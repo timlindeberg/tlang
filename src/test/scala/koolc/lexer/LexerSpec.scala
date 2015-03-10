@@ -10,9 +10,13 @@ class LexerSpec extends FlatSpec with Matchers {
 
   it should "lex kool programs" in {
     val it = useLexer("valid-program-1.kool")
+    
     var tokens = new ArrayBuffer[Token]()
     while (it.hasNext) tokens += it.next
-    
+    println("Got tokens")
+    for(t <- tokens) {
+      print(t+"("+t.line+":"+t.col+") ")
+    }
     
   }
 

@@ -1,0 +1,18 @@
+object Program {
+  def main(): Unit = {
+    /*
+      fat comment
+
+    */
+    // comment
+    while (true) {
+      while(true) {
+        /*
+        adsd
+        */
+        a + b
+      }
+    }
+
+  }
+}
