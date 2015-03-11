@@ -9,11 +9,15 @@ import scala.io.Source
 
 class LexerSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/"
-  val validPrograms = 7
+  val validPrograms = 8
   val invalidPrograms = 0
 
   for (i <- 1 to validPrograms) {
     it should "lex valid program " + i in testFile("valid-program-" + i)
+  }
+
+  for (i <- 1 to invalidPrograms) {
+    it should "lex invalid program " + i in testFile("invalid-program-" + i)
   }
 
   def useLexer(fileName: String): Iterator[Token] = {
