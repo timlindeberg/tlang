@@ -6,6 +6,7 @@ import java.io.File
 import lexer._
 
 object Main {
+  var printTokens = false
 
   def processOptions(args: Array[String]): Context = {
 
@@ -18,7 +19,11 @@ object Main {
         outDir = Some(new File(out))
         processOption(args)
 
-      case f ::args =>
+      case "--tokens" :: args =>
+        printTokens = true
+        processOption(args)
+
+      case f :: args =>
         files = new File(f) :: files
         processOption(args)
 
@@ -28,21 +33,21 @@ object Main {
     processOption(args.toList)
 
     if (files.size != 1) {
-      reporter.fatal("Exactly one file expected, "+files.size+" file(s) given.")
+      reporter.fatal("Exactly one file expected, " + files.size + " file(s) given.")
     }
 
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }
 
-
   def main(args: Array[String]) {
     val ctx = processOptions(args)
 
     val pipeline = Lexer andThen PrintTokens
-
     val program = pipeline.run(ctx)(ctx.file)
-    
-    program.toList
- 
+
+    if(printTokens) {
+      program.toList
+    }
+
   }
 }
