@@ -79,7 +79,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
         case ('"' :: r)  => (createToken(s, s.length + 2), r)
-        case ('\n' :: r) => getStringIdentifier(r, s)
+        case ('\n' :: r) => (createToken(BAD, s.length), r)
         case (c :: r)    => getStringIdentifier(r, s + c)
         case Nil         => (createToken(BAD, s.length), Nil)
       }
