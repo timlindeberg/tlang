@@ -99,15 +99,26 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     }
 
     private def skipLine(chars: List[Char]): List[Char] = chars match {
-      case '\n' :: r => r
-      case _ :: r    => skipLine(r)
-      case Nil       => Nil
+      case '\n' :: r =>
+        line += 1
+        column = 1
+        r
+      case _ :: r =>
+        column += 1
+        skipLine(r)
+      case Nil => Nil
     }
 
     private def skipBlock(chars: List[Char]): List[Char] = chars match {
       case '*' :: '/' :: r => r
-      case _ :: r          => skipBlock(r)
-      case Nil             => Nil
+      case '\n' :: r =>
+        line += 1
+        column = 1
+        skipBlock(r)
+      case _ :: r =>
+        column += 1
+        skipBlock(r)
+      case Nil => Nil
     }
 
     def readTokens(chars: List[Char]): List[Token] = {
@@ -135,7 +146,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isDigit =>
           var (token, tail) = getIntLiteral(chars)
           readTokens(tail, token :: tokens)
-        case Nil    => (createToken(EOF, 0) :: tokens)
+        case Nil    => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column-1)) :: tokens)
         case _ :: r => (createToken(BAD, 1) :: tokens)
       }
       readTokens(chars, List[Token]()).reverse

@@ -11,7 +11,6 @@ class LexerSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/"
 
   it should "lex valid program 1" in testFile("valid-program-1")
-
   it should "lex valid program 2" in testFile("valid-program-2")
 
   def useLexer(fileName: String): Iterator[Token] = {
@@ -20,10 +19,10 @@ class LexerSpec extends FlatSpec with Matchers {
   }
 
   def testFile(file: String) {
-    val it = useLexer(testResource + file + ".kool").toList
-    val sol = readSolution(testResource + file + "-solution.kool").toList
+    val it = useLexer(testResource + file + ".kool").toList.map(format)
+    val sol = readSolution(testResource + file + "-solution.kool").toList.map(_.trim)
     assert(it.length === sol.length)
-    it.zip(sol).foreach(x => assert(format(x._1) === x._2))
+    it.zip(sol).foreach(x => assert(x._1 === x._2))
   }
 
   def readSolution(fileName: String): Iterator[String] = {
@@ -31,7 +30,7 @@ class LexerSpec extends FlatSpec with Matchers {
   }
 
   def format(token: Token): String = {
-    token + "(" + token.line + ":" + token.col + ") "
+    token + "(" + token.line + ":" + token.col + ")"
   }
 
 }
