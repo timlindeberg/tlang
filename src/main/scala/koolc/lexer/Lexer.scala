@@ -12,45 +12,45 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
   object Tokenizer {
 
-    val singleTokens = Map(
-      ':' -> { () => new Token(Tokens.COLON) },
-      ';' -> { () => new Token(Tokens.SEMICOLON) },
-      '.' -> { () => new Token(Tokens.DOT) },
-      ',' -> { () => new Token(Tokens.COMMA) },
-      '!' -> { () => new Token(Tokens.BANG) },
-      '(' -> { () => new Token(Tokens.LPAREN) },
-      ')' -> { () => new Token(Tokens.RPAREN) },
-      '[' -> { () => new Token(Tokens.LBRACKET) },
-      ']' -> { () => new Token(Tokens.RBRACKET) },
-      '{' -> { () => new Token(Tokens.LBRACE) },
-      '}' -> { () => new Token(Tokens.RBRACE) },
-      '+' -> { () => new Token(Tokens.PLUS) },
-      '-' -> { () => new Token(Tokens.MINUS) },
-      '*' -> { () => new Token(Tokens.TIMES) },
-      '<' -> { () => new Token(Tokens.LESSTHAN) },
-      '/' -> { () => new Token(Tokens.DIV) })
+    val singleCharTokens = Map(
+      ':' -> Tokens.COLON,
+      ';' -> Tokens.SEMICOLON,
+      '.' -> Tokens.DOT,
+      ',' -> Tokens.COMMA,
+      '!' -> Tokens.BANG,
+      '(' -> Tokens.LPAREN,
+      ')' -> Tokens.RPAREN,
+      '[' -> Tokens.LBRACKET,
+      ']' -> Tokens.RBRACKET,
+      '{' -> Tokens.LBRACE,
+      '}' -> Tokens.RBRACE,
+      '+' -> Tokens.PLUS,
+      '-' -> Tokens.MINUS,
+      '*' -> Tokens.TIMES,
+      '<' -> Tokens.LESSTHAN,
+      '/' -> Tokens.DIV)
 
     val keyWords = Map(
-      "object" -> { () => new Token(Tokens.OBJECT) },
-      "class" -> { () => new Token(Tokens.CLASS) },
-      "def" -> { () => new Token(Tokens.DEF) },
-      "var" -> { () => new Token(Tokens.VAR) },
-      "Unit" -> { () => new Token(Tokens.UNIT) },
-      "main" -> { () => new Token(Tokens.MAIN) },
-      "String" -> { () => new Token(Tokens.STRING) },
-      "extends" -> { () => new Token(Tokens.EXTENDS) },
-      "Int" -> { () => new Token(Tokens.INT) },
-      "Bool" -> { () => new Token(Tokens.BOOLEAN) },
-      "while" -> { () => new Token(Tokens.WHILE) },
-      "if" -> { () => new Token(Tokens.IF) },
-      "else" -> { () => new Token(Tokens.ELSE) },
-      "return" -> { () => new Token(Tokens.RETURN) },
-      "length" -> { () => new Token(Tokens.LENGTH) },
-      "true" -> { () => new Token(Tokens.TRUE) },
-      "false" -> { () => new Token(Tokens.FALSE) },
-      "this" -> { () => new Token(Tokens.THIS) },
-      "new" -> { () => new Token(Tokens.NEW) },
-      "println" -> { () => new Token(Tokens.PRINTLN) })
+      "object" -> Tokens.OBJECT,
+      "class" -> Tokens.CLASS,
+      "def" -> Tokens.DEF,
+      "var" -> Tokens.VAR,
+      "Unit" -> Tokens.UNIT,
+      "main" -> Tokens.MAIN,
+      "String" -> Tokens.STRING,
+      "extends" -> Tokens.EXTENDS,
+      "Int" -> Tokens.INT,
+      "Bool" -> Tokens.BOOLEAN,
+      "while" -> Tokens.WHILE,
+      "if" -> Tokens.IF,
+      "else" -> Tokens.ELSE,
+      "return" -> Tokens.RETURN,
+      "length" -> Tokens.LENGTH,
+      "true" -> Tokens.TRUE,
+      "false" -> Tokens.FALSE,
+      "this" -> Tokens.THIS,
+      "new" -> Tokens.NEW,
+      "println" -> Tokens.PRINTLN)
 
     def tokenize(file: File): Iterator[Token] = {
       val buffer = Source.fromFile(file).buffered.toList
@@ -74,7 +74,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       }
 
       val peek = () => {
-        buffer(index+1)
+        buffer(index + 1)
       }
 
       val addToken = (token: Token, line: Int, column: Int) => {
@@ -85,8 +85,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       while (index < buffer.size) {
         var c = next()
 
-        if (singleTokens.contains(c)) {
-          addToken(singleTokens(c)(), line, column - 1)
+        if (singleCharTokens.contains(c)) {
+          addToken(new Token(singleCharTokens(c)), line, column - 1)
         } else if (!c.isWhitespace) {
 
           var specialPeople = () => {
@@ -123,20 +123,20 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
               }
               case '&' => {
                 c = peek()
-                if(c == '&'){
-                   c = next()
-                   addToken(new Token(Tokens.AND), line, column - 2)
-                }else{
+                if (c == '&') {
+                  c = next()
+                  addToken(new Token(Tokens.AND), line, column - 2)
+                } else {
                   addToken(new Token(Tokens.BAD), line, column - 1)
                 }
                 true
               }
               case '|' => {
                 c = peek()
-                if(c == '|'){
-                   c = next()
-                   addToken(new Token(Tokens.OR), line, column - 2)
-                }else{
+                if (c == '|') {
+                  c = next()
+                  addToken(new Token(Tokens.OR), line, column - 2)
+                } else {
                   addToken(new Token(Tokens.BAD), line, column - 1)
                 }
                 true
@@ -144,7 +144,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
               case '"' => {
                 var stringb = new StringBuilder
                 c = next()
-                while(c != '"'){ // TODO
+                while (c != '"') { // TODO
                   stringb += c
                   c = next()
                 }
@@ -152,18 +152,15 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
                 addToken(new Tokens.STRLIT(str), line, column - str.length - 1)
                 true
               }
+              case isDigit => ???
               case default => false
-              //              case '&'     => ??? // &&
-              //              case '|'     => ??? // ||
-              //              case '"'     => ???
-              //              case isDigit => ???
             }
           }
 
           if (!specialPeople()) {
             var doIt = () => {
               c = next()
-              !singleTokens.contains(c) && c != ' ' && c != '\n' && c != '\t'
+              !singleCharTokens.contains(c) && c != ' ' && c != '\n' && c != '\t'
             }
 
             var s = new StringBuilder
@@ -175,9 +172,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
             var token = s.mkString
             if (keyWords.contains(token)) {
-              addToken(keyWords(token)(), line, column - token.length - 1)
-              if (singleTokens.contains(c)) {
-                addToken(singleTokens(c)(), line, column - 1)
+              addToken(new Token(keyWords(token)), line, column - token.length - 1)
+              if (singleCharTokens.contains(c)) {
+                addToken(new Token(singleCharTokens(c)), line, column - 1)
               }
             } else {
               addToken(new Tokens.ID(token), line, column - token.length - 1)
