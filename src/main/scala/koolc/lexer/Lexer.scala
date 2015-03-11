@@ -135,7 +135,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isDigit =>
           var (token, tail) = getIntLiteral(chars)
           readTokens(tail, token :: tokens)
-        case Nil    => (createToken(EOF, 1) :: tokens)
+        case Nil    => (createToken(EOF, 0) :: tokens)
         case _ :: r => (createToken(BAD, 1) :: tokens)
       }
       readTokens(chars, List[Token]()).reverse
