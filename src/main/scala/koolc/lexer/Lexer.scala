@@ -55,17 +55,22 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     var line = 1
     var column = 1
 
+    private def createIdentifierOrKeyWord(s: String): Token = {
+      if (keyWords.contains(s))
+        createToken(keyWords(s), s.length)
+      else
+        createToken(new ID(s), s.length)
+    }
+
     private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
-      def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) =
+      def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
+        val stop = (c: Char) => singleCharTokens.contains(c) || c.isWhitespace
         chars match {
-          case (c :: r) if singleCharTokens.contains(c) || c.isWhitespace =>
-            if (keyWords.contains(s)) {
-              (createToken(keyWords(s), s.length), chars)
-            } else {
-              (createToken(new ID(s), s.length), chars)
-            }
+          case (c :: r) if singleCharTokens.contains(c) || c.isWhitespace => (createIdentifierOrKeyWord(s), chars)
           case (c :: r) => getIdentifierOrKeyword(r, s + c)
+          case Nil => (createIdentifierOrKeyWord(s), chars)
         }
+      }
       getIdentifierOrKeyword(chars.tail, chars.head.toString)
     }
 
@@ -111,8 +116,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             skip(r)
           case Nil => Nil
         }
-        column += 2
-        skip(chars)
+      column += 2
+      skip(chars)
     }
 
     private def skipBlock(chars: List[Char]): List[Char] = {
@@ -148,6 +153,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '/' :: '*' :: r                          => readTokens(skipBlock(r), tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
+        case '0' :: r                                 => readTokens(r, createToken(new INTLIT(0), 1) :: tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case (c :: r) if c.isLetter =>
           var (token, tail) = getIdentifierOrKeyword(chars)
