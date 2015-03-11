@@ -10,8 +10,9 @@ import scala.io.Source
 class LexerSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/"
 
-  it should "lex valid program 1" in testFile("valid-program-1")
-  it should "lex valid program 2" in testFile("valid-program-2")
+  for (i <- 1 to 5) {
+    it should "lex valid program " + i in testFile("valid-program-" + i)
+  }
 
   def useLexer(fileName: String): Iterator[Token] = {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = new File(fileName), outDir = None)

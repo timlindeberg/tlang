@@ -1,0 +1,6 @@
+var hej : Int ;
+
+def Identifier ( Identifier : Int ) : Boolean = {
+  var hej : Int ; 
+ return true ; 
+}
