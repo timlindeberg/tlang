@@ -78,10 +78,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case ('"' :: r) => (createToken(s, s.length + 2), r)
+        case ('"' :: r)  => (createToken(s, s.length + 2), r)
         case ('\n' :: r) => (createToken(BAD, s.length), chars)
-        case (c :: r) => getStringIdentifier(r, s + c)
-        case Nil      => (createToken(BAD, s.length), Nil)
+        case (c :: r)    => getStringIdentifier(r, s + c)
+        case Nil         => (createToken(BAD, s.length), Nil)
       }
       getStringIdentifier(chars, "")
     }
@@ -162,7 +162,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           column += 1
           readTokens(r, tokens)
         case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
-        case '/' :: '*' :: r                          => readTokens(skipBlock(r), tokens)
+        case '/' :: '*' :: r                          => 
+          val tail = skipBlock(r)
+          readTokens(tail,  if(tail == Nil) createToken(BAD, 1) :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
