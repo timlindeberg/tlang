@@ -59,17 +59,17 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       if (keyWords.contains(s))
         createToken(keyWords(s), s.length)
       else
-        createToken(new ID(s), s.length)
+        createIdToken(s, s.length)
     }
 
     private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
       def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-        val stop = (c: Char) => singleCharTokens.contains(c) || c.isWhitespace
+        val end = (c: Char)       => singleCharTokens.contains(c) || c.isWhitespace
         val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
         chars match {
-          case (c :: r) if stop(c)      => (createIdentifierOrKeyWord(s), chars)
-          case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)
-          case (c :: r)                 => (createToken(Tokens.BAD, s.length), chars)
+          case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)  
+          case (c :: r) if end(c)       => (createIdentifierOrKeyWord(s), chars)
+          case (c :: r)                 => (createToken(BAD, s.length), chars)
           case Nil                      => (createIdentifierOrKeyWord(s), chars)
         }
       }
@@ -78,7 +78,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case ('"' :: r)  => (createToken(new STRLIT(s), s.length + 2), r)
+        case ('"' :: r)  => (createToken(s, s.length + 2), r)
         case ('\n' :: r) => getStringIdentifier(r, s)
         case (c :: r)    => getStringIdentifier(r, s + c)
         case Nil         => (createToken(BAD, s.length), Nil)
@@ -89,7 +89,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     private def getIntLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getIntLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
         case (c :: r) if c.isDigit => getIntLiteral(r, s + c)
-        case (c :: r)              => (createToken(new INTLIT(s.toInt), s.length), chars)
+        case (c :: r)              => (createToken(s.toInt, s.length), chars)
       }
       getIntLiteral(chars.tail, chars.head.toString)
     }
@@ -100,8 +100,20 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       token
     }
 
-    private def createToken(token: Token, tokenLength: Int): Token = {
-      token.setPos(file, Position.encode(line, column))
+    private def createToken(integer: Int, tokenLength: Int): Token = {
+      var token = new INTLIT(integer).setPos(file, Position.encode(line, column))
+      column += tokenLength
+      token
+    }
+    
+    private def createIdToken(string: String, tokenLength: Int ): Token = {
+      var token = new ID(string).setPos(file, Position.encode(line, column))
+      column += tokenLength
+      token
+    }
+    
+    private def createToken(string: String, tokenLength: Int): Token = {
+      var token = new STRLIT(string).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
@@ -149,13 +161,13 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isWhitespace =>
           column += 1
           readTokens(r, tokens)
-        case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
-        case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
         case '/' :: '*' :: r                          => readTokens(skipBlock(r), tokens)
+        case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
+        case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
-        case '0' :: r                                 => readTokens(r, createToken(new INTLIT(0), 1) :: tokens)
+        case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case (c :: r) if c.isLetter =>
           var (token, tail) = getIdentifierOrKeyword(chars)
