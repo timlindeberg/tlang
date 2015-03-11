@@ -10,189 +10,143 @@ import scala.runtime.RichChar
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
-  object Tokenizer {
+  class Tokenizer(val file: File) {
 
     val singleCharTokens = Map(
-      ':' -> Tokens.COLON,
-      ';' -> Tokens.SEMICOLON,
-      '.' -> Tokens.DOT,
-      ',' -> Tokens.COMMA,
-      '!' -> Tokens.BANG,
-      '(' -> Tokens.LPAREN,
-      ')' -> Tokens.RPAREN,
-      '[' -> Tokens.LBRACKET,
-      ']' -> Tokens.RBRACKET,
-      '{' -> Tokens.LBRACE,
-      '}' -> Tokens.RBRACE,
-      '+' -> Tokens.PLUS,
-      '-' -> Tokens.MINUS,
-      '*' -> Tokens.TIMES,
-      '<' -> Tokens.LESSTHAN,
-      '/' -> Tokens.DIV)
+      ':' -> COLON,
+      ';' -> SEMICOLON,
+      '.' -> DOT,
+      ',' -> COMMA,
+      '!' -> BANG,
+      '(' -> LPAREN,
+      ')' -> RPAREN,
+      '[' -> LBRACKET,
+      ']' -> RBRACKET,
+      '{' -> LBRACE,
+      '}' -> RBRACE,
+      '+' -> PLUS,
+      '-' -> MINUS,
+      '*' -> TIMES,
+      '<' -> LESSTHAN,
+      '/' -> DIV)
 
     val keyWords = Map(
-      "object" -> Tokens.OBJECT,
-      "class" -> Tokens.CLASS,
-      "def" -> Tokens.DEF,
-      "var" -> Tokens.VAR,
-      "Unit" -> Tokens.UNIT,
-      "main" -> Tokens.MAIN,
-      "String" -> Tokens.STRING,
-      "extends" -> Tokens.EXTENDS,
-      "Int" -> Tokens.INT,
-      "Bool" -> Tokens.BOOLEAN,
-      "while" -> Tokens.WHILE,
-      "if" -> Tokens.IF,
-      "else" -> Tokens.ELSE,
-      "return" -> Tokens.RETURN,
-      "length" -> Tokens.LENGTH,
-      "true" -> Tokens.TRUE,
-      "false" -> Tokens.FALSE,
-      "this" -> Tokens.THIS,
-      "new" -> Tokens.NEW,
-      "println" -> Tokens.PRINTLN)
+      "object" -> OBJECT,
+      "class" -> CLASS,
+      "def" -> DEF,
+      "var" -> VAR,
+      "Unit" -> UNIT,
+      "main" -> MAIN,
+      "String" -> STRING,
+      "extends" -> EXTENDS,
+      "Int" -> INT,
+      "Bool" -> BOOLEAN,
+      "while" -> WHILE,
+      "if" -> IF,
+      "else" -> ELSE,
+      "return" -> RETURN,
+      "length" -> LENGTH,
+      "true" -> TRUE,
+      "false" -> FALSE,
+      "this" -> THIS,
+      "new" -> NEW,
+      "println" -> PRINTLN)
 
-    def tokenize(file: File): Iterator[Token] = {
-      val buffer = Source.fromFile(file).buffered.toList
-      var tokens = new ArrayBuffer[Token]()
+    var line = 1
+    var column = 1
 
-      var s = new StringBuilder
-      var line = 1
-      var column = 1
-
-      var index = 0
-
-      val next = () => {
-        column += 1
-        var c = buffer(index)
-        index += 1
-        if (c == '\n') {
-          line += 1
-          column = 1
-        }
-        c
-      }
-
-      val peek = () => {
-        buffer(index + 1)
-      }
-
-      val addToken = (token: Token, line: Int, column: Int) => {
-        token.setPos(file, Position.encode(line, column))
-        tokens += token
-      }
-
-      while (index < buffer.size) {
-        var c = next()
-
-        if (singleCharTokens.contains(c)) {
-          addToken(new Token(singleCharTokens(c)), line, column - 1)
-        } else if (!c.isWhitespace) {
-
-          var specialPeople = () => {
-            c match {
-              case '/' =>
-                {
-                  c = next()
-                  c match {
-                    case '/' => {
-                      while (next() != '\n') {}
-                    }
-                    case '*' => {
-                      while (next() != '*') {}
-                      c = next()
-                      if (c != '/') {
-                        addToken(new Token(Tokens.BAD), line, column - 1)
-                      }
-                    }
-                    case default => {
-                      addToken(new Token(Tokens.BAD), line, column - 1)
-                    }
-                  }
-                  true
-                }
-              case '=' => {
-                c = peek()
-                if (c == '=') {
-                  c = next()
-                  addToken(new Token(Tokens.EQUALS), line, column - 2)
-                } else {
-                  addToken(new Token(Tokens.EQSIGN), line, column - 1)
-                }
-                true
-              }
-              case '&' => {
-                c = peek()
-                if (c == '&') {
-                  c = next()
-                  addToken(new Token(Tokens.AND), line, column - 2)
-                } else {
-                  addToken(new Token(Tokens.BAD), line, column - 1)
-                }
-                true
-              }
-              case '|' => {
-                c = peek()
-                if (c == '|') {
-                  c = next()
-                  addToken(new Token(Tokens.OR), line, column - 2)
-                } else {
-                  addToken(new Token(Tokens.BAD), line, column - 1)
-                }
-                true
-              }
-              case '"' => {
-                var stringb = new StringBuilder
-                c = next()
-                while (c != '"') { // TODO
-                  stringb += c
-                  c = next()
-                }
-                var str = stringb.toString
-                addToken(new Tokens.STRLIT(str), line, column - str.length - 1)
-                true
-              }
-              case isDigit => ???
-              case default => false
-            }
-          }
-
-          if (!specialPeople()) {
-            var doIt = () => {
-              c = next()
-              !singleCharTokens.contains(c) && c != ' ' && c != '\n' && c != '\t'
-            }
-
-            var s = new StringBuilder
-            s += c
-
-            while (doIt()) {
-              s += c
-            }
-
-            var token = s.mkString
-            if (keyWords.contains(token)) {
-              addToken(new Token(keyWords(token)), line, column - token.length - 1)
-              if (singleCharTokens.contains(c)) {
-                addToken(new Token(singleCharTokens(c)), line, column - 1)
-              }
+    private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
+      def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) =
+        chars match {
+          case (c :: r) if singleCharTokens.contains(c) || c.isWhitespace =>
+            if (keyWords.contains(s)) {
+              (createToken(keyWords(s), s.length), chars)
             } else {
-              addToken(new Tokens.ID(token), line, column - token.length - 1)
+              (createToken(new ID(s), s.length), chars)
             }
-          }
-
+          case (c :: r) => getIdentifierOrKeyword(r, s + c)
         }
-      }
-      addToken(new Token(Tokens.EOF), line, column - 1)
-
-      tokens.iterator
+      getIdentifierOrKeyword(chars.tail, chars.head.toString)
     }
+
+    private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
+      def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+        case ('"' :: r) => (createToken(new STRLIT(s), s.length), r)
+        case (c :: r)   => getStringIdentifier(r, s + c)
+        case Nil        => (createToken(BAD, s.length), Nil)
+      }
+      getStringIdentifier(chars.tail, chars.head.toString)
+    }
+
+    private def getIntLiteral(chars: List[Char]): (Token, List[Char]) = {
+      def getIntLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+        case (c :: r) if c.isDigit => getIntLiteral(r, s + c)
+        case (c :: r)              => (createToken(new STRLIT(s), s.length), chars)
+      }
+      getIntLiteral(chars.tail, chars.head.toString)
+    }
+
+    private def createToken(kind: TokenKind, tokenLength: Int): Token = {
+      var token = new Token(kind).setPos(file, Position.encode(line, column))
+      column += tokenLength
+      token
+    }
+
+    private def createToken(token: Token, tokenLength: Int): Token = {
+      token.setPos(file, Position.encode(line, column))
+      column += tokenLength
+      token
+    }
+
+    private def skipLine(chars: List[Char]): List[Char] = chars match {
+      case '\n' :: r => r
+      case _ :: r    => skipLine(r)
+      case Nil       => Nil
+    }
+
+    private def skipBlock(chars: List[Char]): List[Char] = chars match {
+      case '*' :: '/' :: r => r
+      case _ :: r          => skipBlock(r)
+      case Nil             => Nil
+    }
+
+    def readTokens(chars: List[Char]): List[Token] = {
+      def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
+        case '\n' :: r =>
+          column = 1
+          line += 1
+          readTokens(r, tokens)
+        case (c :: r) if c.isWhitespace =>
+          column += 1
+          readTokens(r, tokens)
+        case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
+        case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
+        case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
+        case '/' :: '*' :: r                          => readTokens(skipBlock(r), tokens)
+        case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
+        case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
+        case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
+        case (c :: r) if c.isLetter =>
+          var (token, tail) = getIdentifierOrKeyword(chars)
+          readTokens(tail, token :: tokens)
+        case ('"' :: r) =>
+          var (token, tail) = getStringLiteral(r)
+          readTokens(tail, token :: tokens)
+        case (c :: r) if c.isDigit =>
+          var (token, tail) = getIntLiteral(chars)
+          readTokens(tail, token :: tokens)
+        case Nil    => (createToken(EOF, 1) :: tokens)
+        case _ :: r => (createToken(BAD, 1) :: tokens)
+      }
+      readTokens(chars, List[Token]()).reverse
+    }
+
+    def tokenize(): Iterator[Token] = readTokens(Source.fromFile(file).buffered.toList).iterator
   }
 
   def run(ctx: Context)(f: File): Iterator[Token] = {
     import ctx.reporter._
 
-    // Complete this file
-    Tokenizer.tokenize(f)
+    new Tokenizer(f).tokenize
   }
 }
