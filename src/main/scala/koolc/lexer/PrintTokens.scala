@@ -10,7 +10,7 @@ object PrintTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
 
   def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
     val ts = for (t <- tokens) yield {
-      println(t+"("+t.line+":"+t.col+") ")
+      println(t + "(" + t.line + ":" + t.col + ") ")
       t
     }
 

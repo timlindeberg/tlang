@@ -64,10 +64,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
       def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-        val end = (c: Char)       => singleCharTokens.contains(c) || c.isWhitespace
+        val end = (c: Char) => singleCharTokens.contains(c) || c.isWhitespace
         val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
         chars match {
-          case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)  
+          case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)
           case (c :: r) if end(c)       => (createIdentifierOrKeyWord(s), chars)
           case (c :: r)                 => (createToken(BAD, s.length), chars)
           case Nil                      => (createIdentifierOrKeyWord(s), chars)
@@ -78,12 +78,12 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case ('"' :: r)  => (createToken(s, s.length + 2), r)
-        case ('\n' :: r) => (createToken(BAD, s.length), r)
-        case (c :: r)    => getStringIdentifier(r, s + c)
-        case Nil         => (createToken(BAD, s.length), Nil)
+        case ('"' :: r) => (createToken(s, s.length + 2), r)
+        case ('\n' :: r) => (createToken(BAD, s.length), chars)
+        case (c :: r) => getStringIdentifier(r, s + c)
+        case Nil      => (createToken(BAD, s.length), Nil)
       }
-      getStringIdentifier(chars.tail, chars.head.toString)
+      getStringIdentifier(chars, "")
     }
 
     private def getIntLiteral(chars: List[Char]): (Token, List[Char]) = {
@@ -91,7 +91,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isDigit => getIntLiteral(r, s + c)
         case (c :: r)              => (createToken(s.toInt, s.length), chars)
       }
-      getIntLiteral(chars.tail, chars.head.toString)
+      getIntLiteral(chars, "")
     }
 
     private def createToken(kind: TokenKind, tokenLength: Int): Token = {
@@ -105,13 +105,13 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       column += tokenLength
       token
     }
-    
-    private def createIdToken(string: String, tokenLength: Int ): Token = {
+
+    private def createIdToken(string: String, tokenLength: Int): Token = {
       var token = new ID(string).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
-    
+
     private def createToken(string: String, tokenLength: Int): Token = {
       var token = new STRLIT(string).setPos(file, Position.encode(line, column))
       column += tokenLength

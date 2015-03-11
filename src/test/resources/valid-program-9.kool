@@ -1,0 +1,31 @@
+object A {
+  def/**/main () : Unit = {}
+}
+object A {
+  def/**//**/main () : Unit = {}
+}
+object A {
+  def/*aaa*//****/main () : Unit = {}
+}
+object Oooo1234 {
+  def/**/main () : Unit = {
+    /* * */
+    /* ************* */
+    /******/
+    /*/ apa * */
+    /*/// // // */
+    if (false || true && (5 + 2 - 1 * 20 == 1000)) {
+      ///
+      this.length == true;
+      !false
+      this = new Object()    
+    }
+    return new int[1000].length;
+  }
+}
+{{{{}}}}
+/*
+************
+*/
+/**/
+// comment at EOF
