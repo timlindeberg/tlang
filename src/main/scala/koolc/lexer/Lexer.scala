@@ -71,9 +71,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case ('"' :: r) => (createToken(new STRLIT(s), s.length), r)
-        case (c :: r)   => getStringIdentifier(r, s + c)
-        case Nil        => (createToken(BAD, s.length), Nil)
+        case ('"' :: r)  => (createToken(new STRLIT(s), s.length), r)
+        case ('\n' :: r) => getStringIdentifier(r, s)
+        case (c :: r)    => getStringIdentifier(r, s + c)
+        case Nil         => (createToken(BAD, s.length), Nil)
       }
       getStringIdentifier(chars.tail, chars.head.toString)
     }
@@ -98,27 +99,38 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       token
     }
 
-    private def skipLine(chars: List[Char]): List[Char] = chars match {
-      case '\n' :: r =>
-        line += 1
-        column = 1
-        r
-      case _ :: r =>
-        column += 1
-        skipLine(r)
-      case Nil => Nil
+    private def skipLine(chars: List[Char]): List[Char] = {
+      def skip(chars: List[Char]): List[Char] =
+        chars match {
+          case '\n' :: r =>
+            line += 1
+            column = 1
+            r
+          case _ :: r =>
+            column += 1
+            skip(r)
+          case Nil => Nil
+        }
+        column += 2
+        skip(chars)
     }
 
-    private def skipBlock(chars: List[Char]): List[Char] = chars match {
-      case '*' :: '/' :: r => r
-      case '\n' :: r =>
-        line += 1
-        column = 1
-        skipBlock(r)
-      case _ :: r =>
-        column += 1
-        skipBlock(r)
-      case Nil => Nil
+    private def skipBlock(chars: List[Char]): List[Char] = {
+      def skip(chars: List[Char]): List[Char] = chars match {
+        case '*' :: '/' :: r =>
+          column += 2
+          r
+        case '\n' :: r =>
+          line += 1
+          column = 1
+          skip(r)
+        case _ :: r =>
+          column += 1
+          skip(r)
+        case Nil => Nil
+      }
+      column += 2
+      skip(chars)
     }
 
     def readTokens(chars: List[Char]): List[Token] = {
@@ -146,7 +158,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isDigit =>
           var (token, tail) = getIntLiteral(chars)
           readTokens(tail, token :: tokens)
-        case Nil    => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column-1)) :: tokens)
+        case Nil    => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens)
         case _ :: r => (createToken(BAD, 1) :: tokens)
       }
       readTokens(chars, List[Token]()).reverse
