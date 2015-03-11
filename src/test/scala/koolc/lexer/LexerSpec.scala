@@ -10,7 +10,7 @@ import scala.io.Source
 class LexerSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/"
 
-  for (i <- 1 to 6) {
+  for (i <- 1 to 7) {
     it should "lex valid program " + i in testFile("valid-program-" + i)
   }
 

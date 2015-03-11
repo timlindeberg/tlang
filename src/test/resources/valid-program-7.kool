@@ -1,0 +1,81 @@
+/*
+Goal
+MainObject
+ClassDeclaration
+VarDeclaration
+MethodDeclaration
+*/
+
+object Test { def main() : Unit = { }}
+class Test { var O: Boolean }
+class Test { var O: Boolean }
+class Test extends Tja { var O: Boolean; def Metod ( ja : Int }: String = { return true } }
+
+
+/*
+Type
+*/
+Int[]
+Bool
+Int
+String
+var Test: CoolObject
+
+/*
+Statement
+*/
+{
+  {
+    if (true) {
+      {
+
+      } / * cool 
+
+
+      */
+    } else {
+      {
+        while(false) { // ok
+
+        }
+        println( new Object() )
+
+      }
+    }
+  }
+}
+CoolObject = true
+CoolObject = false
+CoolObject = new Ob()
+
+
+/*
+Expression
+*/
+!false
+!true
+this
+" test string "
+1000
+2000
+000111
+01010101
+true.length
+CoolBoject[new Int[]]
+!this.Identifier(true, false, tis, new Object(), !false)
+&&
+||
+==
+<
++
+-
+*
+/
+&&||==<+-*/ /* haha */ // tja
+
+/*
+Identifier
+*/
+h111111__
+h0100101
+a__1__11912912haa
