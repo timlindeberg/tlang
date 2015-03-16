@@ -36,7 +36,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     /** Complains that what was found was not expected. The method accepts arbitrarily many arguments of type TokenKind */
     def expected(kind: TokenKind, more: TokenKind*): Nothing = {
-      fatal("expected: " + (kind::more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
+      fatal("expected: " + (kind :: more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
     }
 
     def parseGoal: Program = {

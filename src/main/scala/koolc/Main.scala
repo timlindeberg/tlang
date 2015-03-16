@@ -4,9 +4,9 @@ import utils._
 import java.io.File
 
 import lexer._
+import ast._
 
 object Main {
-  var printTokens = false
 
   def processOptions(args: Array[String]): Context = {
 
@@ -19,9 +19,9 @@ object Main {
         outDir = Some(new File(out))
         processOption(args)
 
-      case "--tokens" :: args =>
-        printTokens = true
-        processOption(args)
+      //      case "--tokens" :: args =>
+      //        printTokens = true
+      //        processOption(args)
 
       case f :: args =>
         files = new File(f) :: files
@@ -42,12 +42,10 @@ object Main {
   def main(args: Array[String]) {
     val ctx = processOptions(args)
 
-    val pipeline = Lexer andThen PrintTokens
+    val pipeline = Lexer andThen Parser
+
     val program = pipeline.run(ctx)(ctx.file)
 
-    if (printTokens) {
-      program.toList
-    }
-
+    println(Printer(program))
   }
 }
