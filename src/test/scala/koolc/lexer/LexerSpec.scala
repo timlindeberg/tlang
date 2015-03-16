@@ -8,16 +8,16 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
 class LexerSpec extends FlatSpec with Matchers {
-  val testResource = "./src/test/resources/"
+  val testResource = "./src/test/resources/lexer/"
   val validPrograms = 8
   val invalidPrograms = 3
   
   for (i <- 1 to validPrograms) {
-    it should "lex valid program " + i in testFile("valid-program-" + i)
+    it should "lex valid program " + i in testFile("valid-" + i)
   }
 
   for (i <- 1 to invalidPrograms) {
-    it should "lex invalid program " + i in testFile("invalid-program-" + i)
+    it should "lex invalid program " + i in testFile("invalid-" + i)
   }
 
   def useLexer(fileName: String): Iterator[Token] = {
