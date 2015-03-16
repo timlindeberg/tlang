@@ -11,7 +11,7 @@ class LexerSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/"
   val validPrograms = 8
   val invalidPrograms = 3
-
+  
   for (i <- 1 to validPrograms) {
     it should "lex valid program " + i in testFile("valid-program-" + i)
   }

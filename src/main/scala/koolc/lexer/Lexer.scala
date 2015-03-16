@@ -134,11 +134,11 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       skip(chars)
     }
 
-    private def skipBlock(chars: List[Char]): List[Char] = {
-      def skip(chars: List[Char]): List[Char] = chars match {
+    private def skipBlock(chars: List[Char]): (Option[Token], List[Char]) = {
+      def skip(chars: List[Char]): (Option[Token], List[Char]) = chars match {
         case '*' :: '/' :: r =>
           column += 2
-          r
+          (None, r)
         case '\n' :: r =>
           line += 1
           column = 1
@@ -146,7 +146,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case _ :: r =>
           column += 1
           skip(r)
-        case Nil => Nil
+        case Nil => (Some(createToken(BAD, 1)), Nil)
       }
       column += 2
       skip(chars)
@@ -163,8 +163,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           readTokens(r, tokens)
         case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
         case '/' :: '*' :: r                          => 
-          val tail = skipBlock(r)
-          readTokens(tail,  if(tail == Nil) createToken(BAD, 1) :: tokens else tokens)
+          val (token, tail) = skipBlock(r)
+          readTokens(tail, if(token.isDefined) token.get :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
