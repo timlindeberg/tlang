@@ -161,10 +161,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isWhitespace =>
           column += 1
           readTokens(r, tokens)
-        case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
-        case '/' :: '*' :: r                          => 
+        case '/' :: '/' :: r => readTokens(skipLine(r), tokens)
+        case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
-          readTokens(tail, if(token.isDefined) token.get :: tokens else tokens)
+          readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
@@ -186,12 +186,14 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       readTokens(chars, List[Token]()).reverse
     }
 
-    def tokenize(): Iterator[Token] = readTokens(Source.fromFile(file).buffered.toList).iterator
+    def tokenize(chars: List[Char]): Iterator[Token] = readTokens(chars).iterator
   }
 
   def run(ctx: Context)(f: File): Iterator[Token] = {
     import ctx.reporter._
 
-    new Tokenizer(f).tokenize
+    new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
   }
+
+  def run(chars: List[Char]): Iterator[Token] = new Tokenizer(null).tokenize(chars)
 }
