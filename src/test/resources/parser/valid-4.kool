@@ -2,13 +2,13 @@ object A {
   def/**/main () : Unit = {}
 }
 class B {
-  def/**//**/Test () : Int = {}
+  def/**//**/Test (A: Int) : Int = { return 0; }
 }
 class C {
-  def/*aaa*//****/Test () : String = {}
+  def/*aaa*//****/Test (B: Int) : String = { return ""; }
 }
 class D {
-  def/**/Test () : Int = {
+  def/**/Test (C: Int) : Int = {
     /* * */
     /* ************* */
     /******/
@@ -17,8 +17,7 @@ class D {
     if (false || true && (5 + 2 - 1 * 20 == 1000)) {
       ///
       this.length == true;
-      !false
-      this = new Object()    
+      this = new Object();
     }
     return new int[1000].length;
   }
