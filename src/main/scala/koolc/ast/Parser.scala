@@ -9,12 +9,23 @@ import scala.collection.mutable.ArrayBuffer
 import org.xml.sax.helpers.NewInstance
 
 object Parser extends Pipeline[Iterator[Token], Program] {
+  
+ var currentToken: Token = new Token(BAD)
+     
   def run(ctx: Context)(tokens: Iterator[Token]): Program = {
     import ctx.reporter._
-
-    /** Store the current token, as read from the lexer. */
-    var currentToken: Token = new Token(BAD)
-
+    val astBuilder = new ASTBuilder(ctx, tokens)
+    astBuilder.readToken
+    val tree = astBuilder.parseGoal
+    terminateIfErrors
+    tree
+  }
+ 
+ private class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
+   
+    import ctx.reporter._
+       /** Store the current token, as read from the lexer. */
+    
     def readToken: Unit = {
       if (tokens.hasNext) {
         // uses nextToken from the Lexer trait
@@ -44,41 +55,28 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       fatal("expected: " + (kind :: more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
     }
 
-    def parseGoal = {
-      val mainObject = parseMainObject
-      var classDecls = new ArrayBuffer[ClassDecl]
-      while (currentToken.kind != EOF) {
-        classDecls += parseClassDecleration
-      }
-      Program(mainObject, classDecls.toList)
-    }
+    def parseGoal() = Program(parseMainObject, until(parseClassDecleration, EOF))
 
-    def parseMainObject: MainObject = {
+    def parseMainObject(): MainObject = {
       eat(OBJECT)
       val id = parseIdentifier
       eat(LBRACE, DEF, MAIN, LPAREN, RPAREN, COLON, UNIT, EQSIGN, LBRACE)
-      val stmts = parseStatementUntil(RBRACE)
+      val stmts = until(parseStatement, RBRACE)
       eat(RBRACE)
       MainObject(id, stmts)
     }
 
-    def parseClassDecleration: ClassDecl = {
+    def parseClassDecleration(): ClassDecl = {
       eat(CLASS)
       var id = parseIdentifier
-      var parent = if (currentToken.kind == EXTENDS) Some(parseIdentifier) else None
+      var parent = optional(parseIdentifier, EXTENDS)
       eat(LBRACE)
-      var vars = new ArrayBuffer[VarDecl]
-      while (currentToken.kind == VAR) {
-        vars += parseVarDeclaration
-      }
-      var methods = new ArrayBuffer[MethodDecl]
-      while (currentToken.kind != RBRACE) {
-        methods += parseMethodDeclaration
-      }
+      var vars = until(parseVarDeclaration, VAR)
+      var methods = until(parseMethodDeclaration, VAR)
       ClassDecl(id, parent, vars.toList, methods.toList)
     }
 
-    def parseVarDeclaration: VarDecl = {
+    def parseVarDeclaration(): VarDecl = {
       eat(VAR)
       val id = parseIdentifier
       eat(COLON)
@@ -94,33 +92,23 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Formal(typ, id)
     }
 
-    def parseMethodDeclaration: MethodDecl = {
+    def parseMethodDeclaration(): MethodDecl = {
       eat(DEF)
       val id = parseIdentifier
       eat(LPAREN)
-      var args = new ArrayBuffer[Formal]()
-      args += parseFormal
-      while (currentToken.kind != COMMA) {
-        eat(COMMA)
-        args += parseFormal
-      }
+      var arrBuff = new ArrayBuffer[Formal]() += parseFormal
+      var args = until(parseFormal, COMMA, arrBuff)
+
       eat(RPAREN, COLON)
       val retType = parseType
       eat(EQSIGN, LBRACE)
-      val vars = new ArrayBuffer[VarDecl]()
-      while (currentToken.kind == VAR) {
-        vars += parseVarDeclaration
-      }
-      val stmts = new ArrayBuffer[StatTree]()
-      while (currentToken.kind != RETURN) {
-        stmts += parseStatement
-      }
-      eat(RETURN)
+      val vars = untilNot(parseVarDeclaration, VAR)
+      val stmts = until(parseStatement, RETURN)
       val expr = parseExpression
       MethodDecl(retType, id, args.toList, vars.toList, stmts.toList, expr)
     }
 
-    def parseType: TypeTree = currentToken.kind match {
+    def parseType(): TypeTree = currentToken.kind match {
       case INT => {
         eat(INT)
         if (currentToken.kind == LBRACKET) {
@@ -137,26 +125,18 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case _ => parseIdentifier
     }
 
-    def parseStatementUntil(kind: TokenKind): List[StatTree] = {
-      var stmts = new ArrayBuffer[StatTree]()
-      while (currentToken.kind != kind) {
-        stmts += parseStatement
-      }
-      eat(kind)
-      stmts.toList
-    }
-
-    def parseStatement: StatTree = currentToken.kind match {
+    def parseStatement(): StatTree = currentToken.kind match {
       case LBRACE => {
         eat(LBRACE)
-        Block(parseStatementUntil(RBRACE))
+        Block(until(parseStatement, RBRACE))
       }
       case IF => {
         eat(IF, LPAREN)
         val expr = parseExpression
         eat(RPAREN)
         val stmt = parseStatement
-        If(expr, stmt, if (currentToken.kind == ELSE) Some(parseStatement) else None)
+        
+        If(expr, stmt, optional(parseStatement, ELSE))
       }
       case WHILE => {
         eat(WHILE)
@@ -193,7 +173,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case _ => expected(LBRACE, IF, WHILE, PRINTLN, IDKIND)
     }
 
-    def parseExpression: ExprTree = {
+    def parseExpression(): ExprTree = {
       currentToken.kind match {
         case INTLITKIND => parseExpressionRest(parseIntLit)
         case STRLITKIND => parseExpressionRest(parseStringLit)
@@ -239,11 +219,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           } else {
             val id = parseIdentifier
             eat(LPAREN)
-            val exprs = new ArrayBuffer[ExprTree]
-            exprs += parseExpression
-            while (currentToken.kind == COMMA) {
-              exprs += parseExpression
-            }
+            val arrBuff = new ArrayBuffer[ExprTree] += parseExpression
+            val exprs = untilNot(parseExpression, COMMA, arrBuff)
             eat(RPAREN)
             MethodCall(lhs, id, exprs.toList)
           }
@@ -258,7 +235,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseIdentifier: Identifier = {
+    def parseIdentifier(): Identifier = {
       try {
         val id = currentToken.asInstanceOf[ID]
         eat(IDKIND)
@@ -268,7 +245,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseStringLit: StringLit = {
+    def parseStringLit(): StringLit = {
       try {
         val id = currentToken.asInstanceOf[STRLIT]
         eat(STRLITKIND)
@@ -278,7 +255,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseIntLit: IntLit = {
+    def parseIntLit(): IntLit = {
       try {
         val id = currentToken.asInstanceOf[INTLIT]
         eat(INTLITKIND)
@@ -287,10 +264,23 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case _ => expected(INTLITKIND)
       }
     }
+    
+    def optional[T](parse: () => T, kind: TokenKind): Option[T] = if (currentToken.kind == kind) Some(parse()) else None
 
-    readToken
-    val tree = parseGoal
-    terminateIfErrors
-    tree
-  }
+    def until[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] =
+      _until(() => currentToken.kind != kind, parse, kind, arrBuff)
+
+    def untilNot[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] =
+      _until(() => currentToken.kind == kind, parse, kind, arrBuff)
+
+    def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()) = {
+      while (condition()) arrBuff += parse()
+      eat(kind)
+      arrBuff.toList
+    }
+ }
+  
+
+
+  
 }
