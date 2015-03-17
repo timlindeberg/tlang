@@ -3,6 +3,8 @@ object Program {
     var a: Int;
     var b: Int;
     var c: Int;
+    var d: Int[];
+    var obj: Object;
     a = 4 / 3 * 6;
     b = ((4 / 3) * 6);
     c = 6 * 4 / 3;
@@ -12,13 +14,11 @@ object Program {
     } else {
       println("false");
     }
-    var d: Int[];
     println(d.length);
     d = new Int[10]
     println(d.length);
     println("abc");
     println(10);
-    var obj: Object;
     obj = new Object()
   }
 }
