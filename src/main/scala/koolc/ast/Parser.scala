@@ -195,8 +195,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           }
         }
         case BANG => Not(parseExpression)
-        case LPAREN =>
-          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
+        case LPAREN => eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
       }
     }
 
@@ -239,7 +238,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(IDKIND)
         Identifier(id.value)
       } catch {
-        case _ => expected(IDKIND)
+        case _: Throwable => expected(IDKIND)
       }
     }
 
@@ -249,7 +248,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(STRLITKIND)
         StringLit(id.value)
       } catch {
-        case _ => expected(STRLITKIND)
+        case _: Throwable => expected(STRLITKIND)
       }
     }
 
@@ -259,7 +258,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(INTLITKIND)
         IntLit(id.value)
       } catch {
-        case _ => expected(INTLITKIND)
+        case _: Throwable => expected(INTLITKIND)
       }
     }
     
@@ -271,11 +270,16 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     
     def optional[T](parse: () => T, kind: TokenKind): Option[T] = if (currentToken.kind == kind) Some(parse()) else None
 
-    def until[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] =
-      _until(() => currentToken.kind != kind, parse, kind, arrBuff)
+    
+    def until[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] = {
+      val condition = () => currentToken.kind != kind
+      _until(condition, parse, kind, arrBuff)
+    }
 
-    def untilNot[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] =
-      _until(() => currentToken.kind == kind, parse, kind, arrBuff)
+    def untilNot[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] = {
+      val condition = () => currentToken.kind == kind
+      _until(condition, parse, kind, arrBuff)
+    }
 
     private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind,
         arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()) = {
