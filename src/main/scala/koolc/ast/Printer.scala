@@ -31,11 +31,11 @@ object Printer {
     // Expressions
     case And(lhs, rhs)                => apply(lhs) + " && " + apply(rhs)
     case Or(lhs, rhs)                 => apply(lhs) + " || " + apply(rhs)
-    case Plus(lhs, rhs)               => apply(lhs) + " + " + apply(rhs)
-    case Minus(lhs, rhs)              => apply(lhs) + " - " + apply(rhs)
-    case Times(lhs, rhs)              => apply(lhs) + " * " + apply(rhs)
-    case Div(lhs, rhs)                => apply(lhs) + " / " + apply(rhs)
-    case LessThan(lhs, rhs)           => apply(lhs) + " < " + apply(rhs)
+    case Plus(lhs, rhs)               => apply(lhs) + " + "  + apply(rhs)
+    case Minus(lhs, rhs)              => apply(lhs) + " - "  + apply(rhs)
+    case Times(lhs, rhs)              => apply(lhs) + " * "  + apply(rhs)
+    case Div(lhs, rhs)                => apply(lhs) + " / "  + apply(rhs)
+    case LessThan(lhs, rhs)           => apply(lhs) + " < "  + apply(rhs)
     case Equals(lhs, rhs)             => apply(lhs) + " == " + apply(rhs)
     case ArrayRead(arr, index)        => apply(arr) + "[" + apply(index) + "]"
     case ArrayLength(arr)             => apply(arr) + ".length"
