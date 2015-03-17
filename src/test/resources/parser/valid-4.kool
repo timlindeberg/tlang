@@ -1,0 +1,30 @@
+object A {
+  def/**/main () : Unit = {}
+}
+class B {
+  def/**//**/Test () : Int = {}
+}
+class C {
+  def/*aaa*//****/Test () : String = {}
+}
+class D {
+  def/**/Test () : Int = {
+    /* * */
+    /* ************* */
+    /******/
+    /*/ apa * */
+    /*/// // // */
+    if (false || true && (5 + 2 - 1 * 20 == 1000)) {
+      ///
+      this.length == true;
+      !false
+      this = new Object()    
+    }
+    return new int[1000].length;
+  }
+}
+/*
+************
+*/
+/**/
+// comment at EOF

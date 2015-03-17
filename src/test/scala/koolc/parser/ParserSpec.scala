@@ -10,9 +10,9 @@ import koolc.lexer._
 
 class ParserSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/parser/"
-  val validPrograms = 1
+  val validPrograms = 4
 
-  for (i <- 1 to validPrograms) {
+  for (i <- 4 to validPrograms) {
     it should "parse valid program " + i in testProgram("valid-" + i)
   }
 
@@ -21,7 +21,10 @@ class ParserSpec extends FlatSpec with Matchers {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = new File(program), outDir = None)
     val P = Source.fromFile(new File(program)).mkString
 
-    def parse(p: String): Program = Parser.run(ctx)(Lexer.run(p.toList))
+    def parse(p: String): Program = {
+      val tokens = Lexer.run(p.toList, ctx.file)
+      Parser.run(ctx)(tokens)
+    }
     def print(p: Program) = Printer(p)
 
     assert(print(parse(P)) === print(parse(print(parse(P)))))

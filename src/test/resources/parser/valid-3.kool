@@ -1,0 +1,24 @@
+object Program {
+  def main(): Unit = {
+  }
+}
+
+class Identifier extends Identifier { 
+  var V : Int ;
+  var V : String ;
+  var V : Bool ;
+  var V : Int[] ;
+  def Identifier (Identifier : Int) : Boolean = {  }
+  def Identifier (Identifier : Int, Identifier : Boolean) : Boolean = {  }
+  def Identifier (Identifier : Int, Identifier : Boolean, Identifier: String) : Boolean = {}
+  def Identifier (Identifier : Int, Identifier : Boolean, Identifier: String) : Int = {  
+    while( false ) {
+      while ( this ) {
+        println(false);
+        if (new Obj() && true || false || this < 0 || true + 1 || false - 1 && 1 * 2) {
+          println ("Test")
+        }
+      }
+    }
+  }
+}

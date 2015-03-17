@@ -195,5 +195,5 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
   }
 
-  def run(chars: List[Char]): Iterator[Token] = new Tokenizer(null).tokenize(chars)
+  def run(chars: List[Char], f: File): Iterator[Token] = new Tokenizer(f).tokenize(chars)
 }
