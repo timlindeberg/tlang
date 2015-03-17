@@ -55,7 +55,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       fatal("expected: " + (kind :: more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
     }
 
-    def parseGoal() = Program(parseMainObject, until(parseClassDecleration, EOF))
+    def parseGoal() = {
+      val pos = currentToken
+      Program(parseMainObject, until(parseClassDecleration, EOF)).setPos(pos)
+    }
 
     def parseMainObject(): MainObject = {
       val pos = currentToken
@@ -101,7 +104,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val pos = currentToken
       eat(DEF)
       val id = parseIdentifier
+      println("parsed id")
       eat(LPAREN)
+      println("parsed lparen")
       var args = commaList(parseFormal)
 
       eat(RPAREN, COLON)

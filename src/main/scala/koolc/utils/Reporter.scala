@@ -41,13 +41,13 @@ class Reporter {
 
   private def report(prefix: String, msg: Any, pos: Positioned) {
     if (pos.hasPosition) {
-      err(pos.position+": "+prefix+": "+msg.toString)
+      err(pos.position + ": " + prefix + ": " + msg.toString)
 
       val lines = getLines(pos.file)
 
       if (pos.line-1 < lines.size) {
           err(lines(pos.line-1))
-          err(" "*pos.col+"^")
+          err(" "*(pos.col-1)+"^")
       } else {
           err("<line unavailable in source file>")
       }
