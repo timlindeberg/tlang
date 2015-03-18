@@ -12,7 +12,7 @@ class ParserSpec extends FlatSpec with Matchers {
   val testResource = "./src/test/resources/parser/"
   val validPrograms = 4
 
-  for (i <- 4 to validPrograms) {
+  for (i <- 1 to validPrograms) {
     it should "parse valid program " + i in testProgram("valid-" + i)
   }
 
@@ -26,7 +26,7 @@ class ParserSpec extends FlatSpec with Matchers {
       Parser.run(ctx)(tokens)
     }
     def print(p: Program) = Printer(p)
-
+    println(print(parse(P)))
     assert(print(parse(P)) === print(parse(print(parse(P)))))
   }
 

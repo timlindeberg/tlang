@@ -9,6 +9,8 @@ class C {
 }
 class D {
   def/**/Test (C: Int) : Int = {
+    var a : Object;
+    var b : Int[];
     /* * */
     /* ************* */
     /******/
@@ -16,10 +18,11 @@ class D {
     /*/// // // */
     if (false || true && (5 + 2 - 1 * 20 == 1000)) {
       ///
-      this.length == true;
-      this = new Object();
+      println(this.length == true);
+      a = new Object();
     }
-    return new int[1000].length;
+    a = new Int[1000].length;
+    return Object[1000].length;
   }
 }
 /*

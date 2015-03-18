@@ -1,4 +1,4 @@
-object Program {
+object Program2 {
   def main(): Unit = {
     /*
       fat comment
@@ -10,7 +10,9 @@ object Program {
         /*
         adsd
         */
-        var a = 1 + 2;
+        if(1+2 == 3){
+
+        }
       }
     }
 

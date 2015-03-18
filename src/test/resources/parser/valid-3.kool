@@ -1,4 +1,4 @@
-object Program { def main(): Unit = { }}
+object Program3 { def main(): Unit = { } }
 
 class Identifier extends Identifier { 
   var V : Int ;
