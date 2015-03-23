@@ -25,8 +25,11 @@ class C {
     return Object[1000].length;
   }
 }
-class B {
+class D {
   def/*****/Test () : Int = { return 0; }
+}
+class E {
+  
 }
 
 /*

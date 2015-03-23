@@ -76,7 +76,6 @@ object Printer {
       val s = list.foldLeft("")(_ + apply(_) + ", ")
       s.substring(0, s.length - 2) // remove last comma
     }
-
   }
 
   private def all(list: List[Tree], start: String = ""): String = list.foldLeft(start)(_ + apply(_))

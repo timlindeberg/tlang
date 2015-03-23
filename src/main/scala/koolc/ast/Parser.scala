@@ -195,6 +195,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     def parseExpression(): ExprTree = {
       val pos = currentToken
       currentToken.kind match {
+        case LPAREN =>
+          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
+        case BANG => eat(BANG); Not(parseExpression).setPos(pos)
         case INTLITKIND =>
           parseExpressionRest(parseIntLit.setPos(pos))
         case STRLITKIND =>
@@ -220,32 +223,30 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             parseExpressionRest(New(id).setPos(pos))
           }
         }
-        case BANG   => Not(parseExpression).setPos(pos)
-        case LPAREN =>
-          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
-        case _      => expected(BANG, BANG)
+        
+        case _ => expected(BANG, BANG)
       }
     }
 
     def parseExpressionRest(lhs: ExprTree): ExprTree = {
       val pos = currentToken
       currentToken.kind match {
-        case AND =>
-          eat(AND); And(lhs, parseExpression).setPos(pos)
-        case OR =>
-          eat(OR); Or(lhs, parseExpression).setPos(pos)
-        case EQUALS =>
-          eat(EQUALS); Equals(lhs, parseExpression).setPos(pos)
-        case LESSTHAN =>
-          eat(LESSTHAN); LessThan(lhs, parseExpression).setPos(pos)
-        case PLUS =>
-          eat(PLUS); Plus(lhs, parseExpression).setPos(pos)
-        case MINUS =>
-          eat(MINUS); Minus(lhs, parseExpression).setPos(pos)
         case TIMES =>
           eat(TIMES); Times(lhs, parseExpression).setPos(pos)
         case DIV =>
           eat(DIV); Div(lhs, parseExpression).setPos(pos)
+        case PLUS =>
+          eat(PLUS); Plus(lhs, parseExpression).setPos(pos)
+        case MINUS =>
+          eat(MINUS); Minus(lhs, parseExpression).setPos(pos)
+        case LESSTHAN =>
+          eat(LESSTHAN); LessThan(lhs, parseExpression).setPos(pos)
+        case EQUALS =>
+          eat(EQUALS); Equals(lhs, parseExpression).setPos(pos)
+        case AND =>
+          eat(AND); And(lhs, parseExpression).setPos(pos)
+        case OR =>
+          eat(OR); Or(lhs, parseExpression).setPos(pos)
         case DOT => {
           eat(DOT)
           if (currentToken.kind == LENGTH) {

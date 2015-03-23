@@ -1,0 +1,11 @@
+// Must begin with main object
+
+class A {
+		
+}
+
+object Program5 {
+  def main(): Unit = {
+  
+  }
+}

@@ -1,0 +1,10 @@
+// keyword as identifier
+object Program5 {
+  def main(): Unit = {
+
+  }
+}
+
+class A {
+	var length : Int = 0;
+}
