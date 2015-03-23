@@ -1,13 +1,13 @@
-object A {
+object Program4 {
   def/**/main () : Unit = {}
 }
-class B {
+class A {
   def/**//**/Test (A: Int) : Int = { return 0; }
 }
-class C {
+class B {
   def/*aaa*//****/Test (B: Int) : String = { return ""; }
 }
-class D {
+class C {
   def/**/Test (C: Int) : Int = {
     var a : Object;
     var b : Int[];

@@ -4,6 +4,8 @@ package utils
 import java.io.File
 import scala.io.Source
 
+class ParsingException(msg: String) extends RuntimeException(msg)
+
 class Reporter {
 
   def info(msg: Any, pos: Positioned = NoPosition): Unit = {
@@ -22,8 +24,7 @@ class Reporter {
   }
 
   def fatal(msg: Any, pos: Positioned = NoPosition): Nothing = {
-    report("Fatal", msg, pos)
-    sys.exit(1);
+    throw new ParsingException(errMessage("Fatal", msg, pos))
   }
 
   var filesToLines = Map[File, IndexedSeq[String]]()
@@ -39,21 +40,25 @@ class Reporter {
     }
   }
 
-  private def report(prefix: String, msg: Any, pos: Positioned) {
+  private def report(prefix: String, msg: Any, pos: Positioned) = System.err.println(errMessage(prefix, msg, pos))
+  
+  private def errMessage(prefix: String, msg: Any, pos: Positioned) = {
+    var s = ""
     if (pos.hasPosition) {
-      err(pos.position + ": " + prefix + ": " + msg.toString)
+      s += s + pos.position + ": " + prefix + ": " + msg.toString + "\n"
 
       val lines = getLines(pos.file)
 
       if (pos.line-1 < lines.size) {
-          err(lines(pos.line-1))
-          err(" "*(pos.col-1)+"^")
+          s += lines(pos.line-1) + "\n"
+          s += " "*(pos.col-1)+"^" + "\n"
       } else {
-          err("<line unavailable in source file>")
+          s += "<line unavailable in source file>"
       }
     } else {
-      err(prefix+": "+msg.toString)
+      s += prefix+": "+msg.toString
     }
+    s
   }
 
   private def getLines(f: File): IndexedSeq[String] = {

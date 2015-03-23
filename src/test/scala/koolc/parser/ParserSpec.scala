@@ -7,27 +7,50 @@ import scala.io.Source
 import koolc.ast._
 import koolc.ast.Trees._
 import koolc.lexer._
+import scala.collection.JavaConversions._
+import java.io._
 
 class ParserSpec extends FlatSpec with Matchers {
+  
+  def files(dir: String) = new File(dir).listFiles.filter(_.toString.endsWith(".kool"))
+  
   val testResource = "./src/test/resources/parser/"
-  val validPrograms = 4
-
-  for (i <- 1 to validPrograms) {
-    it should "parse valid program " + i in testProgram("valid-" + i)
+  val valid = files(testResource + "valid/")
+  val invalid = files(testResource + "invalid/")
+  
+  valid.zipWithIndex.foreach{ case (file, i) => 
+     it should "parse valid program " + (i + 1) in testValidProgram(file)
+  }
+  
+  invalid.zipWithIndex.foreach{ case (file, i) => 
+     it should "not parse invalid program " + (i + 1) in testInvalidProgram(file)
   }
 
-  def testProgram(p: String) {
-    val program = testResource + p + ".kool"
-    val ctx = new Context(reporter = new koolc.utils.Reporter, file = new File(program), outDir = None)
-    val P = Source.fromFile(new File(program)).mkString
+  // Helper functions
 
-    def parse(p: String): Program = {
-      val tokens = Lexer.run(p.toList, ctx.file)
-      Parser.run(ctx)(tokens)
+  def parseCtx(ctx: Context, p: String): Program = {
+    val tokens = Lexer.run(p.toList, ctx.file)
+    Parser.run(ctx)(tokens)
+  }
+
+  def print(p: Program) = Printer(p)
+
+  def testValidProgram(file: File) {
+    val (parse, p) = program(file)
+
+    assert(print(parse(p)) === print(parse(print(parse(p)))))
+  }
+
+  def testInvalidProgram(file: File) {
+    val (parse, p) = program(file)
+    intercept[ParsingException] {
+      (parse(p))
     }
-    def print(p: Program) = Printer(p)
-    println(print(parse(P)))
-    assert(print(parse(P)) === print(parse(print(parse(P)))))
+  }
+
+  def program(file: File): ((String) => Program, String) = {
+    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
+    (parseCtx(ctx, _), Source.fromFile(file).mkString)
   }
 
 }

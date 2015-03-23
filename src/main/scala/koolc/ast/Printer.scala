@@ -4,7 +4,7 @@ package ast
 import Trees._
 
 object Printer {
-
+  
   var indent : Int = 0
   
   def l: String = {
