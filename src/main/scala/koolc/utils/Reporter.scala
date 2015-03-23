@@ -42,7 +42,7 @@ class Reporter {
 
   private def report(prefix: String, msg: Any, pos: Positioned) = System.err.println(errMessage(prefix, msg, pos))
   
-  private def errMessage(prefix: String, msg: Any, pos: Positioned) = {
+  private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msg.toString + "\n"

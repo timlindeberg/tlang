@@ -4,23 +4,23 @@ package ast
 import Trees._
 
 object Printer {
-  
-  var indent : Int = 0
-  
+
+  var indent: Int = 0
+
   def l: String = {
-   indent += 1
-   "{" + n
+    indent += 1
+    "{" + n
   }
-  
+
   def r: String = {
     indent -= 1
-    n + "}" 
+    n + "}"
   }
-  
+
   def n: String = {
     "\n" + " " * (2 * indent)
   }
-  
+
   def apply(t: Tree): String = t match {
     case Program(main, classes) => apply(main) + all(classes)
     case MainObject(id, stats)  => "object " + id.value + " " + l + "def main () : Unit = " + l + all(stats) + r + r
@@ -47,11 +47,11 @@ object Printer {
     // Expressions
     case And(lhs, rhs)                => apply(lhs) + " && " + apply(rhs)
     case Or(lhs, rhs)                 => apply(lhs) + " || " + apply(rhs)
-    case Plus(lhs, rhs)               => apply(lhs) + " + "  + apply(rhs)
-    case Minus(lhs, rhs)              => apply(lhs) + " - "  + apply(rhs)
-    case Times(lhs, rhs)              => apply(lhs) + " * "  + apply(rhs)
-    case Div(lhs, rhs)                => apply(lhs) + " / "  + apply(rhs)
-    case LessThan(lhs, rhs)           => apply(lhs) + " < "  + apply(rhs)
+    case Plus(lhs, rhs)               => apply(lhs) + " + " + apply(rhs)
+    case Minus(lhs, rhs)              => apply(lhs) + " - " + apply(rhs)
+    case Times(lhs, rhs)              => apply(lhs) + " * " + apply(rhs)
+    case Div(lhs, rhs)                => apply(lhs) + " / " + apply(rhs)
+    case LessThan(lhs, rhs)           => apply(lhs) + " < " + apply(rhs)
     case Equals(lhs, rhs)             => apply(lhs) + " == " + apply(rhs)
     case ArrayRead(arr, index)        => apply(arr) + "[" + apply(index) + "]"
     case ArrayLength(arr)             => apply(arr) + ".length"
@@ -67,11 +67,16 @@ object Printer {
     case Not(expr)                    => "!" + apply(expr)
   }
 
-  private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else "" 
-  
+  private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
+
   private def commaList(list: List[Tree]): String = {
-    val s = list.foldLeft("")(_ + apply(_) + ", ")
-    s.substring(0, s.length - 2) // remove last comma
+    if (list.size <= 0) {
+      ""
+    } else {
+      val s = list.foldLeft("")(_ + apply(_) + ", ")
+      s.substring(0, s.length - 2) // remove last comma
+    }
+
   }
 
   private def all(list: List[Tree], start: String = ""): String = list.foldLeft(start)(_ + apply(_))

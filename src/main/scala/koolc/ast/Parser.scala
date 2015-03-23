@@ -185,6 +185,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               eat(SEMICOLON)
               ArrayAssign(id, expr1, expr2).setPos(pos)
             }
+            case _ => expected(EQSIGN, LBRACKET)
           }
         }
         case _ => expected(LBRACE, IF, WHILE, PRINTLN, IDKIND)
@@ -220,7 +221,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           }
         }
         case BANG   => Not(parseExpression).setPos(pos)
-        case LPAREN => eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
+        case LPAREN =>
+          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
         case _      => expected(BANG, BANG)
       }
     }
@@ -301,23 +303,27 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     def commaList[T](parse: () => T): List[T] = {
-      val arrBuff = new ArrayBuffer[T]()
-      arrBuff += parse()
-      while(currentToken.kind == COMMA){
-        eat(COMMA)
+      if (currentToken.kind == RPAREN) {
+        List()
+      } else {
+        val arrBuff = new ArrayBuffer[T]()
         arrBuff += parse()
+        while (currentToken.kind == COMMA) {
+          eat(COMMA)
+          arrBuff += parse()
+        }
+        arrBuff.toList
       }
-      arrBuff.toList
     }
 
-    def optional[T](parse: () => T, kind: TokenKind): Option[T] ={
-      if (currentToken.kind == kind){
+    def optional[T](parse: () => T, kind: TokenKind): Option[T] = {
+      if (currentToken.kind == kind) {
         eat(kind)
         Some(parse())
-      }else {
-        None 
+      } else {
+        None
       }
-    } 
+    }
 
     def until[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] = {
       val condition = () => currentToken.kind != kind
