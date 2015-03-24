@@ -15,7 +15,7 @@ class ParserReferenceSpec extends FlatSpec with Matchers {
   val flag = "--ast"
 
   val valid = TestUtils.programFiles(resources + "valid/")
-  val invalid = TestUtils.programFiles(resources + "invalid/")
+  //val invalid = TestUtils.programFiles(resources + "invalid/")
 
   def useParser(file: File): String = {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
@@ -28,6 +28,6 @@ class ParserReferenceSpec extends FlatSpec with Matchers {
 
   // TODO invalid programs
 
-  def test(file: File) = useParser(file).zip(getAnswer(file)).foreach(x => assert(x._1 === x._2))
+  def test(file: File) = assert(useParser(file) + "\n" === getAnswer(file))
   def getAnswer(file: File) = Seq(runScript, flag + " " + file.toPath()) !!
 }

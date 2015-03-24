@@ -140,6 +140,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     def parseStatement(): StatTree = {
+      //println(currentToken.kind)
       val pos = currentToken
       currentToken.kind match {
         case LBRACE => {
@@ -194,59 +195,187 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     def parseExpression(): ExprTree = {
       val pos = currentToken
-      currentToken.kind match {
+      parseBooleanOperator.setPos(pos)
+    }
+
+    def leftAssoc(pos: Token, lhs: ExprTree, parse: () => ExprTree, kind: TokenKind, f: (ExprTree, ExprTree) => ExprTree): ExprTree = {
+      var e = lhs
+      while (currentToken.kind == kind) {
+        val pos2 = currentToken
+        eat(kind)
+        e = f(e, parse()).setPos(pos2)
+      }
+      e.setPos(pos)
+    }
+
+    def parseBooleanOperator(): ExprTree = {
+      val pos = currentToken
+      var e = parseBooleanOperator2
+
+      while (currentToken.kind == OR) {
+        val pos2 = currentToken
+        eat(OR)
+        e = Or(e, parseBooleanOperator2).setPos(pos2)
+      }
+      e
+    }
+
+    def parseBooleanOperator2(): ExprTree = {
+      val pos = currentToken
+      var e = parseLessThanEquals
+
+      while (currentToken.kind == AND) {
+        val pos2 = currentToken
+        eat(AND)
+        e = And(e, parseLessThanEquals).setPos(pos2)
+      }
+      e
+    }
+
+    def parseLessThanEquals(): ExprTree = {
+      val pos = currentToken
+      var e = parsePlusMinus
+
+      while (currentToken.kind == LESSTHAN || currentToken.kind == EQUALS) {
+        val pos2 = currentToken
+        if (currentToken.kind == LESSTHAN) {
+          eat(LESSTHAN)
+          e = LessThan(e, parsePlusMinus).setPos(pos2)
+        } else if (currentToken.kind == EQUALS) {
+          eat(EQUALS)
+          e = Equals(e, parsePlusMinus).setPos(pos2)
+        }
+      }
+      e
+    }
+
+    def parsePlusMinus(): ExprTree = {
+      val pos = currentToken
+      var e = parseTimesDiv
+
+      while (currentToken.kind == PLUS || currentToken.kind == MINUS) {
+        val pos2 = currentToken
+        if (currentToken.kind == PLUS) {
+          eat(PLUS)
+          e = Plus(e, parseTimesDiv).setPos(pos2)
+        } else if (currentToken.kind == MINUS) {
+          eat(MINUS)
+          e = Minus(e, parseTimesDiv).setPos(pos2)
+        }
+      }
+      e
+    }
+
+    def parseTimesDiv(): ExprTree = {
+      val pos = currentToken
+      var e = parseTerm
+
+      while (currentToken.kind == TIMES || currentToken.kind == DIV) {
+        val pos2 = currentToken
+        if (currentToken.kind == TIMES) {
+          eat(TIMES)
+          e = Times(e, parseTerm).setPos(pos2)
+        } else if (currentToken.kind == DIV) {
+          eat(DIV)
+          e = Div(e, parseTerm).setPos(pos2)
+        }
+      }
+      e
+    }
+
+    def parseTerm(): ExprTree = {
+      val pos = currentToken
+      parseTermRest(currentToken.kind match {
         case LPAREN =>
-          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr
-        case BANG => eat(BANG); Not(parseExpression).setPos(pos)
+          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr.setPos(pos)
+        case BANG =>
+          eat(BANG); Not(parseTerm).setPos(pos)
         case INTLITKIND =>
-          parseExpressionRest(parseIntLit.setPos(pos))
+          parseIntLit.setPos(pos)
         case STRLITKIND =>
-          parseExpressionRest(parseStringLit.setPos(pos))
+          parseStringLit.setPos(pos)
         case IDKIND =>
-          parseExpressionRest(parseIdentifier.setPos(pos))
+          parseIdentifier.setPos(pos)
         case TRUE =>
-          eat(TRUE); parseExpressionRest(True().setPos(pos))
+          eat(TRUE); True().setPos(pos)
         case FALSE =>
-          eat(FALSE); parseExpressionRest(False().setPos(pos))
+          eat(FALSE); False().setPos(pos)
         case THIS =>
-          eat(THIS); parseExpressionRest(This().setPos(pos))
+          eat(THIS); This().setPos(pos)
         case NEW => {
           eat(NEW)
           if (currentToken.kind == INT) {
             eat(INT, LBRACKET)
             var expr = parseExpression
             eat(RBRACKET)
-            parseExpressionRest(NewIntArray(expr).setPos(pos))
+            NewIntArray(expr).setPos(pos)
           } else {
             var id = parseIdentifier
             eat(LPAREN, RPAREN)
-            parseExpressionRest(New(id).setPos(pos))
+            New(id).setPos(pos)
           }
         }
-        
         case _ => expected(BANG, BANG)
+      })
+    }
+
+    def parseTermRest(lhs: ExprTree): ExprTree = {
+      val pos = currentToken
+      var e = lhs
+      while (currentToken.kind == DOT || currentToken.kind == LBRACKET) {
+        if (currentToken.kind == DOT) {
+          eat(DOT)
+          if (currentToken.kind == LENGTH) {
+            eat(LENGTH)
+            e = ArrayLength(e).setPos(pos)
+          } else {
+            val id = parseIdentifier
+            eat(LPAREN)
+            val exprs = commaList(parseExpression)
+            eat(RPAREN)
+            e = MethodCall(e, id, exprs.toList).setPos(pos)
+          }
+        } else if (currentToken.kind == LBRACKET) {
+          eat(LBRACKET)
+          var expr = parseExpression
+          eat(RBRACKET)
+          e = ArrayRead(e, expr).setPos(pos)
+        }
       }
+      e
     }
 
     def parseExpressionRest(lhs: ExprTree): ExprTree = {
+
       val pos = currentToken
+
+      def leftAssoc(kind: TokenKind, f: (ExprTree, ExprTree) => ExprTree): ExprTree = {
+        var e = lhs
+        while (currentToken.kind == kind) {
+          val pos2 = currentToken
+          eat(kind)
+          e = f(e, parseTerm)
+        }
+        e.setPos(pos)
+      }
+
       currentToken.kind match {
         case TIMES =>
-          eat(TIMES); Times(lhs, parseExpression).setPos(pos)
+          leftAssoc(TIMES, Times(_, _))
         case DIV =>
-          eat(DIV); Div(lhs, parseExpression).setPos(pos)
+          leftAssoc(DIV, Div(_, _))
         case PLUS =>
-          eat(PLUS); Plus(lhs, parseExpression).setPos(pos)
+          leftAssoc(PLUS, Plus(_, _))
         case MINUS =>
-          eat(MINUS); Minus(lhs, parseExpression).setPos(pos)
+          leftAssoc(MINUS, Minus(_, _))
         case LESSTHAN =>
-          eat(LESSTHAN); LessThan(lhs, parseExpression).setPos(pos)
+          leftAssoc(LESSTHAN, LessThan(_, _))
         case EQUALS =>
-          eat(EQUALS); Equals(lhs, parseExpression).setPos(pos)
+          leftAssoc(EQUALS, Equals(_, _))
         case AND =>
-          eat(AND); And(lhs, parseExpression).setPos(pos)
+          leftAssoc(AND, And(_, _))
         case OR =>
-          eat(OR); Or(lhs, parseExpression).setPos(pos)
+          leftAssoc(OR, Or(_, _))
         case DOT => {
           eat(DOT)
           if (currentToken.kind == LENGTH) {
