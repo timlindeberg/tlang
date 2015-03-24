@@ -28,7 +28,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       '-' -> MINUS,
       '*' -> TIMES,
       '<' -> LESSTHAN,
-      '/' -> DIV)
+      '/' -> DIV,
+      '=' -> EQSIGN)
 
     val keyWords = Map(
       "object" -> OBJECT,
@@ -166,7 +167,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
-        case '=' :: r                                 => readTokens(r, createToken(EQSIGN, 1) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
