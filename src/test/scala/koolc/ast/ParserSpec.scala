@@ -1,4 +1,4 @@
-package koolc.parser
+package koolc.ast
 
 import org.scalatest._
 import java.io.File
@@ -13,8 +13,8 @@ import java.io._
 class ParserSpec extends FlatSpec with Matchers {
 
   def files(dir: String) = new File(dir).listFiles.filter(_.toString.endsWith(".kool"))
-
-  val testResource = "./src/test/resources/parser/"
+  
+  val testResource = "./src/test/resources/ast/"
   val valid = files(testResource + "valid/")
   val invalid = files(testResource + "invalid/")
   val operator = new File(testResource + "operatortest.kool")
