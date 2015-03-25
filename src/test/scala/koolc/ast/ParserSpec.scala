@@ -13,25 +13,23 @@ import scala.io.Source
 import koolc.ast.Trees.Program
 
 class ParserSpec extends FlatSpec with Matchers {
-  val runScript = "./reference/run.sh"
-  val resources = "./src/test/resources/"
   val flag = "--ast"
 
   behavior of "Created tests"
-  TestUtils.programFiles(resources + "ast/valid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.resources + "ast/valid/").foreach { file =>
     it should "parse valid program " + file.toPath() in test(file)
   }
 
-  TestUtils.programFiles(resources + "ast/invalid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.resources + "ast/invalid/").foreach { file =>
     it should "parse invalid program " + file.toPath() in test(file, true)
   }
 
   behavior of "Given tests"
-  TestUtils.programFiles(resources + "given/ast/valid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.resources + "given/ast/valid/").foreach { file =>
     it should "parse valid program " + file.toPath() in test(file)
   }
 
-  TestUtils.programFiles(resources + "given/ast/invalid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.resources + "given/ast/invalid/").foreach { file =>
     it should "parse invalid program " + file.toPath() in test(file, true)
   }
 
@@ -47,6 +45,6 @@ class ParserSpec extends FlatSpec with Matchers {
       assert(parse(program).toString + "\n" === getAnswer(file))
     }
   }
-  def getAnswer(file: File) = Seq(runScript, flag + " " + file.toPath()) !!
+  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
 
 }
