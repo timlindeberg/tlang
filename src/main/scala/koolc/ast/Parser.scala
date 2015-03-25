@@ -195,14 +195,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     def expression(): ExprTree = {
       val pos = currentToken
       val map: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-        OR       -> Or,
-        AND      -> And,
+        OR -> Or,
+        AND -> And,
         LESSTHAN -> LessThan,
-        EQUALS   -> Equals,
-        PLUS     -> Plus,
-        MINUS    -> Minus,
-        TIMES    -> Times,
-        DIV      -> Div)
+        EQUALS -> Equals,
+        PLUS -> Plus,
+        MINUS -> Minus,
+        TIMES -> Times,
+        DIV -> Div)
 
       def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
         var e = next()
@@ -223,63 +223,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       def lessThanAndEquals() = left(plusAndMinus, LESSTHAN, EQUALS)
       def plusAndMinus() = left(timesAndDiv, PLUS, MINUS)
       def timesAndDiv() = left(term, TIMES, DIV)
-      /*
-      def lessThanAndEquals(): ExprTree = {
-        val pos = currentToken
-        var e = plusAndMinus
-
-        while (currentToken.kind == LESSTHAN || currentToken.kind == EQUALS) {
-          val pos2 = currentToken
-          if (currentToken.kind == LESSTHAN) {
-            eat(LESSTHAN)
-            e = LessThan(e, plusAndMinus).setPos(pos2)
-          } else if (currentToken.kind == EQUALS) {
-            eat(EQUALS)
-            e = Equals(e, plusAndMinus).setPos(pos2)
-          }
-        }
-        e
-      }
-
-      def plusAndMinus(): ExprTree = {
-        val pos = currentToken
-        var e = timesAndDiv
-
-        while (currentToken.kind == PLUS || currentToken.kind == MINUS) {
-          val pos2 = currentToken
-          if (currentToken.kind == PLUS) {
-            eat(PLUS)
-            e = Plus(e, timesAndDiv).setPos(pos2)
-          } else if (currentToken.kind == MINUS) {
-            eat(MINUS)
-            e = Minus(e, timesAndDiv).setPos(pos2)
-          }
-        }
-        e
-      }
-
-      def timesAndDiv(): ExprTree = {
-        val pos = currentToken
-        var e = term
-
-        while (currentToken.kind == TIMES || currentToken.kind == DIV) {
-          val pos2 = currentToken
-          if (currentToken.kind == TIMES) {
-            eat(TIMES)
-            e = Times(e, term).setPos(pos2)
-          } else if (currentToken.kind == DIV) {
-            eat(DIV)
-            e = Div(e, term).setPos(pos2)
-          }
-        }
-        e
-      }
-
-      */
 
       def term(): ExprTree = {
         val pos = currentToken
-        termRest(currentToken.kind match {
+        val lhs = currentToken.kind match {
           case LPAREN =>
             eat(LPAREN); var expr = expression; eat(RPAREN); expr.setPos(pos)
           case BANG =>
@@ -310,7 +257,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             }
           }
           case _ => expected(BANG, BANG)
-        })
+        }
+        termRest(lhs)
       }
 
       def termRest(lhs: ExprTree): ExprTree = {
