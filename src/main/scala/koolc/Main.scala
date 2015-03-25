@@ -2,11 +2,15 @@ package koolc
 
 import utils._
 import java.io.File
-
 import lexer._
 import ast._
+import scala.collection.mutable.HashMap
 
 object Main {
+
+  val tokensFlag = "--tokens"
+  val astFlag = "--ast"
+  val flags = HashMap(tokensFlag -> false, astFlag -> false)
 
   def processOptions(args: Array[String]): Context = {
 
@@ -19,9 +23,9 @@ object Main {
         outDir = Some(new File(out))
         processOption(args)
 
-      //      case "--tokens" :: args =>
-      //        printTokens = true
-      //        processOption(args)
+      case flag :: args if flags.contains(flag) =>
+        flags(flag) = true
+        processOption(args)
 
       case f :: args =>
         files = new File(f) :: files
@@ -41,11 +45,16 @@ object Main {
 
   def main(args: Array[String]) {
     val ctx = processOptions(args)
-
-    val pipeline = Lexer andThen Parser
-
-    val program = pipeline.run(ctx)(ctx.file)
-
-    println(Printer(program))
+    if (flags(tokensFlag)) {
+      (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
+    } else {
+      val pipeline = Lexer andThen Parser
+      val program = pipeline.run(ctx)(ctx.file)
+      if (flags(astFlag)) {
+        println(program)
+      } else {
+        println(Printer(program))
+      }
+    }
   }
 }

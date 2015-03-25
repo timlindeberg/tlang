@@ -10,9 +10,9 @@ import scala.runtime.RichChar
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
-  class Tokenizer(val file: File) {
+  class Tokenizer(private val file: File) {
 
-    val singleCharTokens = Map(
+    private val singleCharTokens = Map(
       ':' -> COLON,
       ';' -> SEMICOLON,
       '.' -> DOT,
@@ -31,7 +31,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       '/' -> DIV,
       '=' -> EQSIGN)
 
-    val keyWords = Map(
+    private val keyWords = Map(
       "object" -> OBJECT,
       "class" -> CLASS,
       "def" -> DEF,
@@ -53,8 +53,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "new" -> NEW,
       "println" -> PRINTLN)
 
-    var line = 1
-    var column = 1
+    private var line = 1
+    private var column = 1
 
     private def createIdentifierOrKeyWord(s: String): Token = {
       if (keyWords.contains(s))
@@ -153,7 +153,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       skip(chars)
     }
 
-    def readTokens(chars: List[Char]): List[Token] = {
+    private def readTokens(chars: List[Char]): List[Token] = {
       def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
         case '\n' :: r =>
           column = 1
@@ -189,11 +189,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     def tokenize(chars: List[Char]): Iterator[Token] = readTokens(chars).iterator
   }
 
-  def run(ctx: Context)(f: File): Iterator[Token] = {
-    import ctx.reporter._
-
-    new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
-  }
-
+  def run(ctx: Context)(f: File): Iterator[Token] = new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
   def run(chars: List[Char], f: File): Iterator[Token] = new Tokenizer(f).tokenize(chars)
 }
