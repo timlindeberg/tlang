@@ -55,11 +55,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       fatal("expected: " + (kind :: more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
     }
 
+    /*
+     * <goal> ::= <mainObject> { <classDeclaration> } <EOF> 
+     */
     def parseGoal() = {
       val pos = currentToken
-      Program(mainObject, until(classDecleration, EOF)).setPos(pos)
+      Program(mainObject, until(classDeclaration, EOF)).setPos(pos)
     }
 
+    /*
+     * <mainObject> ::= object <identifier> "{" def main (): Unit = "{" { <statement> } "}" "}"
+     */
     private def mainObject(): MainObject = {
       val pos = currentToken
       eat(OBJECT)
@@ -70,7 +76,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       MainObject(id, stmts).setPos(pos)
     }
 
-    private def classDecleration(): ClassDecl = {
+    /*
+     * <classDeclaration> ::= class <identifier> ["(" extends <identifier> ")"] "{" { <varDeclaration> } { methodDeclaration } "}"
+     */
+    private def classDeclaration(): ClassDecl = {
       val pos = currentToken
       eat(CLASS)
       val id = identifier
@@ -82,6 +91,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       ClassDecl(id, parent, vars, methods).setPos(pos)
     }
 
+    /*
+     * <varDeclaration> ::= var <identifier> ":" <tpe> ";"
+     */
     private def varDeclaration(): VarDecl = {
       val pos = currentToken
       eat(VAR)
@@ -92,6 +104,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       VarDecl(typ, id).setPos(pos)
     }
 
+    /*
+     * <formal> ::= <identifier> ":" <tpe> 
+     */
     private def formal(): Formal = {
       val pos = currentToken
       val id = identifier
@@ -100,6 +115,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Formal(typ, id).setPos(pos)
     }
 
+    /*
+     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { , <formal> } ] ")" ":" <tpe> = "{" { <varDeclaration> } { <statement> } return <expression> "}"
+     */
     private def methodDeclaration(): MethodDecl = {
       val pos = currentToken
       eat(DEF)
@@ -118,6 +136,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
     }
 
+    /*
+     * <tpe> ::= Int[]
+     *         | Bool
+     *         | Int
+     *         | String
+     *         | <identifier>
+     */
     private def tpe(): TypeTree = {
       val pos = currentToken
       currentToken.kind match {
@@ -139,6 +164,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /*
+     * <statement> ::= "{" { <statement> } "}
+     *               | if"(" <expression> ")" <statement> [ else <statement> ]
+     *               | while"(" <expression> ")" <statement>
+     *               | println"(" <expression> ");"
+     *               | <identifier> "=" <expression> ";"
+     *               | <identifier>"[" <expression> "]" "=" <expression> ";"
+     */
     private def statement(): StatTree = {
       val pos = currentToken
       currentToken.kind match {
@@ -192,6 +225,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /* 
+     * <expression>     ::= <or>
+     */
     private def expression(): ExprTree = {
       val pos = currentToken
       val exprMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
@@ -207,7 +243,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       /* Parses expressions of type 
        * E ::= next { ( kinds[0] | kinds[1] | ... | kinds[n] ) next }. 
        * Used to parse left associative expressions. *
-       * */ 
+       * */
       def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
         var expr = next()
         while (kinds.contains(currentToken.kind)) {
@@ -221,22 +257,39 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         }
         expr
       }
-
-      /* expression     ::= and { (OR) and }
-       * and            ::= lessThanEquals { (AND) lessThanEquals }
-       * lessThanEqauls ::= plusMinus { (LESSTHAN | EQUALS) plusMinus }
-       * plusMinus      ::= timesDiv { (PLUS | MINUS) timesDiv }
-       * timesDiv       ::= term { (TIMES | DIV) term }
-       * */
+      
+      /* <or> ::= <and> { || <and> } */
       def or() = left(and, OR)
+
+      /* <and> ::= <lessThanEquals> { && <lessThanEquals> } */
       def and() = left(lessThanEquals, AND)
+
+      /* <lessThanEquals> ::= <plusMinus> { ( < | == ) <plusMinus> } */
       def lessThanEquals() = left(plusMinus, LESSTHAN, EQUALS)
+
+      /* <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
       def plusMinus() = left(timesDiv, PLUS, MINUS)
+
+      /* <timesDiv> ::= <term> { (*| /) <term> } */
       def timesDiv() = left(term, TIMES, DIV)
 
+      /*
+       * <term> ::= <termFirst> [ termRest ]
+       */
       def term(): ExprTree = {
-        val pos = currentToken
-        val lhs = currentToken.kind match {
+        /*
+         * <termFirst> ::= "(" <expression> ")"
+         *               | "!" <expression>
+         *               | <intLit>
+         *               | <stringLit>
+         *               | <identifier>
+         *               | true
+         *               | false
+         *               | this
+         *               | new Int"[" <expression> "]"
+         *               | new <identifier> "()"
+         */
+        def termFirst() = currentToken.kind match {
           case LPAREN =>
             eat(LPAREN); val expr = expression; eat(RPAREN); expr.setPos(pos)
           case BANG =>
@@ -268,38 +321,44 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           }
           case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
         }
-        termRest(lhs)
-      }
-
-      def termRest(lhs: ExprTree): ExprTree = {
-        val pos = currentToken
-        var e = lhs
-        while (currentToken.kind == DOT || currentToken.kind == LBRACKET) {
-          if (currentToken.kind == DOT) {
-            eat(DOT)
-            if (currentToken.kind == LENGTH) {
-              eat(LENGTH)
-              e = ArrayLength(e).setPos(pos)
-            } else {
-              val id = identifier
-              eat(LPAREN)
-              val exprs = commaList(expression)
-              eat(RPAREN)
-              e = MethodCall(e, id, exprs.toList).setPos(pos)
+        
+        /*
+         * <termRest> ::= .length
+         *              | "[" <expression> "]
+         */
+        def termRest(lhs: ExprTree): ExprTree = {
+          val pos = currentToken
+          var e = lhs
+          while (currentToken.kind == DOT || currentToken.kind == LBRACKET) {
+            if (currentToken.kind == DOT) {
+              eat(DOT)
+              if (currentToken.kind == LENGTH) {
+                eat(LENGTH)
+                e = ArrayLength(e).setPos(pos)
+              } else {
+                val id = identifier
+                eat(LPAREN)
+                val exprs = commaList(expression)
+                eat(RPAREN)
+                e = MethodCall(e, id, exprs.toList).setPos(pos)
+              }
+            } else if (currentToken.kind == LBRACKET) {
+              eat(LBRACKET)
+              val expr = expression
+              eat(RBRACKET)
+              e = ArrayRead(e, expr).setPos(pos)
             }
-          } else if (currentToken.kind == LBRACKET) {
-            eat(LBRACKET)
-            val expr = expression
-            eat(RBRACKET)
-            e = ArrayRead(e, expr).setPos(pos)
           }
+          e
         }
-        e
+        termRest(termFirst)
       }
-
       or().setPos(pos)
     }
 
+    /*
+     * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
+     */
     private def identifier(): Identifier = {
       try {
         val id = currentToken.asInstanceOf[ID]
@@ -310,6 +369,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /*
+     * <stringLit> ::= sequence of arbitrary characters, except new lines and "
+     */
     private def stringLit(): StringLit = {
       try {
         val id = currentToken.asInstanceOf[STRLIT]
@@ -319,7 +381,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case _: Throwable => expected(STRLITKIND)
       }
     }
-
+    /*
+     * <intLit> ::= sequence of digits, with no leading zeros
+     */
     private def intLit(): IntLit = {
       try {
         val id = currentToken.asInstanceOf[INTLIT]
@@ -330,6 +394,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /*
+     * Parses a commalist of the form
+     * <commaList> ::= [ parse { "," parse } ] 
+     */
     private def commaList[T](parse: () => T): List[T] = {
       if (currentToken.kind == RPAREN) {
         List()
@@ -344,6 +412,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /*
+     * Parses an optional of the form
+     * <optional> ::= [ parse ] and returns Option
+     */
     private def optional[T](parse: () => T, kind: TokenKind): Option[T] = {
       if (currentToken.kind == kind) {
         eat(kind)
@@ -353,11 +425,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
+    /*
+     * Continues parsing until the given token kind is encountered.
+     */
     private def until[T](parse: () => T, kind: TokenKind): List[T] = {
       val condition = () => currentToken.kind != kind
       _until(condition, parse, kind)
     }
 
+    /*
+     * Continues parsing until a token different from the given token is encountered.
+     */
     private def untilNot[T](parse: () => T, kind: TokenKind): List[T] = {
       val condition = () => currentToken.kind == kind
       _until(condition, parse, kind)
