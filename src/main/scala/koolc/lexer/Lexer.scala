@@ -177,7 +177,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case (c :: r) if c.isLetter                   => read(getIdentifierOrKeyword, chars, tokens)
-        case ('"' :: r)                               => read(getStringLiteral, chars, tokens)
+        case ('"' :: r)                               => read(getStringLiteral, r, tokens)
         case (c :: r) if c.isDigit                    => read(getIntLiteral, chars, tokens)
         case Nil                                      => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens)
         case _ :: r                                   => readTokens(r, (createToken(BAD, 1) :: tokens))

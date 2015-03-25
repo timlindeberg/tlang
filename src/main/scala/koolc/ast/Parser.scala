@@ -140,7 +140,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     def statement(): StatTree = {
-      //println(currentToken.kind)
       val pos = currentToken
       currentToken.kind match {
         case LBRACE => {
@@ -195,20 +194,36 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     def expression(): ExprTree = {
       val pos = currentToken
+      val map: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
+        OR       -> Or,
+        AND      -> And,
+        LESSTHAN -> LessThan,
+        EQUALS   -> Equals,
+        PLUS     -> Plus,
+        MINUS    -> Minus,
+        TIMES    -> Times,
+        DIV      -> Div)
 
-      def left(f: (ExprTree, ExprTree) => ExprTree, next: () => ExprTree, kind: TokenKind): ExprTree = {
+      def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
         var e = next()
-        while (currentToken.kind == kind) {
-          val pos = currentToken
-          eat(kind)
-          e = f(e, next()).setPos(pos)
+        while (kinds.contains(currentToken.kind)) {
+          kinds.foreach { kind =>
+            if (currentToken.kind == kind) {
+              val pos = currentToken
+              eat(kind)
+              e = map(kind)(e, next()).setPos(pos)
+            }
+          }
         }
         e
       }
 
-      def or() = left(Or, and, OR)
-      def and() = left(And, lessThanAndEquals, AND)
-
+      def or() = left(and, OR)
+      def and() = left(lessThanAndEquals, AND)
+      def lessThanAndEquals() = left(plusAndMinus, LESSTHAN, EQUALS)
+      def plusAndMinus() = left(timesAndDiv, PLUS, MINUS)
+      def timesAndDiv() = left(term, TIMES, DIV)
+      /*
       def lessThanAndEquals(): ExprTree = {
         val pos = currentToken
         var e = plusAndMinus
@@ -260,6 +275,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         e
       }
 
+      */
+
       def term(): ExprTree = {
         val pos = currentToken
         termRest(currentToken.kind match {
@@ -268,11 +285,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           case BANG =>
             eat(BANG); (Not(term)).setPos(pos)
           case INTLITKIND =>
-            intLit.setPos(pos)
+            intLit
           case STRLITKIND =>
-            stringLit.setPos(pos)
+            stringLit
           case IDKIND =>
-            identifier.setPos(pos)
+            identifier
           case TRUE =>
             eat(TRUE); True().setPos(pos)
           case FALSE =>
