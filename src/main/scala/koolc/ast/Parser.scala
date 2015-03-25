@@ -381,18 +381,18 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def until[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] = {
+    def until[T](parse: () => T, kind: TokenKind): List[T] = {
       val condition = () => currentToken.kind != kind
-      _until(condition, parse, kind, arrBuff)
+      _until(condition, parse, kind)
     }
 
-    def untilNot[T](parse: () => T, kind: TokenKind, arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()): List[T] = {
+    def untilNot[T](parse: () => T, kind: TokenKind): List[T] = {
       val condition = () => currentToken.kind == kind
-      _until(condition, parse, kind, arrBuff)
+      _until(condition, parse, kind)
     }
 
-    private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind,
-                          arrBuff: ArrayBuffer[T] = new ArrayBuffer[T]()) = {
+    private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind) = {
+      var arrBuff = new ArrayBuffer[T]()
       while (condition()) arrBuff += parse()
       arrBuff.toList
     }
