@@ -55,7 +55,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       fatal("expected: " + (kind :: more.toList).mkString(" or ") + ", found: " + currentToken, currentToken)
     }
 
-    /*
+    /**
      * <goal> ::= <mainObject> { <classDeclaration> } <EOF> 
      */
     def parseGoal() = {
@@ -63,7 +63,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Program(mainObject, until(classDeclaration, EOF)).setPos(pos)
     }
 
-    /*
+    /**
      * <mainObject> ::= object <identifier> "{" def main (): Unit = "{" { <statement> } "}" "}"
      */
     private def mainObject(): MainObject = {
@@ -76,8 +76,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       MainObject(id, stmts).setPos(pos)
     }
 
-    /*
-     * <classDeclaration> ::= class <identifier> ["(" extends <identifier> ")"] "{" { <varDeclaration> } { methodDeclaration } "}"
+    /**
+     * <classDeclaration> ::= class <identifier> [ extends <identifier> ] "{" { <varDeclaration> } { methodDeclaration } "}"
      */
     private def classDeclaration(): ClassDecl = {
       val pos = currentToken
@@ -91,7 +91,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       ClassDecl(id, parent, vars, methods).setPos(pos)
     }
 
-    /*
+    /**
      * <varDeclaration> ::= var <identifier> ":" <tpe> ";"
      */
     private def varDeclaration(): VarDecl = {
@@ -104,7 +104,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       VarDecl(typ, id).setPos(pos)
     }
 
-    /*
+    /**
      * <formal> ::= <identifier> ":" <tpe> 
      */
     private def formal(): Formal = {
@@ -115,8 +115,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Formal(typ, id).setPos(pos)
     }
 
-    /*
-     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { , <formal> } ] ")" ":" <tpe> = "{" { <varDeclaration> } { <statement> } return <expression> "}"
+    /**
+     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] ")" ":" <tpe> "=" "{" { <varDeclaration> } { <statement> } return <expression> "}"
      */
     private def methodDeclaration(): MethodDecl = {
       val pos = currentToken
@@ -136,7 +136,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
     }
 
-    /*
+    /**
      * <tpe> ::= Int[]
      *         | Bool
      *         | Int
@@ -164,7 +164,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /*
+    /**
      * <statement> ::= "{" { <statement> } "}
      *               | if"(" <expression> ")" <statement> [ else <statement> ]
      *               | while"(" <expression> ")" <statement>
@@ -225,8 +225,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /* 
-     * <expression>     ::= <or>
+    /** 
+     * <expression> ::= <or>
      */
     private def expression(): ExprTree = {
       val pos = currentToken
@@ -240,10 +240,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         TIMES -> Times,
         DIV -> Div)
 
-      /* Parses expressions of type 
+      /** Parses expressions of type 
        * E ::= next { ( kinds[0] | kinds[1] | ... | kinds[n] ) next }. 
        * Used to parse left associative expressions. *
-       * */
+       */
       def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
         var expr = next()
         while (kinds.contains(currentToken.kind)) {
@@ -258,26 +258,26 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         expr
       }
       
-      /* <or> ::= <and> { || <and> } */
+      /** <or> ::= <and> { || <and> } */
       def or() = left(and, OR)
 
-      /* <and> ::= <lessThanEquals> { && <lessThanEquals> } */
+      /** <and> ::= <lessThanEquals> { && <lessThanEquals> } */
       def and() = left(lessThanEquals, AND)
 
-      /* <lessThanEquals> ::= <plusMinus> { ( < | == ) <plusMinus> } */
+      /** <lessThanEquals> ::= <plusMinus> { ( < | == ) <plusMinus> } */
       def lessThanEquals() = left(plusMinus, LESSTHAN, EQUALS)
 
-      /* <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
+      /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
       def plusMinus() = left(timesDiv, PLUS, MINUS)
 
-      /* <timesDiv> ::= <term> { (*| /) <term> } */
+      /** <timesDiv> ::= <term> { (*| /) <term> } */
       def timesDiv() = left(term, TIMES, DIV)
 
-      /*
+      /**
        * <term> ::= <termFirst> [ termRest ]
        */
       def term(): ExprTree = {
-        /*
+        /**
          * <termFirst> ::= "(" <expression> ")"
          *               | "!" <expression>
          *               | <intLit>
@@ -322,7 +322,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
         }
         
-        /*
+        /**
          * <termRest> ::= .length
          *              | "[" <expression> "]
          */
@@ -356,7 +356,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       or().setPos(pos)
     }
 
-    /*
+    /**
      * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
      */
     private def identifier(): Identifier = {
@@ -369,7 +369,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /*
+    /**
      * <stringLit> ::= sequence of arbitrary characters, except new lines and "
      */
     private def stringLit(): StringLit = {
@@ -381,7 +381,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case _: Throwable => expected(STRLITKIND)
       }
     }
-    /*
+    
+    /**
      * <intLit> ::= sequence of digits, with no leading zeros
      */
     private def intLit(): IntLit = {
@@ -394,7 +395,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /*
+    /**
      * Parses a commalist of the form
      * <commaList> ::= [ parse { "," parse } ] 
      */
@@ -412,7 +413,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /*
+    /**
      * Parses an optional of the form
      * <optional> ::= [ parse ] and returns Option
      */
@@ -425,7 +426,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /*
+    /**
      * Continues parsing until the given token kind is encountered.
      */
     private def until[T](parse: () => T, kind: TokenKind): List[T] = {
@@ -433,7 +434,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       _until(condition, parse, kind)
     }
 
-    /*
+    /**
      * Continues parsing until a token different from the given token is encountered.
      */
     private def untilNot[T](parse: () => T, kind: TokenKind): List[T] = {
@@ -443,7 +444,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind) = {
       var arrBuff = new ArrayBuffer[T]()
-      while (condition()) arrBuff += parse()
+      while (condition()){
+        arrBuff += parse()
+      }
       arrBuff.toList
     }
   }
