@@ -164,15 +164,12 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           column = 1
           line += 1
           readTokens(r, tokens)
-        case '\t' :: r =>
-          column += 4
-          readTokens(r, tokens)
         case (c :: r) if c.isWhitespace =>
           column += 1
           readTokens(r, tokens)
         case '/' :: '/' :: r => readTokens(skipLine(r), tokens)
         case '/' :: '*' :: r =>
-          val (token, tail) = skipBlock(r)
+          val (token, tail) = skipBlock(r)  
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
