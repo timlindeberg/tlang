@@ -57,68 +57,68 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     def parseGoal() = {
       val pos = currentToken
-      Program(parseMainObject, until(parseClassDecleration, EOF)).setPos(pos)
+      Program(mainObject, until(classDecleration, EOF)).setPos(pos)
     }
 
-    def parseMainObject(): MainObject = {
+    def mainObject(): MainObject = {
       val pos = currentToken
       eat(OBJECT)
-      val id = parseIdentifier
+      val id = identifier
       eat(LBRACE, DEF, MAIN, LPAREN, RPAREN, COLON, UNIT, EQSIGN, LBRACE)
-      val stmts = until(parseStatement, RBRACE)
+      val stmts = until(statement, RBRACE)
       eat(RBRACE, RBRACE)
       MainObject(id, stmts).setPos(pos)
     }
 
-    def parseClassDecleration(): ClassDecl = {
+    def classDecleration(): ClassDecl = {
       val pos = currentToken
       eat(CLASS)
-      var id = parseIdentifier
-      var parent = optional(parseIdentifier, EXTENDS)
+      var id = identifier
+      var parent = optional(identifier, EXTENDS)
       eat(LBRACE)
-      var vars = untilNot(parseVarDeclaration, VAR)
-      var methods = untilNot(parseMethodDeclaration, DEF)
+      var vars = untilNot(varDeclaration, VAR)
+      var methods = untilNot(methodDeclaration, DEF)
       eat(RBRACE)
       ClassDecl(id, parent, vars, methods).setPos(pos)
     }
 
-    def parseVarDeclaration(): VarDecl = {
+    def varDeclaration(): VarDecl = {
       val pos = currentToken
       eat(VAR)
-      val id = parseIdentifier
+      val id = identifier
       eat(COLON)
-      val typ = parseType
+      val typ = tpe
       eat(SEMICOLON)
       VarDecl(typ, id).setPos(pos)
     }
 
-    def parseFormal(): Formal = {
+    def formal(): Formal = {
       val pos = currentToken
-      var id = parseIdentifier
+      var id = identifier
       eat(COLON)
-      var typ = parseType
+      var typ = tpe
       Formal(typ, id).setPos(pos)
     }
 
-    def parseMethodDeclaration(): MethodDecl = {
+    def methodDeclaration(): MethodDecl = {
       val pos = currentToken
       eat(DEF)
-      val id = parseIdentifier
+      val id = identifier
       eat(LPAREN)
-      var args = commaList(parseFormal)
+      var args = commaList(formal)
 
       eat(RPAREN, COLON)
-      val retType = parseType
+      val retType = tpe
       eat(EQSIGN, LBRACE)
-      val vars = untilNot(parseVarDeclaration, VAR)
-      val stmts = until(parseStatement, RETURN)
+      val vars = untilNot(varDeclaration, VAR)
+      val stmts = until(statement, RETURN)
       eat(RETURN)
-      val retExpr = parseExpression
+      val retExpr = expression
       eat(SEMICOLON, RBRACE)
       MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
     }
 
-    def parseType(): TypeTree = {
+    def tpe(): TypeTree = {
       val pos = currentToken
       currentToken.kind match {
 
@@ -135,54 +135,54 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           eat(BOOLEAN); BooleanType().setPos(pos)
         case STRING =>
           eat(STRING); StringType().setPos(pos)
-        case _ => parseIdentifier
+        case _ => identifier
       }
     }
 
-    def parseStatement(): StatTree = {
+    def statement(): StatTree = {
       //println(currentToken.kind)
       val pos = currentToken
       currentToken.kind match {
         case LBRACE => {
           eat(LBRACE)
-          val stmts = until(parseStatement, RBRACE)
+          val stmts = until(statement, RBRACE)
           eat(RBRACE)
           Block(stmts).setPos(pos)
         }
         case IF => {
           eat(IF, LPAREN)
-          val expr = parseExpression
+          val expr = expression
           eat(RPAREN)
-          val stmt = parseStatement
-          val els = optional(parseStatement, ELSE)
+          val stmt = statement
+          val els = optional(statement, ELSE)
           If(expr, stmt, els).setPos(pos)
         }
         case WHILE => {
           eat(WHILE, LPAREN)
-          val expr = parseExpression
+          val expr = expression
           eat(RPAREN)
-          While(expr, parseStatement).setPos(pos)
+          (While(expr, statement)).setPos(pos)
         }
         case PRINTLN => {
           eat(PRINTLN, LPAREN)
-          val expr = parseExpression
+          val expr = expression
           eat(RPAREN, SEMICOLON)
           Println(expr).setPos(pos)
         }
         case IDKIND => {
-          val id = parseIdentifier
+          val id = identifier
           currentToken.kind match {
             case EQSIGN => {
               eat(EQSIGN)
-              val expr = parseExpression
+              val expr = expression
               eat(SEMICOLON)
               Assign(id, expr).setPos(pos)
             }
             case LBRACKET => {
               eat(LBRACKET)
-              val expr1 = parseExpression
+              val expr1 = expression
               eat(RBRACKET, EQSIGN)
-              val expr2 = parseExpression
+              val expr2 = expression
               eat(SEMICOLON)
               ArrayAssign(id, expr1, expr2).setPos(pos)
             }
@@ -193,213 +193,139 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseExpression(): ExprTree = {
-      val pos = currentToken
-      parseBooleanOperator.setPos(pos)
-    }
-
-    def leftAssoc(pos: Token, lhs: ExprTree, parse: () => ExprTree, kind: TokenKind, f: (ExprTree, ExprTree) => ExprTree): ExprTree = {
-      var e = lhs
-      while (currentToken.kind == kind) {
-        val pos2 = currentToken
-        eat(kind)
-        e = f(e, parse()).setPos(pos2)
-      }
-      e.setPos(pos)
-    }
-
-    def parseBooleanOperator(): ExprTree = {
-      val pos = currentToken
-      var e = parseBooleanOperator2
-
-      while (currentToken.kind == OR) {
-        val pos2 = currentToken
-        eat(OR)
-        e = Or(e, parseBooleanOperator2).setPos(pos2)
-      }
-      e
-    }
-
-    def parseBooleanOperator2(): ExprTree = {
-      val pos = currentToken
-      var e = parseLessThanEquals
-
-      while (currentToken.kind == AND) {
-        val pos2 = currentToken
-        eat(AND)
-        e = And(e, parseLessThanEquals).setPos(pos2)
-      }
-      e
-    }
-
-    def parseLessThanEquals(): ExprTree = {
-      val pos = currentToken
-      var e = parsePlusMinus
-
-      while (currentToken.kind == LESSTHAN || currentToken.kind == EQUALS) {
-        val pos2 = currentToken
-        if (currentToken.kind == LESSTHAN) {
-          eat(LESSTHAN)
-          e = LessThan(e, parsePlusMinus).setPos(pos2)
-        } else if (currentToken.kind == EQUALS) {
-          eat(EQUALS)
-          e = Equals(e, parsePlusMinus).setPos(pos2)
-        }
-      }
-      e
-    }
-
-    def parsePlusMinus(): ExprTree = {
-      val pos = currentToken
-      var e = parseTimesDiv
-
-      while (currentToken.kind == PLUS || currentToken.kind == MINUS) {
-        val pos2 = currentToken
-        if (currentToken.kind == PLUS) {
-          eat(PLUS)
-          e = Plus(e, parseTimesDiv).setPos(pos2)
-        } else if (currentToken.kind == MINUS) {
-          eat(MINUS)
-          e = Minus(e, parseTimesDiv).setPos(pos2)
-        }
-      }
-      e
-    }
-
-    def parseTimesDiv(): ExprTree = {
-      val pos = currentToken
-      var e = parseTerm
-
-      while (currentToken.kind == TIMES || currentToken.kind == DIV) {
-        val pos2 = currentToken
-        if (currentToken.kind == TIMES) {
-          eat(TIMES)
-          e = Times(e, parseTerm).setPos(pos2)
-        } else if (currentToken.kind == DIV) {
-          eat(DIV)
-          e = Div(e, parseTerm).setPos(pos2)
-        }
-      }
-      e
-    }
-
-    def parseTerm(): ExprTree = {
-      val pos = currentToken
-      parseTermRest(currentToken.kind match {
-        case LPAREN =>
-          eat(LPAREN); var expr = parseExpression; eat(RPAREN); expr.setPos(pos)
-        case BANG =>
-          eat(BANG); Not(parseTerm).setPos(pos)
-        case INTLITKIND =>
-          parseIntLit.setPos(pos)
-        case STRLITKIND =>
-          parseStringLit.setPos(pos)
-        case IDKIND =>
-          parseIdentifier.setPos(pos)
-        case TRUE =>
-          eat(TRUE); True().setPos(pos)
-        case FALSE =>
-          eat(FALSE); False().setPos(pos)
-        case THIS =>
-          eat(THIS); This().setPos(pos)
-        case NEW => {
-          eat(NEW)
-          if (currentToken.kind == INT) {
-            eat(INT, LBRACKET)
-            var expr = parseExpression
-            eat(RBRACKET)
-            NewIntArray(expr).setPos(pos)
-          } else {
-            var id = parseIdentifier
-            eat(LPAREN, RPAREN)
-            New(id).setPos(pos)
-          }
-        }
-        case _ => expected(BANG, BANG)
-      })
-    }
-
-    def parseTermRest(lhs: ExprTree): ExprTree = {
-      val pos = currentToken
-      var e = lhs
-      while (currentToken.kind == DOT || currentToken.kind == LBRACKET) {
-        if (currentToken.kind == DOT) {
-          eat(DOT)
-          if (currentToken.kind == LENGTH) {
-            eat(LENGTH)
-            e = ArrayLength(e).setPos(pos)
-          } else {
-            val id = parseIdentifier
-            eat(LPAREN)
-            val exprs = commaList(parseExpression)
-            eat(RPAREN)
-            e = MethodCall(e, id, exprs.toList).setPos(pos)
-          }
-        } else if (currentToken.kind == LBRACKET) {
-          eat(LBRACKET)
-          var expr = parseExpression
-          eat(RBRACKET)
-          e = ArrayRead(e, expr).setPos(pos)
-        }
-      }
-      e
-    }
-
-    def parseExpressionRest(lhs: ExprTree): ExprTree = {
-
+    def expression(): ExprTree = {
       val pos = currentToken
 
-      def leftAssoc(kind: TokenKind, f: (ExprTree, ExprTree) => ExprTree): ExprTree = {
-        var e = lhs
+      def left(f: (ExprTree, ExprTree) => ExprTree, next: () => ExprTree, kind: TokenKind): ExprTree = {
+        var e = next()
         while (currentToken.kind == kind) {
-          val pos2 = currentToken
+          val pos = currentToken
           eat(kind)
-          e = f(e, parseTerm)
+          e = f(e, next()).setPos(pos)
         }
-        e.setPos(pos)
+        e
       }
 
-      currentToken.kind match {
-        case TIMES =>
-          leftAssoc(TIMES, Times(_, _))
-        case DIV =>
-          leftAssoc(DIV, Div(_, _))
-        case PLUS =>
-          leftAssoc(PLUS, Plus(_, _))
-        case MINUS =>
-          leftAssoc(MINUS, Minus(_, _))
-        case LESSTHAN =>
-          leftAssoc(LESSTHAN, LessThan(_, _))
-        case EQUALS =>
-          leftAssoc(EQUALS, Equals(_, _))
-        case AND =>
-          leftAssoc(AND, And(_, _))
-        case OR =>
-          leftAssoc(OR, Or(_, _))
-        case DOT => {
-          eat(DOT)
-          if (currentToken.kind == LENGTH) {
-            eat(LENGTH)
-            parseExpressionRest(ArrayLength(lhs).setPos(pos))
-          } else {
-            val id = parseIdentifier
-            eat(LPAREN)
-            val exprs = commaList(parseExpression)
-            eat(RPAREN)
-            parseExpressionRest(MethodCall(lhs, id, exprs.toList).setPos(pos))
+      def or() = left(Or, and, OR)
+      def and() = left(And, lessThanAndEquals, AND)
+
+      def lessThanAndEquals(): ExprTree = {
+        val pos = currentToken
+        var e = plusAndMinus
+
+        while (currentToken.kind == LESSTHAN || currentToken.kind == EQUALS) {
+          val pos2 = currentToken
+          if (currentToken.kind == LESSTHAN) {
+            eat(LESSTHAN)
+            e = LessThan(e, plusAndMinus).setPos(pos2)
+          } else if (currentToken.kind == EQUALS) {
+            eat(EQUALS)
+            e = Equals(e, plusAndMinus).setPos(pos2)
           }
         }
-        case LBRACKET => {
-          eat(LBRACKET)
-          var expr = parseExpression
-          eat(RBRACKET)
-          parseExpressionRest(ArrayRead(lhs, expr).setPos(pos))
-        }
-        case _ => lhs
+        e
       }
+
+      def plusAndMinus(): ExprTree = {
+        val pos = currentToken
+        var e = timesAndDiv
+
+        while (currentToken.kind == PLUS || currentToken.kind == MINUS) {
+          val pos2 = currentToken
+          if (currentToken.kind == PLUS) {
+            eat(PLUS)
+            e = Plus(e, timesAndDiv).setPos(pos2)
+          } else if (currentToken.kind == MINUS) {
+            eat(MINUS)
+            e = Minus(e, timesAndDiv).setPos(pos2)
+          }
+        }
+        e
+      }
+
+      def timesAndDiv(): ExprTree = {
+        val pos = currentToken
+        var e = term
+
+        while (currentToken.kind == TIMES || currentToken.kind == DIV) {
+          val pos2 = currentToken
+          if (currentToken.kind == TIMES) {
+            eat(TIMES)
+            e = Times(e, term).setPos(pos2)
+          } else if (currentToken.kind == DIV) {
+            eat(DIV)
+            e = Div(e, term).setPos(pos2)
+          }
+        }
+        e
+      }
+
+      def term(): ExprTree = {
+        val pos = currentToken
+        termRest(currentToken.kind match {
+          case LPAREN =>
+            eat(LPAREN); var expr = expression; eat(RPAREN); expr.setPos(pos)
+          case BANG =>
+            eat(BANG); (Not(term)).setPos(pos)
+          case INTLITKIND =>
+            intLit.setPos(pos)
+          case STRLITKIND =>
+            stringLit.setPos(pos)
+          case IDKIND =>
+            identifier.setPos(pos)
+          case TRUE =>
+            eat(TRUE); True().setPos(pos)
+          case FALSE =>
+            eat(FALSE); False().setPos(pos)
+          case THIS =>
+            eat(THIS); This().setPos(pos)
+          case NEW => {
+            eat(NEW)
+            if (currentToken.kind == INT) {
+              eat(INT, LBRACKET)
+              var expr = expression
+              eat(RBRACKET)
+              NewIntArray(expr).setPos(pos)
+            } else {
+              var id = identifier
+              eat(LPAREN, RPAREN)
+              New(id).setPos(pos)
+            }
+          }
+          case _ => expected(BANG, BANG)
+        })
+      }
+
+      def termRest(lhs: ExprTree): ExprTree = {
+        val pos = currentToken
+        var e = lhs
+        while (currentToken.kind == DOT || currentToken.kind == LBRACKET) {
+          if (currentToken.kind == DOT) {
+            eat(DOT)
+            if (currentToken.kind == LENGTH) {
+              eat(LENGTH)
+              e = ArrayLength(e).setPos(pos)
+            } else {
+              val id = identifier
+              eat(LPAREN)
+              val exprs = commaList(expression)
+              eat(RPAREN)
+              e = MethodCall(e, id, exprs.toList).setPos(pos)
+            }
+          } else if (currentToken.kind == LBRACKET) {
+            eat(LBRACKET)
+            var expr = expression
+            eat(RBRACKET)
+            e = ArrayRead(e, expr).setPos(pos)
+          }
+        }
+        e
+      }
+
+      or().setPos(pos)
     }
 
-    def parseIdentifier(): Identifier = {
+    def identifier(): Identifier = {
       try {
         val id = currentToken.asInstanceOf[ID]
         val t = currentToken
@@ -410,7 +336,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseStringLit(): StringLit = {
+    def stringLit(): StringLit = {
       try {
         val id = currentToken.asInstanceOf[STRLIT]
         val t = currentToken
@@ -421,7 +347,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    def parseIntLit(): IntLit = {
+    def intLit(): IntLit = {
       try {
         val id = currentToken.asInstanceOf[INTLIT]
         val t = currentToken

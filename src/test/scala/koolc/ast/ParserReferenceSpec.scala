@@ -8,6 +8,7 @@ import koolc.lexer.Token
 import koolc.lexer.Lexer
 import koolc.ast._
 import koolc.TestUtils
+import koolc.utils.ParsingException
 
 class ParserReferenceSpec extends FlatSpec with Matchers {
   val runScript = "./reference/run.sh"
@@ -15,7 +16,7 @@ class ParserReferenceSpec extends FlatSpec with Matchers {
   val flag = "--ast"
 
   val valid = TestUtils.programFiles(resources + "valid/")
-  //val invalid = TestUtils.programFiles(resources + "invalid/")
+  val invalid = TestUtils.programFiles(resources + "invalid/")
 
   def useParser(file: File): String = {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
@@ -26,7 +27,9 @@ class ParserReferenceSpec extends FlatSpec with Matchers {
     it should "parse valid program " + file.toPath() in test(file)
   }
 
-  // TODO invalid programs
+  invalid.foreach { file =>
+    it should "parse invalid program " + file.toPath() in intercept[ParsingException] { useParser(file) }
+  }
 
   def test(file: File) = assert(useParser(file) + "\n" === getAnswer(file))
   def getAnswer(file: File) = Seq(runScript, flag + " " + file.toPath()) !!
