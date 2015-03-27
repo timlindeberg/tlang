@@ -1,3 +1,0 @@
-And(Not(Identifier(a)), Identifier(b))
-Times(Div(IntLit(4), IntLit(3)), IntLit(6))
-Div(Times(IntLit(6), IntLit(4)), IntLit(3))

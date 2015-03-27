@@ -22,7 +22,7 @@ class LexerSpec extends FlatSpec with Matchers {
   }
 
   behavior of "Created tests without reference"
-  for (i <- 1 to 3) {
+  for (i <- 1 to 4) {
     it should "lex invalid " + i in compare(TestUtils.resources + "/lexer/invalid/invalid-" + i)
   }
 
@@ -31,6 +31,7 @@ class LexerSpec extends FlatSpec with Matchers {
     def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()).!!.split('\n').map(_.trim)
     lexer(file).toList.map(TestUtils.format).zip(getAnswer(file)).foreach(x => assert(x._1 === x._2))
   }
+
   def compare(file: String) {
     def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
     val it = lexer(new File(file + ".kool")).toList.map(TestUtils.format)
