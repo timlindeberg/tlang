@@ -42,9 +42,11 @@ class ParserSpec extends FlatSpec with Matchers {
       intercept[ParsingException] { parse(program) }
     } else {
       assert(print(parse(program)) === print(parse(print(parse(program)))))
+      assert(parse(program) === parse(print(parse(program))))
       assert(parse(program).toString + "\n" === getAnswer(file))
     }
   }
+  
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
 
 }
