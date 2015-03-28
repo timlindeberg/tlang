@@ -42,14 +42,14 @@ object Printer {
     case Assign(id, expr) => id.value + " = " + apply(expr) + "; " + n
     case ArrayAssign(id, index, expr) => id.value + "[" + apply(index) + "] = " + apply(expr) + ";" + n
     // Expressions
-    case And(lhs, rhs) => apply(lhs) + " && " + apply(rhs)
-    case Or(lhs, rhs) => apply(lhs) + " || " + apply(rhs)
-    case Plus(lhs, rhs) => apply(lhs) + " + " + apply(rhs)
-    case Minus(lhs, rhs) => apply(lhs) + " - " + apply(rhs)
-    case Times(lhs, rhs) => apply(lhs) + " * " + apply(rhs)
-    case Div(lhs, rhs) => apply(lhs) + " / " + apply(rhs)
-    case LessThan(lhs, rhs) => apply(lhs) + " < " + apply(rhs)
-    case Equals(lhs, rhs) => apply(lhs) + " == " + apply(rhs)
+    case And(lhs, rhs) => "(" + apply(lhs) + " && " + apply(rhs) + ")"
+    case Or(lhs, rhs) => "(" + apply(lhs) + " || " + apply(rhs) + ")"
+    case Plus(lhs, rhs) => "(" + apply(lhs) + " + " + apply(rhs) + ")"
+    case Minus(lhs, rhs) => "(" + apply(lhs) + " - " + apply(rhs) + ")"
+    case Times(lhs, rhs) => "(" + apply(lhs) + " * " + apply(rhs) + ")"
+    case Div(lhs, rhs) => "(" + apply(lhs) + " / " + apply(rhs) + ")"
+    case LessThan(lhs, rhs) => "(" + apply(lhs) + " < " + apply(rhs) + ")"
+    case Equals(lhs, rhs) => "(" + apply(lhs) + " == " + apply(rhs) + ")"
     case ArrayRead(arr, index) => apply(arr) + "[" + apply(index) + "]"
     case ArrayLength(arr) => apply(arr) + ".length"
     case MethodCall(obj, meth, args) => apply(obj) + "." + meth.value + "(" + commaList(args) + ")"
@@ -61,7 +61,7 @@ object Printer {
     case This() => "this"
     case NewIntArray(size) => "new Int[" + apply(size) + "]"
     case New(tpe) => "new " + tpe.value + "()"
-    case Not(expr) => "!" + apply(expr)
+    case Not(expr) => "!(" + apply(expr) + ")"
   }
 
   def positionTree(t: Tree): String = {
