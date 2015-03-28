@@ -44,17 +44,21 @@ object Main {
   }
 
   def main(args: Array[String]) {
-    val ctx = processOptions(args)
-    if (flags(tokensFlag)) {
-      (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
-    } else {
-      val pipeline = Lexer andThen Parser
-      val program = pipeline.run(ctx)(ctx.file)
-      if (flags(astFlag)) {
-        println(program)
+    try {
+      val ctx = processOptions(args)
+      if (flags(tokensFlag)) {
+        (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        println(Printer(program))
+        val pipeline = Lexer andThen Parser
+        val program = pipeline.run(ctx)(ctx.file)
+        if (flags(astFlag)) {
+          println(program)
+        } else {
+          println(Printer(program))
+        }
       }
+    } catch {
+      case e: ParsingException => System.err.println(e.getMessage)
     }
   }
 }
