@@ -70,49 +70,41 @@ object Printer {
 
     def pt(t: Tree, indent: Int): String = {
       val i = indent + 1
-      val s = " " * i
-      val s2 = t match {
-        case Program(main, classes) => "Program" + pos(t) + "(" + pt(main, i) + "," + all(classes, i) + ")"
-        case MainObject(id, stats) => "MainObject" + pos(t) + "(" + pt(id, i) + "," + all(stats, i) + ")"
-        case ClassDecl(id, parent, vars, methods) => "ClassDecl" + pos(t) + "(" + (if (parent.isDefined) pt(parent.get, i) else "") + all(vars, i) + all(methods, i) + ")"
-        case VarDecl(tpe, id) => "VarDecl" + pos(t) + "(" + pt(tpe, i) + pt(id, i) + ")"
-        case MethodDecl(retType, id, args, vars, stats, retExpr) => "MethodDecl" + pos(t) + "(" + pt(id, i) + all(args, i) + all(vars, i) + all(stats, i) + pt(retExpr, i) + ")"
-        case Formal(tpe, id) => "Formal" + pos(t) + "(" + pt(tpe, i) + pt(id, i) + ")"
-        // Types + ")"
-        case IntType() => "IntType" + pos(t) + "()"
-        case IntArrayType() => "IntArrayType" + pos(t) + "()"
-        case BooleanType() => "BooleanType" + pos(t) + "()"
-        case StringType() => "StringType" + pos(t) + "()"
-        // Statements + ")"
-        case Block(stats) => "Block" + pos(t) + "(" + all(stats, i) + ")"
-        case If(expr, thn, els) => "If" + pos(t) + "(" + pt(expr, i) + pt(thn, i) + (if (els.isDefined) pt(els.get, i) else "") + ")"
-        case While(expr, stat) => "While" + pos(t) + "(" + pt(expr, i) + pt(stat, i) + ")"
-        case Println(expr) => "Println" + pos(t) + "(" + pt(expr, i) + ")"
-        case Assign(id, expr) => "Assign" + pos(t) + "(" + pt(id, i) + pt(expr, i) + ")"
-        case ArrayAssign(id, index, expr) => "ArrayAssign" + pos(t) + "(" + pt(id, i) + pt(index, i) + pt(expr, i) + ")"
-        // Expressions + ")"
-        case And(lhs, rhs) => "And" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Or(lhs, rhs) => "Or" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Plus(lhs, rhs) => "Plus" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Minus(lhs, rhs) => "Minus" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Times(lhs, rhs) => "Times" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Div(lhs, rhs) => "Div" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case LessThan(lhs, rhs) => "LessThan" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case Equals(lhs, rhs) => "Equals" + pos(t) + "(" + pt(lhs, i) + pt(rhs, i) + ")"
-        case ArrayRead(arr, index) => "ArrayRead" + pos(t) + "(" + pt(arr, i) + pt(index, i) + ")"
-        case ArrayLength(arr) => "ArrayLength" + pos(t) + "(" + pt(arr, i) + ")"
-        case MethodCall(obj, meth, args) => "MethodCall" + pos(t) + "(" + pt(obj, i) + pt(meth, i) + all(args, i) + ")"
-        case IntLit(value) => "IntLit" + pos(t) + "(" + value + ")"
-        case StringLit(value) => "StringLit" + pos(t) + "(" + value + ")"
-        case True() => "True" + pos(t) + "()"
-        case False() => "False" + pos(t) + "()"
-        case Identifier(value) => "Identifier" + pos(t) + "(" + value + ")"
-        case This() => "This" + pos(t) + "()"
-        case NewIntArray(size) => "NewIntArray" + pos(t) + "(" + pt(size, i) + ")"
-        case New(tpe) => "New" + pos(t) + "(" + pt(tpe, i) + ")"
-        case Not(expr) => "Not" + pos(t) + "(" + pt(expr, i) + ")"
+      val s = t match {
+        case Program(main, classes) => pt(main, i) + all(classes, i)
+        case MainObject(id, stats) => pt(id, i) + all(stats, i)
+        case ClassDecl(id, parent, vars, methods) => (if (parent.isDefined) pt(parent.get, i) else "") + all(vars, i) + all(methods, i)
+        case VarDecl(tpe, id) => pt(tpe, i) + pt(id, i)
+        case MethodDecl(retType, id, args, vars, stats, retExpr) => pt(id, i) + all(args, i) + all(vars, i) + all(stats, i) + pt(retExpr, i)
+        case Formal(tpe, id) => pt(tpe, i) + pt(id, i)
+        // Statements
+        case Block(stats) => all(stats, i)
+        case If(expr, thn, els) => pt(expr, i) + pt(thn, i) + (if (els.isDefined) pt(els.get, i) else "")
+        case While(expr, stat) => pt(expr, i) + pt(stat, i)
+        case Println(expr) => pt(expr, i)
+        case Assign(id, expr) => pt(id, i) + pt(expr, i)
+        case ArrayAssign(id, index, expr) => pt(id, i) + pt(index, i) + pt(expr, i)
+        // Expressions
+        case And(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Or(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Plus(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Minus(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Times(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Div(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case LessThan(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case Equals(lhs, rhs) => pt(lhs, i) + pt(rhs, i)
+        case ArrayRead(arr, index) => pt(arr, i) + pt(index, i)
+        case ArrayLength(arr) => pt(arr, i)
+        case MethodCall(obj, meth, args) => pt(obj, i) + pt(meth, i) + all(args, i)
+        case IntLit(value) => value
+        case StringLit(value) => value
+        case Identifier(value) => value
+        case NewIntArray(size) => pt(size, i)
+        case New(tpe) => pt(tpe, i)
+        case Not(expr) => pt(expr, i)
+        case _ => ""
       }
-      "\n" + s + s2
+      "\n" + (" " * 2 * i) + t.getClass.getSimpleName + pos(t) + "(" + s + ")"
     }
     pt(t, 1)
   }
