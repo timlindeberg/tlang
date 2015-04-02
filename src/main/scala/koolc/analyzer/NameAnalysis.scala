@@ -4,65 +4,189 @@ package analyzer
 import utils._
 import ast.Trees._
 import Symbols._
+import org.omg.CosNaming.NamingContextExtPackage.InvalidAddressHelper
 
 object NameAnalysis extends Pipeline[Program, Program] {
 
-  class NameAnalyser(ctx: Context) {
+  class NameAnalyser(ctx: Context, prog: Program, g: GlobalScope) {
     import ctx.reporter._
-
-    def addTo[T](map: Map[String, T], symbol: T, id: Identifier): Map[String, T] = {
-      if (map.contains(id.value)) {
-        error("Something already defined!", id)
+    object Adder {
+      def apply(): Unit = addSymbols(prog, g)
+      private def addSymbols(t: Tree, s: GlobalScope): Unit = t match {
+        case Program(main, classes) => {
+          addSymbols(main, s)
+          classes.foreach(addSymbols(_, s))
+        }
+        case x @ MainObject(id, stats) => {
+          s.mainClass = new ClassSymbol(id.value).setPos(id)
+          x.setSymbol(s.mainClass)
+          id.setSymbol(s.mainClass)
+        }
+        case x @ ClassDecl(id, parent, vars, methods) => {
+          val newSymbol = new ClassSymbol(id.value).setPos(id)
+          s.classes = addTo(s.classes, newSymbol, id, x)
+          vars.foreach(addSymbols(_, newSymbol))
+          methods.foreach(addSymbols(_, newSymbol))
+        }
+        case _ => error("LOL")
       }
-      map + (id.value -> symbol)
-    }
 
-    def addSymbols(t: Tree, s: GlobalScope): Unit = t match {
-      case Program(main, classes) => {
-        addSymbols(main, s)
-        classes.foreach(addSymbols(_, s))
+      private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
+        case x @ VarDecl(tpe, id) => {
+          val newSymbol = new VariableSymbol(id.value).setPos(id)
+          s.members = addTo(s.members, newSymbol, id, x)
+        }
+        case x @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
+          val newSymbol = new MethodSymbol(id.value, s).setPos(id)
+          s.methods = addTo(s.methods, newSymbol, id, x)
+          args.foreach(addSymbols(_, newSymbol))
+          vars.foreach(addSymbols(_, newSymbol))
+        }
+        case _ => error("LOL")
       }
-      case MainObject(id, stats) => s.mainClass = new ClassSymbol(id.value)
-      case ClassDecl(id, parent, vars, methods) => {
-        var newSymbol = new ClassSymbol(id.value)
-        s.classes = addTo(s.classes, newSymbol, id)
-        vars.foreach(addSymbols(_, newSymbol))
-        methods.foreach(addSymbols(_, newSymbol))
+
+      private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
+        case x @ VarDecl(tpe, id) => {
+          val newSymbol = new VariableSymbol(id.value).setPos(id)
+          s.members = addTo(s.members, newSymbol, id, x)
+        }
+        case x @ Formal(tpe, id) => {
+          val newSymbol = new VariableSymbol(id.value).setPos(id)
+          s.params = addTo(s.params, newSymbol, id, x)
+        }
+        case _ => error("LOL")
       }
-      case _ => error("LOL")
-    }
 
-    def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
-      case VarDecl(tpe, id) => s.members = addTo(s.members, new VariableSymbol(id.value), id)
-      case MethodDecl(retType, id, args, vars, stats, retExpr) => {
-        var newSymbol = new MethodSymbol(id.value, s)
-        s.methods = addTo(s.methods, newSymbol, id)
-        args.foreach(addSymbols(_, newSymbol))
-        vars.foreach(addSymbols(_, newSymbol))
+      private def addTo[T <: Symbol](map: Map[String, T], symbol: T, id: Identifier, x: Symbolic[T]): Map[String, T] = {
+        if (map.contains(id.value)) {
+          val oldSymbol = map(id.value)
+          error("Symbol \"" + id.value + "\" already defined at " + oldSymbol.line + ":" + oldSymbol.col, id)
+        }
+        id.setSymbol(symbol)
+        x.setSymbol(symbol)
+        map + (id.value -> symbol)
       }
-      case _ => error("LOL")
     }
+    object Binder {
+      def apply(): Unit = bind(prog)
+      private def bind(t: Option[Tree]): Unit = if (t.isDefined) bind(t.get)
 
-    def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
-      case VarDecl(tpe, id) => s.members = addTo(s.members, new VariableSymbol(id.value), id)
-      case Formal(tpe, id)  => s.params = addTo(s.params, new VariableSymbol(id.value), id)
-      case _                => error("LOL")
+      private def bind(list: List[Tree]): Unit = list.foreach(bind)
+
+      private def bind(t: Tree): Unit = t match {
+        case Program(main, classes) =>
+          bind(main); bind(classes)
+        case x @ MainObject(id, stats) => bind(x.getSymbol, stats)
+        case classDecl @ ClassDecl(id, parent, vars, methods) => {
+          setParent(id, parent, classDecl)
+          bind(vars)
+          bind(methods)
+        }
+        case x @ VarDecl(tpe, id) => setType(tpe)
+        case x @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
+          setType(retType)
+          bind(args)
+          bind(vars)
+          bind(x.getSymbol, stats, retExpr)
+        }
+        case Formal(tpe, id) => setType(tpe)
+      }
+
+      private def bind(s: Symbol, list: Any*): Unit = {
+        list.foreach(_ match {
+          case x: List[Tree]   => x.foreach(bind(s, _))
+          case x: Tree         => bind(s, x)
+          case x: Option[Tree] => if (x.isDefined) bind(s, x.get)
+          case _               => throw new UnsupportedOperationException
+        })
+      }
+
+      private def bind(s: Symbol, t: Tree): Unit = t match {
+        // Statements
+        case Block(stats)       => bind(s, stats)
+        case If(expr, thn, els) => bind(s, expr, thn, els)
+        case While(expr, stat)  => bind(s, expr, stat)
+        case Println(expr)      => bind(s, expr)
+        case Assign(id, expr) => {
+          setVariable(id, s)
+          bind(s, expr)
+        }
+        case ArrayAssign(id, index, expr) => {
+          setVariable(id, s)
+          bind(s, index, expr)
+        }
+        // Expressions
+        case And(lhs, rhs)               => bind(s, lhs, rhs)
+        case Or(lhs, rhs)                => bind(s, lhs, rhs)
+        case Plus(lhs, rhs)              => bind(s, lhs, rhs)
+        case Minus(lhs, rhs)             => bind(s, lhs, rhs)
+        case Times(lhs, rhs)             => bind(s, lhs, rhs)
+        case Div(lhs, rhs)               => bind(s, lhs, rhs)
+        case LessThan(lhs, rhs)          => bind(s, lhs, rhs)
+        case Equals(lhs, rhs)            => bind(s, lhs, rhs)
+        case ArrayRead(arr, index)       => bind(s, arr, index)
+        case ArrayLength(arr)            => bind(s, arr)
+        case MethodCall(obj, meth, args) => bind(s, obj, args)
+        case id @ Identifier(value)      => setVariable(id, s)
+        case x @ This() => {
+          s match {
+            case classSymbol: ClassSymbol   => x.setSymbol(g.mainClass)
+            case methodSymbol: MethodSymbol => x.setSymbol(methodSymbol.classSymbol)
+          }
+        }
+        case NewIntArray(size) => bind(s, size)
+        case New(tpe)          => setType(tpe)
+        case Not(expr)         => bind(s, expr)
+        case _                 =>
+      }
+      private def setClassSymbol(id: Identifier, errorStr: String): Unit = {
+        g.lookupClass(id.value) match {
+          case Some(x) => id.setSymbol(x)
+          case None    => error(errorStr + id.value, id)
+        }
+      }
+
+      private def setType(tpe: TypeTree): Unit = {
+        if (tpe.isInstanceOf[Identifier]) {
+          val id = tpe.asInstanceOf[Identifier]
+          setClassSymbol(id, "Class not declared:")
+        }
+      }
+
+      private def setVariable(id: Identifier, s: Symbol): Unit = {
+        s match {
+          case classSymbol: ClassSymbol => error("Variable not declared: " + id.value, id)
+          case methodSymbol: MethodSymbol => {
+            methodSymbol.lookupVar(id) match {
+              case Some(symbol) => id.setSymbol(symbol)
+              case None         => error("Variable not declared: " + id.value, id)
+            }
+          }
+        }
+      }
+
+      private def setParent(id: Identifier, parent: Option[Identifier], classDecl: ClassDecl): Unit = {
+        if (parent.isDefined) {
+          val p = parent.get
+          g.lookupClass(p.value) match {
+            case Some(parentSymbol) => {
+              p.setSymbol(parentSymbol)
+              classDecl.getSymbol.parent = Some(parentSymbol)
+            }
+            case None => error("Parent class is not defined: " + p.value, p)
+          }
+        }
+      }
     }
-
+    def addSymbols(): Unit = Adder()
+    def bindIdentifiers(): Unit = Binder()
   }
+
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
-    var g = new GlobalScope
-    new NameAnalyser(ctx).addSymbols(prog, g)
-
-    //def analyze(list: List[Tree]): Unit = list.foreach(analyze(_))
-    // Step 1: Collect symbols in declarations
-
-    // Step 2: Attach symbols to identifiers (except method calls) in method bodies
-
-    // (Step 3:) Print tree with symbol ids for debugging
-
-    // Make sure you check for all constraints
+    var nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
+    nameAnalyzer.addSymbols()
+    nameAnalyzer.bindIdentifiers()
 
     prog
   }

@@ -2,6 +2,7 @@ package koolc
 package analyzer
 
 import utils._
+import koolc.ast.Trees._
 
 object Symbols {
   trait Symbolic[S <: Symbol] {
@@ -36,7 +37,8 @@ object Symbols {
   class GlobalScope {
     var mainClass: ClassSymbol = _
     var classes = Map[String, ClassSymbol]()
-
+    
+    def lookupClass(id: Identifier): Option[ClassSymbol] = lookupClass(id.value)
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
 
@@ -45,8 +47,13 @@ object Symbols {
     var methods = Map[String, MethodSymbol]()
     var members = Map[String, VariableSymbol]()
 
+    def lookupMethod(id: Identifier): Option[MethodSymbol] = lookupMethod(id.value)
     def lookupMethod(n: String): Option[MethodSymbol] = methods.get(n)
-    def lookupVar(n: String): Option[VariableSymbol] = members.get(n)
+    def lookupVar(id: Identifier): Option[VariableSymbol] = lookupVar(id.value)
+    def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
+      case x @ Some(t) => x
+      case None => if(parent.isDefined) parent.get.lookupVar(n) else None
+    }
   }
 
   class MethodSymbol(val name: String, val classSymbol: ClassSymbol) extends Symbol {
@@ -55,9 +62,13 @@ object Symbols {
     var argList: List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
 
+    def lookupVar(id: Identifier): Option[VariableSymbol] = lookupVar(id.value)
     def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
       case x @ Some(t) => x
-      case None        => classSymbol.lookupVar(n)
+      case None => params.get(n) match {
+        case x @ Some(t) => x
+        case None        => classSymbol.lookupVar(n)
+      }
     }
   }
 

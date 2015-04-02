@@ -15,9 +15,18 @@ import koolc.ast.Trees.Program
 class NameAnalysisSpec extends FlatSpec with Matchers {
 
   behavior of "Created tests"
-  TestUtils.programFiles(TestUtils.resources + "analyzer/name/").foreach { file =>
-    it should "parse analyse program " + file.toPath() in test(file)
+  //  TestUtils.programFiles(TestUtils.resources + "analyzer/name/valid/").foreach { file =>
+  //    it should "name analyse program " + file.toPath() in test(file)
+  //  }
+
+  TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
+    it should "name analyse program " + file.toPath() in test(file, true)
   }
+
+  //  behavior of "Given tests"
+  //  TestUtils.programFiles(TestUtils.resources + "given/analyzer/valid/").foreach { file =>
+  //    it should "name analyse program " + file.toPath() in test(file)
+  //  }
 
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString
@@ -26,10 +35,11 @@ class NameAnalysisSpec extends FlatSpec with Matchers {
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p)
     if (exception) {
-      intercept[ParsingException] { parse(program) }
+      (Lexer andThen Parser andThen NameAnalysis).run(ctx)(file)
+      assert(ctx.reporter.hasErrors)
     } else {
-      analysis(parse(program))
+      println(Printer(analysis(parse(program))))
     }
   }
-  
+
 }

@@ -1,0 +1,10 @@
+object Main {
+  def main() : Unit = {
+    println(new Test());
+  }
+}
+
+class Test extends Test2 { }
+class Test2 extends Test3 { }
+class Test3 extends Test4 { }
+class Test4 { }

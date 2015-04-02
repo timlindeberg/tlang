@@ -1,0 +1,12 @@
+object Main {
+  def main() : Unit = {
+  }
+}
+
+class A { 
+  def foo():Int = { return 0; }
+}
+
+class B extends A {
+  def foo(a: Int): Int = { return a; }
+}
