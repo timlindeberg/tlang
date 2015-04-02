@@ -41,6 +41,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s.methods = addTo(s.methods, newSymbol, id, x)
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
+          newSymbol.argList = newSymbol.params.values.toList
         }
         case _ => error("LOL")
       }
@@ -79,11 +80,28 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case x @ MainObject(id, stats) => bind(x.getSymbol, stats)
         case classDecl @ ClassDecl(id, parent, vars, methods) => {
           setParent(id, parent, classDecl)
+
+          val p = classDecl.getSymbol.parent
+          if (p.isDefined) {
+            vars.foreach(variable => {
+              p.get.lookupVar(variable.id) match {
+                case Some(x) => error("Field already defined in parent class: " + variable.getSymbol.name, variable)
+                case None    =>
+              }
+            })
+          }
           bind(vars)
           bind(methods)
         }
         case x @ VarDecl(tpe, id) => setType(tpe)
         case x @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
+          val parent = x.getSymbol.classSymbol.parent
+          if (parent.isDefined) {
+            parent.get.lookupMethod(id) match {
+              case Some(parentMethod) => if (parentMethod.argList.size != x.getSymbol.argList.size)
+                error("Method already declared in super class: " + id.value, id)
+            }
+          }
           setType(retType)
           bind(args)
           bind(vars)
@@ -139,6 +157,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case Not(expr)         => bind(s, expr)
         case _                 =>
       }
+
       private def setClassSymbol(id: Identifier, errorStr: String): Unit = {
         g.lookupClass(id.value) match {
           case Some(x) => id.setSymbol(x)
@@ -180,6 +199,23 @@ object NameAnalysis extends Pipeline[Program, Program] {
     }
     def addSymbols(): Unit = Adder()
     def bindIdentifiers(): Unit = Binder()
+
+    def checkForCycles(): Unit = {
+      g.classes.foreach { x =>
+        var classSymbol: Option[ClassSymbol] = Some(x._2)
+        var set: Set[ClassSymbol] = Set()
+        while (classSymbol.isDefined) {
+          val c = classSymbol.get
+          if (set.contains(c)) {
+            error("The transitive closure of the \"extends\" relation must be irreflexive: " + c.name, c)
+            return
+          }
+          set += c
+          classSymbol = c.parent
+        }
+
+      }
+    }
   }
 
   def run(ctx: Context)(prog: Program): Program = {
@@ -187,6 +223,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     var nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
     nameAnalyzer.addSymbols()
     nameAnalyzer.bindIdentifiers()
+    nameAnalyzer.checkForCycles()
 
     prog
   }

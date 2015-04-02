@@ -48,7 +48,10 @@ object Symbols {
     var members = Map[String, VariableSymbol]()
 
     def lookupMethod(id: Identifier): Option[MethodSymbol] = lookupMethod(id.value)
-    def lookupMethod(n: String): Option[MethodSymbol] = methods.get(n)
+    def lookupMethod(n: String): Option[MethodSymbol] = methods.get(n) match {
+      case x @ Some(t) => x
+      case None => if(parent.isDefined) parent.get.lookupMethod(n) else None
+    }
     def lookupVar(id: Identifier): Option[VariableSymbol] = lookupVar(id.value)
     def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
       case x @ Some(t) => x
