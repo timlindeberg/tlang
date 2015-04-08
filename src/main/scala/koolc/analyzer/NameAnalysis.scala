@@ -188,13 +188,16 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case classSymbol: ClassSymbol => error("Variable not declared: " + id.value, id)
           case methodSymbol: MethodSymbol => {
             methodSymbol.lookupVar(id) match {
-              case Some(symbol) => id.setSymbol(symbol)
+              case Some(symbol) => {
+                id.setSymbol(symbol)
+                usageMap += id.getSymbol.asInstanceOf[VariableSymbol] -> true
+              }
               case None         => error("Variable not declared: " + id.value, id)
             }
           }
           case _ => throw new UnsupportedOperationException
         }
-        usageMap += id.getSymbol.asInstanceOf[VariableSymbol] -> true
+        
       }
 
       private def setParent(id: Identifier, parent: Option[Identifier], classDecl: ClassDecl): Unit = {
