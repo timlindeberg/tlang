@@ -100,6 +100,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
             parent.get.lookupMethod(id) match {
               case Some(parentMethod) => if (parentMethod.argList.size != x.getSymbol.argList.size)
                 error("Method already declared in super class: " + id.value, id)
+              case None =>
             }
           }
           setType(retType)
