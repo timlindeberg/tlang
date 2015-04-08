@@ -10,6 +10,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
   class NameAnalyser(ctx: Context, prog: Program, g: GlobalScope) {
     import ctx.reporter._
+    
+    var usageMap : Map[VariableSymbol, Boolean] = Map()
+    
     object Adder {
       def apply(): Unit = addSymbols(prog, g)
       private def addSymbols(t: Tree, s: GlobalScope): Unit = t match {
@@ -65,6 +68,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
         id.setSymbol(symbol)
         x.setSymbol(symbol)
+        if(symbol.isInstanceOf[VariableSymbol])
+          usageMap += symbol.asInstanceOf[VariableSymbol] -> false
+        
         map + (id.value -> symbol)
       }
     }
@@ -85,7 +91,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           if (p.isDefined) {
             vars.foreach(variable => {
               p.get.lookupVar(variable.id) match {
-                case Some(x) => error("Field already defined in parent class: " + variable.getSymbol.name, variable)
+                case Some(x) => error("Field already defined in super class: " + variable.getSymbol.name, variable)
                 case None    =>
               }
             })
@@ -115,9 +121,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(s: Symbol, list: Any*): Unit = {
         list.foreach(_ match {
           case x: List[_]   => x.foreach(bind(s, _))
-          case x: Tree      => bind(s, x)
+          case x: Tree         => bind(s, x)
           case x: Option[_] => if (x.isDefined) bind(s, x.get)
-          case _            => throw new UnsupportedOperationException
+          case _               => throw new UnsupportedOperationException
         })
       }
 
@@ -167,6 +173,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case None    => error(errorStr + id.value, id)
         }
       }
+      
+      private def lol(a: Int): Int = 5
 
       private def setType(tpe: TypeTree): Unit = {
         if (tpe.isInstanceOf[Identifier]) {
@@ -186,6 +194,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
           case _ => throw new UnsupportedOperationException
         }
+        usageMap += id.getSymbol.asInstanceOf[VariableSymbol] -> true
       }
 
       private def setParent(id: Identifier, parent: Option[Identifier], classDecl: ClassDecl): Unit = {
@@ -201,34 +210,44 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
     }
-    def addSymbols(): Unit = Adder()
-    def bindIdentifiers(): Unit = Binder()
+    
+    def addSymbols(): this.type = { Adder(); this }
+    def bindIdentifiers(): this.type = { Binder(); this }
 
-    def checkForCycles(): Unit = {
+    def checkForCycles(): this.type = {
+      
+      def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol): String = 
+        ( if(set.size >= 2) set.tail.foldLeft(set.head.name)((old, next) => old + " <: " + next.name)
+        else c.name ) + " <: " + c.name
+      
       g.classes.foreach { x =>
         var classSymbol: Option[ClassSymbol] = Some(x._2)
         var set: Set[ClassSymbol] = Set()
         while (classSymbol.isDefined) {
           val c = classSymbol.get
           if (set.contains(c)) {
-            error("The transitive closure of the \"extends\" relation must be irreflexive: " + c.name, c)
-            return
+            error("A cycle was found in the inheritence graph: " + inheritanceList(set, c), c)
+            return this
           }
           set += c
           classSymbol = c.parent
         }
-
       }
+      this
+    }
+    
+    
+    def checkVariableUsage(): this.type = {
+      usageMap map {case (variable, used) => 
+        if(!used) warning("Variable " + variable.name + " declared but is never used:", variable)}
+      this
     }
   }
 
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
     var nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
-    nameAnalyzer.addSymbols()
-    nameAnalyzer.bindIdentifiers()
-    nameAnalyzer.checkForCycles()
-
+    nameAnalyzer.addSymbols().bindIdentifiers().checkForCycles().checkVariableUsage()
     prog
   }
 
