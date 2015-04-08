@@ -60,12 +60,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
         case x @ Formal(tpe, id) => {
           val newSymbol = new VariableSymbol(id.value).setPos(id)
-          s.params = addTo(s.params, newSymbol, id, x)
+          val used = true
+          s.params = addTo(s.params, newSymbol, id, x, used)
         }
         case _ => throw new UnsupportedOperationException
       }
 
-      private def addTo[T <: Symbol](map: Map[String, T], symbol: T, id: Identifier, x: Symbolic[T]): Map[String, T] = {
+      private def addTo[T <: Symbol](map: Map[String, T], symbol: T, id: Identifier, x: Symbolic[T], used: Boolean = false): Map[String, T] = {
         if (map.contains(id.value)) {
           val oldSymbol = map(id.value)
           error("Variable \'" + id.value + "\' is already defined at " + oldSymbol.line + ":" + oldSymbol.col, id)
@@ -73,7 +74,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         id.setSymbol(symbol)
         x.setSymbol(symbol)
         if (symbol.isInstanceOf[VariableSymbol])
-          usageMap += symbol.asInstanceOf[VariableSymbol] -> false
+          usageMap += symbol.asInstanceOf[VariableSymbol] -> used
 
         map + (id.value -> symbol)
       }
@@ -162,7 +163,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s match {
             case classSymbol: ClassSymbol   => x.setSymbol(g.mainClass)
             case methodSymbol: MethodSymbol => x.setSymbol(methodSymbol.classSymbol)
-            
             case _                          => throw new UnsupportedOperationException
           }
         }
