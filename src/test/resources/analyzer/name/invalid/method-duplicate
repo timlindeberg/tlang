@@ -5,6 +5,6 @@ object Main {
 
 class A { 
   def foo(): String = { return "hej"; }
-  def foo(): Boolean = { return true; }
+  def foo(): Bool = { return true; }
   def foo(a: Int): Int = { return 0; }
 }

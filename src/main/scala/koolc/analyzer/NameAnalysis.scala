@@ -158,7 +158,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case NewIntArray(size) => bind(s, size)
         case New(tpe)          => setType(tpe)
         case Not(expr)         => bind(s, expr)
-        case _                 => throw new UnsupportedOperationException
+        case _                 => 
       }
 
       private def setClassSymbol(id: Identifier, errorStr: String): Unit = {

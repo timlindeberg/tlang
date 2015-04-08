@@ -33,7 +33,7 @@ class NameAnalysisSpec extends FlatSpec with Matchers {
       (Lexer andThen Parser andThen NameAnalysis).run(ctx)(file)
       assert(ctx.reporter.hasErrors)
     } else {
-      println(Printer(analysis(parse(program))))
+      Printer(analysis(parse(program)))
     }
   }
 

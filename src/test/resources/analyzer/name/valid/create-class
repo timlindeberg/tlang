@@ -1,7 +1,7 @@
 object Main {
   def main() : Unit = {
-    println(new Test());
+    println(new Test().foo());
   }
 }
 
-class Test { }
+class Test { def foo():String = { return "foo"; } }

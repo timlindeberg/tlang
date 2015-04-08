@@ -1,6 +1,6 @@
 object Main {
     def main() : Unit = {
-        println(new Test());
+        println(new Test().test(2));
     }
 }
 

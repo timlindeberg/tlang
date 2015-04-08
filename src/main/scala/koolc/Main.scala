@@ -5,6 +5,7 @@ import java.io.File
 import lexer._
 import ast._
 import scala.collection.mutable.HashMap
+import koolc.analyzer.NameAnalysis
 
 object Main {
 
@@ -49,16 +50,19 @@ object Main {
       if (flags(tokensFlag)) {
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        val pipeline = Lexer andThen Parser
-        val program = pipeline.run(ctx)(ctx.file)
+        var pipeline = Lexer andThen Parser
         if (flags(astFlag)) {
+          val program = pipeline.run(ctx)(ctx.file)
           println(program)
         } else {
-          println(Printer(program))
+          val program = (pipeline andThen NameAnalysis).run(ctx)(ctx.file)
+          if (!ctx.reporter.hasErrors) {
+            println(Printer(program))
+          }
         }
       }
     } catch {
-      case e: ParsingException => System.err.println(e.getMessage)
+      case e: Exception => System.err.println(e.getMessage)
     }
   }
 }

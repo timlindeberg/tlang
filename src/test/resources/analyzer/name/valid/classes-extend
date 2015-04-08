@@ -1,10 +1,12 @@
 object Main {
   def main() : Unit = {
-    println(new Test());
+    println(new Test().Method());
   }
 }
 
-class Test extends Test2 { }
+class Test extends Test2 { 
+  def Method () : String = { return "String" ; }
+}
 class Test2 extends Test3 { }
 class Test3 extends Test4 { }
 class Test4 { }
