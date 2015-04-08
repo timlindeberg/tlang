@@ -1,0 +1,12 @@
+object Main {
+    def main() : Unit = {
+    }
+}
+
+class Test {
+    def test(num : Int) : Int = {
+        var t: Int;
+        var t: Int;
+        return num;
+    }
+}

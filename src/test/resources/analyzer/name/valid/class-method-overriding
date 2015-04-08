@@ -8,5 +8,5 @@ class A {
 }
 
 class B extends A {
-  def foo(a: Int): Int = { return a; }
+  def foo(): Int = { return 0; }
 }
