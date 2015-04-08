@@ -28,7 +28,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           vars.foreach(addSymbols(_, newSymbol))
           methods.foreach(addSymbols(_, newSymbol))
         }
-        case _ => error("LOL")
+        case _ => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
@@ -43,7 +43,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           vars.foreach(addSymbols(_, newSymbol))
           newSymbol.argList = newSymbol.params.values.toList
         }
-        case _ => error("LOL")
+        case _ => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
@@ -55,7 +55,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           s.params = addTo(s.params, newSymbol, id, x)
         }
-        case _ => error("LOL")
+        case _ => throw new UnsupportedOperationException
       }
 
       private def addTo[T <: Symbol](map: Map[String, T], symbol: T, id: Identifier, x: Symbolic[T]): Map[String, T] = {
@@ -109,14 +109,15 @@ object NameAnalysis extends Pipeline[Program, Program] {
           bind(x.getSymbol, stats, retExpr)
         }
         case Formal(tpe, id) => setType(tpe)
+        case _               => throw new UnsupportedOperationException
       }
 
       private def bind(s: Symbol, list: Any*): Unit = {
         list.foreach(_ match {
-          case x: List[Tree]   => x.foreach(bind(s, _))
-          case x: Tree         => bind(s, x)
-          case x: Option[Tree] => if (x.isDefined) bind(s, x.get)
-          case _               => throw new UnsupportedOperationException
+          case x: List[_]   => x.foreach(bind(s, _))
+          case x: Tree      => bind(s, x)
+          case x: Option[_] => if (x.isDefined) bind(s, x.get)
+          case _            => throw new UnsupportedOperationException
         })
       }
 
@@ -151,12 +152,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s match {
             case classSymbol: ClassSymbol   => x.setSymbol(g.mainClass)
             case methodSymbol: MethodSymbol => x.setSymbol(methodSymbol.classSymbol)
+            case _                          => throw new UnsupportedOperationException
           }
         }
         case NewIntArray(size) => bind(s, size)
         case New(tpe)          => setType(tpe)
         case Not(expr)         => bind(s, expr)
-        case _                 =>
+        case _                 => throw new UnsupportedOperationException
       }
 
       private def setClassSymbol(id: Identifier, errorStr: String): Unit = {
@@ -182,6 +184,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case None         => error("Variable not declared: " + id.value, id)
             }
           }
+          case _ => throw new UnsupportedOperationException
         }
       }
 
