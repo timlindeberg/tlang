@@ -6,6 +6,7 @@ import lexer._
 import ast._
 import scala.collection.mutable.HashMap
 import koolc.analyzer.NameAnalysis
+import koolc.analyzer.TypeChecking
 
 object Main {
 
@@ -55,7 +56,7 @@ object Main {
           val program = pipeline.run(ctx)(ctx.file)
           println(program)
         } else {
-          val program = (pipeline andThen NameAnalysis).run(ctx)(ctx.file)
+          val program = (pipeline andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
           if (!ctx.reporter.hasErrors) {
             println(Printer(program))
           }
