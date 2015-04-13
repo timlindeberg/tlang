@@ -1,0 +1,18 @@
+object Main {
+    def main() : Unit = {
+        println(new Test().test(2));
+    }
+}
+
+class Test {
+    def test(num : Int) : Int = {
+        return 0;
+    }
+}
+
+
+class Test2 {
+    def test(t : Int) : Int = {
+        return 0;
+    }
+}

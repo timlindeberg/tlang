@@ -13,12 +13,12 @@ import scala.io.Source
 import koolc.ast.Trees.Program
 
 class NameAnalysisSpec extends FlatSpec with Matchers {
+  val flag = "--symid"
 
   behavior of "Created tests"
   TestUtils.programFiles(TestUtils.resources + "analyzer/name/valid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file)
   }
-
   TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file, true)
   }
@@ -33,8 +33,10 @@ class NameAnalysisSpec extends FlatSpec with Matchers {
       (Lexer andThen Parser andThen NameAnalysis).run(ctx)(file)
       assert(ctx.reporter.hasErrors)
     } else {
-      print(analysis(parse(program)))
+      // Printer(analysis(parse(program)))
+      assert(Printer(analysis(parse(program))) + "\n" === getAnswer(file))
     }
   }
 
+  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
 }
