@@ -11,7 +11,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
   class NameAnalyser(ctx: Context, prog: Program, g: GlobalScope) {
     import ctx.reporter._
 
-    var usageMap: Map[VariableSymbol, Boolean] = Map()
+    var variableUsage: Map[VariableSymbol, Boolean] = Map()
 
     object Adder {
       def apply(): Unit = addSymbols(prog, g)
@@ -74,7 +74,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         id.setSymbol(symbol)
         x.setSymbol(symbol)
         if (symbol.isInstanceOf[VariableSymbol])
-          usageMap += symbol.asInstanceOf[VariableSymbol] -> used
+          variableUsage += symbol.asInstanceOf[VariableSymbol] -> used
 
         map + (id.value -> symbol)
       }
@@ -169,7 +169,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case NewIntArray(size) => bind(s, size)
         case New(tpe)          => setType(tpe)
         case Not(expr)         => bind(s, expr)
-        case _                 =>
+        case _                 => throw new UnsupportedOperationException
       }
 
       private def setType(tpe: TypeTree): Unit = {
@@ -189,7 +189,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
             methodSymbol.lookupVar(id) match {
               case Some(symbol) => {
                 id.setSymbol(symbol)
-                usageMap += symbol.asInstanceOf[VariableSymbol] -> true
+                variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
               }
               case None => error(errorMsg(id.value), id)
             }
@@ -215,7 +215,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     def addSymbols(): this.type = { Adder(); this }
     def bindIdentifiers(): this.type = { Binder(); this }
 
-    def checkForCycles(): this.type = {
+    def checkInheritanceCycles(): this.type = {
 
       def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol): String =
         (if (set.size >= 2) set.tail.foldLeft(set.head.name)((old, next) => old + " <: " + next.name)
@@ -238,7 +238,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     }
 
     def checkVariableUsage(): this.type = {
-      usageMap map {
+      variableUsage map {
         case (variable, used) =>
           if (!used) warning("Variable \'" + variable.name + "\' declared but is never used:", variable)
       }
@@ -249,7 +249,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
     var nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
-    nameAnalyzer.addSymbols().bindIdentifiers().checkForCycles().checkVariableUsage()
+    nameAnalyzer.addSymbols().bindIdentifiers()
+    nameAnalyzer.checkInheritanceCycles().checkVariableUsage()
     prog
   }
 
