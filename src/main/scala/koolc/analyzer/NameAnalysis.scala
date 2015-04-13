@@ -169,7 +169,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case NewIntArray(size) => bind(s, size)
         case New(tpe)          => setType(tpe)
         case Not(expr)         => bind(s, expr)
-        case _                 => 
+        case _                 => // Do nothing
       }
 
       private def setType(tpe: TypeTree): Unit = {
