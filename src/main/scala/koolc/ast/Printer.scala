@@ -7,6 +7,7 @@ import koolc.analyzer.Symbols._
 object Printer {
 
   var indent: Int = 0
+  var printIdNumber = false
 
   def l: String = {
     indent += 1
@@ -22,15 +23,23 @@ object Printer {
     "\n" + " " * (2 * indent)
   }
 
-  def symbol[T <: Symbol](t: Symbolic[T]): String = "#" + t.getSymbol.id
-  
-  def apply(t: Tree): String = t match {
-    case Program(main, classes) => apply(main) + all(classes)
-    case MainObject(id, stats) => "object " + apply(id) + " " + l + "def main () : Unit = " + l + all(stats) + r + r
-    case ClassDecl(id, parent, vars, methods) => n + n + "class " + apply(id) + optional(parent, t => " extends " + apply(t.asInstanceOf[Identifier])) + " " + l + all(vars) + all(methods) + "" + r
-    case VarDecl(tpe, id) => "var " + apply(id) + " : " + apply(tpe) + ";" + n
-    case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + apply(id) + " ( " + commaList(args) + " ) : " + apply(retType) + " = " + l + all(vars) + all(stats) + "return " + apply(retExpr) + "; " + r + n
-    case Formal(tpe, id) => apply(id) + ": " + apply(tpe)
+  def symbol[T <: Symbol](t: Symbolic[T]): String = 
+    if (printIdNumber) 
+      "#" + (if(t.hasSymbol) t.getSymbol.id else "??")
+    else ""
+
+  def apply(t: Tree, printIdNumber: Boolean = false): String = {
+    this.printIdNumber = printIdNumber
+    f(t)
+  }
+
+  private def f(t: Tree): String = t match {
+    case Program(main, classes) => f(main) + all(classes)
+    case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + all(stats) + r + r
+    case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[Identifier])) + " " + l + all(vars) + all(methods) + "" + r
+    case VarDecl(tpe, id) => "var " + f(id) + " : " + f(tpe) + ";" + n
+    case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + " ( " + commaList(args) + " ) : " + f(retType) + " = " + l + all(vars) + all(stats) + "return " + f(retExpr) + "; " + r + n
+    case Formal(tpe, id) => f(id) + ": " + f(tpe)
 
     // Types
     case IntType() => "Int"
@@ -39,32 +48,32 @@ object Printer {
     case StringType() => "String"
     // Statements
     case Block(stats) => l + all(stats) + r
-    case If(expr, thn, els) => "if(" + apply(expr) + ")" + apply(thn) + optional(els, "else " + apply(_)) + n
-    case While(expr, stat) => "while(" + apply(expr) + ")" + apply(stat) + n
-    case Println(expr) => "println(" + apply(expr) + "); " + n
-    case Assign(id, expr) => id.value + " = " + apply(expr) + "; " + n
-    case ArrayAssign(id, index, expr) => apply(id) + "[" + apply(index) + "] = " + apply(expr) + ";" + n
+    case If(expr, thn, els) => "if(" + f(expr) + ")" + f(thn) + optional(els, "else " + f(_)) + n
+    case While(expr, stat) => "while(" + f(expr) + ")" + f(stat) + n
+    case Println(expr) => "println(" + f(expr) + "); " + n
+    case Assign(id, expr) => id.value + " = " + f(expr) + "; " + n
+    case ArrayAssign(id, index, expr) => f(id) + "[" + f(index) + "] = " + f(expr) + ";" + n
     // Expressions
-    case And(lhs, rhs) => "(" + apply(lhs) + " && " + apply(rhs) + ")"
-    case Or(lhs, rhs) => "(" + apply(lhs) + " || " + apply(rhs) + ")"
-    case Plus(lhs, rhs) => "(" + apply(lhs) + " + " + apply(rhs) + ")"
-    case Minus(lhs, rhs) => "(" + apply(lhs) + " - " + apply(rhs) + ")"
-    case Times(lhs, rhs) => "(" + apply(lhs) + " * " + apply(rhs) + ")"
-    case Div(lhs, rhs) => "(" + apply(lhs) + " / " + apply(rhs) + ")"
-    case LessThan(lhs, rhs) => "(" + apply(lhs) + " < " + apply(rhs) + ")"
-    case Equals(lhs, rhs) => "(" + apply(lhs) + " == " + apply(rhs) + ")"
-    case ArrayRead(arr, index) => apply(arr) + "[" + apply(index) + "]"
-    case ArrayLength(arr) => apply(arr) + ".length"
-    case MethodCall(obj, meth, args) => apply(obj) + "." + meth.value + "#??" + "(" + commaList(args) + ")"
+    case And(lhs, rhs) => "(" + f(lhs) + " && " + f(rhs) + ")"
+    case Or(lhs, rhs) => "(" + f(lhs) + " || " + f(rhs) + ")"
+    case Plus(lhs, rhs) => "(" + f(lhs) + " + " + f(rhs) + ")"
+    case Minus(lhs, rhs) => "(" + f(lhs) + " - " + f(rhs) + ")"
+    case Times(lhs, rhs) => "(" + f(lhs) + " * " + f(rhs) + ")"
+    case Div(lhs, rhs) => "(" + f(lhs) + " / " + f(rhs) + ")"
+    case LessThan(lhs, rhs) => "(" + f(lhs) + " < " + f(rhs) + ")"
+    case Equals(lhs, rhs) => "(" + f(lhs) + " == " + f(rhs) + ")"
+    case ArrayRead(arr, index) => f(arr) + "[" + f(index) + "]"
+    case ArrayLength(arr) => f(arr) + ".length"
+    case MethodCall(obj, meth, args) => f(obj) + "." + apply(meth) + "(" + commaList(args) + ")"
     case IntLit(value) => value.toString
     case StringLit(value) => "\"" + value + "\""
     case True() => "true"
     case False() => "false"
     case x @ Identifier(value) => value + symbol(x)
     case This() => "this"
-    case NewIntArray(size) => "new Int[" + apply(size) + "]"
-    case New(tpe) => "new " + apply(tpe) + "()"
-    case Not(expr) => "!(" + apply(expr) + ")"
+    case NewIntArray(size) => "new Int[" + f(size) + "]"
+    case New(tpe) => "new " + f(tpe) + "()"
+    case Not(expr) => "!(" + f(expr) + ")"
   }
 
   def positionTree(t: Tree): String = {
@@ -116,14 +125,13 @@ object Printer {
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
 
-  private def commaList(list: List[Tree]): String = {
+  private def commaList(list: List[Tree]): String =
     if (list.size <= 0) {
       ""
     } else {
-      val s = list.foldLeft("")(_ + apply(_) + ", ")
+      val s = list.foldLeft("")(_ + f(_) + ", ")
       s.substring(0, s.length - 2) // remove last comma
     }
-  }
 
-  private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + apply(_))
+  private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
 }

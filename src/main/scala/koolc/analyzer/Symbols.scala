@@ -8,6 +8,8 @@ object Symbols {
   trait Symbolic[S <: Symbol] {
     private var _sym: Option[S] = None
 
+    def hasSymbol: Boolean = _sym.isDefined
+    
     def setSymbol(sym: S): this.type = {
       _sym = Some(sym)
       this
