@@ -19,9 +19,8 @@ object Printer {
     n + "}"
   }
 
-  def n: String = {
-    "\n" + " " * (2 * indent)
-  }
+  def n: String = "\n" + " " * (2 * indent)
+ 
 
   def symbol[T <: Symbol](t: Symbolic[T]): String = 
     if (printIdNumber) 

@@ -28,12 +28,12 @@ class NameAnalysisSpec extends FlatSpec with Matchers {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
     def analysis(p: Program) = NameAnalysis.run(ctx)(p)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
-    def print(p: Program) = Printer(p)
+    def print(p: Program) = Printer(p, true)
     if (exception) {
       (Lexer andThen Parser andThen NameAnalysis).run(ctx)(file)
       assert(ctx.reporter.hasErrors)
     } else {
-      Printer(analysis(parse(program)))
+      print(analysis(parse(program)))
     }
   }
 
