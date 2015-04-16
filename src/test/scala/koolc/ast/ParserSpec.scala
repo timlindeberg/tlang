@@ -8,9 +8,10 @@ import koolc.lexer.Token
 import koolc.lexer.Lexer
 import koolc.ast._
 import koolc.TestUtils
-import koolc.utils.ParsingException
+import koolc.utils.CompilationException
 import scala.io.Source
 import koolc.ast.Trees.Program
+import koolc.utils.CompilationException
 
 class ParserSpec extends FlatSpec with Matchers {
   val flag = "--ast"
@@ -39,7 +40,7 @@ class ParserSpec extends FlatSpec with Matchers {
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p)
     if (exception) {
-      intercept[ParsingException] { parse(program) }
+      intercept[CompilationException] { parse(program) }
     } else {
       assert(print(parse(program)) === print(parse(print(parse(program)))))
       assert(parse(program) === parse(print(parse(program))))

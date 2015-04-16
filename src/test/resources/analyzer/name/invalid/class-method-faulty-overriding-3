@@ -1,0 +1,13 @@
+object Main {
+  def main() : Unit = {
+  }
+}
+
+class A { 
+  def foo(a: Int):String = { return "0"; }
+}
+
+class B extends A {
+  // Different number of parameters
+  def foo(a: Int): Int = { return a; }
+}

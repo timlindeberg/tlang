@@ -27,7 +27,10 @@ object Symbols {
     val name: String
   }
 
-  private object ID {
+  object ID {
+    
+    def reset() = c = 0
+    
     private var c: Int = 0
 
     def next: Int = {
@@ -79,4 +82,6 @@ object Symbols {
   }
 
   class VariableSymbol(val name: String) extends Symbol
+  
+  case class ErrorSymbol(val name: String = "") extends Symbol
 }

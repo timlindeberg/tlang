@@ -4,9 +4,9 @@ package utils
 import java.io.File
 import scala.io.Source
 
-class ParsingException(msg: String) extends RuntimeException(msg)
+class CompilationException(msg: String) extends RuntimeException(msg)
 
-class Reporter {
+class Reporter(quiet: Boolean = false) {
 
   def info(msg: Any, pos: Positioned = NoPosition): Unit = {
     report("Info", msg, pos)
@@ -24,7 +24,7 @@ class Reporter {
   }
 
   def fatal(msg: Any, pos: Positioned = NoPosition): Nothing = {
-    throw new ParsingException(errMessage("Fatal", msg, pos))
+    throw new CompilationException(errMessage("Fatal", msg, pos))
   }
 
   var filesToLines = Map[File, IndexedSeq[String]]()
@@ -40,7 +40,7 @@ class Reporter {
     }
   }
 
-  private def report(prefix: String, msg: Any, pos: Positioned) = System.err.println(errMessage(prefix, msg, pos))
+  private def report(prefix: String, msg: Any, pos: Positioned) = if(!quiet) System.err.println(errMessage(prefix, msg, pos))
   
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""

@@ -4,7 +4,7 @@ package analyzer
 import utils._
 import ast.Trees._
 import Symbols._
-import org.omg.CosNaming.NamingContextExtPackage.InvalidAddressHelper
+import Types._
 
 object NameAnalysis extends Pipeline[Program, Program] {
 
@@ -13,7 +13,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
     var variableUsage: Map[VariableSymbol, Boolean] = Map()
 
-    object Adder {
+    object SymbolAdder {
       def apply(): Unit = addSymbols(prog, g)
       private def addSymbols(t: Tree, s: GlobalScope): Unit = t match {
         case Program(main, classes) => {
@@ -79,7 +79,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         map + (id.value -> symbol)
       }
     }
-    object Binder {
+    object SymbolBinder {
       def apply(): Unit = bind(prog)
       private def bind(t: Option[Tree]): Unit = if (t.isDefined) bind(t.get)
 
@@ -88,38 +88,31 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(t: Tree): Unit = t match {
         case Program(main, classes) =>
           bind(main); bind(classes)
-        case x @ MainObject(id, stats) => bind(x.getSymbol, stats)
+        case main @ MainObject(id, stats) => bind(main.getSymbol, stats)
         case classDecl @ ClassDecl(id, parent, vars, methods) => {
           setParent(id, parent, classDecl)
-
+          val sym = classDecl.getSymbol
+          sym.setType(TObject(sym))
           val p = classDecl.getSymbol.parent
           if (p.isDefined) {
             vars.foreach(variable => {
-              p.get.lookupVar(variable.id) match {
-                case Some(x) => error("Field \'" + variable.getSymbol.name + "\' already defined in super class: ", variable)
-                case None    =>
-              }
+              val v = p.get.lookupVar(variable.id)
+              if (v.isDefined)
+                error("Field \'" + variable.getSymbol.name + "\' already defined in super class: ", variable)
             })
           }
           bind(vars)
           bind(methods)
         }
-        case x @ VarDecl(tpe, id) => setType(tpe)
-        case x @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
-          val parent = x.getSymbol.classSymbol.parent
-          if (parent.isDefined) {
-            parent.get.lookupMethod(id) match {
-              case Some(parentMethod) => if (parentMethod.argList.size != x.getSymbol.argList.size)
-                error("Method \'" + id.value + "\' is already declared in super class: ", id)
-              case None =>
-            }
-          }
+        case VarDecl(tpe, id) => setType(tpe, id)
+        case methDecl @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
           setType(retType)
+          methDecl.getSymbol.setType(retType.getType)
           bind(args)
           bind(vars)
-          bind(x.getSymbol, stats, retExpr)
+          bind(methDecl.getSymbol, stats, retExpr)
         }
-        case Formal(tpe, id) => setType(tpe)
+        case Formal(tpe, id) => setType(tpe, id)
         case _               => throw new UnsupportedOperationException
       }
 
@@ -138,14 +131,12 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case If(expr, thn, els) => bind(s, expr, thn, els)
         case While(expr, stat)  => bind(s, expr, stat)
         case Println(expr)      => bind(s, expr)
-        case Assign(id, expr) => {
+        case Assign(id, expr) =>
           setVariable(id, s)
           bind(s, expr)
-        }
-        case ArrayAssign(id, index, expr) => {
+        case ArrayAssign(id, index, expr) =>
           setVariable(id, s)
           bind(s, index, expr)
-        }
         // Expressions
         case And(lhs, rhs)               => bind(s, lhs, rhs)
         case Or(lhs, rhs)                => bind(s, lhs, rhs)
@@ -159,41 +150,64 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case ArrayLength(arr)            => bind(s, arr)
         case MethodCall(obj, meth, args) => bind(s, obj, args)
         case id @ Identifier(value)      => setVariable(id, s)
-        case x @ This() => {
+        case thisSym @ This() =>
           s match {
-            case classSymbol: ClassSymbol   => x.setSymbol(g.mainClass)
-            case methodSymbol: MethodSymbol => x.setSymbol(methodSymbol.classSymbol)
+            case classSymbol: ClassSymbol   => thisSym.setSymbol(g.mainClass)
+            case methodSymbol: MethodSymbol => thisSym.setSymbol(methodSymbol.classSymbol)
             case _                          => throw new UnsupportedOperationException
           }
-        }
         case NewIntArray(size) => bind(s, size)
         case New(tpe)          => setType(tpe)
         case Not(expr)         => bind(s, expr)
         case _                 => // Do nothing
       }
 
+      private def setType(tpe: TypeTree, id: Identifier): Unit = {
+        def set(t: Type): Unit = {
+          id.setType(t)
+          tpe.setType(t)
+        }
+        tpe match {
+          case tpeId @ Identifier(value) =>
+            g.lookupClass(tpeId) match {
+              case Some(classSymbol) =>
+                tpeId.setSymbol(classSymbol)
+                set(TObject(classSymbol))
+              case None => error("Type \'" + id.value + "\' was not declared:", id)
+            }
+          case BooleanType()  => set(TBool)
+          case IntType()      => set(TInt)
+          case IntArrayType() => set(TIntArray)
+          case StringType()   => set(TString)
+        }
+      }
+
       private def setType(tpe: TypeTree): Unit = {
-        if (tpe.isInstanceOf[Identifier]) {
-          val id = tpe.asInstanceOf[Identifier]
-          g.lookupClass(id.value) match {
-            case Some(x) => id.setSymbol(x)
-            case None    => error("Type \'"+ id.value +"\' was not declared:", id)
-          }
+        tpe match {
+          case tpeId @ Identifier(value) =>
+            g.lookupClass(tpeId) match {
+              case Some(classSymbol) => 
+                tpeId.setSymbol(classSymbol)
+                tpeId.setType(TObject(classSymbol))
+              case None    => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
+            }
+          case BooleanType()  => tpe.setType(TBool)
+          case IntType()      => tpe.setType(TInt)
+          case IntArrayType() => tpe.setType(TIntArray)
+          case StringType()   => tpe.setType(TString)
         }
       }
 
       private def setVariable(id: Identifier, s: Symbol): Unit = {
         def errorMsg(name: String) = "Variable \'" + name + "\' was not declared: "
         s match {
-          case methodSymbol: MethodSymbol => {
+          case methodSymbol: MethodSymbol =>
             methodSymbol.lookupVar(id) match {
-              case Some(symbol) => {
+              case Some(symbol) =>
                 id.setSymbol(symbol)
                 variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
-              }
               case None => error(errorMsg(id.value), id)
             }
-          }
           case _ => throw new UnsupportedOperationException
         }
       }
@@ -212,13 +226,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
     }
 
-    def addSymbols(): this.type = { Adder(); this }
-    def bindIdentifiers(): this.type = { Binder(); this }
+    def addSymbols(): this.type = { SymbolAdder(); this }
+    def bindIdentifiers(): this.type = { SymbolBinder(); this }
 
     def checkInheritanceCycles(): this.type = {
 
       def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol): String =
-        (if (set.size >= 2) set.tail.foldLeft(set.head.name)((old, next) => old + " <: " + next.name)
+        (if (set.size >= 2) set.map(_.name).mkString(" <: ")
         else c.name) + " <: " + c.name
 
       g.classes.foreach { x =>
@@ -237,6 +251,29 @@ object NameAnalysis extends Pipeline[Program, Program] {
       this
     }
 
+    def checkOverrideConstraints(): this.type = {
+      prog.classes.foreach { klass =>
+        klass.methods.foreach { meth =>
+          val parent = meth.getSymbol.classSymbol.parent
+          if (parent.isDefined) {
+            val parentMeth = parent.get.lookupMethod(meth.id)
+            if (parentMeth.isDefined) {
+              val (methSymbol, parentMethSymbol) = (meth.getSymbol, parentMeth.get)
+              val (list1, list2) = (methSymbol.argList, parentMethSymbol.argList)
+              val sameSize = list1.size == list2.size
+              val sameArgs = list1.zip(list2).forall { case (x, y) => x.getType == y.getType }
+              val sameRetType = methSymbol.getType == parentMethSymbol.getType
+              if (sameSize && sameArgs && sameRetType)
+                methSymbol.overridden = Some(parentMethSymbol)
+              else
+                error("Method \'" + meth.id + "\' is already declared in super class: ", meth.id)
+            }
+          }
+        }
+      }
+      this
+    }
+
     def checkVariableUsage(): this.type = {
       variableUsage map {
         case (variable, used) =>
@@ -244,13 +281,18 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
       this
     }
+
+    def error(msg: String, tree: Positioned) = {
+      if (tree.isInstanceOf[Identifier])
+        tree.asInstanceOf[Identifier].setSymbol(new ErrorSymbol)
+      ctx.reporter.error(msg, tree)
+    }
   }
 
   def run(ctx: Context)(prog: Program): Program = {
-    import ctx.reporter._
     var nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
-    nameAnalyzer.addSymbols().bindIdentifiers()
-    nameAnalyzer.checkInheritanceCycles().checkVariableUsage()
+    nameAnalyzer.addSymbols.bindIdentifiers
+    nameAnalyzer.checkInheritanceCycles.checkVariableUsage.checkOverrideConstraints
     prog
   }
 
