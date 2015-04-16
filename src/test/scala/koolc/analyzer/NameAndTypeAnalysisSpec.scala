@@ -55,6 +55,7 @@ class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter
       val resList = getSymbolIDs(res)
       val correctList = getSymbolIDs(correct)
       assert(hasTypes(prog))
+      //getSymbolIdMap(res, correct)
       assert(getSymbolCount(resList) == getSymbolCount(correctList))
       assert(resList.size == correctList.size)
       assert(resList.distinct == correctList.distinct)
@@ -71,7 +72,6 @@ class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter
   }
 
   def hasTypes(prog: Program) =
-    
     flatten(prog.classes.map(_.getSymbol).map(klass => {
       List(
         klass.getType,
@@ -89,8 +89,15 @@ class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter
     case l1: List[_] => flatten(l1)
     case otherwise   => List(otherwise)
   }
-
-  def getSymbolIDs(ast: String) = "#(\\d*)".r.findAllIn(ast).matchData.map(_.group(1)).filter(_ != "").map(_.toInt).toList.sortBy(+_)
+  
+  def getSymbolIdMap(ast1: String, ast2: String) = {
+    val map = Map() ++ getSymbolIDs(ast1).zip(getSymbolIDs(ast2))
+    println(map)
+    map
+  }
+  
+  def getSymbolIDsSorted(ast: String) = getSymbolIDs(ast).sortBy(+_)
+  def getSymbolIDs(ast: String) = "#(\\d*)".r.findAllIn(ast).matchData.map(_.group(1)).filter(_ != "").map(_.toInt).toList
 
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! (TestUtils.IgnoreErrorOutput)
 
