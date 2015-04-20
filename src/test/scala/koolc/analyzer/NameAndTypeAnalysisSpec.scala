@@ -1,19 +1,18 @@
 package koolc.analyzer
 
-import org.scalatest._
-import scala.sys.process._
-import koolc.utils.Context
 import java.io.File
-import koolc.lexer.Token
-import koolc.lexer.Lexer
-import koolc.ast._
+
 import koolc.TestUtils
-import koolc.utils.CompilationException
-import scala.io.Source
-import koolc.ast.Trees.Program
-import scala.collection.mutable.HashMap._
-import scala.collection.mutable.HashMap
 import koolc.analyzer.Types.TUntyped
+import koolc.ast.Trees.Program
+import koolc.ast._
+import koolc.lexer.Lexer
+import koolc.utils.Context
+import org.scalatest._
+
+import scala.collection.mutable.HashMap
+import scala.io.Source
+import scala.sys.process._
 
 class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val flag = "--ast --symid"
@@ -34,31 +33,27 @@ class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter
   TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file, true)
   }
-  TestUtils.programFiles(TestUtils.resources + "given/analyzer/invalid/").foreach { file =>
-    it should "analyse program " + file.toPath() in test(file, true)
-  }
+  //TestUtils.programFiles(TestUtils.resources + "given/analyzer/invalid/").foreach { file =>
+//    it should "analyse program " + file.toPath() in test(file, true)
+//  }
 
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
     def analysis(p: Program) = NameAnalysis.run(ctx)(p)
-    def tanalysis(p: Program) = TypeChecking.run(ctx)(p)
+    //def tanalysis(p: Program) = TypeChecking.run(ctx)(p)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p, true)
     if (exception) {
-      tanalysis(analysis(parse(program)))
+      analysis(parse(program))
       assert(ctx.reporter.hasErrors)
     } else {
-      val prog = tanalysis(analysis(parse(program)))
+      val prog = analysis(parse(program))
       val res = ASTPrinterWithSymbols(prog)
-      val correct = getAnswer(file)
-      val resList = getSymbolIDs(res)
-      val correctList = getSymbolIDs(correct)
+      val correct = replaceIDNumbers(getAnswer(file), res)
+      
       assert(hasTypes(prog))
-      //getSymbolIdMap(res, correct)
-      assert(getSymbolCount(resList) == getSymbolCount(correctList))
-      assert(resList.size == correctList.size)
-      assert(resList.distinct == correctList.distinct)
+      assert(res + "\n" == correct)
     }
   }
 
@@ -90,15 +85,25 @@ class NameAndTypeAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter
     case otherwise   => List(otherwise)
   }
   
-  def getSymbolIdMap(ast1: String, ast2: String) = {
-    val map = Map() ++ getSymbolIDs(ast1).zip(getSymbolIDs(ast2))
-    println(map)
+  val idRegex = """#(\d+)""".r
+  
+  def replaceIDNumbers(ast1: String, ast2: String): String = {
+    val idMap = getSymbolIDMap(ast1, ast2)
+    idRegex.replaceAllIn(ast1, m => "#" + idMap(m.group(1).toInt))
+  }
+  
+  def getSymbolIDMap(ast1: String, ast2: String) = {
+    val map: HashMap[Int, Int] = HashMap()
+    getSymbolIDs(ast1).zip(getSymbolIDs(ast2)).foreach{ case (x, y) =>
+      if(map.contains(x))
+        assert(map(x) == y)
+      map(x) = y
+    }
     map
   }
   
-  def getSymbolIDsSorted(ast: String) = getSymbolIDs(ast).sortBy(+_)
-  def getSymbolIDs(ast: String) = "#(\\d*)".r.findAllIn(ast).matchData.map(_.group(1)).filter(_ != "").map(_.toInt).toList
+  def getSymbolIDs(ast: String) = idRegex.findAllIn(ast).matchData.map(_.group(1).toInt).toList
 
-  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! (TestUtils.IgnoreErrorOutput)
+  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! TestUtils.IgnoreErrorOutput
 
 }
