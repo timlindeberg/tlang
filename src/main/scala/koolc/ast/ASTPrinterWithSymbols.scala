@@ -47,9 +47,9 @@ object ASTPrinterWithSymbols {
   def symbol(t: Tree): String =
     if (t.isInstanceOf[Symbolic[Symbol]]) {
       val symbol = t.asInstanceOf[Symbolic[Symbol]]
-      if(symbol.hasSymbol){
+      if (symbol.hasSymbol) {
         "#" + symbol.getSymbol.id
-      }else{
+      } else {
         ""
       }
     } else {

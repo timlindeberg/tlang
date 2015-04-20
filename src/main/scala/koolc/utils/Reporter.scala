@@ -6,7 +6,7 @@ import scala.io.Source
 
 class CompilationException(msg: String) extends RuntimeException(msg)
 
-class Reporter(quiet: Boolean = false) {
+class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   def info(msg: Any, pos: Positioned = NoPosition): Unit = {
     report("Info", msg, pos)
@@ -16,10 +16,11 @@ class Reporter(quiet: Boolean = false) {
     report("Warning", msg, pos)
   }
 
-  var hasErrors = false
+  var errors = 0
+  def hasErrors = errors > 0
 
   def error(msg: Any, pos: Positioned = NoPosition): Unit = {
-    hasErrors = true
+    errors += 1
     report("Error", msg, pos)
   }
 
@@ -40,8 +41,8 @@ class Reporter(quiet: Boolean = false) {
     }
   }
 
-  private def report(prefix: String, msg: Any, pos: Positioned) = if(!quiet) System.err.println(errMessage(prefix, msg, pos))
-  
+  private def report(prefix: String, msg: Any, pos: Positioned) = if (!quiet) System.err.println(errMessage(prefix, msg, pos))
+
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
     if (pos.hasPosition) {
@@ -49,14 +50,14 @@ class Reporter(quiet: Boolean = false) {
 
       val lines = getLines(pos.file)
 
-      if (pos.line-1 < lines.size) {
-          s += lines(pos.line-1) + "\n"
-          s += " "*(pos.col-1)+"^" + "\n"
+      if (pos.line - 1 < lines.size) {
+        s += lines(pos.line - 1) + "\n"
+        s += " " * (pos.col - 1) + "^" + "\n"
       } else {
-          s += "<line unavailable in source file>"
+        s += "<line unavailable in source file>"
       }
     } else {
-      s += prefix+": "+msg.toString
+      s += prefix + ": " + msg.toString
     }
     s
   }
@@ -68,7 +69,10 @@ class Reporter(quiet: Boolean = false) {
 
       case None =>
         val source = Source.fromFile(f).withPositioning(true)
-        val lines = source.getLines().toIndexedSeq
+        var lines = source.getLines().toIndexedSeq
+        if (ignoreFirstLine) {
+          lines = lines.tail
+        }
         source.close()
 
         filesToLines += f -> lines

@@ -26,7 +26,7 @@ object TypeChecking extends Pipeline[Program, Program] {
       case While(expr, stat) =>
         tcExpr(expr, TBool)
         tcStat(stat)
-      case Println(expr)    => tcExpr(expr, TInt, TBool, TString)
+      case Println(expr)    => tcExpr(expr)
       case Assign(id, expr) => tcExpr(expr, id.getType)
       case ArrayAssign(id, index, expr) =>
         tcExpr(index, TInt)
@@ -68,7 +68,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           (tcExpr(lhs), tcExpr(rhs)) match {
             case (TObject(_), TObject(_)) => TBool
             case (x, y) if x == y         => TBool
-            case (x, y)                   => error("Can't compare variables of types " + x + " and " + y + ".", eq)
+            case (x, y)                   => error("Type error: expected: " + x + ", found " + y, rhs)
           }
         case ArrayRead(arr, index) =>
           tcExpr(arr, TIntArray)
@@ -102,7 +102,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         case New(tpe)  => tpe.getType
         case Not(expr) => TBool
       }
-      
+
       // Check result and return a valid type in case of error
       val res = if (expected.isEmpty) {
         tpe
