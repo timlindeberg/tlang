@@ -89,16 +89,16 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getIntLiteral(chars: List[Char]): (Token, List[Char]) = {
       def parseIntToken(intString: String): Token = {
-        try{
+        try {
           createToken(intString.toInt, intString.length)
-        }catch{
+        } catch {
           case _: Throwable => createToken(BAD, intString.length)
         }
       }
-        
+
       def getIntLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
         case (c :: r) if c.isDigit => getIntLiteral(r, s + c)
-        case (c :: r)              => (parseIntToken(s), chars)
+        case _                     => (parseIntToken(s), chars)
       }
       getIntLiteral(chars, "")
     }
@@ -177,7 +177,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           readTokens(r, tokens)
         case '/' :: '/' :: r => readTokens(skipLine(r), tokens)
         case '/' :: '*' :: r =>
-          val (token, tail) = skipBlock(r)  
+          val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
