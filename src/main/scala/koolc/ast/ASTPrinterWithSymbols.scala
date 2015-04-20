@@ -3,6 +3,7 @@ package ast
 
 import Trees._
 import analyzer.Symbols._
+import analyzer.Types._
 
 object ASTPrinterWithSymbols {
 
@@ -44,17 +45,15 @@ object ASTPrinterWithSymbols {
     t.getClass.getSimpleName + symbol(t) + "(" + s + ")"
   }
 
-  def symbol(t: Tree): String =
-    if (t.isInstanceOf[Symbolic[Symbol]]) {
-      val symbol = t.asInstanceOf[Symbolic[Symbol]]
-      if (symbol.hasSymbol) {
-        "#" + symbol.getSymbol.id
-      } else {
-        ""
-      }
-    } else {
-      ""
-    }
+  def typeOf(t: Tree): String = t match {
+    case typed: Typed => "[" + typed.getType + "]"
+    case _            => ""
+  }
+
+  def symbol(t: Tree): String = t match {
+    case sym: Symbolic[_] if sym.hasSymbol => "#" + sym.getSymbol.id
+    case _                                 => ""
+  }
 
   private def optional(t: Option[Tree]) = t match { case Some(p) => "Some(" + f(p) + ")" case None => "None" }
   private def trees(trees: List[Tree]) = "List(" + trees.map(f).mkString(",") + ")"
