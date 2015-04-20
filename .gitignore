@@ -32,6 +32,9 @@ local.properties
 .settings/
 .loadpath
 
+# IntelliJ
+.idea
+
 # Eclipse Core
 .project
 
