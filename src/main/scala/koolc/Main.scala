@@ -9,10 +9,10 @@ import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking
 
 object Main {
-
   val tokensFlag = "--tokens"
   val astFlag = "--ast"
-  val flags = HashMap(tokensFlag -> false, astFlag -> false)
+  val symId = "--symid"
+  val flags = HashMap(tokensFlag -> false, astFlag -> false, symId -> false)
 
   def processOptions(args: Array[String]): Context = {
 
@@ -51,19 +51,29 @@ object Main {
       if (flags(tokensFlag)) {
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        var pipeline = Lexer andThen Parser
+        var pipeline = Lexer andThen Parser;
+        var analysis = NameAnalysis andThen TypeChecking;
         if (flags(astFlag)) {
-          val program = pipeline.run(ctx)(ctx.file)
-          println(program)
+          if (flags(symId)) {
+            val program = (pipeline andThen analysis).run(ctx)(ctx.file)
+            println(ASTPrinterWithSymbols(program))
+          } else {
+            val program = pipeline.run(ctx)(ctx.file)
+            println(program)
+          }
         } else {
-          val program = (pipeline andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+          val program = (pipeline andThen analysis).run(ctx)(ctx.file)
           if (!ctx.reporter.hasErrors) {
-            println(Printer(program))
+            if (flags(symId)) {
+              println(Printer(program, true))
+            } else {
+              println(Printer(program))
+            }
           }
         }
       }
     } catch {
-      case e: Exception => System.err.println(e.getMessage)
+      case e: Throwable => System.err.println(e.getMessage)
     }
   }
 }
