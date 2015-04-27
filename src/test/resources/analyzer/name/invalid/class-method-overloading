@@ -1,0 +1,9 @@
+object Main {
+  def main() : Unit = {
+  }
+}
+
+class A {
+  def foo():Int = { return 0; }
+  def foo():String = { return "0"; }
+}

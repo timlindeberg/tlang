@@ -1,10 +1,11 @@
 object Main {
   def main() : Unit = {
+    println(new A().fooBar());
   }
 }
 
 class A { 
-  def foo(): B = {
+  def foo(): Int = {
     return 0; 
   }
 }
