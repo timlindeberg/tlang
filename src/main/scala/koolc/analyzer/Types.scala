@@ -36,7 +36,6 @@ object Types {
     override def toString = "int"
   }
 
-  // TODO: Complete by creating necessary types
   case object TString extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TString => true
@@ -63,8 +62,9 @@ object Types {
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
+      case _ if tpe == anyObject => true
       case TObject(c) =>
-        if (classSymbol.name == c.name) {
+         if (classSymbol.name == c.name) {
           true
         } else {
           if (classSymbol.parent.isDefined) {

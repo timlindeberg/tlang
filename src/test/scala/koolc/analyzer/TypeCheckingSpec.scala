@@ -91,18 +91,17 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val T4 = TObject(C4);
     val T5 = TObject(C5);
 
-    assert(T1.isSubTypeOf(anyObject))
-    assert(T2.isSubTypeOf(anyObject))
-    assert(T3.isSubTypeOf(anyObject))
-    assert(T4.isSubTypeOf(anyObject))
-    assert(T5.isSubTypeOf(anyObject))
+    C2.setType(T2)
+    C3.setType(T3)
+    C4.setType(T4)
+    C5.setType(T5)
 
-    // TODO
-    for ((t1, i) <- List(T1, T2, T3, T4, T5).zipWithIndex) {
-      for ((t2, j) <- List(T1, T2, T3, T4, T5).zipWithIndex) {
-        if (j > i) {
-          assert(t2.isSubTypeOf(t1))
-          assert(!t1.isSubTypeOf(t2))
+    val types = List(T1, T2, T3, T4, T5).zipWithIndex;
+    for ((t1, i) <- types) {
+      for ((t2, j) <- types) {
+        if (j >= i) {
+          assert(t2.isSubTypeOf(t1), t2 + " is subtype of " + t1)
+          if (j > i) assert(!t1.isSubTypeOf(t2), t1 + " is not subtype of " + t2)
         }
       }
     }
