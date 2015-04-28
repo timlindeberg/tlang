@@ -15,17 +15,20 @@ object Types {
 
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean
+    def byteCodeName(): String
   }
 
   case object TError extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = true
     override def toString = "[error]"
+    override def byteCodeName(): String = "ERROR"
   }
 
   
   case object TUntyped extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = false
     override def toString = "[untyped]"
+    override def byteCodeName(): String = "UNTYPED"
   }
 
   case object TInt extends Type {
@@ -34,6 +37,7 @@ object Types {
       case _    => false
     }
     override def toString = "int"
+    override def byteCodeName(): String = "I"
   }
 
   case object TString extends Type {
@@ -42,6 +46,7 @@ object Types {
       case _       => false
     }
     override def toString = "string"
+    override def byteCodeName(): String = "Ljava/lang/String"
   }
 
   case object TBool extends Type {
@@ -50,6 +55,7 @@ object Types {
       case _     => false
     }
     override def toString = "bool"
+    override def byteCodeName(): String = "Z"
   }
 
   case object TIntArray extends Type {
@@ -58,6 +64,7 @@ object Types {
       case _         => false
     }
     override def toString = "int[]"
+    override def byteCodeName(): String = "[I"
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
@@ -77,6 +84,7 @@ object Types {
     }
     override def toString = classSymbol.name
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
+    override def byteCodeName(): String = "L" + classSymbol.name
   }
 
   // special object to implement the fact that all objects are its subclasses

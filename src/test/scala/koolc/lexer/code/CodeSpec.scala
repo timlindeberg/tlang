@@ -22,20 +22,19 @@ class CodeSpec extends FlatSpec with Matchers {
   val flag = "--eval"
 
   behavior of "Given tests"
-  TestUtils.programFiles(TestUtils.resources + "/given/ast/valid/").foreach { file =>
-    it should "code gen program " + file.toPath() in test(file)
-  }
+  var f = new File(TestUtils.resources + "/given/ast/valid/Simple.kool")
+  it should "code gen program " + f.toPath() in test(f)
 
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString
-    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
+    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/")))
     def analysis(p: Program) = NameAnalysis.run(ctx)(p)
     def tcheck(p: Program) = TypeChecking.run(ctx)(p)
     def code(p: Program) = CodeGeneration.run(ctx)(p)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p, true)
     code(tcheck(analysis(parse(program))))
-    //assert(res + "\n" == correct)
+    //assert(code(tcheck(analysis(parse(program)))) + "\n" == getAnswer(file))
   }
 
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
