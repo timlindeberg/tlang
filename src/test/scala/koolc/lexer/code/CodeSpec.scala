@@ -28,11 +28,11 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   behavior of "Positive tests"
-  var file = new File(TestUtils.resources + "/given/ast/valid/VehicleRent.kool")
+  //var file = new File(TestUtils.resources + "/given/ast/valid/VehicleRent.kool")
   //it should "code gen program " + file.toPath() in test(file)
-    TestUtils.programFiles(TestUtils.resources + "given/ast/valid/").foreach { file =>
-      it should "code gen program " + file.toPath() in test(file)
-    }
+  TestUtils.programFiles(TestUtils.resources + "/analyzer/name/valid/").foreach { file =>
+    it should "code gen program " + file.toPath() in test(file)
+  }
 
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString

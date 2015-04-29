@@ -1,6 +1,7 @@
 object Main {
   def main() : Unit = {
     println(new Test().Method());
+    println(new Test4().Method());
   }
 }
 
@@ -9,4 +10,4 @@ class Test extends Test2 {
 }
 class Test2 extends Test3 { }
 class Test3 extends Test4 { }
-class Test4 { }
+class Test4 { def Method () : String = { return "Test4" ; } }

@@ -63,7 +63,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         compileStat(thn, ch, cn)
         ch << Goto(afterLabel)
         ch << Label(elsLabel)
-        if(els.isDefined) compileStat(els.get, ch, cn)
+        if (els.isDefined) compileStat(els.get, ch, cn)
         ch << Label(afterLabel)
 
       case While(expr, stat) =>
@@ -77,7 +77,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case Println(expr) =>
         ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
         compileExpr(expr, ch, cn)
-        ch << InvokeVirtual("java/io/PrintStream", "println", "(" + expr.getType.byteCodeName + ")V")
+        var arg = ""
+        expr.getType match {
+          case TInt | TBool => arg = expr.getType.byteCodeName
+          case _            => arg = "Ljava/lang/Object;"
+        }
+        ch << InvokeVirtual("java/io/PrintStream", "println", "(" + arg + ")V")
       case Assign(id, expr) =>
         store(expr, ch, id, cn)
       case ArrayAssign(id, index, expr) =>
@@ -232,7 +237,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mt.args.zipWithIndex.foreach {
         case (arg, i) => varMap(arg.getSymbol.name) = i + 1
       }
-      mt.vars foreach { variable => varMap(variable.getSymbol.name) = ch.getFreshVar }
+      mt.vars foreach { variable =>
+        varMap(variable.getSymbol.name) = ch.getFreshVar
+        variable.getSymbol.getType match {
+          case TInt | TBool => ch << Ldc(0) << IStore(varMap(variable.getSymbol.name))
+          case _            => ch << ACONST_NULL << AStore(varMap(variable.getSymbol.name))
+        }
+      }
 
       mt.stats.foreach(compileStat(_, ch, mt.getSymbol.classSymbol.name))
       compileExpr(mt.retExpr, ch, methSym.classSymbol.name)

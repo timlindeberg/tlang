@@ -1,5 +1,6 @@
 object Main {
   def main() : Unit = {
+    println(new B().foo(1, "hej") == 1);
   }
 }
 
@@ -8,5 +9,5 @@ class A {
 }
 
 class B extends A {
-  def foo(a: Int, b: String): Int = { return 0; }
+  def foo(a: Int, b: String): Int = { return 1; }
 }
