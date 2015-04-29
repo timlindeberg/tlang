@@ -71,14 +71,10 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case _ if tpe == anyObject => true
       case TObject(c) =>
-         if (classSymbol.name == c.name) {
-          true
-        } else {
-          if (classSymbol.parent.isDefined) {
-            classSymbol.parent.get.getType.isSubTypeOf(tpe)
-          } else {
-            false
-          }
+         if (classSymbol.name == c.name) true
+         else classSymbol.parent match {
+           case Some(x) => x.getType.isSubTypeOf(tpe)
+           case None => false
         }
       case _ => false
     }
