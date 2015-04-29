@@ -44,7 +44,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s.methods = addTo(s.methods, newSymbol, id, x)
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-          newSymbol.argList = newSymbol.params.values.toList
         }
         case _ => throw new UnsupportedOperationException
       }
@@ -62,6 +61,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           val used = true
           s.params = addTo(s.params, newSymbol, id, x, used)
+          s.argList ++= List(newSymbol)
+
         }
         case _ => throw new UnsupportedOperationException
       }
@@ -108,6 +109,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case methDecl @ MethodDecl(retType, id, args, vars, stats, retExpr) => {
           setType(retType)
           methDecl.getSymbol.setType(retType.getType)
+
           bind(args)
           bind(vars)
           bind(methDecl.getSymbol, stats, retExpr)
@@ -148,7 +150,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
         case Equals(lhs, rhs)            => bind(s, lhs, rhs)
         case ArrayRead(arr, index)       => bind(s, arr, index)
         case ArrayLength(arr)            => bind(s, arr)
-        case MethodCall(obj, meth, args) => bind(s, obj, args)
+        case MethodCall(obj, meth, args) => 
+        
+          bind(s, obj, args)
         case id @ Identifier(value)      => setVariable(id, s)
         case thisSym @ This() =>
           s match {
@@ -186,10 +190,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
         tpe match {
           case tpeId @ Identifier(value) =>
             g.lookupClass(tpeId) match {
-              case Some(classSymbol) => 
+              case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
                 tpeId.setType(TObject(classSymbol))
-              case None    => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
+              case None => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
           case BooleanType()  => tpe.setType(TBool)
           case IntType()      => tpe.setType(TInt)

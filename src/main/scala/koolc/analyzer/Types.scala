@@ -46,7 +46,7 @@ object Types {
       case _       => false
     }
     override def toString = "string"
-    override def byteCodeName(): String = "Ljava/lang/String"
+    override def byteCodeName(): String = "Ljava/lang/String;"
   }
 
   case object TBool extends Type {
@@ -84,7 +84,7 @@ object Types {
     }
     override def toString = classSymbol.name
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
-    override def byteCodeName(): String = "L" + classSymbol.name
+    override def byteCodeName(): String = "L" + classSymbol.name + ";"
   }
 
   // special object to implement the fact that all objects are its subclasses

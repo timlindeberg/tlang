@@ -30,7 +30,7 @@ object TypeChecking extends Pipeline[Program, Program] {
       case Assign(id, expr) => tcExpr(expr, id.getType)
       case ArrayAssign(id, index, expr) =>
         tcExpr(index, TInt)
-        tcExpr(expr, id.getType)
+        tcExpr(expr, TInt)
     }
 
     def tcExpr(expr: ExprTree, expected: Type*): Type = {
@@ -82,10 +82,10 @@ object TypeChecking extends Pipeline[Program, Program] {
           objType match {
             case TObject(classSymbol) =>
               classSymbol.lookupMethod(meth) match {
-                case Some(method) =>
-                  args.zip(method.argList.map(_.getType)).foreach(x => tcExpr(x._1, x._2))
-                  meth.setSymbol(method)
-                  method.getType
+                case Some(methodSymbol) =>
+                  args.zip(methodSymbol.argList.map(_.getType)).foreach(x => tcExpr(x._1, x._2))
+                  meth.setSymbol(methodSymbol)
+                  meth.getType
                 case None => error("Class \'" + classSymbol.name + "\' does not contain a method called \'" + meth.value + "\'.", mc)
               }
             case _ => error("Cannot call function on type " + objType, mc)
@@ -100,7 +100,9 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(size, TInt)
           TIntArray
         case New(tpe)  => tpe.getType
-        case Not(expr) => TBool
+        case Not(expr) => 
+          tcExpr(expr)
+          TBool
       }
 
       // Check result and return a valid type in case of error

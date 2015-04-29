@@ -31,7 +31,7 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file, true)
   }
-
+  
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)

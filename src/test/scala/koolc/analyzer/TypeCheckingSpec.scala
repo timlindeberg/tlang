@@ -26,32 +26,42 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "Positive tests"
   TestUtils.programFiles(TestUtils.resources + "analyzer/type/valid/").foreach { file =>
-    //it should "type check program " + file.toPath() in test(file)
+    it should "type check program " + file.toPath() in test(file)
   }
   TestUtils.programFiles(TestUtils.resources + "given/ast/valid/").foreach { file =>
-    //it should "type check given program " + file.toPath() in test(file)
+    it should "type check given program " + file.toPath() in test(file)
   }
 
   behavior of "Negative tests"
   TestUtils.programFiles(TestUtils.resources + "analyzer/type/invalid/").foreach { file =>
-    //it should "type check invalid program " + file.toPath() in test(file, true)
-  }
-  TestUtils.programFiles(TestUtils.resources + "given/ast/invalid/").foreach { file =>
-    it should "type check invalid given program" + file.toPath() in test(file)
+    it should "type check invalid program " + file.toPath() in test(file, true)
   }
 
   def test(file: File, exception: Boolean = false) = {
-    val program = Source.fromFile(file).mkString
-    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
-    def analysis(p: Program) = NameAnalysis.run(ctx)(p)
-    def tcheck(p: Program) = TypeChecking.run(ctx)(p)
+    var progString = Source.fromFile(file).getLines.toList
+    var expectedErrors = 1
+    var ignoreFirstLine = false
+    try {
+      expectedErrors = progString.head.toInt
+      progString = progString.tail
+      ignoreFirstLine = true
+    } catch {
+      case _: Throwable => expectedErrors = 1
+    }
+
+    val program = progString.mkString("\n")
+    val ctx = new Context(reporter = new koolc.utils.Reporter(false, ignoreFirstLine), file = file, outDir = None)
+    def nameAnalysis(p: Program) = NameAnalysis.run(ctx)(p)
+    def typeChecking(p: Program) = TypeChecking.run(ctx)(p)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p, true)
     if (exception) {
-      tcheck(analysis(parse(program)))
-      assert(ctx.reporter.hasErrors)
+      typeChecking(nameAnalysis(parse(program)))
+      assert(ctx.reporter.errors === expectedErrors)
+    } else {
+      var tree = typeChecking(nameAnalysis(parse(program)))
+      assert(!ctx.reporter.hasErrors)
     }
-    // TODO
   }
 
   behavior of "Relations"
