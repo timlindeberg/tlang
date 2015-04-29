@@ -5,204 +5,219 @@ import ast.Trees._
 import analyzer.Symbols._
 import analyzer.Types._
 import cafebabe._
-import AbstractByteCodes.{ New => _, _ }
-import ByteCodes._
+import cafebabe.ByteCodes._
 import utils._
 import scala.collection.mutable.HashMap
 import com.sun.org.apache.bcel.internal.generic.IF_ICMPLE
+import cafebabe.AbstractByteCodes._
 
 object CodeGeneration extends Pipeline[Program, Unit] {
+
+  /* Java classes used by compiler */
+  val STRING_BUILDER = "java/lang/StringBuilder"
+  val STRING = "java/lang/String"
+  val SYSTEM = "java/lang/System"
+  val PRINT_STREAM = "java/io/PrintStream"
+  val OBJECT = "java/lang/Object"
+
+  /* Labels */
+  val THEN = "then"
+  val ELSE = "else"
+  val AFTER = "after"
+  val BODY = "body"
+  val NEXT = "next"
 
   def run(ctx: Context)(prog: Program): Unit = {
     import ctx.reporter._
 
     var varMap = new HashMap[String, Int]
 
-    def store(expr: ExprTree, ch: CodeHandler, id: Identifier, cn: String): Unit = {
-      val name = id.value
-      val tp = id.getType
+    class CodeCompiler(ch: CodeHandler, cn: String){
+      def store(expr: ExprTree, id: Identifier): Unit = {
+        val name = id.value
+        val tp = id.getType
 
-      if (varMap.contains(name)) {
-        compileExpr(expr, ch, cn)
-        ch << (tp match {
-          case TBool | TInt => IStore(varMap(name))
-          case _            => AStore(varMap(name))
-        })
-      } else {
-        ch << ArgLoad(0) // put this-reference on stack
-        compileExpr(expr, ch, cn)
-        ch << PutField(cn, name, tp.byteCodeName)
+        if (varMap.contains(name)) {
+          compile(expr)
+          ch << (tp match {
+            case TBool | TInt => IStore(varMap(name))
+            case _            => AStore(varMap(name))
+          })
+        } else {
+          ch << ArgLoad(0) // put this-reference on stack
+          compile(expr)
+          ch << PutField(cn, name, tp.byteCodeName)
+        }
+
       }
 
-    }
+      def load(id: Identifier): Unit = {
+        val name = id.value
+        val tp = id.getType
 
-    def load(ch: CodeHandler, id: Identifier, cn: String): Unit = {
-      val name = id.value
-      val tp = id.getType
-
-      if (varMap.contains(name))
-        ch << (tp match {
-          case TBool | TInt => ILoad(varMap(name))
-          case _            => ALoad(varMap(name))
-        })
-      else {
-        ch << ArgLoad(0) // put this-reference on stack
-        ch << GetField(cn, name, tp.byteCodeName)
+        if (varMap.contains(name))
+          ch << (tp match {
+            case TBool | TInt => ILoad(varMap(name))
+            case _            => ALoad(varMap(name))
+          })
+        else {
+          ch << ArgLoad(0) // put this-reference on stack
+          ch << GetField(cn, name, tp.byteCodeName)
+        }
       }
-    }
 
-    def compileStat(stat: StatTree, ch: CodeHandler, cn: String): Unit = stat match {
-      case Block(stats) => stats.foreach(compileStat(_, ch, cn))
-      case If(expr, thn, els) =>
-        val thnLabel = ch.getFreshLabel("then")
-        val elsLabel = ch.getFreshLabel("else")
-        val afterLabel = ch.getFreshLabel("after")
+      def compile(stat: StatTree): Unit = stat match {
+        case Block(stats) => stats.foreach(compile)
+        case If(expr, thn, els) =>
+          val thnLabel = ch.getFreshLabel(THEN)
+          val elsLabel = ch.getFreshLabel(ELSE)
+          val afterLabel = ch.getFreshLabel(AFTER)
 
-        branch(expr, Label(thnLabel), Label(elsLabel), ch, cn)
-        ch << Label(thnLabel)
-        compileStat(thn, ch, cn)
-        ch << Goto(afterLabel)
-        ch << Label(elsLabel)
-        if (els.isDefined) compileStat(els.get, ch, cn)
-        ch << Label(afterLabel)
+          branch(expr, Label(thnLabel), Label(elsLabel))
+          ch << Label(thnLabel)
+          compile(thn)
+          ch << Goto(afterLabel)
+          ch << Label(elsLabel)
+          if (els.isDefined) compile(els.get)
+          ch << Label(afterLabel)
 
-      case While(expr, stat) =>
-        val bodyLabel = ch.getFreshLabel("body")
-        val afterLabel = ch.getFreshLabel("after")
-        branch(expr, Label(bodyLabel), Label(afterLabel), ch, cn)
-        ch << Label(bodyLabel)
-        compileStat(stat, ch, cn)
-        branch(expr, Label(bodyLabel), Label(afterLabel), ch, cn)
-        ch << Label(afterLabel)
-      case Println(expr) =>
-        ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
-        compileExpr(expr, ch, cn)
-        var arg = ""
-        expr.getType match {
-          case TInt | TBool => arg = expr.getType.byteCodeName
-          case _            => arg = "Ljava/lang/Object;"
-        }
-        ch << InvokeVirtual("java/io/PrintStream", "println", "(" + arg + ")V")
-      case Assign(id, expr) =>
-        store(expr, ch, id, cn)
-      case ArrayAssign(id, index, expr) =>
-        load(ch, id, cn)
-        compileExpr(index, ch, cn)
-        compileExpr(expr, ch, cn)
-        ch << IASTORE
-    }
-
-    def branch(expr: ExprTree, thn: Label, els: Label, ch: CodeHandler, cn: String): Unit = expr match {
-      case Not(expr) => branch(expr, els, thn, ch, cn)
-      case And(lhs, rhs) =>
-        val next = Label(ch.getFreshLabel("next"))
-        branch(lhs, next, els, ch, cn)
-        ch << next
-        branch(rhs, thn, els, ch, cn)
-      case Or(lhs, rhs) =>
-        val next = Label(ch.getFreshLabel("next"))
-        branch(lhs, thn, next, ch, cn)
-        ch << next
-        branch(rhs, thn, els, ch, cn)
-      case True() =>
-        ch << Goto(thn.id)
-      case False() =>
-        ch << Goto(els.id)
-      case id @ Identifier(value) =>
-        load(ch, id, cn)
-        ch << IfEq(els.id)
-        ch << Goto(thn.id)
-      case LessThan(lhs, rhs) =>
-        compileExpr(lhs, ch, cn)
-        compileExpr(rhs, ch, cn)
-        ch << If_ICmpLt(thn.id)
-        ch << Goto(els.id)
-      case Equals(lhs, rhs) =>
-        compileExpr(lhs, ch, cn)
-        compileExpr(rhs, ch, cn)
-        lhs.getType match {
-          case TInt | TBool => ch << If_ICmpEq(thn.id)
-          case _            => ch << If_ACmpEq(thn.id)
-        }
-        ch << Goto(els.id)
-      case mc @ MethodCall(obj, meth, args) =>
-        compileExpr(mc, ch, cn)
-        ch << IfEq(els.id)
-        ch << Goto(thn.id)
-    }
-
-    def compileExpr(expr: ExprTree, ch: CodeHandler, cn: String): Unit = expr match {
-      case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) =>
-        val thn = ch.getFreshLabel("then")
-        val els = ch.getFreshLabel("else")
-        val after = ch.getFreshLabel("after")
-        branch(expr, Label(thn), Label(els), ch, cn)
-        ch << Label(thn)
-        ch << Ldc(1)
-        ch << Goto(after)
-        ch << Label(els)
-        ch << Ldc(0)
-        ch << Label(after)
-      case True()  => ch << Ldc(1)
-      case False() => ch << Ldc(0)
-      case expr @ Plus(lhs, rhs) =>
-        expr.getType match {
-          case TInt => {
-            compileExpr(lhs, ch, cn)
-            compileExpr(rhs, ch, cn)
-            ch << IADD
+        case While(expr, stat) =>
+          val bodyLabel = ch.getFreshLabel(BODY)
+          val afterLabel = ch.getFreshLabel(AFTER)
+          branch(expr, Label(bodyLabel), Label(afterLabel))
+          ch << Label(bodyLabel)
+          compile(stat)
+          branch(expr, Label(bodyLabel), Label(afterLabel))
+          ch << Label(afterLabel)
+        case Println(expr) =>
+          ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
+          compile(expr)
+          val arg = expr.getType match {
+            case TInt | TBool => expr.getType.byteCodeName
+            case _            => "L" + OBJECT + ";"
           }
-          case TString => {
-            ch << DefaultNew("java/lang/StringBuilder")
-            compileExpr(lhs, ch, cn)
-            ch << InvokeVirtual("java/lang/StringBuilder", "append", "(" + lhs.getType.byteCodeName + ")Ljava/lang/StringBuilder;")
-            compileExpr(rhs, ch, cn)
-            ch << InvokeVirtual("java/lang/StringBuilder", "append", "(" + rhs.getType.byteCodeName + ")Ljava/lang/StringBuilder;")
-            ch << InvokeVirtual("java/lang/StringBuilder", "toString", "()Ljava/lang/String;")
-          }
-          case _ => throw new UnsupportedOperationException(expr.toString)
-        }
+          ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
+        case Assign(id, expr) =>
+          store(expr, id)
+        case ArrayAssign(id, index, expr) =>
+          load(id)
+          compile(index)
+          compile(expr)
+          ch << IASTORE
+      }
 
-      case Minus(lhs, rhs) =>
-        compileExpr(lhs, ch, cn)
-        compileExpr(rhs, ch, cn)
-        ch << ISUB
-      case Times(lhs, rhs) =>
-        compileExpr(lhs, ch, cn)
-        compileExpr(rhs, ch, cn)
-        ch << IMUL
-      case Div(lhs, rhs) =>
-        compileExpr(lhs, ch, cn)
-        compileExpr(rhs, ch, cn)
-        ch << IDIV
-      case ArrayRead(arr, index) =>
-        compileExpr(arr, ch, cn)
-        compileExpr(index, ch, cn)
-        ch << IALOAD
-      case ArrayLength(arr) =>
-        compileExpr(arr, ch, cn)
-        ch << ARRAYLENGTH
-      case mc @ MethodCall(obj, meth, args) =>
-        compileExpr(obj, ch, cn)
-        args.foreach(compileExpr(_, ch, cn))
-        val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
-        val argTypes = methArgList.map(_.getType.byteCodeName).mkString
-        val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
-        val name = obj.getType.asInstanceOf[TObject].classSymbol.name
-        ch << InvokeVirtual(name, meth.value, signature)
-      case IntLit(value) =>
-        ch << Ldc(value)
-      case StringLit(value) =>
-        ch << Ldc(value)
-      case id @ Identifier(value) =>
-        load(ch, id, cn)
-      case This() =>
-        ch << ArgLoad(0)
-      case NewIntArray(size) =>
-        compileExpr(size, ch, cn)
-        ch << NewArray(10) // I?
-      case New(tpe) =>
-        ch << DefaultNew(tpe.value)
+      def branch(expr: ExprTree, thn: Label, els: Label): Unit = expr match {
+        case Not(expr) => branch(expr, els, thn)
+        case And(lhs, rhs) =>
+          val next = Label(ch.getFreshLabel(NEXT))
+          branch(lhs, next, els)
+          ch << next
+          branch(rhs, thn, els)
+        case Or(lhs, rhs) =>
+          val next = Label(ch.getFreshLabel(NEXT))
+          branch(lhs, thn, next)
+          ch << next
+          branch(rhs, thn, els)
+        case True() =>
+          ch << Goto(thn.id)
+        case False() =>
+          ch << Goto(els.id)
+        case id @ Identifier(value) =>
+          load(id)
+          ch << IfEq(els.id)
+          ch << Goto(thn.id)
+        case LessThan(lhs, rhs) =>
+          compile(lhs)
+          compile(rhs)
+          ch << If_ICmpLt(thn.id)
+          ch << Goto(els.id)
+        case Equals(lhs, rhs) =>
+          compile(lhs)
+          compile(rhs)
+          lhs.getType match {
+            case TInt | TBool => ch << If_ICmpEq(thn.id)
+            case _            => ch << If_ACmpEq(thn.id)
+          }
+          ch << Goto(els.id)
+        case mc @ MethodCall(obj, meth, args) =>
+          compile(mc)
+          ch << IfEq(els.id)
+          ch << Goto(thn.id)
+      }
+
+      def compile(expr: ExprTree): Unit = expr match {
+        case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) =>
+          val thn = ch.getFreshLabel(THEN)
+          val els = ch.getFreshLabel(ELSE)
+          val after = ch.getFreshLabel(AFTER)
+          branch(expr, Label(thn), Label(els))
+          ch << Label(thn)
+          ch << Ldc(1)
+          ch << Goto(after)
+          ch << Label(els)
+          ch << Ldc(0)
+          ch << Label(after)
+        case True()  => ch << Ldc(1)
+        case False() => ch << Ldc(0)
+        case expr @ Plus(lhs, rhs) =>
+          expr.getType match {
+            case TInt => {
+              compile(lhs)
+              compile(rhs)
+              ch << IADD
+            }
+            case TString => {
+              ch << DefaultNew(STRING_BUILDER)
+              compile(lhs)
+              ch << InvokeVirtual(STRING_BUILDER, "append", "(" + lhs.getType.byteCodeName + ")L" + STRING_BUILDER + ";")
+              compile(rhs)
+              ch << InvokeVirtual(STRING_BUILDER, "append", "(" + rhs.getType.byteCodeName + ")L" + STRING_BUILDER + ";")
+              ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
+            }
+            case _ => throw new UnsupportedOperationException(expr.toString)
+          }
+
+        case Minus(lhs, rhs) =>
+          compile(lhs)
+          compile(rhs)
+          ch << ISUB
+        case Times(lhs, rhs) =>
+          compile(lhs)
+          compile(rhs)
+          ch << IMUL
+        case Div(lhs, rhs) =>
+          compile(lhs)
+          compile(rhs)
+          ch << IDIV
+        case ArrayRead(arr, index) =>
+          compile(arr)
+          compile(index)
+          ch << IALOAD
+        case ArrayLength(arr) =>
+          compile(arr)
+          ch << ARRAYLENGTH
+        case mc @ MethodCall(obj, meth, args) =>
+          compile(obj)
+          args.foreach(compile)
+          val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
+          val argTypes = methArgList.map(_.getType.byteCodeName).mkString
+          val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
+          val name = obj.getType.asInstanceOf[TObject].classSymbol.name
+          ch << InvokeVirtual(name, meth.value, signature)
+        case IntLit(value) =>
+          ch << Ldc(value)
+        case StringLit(value) =>
+          ch << Ldc(value)
+        case id @ Identifier(value) =>
+          load(id)
+        case This() =>
+          ch << ArgLoad(0)
+        case NewIntArray(size) =>
+          compile(size)
+          ch << NewArray(10) // I?
+        case ast.Trees.New(tpe) =>
+          ch << DefaultNew(tpe.value)
+      }
     }
 
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
@@ -244,9 +259,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case _            => ch << ACONST_NULL << AStore(varMap(variable.getSymbol.name))
         }
       }
-
-      mt.stats.foreach(compileStat(_, ch, mt.getSymbol.classSymbol.name))
-      compileExpr(mt.retExpr, ch, methSym.classSymbol.name)
+      val codeCompiler = new CodeCompiler(ch, methSym.classSymbol.name)
+      mt.stats.foreach(codeCompiler.compile)
+      codeCompiler.compile(mt.retExpr)
 
       ch << (mt.retType match {
         case IntType() | BooleanType() => IRETURN
@@ -258,7 +273,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
       varMap = new HashMap[String, Int]
-      stmts.foreach(compileStat(_, ch, cname))
+      val codeCompiler = new CodeCompiler(ch, cname);
+      stmts.foreach(codeCompiler.compile)
       ch << RETURN
       ch.freeze
     }
