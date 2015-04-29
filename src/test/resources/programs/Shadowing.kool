@@ -1,0 +1,24 @@
+object Main {
+    def main() : Unit = {
+        println(new Test().test(2)); // null
+        println(new Test2().test(2)); // 2
+    }
+}
+
+class Test {
+    var t: Int;
+    var b: Test2;
+    var c: Int[];
+    def test(num : Int) : Test2 = {
+        var b: Test2;
+        return b;
+    }
+}
+
+
+class Test2 {
+    var t: Int;
+    def test(t : Int) : Int = {
+        return t;
+    }
+}

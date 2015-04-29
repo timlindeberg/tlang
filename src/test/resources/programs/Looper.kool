@@ -1,0 +1,19 @@
+object Main {
+    def main() : Unit = {
+      println(new Looper().run(100)); // 20
+    }
+}
+
+class Looper {
+  def run(times: Int): Int = {
+    var value: Int;
+    while((true || (1/0 == 1)) && value < times) {
+      value = value + 1;
+      times = times - 1;
+    }
+    while(value < times*2) {
+      value = value + 1;
+    }
+    return value / 5;
+  }
+}

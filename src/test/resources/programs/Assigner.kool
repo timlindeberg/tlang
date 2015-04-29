@@ -1,0 +1,63 @@
+object Main {
+    def main() : Unit = {
+      println(new H().run());
+    }
+}
+
+class H {
+
+  def run(): String = {
+    var f: Foo;
+    var t: Test;
+    var a: A;
+    var c: C;
+    f = new Foo();
+    println(f.bar(10000)); // 5
+    println(f.baz(1));     // 1
+    println(f.foo());      // "foo"
+    t = new Test();
+    println(t.Method());      // "String"
+    t = new Test4();
+    println(t.Method());      // "Test4"
+
+    a = new A();
+    println(a.foo(0, "yo"));      // "0"
+    a = new B();
+    println(a.foo(0, "yo"));      // "1"
+    return "!";
+  }
+
+}
+
+class Foo {
+  def bar(a: Int): Int = {
+    a = 5;
+    return a;
+  }
+  def baz(a: Int): Int = {
+    return a;
+  }
+
+  def foo():String = { return "foo"; }
+}
+
+class Test { def Method () : String = { return "String" ; } }
+class Test2 extends Test { }
+class Test3 extends Test2 { }
+class Test4 extends Test3 { def Method () : String = { return "Test4" ; } }
+
+class A { 
+  def foo(a: Int, b: String):Int = { return 0; }
+}
+
+class B extends A {
+  def foo(a: Int, b: String): Int = { return 1; }
+}
+
+class C { 
+  def foo():Int = { return 0; }
+}
+
+class D extends C {
+  def foo(): Int = { return 1; }
+}

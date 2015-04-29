@@ -19,6 +19,7 @@ import koolc.code.CodeGeneration
 import koolc.analyzer.TypeChecking
 import koolc.ast.Trees.Program
 import koolc.analyzer.Symbols
+import koolc.Typez
 
 class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val flag = "--eval"
@@ -30,7 +31,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   behavior of "Positive tests"
   //var file = new File(TestUtils.resources + "/given/ast/valid/VehicleRent.kool")
   //it should "code gen program " + file.toPath() in test(file)
-  TestUtils.programFiles(TestUtils.resources + "/analyzer/name/valid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.resources + "/programs/").foreach { file =>
     it should "code gen program " + file.toPath() in test(file)
   }
 
@@ -41,28 +42,16 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     def tcheck(p: Program) = TypeChecking.run(ctx)(p)
     def code(p: Program) = CodeGeneration.run(ctx)(p)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
-    def print(p: Program) = Printer(p, true)
+    def print(p: Program) = println(Printer(p, true))
     val prog = tcheck(analysis(parse(program)))
-
+    assert(!ctx.reporter.hasErrors)
+    print(prog)
     code(prog)
     val res = execute(prog, file)
     println(res)
+    //assert(Typez(prog))
     //assert(res == getAnswer(file))
   }
-
-  def hasTypes(prog: Program) =
-    flatten(prog.classes.map(_.getSymbol).map(klass => {
-      List(
-        klass.getType,
-        klass.members.map(_._2.getType),
-        klass.methods.map(_._2.getType),
-        klass.methods.map(_._2).flatMap(meth => {
-          List(
-            meth.argList.map(_.getType),
-            meth.members.map(_._2.getType),
-            meth.params.map(_._2.getType))
-        }))
-    })).forall(_ != TUntyped)
 
   def flatten(l: List[_]): List[_] = l flatMap {
     case l1: List[_] => flatten(l1)

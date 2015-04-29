@@ -1,0 +1,52 @@
+object P { def main(): Unit = { 
+    println(new A().bar()); // false
+    println(new A().bar2()); // true
+    println(new A().T());   // 0
+    println(new B().foo()); // 42
+    println(new B().a());   // false
+    println(new B().b());   // false
+
+    println(new Test().init());
+  } 
+}
+
+class A {
+  var value: Int;
+  var a: Bool;
+  var b: Bool;
+
+  def bar(): Bool = { return !a && b; }
+  def bar2(): Bool = { return !(a && b); }
+  def T() : Int = { return 0; }
+
+  def foo(): Int = {
+    var value: Bool;
+    value = false;
+    return 41;
+  }
+}
+
+class B extends A {
+  def foo(): Int = {
+    value = 42;
+    return value;
+  }
+  def a(): Bool = {
+    return a;
+  }
+  def b(): Bool = {
+    return b;
+  }    
+}
+
+class Test {
+  def init() : Test = {
+    var expr1 : Bool;
+    var expr2 : Bool;
+    var a : Int;
+    if(expr1) { if(expr2) { a=1; } else { a=2; } }
+    if(expr1) if(expr2) a=1; else a=2;
+    if(expr1) { if(expr2) { a=1; } } else { a=2; }
+    return this;
+  }
+}
