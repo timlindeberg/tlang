@@ -10,7 +10,14 @@ import koolc.analyzer.Types._
 object TestUtils {
   val runScript = "./reference/run.sh"
   val resources = "./src/test/resources/"
-  def programFiles(dir: String) = new File(dir).listFiles
+  def programFiles(dir: String): Array[File] = {
+    val f = new File(dir)
+    if(f.exists())
+      f.listFiles
+    else
+      f.mkdir
+      Array[File]()
+  }
   def format(token: Token): String = token + "(" + token.line + ":" + token.col + ")"
 
   object IgnoreErrorOutput extends ProcessLogger {
