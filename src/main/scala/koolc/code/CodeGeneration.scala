@@ -8,7 +8,6 @@ import cafebabe._
 import cafebabe.ByteCodes._
 import utils._
 import scala.collection.mutable.HashMap
-import com.sun.org.apache.bcel.internal.generic.IF_ICMPLE
 import cafebabe.AbstractByteCodes._
 
 object CodeGeneration extends Pipeline[Program, Unit] {
@@ -40,12 +39,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     var varMap = new HashMap[String, Int]
 
-    class CodeCompiler(ch: CodeHandler, cn: String) {
+    class StatementCompiler(ch: CodeHandler, cn: String) {
 
-      implicit class CodeHandler(ch: cafebabe.CodeHandler) {
-        def <<(list: List[AbstractByteCode]): Unit = list.foreach(ch << _)
-      }
-      
       def store(expr: ExprTree, id: Identifier): Unit = {
         val name = id.value
         val tp = id.getType
@@ -75,40 +70,43 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         }
       }
 
-      def compile(stat: StatTree): Unit = stat match {
-        case Block(stats) => stats.foreach(compile)
-        case If(expr, thn, els) =>
-          val thnLabel = ch.getFreshLabel(THEN)
-          val elsLabel = ch.getFreshLabel(ELSE)
-          val afterLabel = ch.getFreshLabel(AFTER)
+      def compile(stat: StatTree): Unit = {
+        ch << LineNumber(stat.line)
+        stat match {
+          case Block(stats) => stats.foreach(compile)
+          case If(expr, thn, els) =>
+            val thnLabel = ch.getFreshLabel(THEN)
+            val elsLabel = ch.getFreshLabel(ELSE)
+            val afterLabel = ch.getFreshLabel(AFTER)
 
-          branch(expr, Label(thnLabel), Label(elsLabel))
-          ch << Label(thnLabel)
-          compile(thn)
-          ch << Goto(afterLabel)
-          ch << Label(elsLabel)
-          if (els.isDefined) compile(els.get)
-          ch << Label(afterLabel)
-        case While(expr, stat) =>
-          val bodyLabel = ch.getFreshLabel(BODY)
-          val afterLabel = ch.getFreshLabel(AFTER)
-          branch(expr, Label(bodyLabel), Label(afterLabel))
-          ch << Label(bodyLabel)
-          compile(stat)
-          branch(expr, Label(bodyLabel), Label(afterLabel))
-          ch << Label(afterLabel)
-        case Println(expr) =>
-          ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
-          compile(expr)
-          val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
-          ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
-        case Assign(id, expr) =>
-          store(expr, id)
-        case ArrayAssign(id, index, expr) =>
-          load(id)
-          compile(index)
-          compile(expr)
-          ch << IASTORE
+            branch(expr, Label(thnLabel), Label(elsLabel))
+            ch << Label(thnLabel)
+            compile(thn)
+            ch << Goto(afterLabel)
+            ch << Label(elsLabel)
+            if (els.isDefined) compile(els.get)
+            ch << Label(afterLabel)
+          case While(expr, stat) =>
+            val bodyLabel = ch.getFreshLabel(BODY)
+            val afterLabel = ch.getFreshLabel(AFTER)
+            branch(expr, Label(bodyLabel), Label(afterLabel))
+            ch << Label(bodyLabel)
+            compile(stat)
+            branch(expr, Label(bodyLabel), Label(afterLabel))
+            ch << Label(afterLabel)
+          case Println(expr) =>
+            ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
+            compile(expr)
+            val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
+            ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
+          case Assign(id, expr) =>
+            store(expr, id)
+          case ArrayAssign(id, index, expr) =>
+            load(id)
+            compile(index)
+            compile(expr)
+            ch << IASTORE
+        }
       }
 
       def branch(expr: ExprTree, thn: Label, els: Label): Unit = expr match {
@@ -143,21 +141,24 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           compile(mc)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
+        case _ => throw new UnsupportedOperationException(expr.toString)
       }
 
-      def compile(expr: ExprTree): Unit = expr match {
-        case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) =>
-          val thn = ch.getFreshLabel(THEN)
-          val els = ch.getFreshLabel(ELSE)
-          val after = ch.getFreshLabel(AFTER)
-          branch(expr, Label(thn), Label(els))
-          ch << Label(thn)
-          ch << Ldc(1)
-          ch << Goto(after)
-          ch << Label(els)
-          ch << Ldc(0)
-          ch << Label(after)
-        case expr @ Plus(lhs, rhs) => expr.getType match {
+      def compile(expr: ExprTree): Unit = {
+        ch << LineNumber(expr.line)
+        expr match {
+          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) =>
+            val thn = ch.getFreshLabel(THEN)
+            val els = ch.getFreshLabel(ELSE)
+            val after = ch.getFreshLabel(AFTER)
+            branch(expr, Label(thn), Label(els))
+            ch << Label(thn)
+            ch << Ldc(1)
+            ch << Goto(after)
+            ch << Label(els)
+            ch << Ldc(0)
+            ch << Label(after)
+          case expr @ Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compile(lhs)
               compile(rhs)
@@ -172,49 +173,49 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
             case _ => throw new UnsupportedOperationException(expr.toString)
           }
-        case Minus(lhs, rhs) =>
-          compile(lhs)
-          compile(rhs)
-          ch << ISUB
-        case Times(lhs, rhs) =>
-          compile(lhs)
-          compile(rhs)
-          ch << IMUL
-        case Div(lhs, rhs) =>
-          compile(lhs)
-          compile(rhs)
-          ch << IDIV
-        case ArrayRead(arr, index) =>
-          compile(arr)
-          compile(index)
-          ch << IALOAD
-        case ArrayLength(arr) =>
-          compile(arr)
-          ch << ARRAYLENGTH
-        case mc @ MethodCall(obj, meth, args) =>
-          compile(obj)
-          args.foreach(compile)
-          val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
-          val argTypes = methArgList.map(_.getType.byteCodeName).mkString
-          val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
-          val name = obj.getType.asInstanceOf[TObject].classSymbol.name
-          ch << InvokeVirtual(name, meth.value, signature)
-        case True()                 => ch << Ldc(1)
-        case False()                => ch << Ldc(0)
-        case IntLit(value)          => ch << Ldc(value)
-        case StringLit(value)       => ch << Ldc(value)
-        case id @ Identifier(value) => load(id)
-        case This()                 => ch << ArgLoad(0)
-        case ast.Trees.New(tpe)     => ch << DefaultNew(tpe.value)
-        case NewIntArray(size) =>
-          compile(size)
-          ch << NewArray(T_INT) // I?
+          case Minus(lhs, rhs) =>
+            compile(lhs)
+            compile(rhs)
+            ch << ISUB
+          case Times(lhs, rhs) =>
+            compile(lhs)
+            compile(rhs)
+            ch << IMUL
+          case Div(lhs, rhs) =>
+            compile(lhs)
+            compile(rhs)
+            ch << IDIV
+          case ArrayRead(arr, index) =>
+            compile(arr)
+            compile(index)
+            ch << IALOAD
+          case ArrayLength(arr) =>
+            compile(arr)
+            ch << ARRAYLENGTH
+          case mc @ MethodCall(obj, meth, args) =>
+            compile(obj)
+            args.foreach(compile)
+            val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
+            val argTypes = methArgList.map(_.getType.byteCodeName).mkString
+            val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
+            val name = obj.getType.asInstanceOf[TObject].classSymbol.name
+            ch << InvokeVirtual(name, meth.value, signature)
+          case NewIntArray(size) =>
+            compile(size)
+            ch << NewArray(T_INT) // I?
+          case True()                 => ch << Ldc(1)
+          case False()                => ch << Ldc(0)
+          case IntLit(value)          => ch << Ldc(value)
+          case StringLit(value)       => ch << Ldc(value)
+          case id @ Identifier(value) => load(id)
+          case This()                 => ch << ArgLoad(0)
+          case ast.Trees.New(tpe)     => ch << DefaultNew(tpe.value)
+        }
       }
     }
 
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
     def generateClassFile(sourceName: String, ct: ClassDecl, dir: String): Unit = {
-      // TODO: Create code handler, save to files ...
       val sym = ct.getSymbol
       val classFile = new ClassFile(sym.name, sym.parent.map(_.name))
       classFile.setSourceFile(sourceName)
@@ -235,8 +236,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       classFile.writeToFile(if (dir.length == 0) "./" else dir + sym.name + ".class")
     }
 
-    // a mapping from variable symbols to positions in the local variables
-    // of the stack frame
     def generateMethodCode(ch: CodeHandler, mt: MethodDecl): Unit = {
       val methSym = mt.getSymbol
 
@@ -244,26 +243,38 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mt.args.zipWithIndex.foreach {
         case (arg, i) => varMap(arg.getSymbol.name) = i + 1
       }
-      mt.vars foreach { variable =>
-        varMap(variable.getSymbol.name) = ch.getFreshVar
-        variable.getSymbol.getType match {
-          case TInt | TBool => ch << Ldc(0) << IStore(varMap(variable.getSymbol.name))
-          case _            => ch << ACONST_NULL << AStore(varMap(variable.getSymbol.name))
-        }
-      }
-      val codeCompiler = new CodeCompiler(ch, methSym.classSymbol.name)
-      mt.stats.foreach(codeCompiler.compile)
-      codeCompiler.compile(mt.retExpr)
+
+      initializeLocalVariables(mt, ch)
+
+      val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
+      mt.stats.foreach(statementCompiler.compile)
+      statementCompiler.compile(mt.retExpr)
 
       ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
 
       ch.freeze
     }
 
+    def initializeLocalVariables(mt: MethodDecl, ch: CodeHandler) = mt.vars foreach { variable =>
+      val id = ch.getFreshVar
+      varMap(variable.getSymbol.name) = id
+      variable.getSymbol.getType match {
+        case TInt | TBool => ch << Ldc(0) << IStore(id)
+        case _            => ch << ACONST_NULL << AStore(id)
+      }
+    }
+
+    def generateMainClassFile(sourceName: String, main: MainObject, dir: String) = {
+      val mainClassFile = new ClassFile(prog.main.id.value, None)
+      mainClassFile.setSourceFile(sourceName)
+      mainClassFile.addDefaultConstructor
+      generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
+      mainClassFile.writeToFile(dir + prog.main.id.value + ".class")
+    }
+
     def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
       varMap = new HashMap[String, Int]
-      val codeCompiler = new CodeCompiler(ch, cname);
-      stmts.foreach(codeCompiler.compile)
+      stmts.foreach(new StatementCompiler(ch, cname).compile)
       ch << RETURN
       ch.freeze
     }
@@ -271,24 +282,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("./")
 
     val f = new java.io.File(outDir)
-    if (!f.exists()) {
-      f.mkdirs()
-    }
+    if (!f.exists()) f.mkdirs()
 
     val sourceName = ctx.file.getName
 
     // output code
-    prog.classes foreach {
-      ct => generateClassFile(sourceName, ct, outDir)
-    }
+    prog.classes.foreach(generateClassFile(sourceName, _, outDir))
+    generateMainClassFile(sourceName, prog.main, outDir)
 
-    // Now do the main method
-    // ...
-    val mainClassFile = new ClassFile(prog.main.id.value, None)
-    mainClassFile.setSourceFile(sourceName)
-    mainClassFile.addDefaultConstructor
-    generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, prog.main.stats, prog.main.id.value)
-    mainClassFile.writeToFile(outDir + prog.main.id.value + ".class")
   }
 
 }
