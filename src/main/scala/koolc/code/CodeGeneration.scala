@@ -159,11 +159,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Label(after)
         }
         expr match {
-          case And(_, _)      => doBranch
-          case Or(_, _)       => doBranch
-          case Equals(_, _)   => doBranch
-          case LessThan(_, _) => doBranch
-          case Not(_)         => doBranch
+          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) => doBranch
+          case Not(_) => doBranch
           case expr @ Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compile(lhs)
