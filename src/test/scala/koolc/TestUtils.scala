@@ -12,11 +12,12 @@ object TestUtils {
   val resources = "./src/test/resources/"
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
-    if(f.exists())
+    if(f.exists()){
       f.listFiles
-    else
+    }else{
       f.mkdir
       Array[File]()
+    }
   }
   def format(token: Token): String = token + "(" + token.line + ":" + token.col + ")"
 
