@@ -146,18 +146,24 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       def compile(expr: ExprTree): Unit = {
         ch << LineNumber(expr.line)
+        def doBranch() = {
+          val thn = ch.getFreshLabel(THEN)
+          val els = ch.getFreshLabel(ELSE)
+          val after = ch.getFreshLabel(AFTER)
+          branch(expr, Label(thn), Label(els))
+          ch << Label(thn)
+          ch << Ldc(1)
+          ch << Goto(after)
+          ch << Label(els)
+          ch << Ldc(0)
+          ch << Label(after)
+        }
         expr match {
-          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) =>
-            val thn = ch.getFreshLabel(THEN)
-            val els = ch.getFreshLabel(ELSE)
-            val after = ch.getFreshLabel(AFTER)
-            branch(expr, Label(thn), Label(els))
-            ch << Label(thn)
-            ch << Ldc(1)
-            ch << Goto(after)
-            ch << Label(els)
-            ch << Ldc(0)
-            ch << Label(after)
+          case And(_, _)      => doBranch
+          case Or(_, _)       => doBranch
+          case Equals(_, _)   => doBranch
+          case LessThan(_, _) => doBranch
+          case Not(_)         => doBranch
           case expr @ Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compile(lhs)
