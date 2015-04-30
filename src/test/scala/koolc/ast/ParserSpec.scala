@@ -11,7 +11,6 @@ import koolc.TestUtils
 import koolc.utils.CompilationException
 import scala.io.Source
 import koolc.ast.Trees.Program
-import koolc.utils.CompilationException
 
 class ParserSpec extends FlatSpec with Matchers {
   val flag = "--ast"
@@ -47,7 +46,7 @@ class ParserSpec extends FlatSpec with Matchers {
       assert(parse(program).toString + "\n" === getAnswer(file))
     }
   }
-  
+
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
 
 }

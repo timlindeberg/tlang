@@ -24,7 +24,6 @@ object Types {
     override def byteCodeName(): String = "ERROR"
   }
 
-  
   case object TUntyped extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = false
     override def toString = "[untyped]"
@@ -71,10 +70,10 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case _ if tpe == anyObject => true
       case TObject(c) =>
-         if (classSymbol.name == c.name) true
-         else classSymbol.parent match {
-           case Some(x) => x.getType.isSubTypeOf(tpe)
-           case None => false
+        if (classSymbol.name == c.name) true
+        else classSymbol.parent match {
+          case Some(x) => x.getType.isSubTypeOf(tpe)
+          case None    => false
         }
       case _ => false
     }

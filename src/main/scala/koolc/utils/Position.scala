@@ -9,8 +9,8 @@
 package koolc
 package utils
 
-
-/** The object Position provides convenience methods to encode
+/**
+ * The object Position provides convenience methods to encode
  *  line and column number in one single integer.  The encoded line
  *  (column) numbers range from 0 to `LINE_MASK` (`COLUMN_MASK`),
  *  where `0` indicates that the line (column) is undefined and
@@ -35,16 +35,17 @@ package utils
  *  @author Burak Emir (translated from work by Matthias Zenger and others)
  */
 abstract class Position {
-  /** Definable behavior for overflow conditions.
+  /**
+   * Definable behavior for overflow conditions.
    */
   def checkInput(line: Int, column: Int): Unit
 
   /** Number of bits used to encode the line number */
-  final val LINE_BITS   = 20
+  final val LINE_BITS = 20
   /** Number of bits used to encode the column number */
   final val COLUMN_BITS = 31 - LINE_BITS // no negatives => 31
   /** Mask to decode the line number */
-  final val LINE_MASK   = (1 << LINE_BITS) - 1
+  final val LINE_MASK = (1 << LINE_BITS) - 1
   /** Mask to decode the column number */
   final val COLUMN_MASK = (1 << COLUMN_BITS) - 1
 

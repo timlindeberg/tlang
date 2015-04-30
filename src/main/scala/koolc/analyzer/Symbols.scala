@@ -10,7 +10,7 @@ object Symbols {
     private var _sym: Option[S] = None
 
     def hasSymbol: Boolean = _sym.isDefined
-    
+
     def setSymbol(sym: S): this.type = {
       _sym = Some(sym)
       this
@@ -28,9 +28,9 @@ object Symbols {
   }
 
   object ID {
-    
+
     def reset() = c = 0
-    
+
     private var c: Int = 0
 
     def next: Int = {
@@ -43,7 +43,7 @@ object Symbols {
   class GlobalScope {
     var mainClass: ClassSymbol = _
     var classes = Map[String, ClassSymbol]()
-    
+
     def lookupClass(id: Identifier): Option[ClassSymbol] = lookupClass(id.value)
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
@@ -56,12 +56,12 @@ object Symbols {
     def lookupMethod(id: Identifier): Option[MethodSymbol] = lookupMethod(id.value)
     def lookupMethod(n: String): Option[MethodSymbol] = methods.get(n) match {
       case x @ Some(t) => x
-      case None => if(parent.isDefined) parent.get.lookupMethod(n) else None
+      case None        => if (parent.isDefined) parent.get.lookupMethod(n) else None
     }
     def lookupVar(id: Identifier): Option[VariableSymbol] = lookupVar(id.value)
     def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
       case x @ Some(t) => x
-      case None => if(parent.isDefined) parent.get.lookupVar(n) else None
+      case None        => if (parent.isDefined) parent.get.lookupVar(n) else None
     }
   }
 
@@ -82,6 +82,6 @@ object Symbols {
   }
 
   class VariableSymbol(val name: String) extends Symbol
-  
+
   case class ErrorSymbol(val name: String = "") extends Symbol
 }

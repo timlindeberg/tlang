@@ -6,7 +6,6 @@ import Trees._
 import lexer._
 import lexer.Tokens._
 import scala.collection.mutable.ArrayBuffer
-import org.xml.sax.helpers.NewInstance
 
 object Parser extends Pipeline[Iterator[Token], Program] {
 
@@ -56,7 +55,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <goal> ::= <mainObject> { <classDeclaration> } <EOF> 
+     * <goal> ::= <mainObject> { <classDeclaration> } <EOF>
      */
     def parseGoal() = {
       val pos = currentToken
@@ -105,7 +104,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <formal> ::= <identifier> ":" <tpe> 
+     * <formal> ::= <identifier> ":" <tpe>
      */
     private def formal(): Formal = {
       val pos = currentToken
@@ -225,7 +224,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
     }
 
-    /** 
+    /**
      * <expression> ::= <or>
      */
     private def expression(): ExprTree = {
@@ -240,8 +239,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         TIMES -> Times,
         DIV -> Div)
 
-      /** Parses expressions of type 
-       * E ::= next { ( kinds[0] | kinds[1] | ... | kinds[n] ) next }. 
+      /**
+       * Parses expressions of type
+       * E ::= next { ( kinds[0] | kinds[1] | ... | kinds[n] ) next }.
        * Used to parse left associative expressions. *
        */
       def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
@@ -257,7 +257,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         }
         expr
       }
-      
+
       /** <or> ::= <and> { || <and> } */
       def or() = left(and, OR)
 
@@ -321,7 +321,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           }
           case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
         }
-        
+
         /**
          * <termRest> ::= .length
          *              | "[" <expression> "]
@@ -381,7 +381,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case _: Throwable => expected(STRLITKIND)
       }
     }
-    
+
     /**
      * <intLit> ::= sequence of digits, with no leading zeros
      */
@@ -397,7 +397,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     /**
      * Parses a commalist of the form
-     * <commaList> ::= [ parse { "," parse } ] 
+     * <commaList> ::= [ parse { "," parse } ]
      */
     private def commaList[T](parse: () => T): List[T] = {
       if (currentToken.kind == RPAREN) {
@@ -444,7 +444,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind) = {
       var arrBuff = new ArrayBuffer[T]()
-      while (condition()){
+      while (condition()) {
         arrBuff += parse()
       }
       arrBuff.toList

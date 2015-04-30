@@ -140,20 +140,20 @@ object NameAnalysis extends Pipeline[Program, Program] {
           setVariable(id, s)
           bind(s, index, expr)
         // Expressions
-        case And(lhs, rhs)               => bind(s, lhs, rhs)
-        case Or(lhs, rhs)                => bind(s, lhs, rhs)
-        case Plus(lhs, rhs)              => bind(s, lhs, rhs)
-        case Minus(lhs, rhs)             => bind(s, lhs, rhs)
-        case Times(lhs, rhs)             => bind(s, lhs, rhs)
-        case Div(lhs, rhs)               => bind(s, lhs, rhs)
-        case LessThan(lhs, rhs)          => bind(s, lhs, rhs)
-        case Equals(lhs, rhs)            => bind(s, lhs, rhs)
-        case ArrayRead(arr, index)       => bind(s, arr, index)
-        case ArrayLength(arr)            => bind(s, arr)
-        case MethodCall(obj, meth, args) => 
-        
+        case And(lhs, rhs)         => bind(s, lhs, rhs)
+        case Or(lhs, rhs)          => bind(s, lhs, rhs)
+        case Plus(lhs, rhs)        => bind(s, lhs, rhs)
+        case Minus(lhs, rhs)       => bind(s, lhs, rhs)
+        case Times(lhs, rhs)       => bind(s, lhs, rhs)
+        case Div(lhs, rhs)         => bind(s, lhs, rhs)
+        case LessThan(lhs, rhs)    => bind(s, lhs, rhs)
+        case Equals(lhs, rhs)      => bind(s, lhs, rhs)
+        case ArrayRead(arr, index) => bind(s, arr, index)
+        case ArrayLength(arr)      => bind(s, arr)
+        case MethodCall(obj, meth, args) =>
+
           bind(s, obj, args)
-        case id @ Identifier(value)      => setVariable(id, s)
+        case id @ Identifier(value) => setVariable(id, s)
         case thisSym @ This() =>
           s match {
             case classSymbol: ClassSymbol   => thisSym.setSymbol(g.mainClass)

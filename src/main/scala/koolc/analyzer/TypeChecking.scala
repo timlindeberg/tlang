@@ -87,7 +87,7 @@ object TypeChecking extends Pipeline[Program, Program] {
                   val methodArgs = methodSymbol.argList
                   if (mcArgs.length == methodArgs.length) {
                     val zipped = mcArgs.zip(methodArgs.map(_.getType))
-                    zipped.foreach{ case(mcArg, actualArg) => tcExpr(mcArg, actualArg) }
+                    zipped.foreach { case (mcArg, actualArg) => tcExpr(mcArg, actualArg) }
                     meth.setSymbol(methodSymbol)
                     meth.getType
                   } else {

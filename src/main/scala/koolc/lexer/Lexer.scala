@@ -5,7 +5,6 @@ import utils._
 import scala.io.Source
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
-import scala.runtime.RichChar
 
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._

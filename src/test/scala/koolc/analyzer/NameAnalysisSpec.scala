@@ -11,7 +11,6 @@ import koolc.TestUtils
 import koolc.utils.CompilationException
 import scala.io.Source
 import koolc.ast.Trees.Program
-import scala.collection.mutable.HashMap._
 import scala.collection.mutable.HashMap
 import koolc.analyzer.Types.TUntyped
 

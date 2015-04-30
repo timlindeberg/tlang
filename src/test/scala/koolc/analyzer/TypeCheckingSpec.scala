@@ -11,10 +11,8 @@ import koolc.TestUtils
 import koolc.utils.CompilationException
 import scala.io.Source
 import koolc.ast.Trees.Program
-import scala.collection.mutable.HashMap._
 import scala.collection.mutable.HashMap
 import koolc.analyzer.Types._
-import koolc.analyzer.Symbols.ClassSymbol
 import koolc.analyzer.Symbols.ClassSymbol
 
 class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
@@ -33,7 +31,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
   TestUtils.programFiles(TestUtils.resources + "given/programs/").foreach { file =>
     it should "type check given program " + file.toPath() in test(file)
-  }  
+  }
 
   behavior of "Negative tests"
   TestUtils.programFiles(TestUtils.resources + "analyzer/type/invalid/").foreach { file =>

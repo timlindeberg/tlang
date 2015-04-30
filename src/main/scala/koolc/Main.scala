@@ -2,8 +2,10 @@ package koolc
 
 import utils._
 import java.io.File
-import lexer._
-import ast._
+import lexer.Lexer
+import lexer.PrintTokens
+import ast.Parser
+import ast.ASTPrinterWithSymbols
 import scala.collection.mutable.HashMap
 import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking

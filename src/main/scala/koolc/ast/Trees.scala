@@ -54,7 +54,7 @@ object Trees {
       case ms: MethodSymbol   => ms.getType
       case es: ErrorSymbol    => TError
     }
-    override def setType(tpe: Type) = {getSymbol.setType(tpe); this}
+    override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
