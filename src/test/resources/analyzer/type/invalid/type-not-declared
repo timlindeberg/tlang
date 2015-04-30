@@ -1,0 +1,28 @@
+// 4
+
+object Main {
+  def main() : Unit = {
+    println(new A().run());
+    println(new B().run());
+  }
+}
+
+class A {
+  def run(): String = {
+    var a: A;
+    var b: B;
+    var c: C; // Error
+    var d: D; // Error
+    return "";
+  }
+}
+
+class B {
+  var a: A;
+  var b: B; 
+  var c: C; // Error
+  var d: D; // Error
+  def run(): String = {
+    return "";
+  }
+}

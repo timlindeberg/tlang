@@ -6,14 +6,17 @@ import scala.sys.process.ProcessLogger
 import koolc.ast.Trees._
 import koolc.analyzer.Symbols._
 import koolc.analyzer.Types._
+import scala.io.Source
 
 object TestUtils {
   val runScript = "./reference/run.sh"
   val resources = "./src/test/resources/"
+  val solutionPrefix = ".kool-solution"
+
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
     if (f.exists()) {
-      f.listFiles
+      f.listFiles.filter(!_.getName.contains(solutionPrefix))
     } else {
       f.mkdir
       Array[File]()
@@ -21,6 +24,22 @@ object TestUtils {
   }
   def format(token: Token): String = token + "(" + token.line + ":" + token.col + ")"
 
+  def readOptions(file: File): Map[String, Any] = {
+    var progString = Source.fromFile(file).getLines.toList
+    var expectedErrors = 1
+    var quietReporter = false
+    val map = Map
+    try {
+      val options = progString.head.split(" ").tail.toList
+      if (options.size > 0) {
+        expectedErrors = options(0).toInt
+        quietReporter = options.lift(1).getOrElse("false").toBoolean
+      }
+    } catch {
+      case _: Throwable => expectedErrors = 1
+    }
+    map("expectedErrors" -> expectedErrors, "quietReporter" -> quietReporter)
+  }
   object IgnoreErrorOutput extends ProcessLogger {
     def buffer[T](f: ⇒ T): T = f
     def err(s: ⇒ String): Unit = {}

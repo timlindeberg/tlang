@@ -12,22 +12,22 @@ class H {
     var a: A;
     var c: C;
     f = new Foo();
-    println(f.bar(10000)); // 5
-    println(f.baz(1));     // 1
-    println(f.foo());      // "foo"
+    println(f.bar(10000)); 
+    println(f.baz(1));     
+    println(f.foo());    
     t = new Test();
-    println(t.Method());      // "String"
+    println(t.Method());     
     t = new Test4();
-    println(t.Method());      // "Test4"
+    println(t.Method());     
 
     a = new A();
-    println(a.foo(0, "yo"));      // "0"
+    println(a.foo(0, "yo")); 
     a = new B();
-    println(a.foo(0, "yo"));      // "1"
+    println(a.foo(0, "yo"));  
     c = new C();
-    println(c.foo(0, "yo"));      // "0"
+    println(c.foo());  
     c = new D();
-    println(c.foo(0, "yo"));      // "1"    
+    println(c.foo());   
     return "!";
   }
 

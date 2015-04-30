@@ -1,4 +1,4 @@
-package koolc.lexer.code
+package koolc.code
 
 import org.scalatest._
 import scala.sys.process._
@@ -15,10 +15,10 @@ import scala.collection.mutable.HashMap._
 import koolc.analyzer.Types._
 import koolc.analyzer.Symbols.ClassSymbol
 import koolc.analyzer.NameAnalysis
-import koolc.code.CodeGeneration
 import koolc.analyzer.TypeChecking
 import koolc.ast.Trees.Program
 import koolc.analyzer.Symbols
+import java.io.FileNotFoundException
 
 class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val flag = "--eval"
@@ -36,7 +36,8 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   def test(file: File, exception: Boolean = false) = {
-    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
+    val options = TestUtils.readOptions(file)
+    val ctx = new Context(reporter = new koolc.utils.Reporter(options.contains("quietReporter")), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
     TestUtils.HasTypes(program) should be(true)
@@ -45,9 +46,19 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     CodeGeneration.run(ctx)(program)
 
     val res = execute(program, file)
-    //println(res)
+
+    // Try and compare result with solution file
+    try {
+      val sol = readSolution(file + "-solution").toList.map(_.trim)
+      val r = res.split("\n").toList
+      r.length should be(sol.length)
+      r.zip(sol).foreach(x => x._1 should be(x._2))
+    } catch {
+      case t: FileNotFoundException =>
+    }
 
     //res should be (getAnswer(file))
+
   }
 
   def flatten(l: List[_]): List[_] = l flatMap {
@@ -57,5 +68,6 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.id.value !!
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
+  def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
 
 }

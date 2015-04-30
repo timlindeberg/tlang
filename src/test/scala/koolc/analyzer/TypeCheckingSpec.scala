@@ -93,29 +93,15 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   def test(file: File, exception: Boolean = false) = {
-    val (ignoreFirstLine, expectedErrors) = tryGetExpectedNumberOfErrors(file)
-    val ctx = new Context(reporter = new koolc.utils.Reporter(exception, ignoreFirstLine), file = file, outDir = None)
+    val options = TestUtils.readOptions(file)
+    val ctx = new Context(reporter = new koolc.utils.Reporter(exception || options.contains("quietReporter")), file = file, outDir = None)
     val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
     if (exception) {
-      ctx.reporter.errors should be(expectedErrors)
+      ctx.reporter.errors should be(options("expectedErrors"))
     } else {
       ctx.reporter.hasErrors should be(false)
       TestUtils.HasTypes(program) should be(true)
     }
-  }
-
-  def tryGetExpectedNumberOfErrors(file: File): (Boolean, Int) = {
-    var progString = Source.fromFile(file).getLines.toList
-    var expectedErrors = 1
-    var ignoreFirstLine = false
-    try {
-      val r = """(\d+)""".r
-      expectedErrors = r.findAllIn(progString.head).map(_.toInt).next
-      ignoreFirstLine = true
-    } catch {
-      case _: Throwable => expectedErrors = 1
-    }
-    (ignoreFirstLine, expectedErrors)
   }
 
 }

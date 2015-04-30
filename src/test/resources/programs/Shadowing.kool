@@ -1,26 +1,33 @@
+// 0 true
+
 object Main {
     def main() : Unit = {
-        println(new Test().test(2)); // null
-        println(new Test2().test(2)); // 2
+        println(new Test1().test(1337));
+        println(new Test2().test(1337));
     }
 }
 
-class Test {
-    var t: Int;
-    var b: Test2;
-    var c: Int[];
-    def test(num : Int) : Test2 = {
-        var b: Test2;
-        t = 5;
-        c = new Int[0];
-        return b;
+class Test1 {
+    var t: Test1;
+    var b: String;
+
+    def test(num : Int): Int = {
+        var b: Int;
+        var t: Int;
+        t = 10;
+        b = 10;
+        num = 0;
+        return t + b + num;
     }
 }
-
 
 class Test2 {
-    var t: Int;
-    def test(t : Int) : Int = {
-        return t;
+    var t: Test1;
+    var b: Int;
+
+    def test(t : Int): Int = {
+        t = 10;
+        b = 10;
+        return t + b;
     }
 }

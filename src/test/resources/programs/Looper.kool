@@ -1,13 +1,9 @@
 object Main {
     def main() : Unit = {
-      println("--");
-      println(new Looper().run(100)); // 20
-      println("--");
-      println(new Loopy().run(100)); // 100
-      println("--");
-      println(new Loopy2().run(100)); // 300
-      println("--");
-      println(new Loopy3().run(100)); // 20
+      println(new Looper().run(100));
+      println(new Loopy().run(100));
+      println(new Loopy2().run(100));
+      println(new Loopy3().run(100));
     }
 }
 

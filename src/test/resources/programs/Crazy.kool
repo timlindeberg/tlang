@@ -1,10 +1,10 @@
 object P { def main(): Unit = { 
-    println(new A().bar()); // false
-    println(new A().bar2()); // true
-    println(new A().T());   // 0
-    println(new B().foo()); // 42
-    println(new B().a());   // false
-    println(new B().b());   // false
+    println(new A().bar());
+    println(new A().bar2());
+    println(new A().T());
+    println(new B().foo());
+    println(new B().a());
+    println(new B().b());
 
     println(new Test().init());
   } 
@@ -40,13 +40,15 @@ class B extends A {
 }
 
 class Test {
-  def init() : Test = {
+  def init() : Int = {
     var expr1 : Bool;
     var expr2 : Bool;
     var a : Int;
+    expr1 = true;
+    expr2 = true;
     if(expr1) { if(expr2) { a=1; } else { a=2; } }
     if(expr1) if(expr2) a=1; else a=2;
     if(expr1) { if(expr2) { a=1; } } else { a=2; }
-    return this;
+    return a;
   }
 }

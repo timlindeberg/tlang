@@ -8,8 +8,6 @@ object Main {
 
 class H {
   def run(): String = {
-    var f: Foo;
-    var t: Test;
     var a: A;
     var c: C;
     a = new A();
