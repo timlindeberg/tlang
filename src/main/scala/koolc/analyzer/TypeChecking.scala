@@ -77,16 +77,24 @@ object TypeChecking extends Pipeline[Program, Program] {
         case ArrayLength(arr) =>
           tcExpr(arr, TIntArray)
           TInt
-        case mc @ MethodCall(obj, meth, args) =>
+        case mc @ MethodCall(obj, meth, mcArgs) =>
+          def methodSignature() = meth.value + mcArgs.map(_.getType).mkString("(", ", ", ")")
           val objType = tcExpr(obj)
           objType match {
             case TObject(classSymbol) =>
               classSymbol.lookupMethod(meth) match {
                 case Some(methodSymbol) =>
-                  args.zip(methodSymbol.argList.map(_.getType)).foreach(x => tcExpr(x._1, x._2))
-                  meth.setSymbol(methodSymbol)
-                  meth.getType
-                case None => error("Class \'" + classSymbol.name + "\' does not contain a method called \'" + meth.value + "\'.", mc)
+                  val methodArgs = methodSymbol.argList
+                  if (mcArgs.length == methodArgs.length) {
+                    val zipped = mcArgs.zip(methodArgs.map(_.getType))
+                    zipped.foreach{ case(mcArg, actualArg) => tcExpr(mcArg, actualArg) }
+                    meth.setSymbol(methodSymbol)
+                    meth.getType
+                  } else {
+                    mcArgs.foreach(tcExpr(_))
+                    error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
+                  }
+                case None => error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
               }
             case _ => error("Cannot call function on type " + objType, mc)
           }
@@ -99,8 +107,8 @@ object TypeChecking extends Pipeline[Program, Program] {
         case NewIntArray(size) =>
           tcExpr(size, TInt)
           TIntArray
-        case New(tpe)  => tpe.getType
-        case Not(expr) => 
+        case New(tpe) => tpe.getType
+        case Not(expr) =>
           tcExpr(expr)
           TBool
       }
