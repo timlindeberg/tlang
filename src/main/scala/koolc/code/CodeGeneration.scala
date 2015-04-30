@@ -27,26 +27,37 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   val BODY = "body"
   val NEXT = "next"
 
+  /* Types */
+  val T_INT = 10
+
   def run(ctx: Context)(prog: Program): Unit = {
     import ctx.reporter._
 
+    def getIntOrReference[T](tp: Type, Iret: T, Aret: T) = tp match {
+      case TBool | TInt => Iret
+      case _            => Aret
+    }
+
     var varMap = new HashMap[String, Int]
 
-    class CodeCompiler(ch: CodeHandler, cn: String){
+    class CodeCompiler(ch: CodeHandler, cn: String) {
+
+      implicit class CodeHandler(ch: cafebabe.CodeHandler) {
+        def <<(list: List[AbstractByteCode]): Unit = list.foreach(ch << _)
+      }
+      
       def store(expr: ExprTree, id: Identifier): Unit = {
         val name = id.value
         val tp = id.getType
 
         if (varMap.contains(name)) {
+          val id = varMap(name)
           compile(expr)
-          ch << (tp match {
-            case TBool | TInt => IStore(varMap(name))
-            case _            => AStore(varMap(name))
-          })
+          ch << getIntOrReference(tp, IStore(id), AStore(id))
         } else {
-          ch << ArgLoad(0) // put this-reference on stack
+          ch << ArgLoad(0)
           compile(expr)
-          ch << PutField(cn, name, tp.byteCodeName)
+          ch << PutField(cn, name, tp.byteCodeName) // put this-reference on stack
         }
 
       }
@@ -55,13 +66,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         val name = id.value
         val tp = id.getType
 
-        if (varMap.contains(name))
-          ch << (tp match {
-            case TBool | TInt => ILoad(varMap(name))
-            case _            => ALoad(varMap(name))
-          })
-        else {
-          ch << ArgLoad(0) // put this-reference on stack
+        if (varMap.contains(name)) {
+          val id = varMap(name)
+          ch << getIntOrReference(tp, ILoad(id), ALoad(id))
+        } else {
+          ch << ArgLoad(0)
           ch << GetField(cn, name, tp.byteCodeName)
         }
       }
@@ -80,7 +89,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Label(elsLabel)
           if (els.isDefined) compile(els.get)
           ch << Label(afterLabel)
-
         case While(expr, stat) =>
           val bodyLabel = ch.getFreshLabel(BODY)
           val afterLabel = ch.getFreshLabel(AFTER)
@@ -92,10 +100,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case Println(expr) =>
           ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
           compile(expr)
-          val arg = expr.getType match {
-            case TInt | TBool => expr.getType.byteCodeName
-            case _            => "L" + OBJECT + ";"
-          }
+          val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
           ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
         case Assign(id, expr) =>
           store(expr, id)
@@ -108,6 +113,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       def branch(expr: ExprTree, thn: Label, els: Label): Unit = expr match {
         case Not(expr) => branch(expr, els, thn)
+        case True()    => ch << Goto(thn.id)
+        case False()   => ch << Goto(els.id)
         case And(lhs, rhs) =>
           val next = Label(ch.getFreshLabel(NEXT))
           branch(lhs, next, els)
@@ -118,10 +125,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           branch(lhs, thn, next)
           ch << next
           branch(rhs, thn, els)
-        case True() =>
-          ch << Goto(thn.id)
-        case False() =>
-          ch << Goto(els.id)
         case id @ Identifier(value) =>
           load(id)
           ch << IfEq(els.id)
@@ -134,10 +137,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case Equals(lhs, rhs) =>
           compile(lhs)
           compile(rhs)
-          lhs.getType match {
-            case TInt | TBool => ch << If_ICmpEq(thn.id)
-            case _            => ch << If_ACmpEq(thn.id)
-          }
+          ch << getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
           ch << Goto(els.id)
         case mc @ MethodCall(obj, meth, args) =>
           compile(mc)
@@ -157,26 +157,21 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Label(els)
           ch << Ldc(0)
           ch << Label(after)
-        case True()  => ch << Ldc(1)
-        case False() => ch << Ldc(0)
-        case expr @ Plus(lhs, rhs) =>
-          expr.getType match {
-            case TInt => {
+        case expr @ Plus(lhs, rhs) => expr.getType match {
+            case TInt =>
               compile(lhs)
               compile(rhs)
               ch << IADD
-            }
-            case TString => {
+            case TString =>
+              def methSignature(expr: ExprTree) = "(" + expr.getType.byteCodeName + ")L" + STRING_BUILDER + ";"
               ch << DefaultNew(STRING_BUILDER)
               compile(lhs)
-              ch << InvokeVirtual(STRING_BUILDER, "append", "(" + lhs.getType.byteCodeName + ")L" + STRING_BUILDER + ";")
+              ch << InvokeVirtual(STRING_BUILDER, "append", methSignature(lhs))
               compile(rhs)
-              ch << InvokeVirtual(STRING_BUILDER, "append", "(" + rhs.getType.byteCodeName + ")L" + STRING_BUILDER + ";")
+              ch << InvokeVirtual(STRING_BUILDER, "append", methSignature(rhs))
               ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
-            }
             case _ => throw new UnsupportedOperationException(expr.toString)
           }
-
         case Minus(lhs, rhs) =>
           compile(lhs)
           compile(rhs)
@@ -204,19 +199,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
           val name = obj.getType.asInstanceOf[TObject].classSymbol.name
           ch << InvokeVirtual(name, meth.value, signature)
-        case IntLit(value) =>
-          ch << Ldc(value)
-        case StringLit(value) =>
-          ch << Ldc(value)
-        case id @ Identifier(value) =>
-          load(id)
-        case This() =>
-          ch << ArgLoad(0)
+        case True()                 => ch << Ldc(1)
+        case False()                => ch << Ldc(0)
+        case IntLit(value)          => ch << Ldc(value)
+        case StringLit(value)       => ch << Ldc(value)
+        case id @ Identifier(value) => load(id)
+        case This()                 => ch << ArgLoad(0)
+        case ast.Trees.New(tpe)     => ch << DefaultNew(tpe.value)
         case NewIntArray(size) =>
           compile(size)
-          ch << NewArray(10) // I?
-        case ast.Trees.New(tpe) =>
-          ch << DefaultNew(tpe.value)
+          ch << NewArray(T_INT) // I?
       }
     }
 
@@ -263,10 +255,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mt.stats.foreach(codeCompiler.compile)
       codeCompiler.compile(mt.retExpr)
 
-      ch << (mt.retType match {
-        case IntType() | BooleanType() => IRETURN
-        case _                         => ARETURN
-      })
+      ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
 
       ch.freeze
     }
@@ -283,7 +272,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     val f = new java.io.File(outDir)
     if (!f.exists()) {
-      f.mkdir()
+      f.mkdirs()
     }
 
     val sourceName = ctx.file.getName
