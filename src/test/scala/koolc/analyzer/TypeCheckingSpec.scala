@@ -120,6 +120,4 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     (ignoreFirstLine, expectedErrors)
   }
 
-  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! TestUtils.IgnoreErrorOutput
-
 }

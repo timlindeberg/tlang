@@ -35,9 +35,9 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   }
 
   def terminateIfErrors = {
-    if (hasErrors) {
+    if (hasErrors && !quiet) {
       err("There were errors.")
-      sys.exit(1);
+      sys.exit(1)
     }
   }
 

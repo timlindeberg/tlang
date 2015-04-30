@@ -7,6 +7,7 @@ import ast._
 import scala.collection.mutable.HashMap
 import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking
+import koolc.code.CodeGeneration
 
 object Main {
   val tokensFlag = "--tokens"
@@ -46,33 +47,33 @@ object Main {
   }
 
   def main(args: Array[String]) {
+    val ctx = processOptions(args)
+
     try {
       val ctx = processOptions(args)
       if (flags(tokensFlag)) {
+        // Lex the program and print all tokens
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        var pipeline = Lexer andThen Parser;
+        var parsing = Lexer andThen Parser;
         var analysis = NameAnalysis andThen TypeChecking;
         if (flags(astFlag)) {
           if (flags(symId)) {
-            val program = (pipeline andThen analysis).run(ctx)(ctx.file)
+            // Run analysis and print AST tree with symbols
+            val program = (parsing andThen analysis).run(ctx)(ctx.file)
             println(ASTPrinterWithSymbols(program))
           } else {
-            val program = pipeline.run(ctx)(ctx.file)
+            // Parse and print AST tree
+            val program = parsing.run(ctx)(ctx.file)
             println(program)
           }
         } else {
-          val program = (pipeline andThen analysis).run(ctx)(ctx.file)
-          if (!ctx.reporter.hasErrors) {
-            if (flags(symId)) {
-              println(Printer(program, true))
-            } else {
-              println(Printer(program))
-            }
-          }
+          // Generate code
+          (parsing andThen analysis andThen CodeGeneration).run(ctx)(ctx.file)
         }
       }
     } catch {
+      // Reporter throws exception at fatal instead exiting program
       case e: Throwable => System.err.println(e.getMessage)
     }
   }
