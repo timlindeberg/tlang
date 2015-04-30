@@ -24,6 +24,10 @@ class H {
     println(a.foo(0, "yo"));      // "0"
     a = new B();
     println(a.foo(0, "yo"));      // "1"
+    c = new C();
+    println(c.foo(0, "yo"));      // "0"
+    c = new D();
+    println(c.foo(0, "yo"));      // "1"    
     return "!";
   }
 

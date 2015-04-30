@@ -28,40 +28,16 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(TestUtils.resources + "analyzer/type/valid/").foreach { file =>
     it should "type check program " + file.toPath() in test(file)
   }
-  TestUtils.programFiles(TestUtils.resources + "given/ast/valid/").foreach { file =>
-    it should "type check given program " + file.toPath() in test(file)
+  TestUtils.programFiles(TestUtils.resources + "programs/").foreach { file =>
+    it should "type check program " + file.toPath() in test(file)
   }
+  TestUtils.programFiles(TestUtils.resources + "given/programs/").foreach { file =>
+    it should "type check given program " + file.toPath() in test(file)
+  }  
 
   behavior of "Negative tests"
   TestUtils.programFiles(TestUtils.resources + "analyzer/type/invalid/").foreach { file =>
     it should "type check invalid program " + file.toPath() in test(file, true)
-  }
-
-  def test(file: File, exception: Boolean = false) = {
-    var progString = Source.fromFile(file).getLines.toList
-    var expectedErrors = 1
-    var ignoreFirstLine = false
-    try {
-      expectedErrors = progString.head.toInt
-      progString = progString.tail
-      ignoreFirstLine = true
-    } catch {
-      case _: Throwable => expectedErrors = 1
-    }
-
-    val program = progString.mkString("\n")
-    val ctx = new Context(reporter = new koolc.utils.Reporter(false, ignoreFirstLine), file = file, outDir = None)
-    def nameAnalysis(p: Program) = NameAnalysis.run(ctx)(p)
-    def typeChecking(p: Program) = TypeChecking.run(ctx)(p)
-    def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
-    def print(p: Program) = Printer(p, true)
-    if (exception) {
-      typeChecking(nameAnalysis(parse(program)))
-      assert(ctx.reporter.errors === expectedErrors)
-    } else {
-      var tree = typeChecking(nameAnalysis(parse(program)))
-      assert(!ctx.reporter.hasErrors)
-    }
   }
 
   behavior of "Relations"
@@ -116,6 +92,32 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     }
 
+  }
+
+  def test(file: File, exception: Boolean = false) = {
+    val (ignoreFirstLine, expectedErrors) = tryGetExpectedNumberOfErrors(file)
+    val ctx = new Context(reporter = new koolc.utils.Reporter(exception, ignoreFirstLine), file = file, outDir = None)
+    val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+    if (exception) {
+      ctx.reporter.errors should be(expectedErrors)
+    } else {
+      ctx.reporter.hasErrors should be(false)
+      TestUtils.HasTypes(program) should be(true)
+    }
+  }
+
+  def tryGetExpectedNumberOfErrors(file: File): (Boolean, Int) = {
+    var progString = Source.fromFile(file).getLines.toList
+    var expectedErrors = 1
+    var ignoreFirstLine = false
+    try {
+      val r = """(\d+)""".r
+      expectedErrors = r.findAllIn(progString.head).map(_.toInt).next
+      ignoreFirstLine = true
+    } catch {
+      case _: Throwable => expectedErrors = 1
+    }
+    (ignoreFirstLine, expectedErrors)
   }
 
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! TestUtils.IgnoreErrorOutput

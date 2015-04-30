@@ -41,7 +41,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
     }
   }
 
-  private def report(prefix: String, msg: Any, pos: Positioned) = if (!quiet) System.err.println(errMessage(prefix, msg, pos))
+  private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
