@@ -57,7 +57,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       case t: FileNotFoundException =>
     }
 
-    //res should be (getAnswer(file))
+    // res should be (getAnswer(file))
 
   }
 

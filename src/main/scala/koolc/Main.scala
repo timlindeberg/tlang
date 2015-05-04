@@ -49,8 +49,6 @@ object Main {
   }
 
   def main(args: Array[String]) {
-    val ctx = processOptions(args)
-
     try {
       val ctx = processOptions(args)
       if (flags(tokensFlag)) {
