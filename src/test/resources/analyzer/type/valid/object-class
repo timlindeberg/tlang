@@ -9,3 +9,5 @@ class Foo {
     return a;
   }
 }
+
+class A { }
