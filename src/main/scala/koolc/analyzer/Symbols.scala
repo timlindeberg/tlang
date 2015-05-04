@@ -39,10 +39,12 @@ object Symbols {
       ret
     }
   }
+  
+  val objectClass = new ClassSymbol("Object").setType(Types.anyObject)
 
   class GlobalScope {
     var mainClass: ClassSymbol = _
-    var classes = Map[String, ClassSymbol]()
+    var classes = Map[String, ClassSymbol]("Object" -> objectClass)
 
     def lookupClass(id: Identifier): Option[ClassSymbol] = lookupClass(id.value)
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)

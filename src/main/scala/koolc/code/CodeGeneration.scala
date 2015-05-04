@@ -212,7 +212,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case StringLit(value)       => ch << Ldc(value)
           case id @ Identifier(value) => load(id)
           case This()                 => ch << ArgLoad(0)
-          case ast.Trees.New(tpe)     => ch << DefaultNew(tpe.value)
+          case ast.Trees.New(tpe)     => ch << DefaultNew(if(tpe.value == "Object") OBJECT else tpe.value)
         }
       }
     }

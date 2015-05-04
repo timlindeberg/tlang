@@ -2,6 +2,7 @@ package koolc
 package analyzer
 
 import Symbols._
+import koolc.code.CodeGeneration
 
 object Types {
   trait Typed {
@@ -68,9 +69,8 @@ object Types {
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case _ if tpe == anyObject => true
-      case TObject(c) =>
-        if (classSymbol.name == c.name) true
+      case obj @ TObject(c) =>
+        if (classSymbol.name == c.name || obj == anyObject) true
         else classSymbol.parent match {
           case Some(x) => x.getType.isSubTypeOf(tpe)
           case None    => false
@@ -79,7 +79,10 @@ object Types {
     }
     override def toString = classSymbol.name
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
-    override def byteCodeName(): String = "L" + classSymbol.name + ";"
+    override def byteCodeName(): String = {
+      val name = if (this == anyObject) CodeGeneration.OBJECT else classSymbol.name
+      "L" + name + ";"
+    }
   }
 
   // special object to implement the fact that all objects are its subclasses

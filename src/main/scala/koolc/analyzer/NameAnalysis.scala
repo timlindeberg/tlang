@@ -181,7 +181,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
                 set(TObject(classSymbol))
-              case None => error("Type \'" + id.value + "\' was not declared:", id)
+              case None => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
           case BooleanType()  => set(TBool)
           case IntType()      => set(TInt)
