@@ -21,23 +21,24 @@ class LexerSpec extends FlatSpec with Matchers {
     it should "lex valid program " + file.toPath() in test(file)
   }
 
-  behavior of "Created tests without reference"
-  for (i <- 1 to 4) {
-    it should "lex invalid " + i in compare(TestUtils.resources + "/lexer/invalid/invalid-" + i)
+  TestUtils.programFiles(TestUtils.resources + "/lexer/invalid/").foreach { file =>
+    it should "lex invalid program " + file.toPath() in test(file, true)
   }
+
+  behavior of "Created tests without reference"
 
   def lexer(file: File): Iterator[Token] = Lexer.run(new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None))(file)
-  def test(file: File) = {
+  def test(file: File, exception: Boolean = false) = {
     def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()).!!.split('\n').map(_.trim)
-    lexer(file).toList.map(TestUtils.format).zip(getAnswer(file)).foreach(x => assert(x._1 === x._2))
-  }
-
-  def compare(file: String) {
     def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
-    val it = lexer(new File(file + ".kool")).toList.map(TestUtils.format)
-    val sol = readSolution(file + "-solution.kool").toList.map(_.trim)
-    assert(it.length === sol.length)
-    it.zip(sol).foreach(x => assert(x._1 === x._2))
+    val lex = lexer(file).toList.map(TestUtils.format)
+    if (exception) {
+      val sol = readSolution(file + "-solution").toList.map(_.trim)
+      println(lex)
+      assert(lex.length === sol.length)
+      lex.zip(sol).foreach(x => assert(x._1 === x._2))
+    } else {
+      lex.zip(getAnswer(file)).foreach(x => assert(x._1 === x._2))
+    }
   }
-
 }

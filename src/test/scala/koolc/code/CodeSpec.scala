@@ -49,7 +49,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     // Try and compare result with solution file
     try {
-      val sol = readSolution(file + "-solution").toList.map(_.trim)
+      val sol = readSolution(file + "-solution").toList
       val r = res.split("\n").toList
       r.length should be(sol.length)
       r.zip(sol).foreach(x => x._1 should be(x._2))
