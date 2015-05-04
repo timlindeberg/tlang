@@ -8,6 +8,6 @@ class A {
 }
 
 class B extends A {
-  // Different number of parameters
+  // Different types of parameters
   def foo(a: Int): Int = { return a; }
 }
