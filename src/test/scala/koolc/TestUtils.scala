@@ -131,6 +131,7 @@ object TestUtils {
           case x @ False()           => x.getType == TBool
           case x @ This()            => x.getType != TUntyped && x.getType != TError
         }
+        assert(s)
         s
       } catch {
         case t: Throwable => false
