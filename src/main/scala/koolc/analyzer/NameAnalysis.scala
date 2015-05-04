@@ -25,11 +25,15 @@ object NameAnalysis extends Pipeline[Program, Program] {
           x.setSymbol(s.mainClass)
           id.setSymbol(s.mainClass)
         }
-        case x @ ClassDecl(id, parent, vars, methods) => {
-          val newSymbol = new ClassSymbol(id.value).setPos(id)
+        case x @ ClassDecl(id @ Identifier(name), parent, vars, methods) => {
+          val newSymbol = new ClassSymbol(name).setPos(id)
           s.classes = addTo(s.classes, newSymbol, id, x)
           vars.foreach(addSymbols(_, newSymbol))
           methods.foreach(addSymbols(_, newSymbol))
+
+          if (name == s.mainClass.name) {
+            error("Class \'" + name + "\' has the same name as the main object.", id)
+          }
         }
         case _ => throw new UnsupportedOperationException
       }
@@ -289,6 +293,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     def error(msg: String, tree: Positioned) = {
       if (tree.isInstanceOf[Identifier])
         tree.asInstanceOf[Identifier].setSymbol(new ErrorSymbol)
+
       ctx.reporter.error(msg, tree)
     }
   }
