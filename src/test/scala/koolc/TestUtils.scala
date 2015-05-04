@@ -16,7 +16,7 @@ object TestUtils {
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
     if (f.exists()) {
-      f.listFiles.filter(!_.getName.contains(solutionPrefix))
+      f.listFiles.filter(x => !x.getName.contains(solutionPrefix) && x.getName != ".DS_Store")
     } else {
       f.mkdir
       Array[File]()
