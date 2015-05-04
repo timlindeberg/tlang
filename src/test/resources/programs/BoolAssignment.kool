@@ -1,0 +1,31 @@
+object Main {
+    def main() : Unit = {
+        println(new Test().test());
+    }
+}
+
+class Test {
+
+    def test(): String = {
+        var b: Bool;
+        b = true;
+        println(b); // true
+        b = false;
+        println(b); // false
+        b = false || true;
+        println(b); // true
+        b = true && false;
+        println(b); // false
+        b = false && this.foo();
+        println(b); // false
+        b = true || this.foo();
+        println(b); // true
+        return "";
+    }
+
+    def foo(): Bool = {
+        println("Never called");
+        return true;
+    }
+}
+
