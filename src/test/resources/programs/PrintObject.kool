@@ -10,4 +10,8 @@ class Foo {
   }
 }
 
-class A { }
+class A { 
+	def toString(): String = {
+		return "Print A!";
+	}
+}
