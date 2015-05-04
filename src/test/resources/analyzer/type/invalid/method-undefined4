@@ -1,0 +1,11 @@
+object Main {
+  def main() : Unit = {
+    println(new A().foo("Hej"));
+  }
+}
+
+class A { 
+  def foo(a: Int): Int = {
+    return 0; 
+  }
+}

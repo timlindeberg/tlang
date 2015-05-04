@@ -1,0 +1,10 @@
+object Main {
+  def main() : Unit = {
+  }
+}
+
+class A { 
+  def foo(): Int = {
+    return "string"; 
+  }
+}
