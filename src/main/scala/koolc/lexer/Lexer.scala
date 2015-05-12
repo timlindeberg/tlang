@@ -64,7 +64,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
       def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-        val end = (c: Char) => singleCharTokens.contains(c) || c.isWhitespace
+        val end = (c: Char) => singleCharTokens.contains(c) || c.isWhitespace || c == '&' || c == '|'
         val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
         chars match {
           case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)
