@@ -144,23 +144,23 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def tpe(): TypeTree = {
       val pos = currentToken
-      currentToken.kind match {
-
+      val tree = currentToken.kind match {
         case INT => {
           eat(INT)
           if (currentToken.kind == LBRACKET) {
             eat(LBRACKET, RBRACKET)
-            IntArrayType().setPos(pos)
+            IntArrayType()
           } else {
-            IntType().setPos(pos)
+            IntType()
           }
         }
         case BOOLEAN =>
-          eat(BOOLEAN); BooleanType().setPos(pos)
+          eat(BOOLEAN); BooleanType()
         case STRING =>
-          eat(STRING); StringType().setPos(pos)
+          eat(STRING); StringType()
         case _ => identifier
       }
+      tree.setPos(pos)
     }
 
     /**
@@ -173,12 +173,12 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def statement(): StatTree = {
       val pos = currentToken
-      currentToken.kind match {
+      val tree = currentToken.kind match {
         case LBRACE => {
           eat(LBRACE)
           val stmts = until(statement, RBRACE)
           eat(RBRACE)
-          Block(stmts).setPos(pos)
+          Block(stmts)
         }
         case IF => {
           eat(IF, LPAREN)
@@ -186,19 +186,19 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           eat(RPAREN)
           val stmt = statement
           val els = optional(statement, ELSE)
-          If(expr, stmt, els).setPos(pos)
+          If(expr, stmt, els)
         }
         case WHILE => {
           eat(WHILE, LPAREN)
           val expr = expression
           eat(RPAREN)
-          (While(expr, statement)).setPos(pos)
+          (While(expr, statement))
         }
         case PRINTLN => {
           eat(PRINTLN, LPAREN)
           val expr = expression
           eat(RPAREN, SEMICOLON)
-          Println(expr).setPos(pos)
+          Println(expr)
         }
         case IDKIND => {
           val id = identifier
@@ -207,7 +207,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               eat(EQSIGN)
               val expr = expression
               eat(SEMICOLON)
-              Assign(id, expr).setPos(pos)
+              Assign(id, expr)
             }
             case LBRACKET => {
               eat(LBRACKET)
@@ -215,13 +215,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               eat(RBRACKET, EQSIGN)
               val expr2 = expression
               eat(SEMICOLON)
-              ArrayAssign(id, expr1, expr2).setPos(pos)
+              ArrayAssign(id, expr1, expr2)
             }
             case _ => expected(EQSIGN, LBRACKET)
           }
         }
         case _ => expected(LBRACE, IF, WHILE, PRINTLN, IDKIND)
       }
+      tree.setPos(pos)
     }
 
     /**
@@ -289,37 +290,40 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          *               | new Int"[" <expression> "]"
          *               | new <identifier> "()"
          */
-        def termFirst() = currentToken.kind match {
-          case LPAREN =>
-            eat(LPAREN); val expr = expression; eat(RPAREN); expr.setPos(pos)
-          case BANG =>
-            eat(BANG); Not(term).setPos(pos)
-          case INTLITKIND =>
-            intLit
-          case STRLITKIND =>
-            stringLit
-          case IDKIND =>
-            identifier
-          case TRUE =>
-            eat(TRUE); True().setPos(pos)
-          case FALSE =>
-            eat(FALSE); False().setPos(pos)
-          case THIS =>
-            eat(THIS); This().setPos(pos)
-          case NEW => {
-            eat(NEW)
-            if (currentToken.kind == INT) {
-              eat(INT, LBRACKET)
-              val expr = expression
-              eat(RBRACKET)
-              NewIntArray(expr).setPos(pos)
-            } else {
-              val id = identifier
-              eat(LPAREN, RPAREN)
-              New(id).setPos(pos)
+        def termFirst() = {
+          val tree = currentToken.kind match {
+            case LPAREN =>
+              eat(LPAREN); val expr = expression; eat(RPAREN); expr
+            case BANG =>
+              eat(BANG); Not(term)
+            case INTLITKIND =>
+              intLit
+            case STRLITKIND =>
+              stringLit
+            case IDKIND =>
+              identifier
+            case TRUE =>
+              eat(TRUE); True()
+            case FALSE =>
+              eat(FALSE); False()
+            case THIS =>
+              eat(THIS); This()
+            case NEW => {
+              eat(NEW)
+              if (currentToken.kind == INT) {
+                eat(INT, LBRACKET)
+                val expr = expression
+                eat(RBRACKET)
+                NewIntArray(expr)
+              } else {
+                val id = identifier
+                eat(LPAREN, RPAREN)
+                New(id)
+              }
             }
+            case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
           }
-          case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
+          tree.setPos(pos)
         }
 
         /**
@@ -334,22 +338,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               eat(DOT)
               if (currentToken.kind == LENGTH) {
                 eat(LENGTH)
-                e = ArrayLength(e).setPos(pos)
+                e = ArrayLength(e)
               } else {
                 val id = identifier
                 eat(LPAREN)
                 val exprs = commaList(expression)
                 eat(RPAREN)
-                e = MethodCall(e, id, exprs.toList).setPos(pos)
+                e = MethodCall(e, id, exprs.toList)
               }
             } else if (currentToken.kind == LBRACKET) {
               eat(LBRACKET)
               val expr = expression
               eat(RBRACKET)
-              e = ArrayRead(e, expr).setPos(pos)
+              e = ArrayRead(e, expr)
             }
           }
-          e
+          e.setPos(pos)
         }
         termRest(termFirst)
       }
