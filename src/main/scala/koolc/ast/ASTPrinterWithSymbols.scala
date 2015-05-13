@@ -37,12 +37,13 @@ object ASTPrinterWithSymbols {
       case IntLit(value) => value
       case StringLit(value) => value
       case Identifier(value) => value
+      case TypeIdentifier(value, templateTypes) => value + "," + trees(templateTypes)
       case NewIntArray(size) => f(size)
       case New(tpe) => f(tpe)
       case Not(expr) => f(expr)
       case _ => ""
     }
-    t.getClass.getSimpleName + symbol(t) + "(" + s + ")"
+    t.getClass.getSimpleName + typeOf(t) + "(" + s + ")"
   }
 
   def typeOf(t: Tree): String = t match {

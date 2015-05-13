@@ -76,13 +76,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <classDeclaration> ::= class <identifier> [ extends <identifier> ] "{" { <varDeclaration> } { methodDeclaration } "}"
+     * <classDeclaration> ::= class <typeIdentifier>
+     *    [ extends <typeIdentifier> ] "{" { <varDeclaration> } { methodDeclaration } "}"
      */
     private def classDeclaration(): ClassDecl = {
       val pos = currentToken
       eat(CLASS)
-      val id = identifier
-      val parent = optional(identifier, EXTENDS)
+      val id = typeIdentifier
+      val parent = optional(typeIdentifier, EXTENDS)
       eat(LBRACE)
       val vars = untilNot(varDeclaration, VAR)
       val methods = untilNot(methodDeclaration, DEF)
@@ -158,7 +159,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           eat(BOOLEAN); BooleanType()
         case STRING =>
           eat(STRING); StringType()
-        case _ => identifier
+        case _ => typeIdentifier
       }
       tree.setPos(pos)
     }
@@ -316,7 +317,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
                 eat(RBRACKET)
                 NewIntArray(expr)
               } else {
-                val id = identifier
+                val id = typeIdentifier
                 eat(LPAREN, RPAREN)
                 New(id)
               }
@@ -328,7 +329,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
         /**
          * <termRest> ::= .length
-         *              | "[" <expression> "]
+         *              | "[" <expression> "]"
          */
         def termRest(lhs: ExprTree): ExprTree = {
           val pos = currentToken
@@ -358,6 +359,27 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         termRest(termFirst)
       }
       or().setPos(pos)
+    }
+
+    /**
+     * <typeIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
+     */
+    private def typeIdentifier(): TypeIdentifier = {
+      try {
+        val id = currentToken.asInstanceOf[ID]
+        eat(IDKIND)
+        val tIds = currentToken.kind match {
+          case LBRACKET =>
+            eat(LBRACKET)
+            val tmp = commaList(tpe)
+            eat(RBRACKET)
+            tmp
+          case _ => List()
+        }
+        TypeIdentifier(id.value, tIds).setPos(id)
+      } catch {
+        case _: Throwable => expected(IDKIND)
+      }
     }
 
     /**

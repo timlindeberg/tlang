@@ -57,16 +57,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       }
 
-      def load(id: Identifier): Unit = {
-        val name = id.value
-        val tp = id.getType
+      def load(name: String, tpe: Type): Unit = {
 
         if (varMap.contains(name)) {
           val id = varMap(name)
-          ch << getIntOrReference(tp, ILoad(id), ALoad(id))
+          ch << getIntOrReference(tpe, ILoad(id), ALoad(id))
         } else {
           ch << ArgLoad(0)
-          ch << GetField(cn, name, tp.byteCodeName)
+          ch << GetField(cn, name, tpe.byteCodeName)
         }
       }
 
@@ -102,7 +100,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case Assign(id, expr) =>
             store(expr, id)
           case ArrayAssign(id, index, expr) =>
-            load(id)
+            load(id.value, id.getType)
             compile(index)
             compile(expr)
             ch << IASTORE
@@ -124,7 +122,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << next
           branch(rhs, thn, els)
         case id @ Identifier(value) =>
-          load(id)
+          load(id.value, id.getType)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
         case LessThan(lhs, rhs) =>
@@ -206,13 +204,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case NewIntArray(size) =>
             compile(size)
             ch << NewArray(T_INT) // I?
-          case True()                 => ch << Ldc(1)
-          case False()                => ch << Ldc(0)
-          case IntLit(value)          => ch << Ldc(value)
-          case StringLit(value)       => ch << Ldc(value)
-          case id @ Identifier(value) => load(id)
-          case This()                 => ch << ArgLoad(0)
-          case ast.Trees.New(tpe)     => ch << DefaultNew(if(tpe.value == "Object") OBJECT else tpe.value)
+          case True()                        => ch << Ldc(1)
+          case False()                       => ch << Ldc(0)
+          case IntLit(value)                 => ch << Ldc(value)
+          case StringLit(value)              => ch << Ldc(value)
+          case id @ Identifier(value)        => load(id.value, id.getType)
+          case id @ TypeIdentifier(value, _) => load(id.value, id.getType)
+          case This()                        => ch << ArgLoad(0)
+          case ast.Trees.New(tpe)            => ch << DefaultNew(if (tpe.value == "Object") OBJECT else tpe.value)
         }
       }
     }

@@ -79,10 +79,11 @@ object TypeChecking extends Pipeline[Program, Program] {
           TInt
         case mc @ MethodCall(obj, meth, mcArgs) =>
           def methodSignature() = meth.value + mcArgs.map(_.getType).mkString("(", ", ", ")")
+          
           val objType = tcExpr(obj)
           objType match {
             case TObject(classSymbol) =>
-              classSymbol.lookupMethod(meth) match {
+              classSymbol.lookupMethod(meth.value) match {
                 case Some(methodSymbol) =>
                   val methodArgs = methodSymbol.argList
                   if (mcArgs.length == methodArgs.length) {
@@ -103,6 +104,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         case True()                 => TBool
         case False()                => TBool
         case id @ Identifier(value) => id.getType
+        case id @ TypeIdentifier(value, _) => id.getType
         case th @ This()            => th.getSymbol.getType
         case NewIntArray(size) =>
           tcExpr(size, TInt)

@@ -23,7 +23,7 @@ object Printer {
 
   def symbol[T <: Symbol](t: Symbolic[T]): String =
     if (printIdNumber)
-      "#" + (if (t.hasSymbol) t.getSymbol.id else "??")
+      if (t.hasSymbol) "[" + t.getSymbol.getType + "]" else "??"
     else ""
 
   def apply(t: Tree, printIdNumber: Boolean = false): String = {
@@ -34,7 +34,7 @@ object Printer {
   private def f(t: Tree): String = t match {
     case Program(main, classes) => f(main) + all(classes)
     case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + all(stats) + r + r
-    case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[Identifier])) + " " + l + all(vars) + all(methods) + "" + r
+    case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
     case VarDecl(tpe, id) => "var " + f(id) + " : " + f(tpe) + ";" + n
     case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + " ( " + commaList(args) + " ) : " + f(retType) + " = " + l + all(vars) + all(stats) + "return " + f(retExpr) + "; " + r + n
     case Formal(tpe, id) => f(id) + ": " + f(tpe)
@@ -68,6 +68,7 @@ object Printer {
     case True() => "true"
     case False() => "false"
     case id @ Identifier(value) => value + symbol(id)
+    case id @ TypeIdentifier(value, list) => value + symbol(id) + (if(id.isTemplated) "[" + commaList(list) + "]" else "")
     case This() => "this"
     case NewIntArray(size) => "new Int[" + f(size) + "]"
     case New(tpe) => "new " + f(tpe) + "()"

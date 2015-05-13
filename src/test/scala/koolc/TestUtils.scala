@@ -57,7 +57,7 @@ object TestUtils {
         case l1: List[_] => flatten(l1)
         case otherwise   => List(otherwise)
       }
-      flatten(prog.classes.map(_.getSymbol).map(klass => {
+      val list = flatten(prog.classes.map(_.getSymbol).map(klass => {
         List(
           klass.getType,
           klass.members.map(_._2.getType),
@@ -68,7 +68,9 @@ object TestUtils {
               meth.members.map(_._2.getType),
               meth.params.map(_._2.getType))
           }))
-      })).forall(_ != TUntyped)
+      }))
+      println(list)
+      list.forall(_ != TUntyped)
     }
 
     private def f(t: Tree): Boolean = {
@@ -120,6 +122,7 @@ object TestUtils {
           case x @ IntLit(value)     => x.getType == TInt
           case x @ StringLit(value)  => x.getType == TString
           case x @ Identifier(value) => x.getType != TUntyped && x.getType != TError
+          case x @ TypeIdentifier(value, _) => x.getType != TUntyped && x.getType != TError
           case NewIntArray(size)     => f(size)
           case New(tpe)              => f(tpe)
           case Not(expr)             => f(expr)
