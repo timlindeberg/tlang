@@ -8,12 +8,12 @@ import analyzer.Types._
 object Trees {
   sealed trait Tree extends Positioned
 
-  case class Program(main: MainObject, var classes: List[ClassDecl]) extends Tree
+  case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
-  case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], var vars: List[VarDecl], var methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
-  case class VarDecl(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], var stats: List[StatTree], var retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
-  sealed case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class ClassDecl(id: TypeIdentifier, parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
+  case class VarDecl(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class MethodDecl(retType: TypeTree, id: Identifier, args: List[Formal], vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
+  sealed case class Formal(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   sealed trait TypeTree extends Tree with Typed
   case class IntArrayType() extends TypeTree
@@ -56,7 +56,7 @@ object Trees {
     }
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
   }
-  case class TypeIdentifier(var value: String, var templateTypes: List[TypeTree]) extends TypeTree with ExprTree with Symbolic[Symbol] {
+  case class TypeIdentifier(value: String, templateTypes: List[TypeTree]) extends TypeTree with ExprTree with Symbolic[Symbol] {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol    => TObject(cs)
@@ -64,14 +64,20 @@ object Trees {
       case ms: MethodSymbol   => ms.getType
       case es: ErrorSymbol    => TError
     }
-    
+
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
     def isTemplated = !templateTypes.isEmpty
-    def templatedClassName = value + (if(isTemplated) "$" + templateTypes.mkString("$") else "")
+    def templatedClassName(templateTypes2: List[TypeTree]) = value + (if (isTemplated) "$" + templateTypes2.map(_ match {
+      case TypeIdentifier(value, _) => value
+      case IntType() => "Int"
+      case IntArrayType() => "Int[]"
+      case StringType() => "String"
+      case BooleanType() => "Bool"
+    }).mkString("$") else "")
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
-  case class New(var tpe: TypeIdentifier) extends ExprTree
+  case class New(tpe: TypeIdentifier) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
 }

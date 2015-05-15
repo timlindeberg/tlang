@@ -11,62 +11,55 @@ object Templates extends Pipeline[Program, Program] {
 
     val templateClasses = prog.classes.filter(_.id.isTemplated)
     var set: Set[String] = Set()
+    val classList: List[ClassDecl] = List()
 
     object Generator {
-      def generate(option: Option[Tree]): Unit = if (option.isDefined) generate(option.get)
-      def generate(list: List[Tree]): Unit = list.foreach(generate)
-      def generate(t: Tree): Unit = t match {
-        case Program(main, classes) =>
-          generate(main)
-          generate(classes)
-        case MainObject(id, stats) => generate(stats)
+      def generate(option: Option[Tree], classList: List[ClassDecl]): List[ClassDecl] = if (option.isDefined) generate(option.get, classList) else List()
+      def generate(list: List[Tree], classList: List[ClassDecl]): List[ClassDecl] = list.map(generate(_, classList)).flatten
+      def generate(t: Tree, classList: List[ClassDecl]): List[ClassDecl] = t match {
+        case Program(main, classes) => generate(main, classList) ::: generate(classes, classList)
+        case MainObject(id, stats) => generate(stats, classList)
         case ClassDecl(id, parent, vars, methods) =>
-          if (!id.isTemplated) {
-            generate(parent)
-            generate(vars)
-            generate(methods)
-          }
-        case VarDecl(tpe, id) =>
-          tpe match {
+          if (!id.isTemplated) generate(parent, classList) ::: generate(vars,classList) ::: generate(methods, classList)
+          else List()
+        case VarDecl(tpe, id) => tpe match {
             case id @ TypeIdentifier(value, templateTypes) =>
-              val templateName = id.templatedClassName
-              if(id.isTemplated && !set.contains(templateName)){
+              val templateName = id.templatedClassName(templateTypes)
+              if (id.isTemplated && !set.contains(templateName)) {
                 set += templateName
-                val lol = generateClass(value, templateTypes, tpe)
-                  
-                prog.classes ++= List(lol)
-                println(Printer(lol))
+                List(generateClass(value, templateTypes, tpe))
+              }else{
+                List()
               }
-            case _ =>
+            case _ => List()
           }
-
-        case MethodDecl(retType, id, args, vars, stats, retExpr) => 
-        case Formal(tpe, id) => 
-        case Block(stats) => 
-        case If(expr, thn, els) => 
-        case While(expr, stat) => 
-        case Println(expr) => 
-        case Assign(id, expr) => 
-        case ArrayAssign(id, index, expr) => 
-        case And(lhs, rhs) => 
-        case Or(lhs, rhs) => 
-        case Plus(lhs, rhs) => 
-        case Minus(lhs, rhs) => 
-        case Times(lhs, rhs) => 
-        case Div(lhs, rhs) => 
-        case LessThan(lhs, rhs) => 
-        case Equals(lhs, rhs) => 
-        case ArrayRead(arr, index) => 
-        case ArrayLength(arr) => 
-        case MethodCall(obj, meth, args) => 
-        case IntLit(value) => 
-        case StringLit(value) => 
-        case Identifier(value) => 
-        case TypeIdentifier(value, templateTypes) => 
-        case NewIntArray(size) => 
-        case New(tpe) => 
-        case Not(expr) => 
-        case _ =>
+        case MethodDecl(retType, id, args, vars, stats, retExpr) => List()
+        case Formal(tpe, id) => List()
+        case Block(stats) => List()
+        case If(expr, thn, els) => List()
+        case While(expr, stat) => List()
+        case Println(expr) => List()
+        case Assign(id, expr) => List()
+        case ArrayAssign(id, index, expr) => List()
+        case And(lhs, rhs) => List()
+        case Or(lhs, rhs) => List()
+        case Plus(lhs, rhs) => List()
+        case Minus(lhs, rhs) => List()
+        case Times(lhs, rhs) => List()
+        case Div(lhs, rhs) => List()
+        case LessThan(lhs, rhs) => List()
+        case Equals(lhs, rhs) => List()
+        case ArrayRead(arr, index) => List()
+        case ArrayLength(arr) => List()
+        case MethodCall(obj, meth, args) => List()
+        case IntLit(value) => List()
+        case StringLit(value) => List()
+        case Identifier(value) => List()
+        case TypeIdentifier(value, templateTypes) => List()
+        case NewIntArray(size) => List()
+        case New(tpe) => List()
+        case Not(expr) => List()
+        case _ => List()
       }
 
       def generateClass(name: String, templateTypes: List[TypeTree], pos: Positioned): ClassDecl = {
@@ -79,80 +72,56 @@ object Templates extends Pipeline[Program, Program] {
 
             val typeMap: Map[TypeTree, TypeTree] = template.id.templateTypes.zip(templateTypes).toMap
 
-            val newClass = template.copy()
-            newClass.vars.foreach(varDecl =>
-              if (typeMap.contains(varDecl.tpe)) varDecl.tpe = typeMap(varDecl.tpe)
-            )
-             
-            newClass.methods.foreach(methDecl => {
-              if (typeMap.contains(methDecl.retType)) methDecl.retType = typeMap(methDecl.retType)
-              methDecl.args.foreach(arg => {
-                if (typeMap.contains(arg.tpe)) arg.tpe = typeMap(arg.tpe)
-              })
-              methDecl.vars.foreach(varDecl =>
-                if (typeMap.contains(varDecl.tpe)) varDecl.tpe = typeMap(varDecl.tpe))
-              methDecl.stats.foreach(stat => {
-                replaceNewDeclarationTypes(stat, typeMap)
-              })
-
-            })
-            newClass.id.value = newClass.id.templatedClassName
-            newClass.id.templateTypes = List()
+            val newClass = template.copy(
+              id = new TypeIdentifier(template.id.templatedClassName(templateTypes), List()),
+              vars = template.vars.map(varDecl =>
+                varDecl.copy(tpe = typeMap.getOrElse(varDecl.tpe, varDecl.tpe))),
+              methods = template.methods.map(methDecl =>
+                methDecl.copy(
+                  retType = typeMap.getOrElse(methDecl.retType, methDecl.retType),
+                  args = methDecl.args.map(a => a.copy(tpe = typeMap.getOrElse(a.tpe, a.tpe))),
+                  vars = methDecl.vars.map(v => v.copy(tpe = typeMap.getOrElse(v.tpe, v.tpe))),
+                  stats = methDecl.stats.map(stat => replaceNewDeclarationTypes(stat, typeMap)))))
             newClass
-
           case None => ???
         }
 
       }
 
-      def replaceNewDeclarationTypes(t: Tree, typeMap: Map[TypeTree, TypeTree]): Unit = {
-
+      def replaceNewDeclarationTypes(t: StatTree, typeMap: Map[TypeTree, TypeTree]): StatTree = {
         object Replacer {
-          def f(option: Option[Tree]): Unit = if (option.isDefined) f(option.get)
-          def f(list: List[Tree]): Unit = list.foreach(f)
-          def f(t: Tree): Unit = t match {
-            case Block(stats) => f(stats)
-            case If(expr, thn, els) =>
-              f(expr); f(thn); f(els)
-            case While(expr, stat) =>
-              f(expr); f(stat)
-            case Println(expr) => f(expr)
-            case Assign(id, expr) =>
-              f(id); f(expr)
-            case ArrayAssign(id, index, expr) =>
-              f(id); f(index); f(expr)
-            case And(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Or(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Plus(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Minus(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Times(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Div(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case LessThan(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case Equals(lhs, rhs) =>
-              f(lhs); f(rhs)
-            case ArrayRead(arr, index) =>
-              f(arr); f(index)
-            case ArrayLength(arr) => f(arr)
-            case MethodCall(obj, meth, args) =>
-              f(obj); f(meth); f(args)
-            case Not(expr) => f(expr)
-            case n @ New(tpe) =>
-              if (typeMap.contains(tpe)) n.tpe = typeMap(tpe).asInstanceOf[TypeIdentifier]
-            case _ =>
+          def f(option: Option[StatTree]): Option[StatTree] = if (option.isDefined) Some(f(option.get)) else None
+          def statList(list: List[StatTree]): List[StatTree] = list.map(f)
+          def f(t: StatTree): StatTree = t match {
+            case Block(stats) => new Block(statList(stats))
+            case If(expr, thn, els) => new If(f(expr), f(thn), f(els))
+            case While(expr, stat) => new While(f(expr), f(stat))
+            case Println(expr) => new Println(f(expr))
+            case Assign(id, expr) => new Assign(id, f(expr))
+            case ArrayAssign(id, index, expr) => new ArrayAssign(id, f(index), f(expr))
+          }
+
+          def exprList(list: List[ExprTree]): List[ExprTree] = list.map(f)
+          def f(t: ExprTree): ExprTree = t match {
+            case And(lhs, rhs) => new And(f(lhs), f(rhs))
+            case Or(lhs, rhs) => new Or(f(lhs), f(rhs))
+            case Plus(lhs, rhs) => new Plus(f(lhs), f(rhs))
+            case Minus(lhs, rhs) => new Minus(f(lhs), f(rhs))
+            case Times(lhs, rhs) => new Times(f(lhs), f(rhs))
+            case Div(lhs, rhs) => new Div(f(lhs), f(rhs))
+            case LessThan(lhs, rhs) => new LessThan(f(lhs), f(rhs))
+            case Equals(lhs, rhs) => new Equals(f(lhs), f(rhs))
+            case ArrayRead(arr, index) => new ArrayRead(f(arr), f(index))
+            case ArrayLength(arr) => new ArrayLength(f(arr))
+            case MethodCall(obj, meth, args) => new MethodCall(f(obj), meth, exprList(args))
+            case Not(expr) => new Not(f(expr))
+            case n @ New(tpe) => n.copy(tpe = typeMap.getOrElse(tpe, tpe).asInstanceOf[TypeIdentifier])
           }
         }
         Replacer.f(t)
       }
     }
 
-    Generator.generate(prog)
-    prog
+    prog.copy(classes = prog.classes ++ Generator.generate(prog, List()))
   }
 }

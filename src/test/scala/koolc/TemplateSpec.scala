@@ -36,12 +36,12 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val ctx = new Context(reporter = new koolc.utils.Reporter(options.contains("quietReporter")), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val program = (Lexer andThen Parser andThen Templates).run(ctx)(ctx.file)
     //  s andThen TypeChecking
-    //println(Printer(program, true))
+    println(Printer(program))
     //println(ASTPrinterWithSymbols(program))
-    TestUtils.HasTypes(program) should be(true)
+    //TestUtils.HasTypes(program) should be(true)
     //    ctx.reporter.hasErrors should be(false)
     //
-    CodeGeneration.run(ctx)(program)
+    //CodeGeneration.run(ctx)(program)
     
     //
     //    val res = execute(program, file)
