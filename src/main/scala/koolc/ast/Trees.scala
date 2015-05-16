@@ -15,7 +15,16 @@ object Trees {
   case class MethodDecl(retType: TypeTree, id: Identifier, args: List[Formal], vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
   sealed case class Formal(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
-  sealed trait TypeTree extends Tree with Typed
+  sealed trait TypeTree extends Tree with Typed {
+    def name = this match {
+      case TypeIdentifier(value, _) => value
+      case IntType()                => "Int"
+      case IntArrayType()           => "Int[]"
+      case StringType()             => "String"
+      case BooleanType()            => "Bool"
+    }
+  }
+
   case class IntArrayType() extends TypeTree
   case class IntType() extends TypeTree
   case class BooleanType() extends TypeTree
@@ -67,17 +76,12 @@ object Trees {
 
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
     def isTemplated = !templateTypes.isEmpty
-    def templatedClassName(templateTypes2: List[TypeTree]) = value + (if (isTemplated) "$" + templateTypes2.map(_ match {
-      case TypeIdentifier(value, _) => value
-      case IntType() => "Int"
-      case IntArrayType() => "Int[]"
-      case StringType() => "String"
-      case BooleanType() => "Bool"
-    }).mkString("$") else "")
+    def templatedClassName(): String = templatedClassName(templateTypes)
+    def templatedClassName(templateTypes: List[TypeTree]): String = value + (if (isTemplated) "$" + templateTypes.map(_.name).mkString("$") else "")
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
-  case class New(tpe: TypeIdentifier) extends ExprTree
+  case class New(var tpe: TypeIdentifier) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
 }

@@ -188,11 +188,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
         tpe match {
           case tpeId @ TypeIdentifier(typeName, _) =>
-            println(tpeId + ": " + id)
             g.lookupClass(typeName) match {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
-                println("setting " + id + " to " + classSymbol.name)
                 set(TObject(classSymbol))
               case None => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
@@ -201,7 +199,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case IntArrayType() => set(TIntArray)
           case StringType()   => set(TString)
         }
-        println("typeof id" + id.value + ": " + id.getType)
       }
 
       private def setType(tpe: TypeTree): Unit = {

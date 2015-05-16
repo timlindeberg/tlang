@@ -69,7 +69,6 @@ object TestUtils {
               meth.params.map(_._2.getType))
           }))
       }))
-      println(list)
       list.forall(_ != TUntyped)
     }
 

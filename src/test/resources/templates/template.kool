@@ -9,21 +9,26 @@ class A {
 }
 
 class B {
-  var t: Test[Int];
-  var B: Test[A];
+  var c: Test[String, String];
+  var b: Test[Int, Int];
 
-  def yo(): String = {
-    return new Test[Int]().init(5);
+
+  def yo(): Int = {
+    c = new Test[String, String]();
+    b = new Test[Int, Int]();
+    println(b.calc(1, 1));
+    println(c.calc("1", "1"));
+    return 0;
   }
 }
 
 
-class Test[T1] extends B[Int] {
-  var t: T1;
-  var lol: Test[String];
-
-  def init(a: T1) : T1 = {
-    var t2: T1;
-    return new T1();
+class Test[T1, T2] {
+  var a: T1;
+  
+  def calc(a: T1, b: T2) : T1 = {
+    return a + b;
   }
 }
+
+
