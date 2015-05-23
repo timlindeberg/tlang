@@ -10,14 +10,24 @@ class B {
 
 
   def yo(): Int = {
+    var lol: Test3[B];
     c = new Test[String, String]();
     b = new Test[Int, Int]();
+    lol = new Test3[B]();
+    println(lol.test());
     println(b.calc(1, 1));
     println(c.calc("1", "1"));
     return 0;
   }
 }
 
+class Test3[T] {
+  var a: Test[Int, Int];
+  def test(): Int = {
+    a = new Test[Int, Int]();
+    return a.calc(1, 2);
+  }
+}
 
 class Test[T1, T2] {
   var a: T2;

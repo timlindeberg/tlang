@@ -41,18 +41,22 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
     }
   }
   
-  def templateName(name: String): String = {
-    val s = name.split("$")
-    if(s.length <= 1) return name;
-    s.tail.mkString(s.head + "[", ",", "]")
+  private def templateName(name: String): String = {
+    val s = name.split('$')
+    if(s.length <= 1) name
+    else s.tail.mkString(s.head + "[", ", ", "]")
   }
 
+  private def replaceTemplateName(msg: String) = msg.split(' ').map(templateName).mkString(" ")
+  
   private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
+    
+    var msgStr = replaceTemplateName(msg.toString)
     if (pos.hasPosition) {
-      s += s + pos.position + ": " + prefix + ": " + msg.toString + "\n"
+      s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
 
       val lines = getLines(pos.file)
 
@@ -63,7 +67,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
         s += "<line unavailable in source file>"
       }
     } else {
-      s += prefix + ": " + msg.toString
+      s += prefix + ": " + msgStr
     }
     s
   }

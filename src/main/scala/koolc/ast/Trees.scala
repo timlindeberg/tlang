@@ -90,24 +90,12 @@ object Trees {
   case class Not(expr: ExprTree) extends ExprTree
 
   def traverse(t: Product, f: Product => Unit): Unit = {
-    t.productIterator.foreach(_ match {
+    t.productIterator.foreach(Some(_) collect {
       case x: List[_] =>
-        x.foreach(_ match {
-          case x: Product =>
-            traverse(x, f)
-          case _ =>
-        })
+        x.foreach(Some(_) collect { case x: Product => traverse(x, f) })
       case x: Option[Any] =>
-        if (x.isDefined) {
-          x match {
-            case x: Product =>
-              traverse(x, f)
-            case _ =>
-          }
-        }
-      case x: Product =>
-        traverse(x, f)
-      case _ =>
+        x collect { case x: Product => traverse(x, f) }
+      case x: Product => traverse(x, f)
     })
     f(t)
   }
