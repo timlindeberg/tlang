@@ -40,6 +40,12 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
       sys.exit(1)
     }
   }
+  
+  def templateName(name: String): String = {
+    val s = name.split("$")
+    if(s.length <= 1) return name;
+    s.tail.mkString(s.head + "[", ",", "]")
+  }
 
   private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
 

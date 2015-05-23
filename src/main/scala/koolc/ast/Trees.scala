@@ -10,10 +10,10 @@ object Trees {
 
   case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
-  case class ClassDecl(id: TypeIdentifier, parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
-  case class VarDecl(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  case class MethodDecl(retType: TypeTree, id: Identifier, args: List[Formal], vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
-  sealed case class Formal(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
+  case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
+  sealed case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   sealed trait TypeTree extends Tree with Typed {
     def name = this match {
@@ -65,7 +65,7 @@ object Trees {
     }
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
   }
-  case class TypeIdentifier(value: String, templateTypes: List[TypeTree]) extends TypeTree with ExprTree with Symbolic[Symbol] {
+  case class TypeIdentifier(var value: String, templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol    => TObject(cs)
@@ -77,11 +77,38 @@ object Trees {
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
     def isTemplated = !templateTypes.isEmpty
     def templatedClassName(): String = templatedClassName(templateTypes)
-    def templatedClassName(templateTypes: List[TypeTree]): String = value + (if (isTemplated) "$" + templateTypes.map(_.name).mkString("$") else "")
+    def templatedClassName(templateTypes: List[TypeTree]): String = {
+      var tmp = List[String]()
+      templateTypes.foreach(x => tmp = x.name :: tmp)
+      value + (if (isTemplated) "$" + tmp.reverse.mkString("$") else "")
+    }
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
   case class New(var tpe: TypeIdentifier) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
+
+  def traverse(t: Product, f: Product => Unit): Unit = {
+    t.productIterator.foreach(_ match {
+      case x: List[_] =>
+        x.foreach(_ match {
+          case x: Product =>
+            traverse(x, f)
+          case _ =>
+        })
+      case x: Option[Any] =>
+        if (x.isDefined) {
+          x match {
+            case x: Product =>
+              traverse(x, f)
+            case _ =>
+          }
+        }
+      case x: Product =>
+        traverse(x, f)
+      case _ =>
+    })
+    f(t)
+  }
 }

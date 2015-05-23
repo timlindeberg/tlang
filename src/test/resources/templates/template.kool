@@ -1,11 +1,7 @@
 object Program4 {
   def/**/main () : Unit = {
-    println(new B().yo());
+    println(new Test2().lol());
   }
-}
-
-class A {
-
 }
 
 class B {
@@ -24,10 +20,17 @@ class B {
 
 
 class Test[T1, T2] {
-  var a: T1;
+  var a: T2;
   
   def calc(a: T1, b: T2) : T1 = {
     return a + b;
+  }
+}
+
+class Test2 extends Test[String, Int] {
+  def lol(): String = {
+    a = 1;
+    return this.calc("1", a);
   }
 }
 
