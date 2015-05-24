@@ -79,8 +79,11 @@ object Trees {
     def templatedClassName(): String = templatedClassName(templateTypes)
     def templatedClassName(templateTypes: List[TypeTree]): String = {
       var tmp = List[String]()
-      templateTypes.foreach(x => tmp = x.name :: tmp)
-      value + (if (isTemplated) "$" + tmp.reverse.mkString("$") else "")
+      templateTypes.foreach(_ match {
+        case x: TypeIdentifier if x.isTemplated => tmp = x.templatedClassName :: tmp
+        case x                                  => tmp = x.name :: tmp
+      })
+      "<" + value + (if (isTemplated) "$" + tmp.reverse.mkString("$") else "") + ">"
     }
   }
 

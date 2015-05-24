@@ -6,7 +6,6 @@ object Program4 {
 }
 
 class B[T] {
-  
   def exec(t: T): T = {
     return t + 5;
   }

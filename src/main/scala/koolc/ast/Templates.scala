@@ -12,7 +12,7 @@ object Templates extends Pipeline[Program, Program] {
 
     val templateClasses = prog.classes.filter(_.id.isTemplated)
     val cloner = new Cloner
-    
+
     /* Error messages and predefined
      * error types to return in case of errors. */
 
@@ -35,7 +35,7 @@ object Templates extends Pipeline[Program, Program] {
       error("No template class named \'" + name + "\'.", pos)
       ERROR_CLASS
     }
-    
+
     def ERROR_SAME_NAME(name: String, pos: Positioned) = {
       error("Generic identifiers with the same name: \'" + name + "\'", pos)
     }
@@ -89,14 +89,16 @@ object Templates extends Pipeline[Program, Program] {
     def findClassesToGenerate: Set[TypeIdentifier] = {
       var classesToGenerate: Set[TypeIdentifier] = Set()
       def addTemplatedType(tpe: TypeTree): Unit = Some(tpe) collect {
-        case x: TypeIdentifier if x.isTemplated => classesToGenerate += x
+        case x: TypeIdentifier if x.isTemplated => 
+          x.templateTypes.foreach(addTemplatedType(_))
+          classesToGenerate += x
       }
 
       Trees.traverse(prog, Some(_) collect {
-        case c: ClassDecl => c.parent.foreach(addTemplatedType)
-        case v: VarDecl   => addTemplatedType(v.tpe)
-        case f: Formal    => addTemplatedType(f.tpe)
-        case n: New       => addTemplatedType(n.tpe)
+        case c: ClassDecl      => c.parent.foreach(addTemplatedType)
+        case v: VarDecl        => addTemplatedType(v.tpe)
+        case f: Formal         => addTemplatedType(f.tpe)
+        case n: New            => addTemplatedType(n.tpe)
       })
       classesToGenerate
     }
@@ -117,33 +119,37 @@ object Templates extends Pipeline[Program, Program] {
      * name eg. Foo[Int, String] becomes var Foo$Int$String
      * Step 4: Generate the new classes and remove the templates.
      */
-
+    
+      
+    
+      
     def checkTemplateClassDefs(templateClasses: List[ClassDecl]) =
       templateClasses.foreach { x =>
         var set = Set[TypeTree]()
         var reportedFor = Set[TypeTree]()
         x.id.templateTypes.foreach { x =>
-          if (set(x) && !reportedFor(x)){
+          if (set(x) && !reportedFor(x)) {
             ERROR_SAME_NAME(x.name, x)
             reportedFor += x
           }
           set += x
         }
       }
-    
+    error("-Test$Foo$-B$Int$String-$Int$-", prog)
     checkTemplateClassDefs(templateClasses)
-    val classesToGenerate = findClassesToGenerate
-
-    Trees.traverse(prog, Some(_) collect {
-      case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
+    val generatedClasses = findClassesToGenerate.map(ClassGenerator(_)).toList
+    val modifiedClasses = generatedClasses ++ prog.classes.filter(!_.id.isTemplated)
+    val newProg = prog.copy(classes = modifiedClasses)
+    
+    Trees.traverse(newProg, Some(_) collect {
+      case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)  
       case m: MethodDecl => m.retType = replaceType(m.retType)
       case v: VarDecl    => v.tpe = replaceType(v.tpe)
       case f: Formal     => f.tpe = replaceType(f.tpe)
       case n: New        => n.tpe = replaceTypeId(n.tpe)
     })
-
-    val generatedClasses = classesToGenerate.map(ClassGenerator(_)).toList
-    val modifiedClasses = generatedClasses ++ prog.classes.filter(!_.id.isTemplated)
-    prog.copy(classes = modifiedClasses)
+    
+    println(Printer(newProg))
+    newProg
   }
 }

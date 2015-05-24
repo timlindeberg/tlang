@@ -26,20 +26,23 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
     Symbols.ID.reset
   }
 
-  behavior of "Incorrect Templates"
-  TestUtils.programFiles(TestUtils.resources + "templates/invalid/").foreach { file =>
-    it should "not " + file.toPath() in test(file, true)
-  }
+  //  behavior of "Incorrect Templates"
+  //  TestUtils.programFiles(TestUtils.resources + "templates/invalid/").foreach { file =>
+  //    it should "not " + file.toPath() in test(file, true)
+  //  }
 
-  behavior of "Correct Templates"
-  TestUtils.programFiles(TestUtils.resources + "templates/valid/").foreach { file =>
-    it should "yes " + file.toPath() in test(file)
-  }
+  //  behavior of "Correct Templates"
+  //  TestUtils.programFiles(TestUtils.resources + "templates/valid/").foreach { file =>
+  //    it should "yes " + file.toPath() in test(file)
+  //  }
+
+  val f = new File(TestUtils.resources + "templates/valid/template-in-template.kool")
+  it should "yes " + f.toPath() in test(f)
 
   def test(file: File, exception: Boolean = false) = {
     val options = TestUtils.readOptions(file)
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
-    def templ = Lexer andThen Parser andThen Templates 
+    def templ = Lexer andThen Parser andThen Templates
     if (exception) {
       try {
         val program = templ.run(ctx)(ctx.file)
@@ -49,6 +52,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     } else {
       val program = (templ andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      println(Printer(program))
       ctx.reporter.hasErrors should be(false)
       CodeGeneration.run(ctx)(program)
       val res = execute(program, file)

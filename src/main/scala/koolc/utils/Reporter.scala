@@ -37,23 +37,36 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   def terminateIfErrors = {
     if (hasErrors && !quiet) {
       err("There were errors.")
-      sys.exit(1)
+      //sys.exit(1)
     }
   }
-  
+
   private def templateName(name: String): String = {
-    val s = name.split('$')
-    if(s.length <= 1) name
-    else s.tail.mkString(s.head + "[", ", ", "]")
+    val start = name.indexOf("-")
+    val end = name.lastIndexOf("-")
+    val size = name.length
+
+    if (start != -1 && end != -1) {
+      val pre = if (start > 0) name.substring(0, start) else ""
+      val mid = name.substring(start + 1, end);
+      val post = if (end < size - 1) name.substring(end + 1, size - 1) else ""
+
+      templateName(pre + templateName(mid) + post)
+    } else if (name.contains('$')) {
+      val s = name.split('$')
+      s.tail.mkString(s.head + "[", ", ", "]")
+    } else {
+      name
+    }
   }
 
   private def replaceTemplateNames(msg: String) = msg.split(' ').map(templateName).mkString(" ")
-  
+
   private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
-    
+    println("msg: " + msg.toString)
     var msgStr = replaceTemplateNames(msg.toString)
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
