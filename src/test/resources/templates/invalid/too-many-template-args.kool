@@ -1,0 +1,9 @@
+object Program4 {
+  def/**/main () : Unit = {
+    println(new Test[Int, String, String]()); 
+  }
+}
+
+class Test[T1, T2] { }
+
+    

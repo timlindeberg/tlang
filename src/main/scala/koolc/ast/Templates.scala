@@ -10,6 +10,9 @@ object Templates extends Pipeline[Program, Program] {
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
 
+    val templateClasses = prog.classes.filter(_.id.isTemplated)
+    val cloner = new Cloner
+    
     /* Error messages and predefined
      * error types to return in case of errors. */
 
@@ -32,9 +35,10 @@ object Templates extends Pipeline[Program, Program] {
       error("No template class named \'" + name + "\'.", pos)
       ERROR_CLASS
     }
-
-    val cloner = new Cloner
-    val templateClasses = prog.classes.filter(_.id.isTemplated)
+    
+    def ERROR_SAME_NAME(name: String, pos: Positioned) = {
+      error("Generic identifiers with the same name: \'" + name + "\'", pos)
+    }
 
     object ClassGenerator {
       def apply(typeId: TypeIdentifier): ClassDecl = generateClass(typeId)
@@ -107,12 +111,27 @@ object Templates extends Pipeline[Program, Program] {
       else tpe
 
     /* Generate templates.
-     * Step 1: Find which classes need to be generated.
-     * Step 2: Replace references to classes by the templated
-     * name Foo[Int, String] becomes var Foo$Int$String
-     * Step 3: Generate the new classes and remove the templates.
+     * Step 1: Check wether template classes are legal.
+     * Step 2: Find which classes need to be generated.
+     * Step 3: Replace references to classes by the templated
+     * name eg. Foo[Int, String] becomes var Foo$Int$String
+     * Step 4: Generate the new classes and remove the templates.
      */
 
+    def checkTemplateClassDefs(templateClasses: List[ClassDecl]) =
+      templateClasses.foreach { x =>
+        var set = Set[TypeTree]()
+        var reportedFor = Set[TypeTree]()
+        x.id.templateTypes.foreach { x =>
+          if (set(x) && !reportedFor(x)){
+            ERROR_SAME_NAME(x.name, x)
+            reportedFor += x
+          }
+          set += x
+        }
+      }
+    
+    checkTemplateClassDefs(templateClasses)
     val classesToGenerate = findClassesToGenerate
 
     Trees.traverse(prog, Some(_) collect {
@@ -122,7 +141,7 @@ object Templates extends Pipeline[Program, Program] {
       case f: Formal     => f.tpe = replaceType(f.tpe)
       case n: New        => n.tpe = replaceTypeId(n.tpe)
     })
-    
+
     val generatedClasses = classesToGenerate.map(ClassGenerator(_)).toList
     val modifiedClasses = generatedClasses ++ prog.classes.filter(!_.id.isTemplated)
     prog.copy(classes = modifiedClasses)

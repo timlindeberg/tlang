@@ -1,0 +1,22 @@
+object Program4 {
+  def/**/main () : Unit = {
+    println(new Test[B[Int], Int]().test(5));
+    println(new Test[B[String], String]().test("5"));
+  }
+}
+
+class B[T] {
+  
+  def exec(t: T): T = {
+    return t + 5;
+  }
+}
+
+class Test[T, Tret] {
+  var t: T;
+  def test(a: Tret) : Tret = {
+    t = new T();
+    return t.exec(a);
+  }
+}
+

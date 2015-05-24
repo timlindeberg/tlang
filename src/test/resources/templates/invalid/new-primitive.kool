@@ -1,0 +1,14 @@
+object Program4 {
+  def/**/main () : Unit = {
+    println(new Test[Int]()); 
+  }
+}
+
+class Test[T] { 
+	
+	def test(): T = {	
+		return new T();
+	}
+}
+
+    

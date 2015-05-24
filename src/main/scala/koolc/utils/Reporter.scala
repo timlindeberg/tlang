@@ -47,14 +47,14 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
     else s.tail.mkString(s.head + "[", ", ", "]")
   }
 
-  private def replaceTemplateName(msg: String) = msg.split(' ').map(templateName).mkString(" ")
+  private def replaceTemplateNames(msg: String) = msg.split(' ').map(templateName).mkString(" ")
   
   private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
     
-    var msgStr = replaceTemplateName(msg.toString)
+    var msgStr = replaceTemplateNames(msg.toString)
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
 
