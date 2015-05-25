@@ -35,10 +35,11 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   }
 
   def terminateIfErrors = {
-    if (hasErrors && !quiet) {
-      err("There were errors.")
-      //sys.exit(1)
+    if (hasErrors) {
+      if(!quiet) err("There were errors.")
+      throw new CompilationException("")
     }
+    
   }
 
   private def templateName(name: String): String = {
@@ -66,16 +67,19 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
-    println("msg: " + msg.toString)
     var msgStr = replaceTemplateNames(msg.toString)
+    println("(" + pos.line + ", " + pos.col + ")")
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
 
       val lines = getLines(pos.file)
 
       if (pos.line - 1 < lines.size) {
-        s += lines(pos.line - 1) + "\n"
-        s += " " * (pos.col - 1) + "^" + "\n"
+        val line = lines(pos.line - 1)
+        val tabs = line.count(_ == '\t')
+        
+        s += line.replaceAll("\t", "    ") + "\n"
+        s += " " * (pos.col - 1 + (tabs * 3)) + "^" + "\n"
       } else {
         s += "<line unavailable in source file>"
       }
