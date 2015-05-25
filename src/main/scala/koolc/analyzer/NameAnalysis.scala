@@ -192,7 +192,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
                 set(TObject(classSymbol))
-              case None => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
+              case None =>
+                tpeId.setSymbol(new ErrorSymbol)
+                error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
           case BooleanType()  => set(TBool)
           case IntType()      => set(TInt)
@@ -208,7 +210,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
                 tpeId.setType(TObject(classSymbol))
-              case None => error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
+              case None =>
+                tpeId.setSymbol(new ErrorSymbol)
+                error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
           case BooleanType()  => tpe.setType(TBool)
           case IntType()      => tpe.setType(TInt)
