@@ -10,6 +10,7 @@ import scala.collection.mutable.HashMap
 import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking
 import koolc.code.CodeGeneration
+import koolc.ast.Templates
 
 object Main {
   val tokensFlag = "--tokens"
@@ -55,8 +56,8 @@ object Main {
         // Lex the program and print all tokens
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        var parsing = Lexer andThen Parser;
-        var analysis = NameAnalysis andThen TypeChecking;
+        var parsing = Lexer andThen Parser andThen Templates
+        var analysis = NameAnalysis andThen TypeChecking
         if (flags(astFlag)) {
           if (flags(symId)) {
             // Run analysis and print AST tree with symbols
