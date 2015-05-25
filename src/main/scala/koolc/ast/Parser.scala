@@ -80,7 +80,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     private def classDeclaration(): ClassDecl = {
       val pos = currentToken
       eat(CLASS)
-      val id = typeIdentifier
+      val id = classTypeIdentifier
       val parent = optional(typeIdentifier, EXTENDS)
       eat(LBRACE)
       val vars = untilNot(varDeclaration, VAR)
@@ -359,6 +359,27 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       or().setPos(pos)
     }
 
+    /**
+     * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
+     */
+    private def classTypeIdentifier(): TypeIdentifier = {
+      try {
+        val id = currentToken.asInstanceOf[ID]
+        eat(IDKIND)
+        val tIds = currentToken.kind match {
+          case LBRACKET =>
+            eat(LBRACKET)
+            val tmp = commaList(identifier)
+            eat(RBRACKET)
+            tmp.map(x => new TypeIdentifier(x.value, List()))
+          case _ => List()
+        }
+        TypeIdentifier(id.value, tIds).setPos(id)
+      } catch {
+        case _: ClassCastException => expected(IDKIND)
+      }
+    }
+    
     /**
      * <typeIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
      */
