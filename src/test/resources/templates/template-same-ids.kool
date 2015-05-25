@@ -1,7 +1,0 @@
-object Program4 {
-  def/**/main () : Unit = {
-    println(new Test().lol());
-  }
-}
-
-class Test[T, T, T, T2, T2] { }

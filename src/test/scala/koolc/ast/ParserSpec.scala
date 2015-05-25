@@ -35,18 +35,25 @@ class ParserSpec extends FlatSpec with Matchers {
 
   def test(file: File, exception: Boolean = false) = {
     val program = Source.fromFile(file).mkString
-    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
+    val ctx = new Context(reporter = new koolc.utils.Reporter(quiet = true), file = file, outDir = None)
     def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
     def print(p: Program) = Printer(p)
     if (exception) {
-      intercept[CompilationException] { parse(program) }
+      intercept[CompilationException] { 
+        parse(program) 
+      }
     } else {
-      assert(print(parse(program)) === print(parse(print(parse(program)))))
-      assert(parse(program) === parse(print(parse(program))))
-      assert(parse(program).toString + "\n" === getAnswer(file))
+      val p = parse(program)
+      val pPrint = print(p)
+      assert(pPrint === print(parse(pPrint))) // print(parse(program)) === print(parse(print(parse(program))))
+      assert(p === parse(pPrint))             // parse(program) === parse(print(parse(program)))
+      assert(replaceTypeIdentifiers(p.toString) + "\n" === getAnswer(file))
     }
   }
 
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
 
+  def replaceTypeIdentifiers(s: String) =
+    s.replaceAll("""TypeIdentifier\((.+?),List\(\)\)""", """Identifier\($1\)""")
+  
 }

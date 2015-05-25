@@ -15,9 +15,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     import ctx.reporter._
     val astBuilder = new ASTBuilder(ctx, tokens)
     astBuilder.readToken
-    val tree = astBuilder.parseGoal
-    terminateIfErrors
-    tree
+    astBuilder.parseGoal
   }
 
   private class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
@@ -141,7 +139,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      *         | Bool
      *         | Int
      *         | String
-     *         | <identifier>
+     *         | <typeIdentifier>
      */
     private def tpe(): TypeTree = {
       val pos = currentToken
@@ -289,7 +287,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          *               | false
          *               | this
          *               | new Int"[" <expression> "]"
-         *               | new <identifier> "()"
+         *               | new <typeIdentifier> "()"
          */
         def termFirst() = {
           val tree = currentToken.kind match {

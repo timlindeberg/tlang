@@ -40,14 +40,14 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
         }
     } else {
       val program = exec(ctx.file)
-      val res = replaceTypeIdentifier(ASTPrinterWithSymbols(program))
+      val res = replaceTypeIdentifiers(ASTPrinterWithSymbols(program))
       val correct = replaceIDNumbers(getAnswer(file), res)
       TestUtils.HasTypes.withoutMethodCalls(program) should be(true)
       res + "\n" should be(correct)
     }
   }
   
-  def replaceTypeIdentifier(s: String): String =
+  def replaceTypeIdentifiers(s: String): String =
     s.replaceAll("""TypeIdentifier#(\d+)\((.+?),List\(\)\)""", """Identifier#$1\($2\)""")
     
   def replaceIDNumbers(ast1: String, ast2: String): String = {

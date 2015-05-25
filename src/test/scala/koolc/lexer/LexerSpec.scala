@@ -34,7 +34,6 @@ class LexerSpec extends FlatSpec with Matchers {
     val lex = lexer(file).toList.map(TestUtils.format)
     if (exception) {
       val sol = readSolution(file + "-solution").toList.map(_.trim)
-      println(lex)
       assert(lex.length === sol.length)
       lex.zip(sol).foreach(x => assert(x._1 === x._2))
     } else {

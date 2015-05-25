@@ -1,0 +1,21 @@
+object Program {
+  def main () : Unit = {
+    if(new Main().run()) println("");
+  }
+}
+
+class Main {
+	def run(): Bool = {
+		var list: A[Int, String];
+		return false;
+	}
+}
+
+class A[T, U] {
+	var value: B[B[B[T, U], Int], String];
+}
+
+class B[T, U] {
+	var t: T;
+	var u: U;
+}

@@ -35,7 +35,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(TestUtils.resources + "templates/valid/").foreach { file =>
     it should "yes " + file.toPath() in test(file)
   }
-
+  
   def test(file: File, exception: Boolean = false) = {
     val options = TestUtils.readOptions(file)
     val ctx = new Context(reporter = new koolc.utils.Reporter(quiet = true), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))

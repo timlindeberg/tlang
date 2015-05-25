@@ -65,7 +65,7 @@ object Trees {
     }
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
   }
-  case class TypeIdentifier(var value: String, templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
+  case class TypeIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
     val StartEndSign = "-"
     val Seperator = "$"
     

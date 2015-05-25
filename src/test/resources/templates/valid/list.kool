@@ -1,0 +1,107 @@
+object Program {
+  def main () : Unit = {
+    if(new Main().run()) println("");
+  }
+}
+
+class Main {
+	def run(): Bool = {
+		var list1: List[Int];
+		var list2: List[String];
+		var i: Int;
+		var s: String;
+
+		list1 = new List[Int]();
+		i = list1.init();
+		list2 = new List[String]();
+		i = list2.init();
+		while(i < 5){
+			list1 = list1.add(i / 5);
+			list2 = list2.add("S" + i + "S");
+			i = i + 1;
+		}
+		i = 0;
+		
+		println(list1);
+		println(list2);
+		return false;
+	}
+}
+
+class List[T] {
+	var head: T;
+	var tail: Option[List[T]];
+
+	def init(): Int = {
+		tail = new Option[List[T]]();
+		return 0;
+	}
+
+	def add(t: T): List[T] = {
+		var q: Int;
+		var newList: List[T];
+
+		newList = new List[T]();
+		q = newList.init();
+		q = newList.setHead(t);
+		q = newList.setTail(this);
+		return newList;
+	}
+
+	def head(): T = {
+		return head;
+	}
+
+	def setHead(tArg: T): Int = {
+		head = tArg;
+		return 0;
+	}
+
+	def tail(): Option[List[T]] = {
+		return tail;
+	}
+
+	def setTail(list: List[T]): Int = {
+		var q: Int;
+		var o: Option[List[T]];
+		o = new Option[List[T]]();
+		q = o.add(list);
+		tail = o;
+		return 0;
+	}
+
+	def toString(): String = {
+		var s: String;
+		var tmp: List[T];
+		tmp = this;
+		s = "[";
+		while(tmp.tail().isDefined()){
+			s = s + tmp.head();
+			tmp = tmp.tail().get();
+			if(tmp.tail().isDefined()){
+				 s = s + ", ";
+			}
+		}	
+		s = s + "]";
+		return s;
+	}
+}
+
+class Option[T] {
+	var t: T;
+	var isDefined: Bool;
+
+	def add(tArg: T): Int = {
+		t = tArg;
+		isDefined = true;
+		return 0;
+	}
+
+	def isDefined(): Bool = {
+		return isDefined;
+	}
+
+	def get(): T = {
+		return t;
+	}
+}

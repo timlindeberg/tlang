@@ -157,8 +157,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Label(after)
         }
         expr match {
-          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) => doBranch
-          case Not(_) => doBranch
+          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) => doBranch
           case expr @ Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compile(lhs)
@@ -291,7 +290,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     // output code
     prog.classes.foreach(generateClassFile(sourceName, _, outDir))
     generateMainClassFile(sourceName, prog.main, outDir)
-
   }
 
 }
