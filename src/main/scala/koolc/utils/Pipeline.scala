@@ -8,7 +8,9 @@ abstract class Pipeline[-F, +T] {
     def run(ctx: Context)(v: F): G = {
       val first = self.run(ctx)(v)
       ctx.reporter.terminateIfErrors
-      thenn.run(ctx)(first)
+      val second = thenn.run(ctx)(first)
+      ctx.reporter.terminateIfErrors
+      second
     }
   }
 

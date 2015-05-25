@@ -43,7 +43,7 @@ object ASTPrinterWithSymbols {
       case Not(expr) => f(expr)
       case _ => ""
     }
-    t.getClass.getSimpleName + typeOf(t) + "(" + s + ")"
+    t.getClass.getSimpleName + symbol(t) + "(" + s + ")"
   }
 
   def typeOf(t: Tree): String = t match {

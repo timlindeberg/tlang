@@ -4,7 +4,7 @@ package utils
 import java.io.File
 import scala.io.Source
 
-class CompilationException(msg: String) extends RuntimeException(msg)
+class CompilationException() extends RuntimeException("")
 
 class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
@@ -25,7 +25,8 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   }
 
   def fatal(msg: Any, pos: Positioned = NoPosition): Nothing = {
-    throw new CompilationException(errMessage("Fatal", msg, pos))
+    report("fatal", msg, pos)
+    throw new CompilationException  
   }
 
   var filesToLines = Map[File, IndexedSeq[String]]()
@@ -37,9 +38,8 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   def terminateIfErrors = {
     if (hasErrors) {
       if(!quiet) err("There were errors.")
-      throw new CompilationException("")
+      throw new CompilationException
     }
-    
   }
 
   private def templateName(name: String): String = {
@@ -63,12 +63,11 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   private def replaceTemplateNames(msg: String) = msg.split(' ').map(templateName).mkString(" ")
 
-  private def report(prefix: String, msg: Any, pos: Positioned) = { if (!quiet) System.err.println(errMessage(prefix, msg, pos)) }
+  private def report(prefix: String, msg: Any, pos: Positioned) = if (!quiet) err(errMessage(prefix, msg, pos))
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
     var msgStr = replaceTemplateNames(msg.toString)
-    println("(" + pos.line + ", " + pos.col + ")")
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
 

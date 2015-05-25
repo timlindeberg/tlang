@@ -78,8 +78,9 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(arr, TIntArray)
           TInt
         case mc @ MethodCall(obj, meth, mcArgs) =>
-          def methodSignature() = meth.value + mcArgs.map(_.getType).mkString("(", ", ", ")")
-          
+          def methodSignature() = {
+            meth.value + (if(!mcArgs.isEmpty) mcArgs.map(_.getType).mkString("(", ", ", ")") else "")
+          }
           val objType = tcExpr(obj)
           objType match {
             case TObject(classSymbol) =>

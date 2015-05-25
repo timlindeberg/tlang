@@ -378,7 +378,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         }
         TypeIdentifier(id.value, tIds).setPos(id)
       } catch {
-        case _: Throwable => expected(IDKIND)
+        case _: ClassCastException => expected(IDKIND)
       }
     }
 
@@ -391,7 +391,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(IDKIND)
         Identifier(id.value).setPos(id)
       } catch {
-        case _: Throwable => expected(IDKIND)
+        case _: ClassCastException => expected(IDKIND)
       }
     }
 
@@ -404,7 +404,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(STRLITKIND)
         StringLit(id.value).setPos(id)
       } catch {
-        case _: Throwable => expected(STRLITKIND)
+        case _: ClassCastException => expected(STRLITKIND)
       }
     }
 
@@ -417,7 +417,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(INTLITKIND)
         IntLit(id.value).setPos(id)
       } catch {
-        case _: Throwable => expected(INTLITKIND)
+        case _: ClassCastException => expected(INTLITKIND)
       }
     }
 

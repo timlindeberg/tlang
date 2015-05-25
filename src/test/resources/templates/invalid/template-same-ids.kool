@@ -1,6 +1,6 @@
 object Program4 {
   def/**/main () : Unit = {
-    println(new Test[Int, Int, String, String]());
+    println(new Test[Int, Int, String, String, String]());
   }
 }
 

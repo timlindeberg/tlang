@@ -30,20 +30,26 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file, true)
   }
-
+  
   def test(file: File, exception: Boolean = false) = {
     val ctx = new Context(reporter = new koolc.utils.Reporter(exception), file = file, outDir = None)
-    val program = (Lexer andThen Parser andThen NameAnalysis).run(ctx)(ctx.file)
+    val exec = (Lexer andThen Parser andThen NameAnalysis).run(ctx)(_)
     if (exception) {
-      ctx.reporter.hasErrors should be(true)
+        intercept[CompilationException]{
+          exec(ctx.file)  
+        }
     } else {
-      val res = ASTPrinterWithSymbols(program)
+      val program = exec(ctx.file)
+      val res = replaceTypeIdentifier(ASTPrinterWithSymbols(program))
       val correct = replaceIDNumbers(getAnswer(file), res)
       TestUtils.HasTypes.withoutMethodCalls(program) should be(true)
       res + "\n" should be(correct)
     }
   }
-
+  
+  def replaceTypeIdentifier(s: String): String =
+    s.replaceAll("""TypeIdentifier#(\d+)\((.+?),List\(\)\)""", """Identifier#$1\($2\)""")
+    
   def replaceIDNumbers(ast1: String, ast2: String): String = {
     val idRegex = """#(\d+)""".r
     def getSymbolIDs(ast: String) = idRegex.findAllIn(ast).matchData.map(_.group(1).toInt).toList

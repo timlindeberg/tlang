@@ -95,10 +95,16 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   def test(file: File, exception: Boolean = false) = {
     val options = TestUtils.readOptions(file)
     val ctx = new Context(reporter = new koolc.utils.Reporter(exception || options.contains("quietReporter")), file = file, outDir = None)
-    val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+    val exec = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(_)
     if (exception) {
-      ctx.reporter.errors should be(options("expectedErrors"))
+      try{
+        exec(ctx.file)
+        assert(false)
+      }catch{
+        case _: CompilationException => ctx.reporter.errors should be(options("expectedErrors"))
+      }
     } else {
+      val program = exec(ctx.file)
       ctx.reporter.hasErrors should be(false)
       TestUtils.HasTypes(program) should be(true)
     }

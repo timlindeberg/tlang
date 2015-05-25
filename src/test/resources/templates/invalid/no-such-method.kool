@@ -1,0 +1,29 @@
+object Program4 {
+  def/**/main () : Unit = {
+    println(new Test[A]());
+    println(new Test[B]());
+  }
+}
+
+class A {
+	def exec(): Int = {
+		return 5;
+	}
+}
+
+class B {
+	def dontHaveExec(): Int = {
+		return 5;
+	}
+}
+
+class Test[T] { 
+	var t: T;
+
+	def test(): Int = {	
+		t = new T();
+		return t.exec();
+	}
+}
+
+    
