@@ -66,6 +66,9 @@ object Trees {
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
   }
   case class TypeIdentifier(var value: String, templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
+    val StartEndSign = "-"
+    val Seperator = "$"
+    
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol    => TObject(cs)
@@ -83,7 +86,9 @@ object Trees {
         case x: TypeIdentifier if x.isTemplated => tmp = x.templatedClassName :: tmp
         case x                                  => tmp = x.name :: tmp
       })
-      "<" + value + (if (isTemplated) "$" + tmp.reverse.mkString("$") else "") + ">"
+      StartEndSign + value + 
+      (if (isTemplated) Seperator + tmp.reverse.mkString(Seperator) else "") +
+      StartEndSign
     }
   }
 

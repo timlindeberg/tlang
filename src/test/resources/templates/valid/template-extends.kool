@@ -1,0 +1,22 @@
+object Program4 {
+  def/**/main () : Unit = {
+    println(new B().printt());  
+  }
+}
+
+class B extends A[Int] {
+  def printt(): Int = {
+    var discard: Int;
+    discard = this.init(1337);
+    println(t);
+    return 0;
+  }
+}
+
+class A[T] {
+  var t: T;
+  def init(tinit: T) : Int  = {
+    t = tinit;
+    return 0;
+  }
+}

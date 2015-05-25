@@ -111,17 +111,6 @@ object Templates extends Pipeline[Program, Program] {
     def replaceTypeId(tpe: TypeIdentifier) =
       if (tpe.isTemplated) new TypeIdentifier(tpe.templatedClassName).setPos(tpe)
       else tpe
-
-    /* Generate templates.
-     * Step 1: Check wether template classes are legal.
-     * Step 2: Find which classes need to be generated.
-     * Step 3: Replace references to classes by the templated
-     * name eg. Foo[Int, String] becomes var Foo$Int$String
-     * Step 4: Generate the new classes and remove the templates.
-     */
-    
-      
-    
       
     def checkTemplateClassDefs(templateClasses: List[ClassDecl]) =
       templateClasses.foreach { x =>
@@ -135,7 +124,15 @@ object Templates extends Pipeline[Program, Program] {
           set += x
         }
       }
-    error("-Test$Foo$-B$Int$String-$Int$-", prog)
+
+    /* Generate templates.
+     * Step 1: Check wether template classes are legal.
+     * Step 2: Find which classes need to be generated.
+     * Step 3: Generate the new classes and remove the templates.
+     * Step 3: Replace references to classes by the templated
+     * name eg. Foo[Int, String] becomes var -Foo$Int$String-
+     */
+    
     checkTemplateClassDefs(templateClasses)
     val generatedClasses = findClassesToGenerate.map(ClassGenerator(_)).toList
     val modifiedClasses = generatedClasses ++ prog.classes.filter(!_.id.isTemplated)
@@ -149,7 +146,6 @@ object Templates extends Pipeline[Program, Program] {
       case n: New        => n.tpe = replaceTypeId(n.tpe)
     })
     
-    println(Printer(newProg))
     newProg
   }
 }
