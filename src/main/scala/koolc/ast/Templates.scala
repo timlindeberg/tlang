@@ -12,9 +12,6 @@ object Templates extends Pipeline[Program, Program] {
     import ctx.reporter._
 
     val templateClasses = prog.classes.filter(_.id.isTemplated)
-    val cloner = new Cloner
-    var generated: Set[String] = Set()
-    var generatedClasses: List[ClassDecl] = List()
 
     /* Error messages and predefined
      * error types to return in case of errors. */
@@ -43,57 +40,66 @@ object Templates extends Pipeline[Program, Program] {
       error("Generic identifiers with the same name: \'" + name + "\'", pos)
     }
 
-    object ClassGenerator {
-      def apply(typeId: TypeIdentifier): Unit = generateClass(typeId)
+    class ClassGenerator {
+
+      val cloner = new Cloner
+      cloner.registerConstant(Nil)
+      cloner.registerConstant(None)
+
+      var generated: Set[String] = Set()
+      var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
+
+      def generate(prog: Program): List[ClassDecl] = {
+
+        def generateIfTemplated(tpe: TypeTree): Unit = Some(tpe) collect {
+          case x: TypeIdentifier if x.isTemplated =>
+            x.templateTypes.foreach(generateIfTemplated)
+            generateClass(x)
+        }
+
+        def collect(p: Product) = Some(p) collect {
+          case c: ClassDecl => c.parent.foreach(generateIfTemplated)
+          case v: VarDecl   => generateIfTemplated(v.tpe)
+          case f: Formal    => generateIfTemplated(f.tpe)
+          case n: New       => generateIfTemplated(n.tpe)
+        }
+
+        Trees.traverse(prog.classes.filter(!_.id.isTemplated), collect)
+        Trees.traverse(prog.main, collect)
+        generatedClasses.toList
+      }
 
       private def generateClass(typeId: TypeIdentifier): Unit = {
-        if (generated.contains(typeId.templatedClassName)) {
-          return ;
-        }
+        if (generated(typeId.templatedClassName))
+          return
+
         generated += typeId.templatedClassName
         templateClasses.find(_.id.value == typeId.value) match {
-          case Some(template) => generatedClasses = newTemplateClass(template, typeId.templateTypes) :: generatedClasses
+          case Some(template) => generatedClasses += newTemplateClass(template, typeId.templateTypes)
           case None           => ERROR_DOES_NOT_EXIST(typeId.value, typeId)
         }
       }
 
       private def newTemplateClass(template: ClassDecl, templateTypes: List[TypeTree]): ClassDecl = {
-        val typeMap = constructTemplateMapping(template.id.templateTypes, templateTypes)
+        val templateMap = constructTemplateMapping(template.id.templateTypes, templateTypes)
+
         /* Helper functions to perform transformation */
         def updateType(t: TypeTree): TypeTree = {
-          t match {
-            case t: TypeIdentifier =>
-              if (t.isTemplated) {
-                var newList: ArrayBuffer[TypeTree] = new ArrayBuffer()
-                t.templateTypes.foreach(x => newList += updateType(x))
-                t.templateTypes = newList.toList
-                generateClass(t)
-              }
-            case _ =>
+          Some(t) collect {
+            case t @ TypeIdentifier(_, templateTypes) if t.isTemplated =>
+              t.templateTypes = templateTypes.map(updateType)
+              generateClass(t)
           }
-          typeMap.getOrElse(t, t)
+          templateMap.getOrElse(t, t)
+        }
+
+        def updateTypeOfNewExpr(newExpr: New) = updateType(newExpr.tpe) match {
+          case t: TypeIdentifier => t
+          case t                 => ERROR_NEW_PRIMITIVE(t.name, newExpr.tpe)
         }
 
         def templateName(id: TypeIdentifier) =
           id.copy(value = template.id.templatedClassName(templateTypes), templateTypes = List())
-
-        def updateTypeOfNewExpr(newExpr: New) = {
-          newExpr.tpe match {
-            case t: TypeIdentifier =>
-              if (t.isTemplated) {
-                var newList: ArrayBuffer[TypeTree] = new ArrayBuffer()
-                t.templateTypes.foreach(x => newList += updateType(x))
-                t.templateTypes = newList.toList
-                generateClass(t)
-              }
-            case _ =>
-          }
-          typeMap.get(newExpr.tpe) match {
-            case Some(t: TypeIdentifier) => updateType(t).asInstanceOf[TypeIdentifier]
-            case Some(t)                 => ERROR_NEW_PRIMITIVE(t.name, newExpr.tpe)
-            case None                    => newExpr.tpe
-          }
-        }
 
         val newClass = cloner.deepClone(template)
         Trees.traverse(newClass, Some(_) collect {
@@ -118,33 +124,6 @@ object Templates extends Pipeline[Program, Program] {
       }
     }
 
-    def findClassesToGenerate: Set[TypeIdentifier] = {
-      var classesToGenerate: Set[TypeIdentifier] = Set()
-      def addTemplatedType(tpe: TypeTree): Unit = Some(tpe) collect {
-        case x: TypeIdentifier if x.isTemplated =>
-          x.templateTypes.foreach(addTemplatedType(_))
-          classesToGenerate += x
-      }
-      def collect(p: Product) = Some(p) collect {
-        case c: ClassDecl => c.parent.foreach(addTemplatedType)
-        case v: VarDecl   => addTemplatedType(v.tpe)
-        case f: Formal    => addTemplatedType(f.tpe)
-        case n: New       => addTemplatedType(n.tpe)
-      }
-      Trees.traverse(prog.classes.filter(!_.id.isTemplated), collect)
-      Trees.traverse(prog.main, collect)
-      classesToGenerate
-    }
-
-    def replaceType(tpe: TypeTree) = tpe match {
-      case x: TypeIdentifier => replaceTypeId(x)
-      case x                 => x
-    }
-
-    def replaceTypeId(tpe: TypeIdentifier) =
-      if (tpe.isTemplated) new TypeIdentifier(tpe.templatedClassName).setPos(tpe)
-      else tpe
-
     def checkTemplateClassDefs(templateClasses: List[ClassDecl]) =
       templateClasses.foreach { x =>
         var set = Set[TypeTree]()
@@ -158,28 +137,31 @@ object Templates extends Pipeline[Program, Program] {
         }
       }
 
-    /* Generate templates.
-     * Step 1: Check wether template classes are legal.
-     * Step 2: Find which classes need to be generated.
-     * Step 3: Generate the new classes and remove the templates.
-     * Step 3: Replace references to classes by the templated
-     * name eg. Foo[Int, String] becomes var -Foo$Int$String-
-     */
+    def replaceTypes(prog: Program): Program = {
+      def replaceType(tpe: TypeTree) = tpe match {
+        case x: TypeIdentifier => replaceTypeId(x)
+        case x                 => x
+      }
 
-    val classesToGenerate = findClassesToGenerate
+      def replaceTypeId(tpe: TypeIdentifier) =
+        if (tpe.isTemplated) new TypeIdentifier(tpe.templatedClassName).setPos(tpe)
+        else tpe
+
+      Trees.traverse(prog, Some(_) collect {
+        case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
+        case m: MethodDecl => m.retType = replaceType(m.retType)
+        case v: VarDecl    => v.tpe = replaceType(v.tpe)
+        case f: Formal     => f.tpe = replaceType(f.tpe)
+        case n: New        => n.tpe = replaceTypeId(n.tpe)
+      })
+      prog
+    }
+
     checkTemplateClassDefs(templateClasses)
-    classesToGenerate.foreach(ClassGenerator(_))
-    val modifiedClasses = generatedClasses.toList ++ prog.classes.filter(!_.id.isTemplated)
-    val newProg = prog.copy(classes = modifiedClasses)
+    val newClasses = new ClassGenerator().generate(prog)
+    val oldClasses = prog.classes.filter(!_.id.isTemplated)
+    val newProg = prog.copy(classes = oldClasses ++ newClasses)
 
-    Trees.traverse(newProg, Some(_) collect {
-      case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
-      case m: MethodDecl => m.retType = replaceType(m.retType)
-      case v: VarDecl    => v.tpe = replaceType(v.tpe)
-      case f: Formal     => f.tpe = replaceType(f.tpe)
-      case n: New        => n.tpe = replaceTypeId(n.tpe)
-    })
-
-    newProg
+    replaceTypes(newProg)
   }
 }

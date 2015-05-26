@@ -77,23 +77,22 @@ object TypeChecking extends Pipeline[Program, Program] {
         case ArrayLength(arr) =>
           tcExpr(arr, TIntArray)
           TInt
-        case mc @ MethodCall(obj, meth, mcArgs) =>
-          def methodSignature() = {
-            meth.value + (if(!mcArgs.isEmpty) mcArgs.map(_.getType).mkString("(", ", ", ")") else "")
-          }
+        case mc @ MethodCall(obj, meth, methodCallArgs) =>
+          def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
+          
           val objType = tcExpr(obj)
           objType match {
             case TObject(classSymbol) =>
               classSymbol.lookupMethod(meth.value) match {
                 case Some(methodSymbol) =>
                   val methodArgs = methodSymbol.argList
-                  if (mcArgs.length == methodArgs.length) {
-                    val zipped = mcArgs.zip(methodArgs.map(_.getType))
-                    zipped.foreach { case (mcArg, actualArg) => tcExpr(mcArg, actualArg) }
+                  if (methodCallArgs.length == methodArgs.length) {
+                    val zipped = methodCallArgs.zip(methodArgs.map(_.getType))
+                    zipped.foreach { case (methodCallArg, methodArg) => tcExpr(methodCallArg, methodArg) }
                     meth.setSymbol(methodSymbol)
                     meth.getType
                   } else {
-                    mcArgs.foreach(tcExpr(_))
+                    methodCallArgs.foreach(tcExpr(_))
                     error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
                   }
                 case None => error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)

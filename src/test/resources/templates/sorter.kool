@@ -1,0 +1,102 @@
+object Program {
+  def main () : Unit = {
+    if(new Main().run()) println("");
+  }
+}
+
+class Main {
+	def run(): Bool = {
+		var a: 				List[IntWrapper];
+		var b: 				List[StringWrapper];
+		var intSorter: 		Sorter[IntWrapper];
+		var stringSorter: 	Sorter[StringWrapper];
+		var q: 				Int;
+		var i: 				Int;
+		var x: 				IntWrapper;
+		var y: 				StringWrapper;
+		
+		i = 50;
+		a = new List[IntWrapper]();
+		b = new List[StringWrapper]();
+		intSorter = new Sorter[IntWrapper]();
+		stringSorter = new Sorter[StringWrapper]();
+
+		while(0 < i){
+			x = new IntWrapper();
+			y = new StringWrapper();
+			q = x.set(i);
+			q = y.set("A" + i + "A");
+			q = a.add(x);
+			q = b.add(y);
+			i = i - 1;
+		}
+
+		q = intSorter.sort(a);
+		q = stringSorter.sort(b);
+		return false;
+	}
+}
+
+class Sorter[T] {
+
+	def sort(a: List[T]): List[T] = {
+		var i: Int;
+		var j: Int;
+		var N: Int;
+		var q: Int;
+		i = 1;
+		N  = a.size() - 1;
+		while(i < N){
+			j = i;
+			while(0 < j && 0 < a.get(j-1).compareTo(a.get(j))){
+				q = this.swap(a, j-1, j);
+				j = j - 1;
+			}
+			i = i + 1;
+		}
+		return a;
+	}
+
+	def swap(A: List[T], i: Int, j: Int): Int = {
+		var tmp: T;
+		var q: Int;
+		tmp = A.get(i);
+		q = A.set(i, A.get(j));
+		q = a.set(j, tmp);
+		return 0;
+	}
+}
+
+class IntWrapper {
+	var i: Int;
+
+	def comapareTo(other: IntWrapper): Int = {
+		return i - other.get();
+	}
+
+	def set(iarg: Int): Int = {
+		i = iarg;
+		return 0;
+	}
+
+	def get(): Int = {
+		return i;
+	}
+}
+
+class StringWrapper {
+	var s: String;
+
+	def comapareTo(other: StringWrapper): Int = {
+		return true;
+	}
+
+	def set(sarg: String): Int = {
+		s = sarg;
+		return 0;
+	}
+
+	def get(): String = {
+		return s;
+	}
+}

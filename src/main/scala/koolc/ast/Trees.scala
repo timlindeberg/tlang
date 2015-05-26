@@ -6,7 +6,7 @@ import analyzer.Symbols._
 import analyzer.Types._
 
 object Trees {
-  sealed trait Tree extends Positioned
+  sealed trait Tree extends Positioned with Product
 
   case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
@@ -81,14 +81,11 @@ object Trees {
     def isTemplated = !templateTypes.isEmpty
     def templatedClassName(): String = templatedClassName(templateTypes)
     def templatedClassName(templateTypes: List[TypeTree]): String = {
-      var tmp = List[String]()
-      templateTypes.foreach(_ match {
-        case x: TypeIdentifier if x.isTemplated => tmp = x.templatedClassName :: tmp
-        case x                                  => tmp = x.name :: tmp
+      val tTypes = templateTypes.map(_ match {
+        case x: TypeIdentifier if x.isTemplated => x.templatedClassName
+        case x                                  => x.name
       })
-      StartEndSign + value + 
-      (if (isTemplated) Seperator + tmp.reverse.mkString(Seperator) else "") +
-      StartEndSign
+      StartEndSign + value + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEndSign
     }
   }
 

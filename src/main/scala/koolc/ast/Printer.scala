@@ -82,11 +82,7 @@ object Printer {
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
 
-  private def commaList(list: List[Tree]): String = {
-    var tmp = List[String]()
-    list.foreach(x => tmp = f(x) :: tmp)
-    tmp.reverse.mkString(", ")
-  }
+  private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
   private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
 }
