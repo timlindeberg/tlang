@@ -5,6 +5,8 @@ import utils._
 import scala.io.Source
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.TailCalls.TailRec
+import scala.annotation.tailrec
 
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
@@ -161,11 +163,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     }
 
     private def readTokens(chars: List[Char]): List[Token] = {
-      def read(f: (List[Char]) => (Token, List[Char]), chars: List[Char], tokens: List[Token]): List[Token] = {
-        var (token, tail) = f(chars)
-        readTokens(tail, token :: tokens)
-      }
-
       def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
         case '\n' :: r =>
           column = 1
@@ -183,9 +180,15 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
-        case (c :: r) if c.isLetter                   => read(getIdentifierOrKeyword, chars, tokens)
-        case ('"' :: r)                               => read(getStringLiteral, r, tokens)
-        case (c :: r) if c.isDigit                    => read(getIntLiteral, chars, tokens)
+        case (c :: r) if c.isLetter                   => 
+          var (token, tail) = getIdentifierOrKeyword(chars)
+          readTokens(tail, token :: tokens)
+        case ('"' :: r)                               => 
+          var (token, tail) = getStringLiteral(r)
+          readTokens(tail, token :: tokens)
+        case (c :: r) if c.isDigit                    => 
+          var (token, tail) = getIntLiteral(chars)
+          readTokens(tail, token :: tokens)
         case Nil                                      => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens)
         case _ :: r                                   => readTokens(r, (createToken(BAD, 1) :: tokens))
       }
