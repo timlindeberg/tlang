@@ -4,7 +4,7 @@ package utils
 import java.io.File
 import scala.io.Source
 
-class CompilationException() extends RuntimeException("")
+class CompilationException() extends Exception
 
 class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
@@ -26,7 +26,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   def fatal(msg: Any, pos: Positioned = NoPosition): Nothing = {
     report("fatal", msg, pos)
-    throw new CompilationException  
+    throw new CompilationException
   }
 
   var filesToLines = Map[File, IndexedSeq[String]]()
@@ -37,7 +37,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   def terminateIfErrors = {
     if (hasErrors) {
-      if(!quiet) err("There were errors.")
+      if (!quiet) err("There were errors.")
       throw new CompilationException
     }
   }
@@ -76,7 +76,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
       if (pos.line - 1 < lines.size) {
         val line = lines(pos.line - 1)
         val tabs = line.count(_ == '\t')
-        
+
         s += line.replaceAll("\t", "    ") + "\n"
         s += " " * (pos.col - 1 + (tabs * 3)) + "^" + "\n"
       } else {

@@ -1,0 +1,646 @@
+object Program {
+  def main () : Unit = {
+    if(new Main().run()) println("");
+  }
+}
+
+class Integer {
+	var i: Int;
+
+	def set(iarg: Int): Int = {
+		i = iarg;
+		return 0;
+	}
+
+	def get(): Int = {
+		return i;
+	}
+
+	def toString(): String = {
+		return "" + i;
+	}
+
+	def compareTo(other: Integer): Int = {
+		return i - other.get();
+	}
+
+	def equals(other: Integer): Bool = {
+		return i == other.get();
+	}
+}
+
+class KoolString {
+	var s: String;
+
+	def set(sarg: String): Int = {
+		s = sarg;
+		return 0;
+	}
+
+	def get(): String = {
+		return s;
+	}
+
+	def toString(): String = {
+		return s;
+	}
+
+	def compareTo(other: KoolString): Int = {
+		return 1;
+	}
+
+	def equals(other: KoolString): Bool = {
+		return s == other.get();
+	}
+
+}
+
+class ListPrinter[T, U] {
+
+	var l1: List[T];
+	var l2: List[U];
+
+	def set(list1: List[T], list2: List[U]): Int = {
+		l1 = list1;
+		l2 = list2;
+		return 0;
+	}
+
+	def print(msg: String): Int = {
+		println("----------------------------------------");
+		println("-- " + msg);
+		println("----------------------------------------");
+		println(l1);
+		println(l2);
+		return 0;
+	}
+}
+
+class Main {
+	def run(): Bool = {
+		var p: 			  ListPrinter[Integer, KoolString];
+		var intList: 	  List[Integer];
+		var intList2: 	  List[Integer];
+		var stringList:   List[KoolString];
+		
+		var intSorter: 	  Sorter[List[Integer], Integer];
+		var stringSorter: Sorter[List[KoolString], KoolString];
+		var i: 			  Int;
+		var q: 			  Int;
+		var b: 			  Bool;
+
+		p = 		   new ListPrinter[Integer, KoolString]();
+		intList = 	   new List[Integer]();
+		stringList =   new List[KoolString]();
+		intSorter =    new Sorter[List[Integer], Integer]();
+		stringSorter = new Sorter[List[KoolString], KoolString]();
+
+		q = p.set(intList, stringList);
+		q = intList.init();
+		q = stringList.init();
+		i = 0;
+		while(i < 10){
+			b = intList.add(0, this.newInteger(i));
+			b = stringList.add(0, this.newKoolString("s" + i + "s"));
+			i = i + 1;
+		}
+
+		q = p.print("Add");
+
+		i = 10;
+		while(0 < i){
+			q = intList.push(this.newInteger(i));
+			q = stringList.push(this.newKoolString("s" + i + "s"));
+			i = i - 1;
+		}
+		q = p.print("Initial");
+		
+		i = 0;
+
+		b = intList.set(2, this.newInteger(15));
+		b = intList.set(5, this.newInteger(15));
+		b = intList.add(7, this.newInteger(15));
+
+		b = stringList.set(2, this.newKoolString("s" + 15 + "s"));
+		b = stringList.set(5, this.newKoolString("s" + 15 + "s"));
+		b = stringList.add(7, this.newKoolString("s" + 15 + "s"));
+
+
+		q = p.print("Set 10 and 40 to 15");
+
+		b = intList.remove(0);
+		b = intList.remove(3);
+		b = intList.remove(intList.size() - 1);
+
+		b = stringList.remove(0);
+		b = stringList.remove(3);
+		b = stringList.remove(intList.size() - 1);
+		
+		q = p.print("Removed first, 3, and last");
+
+		q = intSorter.sort(intList);
+		q = stringSorter.sort(stringList);
+
+		q = p.print("Sorted");
+		
+		intList2 = new List[Integer]();
+		q = intList2.init();
+
+		i = 0;
+		while(i < 10){
+			q = intList2.push(this.newInteger(100 - i));
+			i = i + 1;
+		}
+		b = intList.addAll(5, intList2);
+
+		q = intList2.initWith(5, this.newInteger(4));
+		b = intList.addAll(0, intList2);
+		q = p.print("AddAll");
+
+		println(intList2);
+		q = intList2.clear();
+		println(intList2);
+
+		println(intList.contains(this.newInteger(100)));
+		println(intList.contains(this.newInteger(95)));
+		println(intList.contains(this.newInteger(101)));
+
+		println("----------------------------------------");
+		println("-- Pop");
+		println("----------------------------------------");
+		println(intList);
+		while(0 < intList.size()){
+			q = intList.pop().get().get();
+			println(intList);
+		}
+
+		q = intList.clear();
+		i = 0;
+		while(i < 10){
+			q = intList.push(this.newInteger(i));
+			q = intList2.push(this.newInteger(i));
+			i = i + 1;
+		}
+
+		println(intList.equals(intList2));
+
+		return false;
+	}
+
+	def newInteger(i: Int): Integer = {
+		var integer: Integer;
+		var q: Int;
+		integer = new Integer();
+		q = integer.set(i);
+		return integer;
+	}
+
+	def newKoolString(s: String): KoolString = {
+		var string: KoolString;
+		var q: Int;
+		string = new KoolString();
+		q = string.set(s);
+		return string;
+	}
+}
+
+class List[T] {
+	
+	var first: Option[Node[T]];
+	var last:  Option[Node[T]];
+
+	var size: Int; 
+
+	def init(): Int = {
+		first = new Option[Node[T]]();
+		last = new Option[Node[T]]();
+		size = 0;
+		return 0;
+	}
+
+	def initWith(newSize: Int, value: T): Int = {
+		var i: Int;
+		var q: Int;
+		q = this.init();
+
+		while(i < newSize){
+			q = this.push(value);
+			i = i + 1;
+		}
+		return 0;
+	}
+
+	def isEmpty(): Bool = {
+		return size == 0;
+	}
+
+	def clear(): Int = {
+		return this.init();
+	}
+
+	def first(): Option[Node[T]] = {
+		return first;
+	}
+
+	def last(): Option[Node[T]] = {
+		return last;
+	}
+
+	def iterator(): ListIterator[T] = {
+		var it: ListIterator[T];
+		var q:  Int;
+
+		it = new ListIterator[T]();
+		q = it.init(this);
+		return it;
+	}
+
+	def push(data: T): Int = {
+		var node: Node[T];
+		var q: 	  Int;
+
+		node = new Node[T]();
+		q = node.init(data);
+		if(!first.isDefined()){
+			q = first.add(node);
+			last = first;
+		}else{
+			q = node.setPrev(last.get());
+			q = last.get().setNext(node);
+			last = last.get().next();
+		}
+		size = size + 1;
+		return 0;
+	}
+
+	def pop(): Option[T] = {
+		var res: Option[T];
+		var q: 	 Int;
+		var b:	 Bool;
+
+		res = new Option[T]();
+		if(0 < size){
+			q = res.add(last.get().data());
+			b = this.remove(size - 1);
+		}
+
+		return res;
+	}
+
+	def add(index: Int, data: T): Bool = {
+		var node: Option[Node[T]];
+		var next: Option[Node[T]];
+		var prev: Option[Node[T]];
+		var op:	  Option[Node[T]];
+		var elem: Node[T];
+		var res:  Bool;
+		var q: 	  Int;
+
+		if(0 < index + 1 && index < size + 1){
+			elem = new Node[T]();
+			q = elem.init(data);
+			if(index == size){
+				q = this.push(data);
+			}else if(index == 0){
+				q = first.get().setPrev(elem);
+				q = elem.setNext(first.get());
+				op = new Option[Node[T]]();
+				q = op.add(elem);
+				first = op;
+			}else{
+				node = this.find(index);
+				prev = node.get().prev();
+				next = node.get().next();
+
+				q = prev.get().setNext(elem);
+				q = elem.setPrev(prev.get());
+
+				q = elem.setNext(node.get());
+				q = node.get().setPrev(elem);
+			}
+			size = size + 1;
+			res = true;
+		}
+		
+		return res;
+	}
+
+	def addAll(index: Int, other: List[T]): Bool = {
+		var it: ListIterator[T];
+		var b: Bool;
+		it = other.iterator();
+		b = true;
+		while(it.hasNext() && b){
+			b = this.add(index, it.next());	
+		}
+
+		return b;
+	}
+
+	def remove(index: Int): Bool = {
+		var node: 	Option[Node[T]];
+		var next:	Option[Node[T]];
+		var prev:	Option[Node[T]];
+		var res:	Bool;
+		var q: 		Int;
+
+		node = this.find(index);
+		if(0 < size){
+			if(node.isDefined()){
+				prev = node.get().prev();
+				next = node.get().next();
+				if(prev.isDefined() && next.isDefined()){
+					// Node is in the middle of the list
+					q = prev.get().setNext(next.get());
+					q = next.get().setPrev(prev.get());
+				}else if(prev.isDefined() && ! next.isDefined()){
+					// Node is last element
+					q = prev.get().clearNext();
+					last = prev;
+				}else if(!prev.isDefined() && next.isDefined()){
+					// Node is first element
+					q = next.get().clearPrev();
+					first = next;
+				}else{
+					// Node is the only element
+					q = this.init();
+				}
+				size = size - 1;
+				res = true;
+			}
+		}
+		
+		return res;
+	}
+
+	def get(index: Int): Option[T] = {
+		var node: 	Option[Node[T]];
+		var res:	Option[T];
+		var q: 		Int;
+
+		res = new Option[T]();
+		node = this.find(index);
+		if(node.isDefined()){
+			q = res.add(node.get().data());
+		}
+		return res;
+	}
+
+	def set(index: Int, data: T): Bool = {
+		var node: 	Option[Node[T]];
+		var res:	Bool;
+		var q: 		Int;
+
+		node = this.find(index);
+		if(node.isDefined()){
+			q = node.get().setData(data);
+			res = true;
+		}
+		return res;
+	}
+
+	def indexOf(data: T): Int = {
+		var index: Int;
+		var i: 	   Int;
+		var it:	   ListIterator[T];
+
+		index = 0 - 1;
+		it = this.iterator();
+		while(it.hasNext() && index == (0 - 1)){
+			if(it.next().equals(data)){
+				index = i;
+			}
+			i = i + 1;
+		}
+		return index;
+	}
+
+	def lastIndexOf(data: T): Int = {
+		var index: Int;
+		var i: 	   Int;
+		var it:	   ListIterator[T];
+
+		index = 0 - 1;
+		it = this.iterator();
+		while(it.hasNext()){
+			if(it.next().equals(data)){
+				index = i;
+			}
+			i = i + 1;
+		}
+		return index;
+	}
+
+	def contains(data: T): Bool = {
+		var res: Bool;
+		if(this.indexOf(data) == (0 - 1)) res = false;
+		else 							  res = true;
+		return res;
+	}
+
+	def find(index: Int): Option[Node[T]] = {
+		var tmp: 	Option[Node[T]];
+		var i: 		Int;
+
+		tmp = new Option[Node[T]]();
+		if(index == 0){
+			tmp = first;
+		}else if(index == size - 1){
+			tmp = last;
+		}else if(0 < index + 1 && index < size){
+			if(index < (size / 2) + 1){
+				tmp = first;
+				i = 0;
+				while(i < index && tmp.isDefined()){
+					i = i + 1;
+					tmp = tmp.get().next();
+				}	
+			}else{
+				tmp = last;
+				i = size - 1;
+				while(index < i && tmp.isDefined()){
+					i = i - 1;
+					tmp = tmp.get().prev();
+				}
+			}
+			
+		}
+		return tmp;
+	}
+
+    def toString(): String = {
+        var it: ListIterator[T];
+        var s: 	String;
+        
+        if(size == 0){
+        	s = "[]";
+        }else{
+        	it = this.iterator();
+		    s = "[ ";
+		    while(it.hasNext()){
+		        s = s + it.next().toString();
+		        if(it.hasNext()) s = s + ", ";
+		    }       
+		    s = s + " ]";
+        }
+        return s;
+    }
+
+	def size(): Int = {
+		return size;
+	}
+
+	def equals(other: List[T]): Bool = {
+		var thisIt:  ListIterator[T];
+		var otherIt: ListIterator[T];
+		var res: 	 Bool;
+		var done:	 Bool;
+
+		thisIt = this.iterator();
+		otherIt = other.iterator();
+		if(size == other.size()){
+			res = true;
+			while(thisIt.hasNext() && res){
+				res = thisIt.next().equals(otherIt.next());
+			}
+		}
+
+		return res;
+	}
+}
+
+class Node[T] {
+	var data: T;
+	var next: Option[Node[T]];
+	var prev: Option[Node[T]];
+
+	def init(d: T): Int = {
+		data = d;
+		next = new Option[Node[T]]();
+		prev = new Option[Node[T]]();
+		return 0;
+	}
+
+	def data(): T = {
+		return data;
+	}
+
+	def next(): Option[Node[T]] = {
+		return next;
+	}
+
+	def prev(): Option[Node[T]] = {
+		return prev;
+	}
+
+	def setData(t: T): Int = {
+		data = t;
+		return 0;
+	}
+
+	def clearNext(): Int = {
+		next = new Option[Node[T]]();
+		return 0;
+	}
+
+	def clearPrev(): Int = {
+		prev = new Option[Node[T]]();
+		return 0;
+	}
+
+	def setNext(n: Node[T]): Int = {
+		var o: Option[Node[T]];
+		var q: Int;
+		o = new Option[Node[T]]();
+		q = o.add(n);
+		next = o;
+		return 0;
+	}
+
+	def setPrev(n: Node[T]): Int = {
+		var o: Option[Node[T]];
+		var q: Int;
+		o = new Option[Node[T]]();
+		q = o.add(n);
+		prev = o;
+		return 0;
+	}
+}
+
+class ListIterator[T] {
+	var current: Node[T];
+	var hasNext: Bool;
+
+	def init(list: List[T]): Int = {
+		if(list.first().isDefined()){
+			hasNext = true;
+			current = list.first().get();
+		}else{
+			current = new Node[T]();
+		}
+
+		return 0;
+	}
+
+	def hasNext(): Bool = {
+		return hasNext;
+	}
+
+	def next(): T = {
+		var res: T;
+		res = current.data();
+		hasNext = current.next().isDefined();
+		if(hasNext){
+			current = current.next().get();
+		}
+		return res;
+	}
+}
+
+class Option[T] {
+	var isDefined: Bool;
+	var t: 		   T;
+
+	def add(tArg: T): Int = {
+		t = tArg;
+		isDefined = true;
+		return 0;
+	}
+
+	def isDefined(): Bool = {
+		return isDefined;
+	}
+
+	def get(): T = {
+		return t;
+	}
+}
+
+class Sorter[Container, T] {
+	
+	def sort(c: Container): Int = {
+		var i: Int;
+		var j: Int;
+		var q: Int;
+		i = 1;
+
+		while(i < c.size()){
+			j = i;
+			while(0 < j && c.get(j).get().compareTo(c.get(j - 1).get()) < 0){
+				q = this.swap(c, j, j - 1);
+				j = j - 1;
+			}
+			i = i + 1;
+		}
+		return 0;
+	}
+
+	def swap(c: Container, i: Int, j: Int): Int = {
+		var tmp: T;
+		var b:   Bool;
+		tmp = c.get(i).get();
+		b = c.set(i, c.get(j).get());
+		b = c.set(j, tmp);
+		return 0;
+	}
+}

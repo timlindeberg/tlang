@@ -78,7 +78,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(arr, TIntArray)
           TInt
         case mc @ MethodCall(obj, meth, methodCallArgs) =>
-          def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
+          def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", " , ", ")")
           
           val objType = tcExpr(obj)
           objType match {
@@ -132,13 +132,11 @@ object TypeChecking extends Pipeline[Program, Program] {
       ctx.reporter.error(msg, pos)
       TError
     }
-
     prog.main.stats.foreach(tcStat)
     prog.classes.foreach(_.methods.foreach { method =>
       tcExpr(method.retExpr, method.getSymbol.getType)
       method.stats.foreach(tcStat)
     })
-
     prog
   }
 

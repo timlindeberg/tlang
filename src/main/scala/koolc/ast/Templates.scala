@@ -22,7 +22,7 @@ object Templates extends Pipeline[Program, Program] {
     val ERROR_METH = new MethodDecl(ERROR_TYPE, new Identifier("ERROR"), List(), List(), List(), new New(ERROR_TYPE))
 
     def ERROR_WRONG_NUM_GENERICS(expected: Int, found: Int, pos: Positioned) = {
-      fatal("Wrong number of generic parameters, expected " + expected + " but found " + found, pos)
+      error("Wrong number of generic parameters, expected " + expected + " but found " + found, pos)
       ERROR_MAP
     }
 
@@ -40,7 +40,7 @@ object Templates extends Pipeline[Program, Program] {
       error("Generic identifiers with the same name: \'" + name + "\'", pos)
     }
 
-    class ClassGenerator {
+    object ClassGenerator {
 
       val cloner = new Cloner
       cloner.registerConstant(Nil)
@@ -158,7 +158,7 @@ object Templates extends Pipeline[Program, Program] {
     }
 
     checkTemplateClassDefs(templateClasses)
-    val newClasses = new ClassGenerator().generate(prog)
+    val newClasses = ClassGenerator.generate(prog)
     val oldClasses = prog.classes.filter(!_.id.isTemplated)
     val newProg = prog.copy(classes = oldClasses ++ newClasses)
 
