@@ -11,12 +11,15 @@ import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking
 import koolc.code.CodeGeneration
 import koolc.ast.Templates
+import koolc.ast.Trees._
+import scala.sys.process._
 
 object Main {
   val tokensFlag = "--tokens"
   val astFlag = "--ast"
   val symId = "--symid"
-  val flags = HashMap(tokensFlag -> false, astFlag -> false, symId -> false)
+  val exec = "--exec"
+  val flags = HashMap(tokensFlag -> false, astFlag -> false, symId -> false, exec -> false)
 
   def processOptions(args: Array[String]): Context = {
 
@@ -70,12 +73,16 @@ object Main {
           }
         } else {
           // Generate code
-          (parsing andThen analysis andThen CodeGeneration).run(ctx)(ctx.file)
+          val prog = (parsing andThen analysis).run(ctx)(ctx.file)
+          CodeGeneration.run(ctx)(prog)
+          if(flags(exec)){
+            println( "java -cp " + ctx.outDir.get.getAbsolutePath +  " " + prog.main.id.value !!)
+          }
         }
       }
     } catch {
       // Reporter throws exception at fatal instead exiting program
-      case e: Throwable => System.err.println(e.getMessage)
+      case e: CompilationException =>
     }
   }
 }
