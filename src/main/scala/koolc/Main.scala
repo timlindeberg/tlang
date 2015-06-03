@@ -76,7 +76,10 @@ object Main {
           val prog = (parsing andThen analysis).run(ctx)(ctx.file)
           CodeGeneration.run(ctx)(prog)
           if(flags(exec)){
-            println( "java -cp " + ctx.outDir.get.getAbsolutePath +  " " + prog.main.id.value !!)
+            println(ctx.outDir match {
+              case Some(dir) => "java -cp " + ctx.outDir.get.getAbsolutePath +  " " + prog.main.id.value !!
+              case None      => "java " + prog.main.id.value !!
+            })
           }
         }
       }

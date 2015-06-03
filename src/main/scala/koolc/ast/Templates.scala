@@ -163,5 +163,6 @@ object Templates extends Pipeline[Program, Program] {
     val newProg = prog.copy(classes = oldClasses ++ newClasses)
 
     replaceTypes(newProg)
+    newProg
   }
 }

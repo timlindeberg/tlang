@@ -174,7 +174,7 @@ class Main {
 			println(intList);
 		}
 
-		q = intList.clear();
+		q = intList.clear();	
 		i = 0;
 		while(i < 10){
 			q = intList.push(this.newInteger(i));
@@ -432,10 +432,7 @@ class List[T] {
 	}
 
 	def contains(data: T): Bool = {
-		var res: Bool;
-		if(this.indexOf(data) == (0 - 1)) res = false;
-		else 							  res = true;
-		return res;
+		return !this.indexOf(data) == (0 - 1);
 	}
 
 	def find(index: Int): Option[Node[T]] = {
