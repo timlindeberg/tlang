@@ -57,7 +57,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
         r.length should be(sol.length)
         r.zip(sol).foreach(x => x._1 should be(x._2))
       } catch {
-        case t: FileNotFoundException => assert(false)
+        case t: FileNotFoundException =>
       }
     }
 
