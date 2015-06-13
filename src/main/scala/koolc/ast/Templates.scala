@@ -19,7 +19,6 @@ object Templates extends Pipeline[Program, Program] {
     val ERROR_MAP = Map[TypeTree, TypeTree]()
     val ERROR_TYPE = new TypeIdentifier("ERROR")
     val ERROR_CLASS = new ClassDecl(ERROR_TYPE, None, List(), List())
-    val ERROR_METH = new MethodDecl(ERROR_TYPE, new Identifier("ERROR"), List(), List(), List(), new New(ERROR_TYPE))
 
     def ERROR_WRONG_NUM_GENERICS(expected: Int, found: Int, pos: Positioned) = {
       error("Wrong number of generic parameters, expected " + expected + " but found " + found, pos)
@@ -101,13 +100,16 @@ object Templates extends Pipeline[Program, Program] {
         def templateName(id: TypeIdentifier) =
           id.copy(value = template.id.templatedClassName(templateTypes), templateTypes = List())
 
+
+
         val newClass = cloner.deepClone(template)
         Trees.traverse(newClass, Some(_) collect {
-          case c: ClassDecl  => c.id = templateName(c.id)
-          case v: VarDecl    => v.tpe = updateType(v.tpe)
-          case f: Formal     => f.tpe = updateType(f.tpe)
-          case m: MethodDecl => m.retType = updateType(m.retType)
-          case n: New        => n.tpe = updateTypeOfNewExpr(n)
+          case c: ClassDecl       => c.id = templateName(c.id)
+          case v: VarDecl         => v.tpe = updateType(v.tpe)
+          case f: Formal          => f.tpe = updateType(f.tpe)
+          case m: MethodDecl      => m.retType = updateType(m.retType)
+          case c: ConstructorDecl => c.i = c.i.copy(value =template.id.templatedClassName(templateTypes))
+          case n: New             => n.tpe = updateTypeOfNewExpr(n)
         })
 
         newClass

@@ -114,32 +114,38 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] ")" ":" <tpe> "=" "{" { <varDeclaration> } { <statement> } return <expression> "}"
+     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] "): " <tpe> "= {" { <varDeclaration> } { <statement> } return <expression> "}"
+     *                       | def <identifier> "(" [ <formal> { "," <formal> } ] ") = {" { <varDeclaration> } { <statement> } "}"
      */
-    private def methodDeclaration(): MethodDecl = {
+    private def methodDeclaration(): FuncTree = {
       val pos = currentToken
       eat(DEF)
       val id = identifier
       eat(LPAREN)
       val args = commaList(formal)
 
-      eat(RPAREN, COLON)
-      val retType = tpe
-      eat(EQSIGN, LBRACE)
-      val vars = untilNot(varDeclaration, VAR)
-      val stmts = until(statement, RETURN)
-      eat(RETURN)
-      val retExpr = expression
-      eat(SEMICOLON, RBRACE)
-      MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
+      eat(RPAREN)
+      if(currentToken.kind == COLON){
+        eat(COLON)
+        val retType = tpe
+        eat(EQSIGN, LBRACE)
+        val vars = untilNot(varDeclaration, VAR)
+        val stmts = until(statement, RETURN)
+        eat(RETURN)
+        val retExpr = expression
+        eat(SEMICOLON, RBRACE)
+        MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
+      }else{
+        eat(EQSIGN, LBRACE)
+        val vars = untilNot(varDeclaration, VAR)
+        val stmts = until(statement, RBRACE)
+        eat(RBRACE)
+        ConstructorDecl(id, args, vars, stmts).setPos(pos)
+      }
     }
 
     /**
-     * <tpe> ::= Int[]
-     *         | Bool
-     *         | Int
-     *         | String
-     *         | <typeIdentifier>
+     * <tpe> ::= Int[] | Int | Bool | String | <typeIdentifier>
      */
     private def tpe(): TypeTree = {
       val pos = currentToken
@@ -270,7 +276,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
       def plusMinus() = left(timesDiv, PLUS, MINUS)
 
-      /** <timesDiv> ::= <term> { (*| /) <term> } */
+      /** <timesDiv> ::= <term> { ( * | / ) <term> } */
       def timesDiv() = left(term, TIMES, DIV)
 
       /**
@@ -287,7 +293,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          *               | false
          *               | this
          *               | new Int"[" <expression> "]"
-         *               | new <typeIdentifier> "()"
+         *               | new <typeIdentifier> "(" [ <expression> { "," <expression> } ")"
          */
         def termFirst() = {
           val tree = currentToken.kind match {
@@ -316,8 +322,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
                 NewIntArray(expr)
               } else {
                 val id = typeIdentifier
-                eat(LPAREN, RPAREN)
-                New(id)
+                eat(LPAREN)
+                val args = commaList(expression)
+                eat(RPAREN)
+                New(id, args)
               }
             }
             case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
@@ -327,6 +335,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
         /**
          * <termRest> ::= .length
+         *              | .<identifier> "(" <expression> { "," <expression> } ")
          *              | "[" <expression> "]"
          */
         def termRest(lhs: ExprTree): ExprTree = {

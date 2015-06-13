@@ -7,7 +7,7 @@ import java.io.File
 import koolc.lexer.Token
 import koolc.lexer.Lexer
 import koolc.ast._
-import koolc.TestUtils
+import koolc.{utils, TestUtils}
 import koolc.utils.CompilationException
 import scala.io.Source
 import koolc.ast.Trees.Program
@@ -59,7 +59,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   it should "should work with class types" in {
-    val C1 = Types.anyObject.classSymbol;
+    val C1 = Types.anyObject.classSymbol
     val C2 = new ClassSymbol("C2")
     val C3 = new ClassSymbol("C3")
     val C4 = new ClassSymbol("C4")
@@ -69,18 +69,18 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     C4.parent = Some(C3)
     C5.parent = Some(C4)
 
-    val T1 = Types.anyObject;
-    val T2 = TObject(C2);
-    val T3 = TObject(C3);
-    val T4 = TObject(C4);
-    val T5 = TObject(C5);
+    val T1 = Types.anyObject
+    val T2 = TObject(C2)
+    val T3 = TObject(C3)
+    val T4 = TObject(C4)
+    val T5 = TObject(C5)
 
     C2.setType(T2)
     C3.setType(T3)
     C4.setType(T4)
     C5.setType(T5)
 
-    val types = List(T1, T2, T3, T4, T5).zipWithIndex;
+    val types = List(T1, T2, T3, T4, T5).zipWithIndex
     for ((t1, i) <- types) {
       for ((t2, j) <- types) {
         if (j >= i) {
@@ -94,17 +94,18 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   def test(file: File, exception: Boolean = false) = {
     val options = TestUtils.readOptions(file)
-    val ctx = new Context(reporter = new koolc.utils.Reporter(exception || options.contains("quietReporter")), file = file, outDir = None)
-    val exec = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(_)
+    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = None)
+    val quietCtx = ctx.copy(reporter = new koolc.utils.Reporter(false))
+    val exec = Lexer andThen Parser andThen NameAnalysis andThen TypeChecking
     if (exception) {
       try{
-        exec(ctx.file)
+        exec.run(quietCtx)(file)
         assert(false)
       }catch{
         case _: CompilationException => ctx.reporter.errors should be(options("expectedErrors"))
       }
     } else {
-      val program = exec(ctx.file)
+      val program = exec.run(ctx)(file)
       ctx.reporter.hasErrors should be(false)
       TestUtils.HasTypes(program) should be(true)
     }

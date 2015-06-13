@@ -53,14 +53,14 @@ object Main {
   }
 
   def main(args: Array[String]) {
+    val ctx = processOptions(args)
     try {
-      val ctx = processOptions(args)
       if (flags(tokensFlag)) {
         // Lex the program and print all tokens
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        var parsing = Lexer andThen Parser andThen Templates
-        var analysis = NameAnalysis andThen TypeChecking
+        val parsing = Lexer andThen Parser andThen Templates
+        val analysis = NameAnalysis andThen TypeChecking
         if (flags(astFlag)) {
           if (flags(symId)) {
             // Run analysis and print AST tree with symbols

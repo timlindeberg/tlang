@@ -3,6 +3,7 @@ package ast
 
 import Trees._
 import koolc.analyzer.Symbols._
+import koolc.analyzer.Types.Typed
 
 object Printer {
 
@@ -37,7 +38,8 @@ object Printer {
       case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + all(stats) + r + r
       case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id) => "var " + f(id) + " : " + f(tpe) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + " (" + commaList(args) + ") : " + f(retType) + " = " + l + all(vars) + all(stats) + "return " + f(retExpr) + "; " + r + n
+      case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + all(stats) + "return " + f(retExpr) + "; " + r + n
+      case ConstructorDecl(id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + all(stats) + r + n
       case Formal(tpe, id) => f(id) + ": " + f(tpe)
 
       // Types
@@ -72,7 +74,7 @@ object Printer {
       case id @ TypeIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "[" + commaList(list) + "]" else "")
       case This() => "this"
       case NewIntArray(size) => "new Int[" + f(size) + "]"
-      case New(tpe) => "new " + f(tpe) + "()"
+      case New(tpe, exprs) => "new " + f(tpe) + "(" + commaList(exprs) +")"
       case Not(expr) => "!(" + f(expr) + ")"
     }
     s
@@ -85,4 +87,10 @@ object Printer {
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
   private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
+
+  private def typeOf(t: Tree): String = t match {
+    case typed: Typed => "[" + typed.getType + "]"
+    case _            => ""
+  }
+
 }

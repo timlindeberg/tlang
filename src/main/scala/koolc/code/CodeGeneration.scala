@@ -19,6 +19,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   val PRINT_STREAM = "java/io/PrintStream"
   val OBJECT = "java/lang/Object"
 
+
   /* Labels */
   val THEN = "then"
   val ELSE = "else"
@@ -28,13 +29,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   /* Types */
   val T_INT = 10
+  val CONSTRUCTOR_NAME = "<init>"
 
   def run(ctx: Context)(prog: Program): Unit = {
     import ctx.reporter._
 
     def getIntOrReference[T](tp: Type, Iret: T, Aret: T) = tp match {
       case TBool | TInt => Iret
-      case _            => Aret
+      case _ => Aret
     }
 
     var varMap = new HashMap[String, Int]
@@ -109,8 +111,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       def branch(expr: ExprTree, thn: Label, els: Label): Unit = expr match {
         case Not(expr) => branch(expr, els, thn)
-        case True()    => ch << Goto(thn.id)
-        case False()   => ch << Goto(els.id)
+        case True() => ch << Goto(thn.id)
+        case False() => ch << Goto(els.id)
         case And(lhs, rhs) =>
           val next = Label(ch.getFreshLabel(NEXT))
           branch(lhs, next, els)
@@ -121,7 +123,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           branch(lhs, thn, next)
           ch << next
           branch(rhs, thn, els)
-        case id @ Identifier(value) =>
+        case id@Identifier(value) =>
           load(id.value, id.getType)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
@@ -135,7 +137,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           compile(rhs)
           ch << getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
           ch << Goto(els.id)
-        case mc @ MethodCall(obj, meth, args) =>
+        case mc@MethodCall(obj, meth, args) =>
           compile(mc)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
@@ -158,7 +160,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         }
         expr match {
           case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) => doBranch
-          case expr @ Plus(lhs, rhs) => expr.getType match {
+          case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compile(lhs)
               compile(rhs)
@@ -192,7 +194,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case ArrayLength(arr) =>
             compile(arr)
             ch << ARRAYLENGTH
-          case mc @ MethodCall(obj, meth, args) =>
+          case mc@MethodCall(obj, meth, args) =>
             compile(obj)
             args.foreach(compile)
             val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
@@ -203,14 +205,22 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case NewIntArray(size) =>
             compile(size)
             ch << NewArray(T_INT) // I?
-          case True()                        => ch << Ldc(1)
-          case False()                       => ch << Ldc(0)
-          case IntLit(value)                 => ch << Ldc(value)
-          case StringLit(value)              => ch << Ldc(value)
-          case id @ Identifier(value)        => load(id.value, id.getType)
-          case id @ TypeIdentifier(value, _) => load(id.value, id.getType)
-          case This()                        => ch << ArgLoad(0)
-          case ast.Trees.New(tpe)            => ch << DefaultNew(if (tpe.value == "Object") OBJECT else tpe.value)
+          case True() => ch << Ldc(1)
+          case False() => ch << Ldc(0)
+          case IntLit(value) => ch << Ldc(value)
+          case StringLit(value) => ch << Ldc(value)
+          case id@Identifier(value) => load(id.value, id.getType)
+          case id@TypeIdentifier(value, _) => load(id.value, id.getType)
+          case This() => ch << ArgLoad(0)
+          case ast.Trees.New(tpe, args) =>
+            val obj = if (tpe.value == "Object") OBJECT else tpe.value
+            val argTypes = args.map(_.getType.byteCodeName).mkString
+            val signature = "(" + argTypes + ")V"
+
+            ch << cafebabe.AbstractByteCodes.New(obj)
+            ch << DUP
+            args.foreach(compile)
+            ch << InvokeSpecial(obj, CONSTRUCTOR_NAME, signature)
         }
       }
     }
@@ -220,24 +230,42 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val sym = ct.getSymbol
       val classFile = new ClassFile(sym.name, sym.parent.map(_.name))
       classFile.setSourceFile(sourceName)
-      classFile.addDefaultConstructor
+      var hasConstructor = false
 
-      sym.members.foreach {
-        case (name, varSymbol) =>
-          classFile.addField(varSymbol.getType.byteCodeName, name)
-      }
+      sym.members.foreach { case (name, varSymbol) => classFile.addField(varSymbol.getType.byteCodeName, name) }
 
       ct.methods.foreach { mt =>
         val methSymbol = mt.getSymbol
-        val argType = methSymbol.argList.map(_.getType.byteCodeName).mkString
-        val mh = classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argType)
-        generateMethodCode(mh.codeHandler, mt)
+        val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
+
+        val methodHandle = mt match {
+          case mt:  MethodDecl      => classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
+          case con: ConstructorDecl =>
+            hasConstructor = true
+            val mh = classFile.addConstructor(argTypes)
+            addSuperCall(mh, ct)
+            mh
+        }
+        generateMethodCode(methodHandle.codeHandler, mt)
       }
+
+      if(!hasConstructor)
+        classFile.addDefaultConstructor
 
       classFile.writeToFile(if (dir.length == 0) "./" else dir + sym.name + ".class")
     }
 
-    def generateMethodCode(ch: CodeHandler, mt: MethodDecl): Unit = {
+    def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
+      val superClassName = ct.parent match {
+        case Some(name) => name.value
+        case None       => OBJECT
+      }
+
+      mh.codeHandler << ALOAD_0
+      mh.codeHandler << InvokeSpecial(superClassName, CONSTRUCTOR_NAME, "()V")
+    }
+
+    def generateMethodCode(ch: CodeHandler, mt: FuncTree): Unit = {
       val methSym = mt.getSymbol
 
       varMap = new HashMap[String, Int]
@@ -249,19 +277,23 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
       mt.stats.foreach(statementCompiler.compile)
-      statementCompiler.compile(mt.retExpr)
-
-      ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
+      mt match {
+        case mt: MethodDecl =>
+          statementCompiler.compile(mt.retExpr)
+          ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
+        case cons: ConstructorDecl =>
+          ch << RETURN
+      }
 
       ch.freeze
     }
 
-    def initializeLocalVariables(mt: MethodDecl, ch: CodeHandler) = mt.vars foreach { variable =>
+    def initializeLocalVariables(mt: FuncTree, ch: CodeHandler) = mt.vars foreach { variable =>
       val id = ch.getFreshVar
       varMap(variable.getSymbol.name) = id
       variable.getSymbol.getType match {
         case TInt | TBool => ch << Ldc(0) << IStore(id)
-        case _            => ch << ACONST_NULL << AStore(id)
+        case _ => ch << ACONST_NULL << AStore(id)
       }
     }
 

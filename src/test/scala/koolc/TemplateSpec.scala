@@ -37,7 +37,6 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
   
   def test(file: File, exception: Boolean = false) = {
-    val options = TestUtils.readOptions(file)
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val quietCtx = ctx.copy(reporter = new koolc.utils.Reporter(quiet = true))
     def exec = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
@@ -53,9 +52,9 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
       val res = execute(program, file)
       try {
         val sol = readSolution(file + "-solution").toList
-        val r = res.split("\n").toList
+        val r = TestUtils.lines(res)
         r.length should be(sol.length)
-        r.zip(sol).foreach(x => x._1 should be(x._2))
+        r.zip(sol).foreach { case (res, sol) => res should be(sol)}
       } catch {
         case t: FileNotFoundException =>
       }

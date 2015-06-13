@@ -1,11 +1,10 @@
 package koolc
 package analyzer
 
-import ast.Trees._
-
-import Symbols._
-import Types._
-import utils._
+import koolc.analyzer.Types._
+import koolc.ast.Trees._
+import koolc.utils._
+import koolc.ast.Printer
 
 object TypeChecking extends Pipeline[Program, Program] {
 
@@ -14,7 +13,6 @@ object TypeChecking extends Pipeline[Program, Program] {
    * attaching types to trees and potentially outputting error messages.
    */
   def run(ctx: Context)(prog: Program): Program = {
-    import ctx.reporter
 
     def tcStat(stat: StatTree): Unit = stat match {
       case Block(stats) => stats.foreach(tcStat)
@@ -109,9 +107,30 @@ object TypeChecking extends Pipeline[Program, Program] {
         case NewIntArray(size) =>
           tcExpr(size, TInt)
           TIntArray
-        case New(tpe) => tpe.getType
+        case n @ New(tpe, exprs) =>
+          def methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
+
+          tpe.getType match {
+            case TObject(classSymbol) =>
+              classSymbol.lookupMethod(tpe.name) match { // Constructor has same name as class
+                case Some(methodSymbol) =>
+                  val methodArgs = methodSymbol.argList
+                  if (exprs.length == methodArgs.length) {
+                    val zipped = exprs.zip(methodArgs.map(_.getType))
+                    zipped.foreach { case (methodCallArg, methodArg) => tcExpr(methodCallArg, methodArg) }
+                  } else {
+                    exprs.foreach(tcExpr(_)) // Continue type checking
+                    error("Class \'" + classSymbol.name + "\' does not contain a constructor \'" + methodSignature + "\'.", n)
+                  }
+                case None =>
+                  if(exprs.size > 0)
+                    error("Class \'" + classSymbol.name + "\' does not contain a constructor \'" + methodSignature + "\'.", n)
+              }
+            case x => error("Cannot create a new instance of primitive type \'" + x + "\'.", n)
+          }
+          tpe.getType
         case Not(expr) =>
-          tcExpr(expr)
+          tcExpr(expr, TBool)
           TBool
       }
 
@@ -133,10 +152,14 @@ object TypeChecking extends Pipeline[Program, Program] {
       TError
     }
     prog.main.stats.foreach(tcStat)
-    prog.classes.foreach(_.methods.foreach { method =>
-      tcExpr(method.retExpr, method.getSymbol.getType)
-      method.stats.foreach(tcStat)
-    })
+    prog.classes.foreach(_.methods.foreach(_ match {
+      case method: MethodDecl =>
+        tcExpr(method.retExpr, method.getSymbol.getType)
+        method.stats.foreach(tcStat)
+      case constructor: ConstructorDecl =>
+        constructor.stats.foreach(tcStat)
+    }))
+
     prog
   }
 

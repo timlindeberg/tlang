@@ -39,7 +39,7 @@ object ASTPrinterWithSymbols {
       case Identifier(value) => value
       case TypeIdentifier(value, templateTypes) => value + "," + trees(templateTypes)
       case NewIntArray(size) => f(size)
-      case New(tpe) => f(tpe)
+      case New(tpe, exprs) => f(tpe) + ", " + trees(exprs)
       case Not(expr) => f(expr)
       case _ => ""
     }

@@ -1,0 +1,10 @@
+object Main {
+  def main() : Unit = {
+  }
+}
+
+class Test {
+  def WrongConstructorName() = {
+    println("Construct");
+  }
+}

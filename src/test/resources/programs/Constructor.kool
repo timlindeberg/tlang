@@ -1,0 +1,18 @@
+object Main {
+    def main() : Unit = {
+      println(new H("Construct").run());
+    }
+}
+
+class H {
+
+
+  def H(str: String) = {
+    println(str);
+  }
+
+  def run(): String = {
+    return "Run";
+  }
+
+}

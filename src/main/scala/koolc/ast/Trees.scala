@@ -8,12 +8,16 @@ import analyzer.Types._
 object Trees {
   sealed trait Tree extends Positioned with Product
 
+
   case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
-  case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
+  case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends Tree with Symbolic[ClassSymbol]
   case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
   sealed case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+
+  abstract class FuncTree(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], val stats: List[StatTree]) extends Tree with Symbolic[MethodSymbol]
+  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree], retExpr: ExprTree) extends FuncTree(i, a, v, s)
+  case class ConstructorDecl(var i: Identifier, var a: List[Formal], var v: List[VarDecl], val s: List[StatTree]) extends FuncTree(i, a, v, s)
 
   sealed trait TypeTree extends Tree with Typed {
     def name = this match {
@@ -55,6 +59,7 @@ object Trees {
 
   case class True() extends ExprTree
   case class False() extends ExprTree
+
   case class Identifier(value: String) extends ExprTree with Symbolic[Symbol] {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
@@ -91,7 +96,7 @@ object Trees {
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
-  case class New(var tpe: TypeIdentifier) extends ExprTree
+  case class New(var tpe: TypeIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
 
   def traverse(t: Product, f: Product => Unit): Unit = {

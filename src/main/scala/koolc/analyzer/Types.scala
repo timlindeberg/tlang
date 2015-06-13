@@ -15,7 +15,7 @@ object Types {
   }
 
   sealed abstract class Type {
-    def isSubTypeOf(tpe: Type): Boolean
+    def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def byteCodeName(): String
   }
 
@@ -32,38 +32,22 @@ object Types {
   }
 
   case object TInt extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TInt => true
-      case _    => false
-    }
-    override def toString = "int"
+    override def toString = "Int"
     override def byteCodeName(): String = "I"
   }
 
   case object TString extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TString => true
-      case _       => false
-    }
-    override def toString = "string"
+    override def toString = "String"
     override def byteCodeName(): String = "Ljava/lang/String;"
   }
 
   case object TBool extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TBool => true
-      case _     => false
-    }
-    override def toString = "bool"
+    override def toString = "Bool"
     override def byteCodeName(): String = "Z"
   }
 
   case object TIntArray extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TIntArray => true
-      case _         => false
-    }
-    override def toString = "int[]"
+    override def toString = "Int[]"
     override def byteCodeName(): String = "[I"
   }
 
@@ -78,11 +62,11 @@ object Types {
       case _ => false
     }
     override def toString = classSymbol.name
-    def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
     override def byteCodeName(): String = {
       val name = if (this == anyObject) CodeGeneration.OBJECT else classSymbol.name
       "L" + name + ";"
     }
+    def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
   }
 
   // special object to implement the fact that all objects are its subclasses

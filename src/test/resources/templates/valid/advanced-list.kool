@@ -7,6 +7,10 @@ object Program {
 class Integer {
 	var i: Int;
 
+	def Integer(iarg: Int) = {
+		i = iarg;
+	}
+
 	def set(iarg: Int): Int = {
 		i = iarg;
 		return 0;
@@ -31,6 +35,10 @@ class Integer {
 
 class KoolString {
 	var s: String;
+
+	def KoolString(sarg: String) = {
+		s = sarg;
+	}
 
 	def set(sarg: String): Int = {
 		s = sarg;
@@ -60,10 +68,9 @@ class ListPrinter[T, U] {
 	var l1: List[T];
 	var l2: List[U];
 
-	def set(list1: List[T], list2: List[U]): Int = {
+	def ListPrinter(list1: List[T], list2: List[U]) = {
 		l1 = list1;
 		l2 = list2;
-		return 0;
 	}
 
 	def print(msg: String): Int = {
@@ -89,19 +96,17 @@ class Main {
 		var q: 			  Int;
 		var b: 			  Bool;
 
-		p = 		   new ListPrinter[Integer, KoolString]();
 		intList = 	   new List[Integer]();
 		stringList =   new List[KoolString]();
 		intSorter =    new Sorter[List[Integer], Integer]();
 		stringSorter = new Sorter[List[KoolString], KoolString]();
+		p = 		   new ListPrinter[Integer, KoolString](intList, stringList);
 
-		q = p.set(intList, stringList);
-		q = intList.init();
-		q = stringList.init();
+
 		i = 0;
 		while(i < 10){
-			b = intList.add(0, this.newInteger(i));
-			b = stringList.add(0, this.newKoolString("s" + i + "s"));
+			b = intList.add(0, new Integer(i));
+			b = stringList.add(0, new KoolString("s" + i + "s"));
 			i = i + 1;
 		}
 
@@ -109,21 +114,21 @@ class Main {
 
 		i = 10;
 		while(0 < i){
-			q = intList.push(this.newInteger(i));
-			q = stringList.push(this.newKoolString("s" + i + "s"));
+			q = intList.push(new Integer(i));
+			q = stringList.push(new KoolString("s" + i + "s"));
 			i = i - 1;
 		}
 		q = p.print("Initial");
 		
 		i = 0;
 
-		b = intList.set(2, this.newInteger(15));
-		b = intList.set(5, this.newInteger(15));
-		b = intList.add(7, this.newInteger(15));
+		b = intList.set(2, new Integer(15));
+		b = intList.set(5, new Integer(15));
+		b = intList.add(7, new Integer(15));
 
-		b = stringList.set(2, this.newKoolString("s" + 15 + "s"));
-		b = stringList.set(5, this.newKoolString("s" + 15 + "s"));
-		b = stringList.add(7, this.newKoolString("s" + 15 + "s"));
+		b = stringList.set(2, new KoolString("s" + 15 + "s"));
+		b = stringList.set(5, new KoolString("s" + 15 + "s"));
+		b = stringList.add(7, new KoolString("s" + 15 + "s"));
 
 
 		q = p.print("Set 10 and 40 to 15");
@@ -144,16 +149,14 @@ class Main {
 		q = p.print("Sorted");
 		
 		intList2 = new List[Integer]();
-		q = intList2.init();
 
 		i = 0;
 		while(i < 10){
-			q = intList2.push(this.newInteger(100 - i));
+			q = intList2.push(new Integer(100 - i));
 			i = i + 1;
 		}
 		b = intList.addAll(5, intList2);
 
-		q = intList2.initWith(5, this.newInteger(4));
 		b = intList.addAll(0, intList2);
 		q = p.print("AddAll");
 
@@ -161,9 +164,9 @@ class Main {
 		q = intList2.clear();
 		println(intList2);
 
-		println(intList.contains(this.newInteger(100)));
-		println(intList.contains(this.newInteger(95)));
-		println(intList.contains(this.newInteger(101)));
+		println(intList.contains(new Integer(100)));
+		println(intList.contains(new Integer(95)));
+		println(intList.contains(new Integer(101)));
 
 		println("----------------------------------------");
 		println("-- Pop");
@@ -177,30 +180,14 @@ class Main {
 		q = intList.clear();	
 		i = 0;
 		while(i < 10){
-			q = intList.push(this.newInteger(i));
-			q = intList2.push(this.newInteger(i));
+			q = intList.push(new Integer(i));
+			q = intList2.push(new Integer(i));
 			i = i + 1;
 		}
 
 		println(intList.equals(intList2));
 
 		return false;
-	}
-
-	def newInteger(i: Int): Integer = {
-		var integer: Integer;
-		var q: Int;
-		integer = new Integer();
-		q = integer.set(i);
-		return integer;
-	}
-
-	def newKoolString(s: String): KoolString = {
-		var string: KoolString;
-		var q: Int;
-		string = new KoolString();
-		q = string.set(s);
-		return string;
 	}
 }
 
@@ -211,17 +198,14 @@ class List[T] {
 
 	var size: Int; 
 
-	def init(): Int = {
-		first = new Option[Node[T]]();
-		last = new Option[Node[T]]();
-		size = 0;
-		return 0;
+	def List() = {
+		var q: Int;
+		q = this.clear();
 	}
 
 	def initWith(newSize: Int, value: T): Int = {
 		var i: Int;
 		var q: Int;
-		q = this.init();
 
 		while(i < newSize){
 			q = this.push(value);
@@ -235,7 +219,10 @@ class List[T] {
 	}
 
 	def clear(): Int = {
-		return this.init();
+		first = new Option[Node[T]]();
+        last = new Option[Node[T]]();
+        size = 0;
+        return 0;
 	}
 
 	def first(): Option[Node[T]] = {
@@ -247,20 +234,14 @@ class List[T] {
 	}
 
 	def iterator(): ListIterator[T] = {
-		var it: ListIterator[T];
-		var q:  Int;
-
-		it = new ListIterator[T]();
-		q = it.init(this);
-		return it;
+		return new ListIterator[T](this);
 	}
 
 	def push(data: T): Int = {
 		var node: Node[T];
 		var q: 	  Int;
 
-		node = new Node[T]();
-		q = node.init(data);
+		node = new Node[T](data);
 		if(!first.isDefined()){
 			q = first.add(node);
 			last = first;
@@ -297,8 +278,7 @@ class List[T] {
 		var q: 	  Int;
 
 		if(0 < index + 1 && index < size + 1){
-			elem = new Node[T]();
-			q = elem.init(data);
+			elem = new Node[T](data);
 			if(index == size){
 				q = this.push(data);
 			}else if(index == 0){
@@ -363,7 +343,6 @@ class List[T] {
 					first = next;
 				}else{
 					// Node is the only element
-					q = this.init();
 				}
 				size = size - 1;
 				res = true;
@@ -432,7 +411,7 @@ class List[T] {
 	}
 
 	def contains(data: T): Bool = {
-		return !this.indexOf(data) == (0 - 1);
+		return !(this.indexOf(data) == (0 - 1));
 	}
 
 	def find(index: Int): Option[Node[T]] = {
@@ -511,11 +490,10 @@ class Node[T] {
 	var next: Option[Node[T]];
 	var prev: Option[Node[T]];
 
-	def init(d: T): Int = {
+	def Node(d: T) = {
 		data = d;
-		next = new Option[Node[T]]();
-		prev = new Option[Node[T]]();
-		return 0;
+    	next = new Option[Node[T]]();
+    	prev = new Option[Node[T]]();
 	}
 
 	def data(): T = {
@@ -568,15 +546,13 @@ class ListIterator[T] {
 	var current: Node[T];
 	var hasNext: Bool;
 
-	def init(list: List[T]): Int = {
+	def ListIterator(list: List[T]) = {
 		if(list.first().isDefined()){
 			hasNext = true;
 			current = list.first().get();
 		}else{
-			current = new Node[T]();
+			hasNext = false;
 		}
-
-		return 0;
 	}
 
 	def hasNext(): Bool = {
@@ -597,6 +573,10 @@ class ListIterator[T] {
 class Option[T] {
 	var isDefined: Bool;
 	var t: 		   T;
+
+	def Option() = {
+		isDefined = false;
+	}
 
 	def add(tArg: T): Int = {
 		t = tArg;
