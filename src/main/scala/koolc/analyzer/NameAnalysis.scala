@@ -252,6 +252,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case Block(stats) => bind(s, stats)
           case If(expr, thn, els) => bind(s, expr, thn, els)
           case While(expr, stat) => bind(s, expr, stat)
+          case For(init, condition, post, stat) => bind(s, init, condition, post, stat)
           case Println(expr) => bind(s, expr)
           case Assign(id, expr) =>
             setVariable(id, s)

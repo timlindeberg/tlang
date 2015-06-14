@@ -177,6 +177,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      * <statement> ::= "{" { <statement> } "}
      *               | if"(" <expression> ")" <statement> [ else <statement> ]
      *               | while"(" <expression> ")" <statement>
+     *               | for "("[ <assignment> { "," <assignment> } ";" <expression> ";" [ <expression> { "," <expression> } ] " ) <statement>
      *               | println"(" <expression> ");"
      *               | return [ <expression> ] ";"
      *               | <identifier> "=" <expression> ";"
@@ -207,6 +208,39 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           val expr = expression
           eat(RPAREN)
           While(expr, statement)
+        case FOR =>
+          eat(FOR, LPAREN)
+          val init = commaList( () => {
+            val id = identifier
+            eat(EQSIGN)
+            val expr = expression
+            Assign(id, expr)
+          }, SEMICOLON)
+          eat(SEMICOLON)
+          val condition = expression
+          eat(SEMICOLON)
+          val post = commaList(() => currentToken.kind match {
+            case INCREMENT =>
+              eat(INCREMENT)
+              PreIncrement(identifier)
+            case DECREMENT =>
+              eat(DECREMENT)
+              PreDecrement(identifier)
+            case IDKIND =>
+              val id = identifier
+              currentToken.kind match {
+                case INCREMENT =>
+                  eat(INCREMENT)
+                  PostIncrement(id)
+                case DECREMENT =>
+                  eat(DECREMENT)
+                  PostDecrement(id)
+                case _ => expected(INCREMENT, DECREMENT)
+              }
+            case _ => expected(INCREMENT, DECREMENT, IDKIND)
+          })
+          eat(RPAREN)
+          For(init, condition, post, statement)
         case PRINTLN =>
           eat(PRINTLN, LPAREN)
           val expr = expression
@@ -509,8 +543,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      * Parses a commalist of the form
      * <commaList> ::= [ parse { "," parse } ]
      */
-    private def commaList[T](parse: () => T): List[T] = {
-      if (currentToken.kind == RPAREN) {
+    private def commaList[T](parse: () => T, stopSign: TokenKind = RPAREN): List[T] = {
+      if (currentToken.kind == stopSign) {
         List()
       } else {
         val arrBuff = new ArrayBuffer[T]()

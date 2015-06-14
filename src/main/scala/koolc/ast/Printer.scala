@@ -50,7 +50,8 @@ object Printer {
       // Statements
       case Block(stats) => l + allStats(stats) + r
       case If(expr, thn, els) => "if(" + f(expr) + ")" + f(thn) + optional(els, "else " + f(_)) + n
-      case While(expr, stat) => "while(" + f(expr) + ")" + f(stat) + n
+      case While(expr, stat) => "while(" + f(expr) + ") " + f(stat) + n
+      case For(init, condition, post, stat) => "for(" + forAssign(init) + " ; " + f(condition) + " ; " + commaList(post) + ") " + f(stat) + n
       case Println(expr) => "println(" + f(expr) + "); " + n
       case Assign(id, expr) => id.value + " = " + f(expr) + "; " + n
       case ArrayAssign(id, index, expr) => f(id) + "[" + f(index) + "] = " + f(expr) + ";" + n
@@ -93,6 +94,8 @@ object Printer {
   private def pos(t: Tree): String = "[" + t.line + ", " + t.col + "]"
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
+
+  private def forAssign(list: List[Assign]) = list.map(a => a.id.value + " = " + f(a.expr) ).mkString(", ")
 
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 

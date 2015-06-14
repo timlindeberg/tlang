@@ -45,6 +45,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "Int" -> INT,
       "Bool" -> BOOLEAN,
       "while" -> WHILE,
+      "for" -> FOR,
       "if" -> IF,
       "else" -> ELSE,
       "return" -> RETURN,

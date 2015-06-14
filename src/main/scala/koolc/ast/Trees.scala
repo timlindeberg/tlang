@@ -40,6 +40,7 @@ object Trees {
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
+  case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree

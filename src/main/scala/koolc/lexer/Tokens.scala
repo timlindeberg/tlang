@@ -68,6 +68,7 @@ object Tokens {
   case object INT extends TokenKind // int
   case object BOOLEAN extends TokenKind // boolean
   case object WHILE extends TokenKind // while
+  case object FOR extends TokenKind // for
   case object IF extends TokenKind // if
   case object ELSE extends TokenKind // else
   case object RETURN extends TokenKind // return

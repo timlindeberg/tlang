@@ -92,6 +92,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             compileStat(stat)
             branch(expr, Label(bodyLabel), Label(afterLabel))
             ch << Label(afterLabel)
+          case For(init, condition, post, stat) =>
+            val bodyLabel = ch.getFreshLabel(BODY)
+            val afterLabel = ch.getFreshLabel(AFTER)
+            init.foreach(compileStat)
+            branch(condition, Label(bodyLabel), Label(afterLabel))
+            ch << Label(bodyLabel)
+            compileStat(stat)
+            post.foreach(compileStat)
+            branch(condition, Label(bodyLabel), Label(afterLabel))
+            ch << Label(afterLabel)
           case Println(expr) =>
             ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
             compileExpr(expr)

@@ -51,6 +51,11 @@ object TypeChecking extends Pipeline[Program, Program] {
       case While(expr, stat) =>
         tcExpr(expr, TBool)
         tcStat(stat, retType)
+      case For(init, condition, post, stat) =>
+        init.foreach(tcStat(_, retType))
+        tcExpr(condition, TBool)
+        post.foreach(tcStat(_, retType))
+        tcStat(stat, retType)
       case Println(expr)    =>
         if(tcExpr(expr) == TUnit) error("Type error: cannot call println with type Unit!", expr)
       case Assign(id, expr) => tcExpr(expr, id.getType)

@@ -20,6 +20,7 @@ object ASTPrinterWithSymbols {
       case Block(stats) => trees(stats)
       case If(expr, thn, els) => f(expr) + "," + f(thn) + "," + optional(els)
       case While(expr, stat) => f(expr) + "," + f(stat)
+      case For(init, condition, post, stat) => trees(init) + "," + f(condition) + "," + trees(post) + "," + f(stat)
       case Println(expr) => f(expr)
       case Assign(id, expr) => f(id) + "," + f(expr)
       case ArrayAssign(id, index, expr) => f(id) + "," + f(index) + "," + f(expr)

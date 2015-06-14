@@ -98,20 +98,16 @@ class Main {
 		p = 		   new ListPrinter[Integer, KoolString](intList, stringList);
 
 
-		i = 0;
-		while(i < 10){
-			intList.add(0, new Integer(i));
-			stringList.add(0, new KoolString("s" + i + "s"));
-			i = i + 1;
+		for(i = 0; i < 10; i++){
+		    intList.add(0, new Integer(i));
+        	stringList.add(0, new KoolString("s" + i + "s"));
 		}
 
 		p.print("Add");
 
-		i = 10;
-		while(0 < i){
-			intList.push(new Integer(i));
-			stringList.push(new KoolString("s" + i + "s"));
-			i = i - 1;
+		for(i = 10; i > 0; i--){
+		    intList.push(new Integer(i));
+        	stringList.push(new KoolString("s" + i + "s"));
 		}
 		p.print("Initial");
 		
@@ -144,10 +140,8 @@ class Main {
 		
 		intList2 = new List[Integer]();
 
-		i = 0;
-		while(i < 10){
+		for(i = 0; i < 10; i++){
 			intList2.push(new Integer(100 - i));
-			i = i + 1;
 		}
 		intList.addAll(5, intList2);
 
@@ -172,11 +166,9 @@ class Main {
 		}
 
 		intList.clear();
-		i = 0;
-		while(i < 10){
+		for(i = 0; i < 10; i++){
 			intList.push(new Integer(i));
-			intList2.push(new Integer(i));
-			i = i + 1;
+        	intList2.push(new Integer(i));
 		}
 
 		println(intList.equals(intList2));
@@ -196,11 +188,8 @@ class List[T] {
 
 	def initWith(newSize: Int, value: T): Unit = {
 		var i: Int;
-
-		while(i < newSize){
-			this.push(value);
-			i++;
-		}
+        for(i = 0; i < newSize; i++)
+        	this.push(value);
 	}
 
 	def isEmpty(): Bool = {
@@ -566,18 +555,17 @@ class Sorter[Container, T] {
 	def sort(c: Container): Unit = {
 		var i: Int;
 		var j: Int;
+		var N: Int;
 		var x: T;
-		i = 1;
-
-		while(i < c.size()){
-		    x = c.get(i).get();
-			j = i;
-			while(j > 0 && c.get(j-1).get().compareTo(x) > 0){
-			    c.set(j, c.get(j-1).get());
-				j = j - 1;
-			}
-			c.set(j, x);
-			i = i + 1;
-		}
+		N = c.size();
+        for(i = 1; i < N; i++){
+            x = c.get(i).get();
+        	j = i;
+        	while(j > 0 && c.get(j-1).get().compareTo(x) > 0){
+        		c.set(j, c.get(j-1).get());
+        		j = j - 1;
+        	}
+            c.set(j, x);
+        }
 	}
 }
