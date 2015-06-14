@@ -5,6 +5,8 @@ import utils._
 import analyzer.Symbols._
 import analyzer.Types._
 
+import scala.annotation.tailrec
+
 object Trees {
   trait Tree extends Positioned with Product
 
@@ -146,14 +148,17 @@ object Trees {
   case class PreDecrement(id: Identifier) extends ExprTree with StatTree
   case class PostDecrement(id: Identifier) extends ExprTree with StatTree
 
-  def traverse(t: Product, f: Product => Unit): Unit = {
-    t.productIterator.foreach(Some(_) collect {
-      case x: List[_] =>
-        x.foreach(Some(_) collect { case x: Product => traverse(x, f) })
-      case x: Option[Any] =>
-        x collect { case x: Product => traverse(x, f) }
-      case x: Product => traverse(x, f)
-    })
-    f(t)
+  def traverse(t: Product, f: (Product, Product) => Any): Unit = {
+    def trav(parent: Product, current: Product, f: (Product, Product) => Any): Unit = {
+      current.productIterator.foreach(Some(_) collect {
+        case x: List[_] =>
+          x.foreach(Some(_) collect { case x: Product => trav(current, x, f) })
+        case x: Option[Any] =>
+          x collect { case x: Product => trav(current, x, f) }
+        case x: Product => trav(current, x, f)
+      })
+      f(parent, current)
+    }
+    trav(t, t, f)
   }
 }

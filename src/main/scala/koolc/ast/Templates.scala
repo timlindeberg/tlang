@@ -56,7 +56,7 @@ object Templates extends Pipeline[Program, Program] {
             generateClass(x)
         }
 
-        def collect(p: Product) = Some(p) collect {
+        def collect(f: Product, p: Product) = Some(p) collect {
           case c: ClassDecl => c.parent.foreach(generateIfTemplated)
           case v: VarDecl   => generateIfTemplated(v.tpe)
           case f: Formal    => generateIfTemplated(f.tpe)
@@ -103,7 +103,7 @@ object Templates extends Pipeline[Program, Program] {
 
 
         val newClass = cloner.deepClone(template)
-        Trees.traverse(newClass, Some(_) collect {
+        Trees.traverse(newClass, (_, curr) => Some(curr) collect {
           case c: ClassDecl       => c.id = templateName(c.id)
           case v: VarDecl         => v.tpe = updateType(v.tpe)
           case f: Formal          => f.tpe = updateType(f.tpe)
@@ -149,7 +149,7 @@ object Templates extends Pipeline[Program, Program] {
         if (tpe.isTemplated) new TypeIdentifier(tpe.templatedClassName).setPos(tpe)
         else tpe
 
-      Trees.traverse(prog, Some(_) collect {
+      Trees.traverse(prog, (_,curr) => Some(curr) collect {
         case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
         case m: MethodDecl => m.retType = replaceType(m.retType)
         case v: VarDecl    => v.tpe = replaceType(v.tpe)

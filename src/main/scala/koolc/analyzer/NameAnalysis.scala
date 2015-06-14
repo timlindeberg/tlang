@@ -203,8 +203,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(t: Tree): Unit = t match {
         case Program(main, classes) =>
           bind(main); bind(classes)
-        case main@MainObject(id, stats) => bind(main.getSymbol, stats)
-        case classDecl@ClassDecl(id, parent, vars, methods) => {
+        case main@MainObject(id, stats) => stats.foreach(bind(_, main.getSymbol))
+        case classDecl@ClassDecl(id, parent, vars, methods) =>
           setParent(id, parent, classDecl)
           val sym = classDecl.getSymbol
           sym.setType(TObject(sym))
@@ -218,76 +218,37 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
           bind(vars)
           bind(methods)
-        }
         case VarDecl(tpe, id) => setType(tpe, id)
-        case methDecl@MethodDecl(retType, id, args, vars, stats) => {
+        case methDecl@MethodDecl(retType, id, args, vars, stats) =>
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
 
           bind(args)
           bind(vars)
-          bind(methDecl.getSymbol, stats)
-        }
-        case constructorDecl@ConstructorDecl(id, args, vars, stats) => {
+          stats.foreach(bind(_, methDecl.getSymbol))
+        case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
           bind(args)
           bind(vars)
-          bind(constructorDecl.getSymbol, stats)
-        }
+          stats.foreach(bind(_, constructorDecl.getSymbol))
         case Formal(tpe, id) => setType(tpe, id)
         case _ => throw new UnsupportedOperationException
       }
 
-      private def bind(s: Symbol, list: Any*): Unit = {
-        list.foreach(_ match {
-          case x: List[_] => x.foreach(bind(s, _))
-          case x: Tree => bind(s, x)
-          case x: Option[_] => if (x.isDefined) bind(s, x.get)
-          case _ => throw new UnsupportedOperationException
-        })
-      }
-
-      private def bind(s: Symbol, t: Tree): Unit = t match {
-          // Statements
-          case Block(stats) => bind(s, stats)
-          case If(expr, thn, els) => bind(s, expr, thn, els)
-          case While(expr, stat) => bind(s, expr, stat)
-          case For(init, condition, post, stat) => bind(s, init, condition, post, stat)
-          case Println(expr) => bind(s, expr)
-          case Assign(id, expr) =>
-            setVariable(id, s)
-            bind(s, expr)
-          case ArrayAssign(id, index, expr) =>
-            setVariable(id, s)
-            bind(s, index, expr)
-          case Return(expr) => bind(s, expr)
-          // Expressions
-          case MathExpr(lhs, rhs) => bind(s, lhs, rhs)
-          case Comparison(lhs, rhs) => bind(s, lhs, rhs)
-          case ArrayRead(arr, index) => bind(s, arr, index)
-          case ArrayLength(arr) => bind(s, arr)
-          case MethodCall(obj, meth, args) => bind(s, obj, args)
-          case id@Identifier(value) => setVariable(id, s)
-          case id@TypeIdentifier(value, _) => setVariable2(id, s)
-          case thisSym@This() =>
+      private def bind(t: Tree, s: Symbol): Unit =
+        Trees.traverse(t, (parent, current) => Some(current) collect {
+          case mc @ MethodCall(obj, meth, args) =>
+            bind(obj, s)
+            args.foreach(bind(_, s))
+          case id: Identifier     => if(!parent.isInstanceOf[MethodCall]) setVariable(id, s)
+          case id: TypeIdentifier => setType(id)
+          case thisSym: This =>
             s match {
               case classSymbol: ClassSymbol => thisSym.setSymbol(g.mainClass)
               case methodSymbol: MethodSymbol => thisSym.setSymbol(methodSymbol.classSymbol)
               case _ => throw new UnsupportedOperationException
             }
-          case NewIntArray(size) => bind(s, size)
-          case New(tpe, args) =>
-            setType(tpe)
-            bind(s, args)
-          case Not(expr)         => bind(s, expr)
-          case Negation(expr)    => bind(s, expr)
-          case PostDecrement(id) => bind(s, id)
-          case PostIncrement(id) => bind(s, id)
-          case PreDecrement(id)  => bind(s, id)
-          case PreIncrement(id)  => bind(s, id)
-          case _ => // Do nothing
-        }
-
+        })
 
       private def setType(tpe: TypeTree, id: Identifier): Unit = {
         def set(t: Type): Unit = {
@@ -323,29 +284,15 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 tpeId.setSymbol(new ErrorSymbol)
                 error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
-          case BooleanType() => tpe.setType(TBool)
-          case IntType() => tpe.setType(TInt)
+          case BooleanType()  => tpe.setType(TBool)
+          case IntType()      => tpe.setType(TInt)
           case IntArrayType() => tpe.setType(TIntArray)
-          case StringType() => tpe.setType(TString)
-          case UnitType() => tpe.setType(TUnit)
+          case StringType()   => tpe.setType(TString)
+          case UnitType()     => tpe.setType(TUnit)
         }
       }
 
       private def setVariable(id: Identifier, s: Symbol): Unit = {
-        def errorMsg(name: String) = "Variable \'" + name + "\' was not declared: "
-        s match {
-          case methodSymbol: MethodSymbol =>
-            methodSymbol.lookupVar(id.value) match {
-              case Some(symbol) =>
-                id.setSymbol(symbol)
-                variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
-              case None => error(errorMsg(id.value), id)
-            }
-          case _ => throw new UnsupportedOperationException
-        }
-      }
-
-      private def setVariable2(id: TypeIdentifier, s: Symbol): Unit = {
         def errorMsg(name: String) = "Variable \'" + name + "\' was not declared: "
         s match {
           case methodSymbol: MethodSymbol =>

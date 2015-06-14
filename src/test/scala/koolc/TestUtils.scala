@@ -58,7 +58,7 @@ object TestUtils {
 
     private def hasTypes(prog: Program) = {
       var hasTypes = true
-      Trees.traverse(prog, Some(_) collect {
+      Trees.traverse(prog, (_, curr) => Some(curr) collect {
         case node: Typed => hasTypes = node.getType != TUntyped
       })
       hasTypes
@@ -66,7 +66,7 @@ object TestUtils {
 
     private def correctTypes(t: Tree): Boolean = {
       var types = true
-      Trees.traverse(t, x => {
+      Trees.traverse(t, (_, x) => {
         types = x match {
           case x@IntLit(value)            => x.getType == TInt
           case x@StringLit(value)         => x.getType == TString
