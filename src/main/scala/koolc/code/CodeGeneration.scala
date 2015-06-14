@@ -49,11 +49,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
         if (varMap.contains(name)) {
           val id = varMap(name)
-          compile(expr)
+          compileExpr(expr)
           ch << getIntOrReference(tp, IStore(id), AStore(id))
         } else {
           ch << ArgLoad(0)
-          compile(expr)
+          compileExpr(expr)
           ch << PutField(cn, name, tp.byteCodeName) // put this-reference on stack
         }
 
@@ -70,10 +70,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         }
       }
 
-      def compile(stat: StatTree): Unit = {
+      def compileStat(stat: StatTree): Unit = {
         ch << LineNumber(stat.line)
         stat match {
-          case Block(stats) => stats.foreach(compile)
+          case Block(stats) => stats.foreach(compileStat)
           case If(expr, thn, els) =>
             val thnLabel = ch.getFreshLabel(THEN)
             val elsLabel = ch.getFreshLabel(ELSE)
@@ -81,31 +81,40 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
             branch(expr, Label(thnLabel), Label(elsLabel))
             ch << Label(thnLabel)
-            compile(thn)
+            compileStat(thn)
             ch << Goto(afterLabel)
             ch << Label(elsLabel)
-            if (els.isDefined) compile(els.get)
+            if (els.isDefined) compileStat(els.get)
             ch << Label(afterLabel)
           case While(expr, stat) =>
             val bodyLabel = ch.getFreshLabel(BODY)
             val afterLabel = ch.getFreshLabel(AFTER)
             branch(expr, Label(bodyLabel), Label(afterLabel))
             ch << Label(bodyLabel)
-            compile(stat)
+            compileStat(stat)
             branch(expr, Label(bodyLabel), Label(afterLabel))
             ch << Label(afterLabel)
           case Println(expr) =>
             ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
-            compile(expr)
+            compileExpr(expr)
             val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
             ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
           case Assign(id, expr) =>
             store(expr, id)
           case ArrayAssign(id, index, expr) =>
             load(id.value, id.getType)
-            compile(index)
-            compile(expr)
+            compileExpr(index)
+            compileExpr(expr)
             ch << IASTORE
+          case mc @ MethodCall(obj, meth, args) =>
+            compileExpr(obj)
+            args.foreach(compileExpr)
+            val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
+            val argTypes = methArgList.map(_.getType.byteCodeName).mkString
+            val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
+            val name = obj.getType.asInstanceOf[TObject].classSymbol.name
+            ch << InvokeVirtual(name, meth.value, signature)
+            ch << POP
         }
       }
 
@@ -128,23 +137,23 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << IfEq(els.id)
           ch << Goto(thn.id)
         case LessThan(lhs, rhs) =>
-          compile(lhs)
-          compile(rhs)
+          compileExpr(lhs)
+          compileExpr(rhs)
           ch << If_ICmpLt(thn.id)
           ch << Goto(els.id)
         case Equals(lhs, rhs) =>
-          compile(lhs)
-          compile(rhs)
+          compileExpr(lhs)
+          compileExpr(rhs)
           ch << getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
           ch << Goto(els.id)
         case mc@MethodCall(obj, meth, args) =>
-          compile(mc)
+          compileExpr(mc)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
         case _ => throw new UnsupportedOperationException(expr.toString)
       }
 
-      def compile(expr: ExprTree): Unit = {
+      def compileExpr(expr: ExprTree): Unit = {
         ch << LineNumber(expr.line)
         def doBranch() = {
           val thn = ch.getFreshLabel(THEN)
@@ -162,48 +171,48 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) => doBranch
           case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
-              compile(lhs)
-              compile(rhs)
+              compileExpr(lhs)
+              compileExpr(rhs)
               ch << IADD
             case TString =>
               def methSignature(expr: ExprTree) = "(" + expr.getType.byteCodeName + ")L" + STRING_BUILDER + ";"
               ch << DefaultNew(STRING_BUILDER)
-              compile(lhs)
+              compileExpr(lhs)
               ch << InvokeVirtual(STRING_BUILDER, "append", methSignature(lhs))
-              compile(rhs)
+              compileExpr(rhs)
               ch << InvokeVirtual(STRING_BUILDER, "append", methSignature(rhs))
               ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
             case _ => throw new UnsupportedOperationException(expr.toString)
           }
           case Minus(lhs, rhs) =>
-            compile(lhs)
-            compile(rhs)
+            compileExpr(lhs)
+            compileExpr(rhs)
             ch << ISUB
           case Times(lhs, rhs) =>
-            compile(lhs)
-            compile(rhs)
+            compileExpr(lhs)
+            compileExpr(rhs)
             ch << IMUL
           case Div(lhs, rhs) =>
-            compile(lhs)
-            compile(rhs)
+            compileExpr(lhs)
+            compileExpr(rhs)
             ch << IDIV
           case ArrayRead(arr, index) =>
-            compile(arr)
-            compile(index)
+            compileExpr(arr)
+            compileExpr(index)
             ch << IALOAD
           case ArrayLength(arr) =>
-            compile(arr)
+            compileExpr(arr)
             ch << ARRAYLENGTH
           case mc@MethodCall(obj, meth, args) =>
-            compile(obj)
-            args.foreach(compile)
+            compileExpr(obj)
+            args.foreach(compileExpr)
             val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
             val argTypes = methArgList.map(_.getType.byteCodeName).mkString
             val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
             val name = obj.getType.asInstanceOf[TObject].classSymbol.name
             ch << InvokeVirtual(name, meth.value, signature)
           case NewIntArray(size) =>
-            compile(size)
+            compileExpr(size)
             ch << NewArray(T_INT) // I?
           case True() => ch << Ldc(1)
           case False() => ch << Ldc(0)
@@ -219,7 +228,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
             ch << cafebabe.AbstractByteCodes.New(obj)
             ch << DUP
-            args.foreach(compile)
+            args.foreach(compileExpr)
             ch << InvokeSpecial(obj, CONSTRUCTOR_NAME, signature)
         }
       }
@@ -276,10 +285,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       initializeLocalVariables(mt, ch)
 
       val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
-      mt.stats.foreach(statementCompiler.compile)
+      mt.stats.foreach(statementCompiler.compileStat)
       mt match {
         case mt: MethodDecl =>
-          statementCompiler.compile(mt.retExpr)
+          statementCompiler.compileExpr(mt.retExpr)
           ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
         case cons: ConstructorDecl =>
           ch << RETURN
@@ -307,7 +316,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
       varMap = new HashMap[String, Int]
-      stmts.foreach(new StatementCompiler(ch, cname).compile)
+      stmts.foreach(new StatementCompiler(ch, cname).compileStat)
       ch << RETURN
       ch.freeze
     }

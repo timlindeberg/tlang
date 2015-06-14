@@ -35,11 +35,11 @@ object Printer {
   private def f(t: Tree): String = {
     val s = t match {
       case Program(main, classes) => f(main) + all(classes)
-      case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + all(stats) + r + r
+      case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
       case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id) => "var " + f(id) + " : " + f(tpe) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + all(stats) + "return " + f(retExpr) + "; " + r + n
-      case ConstructorDecl(id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + all(stats) + r + n
+      case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + "return " + f(retExpr) + "; " + r + n
+      case ConstructorDecl(id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id) => f(id) + ": " + f(tpe)
 
       // Types
@@ -48,7 +48,7 @@ object Printer {
       case BooleanType() => "Bool"
       case StringType() => "String"
       // Statements
-      case Block(stats) => l + all(stats) + r
+      case Block(stats) => l + allStats(stats) + r
       case If(expr, thn, els) => "if(" + f(expr) + ")" + f(thn) + optional(els, "else " + f(_)) + n
       case While(expr, stat) => "while(" + f(expr) + ")" + f(stat) + n
       case Println(expr) => "println(" + f(expr) + "); " + n
@@ -86,6 +86,12 @@ object Printer {
 
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
+  private def allStats(list: List[StatTree]): String = {
+    list.map(_ match {
+      case MethodCall(obj, meth, args) => f(obj) + "." + f(meth) + "(" + commaList(args) + ");" + n
+      case x => f(x)
+    }).mkString
+  }
   private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
 
   private def typeOf(t: Tree): String = t match {

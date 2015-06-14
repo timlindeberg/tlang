@@ -93,8 +93,6 @@ class Main {
 		var intSorter: 	  Sorter[List[Integer], Integer];
 		var stringSorter: Sorter[List[KoolString], KoolString];
 		var i: 			  Int;
-		var q: 			  Int;
-		var b: 			  Bool;
 
 		intList = 	   new List[Integer]();
 		stringList =   new List[KoolString]();
@@ -105,63 +103,63 @@ class Main {
 
 		i = 0;
 		while(i < 10){
-			b = intList.add(0, new Integer(i));
-			b = stringList.add(0, new KoolString("s" + i + "s"));
+			intList.add(0, new Integer(i));
+			stringList.add(0, new KoolString("s" + i + "s"));
 			i = i + 1;
 		}
 
-		q = p.print("Add");
+		p.print("Add");
 
 		i = 10;
 		while(0 < i){
-			q = intList.push(new Integer(i));
-			q = stringList.push(new KoolString("s" + i + "s"));
+			intList.push(new Integer(i));
+			stringList.push(new KoolString("s" + i + "s"));
 			i = i - 1;
 		}
-		q = p.print("Initial");
+		p.print("Initial");
 		
 		i = 0;
 
-		b = intList.set(2, new Integer(15));
-		b = intList.set(5, new Integer(15));
-		b = intList.add(7, new Integer(15));
+		intList.set(2, new Integer(15));
+		intList.set(5, new Integer(15));
+		intList.add(7, new Integer(15));
 
-		b = stringList.set(2, new KoolString("s" + 15 + "s"));
-		b = stringList.set(5, new KoolString("s" + 15 + "s"));
-		b = stringList.add(7, new KoolString("s" + 15 + "s"));
+		stringList.set(2, new KoolString("s" + 15 + "s"));
+		stringList.set(5, new KoolString("s" + 15 + "s"));
+		stringList.add(7, new KoolString("s" + 15 + "s"));
 
 
-		q = p.print("Set 10 and 40 to 15");
+		p.print("Set 10 and 40 to 15");
 
-		b = intList.remove(0);
-		b = intList.remove(3);
-		b = intList.remove(intList.size() - 1);
+		intList.remove(0);
+	 	intList.remove(3);
+		intList.remove(intList.size() - 1);
 
-		b = stringList.remove(0);
-		b = stringList.remove(3);
-		b = stringList.remove(intList.size() - 1);
+		stringList.remove(0);
+		stringList.remove(3);
+		stringList.remove(intList.size() - 1);
 		
-		q = p.print("Removed first, 3, and last");
+	 	p.print("Removed first, 3, and last");
 
-		q = intSorter.sort(intList);
-		q = stringSorter.sort(stringList);
+		intSorter.sort(intList);
+		stringSorter.sort(stringList);
 
-		q = p.print("Sorted");
+		p.print("Sorted");
 		
 		intList2 = new List[Integer]();
 
 		i = 0;
 		while(i < 10){
-			q = intList2.push(new Integer(100 - i));
+			intList2.push(new Integer(100 - i));
 			i = i + 1;
 		}
-		b = intList.addAll(5, intList2);
+		intList.addAll(5, intList2);
 
-		b = intList.addAll(0, intList2);
-		q = p.print("AddAll");
+		intList.addAll(0, intList2);
+		p.print("AddAll");
 
 		println(intList2);
-		q = intList2.clear();
+		intList2.clear();
 		println(intList2);
 
 		println(intList.contains(new Integer(100)));
@@ -173,15 +171,15 @@ class Main {
 		println("----------------------------------------");
 		println(intList);
 		while(0 < intList.size()){
-			q = intList.pop().get().get();
+			intList.pop().get().get();
 			println(intList);
 		}
 
-		q = intList.clear();	
+		intList.clear();
 		i = 0;
 		while(i < 10){
-			q = intList.push(new Integer(i));
-			q = intList2.push(new Integer(i));
+			intList.push(new Integer(i));
+			intList2.push(new Integer(i));
 			i = i + 1;
 		}
 
@@ -199,16 +197,14 @@ class List[T] {
 	var size: Int; 
 
 	def List() = {
-		var q: Int;
-		q = this.clear();
+		this.clear();
 	}
 
 	def initWith(newSize: Int, value: T): Int = {
 		var i: Int;
-		var q: Int;
 
 		while(i < newSize){
-			q = this.push(value);
+			this.push(value);
 			i = i + 1;
 		}
 		return 0;
@@ -239,15 +235,14 @@ class List[T] {
 
 	def push(data: T): Int = {
 		var node: Node[T];
-		var q: 	  Int;
 
 		node = new Node[T](data);
 		if(!first.isDefined()){
-			q = first.add(node);
+			first.add(node);
 			last = first;
 		}else{
-			q = node.setPrev(last.get());
-			q = last.get().setNext(node);
+			node.setPrev(last.get());
+			last.get().setNext(node);
 			last = last.get().next();
 		}
 		size = size + 1;
@@ -256,13 +251,11 @@ class List[T] {
 
 	def pop(): Option[T] = {
 		var res: Option[T];
-		var q: 	 Int;
-		var b:	 Bool;
 
 		res = new Option[T]();
 		if(0 < size){
-			q = res.add(last.get().data());
-			b = this.remove(size - 1);
+			res.add(last.get().data());
+			this.remove(size - 1);
 		}
 
 		return res;
@@ -275,28 +268,27 @@ class List[T] {
 		var op:	  Option[Node[T]];
 		var elem: Node[T];
 		var res:  Bool;
-		var q: 	  Int;
 
 		if(0 < index + 1 && index < size + 1){
 			elem = new Node[T](data);
 			if(index == size){
-				q = this.push(data);
+				this.push(data);
 			}else if(index == 0){
-				q = first.get().setPrev(elem);
-				q = elem.setNext(first.get());
+				first.get().setPrev(elem);
+				elem.setNext(first.get());
 				op = new Option[Node[T]]();
-				q = op.add(elem);
+				op.add(elem);
 				first = op;
 			}else{
 				node = this.find(index);
 				prev = node.get().prev();
 				next = node.get().next();
 
-				q = prev.get().setNext(elem);
-				q = elem.setPrev(prev.get());
+				prev.get().setNext(elem);
+				elem.setPrev(prev.get());
 
-				q = elem.setNext(node.get());
-				q = node.get().setPrev(elem);
+				elem.setNext(node.get());
+				node.get().setPrev(elem);
 			}
 			size = size + 1;
 			res = true;
@@ -308,6 +300,7 @@ class List[T] {
 	def addAll(index: Int, other: List[T]): Bool = {
 		var it: ListIterator[T];
 		var b: Bool;
+
 		it = other.iterator();
 		b = true;
 		while(it.hasNext() && b){
@@ -322,7 +315,6 @@ class List[T] {
 		var next:	Option[Node[T]];
 		var prev:	Option[Node[T]];
 		var res:	Bool;
-		var q: 		Int;
 
 		node = this.find(index);
 		if(0 < size){
@@ -331,18 +323,19 @@ class List[T] {
 				next = node.get().next();
 				if(prev.isDefined() && next.isDefined()){
 					// Node is in the middle of the list
-					q = prev.get().setNext(next.get());
-					q = next.get().setPrev(prev.get());
+					prev.get().setNext(next.get());
+					next.get().setPrev(prev.get());
 				}else if(prev.isDefined() && ! next.isDefined()){
 					// Node is last element
-					q = prev.get().clearNext();
+					prev.get().clearNext();
 					last = prev;
 				}else if(!prev.isDefined() && next.isDefined()){
 					// Node is first element
-					q = next.get().clearPrev();
+					next.get().clearPrev();
 					first = next;
 				}else{
 					// Node is the only element
+					this.clear();
 				}
 				size = size - 1;
 				res = true;
@@ -355,12 +348,11 @@ class List[T] {
 	def get(index: Int): Option[T] = {
 		var node: 	Option[Node[T]];
 		var res:	Option[T];
-		var q: 		Int;
 
 		res = new Option[T]();
 		node = this.find(index);
 		if(node.isDefined()){
-			q = res.add(node.get().data());
+			res.add(node.get().data());
 		}
 		return res;
 	}
@@ -368,11 +360,10 @@ class List[T] {
 	def set(index: Int, data: T): Bool = {
 		var node: 	Option[Node[T]];
 		var res:	Bool;
-		var q: 		Int;
 
 		node = this.find(index);
 		if(node.isDefined()){
-			q = node.get().setData(data);
+			node.get().setData(data);
 			res = true;
 		}
 		return res;
@@ -525,18 +516,16 @@ class Node[T] {
 
 	def setNext(n: Node[T]): Int = {
 		var o: Option[Node[T]];
-		var q: Int;
 		o = new Option[Node[T]]();
-		q = o.add(n);
+		o.add(n);
 		next = o;
 		return 0;
 	}
 
 	def setPrev(n: Node[T]): Int = {
 		var o: Option[Node[T]];
-		var q: Int;
 		o = new Option[Node[T]]();
-		q = o.add(n);
+		o.add(n);
 		prev = o;
 		return 0;
 	}
@@ -598,13 +587,12 @@ class Sorter[Container, T] {
 	def sort(c: Container): Int = {
 		var i: Int;
 		var j: Int;
-		var q: Int;
 		i = 1;
 
 		while(i < c.size()){
 			j = i;
 			while(0 < j && c.get(j).get().compareTo(c.get(j - 1).get()) < 0){
-				q = this.swap(c, j, j - 1);
+				this.swap(c, j, j - 1);
 				j = j - 1;
 			}
 			i = i + 1;

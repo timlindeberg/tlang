@@ -29,6 +29,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       '-' -> MINUS,
       '*' -> TIMES,
       '<' -> LESSTHAN,
+      '>' -> GREATERTHAN,
       '/' -> DIV,
       '=' -> EQSIGN)
 
@@ -175,19 +176,21 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
+        case '<' :: '=' :: r                          => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
+        case '>' :: '=' :: r                          => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case (c :: r) if c.isLetter                   => 
-          var (token, tail) = getIdentifierOrKeyword(chars)
+          val (token, tail) = getIdentifierOrKeyword(chars)
           readTokens(tail, token :: tokens)
         case ('"' :: r)                               => 
-          var (token, tail) = getStringLiteral(r)
+          val (token, tail) = getStringLiteral(r)
           readTokens(tail, token :: tokens)
         case (c :: r) if c.isDigit                    => 
-          var (token, tail) = getIntLiteral(chars)
+          val (token, tail) = getIntLiteral(chars)
           readTokens(tail, token :: tokens)
         case Nil                                      => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens)
         case _ :: r                                   => readTokens(r, (createToken(BAD, 1) :: tokens))

@@ -47,6 +47,9 @@ object Tokens {
   case object AND extends TokenKind // &&
   case object OR extends TokenKind // ||
   case object LESSTHAN extends TokenKind // <
+  case object LESSTHANEQUALS extends  TokenKind // <=
+  case object GREATERTHAN extends  TokenKind // >
+  case object GREATERTHANEQUALS extends  TokenKind // >=
   case object PLUS extends TokenKind // +
   case object MINUS extends TokenKind // -
   case object TIMES extends TokenKind // *

@@ -1,6 +1,8 @@
 package koolc
 package ast
 
+import java.beans.Expression
+
 import utils._
 import Trees._
 import lexer._
@@ -175,57 +177,69 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      *               | println"(" <expression> ");"
      *               | <identifier> "=" <expression> ";"
      *               | <identifier>"[" <expression> "]" "=" <expression> ";"
+     *               | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] }
      */
     private def statement(): StatTree = {
       val pos = currentToken
       val tree = currentToken.kind match {
-        case LBRACE => {
+        case LBRACE =>
           eat(LBRACE)
           val stmts = until(statement, RBRACE)
           eat(RBRACE)
           Block(stmts)
-        }
-        case IF => {
+        case IF =>
           eat(IF, LPAREN)
           val expr = expression
           eat(RPAREN)
           val stmt = statement
           val els = optional(statement, ELSE)
           If(expr, stmt, els)
-        }
-        case WHILE => {
+        case WHILE =>
           eat(WHILE, LPAREN)
           val expr = expression
           eat(RPAREN)
           (While(expr, statement))
-        }
-        case PRINTLN => {
+        case PRINTLN =>
           eat(PRINTLN, LPAREN)
           val expr = expression
           eat(RPAREN, SEMICOLON)
           Println(expr)
-        }
-        case IDKIND => {
+        case IDKIND =>
           val id = identifier
           currentToken.kind match {
-            case EQSIGN => {
+            case EQSIGN =>
               eat(EQSIGN)
               val expr = expression
               eat(SEMICOLON)
               Assign(id, expr)
-            }
-            case LBRACKET => {
+            case LBRACKET =>
               eat(LBRACKET)
               val expr1 = expression
               eat(RBRACKET, EQSIGN)
               val expr2 = expression
               eat(SEMICOLON)
               ArrayAssign(id, expr1, expr2)
-            }
+            case DOT =>
+              var e: ExprTree = id
+              while(currentToken.kind == DOT){
+                eat(DOT)
+                val methName = identifier
+                eat(LPAREN)
+                val args = commaList(expression)
+                eat(RPAREN)
+                e = MethodCall(e, methName, args)
+              }
+              eat(SEMICOLON)
+              e.asInstanceOf[MethodCall]
             case _ => expected(EQSIGN, LBRACKET)
           }
-        }
-        case _ => expected(LBRACE, IF, WHILE, PRINTLN, IDKIND)
+        case _ =>
+          val expr = expression
+          eat(SEMICOLON)
+          expr match {
+            case m : MethodCall => m
+            case _              => fatal("Not a valid statement, expected println, if, while, assignment or a method call. ", expr)
+          }
       }
       tree.setPos(pos)
     }

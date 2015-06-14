@@ -42,6 +42,20 @@ object Trees {
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
 
+  object BinaryExpr {
+    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
+      case And(lhs, rhs)      => Some((lhs, rhs))
+      case Or(lhs, rhs)       => Some((lhs, rhs))
+      case Plus(lhs, rhs)     => Some((lhs, rhs))
+      case Minus(lhs, rhs)    => Some((lhs, rhs))
+      case Times(lhs, rhs)    => Some((lhs, rhs))
+      case Div(lhs, rhs)      => Some((lhs, rhs))
+      case LessThan(lhs, rhs) => Some((lhs, rhs))
+      case Equals(lhs, rhs)   => Some((lhs, rhs))
+      case _                  => None
+    }
+  }
+
   sealed trait ExprTree extends Tree with Typed
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -53,7 +67,7 @@ object Trees {
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArrayLength(arr: ExprTree) extends ExprTree
-  case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
+  case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree
   case class IntLit(value: Int) extends ExprTree
   case class StringLit(value: String) extends ExprTree
 
