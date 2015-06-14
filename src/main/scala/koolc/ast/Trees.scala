@@ -127,7 +127,7 @@ object Trees {
     }
 
     override def setType(tpe: Type) = { getSymbol.setType(tpe); this }
-    def isTemplated = !templateTypes.isEmpty
+    def isTemplated = templateTypes.nonEmpty
     def templatedClassName(): String = templatedClassName(templateTypes)
     def templatedClassName(templateTypes: List[TypeTree]): String = {
       val tTypes = templateTypes.map(_ match {

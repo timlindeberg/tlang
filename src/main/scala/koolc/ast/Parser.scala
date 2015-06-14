@@ -281,6 +281,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             case DECREMENT =>
               eat(DECREMENT)
               PostDecrement(id)
+            case LPAREN =>
+              eat(LPAREN)
+              val exprs = commaList(expression)
+              eat(RPAREN)
+              MethodCall(This(), id, exprs) // Implicit this
             case _ => expected(EQSIGN, LBRACKET)
           }
           eat(SEMICOLON)
@@ -366,6 +371,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          *               | <identifier>
          *               | <identifier> "++"
          *               | <identifier> "--"
+         *               | <identifier> "(" <expression> { "," <expression> } ")
          *               | true
          *               | false
          *               | this
@@ -404,6 +410,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
                 case DECREMENT =>
                   eat(DECREMENT)
                   PostDecrement(id)
+                case LPAREN =>
+                  eat(LPAREN)
+                  val exprs = commaList(expression)
+                  eat(RPAREN)
+                  MethodCall(This(), id, exprs) // Implicit this
                 case _ => id
               }
             case TRUE =>

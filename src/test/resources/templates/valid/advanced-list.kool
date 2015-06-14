@@ -183,13 +183,13 @@ class List[T] {
 	var size: Int; 
 
 	def List() = {
-		this.clear();
+		clear();
 	}
 
 	def initWith(newSize: Int, value: T): Unit = {
 		var i: Int;
         for(i = 0; i < newSize; i++)
-        	this.push(value);
+        	push(value);
 	}
 
 	def isEmpty(): Bool = {
@@ -237,7 +237,7 @@ class List[T] {
 		    return res;
 
 		res.add(last.get().data());
-		this.remove(size - 1);
+		remove(size - 1);
 		return res;
 	}
 
@@ -254,7 +254,7 @@ class List[T] {
 
         elem = new Node[T](data);
         if(index == size){
-            this.push(data);
+            push(data);
         }else if(index == 0){
             first.get().setPrev(elem);
             elem.setNext(first.get());
@@ -262,7 +262,7 @@ class List[T] {
             op.add(elem);
             first = op;
         }else{
-            node = this.find(index);
+            node = find(index);
             prev = node.get().prev();
             next = node.get().next();
 
@@ -282,7 +282,7 @@ class List[T] {
 
 		it = other.iterator();
 		while(it.hasNext()){
-			if(!this.add(index, it.next()))
+			if(!add(index, it.next()))
 			    return false;
 		}
 
@@ -317,7 +317,7 @@ class List[T] {
             first = next;
         }else{
             // Node is the only element
-            this.clear();
+            clear();
         }
         size--;
 		return true;
@@ -328,7 +328,7 @@ class List[T] {
 		var res:	Option[T];
 
 		res = new Option[T]();
-		node = this.find(index);
+		node = find(index);
 		if(node.isDefined()){
 			res.add(node.get().data());
 		}
@@ -338,7 +338,7 @@ class List[T] {
 	def set(index: Int, data: T): Bool = {
 		var node: 	Option[Node[T]];
 
-		node = this.find(index);
+		node = find(index);
 		if(node.isDefined()){
 			node.get().setData(data);
 			return true;
@@ -350,7 +350,7 @@ class List[T] {
 		var i: 	   Int;
 		var it:	   ListIterator[T];
 
-		it = this.iterator();
+		it = iterator();
 		while(it.hasNext()){
 			if(it.next().equals(data))
 				return i;
@@ -365,7 +365,7 @@ class List[T] {
 		var it:	   ListIterator[T];
 
 		index = -1;
-		it = this.iterator();
+		it = iterator();
 		while(it.hasNext()){
 			if(it.next().equals(data))
 				index = i;
@@ -375,7 +375,7 @@ class List[T] {
 	}
 
 	def contains(data: T): Bool = {
-		return this.indexOf(data) != -1;
+		return indexOf(data) != -1;
 	}
 
 	def find(index: Int): Option[Node[T]] = {
@@ -417,7 +417,7 @@ class List[T] {
         if(size == 0)
         	return "[]";
 
-        it = this.iterator();
+        it = iterator();
         s = "[ ";
         while(it.hasNext()){
             s = s + it.next().toString();
@@ -439,7 +439,7 @@ class List[T] {
         if(size != other.size())
             return false;
 
-		thisIt = this.iterator();
+		thisIt = iterator();
 		otherIt = other.iterator();
         while(thisIt.hasNext()){
             if(!thisIt.next().equals(otherIt.next()))
