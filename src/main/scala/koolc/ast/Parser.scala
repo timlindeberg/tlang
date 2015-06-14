@@ -250,18 +250,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     private def expression(): ExprTree = {
       val pos = currentToken
       val exprMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-        OR -> Or,
-        AND -> And,
-        LESSTHAN -> LessThan,
-        EQUALS -> Equals,
-        PLUS -> Plus,
-        MINUS -> Minus,
-        TIMES -> Times,
-        DIV -> Div)
+        OR                -> Or,
+        AND               -> And,
+        LESSTHAN          -> LessThan,
+        LESSTHANEQUALS    -> LessThanEquals,
+        GREATERTHAN       -> GreaterThan,
+        GREATERTHANEQUALS -> GreaterThanEquals,
+        EQUALS            -> Equals,
+        NOTEQUALS         -> NotEquals,
+        PLUS              -> Plus,
+        MINUS             -> Minus,
+        TIMES             -> Times,
+        DIV               -> Div)
 
       /**
        * Parses expressions of type
-       * E ::= next { ( kinds[0] | kinds[1] | ... | kinds[n] ) next }.
+       * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
        * Used to parse left associative expressions. *
        */
       def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
@@ -281,11 +285,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       /** <or> ::= <and> { || <and> } */
       def or() = left(and, OR)
 
-      /** <and> ::= <lessThanEquals> { && <lessThanEquals> } */
-      def and() = left(lessThanEquals, AND)
+      /** <and> ::= <comparison> { && <comparison> } */
+      def and() = left(comparison, AND)
 
-      /** <lessThanEquals> ::= <plusMinus> { ( < | == ) <plusMinus> } */
-      def lessThanEquals() = left(plusMinus, LESSTHAN, EQUALS)
+      /** <comparison> ::= <plusMinus> { ( < | <= | > | >= | != | == | ) <plusMinus> } */
+      def comparison() = left(plusMinus, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS)
 
       /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
       def plusMinus() = left(timesDiv, PLUS, MINUS)

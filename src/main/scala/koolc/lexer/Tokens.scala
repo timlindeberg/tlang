@@ -37,6 +37,7 @@ object Tokens {
   case object COMMA extends TokenKind // ,
   case object EQSIGN extends TokenKind // =
   case object EQUALS extends TokenKind // ==
+  case object NOTEQUALS extends TokenKind // !=
   case object BANG extends TokenKind // !
   case object LPAREN extends TokenKind // (
   case object RPAREN extends TokenKind // )

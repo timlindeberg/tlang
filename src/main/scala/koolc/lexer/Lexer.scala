@@ -179,6 +179,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '<' :: '=' :: r                          => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
         case '>' :: '=' :: r                          => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
+        case '!' :: '=' :: r                          => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
@@ -192,8 +193,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isDigit                    => 
           val (token, tail) = getIntLiteral(chars)
           readTokens(tail, token :: tokens)
-        case Nil                                      => (new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens)
-        case _ :: r                                   => readTokens(r, (createToken(BAD, 1) :: tokens))
+        case Nil                                      => new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens
+        case _ :: r                                   => readTokens(r, createToken(BAD, 1) :: tokens)
       }
       readTokens(chars, List[Token]()).reverse
     }

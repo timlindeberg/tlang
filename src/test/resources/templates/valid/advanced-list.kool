@@ -269,7 +269,7 @@ class List[T] {
 		var elem: Node[T];
 		var res:  Bool;
 
-		if(0 < index + 1 && index < size + 1){
+		if(index >= 0 && index <= size){
 			elem = new Node[T](data);
 			if(index == size){
 				this.push(data);
@@ -317,7 +317,7 @@ class List[T] {
 		var res:	Bool;
 
 		node = this.find(index);
-		if(0 < size){
+		if(size > 0){
 			if(node.isDefined()){
 				prev = node.get().prev();
 				next = node.get().next();
@@ -402,7 +402,7 @@ class List[T] {
 	}
 
 	def contains(data: T): Bool = {
-		return !(this.indexOf(data) == (0 - 1));
+		return this.indexOf(data) != (0 - 1);
 	}
 
 	def find(index: Int): Option[Node[T]] = {
@@ -414,7 +414,7 @@ class List[T] {
 			tmp = first;
 		}else if(index == size - 1){
 			tmp = last;
-		}else if(0 < index + 1 && index < size){
+		}else if(index > 0 && index < size){
 			if(index < (size / 2) + 1){
 				tmp = first;
 				i = 0;
@@ -425,7 +425,7 @@ class List[T] {
 			}else{
 				tmp = last;
 				i = size - 1;
-				while(index < i && tmp.isDefined()){
+				while(i > index && tmp.isDefined()){
 					i = i - 1;
 					tmp = tmp.get().prev();
 				}
@@ -587,25 +587,19 @@ class Sorter[Container, T] {
 	def sort(c: Container): Int = {
 		var i: Int;
 		var j: Int;
+		var x: T;
 		i = 1;
 
 		while(i < c.size()){
+		    x = c.get(i).get();
 			j = i;
-			while(0 < j && c.get(j).get().compareTo(c.get(j - 1).get()) < 0){
-				this.swap(c, j, j - 1);
+			while(j > 0 && c.get(j-1).get().compareTo(x) > 0){
+			    c.set(j, c.get(j-1).get());
 				j = j - 1;
 			}
+			c.set(j, x);
 			i = i + 1;
 		}
-		return 0;
-	}
-
-	def swap(c: Container, i: Int, j: Int): Int = {
-		var tmp: T;
-		var b:   Bool;
-		tmp = c.get(i).get();
-		b = c.set(i, c.get(j).get());
-		b = c.set(j, tmp);
 		return 0;
 	}
 }

@@ -44,15 +44,33 @@ object Trees {
 
   object BinaryExpr {
     def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
-      case And(lhs, rhs)      => Some((lhs, rhs))
-      case Or(lhs, rhs)       => Some((lhs, rhs))
-      case Plus(lhs, rhs)     => Some((lhs, rhs))
-      case Minus(lhs, rhs)    => Some((lhs, rhs))
-      case Times(lhs, rhs)    => Some((lhs, rhs))
-      case Div(lhs, rhs)      => Some((lhs, rhs))
-      case LessThan(lhs, rhs) => Some((lhs, rhs))
-      case Equals(lhs, rhs)   => Some((lhs, rhs))
-      case _                  => None
+      case And(lhs, rhs)               => Some((lhs, rhs))
+      case Or(lhs, rhs)                => Some((lhs, rhs))
+      case Plus(lhs, rhs)              => Some((lhs, rhs))
+      case Minus(lhs, rhs)             => Some((lhs, rhs))
+      case Times(lhs, rhs)             => Some((lhs, rhs))
+      case Div(lhs, rhs)               => Some((lhs, rhs))
+      case LessThan(lhs, rhs)          => Some((lhs, rhs))
+      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
+      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
+      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
+      case Equals(lhs, rhs)            => Some((lhs, rhs))
+      case NotEquals(lhs, rhs)         => Some((lhs, rhs))
+      case _                           => None
+    }
+  }
+
+  object Comparison {
+    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
+      case And(lhs, rhs)               => Some((lhs, rhs))
+      case Or(lhs, rhs)                => Some((lhs, rhs))
+      case LessThan(lhs, rhs)          => Some((lhs, rhs))
+      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
+      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
+      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
+      case Equals(lhs, rhs)            => Some((lhs, rhs))
+      case NotEquals(lhs, rhs)         => Some((lhs, rhs))
+      case _                           => None
     }
   }
 
@@ -64,7 +82,11 @@ object Trees {
   case class Times(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Div(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArrayLength(arr: ExprTree) extends ExprTree
   case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree

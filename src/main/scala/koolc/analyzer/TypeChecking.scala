@@ -69,6 +69,22 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(lhs, TBool)
           tcExpr(rhs, TBool)
           TBool
+        case Equals(lhs, rhs) =>
+          (tcExpr(lhs), tcExpr(rhs)) match {
+            case (TObject(_), TObject(_)) => TBool
+            case (x, y) if x == y         => TBool
+            case (x, y)                   => error("Type error: expected: " + x + ", found " + y, rhs)
+          }
+        case NotEquals(lhs, rhs) =>
+          (tcExpr(lhs), tcExpr(rhs)) match {
+            case (TObject(_), TObject(_)) => TBool
+            case (x, y) if x == y         => TBool
+            case (x, y)                   => error("Type error: expected: " + x + ", found " + y, rhs)
+          }
+        case Comparison(lhs, rhs) =>
+          tcExpr(lhs, TInt)
+          tcExpr(rhs, TInt)
+          TBool
         case Plus(lhs, rhs) =>
           (tcExpr(lhs, TInt, TString), tcExpr(rhs, TInt, TString)) match {
             case (TInt, TInt) => TInt
@@ -86,16 +102,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
           TInt
-        case LessThan(lhs, rhs) =>
-          tcExpr(lhs, TInt)
-          tcExpr(rhs, TInt)
-          TBool
-        case eq @ Equals(lhs, rhs) =>
-          (tcExpr(lhs), tcExpr(rhs)) match {
-            case (TObject(_), TObject(_)) => TBool
-            case (x, y) if x == y         => TBool
-            case (x, y)                   => error("Type error: expected: " + x + ", found " + y, rhs)
-          }
+
         case ArrayRead(arr, index) =>
           tcExpr(arr, TIntArray)
           tcExpr(index, TInt)

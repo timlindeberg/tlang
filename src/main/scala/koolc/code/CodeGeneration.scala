@@ -136,15 +136,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           load(id.value, id.getType)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
-        case LessThan(lhs, rhs) =>
+        case c @ Comparison(lhs, rhs) =>
           compileExpr(lhs)
           compileExpr(rhs)
-          ch << If_ICmpLt(thn.id)
-          ch << Goto(els.id)
-        case Equals(lhs, rhs) =>
-          compileExpr(lhs)
-          compileExpr(rhs)
-          ch << getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
+          ch << (c match {
+            case _: LessThan          => If_ICmpLt(thn.id)
+            case _: LessThanEquals    => If_ICmpLe(thn.id)
+            case _: GreaterThan       => If_ICmpGt(thn.id)
+            case _: GreaterThanEquals => If_ICmpGe(thn.id)
+            case _: Equals            => getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
+            case _: NotEquals         => getIntOrReference(lhs.getType, If_ICmpNe(thn.id), If_ACmpNe(thn.id))
+          })
           ch << Goto(els.id)
         case mc@MethodCall(obj, meth, args) =>
           compileExpr(mc)
@@ -168,7 +170,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Label(after)
         }
         expr match {
-          case And(_, _) | Or(_, _) | Equals(_, _) | LessThan(_, _) | Not(_) => doBranch
+          case _:And | _:Or | _:Equals | _:NotEquals | _:LessThan |
+               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not => doBranch
           case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compileExpr(lhs)
