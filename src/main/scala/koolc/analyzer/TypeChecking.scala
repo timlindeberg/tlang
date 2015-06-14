@@ -41,22 +41,29 @@ object TypeChecking extends Pipeline[Program, Program] {
       }
     }
 
-    def tcStat(stat: StatTree): Unit = stat match {
-      case Block(stats) => stats.foreach(tcStat)
+    def tcStat(stat: StatTree, retType: Type): Unit = stat match {
+      case Block(stats) => stats.foreach(tcStat(_, retType))
       case If(expr, thn, els) =>
         tcExpr(expr, TBool)
-        tcStat(thn)
+        tcStat(thn, retType)
         if (els.isDefined)
-          tcStat(els.get)
+          tcStat(els.get, retType)
       case While(expr, stat) =>
         tcExpr(expr, TBool)
-        tcStat(stat)
-      case Println(expr)    => tcExpr(expr)
+        tcStat(stat, retType)
+      case Println(expr)    =>
+        if(tcExpr(expr) == TUnit) error("Type error: cannot call println with type Unit!", expr)
       case Assign(id, expr) => tcExpr(expr, id.getType)
       case ArrayAssign(id, index, expr) =>
         tcExpr(index, TInt)
         tcExpr(expr, TInt)
       case mc: MethodCall => mc.setType(typeCheckMethodCall(mc))
+      case Return(Some(expr)) =>
+        tcExpr(expr, retType)
+      case r @ Return(None) =>
+        if(retType != TUnit) error("Expected a return value of type \'" + retType + "\'.", r)
+      case IncrementDecrement(id) =>
+        tcExpr(id, TInt)
     }
 
     def tcExpr(expr: ExprTree, expected: Type*): Type = {
@@ -145,6 +152,12 @@ object TypeChecking extends Pipeline[Program, Program] {
         case Not(expr) =>
           tcExpr(expr, TBool)
           TBool
+        case Negation(expr) =>
+          tcExpr(expr, TInt)
+          TInt
+        case IncrementDecrement(id) =>
+          tcExpr(id, TInt)
+          TInt
       }
 
       // Check result and return a valid type in case of error
@@ -164,19 +177,12 @@ object TypeChecking extends Pipeline[Program, Program] {
       ctx.reporter.error(msg, pos)
       TError
     }
-    prog.main.stats.foreach(tcStat)
+    prog.main.stats.foreach(tcStat(_, TUnit))
     prog.classes.foreach(_.methods.foreach(_ match {
       case method: MethodDecl =>
-        method.retExpr match {
-          case Some(expr) => tcExpr(expr, method.getSymbol.getType)
-          case None =>
-            if(method.getSymbol.getType != TUnit){
-              error("Expected a return value of type \'" + method.getSymbol.getType + "\'.", method.retType)
-            }
-        }
-        method.stats.foreach(tcStat)
+        method.stats.foreach(tcStat(_,method.getSymbol.getType))
       case constructor: ConstructorDecl =>
-        constructor.stats.foreach(tcStat)
+        constructor.stats.foreach(tcStat(_, TUnit))
     }))
 
     prog

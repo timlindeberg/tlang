@@ -6,20 +6,20 @@ import analyzer.Symbols._
 import analyzer.Types._
 
 object Trees {
-  sealed trait Tree extends Positioned with Product
+  trait Tree extends Positioned with Product
 
 
   case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
   case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends Tree with Symbolic[ClassSymbol]
   case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  sealed case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   abstract class FuncTree(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], val stats: List[StatTree]) extends Tree with Symbolic[MethodSymbol]
-  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree], retExpr: Option[ExprTree]) extends FuncTree(i, a, v, s)
+  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree]) extends FuncTree(i, a, v, s)
   case class ConstructorDecl(var i: Identifier, var a: List[Formal], var v: List[VarDecl], val s: List[StatTree]) extends FuncTree(i, a, v, s)
 
-  sealed trait TypeTree extends Tree with Typed {
+  trait TypeTree extends Tree with Typed {
     def name = this match {
       case TypeIdentifier(value, _) => value
       case IntType()                => "Int"
@@ -36,13 +36,14 @@ object Trees {
   case class StringType() extends TypeTree
   case class UnitType() extends TypeTree
 
-  sealed trait StatTree extends Tree
+  trait StatTree extends Tree
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
+  case class Return(expr: Option[ExprTree]) extends StatTree
 
   object MathExpr {
     def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
@@ -68,7 +69,17 @@ object Trees {
     }
   }
 
-  sealed trait ExprTree extends Tree with Typed
+  object IncrementDecrement {
+    def unapply(e: Tree): Option[ExprTree] = e match {
+      case PreIncrement(id)  => Some(id)
+      case PostIncrement(id) => Some(id)
+      case PreDecrement(id)  => Some(id)
+      case PostDecrement(id) => Some(id)
+      case _                 => None
+    }
+  }
+
+  trait ExprTree extends Tree with Typed
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Plus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -128,6 +139,11 @@ object Trees {
   case class NewIntArray(size: ExprTree) extends ExprTree
   case class New(var tpe: TypeIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
+  case class Negation(expr: ExprTree) extends ExprTree
+  case class PreIncrement(id: Identifier) extends ExprTree with StatTree
+  case class PostIncrement(id: Identifier) extends ExprTree with StatTree
+  case class PreDecrement(id: Identifier) extends ExprTree with StatTree
+  case class PostDecrement(id: Identifier) extends ExprTree with StatTree
 
   def traverse(t: Product, f: Product => Unit): Unit = {
     t.productIterator.foreach(Some(_) collect {

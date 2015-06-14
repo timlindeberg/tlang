@@ -42,21 +42,22 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     class StatementCompiler(ch: CodeHandler, cn: String) {
 
-      def store(expr: ExprTree, id: Identifier): Unit = {
+      def store(id: Identifier, put: () => Unit): Unit = {
         val name = id.value
         val tp = id.getType
 
         if (varMap.contains(name)) {
           val id = varMap(name)
-          compileExpr(expr)
+          put()
           ch << getIntOrReference(tp, IStore(id), AStore(id))
         } else {
-          ch << ArgLoad(0)
-          compileExpr(expr)
-          ch << PutField(cn, name, tp.byteCodeName) // put this-reference on stack
+          ch << ArgLoad(0) // put this-reference on stack
+          put()
+          ch << PutField(cn, name, tp.byteCodeName)
         }
-
       }
+
+      def load(id: Identifier): Unit = load(id.value, id.getType)
 
       def load(name: String, tpe: Type): Unit =
         if (varMap.contains(name)) {
@@ -97,9 +98,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
             ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
           case Assign(id, expr) =>
-            store(expr, id)
+            store(id, () => compileExpr(expr))
           case ArrayAssign(id, index, expr) =>
-            load(id.value, id.getType)
+            load(id)
             compileExpr(index)
             compileExpr(expr)
             ch << IASTORE
@@ -113,6 +114,32 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << InvokeVirtual(name, meth.value, signature)
             if(mc.getType != TUnit)
               ch << POP
+          case Return(Some(expr)) =>
+              compileExpr(expr)
+              ch << getIntOrReference(expr.getType, IRETURN, ARETURN)
+          case Return(None) =>
+              ch << RETURN
+          case PreDecrement(id @ Identifier(name)) =>
+            load(id)
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << ISUB
+            })
+          case PreIncrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << IADD
+            } )
+          case PostDecrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << ISUB
+            })
+          case PostIncrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << IADD
+            })
         }
       }
 
@@ -131,7 +158,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << next
           branch(rhs, thn, els)
         case id@Identifier(value) =>
-          load(id.value, id.getType)
+          load(id)
           ch << IfEq(els.id)
           ch << Goto(thn.id)
         case c @ Comparison(lhs, rhs) =>
@@ -155,21 +182,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       def compileExpr(expr: ExprTree): Unit = {
         ch << LineNumber(expr.line)
-        def doBranch() = {
-          val thn = ch.getFreshLabel(THEN)
-          val els = ch.getFreshLabel(ELSE)
-          val after = ch.getFreshLabel(AFTER)
-          branch(expr, Label(thn), Label(els))
-          ch << Label(thn)
-          ch << Ldc(1)
-          ch << Goto(after)
-          ch << Label(els)
-          ch << Ldc(0)
-          ch << Label(after)
-        }
         expr match {
           case _:And | _:Or | _:Equals | _:NotEquals | _:LessThan |
-               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not => doBranch
+               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not =>
+            val thn = ch.getFreshLabel(THEN)
+            val els = ch.getFreshLabel(ELSE)
+            val after = ch.getFreshLabel(AFTER)
+            branch(expr, Label(thn), Label(els))
+            ch << Label(thn)
+            ch << Ldc(1)
+            ch << Goto(after)
+            ch << Label(els)
+            ch << Ldc(0)
+            ch << Label(after)
           case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compileExpr(lhs)
@@ -219,7 +244,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case False() => ch << Ldc(0)
           case IntLit(value) => ch << Ldc(value)
           case StringLit(value) => ch << Ldc(value)
-          case id@Identifier(value) => load(id.value, id.getType)
+          case id@Identifier(value) => load(id)
           case id@TypeIdentifier(value, _) => load(id.value, id.getType)
           case This() => ch << ArgLoad(0)
           case ast.Trees.New(tpe, args) =>
@@ -231,6 +256,30 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << DUP
             args.foreach(compileExpr)
             ch << InvokeSpecial(obj, CONSTRUCTOR_NAME, signature)
+          case Negation(expr) =>
+            compileExpr(expr)
+            ch << INEG
+          case PreDecrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << ISUB << DUP
+            })
+          case PreIncrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << Ldc(1) << IADD << DUP
+            })
+          case PostDecrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << DUP << Ldc(1) << ISUB
+            })
+          case PostIncrement(id) =>
+            store(id, () => {
+              load(id)
+              ch << DUP << Ldc(1) << IADD
+            })
+          case _ =>
         }
       }
     }
@@ -287,16 +336,15 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
       mt.stats.foreach(statementCompiler.compileStat)
+
+      // Always add a return at the end of the function in case one is missing
       mt match {
-        case mt: MethodDecl =>
-          if(mt.retExpr.isDefined){
-            statementCompiler.compileExpr(mt.retExpr.get)
-            ch << getIntOrReference(mt.retExpr.get.getType, IRETURN, ARETURN)
-          }else{
-            ch << RETURN
-          }
-        case cons: ConstructorDecl =>
-          ch << RETURN
+        case mt: MethodDecl => mt.retType.getType match {
+          case TInt | TBool => ch << Ldc(0) << IRETURN
+          case TUnit        => ch << RETURN
+          case _            => ch << ACONST_NULL << ARETURN
+        }
+        case cons: ConstructorDecl => ch << RETURN
       }
 
       ch.freeze

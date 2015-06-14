@@ -134,7 +134,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
         }
-        case methodDecl@MethodDecl(retType, id, args, vars, stats, retExpr) => {
+        case methodDecl@MethodDecl(retType, id, args, vars, stats) => {
           val newSymbol = new MethodSymbol(id.value, s).setPos(id)
           ensureIdentiferNotDefined(s.methods, id.value, id)
           id.setSymbol(newSymbol)
@@ -220,14 +220,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
           bind(methods)
         }
         case VarDecl(tpe, id) => setType(tpe, id)
-        case methDecl@MethodDecl(retType, id, args, vars, stats, retExpr) => {
+        case methDecl@MethodDecl(retType, id, args, vars, stats) => {
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
 
           bind(args)
           bind(vars)
-          bind(methDecl.getSymbol, stats, retExpr)
+          bind(methDecl.getSymbol, stats)
         }
         case constructorDecl@ConstructorDecl(id, args, vars, stats) => {
           bind(args)
@@ -259,6 +259,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case ArrayAssign(id, index, expr) =>
             setVariable(id, s)
             bind(s, index, expr)
+          case Return(expr) => bind(s, expr)
           // Expressions
           case MathExpr(lhs, rhs) => bind(s, lhs, rhs)
           case Comparison(lhs, rhs) => bind(s, lhs, rhs)
@@ -277,7 +278,12 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case New(tpe, args) =>
             setType(tpe)
             bind(s, args)
-          case Not(expr) => bind(s, expr)
+          case Not(expr)         => bind(s, expr)
+          case Negation(expr)    => bind(s, expr)
+          case PostDecrement(id) => bind(s, id)
+          case PostIncrement(id) => bind(s, id)
+          case PreDecrement(id)  => bind(s, id)
+          case PreIncrement(id)  => bind(s, id)
           case _ => // Do nothing
         }
 
@@ -297,10 +303,11 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 tpeId.setSymbol(new ErrorSymbol)
                 error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
-          case BooleanType() => set(TBool)
-          case IntType() => set(TInt)
+          case BooleanType()  => set(TBool)
+          case IntType()      => set(TInt)
           case IntArrayType() => set(TIntArray)
-          case StringType() => set(TString)
+          case StringType()   => set(TString)
+          case UnitType()     => set(TUnit)
         }
       }
 

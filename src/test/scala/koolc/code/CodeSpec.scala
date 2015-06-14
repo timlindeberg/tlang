@@ -36,8 +36,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   def test(file: File, exception: Boolean = false) = {
-    val options = TestUtils.readOptions(file)
-    val ctx = new Context(reporter = new koolc.utils.Reporter(options.contains("quietReporter")), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
+    val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
     println(Printer(program))
@@ -47,13 +46,12 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     CodeGeneration.run(ctx)(program)
 
     val res = execute(program, file)
-
     // Try and compare result with solution file
     try {
       val sol = readSolution(file + "-solution").toList
       val r = TestUtils.lines(res)
       r.length should be(sol.length)
-      r.zip(sol).foreach(x => x._1 should be(x._2))
+      r.zip(sol).foreach{ case (res, sol) => res should be(sol) }
     } catch {
       case t: FileNotFoundException =>
     }

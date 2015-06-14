@@ -38,7 +38,7 @@ object Printer {
       case MainObject(id, stats) => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
       case ClassDecl(id, parent, vars, methods) => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id) => "var " + f(id) + " : " + f(tpe) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats, retExpr) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + "return " + optional(retExpr, f) + "; " + r + n
+      case MethodDecl(retType, id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
       case ConstructorDecl(id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id) => f(id) + ": " + f(tpe)
       // Types
@@ -54,6 +54,7 @@ object Printer {
       case Println(expr) => "println(" + f(expr) + "); " + n
       case Assign(id, expr) => id.value + " = " + f(expr) + "; " + n
       case ArrayAssign(id, index, expr) => f(id) + "[" + f(index) + "] = " + f(expr) + ";" + n
+      case Return(expr) => "return " + optional(expr, f) + ";" + n
       // Expressions
       case And(lhs, rhs) => "(" + f(lhs) + " && " + f(rhs) + ")"
       case Or(lhs, rhs) => "(" + f(lhs) + " || " + f(rhs) + ")"
@@ -79,7 +80,12 @@ object Printer {
       case This() => "this"
       case NewIntArray(size) => "new Int[" + f(size) + "]"
       case New(tpe, exprs) => "new " + f(tpe) + "(" + commaList(exprs) +")"
-      case Not(expr) => "!(" + f(expr) + ")"
+      case Not(expr)         => "!(" + f(expr) + ")"
+      case Negation(expr)    => "-(" + f(expr) + ")"
+      case PreIncrement(id)  => "++" + f(id)
+      case PostIncrement(id) => f(id) + "++"
+      case PreDecrement(id)  => "--" + f(id)
+      case PostDecrement(id) => f(id) + "--"
     }
     s
   }

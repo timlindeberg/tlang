@@ -39,6 +39,8 @@ object Tokens {
   case object EQUALS extends TokenKind // ==
   case object NOTEQUALS extends TokenKind // !=
   case object BANG extends TokenKind // !
+  case object INCREMENT extends TokenKind // ++
+  case object DECREMENT extends TokenKind // --
   case object LPAREN extends TokenKind // (
   case object RPAREN extends TokenKind // )
   case object LBRACKET extends TokenKind // [

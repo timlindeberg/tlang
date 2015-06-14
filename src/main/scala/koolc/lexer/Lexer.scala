@@ -176,6 +176,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
+        case '+' :: '+' :: r                          => readTokens(r, createToken(INCREMENT, 2) :: tokens)
+        case '-' :: '-' :: r                          => readTokens(r, createToken(DECREMENT, 2) :: tokens)
         case '<' :: '=' :: r                          => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
         case '>' :: '=' :: r                          => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
         case '=' :: '=' :: r                          => readTokens(r, createToken(EQUALS, 2) :: tokens)
