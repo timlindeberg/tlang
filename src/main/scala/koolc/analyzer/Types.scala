@@ -46,6 +46,11 @@ object Types {
     override def byteCodeName(): String = "Z"
   }
 
+  case object TUnit extends Type {
+    override def toString = "Unit"
+    override def byteCodeName(): String = "V"
+  }
+
   case object TIntArray extends Type {
     override def toString = "Int[]"
     override def byteCodeName(): String = "[I"

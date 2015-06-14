@@ -32,11 +32,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   val CONSTRUCTOR_NAME = "<init>"
 
   def run(ctx: Context)(prog: Program): Unit = {
-    import ctx.reporter._
 
     def getIntOrReference[T](tp: Type, Iret: T, Aret: T) = tp match {
       case TBool | TInt => Iret
-      case _ => Aret
+      case _            => Aret
     }
 
     var varMap = new HashMap[String, Int]
@@ -59,8 +58,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       }
 
-      def load(name: String, tpe: Type): Unit = {
-
+      def load(name: String, tpe: Type): Unit =
         if (varMap.contains(name)) {
           val id = varMap(name)
           ch << getIntOrReference(tpe, ILoad(id), ALoad(id))
@@ -68,7 +66,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << ArgLoad(0)
           ch << GetField(cn, name, tpe.byteCodeName)
         }
-      }
 
       def compileStat(stat: StatTree): Unit = {
         ch << LineNumber(stat.line)
@@ -114,7 +111,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
             val name = obj.getType.asInstanceOf[TObject].classSymbol.name
             ch << InvokeVirtual(name, meth.value, signature)
-            ch << POP
+            if(mc.getType != TUnit)
+              ch << POP
         }
       }
 
@@ -291,8 +289,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mt.stats.foreach(statementCompiler.compileStat)
       mt match {
         case mt: MethodDecl =>
-          statementCompiler.compileExpr(mt.retExpr)
-          ch << getIntOrReference(mt.retType.getType, IRETURN, ARETURN)
+          if(mt.retExpr.isDefined){
+            statementCompiler.compileExpr(mt.retExpr.get)
+            ch << getIntOrReference(mt.retExpr.get.getType, IRETURN, ARETURN)
+          }else{
+            ch << RETURN
+          }
         case cons: ConstructorDecl =>
           ch << RETURN
       }

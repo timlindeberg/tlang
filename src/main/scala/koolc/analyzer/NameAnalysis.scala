@@ -260,7 +260,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
             setVariable(id, s)
             bind(s, index, expr)
           // Expressions
-          case BinaryExpr(lhs, rhs) => bind(s, lhs, rhs)
+          case MathExpr(lhs, rhs) => bind(s, lhs, rhs)
+          case Comparison(lhs, rhs) => bind(s, lhs, rhs)
           case ArrayRead(arr, index) => bind(s, arr, index)
           case ArrayLength(arr) => bind(s, arr)
           case MethodCall(obj, meth, args) => bind(s, obj, args)
@@ -318,6 +319,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case IntType() => tpe.setType(TInt)
           case IntArrayType() => tpe.setType(TIntArray)
           case StringType() => tpe.setType(TString)
+          case UnitType() => tpe.setType(TUnit)
         }
       }
 

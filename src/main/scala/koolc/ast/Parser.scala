@@ -116,7 +116,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] "): " <tpe> "= {" { <varDeclaration> } { <statement> } return <expression> "}"
+     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> }  [ return [ <expression> ] ;] "}"
      *                       | def <identifier> "(" [ <formal> { "," <formal> } ] ") = {" { <varDeclaration> } { <statement> } "}"
      */
     private def methodDeclaration(): FuncTree = {
@@ -127,23 +127,40 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val args = commaList(formal)
 
       eat(RPAREN)
-      if(currentToken.kind == COLON){
+      val func = if(currentToken.kind == COLON){
         eat(COLON)
-        val retType = tpe
+        val retType = if(currentToken.kind == UNIT){
+          val pos = currentToken
+          eat(UNIT)
+          UnitType().setPos(pos)
+        }else{
+          tpe
+        }
         eat(EQSIGN, LBRACE)
         val vars = untilNot(varDeclaration, VAR)
-        val stmts = until(statement, RETURN)
-        eat(RETURN)
-        val retExpr = expression
-        eat(SEMICOLON, RBRACE)
-        MethodDecl(retType, id, args, vars, stmts, retExpr).setPos(pos)
+        val stmts = until(statement, RETURN, RBRACE)
+        val retExpr = if(currentToken.kind == RETURN){
+          eat(RETURN)
+          val r = if(currentToken.kind != SEMICOLON)
+            Some(expression)
+          else
+            None
+          eat(SEMICOLON)
+          r
+        }else{
+          None
+        }
+
+        eat(RBRACE)
+        MethodDecl(retType, id, args, vars, stmts, retExpr)
       }else{
         eat(EQSIGN, LBRACE)
         val vars = untilNot(varDeclaration, VAR)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
-        ConstructorDecl(id, args, vars, stmts).setPos(pos)
+        ConstructorDecl(id, args, vars, stmts)
       }
+      func.setPos(pos)
     }
 
     /**
@@ -162,9 +179,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           }
         }
         case BOOLEAN =>
-          eat(BOOLEAN); BooleanType()
+          eat(BOOLEAN)
+          BooleanType()
         case STRING =>
-          eat(STRING); StringType()
+          eat(STRING)
+          StringType()
         case _ => typeIdentifier
       }
       tree.setPos(pos)
@@ -288,7 +307,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       /** <and> ::= <comparison> { && <comparison> } */
       def and() = left(comparison, AND)
 
-      /** <comparison> ::= <plusMinus> { ( < | <= | > | >= | != | == | ) <plusMinus> } */
+      /** <comparison> ::= <plusMinus> { ( < | <= | > | >= | != | == ) <plusMinus> } */
       def comparison() = left(plusMinus, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS)
 
       /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
@@ -389,9 +408,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     /**
      * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
      */
-    private def classTypeIdentifier(): TypeIdentifier = {
-      try {
-        val id = currentToken.asInstanceOf[ID]
+    private def classTypeIdentifier(): TypeIdentifier = currentToken match {
+      case id: ID =>
         eat(IDKIND)
         val tIds = currentToken.kind match {
           case LBRACKET =>
@@ -402,17 +420,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           case _ => List()
         }
         TypeIdentifier(id.value, tIds).setPos(id)
-      } catch {
-        case _: ClassCastException => expected(IDKIND)
-      }
+      case _ => expected(IDKIND)
     }
     
     /**
      * <typeIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
      */
-    private def typeIdentifier(): TypeIdentifier = {
-      try {
-        val id = currentToken.asInstanceOf[ID]
+    private def typeIdentifier(): TypeIdentifier = currentToken match {
+      case id: ID =>
         eat(IDKIND)
         val tIds = currentToken.kind match {
           case LBRACKET =>
@@ -423,48 +438,38 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           case _ => List()
         }
         TypeIdentifier(id.value, tIds).setPos(id)
-      } catch {
-        case _: ClassCastException => expected(IDKIND)
-      }
+      case _ => expected(IDKIND)
     }
+
 
     /**
      * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
      */
-    private def identifier(): Identifier = {
-      try {
-        val id = currentToken.asInstanceOf[ID]
+    private def identifier(): Identifier = currentToken match {
+      case id: ID =>
         eat(IDKIND)
         Identifier(id.value).setPos(id)
-      } catch {
-        case _: ClassCastException => expected(IDKIND)
-      }
+      case _ => expected(IDKIND)
     }
 
     /**
      * <stringLit> ::= sequence of arbitrary characters, except new lines and "
      */
-    private def stringLit(): StringLit = {
-      try {
-        val id = currentToken.asInstanceOf[STRLIT]
+    private def stringLit(): StringLit = currentToken match {
+      case strlit: STRLIT =>
         eat(STRLITKIND)
-        StringLit(id.value).setPos(id)
-      } catch {
-        case _: ClassCastException => expected(STRLITKIND)
-      }
+        StringLit(strlit.value).setPos(strlit)
+      case _ => expected(STRLITKIND)
     }
 
     /**
      * <intLit> ::= sequence of digits, with no leading zeros
      */
-    private def intLit(): IntLit = {
-      try {
-        val id = currentToken.asInstanceOf[INTLIT]
+    private def intLit(): IntLit = currentToken match {
+      case intlit: INTLIT =>
         eat(INTLITKIND)
-        IntLit(id.value).setPos(id)
-      } catch {
-        case _: ClassCastException => expected(INTLITKIND)
-      }
+        IntLit(intlit.value).setPos(intlit)
+      case _ => expected(INTLITKIND)
     }
 
     /**
@@ -501,9 +506,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     /**
      * Continues parsing until the given token kind is encountered.
      */
-    private def until[T](parse: () => T, kind: TokenKind): List[T] = {
-      val condition = () => currentToken.kind != kind
-      _until(condition, parse, kind)
+    private def until[T](parse: () => T, kinds: TokenKind*): List[T] = {
+      val condition = () => !kinds.contains(currentToken.kind)
+      _until(condition, parse)
     }
 
     /**
@@ -511,10 +516,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def untilNot[T](parse: () => T, kind: TokenKind): List[T] = {
       val condition = () => currentToken.kind == kind
-      _until(condition, parse, kind)
+      _until(condition, parse)
     }
 
-    private def _until[T](condition: () => Boolean, parse: () => T, kind: TokenKind) = {
+    private def _until[T](condition: () => Boolean, parse: () => T): List[T] = {
       var arrBuff = new ArrayBuffer[T]()
       while (condition()) {
         arrBuff += parse()

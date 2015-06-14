@@ -1,6 +1,6 @@
 object Program {
   def main () : Unit = {
-    if(new Main().run()) println("");
+    new Main().run();
   }
 }
 
@@ -11,9 +11,8 @@ class Integer {
 		i = iarg;
 	}
 
-	def set(iarg: Int): Int = {
+	def set(iarg: Int): Unit = {
 		i = iarg;
-		return 0;
 	}
 
 	def get(): Int = {
@@ -40,9 +39,8 @@ class KoolString {
 		s = sarg;
 	}
 
-	def set(sarg: String): Int = {
+	def set(sarg: String): Unit = {
 		s = sarg;
-		return 0;
 	}
 
 	def get(): String = {
@@ -73,18 +71,17 @@ class ListPrinter[T, U] {
 		l2 = list2;
 	}
 
-	def print(msg: String): Int = {
+	def print(msg: String): Unit = {
 		println("----------------------------------------");
 		println("-- " + msg);
 		println("----------------------------------------");
 		println(l1);
 		println(l2);
-		return 0;
 	}
 }
 
 class Main {
-	def run(): Bool = {
+	def run(): Unit = {
 		var p: 			  ListPrinter[Integer, KoolString];
 		var intList: 	  List[Integer];
 		var intList2: 	  List[Integer];
@@ -170,7 +167,7 @@ class Main {
 		println("-- Pop");
 		println("----------------------------------------");
 		println(intList);
-		while(0 < intList.size()){
+		while(intList.size() > 0){
 			intList.pop().get().get();
 			println(intList);
 		}
@@ -184,8 +181,6 @@ class Main {
 		}
 
 		println(intList.equals(intList2));
-
-		return false;
 	}
 }
 
@@ -200,25 +195,23 @@ class List[T] {
 		this.clear();
 	}
 
-	def initWith(newSize: Int, value: T): Int = {
+	def initWith(newSize: Int, value: T): Unit = {
 		var i: Int;
 
 		while(i < newSize){
 			this.push(value);
 			i = i + 1;
 		}
-		return 0;
 	}
 
 	def isEmpty(): Bool = {
 		return size == 0;
 	}
 
-	def clear(): Int = {
+	def clear(): Unit = {
 		first = new Option[Node[T]]();
         last = new Option[Node[T]]();
         size = 0;
-        return 0;
 	}
 
 	def first(): Option[Node[T]] = {
@@ -233,7 +226,7 @@ class List[T] {
 		return new ListIterator[T](this);
 	}
 
-	def push(data: T): Int = {
+	def push(data: T): Unit = {
 		var node: Node[T];
 
 		node = new Node[T](data);
@@ -246,7 +239,6 @@ class List[T] {
 			last = last.get().next();
 		}
 		size = size + 1;
-		return 0;
 	}
 
 	def pop(): Option[T] = {
@@ -499,35 +491,30 @@ class Node[T] {
 		return prev;
 	}
 
-	def setData(t: T): Int = {
+	def setData(t: T): Unit = {
 		data = t;
-		return 0;
 	}
 
-	def clearNext(): Int = {
+	def clearNext(): Unit = {
 		next = new Option[Node[T]]();
-		return 0;
 	}
 
-	def clearPrev(): Int = {
+	def clearPrev(): Unit = {
 		prev = new Option[Node[T]]();
-		return 0;
 	}
 
-	def setNext(n: Node[T]): Int = {
+	def setNext(n: Node[T]): Unit = {
 		var o: Option[Node[T]];
 		o = new Option[Node[T]]();
 		o.add(n);
 		next = o;
-		return 0;
 	}
 
-	def setPrev(n: Node[T]): Int = {
+	def setPrev(n: Node[T]): Unit = {
 		var o: Option[Node[T]];
 		o = new Option[Node[T]]();
 		o.add(n);
 		prev = o;
-		return 0;
 	}
 }
 
@@ -567,10 +554,9 @@ class Option[T] {
 		isDefined = false;
 	}
 
-	def add(tArg: T): Int = {
+	def add(tArg: T): Unit = {
 		t = tArg;
 		isDefined = true;
-		return 0;
 	}
 
 	def isDefined(): Bool = {
@@ -584,7 +570,7 @@ class Option[T] {
 
 class Sorter[Container, T] {
 	
-	def sort(c: Container): Int = {
+	def sort(c: Container): Unit = {
 		var i: Int;
 		var j: Int;
 		var x: T;
@@ -600,6 +586,5 @@ class Sorter[Container, T] {
 			c.set(j, x);
 			i = i + 1;
 		}
-		return 0;
 	}
 }

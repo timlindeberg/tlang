@@ -102,7 +102,6 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
           TInt
-
         case ArrayRead(arr, index) =>
           tcExpr(arr, TIntArray)
           tcExpr(index, TInt)
@@ -168,7 +167,13 @@ object TypeChecking extends Pipeline[Program, Program] {
     prog.main.stats.foreach(tcStat)
     prog.classes.foreach(_.methods.foreach(_ match {
       case method: MethodDecl =>
-        tcExpr(method.retExpr, method.getSymbol.getType)
+        method.retExpr match {
+          case Some(expr) => tcExpr(expr, method.getSymbol.getType)
+          case None =>
+            if(method.getSymbol.getType != TUnit){
+              error("Expected a return value of type \'" + method.getSymbol.getType + "\'.", method.retType)
+            }
+        }
         method.stats.foreach(tcStat)
       case constructor: ConstructorDecl =>
         constructor.stats.foreach(tcStat)

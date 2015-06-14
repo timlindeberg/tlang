@@ -15,7 +15,7 @@ object ASTPrinterWithSymbols {
       case MainObject(id, stats) => f(id) + "," + trees(stats)
       case ClassDecl(id, parent, vars, methods) => f(id) + "," + optional(parent) + "," + trees(vars) + "," + trees(methods)
       case VarDecl(tpe, id) => f(tpe) + "," + f(id)
-      case MethodDecl(retType, id, args, vars, stats, retExpr) => f(retType) + "," + f(id) + "," + trees(args) + "," + trees(vars) + "," + trees(stats) + "," + f(retExpr)
+      case MethodDecl(retType, id, args, vars, stats, retExpr) => f(retType) + "," + f(id) + "," + trees(args) + "," + trees(vars) + "," + trees(stats) + "," + optional(retExpr)
       case Formal(tpe, id) => f(tpe) + "," + f(id)
       case Block(stats) => trees(stats)
       case If(expr, thn, els) => f(expr) + "," + f(thn) + "," + optional(els)

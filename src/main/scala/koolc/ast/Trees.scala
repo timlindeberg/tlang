@@ -16,7 +16,7 @@ object Trees {
   sealed case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   abstract class FuncTree(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], val stats: List[StatTree]) extends Tree with Symbolic[MethodSymbol]
-  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree], retExpr: ExprTree) extends FuncTree(i, a, v, s)
+  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree], retExpr: Option[ExprTree]) extends FuncTree(i, a, v, s)
   case class ConstructorDecl(var i: Identifier, var a: List[Formal], var v: List[VarDecl], val s: List[StatTree]) extends FuncTree(i, a, v, s)
 
   sealed trait TypeTree extends Tree with Typed {
@@ -26,6 +26,7 @@ object Trees {
       case IntArrayType()           => "Int[]"
       case StringType()             => "String"
       case BooleanType()            => "Bool"
+      case UnitType()               => "Unit"
     }
   }
 
@@ -33,6 +34,7 @@ object Trees {
   case class IntType() extends TypeTree
   case class BooleanType() extends TypeTree
   case class StringType() extends TypeTree
+  case class UnitType() extends TypeTree
 
   sealed trait StatTree extends Tree
   case class Block(stats: List[StatTree]) extends StatTree
@@ -42,20 +44,12 @@ object Trees {
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
 
-  object BinaryExpr {
+  object MathExpr {
     def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
-      case And(lhs, rhs)               => Some((lhs, rhs))
-      case Or(lhs, rhs)                => Some((lhs, rhs))
       case Plus(lhs, rhs)              => Some((lhs, rhs))
       case Minus(lhs, rhs)             => Some((lhs, rhs))
       case Times(lhs, rhs)             => Some((lhs, rhs))
       case Div(lhs, rhs)               => Some((lhs, rhs))
-      case LessThan(lhs, rhs)          => Some((lhs, rhs))
-      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
-      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
-      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
-      case Equals(lhs, rhs)            => Some((lhs, rhs))
-      case NotEquals(lhs, rhs)         => Some((lhs, rhs))
       case _                           => None
     }
   }
