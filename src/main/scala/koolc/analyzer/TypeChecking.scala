@@ -106,6 +106,9 @@ object TypeChecking extends Pipeline[Program, Program] {
             error("Type error: expected: object , found " + tpe, expr)
           tcExprList(id, tpe.getSuperTypes)
           TBool
+        case As(expr, tpe) =>
+          tcExprList(expr, tpe.getType.getSuperTypes)
+          tpe.getType
         case Comparison(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)

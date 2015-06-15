@@ -234,6 +234,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case Instance(expr, id) =>
             compileExpr(expr)
             ch << InstanceOf(id.value)
+          case As(expr, tpe) =>
+            compileExpr(expr)
+            ch << CheckCast(tpe.name)
           case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compileExpr(lhs)

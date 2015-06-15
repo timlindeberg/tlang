@@ -77,6 +77,7 @@ object Trees {
   case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
+  case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree

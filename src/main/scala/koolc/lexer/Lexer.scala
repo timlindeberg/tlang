@@ -57,6 +57,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "return"  -> RETURN,
       "length"  -> LENGTH,
       "inst"    -> INSTANCEOF,
+      "as"      -> AS,
       "true"    -> TRUE,
       "false"   -> FALSE,
       "this"    -> THIS,
@@ -180,10 +181,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isWhitespace =>
           column += 1
           readTokens(r, tokens)
-        case '/' :: '/' :: r => readTokens(skipLine(r), tokens)
-        case '/' :: '*' :: r =>
-          val (token, tail) = skipBlock(r)
-          readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
+        case '/' :: '/' :: r                          => readTokens(skipLine(r), tokens)
         case '+' :: '=' :: r                          => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
         case '-' :: '=' :: r                          => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
         case '*' :: '=' :: r                          => readTokens(r, createToken(MULEQ, 2) :: tokens)
@@ -206,6 +204,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
+        case '/' :: '*' :: r =>
+          val (token, tail) = skipBlock(r)
+          readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case (c :: r) if c.isLetter                   => 
           val (token, tail) = getIdentifierOrKeyword(chars)

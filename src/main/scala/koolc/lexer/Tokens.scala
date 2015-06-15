@@ -76,6 +76,7 @@ object Tokens {
   case object TIMES extends TokenKind // *
   case object DIV extends TokenKind // /
   case object INSTANCEOF extends TokenKind // inst
+  case object AS extends TokenKind // as
   case object OBJECT extends TokenKind // object
   case object CLASS extends TokenKind // class
   case object DEF extends TokenKind // def

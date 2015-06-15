@@ -247,10 +247,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 id.setType(TObject(classSymbol))
               case None => error("Type \'" + id.value + "\' was not declared:", id)
             }
-          case id: Identifier     => parent match {
+          case id: Identifier => parent match {
             case _: MethodCall =>
-            case _: Instance =>
-            case _ => setVariable(id, s)
+            case _: Instance   =>
+            case _             => setVariable(id, s)
           }
           case id: TypeIdentifier => setType(id)
           case thisSym: This =>

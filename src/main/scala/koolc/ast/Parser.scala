@@ -518,11 +518,12 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          * <termRest> ::= .length
          *              | .<identifier> "(" <expression> { "," <expression> } ")
          *              | "[" <expression> "]"
+         *              | as <tpe>
          */
         def termRest(lhs: ExprTree): ExprTree = {
           val pos = currentToken
           var e = lhs
-          val tokens = List(DOT, LBRACKET)
+          val tokens = List(DOT, LBRACKET, AS)
 
           while (tokens.contains(currentToken.kind)) {
             e = currentToken.kind match {
@@ -543,6 +544,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
                 val expr = expression
                 eat(RBRACKET)
                 ArrayRead(e, expr)
+              case AS =>
+                eat(AS)
+                As(e, tpe)
               case _ => e
             }
           }
