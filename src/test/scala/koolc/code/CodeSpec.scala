@@ -46,9 +46,11 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     CodeGeneration.run(ctx)(program)
 
     val res = execute(program, file)
+    println("res: " + res)
     // Try and compare result with solution file
     try {
       val sol = readSolution(file + "-solution").toList
+      println("sol: " + sol)
       val r = TestUtils.lines(res)
       r.length should be(sol.length)
       r.zip(sol).foreach{ case (res, sol) => res should be(sol) }

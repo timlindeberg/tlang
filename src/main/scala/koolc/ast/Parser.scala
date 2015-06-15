@@ -181,6 +181,16 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      *               | println"(" <expression> ");"
      *               | return [ <expression> ] ";"
      *               | <identifier> "=" <expression> ";"
+     *               | <identifier> "+=" <expression> ";"
+     *               | <identifier> "-=" <expression> ";"
+     *               | <identifier> "*=" <expression> ";"
+     *               | <identifier> "/=" <expression> ";"
+     *               | <identifier> "%=" <expression> ";"
+     *               | <identifier> "&=" <expression> ";"
+     *               | <identifier> "|=" <expression> ";"
+     *               | <identifier> "^=" <expression> ";"
+     *               | <identifier> "<<=" <expression> ";"
+     *               | <identifier> ">>=" <expression> ";"
      *               | <identifier>"[" <expression> "]" "=" <expression> ";"
      *               | <identifier> "++"
      *               | <identifier> "--"
@@ -253,11 +263,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           Return(expr)
         case IDKIND =>
           val id = identifier
+          def assignment(constructor: (Identifier, ExprTree) => StatTree) = {
+            eat(currentToken.kind)
+            constructor(id, expression)
+          }
           val stat = currentToken.kind match {
-            case EQSIGN =>
-              eat(EQSIGN)
-              val expr = expression
-              Assign(id, expr)
+            case EQSIGN       => assignment(Assign)
+            case PLUSEQ       => assignment(PlusAssign)
+            case MINUSEQ      => assignment(MinusAssign)
+            case MULEQ        => assignment(MulAssign)
+            case DIVEQ        => assignment(DivAssign)
+            case MODEQ        => assignment(ModAssign)
+            case ANDEQ        => assignment(AndAssign)
+            case OREQ         => assignment(OrAssign)
+            case XOREQ        => assignment(XorAssign)
+            case LEFTSHIFTEQ  => assignment(LeftShiftAssign)
+            case RIGHTSHIFTEQ => assignment(RightShiftAssign)
             case LBRACKET =>
               eat(LBRACKET)
               val expr1 = expression
@@ -304,7 +325,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <expression> ::= <or>
+     * <expression> ::= <ternary>
      */
     private def expression(): ExprTree = {
       val pos = currentToken
@@ -320,7 +341,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         PLUS              -> Plus,
         MINUS             -> Minus,
         TIMES             -> Times,
-        DIV               -> Div)
+        DIV               -> Div,
+        MODULO            -> Modulo,
+        LEFTSHIFT         -> LeftShift,
+        RIGHTSHIFT        -> RightShift,
+        LOGICAND          -> LogicAnd,
+        LOGICOR           -> LogicOr,
+        LOGICXOR          -> LogicXor)
 
       /**
        * Parses expressions of type
@@ -341,20 +368,45 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         expr
       }
 
+      /** <ternary> ::= <or> [ ? <or> : <or> ]*/
+      def ternary() = {
+        var e = or
+        if(currentToken.kind == QUESTIONMARK){
+          eat(QUESTIONMARK)
+          val thn = or
+          eat(COLON)
+          val els = or
+          e = Ternary(e, thn, els)
+        }
+        e
+      }
+
       /** <or> ::= <and> { || <and> } */
       def or() = left(and, OR)
 
-      /** <and> ::= <comparison> { && <comparison> } */
-      def and() = left(comparison, AND)
+      /** <and> ::= <logicOr> { && <logicOr> } */
+      def and() = left(logicOr, AND)
 
-      /** <comparison> ::= <plusMinus> { ( < | <= | > | >= | != | == ) <plusMinus> } */
-      def comparison() = left(plusMinus, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS)
+      /** <logicOr> ::= <logicXor> { | <logicXor> } */
+      def logicOr() = left(logicXor, LOGICOR)
+
+      /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
+      def logicXor() = left(logicAnd, LOGICXOR)
+
+      /** <logicAnd> ::= <comparison> { & <comparison> } */
+      def logicAnd() = left(comparison, LOGICAND)
+
+      /** <comparison> ::= <bitShift> { ( < | <= | > | >= | != | == ) <bitShift> } */
+      def comparison() = left(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS)
+
+      /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
+      def bitShift() = left(plusMinus, LEFTSHIFT, RIGHTSHIFT, MINUS)
 
       /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
-      def plusMinus() = left(timesDiv, PLUS, MINUS)
+      def plusMinus() = left(timesDivMod, PLUS, MINUS)
 
-      /** <timesDiv> ::= <term> { ( * | / ) <term> } */
-      def timesDiv() = left(term, TIMES, DIV)
+      /** <timesDivMod> ::= <term> { ( * | / | % ) <term> } */
+      def timesDivMod() = left(term, TIMES, DIV, MODULO)
 
       /**
        * <term> ::= <termFirst> [ termRest ]
@@ -362,16 +414,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       def term(): ExprTree = {
         /**
          * <termFirst> ::= "(" <expression> ")"
-         *               | "!" <expression>
-         *               | "-" <expression>
-         *               | "--" <identifier>
-         *               | "++" <identifier>
+         *               | ! <expression>
+         *               | - <expression>
+         *               | -- <identifier>
+         *               | ++ <identifier>
+         *               | ~ <identifier>
          *               | <intLit>
          *               | <stringLit>
          *               | <identifier>
-         *               | <identifier> "++"
-         *               | <identifier> "--"
-         *               | <identifier> "(" <expression> { "," <expression> } ")
+         *               | <identifier> ++
+         *               | <identifier> --
+         *               | <identifier> "(" <expression> { "," <expression> } ")"
          *               | true
          *               | false
          *               | this
@@ -391,6 +444,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             case MINUS =>
               eat(MINUS)
               Negation(term)
+            case LOGICNOT =>
+              eat(LOGICNOT)
+              LogicNot(term)
             case DECREMENT =>
               eat(DECREMENT)
               PreDecrement(identifier)
@@ -454,6 +510,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           val pos = currentToken
           var e = lhs
           val tokens = List(DOT, LBRACKET)
+
           while (tokens.contains(currentToken.kind)) {
             e = currentToken.kind match {
               case DOT =>
@@ -476,11 +533,12 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               case _ => e
             }
           }
+
           e.setPos(pos)
         }
         termRest(termFirst)
       }
-      or().setPos(pos)
+      ternary().setPos(pos)
     }
 
     /**

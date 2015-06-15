@@ -109,6 +109,23 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
           case Assign(id, expr) =>
             store(id, () => compileExpr(expr))
+          case a @ Assignment(id, expr) =>
+            store(id, () => {
+              load(id)
+              compileExpr(expr)
+              ch << (a match {
+                case _: PlusAssign       => IADD
+                case _: MinusAssign      => ISUB
+                case _: MulAssign        => IMUL
+                case _: DivAssign        => IDIV
+                case _: ModAssign        => IREM
+                case _: AndAssign        => IAND
+                case _: OrAssign         => IOR
+                case _: XorAssign        => IXOR
+                case _: LeftShiftAssign  => ISHL
+                case _: RightShiftAssign => ISHR
+              })
+            })
           case ArrayAssign(id, index, expr) =>
             load(id)
             compileExpr(index)
@@ -194,7 +211,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         ch << LineNumber(expr.line)
         expr match {
           case _:And | _:Or | _:Equals | _:NotEquals | _:LessThan |
-               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not =>
+               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not  =>
             val thn = ch.getFreshLabel(THEN)
             val els = ch.getFreshLabel(ELSE)
             val after = ch.getFreshLabel(AFTER)
@@ -220,18 +237,21 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
             case _ => throw new UnsupportedOperationException(expr.toString)
           }
-          case Minus(lhs, rhs) =>
+          case e @ MathBinaryExpr(lhs, rhs) =>
             compileExpr(lhs)
             compileExpr(rhs)
-            ch << ISUB
-          case Times(lhs, rhs) =>
-            compileExpr(lhs)
-            compileExpr(rhs)
-            ch << IMUL
-          case Div(lhs, rhs) =>
-            compileExpr(lhs)
-            compileExpr(rhs)
-            ch << IDIV
+            ch << (e match {
+              case _: Minus      => ISUB
+              case _: LogicAnd   => IAND
+              case _: LogicOr    => IOR
+              case _: LogicXor   => IXOR
+              case _: LeftShift  => ISHL
+              case _: LeftShift  => ISHL
+              case _: RightShift => ISHR
+              case _: Times      => IMUL
+              case _: Div        => IDIV
+              case _: Modulo     => IREM
+            })
           case ArrayRead(arr, index) =>
             compileExpr(arr)
             compileExpr(index)
@@ -269,6 +289,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case Negation(expr) =>
             compileExpr(expr)
             ch << INEG
+          case LogicNot(expr) =>
+            compileExpr(expr)
+            ch << Ldc(-1) << IXOR
           case PreDecrement(id) =>
             store(id, () => {
               load(id)
@@ -289,6 +312,18 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               load(id)
               ch << DUP << Ldc(1) << IADD
             })
+          case Ternary(condition, thn, els) =>
+            val thnLabel = ch.getFreshLabel(THEN)
+            val elsLabel = ch.getFreshLabel(ELSE)
+            val afterLabel = ch.getFreshLabel(AFTER)
+
+            branch(condition, Label(thnLabel), Label(elsLabel))
+            ch << Label(thnLabel)
+            compileExpr(thn)
+            ch << Goto(afterLabel)
+            ch << Label(elsLabel)
+            compileExpr(els)
+            ch << Label(afterLabel)
           case _ =>
         }
       }

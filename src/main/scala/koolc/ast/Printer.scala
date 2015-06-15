@@ -42,51 +42,70 @@ object Printer {
       case ConstructorDecl(id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id) => f(id) + ": " + f(tpe)
       // Types
-      case IntType() => "Int"
+      case IntType()      => "Int"
       case IntArrayType() => "Int[]"
-      case BooleanType() => "Bool"
-      case StringType() => "String"
-      case UnitType() => "Unit"
+      case BooleanType()  => "Bool"
+      case StringType()   => "String"
+      case UnitType()     => "Unit"
       // Statements
       case Block(stats) => l + allStats(stats) + r
       case If(expr, thn, els) => "if(" + f(expr) + ")" + f(thn) + optional(els, "else " + f(_)) + n
       case While(expr, stat) => "while(" + f(expr) + ") " + f(stat) + n
       case For(init, condition, post, stat) => "for(" + forAssign(init) + " ; " + f(condition) + " ; " + commaList(post) + ") " + f(stat) + n
-      case Println(expr) => "println(" + f(expr) + "); " + n
-      case Assign(id, expr) => id.value + " = " + f(expr) + "; " + n
+      case Println(expr)                => "println(" + f(expr) + "); " + n
+      case Assign(id, expr)             => id.value + " = "   + f(expr) + "; " + n
+      case PlusAssign(id, expr)         => id.value + " += "  + f(expr) + "; " + n
+      case MinusAssign(id, expr)        => id.value + " -= "  + f(expr) + "; " + n
+      case MulAssign(id, expr)          => id.value + " *= "  + f(expr) + "; " + n
+      case DivAssign(id, expr)          => id.value + " /= "  + f(expr) + "; " + n
+      case ModAssign(id, expr)          => id.value + " %= "  + f(expr) + "; " + n
+      case AndAssign(id, expr)          => id.value + " &= "  + f(expr) + "; " + n
+      case OrAssign(id, expr)           => id.value + " |= "  + f(expr) + "; " + n
+      case XorAssign(id, expr)          => id.value + " ^= "  + f(expr) + "; " + n
+      case LeftShiftAssign(id, expr)    => id.value + " <<= " + f(expr) + "; " + n
+      case RightShiftAssign(id, expr)   => id.value + " >>= " + f(expr) + "; " + n
       case ArrayAssign(id, index, expr) => f(id) + "[" + f(index) + "] = " + f(expr) + ";" + n
-      case Return(expr) => "return " + optional(expr, f) + ";" + n
+      case Return(expr)                 => "return " + optional(expr, f) + ";" + n
       // Expressions
-      case And(lhs, rhs) => "(" + f(lhs) + " && " + f(rhs) + ")"
-      case Or(lhs, rhs) => "(" + f(lhs) + " || " + f(rhs) + ")"
-      case Plus(lhs, rhs) => "(" + f(lhs) + " + " + f(rhs) + ")"
-      case Minus(lhs, rhs) => "(" + f(lhs) + " - " + f(rhs) + ")"
-      case Times(lhs, rhs) => "(" + f(lhs) + " * " + f(rhs) + ")"
-      case Div(lhs, rhs) => "(" + f(lhs) + " / " + f(rhs) + ")"
-      case LessThan(lhs, rhs) => "(" + f(lhs) + " < " + f(rhs) + ")"
-      case LessThanEquals(lhs, rhs) => "(" + f(lhs) + " <= " + f(rhs) + ")"
-      case GreaterThan(lhs, rhs) => "(" + f(lhs) + " > " + f(rhs) + ")"
+      case And(lhs, rhs)               => "(" + f(lhs) + " && " + f(rhs) + ")"
+      case Or(lhs, rhs)                => "(" + f(lhs) + " || " + f(rhs) + ")"
+      case Plus(lhs, rhs)              => "(" + f(lhs) + " + "  + f(rhs) + ")"
+      case Minus(lhs, rhs)             => "(" + f(lhs) + " - "  + f(rhs) + ")"
+      case LogicAnd(lhs, rhs)          => "(" + f(lhs) + " & "  + f(rhs) + ")"
+      case LogicOr(lhs, rhs)           => "(" + f(lhs) + " | "  + f(rhs) + ")"
+      case LogicXor(lhs, rhs)          => "(" + f(lhs) + " ^ "  + f(rhs) + ")"
+      case LeftShift(lhs, rhs)         => "(" + f(lhs) + " << " + f(rhs) + ")"
+      case RightShift(lhs, rhs)        => "(" + f(lhs) + " >> " + f(rhs) + ")"
+      case Times(lhs, rhs)             => "(" + f(lhs) + " * "  + f(rhs) + ")"
+      case Div(lhs, rhs)               => "(" + f(lhs) + " / "  + f(rhs) + ")"
+      case Modulo(lhs, rhs)            => "(" + f(lhs) + " % "  + f(rhs) + ")"
+      case LessThan(lhs, rhs)          => "(" + f(lhs) + " < "  + f(rhs) + ")"
+      case LessThanEquals(lhs, rhs)    => "(" + f(lhs) + " <= " + f(rhs) + ")"
+      case GreaterThan(lhs, rhs)       => "(" + f(lhs) + " > "  + f(rhs) + ")"
       case GreaterThanEquals(lhs, rhs) => "(" + f(lhs) + " >= " + f(rhs) + ")"
-      case Equals(lhs, rhs) => "(" + f(lhs) + " == " + f(rhs) + ")"
-      case NotEquals(lhs, rhs) => "(" + f(lhs) + " != " + f(rhs) + ")"
-      case ArrayRead(arr, index) => f(arr) + "[" + f(index) + "]"
-      case ArrayLength(arr) => f(arr) + ".length"
+      case Equals(lhs, rhs)            => "(" + f(lhs) + " == " + f(rhs) + ")"
+      case NotEquals(lhs, rhs)         => "(" + f(lhs) + " != " + f(rhs) + ")"
+      case Not(expr)                   => "!(" + f(expr) + ")"
+      case Negation(expr)              => "-(" + f(expr) + ")"
+      case LogicNot(expr)              => "~(" + f(expr) + ")"
+      case ArrayRead(arr, index)       => f(arr) + "[" + f(index) + "]"
+      case ArrayLength(arr)            => f(arr) + ".length"
       case MethodCall(obj, meth, args) => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
-      case IntLit(value) => value.toString
-      case StringLit(value) => "\"" + value + "\""
-      case True() => "true"
-      case False() => "false"
-      case id @ Identifier(value) => value + symbol(id)
+      case IntLit(value)               => value.toString
+      case StringLit(value)            => "\"" + value + "\""
+      case True()                      => "true"
+      case False()                     => "false"
+      case id @ Identifier(value)      => value + symbol(id)
       case id @ TypeIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "[" + commaList(list) + "]" else "")
       case This() => "this"
       case NewIntArray(size) => "new Int[" + f(size) + "]"
       case New(tpe, exprs) => "new " + f(tpe) + "(" + commaList(exprs) +")"
-      case Not(expr)         => "!(" + f(expr) + ")"
-      case Negation(expr)    => "-(" + f(expr) + ")"
+
       case PreIncrement(id)  => "++" + f(id)
       case PostIncrement(id) => f(id) + "++"
       case PreDecrement(id)  => "--" + f(id)
       case PostDecrement(id) => f(id) + "--"
+      case Ternary(condition, thn, els) => f(condition) + " ? " + f(thn) + " : " + f(els)
     }
     s
   }

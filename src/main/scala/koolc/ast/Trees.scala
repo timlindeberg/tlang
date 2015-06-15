@@ -1,6 +1,7 @@
 package koolc
 package ast
 
+import koolc.lexer.Tokens._
 import utils._
 import analyzer.Symbols._
 import analyzer.Types._
@@ -45,50 +46,32 @@ object Trees {
   case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
+  case class PlusAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class MinusAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class MulAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class DivAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class ModAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class AndAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class OrAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class XorAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class LeftShiftAssign(id: Identifier, expr: ExprTree) extends StatTree
+  case class RightShiftAssign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
-
-  object MathExpr {
-    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
-      case Plus(lhs, rhs)              => Some((lhs, rhs))
-      case Minus(lhs, rhs)             => Some((lhs, rhs))
-      case Times(lhs, rhs)             => Some((lhs, rhs))
-      case Div(lhs, rhs)               => Some((lhs, rhs))
-      case _                           => None
-    }
-  }
-
-  object Comparison {
-    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
-      case And(lhs, rhs)               => Some((lhs, rhs))
-      case Or(lhs, rhs)                => Some((lhs, rhs))
-      case LessThan(lhs, rhs)          => Some((lhs, rhs))
-      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
-      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
-      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
-      case Equals(lhs, rhs)            => Some((lhs, rhs))
-      case NotEquals(lhs, rhs)         => Some((lhs, rhs))
-      case _                           => None
-    }
-  }
-
-  object IncrementDecrement {
-    def unapply(e: Tree): Option[ExprTree] = e match {
-      case PreIncrement(id)  => Some(id)
-      case PostIncrement(id) => Some(id)
-      case PreDecrement(id)  => Some(id)
-      case PostDecrement(id) => Some(id)
-      case _                 => None
-    }
-  }
 
   trait ExprTree extends Tree with Typed
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Plus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Minus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Times(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Div(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -143,10 +126,71 @@ object Trees {
   case class New(var tpe: TypeIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree
+  case class LogicNot(expr: ExprTree) extends ExprTree
   case class PreIncrement(id: Identifier) extends ExprTree with StatTree
   case class PostIncrement(id: Identifier) extends ExprTree with StatTree
   case class PreDecrement(id: Identifier) extends ExprTree with StatTree
   case class PostDecrement(id: Identifier) extends ExprTree with StatTree
+  case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree with StatTree
+
+  // Collections for easier pattern matching
+
+  object Assignment {
+    def unapply(e: StatTree): Option[(Identifier, ExprTree)] = e match {
+      case Assign(id, expr)           => Some((id, expr))
+      case PlusAssign(id, expr)       => Some((id, expr))
+      case MinusAssign(id, expr)      => Some((id, expr))
+      case MulAssign(id, expr)        => Some((id, expr))
+      case DivAssign(id, expr)        => Some((id, expr))
+      case ModAssign(id, expr)        => Some((id, expr))
+      case AndAssign(id, expr)        => Some((id, expr))
+      case OrAssign(id, expr)         => Some((id, expr))
+      case XorAssign(id, expr)        => Some((id, expr))
+      case LeftShiftAssign(id, expr)  => Some((id, expr))
+      case RightShiftAssign(id, expr) => Some((id, expr))
+      case _                          => None
+    }
+  }
+
+  object MathBinaryExpr {
+    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
+      case Plus(lhs, rhs)       => Some((lhs, rhs))
+      case Minus(lhs, rhs)      => Some((lhs, rhs))
+      case LogicAnd(lhs, rhs)   => Some((lhs, rhs))
+      case LogicOr(lhs, rhs)    => Some((lhs, rhs))
+      case LogicXor(lhs, rhs)   => Some((lhs, rhs))
+      case Times(lhs, rhs)      => Some((lhs, rhs))
+      case Div(lhs, rhs)        => Some((lhs, rhs))
+      case Modulo(lhs, rhs)     => Some((lhs, rhs))
+      case LeftShift(lhs, rhs)  => Some((lhs, rhs))
+      case RightShift(lhs, rhs) => Some((lhs, rhs))
+      case _                    => None
+    }
+  }
+
+  object Comparison {
+    def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
+      case And(lhs, rhs)               => Some((lhs, rhs))
+      case Or(lhs, rhs)                => Some((lhs, rhs))
+      case LessThan(lhs, rhs)          => Some((lhs, rhs))
+      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
+      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
+      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
+      case Equals(lhs, rhs)            => Some((lhs, rhs))
+      case NotEquals(lhs, rhs)         => Some((lhs, rhs))
+      case _                           => None
+    }
+  }
+
+  object IncrementDecrement {
+    def unapply(e: Tree): Option[ExprTree] = e match {
+      case PreIncrement(id)  => Some(id)
+      case PostIncrement(id) => Some(id)
+      case PreDecrement(id)  => Some(id)
+      case PostDecrement(id) => Some(id)
+      case _                 => None
+    }
+  }
 
   def traverse(t: Product, f: (Product, Product) => Any): Unit = {
     def trav(parent: Product, current: Product, f: (Product, Product) => Any): Unit = {

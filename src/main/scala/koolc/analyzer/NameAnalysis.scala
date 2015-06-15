@@ -12,7 +12,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
   def run(ctx: Context)(prog: Program): Program = {
     val nameAnalyzer = new NameAnalyser(ctx, prog, new GlobalScope)
     nameAnalyzer.addSymbols.bindIdentifiers
-    nameAnalyzer.checkInheritanceCycles.checkVariableUsage.checkOverrideConstraints
+    nameAnalyzer.checkInheritanceCycles.checkVariableUsage.checkOverrideAndOverLoadConstraints
     prog
   }
 
@@ -23,12 +23,12 @@ object NameAnalysis extends Pipeline[Program, Program] {
     var variableUsage: Map[VariableSymbol, Boolean] = Map()
 
     def addSymbols(): this.type = {
-      SymbolAdder();
+      SymbolAdder()
       this
     }
 
     def bindIdentifiers(): this.type = {
-      SymbolBinder();
+      SymbolBinder()
       this
     }
 
@@ -55,13 +55,24 @@ object NameAnalysis extends Pipeline[Program, Program] {
     }
 
     def error(msg: String, tree: Positioned) = {
-      if (tree.isInstanceOf[Identifier])
-        tree.asInstanceOf[Identifier].setSymbol(new ErrorSymbol)
+      tree match {
+        case id: Identifier => id.setSymbol(new ErrorSymbol)
+        case _ =>
+      }
 
       ctx.reporter.error(msg, tree)
     }
 
-    def checkOverrideConstraints(): this.type = {
+    def methodsEquals(meth1: MethodSymbol, meth2: MethodSymbol): Boolean = {
+      val (list1, list2) = (meth1.argList, meth2.argList)
+      val sameSize = list1.size == list2.size
+      val sameArgs = list1.zip(list2).forall { case (x, y) => x.getType == y.getType }
+      val sameRetType = meth1.getType == meth2.getType
+
+      sameSize && sameArgs && sameRetType
+    }
+
+    def checkOverrideAndOverLoadConstraints(): this.type = {
       prog.classes.foreach { klass =>
         klass.methods.foreach(_ match {
           case meth: MethodDecl =>
@@ -70,11 +81,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
               val parentMeth = parent.get.lookupMethod(meth.id.value)
               if (parentMeth.isDefined) {
                 val (methSymbol, parentMethSymbol) = (meth.getSymbol, parentMeth.get)
-                val (list1, list2) = (methSymbol.argList, parentMethSymbol.argList)
-                val sameSize = list1.size == list2.size
-                val sameArgs = list1.zip(list2).forall { case (x, y) => x.getType == y.getType }
-                val sameRetType = methSymbol.getType == parentMethSymbol.getType
-                if (sameSize && sameArgs && sameRetType)
+                if(methodsEquals(methSymbol, parentMethSymbol))
                   methSymbol.overridden = Some(parentMethSymbol)
                 else
                   error("Method \'" + meth.id + "\' is already declared in super class: ", meth.id)
@@ -100,16 +107,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
       def apply(): Unit = addSymbols(prog, g)
 
       private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-        case Program(main, classes) => {
+        case Program(main, classes) =>
           addSymbols(main, globalScope)
           classes.foreach(addSymbols(_, globalScope))
-        }
-        case mainObject@MainObject(id, stats) => {
+        case mainObject@MainObject(id, stats) =>
           globalScope.mainClass = new ClassSymbol(id.value).setPos(id)
           mainObject.setSymbol(globalScope.mainClass)
           id.setSymbol(globalScope.mainClass)
-        }
-        case classDecl@ClassDecl(id@TypeIdentifier(name, types), parent, vars, methods) => {
+        case classDecl@ClassDecl(id@TypeIdentifier(name, types), parent, vars, methods) =>
           val newSymbol = new ClassSymbol(name).setPos(id)
           ensureIdentiferNotDefined(globalScope.classes, id.value, id)
           id.setSymbol(newSymbol)
@@ -118,23 +123,20 @@ object NameAnalysis extends Pipeline[Program, Program] {
           vars.foreach(addSymbols(_, newSymbol))
           methods.foreach(addSymbols(_, newSymbol))
 
-          if (name == globalScope.mainClass.name) {
+          if (name == globalScope.mainClass.name)
             error("Class \'" + name + "\' has the same name as the main object.", id)
-          }
-        }
         case _ => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
-        case varDecl@VarDecl(tpe, id) => {
+        case varDecl@VarDecl(tpe, id) =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        }
-        case methodDecl@MethodDecl(retType, id, args, vars, stats) => {
+        case methodDecl@MethodDecl(retType, id, args, vars, stats) =>
           val newSymbol = new MethodSymbol(id.value, s).setPos(id)
           ensureIdentiferNotDefined(s.methods, id.value, id)
           id.setSymbol(newSymbol)
@@ -142,8 +144,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s.methods += (id.value -> newSymbol)
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        }
-        case constructorDecl@ConstructorDecl(id, args, vars, stats) => {
+        case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
           val newSymbol = new MethodSymbol(id.value, s).setPos(id)
           newSymbol.setType(TObject(s))
 
@@ -155,15 +156,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s.methods += (id.value -> newSymbol)
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-          if(id.value != s.name) {
+          if(id.value != s.name)
             error("Invalid constructor name: \'" + id.value + "\'. Needs to have the same name as the class it's declared in: \'" + s.name + "\'.", id)
-          }
-        }
+
         case _ => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
-        case varDecl@VarDecl(tpe, id) => {
+        case varDecl@VarDecl(tpe, id) =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           if (s.params.contains(id.value)) {
@@ -174,15 +174,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        }
-        case formal@Formal(tpe, id) => {
+        case formal@Formal(tpe, id) =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.params, id.value, id)
           id.setSymbol(newSymbol)
           formal.setSymbol(newSymbol)
           s.params += (id.value -> newSymbol)
           s.argList ++= List(newSymbol)
-        }
         case _ => throw new UnsupportedOperationException
       }
 
@@ -202,7 +200,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       private def bind(t: Tree): Unit = t match {
         case Program(main, classes) =>
-          bind(main); bind(classes)
+          bind(main)
+          bind(classes)
         case main@MainObject(id, stats) => stats.foreach(bind(_, main.getSymbol))
         case classDecl@ClassDecl(id, parent, vars, methods) =>
           setParent(id, parent, classDecl)
@@ -218,7 +217,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
           bind(vars)
           bind(methods)
-        case VarDecl(tpe, id) => setType(tpe, id)
         case methDecl@MethodDecl(retType, id, args, vars, stats) =>
           setType(retType)
 
@@ -231,7 +229,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
           bind(args)
           bind(vars)
           stats.foreach(bind(_, constructorDecl.getSymbol))
-        case Formal(tpe, id) => setType(tpe, id)
+        case VarDecl(tpe, id) => setType(tpe, id)
+        case Formal(tpe, id)  => setType(tpe, id)
         case _ => throw new UnsupportedOperationException
       }
 

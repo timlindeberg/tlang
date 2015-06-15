@@ -31,17 +31,23 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       '<' -> LESSTHAN,
       '>' -> GREATERTHAN,
       '/' -> DIV,
-      '=' -> EQSIGN)
+      '=' -> EQSIGN,
+      '?' -> QUESTIONMARK,
+      '%' -> MODULO,
+      '~' -> LOGICNOT,
+      '&' -> LOGICAND,
+      '|' -> LOGICOR,
+      '^' -> LOGICXOR)
 
     private val keyWords = Map(
       "object" -> OBJECT,
       "class" -> CLASS,
       "def" -> DEF,
       "var" -> VAR,
-      "Unit" -> UNIT,
       "main" -> MAIN,
       "String" -> STRING,
       "extends" -> EXTENDS,
+      "Unit" -> UNIT,
       "Int" -> INT,
       "Bool" -> BOOLEAN,
       "while" -> WHILE,
@@ -107,25 +113,25 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     }
 
     private def createToken(kind: TokenKind, tokenLength: Int): Token = {
-      var token = new Token(kind).setPos(file, Position.encode(line, column))
+      val token = new Token(kind).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
 
     private def createToken(integer: Int, tokenLength: Int): Token = {
-      var token = new INTLIT(integer).setPos(file, Position.encode(line, column))
+      val token = new INTLIT(integer).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
 
     private def createIdToken(string: String, tokenLength: Int): Token = {
-      var token = new ID(string).setPos(file, Position.encode(line, column))
+      val token = new ID(string).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
 
     private def createToken(string: String, tokenLength: Int): Token = {
-      var token = new STRLIT(string).setPos(file, Position.encode(line, column))
+      val token = new STRLIT(string).setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
@@ -177,6 +183,19 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
+        case '+' :: '=' :: r                          => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
+        case '-' :: '=' :: r                          => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
+        case '*' :: '=' :: r                          => readTokens(r, createToken(MULEQ, 2) :: tokens)
+        case '/' :: '=' :: r                          => readTokens(r, createToken(DIVEQ, 2) :: tokens)
+        case '%' :: '=' :: r                          => readTokens(r, createToken(MODEQ, 2) :: tokens)
+        case '&' :: '=' :: r                          => readTokens(r, createToken(ANDEQ, 2) :: tokens)
+        case '|' :: '=' :: r                          => readTokens(r, createToken(OREQ, 2) :: tokens)
+        case '^' :: '=' :: r                          => readTokens(r, createToken(XOREQ, 2) :: tokens)
+        case '<' :: '<' :: '=' :: r                   => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
+        case '>' :: '>' :: '=' :: r                   => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
+        case '^' :: '=' :: r                          => readTokens(r, createToken(XOREQ, 2) :: tokens)
+        case '<' :: '<' :: r                          => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
+        case '>' :: '>' :: r                          => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
         case '+' :: '+' :: r                          => readTokens(r, createToken(INCREMENT, 2) :: tokens)
         case '-' :: '-' :: r                          => readTokens(r, createToken(DECREMENT, 2) :: tokens)
         case '<' :: '=' :: r                          => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)

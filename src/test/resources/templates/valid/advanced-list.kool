@@ -505,12 +505,9 @@ class ListIterator[T] {
 	var hasNext: Bool;
 
 	def ListIterator(list: List[T]) = {
-		if(list.first().isDefined()){
-			hasNext = true;
+		if(list.first().isDefined())
 			current = list.first().get();
-		}else{
-			hasNext = false;
-		}
+		hasNext = list.first().isDefined()
 	}
 
 	def hasNext(): Bool = {

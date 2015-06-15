@@ -1,0 +1,35 @@
+object Main {
+    def main() : Unit = {
+      new H().run();
+    }
+}
+
+class H {
+
+  def run(): Unit = {
+     var i: Int;
+     i = 2;
+     i += 2;
+     println(i); // 4
+     i -= 2;
+     println(i); // 2
+     i *= 2;
+     println(i); // 4
+     i /= 2;
+     println(i); // 2
+     i %= 2;
+     println(i); // 0
+     i |= 2;
+     println(i); // 2
+     i &= 2;
+     println(i); // 2;
+     i ^= 2;
+     println(i); // 0
+     i = 1;
+     i <<= 2;
+     println(i); // 4
+     i >>= 2;
+     println(i); // 1
+  }
+
+}

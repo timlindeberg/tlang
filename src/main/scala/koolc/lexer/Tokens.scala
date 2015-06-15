@@ -7,7 +7,7 @@ sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString = kind.toString
 }
 
-sealed trait TokenKind;
+sealed trait TokenKind
 
 object Tokens {
 
@@ -36,6 +36,16 @@ object Tokens {
   case object DOT extends TokenKind // .
   case object COMMA extends TokenKind // ,
   case object EQSIGN extends TokenKind // =
+  case object PLUSEQ extends TokenKind // +=
+  case object MINUSEQ extends TokenKind // -=
+  case object MULEQ extends TokenKind // *=
+  case object DIVEQ extends TokenKind // /=
+  case object MODEQ extends TokenKind // %=
+  case object ANDEQ extends TokenKind // &=
+  case object OREQ extends TokenKind // |=
+  case object XOREQ extends TokenKind // ^=
+  case object LEFTSHIFTEQ extends TokenKind // <<=
+  case object RIGHTSHIFTEQ extends TokenKind // >>=
   case object EQUALS extends TokenKind // ==
   case object NOTEQUALS extends TokenKind // !=
   case object BANG extends TokenKind // !
@@ -49,6 +59,14 @@ object Tokens {
   case object RBRACE extends TokenKind // }
   case object AND extends TokenKind // &&
   case object OR extends TokenKind // ||
+  case object QUESTIONMARK extends TokenKind // ?
+  case object LOGICNOT extends TokenKind // ~
+  case object LOGICAND extends TokenKind // &
+  case object LOGICOR extends TokenKind // |
+  case object LOGICXOR extends TokenKind // ^
+  case object MODULO extends TokenKind // %
+  case object LEFTSHIFT extends TokenKind // <<
+  case object RIGHTSHIFT extends TokenKind // >>
   case object LESSTHAN extends TokenKind // <
   case object LESSTHANEQUALS extends  TokenKind // <=
   case object GREATERTHAN extends  TokenKind // >

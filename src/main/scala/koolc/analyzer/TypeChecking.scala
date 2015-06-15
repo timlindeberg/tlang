@@ -59,6 +59,9 @@ object TypeChecking extends Pipeline[Program, Program] {
       case Println(expr)    =>
         if(tcExpr(expr) == TUnit) error("Type error: cannot call println with type Unit!", expr)
       case Assign(id, expr) => tcExpr(expr, id.getType)
+      case Assignment(id, expr) =>
+        tcExpr(id, TInt)
+        tcExpr(expr, TInt)
       case ArrayAssign(id, index, expr) =>
         tcExpr(index, TInt)
         tcExpr(expr, TInt)
@@ -102,15 +105,7 @@ object TypeChecking extends Pipeline[Program, Program] {
             case (TInt, TInt) => TInt
             case _            => TString
           }
-        case Minus(lhs, rhs) =>
-          tcExpr(lhs, TInt)
-          tcExpr(rhs, TInt)
-          TInt
-        case Times(lhs, rhs) =>
-          tcExpr(lhs, TInt)
-          tcExpr(rhs, TInt)
-          TInt
-        case Div(lhs, rhs) =>
+        case MathBinaryExpr(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
           TInt
@@ -163,6 +158,13 @@ object TypeChecking extends Pipeline[Program, Program] {
         case IncrementDecrement(id) =>
           tcExpr(id, TInt)
           TInt
+        case LogicNot(expr)  =>
+          tcExpr(expr, TInt)
+          TInt
+        case Ternary(condition, thn, els) =>
+          tcExpr(condition, TBool)
+          val tpe = tcExpr(thn)
+          tcExpr(els, tpe)
       }
 
       // Check result and return a valid type in case of error
