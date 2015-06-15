@@ -16,11 +16,19 @@ object Trees {
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
   case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends Tree with Symbolic[ClassSymbol]
   case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic  [VariableSymbol]
 
-  abstract class FuncTree(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], val stats: List[StatTree]) extends Tree with Symbolic[MethodSymbol]
-  case class MethodDecl(var retType: TypeTree, var i: Identifier, var a: List[Formal], var v: List[VarDecl], s: List[StatTree]) extends FuncTree(i, a, v, s)
-  case class ConstructorDecl(var i: Identifier, var a: List[Formal], var v: List[VarDecl], val s: List[StatTree]) extends FuncTree(i, a, v, s)
+  trait FuncTree extends Tree with Symbolic[MethodSymbol]{
+    var id: Identifier
+    var args: List[Formal]
+    var vars: List[VarDecl]
+    val stats: List[StatTree]
+
+    def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
+  }
+
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree]) extends FuncTree
+  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree]) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name = this match {

@@ -18,24 +18,19 @@ object TypeChecking extends Pipeline[Program, Program] {
       val obj = mc.obj
       val meth = mc.meth
       val methodCallArgs = mc.args
-      def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", " , ", ")")
+      def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
 
       val objType = tcExpr(obj)
+      val argTypes = methodCallArgs.map(tcExpr(_))
+
       objType match {
         case TObject(classSymbol) =>
-          classSymbol.lookupMethod(meth.value) match {
+          classSymbol.lookupMethod(meth.value, argTypes) match {
             case Some(methodSymbol) =>
-              val methodArgs = methodSymbol.argList
-              if (methodCallArgs.length == methodArgs.length) {
-                val zipped = methodCallArgs.zip(methodArgs.map(_.getType))
-                zipped.foreach { case (methodCallArg, methodArg) => tcExpr(methodCallArg, methodArg) }
                 meth.setSymbol(methodSymbol)
                 meth.getType
-              } else {
-                methodCallArgs.foreach(tcExpr(_))
-                error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
-              }
-            case None => error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
+            case None =>
+              error("Class \'" + classSymbol.name + "\' does not contain a method \'" + methodSignature + "\'.", mc)
           }
         case _ => error("Cannot call function on type " + objType, mc)
       }
@@ -141,23 +136,17 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(size, TInt)
           TIntArray
         case n @ New(tpe, exprs) =>
-          def methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
+          val argTypes = exprs.map(tcExpr(_))
 
           tpe.getType match {
             case TObject(classSymbol) =>
-              classSymbol.lookupMethod(tpe.name) match { // Constructor has same name as class
-                case Some(methodSymbol) =>
-                  val methodArgs = methodSymbol.argList
-                  if (exprs.length == methodArgs.length) {
-                    val zipped = exprs.zip(methodArgs.map(_.getType))
-                    zipped.foreach { case (methodCallArg, methodArg) => tcExpr(methodCallArg, methodArg) }
-                  } else {
-                    exprs.foreach(tcExpr(_)) // Continue type checking
+              classSymbol.lookupMethod(tpe.value, argTypes) match {
+                case Some(_) =>
+                case None =>
+                  if(exprs.size > 0){
+                    val methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
                     error("Class \'" + classSymbol.name + "\' does not contain a constructor \'" + methodSignature + "\'.", n)
                   }
-                case None =>
-                  if(exprs.size > 0)
-                    error("Class \'" + classSymbol.name + "\' does not contain a constructor \'" + methodSignature + "\'.", n)
               }
             case x => error("Cannot create a new instance of primitive type \'" + x + "\'.", n)
           }

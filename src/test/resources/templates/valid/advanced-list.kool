@@ -99,7 +99,7 @@ class Main {
 
 
 		for(i = 0; i < 10; i++){
-		    intList.add(0, new Integer(i));
+		    intList.add(new Integer(i));
         	stringList.add(0, new KoolString("s" + i + "s"));
 		}
 
@@ -152,6 +152,11 @@ class Main {
 		intList2.clear();
 		println(intList2);
 
+		intList2 = new List[Integer](5, new Integer(5));
+		intList.addAll(0, intList2);
+
+		p.print("Constructor 2");
+
 		println(intList.contains(new Integer(100)));
 		println(intList.contains(new Integer(95)));
 		println(intList.contains(new Integer(101)));
@@ -186,11 +191,16 @@ class List[T] {
 		clear();
 	}
 
-	def initWith(newSize: Int, value: T): Unit = {
+	def List(size: Int, value: T) = {
 		var i: Int;
-        for(i = 0; i < newSize; i++)
+		clear();
+        for(i = 0; i < size; i++)
         	push(value);
 	}
+
+    def nonEmpty(): Bool = {
+        return size != 0;
+    }
 
 	def isEmpty(): Bool = {
 		return size == 0;
@@ -241,6 +251,10 @@ class List[T] {
 		return res;
 	}
 
+	def add(data: T): Bool = {
+	    return add(0, data);
+	}
+
 	def add(index: Int, data: T): Bool = {
 		var node: Option[Node[T]];
 		var next: Option[Node[T]];
@@ -276,6 +290,10 @@ class List[T] {
 
 		return true;
 	}
+
+    def addAll(other: List[T]): Bool = {
+        return addAll(size, other);
+    }
 
 	def addAll(index: Int, other: List[T]): Bool = {
 		var it: ListIterator[T];
@@ -507,7 +525,7 @@ class ListIterator[T] {
 	def ListIterator(list: List[T]) = {
 		if(list.first().isDefined())
 			current = list.first().get();
-		hasNext = list.first().isDefined()
+		hasNext = list.first().isDefined();
 	}
 
 	def hasNext(): Bool = {

@@ -100,18 +100,15 @@ object Templates extends Pipeline[Program, Program] {
         def templateName(id: TypeIdentifier) =
           id.copy(value = template.id.templatedClassName(templateTypes), templateTypes = List())
 
-
-
         val newClass = cloner.deepClone(template)
-        Trees.traverse(newClass, (_, curr) => Some(curr) collect {
+        Trees.traverse(newClass, (_, current) => Some(current) collect {
           case c: ClassDecl       => c.id = templateName(c.id)
           case v: VarDecl         => v.tpe = updateType(v.tpe)
           case f: Formal          => f.tpe = updateType(f.tpe)
           case m: MethodDecl      => m.retType = updateType(m.retType)
-          case c: ConstructorDecl => c.i = c.i.copy(value =template.id.templatedClassName(templateTypes))
+          case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))
           case n: New             => n.tpe = updateTypeOfNewExpr(n)
         })
-
         newClass
       }
 

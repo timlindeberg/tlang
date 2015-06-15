@@ -67,7 +67,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
     var s = ""
-    var msgStr = replaceTemplateNames(msg.toString)
+    val msgStr = replaceTemplateNames(msg.toString)
     if (pos.hasPosition) {
       s += s + pos.position + ": " + prefix + ": " + msgStr + "\n"
 

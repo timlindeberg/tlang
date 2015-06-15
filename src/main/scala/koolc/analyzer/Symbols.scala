@@ -49,18 +49,30 @@ object Symbols {
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
 
+  class MethodMap extends scala.collection.mutable.HashMap[(String, List[Type]), MethodSymbol] {
+    protected override def elemEquals(key1: (String, List[Type]), key2: (String, List[Type])): Boolean = {
+      val (name1, args1) = key1
+      val (name2, args2) = key2
+      if(name1 == name2 && args1.size == args2.size)
+        args1.zip(args2).forall{ case(arg1, arg2) => arg1.isSubTypeOf(arg2) }
+      else
+        false
+
+    }
+  }
+
   class ClassSymbol(val name: String) extends Symbol {
     var parent: Option[ClassSymbol] = None
-    var methods = Map[String, MethodSymbol]()
+    var methods = new MethodMap()
     var members = Map[String, VariableSymbol]()
 
-    def lookupMethod(n: String): Option[MethodSymbol] = methods.get(n) match {
+    def lookupMethod(name: String, args: List[Type]): Option[MethodSymbol] = methods.get((name, args)) match {
       case x @ Some(t) => x
-      case None        => if (parent.isDefined) parent.get.lookupMethod(n) else None
+      case None        => if (parent.isDefined) parent.get.lookupMethod(name, args) else None
     }
-    def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
+    def lookupVar(name: String): Option[VariableSymbol] = members.get(name) match {
       case x @ Some(t) => x
-      case None        => if (parent.isDefined) parent.get.lookupVar(n) else None
+      case None        => if (parent.isDefined) parent.get.lookupVar(name) else None
     }
   }
 
@@ -70,11 +82,11 @@ object Symbols {
     var argList: List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
 
-    def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
+    def lookupVar(name: String): Option[VariableSymbol] = members.get(name) match {
       case x @ Some(t) => x
-      case None => params.get(n) match {
+      case None => params.get(name) match {
         case x @ Some(t) => x
-        case None        => classSymbol.lookupVar(n)
+        case None        => classSymbol.lookupVar(name)
       }
     }
   }

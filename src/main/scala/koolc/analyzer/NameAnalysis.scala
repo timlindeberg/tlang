@@ -76,16 +76,17 @@ object NameAnalysis extends Pipeline[Program, Program] {
       prog.classes.foreach { klass =>
         klass.methods.foreach(_ match {
           case meth: MethodDecl =>
-            val parent = meth.getSymbol.classSymbol.parent
-            if (parent.isDefined) {
-              val parentMeth = parent.get.lookupMethod(meth.id.value)
-              if (parentMeth.isDefined) {
-                val (methSymbol, parentMethSymbol) = (meth.getSymbol, parentMeth.get)
-                if(methodsEquals(methSymbol, parentMethSymbol))
-                  methSymbol.overridden = Some(parentMethSymbol)
-                else
-                  error("Method \'" + meth.id + "\' is already declared in super class: ", meth.id)
+            val methSymbol = meth.getSymbol
+            val methName = meth.id.value
+            val argTypes = meth.args.map(_.tpe.getType)
+            methSymbol.classSymbol.parent match {
+              case Some(parent) =>
+                parent.lookupMethod(methName, argTypes) match {
+                case Some(parentMethSymbol) =>
+                    methSymbol.overridden = Some(parentMethSymbol)
+                case None =>
               }
+              case None =>
             }
           case constructor: ConstructorDecl => // TODO
         }
@@ -138,22 +139,18 @@ object NameAnalysis extends Pipeline[Program, Program] {
           s.members += (id.value -> newSymbol)
         case methodDecl@MethodDecl(retType, id, args, vars, stats) =>
           val newSymbol = new MethodSymbol(id.value, s).setPos(id)
-          ensureIdentiferNotDefined(s.methods, id.value, id)
           id.setSymbol(newSymbol)
           methodDecl.setSymbol(newSymbol)
-          s.methods += (id.value -> newSymbol)
+
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
         case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
           val newSymbol = new MethodSymbol(id.value, s).setPos(id)
           newSymbol.setType(TObject(s))
 
-          ensureIdentiferNotDefined(s.methods, id.value, id)
-
           id.setSymbol(newSymbol)
           constructorDecl.setSymbol(newSymbol)
 
-          s.methods += (id.value -> newSymbol)
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
           if(id.value != s.name)
@@ -196,6 +193,17 @@ object NameAnalysis extends Pipeline[Program, Program] {
     object SymbolBinder {
       def apply(): Unit = bind(prog)
 
+      private def ensureMethodNotDefined(meth: FuncTree): Unit = {
+        val name = meth.id.value
+        val argTypes = meth.args.map(_.tpe.getType)
+        meth.getSymbol.classSymbol.methods.get((name, argTypes)) match {
+          case Some(oldMeth) =>
+            error("Method \'" + meth.signature + "\' is already defined at line " + oldMeth.line + ".", meth)
+          case None =>
+            meth.getSymbol.classSymbol.methods += ((name, argTypes) -> meth.getSymbol)
+        }
+      }
+
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
@@ -224,10 +232,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
           bind(args)
           bind(vars)
+          ensureMethodNotDefined(methDecl)
+
           stats.foreach(bind(_, methDecl.getSymbol))
         case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
           bind(args)
           bind(vars)
+          ensureMethodNotDefined(constructorDecl)
           stats.foreach(bind(_, constructorDecl.getSymbol))
         case VarDecl(tpe, id) => setType(tpe, id)
         case Formal(tpe, id)  => setType(tpe, id)
@@ -301,10 +312,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case StringType()   => tpe.setType(TString)
           case UnitType()     => tpe.setType(TUnit)
         }
-      }
-
-      private def setType(id: Identifier): Unit = {
-
       }
 
       private def setVariable(id: Identifier, s: Symbol): Unit = {
