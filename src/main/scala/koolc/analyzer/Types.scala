@@ -16,6 +16,7 @@ object Types {
 
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
+    def getSuperTypes(): List[Type] = List()
     def byteCodeName(): String
   }
 
@@ -66,6 +67,12 @@ object Types {
         }
       case _ => false
     }
+    override def getSuperTypes(): List[Type] =
+      List(this) ++ (classSymbol.parent match {
+        case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
+        case None => List()
+      })
+
     override def toString = classSymbol.name
     override def byteCodeName(): String = {
       val name = if (this == anyObject) CodeGeneration.OBJECT else classSymbol.name

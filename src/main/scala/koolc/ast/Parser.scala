@@ -393,14 +393,27 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
       def logicXor() = left(logicAnd, LOGICXOR)
 
-      /** <logicAnd> ::= <comparison> { & <comparison> } */
-      def logicAnd() = left(comparison, LOGICAND)
+      /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
+      def logicAnd() = left(eqNotEq, LOGICAND)
 
-      /** <comparison> ::= <bitShift> { ( < | <= | > | >= | != | == ) <bitShift> } */
-      def comparison() = left(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS)
+      /** <eqNotEq> ::= <instOf> { ( == | != ) <instOf> } */
+      def eqNotEq() = left(instOf, EQUALS, NOTEQUALS)
+
+      /** <instOf> ::= <comparison> { inst <identifier> } */
+      def instOf() = {
+        var e = comparison
+        while(currentToken.kind == INSTANCEOF){
+          eat(INSTANCEOF)
+          e = Instance(e, identifier)
+        }
+        e
+      }
+
+      /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
+      def comparison() = left(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS)
 
       /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
-      def bitShift() = left(plusMinus, LEFTSHIFT, RIGHTSHIFT, MINUS)
+      def bitShift() = left(plusMinus, LEFTSHIFT, RIGHTSHIFT)
 
       /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
       def plusMinus() = left(timesDivMod, PLUS, MINUS)

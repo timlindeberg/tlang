@@ -239,7 +239,19 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case mc @ MethodCall(obj, meth, args) =>
             bind(obj, s)
             args.foreach(bind(_, s))
-          case id: Identifier     => if(!parent.isInstanceOf[MethodCall]) setVariable(id, s)
+          case inst @ Instance(expr, id) =>
+            bind(expr, s)
+            g.lookupClass(id.value) match {
+              case Some(classSymbol) =>
+                id.setSymbol(classSymbol)
+                id.setType(TObject(classSymbol))
+              case None => error("Type \'" + id.value + "\' was not declared:", id)
+            }
+          case id: Identifier     => parent match {
+            case _: MethodCall =>
+            case _: Instance =>
+            case _ => setVariable(id, s)
+          }
           case id: TypeIdentifier => setType(id)
           case thisSym: This =>
             s match {
@@ -289,6 +301,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case StringType()   => tpe.setType(TString)
           case UnitType()     => tpe.setType(TUnit)
         }
+      }
+
+      private def setType(id: Identifier): Unit = {
+
       }
 
       private def setVariable(id: Identifier, s: Symbol): Unit = {

@@ -75,6 +75,10 @@ object TypeChecking extends Pipeline[Program, Program] {
     }
 
     def tcExpr(expr: ExprTree, expected: Type*): Type = {
+      tcExprList(expr, expected.toList)
+    }
+
+    def tcExprList(expr: ExprTree, expected: List[Type]): Type = {
       val tpe = expr match {
         case And(lhs, rhs) =>
           tcExpr(lhs, TBool)
@@ -96,6 +100,12 @@ object TypeChecking extends Pipeline[Program, Program] {
             case (x, y) if x == y         => TBool
             case (x, y)                   => error("Type error: expected: " + x + ", found " + y, rhs)
           }
+        case Instance(expr, id) =>
+          val tpe = tcExpr(expr)
+          if(!tpe.isInstanceOf[TObject])
+            error("Type error: expected: object , found " + tpe, expr)
+          tcExprList(id, tpe.getSuperTypes)
+          TBool
         case Comparison(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)

@@ -1,0 +1,30 @@
+object Main {
+    def main() : Unit = {
+      new H().run();
+    }
+}
+
+class H {
+
+  def run(): Unit = {
+     var a: A;
+     var b: B;
+     var c: A;
+     a = new A();
+     b = new B();
+     c = new B();
+
+     println(a inst A); // true
+     println(a inst B); // false
+     println(b inst B); // true
+     println(b inst A); // true
+     println(c inst A); // true
+     println(c inst B); // true
+
+  }
+
+}
+
+
+class A {}
+class B extends A {}

@@ -186,8 +186,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           branch(rhs, thn, els)
         case id@Identifier(value) =>
           load(id)
-          ch << IfEq(els.id)
-          ch << Goto(thn.id)
+          ch << IfEq(els.id) << Goto(thn.id)
+        case Instance(expr, id) =>
+          compileExpr(expr)
+          ch << Ldc(1)
+          ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
         case c @ Comparison(lhs, rhs) =>
           compileExpr(lhs)
           compileExpr(rhs)
@@ -202,16 +205,22 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << Goto(els.id)
         case mc@MethodCall(obj, meth, args) =>
           compileExpr(mc)
-          ch << IfEq(els.id)
-          ch << Goto(thn.id)
+          ch << IfEq(els.id) << Goto(thn.id)
         case _ => throw new UnsupportedOperationException(expr.toString)
       }
 
       def compileExpr(expr: ExprTree): Unit = {
         ch << LineNumber(expr.line)
         expr match {
-          case _:And | _:Or | _:Equals | _:NotEquals | _:LessThan |
-               _:LessThanEquals | _:GreaterThan | _:GreaterThanEquals | _:Not  =>
+          case _:And |
+               _:Or |
+               _:Equals |
+               _:NotEquals |
+               _:LessThan |
+               _:LessThanEquals |
+               _:GreaterThan |
+               _:GreaterThanEquals |
+               _:Not  =>
             val thn = ch.getFreshLabel(THEN)
             val els = ch.getFreshLabel(ELSE)
             val after = ch.getFreshLabel(AFTER)
@@ -222,6 +231,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << Label(els)
             ch << Ldc(0)
             ch << Label(after)
+          case Instance(expr, id) =>
+            compileExpr(expr)
+            ch << InstanceOf(id.value)
           case expr@Plus(lhs, rhs) => expr.getType match {
             case TInt =>
               compileExpr(lhs)
@@ -245,7 +257,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case _: LogicAnd   => IAND
               case _: LogicOr    => IOR
               case _: LogicXor   => IXOR
-              case _: LeftShift  => ISHL
               case _: LeftShift  => ISHL
               case _: RightShift => ISHR
               case _: Times      => IMUL

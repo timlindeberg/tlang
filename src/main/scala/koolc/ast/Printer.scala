@@ -85,6 +85,7 @@ object Printer {
       case GreaterThanEquals(lhs, rhs) => "(" + f(lhs) + " >= " + f(rhs) + ")"
       case Equals(lhs, rhs)            => "(" + f(lhs) + " == " + f(rhs) + ")"
       case NotEquals(lhs, rhs)         => "(" + f(lhs) + " != " + f(rhs) + ")"
+      case Instance(expr, id)          => "(" + f(expr) + " inst "  + f(id) + ")"
       case Not(expr)                   => "!(" + f(expr) + ")"
       case Negation(expr)              => "-(" + f(expr) + ")"
       case LogicNot(expr)              => "~(" + f(expr) + ")"
