@@ -61,12 +61,12 @@ class KoolString {
 
 }
 
-class ListPrinter[T, U] {
+class ListPrinter<T, U> {
 
-	var l1: List[T];
-	var l2: List[U];
+	var l1: List<T>;
+	var l2: List<U>;
 
-	def ListPrinter(list1: List[T], list2: List[U]) = {
+	def ListPrinter(list1: List<T>, list2: List<U>) = {
 		l1 = list1;
 		l2 = list2;
 	}
@@ -82,20 +82,20 @@ class ListPrinter[T, U] {
 
 class Main {
 	def run(): Unit = {
-		var p: 			  ListPrinter[Integer, KoolString];
-		var intList: 	  List[Integer];
-		var intList2: 	  List[Integer];
-		var stringList:   List[KoolString];
+		var p: 			  ListPrinter<Integer, KoolString>;
+		var intList: 	  List<Integer>;
+		var intList2: 	  List<Integer>;
+		var stringList:   List<KoolString>;
 		
-		var intSorter: 	  Sorter[List[Integer], Integer];
-		var stringSorter: Sorter[List[KoolString], KoolString];
+		var intSorter: 	  Sorter<List<Integer>, Integer>;
+		var stringSorter: Sorter<List<KoolString>, KoolString>;
 		var i: 			  Int;
 
-		intList = 	   new List[Integer]();
-		stringList =   new List[KoolString]();
-		intSorter =    new Sorter[List[Integer], Integer]();
-		stringSorter = new Sorter[List[KoolString], KoolString]();
-		p = 		   new ListPrinter[Integer, KoolString](intList, stringList);
+		intList = 	   new List<Integer>();
+		stringList =   new List<KoolString>();
+		intSorter =    new Sorter<List<Integer>, Integer>();
+		stringSorter = new Sorter<List<KoolString>, KoolString>();
+		p = 		   new ListPrinter<Integer, KoolString>(intList, stringList);
 
 
 		for(i = 0; i < 10; i++){
@@ -138,7 +138,7 @@ class Main {
 
 		p.print("Sorted");
 		
-		intList2 = new List[Integer]();
+		intList2 = new List<Integer>();
 
 		for(i = 0; i < 10; i++){
 			intList2.push(new Integer(100 - i));
@@ -152,7 +152,7 @@ class Main {
 		intList2.clear();
 		println(intList2);
 
-		intList2 = new List[Integer](5, new Integer(5));
+		intList2 = new List<Integer>(5, new Integer(5));
 		intList.addAll(0, intList2);
 
 		p.print("Constructor 2");
@@ -160,7 +160,8 @@ class Main {
 		println(intList.contains(new Integer(100)));
 		println(intList.contains(new Integer(95)));
 		println(intList.contains(new Integer(101)));
-
+        
+        intSorter.sort(intList);
 		println("----------------------------------------");
 		println("-- Pop");
 		println("----------------------------------------");
@@ -180,10 +181,9 @@ class Main {
 	}
 }
 
-class List[T] {
-	
-	var first: Option[Node[T]];
-	var last:  Option[Node[T]];
+class List<T> {
+	var first: Option<Node<T>>;
+	var last:  Option<Node<T>>;
 
 	var size: Int; 
 
@@ -207,27 +207,27 @@ class List[T] {
 	}
 
 	def clear(): Unit = {
-		first = new Option[Node[T]]();
-        last = new Option[Node[T]]();
+		first = new Option<Node<T>>();
+        last = new Option<Node<T>>();
         size = 0;
 	}
 
-	def first(): Option[Node[T]] = {
+	def first(): Option<Node<T>> = {
 		return first;
 	}
 
-	def last(): Option[Node[T]] = {
+	def last(): Option<Node<T>> = {
 		return last;
 	}
 
-	def iterator(): ListIterator[T] = {
-		return new ListIterator[T](this);
+	def iterator(): ListIterator<T> = {
+		return new ListIterator<T>(this);
 	}
 
 	def push(data: T): Unit = {
-		var node: Node[T];
+		var node: Node<T>;
 
-		node = new Node[T](data);
+		node = new Node<T>(data);
 		if(!first.isDefined()){
 			first.add(node);
 			last = first;
@@ -239,10 +239,10 @@ class List[T] {
 		size++;
 	}
 
-	def pop(): Option[T] = {
-		var res: Option[T];
+	def pop(): Option<T> = {
+		var res: Option<T>;
 
-		res = new Option[T]();
+		res = new Option<T>();
 		if(size <= 0)
 		    return res;
 
@@ -256,24 +256,23 @@ class List[T] {
 	}
 
 	def add(index: Int, data: T): Bool = {
-		var node: Option[Node[T]];
-		var next: Option[Node[T]];
-		var prev: Option[Node[T]];
-		var op:	  Option[Node[T]];
-		var elem: Node[T];
+		var node: Option<Node<T>>;
+		var next: Option<Node<T>>;
+		var prev: Option<Node<T>>;
+		var op:	  Option<Node<T>>;
+		var elem: Node<T>;
 		var res:  Bool;
 
         if(index < 0 || index > size)
             return false;
 
-        elem = new Node[T](data);
+        elem = new Node<T>(data);
         if(index == size){
             push(data);
         }else if(index == 0){
             first.get().setPrev(elem);
             elem.setNext(first.get());
-            op = new Option[Node[T]]();
-            op.add(elem);
+            op = new Option<Node<T>>(elem);
             first = op;
         }else{
             node = find(index);
@@ -291,12 +290,12 @@ class List[T] {
 		return true;
 	}
 
-    def addAll(other: List[T]): Bool = {
+    def addAll(other: List<T>): Bool = {
         return addAll(size, other);
     }
 
-	def addAll(index: Int, other: List[T]): Bool = {
-		var it: ListIterator[T];
+	def addAll(index: Int, other: List<T>): Bool = {
+		var it: ListIterator<T>;
 
 		it = other.iterator();
 		while(it.hasNext()){
@@ -308,9 +307,9 @@ class List[T] {
 	}
 
 	def remove(index: Int): Bool = {
-		var node: 	Option[Node[T]];
-		var next:	Option[Node[T]];
-		var prev:	Option[Node[T]];
+		var node: 	Option<Node<T>>;
+		var next:	Option<Node<T>>;
+		var prev:	Option<Node<T>>;
 
         if(size <= 0)
             return false;
@@ -341,11 +340,11 @@ class List[T] {
 		return true;
 	}
 
-	def get(index: Int): Option[T] = {
-		var node: 	Option[Node[T]];
-		var res:	Option[T];
+	def get(index: Int): Option<T> = {
+		var node: 	Option<Node<T>>;
+		var res:	Option<T>;
 
-		res = new Option[T]();
+		res = new Option<T>();
 		node = find(index);
 		if(node.isDefined()){
 			res.add(node.get().data());
@@ -354,7 +353,7 @@ class List[T] {
 	}
 
 	def set(index: Int, data: T): Bool = {
-		var node: 	Option[Node[T]];
+		var node: 	Option<Node<T>>;
 
 		node = find(index);
 		if(node.isDefined()){
@@ -366,7 +365,7 @@ class List[T] {
 
 	def indexOf(data: T): Int = {
 		var i: 	   Int;
-		var it:	   ListIterator[T];
+		var it:	   ListIterator<T>;
 
 		it = iterator();
 		while(it.hasNext()){
@@ -380,7 +379,7 @@ class List[T] {
 	def lastIndexOf(data: T): Int = {
 		var index: Int;
 		var i: 	   Int;
-		var it:	   ListIterator[T];
+		var it:	   ListIterator<T>;
 
 		index = -1;
 		it = iterator();
@@ -396,11 +395,11 @@ class List[T] {
 		return indexOf(data) != -1;
 	}
 
-	def find(index: Int): Option[Node[T]] = {
-		var tmp: 	Option[Node[T]];
+	def find(index: Int): Option<Node<T>> = {
+		var tmp: 	Option<Node<T>>;
 		var i: 		Int;
 
-		tmp = new Option[Node[T]]();
+		tmp = new Option<Node<T>>();
 
 		if(index < 0 || index >= size)
 		    return tmp;
@@ -429,11 +428,11 @@ class List[T] {
 	}
 
     def toString(): String = {
-        var it: ListIterator[T];
+        var it: ListIterator<T>;
         var s: 	String;
         
         if(size == 0)
-        	return "[]";
+        	return "<>";
 
         it = iterator();
         s = "[ ";
@@ -449,9 +448,9 @@ class List[T] {
 		return size;
 	}
 
-	def equals(other: List[T]): Bool = {
-		var thisIt:  ListIterator[T];
-		var otherIt: ListIterator[T];
+	def equals(other: List<T>): Bool = {
+		var thisIt:  ListIterator<T>;
+		var otherIt: ListIterator<T>;
 		var done:	 Bool;
 
         if(size != other.size())
@@ -468,26 +467,26 @@ class List[T] {
 	}
 }
 
-class Node[T] {
+class Node<T> {
 	var data: T;
-	var next: Option[Node[T]];
-	var prev: Option[Node[T]];
+	var next: Option<Node<T>>;
+	var prev: Option<Node<T>>;
 
 	def Node(d: T) = {
 		data = d;
-    	next = new Option[Node[T]]();
-    	prev = new Option[Node[T]]();
+    	next = new Option<Node<T>>();
+    	prev = new Option<Node<T>>();
 	}
 
 	def data(): T = {
 		return data;
 	}
 
-	def next(): Option[Node[T]] = {
+	def next(): Option<Node<T>> = {
 		return next;
 	}
 
-	def prev(): Option[Node[T]] = {
+	def prev(): Option<Node<T>> = {
 		return prev;
 	}
 
@@ -496,33 +495,31 @@ class Node[T] {
 	}
 
 	def clearNext(): Unit = {
-		next = new Option[Node[T]]();
+		next = new Option<Node<T>>();
 	}
 
 	def clearPrev(): Unit = {
-		prev = new Option[Node[T]]();
+		prev = new Option<Node<T>>();
 	}
 
-	def setNext(n: Node[T]): Unit = {
-		var o: Option[Node[T]];
-		o = new Option[Node[T]]();
-		o.add(n);
+	def setNext(n: Node<T>): Unit = {
+		var o: Option<Node<T>>;
+		o = new Option<Node<T>>(n);
 		next = o;
 	}
 
-	def setPrev(n: Node[T]): Unit = {
-		var o: Option[Node[T]];
-		o = new Option[Node[T]]();
-		o.add(n);
+	def setPrev(n: Node<T>): Unit = {
+		var o: Option<Node<T>>;
+		o = new Option<Node<T>>(n);
 		prev = o;
 	}
 }
 
-class ListIterator[T] {
-	var current: Node[T];
+class ListIterator<T> {
+	var current: Node<T>;
 	var hasNext: Bool;
 
-	def ListIterator(list: List[T]) = {
+	def ListIterator(list: List<T>) = {
 		if(list.first().isDefined())
 			current = list.first().get();
 		hasNext = list.first().isDefined();
@@ -543,12 +540,16 @@ class ListIterator[T] {
 	}
 }
 
-class Option[T] {
+class Option<T> {
 	var isDefined: Bool;
 	var t: 		   T;
 
 	def Option() = {
 		isDefined = false;
+	}
+
+	def Option(tArg: T) = {
+	    add(tArg);
 	}
 
 	def add(tArg: T): Unit = {
@@ -565,7 +566,7 @@ class Option[T] {
 	}
 }
 
-class Sorter[Container, T] {
+class Sorter<Container, T> {
 	
 	def sort(c: Container): Unit = {
 		var i: Int;

@@ -1,24 +1,24 @@
 object Program4 {
   def/**/main () : Unit = {
     println(
-      new Test1[Test2[Test3[Int]]]().test(new Test2[Test3[Int]]())
+      new Test1<Test2<Test3<Int>>>().test(new Test2<Test3<Int>>())
       );
   }
 }
 
-class Test1[T] {
+class Test1<T> {
   def test(a: T) : Int  = {
     return 1;
   }
 }
 
-class Test2[T] {
+class Test2<T> {
   def test(a: T) : Int = {
     return 2;
   }
 }
 
-class Test3[T] {
+class Test3<T> {
   def test(a: T) : Int = {
     return 3;
   }

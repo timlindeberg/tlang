@@ -1,7 +1,7 @@
 object Program4 {
   def/**/main () : Unit = {
-    println(new Test[A]());
-    println(new Test[B]());
+    println(new Test<A>());
+    println(new Test<B>());
   }
 }
 
@@ -17,7 +17,7 @@ class B {
 	}
 }
 
-class Test[T] { 
+class Test<T> {
 	var t: T;
 
 	def test(): Int = {	

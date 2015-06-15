@@ -558,6 +558,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       ternary().setPos(pos)
     }
 
+    private var usedOneGreaterThan = false
+
+    /**
+     * Handles the conflict of generics having multiple ">" signs by
+     * treating RIGHTSHIFT (>>) as two ">".
+     */
+    private def eatRightShiftOrGreaterThan() =
+      if(currentToken.kind == RIGHTSHIFT){
+        if(usedOneGreaterThan){
+          eat(RIGHTSHIFT)
+        }
+        usedOneGreaterThan = !usedOneGreaterThan
+      }else{
+        eat(GREATERTHAN)
+      }
+
     /**
      * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
      */
@@ -565,17 +581,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case id: ID =>
         eat(IDKIND)
         val tIds = currentToken.kind match {
-          case LBRACKET =>
-            eat(LBRACKET)
+          case LESSTHAN =>
+            eat(LESSTHAN)
             val tmp = commaList(identifier)
-            eat(RBRACKET)
+            eatRightShiftOrGreaterThan
             tmp.map(x => new TypeIdentifier(x.value, List()))
           case _ => List()
         }
         TypeIdentifier(id.value, tIds).setPos(id)
       case _ => expected(IDKIND)
     }
-    
+
     /**
      * <typeIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
      */
@@ -583,10 +599,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case id: ID =>
         eat(IDKIND)
         val tIds = currentToken.kind match {
-          case LBRACKET =>
-            eat(LBRACKET)
+          case LESSTHAN =>
+            eat(LESSTHAN)
             val tmp = commaList(tpe)
-            eat(RBRACKET)
+            eatRightShiftOrGreaterThan
             tmp
           case _ => List()
         }

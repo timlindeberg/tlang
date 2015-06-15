@@ -6,14 +6,14 @@ object Program {
 
 class Main {
 	def run(): Bool = {
-		var list1: List[Int];
-		var list2: List[String];
+		var list1: List<Int>;
+		var list2: List<String>;
 		var i: Int;
 		var s: String;
 
-		list1 = new List[Int]();
+		list1 = new List<Int>();
 		i = list1.init();
-		list2 = new List[String]();
+		list2 = new List<String>();
 		i = list2.init();
 		while(i < 5){
 			list1 = list1.add(i / 5);
@@ -28,20 +28,20 @@ class Main {
 	}
 }
 
-class List[T] {
+class List<T> {
 	var head: T;
-	var tail: Option[List[T]];
+	var tail: Option<List<T>>;
 
 	def init(): Int = {
-		tail = new Option[List[T]]();
+		tail = new Option<List<T>>();
 		return 0;
 	}
 
-	def add(t: T): List[T] = {
+	def add(t: T): List<T> = {
 		var q: Int;
-		var newList: List[T];
+		var newList: List<T>;
 
-		newList = new List[T]();
+		newList = new List<T>();
 		q = newList.init();
 		q = newList.setHead(t);
 		q = newList.setTail(this);
@@ -57,14 +57,14 @@ class List[T] {
 		return 0;
 	}
 
-	def tail(): Option[List[T]] = {
+	def tail(): Option<List<T>> = {
 		return tail;
 	}
 
-	def setTail(list: List[T]): Int = {
+	def setTail(list: List<T>): Int = {
 		var q: Int;
-		var o: Option[List[T]];
-		o = new Option[List[T]]();
+		var o: Option<List<T>>;
+		o = new Option<List<T>>();
 		q = o.add(list);
 		tail = o;
 		return 0;
@@ -72,7 +72,7 @@ class List[T] {
 
 	def toString(): String = {
 		var s: String;
-		var tmp: List[T];
+		var tmp: List<T>;
 		tmp = this;
 		s = "[";
 		while(tmp.tail().isDefined()){
@@ -87,7 +87,7 @@ class List[T] {
 	}
 }
 
-class Option[T] {
+class Option<T> {
 	var t: T;
 	var isDefined: Bool;
 

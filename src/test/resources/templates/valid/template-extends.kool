@@ -4,7 +4,7 @@ object Program4 {
   }
 }
 
-class B extends A[Int] {
+class B extends A<Int> {
   def printt(): Int = {
     var discard: Int;
     discard = this.init(1337);
@@ -13,7 +13,7 @@ class B extends A[Int] {
   }
 }
 
-class A[T] {
+class A<T> {
   var t: T;
   def init(tinit: T) : Int  = {
     t = tinit;

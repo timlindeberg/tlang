@@ -1,8 +1,8 @@
 object Program4 {
   def/**/main () : Unit = {
-    println(new Test[Int]());
+    println(new Test<Int>());
     
   }
 }
 
-class Test[T1, T2] { }
+class Test<T1, T2> { }

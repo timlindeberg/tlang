@@ -6,14 +6,14 @@ object Program {
 
 class Main {
 	def run(): Bool = {
-		var a: A[Int];
-		a = new A[Int]();
+		var a: A<Int>;
+		a = new A<Int>();
 		println(a.exec(5));
 		return false;
 	}
 }
 
-class A[B] {
+class A<B> {
 	var value: B;
 
 	def exec(b: B): B = {

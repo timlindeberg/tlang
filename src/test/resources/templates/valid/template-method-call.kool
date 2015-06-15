@@ -10,12 +10,12 @@ class MMain {
     var a2: A;
     var b1: B;
     var b2: B;
-    var compA: Comparator[A];
-    var compB: Comparator[B];
+    var compA: Comparator<A>;
+    var compB: Comparator<B>;
     var discard: Int;
 
-    compA = new Comparator[A]();
-    compB = new Comparator[B]();
+    compA = new Comparator<A>();
+    compB = new Comparator<B>();
     a1 = new A();
     a2 = new A();
     b1 = new B();
@@ -26,7 +26,7 @@ class MMain {
   }
 }
 
-class Comparator[T] {
+class Comparator<T> {
   def compare(t1: T, t2: T): Bool = {
     return t1.equals(t2);
   }

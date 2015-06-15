@@ -1,11 +1,11 @@
 object Program4 {
   def/**/main () : Unit = {
-    println(new Test[Int, Int]().calc(1, 1));
-    println(new Test[String, String]().calc("1", "1"));
+    println(new Test<Int, Int>().calc(1, 1));
+    println(new Test<String, String>().calc("1", "1"));
   }
 }
 
-class Test[T1, T2] {
+class Test<T1, T2> {
   var a: T2;
   
   def calc(a: T1, b: T2) : T1 = {

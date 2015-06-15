@@ -6,16 +6,16 @@ object Program {
 
 class Main {
 	def run(): Bool = {
-		var list: A[Int, String];
+		var list: A<Int, String>;
 		return false;
 	}
 }
 
-class A[T, U] {
-	var value: B[B[B[T, U], Int], String];
+class A<T, U> {
+	var value: B<B<B<T, U>, Int>, String>;
 }
 
-class B[T, U] {
+class B<T, U> {
 	var t: T;
 	var u: U;
 }
