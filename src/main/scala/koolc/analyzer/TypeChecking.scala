@@ -53,13 +53,18 @@ object TypeChecking extends Pipeline[Program, Program] {
         tcStat(stat, retType)
       case Println(expr)    =>
         if(tcExpr(expr) == TUnit) error("Type error: cannot call println with type Unit!", expr)
-      case Assign(id, expr) => tcExpr(expr, id.getType)
+      case Assign(id, expr) =>
+        tcExpr(expr, id.getType)
       case Assignment(id, expr) =>
         tcExpr(id, TInt)
         tcExpr(expr, TInt)
       case ArrayAssign(id, index, expr) =>
         tcExpr(index, TInt)
-        tcExpr(expr, TInt)
+        val tpe = tcExpr(id)
+        tpe match {
+          case TArray(arrayTpe) => tcExpr(expr, arrayTpe)
+          case x => error("Type error: expected array, found \'" + x + "\'.", id)
+        }
       case mc: MethodCall => mc.setType(typeCheckMethodCall(mc))
       case Return(Some(expr)) =>
         tcExpr(expr, retType)
@@ -118,12 +123,16 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(rhs, TInt)
           TInt
         case ArrayRead(arr, index) =>
-          tcExpr(arr, TIntArray)
           tcExpr(index, TInt)
-          TInt
+          tcExpr(arr) match {
+            case TArray(arrTpe) => arrTpe
+            case x => error("Type error: expected array, found \'" + x + "\'.", arr)
+          }
         case ArrayLength(arr) =>
-          tcExpr(arr, TIntArray)
-          TInt
+          tcExpr(arr) match {
+            case TArray(_) => TInt
+            case x => error("Type error: expected array, found \'" + x + "\'.", arr)
+          }
         case mc : MethodCall        => typeCheckMethodCall(mc)
         case IntLit(value)          => TInt
         case StringLit(value)       => TString
@@ -132,9 +141,9 @@ object TypeChecking extends Pipeline[Program, Program] {
         case id @ Identifier(value) => id.getType
         case id @ TypeIdentifier(value, _) => id.getType
         case th @ This()            => th.getSymbol.getType
-        case NewIntArray(size) =>
+        case NewArray(tpe, size) =>
           tcExpr(size, TInt)
-          TIntArray
+          TArray(tpe.getType)
         case n @ New(tpe, exprs) =>
           val argTypes = exprs.map(tcExpr(_))
 

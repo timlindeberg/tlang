@@ -2,7 +2,10 @@ package koolc
 package analyzer
 
 import Symbols._
+import cafebabe.ByteCodes.IASTORE
 import koolc.code.CodeGeneration
+import cafebabe.AbstractByteCodes._
+import cafebabe.ByteCodes._
 
 object Types {
   trait Typed {
@@ -16,7 +19,7 @@ object Types {
 
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
-    def getSuperTypes(): List[Type] = List()
+    def getSuperTypes: List[Type] = List()
     def byteCodeName(): String
   }
 
@@ -52,9 +55,15 @@ object Types {
     override def byteCodeName(): String = "V"
   }
 
-  case object TIntArray extends Type {
-    override def toString = "Int[]"
-    override def byteCodeName(): String = "[I"
+  case class TArray(tpe: Type) extends Type {
+    override def isSubTypeOf(otherTpe: Type): Boolean = {
+      otherTpe match {
+        case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
+        case _ => false
+      }
+    }
+    override def toString = tpe.toString + "[]"
+    override def byteCodeName(): String = "[" + tpe.byteCodeName
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {

@@ -148,19 +148,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <tpe> ::= Int[] | Int | Bool | String | <typeIdentifier>
+     * <tpe> ::= ( Int | Bool | String | <typeIdentifier> ) { "[]" }
      */
     private def tpe(): TypeTree = {
       val pos = currentToken
-      val tree = currentToken.kind match {
+      val tpe = currentToken.kind match {
         case INT => {
           eat(INT)
-          if (currentToken.kind == LBRACKET) {
-            eat(LBRACKET, RBRACKET)
-            IntArrayType()
-          } else {
-            IntType()
-          }
+          IntType()
         }
         case BOOLEAN =>
           eat(BOOLEAN)
@@ -170,7 +165,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           StringType()
         case _ => typeIdentifier
       }
-      tree.setPos(pos)
+      var e = tpe
+      while(currentToken.kind == LBRACKET){
+        e.setPos(pos)
+        eat(LBRACKET, RBRACKET)
+        e = ArrayType(e)
+      }
+      e.setPos(pos)
     }
 
     /**
@@ -191,7 +192,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      *               | <identifier> "^=" <expression> ";"
      *               | <identifier> "<<=" <expression> ";"
      *               | <identifier> ">>=" <expression> ";"
-     *               | <identifier>"[" <expression> "]" "=" <expression> ";"
+     *               | <identifier> "[" <expression> "]" "=" <expression> ";"
      *               | <identifier> "++"
      *               | <identifier> "--"
      *               | "++" <identifier>
@@ -441,7 +442,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
          *               | true
          *               | false
          *               | this
-         *               | new Int"[" <expression> "]"
+         *               | new <tpe>"[" <expression> "]"
          *               | new <typeIdentifier> "(" [ <expression> { "," <expression> } ")"
          */
         def termFirst() = {
@@ -497,17 +498,32 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               This()
             case NEW =>
               eat(NEW)
-              if (currentToken.kind == INT) {
-                eat(INT, LBRACKET)
+              def primitiveArray(construct: () => TypeTree) = {
+                eat(currentToken.kind, LBRACKET)
                 val expr = expression
                 eat(RBRACKET)
-                NewIntArray(expr)
-              } else {
-                val id = typeIdentifier
-                eat(LPAREN)
-                val args = commaList(expression)
-                eat(RPAREN)
-                New(id, args)
+                NewArray(construct(), expr)
+              }
+              currentToken.kind match {
+                case INT     => primitiveArray(IntType)
+                case STRING  => primitiveArray(StringType)
+                case BOOLEAN => primitiveArray(BooleanType)
+                case _ =>
+                  val id = typeIdentifier
+                  currentToken.kind match {
+                    case LPAREN =>
+                      eat(LPAREN)
+                      val args = commaList(expression)
+                      eat(RPAREN)
+                      New(id, args)
+                    case LBRACKET =>
+                      eat(LBRACKET)
+                      val expr = expression
+                      eat(RBRACKET)
+                      NewArray(id, expr)
+                    case _ => expected(LPAREN, LBRACKET)
+                  }
+
               }
             case _ => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
           }

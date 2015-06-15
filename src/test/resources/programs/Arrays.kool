@@ -1,0 +1,56 @@
+object Main {
+    def main() : Unit = {
+      new H().run();
+    }
+}
+
+class H {
+
+  def run(): Unit = {
+     var i: Int;
+     var int: Int[];
+     var str: String[];
+     var bool: Bool[];
+     var a: A[];
+
+     int = new Int[5];
+     str = new String[5];
+     bool = new Bool[5];
+     a = new A[5];
+
+     for(i = 0; i < 5; i++){
+        int[i]  = i;
+        str[i]  = "" + i;
+        bool[i] = i % 2 == 0;
+        a[i]    = new A(i);
+     }
+
+     for(i = 0; i < 5; i++){
+        println(int[i]); // 0 1 2 3 4
+     }
+     for(i = 0; i < 5; i++){
+        println(str[i]); // 0 1 2 3 4
+     }
+     for(i = 0; i < 5; i++){
+        println(bool[i]); // true false true false true
+     }
+     for(i = 0; i < 5; i++){
+        println(a[i]);    // 0 1 2 3 4
+     }
+  }
+
+}
+
+class A {
+
+  var int: Int;
+
+  def A(i: Int) = {
+    int = i;
+  }
+
+  def toString(): String = {
+    return "" + int;
+  }
+
+}

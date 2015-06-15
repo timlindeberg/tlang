@@ -12,6 +12,8 @@ import cafebabe.AbstractByteCodes._
 
 object CodeGeneration extends Pipeline[Program, Unit] {
 
+  val CONSTRUCTOR_NAME = "<init>"
+
   /* Java classes used by compiler */
   val STRING_BUILDER = "java/lang/StringBuilder"
   val STRING = "java/lang/String"
@@ -29,7 +31,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   /* Types */
   val T_INT = 10
-  val CONSTRUCTOR_NAME = "<init>"
+  val T_BOOL = 4
 
   def run(ctx: Context)(prog: Program): Unit = {
 
@@ -130,7 +132,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             load(id)
             compileExpr(index)
             compileExpr(expr)
-            ch << IASTORE
+            val tpe = id.getType.asInstanceOf[TArray].tpe
+            ch << (tpe match {
+              case TInt  => IASTORE
+              case TBool => BASTORE
+              case _     => AASTORE
+            })
           case mc @ MethodCall(obj, meth, args) =>
             compileExpr(obj)
             args.foreach(compileExpr)
@@ -269,7 +276,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case ArrayRead(arr, index) =>
             compileExpr(arr)
             compileExpr(index)
-            ch << IALOAD
+            val tpe = arr.getType.asInstanceOf[TArray].tpe
+            ch << (tpe match {
+              case TInt  => IALOAD
+              case TBool => BALOAD
+              case _     => AALOAD
+            })
           case ArrayLength(arr) =>
             compileExpr(arr)
             ch << ARRAYLENGTH
@@ -281,9 +293,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
             val name = obj.getType.asInstanceOf[TObject].classSymbol.name
             ch << InvokeVirtual(name, meth.value, signature)
-          case NewIntArray(size) =>
+          case ast.Trees.NewArray(tpe, size) =>
             compileExpr(size)
-            ch << NewArray(T_INT) // I?
+            ch << (tpe.getType match {
+              case TObject(classSymbol) => cafebabe.AbstractByteCodes.NewArray(classSymbol.name)
+              case TString              => cafebabe.AbstractByteCodes.NewArray(STRING)
+              case TInt                 => cafebabe.AbstractByteCodes.NewArray(T_INT)
+              case TBool                => cafebabe.AbstractByteCodes.NewArray(T_BOOL)
+              case TArray(arrayTpe)     => ???
+              case _                    => ???
+            })
           case True() => ch << Ldc(1)
           case False() => ch << Ldc(0)
           case IntLit(value) => ch << Ldc(value)

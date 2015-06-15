@@ -41,7 +41,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   behavior of "Relations"
 
   it should "work with primitive types" in {
-    val primitives = List(TInt, TString, TBool, TIntArray)
+    val primitives = List(TInt, TString, TBool)
     val others = List(TError, Types.anyObject, TObject(new ClassSymbol("")), TUntyped)
 
     for (t1 <- primitives) {

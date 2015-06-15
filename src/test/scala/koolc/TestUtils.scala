@@ -68,18 +68,18 @@ object TestUtils {
       var types = true
       Trees.traverse(t, (_, x) => {
         types = x match {
-          case x@IntLit(value)            => x.getType == TInt
-          case x@StringLit(value)         => x.getType == TString
-          case x@Identifier(value)        => x.getType != TUntyped && x.getType != TError
-          case x@TypeIdentifier(value, _) => x.getType != TUntyped && x.getType != TError
-          case x@IntType()                => x.getType == TInt
-          case x@IntArrayType()           => x.getType == TIntArray
-          case x@BooleanType()            => x.getType == TBool
-          case x@StringType()             => x.getType == TString
-          case x@True()                   => x.getType == TBool
-          case x@False()                  => x.getType == TBool
-          case x@This()                   => x.getType != TUntyped && x.getType != TError
-          case _                          => true
+          case x: IntLit         => x.getType == TInt
+          case x: StringLit      => x.getType == TString
+          case x: Identifier     => x.getType != TUntyped && x.getType != TError
+          case x: TypeIdentifier => x.getType != TUntyped && x.getType != TError
+          case x: IntType        => x.getType == TInt
+          case x: ArrayType      => x.getType == TArray
+          case x: BooleanType    => x.getType == TBool
+          case x: StringType     => x.getType == TString
+          case x: True           => x.getType == TBool
+          case x: False          => x.getType == TBool
+          case x: This           => x.getType != TUntyped && x.getType != TError
+          case _                 => true
         }
       })
       types

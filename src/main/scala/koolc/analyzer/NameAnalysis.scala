@@ -263,7 +263,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
             case _: Instance   =>
             case _             => setVariable(id, s)
           }
-          case id: TypeIdentifier => setType(id)
+          case id: TypeIdentifier  => setType(id)
+          case NewArray(tpe, size) => setType(tpe)
           case thisSym: This =>
             s match {
               case classSymbol: ClassSymbol => thisSym.setSymbol(g.mainClass)
@@ -289,7 +290,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           case BooleanType()  => set(TBool)
           case IntType()      => set(TInt)
-          case IntArrayType() => set(TIntArray)
+          case ArrayType(arrayTpe) =>
+            setType(arrayTpe)
+            set(TArray(arrayTpe.getType))
           case StringType()   => set(TString)
           case UnitType()     => set(TUnit)
         }
@@ -308,7 +311,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           case BooleanType()  => tpe.setType(TBool)
           case IntType()      => tpe.setType(TInt)
-          case IntArrayType() => tpe.setType(TIntArray)
+          case ArrayType(arrayTpe) =>
+            setType(arrayTpe)
+            tpe.setType(TArray(arrayTpe.getType))
           case StringType()   => tpe.setType(TString)
           case UnitType()     => tpe.setType(TUnit)
         }

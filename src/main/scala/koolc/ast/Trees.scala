@@ -31,17 +31,17 @@ object Trees {
   case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree]) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
-    def name = this match {
+    def name: String = this match {
       case TypeIdentifier(value, _) => value
+      case ArrayType(tpe)           => tpe.name + "[]"
       case IntType()                => "Int"
-      case IntArrayType()           => "Int[]"
       case StringType()             => "String"
       case BooleanType()            => "Bool"
       case UnitType()               => "Unit"
     }
   }
 
-  case class IntArrayType() extends TypeTree
+  case class ArrayType(tpe: TypeTree) extends TypeTree
   case class IntType() extends TypeTree
   case class BooleanType() extends TypeTree
   case class StringType() extends TypeTree
@@ -135,7 +135,7 @@ object Trees {
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
-  case class NewIntArray(size: ExprTree) extends ExprTree
+  case class NewArray(tpe: TypeTree, size: ExprTree) extends ExprTree
   case class New(var tpe: TypeIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree

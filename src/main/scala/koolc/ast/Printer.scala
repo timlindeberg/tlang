@@ -42,8 +42,8 @@ object Printer {
       case ConstructorDecl(id, args, vars, stats)     => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id)                            => f(id) + ": " + f(tpe)
       // Types
+      case ArrayType(tpe) => f(tpe) + "[]"
       case IntType()      => "Int"
-      case IntArrayType() => "Int[]"
       case BooleanType()  => "Bool"
       case StringType()   => "String"
       case UnitType()     => "Unit"
@@ -100,7 +100,7 @@ object Printer {
       case id @ Identifier(value)           => value + symbol(id)
       case id @ TypeIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "[" + commaList(list) + "]" else "")
       case This()                           => "this"
-      case NewIntArray(size)                => "new Int[" + f(size) + "]"
+      case NewArray(tpe, size)              => "new " + f(tpe) + "[" + f(size) + "]"
       case New(tpe, exprs)                  => "new " + f(tpe) + "(" + commaList(exprs) +")"
       case PreIncrement(id)                 => "++" + f(id)
       case PostIncrement(id)                => f(id) + "++"
