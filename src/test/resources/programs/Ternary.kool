@@ -6,7 +6,7 @@ object Main {
 
 class H {
 
-  def run(): Unit = {
+  Def run(): Unit = {
      var i: Int;
      i = 5;
      println(i == 5 ? 0 : 1); // 0
@@ -16,7 +16,7 @@ class H {
      println(test(10) || test(9) || test(8) || 7 > 8 || 8*5 + 3 - 40 < 3 ? 50*3 - 150 : 8 + 8 + 8 + (25*4) - 123); // 1
   }
 
-  def test(i: Int): Bool = {
+  Def test(i: Int): Bool = {
     return i < 5;
   }
 }

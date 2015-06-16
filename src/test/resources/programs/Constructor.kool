@@ -7,11 +7,11 @@ object Main {
 class H {
 
 
-  def H(str: String) = {
+  Def H(str: String) = {
     println(str);
   }
 
-  def run(): String = {
+  Def run(): String = {
     return "Run";
   }
 

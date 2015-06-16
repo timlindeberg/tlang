@@ -137,16 +137,16 @@ object NameAnalysis extends Pipeline[Program, Program] {
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        case methodDecl@MethodDecl(retType, id, args, vars, stats) =>
-          val newSymbol = new MethodSymbol(id.value, s).setPos(id)
+        case methodDecl@MethodDecl(retType, id, args, vars, stats, access) =>
+          val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
           id.setSymbol(newSymbol)
           methodDecl.setSymbol(newSymbol)
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
-          val newSymbol = new MethodSymbol(id.value, s).setPos(id)
-          newSymbol.setType(TObject(s))
+        case constructorDecl@ConstructorDecl(id, args, vars, stats, access) =>
+          val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
+          newSymbol.setType(TUnit)
 
           id.setSymbol(newSymbol)
           constructorDecl.setSymbol(newSymbol)
@@ -193,17 +193,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
     object SymbolBinder {
       def apply(): Unit = bind(prog)
 
-      private def ensureMethodNotDefined(meth: FuncTree): Unit = {
-        val name = meth.id.value
-        val argTypes = meth.args.map(_.tpe.getType)
-        meth.getSymbol.classSymbol.methods.get((name, argTypes)) match {
-          case Some(oldMeth) =>
-            error("Method \'" + meth.signature + "\' is already defined at line " + oldMeth.line + ".", meth)
-          case None =>
-            meth.getSymbol.classSymbol.methods += ((name, argTypes) -> meth.getSymbol)
-        }
-      }
-
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
@@ -225,7 +214,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
           bind(vars)
           bind(methods)
-        case methDecl@MethodDecl(retType, id, args, vars, stats) =>
+        case methDecl@MethodDecl(retType, id, args, vars, stats, access) =>
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
@@ -235,7 +224,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           ensureMethodNotDefined(methDecl)
 
           stats.foreach(bind(_, methDecl.getSymbol))
-        case constructorDecl@ConstructorDecl(id, args, vars, stats) =>
+        case constructorDecl@ConstructorDecl(id, args, vars, stats, access) =>
           bind(args)
           bind(vars)
           ensureMethodNotDefined(constructorDecl)
@@ -272,6 +261,17 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case _ => throw new UnsupportedOperationException
             }
         })
+
+      private def ensureMethodNotDefined(meth: FuncTree): Unit = {
+        val name = meth.id.value
+        val argTypes = meth.args.map(_.tpe.getType)
+        meth.getSymbol.classSymbol.methods.get((name, argTypes)) match {
+          case Some(oldMeth) =>
+            error("Method \'" + meth.signature + "\' is already defined at line " + oldMeth.line + ".", meth)
+          case None =>
+            meth.getSymbol.classSymbol.methods += ((name, argTypes) -> meth.getSymbol)
+        }
+      }
 
       private def setType(tpe: TypeTree, id: Identifier): Unit = {
         def set(t: Type): Unit = {

@@ -34,13 +34,13 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(main, classes)                     => f(main) + all(classes)
-      case MainObject(id, stats)                      => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
-      case ClassDecl(id, parent, vars, methods)       => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id)                           => "var " + f(id) + " : " + f(tpe) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats) => "def " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
-      case ConstructorDecl(id, args, vars, stats)     => "def " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
-      case Formal(tpe, id)                            => f(id) + ": " + f(tpe)
+      case Program(main, classes)                             => f(main) + all(classes)
+      case MainObject(id, stats)                              => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
+      case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
+      case VarDecl(tpe, id)                                   => "var " + f(id) + " : " + f(tpe) + ";" + n
+      case MethodDecl(retType, id, args, vars, stats, access) => definition(access) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
+      case ConstructorDecl(id, args, vars, stats, access)     => definition(access) + " " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
+      case Formal(tpe, id)                                    => f(id) + ": " + f(tpe)
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"
       case IntType()      => "Int"
@@ -109,6 +109,12 @@ object Printer {
       case Ternary(condition, thn, els)     => f(condition) + " ? " + f(thn) + " : " + f(els)
     }
     s
+  }
+
+  private def definition(a: Accessability) = a match {
+    case Private   => "def"
+    case Public    => "Def"
+    case Protected => "def protected"
   }
 
   private def pos(t: Tree): String = "[" + t.line + ", " + t.col + "]"

@@ -6,7 +6,7 @@ object Program4 {
 
 class Test<T> {
 	
-	def test(): T = {	
+	Def test(): T = {
 		return new T();
 	}
 }

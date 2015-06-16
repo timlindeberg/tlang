@@ -11,7 +11,7 @@ class Test1 {
     var t: Test1;
     var b: String;
 
-    def test(num : Int): Int = {
+    Def test(num : Int): Int = {
         var b: Int;
         var t: Int;
         t = 10;
@@ -25,7 +25,7 @@ class Test2 {
     var t: Test1;
     var b: Int;
 
-    def test(t : Int): Int = {
+    Def test(t : Int): Int = {
         t = 10;
         b = 10;
         return t + b;

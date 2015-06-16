@@ -18,17 +18,23 @@ object Trees {
   case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic  [VariableSymbol]
 
+  trait Accessability
+  case object Public extends  Accessability
+  case object Private extends  Accessability
+  case object Protected extends  Accessability
+
   trait FuncTree extends Tree with Symbolic[MethodSymbol]{
     var id: Identifier
     var args: List[Formal]
     var vars: List[VarDecl]
     val stats: List[StatTree]
+    val access: Accessability
 
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree]) extends FuncTree
-  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree]) extends FuncTree
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
+  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String = this match {
@@ -52,6 +58,7 @@ object Trees {
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
   case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
+  case class Print(expr: ExprTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class PlusAssign(id: Identifier, expr: ExprTree) extends StatTree
@@ -147,6 +154,14 @@ object Trees {
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree with StatTree
 
   // Collections for easier pattern matching
+
+  object PrintStatement {
+    def unapply(e: StatTree): Option[ExprTree] = e match {
+      case Print(expr)   => Some(expr)
+      case Println(expr) => Some(expr)
+      case _             => None
+    }
+  }
 
   object Assignment {
     def unapply(e: StatTree): Option[(Identifier, ExprTree)] = e match {

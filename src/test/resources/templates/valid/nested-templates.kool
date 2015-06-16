@@ -5,7 +5,7 @@ object Program {
 }
 
 class Main {
-	def run(): Bool = {
+	Def run(): Bool = {
 		var list: A<Int, String>;
 		return false;
 	}

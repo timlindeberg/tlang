@@ -8,7 +8,7 @@ object Main {
 }
 
 class Looper {
-  def run(times: Int): Int = {
+  Def run(times: Int): Int = {
     var value: Int;
     value = 0;
     while((true || (1/0 == 1)) && value < times) {
@@ -25,23 +25,23 @@ class Looper {
 class Counter {
   var count: Int;
 
-  def init(): Counter = {
+  Def init(): Counter = {
     count = 0;
     return this;
   }
 
-  def increment(): Int = {
+  Def increment(): Int = {
     count = count + 1;
     return count;
   }
 
-  def count(): Int = {
+  Def count(): Int = {
     return count;
   }
 }
 
 class Loopy {
-  def run(times: Int): Int = {
+  Def run(times: Int): Int = {
     var c: Counter;
     c = new Counter();
     c = c.init();
@@ -54,7 +54,7 @@ class Loopy2 {
   var c1: Counter;
   var c2: Counter;
   var c3: Counter;
-  def run(times: Int): Int = {
+  Def run(times: Int): Int = {
     var tmp: Int;
     c1 = new Counter();
     c1 = c1.init();
@@ -76,7 +76,7 @@ class Loopy2 {
 }
 
 class Loopy3 {
-  def run(times: Int): Int = {
+  Def run(times: Int): Int = {
     var l: Loopy3;
     while (!(times < 1)) {
       l = new Loopy3();

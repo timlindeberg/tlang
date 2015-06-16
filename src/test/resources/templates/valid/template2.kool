@@ -9,7 +9,7 @@ class B {
   var b: Test<Int, Int>;
 
 
-  def yo(): Int = {
+  Def yo(): Int = {
     var lol: Test3<B>;
     c = new Test<String, String>();
     b = new Test<Int, Int>();
@@ -23,7 +23,7 @@ class B {
 
 class Test3<T> {
   var a: Test<Int, Int>;
-  def test(): Int = {
+  Def test(): Int = {
     a = new Test<Int, Int>();
     return a.calc(1, 2);
   }
@@ -32,13 +32,13 @@ class Test3<T> {
 class Test<T1, T2> {
   var a: T2;
   
-  def calc(a: T1, b: T2) : T1 = {
+  Def calc(a: T1, b: T2) : T1 = {
     return a + b;
   }
 }
 
 class Test2 extends Test<String, Int> {
-  def lol(): String = {
+  Def lol(): String = {
     a = 1;
     return this.calc("1", a);
   }

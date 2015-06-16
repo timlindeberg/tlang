@@ -8,7 +8,7 @@ object Program4 {
 class Test<T1, T2> {
   var a: T2;
   
-  def calc(a: T1, b: T2) : T1 = {
+  Def calc(a: T1, b: T2) : T1 = {
     return a + b;
   }
 }

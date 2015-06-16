@@ -65,7 +65,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val pos = currentToken
       eat(OBJECT)
       val id = identifier
-      eat(LBRACE, DEF, MAIN, LPAREN, RPAREN, COLON, UNIT, EQSIGN, LBRACE)
+      eat(LBRACE, PRIVDEF, MAIN, LPAREN, RPAREN, COLON, UNIT, EQSIGN, LBRACE)
       val stmts = until(statement, RBRACE)
       eat(RBRACE, RBRACE)
       MainObject(id, stmts).setPos(pos)
@@ -73,7 +73,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     /**
      * <classDeclaration> ::= class <typeIdentifier>
-     *    [ extends <typeIdentifier> ] "{" { <varDeclaration> } { methodDeclaration } "}"
+     *    [ extends <typeIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
      */
     private def classDeclaration(): ClassDecl = {
       val pos = currentToken
@@ -82,7 +82,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val parent = optional(typeIdentifier, EXTENDS)
       eat(LBRACE)
       val vars = untilNot(varDeclaration, VAR)
-      val methods = untilNot(methodDeclaration, DEF)
+      val methods = untilNot(methodDeclaration, PRIVDEF, PUBDEF)
       eat(RBRACE)
       ClassDecl(id, parent, vars, methods).setPos(pos)
     }
@@ -111,13 +111,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Formal(typ, id).setPos(pos)
     }
 
-    /**-
-     * <methodDeclaration> ::= def <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
-     *                       | def <identifier> "(" [ <formal> { "," <formal> } ] ") = {" { <varDeclaration> } { <statement> } "}"
+    /**
+     * <methodDeclaration> ::= (Def | def ) <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
+     *                       | (Def | def ) <identifier> "(" [ <formal> { "," <formal> } ] ") = {" { <varDeclaration> } { <statement> } "}"
      */
     private def methodDeclaration(): FuncTree = {
       val pos = currentToken
-      eat(DEF)
+      val access = currentToken.kind match {
+        case PRIVDEF =>
+          eat(PRIVDEF)
+          Private
+        case PUBDEF  =>
+          eat(PUBDEF)
+          Public
+        case _       =>
+          expected(PRIVDEF, PUBDEF)
+      }
       val id = identifier
       eat(LPAREN)
       val args = commaList(formal)
@@ -136,13 +145,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         val vars = untilNot(varDeclaration, VAR)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
-        MethodDecl(retType, id, args, vars, stmts)
+        MethodDecl(retType, id, args, vars, stmts, access)
       }else{
         eat(EQSIGN, LBRACE)
         val vars = untilNot(varDeclaration, VAR)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
-        ConstructorDecl(id, args, vars, stmts)
+        ConstructorDecl(id, args, vars, stmts, access)
       }
       func.setPos(pos)
     }
@@ -252,6 +261,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           })
           eat(RPAREN)
           For(init, condition, post, statement)
+        case PRINT =>
+          eat(PRINT, LPAREN)
+          val expr = expression
+          eat(RPAREN, SEMICOLON)
+          Print(expr)
         case PRINTLN =>
           eat(PRINTLN, LPAREN)
           val expr = expression
@@ -698,8 +712,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     /**
      * Continues parsing until a token different from the given token is encountered.
      */
-    private def untilNot[T](parse: () => T, kind: TokenKind): List[T] = {
-      val condition = () => currentToken.kind == kind
+    private def untilNot[T](parse: () => T, kinds: TokenKind*): List[T] = {
+      val condition = () => kinds.contains(currentToken.kind)
       _until(condition, parse)
     }
 

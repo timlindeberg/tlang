@@ -42,7 +42,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     private val keyWords = Map(
       "object"  -> OBJECT,
       "class"   -> CLASS,
-      "def"     -> DEF,
+      "Def"     -> PUBDEF,
+      "def"     -> PRIVDEF,
       "var"     -> VAR,
       "main"    -> MAIN,
       "String"  -> STRING,
@@ -62,6 +63,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "false"   -> FALSE,
       "this"    -> THIS,
       "new"     -> NEW,
+      "print"   -> PRINT,
       "println" -> PRINTLN)
 
     private var line = 1

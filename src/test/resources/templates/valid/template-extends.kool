@@ -5,7 +5,7 @@ object Program4 {
 }
 
 class B extends A<Int> {
-  def printt(): Int = {
+  Def printt(): Int = {
     var discard: Int;
     discard = this.init(1337);
     println(t);
@@ -15,7 +15,7 @@ class B extends A<Int> {
 
 class A<T> {
   var t: T;
-  def init(tinit: T) : Int  = {
+  Def init(tinit: T) : Int  = {
     t = tinit;
     return 0;
   }

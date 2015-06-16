@@ -76,7 +76,7 @@ object Symbols {
     }
   }
 
-  class MethodSymbol(val name: String, val classSymbol: ClassSymbol) extends Symbol {
+  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val access: Accessability) extends Symbol {
     var params = Map[String, VariableSymbol]()
     var members = Map[String, VariableSymbol]()
     var argList: List[VariableSymbol] = Nil

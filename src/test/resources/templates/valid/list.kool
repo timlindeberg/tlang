@@ -5,7 +5,7 @@ object Program {
 }
 
 class Main {
-	def run(): Bool = {
+	Def run(): Bool = {
 		var list1: List<Int>;
 		var list2: List<String>;
 		var i: Int;
@@ -32,12 +32,12 @@ class List<T> {
 	var head: T;
 	var tail: Option<List<T>>;
 
-	def init(): Int = {
+	Def init(): Int = {
 		tail = new Option<List<T>>();
 		return 0;
 	}
 
-	def add(t: T): List<T> = {
+	Def add(t: T): List<T> = {
 		var q: Int;
 		var newList: List<T>;
 
@@ -48,20 +48,20 @@ class List<T> {
 		return newList;
 	}
 
-	def head(): T = {
+	Def head(): T = {
 		return head;
 	}
 
-	def setHead(tArg: T): Int = {
+	Def setHead(tArg: T): Int = {
 		head = tArg;
 		return 0;
 	}
 
-	def tail(): Option<List<T>> = {
+	Def tail(): Option<List<T>> = {
 		return tail;
 	}
 
-	def setTail(list: List<T>): Int = {
+	Def setTail(list: List<T>): Int = {
 		var q: Int;
 		var o: Option<List<T>>;
 		o = new Option<List<T>>();
@@ -70,7 +70,7 @@ class List<T> {
 		return 0;
 	}
 
-	def toString(): String = {
+	Def toString(): String = {
 		var s: String;
 		var tmp: List<T>;
 		tmp = this;
@@ -91,17 +91,17 @@ class Option<T> {
 	var t: T;
 	var isDefined: Bool;
 
-	def add(tArg: T): Int = {
+	Def add(tArg: T): Int = {
 		t = tArg;
 		isDefined = true;
 		return 0;
 	}
 
-	def isDefined(): Bool = {
+	Def isDefined(): Bool = {
 		return isDefined;
 	}
 
-	def get(): T = {
+	Def get(): T = {
 		return t;
 	}
 }

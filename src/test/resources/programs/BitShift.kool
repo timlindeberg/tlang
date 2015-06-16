@@ -6,7 +6,7 @@ object Main {
 
 class H {
 
-  def run(): Unit = {
+  Def run(): Unit = {
      var i: Int;
      i = 1;
      println(i << 0); // 1

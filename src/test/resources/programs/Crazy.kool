@@ -15,11 +15,11 @@ class A {
   var a: Bool;
   var b: Bool;
 
-  def bar(): Bool = { return !a && b; }
-  def bar2(): Bool = { return !(a && b); }
-  def T() : Int = { return 0; }
+  Def bar(): Bool = { return !a && b; }
+  Def bar2(): Bool = { return !(a && b); }
+  Def T() : Int = { return 0; }
 
-  def foo(): Int = {
+  Def foo(): Int = {
     var value: Bool;
     value = false;
     return 41;
@@ -27,20 +27,20 @@ class A {
 }
 
 class B extends A {
-  def foo(): Int = {
+  Def foo(): Int = {
     value = 42;
     return value;
   }
-  def a(): Bool = {
+  Def a(): Bool = {
     return a;
   }
-  def b(): Bool = {
+  Def b(): Bool = {
     return b;
   }    
 }
 
 class Test {
-  def init() : Int = {
+  Def init() : Int = {
     var expr1 : Bool;
     var expr2 : Bool;
     var a : Int;

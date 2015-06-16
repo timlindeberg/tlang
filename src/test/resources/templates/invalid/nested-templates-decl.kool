@@ -5,7 +5,7 @@ object Program {
 }
 
 class Main {
-	def run(): Bool = {
+	Def run(): Bool = {
 		var a: A<Int, String>;
 		a = new A<Int, String>();
 		println(a.run(5));
@@ -15,7 +15,7 @@ class Main {
 
 class A<T<X>, U> {
 	
-	def run(t: T): T = {
+	Def run(t: T): T = {
 		return t;
 	}
 }

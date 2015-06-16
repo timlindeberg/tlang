@@ -5,7 +5,7 @@ object Program4 {
 }
 
 class MMain {
-  def run(): Bool = {
+  Def run(): Bool = {
     var a1: A;
     var a2: A;
     var b1: B;
@@ -27,19 +27,19 @@ class MMain {
 }
 
 class Comparator<T> {
-  def compare(t1: T, t2: T): Bool = {
+  Def compare(t1: T, t2: T): Bool = {
     return t1.equals(t2);
   }
 }
 
 class A {
-  def equals(other: A): Bool  = {
+  Def equals(other: A): Bool  = {
     return this == other;
   }
 }
 
 class B {
-  def equals(other: B): Bool = {
+  Def equals(other: B): Bool = {
     return true;
   }
 }

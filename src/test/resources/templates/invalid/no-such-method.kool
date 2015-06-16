@@ -6,13 +6,13 @@ object Program4 {
 }
 
 class A {
-	def exec(): Int = {
+	Def exec(): Int = {
 		return 5;
 	}
 }
 
 class B {
-	def dontHaveExec(): Int = {
+	Def dontHaveExec(): Int = {
 		return 5;
 	}
 }
@@ -20,7 +20,7 @@ class B {
 class Test<T> {
 	var t: T;
 
-	def test(): Int = {	
+	Def test(): Int = {
 		t = new T();
 		return t.exec();
 	}

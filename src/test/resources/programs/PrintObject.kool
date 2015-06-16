@@ -5,13 +5,13 @@ object Test {
 }
 
 class Foo {
-  def bar(a: Object): Object = {
+  Def bar(a: Object): Object = {
     return a;
   }
 }
 
 class A { 
-	def toString(): String = {
+	Def toString(): String = {
 		return "Print A!";
 	}
 }

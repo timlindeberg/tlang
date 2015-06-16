@@ -6,7 +6,7 @@ object Main {
 
 class H {
 
-  def run(): Unit = {
+  Def run(): Unit = {
      var a: A;
      var b: A;
      var c: A;
@@ -19,32 +19,32 @@ class H {
 
 class A {
 
-    def test(): Unit = {
+    Def test(): Unit = {
         println("A");
     }
 
-    def testA(): Unit = {
+    Def testA(): Unit = {
         println("A");
     }
 }
 class B extends A {
 
-     def test(): Unit = {
+     Def test(): Unit = {
         println("B");
      }
 
-    def testB(): Unit = {
+    Def testB(): Unit = {
         println("B");
     }
 }
 
 class C extends B {
 
-     def test(): Unit = {
+     Def test(): Unit = {
         println("C");
      }
 
-    def testC(): Unit = {
+    Def testC(): Unit = {
         println("C");
     }
 }

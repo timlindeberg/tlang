@@ -6,7 +6,7 @@ object Main {
 
 class Test {
 
-    def test(s1 : String): String = {
+    Def test(s1 : String): String = {
         var num: Int;
         var a: A;
         var b: A;
@@ -14,8 +14,8 @@ class Test {
         var s2: String;
         var i1: Int[];
         var i2: Int[];
-        
-        num = 1; 
+
+        num = 1;
 
         a = new A();
         b = new B();
@@ -51,7 +51,7 @@ class Test {
 
         // arrays
         println(i1 == i2);      // false
-        i1 = i2;                
+        i1 = i2;
         println(i1 == i2);      // true
 
         return "";

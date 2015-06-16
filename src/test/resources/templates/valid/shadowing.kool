@@ -5,7 +5,7 @@ object Program {
 }
 
 class Main {
-	def run(): Bool = {
+	Def run(): Bool = {
 		var a: A<Int>;
 		a = new A<Int>();
 		println(a.exec(5));
@@ -16,13 +16,13 @@ class Main {
 class A<B> {
 	var value: B;
 
-	def exec(b: B): B = {
+	Def exec(b: B): B = {
 		return b;
 	}
 }
 
 class B {
-	def foo(): Int = {
+	Def foo(): Int = {
 		return 1;
 	}
 }

@@ -1,0 +1,241 @@
+object Program {
+  def main () : Unit = {
+    new Main().run();
+  }
+}
+
+class Integer {
+	var i: Int;
+
+	def Integer(iarg: Int) = {
+		i = iarg;
+	}
+
+	def set(iarg: Int): Unit = {
+		i = iarg;
+	}
+
+	def get(): Int = {
+		return i;
+	}
+
+	def toString(): String = {
+		return "" + i;
+	}
+
+	def compareTo(other: Integer): Int = {
+		return i - other.get();
+	}
+
+	def equals(other: Integer): Bool = {
+		return i == other.get();
+	}
+}
+
+class KoolString {
+	var s: String;
+
+	def KoolString(sarg: String) = {
+		s = sarg;
+	}
+
+	def set(sarg: String): Unit = {
+		s = sarg;
+	}
+
+	def get(): String = {
+		return s;
+	}
+
+	def toString(): String = {
+		return s;
+	}
+
+	def compareTo(other: KoolString): Int = {
+		return 1;
+	}
+
+	def equals(other: KoolString): Bool = {
+		return s == other.get();
+	}
+
+}
+
+class ListPrinter<T, U> {
+
+	var l1: List<T>;
+	var l2: List<U>;
+
+	def ListPrinter(list1: List<T>, list2: List<U>) = {
+		l1 = list1;
+		l2 = list2;
+	}
+
+	def printList(msg: String): Unit = {
+		println("----------------------------------------");
+		println("-- " + msg);
+		println("----------------------------------------");
+		println(l1);
+		println(l2);
+	}
+}
+
+class Main {
+	def run(): Unit = {
+
+	}
+}
+
+class Vector<T> {
+
+	var size: Int;
+	var data: T[];
+
+	def Vector() = {
+		clear();
+	}
+
+	def Vector(size: Int, value: T) = {
+	}
+
+    def nonEmpty(): Bool = {
+    }
+
+	def isEmpty(): Bool = {
+	}
+
+	def clear(): Unit = {
+		data = new T[16];
+		size = 0;
+	}
+
+	def first(): Option<Node<T>> = {
+	}
+
+	def last(): Option<Node<T>> = {
+	}
+
+	def iterator(): ListIterator<T> = {
+	}
+
+	def push(data: T): Unit = {
+	}
+
+	def pop(): Option<T> = {
+	}
+
+	def add(data: T): Bool = {
+	}
+
+	def add(index: Int, data: T): Bool = {
+	}
+
+    def addAll(other: List<T>): Bool = {
+    }
+
+	def addAll(index: Int, other: List<T>): Bool = {
+	}
+
+	def remove(index: Int): Bool = {
+	}
+
+	def get(index: Int): Option<T> = {
+	}
+
+	def set(index: Int, data: T): Bool = {
+	}
+
+	def indexOf(data: T): Int = {
+	}
+
+	def lastIndexOf(data: T): Int = {
+	}
+
+	def contains(data: T): Bool = {
+	}
+
+    def toString(): String = {
+    }
+
+	def size(): Int = {
+		return size;
+	}
+
+	def equals(other: List<T>): Bool = {
+		var thisIt:  ListIterator<T>;
+		var otherIt: ListIterator<T>;
+		var done:	 Bool;
+
+        if(size != other.size())
+            return false;
+
+		thisIt = iterator();
+		otherIt = other.iterator();
+        while(thisIt.hasNext()){
+            if(!thisIt.next().equals(otherIt.next()))
+                return false;
+        }
+
+		return true;
+	}
+}
+
+class VectorIterator<T> {
+	var current: Int;
+	var hasNext: Bool;
+
+	def VectorIterator(list: Vector<T>) = {
+	}
+
+	def hasNext(): Bool = {
+	}
+
+	def next(): T = {
+	}
+}
+
+class Option<T> {
+	var isDefined: Bool;
+	var t: 		   T;
+
+	def Option() = {
+		isDefined = false;
+	}
+
+	def Option(tArg: T) = {
+	    add(tArg);
+	}
+
+	def add(tArg: T): Unit = {
+		t = tArg;
+		isDefined = true;
+	}
+
+	def isDefined(): Bool = {
+		return isDefined;
+	}
+
+	def get(): T = {
+		return t;
+	}
+}
+
+class Sorter<Container, T> {
+	
+	def sort(c: Container): Unit = {
+		var i: Int;
+		var j: Int;
+		var N: Int;
+		var x: T;
+		N = c.size();
+        for(i = 1; i < N; i++){
+            x = c.get(i).get();
+        	j = i;
+        	while(j > 0 && c.get(j-1).get().compareTo(x) > 0){
+        		c.set(j, c.get(j-1).get());
+        		j = j - 1;
+        	}
+            c.set(j, x);
+        }
+	}
+}

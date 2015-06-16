@@ -35,11 +35,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   def run(ctx: Context)(prog: Program): Unit = {
 
-    def getIntOrReference[T](tp: Type, Iret: T, Aret: T) = tp match {
-      case TBool | TInt => Iret
-      case _            => Aret
-    }
-
     var varMap = new HashMap[String, Int]
 
     class StatementCompiler(ch: CodeHandler, cn: String) {
@@ -51,7 +46,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         if (varMap.contains(name)) {
           val id = varMap(name)
           put()
-          ch << getIntOrReference(tp, IStore(id), AStore(id))
+          tp.storeCode(ch, id)
         } else {
           ch << ArgLoad(0) // put this-reference on stack
           put()
@@ -64,7 +59,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       def load(name: String, tpe: Type): Unit =
         if (varMap.contains(name)) {
           val id = varMap(name)
-          ch << getIntOrReference(tpe, ILoad(id), ALoad(id))
+          tpe.loadCode(ch, id)
         } else {
           ch << ArgLoad(0)
           ch << GetField(cn, name, tpe.byteCodeName)
@@ -104,11 +99,18 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             post.foreach(compileStat)
             branch(condition, Label(bodyLabel), Label(afterLabel))
             ch << Label(afterLabel)
-          case Println(expr) =>
+          case p @ PrintStatement(expr) =>
             ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
             compileExpr(expr)
-            val arg = getIntOrReference(expr.getType, expr.getType.byteCodeName, "L" + OBJECT + ";")
-            ch << InvokeVirtual(PRINT_STREAM, "println", "(" + arg + ")V")
+            val arg = expr.getType match {
+              case TInt | TBool => expr.getType.byteCodeName
+              case _            => "L" + OBJECT + ";" // Call System.out.println(Object) for all other types
+            }
+            val funcName = p match {
+              case _: Print   => "print"
+              case _: Println => "println"
+            }
+            ch << InvokeVirtual(PRINT_STREAM, funcName, "(" + arg + ")V")
           case Assign(id, expr) =>
             store(id, () => compileExpr(expr))
           case a @ Assignment(id, expr) =>
@@ -133,11 +135,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             compileExpr(index)
             compileExpr(expr)
             val tpe = id.getType.asInstanceOf[TArray].tpe
-            ch << (tpe match {
-              case TInt  => IASTORE
-              case TBool => BASTORE
-              case _     => AASTORE
-            })
+            tpe.arrayStoreCode(ch)
           case mc @ MethodCall(obj, meth, args) =>
             compileExpr(obj)
             args.foreach(compileExpr)
@@ -150,7 +148,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << POP
           case Return(Some(expr)) =>
               compileExpr(expr)
-              ch << getIntOrReference(expr.getType, IRETURN, ARETURN)
+              expr.getType.returnCode(ch)
           case Return(None) =>
               ch << RETURN
           case PreDecrement(id @ Identifier(name)) =>
@@ -201,14 +199,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case c @ Comparison(lhs, rhs) =>
           compileExpr(lhs)
           compileExpr(rhs)
-          ch << (c match {
-            case _: LessThan          => If_ICmpLt(thn.id)
-            case _: LessThanEquals    => If_ICmpLe(thn.id)
-            case _: GreaterThan       => If_ICmpGt(thn.id)
-            case _: GreaterThanEquals => If_ICmpGe(thn.id)
-            case _: Equals            => getIntOrReference(lhs.getType, If_ICmpEq(thn.id), If_ACmpEq(thn.id))
-            case _: NotEquals         => getIntOrReference(lhs.getType, If_ICmpNe(thn.id), If_ACmpNe(thn.id))
-          })
+          c match {
+            case _: LessThan          => ch << If_ICmpLt(thn.id)
+            case _: LessThanEquals    => ch << If_ICmpLe(thn.id)
+            case _: GreaterThan       => ch << If_ICmpGt(thn.id)
+            case _: GreaterThanEquals => ch << If_ICmpGe(thn.id)
+            case _: Equals            => lhs.getType.cmpEqCode(ch, thn.id)
+            case _: NotEquals         => lhs.getType.cmpNeCode(ch, thn.id)
+          }
           ch << Goto(els.id)
         case mc@MethodCall(obj, meth, args) =>
           compileExpr(mc)
@@ -277,11 +275,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             compileExpr(arr)
             compileExpr(index)
             val tpe = arr.getType.asInstanceOf[TArray].tpe
-            ch << (tpe match {
-              case TInt  => IALOAD
-              case TBool => BALOAD
-              case _     => AALOAD
-            })
+            tpe.arrayLoadCode(ch)
           case ArrayLength(arr) =>
             compileExpr(arr)
             ch << ARRAYLENGTH
@@ -374,13 +368,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ct.methods.foreach { mt =>
         val methSymbol = mt.getSymbol
         val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
-
         val methodHandle = mt match {
           case mt:  MethodDecl      => classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
           case con: ConstructorDecl =>
             hasConstructor = true
             val mh = classFile.addConstructor(argTypes)
             addSuperCall(mh, ct)
+            mh.setFlags(mt.access match {
+              case Public    => Flags.FIELD_ACC_PUBLIC
+              case Private   => Flags.FIELD_ACC_PRIVATE
+              case Protected => Flags.FIELD_ACC_PROTECTED
+            })
             mh
         }
         generateMethodCode(methodHandle.codeHandler, mt)
@@ -415,16 +413,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
       mt.stats.foreach(statementCompiler.compileStat)
 
-      // Always add a return at the end of the function in case one is missing
-      mt match {
-        case mt: MethodDecl => mt.retType.getType match {
-          case TInt | TBool => ch << Ldc(0) << IRETURN
-          case TUnit        => ch << RETURN
-          case _            => ch << ACONST_NULL << ARETURN
-        }
-        case cons: ConstructorDecl => ch << RETURN
+      ch.peek match {
+        case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
+        case _ =>
+          // Add a return at the end of the function in case one is missing
+        mt match {
+            case mt: MethodDecl => mt.retType.getType match {
+              case TInt | TBool => ch << Ldc(0) << IRETURN
+              case TUnit        => ch << RETURN
+              case _            => ch << ACONST_NULL << ARETURN
+            }
+            case cons: ConstructorDecl => ch << RETURN
+          }
       }
-
       ch.freeze
     }
 

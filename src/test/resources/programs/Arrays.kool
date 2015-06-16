@@ -6,7 +6,7 @@ object Main {
 
 class H {
 
-  def run(): Unit = {
+  Def run(): Unit = {
      var i: Int;
      var int: Int[];
      var str: String[];
@@ -18,6 +18,11 @@ class H {
      bool = new Bool[5];
      a = new A[5];
 
+     println(int.length); // 5
+     println(str.length); // 5
+     println(bool.length); // 5
+     println(a.length); // 5
+
      for(i = 0; i < 5; i++){
         int[i]  = i;
         str[i]  = "" + i;
@@ -26,16 +31,21 @@ class H {
      }
 
      for(i = 0; i < 5; i++){
-        println(int[i]); // 0 1 2 3 4
+        print(int[i] + " "); // 0 1 2 3 4
      }
+     println("");
      for(i = 0; i < 5; i++){
-        println(str[i]); // 0 1 2 3 4
+        print(str[i] + " "); // 0 1 2 3 4
      }
+     println("");
      for(i = 0; i < 5; i++){
-        println(bool[i]); // true false true false true
+        print(bool[i]); // true false true false true
+        print(" ");
      }
+     println("");
      for(i = 0; i < 5; i++){
-        println(a[i]);    // 0 1 2 3 4
+        print(a[i]);    // 0 1 2 3 4
+        print(" ");
      }
   }
 
@@ -45,11 +55,11 @@ class A {
 
   var int: Int;
 
-  def A(i: Int) = {
+  Def A(i: Int) = {
     int = i;
   }
 
-  def toString(): String = {
+  Def toString(): String = {
     return "" + int;
   }
 

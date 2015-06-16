@@ -79,7 +79,8 @@ object Tokens {
   case object AS extends TokenKind // as
   case object OBJECT extends TokenKind // object
   case object CLASS extends TokenKind // class
-  case object DEF extends TokenKind // def
+  case object PUBDEF extends TokenKind // Def
+  case object PRIVDEF extends TokenKind // def
   case object VAR extends TokenKind // var
   case object UNIT extends TokenKind // unit
   case object MAIN extends TokenKind // main
@@ -97,6 +98,7 @@ object Tokens {
   case object FALSE extends TokenKind // false
   case object THIS extends TokenKind // this
   case object NEW extends TokenKind // new
+  case object PRINT extends TokenKind // println
   case object PRINTLN extends TokenKind // println
 
   // Identifiers

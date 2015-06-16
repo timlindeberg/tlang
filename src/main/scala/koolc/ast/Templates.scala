@@ -44,6 +44,9 @@ object Templates extends Pipeline[Program, Program] {
       val cloner = new Cloner
       cloner.registerConstant(Nil)
       cloner.registerConstant(None)
+      cloner.registerConstant(Private)
+      cloner.registerConstant(Public)
+      cloner.registerConstant(Protected)
 
       var generated: Set[String] = Set()
       var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()

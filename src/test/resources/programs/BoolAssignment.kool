@@ -6,7 +6,7 @@ object Main {
 
 class Test {
 
-    def test(): String = {
+    Def test(): String = {
         var b: Bool;
         b = true;
         println(b); // true
@@ -23,7 +23,7 @@ class Test {
         return "";
     }
 
-    def foo(): Bool = {
+    Def foo(): Bool = {
         println("Never called");
         return true;
     }

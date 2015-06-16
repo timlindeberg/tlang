@@ -6,7 +6,7 @@ object Main {
 
 class H {
 
-  def run(): String = {
+  Def run(): String = {
     var f: Foo;
     var t: Test;
     var a: A;
@@ -34,34 +34,34 @@ class H {
 }
 
 class Foo {
-  def bar(a: Int): Int = {
+  Def bar(a: Int): Int = {
     a = 5;
     return a;
   }
-  def baz(a: Int): Int = {
+  Def baz(a: Int): Int = {
     return a;
   }
 
-  def foo():String = { return "foo"; }
+  Def foo():String = { return "foo"; }
 }
 
-class Test { def Method () : String = { return "String" ; } }
+class Test { Def Method () : String = { return "String" ; } }
 class Test2 extends Test { }
 class Test3 extends Test2 { }
-class Test4 extends Test3 { def Method () : String = { return "Test4" ; } }
+class Test4 extends Test3 { Def Method () : String = { return "Test4" ; } }
 
 class A { 
-  def foo(a: Int, b: String):Int = { return 0; }
+  Def foo(a: Int, b: String):Int = { return 0; }
 }
 
 class B extends A {
-  def foo(a: Int, b: String): Int = { return 1; }
+  Def foo(a: Int, b: String): Int = { return 1; }
 }
 
 class C { 
-  def foo():Int = { return 0; }
+  Def foo():Int = { return 0; }
 }
 
 class D extends C {
-  def foo(): Int = { return 1; }
+  Def foo(): Int = { return 1; }
 }
