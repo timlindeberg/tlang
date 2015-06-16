@@ -99,7 +99,7 @@ object Printer {
       case True()                           => "true"
       case False()                          => "false"
       case id @ Identifier(value)           => value + symbol(id)
-      case id @ TypeIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "[" + commaList(list) + "]" else "")
+      case id @ TypeIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "<" + commaList(list) + ">" else "")
       case This()                           => "this"
       case NewArray(tpe, size)              => "new " + f(tpe) + "[" + f(size) + "]"
       case New(tpe, exprs)                  => "new " + f(tpe) + "(" + commaList(exprs) +")"

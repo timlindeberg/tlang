@@ -175,18 +175,15 @@ class Main {
 }
 
 class List<T> {
-	var first: Option<Node<T>>;
-	var last:  Option<Node<T>>;
+	var first: Option<Node<T>> = new Option<Node<T>>();
+	var last:  Option<Node<T>> = new Option<Node<T>>();
 
-	var size: Int; 
+	var size: Int = 0;
 
-	Def List() = {
-		Clear();
-	}
+	Def List() = {}
 
 	Def List(size: Int, value: T) = {
 		var i: Int = 0;
-		Clear();
         for(i = 0; i < size; i++)
         	Push(value);
 	}
@@ -551,7 +548,7 @@ class Sorter<Container, T> {
 		var j: Int;
 		var N: Int = c.Size();
 		var x: T;
-		
+
         for(i = 1; i < N; i++){
             x = c.Get(i).Get();
         	j = i;

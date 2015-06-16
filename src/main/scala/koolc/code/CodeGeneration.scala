@@ -39,7 +39,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     class StatementCompiler(val ch: CodeHandler, cn: String) {
 
-      def store(id: Identifier, put: () => Unit): Unit = {
+      def store(id: Identifier, put: () => Unit): CodeHandler = {
         val name = id.value
         val tp = id.getType
 
@@ -54,9 +54,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         }
       }
 
-      def load(id: Identifier): Unit = load(id.value, id.getType)
+      def load(id: Identifier): CodeHandler = load(id.value, id.getType)
 
-      def load(name: String, tpe: Type): Unit =
+      def load(name: String, tpe: Type): CodeHandler =
         if (varMap.contains(name)) {
           val id = varMap(name)
           tpe.loadCode(ch, id)
@@ -306,12 +306,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case This() => ch << ArgLoad(0)
           case ast.Trees.New(tpe, args) =>
             val obj = if (tpe.value == "Object") OBJECT else tpe.value
-            val argTypes = args.map(_.getType.byteCodeName).mkString
-            val signature = "(" + argTypes + ")V"
-
             ch << cafebabe.AbstractByteCodes.New(obj)
             ch << DUP
             args.foreach(compileExpr)
+
+            val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
             ch << InvokeSpecial(obj, CONSTRUCTOR_NAME, signature)
           case Negation(expr) =>
             compileExpr(expr)
@@ -330,10 +329,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << Ldc(1) << IADD << DUP
             })
           case PostDecrement(id) =>
-            store(id, () => {
-              load(id)
-              ch << DUP << Ldc(1) << ISUB
-            })
+            store(id, () => load(id) << DUP << Ldc(1) << ISUB)
           case PostIncrement(id) =>
             store(id, () => {
               load(id)
@@ -356,6 +352,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       }
     }
 
+    def findVariableDeclarationsInClass(tpe: TypeTree) = {
+      val sym = tpe.getType.asInstanceOf[TObject].classSymbol
+      prog.classes.find(sym == _.getSymbol).get.vars
+    }
+
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
     def generateClassFile(sourceName: String, ct: ClassDecl, dir: String): Unit = {
       val sym = ct.getSymbol
@@ -373,6 +374,18 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case con: ConstructorDecl =>
             hasConstructor = true
             val mh = classFile.addConstructor(argTypes)
+            val ch = mh.codeHandler
+
+            // Initialize fields after constructor
+            val sc = new StatementCompiler(ch, con.getSymbol.classSymbol.name)
+            ct.vars.foreach {
+              case VarDecl(varTpe, id, Some(expr)) =>
+                ch << ArgLoad(0) // put this-reference on stack
+                sc.compileExpr(expr)
+                ch << PutField(con.getSymbol.classSymbol.name, id.value, varTpe.getType.byteCodeName)
+              case _ =>
+            }
+
             addSuperCall(mh, ct)
             mh.setFlags(mt.access match {
               case Public    => Flags.FIELD_ACC_PUBLIC
@@ -417,7 +430,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
         case _ =>
           // Add a return at the end of the function in case one is missing
-        mt match {
+          mt match {
             case mt: MethodDecl =>
               val tpe = mt.retType.getType
               tpe.defaultConstantCode(ch)
@@ -431,7 +444,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     def initializeLocalVariables(mt: FuncTree, statementCompiler: StatementCompiler) = {
       val ch = statementCompiler.ch
 
-      // first initialize all variables to a default value
+      // First initialize all variables to a default value
       mt.vars foreach { case variable @ VarDecl(tpe, _, init) =>
         val t = tpe.getType
         val id = ch.getFreshVar
@@ -441,6 +454,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       }
 
       // Then initialize variables with their expressions if they have one
+      // This way variables can't be uninitialized if they're used to
+      // intialize other variables
       mt.vars foreach { variable =>
         val sym = variable.getSymbol
         Some(variable) collect { case VarDecl(_, _, Some(expr)) =>

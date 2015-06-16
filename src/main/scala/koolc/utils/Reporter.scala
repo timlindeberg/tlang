@@ -55,7 +55,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
       templateName(pre + templateName(mid) + post)
     } else if (name.contains('$')) {
       val s = name.split('$')
-      s.tail.mkString(s.head + "[", ", ", "]")
+      s.tail.mkString(s.head + "<", ", ", ">")
     } else {
       name
     }

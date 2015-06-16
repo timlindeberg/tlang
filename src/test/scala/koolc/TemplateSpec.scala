@@ -46,7 +46,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     } else {
       val program = exec.run(ctx)(file)
-      println(Printer(program))
+      //println(Printer(program))
       ctx.reporter.hasErrors should be(false)
       CodeGeneration.run(ctx)(program)
       val res = execute(program, file)
