@@ -39,17 +39,18 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val ctx = new Context(reporter = new koolc.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
+    println(Printer(program))
     TestUtils.HasTypes(program) should be(true)
     ctx.reporter.hasErrors should be(false)
 
     CodeGeneration.run(ctx)(program)
 
     val res = execute(program, file)
-    println("res:" + res)
     // Try and compare result with solution file
     try {
       val sol = readSolution(file + "-solution").toList
-      println("sol:" + sol)
+      println("res: \n" + res)
+      println("sol: \n" + sol.mkString("\n"))
       val r = TestUtils.lines(res)
       r.length should be(sol.length)
       r.zip(sol).foreach{ case (res, sol) => res.trim should be(sol.trim) }

@@ -1,0 +1,38 @@
+object Main {
+    def main() : Unit = {
+      new H().run();
+    }
+}
+
+class H {
+
+  Def run(): Unit = {
+    var b: B;
+    var a: A;
+    b = new B();
+    a = new A();
+
+    println(b.Test(0)); // 1
+    println(a.Test(0)); // 1
+  }
+
+}
+
+class A {
+
+  def protected test(i: Int): Int = {
+    return i + 1;
+  }
+
+  Def Test(i: Int): Int = {
+    return test(i);
+  }
+}
+
+class B extends A {
+
+  Def Test(i: Int): Int = {
+    return test(i);
+  }
+
+}

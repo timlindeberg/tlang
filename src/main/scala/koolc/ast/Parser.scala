@@ -88,7 +88,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <varDeclaration> ::= var <identifier> ":" <tpe> ";"
+     * <varDeclaration> ::= var <identifier> ":" <tpe> [ = <expression> ] ";"
      */
     private def varDeclaration(): VarDecl = {
       val pos = currentToken
@@ -96,8 +96,9 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val id = identifier
       eat(COLON)
       val typ = tpe
+      val init = optional(expression, EQSIGN)
       eat(SEMICOLON)
-      VarDecl(typ, id).setPos(pos)
+      VarDecl(typ, id, init).setPos(pos)
     }
 
     /**
@@ -112,20 +113,24 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <methodDeclaration> ::= (Def | def ) <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
-     *                       | (Def | def ) <identifier> "(" [ <formal> { "," <formal> } ] ") = {" { <varDeclaration> } { <statement> } "}"
+     * <methodDeclaration> ::= (Def | def [ protected ] ) <identifier> "(" [ <formal> { "," <formal> } ] ")"
+     *                           ( : " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
+     *                           | = {" { <varDeclaration> } { <statement> } "}" )
      */
     private def methodDeclaration(): FuncTree = {
       val pos = currentToken
       val access = currentToken.kind match {
         case PRIVDEF =>
           eat(PRIVDEF)
-          Private
+          if(currentToken.kind == PROTECTED) {
+            eat(PROTECTED)
+            Protected
+          }
+          else Private
         case PUBDEF  =>
           eat(PUBDEF)
           Public
-        case _       =>
-          expected(PRIVDEF, PUBDEF)
+        case _       => expected(PRIVDEF, PUBDEF)
       }
       val id = identifier
       eat(LPAREN)

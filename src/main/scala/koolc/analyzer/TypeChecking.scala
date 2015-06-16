@@ -217,8 +217,22 @@ object TypeChecking extends Pipeline[Program, Program] {
     val mainTypeChecker = new TypeChecker(mainMethod)
     prog.main.stats.foreach(mainTypeChecker.tcStat(_))
     prog.classes.foreach { classDecl =>
+      classDecl.vars.foreach{ varDecl =>
+        val method = new MethodSymbol("tmp", classDecl.getSymbol, Private).setType(TUnit)
+        val typeChecker = new TypeChecker(method)
+        varDecl match {
+          case VarDecl(tpe, id, Some(expr)) => typeChecker.tcExpr(expr, tpe.getType)
+          case _ =>
+        }
+      }
       classDecl.methods.foreach { method =>
         val typeChecker = new TypeChecker(method.getSymbol)
+        method.vars.foreach { varDecl =>
+          varDecl match {
+            case VarDecl(tpe, id, Some(expr)) => typeChecker.tcExpr(expr, tpe.getType)
+            case _ =>
+          }
+        }
         method.stats.foreach(typeChecker.tcStat(_))
       }
     }

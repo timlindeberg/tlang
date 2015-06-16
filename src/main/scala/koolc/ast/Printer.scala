@@ -37,7 +37,7 @@ object Printer {
       case Program(main, classes)                             => f(main) + all(classes)
       case MainObject(id, stats)                              => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
       case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[TypeIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id)                                   => "var " + f(id) + " : " + f(tpe) + ";" + n
+      case VarDecl(tpe, id, expr)                             => "var " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
       case MethodDecl(retType, id, args, vars, stats, access) => definition(access) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
       case ConstructorDecl(id, args, vars, stats, access)     => definition(access) + " " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id)                                    => f(id) + ": " + f(tpe)
@@ -52,6 +52,7 @@ object Printer {
       case If(expr, thn, els)               => "if(" + f(expr) + ")" + f(thn) + optional(els, "else " + f(_)) + n
       case While(expr, stat)                => "while(" + f(expr) + ") " + f(stat) + n
       case For(init, condition, post, stat) => "for(" + forAssign(init) + " ; " + f(condition) + " ; " + commaList(post) + ") " + f(stat) + n
+      case Print(expr)                      => "print(" + f(expr) + "); " + n
       case Println(expr)                    => "println(" + f(expr) + "); " + n
       case Assign(id, expr)                 => id.value + " = "   + f(expr) + "; " + n
       case PlusAssign(id, expr)             => id.value + " += "  + f(expr) + "; " + n
@@ -108,7 +109,7 @@ object Printer {
       case PostDecrement(id)                => f(id) + "--"
       case Ternary(condition, thn, els)     => f(condition) + " ? " + f(thn) + " : " + f(els)
     }
-    s
+    s + typeOf(t)
   }
 
   private def definition(a: Accessability) = a match {

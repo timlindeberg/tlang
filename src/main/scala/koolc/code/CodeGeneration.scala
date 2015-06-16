@@ -37,7 +37,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     var varMap = new HashMap[String, Int]
 
-    class StatementCompiler(ch: CodeHandler, cn: String) {
+    class StatementCompiler(val ch: CodeHandler, cn: String) {
 
       def store(id: Identifier, put: () => Unit): Unit = {
         val name = id.value
@@ -408,9 +408,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case (arg, i) => varMap(arg.getSymbol.name) = i + 1
       }
 
-      initializeLocalVariables(mt, ch)
-
       val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
+      initializeLocalVariables(mt, statementCompiler)
+
       mt.stats.foreach(statementCompiler.compileStat)
 
       ch.peek match {
@@ -418,23 +418,36 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case _ =>
           // Add a return at the end of the function in case one is missing
         mt match {
-            case mt: MethodDecl => mt.retType.getType match {
-              case TInt | TBool => ch << Ldc(0) << IRETURN
-              case TUnit        => ch << RETURN
-              case _            => ch << ACONST_NULL << ARETURN
-            }
+            case mt: MethodDecl =>
+              val tpe = mt.retType.getType
+              tpe.defaultConstantCode(ch)
+              tpe.returnCode(ch)
             case cons: ConstructorDecl => ch << RETURN
           }
       }
       ch.freeze
     }
 
-    def initializeLocalVariables(mt: FuncTree, ch: CodeHandler) = mt.vars foreach { variable =>
-      val id = ch.getFreshVar
-      varMap(variable.getSymbol.name) = id
-      variable.getSymbol.getType match {
-        case TInt | TBool => ch << Ldc(0) << IStore(id)
-        case _ => ch << ACONST_NULL << AStore(id)
+    def initializeLocalVariables(mt: FuncTree, statementCompiler: StatementCompiler) = {
+      val ch = statementCompiler.ch
+
+      // first initialize all variables to a default value
+      mt.vars foreach { case variable @ VarDecl(tpe, _, init) =>
+        val t = tpe.getType
+        val id = ch.getFreshVar
+        varMap(variable.getSymbol.name) = id
+        t.defaultConstantCode(ch)
+        t.storeCode(ch, id)
+      }
+
+      // Then initialize variables with their expressions if they have one
+      mt.vars foreach { variable =>
+        val sym = variable.getSymbol
+        Some(variable) collect { case VarDecl(_, _, Some(expr)) =>
+            statementCompiler.compileExpr(expr)
+            sym.getType.storeCode(ch, varMap(sym.name))
+        }
+
       }
     }
 

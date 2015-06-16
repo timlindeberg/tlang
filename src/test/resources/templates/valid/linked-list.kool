@@ -82,21 +82,14 @@ class ListPrinter<T, U> {
 
 class Main {
 	Def Run(): Unit = {
-		var p: 			  ListPrinter<Integer, KoolString>;
-		var intList: 	  List<Integer>;
-		var intList2: 	  List<Integer>;
-		var stringList:   List<KoolString>;
-		
-		var intSorter: 	  Sorter<List<Integer>, Integer>;
-		var stringSorter: Sorter<List<KoolString>, KoolString>;
+		var intList: 	  List<Integer> = new List<Integer>();
+		var intList2: 	  List<Integer> = new List<Integer>();
+		var stringList:   List<KoolString> = new List<KoolString>();
+		var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList);
+
+		var intSorter: 	  Sorter<List<Integer>, Integer> = new Sorter<List<Integer>, Integer>();
+		var stringSorter: Sorter<List<KoolString>, KoolString> = new Sorter<List<KoolString>, KoolString>();
 		var i: 			  Int;
-
-		intList = 	   new List<Integer>();
-		stringList =   new List<KoolString>();
-		intSorter =    new Sorter<List<Integer>, Integer>();
-		stringSorter = new Sorter<List<KoolString>, KoolString>();
-		p = 		   new ListPrinter<Integer, KoolString>(intList, stringList);
-
 
 		for(i = 0; i < 10; i++){
 		    intList.Add(new Integer(i));
@@ -192,7 +185,7 @@ class List<T> {
 	}
 
 	Def List(size: Int, value: T) = {
-		var i: Int;
+		var i: Int = 0;
 		Clear();
         for(i = 0; i < size; i++)
         	Push(value);
@@ -217,9 +210,8 @@ class List<T> {
 	}
 
 	Def Push(data: T): Unit = {
-		var node: Node<T>;
+		var node: Node<T> = new Node<T>(data);
 
-		node = new Node<T>(data);
 		if(!first.IsDefined()){
 			first.Add(node);
 			last = first;
@@ -232,9 +224,8 @@ class List<T> {
 	}
 
 	Def Pop(): Option<T> = {
-		var res: Option<T>;
+		var res: Option<T> = new Option<T>();
 
-		res = new Option<T>();
 		if(size <= 0)
 		    return res;
 
@@ -286,10 +277,9 @@ class List<T> {
         return AddAll(size, other);
     }
 
-	Def AddAll(index: Int, other: List<T>): Bool = {
-		var it: ListIterator<T>;
+	Def AddAll(index: Int, list: List<T>): Bool = {
+		var it: ListIterator<T> = list.Iterator();
 
-		it = other.Iterator();
 		while(it.HasNext()){
 			if(!Add(index, it.Next()))
 			    return false;
@@ -306,7 +296,7 @@ class List<T> {
         if(size <= 0)
             return false;
 
-		node = this.find(index);
+		node = find(index);
 		if(!node.IsDefined())
 		    return false;
 
@@ -333,11 +323,9 @@ class List<T> {
 	}
 
 	Def Get(index: Int): Option<T> = {
-		var node: 	Option<Node<T>>;
-		var res:	Option<T>;
+		var res:  Option<T>       = new Option<T>();
+		var node: Option<Node<T>> = find(index);
 
-		res = new Option<T>();
-		node = find(index);
 		if(node.IsDefined()){
 			res.Add(node.Get().Data());
 		}
@@ -345,9 +333,8 @@ class List<T> {
 	}
 
 	Def Set(index: Int, data: T): Bool = {
-		var node: 	Option<Node<T>>;
+		var node: Option<Node<T>> = find(index);
 
-		node = find(index);
 		if(node.IsDefined()){
 			node.Get().SetData(data);
 			return true;
@@ -357,9 +344,8 @@ class List<T> {
 
 	Def IndexOf(data: T): Int = {
 		var i: 	   Int;
-		var it:	   ListIterator<T>;
+		var it:	   ListIterator<T> = Iterator();
 
-		it = Iterator();
 		while(it.HasNext()){
 			if(it.Next().Equals(data))
 				return i;
@@ -369,12 +355,10 @@ class List<T> {
 	}
 
 	Def LastIndexOf(data: T): Int = {
-		var index: Int;
+		var index: Int = -1;
 		var i: 	   Int;
-		var it:	   ListIterator<T>;
+		var it:	   ListIterator<T> = Iterator();
 
-		index = -1;
-		it = Iterator();
 		while(it.HasNext()){
 			if(it.Next().Equals(data))
 				index = i;
@@ -438,10 +422,8 @@ class List<T> {
 		var tmp: 	Option<Node<T>>;
 		var i: 		Int;
 
-		tmp = new Option<Node<T>>();
-
 		if(index < 0 || index >= size)
-			return tmp;
+			return new Option<Node<T>>();
 		if(index == 0)
 			return first;
 		if(index == size - 1)
@@ -503,15 +485,11 @@ class Node<T> {
 	}
 
 	Def SetNext(n: Node<T>): Unit = {
-		var o: Option<Node<T>>;
-		o = new Option<Node<T>>(n);
-		next = o;
+		next = new Option<Node<T>>(n);
 	}
 
 	Def SetPrev(n: Node<T>): Unit = {
-		var o: Option<Node<T>>;
-		o = new Option<Node<T>>(n);
-		prev = o;
+		prev = new Option<Node<T>>(n);
 	}
 }
 
@@ -530,8 +508,8 @@ class ListIterator<T> {
 	}
 
 	Def Next(): T = {
-		var res: T;
-		res = current.Data();
+		var res: T = current.Data();
+
 		hasNext = current.Next().IsDefined();
 		if(hasNext){
 			current = current.Next().Get();
@@ -571,9 +549,9 @@ class Sorter<Container, T> {
 	Def sort(c: Container): Unit = {
 		var i: Int;
 		var j: Int;
-		var N: Int;
+		var N: Int = c.Size();
 		var x: T;
-		N = c.Size();
+		
         for(i = 1; i < N; i++){
             x = c.Get(i).Get();
         	j = i;

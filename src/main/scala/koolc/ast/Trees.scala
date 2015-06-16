@@ -15,7 +15,7 @@ object Trees {
   case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
   case class ClassDecl(var id: TypeIdentifier, var parent: Option[TypeIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends Tree with Symbolic[ClassSymbol]
-  case class VarDecl(var tpe: TypeTree, var id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  case class VarDecl(var tpe: TypeTree, var id: Identifier, init: Option[ExprTree]) extends Tree with Symbolic[VariableSymbol]
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic  [VariableSymbol]
 
   trait Accessability

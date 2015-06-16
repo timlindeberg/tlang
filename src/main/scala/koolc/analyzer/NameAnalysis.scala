@@ -130,7 +130,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
 
       private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
-        case varDecl@VarDecl(tpe, id) =>
+        case varDecl@VarDecl(tpe, id, init) =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           id.setSymbol(newSymbol)
@@ -160,7 +160,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
 
       private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
-        case varDecl@VarDecl(tpe, id) =>
+        case varDecl@VarDecl(tpe, id, init) =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           if (s.params.contains(id.value)) {
@@ -212,7 +212,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 error("Field \'" + variable.getSymbol.name + "\' already defined in super class: ", variable)
             })
           }
-          bind(vars)
+          vars.foreach{ case VarDecl(tpe, id, init) =>
+            setType(tpe, id)
+            init match {
+              case Some(expr) => bind(expr, classDecl.getSymbol)
+              case None =>
+            }
+          }
           bind(methods)
         case methDecl@MethodDecl(retType, id, args, vars, stats, access) =>
           setType(retType)
@@ -220,16 +226,27 @@ object NameAnalysis extends Pipeline[Program, Program] {
           methDecl.getSymbol.setType(retType.getType)
 
           bind(args)
-          bind(vars)
+          vars.foreach{ case VarDecl(tpe, id, init) =>
+            setType(tpe, id)
+            init match {
+                case Some(expr) => bind(expr, methDecl.getSymbol)
+                case None =>
+              }
+          }
           ensureMethodNotDefined(methDecl)
 
           stats.foreach(bind(_, methDecl.getSymbol))
         case constructorDecl@ConstructorDecl(id, args, vars, stats, access) =>
           bind(args)
-          bind(vars)
+          vars.foreach{ case VarDecl(tpe, id, init) =>
+            setType(tpe, id)
+            init match {
+              case Some(expr) => bind(expr, constructorDecl.getSymbol)
+              case None =>
+            }
+          }
           ensureMethodNotDefined(constructorDecl)
           stats.foreach(bind(_, constructorDecl.getSymbol))
-        case VarDecl(tpe, id) => setType(tpe, id)
         case Formal(tpe, id)  => setType(tpe, id)
         case _ => throw new UnsupportedOperationException
       }
@@ -329,7 +346,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
               case None => error(errorMsg(id.value), id)
             }
-          case _ => throw new UnsupportedOperationException
+          case classSymbol: ClassSymbol =>
+            classSymbol.lookupVar(id.value) match {
+            case Some(symbol) =>
+              id.setSymbol(symbol)
+              variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
+            case None => error(errorMsg(id.value), id)
+          }
         }
       }
 
