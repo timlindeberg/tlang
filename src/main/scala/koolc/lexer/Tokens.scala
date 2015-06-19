@@ -75,6 +75,8 @@ object Tokens {
   case object MINUS extends TokenKind // -
   case object TIMES extends TokenKind // *
   case object DIV extends TokenKind // /
+  case object PACKAGE extends TokenKind // package
+  case object IMPORT extends TokenKind // import
   case object INSTANCEOF extends TokenKind // inst
   case object AS extends TokenKind // as
   case object OBJECT extends TokenKind // object

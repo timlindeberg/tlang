@@ -142,7 +142,7 @@ object Types {
         }
       case _ => false
     }
-    override def getSuperTypes(): List[Type] =
+    override def getSuperTypes: List[Type] =
       List(this) ++ (classSymbol.parent match {
         case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
         case None => List()

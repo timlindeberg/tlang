@@ -4,6 +4,7 @@ package analyzer
 import koolc.ast.Trees
 import utils._
 import ast.Trees._
+import ast.Trees.ClassDecl
 import Symbols._
 import Types._
 
@@ -107,15 +108,17 @@ object NameAnalysis extends Pipeline[Program, Program] {
     object SymbolAdder {
       def apply(): Unit = addSymbols(prog, g)
 
-      private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-        case Program(main, classes) =>
+      private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t
+
+      match {
+        case Program(pack, imports, main, classes) =>
           addSymbols(main, globalScope)
           classes.foreach(addSymbols(_, globalScope))
         case mainObject@MainObject(id, stats) =>
           globalScope.mainClass = new ClassSymbol(id.value).setPos(id)
           mainObject.setSymbol(globalScope.mainClass)
           id.setSymbol(globalScope.mainClass)
-        case classDecl@ClassDecl(id@TypeIdentifier(name, types), parent, vars, methods) =>
+        case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
           val newSymbol = new ClassSymbol(name).setPos(id)
           ensureIdentiferNotDefined(globalScope.classes, id.value, id)
           id.setSymbol(newSymbol)
@@ -196,7 +199,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
-        case Program(main, classes) =>
+        case Program(pack, imports, main, classes) =>
           bind(main)
           bind(classes)
         case main@MainObject(id, stats) => stats.foreach(bind(_, main.getSymbol))
@@ -269,7 +272,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
             case _: Instance   =>
             case _             => setVariable(id, s)
           }
-          case id: TypeIdentifier  => setType(id)
+          case id: ClassIdentifier  => setType(id)
           case NewArray(tpe, size) => setType(tpe)
           case thisSym: This =>
             s match {
@@ -296,7 +299,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           tpe.setType(t)
         }
         tpe match {
-          case tpeId@TypeIdentifier(typeName, _) =>
+          case tpeId@ClassIdentifier(typeName, _) =>
             g.lookupClass(typeName) match {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
@@ -317,7 +320,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       private def setType(tpe: TypeTree): Unit = {
         tpe match {
-          case tpeId@TypeIdentifier(typeName, _) =>
+          case tpeId@ClassIdentifier(typeName, _) =>
             g.lookupClass(typeName) match {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
@@ -356,7 +359,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
 
-      private def setParent(id: TypeIdentifier, parent: Option[TypeIdentifier], classDecl: ClassDecl): Unit = {
+      private def setParent(id: ClassIdentifier, parent: Option[ClassIdentifier], classDecl: ClassDecl): Unit = {
         if (parent.isDefined) {
           val p = parent.get
           g.lookupClass(p.value) match {

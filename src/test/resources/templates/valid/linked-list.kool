@@ -1,91 +1,22 @@
+package kool.std;
+
+import java.util;
+import dasd.dasd.dasdjjvbxcjvkjxc.das;
+
 object Program {
   def main () : Unit = {
     new Main().Run();
   }
 }
 
-class Integer {
-	var i: Int;
-
-	Def Integer(iarg: Int) = {
-		i = iarg;
-	}
-
-	Def Set(iarg: Int): Unit = {
-		i = iarg;
-	}
-
-	Def Get(): Int = {
-		return i;
-	}
-
-	Def toString(): String = {
-		return "" + i;
-	}
-
-	Def CompareTo(other: Integer): Int = {
-		return i - other.Get();
-	}
-
-	Def Equals(other: Integer): Bool = {
-		return i == other.Get();
-	}
-}
-
-class KoolString {
-	var s: String;
-
-	Def KoolString(sarg: String) = {
-		s = sarg;
-	}
-
-	Def Set(sarg: String): Unit = {
-		s = sarg;
-	}
-
-	Def Get(): String = {
-		return s;
-	}
-
-	Def toString(): String = {
-		return s;
-	}
-
-	Def CompareTo(other: KoolString): Int = {
-		return 1;
-	}
-
-	Def Equals(other: KoolString): Bool = {
-		return s == other.Get();
-	}
-
-}
-
-class ListPrinter<T, U> {
-
-	var l1: List<T>;
-	var l2: List<U>;
-
-	Def ListPrinter(list1: List<T>, list2: List<U>) = {
-		l1 = list1;
-		l2 = list2;
-	}
-
-	Def PrintList(msg: String): Unit = {
-		println("----------------------------------------");
-		println("-- " + msg);
-		println("----------------------------------------");
-		println(l1);
-		println(l2);
-	}
-}
-
 class Main {
+
 	Def Run(): Unit = {
 		var intList: 	  List<Integer> = new List<Integer>();
 		var intList2: 	  List<Integer> = new List<Integer>();
 		var stringList:   List<KoolString> = new List<KoolString>();
 		var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList);
+		var r:		      ArrayList = new ArrayList();
 
 		var intSorter: 	  Sorter<List<Integer>, Integer> = new Sorter<List<Integer>, Integer>();
 		var stringSorter: Sorter<List<KoolString>, KoolString> = new Sorter<List<KoolString>, KoolString>();
@@ -538,6 +469,82 @@ class Option<T> {
 
 	Def Get(): T = {
 		return t;
+	}
+}
+
+class Integer {
+	var i: Int;
+
+	Def Integer(iarg: Int) = {
+		i = iarg;
+	}
+
+	Def Set(iarg: Int): Unit = {
+		i = iarg;
+	}
+
+	Def Get(): Int = {
+		return i;
+	}
+
+	Def toString(): String = {
+		return "" + i;
+	}
+
+	Def CompareTo(other: Integer): Int = {
+		return i - other.Get();
+	}
+
+	Def Equals(other: Integer): Bool = {
+		return i == other.Get();
+	}
+}
+
+class KoolString {
+	var s: String;
+
+	Def KoolString(sarg: String) = {
+		s = sarg;
+	}
+
+	Def Set(sarg: String): Unit = {
+		s = sarg;
+	}
+
+	Def Get(): String = {
+		return s;
+	}
+
+	Def toString(): String = {
+		return s;
+	}
+
+	Def CompareTo(other: KoolString): Int = {
+		return 1;
+	}
+
+	Def Equals(other: KoolString): Bool = {
+		return s == other.Get();
+	}
+
+}
+
+class ListPrinter<T, U> {
+
+	var l1: List<T>;
+	var l2: List<U>;
+
+	Def ListPrinter(list1: List<T>, list2: List<U>) = {
+		l1 = list1;
+		l2 = list2;
+	}
+
+	Def PrintList(msg: String): Unit = {
+		println("----------------------------------------");
+		println("-- " + msg);
+		println("----------------------------------------");
+		println(l1);
+		println(l2);
 	}
 }
 

@@ -11,20 +11,22 @@ object ASTPrinterWithSymbols {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(main, classes) => f(main) + "," + trees(classes)
-      case MainObject(id, stats) => f(id) + "," + trees(stats)
-      case ClassDecl(id, parent, vars, methods) => f(id) + "," + optional(parent) + "," + trees(vars) + "," + trees(methods)
-      case VarDecl(tpe, id) => f(tpe) + "," + f(id)
-      case MethodDecl(retType, id, args, vars, stats) => f(retType) + "," + f(id) + "," + trees(args) + "," + trees(vars) + "," + trees(stats)
+      case Program(pack, imports, main, classes) => f(pack) + "," + f(imports) + "," + f(main) + "," + f(classes)
+      case Package(identifiers) => f(identifiers)
+      case Import(identifiers) => f(identifiers)
+      case MainObject(id, stats) => f(id) + "," + f(stats)
+      case ClassDecl(id, parent, vars, methods) => f(id) + "," + f(parent) + "," + f(vars) + "," + f(methods)
+      case VarDecl(tpe, id, init) => f(tpe) + "," + f(id) + "," + init
+      case MethodDecl(retType, id, args, vars, stats, access) => f(retType) + "," + f(id) + "," + f(args) + "," + f(vars) + "," + f(stats) + "," + f(access)
       case Formal(tpe, id) => f(tpe) + "," + f(id)
-      case Block(stats) => trees(stats)
-      case If(expr, thn, els) => f(expr) + "," + f(thn) + "," + optional(els)
+      case Block(stats) => f(stats)
+      case If(expr, thn, els) => f(expr) + "," + f(thn) + "," + f(els)
       case While(expr, stat) => f(expr) + "," + f(stat)
-      case For(init, condition, post, stat) => trees(init) + "," + f(condition) + "," + trees(post) + "," + f(stat)
+      case For(init, condition, post, stat) => f(init) + "," + f(condition) + "," + f(post) + "," + f(stat)
       case Println(expr) => f(expr)
       case Assign(id, expr) => f(id) + "," + f(expr)
       case ArrayAssign(id, index, expr) => f(id) + "," + f(index) + "," + f(expr)
-      case Return(expr) => optional(expr)
+      case Return(expr) => f(expr)
       case And(lhs, rhs) => f(lhs) + "," + f(rhs)
       case Or(lhs, rhs) => f(lhs) + "," + f(rhs)
       case Plus(lhs, rhs) => f(lhs) + "," + f(rhs)
@@ -35,13 +37,13 @@ object ASTPrinterWithSymbols {
       case Equals(lhs, rhs) => f(lhs) + "," + f(rhs)
       case ArrayRead(arr, index) => f(arr) + "," + f(index)
       case ArrayLength(arr) => f(arr)
-      case MethodCall(obj, meth, args) => f(obj) + "," + f(meth) + "," + trees(args)
+      case MethodCall(obj, meth, args) => f(obj) + "," + f(meth) + "," + f(args)
       case IntLit(value) => value
       case StringLit(value) => value
       case Identifier(value) => value
-      case TypeIdentifier(value, templateTypes) => value + "," + trees(templateTypes)
+      case ClassIdentifier(value, templateTypes) => value + "," + f(templateTypes)
       case NewArray(tpe, size) => f(tpe) + "," + f(size)
-      case New(tpe, exprs) => f(tpe) + ", " + trees(exprs)
+      case New(tpe, exprs) => f(tpe) + ", " + f(exprs)
       case Not(expr) => f(expr)
       case _ => ""
     }
@@ -58,7 +60,7 @@ object ASTPrinterWithSymbols {
     case _                                 => ""
   }
 
-  private def optional(t: Option[Tree]) = t match { case Some(p) => "Some(" + f(p) + ")" case None => "None" }
-  private def trees(trees: List[Tree]) = "List(" + trees.map(f).mkString(",") + ")"
+  private def f(t: Option[Tree]): String = t match { case Some(p) => "Some(" + f(p) + ")" case None => "None" }
+  private def f(trees: List[Tree]): String = "List(" + trees.map(f).mkString(",") + ")"
 
 }

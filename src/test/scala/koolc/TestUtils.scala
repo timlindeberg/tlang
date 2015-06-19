@@ -71,7 +71,7 @@ object TestUtils {
           case x: IntLit         => x.getType == TInt
           case x: StringLit      => x.getType == TString
           case x: Identifier     => x.getType != TUntyped && x.getType != TError
-          case x: TypeIdentifier => x.getType != TUntyped && x.getType != TError
+          case x: ClassIdentifier => x.getType != TUntyped && x.getType != TError
           case x: IntType        => x.getType == TInt
           case x: ArrayType      => x.getType == TArray
           case x: BooleanType    => x.getType == TBool

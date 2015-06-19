@@ -10,8 +10,7 @@ import scala.collection.mutable.HashMap
 import koolc.analyzer.NameAnalysis
 import koolc.analyzer.TypeChecking
 import koolc.code.CodeGeneration
-import koolc.ast.Templates
-import koolc.ast.Trees._
+import koolc.modification.{Imports, Templates}
 import scala.sys.process._
 
 object Main {
@@ -45,9 +44,7 @@ object Main {
 
     processOption(args.toList)
 
-    if (files.size != 1) {
-      reporter.fatal("Exactly one file expected, " + files.size + " file(s) given.")
-    }
+    if (files.size != 1) reporter.fatal("Exactly one file expected, " + files.size + " file(s) given.")
 
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }
@@ -59,7 +56,7 @@ object Main {
         // Lex the program and print all tokens
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
       } else {
-        val parsing = Lexer andThen Parser andThen Templates
+        val parsing = Lexer andThen Parser andThen Templates andThen Imports
         val analysis = NameAnalysis andThen TypeChecking
         if (flags(astFlag)) {
           if (flags(symId)) {
@@ -77,7 +74,8 @@ object Main {
           CodeGeneration.run(ctx)(prog)
           if(flags(exec)){
             println(ctx.outDir match {
-              case Some(dir) => "java -cp " + ctx.outDir.get.getAbsolutePath +  " " + prog.main.id.value !!
+              case Some(dir) =>
+                "java -cp " + ctx.outDir.get.getAbsolutePath + " kool.std." + prog.main.id.value !!
               case None      => "java " + prog.main.id.value !!
             })
           }

@@ -40,6 +40,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       '^' -> LOGICXOR)
 
     private val keyWords = Map(
+      "package"   -> PACKAGE,
+      "import"    -> IMPORT,
       "object"    -> OBJECT,
       "class"     -> CLASS,
       "Def"       -> PUBDEF,
@@ -63,7 +65,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "true"      -> TRUE,
       "false"     -> FALSE,
       "this"      -> THIS,
-      "new"      -> NEW,
+      "new"       -> NEW,
       "print"     -> PRINT,
       "println"   -> PRINTLN)
 

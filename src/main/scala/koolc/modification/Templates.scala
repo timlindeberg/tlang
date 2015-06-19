@@ -1,5 +1,7 @@
-package koolc.ast
+package koolc
+package modification
 
+import koolc.ast.Trees
 import koolc.utils.Pipeline
 import koolc.utils.Context
 import koolc.ast.Trees._
@@ -17,8 +19,8 @@ object Templates extends Pipeline[Program, Program] {
      * error types to return in case of errors. */
 
     val ERROR_MAP = Map[TypeTree, TypeTree]()
-    val ERROR_TYPE = new TypeIdentifier("ERROR")
-    val ERROR_CLASS = new ClassDecl(ERROR_TYPE, None, List(), List())
+    val ERROR_TYPE = new ClassIdentifier("ERROR")
+    val ERROR_CLASS = new InternalClassDecl(ERROR_TYPE, None, List(), List())
 
     def ERROR_WRONG_NUM_GENERICS(expected: Int, found: Int, pos: Positioned) = {
       error("Wrong number of generic parameters, expected " + expected + " but found " + found, pos)
@@ -54,7 +56,7 @@ object Templates extends Pipeline[Program, Program] {
       def generate(prog: Program): List[ClassDecl] = {
 
         def generateIfTemplated(tpe: TypeTree): Unit = Some(tpe) collect {
-          case x: TypeIdentifier if x.isTemplated =>
+          case x: ClassIdentifier if x.isTemplated =>
             x.templateTypes.foreach(generateIfTemplated)
             generateClass(x)
         }
@@ -71,11 +73,12 @@ object Templates extends Pipeline[Program, Program] {
         generatedClasses.toList
       }
 
-      private def generateClass(typeId: TypeIdentifier): Unit = {
+      private def generateClass(typeId: ClassIdentifier): Unit = {
         if (generated(typeId.templatedClassName))
           return
 
         generated += typeId.templatedClassName
+
         templateClasses.find(_.id.value == typeId.value) match {
           case Some(template) => generatedClasses += newTemplateClass(template, typeId.templateTypes)
           case None           => ERROR_DOES_NOT_EXIST(typeId.value, typeId)
@@ -88,7 +91,7 @@ object Templates extends Pipeline[Program, Program] {
         /* Helper functions to perform transformation */
         def updateType(t: TypeTree): TypeTree = {
           Some(t) collect {
-            case t @ TypeIdentifier(_, templateTypes) if t.isTemplated =>
+            case t @ ClassIdentifier(_, templateTypes) if t.isTemplated =>
               t.templateTypes = templateTypes.map(updateType)
               generateClass(t)
           }
@@ -96,11 +99,11 @@ object Templates extends Pipeline[Program, Program] {
         }
 
         def updateTypeOfNewExpr(newExpr: New) = updateType(newExpr.tpe) match {
-          case t: TypeIdentifier => t
+          case t: ClassIdentifier => t
           case t                 => ERROR_NEW_PRIMITIVE(t.name, newExpr.tpe)
         }
 
-        def templateName(id: TypeIdentifier) =
+        def templateName(id: ClassIdentifier) =
           id.copy(value = template.id.templatedClassName(templateTypes), templateTypes = List())
 
         val newClass = cloner.deepClone(template)
@@ -141,12 +144,12 @@ object Templates extends Pipeline[Program, Program] {
 
     def replaceTypes(prog: Program): Program = {
       def replaceType(tpe: TypeTree) = tpe match {
-        case x: TypeIdentifier => replaceTypeId(x)
+        case x: ClassIdentifier => replaceTypeId(x)
         case x                 => x
       }
 
-      def replaceTypeId(tpe: TypeIdentifier) =
-        if (tpe.isTemplated) new TypeIdentifier(tpe.templatedClassName).setPos(tpe)
+      def replaceTypeId(tpe: ClassIdentifier) =
+        if (tpe.isTemplated) new ClassIdentifier(tpe.templatedClassName).setPos(tpe)
         else tpe
 
       Trees.traverse(prog, (_,curr) => Some(curr) collect {

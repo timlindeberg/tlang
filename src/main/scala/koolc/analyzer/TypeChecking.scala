@@ -156,7 +156,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           case True()                 => TBool
           case False()                => TBool
           case id @ Identifier(value) => id.getType
-          case id @ TypeIdentifier(value, _) => id.getType
+          case id @ ClassIdentifier(value, _) => id.getType
           case th @ This()            => th.getSymbol.getType
           case NewArray(tpe, size) =>
             tcExpr(size, TInt)

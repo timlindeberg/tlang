@@ -9,6 +9,7 @@ import cafebabe.ByteCodes._
 import utils._
 import scala.collection.mutable.HashMap
 import cafebabe.AbstractByteCodes._
+import java.io.File
 
 object CodeGeneration extends Pipeline[Program, Unit] {
 
@@ -302,10 +303,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case IntLit(value) => ch << Ldc(value)
           case StringLit(value) => ch << Ldc(value)
           case id@Identifier(value) => load(id)
-          case id@TypeIdentifier(value, _) => load(id.value, id.getType)
+          case id@ClassIdentifier(value, _) => load(id.value, id.getType)
           case This() => ch << ArgLoad(0)
           case ast.Trees.New(tpe, args) =>
             val obj = if (tpe.value == "Object") OBJECT else tpe.value
+            println(obj)
             ch << cafebabe.AbstractByteCodes.New(obj)
             ch << DUP
             args.foreach(compileExpr)
@@ -352,11 +354,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       }
     }
 
-    def findVariableDeclarationsInClass(tpe: TypeTree) = {
-      val sym = tpe.getType.asInstanceOf[TObject].classSymbol
-      prog.classes.find(sym == _.getSymbol).get.vars
-    }
-
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
     def generateClassFile(sourceName: String, ct: ClassDecl, dir: String): Unit = {
       val sym = ct.getSymbol
@@ -368,39 +365,57 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       ct.methods.foreach { mt =>
         val methSymbol = mt.getSymbol
-        val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
+
         val methodHandle = mt match {
-          case mt:  MethodDecl      => classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
+          case mt:  MethodDecl      =>
+            val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
+            classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
           case con: ConstructorDecl =>
             hasConstructor = true
-            val mh = classFile.addConstructor(argTypes)
-            val ch = mh.codeHandler
-
-            // Initialize fields after constructor
-            val sc = new StatementCompiler(ch, con.getSymbol.classSymbol.name)
-            ct.vars.foreach {
-              case VarDecl(varTpe, id, Some(expr)) =>
-                ch << ArgLoad(0) // put this-reference on stack
-                sc.compileExpr(expr)
-                ch << PutField(con.getSymbol.classSymbol.name, id.value, varTpe.getType.byteCodeName)
-              case _ =>
-            }
-
-            addSuperCall(mh, ct)
-            mh.setFlags(mt.access match {
-              case Public    => Flags.FIELD_ACC_PUBLIC
-              case Private   => Flags.FIELD_ACC_PRIVATE
-              case Protected => Flags.FIELD_ACC_PROTECTED
-            })
-            mh
+            generateConstructor(con, classFile, ct)
         }
+        methodHandle.setFlags(mt.access match {
+          case Public    => Flags.FIELD_ACC_PUBLIC
+          case Private   => Flags.FIELD_ACC_PRIVATE
+          case Protected => Flags.FIELD_ACC_PROTECTED
+        })
         generateMethodCode(methodHandle.codeHandler, mt)
       }
 
       if(!hasConstructor)
         classFile.addDefaultConstructor
 
-      classFile.writeToFile(if (dir.length == 0) "./" else dir + sym.name + ".class")
+      val file = getFilePath(dir, sym)
+      println("file: " + file)
+      classFile.writeToFile(file)
+    }
+
+    def getFilePath(outDir: String, sym: ClassSymbol): String = {
+      val fileName = sym.name + ".class"
+      val filePath = outDir
+      val f = new File(filePath)
+      if (!f.exists())
+        f.mkdirs()
+      filePath + "/" + fileName
+    }
+
+    def generateConstructor(con: ConstructorDecl, classFile: ClassFile, ct: ClassDecl):  MethodHandler = {
+      val argTypes = con.getSymbol.argList.map(_.getType.byteCodeName).mkString
+      val mh = classFile.addConstructor(argTypes)
+      val ch = mh.codeHandler
+
+      // Initialize fields after constructor
+      val sc = new StatementCompiler(ch, con.getSymbol.classSymbol.name)
+      ct.vars.foreach {
+        case VarDecl(varTpe, id, Some(expr)) =>
+          ch << ArgLoad(0) // put this-reference on stack
+          sc.compileExpr(expr)
+          ch << PutField(con.getSymbol.classSymbol.name, id.value, varTpe.getType.byteCodeName)
+        case _ =>
+      }
+
+      addSuperCall(mh, ct)
+      mh
     }
 
     def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
@@ -467,11 +482,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     def generateMainClassFile(sourceName: String, main: MainObject, dir: String) = {
+      println("main: " + prog.getPackageDirectory + prog.main.id.value)
       val mainClassFile = new ClassFile(prog.main.id.value, None)
       mainClassFile.setSourceFile(sourceName)
-      mainClassFile.addDefaultConstructor
       generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
-      mainClassFile.writeToFile(dir + prog.main.id.value + ".class")
+      mainClassFile.addDefaultConstructor
+      mainClassFile.writeToFile(getFilePath(dir, main.getSymbol))
     }
 
     def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
@@ -481,16 +497,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ch.freeze
     }
 
-    val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("./")
+    val outDir = ctx.outDir.map(_.getPath).getOrElse(".")
 
-    val f = new java.io.File(outDir)
+    val f = new File(outDir)
     if (!f.exists()) f.mkdirs()
 
     val sourceName = ctx.file.getName
 
     // output code
-    prog.classes.foreach(generateClassFile(sourceName, _, outDir))
     generateMainClassFile(sourceName, prog.main, outDir)
+    prog.classes.foreach(generateClassFile(sourceName, _, outDir))
   }
 
 }
