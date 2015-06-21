@@ -56,10 +56,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     def parseGoal() = {
       val pos = currentToken
       val pack = optional(packageDecl, PACKAGE)
-      val imports = untilNot(importDecl, IMPORT)
+      val (regImports, wcImports) = imports
       val main = mainObject
       val classes = until(classDeclaration, EOF)
-      Program(pack, imports, main, classes).setPos(pos)
+      Program(pack, regImports, wcImports, main, classes).setPos(pos)
     }
 
     /**
@@ -72,15 +72,36 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Package(identifiers).setPos(pos)
     }
 
+    def imports() = {
+      val regImports = new ArrayBuffer[Import]()
+      var wcImports = new ArrayBuffer[Import]()
+      while(currentToken.kind == IMPORT){
+       val (imp, isWildcard) = importDecl
+        if(isWildcard) wcImports += imp
+        else          regImports += imp
+      }
+      (regImports.toList, wcImports.toList)
+    }
+
     /**
      * <importDecl> ::= import <identifier> { . ( <identifier> | * ) }
      */
-    def importDecl() = {
+    def importDecl(): (Import, Boolean) = {
       val pos = currentToken
       eat(IMPORT)
-      val identifiers = nonEmptyList(identifier, DOT)
+      val ids = new ArrayBuffer[Identifier]()
+      ids += identifier()
+      while (currentToken.kind == DOT) {
+        eat(DOT)
+        currentToken.kind match {
+          case TIMES =>
+            eat(TIMES, SEMICOLON)
+            return (Import(ids.toList).setPos(pos), true)
+          case _     => ids += identifier
+        }
+      }
       eat(SEMICOLON)
-      Import(identifiers).setPos(pos)
+      (Import(ids.toList).setPos(pos), false)
     }
 
     /**

@@ -1,8 +1,5 @@
 package kool.std;
 
-import java.util;
-import dasd.dasd.dasdjjvbxcjvkjxc.das;
-
 object Program {
   def main () : Unit = {
     new Main().Run();
@@ -16,12 +13,20 @@ class Main {
 		var intList2: 	  List<Integer> = new List<Integer>();
 		var stringList:   List<KoolString> = new List<KoolString>();
 		var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList);
-		var r:		      ArrayList = new ArrayList();
+		var r:		      java.util.Random = new java.util.Random();
 
 		var intSorter: 	  Sorter<List<Integer>, Integer> = new Sorter<List<Integer>, Integer>();
 		var stringSorter: Sorter<List<KoolString>, KoolString> = new Sorter<List<KoolString>, KoolString>();
 		var i: 			  Int;
 
+		for(i = 0; i < 1000; i++){
+        	intList.Add(new Integer(r.nextInt(10000)));
+        }
+
+		intSorter.sort(intList);
+
+		p.PrintList("Random");
+		intList.Clear();
 		for(i = 0; i < 10; i++){
 		    intList.Add(new Integer(i));
         	stringList.Add(0, new KoolString("s" + i + "s"));

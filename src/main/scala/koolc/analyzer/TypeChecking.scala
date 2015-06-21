@@ -41,7 +41,7 @@ object TypeChecking extends Pipeline[Program, Program] {
 
       def checkPrivacy(classSymbol: ClassSymbol, methodSymbol: MethodSymbol): Unit = methodSymbol.access match {
         case Public =>
-        case Private if classSymbol == globalMethodSymbol.classSymbol =>
+        case Private   if classSymbol == globalMethodSymbol.classSymbol =>
         case Protected if classSymbol == globalMethodSymbol.classSymbol =>
         case Protected if globalMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) =>
         case Private =>

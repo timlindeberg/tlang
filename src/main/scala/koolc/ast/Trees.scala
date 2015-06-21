@@ -12,7 +12,7 @@ object Trees {
   trait Tree extends Positioned with Product
 
 
-  case class Program(progPackage: Option[Package], imports: List[Import], main: MainObject, var classes: List[ClassDecl]) extends Tree{
+  case class Program(progPackage: Option[Package], imports: List[Import], wcImports: List[Import], main: MainObject, var classes: List[ClassDecl]) extends Tree{
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
   }
 

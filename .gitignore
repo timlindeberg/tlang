@@ -6,7 +6,6 @@
 # sbt specific
 .cache
 .history
-.lib/
 dist/*
 target/
 lib_managed/

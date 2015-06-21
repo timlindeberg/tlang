@@ -17,25 +17,54 @@ object Imports extends Pipeline[Program, Program] {
 
     var addedExternalClasses = Map[String, String]()
     var addedClasses = Set[String]()
+    var usedImports = Set[Import]()
 
     object Importer {
 
       def addClass(className: String): Unit = {
-        (Import(List()) :: prog.imports).takeWhile { imp =>
-          try{
-            val importName = imp.identifiers.map(_.value).mkString("/") + "/"
-            println("Trying " + importName + className)
-            addClass(findClass(Repository.lookupClass(importName + className)))
-            addedExternalClasses += (className -> (importName + className))
-            false
-          } catch {
-            case _: ClassNotFoundException =>
-              true
+
+        val fullName = className.replaceAll("\\.", "/")
+        if(addImport(fullName)){
+          addedExternalClasses += className -> fullName
+          return
+        }
+
+        for(imp <- prog.imports){
+          if(imp.identifiers.last.value == className){
+            val fullName = imp.identifiers.map(_.value).mkString("/")
+            if(addImport(fullName)){
+              addedExternalClasses += className -> fullName
+              usedImports += imp
+              return
+            }
+          }
+        }
+
+        for(imp <- prog.wcImports){
+          val fullName = imp.identifiers.map(_.value).mkString("/") + "/" + className
+          if(addImport(fullName)){
+            addedExternalClasses += className -> fullName
+            usedImports += imp
+            return
           }
         }
       }
 
-      def addClass(cl: ClassDecl) = prog.classes = cl::prog.classes
+      def addImport(className: String) = {
+        getClass(className) match {
+          case Some(clazz) =>
+            prog.classes = findClass(clazz)::prog.classes
+            true
+          case None => false
+        }
+      }
+
+      def getClass(name: String): Option[JavaClass] =
+        try {
+          Some(Repository.lookupClass(name))
+        } catch {
+          case _: ClassNotFoundException => None
+        }
 
       def findClass(clazz: JavaClass): ClassDecl = {
         val name = clazz.getClassName
@@ -48,8 +77,9 @@ object Imports extends Pipeline[Program, Program] {
 
       def convertParent(parent: JavaClass) = parent match {
         case null   => None
+        case parent if parent.getClassName == "java.lang.Object" => None
         case parent =>
-          addClass(findClass(parent))
+          prog.classes = findClass(parent)::prog.classes
           Some(ClassIdentifier(convertName(parent.getClassName), List()))
       }
 
@@ -93,8 +123,6 @@ object Imports extends Pipeline[Program, Program] {
       }
     }
 
-
-
     def createClassSet(program: Program): Set[String] = program.classes.map(_.id.value).toSet
     val originalClasses = createClassSet(prog)
 
@@ -115,8 +143,6 @@ object Imports extends Pipeline[Program, Program] {
                 addedClasses += packString + name
                 c.value = packString + name
               }else if (!addedExternalClasses.contains(name) && !addedClasses(name)){
-                println(addedClasses)
-                println("Adding " + name)
                 Importer.addClass(name)
               }
               if(addedExternalClasses.contains(name)){
@@ -129,8 +155,17 @@ object Imports extends Pipeline[Program, Program] {
       prog
     }
 
+    def checkUnusedImports() = {
+      prog.imports.foreach(imp => {
+        if(!usedImports.contains(imp)){
+          val importName = imp.identifiers.map(_.value).mkString("/")
+          warning("Unused import \'" + importName + "\'.", imp)
+        }
+      })
+    }
 
     replaceNames(prog)
+    checkUnusedImports()
     println(Printer(prog))
     prog
   }

@@ -100,34 +100,34 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             post.foreach(compileStat)
             branch(condition, Label(bodyLabel), Label(afterLabel))
             ch << Label(afterLabel)
-          case p @ PrintStatement(expr) =>
+          case p@PrintStatement(expr) =>
             ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
             compileExpr(expr)
             val arg = expr.getType match {
               case TInt | TBool => expr.getType.byteCodeName
-              case _            => "L" + OBJECT + ";" // Call System.out.println(Object) for all other types
+              case _ => "L" + OBJECT + ";" // Call System.out.println(Object) for all other types
             }
             val funcName = p match {
-              case _: Print   => "print"
+              case _: Print => "print"
               case _: Println => "println"
             }
             ch << InvokeVirtual(PRINT_STREAM, funcName, "(" + arg + ")V")
           case Assign(id, expr) =>
             store(id, () => compileExpr(expr))
-          case a @ Assignment(id, expr) =>
+          case a@Assignment(id, expr) =>
             store(id, () => {
               load(id)
               compileExpr(expr)
               ch << (a match {
-                case _: PlusAssign       => IADD
-                case _: MinusAssign      => ISUB
-                case _: MulAssign        => IMUL
-                case _: DivAssign        => IDIV
-                case _: ModAssign        => IREM
-                case _: AndAssign        => IAND
-                case _: OrAssign         => IOR
-                case _: XorAssign        => IXOR
-                case _: LeftShiftAssign  => ISHL
+                case _: PlusAssign => IADD
+                case _: MinusAssign => ISUB
+                case _: MulAssign => IMUL
+                case _: DivAssign => IDIV
+                case _: ModAssign => IREM
+                case _: AndAssign => IAND
+                case _: OrAssign => IOR
+                case _: XorAssign => IXOR
+                case _: LeftShiftAssign => ISHL
                 case _: RightShiftAssign => ISHR
               })
             })
@@ -137,7 +137,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             compileExpr(expr)
             val tpe = id.getType.asInstanceOf[TArray].tpe
             tpe.arrayStoreCode(ch)
-          case mc @ MethodCall(obj, meth, args) =>
+          case mc@MethodCall(obj, meth, args) =>
             compileExpr(obj)
             args.foreach(compileExpr)
             val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
@@ -145,14 +145,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
             val name = obj.getType.asInstanceOf[TObject].classSymbol.name
             ch << InvokeVirtual(name, meth.value, signature)
-            if(mc.getType != TUnit)
+            if (mc.getType != TUnit)
               ch << POP
           case Return(Some(expr)) =>
-              compileExpr(expr)
-              expr.getType.returnCode(ch)
+            compileExpr(expr)
+            expr.getType.returnCode(ch)
           case Return(None) =>
-              ch << RETURN
-          case PreDecrement(id @ Identifier(name)) =>
+            ch << RETURN
+          case PreDecrement(id@Identifier(name)) =>
             load(id)
             store(id, () => {
               load(id)
@@ -162,7 +162,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             store(id, () => {
               load(id)
               ch << Ldc(1) << IADD
-            } )
+            })
           case PostDecrement(id) =>
             store(id, () => {
               load(id)
@@ -197,16 +197,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           compileExpr(expr)
           ch << Ldc(1)
           ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
-        case c @ Comparison(lhs, rhs) =>
+        case c@Comparison(lhs, rhs) =>
           compileExpr(lhs)
           compileExpr(rhs)
           c match {
-            case _: LessThan          => ch << If_ICmpLt(thn.id)
-            case _: LessThanEquals    => ch << If_ICmpLe(thn.id)
-            case _: GreaterThan       => ch << If_ICmpGt(thn.id)
+            case _: LessThan => ch << If_ICmpLt(thn.id)
+            case _: LessThanEquals => ch << If_ICmpLe(thn.id)
+            case _: GreaterThan => ch << If_ICmpGt(thn.id)
             case _: GreaterThanEquals => ch << If_ICmpGe(thn.id)
-            case _: Equals            => lhs.getType.cmpEqCode(ch, thn.id)
-            case _: NotEquals         => lhs.getType.cmpNeCode(ch, thn.id)
+            case _: Equals => lhs.getType.cmpEqCode(ch, thn.id)
+            case _: NotEquals => lhs.getType.cmpNeCode(ch, thn.id)
           }
           ch << Goto(els.id)
         case mc@MethodCall(obj, meth, args) =>
@@ -218,15 +218,15 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       def compileExpr(expr: ExprTree): Unit = {
         ch << LineNumber(expr.line)
         expr match {
-          case _:And |
-               _:Or |
-               _:Equals |
-               _:NotEquals |
-               _:LessThan |
-               _:LessThanEquals |
-               _:GreaterThan |
-               _:GreaterThanEquals |
-               _:Not  =>
+          case _: And |
+               _: Or |
+               _: Equals |
+               _: NotEquals |
+               _: LessThan |
+               _: LessThanEquals |
+               _: GreaterThan |
+               _: GreaterThanEquals |
+               _: Not =>
             val thn = ch.getFreshLabel(THEN)
             val els = ch.getFreshLabel(ELSE)
             val after = ch.getFreshLabel(AFTER)
@@ -258,19 +258,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << InvokeVirtual(STRING_BUILDER, "toString", "()L" + STRING + ";")
             case _ => throw new UnsupportedOperationException(expr.toString)
           }
-          case e @ MathBinaryExpr(lhs, rhs) =>
+          case e@MathBinaryExpr(lhs, rhs) =>
             compileExpr(lhs)
             compileExpr(rhs)
             ch << (e match {
-              case _: Minus      => ISUB
-              case _: LogicAnd   => IAND
-              case _: LogicOr    => IOR
-              case _: LogicXor   => IXOR
-              case _: LeftShift  => ISHL
+              case _: Minus => ISUB
+              case _: LogicAnd => IAND
+              case _: LogicOr => IOR
+              case _: LogicXor => IXOR
+              case _: LeftShift => ISHL
               case _: RightShift => ISHR
-              case _: Times      => IMUL
-              case _: Div        => IDIV
-              case _: Modulo     => IREM
+              case _: Times => IMUL
+              case _: Div => IDIV
+              case _: Modulo => IREM
             })
           case ArrayRead(arr, index) =>
             compileExpr(arr)
@@ -292,11 +292,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             compileExpr(size)
             ch << (tpe.getType match {
               case TObject(classSymbol) => cafebabe.AbstractByteCodes.NewArray(classSymbol.name)
-              case TString              => cafebabe.AbstractByteCodes.NewArray(STRING)
-              case TInt                 => cafebabe.AbstractByteCodes.NewArray(T_INT)
-              case TBool                => cafebabe.AbstractByteCodes.NewArray(T_BOOL)
-              case TArray(arrayTpe)     => ???
-              case _                    => ???
+              case TString => cafebabe.AbstractByteCodes.NewArray(STRING)
+              case TInt => cafebabe.AbstractByteCodes.NewArray(T_INT)
+              case TBool => cafebabe.AbstractByteCodes.NewArray(T_BOOL)
+              case TArray(arrayTpe) => ???
+              case _ => ???
             })
           case True() => ch << Ldc(1)
           case False() => ch << Ldc(0)
@@ -307,7 +307,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case This() => ch << ArgLoad(0)
           case ast.Trees.New(tpe, args) =>
             val obj = if (tpe.value == "Object") OBJECT else tpe.value
-            println(obj)
             ch << cafebabe.AbstractByteCodes.New(obj)
             ch << DUP
             args.foreach(compileExpr)
@@ -367,7 +366,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         val methSymbol = mt.getSymbol
 
         val methodHandle = mt match {
-          case mt:  MethodDecl      =>
+          case mt: MethodDecl =>
             val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
             classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
           case con: ConstructorDecl =>
@@ -375,18 +374,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             generateConstructor(con, classFile, ct)
         }
         methodHandle.setFlags(mt.access match {
-          case Public    => Flags.FIELD_ACC_PUBLIC
-          case Private   => Flags.FIELD_ACC_PRIVATE
+          case Public => Flags.FIELD_ACC_PUBLIC
+          case Private => Flags.FIELD_ACC_PRIVATE
           case Protected => Flags.FIELD_ACC_PROTECTED
         })
         generateMethodCode(methodHandle.codeHandler, mt)
       }
 
-      if(!hasConstructor)
+      if (!hasConstructor)
         classFile.addDefaultConstructor
 
       val file = getFilePath(dir, sym)
-      println("file: " + file)
       classFile.writeToFile(file)
     }
 
@@ -399,7 +397,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       filePath + "/" + fileName
     }
 
-    def generateConstructor(con: ConstructorDecl, classFile: ClassFile, ct: ClassDecl):  MethodHandler = {
+    def generateConstructor(con: ConstructorDecl, classFile: ClassFile, ct: ClassDecl): MethodHandler = {
       val argTypes = con.getSymbol.argList.map(_.getType.byteCodeName).mkString
       val mh = classFile.addConstructor(argTypes)
       val ch = mh.codeHandler
@@ -421,7 +419,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
       val superClassName = ct.parent match {
         case Some(name) => name.value
-        case None       => OBJECT
+        case None => OBJECT
       }
 
       mh.codeHandler << ALOAD_0
@@ -460,7 +458,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val ch = statementCompiler.ch
 
       // First initialize all variables to a default value
-      mt.vars foreach { case variable @ VarDecl(tpe, _, init) =>
+      mt.vars foreach { case variable@VarDecl(tpe, _, init) =>
         val t = tpe.getType
         val id = ch.getFreshVar
         varMap(variable.getSymbol.name) = id
@@ -474,15 +472,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mt.vars foreach { variable =>
         val sym = variable.getSymbol
         Some(variable) collect { case VarDecl(_, _, Some(expr)) =>
-            statementCompiler.compileExpr(expr)
-            sym.getType.storeCode(ch, varMap(sym.name))
+          statementCompiler.compileExpr(expr)
+          sym.getType.storeCode(ch, varMap(sym.name))
         }
 
       }
     }
 
     def generateMainClassFile(sourceName: String, main: MainObject, dir: String) = {
-      println("main: " + prog.getPackageDirectory + prog.main.id.value)
       val mainClassFile = new ClassFile(prog.main.id.value, None)
       mainClassFile.setSourceFile(sourceName)
       generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
@@ -506,7 +503,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     // output code
     generateMainClassFile(sourceName, prog.main, outDir)
-    prog.classes.foreach(generateClassFile(sourceName, _, outDir))
+    prog.classes.foreach(_ match {
+      case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
+      case _ =>
+    })
   }
-
 }
