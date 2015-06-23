@@ -72,6 +72,7 @@ object Main {
           // Generate code
           val prog = (parsing andThen analysis).run(ctx)(ctx.file)
           CodeGeneration.run(ctx)(prog)
+          System.out.flush()
           if(flags(exec)){
             println(ctx.outDir match {
               case Some(dir) =>

@@ -13,6 +13,7 @@ import java.io.File
 
 object CodeGeneration extends Pipeline[Program, Unit] {
 
+
   val CONSTRUCTOR_NAME = "<init>"
 
   /* Java classes used by compiler */
@@ -35,6 +36,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   val T_BOOL = 4
 
   def run(ctx: Context)(prog: Program): Unit = {
+
+    import ctx.reporter._
 
     var varMap = new HashMap[String, Int]
 
@@ -389,12 +392,15 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     def getFilePath(outDir: String, sym: ClassSymbol): String = {
-      val fileName = sym.name + ".class"
-      val filePath = outDir
+      val split = sym.name.split("/")
+      val packageDir = split.take(split.size - 1).mkString("/")
+      val filePath = outDir + packageDir
       val f = new File(filePath)
-      if (!f.exists())
-        f.mkdirs()
-      filePath + "/" + fileName
+      if (!f.exists()){
+        if(!f.mkdirs())
+          error("Could not create output directory \'" + f.getAbsolutePath + "\'.")
+      }
+      outDir + sym.name + ".class"
     }
 
     def generateConstructor(con: ConstructorDecl, classFile: ClassFile, ct: ClassDecl): MethodHandler = {
@@ -484,6 +490,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       mainClassFile.setSourceFile(sourceName)
       generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
       mainClassFile.addDefaultConstructor
+      val file = getFilePath(dir, main.getSymbol)
       mainClassFile.writeToFile(getFilePath(dir, main.getSymbol))
     }
 
@@ -493,19 +500,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ch << RETURN
       ch.freeze
     }
-
-    val outDir = ctx.outDir.map(_.getPath).getOrElse(".")
-
-    val f = new File(outDir)
-    if (!f.exists()) f.mkdirs()
-
+    val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("")
     val sourceName = ctx.file.getName
 
     // output code
     generateMainClassFile(sourceName, prog.main, outDir)
-    prog.classes.foreach(_ match {
+    prog.classes.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
       case _ =>
-    })
+    }
   }
 }

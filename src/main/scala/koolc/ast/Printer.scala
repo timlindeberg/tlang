@@ -34,9 +34,8 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)              => optional(pack, f) + all(imports) + f(main) + all(classes)
-      case Package(identifiers)                               => "package " + identifiers.map(_.value).mkString(".") + n
-      case Import(identifiers)                                => "import " + identifiers.map(_.value).mkString(".") + n
+      case Program(pack, imp, wcImports, main, classes)       => optional(pack, f) + imports(imp) + imports(wcImports, ".*") + f(main) + all(classes)
+      case Package(identifiers)                               => "package " + identifiers.map(_.value).mkString(".") + ";" + n
       case MainObject(id, stats)                              => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
       case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id, expr)                             => "var " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
@@ -114,6 +113,10 @@ object Printer {
     s
   }
 
+  private def imports(list: List[Import], endStr: String = "") =
+    if(list.isEmpty) ""
+    else list.map("import " + _.identifiers.map(_.value).mkString(".") + endStr + ";" + n)
+
   private def definition(a: Accessability) = a match {
     case Private   => "def"
     case Public    => "Def"
@@ -128,12 +131,12 @@ object Printer {
 
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
-  private def allStats(list: List[StatTree]): String = {
-    list.map(_ match {
+  private def allStats(list: List[StatTree]): String =
+    list.map {
       case MethodCall(obj, meth, args) => f(obj) + "." + f(meth) + "(" + commaList(args) + ");" + n
       case x => f(x)
-    }).mkString
-  }
+    }.mkString
+
   private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
 
   private def typeOf(t: Tree): String = t match {

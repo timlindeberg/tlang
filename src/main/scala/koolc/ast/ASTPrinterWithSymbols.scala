@@ -11,7 +11,7 @@ object ASTPrinterWithSymbols {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes) => f(pack) + "," + f(imports) + "," + f(main) + "," + f(classes)
+      case Program(pack, imports, wcImports, main, classes) => f(pack) + "," + f(imports) + "," + f(wcImports) + "," + f(main) + "," + f(classes)
       case Package(identifiers) => f(identifiers)
       case Import(identifiers) => f(identifiers)
       case MainObject(id, stats) => f(id) + "," + f(stats)

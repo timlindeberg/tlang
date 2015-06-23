@@ -111,7 +111,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t
 
       match {
-        case Program(pack, imports, main, classes) =>
+        case Program(_, _, _, main, classes) =>
           addSymbols(main, globalScope)
           classes.foreach(addSymbols(_, globalScope))
         case mainObject@MainObject(id, stats) =>
@@ -199,7 +199,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
-        case Program(pack, imports, main, classes) =>
+        case Program(_, _, _, main, classes) =>
           bind(main)
           bind(classes)
         case main@MainObject(id, stats) => stats.foreach(bind(_, main.getSymbol))

@@ -11,6 +11,9 @@ import scala.annotation.tailrec
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
+  def run(ctx: Context)(f: File): Iterator[Token] = new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
+  def run(chars: List[Char], f: File): Iterator[Token] = new Tokenizer(f).tokenize(chars)
+
   class Tokenizer(private val file: File) {
 
     private val singleCharTokens = Map(
@@ -93,12 +96,42 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       getIdentifierOrKeyword(chars.tail, chars.head.toString)
     }
 
-    private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
+    private def getMultiLineStringLiteral(chars: List[Char]): (Token, List[Char]) = {
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case ('"' :: r)  => (createToken(s, s.length + 2), r)
-        case ('\n' :: r) => (createToken(BAD, s.length), chars)
-        case (c :: r)    => getStringIdentifier(r, s + c)
-        case Nil         => (createToken(BAD, s.length), Nil)
+        case '"' :: '"' :: '"' :: r  => (createToken(s, s.length + 6), r)
+        case c :: r                  => getStringIdentifier(r, s + c)
+        case Nil                     => (createToken(BAD, s.length), Nil)
+      }
+      getStringIdentifier(chars, "")
+    }
+
+    private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
+
+      def areHexDigits(chars: Char*) = chars.forall(c => c.isDigit || "abcdef".contains(c.toLower))
+
+      def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+        case '"'  :: r => (createToken(s, s.length + 2), r)
+        case '\\' :: r => r match {
+            case 't'  :: r  => getStringIdentifier(r, s + "\t")
+            case 'b'  :: r  => getStringIdentifier(r, s + "\b")
+            case 'n'  :: r  => getStringIdentifier(r, s + "\n")
+            case 'r'  :: r  => getStringIdentifier(r, s + "\r")
+            case 'f'  :: r  => getStringIdentifier(r, s + "\f")
+            case '''  :: r  => getStringIdentifier(r, s + "\'")
+            case '"'  :: r  => getStringIdentifier(r, s + "\"")
+            case '\\' :: r  => getStringIdentifier(r, s + "\\")
+            case 'u'  :: r  => r match {
+                case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
+                  val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
+                  val unicodeChar = String.valueOf(Character.toChars(unicodeNumber))
+                  getStringIdentifier(r, s + unicodeChar)
+                case _ => (createToken(BAD, s.length), chars)
+              }
+            case _ => (createToken(BAD, s.length), chars)
+          }
+        case '\n' :: r        => (createToken(BAD, s.length), chars)
+        case c :: r           => getStringIdentifier(r, s + c)
+        case Nil              => (createToken(BAD, s.length), Nil)
       }
       getStringIdentifier(chars, "")
     }
@@ -197,7 +230,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '^' :: '=' :: r                          => readTokens(r, createToken(XOREQ, 2) :: tokens)
         case '<' :: '<' :: '=' :: r                   => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
         case '>' :: '>' :: '=' :: r                   => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
-        case '^' :: '=' :: r                          => readTokens(r, createToken(XOREQ, 2) :: tokens)
         case '<' :: '<' :: r                          => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
         case '>' :: '>' :: r                          => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
         case '+' :: '+' :: r                          => readTokens(r, createToken(INCREMENT, 2) :: tokens)
@@ -216,7 +248,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case (c :: r) if c.isLetter                   => 
           val (token, tail) = getIdentifierOrKeyword(chars)
           readTokens(tail, token :: tokens)
-        case ('"' :: r)                               => 
+        case ('"' :: '"' :: '"' ::  r)                =>
+          val (token, tail) = getMultiLineStringLiteral(r)
+          readTokens(tail, token :: tokens)
+        case ('"' :: r)                               =>
           val (token, tail) = getStringLiteral(r)
           readTokens(tail, token :: tokens)
         case (c :: r) if c.isDigit                    => 
@@ -231,6 +266,5 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     def tokenize(chars: List[Char]): Iterator[Token] = readTokens(chars).iterator
   }
 
-  def run(ctx: Context)(f: File): Iterator[Token] = new Tokenizer(f).tokenize(Source.fromFile(f).buffered.toList)
-  def run(chars: List[Char], f: File): Iterator[Token] = new Tokenizer(f).tokenize(chars)
+
 }

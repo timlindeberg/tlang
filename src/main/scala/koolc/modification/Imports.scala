@@ -22,7 +22,6 @@ object Imports extends Pipeline[Program, Program] {
     object Importer {
 
       def addClass(className: String): Unit = {
-
         val fullName = className.replaceAll("\\.", "/")
         if(addImport(fullName)){
           addedExternalClasses += className -> fullName
@@ -166,7 +165,6 @@ object Imports extends Pipeline[Program, Program] {
 
     replaceNames(prog)
     checkUnusedImports()
-    println(Printer(prog))
     prog
   }
 }
