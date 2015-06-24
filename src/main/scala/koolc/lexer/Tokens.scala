@@ -101,7 +101,7 @@ object Tokens {
   case object FALSE extends TokenKind // false
   case object THIS extends TokenKind // this
   case object NEW extends TokenKind // new
-  case object PRINT extends TokenKind // print
+  case object PRINT extends TokenKind // println
   case object PRINTLN extends TokenKind // println
 
   // Identifiers

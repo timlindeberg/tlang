@@ -67,7 +67,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     case otherwise   => List(otherwise)
   }
 
-  def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.id.value !!
+  def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.get.id.value !!
   def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
   def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
 

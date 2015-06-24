@@ -58,7 +58,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   }
 
-  def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.id.value !!
+  def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.get.id.value !!
   def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
 
 }

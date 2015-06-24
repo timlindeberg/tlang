@@ -1,16 +1,71 @@
 package koolc
 package modification
 
-import koolc.ast.{Printer, Trees}
-import koolc.utils.Pipeline
-import koolc.utils.Context
+import java.io.File
+
+import koolc.ast.{Parser, Printer, Trees}
+import koolc.lexer.Lexer
+import koolc.utils.{CompilationException, Pipeline, Context}
 import koolc.ast.Trees._
 import org.apache.bcel._
 import org.apache.bcel.classfile.{JavaClass, Method}
 import org.apache.bcel.generic.{ObjectType, BasicType, Type}
 import org.apache.bcel.Constants
 
+import scala.collection.mutable.ArrayBuffer
+
 object Imports extends Pipeline[Program, Program] {
+
+  def importGenericClasses(prog: Program, ctx: Context): List[ClassDecl] = {
+    import ctx.reporter._
+    def mkImportString(imp: Import, sep: String) = imp.identifiers.map(_.value).mkString(sep)
+
+    var importedClasses: ArrayBuffer[ClassDecl] = new ArrayBuffer()
+    prog.imports.filter(_.isInstanceOf[GenericImport]).foreach { imp =>
+      val fileName = mkImportString(imp, "/") + ".kool"
+      var found = false
+
+      getClassPaths.foreach { path =>
+        val file = new File(path + "/" + fileName)
+        if(file.exists()){
+          found = true
+
+          parseGenericFile(ctx, file) match {
+            case Some(importedProg) =>
+              val genericClasses = importedProg.classes.filter(_.id.isTemplated)
+
+              if(genericClasses.size > 0)
+                importedClasses ++= genericClasses
+              else
+                warning("Generic import \'" + file.getName + "\' did not contain any generic classes.", imp)
+
+            case None => error("Unable to parse generic import \'" + file.getName + "\'.", imp)
+          }
+
+        }
+      }
+      if(!found) error("Could not resolve generic import \'" + mkImportString(imp, ".") + "\'.")
+
+    }
+    val i = importedClasses.toList
+    i.foreach(i => println(Printer(i)))
+    i
+  }
+
+  def getClassPaths = {
+    val seperator = System.getProperty("path.seperator")
+    val paths = System.getProperty("java.class.path").split(seperator)
+    "." :: paths.toList
+  }
+
+  def parseGenericFile(ctx: Context, file: File): Option[Program] =
+    try {
+      Some((Lexer andThen Parser andThen Imports).run(ctx)(file))
+    } catch {
+      case _: CompilationException => None
+    }
+
+
 
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
@@ -18,6 +73,9 @@ object Imports extends Pipeline[Program, Program] {
     var addedExternalClasses = Map[String, String]()
     var addedClasses = Set[String]()
     var usedImports = Set[Import]()
+
+    val regImports = prog.imports.filter(_.isInstanceOf[RegularImport]).asInstanceOf[List[RegularImport]]
+    val wcImports = prog.imports.filter(_.isInstanceOf[WildCardImport]).asInstanceOf[List[WildCardImport]]
 
     object Importer {
 
@@ -28,7 +86,7 @@ object Imports extends Pipeline[Program, Program] {
           return
         }
 
-        for(imp <- prog.imports){
+        for(imp <- regImports){
           if(imp.identifiers.last.value == className){
             val fullName = imp.identifiers.map(_.value).mkString("/")
             if(addImport(fullName)){
@@ -39,7 +97,7 @@ object Imports extends Pipeline[Program, Program] {
           }
         }
 
-        for(imp <- prog.wcImports){
+        for(imp <- wcImports){
           val fullName = imp.identifiers.map(_.value).mkString("/") + "/" + className
           if(addImport(fullName)){
             addedExternalClasses += className -> fullName
@@ -134,7 +192,10 @@ object Imports extends Pipeline[Program, Program] {
       prog.progPackage match {
         case Some(pack) =>
           val packString = prog.getPackageDirectory
-          prog.main.id.value = packString + prog.main.id.value
+
+          if(prog.main.isDefined)
+            prog.main.get.id.value = packString + prog.main.get.id.value
+
           Trees.traverse(prog, (_, t) => Some(t) collect {
             case c: ClassIdentifier =>
               val name = c.value

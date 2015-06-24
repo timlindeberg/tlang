@@ -13,7 +13,7 @@ object Templates extends Pipeline[Program, Program] {
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
 
-    val templateClasses = prog.classes.filter(_.id.isTemplated)
+    val templateClasses = prog.classes.filter(_.id.isTemplated) ::: Imports.importGenericClasses(prog, ctx)
 
     /* Error messages and predefined
      * error types to return in case of errors. */

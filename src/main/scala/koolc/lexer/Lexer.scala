@@ -132,15 +132,16 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           error("Unclosed string literal.", startPos)
           (createToken(BAD, s.length), chars)
         case '\\' :: r => r match {
-          case 't'  :: r  => getStringIdentifier(r, s + "\t")
-          case 'b'  :: r  => getStringIdentifier(r, s + "\b")
-          case 'n'  :: r  => getStringIdentifier(r, s + "\n")
-          case 'r'  :: r  => getStringIdentifier(r, s + "\r")
-          case 'f'  :: r  => getStringIdentifier(r, s + "\f")
-          case '''  :: r  => getStringIdentifier(r, s + "\'")
-          case '"'  :: r  => getStringIdentifier(r, s + "\"")
-          case '\\' :: r  => getStringIdentifier(r, s + "\\")
-          case 'u'  :: r  => r match {
+          case 't'  :: r => getStringIdentifier(r, s + '\t')
+          case 'b'  :: r => getStringIdentifier(r, s + '\b')
+          case 'n'  :: r => getStringIdentifier(r, s + '\n')
+          case 'r'  :: r => getStringIdentifier(r, s + '\r')
+          case 'f'  :: r => getStringIdentifier(r, s + '\f')
+          case '''  :: r => getStringIdentifier(r, s + '\'')
+          case '"'  :: r => getStringIdentifier(r, s + '\"')
+          case '\\' :: r => getStringIdentifier(r, s + '\\')
+          case '['  :: r => getStringIdentifier(r, s + 27.toChar + '[') // TODO: add rules for ANSI escape codes
+          case 'u'  :: r => r match {
               case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
                 val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
                 val unicodeChar = String.valueOf(Character.toChars(unicodeNumber))

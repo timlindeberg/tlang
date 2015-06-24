@@ -12,12 +12,19 @@ object Trees {
   trait Tree extends Positioned with Product
 
 
-  case class Program(progPackage: Option[Package], imports: List[Import], wcImports: List[Import], main: MainObject, var classes: List[ClassDecl]) extends Tree{
+  case class Program(progPackage: Option[Package], imports: List[Import], main: Option[MainObject], var classes: List[ClassDecl]) extends Tree{
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
   }
 
   case class Package(identifiers: List[Identifier]) extends Tree
-  case class Import(identifiers: List[Identifier]) extends Tree
+
+  trait Import extends Tree {
+    val identifiers: List[Identifier]
+  }
+
+  case class RegularImport(identifiers: List[Identifier]) extends Import
+  case class WildCardImport(identifiers: List[Identifier]) extends Import
+  case class GenericImport(identifiers: List[Identifier]) extends Import
   case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
 
   object ClassDecl {

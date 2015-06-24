@@ -486,12 +486,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     def generateMainClassFile(sourceName: String, main: MainObject, dir: String) = {
-      val mainClassFile = new ClassFile(prog.main.id.value, None)
+      val mainClassFile = new ClassFile(main.id.value, None)
       mainClassFile.setSourceFile(sourceName)
       generateMainMethodCode(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
       mainClassFile.addDefaultConstructor
       val file = getFilePath(dir, main.getSymbol)
-      mainClassFile.writeToFile(getFilePath(dir, main.getSymbol))
+      mainClassFile.writeToFile(file)
     }
 
     def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
@@ -504,7 +504,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val sourceName = ctx.file.getName
 
     // output code
-    generateMainClassFile(sourceName, prog.main, outDir)
+    if(prog.main.isDefined)
+      generateMainClassFile(sourceName, prog.main.get, outDir)
+
     prog.classes.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
       case _ =>

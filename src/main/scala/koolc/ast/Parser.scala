@@ -56,10 +56,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     def parseGoal() = {
       val pos = currentToken
       val pack = optional(packageDecl, PACKAGE)
-      val (regImports, wcImports) = imports
-      val main = mainObject
+      val imp = untilNot(importDecl, IMPORT)
+      val main = optional(mainObject, MAIN)
       val classes = until(classDeclaration, EOF)
-      Program(pack, regImports, wcImports, main, classes).setPos(pos)
+      Program(pack, imp, main, classes).setPos(pos)
     }
 
     /**
@@ -72,36 +72,34 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       Package(identifiers).setPos(pos)
     }
 
-    def imports() = {
-      val regImports = new ArrayBuffer[Import]()
-      var wcImports = new ArrayBuffer[Import]()
-      while(currentToken.kind == IMPORT){
-       val (imp, isWildcard) = importDecl
-        if(isWildcard) wcImports += imp
-        else          regImports += imp
-      }
-      (regImports.toList, wcImports.toList)
-    }
-
     /**
-     * <importDecl> ::= import <identifier> { . ( <identifier> | * ) }
+     * <importDecl> ::= import [ "<" ] <identifier> { . ( <identifier> | * ) } [ ">" ]
      */
-    def importDecl(): (Import, Boolean) = {
+    def importDecl(): Import = {
       val pos = currentToken
       eat(IMPORT)
       val ids = new ArrayBuffer[Identifier]()
+
+      if(currentToken.kind == LESSTHAN){
+        ids += identifier()
+        while (currentToken.kind == DOT) {
+          ids += identifier()
+        }
+        eat(GREATERTHAN)
+        return GenericImport(ids.toList).setPos(pos)
+      }
       ids += identifier()
       while (currentToken.kind == DOT) {
         eat(DOT)
         currentToken.kind match {
           case TIMES =>
             eat(TIMES, SEMICOLON)
-            return (Import(ids.toList).setPos(pos), true)
+            return WildCardImport(ids.toList).setPos(pos)
           case _     => ids += identifier
         }
       }
       eat(SEMICOLON)
-      (Import(ids.toList).setPos(pos), false)
+      RegularImport(ids.toList).setPos(pos)
     }
 
     /**
@@ -109,11 +107,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def mainObject(): MainObject = {
       val pos = currentToken
-      eat(OBJECT)
       val id = identifier
-      eat(LBRACE, PRIVDEF, MAIN, LPAREN, RPAREN, COLON, UNIT, EQSIGN, LBRACE)
+      eat(EQSIGN, LBRACE)
       val stmts = until(statement, RBRACE)
-      eat(RBRACE, RBRACE)
+      eat(RBRACE)
       MainObject(id, stmts).setPos(pos)
     }
 

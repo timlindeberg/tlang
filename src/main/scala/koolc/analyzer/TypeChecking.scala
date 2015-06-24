@@ -213,9 +213,13 @@ object TypeChecking extends Pipeline[Program, Program] {
         TError
       }
     }
-    val mainMethod = new MethodSymbol("main", prog.main.getSymbol, Private).setType(TUnit)
-    val mainTypeChecker = new TypeChecker(mainMethod)
-    prog.main.stats.foreach(mainTypeChecker.tcStat(_))
+    if(prog.main.isDefined){
+      val main = prog.main.get
+      val mainMethod = new MethodSymbol("main", main.getSymbol, Private).setType(TUnit)
+      val mainTypeChecker = new TypeChecker(mainMethod)
+      main.stats.foreach(mainTypeChecker.tcStat(_))
+    }
+
     prog.classes.foreach { classDecl =>
       classDecl.vars.foreach{ varDecl =>
         val method = new MethodSymbol("tmp", classDecl.getSymbol, Private).setType(TUnit)

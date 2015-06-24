@@ -1,9 +1,7 @@
 package kool.std;
 
-object Program {
-  def main () : Unit = {
-    new Main().Run();
-  }
+main Program = {
+	new Main().Run();
 }
 
 class Main {
@@ -18,14 +16,6 @@ class Main {
 		var intSorter: 	  Sorter<List<Integer>, Integer> = new Sorter<List<Integer>, Integer>();
 		var stringSorter: Sorter<List<KoolString>, KoolString> = new Sorter<List<KoolString>, KoolString>();
 		var i:            Int;
-
-		println("unicode: ❤");
-		println("""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a gravida nisl. Donec mattis condimentum dolor,
-in mattis turpis sollicitudin a. Morbi rutrum mi magna, lacinia faucibus risus molestie at. Maecenas consequat
-ipsum nec ante feugiat scelerisque. Mor" "bi ut velit nec odio interdum luctus sed eget libero. Vestibulum at vestibulum
-elit, a semper ante. Nunc sed orci elit. Pellentesque lobortis tortor arcu, ut blandit ex placerat posuere. Ut vel
-enim ut risus interdum rutrum. Cras loborti"s maximus purus vitae condimentum. Nullam non libero non dui tristique
-sodales vel et ex. Vivamus dapibus iaculis n""ibh, f "erm"entum mollis sem malesuada et. In hac habitasse platea dictumst.""");
 
 		for(i = 0; i < 100; i++){
         	intList.Add(new Integer(r.nextInt(10000)));
@@ -115,6 +105,8 @@ sodales vel et ex. Vivamus dapibus iaculis n""ibh, f "erm"entum mollis sem males
 		}
 
 		println(intList.Equals(intList2));
+
+		println("hej \[31m lolol");
 	}
 }
 

@@ -73,11 +73,11 @@ object Main {
           val prog = (parsing andThen analysis).run(ctx)(ctx.file)
           CodeGeneration.run(ctx)(prog)
           System.out.flush()
-          if(flags(exec)){
+          if(flags(exec) && prog.main.isDefined){
             println(ctx.outDir match {
               case Some(dir) =>
-                "java -cp " + ctx.outDir.get.getAbsolutePath + " kool.std." + prog.main.id.value !!
-              case None      => "java " + prog.main.id.value !!
+                "java -cp " + ctx.outDir.get.getAbsolutePath + " kool.std." + prog.main.get.id.value !!
+              case None      => "java " + prog.main.get.id.value !!
             })
           }
         }

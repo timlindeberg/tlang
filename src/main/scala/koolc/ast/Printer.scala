@@ -34,9 +34,12 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imp, wcImports, main, classes)       => optional(pack, f) + imports(imp) + imports(wcImports, ".*") + f(main) + all(classes)
+      case Program(pack, imports, main, classes)              => optional(pack, f) + all(imports) + optional(main, f) + all(classes)
       case Package(identifiers)                               => "package " + identifiers.map(_.value).mkString(".") + ";" + n
-      case MainObject(id, stats)                              => "object " + f(id) + " " + l + "def main () : Unit = " + l + allStats(stats) + r + r
+      case RegularImport(identifiers)                         => "import " + identifiers.map(_.value).mkString(".") + ";" + n
+      case WildCardImport(identifiers)                        => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
+      case GenericImport(identifiers)                         => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
+      case MainObject(id, stats)                              => "main " + f(id) + " = " + l + allStats(stats) + r
       case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id, expr)                             => "var " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
       case MethodDecl(retType, id, args, vars, stats, access) => definition(access) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
@@ -112,10 +115,6 @@ object Printer {
     }
     s
   }
-
-  private def imports(list: List[Import], endStr: String = "") =
-    if(list.isEmpty) ""
-    else list.map("import " + _.identifiers.map(_.value).mkString(".") + endStr + ";" + n)
 
   private def definition(a: Accessability) = a match {
     case Private   => "def"
