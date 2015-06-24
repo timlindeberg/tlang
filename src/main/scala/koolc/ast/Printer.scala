@@ -4,6 +4,8 @@ package ast
 import Trees._
 import koolc.analyzer.Symbols._
 import koolc.analyzer.Types.Typed
+import org.apache.commons.lang3.StringEscapeUtils._
+
 
 object Printer {
 
@@ -34,7 +36,7 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)              => optional(pack, f) + all(imports) + optional(main, f) + all(classes)
+      case Program(pack, imports, main, classes)              => optional(pack, f) + all(imports) + n + optional(main, f) + all(classes)
       case Package(identifiers)                               => "package " + identifiers.map(_.value).mkString(".") + ";" + n
       case RegularImport(identifiers)                         => "import " + identifiers.map(_.value).mkString(".") + ";" + n
       case WildCardImport(identifiers)                        => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
@@ -99,7 +101,7 @@ object Printer {
       case ArrayLength(arr)                 => f(arr) + ".length"
       case MethodCall(obj, meth, args)      => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
       case IntLit(value)                    => value.toString
-      case StringLit(value)                 => "\"" + value + "\""
+      case StringLit(value)                 => "\"" + escapeJava(value) + "\""
       case True()                           => "true"
       case False()                          => "false"
       case id @ Identifier(value)           => value + symbol(id)

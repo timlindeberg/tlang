@@ -9,7 +9,8 @@ scalacOptions ++= Seq("-deprecation", "-unchecked")
 libraryDependencies ++= Seq(
 	"org.scalatest" %% "scalatest" % "2.2.4" % "test",
 	"uk.com.robust-it" % "cloning" % "1.9.2",
-	"org.apache.bcel" % "bcel" % "5.2"
+	"org.apache.bcel" % "bcel" % "5.2",
+	"org.apache.commons" % "commons-lang3" % "3.4"
 )
 
 // src/main/scala only

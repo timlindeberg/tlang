@@ -396,7 +396,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val packageDir = split.take(split.size - 1).mkString("/")
       val filePath = outDir + packageDir
       val f = new File(filePath)
-      if (!f.exists()){
+      if (!f.getAbsoluteFile.exists()){
         if(!f.mkdirs())
           error("Could not create output directory \'" + f.getAbsolutePath + "\'.")
       }

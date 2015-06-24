@@ -81,11 +81,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val ids = new ArrayBuffer[Identifier]()
 
       if(currentToken.kind == LESSTHAN){
+        eat(LESSTHAN)
         ids += identifier()
         while (currentToken.kind == DOT) {
+          eat(DOT)
           ids += identifier()
         }
-        eat(GREATERTHAN)
+        eat(GREATERTHAN, SEMICOLON)
         return GenericImport(ids.toList).setPos(pos)
       }
       ids += identifier()

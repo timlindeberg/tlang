@@ -1,7 +1,7 @@
 package koolc
 package modification
 
-import koolc.ast.Trees
+import koolc.ast.{Printer, Trees}
 import koolc.utils.Pipeline
 import koolc.utils.Context
 import koolc.ast.Trees._
@@ -168,6 +168,5 @@ object Templates extends Pipeline[Program, Program] {
     val newProg = prog.copy(classes = oldClasses ++ newClasses)
 
     replaceTypes(newProg)
-    newProg
   }
 }

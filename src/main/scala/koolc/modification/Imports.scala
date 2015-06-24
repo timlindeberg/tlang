@@ -18,7 +18,14 @@ object Imports extends Pipeline[Program, Program] {
 
   def importGenericClasses(prog: Program, ctx: Context): List[ClassDecl] = {
     import ctx.reporter._
-    def mkImportString(imp: Import, sep: String) = imp.identifiers.map(_.value).mkString(sep)
+    def mkImportString(imp: Import, sep: String) = {
+      val id = imp.identifiers
+      if(id.length == 1){
+        prog.getPackageDirectory + "/" + id.head.value
+      }else{
+        imp.identifiers.map(_.value).mkString(sep)
+      }
+    }
 
     var importedClasses: ArrayBuffer[ClassDecl] = new ArrayBuffer()
     prog.imports.filter(_.isInstanceOf[GenericImport]).foreach { imp =>
@@ -27,12 +34,14 @@ object Imports extends Pipeline[Program, Program] {
 
       getClassPaths.foreach { path =>
         val file = new File(path + "/" + fileName)
+
         if(file.exists()){
           found = true
-
           parseGenericFile(ctx, file) match {
             case Some(importedProg) =>
-              val genericClasses = importedProg.classes.filter(_.id.isTemplated)
+              // Recursively import generics
+              val genericsInImportedProg = importGenericClasses(importedProg, ctx)
+              val genericClasses = importedProg.classes.filter(_.id.isTemplated) :::  genericsInImportedProg
 
               if(genericClasses.size > 0)
                 importedClasses ++= genericClasses
@@ -45,22 +54,19 @@ object Imports extends Pipeline[Program, Program] {
         }
       }
       if(!found) error("Could not resolve generic import \'" + mkImportString(imp, ".") + "\'.")
-
     }
-    val i = importedClasses.toList
-    i.foreach(i => println(Printer(i)))
-    i
+    importedClasses.toList
   }
 
   def getClassPaths = {
-    val seperator = System.getProperty("path.seperator")
-    val paths = System.getProperty("java.class.path").split(seperator)
-    "." :: paths.toList
+    // TODO decide a system for the kool std
+    val koolStdLibPath = "src"
+    List("", koolStdLibPath)
   }
 
   def parseGenericFile(ctx: Context, file: File): Option[Program] =
     try {
-      Some((Lexer andThen Parser andThen Imports).run(ctx)(file))
+      Some((Lexer andThen Parser).run(ctx)(file))
     } catch {
       case _: CompilationException => None
     }
@@ -189,41 +195,36 @@ object Imports extends Pipeline[Program, Program] {
      * class Foo declared in package bar.baz will be replaced by bar/baz/Foo.
      */
     def replaceNames(prog: Program): Program = {
-      prog.progPackage match {
-        case Some(pack) =>
-          val packString = prog.getPackageDirectory
+      val packString = prog.getPackageDirectory
 
-          if(prog.main.isDefined)
-            prog.main.get.id.value = packString + prog.main.get.id.value
+      if(prog.main.isDefined)
+        prog.main.get.id.value = packString + prog.main.get.id.value
 
-          Trees.traverse(prog, (_, t) => Some(t) collect {
-            case c: ClassIdentifier =>
-              val name = c.value
-              if(originalClasses(name)){
-                addedClasses += packString + name
-                c.value = packString + name
-              }else if (!addedExternalClasses.contains(name) && !addedClasses(name)){
-                Importer.addClass(name)
-              }
-              if(addedExternalClasses.contains(name)){
-                c.value = addedExternalClasses(name)
-              }
-            case c: ConstructorDecl => if(originalClasses(c.id.value)) c.id.value = packString + c.id.value
-          })
-        case None =>
-      }
+      Trees.traverse(prog, (_, t) => Some(t) collect {
+        case c: ClassIdentifier =>
+          val name = c.value
+          if(originalClasses(name)){
+            addedClasses += packString + name
+            c.value = packString + name
+          }else if (!addedExternalClasses.contains(name) && !addedClasses(name)){
+            Importer.addClass(name)
+          }
+          if(addedExternalClasses.contains(name)){
+            c.value = addedExternalClasses(name)
+          }
+        case c: ConstructorDecl => if(originalClasses(c.id.value)) c.id.value = packString + c.id.value
+      })
       prog
     }
 
     def checkUnusedImports() = {
       prog.imports.foreach(imp => {
-        if(!usedImports.contains(imp)){
+        if(!usedImports.contains(imp) && !imp.isInstanceOf[GenericImport]){
           val importName = imp.identifiers.map(_.value).mkString("/")
           warning("Unused import \'" + importName + "\'.", imp)
         }
       })
     }
-
     replaceNames(prog)
     checkUnusedImports()
     prog

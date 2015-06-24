@@ -1,0 +1,27 @@
+package kool.std;
+
+class Option<T> {
+	var isDefined: Bool;
+	var t: 		   T;
+
+	Def Option() = {
+		isDefined = false;
+	}
+
+	Def Option(tArg: T) = {
+	    Add(tArg);
+	}
+
+	Def Add(tArg: T): Unit = {
+		t = tArg;
+		isDefined = true;
+	}
+
+	Def IsDefined(): Bool = {
+		return isDefined;
+	}
+
+	Def Get(): T = {
+		return t;
+	}
+}

@@ -1,4 +1,4 @@
-package kool.std;
+import <kool.std.LinkedList>;
 
 main Program = {
 	new Main().Run();
@@ -7,14 +7,14 @@ main Program = {
 class Main {
 
 	Def Run(): Unit = {
-		var intList: 	  List<Integer> = new List<Integer>();
-		var intList2: 	  List<Integer> = new List<Integer>();
-		var stringList:   List<KoolString> = new List<KoolString>();
+		var intList: 	  LinkedList<Integer> = new LinkedList<Integer>();
+		var intList2: 	  LinkedList<Integer> = new LinkedList<Integer>();
+		var stringList:   LinkedList<KoolString> = new LinkedList<KoolString>();
 		var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList);
 		var r:		      java.util.Random = new java.util.Random();
 
-		var intSorter: 	  Sorter<List<Integer>, Integer> = new Sorter<List<Integer>, Integer>();
-		var stringSorter: Sorter<List<KoolString>, KoolString> = new Sorter<List<KoolString>, KoolString>();
+		var intSorter: 	  Sorter<LinkedList<Integer>, Integer> = new Sorter<LinkedList<Integer>, Integer>();
+		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
 
 		for(i = 0; i < 100; i++){
@@ -65,7 +65,7 @@ class Main {
 
 		p.PrintList("Sorted");
 		
-		intList2 = new List<Integer>();
+		intList2 = new LinkedList<Integer>();
 
 		for(i = 0; i < 10; i++){
 			intList2.Push(new Integer(100 - i));
@@ -79,7 +79,7 @@ class Main {
 		intList2.Clear();
 		println(intList2);
 
-		intList2 = new List<Integer>(5, new Integer(5));
+		intList2 = new LinkedList<Integer>(5, new Integer(5));
 		intList.AddAll(0, intList2);
 
 		p.PrintList("Constructor 2");
@@ -107,373 +107,6 @@ class Main {
 		println(intList.Equals(intList2));
 
 		println("hej \[31m lolol");
-	}
-}
-
-class List<T> {
-	var first: Option<Node<T>> = new Option<Node<T>>();
-	var last:  Option<Node<T>> = new Option<Node<T>>();
-
-	var size: Int = 0;
-
-	Def List() = {}
-
-	Def List(size: Int, value: T) = {
-		var i: Int = 0;
-        for(i = 0; i < size; i++)
-        	Push(value);
-	}
-
-    Def NonEmpty(): Bool = {
-        return size != 0;
-    }
-
-	Def IsEmpty(): Bool = {
-		return size == 0;
-	}
-
-	Def Clear(): Unit = {
-		first = new Option<Node<T>>();
-        last = new Option<Node<T>>();
-        size = 0;
-	}
-
-	Def Iterator(): ListIterator<T> = {
-		return new ListIterator<T>(this);
-	}
-
-	Def Push(data: T): Unit = {
-		var node: Node<T> = new Node<T>(data);
-
-		if(!first.IsDefined()){
-			first.Add(node);
-			last = first;
-		}else{
-			node.SetPrev(last.Get());
-			last.Get().SetNext(node);
-			last = last.Get().Next();
-		}
-		size++;
-	}
-
-	Def Pop(): Option<T> = {
-		var res: Option<T> = new Option<T>();
-
-		if(size <= 0)
-		    return res;
-
-		res.Add(last.Get().Data());
-		Remove(size - 1);
-		return res;
-	}
-
-	Def Add(data: T): Bool = {
-	    return Add(0, data);
-	}
-
-	Def Add(index: Int, data: T): Bool = {
-		var node: Option<Node<T>>;
-		var next: Option<Node<T>>;
-		var prev: Option<Node<T>>;
-		var op:	  Option<Node<T>>;
-		var elem: Node<T>;
-		var res:  Bool;
-
-        if(index < 0 || index > size)
-            return false;
-
-        elem = new Node<T>(data);
-        if(index == size){
-            Push(data);
-        }else if(index == 0){
-            first.Get().SetPrev(elem);
-            elem.SetNext(first.Get());
-            op = new Option<Node<T>>(elem);
-            first = op;
-        }else{
-            node = find(index);
-            prev = node.Get().Prev();
-            next = node.Get().Next();
-
-            prev.Get().SetNext(elem);
-            elem.SetPrev(prev.Get());
-
-            elem.SetNext(node.Get());
-            node.Get().SetPrev(elem);
-        }
-        size++;
-
-		return true;
-	}
-
-    Def AddAll(other: List<T>): Bool = {
-        return AddAll(size, other);
-    }
-
-	Def AddAll(index: Int, list: List<T>): Bool = {
-		var it: ListIterator<T> = list.Iterator();
-
-		while(it.HasNext()){
-			if(!Add(index, it.Next()))
-			    return false;
-		}
-
-		return true;
-	}
-
-	Def Remove(index: Int): Bool = {
-		var node: 	Option<Node<T>>;
-		var next:	Option<Node<T>>;
-		var prev:	Option<Node<T>>;
-
-        if(size <= 0)
-            return false;
-
-		node = find(index);
-		if(!node.IsDefined())
-		    return false;
-
-        prev = node.Get().Prev();
-        next = node.Get().Next();
-        if(prev.IsDefined() && next.IsDefined()){
-            // Node is in the middle of the list
-            prev.Get().SetNext(next.Get());
-            next.Get().SetPrev(prev.Get());
-        }else if(prev.IsDefined() && ! next.IsDefined()){
-            // Node is last element
-            prev.Get().ClearNext();
-            last = prev;
-        }else if(!prev.IsDefined() && next.IsDefined()){
-            // Node is first element
-            next.Get().ClearPrev();
-            first = next;
-        }else{
-            // Node is the only element
-            Clear();
-        }
-        size--;
-		return true;
-	}
-
-	Def Get(index: Int): Option<T> = {
-		var res:  Option<T>       = new Option<T>();
-		var node: Option<Node<T>> = find(index);
-
-		if(node.IsDefined()){
-			res.Add(node.Get().Data());
-		}
-		return res;
-	}
-
-	Def Set(index: Int, data: T): Bool = {
-		var node: Option<Node<T>> = find(index);
-
-		if(node.IsDefined()){
-			node.Get().SetData(data);
-			return true;
-		}
-		return false;
-	}
-
-	Def IndexOf(data: T): Int = {
-		var i: 	   Int;
-		var it:	   ListIterator<T> = Iterator();
-
-		while(it.HasNext()){
-			if(it.Next().Equals(data))
-				return i;
-			i++;
-		}
-		return -1;
-	}
-
-	Def LastIndexOf(data: T): Int = {
-		var index: Int = -1;
-		var i: 	   Int;
-		var it:	   ListIterator<T> = Iterator();
-
-		while(it.HasNext()){
-			if(it.Next().Equals(data))
-				index = i;
-			i++;
-		}
-		return index;
-	}
-
-	Def Contains(data: T): Bool = {
-		return IndexOf(data) != -1;
-	}
-
-    Def toString(): String = {
-        var it: ListIterator<T>;
-        var s: 	String;
-        
-        if(size == 0)
-        	return "<>";
-
-        it = Iterator();
-        s = "[ ";
-        while(it.HasNext()){
-            s = s + it.Next().toString();
-            if(it.HasNext()) s = s + ", ";
-        }
-        s = s + " ]";
-        return s;
-    }
-
-	Def Size(): Int = {
-		return size;
-	}
-
-	Def Equals(other: List<T>): Bool = {
-		var thisIt:  ListIterator<T>;
-		var otherIt: ListIterator<T>;
-		var done:	 Bool;
-
-        if(size != other.Size())
-            return false;
-
-		thisIt = Iterator();
-		otherIt = other.Iterator();
-        while(thisIt.HasNext()){
-            if(!thisIt.Next().Equals(otherIt.Next()))
-                return false;
-        }
-
-		return true;
-	}
-
-	Def first(): Option<Node<T>> = {
-		return first;
-	}
-
-	Def last(): Option<Node<T>> = {
-		return last;
-	}
-
-	def find(index: Int): Option<Node<T>> = {
-		var tmp: 	Option<Node<T>>;
-		var i: 		Int;
-
-		if(index < 0 || index >= size)
-			return new Option<Node<T>>();
-		if(index == 0)
-			return first;
-		if(index == size - 1)
-			return last;
-
-		if(index < (size / 2) + 1){
-			tmp = first;
-			i = 0;
-			while(i < index && tmp.IsDefined()){
-				i++;
-				tmp = tmp.Get().Next();
-			}
-		}else{
-			tmp = last;
-			i = size - 1;
-			while(i > index && tmp.IsDefined()){
-				i--;
-				tmp = tmp.Get().Prev();
-			}
-		}
-
-		return tmp;
-	}
-}
-
-class Node<T> {
-	var data: T;
-	var next: Option<Node<T>>;
-	var prev: Option<Node<T>>;
-
-	Def Node(d: T) = {
-		data = d;
-    	next = new Option<Node<T>>();
-    	prev = new Option<Node<T>>();
-	}
-
-	Def Data(): T = {
-		return data;
-	}
-
-	Def Next(): Option<Node<T>> = {
-		return next;
-	}
-
-	Def Prev(): Option<Node<T>> = {
-		return prev;
-	}
-
-	Def SetData(t: T): Unit = {
-		data = t;
-	}
-
-	Def ClearNext(): Unit = {
-		next = new Option<Node<T>>();
-	}
-
-	Def ClearPrev(): Unit = {
-		prev = new Option<Node<T>>();
-	}
-
-	Def SetNext(n: Node<T>): Unit = {
-		next = new Option<Node<T>>(n);
-	}
-
-	Def SetPrev(n: Node<T>): Unit = {
-		prev = new Option<Node<T>>(n);
-	}
-}
-
-class ListIterator<T> {
-	var current: Node<T>;
-	var hasNext: Bool;
-
-	Def ListIterator(list: List<T>) = {
-		if(list.first().IsDefined())
-			current = list.first().Get();
-		hasNext = list.first().IsDefined();
-	}
-
-	Def HasNext(): Bool = {
-		return hasNext;
-	}
-
-	Def Next(): T = {
-		var res: T = current.Data();
-
-		hasNext = current.Next().IsDefined();
-		if(hasNext){
-			current = current.Next().Get();
-		}
-		return res;
-	}
-}
-
-class Option<T> {
-	var isDefined: Bool;
-	var t: 		   T;
-
-	Def Option() = {
-		isDefined = false;
-	}
-
-	Def Option(tArg: T) = {
-	    Add(tArg);
-	}
-
-	Def Add(tArg: T): Unit = {
-		t = tArg;
-		isDefined = true;
-	}
-
-	Def IsDefined(): Bool = {
-		return isDefined;
-	}
-
-	Def Get(): T = {
-		return t;
 	}
 }
 
@@ -536,10 +169,10 @@ class KoolString {
 
 class ListPrinter<T, U> {
 
-	var l1: List<T>;
-	var l2: List<U>;
+	var l1: LinkedList<T>;
+	var l2: LinkedList<U>;
 
-	Def ListPrinter(list1: List<T>, list2: List<U>) = {
+	Def ListPrinter(list1: LinkedList<T>, list2: LinkedList<U>) = {
 		l1 = list1;
 		l2 = list2;
 	}
