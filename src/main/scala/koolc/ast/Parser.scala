@@ -326,64 +326,12 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           val expr = if(currentToken.kind != SEMICOLON) Some(expression) else None
           eat(SEMICOLON)
           Return(expr)
-        case IDKIND =>
-          val id = identifier
-          def assignment(constructor: (Identifier, ExprTree) => StatTree) = {
-            eat(currentToken.kind)
-            constructor(id, expression)
-          }
-          val stat = currentToken.kind match {
-            case EQSIGN       => assignment(Assign)
-            case PLUSEQ       => assignment(PlusAssign)
-            case MINUSEQ      => assignment(MinusAssign)
-            case MULEQ        => assignment(MulAssign)
-            case DIVEQ        => assignment(DivAssign)
-            case MODEQ        => assignment(ModAssign)
-            case ANDEQ        => assignment(AndAssign)
-            case OREQ         => assignment(OrAssign)
-            case XOREQ        => assignment(XorAssign)
-            case LEFTSHIFTEQ  => assignment(LeftShiftAssign)
-            case RIGHTSHIFTEQ => assignment(RightShiftAssign)
-            case LBRACKET =>
-              eat(LBRACKET)
-              val expr1 = expression
-              eat(RBRACKET, EQSIGN)
-              val expr2 = expression
-              ArrayAssign(id, expr1, expr2)
-            case DOT =>
-              var e: ExprTree = id
-              while(currentToken.kind == DOT){
-                eat(DOT)
-                val methName = identifier
-                eat(LPAREN)
-                val args = commaList(expression)
-                eat(RPAREN)
-                e = MethodCall(e, methName, args)
-              }
-              e.asInstanceOf[MethodCall]
-            case INCREMENT =>
-              eat(INCREMENT)
-              PostIncrement(id)
-            case DECREMENT =>
-              eat(DECREMENT)
-              PostDecrement(id)
-            case LPAREN =>
-              eat(LPAREN)
-              val exprs = commaList(expression)
-              eat(RPAREN)
-              MethodCall(This(), id, exprs) // Implicit this
-            case _ => expected(EQSIGN, LBRACKET)
-          }
-          eat(SEMICOLON)
-          stat
         case _ =>
           val expr = expression
           eat(SEMICOLON)
           expr match {
-            case m : MethodCall    => m
-            case m : PreIncrement  => m
-            case m : PreDecrement  => m
-            case _                 => fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", expr)
+            case stat : StatTree => stat
+            case _               => fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", expr)
           }
       }
       tree.setPos(pos)
@@ -433,15 +381,54 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         expr
       }
 
+      /**
+       * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
+       *                | <ternary> [ "[" <expression> "] = " <expression> ]
+       */
+      def assignment() = {
+        val e = ternary
+
+        def assignment(constructor: (Identifier, ExprTree) => ExprTree) = {
+          eat(currentToken.kind)
+          e match {
+            case id: Identifier => constructor(id, expression)
+            case _ => fatal("expected identifier on left side of assignment.", e)
+          }
+        }
+        currentToken.kind match {
+          case EQSIGN       => assignment(Assign)
+          case PLUSEQ       => assignment(PlusAssign)
+          case MINUSEQ      => assignment(MinusAssign)
+          case MULEQ        => assignment(MulAssign)
+          case DIVEQ        => assignment(DivAssign)
+          case MODEQ        => assignment(ModAssign)
+          case ANDEQ        => assignment(AndAssign)
+          case OREQ         => assignment(OrAssign)
+          case XOREQ        => assignment(XorAssign)
+          case LEFTSHIFTEQ  => assignment(LeftShiftAssign)
+          case RIGHTSHIFTEQ => assignment(RightShiftAssign)
+          case LBRACKET     =>
+            eat(LBRACKET)
+            val index = expression
+            eat(RBRACKET, EQSIGN)
+            e match {
+              case id: Identifier => ArrayAssign(id, index, expression)
+              case _ => fatal("expected identifier on left side of assignment.", e)
+            }
+          case _ => e
+        }
+      }
+
       /** <ternary> ::= <or> [ ? <or> : <or> ]*/
       def ternary() = {
         var e = or
+        val pos = currentToken
         if(currentToken.kind == QUESTIONMARK){
           eat(QUESTIONMARK)
           val thn = or
           eat(COLON)
           val els = or
-          e = Ternary(e, thn, els)
+          e = Ternary(e, thn, els).setPos(pos)
         }
         e
       }
@@ -635,7 +622,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         }
         termRest(termFirst)
       }
-      ternary().setPos(pos)
+      assignment().setPos(pos)
     }
 
     private var usedOneGreaterThan = false

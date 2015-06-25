@@ -1,4 +1,6 @@
-import <kool.std.LinkedList>;
+package kool.std;
+
+import <LinkedList>;
 
 main Program = {
 	new Main().Run();
@@ -16,6 +18,14 @@ class Main {
 		var intSorter: 	  Sorter<LinkedList<Integer>, Integer> = new Sorter<LinkedList<Integer>, Integer>();
 		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
+		var j:            Int;
+		var k:            Int;
+
+        i = j = k = 1;
+
+        println("i: " + i);
+        println("j: " + j);
+        println("k: " + k);
 
 		for(i = 0; i < 100; i++){
         	intList.Add(new Integer(r.nextInt(10000)));
@@ -105,8 +115,6 @@ class Main {
 		}
 
 		println(intList.Equals(intList2));
-
-		println("hej \[31m lolol");
 	}
 }
 

@@ -89,21 +89,22 @@ object Trees {
   case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Print(expr: ExprTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
-  case class Assign(id: Identifier, expr: ExprTree) extends StatTree
-  case class PlusAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class MinusAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class MulAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class DivAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class ModAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class AndAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class OrAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class XorAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class LeftShiftAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class RightShiftAssign(id: Identifier, expr: ExprTree) extends StatTree
-  case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
 
   trait ExprTree extends Tree with Typed
+  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class PlusAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class MinusAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class MulAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class DivAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class ModAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class AndAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class OrAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class XorAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class LeftShiftAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class RightShiftAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
+
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends ExprTree
