@@ -97,6 +97,11 @@ object TypeChecking extends Pipeline[Program, Program] {
 
       def tcExpr(expr: ExprTree, expected: List[Type]): Type = {
         val tpe = expr match {
+          case Assignment(id, expr) =>
+            tcExpr(expr, id.getType)
+          case Assign(id, expr) =>
+            tcExpr(id, TInt)
+            tcExpr(expr, TInt)
           case And(lhs, rhs) =>
             tcExpr(lhs, TBool)
             tcExpr(rhs, TBool)

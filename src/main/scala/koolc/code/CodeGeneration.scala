@@ -43,17 +43,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     class StatementCompiler(val ch: CodeHandler, cn: String) {
 
-      def store(id: Identifier, put: () => Unit): CodeHandler = {
+      def store(id: Identifier, put: () => Unit, duplicate: Boolean = false): CodeHandler = {
         val name = id.value
         val tp = id.getType
-
+        def dup() = if(duplicate) ch << DUP
         if (varMap.contains(name)) {
           val id = varMap(name)
           put()
+          dup()
           tp.storeCode(ch, id)
         } else {
           ch << ArgLoad(0) // put this-reference on stack
           put()
+          dup()
           ch << PutField(cn, name, tp.byteCodeName)
         }
       }
@@ -240,6 +242,32 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << Label(els)
             ch << Ldc(0)
             ch << Label(after)
+          case Assign(id, expr) =>
+            store(id, () => compileExpr(expr), duplicate = true)
+          case a@Assignment(id, expr) =>
+            println("assign expr!")
+            store(id, () => {
+              load(id)
+              compileExpr(expr)
+              ch << (a match {
+                case _: PlusAssign => IADD
+                case _: MinusAssign => ISUB
+                case _: MulAssign => IMUL
+                case _: DivAssign => IDIV
+                case _: ModAssign => IREM
+                case _: AndAssign => IAND
+                case _: OrAssign => IOR
+                case _: XorAssign => IXOR
+                case _: LeftShiftAssign => ISHL
+                case _: RightShiftAssign => ISHR
+              })
+            }, duplicate = true)
+          case ArrayAssign(id, index, expr) =>
+            load(id)
+            compileExpr(index)
+            compileExpr(expr)
+            val tpe = id.getType.asInstanceOf[TArray].tpe
+            tpe.arrayStoreCode(ch)
           case Instance(expr, id) =>
             compileExpr(expr)
             ch << InstanceOf(id.value)
@@ -351,7 +379,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << Label(elsLabel)
             compileExpr(els)
             ch << Label(afterLabel)
-          case _ =>
         }
       }
     }
