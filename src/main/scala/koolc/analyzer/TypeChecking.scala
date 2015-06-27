@@ -25,7 +25,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         val objType = tcExpr(obj)
         val argTypes = methodCallArgs.map(tcExpr(_))
 
-        objType match {
+        val tpe = objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupMethod(meth.value, argTypes) match {
               case Some(methSymbol) =>
@@ -37,6 +37,8 @@ object TypeChecking extends Pipeline[Program, Program] {
             }
           case _ => error("Cannot call function on type " + objType, mc)
         }
+        mc.setType(tpe)
+        tpe
       }
 
       def checkPrivacy(classSymbol: ClassSymbol, methodSymbol: MethodSymbol): Unit = methodSymbol.access match {
@@ -70,25 +72,12 @@ object TypeChecking extends Pipeline[Program, Program] {
           if(tcExpr(expr) == TUnit) error("Type error: cannot call print with type Unit!", expr)
         case Println(expr)    =>
           if(tcExpr(expr) == TUnit) error("Type error: cannot call println with type Unit!", expr)
-        case Assign(id, expr) =>
-          tcExpr(expr, id.getType)
-        case Assignment(id, expr) =>
-          tcExpr(id, TInt)
-          tcExpr(expr, TInt)
-        case ArrayAssign(id, index, expr) =>
-          tcExpr(index, TInt)
-          val tpe = tcExpr(id)
-          tpe match {
-            case TArray(arrayTpe) => tcExpr(expr, arrayTpe)
-            case x => error("Type error: expected array, found \'" + x + "\'.", id)
-          }
-        case mc: MethodCall => mc.setType(typeCheckMethodCall(mc))
         case Return(Some(expr)) =>
           tcExpr(expr, globalMethodSymbol.getType)
         case r @ Return(None) =>
           if(globalMethodSymbol.getType != TUnit) error("Expected a return value of type \'" + globalMethodSymbol.getType + "\'.", r)
-        case IncrementDecrement(id) =>
-          tcExpr(id, TInt)
+        case expr: ExprTree =>
+          tcExpr(expr)
       }
 
       def tcExpr(expr: ExprTree, expected: Type*): Type = {
@@ -97,11 +86,18 @@ object TypeChecking extends Pipeline[Program, Program] {
 
       def tcExpr(expr: ExprTree, expected: List[Type]): Type = {
         val tpe = expr match {
-          case Assignment(id, expr) =>
-            tcExpr(expr, id.getType)
           case Assign(id, expr) =>
+            tcExpr(expr, id.getType)
+          case AnyAssignment(id, expr) =>
             tcExpr(id, TInt)
             tcExpr(expr, TInt)
+          case ArrayAssign(id, index, expr) =>
+            tcExpr(index, TInt)
+            val tpe = tcExpr(id)
+            tpe match {
+              case TArray(arrayTpe) => tcExpr(expr, arrayTpe)
+              case x => error("Type error: expected array of type \'" + id.getType + "\', found \'" + x + "\'.", id)
+            }
           case And(lhs, rhs) =>
             tcExpr(lhs, TBool)
             tcExpr(rhs, TBool)

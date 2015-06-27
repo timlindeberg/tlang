@@ -387,7 +387,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
        */
       def assignment() = {
         val e = ternary
-
         def assignment(constructor: (Identifier, ExprTree) => ExprTree) = {
           eat(currentToken.kind)
           e match {
@@ -395,8 +394,19 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             case _ => fatal("expected identifier on left side of assignment.", e)
           }
         }
+
         currentToken.kind match {
-          case EQSIGN       => assignment(Assign)
+          case EQSIGN       =>
+            eat(EQSIGN)
+            e match {
+              case ArrayRead(idExpr, index) =>
+                idExpr match {
+                  case id: Identifier => ArrayAssign(id, index, expression)
+                  case _ => fatal("expected identifier on left side of array assignment.", e)
+                }
+              case id: Identifier => Assign(id, expression)
+              case _ => fatal("expected identifier on left side of assignment.", e)
+            }
           case PLUSEQ       => assignment(PlusAssign)
           case MINUSEQ      => assignment(MinusAssign)
           case MULEQ        => assignment(MulAssign)
@@ -407,14 +417,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           case XOREQ        => assignment(XorAssign)
           case LEFTSHIFTEQ  => assignment(LeftShiftAssign)
           case RIGHTSHIFTEQ => assignment(RightShiftAssign)
-          case LBRACKET     =>
-            eat(LBRACKET)
-            val index = expression
-            eat(RBRACKET, EQSIGN)
-            e match {
-              case id: Identifier => ArrayAssign(id, index, expression)
-              case _ => fatal("expected identifier on left side of assignment.", e)
-            }
           case _ => e
         }
       }

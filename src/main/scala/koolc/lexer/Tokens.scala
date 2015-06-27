@@ -11,17 +11,34 @@ sealed trait TokenKind
 
 object Tokens {
 
-  object STRLITKIND extends TokenKind {
-    override def toString = "string literal"
+  object IDKIND extends TokenKind {
+    override def toString = "identifier"
   }
 
   object INTLITKIND extends TokenKind {
     override def toString = "integer literal"
   }
 
-  object IDKIND extends TokenKind {
-    override def toString = "identifier"
+  object LONGLITKIND extends TokenKind {
+    override def toString = "long literal"
   }
+
+  object FLOATLITKIND extends TokenKind {
+    override def toString = "float literal"
+  }
+
+  object DOUBLELITKIND extends TokenKind {
+    override def toString = "double literal"
+  }
+
+  object CHARLITKIND extends TokenKind {
+    override def toString = "char literal"
+  }
+
+  object STRLITKIND extends TokenKind {
+    override def toString = "string literal"
+  }
+
 
   object Kinded {
     def unapply(t: Token): Option[TokenKind] = {
@@ -90,6 +107,10 @@ object Tokens {
   case object STRING extends TokenKind // string
   case object EXTENDS extends TokenKind // extends
   case object INT extends TokenKind // int
+  case object LONG extends TokenKind // int
+  case object FLOAT extends TokenKind // int
+  case object DOUBLE extends TokenKind // int
+  case object CHAR extends TokenKind // int
   case object BOOLEAN extends TokenKind // boolean
   case object WHILE extends TokenKind // while
   case object FOR extends TokenKind // for
@@ -112,6 +133,26 @@ object Tokens {
   // Integer literals
   class INTLIT(val value: Int) extends Token(INTLITKIND) {
     override def toString = "INT(" + value + ")"
+  }
+
+  // Long literals
+  class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
+    override def toString = "LONG(" + value + ")"
+  }
+
+  // Float literals
+  class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
+    override def toString = "FLOAT(" + value + ")"
+  }
+
+  // Double literals
+  class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
+    override def toString = "DOUBLE(" + value + ")"
+  }
+
+  // Char literals
+  class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
+    override def toString = "CHAR(" + value + ")"
   }
 
   // String literals

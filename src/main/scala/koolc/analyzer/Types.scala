@@ -2,11 +2,8 @@ package koolc
 package analyzer
 
 import Symbols._
-import cafebabe.ByteCodes.IASTORE
-import cafebabe.CodeHandler
+import koolc.ast.Trees._
 import koolc.code.CodeGeneration
-import cafebabe.AbstractByteCodes._
-import cafebabe.ByteCodes._
 
 object Types {
   trait Typed {
@@ -21,96 +18,47 @@ object Types {
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def getSuperTypes: List[Type] = List()
-    def byteCodeName(): String
-    def loadCode(ch: CodeHandler, index: Int): CodeHandler
-    def storeCode(ch: CodeHandler, index: Int): CodeHandler
-    def arrayLoadCode(ch: CodeHandler): CodeHandler
-    def arrayStoreCode(ch: CodeHandler): CodeHandler
-    def returnCode(ch: CodeHandler): CodeHandler
-    def cmpEqCode(ch: CodeHandler, id: String): CodeHandler
-    def cmpNeCode(ch: CodeHandler, id: String): CodeHandler
-    def defaultConstantCode(ch: CodeHandler): CodeHandler
 
+    def byteCodeName(): String
+    val codes: CodeMap
   }
 
   case object TError extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = true
     override def toString = "[error]"
     override def byteCodeName(): String = "ERROR"
-    override def loadCode(ch: CodeHandler, index: Int) = ch
-    override def storeCode(ch: CodeHandler, index: Int) = ch
-    override def arrayLoadCode(ch: CodeHandler) = ch
-    override def arrayStoreCode(ch: CodeHandler) = ch
-    override def returnCode(ch: CodeHandler) = ch
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch
-    override def defaultConstantCode(ch: CodeHandler) = ch
+    override val codes = EmptyCodeMap
   }
 
   case object TUntyped extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = false
     override def toString = "[untyped]"
     override def byteCodeName(): String = "UNTYPED"
-    override def loadCode(ch: CodeHandler, index: Int) = ch
-    override def storeCode(ch: CodeHandler, index: Int) = ch
-    override def arrayLoadCode(ch: CodeHandler) = ch
-    override def arrayStoreCode(ch: CodeHandler) = ch
-    override def returnCode(ch: CodeHandler) = ch
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch
-    override def defaultConstantCode(ch: CodeHandler) = ch
+    override val codes = EmptyCodeMap
   }
 
   case object TUnit extends Type {
     override def toString = "Unit"
     override def byteCodeName(): String = "V"
-    override def loadCode(ch: CodeHandler, index: Int) = ch
-    override def storeCode(ch: CodeHandler, index: Int) = ch
-    override def arrayLoadCode(ch: CodeHandler) = ch
-    override def arrayStoreCode(ch: CodeHandler) = ch
-    override def returnCode(ch: CodeHandler) = ch << RETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch
-    override def defaultConstantCode(ch: CodeHandler) = ch
+    override val codes = EmptyCodeMap
   }
 
   case object TInt extends Type {
     override def toString = "Int"
     override def byteCodeName(): String = "I"
-    override def loadCode(ch: CodeHandler, index: Int) = ch << ILoad(index)
-    override def storeCode(ch: CodeHandler, index: Int) = ch << IStore(index)
-    override def arrayLoadCode(ch: CodeHandler) = ch << IALOAD
-    override def arrayStoreCode(ch: CodeHandler) = ch << IASTORE
-    override def returnCode(ch: CodeHandler) = ch << IRETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch << If_ICmpEq(id)
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch << If_ICmpNe(id)
-    override def defaultConstantCode(ch: CodeHandler) = ch << Ldc(0)
+    override val codes = IntCodeMap
   }
 
   case object TBool extends Type {
     override def toString = "Bool"
     override def byteCodeName(): String = "Z"
-    override def loadCode(ch: CodeHandler, index: Int) = ch << ILoad(index)
-    override def storeCode(ch: CodeHandler, index: Int) = ch << IStore(index)
-    override def arrayLoadCode(ch: CodeHandler) = ch << BALOAD
-    override def arrayStoreCode(ch: CodeHandler) = ch << BASTORE
-    override def returnCode(ch: CodeHandler) = ch << IRETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch << If_ICmpEq(id)
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch << If_ICmpNe(id)
-    override def defaultConstantCode(ch: CodeHandler) = ch << Ldc(0)
+    override val codes = BoolCodeMap
   }
 
   case object TString extends Type {
     override def toString = "String"
     override def byteCodeName(): String = "Ljava/lang/String;"
-    override def loadCode(ch: CodeHandler, index: Int) = ch << ALoad(index)
-    override def storeCode(ch: CodeHandler, index: Int) = ch << AStore(index)
-    override def arrayLoadCode(ch: CodeHandler) = ch << AALOAD
-    override def arrayStoreCode(ch: CodeHandler) = ch << AASTORE
-    override def returnCode(ch: CodeHandler) = ch << ARETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch << If_ACmpNe(id)
-    override def defaultConstantCode(ch: CodeHandler) = ch << ACONST_NULL
+    override val codes = StringCodeMap
   }
 
   case class TArray(tpe: Type) extends Type {
@@ -122,14 +70,7 @@ object Types {
     }
     override def toString = tpe.toString + "[]"
     override def byteCodeName(): String = "[" + tpe.byteCodeName
-    override def loadCode(ch: CodeHandler, index: Int) = ch << ALoad(index)
-    override def storeCode(ch: CodeHandler, index: Int) = ch << AStore(index)
-    override def arrayLoadCode(ch: CodeHandler) = ???
-    override def arrayStoreCode(ch: CodeHandler) = ???
-    override def returnCode(ch: CodeHandler) = ch << ARETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch << If_ACmpNe(id)
-    override def defaultConstantCode(ch: CodeHandler) = ch << ACONST_NULL
+    override val codes = ArrayCodeMap
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
@@ -155,14 +96,7 @@ object Types {
     }
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 
-    override def loadCode(ch: CodeHandler, index: Int) = ch << ALoad(index)
-    override def storeCode(ch: CodeHandler, index: Int) = ch << AStore(index)
-    override def arrayLoadCode(ch: CodeHandler) = ch << AALOAD
-    override def arrayStoreCode(ch: CodeHandler) = ch << AASTORE
-    override def returnCode(ch: CodeHandler) = ch << ARETURN
-    override def cmpEqCode(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)
-    override def cmpNeCode(ch: CodeHandler, id: String) = ch << If_ACmpNe(id)
-    override def defaultConstantCode(ch: CodeHandler) = ch << ACONST_NULL
+    override val codes = new ObjectCodeMap(classSymbol.name)
   }
 
   // special object to implement the fact that all objects are its subclasses

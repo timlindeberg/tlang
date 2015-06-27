@@ -20,9 +20,10 @@ class Main {
 		var i:            Int;
 		var j:            Int;
 		var k:            Int;
+		var arr:		  Int[] = new Int[5];
 
-        i = j = k = 1;
-
+		i = arr[0] = j = k = 3;
+		println("arr[0]: " + arr[0]);
         println("i: " + i);
         println("j: " + j);
         println("k: " + k);

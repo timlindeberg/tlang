@@ -1,7 +1,5 @@
-object Test {
-  def main() : Unit = {
-  	println(new Foo().bar(new A()));
-  }
+main Main = {
+	println(new Foo().bar(new A()));
 }
 
 class Foo {

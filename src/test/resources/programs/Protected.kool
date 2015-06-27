@@ -1,7 +1,5 @@
-object Main {
-    def main() : Unit = {
-      new H().run();
-    }
+main Main = {
+	new H().run();
 }
 
 class H {

@@ -64,6 +64,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "extends"   -> EXTENDS,
       "Unit"      -> UNIT,
       "Int"       -> INT,
+      "Long"      -> LONG,
+      "Float"     -> FLOAT,
+      "Double"    -> DOUBLE,
+      "Char"      -> CHAR,
       "Bool"      -> BOOLEAN,
       "while"     -> WHILE,
       "for"       -> FOR,
@@ -85,7 +89,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
     private def createIdentifierOrKeyWord(s: String): Token =
       if (keyWords.contains(s)) createToken(keyWords(s), s.length)
-      else                      createIdToken(s, s.length)
+      else createIdToken(s, s.length)
 
     private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
       def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
@@ -93,11 +97,11 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
         chars match {
           case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)
-          case (c :: r) if end(c)       => (createIdentifierOrKeyWord(s), chars)
-          case (c :: r)                 =>
+          case (c :: r) if end(c) => (createIdentifierOrKeyWord(s), chars)
+          case (c :: r) =>
             error("Invalid identifier.", s.length)
             (createToken(BAD, s.length), chars)
-          case Nil                      => (createIdentifierOrKeyWord(s), chars)
+          case Nil => (createIdentifierOrKeyWord(s), chars)
         }
       }
       getIdentifierOrKeyword(chars.tail, chars.head.toString)
@@ -108,13 +112,13 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       val startPos = createToken(BAD, 0)
 
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case '"' :: '"' :: '"' :: r  => (createToken(s, s.length + 6), r)
-        case '\n' :: r               =>
+        case '`' :: r => (createToken(s, s.length + 6), r)
+        case '\n' :: r =>
           line += 1
           column = 1
           getStringIdentifier(r, s + '\n')
-        case c :: r                  => getStringIdentifier(r, s + c)
-        case Nil                     =>
+        case c :: r => getStringIdentifier(r, s + c)
+        case Nil =>
           error("Unclosed multiline string literal.", startPos)
           (createToken(BAD, s.length), Nil)
       }
@@ -127,82 +131,111 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
       def areHexDigits(chars: Char*) = chars.forall(c => c.isDigit || "abcdef".contains(c.toLower))
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case '"'  :: r => (createToken(s, s.length + 2), r)
+        case '"' :: r => (createToken(s, s.length + 2), r)
         case '\n' :: r =>
           error("Unclosed string literal.", startPos)
           (createToken(BAD, s.length), chars)
         case '\\' :: r => r match {
-          case 't'  :: r => getStringIdentifier(r, s + '\t')
-          case 'b'  :: r => getStringIdentifier(r, s + '\b')
-          case 'n'  :: r => getStringIdentifier(r, s + '\n')
-          case 'r'  :: r => getStringIdentifier(r, s + '\r')
-          case 'f'  :: r => getStringIdentifier(r, s + '\f')
-          case '''  :: r => getStringIdentifier(r, s + '\'')
-          case '"'  :: r => getStringIdentifier(r, s + '\"')
+          case 't' :: r => getStringIdentifier(r, s + '\t')
+          case 'b' :: r => getStringIdentifier(r, s + '\b')
+          case 'n' :: r => getStringIdentifier(r, s + '\n')
+          case 'r' :: r => getStringIdentifier(r, s + '\r')
+          case 'f' :: r => getStringIdentifier(r, s + '\f')
+          case ''' :: r => getStringIdentifier(r, s + '\'')
+          case '"' :: r => getStringIdentifier(r, s + '\"')
           case '\\' :: r => getStringIdentifier(r, s + '\\')
-          case '['  :: r => getStringIdentifier(r, s + 27.toChar + '[') // TODO: add rules for ANSI escape codes
-          case 'u'  :: r => r match {
-              case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
-                val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
-                val unicodeChar = String.valueOf(Character.toChars(unicodeNumber))
-                getStringIdentifier(r, s + unicodeChar)
-              case _ =>
-                error("Invalid unicode escape sequence.", s.length + 1)
-                getStringIdentifier(r, s)
-            }
+          case '[' :: r => getStringIdentifier(r, s + 27.toChar + '[') // TODO: add rules for ANSI escape codes
+          case 'u' :: r => r match {
+            case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
+              val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
+              val unicodeChar = String.valueOf(Character.toChars(unicodeNumber))
+              getStringIdentifier(r, s + unicodeChar)
+            case _ =>
+              error("Invalid unicode escape sequence.", s.length + 1)
+              getStringIdentifier(r, s)
+          }
           case _ =>
             error("Invalid escape sequence.", s.length + 1)
             getStringIdentifier(r, s)
         }
-        case c :: r           => getStringIdentifier(r, s + c)
-        case Nil              =>
+        case c :: r => getStringIdentifier(r, s + c)
+        case Nil =>
           error("Unclosed string literal.", startPos)
           (createToken(BAD, s.length), chars)
       }
       getStringIdentifier(chars, "")
     }
 
-    private def getIntLiteral(chars: List[Char]): (Token, List[Char]) = {
+    private def getNumberLiteral(chars: List[Char]): (Token, List[Char]) = {
+
 
       val startPos = createToken(BAD, 0)
 
-      def parseIntToken(intString: String): Token = {
+      def tryConversion[T](numStr: String, conversion: (String) => T): Option[T] =
         try {
-          createToken(intString.toInt, intString.length)
+          Some(conversion(numStr))
         } catch {
           case _: NumberFormatException =>
-            error("Integer number too large.", startPos)
-            createToken(BAD, intString.length)
+            error("Number is too large to fit in datatype." , startPos)
+            None
         }
+
+      def parseIntToken(numStr: String): Token = tryConversion(numStr, _.toInt) match {
+        case Some(value) => createToken(value, numStr.length)
+        case None        => createToken(BAD, numStr.length)
       }
 
-      def getIntLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-        case (c :: r) if c.isDigit => getIntLiteral(r, s + c)
-        case _                     => (parseIntToken(s), chars)
+      def parseLongToken(numStr: String): Token = tryConversion(numStr, _.toLong) match {
+        case Some(value) => createToken(value, numStr.length)
+        case None        => createToken(BAD, numStr.length)
       }
-      getIntLiteral(chars, "")
+
+      def parseFloatToken(numStr: String): Token = tryConversion(numStr, _.toFloat) match {
+        case Some(value) => createToken(value, numStr.length)
+        case None        => createToken(BAD, numStr.length)
+      }
+
+      def parseDoubleToken(numStr: String): Token = tryConversion(numStr, _.toDouble) match {
+        case Some(value) => createToken(value, numStr.length)
+        case None        => createToken(BAD, numStr.length)
+      }
+
+      var foundDecimal = false
+      def getNumberLiteral(chars: List[Char], s: String): (Token, List[Char]) =
+        chars match {
+          case c   :: r if c.isDigit => getNumberLiteral(r, s + c)
+          case '.' :: r =>
+            if (!foundDecimal) {
+              foundDecimal = true
+              getNumberLiteral(r, s + ".")
+            } else {
+              error("Invalid number.", startPos)
+              (createToken(BAD, s.length), chars)
+            }
+          case 'f' :: r => (parseFloatToken(s), r)
+          case 'l' :: r => (parseLongToken(s), r)
+          case _        =>
+            if(foundDecimal) (parseDoubleToken(s), chars)
+            else             (parseIntToken(s), chars)
+        }
+
+      val res = getNumberLiteral(chars, "")
+      res._1.setPos(startPos)
+      res
     }
 
-    private def createToken(kind: TokenKind, tokenLength: Int): Token = {
-      val token = new Token(kind).setPos(file, Position.encode(line, column))
-      column += tokenLength
-      token
-    }
 
-    private def createToken(integer: Int, tokenLength: Int): Token = {
-      val token = new INTLIT(integer).setPos(file, Position.encode(line, column))
-      column += tokenLength
-      token
-    }
+    private def createToken(int: Int, tokenLength: Int)         = _createToken(new INTLIT(int), tokenLength)
+    private def createToken(long: Long, tokenLength: Int)       = _createToken(new LONGLIT(long), tokenLength)
+    private def createToken(float: Float, tokenLength: Int)     = _createToken(new FLOATLIT(float), tokenLength)
+    private def createToken(double: Double, tokenLength: Int)   = _createToken(new DOUBLELIT(double), tokenLength)
+    private def createToken(kind: TokenKind, tokenLength: Int)  = _createToken(new Token(kind), tokenLength)
+    private def createIdToken(string: String, tokenLength: Int) = _createToken(new ID(string), tokenLength)
+    private def createToken(char: Char, tokenLength: Int)       = _createToken(new CHARLIT(char), tokenLength)
+    private def createToken(string: String, tokenLength: Int)   = _createToken(new STRLIT(string), tokenLength)
 
-    private def createIdToken(string: String, tokenLength: Int): Token = {
-      val token = new ID(string).setPos(file, Position.encode(line, column))
-      column += tokenLength
-      token
-    }
-
-    private def createToken(string: String, tokenLength: Int): Token = {
-      val token = new STRLIT(string).setPos(file, Position.encode(line, column))
+    private def _createToken[T](token:  Token, tokenLength: Int): Token = {
+      token.setPos(file, Position.encode(line, column))
       column += tokenLength
       token
     }
@@ -241,6 +274,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       skip(chars)
     }
 
+
     private def readTokens(chars: List[Char]): List[Token] = {
       def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
         case '\n' :: r =>
@@ -272,21 +306,22 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
+        case '\'' :: c :: '\'' :: r                     => readTokens(r, createToken(c, 1) :: tokens)
         case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
-        case (c :: r) if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
-        case (c :: r) if c.isLetter                   =>
+        case c :: r if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
+        case c :: r if c.isLetter =>
           val (token, tail) = getIdentifierOrKeyword(chars)
           readTokens(tail, token :: tokens)
-        case ('"' :: '"' :: '"' ::  r)                =>
+        case '`' ::  r =>
           val (token, tail) = getMultiLineStringLiteral(r)
           readTokens(tail, token :: tokens)
-        case ('"' :: r)                               =>
+        case '"' :: r =>
           val (token, tail) = getStringLiteral(r)
           readTokens(tail, token :: tokens)
-        case (c :: r) if c.isDigit                    =>
-          val (token, tail) = getIntLiteral(chars)
+        case c :: r if c.isDigit =>
+          val (token, tail) = getNumberLiteral(chars)
           readTokens(tail, token :: tokens)
         case Nil                                      => new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens
         case _ :: r                                   =>

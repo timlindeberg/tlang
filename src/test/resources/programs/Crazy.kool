@@ -1,13 +1,11 @@
-object P { def main(): Unit = { 
-    println(new A().bar());
+main Main = {
+	println(new A().bar());
     println(new A().bar2());
     println(new A().T());
     println(new B().foo());
     println(new B().a());
     println(new B().b());
-
     println(new Test().init());
-  } 
 }
 
 class A {

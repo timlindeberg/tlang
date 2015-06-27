@@ -193,7 +193,7 @@ object Trees {
     }
   }
 
-  object Assignment {
+  object AnyAssignment {
     def unapply(e: StatTree): Option[(Identifier, ExprTree)] = e match {
       case Assign(id, expr)           => Some((id, expr))
       case PlusAssign(id, expr)       => Some((id, expr))

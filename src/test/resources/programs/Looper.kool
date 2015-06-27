@@ -1,10 +1,8 @@
-object Main {
-    def main() : Unit = {
-      println(new Looper().run(100));
-      println(new Loopy().run(100));
-      println(new Loopy2().run(100));
-      println(new Loopy3().run(100));
-    }
+main Main = {
+	println(new Looper().run(100));
+    println(new Loopy().run(100));
+    println(new Loopy2().run(100));
+    println(new Loopy3().run(100));
 }
 
 class Looper {

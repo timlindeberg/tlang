@@ -51,13 +51,15 @@ object Symbols {
 
   class MethodMap extends scala.collection.mutable.HashMap[(String, List[Type]), MethodSymbol] {
     protected override def elemEquals(key1: (String, List[Type]), key2: (String, List[Type])): Boolean = {
+      // TODO: This fails for some cases for some reason
       val (name1, args1) = key1
       val (name2, args2) = key2
-      if(name1 == name2 && args1.size == args2.size)
-        args1.zip(args2).forall{ case(arg1, arg2) => arg1.isSubTypeOf(arg2) }
-      else
-        false
 
+      if(name1 == name2 && args1.size == args2.size){
+        args1.zip(args2).forall { case(arg1, arg2) => arg2.isSubTypeOf(arg1) }
+      } else{
+        false
+      }
     }
   }
 

@@ -1,7 +1,5 @@
-object Main {
-    def main() : Unit = {
-        println(new Test().test());
-    }
+main Main = {
+	new Test().test();
 }
 
 class Test {
