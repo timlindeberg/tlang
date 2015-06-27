@@ -125,11 +125,62 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       getStringIdentifier(chars, "")
     }
 
+    private def areHexDigits(chars: Char*) = chars.forall(c => c.isDigit || "abcdef".contains(c.toLower))
+
+
+    private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = chars match {
+        case '\'' :: r =>
+          error("Empty character literal.")
+          (createToken(BAD, 1), chars)
+        case '\\' :: c :: '\'' :: r => c match {
+          case 't' => (createToken('\t', 4), r)
+          case 'b' => (createToken('\b', 4), r)
+          case 'n' => (createToken('\n', 4), r)
+          case 'r' => (createToken('\r', 4), r)
+          case 'f' => (createToken('\f', 4), r)
+          case ''' => (createToken('\'', 4), r)
+          case '"' => (createToken('\"', 4), r)
+          case '\\' => (createToken('\\', 4), r)
+          case _ =>
+            error("Invalid escape sequence.", 3)
+            (createToken(BAD, 4), r)
+        }
+        case '\\' :: '\'' :: r =>
+          error("Invalid character literal.", 3)
+          (createToken(BAD, 4), r)
+        case '\\':: 'u' :: r => r match {
+          case c1 :: c2 :: c3 :: c4 :: '\'' :: r if areHexDigits(c1, c2, c3, c4) =>
+            val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
+            (createToken(unicodeNumber.toChar, 8), r)
+          case c1 :: c2 :: c3 :: c4 :: '\'' :: r =>
+            error("Invalid unicode escape sequence.", 6)
+            (createToken(BAD, 4), r)
+          case c1 :: c2 :: c3 :: '\'' :: r =>
+            error("Invalid unicode escape sequence.", 5)
+            (createToken(BAD, 4), r)
+          case c1 :: c2 :: '\'' :: r =>
+            error("Invalid unicode escape sequence.", 4)
+            (createToken(BAD, 4), r)
+          case c1 :: '\'' :: r =>
+            error("Invalid unicode escape sequence.", 3)
+            (createToken(BAD, 4), r)
+          case '\'' :: r =>
+            error("Invalid unicode escape sequence.", 2)
+            (createToken(BAD, 4), r)
+        }
+        case c :: '\'' :: r => (createToken(c, 4), r)
+        case c1 :: c2 :: '\'' :: r =>
+          error("Invalid character literal.", 4)
+          (createToken(BAD, 4), r)
+        case r =>
+          error("Unclosed character literal.", 4)
+          (createToken(BAD, 4), r)
+      }
+
     private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
 
       val startPos = createToken(BAD, 0)
 
-      def areHexDigits(chars: Char*) = chars.forall(c => c.isDigit || "abcdef".contains(c.toLower))
       def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
         case '"' :: r => (createToken(s, s.length + 2), r)
         case '\n' :: r =>
@@ -148,8 +199,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           case 'u' :: r => r match {
             case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
               val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
-              val unicodeChar = String.valueOf(Character.toChars(unicodeNumber))
-              getStringIdentifier(r, s + unicodeChar)
+              getStringIdentifier(r, s + unicodeNumber.toChar)
             case _ =>
               error("Invalid unicode escape sequence.", s.length + 1)
               getStringIdentifier(r, s)
@@ -306,13 +356,15 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         case '|' :: '|' :: r                          => readTokens(r, createToken(OR, 2) :: tokens)
         case '&' :: '&' :: r                          => readTokens(r, createToken(AND, 2) :: tokens)
         case '0' :: r                                 => readTokens(r, createToken(0, 1) :: tokens)
-        case '\'' :: c :: '\'' :: r                     => readTokens(r, createToken(c, 1) :: tokens)
         case '/' :: '*' :: r =>
           val (token, tail) = skipBlock(r)
           readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
         case c :: r if singleCharTokens.contains(c) => readTokens(r, createToken(singleCharTokens(c), 1) :: tokens)
         case c :: r if c.isLetter =>
           val (token, tail) = getIdentifierOrKeyword(chars)
+          readTokens(tail, token :: tokens)
+        case '\'' :: r =>
+          val (token, tail) = getCharLiteral(r)
           readTokens(tail, token :: tokens)
         case '`' ::  r =>
           val (token, tail) = getMultiLineStringLiteral(r)
