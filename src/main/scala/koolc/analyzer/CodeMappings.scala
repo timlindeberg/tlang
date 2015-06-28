@@ -7,8 +7,14 @@ import cafebabe.CodeHandler
 abstract class CodeMap {
 
   /* Types */
-  val T_INT = 10
   val T_BOOL = 4
+  val T_CHAR = 5
+  val T_FLOAT = 6
+  val T_DOUBLE = 7
+  val T_INT = 10
+  val T_LONG = 11
+
+
 
   // Load, store create
   def load(ch: CodeHandler, index: Int): CodeHandler
@@ -41,6 +47,8 @@ abstract class CodeMap {
   // Misc
   def ret(ch: CodeHandler): CodeHandler
   def negation(ch: CodeHandler): CodeHandler
+  def dup(ch: CodeHandler): CodeHandler
+
 }
 
 object EmptyCodeMap extends CodeMap {
@@ -71,6 +79,7 @@ object EmptyCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch
   override def negation(ch: CodeHandler) = ch
+  override def dup(ch: CodeHandler) = ch
 }
 
 object IntCodeMap extends CodeMap {
@@ -101,6 +110,38 @@ object IntCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << IRETURN
   override def negation(ch: CodeHandler) = ch << INEG
+  override def dup(ch: CodeHandler) = ch << DUP
+}
+
+object LongCodeMap extends CodeMap {
+  override def load(ch: CodeHandler, index: Int) = ch << LLoad(index)
+  override def store(ch: CodeHandler, index: Int) = ch << LStore(index)
+  override def arrayLoad(ch: CodeHandler) = ch << LALOAD
+  override def arrayStore(ch: CodeHandler) = ch << LASTORE
+  override def defaultConstant(ch: CodeHandler) = ch << Ldc(0l)
+  override def newArray(ch: CodeHandler) = ch << NewArray(T_LONG)
+
+  override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)2
+  override def cmpLe(ch: CodeHandler, id: String) = ch << If_ICmpLe(id)
+  override def cmpGe(ch: CodeHandler, id: String) = ch << If_ICmpGe(id)
+  override def cmpGt(ch: CodeHandler, id: String) = ch << If_ICmpGt(id)
+  override def cmpEq(ch: CodeHandler, id: String) = ch << If_ICmpEq(id)
+  override def cmpNe(ch: CodeHandler, id: String) = ch << If_ICmpNe(id)
+
+  override def add(ch: CodeHandler) = ch << LADD
+  override def sub(ch: CodeHandler) = ch << LSUB
+  override def mul(ch: CodeHandler) = ch << LMUL
+  override def div(ch: CodeHandler) = ch << LDIV
+  override def mod(ch: CodeHandler) = ch << LREM
+  override def and(ch: CodeHandler) = ch << LAND
+  override def or(ch: CodeHandler) = ch << LOR
+  override def xor(ch: CodeHandler) = ch << LXOR
+  override def leftShift(ch: CodeHandler) = ch << LSHL
+  override def rightShift(ch: CodeHandler) = ch << LSHR
+
+  override def ret(ch: CodeHandler) = ch << LRETURN
+  override def negation(ch: CodeHandler) = ch << LNEG
+  override def dup(ch: CodeHandler) = ch << DUP2
 }
 
 object BoolCodeMap extends CodeMap {
@@ -131,6 +172,7 @@ object BoolCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << IRETURN
   override def negation(ch: CodeHandler) = ch
+  override def dup(ch: CodeHandler) = ch << DUP
 }
 
 object StringCodeMap extends CodeMap {
@@ -161,6 +203,7 @@ object StringCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def negation(ch: CodeHandler) = ch
+  override def dup(ch: CodeHandler) = ch << DUP
 }
 
 object ArrayCodeMap extends CodeMap {
@@ -191,6 +234,7 @@ object ArrayCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def negation(ch: CodeHandler) = ch
+  override def dup(ch: CodeHandler) = ch << DUP
 }
 
 class ObjectCodeMap(name: String) extends CodeMap {
@@ -221,4 +265,5 @@ class ObjectCodeMap(name: String) extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def negation(ch: CodeHandler) = ch
+  override def dup(ch: CodeHandler) = ch << DUP
 }

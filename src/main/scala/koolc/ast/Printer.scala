@@ -50,7 +50,11 @@ object Printer {
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"
       case IntType()      => "Int"
+      case LongType()     => "Long"
+      case FloatType()    => "Float"
+      case DoubleType()   => "Double"
       case BooleanType()  => "Bool"
+      case CharType()     => "Char"
       case StringType()   => "String"
       case UnitType()     => "Unit"
       // Statements
@@ -101,6 +105,10 @@ object Printer {
       case ArrayLength(arr)                 => f(arr) + ".length"
       case MethodCall(obj, meth, args)      => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
       case IntLit(value)                    => value.toString
+      case LongLit(value)                   => value.toString + "l"
+      case FloatLit(value)                  => value.toString + "f"
+      case DoubleLit(value)                 => value.toString
+      case CharLit(value)                   => "'" + value + "'"
       case StringLit(value)                 => "\"" + escapeJava(value) + "\""
       case True()                           => "true"
       case False()                          => "false"

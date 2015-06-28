@@ -21,8 +21,13 @@ class Main {
 		var j:            Int;
 		var k:            Int;
 		var arr:		  Int[] = new Int[5];
+        var f:            Float;
+        var d:            Double;
 
-		i = arr[0] = j = k = 'adasd';
+        i = 3;
+        d = f = i;
+
+
 		println("arr[0]: " + arr[0]);
         println("i: " + i);
         println("j: " + j);

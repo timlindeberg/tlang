@@ -207,18 +207,29 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <tpe> ::= ( Int | Bool | String | <classIdentifier> ) { "[]" }
+     * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }
      */
     private def tpe(): TypeTree = {
       val pos = currentToken
       val tpe = currentToken.kind match {
-        case INT => {
+        case INT =>
           eat(INT)
           IntType()
-        }
+        case LONG =>
+          eat(LONG)
+          LongType()
+        case FLOAT =>
+          eat(FLOAT)
+          FloatType()
+        case DOUBLE =>
+          eat(DOUBLE)
+          DoubleType()
         case BOOLEAN =>
           eat(BOOLEAN)
           BooleanType()
+        case CHAR =>
+          eat(CHAR)
+          CharType()
         case STRING =>
           eat(STRING)
           StringType()
@@ -522,6 +533,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
               PreIncrement(identifier)
             case INTLITKIND =>
               intLit
+            case LONGLITKIND =>
+              longLit
+            case FLOATLITKIND =>
+              floatLit
+            case DOUBLELITKIND =>
+              doubleLit
+            case CHARLITKIND =>
+              charLit
             case STRLITKIND =>
               stringLit
             case IDKIND =>
@@ -710,6 +729,47 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case _ => expected(INTLITKIND)
     }
 
+    /**
+     * <longLit> ::= sequence of digits, with no leading zeros ending with an 'l'
+     */
+    private def longLit(): LongLit = currentToken match {
+      case longLit: LONGLIT =>
+        eat(LONGLITKIND)
+        LongLit(longLit.value).setPos(longLit)
+      case _ => expected(LONGLITKIND)
+    }
+
+    /**
+     * <floatLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
+     */
+    private def floatLit(): FloatLit = currentToken match {
+      case floatLit: FLOATLIT =>
+        eat(FLOATLITKIND)
+        FloatLit(floatLit.value).setPos(floatLit)
+      case _ => expected(FLOATLITKIND)
+    }
+
+
+    /**
+     * <doubleLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
+     */
+    private def doubleLit(): DoubleLit = currentToken match {
+      case doubleLit: DOUBLELIT =>
+        eat(DOUBLELITKIND)
+        DoubleLit(doubleLit.value).setPos(doubleLit)
+      case _ => expected(DOUBLELITKIND)
+    }
+
+    /**
+     * <charLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
+     */
+    private def charLit(): CharLit = currentToken match {
+      case charLit: CHARLIT =>
+        eat(CHARLITKIND)
+        CharLit(charLit.value).setPos(charLit)
+      case _ => expected(CHARLITKIND)
+    }
+    
     /**
      * Parses lists of the form
      * <nonEmptyList> ::= parse { delimiter parse }

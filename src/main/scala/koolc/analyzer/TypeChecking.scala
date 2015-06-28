@@ -87,10 +87,25 @@ object TypeChecking extends Pipeline[Program, Program] {
       def tcExpr(expr: ExprTree, expected: List[Type]): Type = {
         val tpe = expr match {
           case Assign(id, expr) =>
-            tcExpr(expr, id.getType)
+            id.getType match {
+              case t: TObject => tcExpr(expr, t)
+              case TString    => tcExpr(expr, id.getType)
+              case TChar      => tcExpr(expr, TInt, TChar)
+              case TInt       => tcExpr(expr, TInt, TChar)
+              case TBool      => tcExpr(expr, TInt, TBool)
+              case TFloat     => tcExpr(expr, TInt, TChar, TFloat)
+              case TDouble    => tcExpr(expr, TInt, TChar, TFloat, TDouble)
+            }
           case AnyAssignment(id, expr) =>
-            tcExpr(id, TInt)
-            tcExpr(expr, TInt)
+            // TODO: All these assignments are not valid
+            id.getType match {
+              case t: TObject => tcExpr(expr, t)
+              case TString    => tcExpr(expr, id.getType)
+              case TChar      => tcExpr(expr, TInt, TChar)
+              case TInt       => tcExpr(expr, TInt, TChar)
+              case TFloat     => tcExpr(expr, TInt, TChar, TFloat)
+              case TDouble    => tcExpr(expr, TInt, TChar, TFloat, TDouble)
+            }
           case ArrayAssign(id, index, expr) =>
             tcExpr(index, TInt)
             val tpe = tcExpr(id)
@@ -128,18 +143,24 @@ object TypeChecking extends Pipeline[Program, Program] {
             tcExpr(expr, tpe.getType.getSuperTypes)
             tpe.getType
           case Comparison(lhs, rhs) =>
-            tcExpr(lhs, TInt)
-            tcExpr(rhs, TInt)
+            val expectedType = tcExpr(lhs, Types.primitives)
+            tcExpr(rhs, expectedType)
             TBool
           case Plus(lhs, rhs) =>
-            (tcExpr(lhs, TInt, TString), tcExpr(rhs, TInt, TString)) match {
-              case (TInt, TInt) => TInt
-              case _            => TString
+            (tcExpr(lhs, TString :: Types.primitives), tcExpr(rhs, TString :: Types.primitives )) match {
+              case (TString, _)    | (_, TString)     => TString
+              case (TDouble, _)    | (_, TDouble)     => TDouble
+              case (TFloat, _)     | (_, TFloat)      => TFloat
+              case (TLong, _)      | (_, TLong)       => TLong
+              case _                                  => TInt
             }
           case MathBinaryExpr(lhs, rhs) =>
-            tcExpr(lhs, TInt)
-            tcExpr(rhs, TInt)
-            TInt
+            (tcExpr(lhs, Types.primitives), tcExpr(rhs, Types.primitives)) match {
+              case (TDouble, _)    | (_, TDouble)     => TDouble
+              case (TFloat, _)     | (_, TFloat)      => TFloat
+              case (TLong, _)      | (_, TLong)       => TLong
+              case _                                  => TInt
+            }
           case ArrayRead(arr, index) =>
             tcExpr(index, TInt)
             tcExpr(arr) match {
@@ -153,6 +174,10 @@ object TypeChecking extends Pipeline[Program, Program] {
             }
           case mc : MethodCall        => typeCheckMethodCall(mc)
           case IntLit(value)          => TInt
+          case LongLit(value)         => TLong
+          case FloatLit(value)        => TFloat
+          case DoubleLit(value)       => TDouble
+          case CharLit(value)         => TChar
           case StringLit(value)       => TString
           case True()                 => TBool
           case False()                => TBool
@@ -182,14 +207,17 @@ object TypeChecking extends Pipeline[Program, Program] {
             tcExpr(expr, TBool)
             TBool
           case Negation(expr) =>
-            tcExpr(expr, TInt)
-            TInt
+            tcExpr(expr, Types.primitives) match {
+              case TChar => TInt // Negation of char is int
+              case x     => x
+            }
           case IncrementDecrement(id) =>
-            tcExpr(id, TInt)
-            TInt
+            tcExpr(id, TInt, TLong, TFloat, TDouble)
           case LogicNot(expr)  =>
-            tcExpr(expr, TInt)
-            TInt
+            tcExpr(expr, TInt, TLong, TChar) match {
+              case TLong => TLong
+              case _     => TInt
+            }
           case Ternary(condition, thn, els) =>
             tcExpr(condition, TBool)
             val tpe = tcExpr(thn)

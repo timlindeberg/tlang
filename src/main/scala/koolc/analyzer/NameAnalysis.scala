@@ -312,6 +312,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           case BooleanType()  => set(TBool)
           case IntType()      => set(TInt)
+          case LongType()     => set(TLong)
+          case FloatType()    => set(TFloat)
+          case DoubleType()   => set(TDouble)
+          case CharType()     => set(TChar)
           case ArrayType(arrayTpe) =>
             setType(arrayTpe)
             set(TArray(arrayTpe.getType))
@@ -333,6 +337,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           case BooleanType()  => tpe.setType(TBool)
           case IntType()      => tpe.setType(TInt)
+          case LongType()     => tpe.setType(TLong)
+          case FloatType()    => tpe.setType(TFloat)
+          case DoubleType()   => tpe.setType(TDouble)
+          case CharType()     => tpe.setType(TChar)
           case ArrayType(arrayTpe) =>
             setType(arrayTpe)
             tpe.setType(TArray(arrayTpe.getType))

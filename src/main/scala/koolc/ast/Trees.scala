@@ -70,15 +70,23 @@ object Trees {
       case ClassIdentifier(value, _) => value
       case ArrayType(tpe)            => tpe.name + "[]"
       case IntType()                 => "Int"
-      case StringType()              => "String"
+      case LongType()                => "Long"
+      case FloatType()               => "Float"
+      case DoubleType()              => "Double"
       case BooleanType()             => "Bool"
+      case CharType()                => "Char"
+      case StringType()              => "String"
       case UnitType()                => "Unit"
     }
   }
 
   case class ArrayType(tpe: TypeTree) extends TypeTree
   case class IntType() extends TypeTree
+  case class LongType() extends TypeTree
+  case class FloatType() extends TypeTree
+  case class DoubleType() extends TypeTree
   case class BooleanType() extends TypeTree
+  case class CharType() extends TypeTree
   case class StringType() extends TypeTree
   case class UnitType() extends TypeTree
 
@@ -129,6 +137,10 @@ object Trees {
   case class ArrayLength(arr: ExprTree) extends ExprTree
   case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree
   case class IntLit(value: Int) extends ExprTree
+  case class LongLit(value: Long) extends ExprTree
+  case class FloatLit(value: Float) extends ExprTree
+  case class DoubleLit(value: Double) extends ExprTree
+  case class CharLit(value: Char) extends ExprTree
   case class StringLit(value: String) extends ExprTree
 
   case class True() extends ExprTree

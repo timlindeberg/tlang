@@ -46,18 +46,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       def store(id: Identifier, put: () => Unit, duplicate: Boolean = false): CodeHandler = {
         val name = id.value
         val tp = id.getType
+        val codes = tp.codes
 
         if (varMap.contains(name)) {
           val id = varMap(name)
           put()
           if(duplicate)
-            ch << DUP
+            codes.dup(ch)
           tp.codes.store(ch, id)
         } else {
           ch << ArgLoad(0) // put this-reference on stack
           put()
           if(duplicate)
-            ch << DUP
+            codes.dup(ch)
           ch << PutField(cn, name, tp.byteCodeName)
         }
       }
@@ -277,14 +278,15 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             }, duplicate = true)
           case ArrayAssign(id, index, expr) =>
             // TODO: More effecient way of keeping the value on the stack after assignment
+            val codes = id.getType.asInstanceOf[TArray].tpe.codes
+
             compileExpr(expr) // value
-            ch << DUP         // value value
+            codes.dup(ch)     // value value
             load(id)          // value value arrayref
             ch << SWAP        // value arrayref value
             compileExpr(index)// value arrayref value index
             ch << SWAP        // value arrayref index value
-            val tpe = id.getType.asInstanceOf[TArray].tpe
-            tpe.codes.arrayStore(ch)
+            codes.arrayStore(ch)
           case Instance(expr, id) =>
             compileExpr(expr)
             ch << InstanceOf(id.value)
@@ -347,9 +349,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case id@ClassIdentifier(value, _) => load(id.value, id.getType)
           case This()                       => ch << ArgLoad(0)
           case ast.Trees.New(tpe, args) =>
+            val codes = tpe.getType.codes
             val obj = if (tpe.value == "Object") OBJECT else tpe.value
             ch << cafebabe.AbstractByteCodes.New(obj)
-            ch << DUP
+            codes.dup(ch)
             args.foreach(compileExpr)
 
             val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
@@ -362,25 +365,35 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
           case PreDecrement(id) =>
+            val codes = id.getType.codes
             store(id, () => {
               load(id)
               ch << Ldc(1)
-              id.getType.codes.sub(ch) << DUP
+              codes.sub(ch)
+              codes.dup(ch)
             })
           case PreIncrement(id) =>
+            val codes = id.getType.codes
             store(id, () => {
               load(id)
               ch << Ldc(1)
-              id.getType.codes.add(ch) << DUP
+              codes.add(ch)
+              codes.dup(ch)
             })
           case PostDecrement(id) =>
+            val codes = id.getType.codes
             store(id, () => {
-              load(id) << DUP << Ldc(1)
-              id.getType.codes.sub(ch)
+              load(id)
+              codes.dup(ch)
+              ch << Ldc(1)
+              codes.sub(ch)
             })
           case PostIncrement(id) =>
+            val codes = id.getType.codes
             store(id, () => {
-              load(id) << DUP << Ldc(1)
+              load(id)
+              codes.dup(ch)
+              ch << Ldc(1)
               id.getType.codes.add(ch)
             })
           case Ternary(condition, thn, els) =>

@@ -1,0 +1,11 @@
+main Main = {
+	new H().run();
+}
+
+class H {
+
+  Def run(): Unit = {
+      println(1.0 + 1)
+  }
+
+}

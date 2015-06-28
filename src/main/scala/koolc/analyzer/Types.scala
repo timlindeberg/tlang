@@ -2,7 +2,6 @@ package koolc
 package analyzer
 
 import Symbols._
-import koolc.ast.Trees._
 import koolc.code.CodeGeneration
 
 object Types {
@@ -15,9 +14,17 @@ object Types {
     def getType: Type = _tpe
   }
 
+  val primitives = List[Type](
+    TInt,
+    TLong,
+    TFloat,
+    TDouble,
+    TChar)
+
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def getSuperTypes: List[Type] = List()
+    def isPrimitive = primitives.contains(this)
 
     def byteCodeName(): String
     val codes: CodeMap
@@ -49,10 +56,34 @@ object Types {
     override val codes = IntCodeMap
   }
 
+  case object TLong extends Type {
+    override def toString = "Long"
+    override def byteCodeName(): String = "J"
+    override val codes = IntCodeMap
+  }
+
+  case object TFloat extends Type {
+    override def toString = "Float"
+    override def byteCodeName(): String = "F"
+    override val codes = IntCodeMap
+  }
+
+  case object TDouble extends Type {
+    override def toString = "Double"
+    override def byteCodeName(): String = "D"
+    override val codes = IntCodeMap
+  }
+
   case object TBool extends Type {
     override def toString = "Bool"
     override def byteCodeName(): String = "Z"
     override val codes = BoolCodeMap
+  }
+
+  case object TChar extends Type {
+    override def toString = "Char"
+    override def byteCodeName(): String = "C"
+    override val codes = IntCodeMap
   }
 
   case object TString extends Type {
