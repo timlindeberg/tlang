@@ -148,6 +148,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val asserter = new BinaryExpressionAsserter(Plus)
     import asserter._
     valid(string, string, TString)
+    valid(string, obj, TString)
     valid(string, int, TString)
     valid(string, long, TString)
     valid(string, float, TString)
@@ -173,6 +174,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(double, double, TDouble)
     valid(double, char, TDouble)
 
+
     invalid(bool, bool)
     invalid(bool, int)
     invalid(bool, long)
@@ -180,7 +182,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(bool, double)
     invalid(bool, char)
 
-    invalid(obj, string)
     invalid(obj, int)
     invalid(obj, long)
     invalid(obj, float)
@@ -188,14 +189,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(obj, char)
     invalid(obj, array)
 
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+
+    allInvalid(array)
   }
 
   def testBinaryOperator(expressionType: (ExprTree, ExprTree) => ExprTree) = {
@@ -220,38 +215,11 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(double, double, TDouble)
     valid(double, char, TDouble)
 
-    invalid(bool, string)
-    invalid(bool, bool)
-    invalid(bool, int)
-    invalid(bool, long)
-    invalid(bool, float)
-    invalid(bool, double)
-    invalid(bool, char)
 
-    invalid(obj, string)
-    invalid(obj, obj)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-
-    invalid(string, string)
-    invalid(string, obj)
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(bool)
+    allInvalid(obj)
+    allInvalid(string)
+    allInvalid(array)
   }
 
   def testLogicOperator(expressionType: (ExprTree, ExprTree) => ExprTree) = {
@@ -266,20 +234,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(long, char, TLong)
     valid(bool, bool, TBool)
 
-    invalid(int, float)
-    invalid(int, double)
-
-    invalid(long, float)
-    invalid(long, double)
-
-    invalid(float, float)
-    invalid(float, double)
-    invalid(float, char)
 
     invalid(char, char)
-
-    invalid(double, double)
-    invalid(double, char)
 
     invalid(bool, string)
     invalid(bool, int)
@@ -288,27 +244,12 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(bool, double)
     invalid(bool, char)
 
-    invalid(obj, string)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
 
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(float)
+    allInvalid(double)
+    allInvalid(obj)
+    allInvalid(string)
+    allInvalid(array)
   }
 
   def testShiftOperator(expressionType: (ExprTree, ExprTree) => ExprTree) = {
@@ -322,48 +263,13 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(long, long, TLong)
     valid(long, char, TLong)
 
-    invalid(int, float)
-    invalid(int, double)
 
-    invalid(long, float)
-    invalid(long, double)
-
-    invalid(float, float)
-    invalid(float, double)
-    invalid(float, char)
-
-    invalid(double, double)
-    invalid(double, char)
-
-    invalid(bool, bool)
-    invalid(bool, string)
-    invalid(bool, int)
-    invalid(bool, long)
-    invalid(bool, float)
-    invalid(bool, double)
-    invalid(bool, char)
-
-    invalid(obj, string)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(float)
+    allInvalid(double)
+    allInvalid(bool)
+    allInvalid(obj)
+    allInvalid(string)
+    allInvalid(array)
   }
 
 
@@ -395,9 +301,9 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     valid(string, string, TString)
 
-    valid(obj, obj, obj.getType)
+    valid(obj, obj, obj().getType)
 
-    valid(array, array, array.getType)
+    valid(array, array, array().getType)
 
 
     invalid(bool, int)
@@ -498,26 +404,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(string, char, TString)
 
 
-    invalid(bool, bool)
-    invalid(bool, int)
-    invalid(bool, long)
-    invalid(bool, float)
-    invalid(bool, double)
-    invalid(bool, char)
-    invalid(bool, string)
-    invalid(bool, obj)
-    invalid(bool, array)
-
-    invalid(char, char)
-    invalid(char, bool)
-    invalid(char, int)
-    invalid(char, long)
-    invalid(char, float)
-    invalid(char, double)
-    invalid(char, string)
-    invalid(char, obj)
-    invalid(char, array)
-
     invalid(int, float)
     invalid(int, bool)
     invalid(int, double)
@@ -544,25 +430,11 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(double, obj)
     invalid(double, array)
 
-    invalid(obj, obj)
-    invalid(obj, bool)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-    invalid(obj, string)
-    invalid(obj, array)
 
-    invalid(array, array)
-    invalid(array, bool)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(bool)
+    allInvalid(char)
+    allInvalid(obj)
+    allInvalid(array)
   }
 
   def testAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) = {
@@ -586,14 +458,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(double, long, TDouble)
     valid(double, char, TDouble)
 
-    invalid(char, char)
-    invalid(char, int)
-    invalid(char, long)
-    invalid(char, float)
-    invalid(char, double)
-    invalid(char, string)
-    invalid(char, obj)
-    invalid(char, array)
 
     invalid(int, float)
     invalid(int, double)
@@ -613,30 +477,13 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(double, string)
     invalid(double, obj)
 
-    invalid(string, string)
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-    invalid(string, obj)
 
-    invalid(obj, obj)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-    invalid(obj, string)
+    allInvalid(bool)
+    allInvalid(char)
+    allInvalid(string)
+    allInvalid(obj)
+    allInvalid(array)
 
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
   }
 
   def testLogicalAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) = {
@@ -651,6 +498,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     valid(bool, bool, TBool)
 
+
     invalid(bool, int)
     invalid(bool, long)
     invalid(bool, float)
@@ -659,16 +507,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(bool, string)
     invalid(bool, obj)
     invalid(bool, array)
-
-    invalid(char, char)
-    invalid(char, bool)
-    invalid(char, int)
-    invalid(char, long)
-    invalid(char, float)
-    invalid(char, double)
-    invalid(char, string)
-    invalid(char, obj)
-    invalid(char, array)
 
     invalid(int, float)
     invalid(int, bool)
@@ -683,51 +521,13 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(long, string)
     invalid(long, obj)
 
-    invalid(float, float)
-    invalid(float, bool)
-    invalid(float, int)
-    invalid(float, char)
-    invalid(float, long)
-    invalid(float, double)
-    invalid(float, string)
-    invalid(float, obj)
 
-    invalid(double, double)
-    invalid(double, bool)
-    invalid(double, float)
-    invalid(double, int)
-    invalid(double, long)
-    invalid(double, char)
-    invalid(double, string)
-    invalid(double, obj)
-
-    invalid(string, string)
-    invalid(string, bool)
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-    invalid(string, obj)
-
-    invalid(obj, obj)
-    invalid(obj, bool)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-    invalid(obj, string)
-
-    invalid(array, array)
-    invalid(array, bool)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(char)
+    allInvalid(float)
+    allInvalid(double)
+    allInvalid(string)
+    allInvalid(obj)
+    allInvalid(array)
   }
 
   def testShiftAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) = {
@@ -740,25 +540,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(long, int, TLong)
     valid(long, char, TLong)
 
-    invalid(bool, bool)
-    invalid(bool, int)
-    invalid(bool, long)
-    invalid(bool, float)
-    invalid(bool, double)
-    invalid(bool, char)
-    invalid(bool, string)
-    invalid(bool, obj)
-    invalid(bool, array)
-
-    invalid(char, char)
-    invalid(char, bool)
-    invalid(char, int)
-    invalid(char, long)
-    invalid(char, float)
-    invalid(char, double)
-    invalid(char, string)
-    invalid(char, obj)
-    invalid(char, array)
 
     invalid(int, float)
     invalid(int, bool)
@@ -773,51 +554,14 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(long, string)
     invalid(long, obj)
 
-    invalid(float, float)
-    invalid(float, bool)
-    invalid(float, int)
-    invalid(float, char)
-    invalid(float, long)
-    invalid(float, double)
-    invalid(float, string)
-    invalid(float, obj)
 
-    invalid(double, double)
-    invalid(double, bool)
-    invalid(double, float)
-    invalid(double, int)
-    invalid(double, long)
-    invalid(double, char)
-    invalid(double, string)
-    invalid(double, obj)
-
-    invalid(string, string)
-    invalid(string, bool)
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-    invalid(string, obj)
-
-    invalid(obj, obj)
-    invalid(obj, bool)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
-    invalid(obj, string)
-
-    invalid(array, array)
-    invalid(array, bool)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(bool)
+    allInvalid(char)
+    allInvalid(float)
+    allInvalid(double)
+    allInvalid(string)
+    allInvalid(obj)
+    allInvalid(array)
   }
 
   def testArrayAssignOperator() = {
@@ -833,6 +577,18 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
       typeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
       assertErrors()
+    }
+
+    def allInvalid(tpe: () => Identifier) = {
+      invalid(tpe, string)
+      invalid(tpe, array)
+      invalid(tpe, obj)
+      invalid(tpe, int)
+      invalid(tpe, long)
+      invalid(tpe, float)
+      invalid(tpe, double)
+      invalid(tpe, char)
+      invalid(tpe, bool)
     }
 
     valid(char, char, TChar)
@@ -904,14 +660,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(obj, char)
     invalid(obj, string)
 
-    invalid(array, string)
-    invalid(array, array)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+
+    allInvalid(array)
   }
 
   def testComparisonOperator(expressionType: (ExprTree, ExprTree) => ExprTree) = {
@@ -938,30 +688,10 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     valid(double, double)
     valid(double, char)
 
-    invalid(obj, obj)
-    invalid(obj, string)
-    invalid(obj, int)
-    invalid(obj, long)
-    invalid(obj, float)
-    invalid(obj, double)
-    invalid(obj, char)
 
-    invalid(string, string)
-    invalid(string, obj)
-    invalid(string, int)
-    invalid(string, long)
-    invalid(string, float)
-    invalid(string, double)
-    invalid(string, char)
-
-    invalid(array, array)
-    invalid(array, string)
-    invalid(array, obj)
-    invalid(array, int)
-    invalid(array, long)
-    invalid(array, float)
-    invalid(array, double)
-    invalid(array, char)
+    allInvalid(obj)
+    allInvalid(string)
+    allInvalid(array)
   }
 
   def testEqualsOperator(expressionType: (ExprTree, ExprTree) => ExprTree) = {
@@ -1034,7 +764,17 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       assertErrors()
     }
 
-
+    def allInvalid(tpe: () => ExprTree) = {
+      invalid(tpe, string)
+      invalid(tpe, array)
+      invalid(tpe, obj)
+      invalid(tpe, int)
+      invalid(tpe, long)
+      invalid(tpe, float)
+      invalid(tpe, double)
+      invalid(tpe, char)
+      invalid(tpe, bool)
+    }
 
   }
 
@@ -1055,6 +795,18 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       assertErrors()
     }
 
+    def allInvalid(tpe: () => ExprTree) = {
+      invalid(tpe, string)
+      invalid(tpe, array)
+      invalid(tpe, obj)
+      invalid(tpe, int)
+      invalid(tpe, long)
+      invalid(tpe, float)
+      invalid(tpe, double)
+      invalid(tpe, char)
+      invalid(tpe, bool)
+    }
+
   }
 
 
@@ -1069,6 +821,18 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     def invalid(id: () => Identifier, expr: () => ExprTree) = {
       typeChecker.tcExpr(expressionType(id(), expr()))
       assertErrors()
+    }
+
+    def allInvalid(tpe: () => Identifier) = {
+      invalid(tpe, string)
+      invalid(tpe, array)
+      invalid(tpe, obj)
+      invalid(tpe, int)
+      invalid(tpe, long)
+      invalid(tpe, float)
+      invalid(tpe, double)
+      invalid(tpe, char)
+      invalid(tpe, bool)
     }
 
   }

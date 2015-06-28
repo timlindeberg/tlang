@@ -135,11 +135,13 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
         tcExpr(size, TInt)
         TArray(tpe.getType)
       case Plus(lhs, rhs)                      =>
-        val types = TString :: TBool :: Types.primitives
+        val types = Types.anyObject :: TString :: TBool :: Types.primitives
         (tcExpr(lhs, types), tcExpr(rhs, types)) match {
           case (TString, _) | (_, TString) => TString
           case (TBool, x)                  => typeError(x, "Bool", lhs)
           case (x, TBool)                  => typeError(x, "Bool", rhs)
+          case (tpe: TObject, x)           => typeError(x, tpe, lhs)
+          case (x, tpe: TObject)           => typeError(x, tpe, rhs)
           case (TDouble, _) | (_, TDouble) => TDouble
           case (TFloat, _) | (_, TFloat)   => TFloat
           case (TLong, _) | (_, TLong)     => TLong
@@ -250,8 +252,7 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
         }
       case ArrayAssign(id, index, expr)        =>
         tcExpr(index, TInt)
-        val tpe = tcExpr(id)
-        tpe match {
+        tcExpr(id) match {
           case TArray(arrayTpe) =>
             arrayTpe match {
               case objType: TObject => tcExpr(expr, objType)
@@ -277,8 +278,17 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
           case x                => typeError(id.getType + "[]", x, id)
         }
       case ComparisonOperator(lhs, rhs)        =>
-        val types = Types.primitives
-        errorOr(tcExpr(lhs, types), errorOr(tcExpr(rhs, types), TBool))
+        tcExpr(lhs, Types.primitives)
+        tcExpr(rhs, Types.primitives)
+        TBool
+      case EqualsOperator(lhs, rhs)            =>
+        tcExpr(lhs) match {
+          case tpe: TObject      => tcExpr(rhs, tpe.getSuperTypes)
+          case arrayType: TArray => tcExpr(rhs, arrayType)
+          case TString           => tcExpr(rhs, TString)
+          case _                 => tcExpr(rhs, Types.primitives)
+        }
+        TBool
       case And(lhs, rhs)                       =>
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
@@ -287,15 +297,6 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
         TBool
-      case EqualsOperator(lhs, rhs)            =>
-        val tpe = tcExpr(lhs)
-        val res = tpe match {
-          case _: TObject        => tcExpr(rhs, tpe.getSuperTypes)
-          case TString           => tcExpr(rhs, TString)
-          case arrayType: TArray => tcExpr(rhs, arrayType)
-          case _                 => tcExpr(rhs, Types.primitives)
-        }
-        errorOr(res, TBool)
       case Instance(expr, id)                  =>
         val tpe = tcExpr(expr)
         tpe match {
@@ -307,19 +308,18 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
       case As(expr, tpe)                       =>
         tcExpr(expr, tpe.getType.getSuperTypes)
         tpe.getType
-
-      case ArrayRead(arr, index)        =>
+      case ArrayRead(arr, index)               =>
         tcExpr(index, TInt)
         tcExpr(arr) match {
           case TArray(arrTpe) => arrTpe
           case x              => typeError("array", x, arr)
         }
-      case ArrayLength(arr)             =>
+      case ArrayLength(arr)                    =>
         tcExpr(arr) match {
           case TArray(_) => TInt
           case x         => typeError("array", x, arr)
         }
-      case newDecl @ New(tpe, exprs)    =>
+      case newDecl @ New(tpe, exprs)           =>
         val argTypes = exprs.map(tcExpr(_))
 
         tpe.getType match {
@@ -335,25 +335,25 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
           case x                    => error("Cannot create a new instance of primitive type \'" + x + "\'.", newDecl)
         }
         tpe.getType
-      case Not(expr)                    =>
+      case Not(expr)                           =>
         tcExpr(expr, TBool)
         TBool
-      case Negation(expr)               =>
+      case Negation(expr)                      =>
         tcExpr(expr, Types.primitives) match {
           case TChar => TInt // Negation of char is int
           case x     => x
         }
-      case IncrementDecrement(id)       =>
+      case IncrementDecrement(id)              =>
         tcExpr(id, TInt, TLong, TFloat, TDouble)
-      case LogicNot(expr)               =>
+      case LogicNot(expr)                      =>
         tcExpr(expr, TInt, TLong, TChar) match {
           case TLong => TLong
           case _     => TInt
         }
-      case Ternary(condition, thn, els) =>
+      case Ternary(condition, thn, els)        =>
         tcExpr(condition, TBool)
-        val tpe = tcExpr(thn)
-        tcExpr(els, tpe)
+        val thenType = tcExpr(thn)
+        tcExpr(els, thenType)
     }
 
     // Check result and return a valid type in case of error
