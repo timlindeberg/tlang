@@ -121,7 +121,7 @@ object LongCodeMap extends CodeMap {
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0l)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_LONG)
 
-  override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)2
+  override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)
   override def cmpLe(ch: CodeHandler, id: String) = ch << If_ICmpLe(id)
   override def cmpGe(ch: CodeHandler, id: String) = ch << If_ICmpGe(id)
   override def cmpGt(ch: CodeHandler, id: String) = ch << If_ICmpGt(id)

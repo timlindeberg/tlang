@@ -5,12 +5,16 @@ import Symbols._
 import koolc.code.CodeGeneration
 
 object Types {
+
   trait Typed {
     self =>
 
     private var _tpe: Type = TUntyped
 
-    def setType(tpe: Type): self.type = { _tpe = tpe; this }
+    def setType(tpe: Type): self.type = {
+      _tpe = tpe;
+      this
+    }
     def getType: Type = _tpe
   }
 
@@ -96,7 +100,7 @@ object Types {
     override def isSubTypeOf(otherTpe: Type): Boolean = {
       otherTpe match {
         case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-        case _ => false
+        case _              => false
       }
     }
     override def toString = tpe.toString + "[]"
@@ -106,18 +110,18 @@ object Types {
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case obj @ TObject(c) =>
+      case obj@TObject(c) =>
         if (classSymbol.name == c.name || c.name == anyObject.classSymbol.name) true
         else classSymbol.parent match {
           case Some(x) => x.getType.isSubTypeOf(tpe)
           case None    => false
         }
-      case _ => false
+      case _              => false
     }
     override def getSuperTypes: List[Type] =
       List(this) ++ (classSymbol.parent match {
         case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
-        case None => List()
+        case None               => List()
       })
 
     override def toString = classSymbol.name

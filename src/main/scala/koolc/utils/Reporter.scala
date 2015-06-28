@@ -17,6 +17,8 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
   }
 
   var errors = 0
+
+  def clearErrors() = errors = 0
   def hasErrors = errors > 0
 
   def error(msg: Any, pos: Positioned = NoPosition): Unit = {
