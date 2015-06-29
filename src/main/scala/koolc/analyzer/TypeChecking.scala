@@ -286,6 +286,7 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
           case tpe: TObject      => tcExpr(rhs, tpe.getSuperTypes)
           case arrayType: TArray => tcExpr(rhs, arrayType)
           case TString           => tcExpr(rhs, TString)
+          case TBool             => tcExpr(rhs, TBool)
           case _                 => tcExpr(rhs, Types.primitives)
         }
         TBool
@@ -327,7 +328,7 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
             classSymbol.lookupMethod(tpe.value, argTypes) match {
               case Some(constructorSymbol) => checkPrivacy(classSymbol, constructorSymbol)
               case None                    =>
-                if (exprs.size > 0) {
+                if (exprs.nonEmpty) {
                   val methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
                   error("Class \'" + classSymbol.name + "\' does not contain a constructor \'" + methodSignature + "\'.", newDecl)
                 }

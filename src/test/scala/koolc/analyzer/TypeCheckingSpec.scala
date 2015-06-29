@@ -724,6 +724,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     valid(array, array)
 
+    valid(bool, bool)
+
     invalid(obj, string)
     invalid(obj, int)
     invalid(obj, long)
@@ -745,6 +747,13 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     invalid(array, float)
     invalid(array, double)
     invalid(array, char)
+
+    invalid(bool, string)
+    invalid(bool, int)
+    invalid(bool, long)
+    invalid(bool, float)
+    invalid(bool, double)
+    invalid(bool, char)
   }
 
   class BinaryExpressionAsserter(expressionType: (ExprTree, ExprTree) => ExprTree) {
