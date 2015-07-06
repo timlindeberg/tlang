@@ -63,31 +63,31 @@ object Types {
   case object TLong extends Type {
     override def toString = "Long"
     override def byteCodeName(): String = "J"
-    override val codes = IntCodeMap
+    override val codes = LongCodeMap
   }
 
   case object TFloat extends Type {
     override def toString = "Float"
     override def byteCodeName(): String = "F"
-    override val codes = IntCodeMap
+    override val codes = FloatCodeMap
   }
 
   case object TDouble extends Type {
     override def toString = "Double"
     override def byteCodeName(): String = "D"
-    override val codes = IntCodeMap
+    override val codes = DoubleCodeMap
+  }
+
+  case object TChar extends Type {
+    override def toString = "Char"
+    override def byteCodeName(): String = "C"
+    override val codes = CharCodeMap
   }
 
   case object TBool extends Type {
     override def toString = "Bool"
     override def byteCodeName(): String = "Z"
     override val codes = BoolCodeMap
-  }
-
-  case object TChar extends Type {
-    override def toString = "Char"
-    override def byteCodeName(): String = "C"
-    override val codes = IntCodeMap
   }
 
   case object TString extends Type {

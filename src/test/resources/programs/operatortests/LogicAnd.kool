@@ -1,0 +1,39 @@
+main Main = {
+	new H().run();
+}
+
+class H {
+
+  Def run(): Unit = {
+     var b: Bool = true;
+     var c: Char = 'a';
+     var i: Int = 2;
+     var l: Long = 2l;
+
+     // Bool
+     println(b & b); // true
+     println(b & false); // false
+     println(false & false); // false
+
+     // Char
+     println(c & c); // 98
+
+     // Int
+     println(i & i); // 2
+     println(i & l); // 2
+     println(i & c); // 0
+
+     // Long
+     println(l & l); // 2
+     println(l & c); // 0
+  }
+
+}
+
+class A {
+
+   Def toString(): String = {
+      return "A";
+   }
+
+ }

@@ -15,6 +15,8 @@ object TestUtils {
   val resources = "./src/test/resources/"
   val solutionPrefix = ".kool-solution"
 
+  val Interpreter = new Interpreter
+
   def lines(str: String) = str.split("\\r?\\n").toList
 
   def programFiles(dir: String): Array[File] = {

@@ -1,0 +1,48 @@
+main Main = {
+	new H().run();
+}
+
+class H {
+
+  Def run(): Unit = {
+     var c: Char = 'a';
+     var i: Int = 2;
+     var l: Long = 2l;
+     var f: Float = 2f;
+     var d: Double = 2.0;
+
+     // Char
+     println(c * c); // 9409
+
+     // Int
+     println(i * i); // 4
+     println(i * l); // 4
+     println(i * f); // 4.0
+     println(i * d); // 4.0
+     println(i * c); // 388
+
+     // Long
+     println(l * l); // 4
+     println(l * f); // 4.0
+     println(l * d); // 4.0
+     println(l * c); // 388
+
+     // Float
+     println(f * f); // 4.0
+     println(f * d); // 4.0
+     println(f * c); // 388.0
+
+     // Double
+     println(d * d); // 4.0
+     println(d * c); // 388.0
+  }
+
+}
+
+class A {
+
+   Def toString(): String = {
+      return "A";
+   }
+
+ }

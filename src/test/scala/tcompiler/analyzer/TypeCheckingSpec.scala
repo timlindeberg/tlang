@@ -37,6 +37,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   behavior of "Relations"
 
   it should "work with primitive types" in {
+
     val primitives = List(TInt, TString, TBool)
     val others = List(TError, anyObject, TObject(new ClassSymbol("")), TUntyped)
 
@@ -120,40 +121,55 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "Operators"
 
-  it should "Plus" in testPlusOperator
-  it should "Minus" in testBinaryOperator(Minus)
-  it should "Times" in testBinaryOperator(Times)
-  it should "Div" in testBinaryOperator(Div)
-  it should "Modulo" in testBinaryOperator(Modulo)
+  it should "Plus" in plusOperator
+  it should "Minus" in binaryOperator(Minus)
+  it should "Times" in binaryOperator(Times)
+  it should "Div" in binaryOperator(Div)
+  it should "Modulo" in binaryOperator(Modulo)
 
-  it should "LogicAnd" in testLogicOperator(LogicAnd)
-  it should "LogicOr" in testLogicOperator(LogicOr)
-  it should "LogicXor" in testLogicOperator(LogicXor)
-  it should "LeftShift" in testShiftOperator(LeftShift)
-  it should "RightShift" in testShiftOperator(RightShift)
+  it should "LogicAnd" in logicOperator(LogicAnd)
+  it should "LogicOr" in logicOperator(LogicOr)
+  it should "LogicXor" in logicOperator(LogicXor)
+  it should "LeftShift" in shiftOperator(LeftShift)
+  it should "RightShift" in shiftOperator(RightShift)
 
-  it should "Assign" in testAssignOperator
-  it should "PlusAssign" in testPlusAssignOperator
-  it should "MinusAssign" in testAssignmentOperator(MinusAssign)
-  it should "MulAssign" in testAssignmentOperator(MulAssign)
-  it should "DivAssign" in testAssignmentOperator(DivAssign)
-  it should "ModAssign" in testAssignmentOperator(ModAssign)
+  it should "Assign" in assignOperator
+  it should "PlusAssign" in plusAssignOperator
+  it should "MinusAssign" in assignmentOperator(MinusAssign)
+  it should "MulAssign" in assignmentOperator(MulAssign)
+  it should "DivAssign" in assignmentOperator(DivAssign)
+  it should "ModAssign" in assignmentOperator(ModAssign)
 
-  it should "AndAssign" in testLogicalAssignmentOperator(AndAssign)
-  it should "OrAssign" in testLogicalAssignmentOperator(OrAssign)
-  it should "XorAssign" in testLogicalAssignmentOperator(XorAssign)
-  it should "LeftShiftAssign" in testShiftAssignmentOperator(LeftShiftAssign)
-  it should "RightShiftAssign" in testShiftAssignmentOperator(RightShiftAssign)
-  it should "ArrayAssign" in testArrayAssignOperator
+  it should "AndAssign" in logicalAssignmentOperator(AndAssign)
+  it should "OrAssign" in logicalAssignmentOperator(OrAssign)
+  it should "XorAssign" in logicalAssignmentOperator(XorAssign)
+  it should "LeftShiftAssign" in shiftAssignmentOperator(LeftShiftAssign)
+  it should "RightShiftAssign" in shiftAssignmentOperator(RightShiftAssign)
+  it should "ArrayAssign" in arrayAssignOperator
 
-  it should "LessThan" in testComparisonOperator(LessThan)
-  it should "LessThanEquals" in testComparisonOperator(LessThanEquals)
-  it should "GreaterThan" in testComparisonOperator(GreaterThan)
-  it should "GreaterThanEquals" in testComparisonOperator(GreaterThanEquals)
-  it should "Equals" in testEqualsOperator(Equals)
-  it should "NotEquals" in testEqualsOperator(NotEquals)
+  it should "LessThan" in comparisonOperator(LessThan)
+  it should "LessThanEquals" in comparisonOperator(LessThanEquals)
+  it should "GreaterThan" in comparisonOperator(GreaterThan)
+  it should "GreaterThanEquals" in comparisonOperator(GreaterThanEquals)
+  it should "Equals" in equalsOperator(Equals)
+  it should "NotEquals" in equalsOperator(NotEquals)
 
-  def testPlusOperator() =
+  it should "And" in andOr(And)
+  it should "Or" in andOr(Or)
+  it should "Not" in not(Not)
+
+  it should "Instance" in instance(Instance)
+
+  it should "Negation" in negation(Negation)
+  it should "LogicalNot" in logicalNot(LogicNot)
+
+  it should "PreIncrement" in incrementDecrement(PreIncrement)
+  it should "PostIncrement" in incrementDecrement(PostIncrement)
+  it should "PreDecrement" in incrementDecrement(PreDecrement)
+  it should "PostDecrement" in incrementDecrement(PostDecrement)
+
+
+  def plusOperator() =
     new BinaryExpressionAsserter(Plus).valid(
       (string, string, TString),
       (string, obj, TString),
@@ -185,15 +201,15 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble)
     )
 
-  def testBinaryOperator(expressionType: (ExprTree, ExprTree) => ExprTree) =
+  def binaryOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new BinaryExpressionAsserter(expressionType).valid(
+      (char, char, TInt),
+
       (int, int, TInt),
       (int, long, TLong),
       (int, float, TFloat),
       (int, double, TDouble),
       (int, char, TInt),
-
-      (char, char, TInt),
 
       (long, long, TLong),
       (long, float, TFloat),
@@ -208,18 +224,20 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble)
     )
 
-  def testLogicOperator(expressionType: (ExprTree, ExprTree) => ExprTree) =
+  def logicOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new BinaryExpressionAsserter(expressionType).valid(
       (int, int, TInt),
       (int, long, TLong),
       (int, char, TInt),
+
+      (char, char, TInt),
 
       (long, long, TLong),
       (long, char, TLong),
       (bool, bool, TBool)
     )
 
-  def testShiftOperator(expressionType: (ExprTree, ExprTree) => ExprTree) =
+  def shiftOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new BinaryExpressionAsserter(expressionType).valid(
       (int, int, TInt),
       (int, long, TLong),
@@ -231,7 +249,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (long, char, TLong)
     )
 
-  def testAssignOperator() =
+  def assignOperator() =
     new AssignmentAsserter(Assign).valid(
       (bool, bool, TBool),
 
@@ -263,7 +281,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (array, array, array().getType)
     )
 
-  def testPlusAssignOperator() =
+  def plusAssignOperator() =
     new AssignmentAsserter(PlusAssign).valid(
       (int, int, TInt),
       (int, char, TInt),
@@ -291,7 +309,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (string, char, TString)
     )
 
-  def testAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) =
+  def assignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new AssignmentAsserter(expressionType).valid(
       (int, int, TInt),
       (int, char, TInt),
@@ -312,7 +330,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble)
     )
 
-  def testLogicalAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) =
+  def logicalAssignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new AssignmentAsserter(expressionType).valid(
       (int, int, TInt),
       (int, char, TInt),
@@ -324,7 +342,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (bool, bool, TBool)
     )
 
-  def testShiftAssignmentOperator(expressionType: (Identifier, ExprTree) => ExprTree) =
+  def shiftAssignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new AssignmentAsserter(expressionType).valid(
       (int, int, TInt),
       (int, char, TInt),
@@ -334,7 +352,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (long, char, TLong)
     )
 
-  def testArrayAssignOperator() =
+  def arrayAssignOperator() =
     new ArrayAssignmentAsserter().valid(
       (char, char, TChar),
       (char, int, TChar),
@@ -364,7 +382,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (obj, obj, obj().getType)
     )
 
-  def testComparisonOperator(expressionType: (ExprTree, ExprTree) => ExprTree) =
+  def comparisonOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new BinaryExpressionAsserter(expressionType).valid(
       (char, char, TBool),
 
@@ -387,7 +405,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TBool)
     )
 
-  def testEqualsOperator(expressionType: (ExprTree, ExprTree) => ExprTree) =
+  def equalsOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     new BinaryExpressionAsserter(expressionType).valid(
       (char, char, TBool),
 
@@ -418,9 +436,80 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (bool, bool, TBool)
     )
 
-  class BinaryExpressionAsserter(expressionType: (ExprTree, ExprTree) => ExprTree) {
+  def andOr(expressionType: (Identifier, Identifier) => ExprTree) =
+    new BinaryExpressionAsserter(expressionType).valid(
+      (bool, bool, TBool)
+    )
 
-    def getInvalidCombinations(validCombinations: List[(() => ExprTree, () => ExprTree, Type)]) =
+  def not(expressionType: Identifier => ExprTree) =
+    new UnaryExpressionAsserter(expressionType).valid(
+      (bool, TBool)
+    )
+
+  def instance(expressionType: (Identifier, Identifier) => ExprTree) =
+    new BinaryExpressionAsserter(expressionType).valid(
+      (obj, obj, TBool)
+    )
+
+  def negation(expressionType: Identifier => ExprTree) =
+    new UnaryExpressionAsserter(expressionType).valid(
+      (int, TInt),
+      (char, TInt),
+      (long, TLong),
+      (float, TFloat),
+      (double, TDouble)
+    )
+
+  def logicalNot(expressionType: Identifier => ExprTree) =
+    new UnaryExpressionAsserter(expressionType).valid(
+      (int, TInt),
+      (char, TInt),
+      (long, TLong)
+    )
+
+  def incrementDecrement(expressionType: Identifier => ExprTree) =
+    new UnaryExpressionAsserter(expressionType).valid(
+      (int, TInt),
+      (char, TChar),
+      (long, TLong),
+      (float, TFloat),
+      (double, TDouble)
+    )
+
+
+
+  class UnaryExpressionAsserter(expressionType: Identifier => ExprTree) {
+
+    def getInvalidCombinations(validTpes: List[(() => Identifier, Type)]) =
+      allTypes.filter(tpe => {
+        !validTpes.exists(listElem => tpe == listElem._1)
+      })
+
+    def valid(validTpes: (() => Identifier, Type)*): Unit = {
+
+      validTpes.foreach { case (id, tpe) =>
+        testContext.reporter.clearErrors()
+
+        testContext.reporter.clearErrors()
+        val resType = typeChecker.tcExpr(expressionType(id()))
+        assert(resType == tpe, "for " + id + "")
+
+        val noErrors = !testContext.reporter.hasErrors
+        assert(noErrors, "for " + id + "")
+      }
+
+      getInvalidCombinations(validTpes.toList) foreach { id =>
+        typeChecker.tcExpr(expressionType(id()))
+        val invalid = testContext.reporter.hasErrors
+        assert(invalid, "for " + id + "")
+        testContext.reporter.clearErrors()
+      }
+    }
+  }
+
+  class BinaryExpressionAsserter(expressionType: (Identifier, Identifier) => ExprTree) {
+
+    def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -429,7 +518,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         })
       })
 
-    def valid(validCombinations: (() => ExprTree, () => ExprTree, Type)*): Unit = {
+    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
 
       validCombinations.foreach { case (lhs, rhs, tpe) =>
         testContext.reporter.clearErrors()
@@ -453,9 +542,9 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  class AssignmentAsserter(expressionType: (Identifier, ExprTree) => ExprTree) {
+  class AssignmentAsserter(expressionType: (Identifier, Identifier) => ExprTree) {
 
-    def invalidCombinations(validCombinations: List[(() => Identifier, () => ExprTree, Type)]) =
+    def invalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -463,7 +552,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         })
       })
 
-    def valid(validCombinations: (() => Identifier, () => ExprTree, Type)*): Unit = {
+    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
       validCombinations.foreach { case (id, expr, tpe) =>
 
         testContext.reporter.clearErrors()
@@ -485,7 +574,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   class ArrayAssignmentAsserter() extends AssignmentAsserter(Assign) {
 
-    override def valid(validCombinations: (() => Identifier, () => ExprTree, Type)*) = {
+    override def valid(validCombinations: (() => Identifier, () => Identifier, Type)*) = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
         testContext.reporter.clearErrors()
         val id = createIdentifier(TArray(identifier().getType))

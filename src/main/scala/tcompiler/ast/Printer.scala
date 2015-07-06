@@ -108,7 +108,7 @@ object Printer {
       case LongLit(value)                  => value.toString + "l"
       case FloatLit(value)                 => value.toString + "f"
       case DoubleLit(value)                => value.toString
-      case CharLit(value)                  => "'" + value + "'"
+      case CharLit(value)                  => "'" + escapeJava("" + value) + "'"
       case StringLit(value)                => "\"" + escapeJava(value) + "\""
       case True()                          => "true"
       case False()                         => "false"

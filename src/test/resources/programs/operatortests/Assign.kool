@@ -1,0 +1,61 @@
+main Main = {
+	new H().run();
+}
+
+class H {
+
+  Def run(): Unit = {
+     var b: Bool   = true;
+     var c: Char   = 'a';
+     var i: Int    = 2;
+     var l: Long   = 2l;
+     var f: Float  = 2f;
+     var d: Double = 2.0;
+     var s: String = "str";
+     var a: A      = new A();
+
+     // Bool
+     println(b = true); // true
+
+     // Char
+     println(c = 'a'); // a
+     println(c = 97); // a
+
+     // Int
+     println(i = 2); // 2
+     println(i = 'a'); // 97
+
+     // Long
+     println(l = 2l); // 2
+     println(l = 2); // 2
+     println(l = 'a'); // 97
+
+     // Float
+     println(f = 2.0f); // 2.0
+     println(f = 2); // 2.0
+     println(f = 2l); // 2.0.0
+     println(f = 'a'); // 97.0
+
+     // Double
+     println(d = 2.0); // 2.0
+     println(d = 2.0f); // 2.0
+     println(d = 2); // 2.0
+     println(d = 2l); // 2.0
+     println(d = 'a'); // 97.0
+
+     // String
+     println(str = "str"); // "str"
+
+     // String
+     println(a = new A()); // A
+  }
+
+}
+
+class A {
+
+   Def toString(): String = {
+      return "A";
+   }
+
+ }

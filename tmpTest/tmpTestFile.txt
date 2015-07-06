@@ -1,0 +1,1 @@
+main Main = { println(('0' % '6')); }

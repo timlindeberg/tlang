@@ -20,7 +20,7 @@ object TypeChecking extends Pipeline[Program, Program] {
       val main = prog.main.get
       val mainMethod = new MethodSymbol("main", main.getSymbol, Private).setType(TUnit)
       val mainTypeChecker = new TypeChecker(ctx, mainMethod)
-      main.stats.foreach(mainTypeChecker.tcStat(_))
+      main.stats.foreach(mainTypeChecker.tcStat)
     }
 
     prog.classes.foreach { classDecl =>
@@ -34,13 +34,11 @@ object TypeChecking extends Pipeline[Program, Program] {
       }
       classDecl.methods.foreach { method =>
         val typeChecker = new TypeChecker(ctx, method.getSymbol)
-        method.vars.foreach { varDecl =>
-          varDecl match {
-            case VarDecl(tpe, id, Some(expr)) => typeChecker.tcExpr(expr, tpe.getType)
-            case _                            =>
-          }
+        method.vars.foreach {
+          case VarDecl(tpe, id, Some(expr)) => typeChecker.tcExpr(expr, tpe.getType)
+          case _                            =>
         }
-        method.stats.foreach(typeChecker.tcStat(_))
+        method.stats.foreach(typeChecker.tcStat)
       }
     }
 
@@ -162,6 +160,7 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
           case (x, TBool)              => typeError(x, "Bool", rhs)
           case (TLong, _) | (_, TLong) => TLong
           case (TInt, _) | (_, TInt)   => TInt
+          case (TChar, TChar)          => TInt
           case (TChar, x)              => typeError(x, "Char", lhs)
           case (x, TChar)              => typeError(x, "Char", rhs)
           case _                       => TError
@@ -298,6 +297,9 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
         TBool
+      case Not(expr)                           =>
+        tcExpr(expr, TBool)
+        TBool
       case Instance(expr, id)                  =>
         val tpe = tcExpr(expr)
         tpe match {
@@ -336,16 +338,14 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
           case x                    => error("Cannot create a new instance of primitive type \'" + x + "\'.", newDecl)
         }
         tpe.getType
-      case Not(expr)                           =>
-        tcExpr(expr, TBool)
-        TBool
+
       case Negation(expr)                      =>
         tcExpr(expr, Types.primitives) match {
           case TChar => TInt // Negation of char is int
           case x     => x
         }
       case IncrementDecrement(id)              =>
-        tcExpr(id, TInt, TLong, TFloat, TDouble)
+        tcExpr(id, TChar, TInt, TLong, TFloat, TDouble)
       case LogicNot(expr)                      =>
         tcExpr(expr, TInt, TLong, TChar) match {
           case TLong => TLong
