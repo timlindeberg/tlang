@@ -4,8 +4,8 @@ import java.io._
 
 import org.scalatest._
 import tcompiler.TestUtils
-import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol}
-import tcompiler.analyzer.Types.{TError, TUnit}
+import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
+import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast._
@@ -34,9 +34,14 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val TypeChecker    = new TypeChecker(TypeCheckCtx, MainMethod)
 
   val MainName      = "Main"
+  val IdName        = "x"
   val Rand          = new Random()
   val StringLength  = 5
   val NumberOfTests = 5
+
+  implicit def intWithTimes(n: Int) = new {
+    def times(f: => Unit): Unit = 1 to n foreach { _ => f }
+  }
 
 
   before {
@@ -52,11 +57,20 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "RandomTesting"
 
-  it should "Plus" in testOperator(Plus)
-  it should "Minus" in testOperator(Minus)
-  it should "Times" in testOperator(Times)
-  it should "Div" in testOperator(Div)
-  it should "Mod" in testOperator(Modulo)
+  //  it should "Plus" in testOperator(Plus)
+  //  it should "Minus" in testOperator(Minus)
+  //  it should "Times" in testOperator(Times)
+  //  it should "Div" in testOperator(Div)
+  //  it should "Mod" in testOperator(Modulo)
+  //
+  //  it should "LogicAnd" in testOperator(LogicAnd)
+  //  it should "LogicOr" in testOperator(LogicOr)
+  //  it should "LogicXor" in testOperator(LogicXor)
+
+//  it should "LeftShift" in testOperator(LeftShift)
+//  it should "RightShift" in testOperator(RightShift)
+
+  it should "Assign" in testAssignmentOperator(Assign)
 
   //behavior of "Programs"
   //TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
@@ -70,13 +84,13 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
 
-  val int    = () => IntLit(Rand.nextInt)
-  val bool   = () => if (Rand.nextBoolean) True() else False()
-  val long   = () => LongLit(Rand.nextLong)
-  val float  = () => FloatLit(Rand.nextFloat)
-  val double = () => DoubleLit(Rand.nextDouble)
-  val char   = () => CharLit(Rand.nextPrintableChar())
-  val string = () => StringLit(Rand.nextString(StringLength))
+  val int    = () => IntLit(Rand.nextInt).setType(TInt)
+  val bool   = () => (if (Rand.nextBoolean) True() else False()).setType(TBool)
+  val long   = () => LongLit(Rand.nextLong).setType(TLong)
+  val float  = () => FloatLit(Rand.nextFloat).setType(TFloat)
+  val double = () => DoubleLit(Rand.nextDouble).setType(TDouble)
+  val char   = () => CharLit(Rand.nextPrintableChar()).setType(TChar)
+  val string = () => StringLit(Rand.nextString(StringLength)).setType(TString)
 
   val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
   val combinations = for (x <- types; y <- types) yield (x, y)
@@ -84,28 +98,83 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   def testOperator(operator: (ExprTree, ExprTree) => ExprTree) = {
     combinations.foreach { case (lhs, rhs) =>
-      (1 to NumberOfTests).foreach(_ => {
-        val expr = operator(lhs(), rhs())
-        TypeChecker.tcExpr(expr) match {
-          case TError                               => // Expression does not type check
-          case _ if TypeCheckCtx.reporter.hasErrors => TypeCheckCtx.reporter.clearErrors() // Expression does not type check
-          case _                                    => testExpresion(expr)
-        }
-      })
+      val expr = operator(lhs(), rhs())
+
+      if (exprTypeChecks(expr)) {
+        NumberOfTests times testExpression(operator(lhs(), rhs()))
+      }
     }
   }
 
-  def testExpresion(expr: ExprTree) = {
+  def testAssignmentOperator(operator: (Identifier, ExprTree) => ExprTree) =
+    combinations.foreach { case (lhs, rhs) =>
+      val tpe = lhs().getType
+      val id = Identifier(IdName).setSymbol(new VariableSymbol(IdName)).setType(tpe)
+      def expr = () => operator(id, rhs())
+      TestUtils.Interpreter.interpret(scalaVariableDelcaration(tpe))
+      if (exprTypeChecks(expr())) {
+        NumberOfTests times testAssignment(tpe, expr())
+      }
+    }
+
+  def scalaVariableDelcaration(tpe: Type) = {
+    val scalaType = tpe match {
+      case TBool => "Boolean"
+      case _     => tpe.toString
+    }
+
+    val defaultValue = tpe match {
+      case TInt | TLong | TFloat | TDouble | TChar => "0"
+      case TBool                                   => "true"
+      case TString                                 => "\"\""
+    }
+    s"var $IdName: $scalaType = $defaultValue"
+  }
+
+
+  def exprTypeChecks(expr: ExprTree) = TypeChecker.tcExpr(expr) match {
+    case TError                               => false
+    case _ if TypeCheckCtx.reporter.hasErrors =>
+      TypeCheckCtx.reporter.clearErrors()
+      false
+    case _                                    =>
+      true
+  }
+
+  def testExpression(expr: ExprTree) = {
     val operation = Printer(expr)
     println("Testing " + operation)
     val scalaRes = getScalaResult(operation)
-    val res = getResult(operation)
-
-    assert(res == scalaRes, " for expression " + operation + ".\n\tScala:  '" + scalaRes + "'\n\tResult: '" + res + "'")
+    val res = getResult(operatorProgram(operation))
+    assert(res == scalaRes, s" for expression $operation.\n\tScala:  '$scalaRes'\n\tResult: '$res'")
   }
 
-  def getResult(operation: String) = {
-    val program = "main " + MainName + " = { println(" + operation + "); }"
+  def testAssignment(tpe: Type, expr: ExprTree) = {
+    val operation = Printer(expr) // remove ; newline
+    println("Testing " + operation)
+    val scalaRes = getScalaResult(operation) + "\n" + getScalaResult(IdName)
+    println("scalaRes: " + scalaRes)
+    val res = getResult(assignmentProgram(operation, tpe))
+    assertResult(operation, res, scalaRes)
+  }
+
+  def assertResult(operation: String, res: String, scalaRes: String) =
+    assert(res == scalaRes, s" for expression $operation.\n\tScala:  '$scalaRes'\n\tResult: '$res'")
+
+  def operatorProgram(operation: String) = s"main $MainName = { println($operation); }"
+
+  def assignmentProgram(operation: String, tpe: Type) =
+    s"""
+main $MainName = { new A().B(); }
+
+class A {
+  var $IdName: $tpe;
+  Def B(): Unit = { println($operation); println(x); }
+}
+     """
+
+
+  def getResult(program: String) = {
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.file)
 

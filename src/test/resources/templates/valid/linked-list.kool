@@ -18,20 +18,6 @@ class Main {
 		var intSorter: 	  Sorter<LinkedList<Integer>, Integer> = new Sorter<LinkedList<Integer>, Integer>();
 		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
-		var j:            Int;
-		var k:            Int;
-		var arr:		  Int[] = new Int[5];
-        var f:            Float;
-        var d:            Double;
-
-        i = 3;
-        d = f = i;
-
-
-		println("arr[0]: " + arr[0]);
-        println("i: " + i);
-        println("j: " + j);
-        println("k: " + k);
 
 		for(i = 0; i < 100; i++){
         	intList.Add(new Integer(r.nextInt(10000)));

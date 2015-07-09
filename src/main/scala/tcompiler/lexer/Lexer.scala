@@ -132,7 +132,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
 
     private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = chars match {
-      case '\'' :: '\'':: r              => (createToken('\'', 3), r)
+      case '\'' :: '\'' :: r      => (createToken('\'', 3), r)
       case '\'' :: r              =>
         error("Empty character literal.")
         (createToken(BAD, 1), chars)
@@ -255,19 +255,41 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       }
 
       var foundDecimal = false
+      var foundE = false
       def getNumberLiteral(chars: List[Char], s: String): (Token, List[Char]) =
         chars match {
           case c :: r if c.isDigit => getNumberLiteral(r, s + c)
           case '.' :: r            =>
-            if (!foundDecimal) {
+            if (!foundDecimal && !foundE) {
               foundDecimal = true
               getNumberLiteral(r, s + ".")
             } else {
               error("Invalid number.", startPos)
               (createToken(BAD, s.length), chars)
             }
-          case 'f' :: r            => (parseFloatToken(s), r)
-          case 'l' :: r            => (parseLongToken(s), r)
+          case ('e' | 'E') :: r    =>
+            if (!foundE && !foundDecimal) {
+              foundE = true
+              r match {
+                case '-' :: c :: r if c.isDigit => getNumberLiteral(r, s + "E-" + c)
+                case c :: r if c.isDigit        => getNumberLiteral(r, s + "E" + c)
+                case _                          =>
+                  error("Invalid floating point number.", startPos)
+                  (createToken(BAD, s.length), chars)
+              }
+
+            } else {
+              error("Invalid floating point number.", startPos)
+              (createToken(BAD, s.length), chars)
+            }
+          case ('f' | 'F') :: r    => (parseFloatToken(s), r)
+          case ('l' | 'L') :: r    =>
+            if (!foundE && !foundDecimal) {
+              (parseLongToken(s), r)
+            } else {
+              error("Invalid floating point number.", startPos)
+              (createToken(BAD, s.length), chars)
+            }
           case _                   =>
             if (foundDecimal) (parseDoubleToken(s), chars)
             else (parseIntToken(s), chars)

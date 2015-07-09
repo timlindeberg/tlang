@@ -95,5 +95,5 @@ object Symbols {
 
   class VariableSymbol(val name: String) extends Symbol
 
-  case class ErrorSymbol(val name: String = "") extends Symbol
+  case class ErrorSymbol(name: String = "") extends Symbol
 }

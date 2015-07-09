@@ -1,11 +1,10 @@
 package tcompiler
 package analyzer
 
-import tcompiler.analyzer.Symbols.{MethodSymbol, ClassSymbol}
+import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils._
-import tcompiler.ast.Printer
 
 object TypeChecking extends Pipeline[Program, Program] {
 
@@ -41,7 +40,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         method.stats.foreach(typeChecker.tcStat)
       }
     }
-
+     println(prog)
     prog
   }
 }

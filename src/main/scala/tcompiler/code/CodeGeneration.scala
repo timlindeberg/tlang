@@ -322,6 +322,39 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case _: Div    => codes.div(ch)
               case _: Modulo => codes.mod(ch)
             }
+          case LogicalOperator(lhs, rhs)    =>
+            (lhs.getType, rhs.getType) match {
+              case (TLong, _) | (_, TLong) =>
+                compileExpr(lhs)
+                lhs.getType.codes.toLong(ch)
+                compileExpr(rhs)
+                rhs.getType.codes.toLong(ch)
+              case _                       =>
+                compileExpr(lhs)
+                lhs.getType.codes.toInt(ch)
+                compileExpr(rhs)
+                rhs.getType.codes.toInt(ch)
+            }
+            val codes = expr.getType.codes
+            expr match {
+              case _: LogicAnd => codes.and(ch)
+              case _: LogicOr  => codes.or(ch)
+              case _: LogicXor => codes.xor(ch)
+            }
+          case ShiftOperator(lhs, rhs)      =>
+            compileExpr(lhs)
+            (lhs.getType, rhs.getType) match {
+              case (TLong, _) =>
+              case (_, TLong) => lhs.getType.codes.toLong(ch)
+              case _          => lhs.getType.codes.toInt(ch)
+            }
+            compileExpr(rhs)
+            rhs.getType.codes.toInt(ch) // Always shift by an int
+          val codes = expr.getType.codes
+            expr match {
+              case _: LeftShift  => codes.leftShift(ch)
+              case _: RightShift => codes.rightShift(ch)
+            }
           case Assign(id, expr)             =>
             store(id, () => compileExpr(expr), duplicate = true)
           case a @ AnyAssignment(id, expr)  =>
@@ -359,22 +392,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case As(expr, tpe)                =>
             compileExpr(expr)
             ch << CheckCast(tpe.name)
-
-          case e @ MathBinaryExpr(lhs, rhs)     =>
-            compileExpr(lhs)
-            compileExpr(rhs)
-            val codes = lhs.getType.codes // TODO: same type?
-            e match {
-              case _: Minus      => codes.sub(ch)
-              case _: Times      => codes.mul(ch)
-              case _: Div        => codes.div(ch)
-              case _: Modulo     => codes.mod(ch)
-              case _: LogicAnd   => codes.and(ch)
-              case _: LogicOr    => codes.or(ch)
-              case _: LogicXor   => codes.xor(ch)
-              case _: LeftShift  => codes.leftShift(ch)
-              case _: RightShift => codes.rightShift(ch)
-            }
           case ArrayRead(arr, index)            =>
             compileExpr(arr)
             compileExpr(index)
