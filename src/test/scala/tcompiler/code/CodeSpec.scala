@@ -151,8 +151,9 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   def testAssignment(tpe: Type, expr: ExprTree) = {
     val operation = Printer(expr) // remove ; newline
-    println("Testing " + operation)
-    val scalaRes = getScalaResult(operation) + "\n" + getScalaResult(IdName)
+    println("Testing " + operation + " (x: " + tpe + ")")
+    getScalaResult(operation)
+    val scalaRes = getScalaResult(IdName)
     println("scalaRes: " + scalaRes)
     val res = getResult(assignmentProgram(operation, tpe))
     assertResult(operation, res, scalaRes)
@@ -169,7 +170,7 @@ main $MainName = { new A().B(); }
 
 class A {
   var $IdName: $tpe;
-  Def B(): Unit = { println($operation); println(x); }
+  Def B(): Unit = { $operation; println($IdName); }
 }
      """
 

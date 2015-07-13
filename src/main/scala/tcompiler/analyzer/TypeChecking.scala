@@ -40,7 +40,6 @@ object TypeChecking extends Pipeline[Program, Program] {
         method.stats.foreach(typeChecker.tcStat)
       }
     }
-     println(prog)
     prog
   }
 }
