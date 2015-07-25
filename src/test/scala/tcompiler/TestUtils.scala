@@ -11,8 +11,8 @@ import scala.io.Source
 import scala.sys.process.ProcessLogger
 
 object TestUtils {
-  val runScript = "./reference/run.sh"
-  val resources = "./src/test/resources/"
+  val runScript      = "./reference/run.sh"
+  val resources      = "./src/test/resources/"
   val solutionPrefix = ".kool-solution"
 
   val Interpreter = new Interpreter
@@ -37,7 +37,7 @@ object TestUtils {
     val map = Map
     try {
       val options = progString.head.split(" ").tail.toList
-      if (options.size > 0) {
+      if (options.nonEmpty) {
         expectedErrors = options(0).toInt
         quietReporter = options.lift(1).getOrElse("false").toBoolean
       }
@@ -48,8 +48,8 @@ object TestUtils {
   }
 
   val SolutionRegex = ".*// *res:(.*)".r
-  def parseSolutions(file: File) : List[String] = {
-    var fileName = file.getPath
+  def parseSolutions(file: File): List[String] = {
+    val fileName = file.getPath
     Source.fromFile(fileName).getLines().flatMap(line => SolutionRegex.findAllIn(line).matchData.map(_.group(1))).toList
   }
   object IgnoreErrorOutput extends ProcessLogger {
@@ -76,18 +76,18 @@ object TestUtils {
       var types = true
       Trees.traverse(t, (_, x) => {
         types = x match {
-          case x: IntLit         => x.getType == TInt
-          case x: StringLit      => x.getType == TString
-          case x: Identifier     => x.getType != TUntyped && x.getType != TError
+          case x: IntLit          => x.getType == TInt
+          case x: StringLit       => x.getType == TString
+          case x: Identifier      => x.getType != TUntyped && x.getType != TError
           case x: ClassIdentifier => x.getType != TUntyped && x.getType != TError
-          case x: IntType        => x.getType == TInt
-          case x: ArrayType      => x.getType == TArray
-          case x: BooleanType    => x.getType == TBool
-          case x: StringType     => x.getType == TString
-          case x: True           => x.getType == TBool
-          case x: False          => x.getType == TBool
-          case x: This           => x.getType != TUntyped && x.getType != TError
-          case _                 => true
+          case x: IntType         => x.getType == TInt
+          case x: ArrayType       => x.getType == TArray
+          case x: BooleanType     => x.getType == TBool
+          case x: StringType      => x.getType == TString
+          case x: True            => x.getType == TBool
+          case x: False           => x.getType == TBool
+          case x: This            => x.getType != TUntyped && x.getType != TError
+          case _                  => true
         }
       })
       types

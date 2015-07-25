@@ -37,7 +37,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
     System.err.println(msg)
   }
 
-  def terminateIfErrors = {
+  def terminateIfErrors() = {
     if (hasErrors) {
       if (!quiet) err("There were errors.")
       throw new CompilationException

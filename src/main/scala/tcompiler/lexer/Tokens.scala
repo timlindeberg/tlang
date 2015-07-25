@@ -101,7 +101,8 @@ object Tokens {
   case object PUBDEF extends TokenKind // Def
   case object PRIVDEF extends TokenKind // def
   case object PROTECTED extends TokenKind // protected
-  case object VAR extends TokenKind // var
+  case object PUBVAR extends TokenKind // Var
+  case object PRIVVAR extends TokenKind // var
   case object UNIT extends TokenKind // unit
   case object MAIN extends TokenKind // main
   case object STRING extends TokenKind // string

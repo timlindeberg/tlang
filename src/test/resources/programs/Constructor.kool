@@ -6,7 +6,7 @@ main Main = {
 class H {
 
 
-  Def H(str: String) = {
+  Def new(str: String) = {
     println(str);
   }
 

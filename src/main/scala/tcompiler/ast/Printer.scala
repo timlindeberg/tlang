@@ -43,9 +43,9 @@ object Printer {
       case GenericImport(identifiers)                         => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
       case MainObject(id, stats)                              => "main " + f(id) + " = " + l + allStats(stats) + r
       case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id, expr)                             => "var " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
+      case VarDecl(tpe, id, expr, access)                     => varDecl(access) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
       case MethodDecl(retType, id, args, vars, stats, access) => definition(access) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
-      case ConstructorDecl(id, args, vars, stats, access)     => definition(access) + " " + f(id) + "(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
+      case ConstructorDecl(args, vars, stats, access)         => definition(access) + " new(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
       case Formal(tpe, id)                                    => f(id) + ": " + f(tpe)
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"
@@ -93,6 +93,8 @@ object Printer {
       case LogicNot(expr)                    => "~(" + f(expr) + ")"
       case ArrayRead(arr, index)             => f(arr) + "[" + f(index) + "]"
       case ArrayLength(arr)                  => f(arr) + ".length"
+      case FieldRead(obj, id)                => f(obj) + "." + f(id)
+      case FieldAssign(obj, id, expr)        => f(obj) + "." + f(id) + " = " + f(expr)
       case MethodCall(obj, meth, args)       => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
       case IntLit(value)                     => value.toString
       case LongLit(value)                    => value.toString + "L"
@@ -122,6 +124,12 @@ object Printer {
     case Protected => "def protected"
   }
 
+  private def varDecl(a: Accessability) = a match {
+    case Private   => "var"
+    case Public    => "Var"
+    case Protected => "var protected"
+  }
+
   private def pos(t: Tree): String = "[" + t.line + ", " + t.col + "]"
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
@@ -131,11 +139,11 @@ object Printer {
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
   private def statement(stat: StatTree): String = stat match {
-    case _: Block     => f(stat)
-    case _: For       => f(stat) + n
-    case _: While     => f(stat) + n
-    case _: If        => f(stat) + n
-    case _            => f(stat) + ";" + n
+    case _: Block => f(stat)
+    case _: For   => f(stat) + n
+    case _: While => f(stat) + n
+    case _: If    => f(stat) + n
+    case _        => f(stat) + ";" + n
   }
 
   private def allStats(list: List[StatTree]): String =

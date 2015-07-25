@@ -3,14 +3,13 @@ package modification
 
 import java.io.File
 
-import tcompiler.ast.{Parser, Printer, Trees}
-import tcompiler.lexer.Lexer
-import tcompiler.utils.{CompilationException, Pipeline, Context}
-import tcompiler.ast.Trees._
-import org.apache.bcel._
+import org.apache.bcel.{Constants, _}
 import org.apache.bcel.classfile.{JavaClass, Method}
-import org.apache.bcel.generic.{ObjectType, BasicType, Type}
-import org.apache.bcel.Constants
+import org.apache.bcel.generic.{BasicType, ObjectType, Type}
+import tcompiler.ast.Trees._
+import tcompiler.ast.{Parser, Trees}
+import tcompiler.lexer.Lexer
+import tcompiler.utils.{CompilationException, Context, Pipeline}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -43,12 +42,12 @@ object Imports extends Pipeline[Program, Program] {
               val genericsInImportedProg = importGenericClasses(importedProg, ctx)
               val genericClasses = importedProg.classes.filter(_.id.isTemplated) :::  genericsInImportedProg
 
-              if(genericClasses.size > 0)
+              if(genericClasses.nonEmpty)
                 importedClasses ++= genericClasses
               else
                 warning("Generic import \'" + file.getName + "\' did not contain any generic classes.", imp)
 
-            case None => error("Unable to parse generic import \'" + file.getName + "\'.", imp)
+            case None => error("Found parse error in import \'" + file.getName + "\'.", imp)
           }
 
         }

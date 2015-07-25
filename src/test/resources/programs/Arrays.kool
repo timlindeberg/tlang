@@ -53,7 +53,7 @@ class A {
 
   var int: Int;
 
-  Def A(i: Int) = {
+  Def new(i: Int) = {
     int = i;
   }
 

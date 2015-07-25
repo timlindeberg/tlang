@@ -1,9 +1,9 @@
 package tcompiler
 package analyzer
 
-import utils._
-import tcompiler.ast.Trees._
 import tcompiler.analyzer.Types._
+import tcompiler.ast.Trees._
+import tcompiler.utils._
 
 object Symbols {
   trait Symbolic[S <: Symbol] {
@@ -63,9 +63,24 @@ object Symbols {
     }
   }
 
+  class OperatorMap extends scala.collection.mutable.HashMap[(Class, List[Type]), MethodSymbol] {
+    protected override def elemEquals(key1: (Class, List[Type]), key2: (Class, List[Type])): Boolean = {
+      // TODO: This fails for some cases for some reason
+      val (operator1, args1) = key1
+      val (operator2, args2) = key2
+
+      if(operator1 == operator2 && args1.size == args2.size){
+        args1.zip(args2).forall { case(arg1, arg2) => arg2.isSubTypeOf(arg1) }
+      } else{
+        false
+      }
+    }
+  }
+
   class ClassSymbol(val name: String) extends Symbol {
     var parent: Option[ClassSymbol] = None
     var methods = new MethodMap()
+    var operators = new OperatorMap()
     var members = Map[String, VariableSymbol]()
 
     def lookupMethod(name: String, args: List[Type]): Option[MethodSymbol] = methods.get((name, args)) match {
@@ -93,7 +108,7 @@ object Symbols {
     }
   }
 
-  class VariableSymbol(val name: String) extends Symbol
+  class VariableSymbol(val name: String, val access: Accessability = Public) extends Symbol
 
   case class ErrorSymbol(name: String = "") extends Symbol
 }

@@ -1,12 +1,11 @@
 package tcompiler
 package ast
 
-import java.beans.Expression
+import tcompiler.ast.Trees._
+import tcompiler.lexer.Tokens._
+import tcompiler.lexer._
+import tcompiler.utils._
 
-import utils._
-import Trees._
-import lexer._
-import lexer.Tokens._
 import scala.collection.mutable.ArrayBuffer
 
 object Parser extends Pipeline[Iterator[Token], Program] {
@@ -147,8 +146,8 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val id = classTypeIdentifier
       val parent = optional(classIdentifier, EXTENDS)
       eat(LBRACE)
-      val vars = untilNot(varDeclaration, VAR)
-      val methods = untilNot(methodDeclaration, PRIVDEF, PUBDEF)
+      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+      val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
       eat(RBRACE)
       InternalClassDecl(id, parent, vars, methods).setPos(pos)
     }
@@ -158,13 +157,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def varDeclaration(): VarDecl = {
       val pos = currentToken
-      eat(VAR)
+      val access = accessRights(PRIVVAR, PUBVAR)
       val id = identifier
       eat(COLON)
       val typ = tpe
       val init = optional(expression, EQSIGN)
       eat(SEMICOLON)
-      VarDecl(typ, id, init).setPos(pos)
+      VarDecl(typ, id, init, access).setPos(pos)
     }
 
     /**
@@ -179,53 +178,76 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <methodDeclaration> ::= (Def | def [ protected ] ) <identifier> "(" [ <formal> { "," <formal> } ] ")"
-     * ( : " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
-     * | = {" { <varDeclaration> } { <statement> } "}" )
+     * <methodDeclaration> ::= (Def | def [ protected ] ) ( <constructor> | <binaryOperator> | <method> )
      */
-    private def methodDeclaration(): FuncTree = {
+    private def methodDeclaration(className: String): FuncTree = {
       val pos = currentToken
-      val access = currentToken.kind match {
-        case PRIVDEF =>
-          eat(PRIVDEF)
-          if (currentToken.kind == PROTECTED) {
-            eat(PROTECTED)
-            Protected
-          }
-          else Private
-        case PUBDEF  =>
-          eat(PUBDEF)
-          Public
-        case _       => expected(PRIVDEF, PUBDEF)
-      }
-      val id = identifier
-      eat(LPAREN)
-      val args = commaList(formal)
-
-      eat(RPAREN)
-      val func = if (currentToken.kind == COLON) {
-        eat(COLON)
-        val retType = if (currentToken.kind == UNIT) {
-          val pos = currentToken
-          eat(UNIT)
-          UnitType().setPos(pos)
-        } else {
-          tpe
-        }
-        eat(EQSIGN, LBRACE)
-        val vars = untilNot(varDeclaration, VAR)
-        val stmts = until(statement, RBRACE)
-        eat(RBRACE)
-        MethodDecl(retType, id, args, vars, stmts, access)
-      } else {
-        eat(EQSIGN, LBRACE)
-        val vars = untilNot(varDeclaration, VAR)
-        val stmts = until(statement, RBRACE)
-        eat(RBRACE)
-        ConstructorDecl(id, args, vars, stmts, access)
+      val access = accessRights(PRIVDEF, PUBDEF)
+      val func = currentToken.kind match {
+        case NEW => constructor(access, className)
+        case PLUS | MINUS | TIMES | DIV | MODULO | LOGICAND | LOGICOR | LOGICXOR | LEFTSHIFT | RIGHTSHIFT |
+             LESSTHAN | LESSTHANEQUALS | GREATERTHAN | GREATERTHANEQUALS => binaryOperator(access)
+        //case INCREMENT | DECREMENT | LOGICNOT | BANG => //unaryOperator(access)
+        case _   => method(access)
       }
       func.setPos(pos)
     }
+
+    /**
+     * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  = {" { <varDeclaration> } { <statement> } "}"
+     */
+    private def constructor(access: Accessability, className: String): ConstructorDecl = {
+      eat(NEW)
+      eat(LPAREN)
+      val args = commaList(formal)
+      eat(RPAREN)
+      eat(EQSIGN, LBRACE)
+      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+      val stmts = until(statement, RBRACE)
+      eat(RBRACE)
+      ConstructorDecl(new Identifier(className), args, vars, stmts, access)
+    }
+
+    /**
+     * <binaryOperator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= ) "(" <formal> "," <formal> "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
+     */
+    private def binaryOperator(access: Accessability): OperatorDecl = {
+      val kind = currentToken.kind
+      eat(currentToken.kind)
+      eat(LPAREN)
+      val args = List(formal, formal)
+      eat(COLON)
+      val retType = tpe
+      eat(EQSIGN, LBRACE)
+      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+      val stmts = until(statement, RBRACE)
+      eat(RBRACE)
+      OperatorDecl(kind, retType, args, vars, stmts, access)
+    }
+    /**
+     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
+     */
+    private def method(access: Accessability): MethodDecl = {
+      val id = identifier
+      eat(LPAREN)
+      val args = commaList(formal)
+      eat(RPAREN)
+      eat(COLON)
+      val retType = if (currentToken.kind == UNIT) {
+        val pos = currentToken
+        eat(UNIT)
+        UnitType().setPos(pos)
+      } else {
+        tpe
+      }
+      eat(EQSIGN, LBRACE)
+      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+      val stmts = until(statement, RBRACE)
+      eat(RBRACE)
+      MethodDecl(retType, id, args, vars, stmts, access)
+    }
+
+
 
     /**
      * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }
@@ -396,32 +418,36 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     def assignment(expr: Option[ExprTree] = None) = {
       val e = if (expr.isDefined) expr.get else ternary
-      def assignment(constructor: (Identifier, ExprTree) => ExprTree) = {
+
+      def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
         eat(currentToken.kind)
-        def assignmentExpr(id: Identifier) = if (constructor == Assign) expression else constructor(id, expression)
+
+        def assignmentExpr(expr: ExprTree) = if (constructor.isDefined) constructor.get(expr, expression) else expression
+
         e match {
           case ArrayRead(idExpr, index) =>
             idExpr match {
-              case id: Identifier => ArrayAssign(id, index, assignmentExpr(id))
+              case id: Identifier => ArrayAssign(id, index, assignmentExpr(e))
               case _              => fatal("expected identifier on left side of array assignment.", e)
             }
+          case FieldRead(obj, id)       => FieldAssign(obj, id, assignmentExpr(e))
           case id: Identifier           => Assign(id, assignmentExpr(id))
           case _                        => fatal("expected identifier on left side of assignment.", e)
         }
       }
 
       currentToken.kind match {
-        case EQSIGN       => assignment(Assign)
-        case PLUSEQ       => assignment(Plus)
-        case MINUSEQ      => assignment(Minus)
-        case MULEQ        => assignment(Times)
-        case DIVEQ        => assignment(Div)
-        case MODEQ        => assignment(Modulo)
-        case ANDEQ        => assignment(LogicAnd)
-        case OREQ         => assignment(LogicOr)
-        case XOREQ        => assignment(LogicXor)
-        case LEFTSHIFTEQ  => assignment(LeftShift)
-        case RIGHTSHIFTEQ => assignment(RightShift)
+        case EQSIGN       => assignment(None)
+        case PLUSEQ       => assignment(Some(Plus))
+        case MINUSEQ      => assignment(Some(Minus))
+        case MULEQ        => assignment(Some(Times))
+        case DIVEQ        => assignment(Some(Div))
+        case MODEQ        => assignment(Some(Modulo))
+        case ANDEQ        => assignment(Some(LogicAnd))
+        case OREQ         => assignment(Some(LogicOr))
+        case XOREQ        => assignment(Some(LogicXor))
+        case LEFTSHIFTEQ  => assignment(Some(LeftShift))
+        case RIGHTSHIFTEQ => assignment(Some(RightShift))
         case _            => e
       }
     }
@@ -621,6 +647,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
       /**
        * <termRest> ::= .length
+       * | .<identifier>
        * | .<identifier> "(" <expression> { "," <expression> } ")
        * | "[" <expression> "]"
        * | as <tpe>
@@ -639,10 +666,14 @@ object Parser extends Pipeline[Iterator[Token], Program] {
                 ArrayLength(e)
               } else {
                 val id = identifier
-                eat(LPAREN)
-                val exprs = commaList(expression)
-                eat(RPAREN)
-                MethodCall(e, id, exprs.toList)
+                if (currentToken.kind == LPAREN) {
+                  eat(LPAREN)
+                  val exprs = commaList(expression)
+                  eat(RPAREN)
+                  MethodCall(e, id, exprs.toList)
+                } else {
+                  FieldRead(e, id)
+                }
               }
             case LBRACKET =>
               eat(LBRACKET)
@@ -679,6 +710,25 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       }
       expr
     }
+
+    /**
+     * Parses the correct access rights given the private token and
+     * public token to use.
+     */
+    private def accessRights(priv: TokenKind, pub: TokenKind) =
+      currentToken.kind match {
+        case x if x == pub  =>
+          eat(pub)
+          Public
+        case x if x == priv =>
+          eat(priv)
+          if (currentToken.kind == PROTECTED) {
+            eat(PROTECTED)
+            Protected
+          }
+          else Private
+        case _              => expected(pub, priv)
+      }
 
     private var usedOneGreaterThan = false
 

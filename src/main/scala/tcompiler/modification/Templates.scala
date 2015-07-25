@@ -1,12 +1,11 @@
 package tcompiler
 package modification
 
-import tcompiler.ast.{Printer, Trees}
-import tcompiler.utils.Pipeline
-import tcompiler.utils.Context
-import tcompiler.ast.Trees._
-import tcompiler.utils.Positioned
 import com.rits.cloning._
+import tcompiler.ast.Trees
+import tcompiler.ast.Trees._
+import tcompiler.utils.{Context, Pipeline, Positioned}
+
 import scala.collection.mutable.ArrayBuffer
 
 object Templates extends Pipeline[Program, Program] {
@@ -18,26 +17,26 @@ object Templates extends Pipeline[Program, Program] {
     /* Error messages and predefined
      * error types to return in case of errors. */
 
-    val ERROR_MAP = Map[TypeTree, TypeTree]()
-    val ERROR_TYPE = new ClassIdentifier("ERROR")
-    val ERROR_CLASS = new InternalClassDecl(ERROR_TYPE, None, List(), List())
+    val ErrorMap = Map[TypeTree, TypeTree]()
+    val ErrorType = new ClassIdentifier("ERROR")
+    val ErrorClass = new InternalClassDecl(ErrorType, None, List(), List())
 
-    def ERROR_WRONG_NUM_GENERICS(expected: Int, found: Int, pos: Positioned) = {
+    def ErrorWrongNumGenerics(expected: Int, found: Int, pos: Positioned) = {
       error("Wrong number of generic parameters, expected " + expected + " but found " + found, pos)
-      ERROR_MAP
+      ErrorMap
     }
 
-    def ERROR_NEW_PRIMITIVE(name: String, pos: Positioned) = {
+    def ErrorNewPrimitive(name: String, pos: Positioned) = {
       error("Cannot create a new instance of primitive type \'" + name + "\'.", pos)
-      ERROR_TYPE
+      ErrorType
     }
 
-    def ERROR_DOES_NOT_EXIST(name: String, pos: Positioned) = {
+    def ErrorDoesNotExist(name: String, pos: Positioned) = {
       error("No template class named \'" + name + "\'.", pos)
-      ERROR_CLASS
+      ErrorClass
     }
 
-    def ERROR_SAME_NAME(name: String, pos: Positioned) = {
+    def ErrorSameName(name: String, pos: Positioned) = {
       error("Generic identifiers with the same name: \'" + name + "\'", pos)
     }
 
@@ -50,7 +49,7 @@ object Templates extends Pipeline[Program, Program] {
       cloner.registerConstant(Public)
       cloner.registerConstant(Protected)
 
-      var generated: Set[String] = Set()
+      var generated       : Set[String]            = Set()
       var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
 
       def generate(prog: Program): List[ClassDecl] = {
@@ -81,7 +80,7 @@ object Templates extends Pipeline[Program, Program] {
 
         templateClasses.find(_.id.value == typeId.value) match {
           case Some(template) => generatedClasses += newTemplateClass(template, typeId.templateTypes)
-          case None           => ERROR_DOES_NOT_EXIST(typeId.value, typeId)
+          case None           => ErrorDoesNotExist(typeId.value, typeId)
         }
       }
 
@@ -94,13 +93,14 @@ object Templates extends Pipeline[Program, Program] {
             case t @ ClassIdentifier(_, templateTypes) if t.isTemplated =>
               t.templateTypes = templateTypes.map(updateType)
               generateClass(t)
+            case a @ ArrayType(tpe)                                     => a.tpe = updateType(tpe)
           }
           templateMap.getOrElse(t, t)
         }
 
         def updateTypeOfNewExpr(newExpr: New) = updateType(newExpr.tpe) match {
           case t: ClassIdentifier => t
-          case t                 => ERROR_NEW_PRIMITIVE(t.name, newExpr.tpe)
+          case t                  => ErrorNewPrimitive(t.name, newExpr.tpe)
         }
 
         def templateName(id: ClassIdentifier) =
@@ -114,6 +114,7 @@ object Templates extends Pipeline[Program, Program] {
           case m: MethodDecl      => m.retType = updateType(m.retType)
           case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))
           case n: New             => n.tpe = updateTypeOfNewExpr(n)
+          case n: NewArray        => n.tpe = updateType(n.tpe)
         })
         newClass
       }
@@ -122,7 +123,7 @@ object Templates extends Pipeline[Program, Program] {
         val diff = templateTypes.size - templateList.size
         if (diff != 0) {
           val index = if (diff > 0) templateList.size else templateTypes.size - 1
-          ERROR_WRONG_NUM_GENERICS(templateList.size, templateTypes.size, templateTypes(index))
+          ErrorWrongNumGenerics(templateList.size, templateTypes.size, templateTypes(index))
         } else {
           templateList.zip(templateTypes).toMap
         }
@@ -135,7 +136,7 @@ object Templates extends Pipeline[Program, Program] {
         var reportedFor = Set[TypeTree]()
         x.id.templateTypes.foreach { x =>
           if (set(x) && !reportedFor(x)) {
-            ERROR_SAME_NAME(x.name, x)
+            ErrorSameName(x.name, x)
             reportedFor += x
           }
           set += x
@@ -145,14 +146,14 @@ object Templates extends Pipeline[Program, Program] {
     def replaceTypes(prog: Program): Program = {
       def replaceType(tpe: TypeTree) = tpe match {
         case x: ClassIdentifier => replaceTypeId(x)
-        case x                 => x
+        case x                  => x
       }
 
       def replaceTypeId(tpe: ClassIdentifier) =
         if (tpe.isTemplated) new ClassIdentifier(tpe.templatedClassName).setPos(tpe)
         else tpe
 
-      Trees.traverse(prog, (_,curr) => Some(curr) collect {
+      Trees.traverse(prog, (_, curr) => Some(curr) collect {
         case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
         case m: MethodDecl => m.retType = replaceType(m.retType)
         case v: VarDecl    => v.tpe = replaceType(v.tpe)

@@ -49,9 +49,9 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   after {
-    testFile.delete()
-    testFolderFile.listFiles.foreach(_.delete())
-    testFolderFile.delete()
+    //testFile.delete()
+    //testFolderFile.listFiles.foreach(_.delete())
+    //testFolderFile.delete()
   }
 
   behavior of "Programs"
@@ -59,30 +59,33 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
   TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
 
-  behavior of s"RandomTesting ($NumberOfTests x)"
 
-  it should "Plus" in testOperator(Plus)
-  it should "Minus" in testOperator(Minus)
-  it should "Times" in testOperator(Times)
-  it should "Div" in testOperator(Div)
-  it should "Mod" in testOperator(Modulo)
+  //testFile(new File(TestUtils.resources + "programs/Fields.kool"))
 
-  it should "LogicAnd" in testOperator(LogicAnd)
-  it should "LogicOr" in testOperator(LogicOr)
-  it should "LogicXor" in testOperator(LogicXor)
-
-  it should "LeftShift" in testOperator(LeftShift)
-  it should "RightShift" in testOperator(RightShift)
-
-  it should "Assign" in testAssignmentOperator(Assign)
-  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
-
-  it should "LessThan" in testOperator(LessThan)
-  it should "LessThanEquals" in testOperator(LessThanEquals)
-  it should "GreaterThan" in testOperator(GreaterThan)
-  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
-  it should "Equals" in testOperator(Equals)
-  it should "NotEquals" in testOperator(NotEquals)
+//  behavior of s"RandomTesting ($NumberOfTests x)"
+//
+//  it should "Plus" in testOperator(Plus)
+//  it should "Minus" in testOperator(Minus)
+//  it should "Times" in testOperator(Times)
+//  it should "Div" in testOperator(Div)
+//  it should "Mod" in testOperator(Modulo)
+//
+//  it should "LogicAnd" in testOperator(LogicAnd)
+//  it should "LogicOr" in testOperator(LogicOr)
+//  it should "LogicXor" in testOperator(LogicXor)
+//
+//  it should "LeftShift" in testOperator(LeftShift)
+//  it should "RightShift" in testOperator(RightShift)
+//
+//  it should "Assign" in testAssignmentOperator(Assign)
+//  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
+//
+//  it should "LessThan" in testOperator(LessThan)
+//  it should "LessThanEquals" in testOperator(LessThanEquals)
+//  it should "GreaterThan" in testOperator(GreaterThan)
+//  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
+//  it should "Equals" in testOperator(Equals)
+//  it should "NotEquals" in testOperator(NotEquals)
 
 
   def testFile(f: File): Unit =
