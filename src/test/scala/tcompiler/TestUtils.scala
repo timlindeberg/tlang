@@ -46,6 +46,12 @@ object TestUtils {
     }
     map("expectedErrors" -> expectedErrors, "quietReporter" -> quietReporter)
   }
+
+  val SolutionRegex = ".*// *res:(.*)".r
+  def parseSolutions(file: File) : List[String] = {
+    var fileName = file.getPath
+    Source.fromFile(fileName).getLines().flatMap(line => SolutionRegex.findAllIn(line).matchData.map(_.group(1))).toList
+  }
   object IgnoreErrorOutput extends ProcessLogger {
     def buffer[T](f: ⇒ T): T = f
     def err(s: ⇒ String): Unit = {}

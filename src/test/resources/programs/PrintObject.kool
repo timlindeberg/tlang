@@ -1,5 +1,5 @@
 main Main = {
-	println(new Foo().bar(new A()));
+	println(new Foo().bar(new A())); // res: Print A!
 }
 
 class Foo {

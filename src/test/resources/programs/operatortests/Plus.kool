@@ -15,39 +15,39 @@ class H {
      var a: A = new A();
 
      // String
-     println(s + s); // strstr
-     println(s + a); // strA
-     println(s + i); // str1
-     println(s + l); // str1
-     println(s + f); // str1.0
-     println(s + d); // str1.0
-     println(s + c); // stra
-     println(s + b); // strtrue
+     println(s + s);  // res: strstr
+     println(s + a);  // res: strA
+     println(s + i);  // res: str1
+     println(s + l);  // res: str1
+     println(s + f);  // res: str1.0
+     println(s + d);  // res: str1.0
+     println(s + c);  // res: stra
+     println(s + b);  // res: strtrue
 
      // Char
-     println(c + c); // 194
+     println(c + c);  // res: 194
 
      // Int
-     println(i + i); // 2
-     println(i + l); // 2
-     println(i + f); // 2.0
-     println(i + d); // 2.0
-     println(i + c); // 98
+     println(i + i);  // res: 2
+     println(i + l);  // res: 2
+     println(i + f);  // res: 2.0
+     println(i + d);  // res: 2.0
+     println(i + c);  // res: 98
 
      // Long
-     println(l + l); // 2
-     println(l + f); // 2.0
-     println(l + d); // 2.0
-     println(l + c); // 98
+     println(l + l);  // res: 2
+     println(l + f);  // res: 2.0
+     println(l + d);  // res: 2.0
+     println(l + c);  // res: 98
 
      // Float
-     println(f + f); // 2.0
-     println(f + d); // 2.0
-     println(f + c); // 98.0
+     println(f + f);  // res: 2.0
+     println(f + d);  // res: 2.0
+     println(f + c);  // res: 98.0
 
      // Double
-     println(d + d); // 2.0
-     println(d + c); // 98.0
+     println(d + d);  // res: 2.0
+     println(d + c);  // res: 98.0
   }
 
 }

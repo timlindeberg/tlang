@@ -16,10 +16,10 @@ class H {
      bool = new Bool[5];
      a = new A[5];
 
-     println(int.length); // 5
-     println(str.length); // 5
-     println(bool.length); // 5
-     println(a.length); // 5
+     println(int.length); // res: 5
+     println(str.length); // res: 5
+     println(bool.length); // res: 5
+     println(a.length); // res: 5
 
      for(i = 0; i < 5; i++){
         int[i]  = i;
@@ -29,20 +29,20 @@ class H {
      }
 
      for(i = 0; i < 5; i++){
-        print(int[i] + " "); // 0 1 2 3 4
+        print(int[i] + " "); // res: 0 1 2 3 4
      }
      println("");
      for(i = 0; i < 5; i++){
-        print(str[i] + " "); // 0 1 2 3 4
+        print(str[i] + " "); // res: 0 1 2 3 4
      }
      println("");
      for(i = 0; i < 5; i++){
-        print(bool[i]); // true false true false true
+        print(bool[i]); // res: true false true false true
         print(" ");
      }
      println("");
      for(i = 0; i < 5; i++){
-        print(a[i]);    // 0 1 2 3 4
+        print(a[i]);    // res: 0 1 2 3 4
         print(" ");
      }
   }

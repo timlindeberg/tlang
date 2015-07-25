@@ -7,11 +7,11 @@ class H {
   Def run(): Unit = {
      var i: Int;
      i = 5;
-     println(i == 5 ? 0 : 1); // 0
-     println(true ? 0 : 1);   // 0
-     println(false ? 0 : 1);  // 1
-     println(this.test(i) ? 0 : 1); // 1
-     println(test(10) || test(9) || test(8) || 7 > 8 || 8*5 + 3 - 40 < 3 ? 50*3 - 150 : 8 + 8 + 8 + (25*4) - 123); // 1
+     println(i == 5 ? 0 : 1);  // res: 0
+     println(true ? 0 : 1);    // res: 0
+     println(false ? 0 : 1);   // res: 1
+     println(this.test(i) ? 0 : 1);  // res: 1
+     println(test(10) || test(9) || test(8) || 7 > 8 || 8*5 + 3 - 40 < 3 ? 50*3 - 150 : 8 + 8 + 8 + (25*4) - 123);  // res: 1
   }
 
   Def test(i: Int): Bool = {

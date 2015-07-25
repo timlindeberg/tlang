@@ -10,8 +10,8 @@ class H {
     b = new B();
     a = new A();
 
-    println(b.Test(0)); // 1
-    println(a.Test(0)); // 1
+    println(b.Test(0)); // res: 1
+    println(a.Test(0)); // res: 1
   }
 
 }

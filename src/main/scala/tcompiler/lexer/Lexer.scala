@@ -268,18 +268,18 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
               (createToken(BAD, s.length), chars)
             }
           case ('e' | 'E') :: r    =>
-            if (!foundE && !foundDecimal) {
+            if (!foundE && foundDecimal) {
               foundE = true
               r match {
                 case '-' :: c :: r if c.isDigit => getNumberLiteral(r, s + "E-" + c)
                 case c :: r if c.isDigit        => getNumberLiteral(r, s + "E" + c)
                 case _                          =>
-                  error("Invalid floating point number.", startPos)
+                  error("1Invalid floating point number.", startPos)
                   (createToken(BAD, s.length), chars)
               }
 
             } else {
-              error("Invalid floating point number.", startPos)
+              error("2Invalid floating point number.", startPos)
               (createToken(BAD, s.length), chars)
             }
           case ('f' | 'F') :: r    => (parseFloatToken(s), r)
@@ -287,7 +287,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             if (!foundE && !foundDecimal) {
               (parseLongToken(s), r)
             } else {
-              error("Invalid floating point number.", startPos)
+              error("3Invalid floating point number.", startPos)
               (createToken(BAD, s.length), chars)
             }
           case _                   =>

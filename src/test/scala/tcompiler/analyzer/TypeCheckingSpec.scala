@@ -134,17 +134,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   it should "RightShift" in shiftOperator(RightShift)
 
   it should "Assign" in assignOperator
-  it should "PlusAssign" in plusAssignOperator
-  it should "MinusAssign" in assignmentOperator(MinusAssign)
-  it should "MulAssign" in assignmentOperator(MulAssign)
-  it should "DivAssign" in assignmentOperator(DivAssign)
-  it should "ModAssign" in assignmentOperator(ModAssign)
-
-  it should "AndAssign" in logicalAssignmentOperator(AndAssign)
-  it should "OrAssign" in logicalAssignmentOperator(OrAssign)
-  it should "XorAssign" in logicalAssignmentOperator(XorAssign)
-  it should "LeftShiftAssign" in shiftAssignmentOperator(LeftShiftAssign)
-  it should "RightShiftAssign" in shiftAssignmentOperator(RightShiftAssign)
   it should "ArrayAssign" in arrayAssignOperator
 
   it should "LessThan" in comparisonOperator(LessThan)
@@ -279,77 +268,6 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (obj, obj, obj().getType),
 
       (array, array, array().getType)
-    )
-
-  def plusAssignOperator() =
-    new AssignmentAsserter(PlusAssign).valid(
-      (int, int, TInt),
-      (int, char, TInt),
-
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong),
-
-      (float, float, TFloat),
-      (float, int, TFloat),
-      (float, char, TFloat),
-      (float, long, TFloat),
-
-      (double, double, TDouble),
-      (double, float, TDouble),
-      (double, int, TDouble),
-      (double, long, TDouble),
-      (double, char, TDouble),
-
-      (string, string, TString),
-      (string, int, TString),
-      (string, long, TString),
-      (string, float, TString),
-      (string, double, TString),
-      (string, char, TString)
-    )
-
-  def assignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new AssignmentAsserter(expressionType).valid(
-      (int, int, TInt),
-      (int, char, TInt),
-
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong),
-
-      (float, float, TFloat),
-      (float, int, TFloat),
-      (float, char, TFloat),
-      (float, long, TFloat),
-
-      (double, double, TDouble),
-      (double, float, TDouble),
-      (double, int, TDouble),
-      (double, long, TDouble),
-      (double, char, TDouble)
-    )
-
-  def logicalAssignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new AssignmentAsserter(expressionType).valid(
-      (int, int, TInt),
-      (int, char, TInt),
-
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong),
-
-      (bool, bool, TBool)
-    )
-
-  def shiftAssignmentOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new AssignmentAsserter(expressionType).valid(
-      (int, int, TInt),
-      (int, char, TInt),
-
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong)
     )
 
   def arrayAssignOperator() =

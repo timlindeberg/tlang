@@ -28,29 +28,29 @@ class Test {
         i2[1] = 1;
 
         // primitives
-        println(num == 1);      // true
-        println(1 == 2);        // false
-        println(true == true);  // true
-        println(false == true); // false
+        println(num == 1);      // res: true
+        println(1 == 2);        // res: false
+        println(true == true);  // res: true
+        println(false == true); // res: false
 
         // strings
-        println("Hej" == "Hej");// true, comparing string constants
-        println(s1 == s2);      // true, both are constants
+        println("Hej" == "Hej");// res: true
+        println(s1 == s2);      // res: true
         s1 = s1 + "hej";
         s2 = s1 + "hej";
-        println(s1 == s2);      // false
+        println(s1 == s2);      // res: false
 
         // objects
-        println(a == b);        // false
-        println(a == c);        // false
+        println(a == b);        // res: false
+        println(a == c);        // res: false
         a = b;
-        println(a == b);        // true
+        println(a == b);        // res: true
 
 
         // arrays
-        println(i1 == i2);      // false
+        println(i1 == i2);      // res: false
         i1 = i2;
-        println(i1 == i2);      // true
+        println(i1 == i2);      // res: true
 
         return "";
     }

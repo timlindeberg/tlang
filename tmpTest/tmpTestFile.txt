@@ -1,0 +1,1 @@
+main Main = { println(("\u036A\u8AE3\u0762\u7655\u85CD" != "\u366E\u53AD\u849D\u9C63\u240E")); }

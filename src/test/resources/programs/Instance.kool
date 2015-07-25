@@ -12,12 +12,12 @@ class H {
      b = new B();
      c = new B();
 
-     println(a inst A); // true
-     println(a inst B); // false
-     println(b inst B); // true
-     println(b inst A); // true
-     println(c inst A); // true
-     println(c inst B); // true
+     println(a inst A); // res: true
+     println(a inst B); // res: false
+     println(b inst B); // res: true
+     println(b inst A); // res: true
+     println(c inst A); // res: true
+     println(c inst B); // res: true
 
   }
 

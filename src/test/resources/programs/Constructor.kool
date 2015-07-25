@@ -1,5 +1,6 @@
 main Main = {
-	println(new H("Construct").run());
+	println(new H("Construct").run()); // res: Construct
+	// res: Run
 }
 
 class H {

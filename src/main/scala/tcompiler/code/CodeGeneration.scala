@@ -1,15 +1,18 @@
 package tcompiler
 package code
 
-import ast.Trees._
-import analyzer.Symbols._
-import analyzer.Types._
-import cafebabe._
-import cafebabe.ByteCodes._
-import utils._
-import scala.collection.mutable.HashMap
-import cafebabe.AbstractByteCodes._
 import java.io.File
+
+import cafebabe.AbstractByteCodes._
+import cafebabe.ByteCodes._
+import cafebabe._
+import tcompiler.analyzer.Symbols._
+import tcompiler.analyzer.Types._
+import tcompiler.analyzer._
+import tcompiler.ast.Trees._
+import tcompiler.utils._
+
+import scala.collection.mutable.HashMap
 
 object CodeGeneration extends Pipeline[Program, Unit] {
 
@@ -18,21 +21,21 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   /* Java classes used by compiler */
   val STRING_BUILDER = "java/lang/StringBuilder"
-  val STRING = "java/lang/String"
-  val SYSTEM = "java/lang/System"
-  val PRINT_STREAM = "java/io/PrintStream"
-  val OBJECT = "java/lang/Object"
+  val STRING         = "java/lang/String"
+  val SYSTEM         = "java/lang/System"
+  val PRINT_STREAM   = "java/io/PrintStream"
+  val OBJECT         = "java/lang/Object"
 
 
   /* Labels */
-  val THEN = "then"
-  val ELSE = "else"
+  val THEN  = "then"
+  val ELSE  = "else"
   val AFTER = "after"
-  val BODY = "body"
-  val NEXT = "next"
+  val BODY  = "body"
+  val NEXT  = "next"
 
   /* Types */
-  val T_INT = 10
+  val T_INT  = 10
   val T_BOOL = 4
 
   def run(ctx: Context)(prog: Program): Unit = {
@@ -41,7 +44,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     var varMap = new HashMap[String, Int]
 
-    class StatementCompiler(val ch: CodeHandler, cn: String) {
+    class CodeGenerator(val ch: CodeHandler, cn: String) {
 
       def store(id: Identifier, put: () => Unit, duplicate: Boolean = false): CodeHandler = {
         val name = id.value
@@ -58,7 +61,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << ArgLoad(0) // put this-reference on stack
           put()
           if (duplicate)
-            codes.dup(ch)
+            codes.dup_x1(ch) // this value -> value this value
           ch << PutField(cn, name, tp.byteCodeName)
         }
       }
@@ -74,9 +77,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << GetField(cn, name, tpe.byteCodeName)
         }
 
-      def compileStat(stat: StatTree): Unit = {
-        ch << LineNumber(stat.line)
-        stat match {
+      def compileStat(statement: StatTree): Unit = {
+        putLineNumber(ch, statement.line)
+        statement match {
           case Block(stats)                     => stats.foreach(compileStat)
           case If(expr, thn, els)               =>
             val thnLabel = ch.getFreshLabel(THEN)
@@ -108,145 +111,43 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             post.foreach(compileStat)
             branch(condition, Label(bodyLabel), Label(afterLabel))
             ch << Label(afterLabel)
-          case p@PrintStatement(expr)           =>
+          case PrintStatement(expr)             =>
             ch << GetStatic(SYSTEM, "out", "L" + PRINT_STREAM + ";")
             compileExpr(expr)
             val arg = expr.getType match {
               case _: TObject => "L" + OBJECT + ";" // Call System.out.println(Object) for all other types
               case _          => expr.getType.byteCodeName
             }
-            val funcName = p match {
+            val funcName = statement match {
               case _: Print   => "print"
               case _: Println => "println"
             }
             ch << InvokeVirtual(PRINT_STREAM, funcName, "(" + arg + ")V")
-          case Assign(id, expr)                 =>
-            store(id, () => {
-              compileExpr(expr)
-              val codes = expr.getType.codes
-              id.getType match {
-                case _: TObject | TString | _: TArray =>
-                case TDouble                          => codes.toDouble(ch)
-                case TFloat                           => codes.toFloat(ch)
-                case TLong                            => codes.toLong(ch)
-                case _                                => codes.toInt(ch)
-              }
-            })
-          case a@AnyAssignment(id, expr)        =>
-            // TODO: Clean up code duplication of expressions
-            store(id, () => {
-              load(id)
-              compileExpr(expr)
-              val codes = id.getType.codes
-              a match {
-                case _: PlusAssign       => codes.add(ch)
-                case _: MinusAssign      => codes.sub(ch)
-                case _: MulAssign        => codes.mul(ch)
-                case _: DivAssign        => codes.div(ch)
-                case _: ModAssign        => codes.mod(ch)
-                case _: AndAssign        => codes.and(ch)
-                case _: OrAssign         => codes.or(ch)
-                case _: XorAssign        => codes.xor(ch)
-                case _: LeftShiftAssign  => codes.leftShift(ch)
-                case _: RightShiftAssign => codes.rightShift(ch)
-              }
-            })
-          case ArrayAssign(id, index, expr)     =>
-            load(id)
-            compileExpr(index)
-            compileExpr(expr)
-            val tpe = id.getType.asInstanceOf[TArray].tpe
-            tpe.codes.arrayStore(ch)
-          case mc@MethodCall(obj, meth, args)   =>
-            compileExpr(obj)
-            args.foreach(compileExpr)
-            val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
-            val argTypes = methArgList.map(_.getType.byteCodeName).mkString
-            val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
-            val name = obj.getType.asInstanceOf[TObject].classSymbol.name
-            ch << InvokeVirtual(name, meth.value, signature)
-            if (mc.getType != TUnit)
-              ch << POP
           case Return(Some(expr))               =>
             compileExpr(expr)
             expr.getType.codes.ret(ch)
           case Return(None)                     =>
             ch << RETURN
-          case PreDecrement(id)                 =>
-            val tpe = id.getType
-            load(id)
-            store(id, () => {
-              load(id)
-              ch << Ldc(1)
-              tpe.codes.sub(ch)
-            })
-          case PreIncrement(id)                 =>
-            val tpe = id.getType
-            store(id, () => {
-              load(id)
-              ch << Ldc(1)
-              tpe.codes.add(ch)
-            })
-          case PostDecrement(id)                =>
-            val tpe = id.getType
-            store(id, () => {
-              load(id)
-              ch << Ldc(1)
-              tpe.codes.sub(ch)
-            })
-          case PostIncrement(id)                =>
-            val tpe = id.getType
-            store(id, () => {
-              load(id)
-              ch << Ldc(1)
-              tpe.codes.add(ch)
-            })
+          case expr: ExprTree                   =>
+            // Assignment, method call or increment/decrement
+            compileExpr(expr, duplicate = false)
         }
       }
 
-      def branch(expr: ExprTree, thn: Label, els: Label): Unit = expr match {
-        case Not(expr)                      => branch(expr, els, thn)
-        case True()                         => ch << Goto(thn.id)
-        case False()                        => ch << Goto(els.id)
-        case And(lhs, rhs)                  =>
-          val next = Label(ch.getFreshLabel(NEXT))
-          branch(lhs, next, els)
-          ch << next
-          branch(rhs, thn, els)
-        case Or(lhs, rhs)                   =>
-          val next = Label(ch.getFreshLabel(NEXT))
-          branch(lhs, thn, next)
-          ch << next
-          branch(rhs, thn, els)
-        case id@Identifier(value)           =>
-          load(id)
-          ch << IfEq(els.id) << Goto(thn.id)
-        case Instance(expr, id)             =>
-          compileExpr(expr)
-          ch << Ldc(1)
-          ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
-        case c@Comparison(lhs, rhs)         =>
-          compileExpr(lhs)
-          compileExpr(rhs)
-          val codes = lhs.getType.codes
-          c match {
-            case _: LessThan          => codes.cmpLt(ch, thn.id)
-            case _: LessThanEquals    => codes.cmpLe(ch, thn.id)
-            case _: GreaterThan       => codes.cmpGt(ch, thn.id)
-            case _: GreaterThanEquals => codes.cmpGe(ch, thn.id)
-            case _: Equals            => codes.cmpEq(ch, thn.id)
-            case _: NotEquals         => codes.cmpNe(ch, thn.id)
-          }
-          ch << Goto(els.id)
-        case mc@MethodCall(obj, meth, args) =>
-          compileExpr(mc)
-          ch << IfEq(els.id) << Goto(thn.id)
-        case _                              => throw new UnsupportedOperationException(expr.toString)
-      }
-
-      def compileExpr(expr: ExprTree): Unit = {
-        ch << LineNumber(expr.line)
-        expr match {
+      def compileExpr(expression: ExprTree, duplicate: Boolean = true): Unit = {
+        putLineNumber(ch, expression.line)
+        expression match {
+          case True()                           => ch << Ldc(1)
+          case False()                          => ch << Ldc(0)
+          case IntLit(value)                    => ch << Ldc(value)
+          case LongLit(value)                   => ch << Ldc(value)
+          case CharLit(value)                   => ch << Ldc(value)
+          case FloatLit(value)                  => ch << Ldc(value)
+          case DoubleLit(value)                 => ch << Ldc(value)
+          case StringLit(value)                 => ch << Ldc(value)
+          case id @ Identifier(value)           => load(id)
+          case id @ ClassIdentifier(value, _)   => load(id.value, id.getType)
+          case This()                           => ch << ArgLoad(0)
           case _: And |
                _: Or |
                _: Equals |
@@ -255,22 +156,27 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                _: LessThanEquals |
                _: GreaterThan |
                _: GreaterThanEquals |
-               _: Not                         =>
+               _: Not                           =>
             val thn = ch.getFreshLabel(THEN)
             val els = ch.getFreshLabel(ELSE)
             val after = ch.getFreshLabel(AFTER)
-            branch(expr, Label(thn), Label(els))
+            branch(expression, Label(thn), Label(els))
             ch << Label(thn)
             ch << Ldc(1)
             ch << Goto(after)
             ch << Label(els)
             ch << Ldc(0)
             ch << Label(after)
-          case Plus(lhs, rhs)                 =>
-            println("Types: " + lhs.getType + ", " + rhs.getType)
+          case Plus(lhs, rhs)                   =>
             (lhs.getType, rhs.getType) match {
               case (TString, _) | (_, TString) =>
-                def methSignature(expr: ExprTree) = "(" + expr.getType.byteCodeName + ")L" + STRING_BUILDER + ";"
+                def methSignature(expr: ExprTree) = {
+                  val arg = expr.getType match {
+                    case TObject(tpe) => "L" + OBJECT + ";"
+                    case _            => expr.getType.byteCodeName
+                  }
+                  "(" + arg + ")L" + STRING_BUILDER + ";"
+                }
                 ch << DefaultNew(STRING_BUILDER)
                 compileExpr(lhs)
                 ch << InvokeVirtual(STRING_BUILDER, "append", methSignature(lhs))
@@ -302,37 +208,34 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 rhs.getType.codes.toInt(ch)
                 ch << IADD
             }
-          case BinaryOperator(lhs, rhs)       =>
+          case BinaryOperator(lhs, rhs)         =>
+            compileExpr(lhs)
             (lhs.getType, rhs.getType) match {
               case (TDouble, _) | (_, TDouble) =>
-                compileExpr(lhs)
                 lhs.getType.codes.toDouble(ch)
                 compileExpr(rhs)
                 rhs.getType.codes.toDouble(ch)
               case (TFloat, _) | (_, TFloat)   =>
-                compileExpr(lhs)
                 lhs.getType.codes.toFloat(ch)
                 compileExpr(rhs)
                 rhs.getType.codes.toFloat(ch)
               case (TLong, _) | (_, TLong)     =>
-                compileExpr(lhs)
                 lhs.getType.codes.toLong(ch)
                 compileExpr(rhs)
                 rhs.getType.codes.toLong(ch)
               case _                           =>
-                compileExpr(lhs)
                 lhs.getType.codes.toInt(ch)
                 compileExpr(rhs)
                 rhs.getType.codes.toInt(ch)
             }
-            val codes = expr.getType.codes
-            expr match {
+            val codes = expression.getType.codes
+            expression match {
               case _: Minus  => codes.sub(ch)
               case _: Times  => codes.mul(ch)
               case _: Div    => codes.div(ch)
               case _: Modulo => codes.mod(ch)
             }
-          case LogicalOperator(lhs, rhs)      =>
+          case LogicalOperator(lhs, rhs)        =>
             (lhs.getType, rhs.getType) match {
               case (TLong, _) | (_, TLong) =>
                 compileExpr(lhs)
@@ -345,13 +248,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 compileExpr(rhs)
                 rhs.getType.codes.toInt(ch)
             }
-            val codes = expr.getType.codes
-            expr match {
+            val codes = expression.getType.codes
+            expression match {
               case _: LogicAnd => codes.and(ch)
               case _: LogicOr  => codes.or(ch)
               case _: LogicXor => codes.xor(ch)
             }
-          case ShiftOperator(lhs, rhs)        =>
+          case ShiftOperator(lhs, rhs)          =>
             compileExpr(lhs)
             (lhs.getType, rhs.getType) match {
               case (TLong, _) =>
@@ -360,137 +263,118 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             }
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch) // Always shift by an int
-          val codes = expr.getType.codes
-            expr match {
+          val codes = expression.getType.codes
+            expression match {
               case _: LeftShift  => codes.leftShift(ch)
               case _: RightShift => codes.rightShift(ch)
             }
-          case Assign(id, expr)               =>
+          case Assign(id, expr)                 =>
             store(id, () => {
               compileExpr(expr)
               val codes = expr.getType.codes
               id.getType match {
-                case _: TObject | TString | _: TArray =>
+                case _: TObject | _: TArray | TString =>
                 case TDouble                          => codes.toDouble(ch)
                 case TFloat                           => codes.toFloat(ch)
                 case TLong                            => codes.toLong(ch)
                 case _                                => codes.toInt(ch)
               }
-            }, duplicate = true)
-          case a@AnyAssignment(id, expr)      =>
-            store(id, () => {
-              load(id)
-              compileExpr(expr)
-              val codes = id.getType.codes
-              a match {
-                case _: PlusAssign       => codes.add(ch)
-                case _: MinusAssign      => codes.sub(ch)
-                case _: MulAssign        => codes.mul(ch)
-                case _: DivAssign        => codes.div(ch)
-                case _: ModAssign        => codes.mod(ch)
-                case _: AndAssign        => codes.and(ch)
-                case _: OrAssign         => codes.or(ch)
-                case _: XorAssign        => codes.xor(ch)
-                case _: LeftShiftAssign  => codes.leftShift(ch)
-                case _: RightShiftAssign => codes.rightShift(ch)
-              }
-            }, duplicate = true)
-          case ArrayAssign(id, index, expr)   =>
-            // TODO: More effecient way of keeping the value on the stack after assignment
-            val codes = id.getType.asInstanceOf[TArray].tpe.codes
-
-            compileExpr(expr) // value
-            codes.dup(ch) // value value
-            load(id) // value value arrayref
-            ch << SWAP // value arrayref value
-            compileExpr(index) // value arrayref value index
-            ch << SWAP // value arrayref index value
-            codes.arrayStore(ch)
-          case Instance(expr, id)             =>
+            }, duplicate = duplicate)
+          case ArrayAssign(id, index, expr)     =>
+            val arrayType = id.getType.asInstanceOf[TArray].tpe
+            val idCodes = arrayType.codes
+            val exprCodes = expr.getType.codes
+            def convertType() = arrayType match {
+              case _: TObject | TString =>
+              case TDouble              => exprCodes.toDouble(ch)
+              case TFloat               => exprCodes.toFloat(ch)
+              case TLong                => exprCodes.toLong(ch)
+              case _                    => exprCodes.toInt(ch)
+            }
+            load(id)
+            compileExpr(index)
+            compileExpr(expr)
+            if (duplicate)
+              expr.getType.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
+            convertType()
+            idCodes.arrayStore(ch)
+          case Instance(expr, id)               =>
             compileExpr(expr)
             ch << InstanceOf(id.value)
-          case As(expr, tpe)                  =>
+          case As(expr, tpe)                    =>
             compileExpr(expr)
             ch << CheckCast(tpe.name)
-          case ArrayRead(arr, index)          =>
+          case ArrayRead(arr, index)            =>
             compileExpr(arr)
             compileExpr(index)
             val tpe = arr.getType.asInstanceOf[TArray].tpe
             tpe.codes.arrayLoad(ch)
-          case ArrayLength(arr)               =>
+          case ArrayLength(arr)                 =>
             compileExpr(arr)
             ch << ARRAYLENGTH
-          case mc@MethodCall(obj, meth, args) =>
+          case mc @ MethodCall(obj, meth, args) =>
             compileExpr(obj)
-            args.foreach(compileExpr)
+            args.foreach(compileExpr(_))
             val methArgList = meth.getSymbol.asInstanceOf[MethodSymbol].argList
             val argTypes = methArgList.map(_.getType.byteCodeName).mkString
             val signature = "(" + argTypes + ")" + mc.getType.byteCodeName
             val name = obj.getType.asInstanceOf[TObject].classSymbol.name
             ch << InvokeVirtual(name, meth.value, signature)
-          case ast.Trees.NewArray(tpe, size)  =>
+            if (!duplicate && mc.getType != TUnit)
+              ch << POP
+          case ast.Trees.NewArray(tpe, size)    =>
             compileExpr(size)
             tpe.getType.codes.newArray(ch)
-          case True()                         => ch << Ldc(1)
-          case False()                        => ch << Ldc(0)
-          case IntLit(value)                  => ch << Ldc(value)
-          case LongLit(value)                 => ch << Ldc(value)
-          case CharLit(value)                 => ch << Ldc(value)
-          case FloatLit(value)                => ch << Ldc(value)
-          case DoubleLit(value)               => ch << Ldc(value)
-          case StringLit(value)               => ch << Ldc(value)
-          case id@Identifier(value)           => load(id)
-          case id@ClassIdentifier(value, _)   => load(id.value, id.getType)
-          case This()                         => ch << ArgLoad(0)
-          case ast.Trees.New(tpe, args)       =>
+
+          case ast.Trees.New(tpe, args)     =>
             val codes = tpe.getType.codes
             val obj = if (tpe.value == "Object") OBJECT else tpe.value
             ch << cafebabe.AbstractByteCodes.New(obj)
             codes.dup(ch)
-            args.foreach(compileExpr)
+            args.foreach(compileExpr(_))
 
             val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
             ch << InvokeSpecial(obj, CONSTRUCTOR_NAME, signature)
-          case Negation(expr)                 =>
+          case Negation(expr)               =>
             compileExpr(expr)
             expr.getType.codes.negation(ch)
-          case LogicNot(expr)                 =>
+          case LogicNot(expr)               =>
             compileExpr(expr)
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
-          case PreDecrement(id)               =>
+          case PreDecrement(id)             =>
             val codes = id.getType.codes
             store(id, () => {
               load(id)
               ch << Ldc(1)
               codes.sub(ch)
-              codes.dup(ch)
+              if (duplicate) codes.dup(ch)
             })
-          case PreIncrement(id)               =>
+          case PreIncrement(id)             =>
             val codes = id.getType.codes
             store(id, () => {
               load(id)
               ch << Ldc(1)
               codes.add(ch)
-              codes.dup(ch)
+              if (duplicate) codes.dup(ch)
             })
-          case PostDecrement(id)              =>
+          case PostDecrement(id)            =>
             val codes = id.getType.codes
             store(id, () => {
               load(id)
-              codes.dup(ch)
+              if (duplicate) codes.dup(ch)
               ch << Ldc(1)
               codes.sub(ch)
             })
-          case PostIncrement(id)              =>
+          case PostIncrement(id)            =>
             val codes = id.getType.codes
             store(id, () => {
               load(id)
-              codes.dup(ch)
+              if (duplicate) codes.dup(ch)
               ch << Ldc(1)
               id.getType.codes.add(ch)
             })
-          case Ternary(condition, thn, els)   =>
+          case Ternary(condition, thn, els) =>
             val thnLabel = ch.getFreshLabel(THEN)
             val elsLabel = ch.getFreshLabel(ELSE)
             val afterLabel = ch.getFreshLabel(AFTER)
@@ -504,17 +388,129 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             ch << Label(afterLabel)
         }
       }
+
+      private def branch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
+        case Not(expr)                        => branch(expr, els, thn)
+        case True()                           => ch << Goto(thn.id)
+        case False()                          => ch << Goto(els.id)
+        case And(lhs, rhs)                    =>
+          val next = Label(ch.getFreshLabel(NEXT))
+          branch(lhs, next, els)
+          ch << next
+          branch(rhs, thn, els)
+        case Or(lhs, rhs)                     =>
+          val next = Label(ch.getFreshLabel(NEXT))
+          branch(lhs, thn, next)
+          ch << next
+          branch(rhs, thn, els)
+        case id @ Identifier(value)           =>
+          load(id)
+          ch << IfEq(els.id) << Goto(thn.id)
+        case Instance(expr, id)               =>
+          compileExpr(expr)
+          ch << Ldc(1)
+          ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
+        case ComparisonOperator(lhs, rhs)     =>
+          def comparison(codes: CodeMap) = {
+            expression match {
+              case _: LessThan          => codes.cmpLt(ch, thn.id)
+              case _: LessThanEquals    => codes.cmpLe(ch, thn.id)
+              case _: GreaterThan       => codes.cmpGt(ch, thn.id)
+              case _: GreaterThanEquals => codes.cmpGe(ch, thn.id)
+            }
+          }
+
+          compileExpr(lhs)
+          (lhs.getType, rhs.getType) match {
+            case (TDouble, _) | (_, TDouble) =>
+              lhs.getType.codes.toDouble(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toDouble(ch)
+              comparison(DoubleCodeMap)
+            case (TFloat, _) | (_, TFloat)   =>
+              lhs.getType.codes.toFloat(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toFloat(ch)
+              comparison(FloatCodeMap)
+            case (TLong, _) | (_, TLong)     =>
+              lhs.getType.codes.toLong(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toLong(ch)
+              comparison(LongCodeMap)
+            case _                           =>
+              lhs.getType.codes.toInt(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toInt(ch)
+              comparison(IntCodeMap)
+          }
+
+          ch << Goto(els.id)
+        case EqualsOperator(lhs, rhs)         =>
+          def comparison(codes: CodeMap) = {
+            expression match {
+              case _: Equals    => codes.cmpEq(ch, thn.id)
+              case _: NotEquals => codes.cmpNe(ch, thn.id)
+            }
+          }
+          compileExpr(lhs)
+          (lhs.getType, rhs.getType) match {
+            case (_, objectType: TObject)        =>
+              compileExpr(rhs)
+              comparison(objectType.codes)
+            case (objectType: TObject, _)        =>
+              compileExpr(rhs)
+              comparison(objectType.codes)
+            case (_, _: TArray) | (_: TArray, _) =>
+              compileExpr(rhs)
+              comparison(ArrayCodeMap)
+            case (TString, _) | (_, TString)     =>
+              compileExpr(rhs)
+              comparison(StringCodeMap)
+            case (TDouble, _) | (_, TDouble)     =>
+              lhs.getType.codes.toDouble(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toDouble(ch)
+              comparison(DoubleCodeMap)
+            case (TFloat, _) | (_, TFloat)       =>
+              lhs.getType.codes.toFloat(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toFloat(ch)
+              comparison(FloatCodeMap)
+            case (TLong, _) | (_, TLong)         =>
+              lhs.getType.codes.toLong(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toLong(ch)
+              comparison(LongCodeMap)
+            case _                               =>
+              lhs.getType.codes.toInt(ch)
+              compileExpr(rhs)
+              rhs.getType.codes.toInt(ch)
+              comparison(IntCodeMap)
+          }
+          ch << Goto(els.id)
+        case mc @ MethodCall(obj, meth, args) =>
+          compileExpr(mc)
+          ch << IfEq(els.id) << Goto(thn.id)
+      }
+
+      var prevLine: Int = 0
+      private def putLineNumber(ch: CodeHandler, line: Int) =
+        if (line != prevLine) {
+          prevLine = line
+          ch << LineNumber(line)
+        }
     }
+
+
 
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
     def generateClassFile(sourceName: String, ct: ClassDecl, dir: String): Unit = {
       val sym = ct.getSymbol
       val classFile = new ClassFile(sym.name, sym.parent.map(_.name))
       classFile.setSourceFile(sourceName)
-      var hasConstructor = false
-
       sym.members.foreach { case (name, varSymbol) => classFile.addField(varSymbol.getType.byteCodeName, name) }
 
+      var hasConstructor = false
       ct.methods.foreach { mt =>
         val methSymbol = mt.getSymbol
 
@@ -559,7 +555,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val ch = mh.codeHandler
 
       // Initialize fields after constructor
-      val sc = new StatementCompiler(ch, con.getSymbol.classSymbol.name)
+      val sc = new CodeGenerator(ch, con.getSymbol.classSymbol.name)
       ct.vars.foreach {
         case VarDecl(varTpe, id, Some(expr)) =>
           ch << ArgLoad(0) // put this-reference on stack
@@ -590,10 +586,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case (arg, i) => varMap(arg.getSymbol.name) = i + 1
       }
 
-      val statementCompiler = new StatementCompiler(ch, methSym.classSymbol.name)
-      initializeLocalVariables(mt, statementCompiler)
+      val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name)
+      initializeLocalVariables(mt, codeGenerator)
 
-      mt.stats.foreach(statementCompiler.compileStat)
+      mt.stats.foreach(codeGenerator.compileStat)
 
       ch.peek match {
         case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
@@ -611,31 +607,27 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             case cons: ConstructorDecl => ch << RETURN
           }
       }
+      //println("varMap = " + varMap)
+      //ch.print
       ch.freeze
     }
 
-    def initializeLocalVariables(mt: FuncTree, statementCompiler: StatementCompiler) = {
-      val ch = statementCompiler.ch
+    def initializeLocalVariables(mt: FuncTree, codeGenerator: CodeGenerator) = {
+      val ch = codeGenerator.ch
 
-      // First initialize all variables to a default value
-      mt.vars foreach { case variable@VarDecl(tpe, _, init) =>
+      mt.vars foreach { case variable @ VarDecl(tpe, _, init) =>
+        val id = ch.getFreshVar(tpe.getType.size)
+        val name = variable.getSymbol.name
         val codes = tpe.getType.codes
-        val id = ch.getFreshVar
-        varMap(variable.getSymbol.name) = id
-        codes.defaultConstant(ch)
-        codes.store(ch, id)
-      }
-
-      // Then initialize variables with their expressions if they have one
-      // This way variables can't be uninitialized if they're used to
-      // intialize other variables
-      mt.vars foreach { variable =>
-        val sym = variable.getSymbol
-        Some(variable) collect { case VarDecl(_, _, Some(expr)) =>
-          statementCompiler.compileExpr(expr)
-          sym.getType.codes.store(ch, varMap(sym.name))
+        varMap(name) = id
+        init match {
+          case Some(expr) =>
+            codeGenerator.compileExpr(expr)
+            codes.store(ch, varMap(name))
+          case None       =>
+            codes.defaultConstant(ch)
+            codes.store(ch, id)
         }
-
       }
     }
 
@@ -649,10 +641,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     def generateMainMethod(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
-      varMap = new HashMap[String, Int]
-      stmts.foreach(new StatementCompiler(ch, cname).compileStat)
+      stmts.foreach(new CodeGenerator(ch, cname).compileStat)
       ch << RETURN
-      //ch.print
+      // ch.print
       ch.freeze
     }
     val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("")

@@ -49,6 +49,8 @@ trait CodeMap {
   def ret(ch: CodeHandler): CodeHandler = ch
   def negation(ch: CodeHandler): CodeHandler = ch
   def dup(ch: CodeHandler): CodeHandler = ch
+  def dup_x1(ch: CodeHandler): CodeHandler = ch
+  def dup_x2(ch: CodeHandler): CodeHandler = ch
 
   // Conversions
   def toDouble(ch: CodeHandler): CodeHandler = ch
@@ -90,6 +92,8 @@ object IntCodeMap extends CodeMap {
   override def ret(ch: CodeHandler) = ch << IRETURN
   override def negation(ch: CodeHandler) = ch << INEG
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
 
   override def toDouble(ch: CodeHandler) = ch << I2D
   override def toFloat(ch: CodeHandler) = ch << I2F
@@ -101,15 +105,15 @@ object LongCodeMap extends CodeMap {
   override def store(ch: CodeHandler, index: Int) = ch << LStore(index)
   override def arrayLoad(ch: CodeHandler) = ch << LALOAD
   override def arrayStore(ch: CodeHandler) = ch << LASTORE
-  override def defaultConstant(ch: CodeHandler) = ch << Ldc(0l)
+  override def defaultConstant(ch: CodeHandler) = ch << Ldc(0L)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_LONG)
 
-  override def cmpLt(ch: CodeHandler, id: String) = ch << LCMP << IfGe(id)
-  override def cmpLe(ch: CodeHandler, id: String) = ch << LCMP << IfGt(id)
-  override def cmpGt(ch: CodeHandler, id: String) = ch << LCMP << IfLe(id)
-  override def cmpGe(ch: CodeHandler, id: String) = ch << LCMP << IfLt(id)
-  override def cmpEq(ch: CodeHandler, id: String) = ch << LCMP << IfNe(id)
-  override def cmpNe(ch: CodeHandler, id: String) = ch << LCMP << IfEq(id)
+  override def cmpLt(ch: CodeHandler, id: String) = ch << LCMP << IfLt(id)
+  override def cmpLe(ch: CodeHandler, id: String) = ch << LCMP << IfLe(id)
+  override def cmpGt(ch: CodeHandler, id: String) = ch << LCMP << IfGt(id)
+  override def cmpGe(ch: CodeHandler, id: String) = ch << LCMP << IfGe(id)
+  override def cmpEq(ch: CodeHandler, id: String) = ch << LCMP << IfEq(id)
+  override def cmpNe(ch: CodeHandler, id: String) = ch << LCMP << IfNe(id)
 
   override def add(ch: CodeHandler) = ch << LADD
   override def sub(ch: CodeHandler) = ch << LSUB
@@ -125,6 +129,8 @@ object LongCodeMap extends CodeMap {
   override def ret(ch: CodeHandler) = ch << LRETURN
   override def negation(ch: CodeHandler) = ch << LNEG
   override def dup(ch: CodeHandler) = ch << DUP2
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP2_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP2_X2
 
   override def toDouble(ch: CodeHandler) = ch << L2D
   override def toFloat(ch: CodeHandler) = ch << L2F
@@ -140,12 +146,12 @@ object FloatCodeMap extends CodeMap {
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0.0f)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_FLOAT)
 
-  override def cmpLt(ch: CodeHandler, id: String) = ch << FCMPG << IfGe(id)
-  override def cmpLe(ch: CodeHandler, id: String) = ch << FCMPG << IfGt(id)
-  override def cmpGt(ch: CodeHandler, id: String) = ch << FCMPL << IfLe(id)
-  override def cmpGe(ch: CodeHandler, id: String) = ch << FCMPL << IfLt(id)
-  override def cmpEq(ch: CodeHandler, id: String) = ch << FCMPL << IfNe(id)
-  override def cmpNe(ch: CodeHandler, id: String) = ch << FCMPL << IfEq(id)
+  override def cmpLt(ch: CodeHandler, id: String) = ch << FCMPG << IfLt(id)
+  override def cmpLe(ch: CodeHandler, id: String) = ch << FCMPG << IfLe(id)
+  override def cmpGt(ch: CodeHandler, id: String) = ch << FCMPL << IfGt(id)
+  override def cmpGe(ch: CodeHandler, id: String) = ch << FCMPL << IfGe(id)
+  override def cmpEq(ch: CodeHandler, id: String) = ch << FCMPL << IfEq(id)
+  override def cmpNe(ch: CodeHandler, id: String) = ch << FCMPL << IfNe(id)
 
   override def add(ch: CodeHandler) = ch << FADD
   override def sub(ch: CodeHandler) = ch << FSUB
@@ -156,6 +162,8 @@ object FloatCodeMap extends CodeMap {
   override def ret(ch: CodeHandler) = ch << FRETURN
   override def negation(ch: CodeHandler) = ch << FNEG
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
 
   override def toDouble(ch: CodeHandler) = ch << F2D
   override def toLong(ch: CodeHandler) = ch << F2L
@@ -170,12 +178,12 @@ object DoubleCodeMap extends CodeMap {
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0.0)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_DOUBLE)
 
-  override def cmpLt(ch: CodeHandler, id: String) = ch << DCMPG << IfGe(id)
-  override def cmpLe(ch: CodeHandler, id: String) = ch << DCMPG << IfGt(id)
-  override def cmpGt(ch: CodeHandler, id: String) = ch << DCMPL << IfLe(id)
-  override def cmpGe(ch: CodeHandler, id: String) = ch << DCMPL << IfLt(id)
-  override def cmpEq(ch: CodeHandler, id: String) = ch << DCMPL << IfNe(id)
-  override def cmpNe(ch: CodeHandler, id: String) = ch << DCMPL << IfEq(id)
+  override def cmpLt(ch: CodeHandler, id: String) = ch << DCMPG << IfLt(id)
+  override def cmpLe(ch: CodeHandler, id: String) = ch << DCMPG << IfLe(id)
+  override def cmpGt(ch: CodeHandler, id: String) = ch << DCMPL << IfGt(id)
+  override def cmpGe(ch: CodeHandler, id: String) = ch << DCMPL << IfGe(id)
+  override def cmpEq(ch: CodeHandler, id: String) = ch << DCMPL << IfEq(id)
+  override def cmpNe(ch: CodeHandler, id: String) = ch << DCMPL << IfNe(id)
 
   override def add(ch: CodeHandler) = ch << DADD
   override def sub(ch: CodeHandler) = ch << DSUB
@@ -186,6 +194,8 @@ object DoubleCodeMap extends CodeMap {
   override def ret(ch: CodeHandler) = ch << DRETURN
   override def negation(ch: CodeHandler) = ch << DNEG
   override def dup(ch: CodeHandler) = ch << DUP2
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP2_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP2_X2
 
   override def toFloat(ch: CodeHandler) = ch << D2F
   override def toLong(ch: CodeHandler) = ch << D2L
@@ -222,6 +232,8 @@ object CharCodeMap extends CodeMap {
   override def ret(ch: CodeHandler) = ch << IRETURN
   override def negation(ch: CodeHandler) = ch << INEG
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
 
   override def toDouble(ch: CodeHandler) = ch << I2D
   override def toFloat(ch: CodeHandler) = ch << I2F
@@ -236,10 +248,6 @@ object BoolCodeMap extends CodeMap {
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_BOOL)
 
-  override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)
-  override def cmpLe(ch: CodeHandler, id: String) = ch << If_ICmpLe(id)
-  override def cmpGt(ch: CodeHandler, id: String) = ch << If_ICmpGt(id)
-  override def cmpGe(ch: CodeHandler, id: String) = ch << If_ICmpGe(id)
   override def cmpEq(ch: CodeHandler, id: String) = ch << If_ICmpEq(id)
   override def cmpNe(ch: CodeHandler, id: String) = ch << If_ICmpNe(id)
 
@@ -249,6 +257,9 @@ object BoolCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << IRETURN
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+
 }
 
 object StringCodeMap extends CodeMap {
@@ -264,6 +275,9 @@ object StringCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+
 }
 
 object ArrayCodeMap extends CodeMap {
@@ -279,6 +293,9 @@ object ArrayCodeMap extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+
 }
 
 class ObjectCodeMap(name: String) extends CodeMap {
@@ -294,4 +311,7 @@ class ObjectCodeMap(name: String) extends CodeMap {
 
   override def ret(ch: CodeHandler) = ch << ARETURN
   override def dup(ch: CodeHandler) = ch << DUP
+  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
+  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+
 }

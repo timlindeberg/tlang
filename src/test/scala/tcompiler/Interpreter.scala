@@ -21,9 +21,7 @@
 
 package tcompiler
 
-import java.io._
-import java.io.PrintWriter
-import java.io.PrintStream
+import java.io.{PrintStream, PrintWriter, _}
 
 import scala.tools.nsc.GenericRunnerSettings
 import scala.tools.nsc.interpreter.IMain

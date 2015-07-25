@@ -201,7 +201,7 @@ class LinkedList<T> {
         var s: 	String;
         
         if(size == 0)
-        	return "<>";
+        	return "[]";
 
         it = Iterator();
         s = "[ ";

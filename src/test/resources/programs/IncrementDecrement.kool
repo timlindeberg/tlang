@@ -9,21 +9,21 @@ class H {
     i = 0;
     j = 0;
     j = i++;
-    println(i); // 1
-    println(j); // 0
+    println(i); // res: 1
+    println(j); // res: 0
     j = i--;
-    println(i); // 0
-    println(j); // 1
+    println(i); // res: 0
+    println(j); // res: 1
     j = --i;
-    println(i); // -1
-    println(j); // -1
+    println(i); // res: -1
+    println(j); // res: -1
     j = ++i;
-    println(i); // 0
-    println(j); // 0
+    println(i); // res: 0
+    println(j); // res: 0
     i++;
-    println(i); // 1
+    println(i); // res: 1
     i = -i;
-    println(i); // -1
+    println(i); // res: -1
   }
 
 }

@@ -1,8 +1,8 @@
 main Main = {
-	println(new Looper().run(100));
-    println(new Loopy().run(100));
-    println(new Loopy2().run(100));
-    println(new Loopy3().run(100));
+	println(new Looper().run(100)); // res: 20
+    println(new Loopy().run(100));  // res: 100
+    println(new Loopy2().run(100)); // res: 300
+    println(new Loopy3().run(100)); // res: 0
 }
 
 class Looper {

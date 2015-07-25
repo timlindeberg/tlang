@@ -1,8 +1,6 @@
-// 0 true
-
 main Main = {
-	println(new Test1().test(1337));
-    println(new Test2().test(1337));
+	println(new Test1().test(1337)); // res: 20
+    println(new Test2().test(1337)); // res: 20
 }
 
 class Test1 {

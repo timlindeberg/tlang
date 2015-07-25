@@ -191,62 +191,6 @@ class TypeChecker(ctx: Context, globalMethodSymbol: MethodSymbol) {
             tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
             TDouble
         }
-      case PlusAssign(id, expr)                =>
-        id.getType match {
-          case TString =>
-            tcExpr(expr, TString, TInt, TLong, TFloat, TDouble, TChar)
-            TString
-          case TInt    =>
-            tcExpr(expr, TInt, TChar)
-            TInt
-          case TLong   =>
-            tcExpr(expr, TLong, TInt, TChar)
-            TLong
-          case TFloat  =>
-            tcExpr(expr, TFloat, TLong, TInt, TChar)
-            TFloat
-          case TDouble =>
-            tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
-            TDouble
-          case _       => error("Invalid assignment for type \'" + id.getType + "\'.", id)
-        }
-      case AssignmentOperator(id, expr)        =>
-        id.getType match {
-          case TInt    =>
-            tcExpr(expr, TInt, TChar)
-            TInt
-          case TLong   =>
-            tcExpr(expr, TLong, TInt, TChar)
-            TLong
-          case TFloat  =>
-            tcExpr(expr, TFloat, TLong, TInt, TChar)
-            TFloat
-          case TDouble =>
-            tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
-            TDouble
-          case _       => error("Invalid assignment for type \'" + id.getType + "\'.", id)
-        }
-      case LogicalAssignmentOperator(id, expr) =>
-        id.getType match {
-          case TInt  =>
-            tcExpr(expr, TInt, TChar)
-            TInt
-          case TLong =>
-            tcExpr(expr, TLong, TInt, TChar)
-            TLong
-          case TBool => tcExpr(expr, TBool)
-          case _     => error("Invalid assignment for type \'" + id.getType + "\'.", id)
-        }
-      case ShiftAssignmentOperator(id, expr)   =>
-        id.getType match {
-          case TInt  =>
-            tcExpr(expr, TInt, TChar)
-            TInt
-          case TLong =>
-            tcExpr(expr, TLong, TInt, TChar)
-            TLong
-          case _     => error("Invalid assignment for type \'" + id.getType + "\'.", id)
-        }
       case ArrayAssign(id, index, expr)        =>
         tcExpr(index, TInt)
         tcExpr(id) match {

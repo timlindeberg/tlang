@@ -65,16 +65,6 @@ object Printer {
       case Print(expr)                      => "print(" + f(expr) + ")"
       case Println(expr)                    => "println(" + f(expr) + ")"
       case Assign(id, expr)                 => id.value + " = " + f(expr)
-      case PlusAssign(id, expr)             => id.value + " += " + f(expr)
-      case MinusAssign(id, expr)            => id.value + " -= " + f(expr)
-      case MulAssign(id, expr)              => id.value + " *= " + f(expr)
-      case DivAssign(id, expr)              => id.value + " /= " + f(expr)
-      case ModAssign(id, expr)              => id.value + " %= " + f(expr)
-      case AndAssign(id, expr)              => id.value + " &= " + f(expr)
-      case OrAssign(id, expr)               => id.value + " |= " + f(expr)
-      case XorAssign(id, expr)              => id.value + " ^= " + f(expr)
-      case LeftShiftAssign(id, expr)        => id.value + " <<= " + f(expr)
-      case RightShiftAssign(id, expr)       => id.value + " >>= " + f(expr)
       case ArrayAssign(id, index, expr)     => f(id) + "[" + f(index) + "] = " + f(expr)
       case Return(expr)                     => "return " + optional(expr, f)
       // Expressions
@@ -105,8 +95,8 @@ object Printer {
       case ArrayLength(arr)                  => f(arr) + ".length"
       case MethodCall(obj, meth, args)       => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
       case IntLit(value)                     => value.toString
-      case LongLit(value)                    => value.toString + "l"
-      case FloatLit(value)                   => value.toString + "f"
+      case LongLit(value)                    => value.toString + "L"
+      case FloatLit(value)                   => value.toString + "F"
       case DoubleLit(value)                  => value.toString
       case CharLit(value)                    => "'" + escapeJava("" + value) + "'"
       case StringLit(value)                  => "\"" + escapeJava(value) + "\""

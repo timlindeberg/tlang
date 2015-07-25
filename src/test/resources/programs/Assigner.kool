@@ -10,22 +10,22 @@ class H {
     var a: A;
     var c: C;
     f = new Foo();
-    println(f.bar(10000)); 
-    println(f.baz(1));     
-    println(f.foo());    
+    println(f.bar(10000));   // res: 5
+    println(f.baz(1));       // res: 1
+    println(f.foo());        // res: foo
     t = new Test();
-    println(t.Method());     
+    println(t.Method());     // res: String
     t = new Test4();
-    println(t.Method());     
+    println(t.Method());     // res: Test4
 
     a = new A();
-    println(a.foo(0, "yo")); 
+    println(a.foo(0, "yo")); // res: 0
     a = new B();
-    println(a.foo(0, "yo"));  
+    println(a.foo(0, "yo")); // res: 1
     c = new C();
-    println(c.foo());  
+    println(c.foo());        // res: 0
     c = new D();
-    println(c.foo());   
+    println(c.foo());        // res: 1
     return "!";
   }
 

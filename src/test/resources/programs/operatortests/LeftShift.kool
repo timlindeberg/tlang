@@ -10,16 +10,16 @@ class H {
      var l: Long = 2l;
 
      // Char
-     println(c << c); // 194
+     println(c << c);  // res: 194
 
      // Int
-     println(i << i); // 8
-     println(i << l); // 8
-     println(i << c); // 4
+     println(i << i);  // res: 8
+     println(i << l);  // res: 8
+     println(i << c);  // res: 4
 
      // Long
-     println(l << l); // 8
-     println(l << c); // 4
+     println(l << l);  // res: 8
+     println(l << c);  // res: 17179869184
   }
 
 }

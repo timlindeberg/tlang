@@ -1,12 +1,9 @@
 package tcompiler
 package ast
 
-import tcompiler.lexer.Tokens._
-import utils._
-import analyzer.Symbols._
-import analyzer.Types._
-
-import scala.annotation.tailrec
+import tcompiler.analyzer.Symbols._
+import tcompiler.analyzer.Types._
+import tcompiler.utils._
 
 object Trees {
 
@@ -105,16 +102,6 @@ object Trees {
   trait ExprTree extends Tree with Typed
 
   case class Assign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class PlusAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class MinusAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class MulAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class DivAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class ModAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class AndAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class OrAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class XorAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class LeftShiftAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class RightShiftAssign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
 
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -237,33 +224,6 @@ object Trees {
     }
   }
 
-  object AssignmentOperator {
-    def unapply(e: ExprTree): Option[(Identifier, ExprTree)] = e match {
-      case MinusAssign(lhs, rhs) => Some((lhs, rhs))
-      case MulAssign(lhs, rhs)   => Some((lhs, rhs))
-      case DivAssign(lhs, rhs)   => Some((lhs, rhs))
-      case ModAssign(lhs, rhs)   => Some((lhs, rhs))
-      case _                     => None
-    }
-  }
-
-  object LogicalAssignmentOperator {
-    def unapply(e: ExprTree): Option[(Identifier, ExprTree)] = e match {
-      case AndAssign(lhs, rhs)        => Some((lhs, rhs))
-      case OrAssign(lhs, rhs)         => Some((lhs, rhs))
-      case XorAssign(lhs, rhs)        => Some((lhs, rhs))
-      case _                          => None
-    }
-  }
-
-  object ShiftAssignmentOperator {
-    def unapply(e: ExprTree): Option[(Identifier, ExprTree)] = e match {
-      case LeftShiftAssign(lhs, rhs)  => Some((lhs, rhs))
-      case RightShiftAssign(lhs, rhs) => Some((lhs, rhs))
-      case _                          => None
-    }
-  }
-
   object ComparisonOperator {
     def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
       case LessThan(lhs, rhs)          => Some((lhs, rhs))
@@ -289,23 +249,6 @@ object Trees {
       case Print(expr)   => Some(expr)
       case Println(expr) => Some(expr)
       case _             => None
-    }
-  }
-
-  object AnyAssignment {
-    def unapply(e: StatTree): Option[(Identifier, ExprTree)] = e match {
-      case Assign(id, expr)           => Some((id, expr))
-      case PlusAssign(id, expr)       => Some((id, expr))
-      case MinusAssign(id, expr)      => Some((id, expr))
-      case MulAssign(id, expr)        => Some((id, expr))
-      case DivAssign(id, expr)        => Some((id, expr))
-      case ModAssign(id, expr)        => Some((id, expr))
-      case AndAssign(id, expr)        => Some((id, expr))
-      case OrAssign(id, expr)         => Some((id, expr))
-      case XorAssign(id, expr)        => Some((id, expr))
-      case LeftShiftAssign(id, expr)  => Some((id, expr))
-      case RightShiftAssign(id, expr) => Some((id, expr))
-      case _                          => None
     }
   }
 

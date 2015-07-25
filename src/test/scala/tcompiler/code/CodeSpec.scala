@@ -13,12 +13,11 @@ import tcompiler.lexer.Lexer
 import tcompiler.modification.{Imports, Templates}
 import tcompiler.utils.{Context, Reporter}
 
-import scala.io.Source
 import scala.sys.process._
 import scala.util.Random
 
 class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
-  val flag = "--eval"
+  val Flag = "--eval"
 
   val Compiler = Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
 
@@ -37,7 +36,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val IdName        = "x"
   val Rand          = new Random()
   val StringLength  = 5
-  val NumberOfTests = 5
+  val NumberOfTests = 2
 
   implicit def intWithTimes(n: Int) = new {
     def times(f: => Unit): Unit = 1 to n foreach { _ => f }
@@ -55,40 +54,48 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     testFolderFile.delete()
   }
 
-  behavior of "RandomTesting"
+  behavior of "Programs"
 
-  //  it should "Plus" in testOperator(Plus)
-  //  it should "Minus" in testOperator(Minus)
-  //  it should "Times" in testOperator(Times)
-  //  it should "Div" in testOperator(Div)
-  //  it should "Mod" in testOperator(Modulo)
-  //
-  //  it should "LogicAnd" in testOperator(LogicAnd)
-  //  it should "LogicOr" in testOperator(LogicOr)
-  //  it should "LogicXor" in testOperator(LogicXor)
+  TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
+  TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
 
-//  it should "LeftShift" in testOperator(LeftShift)
-//  it should "RightShift" in testOperator(RightShift)
+  behavior of s"RandomTesting ($NumberOfTests x)"
+
+  it should "Plus" in testOperator(Plus)
+  it should "Minus" in testOperator(Minus)
+  it should "Times" in testOperator(Times)
+  it should "Div" in testOperator(Div)
+  it should "Mod" in testOperator(Modulo)
+
+  it should "LogicAnd" in testOperator(LogicAnd)
+  it should "LogicOr" in testOperator(LogicOr)
+  it should "LogicXor" in testOperator(LogicXor)
+
+  it should "LeftShift" in testOperator(LeftShift)
+  it should "RightShift" in testOperator(RightShift)
 
   it should "Assign" in testAssignmentOperator(Assign)
+  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
 
-  //behavior of "Programs"
-  //TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
-  //TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
+  it should "LessThan" in testOperator(LessThan)
+  it should "LessThanEquals" in testOperator(LessThanEquals)
+  it should "GreaterThan" in testOperator(GreaterThan)
+  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
+  it should "Equals" in testOperator(Equals)
+  it should "NotEquals" in testOperator(NotEquals)
 
-  def testFile(f: File): Unit = {
+
+  def testFile(f: File): Unit =
     if (f.isDirectory)
-      f.listFiles.foreach(testFile(_))
+      TestUtils.programFiles(f.getPath).foreach(testFile(_))
     else
       it should "code gen program " + f.toPath in test(f)
-  }
-
 
   val int    = () => IntLit(Rand.nextInt).setType(TInt)
   val bool   = () => (if (Rand.nextBoolean) True() else False()).setType(TBool)
-  val long   = () => LongLit(Rand.nextLong).setType(TLong)
+  val long   = () => LongLit(Rand.nextLong % Int.MaxValue).setType(TLong)
   val float  = () => FloatLit(Rand.nextFloat).setType(TFloat)
-  val double = () => DoubleLit(Rand.nextDouble).setType(TDouble)
+  val double = () => DoubleLit(Rand.nextDouble % Float.MaxValue).setType(TDouble)
   val char   = () => CharLit(Rand.nextPrintableChar()).setType(TChar)
   val string = () => StringLit(Rand.nextString(StringLength)).setType(TString)
 
@@ -110,14 +117,26 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
       val id = Identifier(IdName).setSymbol(new VariableSymbol(IdName)).setType(tpe)
+      id.setType(tpe)
       def expr = () => operator(id, rhs())
-      TestUtils.Interpreter.interpret(scalaVariableDelcaration(tpe))
       if (exprTypeChecks(expr())) {
         NumberOfTests times testAssignment(tpe, expr())
       }
     }
 
-  def scalaVariableDelcaration(tpe: Type) = {
+  def testArrayAssignmentOperator(operator: (Identifier, ExprTree, ExprTree) => ExprTree) =
+    combinations.foreach { case (lhs, rhs) =>
+
+      val tpe = lhs().getType
+      val id = Identifier(IdName).setSymbol(new VariableSymbol(IdName)).setType(TArray(tpe))
+      def expr = () => operator(id, IntLit(0), rhs())
+      println(tpe + ",  " + rhs().getType)
+      if (exprTypeChecks(expr())) {
+        NumberOfTests times testArrayAssignment(tpe, expr())
+      }
+    }
+
+  def scalaVariableDeclaration(tpe: Type) = {
     val scalaType = tpe match {
       case TBool => "Boolean"
       case _     => tpe.toString
@@ -125,12 +144,20 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     val defaultValue = tpe match {
       case TInt | TLong | TFloat | TDouble | TChar => "0"
-      case TBool                                   => "true"
+      case TBool                                   => "false"
       case TString                                 => "\"\""
     }
     s"var $IdName: $scalaType = $defaultValue"
   }
 
+  def scalaArrayDeclaration(tpe: Type) = {
+    val scalaType = tpe match {
+      case TBool => "Boolean"
+      case _     => tpe.toString
+    }
+
+    s"var $IdName: Array[$scalaType] = new Array[$scalaType](1)"
+  }
 
   def exprTypeChecks(expr: ExprTree) = TypeChecker.tcExpr(expr) match {
     case TError                               => false
@@ -150,13 +177,27 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   def testAssignment(tpe: Type, expr: ExprTree) = {
-    val operation = Printer(expr) // remove ; newline
-    println("Testing " + operation + " (x: " + tpe + ")")
-    getScalaResult(operation)
-    val scalaRes = getScalaResult(IdName)
-    println("scalaRes: " + scalaRes)
-    val res = getResult(assignmentProgram(operation, tpe))
-    assertResult(operation, res, scalaRes)
+    TestUtils.Interpreter.interpret(scalaVariableDeclaration(tpe))
+    val operation = Printer(expr)
+    println(s"Testing $operation ($IdName : $tpe)")
+    val scalaRes = getScalaResult(operation).trim + System.lineSeparator() + getScalaResult(IdName).trim
+    if (!scalaRes.contains("error")) {
+      val res = getResult(assignmentProgram(operation, tpe)).trim
+      assertResult(operation + " (x: " + tpe + ")", res, scalaRes)
+    }
+
+  }
+
+  def testArrayAssignment(tpe: Type, expr: ExprTree) = {
+    TestUtils.Interpreter.interpret(scalaArrayDeclaration(tpe))
+    val operation = Printer(expr)
+    val scalaOperation = "x(0)" + operation.subSequence(4, operation.length)
+    println(s"Testing $operation ($IdName : $tpe[])")
+    val scalaRes = getScalaResult(IdName + "(0)")
+    if (!scalaRes.contains("error")) {
+      val res = getResult(arrayAssignmentProgram(operation, tpe))
+      assertResult(operation + " (x: " + tpe + ")", res, scalaRes)
+    }
   }
 
   def assertResult(operation: String, res: String, scalaRes: String) =
@@ -170,7 +211,24 @@ main $MainName = { new A().B(); }
 
 class A {
   var $IdName: $tpe;
-  Def B(): Unit = { $operation; println($IdName); }
+  Def B(): Unit = {
+    println($operation);
+    println($IdName);
+  }
+}
+     """
+
+  def arrayAssignmentProgram(operation: String, tpe: Type) =
+    s"""
+main $MainName = { new A().B(); }
+
+class A {
+  var $IdName: $tpe[];
+  Def B(): Unit = {
+    $IdName = new $tpe[1];
+    println($operation);
+    println($IdName[0]);
+  }
 }
      """
 
@@ -182,7 +240,11 @@ class A {
     execute(TestCtx.outDir.get, MainName, "").trim
   }
 
-  def getScalaResult(operation: String) = TestUtils.Interpreter.interpret(operation).split("=").last.trim
+  def getScalaResult(operation: String) = {
+    val r = TestUtils.Interpreter.interpret(operation)
+    if (r.contains("error")) "error"
+    else r.split("=").last.trim
+  }
 
   def setTestProgram(program: String) = {
     var out: FileWriter = null
@@ -210,12 +272,14 @@ class A {
     val res = execute(file, program.main.get.id.value, "./gen/")
     // Try and compare result with solution file
     try {
-      val sol = readSolution(file + "-solution").toList
+      val sol = TestUtils.parseSolutions(file)
       //println("res: \n" + res)
       //println("sol: \n" + sol.mkString("\n"))
       val r = TestUtils.lines(res)
       r.length should be(sol.length)
-      r.zip(sol).foreach { case (res, sol) => res.trim should be(sol.trim) }
+      flattenTuple(r.zip(sol).zipWithIndex).foreach { case (res, sol, i) =>
+        assert(res.trim == sol.trim, ": error on test nr " + (i + 1))
+      }
     } catch {
       case t: FileNotFoundException =>
     }
@@ -224,6 +288,8 @@ class A {
 
   }
 
+  def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
+
   def flatten(l: List[_]): List[_] = l flatMap {
     case l1: List[_] => flatten(l1)
     case otherwise   => List(otherwise)
@@ -231,7 +297,6 @@ class A {
 
   def execute(f: File, main: String, prefix: String): String = "java -cp " + prefix + f.getName + " " + main !!
 
-  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath) !!
-  def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
+  def getAnswer(file: File) = Seq(TestUtils.runScript, Flag + " " + file.toPath) !!
 
 }

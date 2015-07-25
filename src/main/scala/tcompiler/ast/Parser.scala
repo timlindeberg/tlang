@@ -23,6 +23,26 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     import ctx.reporter._
 
+    val exprMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
+      OR -> Or,
+      AND -> And,
+      LESSTHAN -> LessThan,
+      LESSTHANEQUALS -> LessThanEquals,
+      GREATERTHAN -> GreaterThan,
+      GREATERTHANEQUALS -> GreaterThanEquals,
+      EQUALS -> Equals,
+      NOTEQUALS -> NotEquals,
+      PLUS -> Plus,
+      MINUS -> Minus,
+      TIMES -> Times,
+      DIV -> Div,
+      MODULO -> Modulo,
+      LEFTSHIFT -> LeftShift,
+      RIGHTSHIFT -> RightShift,
+      LOGICAND -> LogicAnd,
+      LOGICOR -> LogicOr,
+      LOGICXOR -> LogicXor)
+
     /** Store the current token, as read from the lexer. */
 
     def readToken: Unit = {
@@ -292,15 +312,22 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           While(expr, statement)
         case FOR     =>
           eat(FOR, LPAREN)
+          // Initiation
           val init = commaList(() => {
             val id = identifier
-            eat(EQSIGN)
-            val expr = expression
-            Assign(id, expr)
+            currentToken.kind match {
+              case EQSIGN | PLUSEQ | MINUSEQ |
+                   DIVEQ | MODEQ | ANDEQ | OREQ |
+                   XOREQ | LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+              case _                                  => expected(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
+            }
+            assignment(Some(id)).asInstanceOf[Assign]
           }, SEMICOLON)
           eat(SEMICOLON)
+          // Condition
           val condition = expression
           eat(SEMICOLON)
+          // Incrementation
           val post = commaList(() => currentToken.kind match {
             case INCREMENT =>
               eat(INCREMENT)
@@ -311,13 +338,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
             case IDKIND    =>
               val id = identifier
               currentToken.kind match {
-                case INCREMENT =>
+                case PLUSEQ | MINUSEQ | DIVEQ |
+                     MODEQ | ANDEQ | OREQ | XOREQ |
+                     LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+                  assignment(Some(id)).asInstanceOf[Assign]
+                case INCREMENT                  =>
                   eat(INCREMENT)
                   PostIncrement(id)
-                case DECREMENT =>
+                case DECREMENT                  =>
                   eat(DECREMENT)
                   PostDecrement(id)
-                case _         => expected(INCREMENT, DECREMENT)
+                case _                          => expected(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
               }
             case _         => expected(INCREMENT, DECREMENT, IDKIND)
           })
@@ -349,320 +380,304 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       tree.setPos(pos)
     }
 
+
     /**
-     * <expression> ::= <ternary>
+     * <expression> ::= <assignment>
      */
     private def expression(): ExprTree = {
       val pos = currentToken
-      val exprMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-        OR -> Or,
-        AND -> And,
-        LESSTHAN -> LessThan,
-        LESSTHANEQUALS -> LessThanEquals,
-        GREATERTHAN -> GreaterThan,
-        GREATERTHANEQUALS -> GreaterThanEquals,
-        EQUALS -> Equals,
-        NOTEQUALS -> NotEquals,
-        PLUS -> Plus,
-        MINUS -> Minus,
-        TIMES -> Times,
-        DIV -> Div,
-        MODULO -> Modulo,
-        LEFTSHIFT -> LeftShift,
-        RIGHTSHIFT -> RightShift,
-        LOGICAND -> LogicAnd,
-        LOGICOR -> LogicOr,
-        LOGICXOR -> LogicXor)
-
-      /**
-       * Parses expressions of type
-       * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
-       * Used to parse left associative expressions. *
-       */
-      def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
-        var expr = next()
-        while (kinds.contains(currentToken.kind)) {
-          kinds.foreach { kind =>
-            if (currentToken.kind == kind) {
-              val pos = currentToken
-              eat(kind)
-              expr = exprMap(kind)(expr, next()).setPos(pos)
-            }
-          }
-        }
-        expr
-      }
-
-      /**
-       * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
-       * | <ternary> [ "[" <expression> "] = " <expression> ]
-       */
-      def assignment() = {
-        val e = ternary
-        def assignment(constructor: (Identifier, ExprTree) => ExprTree) = {
-          eat(currentToken.kind)
-          e match {
-            case id: Identifier => constructor(id, expression)
-            case _              => fatal("expected identifier on left side of assignment.", e)
-          }
-        }
-
-        currentToken.kind match {
-          case EQSIGN       =>
-            eat(EQSIGN)
-            e match {
-              case ArrayRead(idExpr, index) =>
-                idExpr match {
-                  case id: Identifier => ArrayAssign(id, index, expression)
-                  case _              => fatal("expected identifier on left side of array assignment.", e)
-                }
-              case id: Identifier           => Assign(id, expression)
-              case _                        => fatal("expected identifier on left side of assignment.", e)
-            }
-          case PLUSEQ       => assignment(PlusAssign)
-          case MINUSEQ      => assignment(MinusAssign)
-          case MULEQ        => assignment(MulAssign)
-          case DIVEQ        => assignment(DivAssign)
-          case MODEQ        => assignment(ModAssign)
-          case ANDEQ        => assignment(AndAssign)
-          case OREQ         => assignment(OrAssign)
-          case XOREQ        => assignment(XorAssign)
-          case LEFTSHIFTEQ  => assignment(LeftShiftAssign)
-          case RIGHTSHIFTEQ => assignment(RightShiftAssign)
-          case _            => e
-        }
-      }
-
-      /** <ternary> ::= <or> [ ? <or> : <or> ] */
-      def ternary() = {
-        var e = or
-        val pos = currentToken
-        if (currentToken.kind == QUESTIONMARK) {
-          eat(QUESTIONMARK)
-          val thn = or
-          eat(COLON)
-          val els = or
-          e = Ternary(e, thn, els).setPos(pos)
-        }
-        e
-      }
-
-      /** <or> ::= <and> { || <and> } */
-      def or() = left(and, OR)
-
-      /** <and> ::= <logicOr> { && <logicOr> } */
-      def and() = left(logicOr, AND)
-
-      /** <logicOr> ::= <logicXor> { | <logicXor> } */
-      def logicOr() = left(logicXor, LOGICOR)
-
-      /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
-      def logicXor() = left(logicAnd, LOGICXOR)
-
-      /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
-      def logicAnd() = left(eqNotEq, LOGICAND)
-
-      /** <eqNotEq> ::= <instOf> { ( == | != ) <instOf> } */
-      def eqNotEq() = left(instOf, EQUALS, NOTEQUALS)
-
-      /** <instOf> ::= <comparison> { inst <identifier> } */
-      def instOf() = {
-        var e = comparison
-        while (currentToken.kind == INSTANCEOF) {
-          eat(INSTANCEOF)
-          e = Instance(e, identifier)
-        }
-        e
-      }
-
-      /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
-      def comparison() = left(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS)
-
-      /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
-      def bitShift() = left(plusMinus, LEFTSHIFT, RIGHTSHIFT)
-
-      /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
-      def plusMinus() = left(timesDivMod, PLUS, MINUS)
-
-      /** <timesDivMod> ::= <term> { ( * | / | % ) <term> } */
-      def timesDivMod() = left(term, TIMES, DIV, MODULO)
-
-      /**
-       * <term> ::= <termFirst> [ termRest ]
-       */
-      def term(): ExprTree = {
-        /**
-         * <termFirst> ::= "(" <expression> ")"
-         * | ! <expression>
-         * | - <expression>
-         * | -- <identifier>
-         * | ++ <identifier>
-         * | ~ <identifier>
-         * | <intLit>
-         * | <stringLit>
-         * | <identifier>
-         * | <identifier> ++
-         * | <identifier> --
-         * | <identifier> "(" <expression> { "," <expression> } ")"
-         * | true
-         * | false
-         * | this
-         * | new <tpe>"[" <expression> "]"
-         * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
-         */
-        def termFirst() = {
-          val tree = currentToken.kind match {
-            case LPAREN        =>
-              eat(LPAREN)
-              val expr = expression
-              eat(RPAREN)
-              expr
-            case BANG          =>
-              eat(BANG)
-              Not(term)
-            case MINUS         =>
-              eat(MINUS)
-              currentToken match {
-                case x: INTLIT    =>
-                  eat(INTLITKIND)
-                  IntLit(-x.value)
-                case x: LONGLIT   =>
-                  eat(LONGLITKIND)
-                  LongLit(-x.value)
-                case x: FLOATLIT  =>
-                  eat(FLOATLITKIND)
-                  FloatLit(-x.value)
-                case x: DOUBLELIT =>
-                  eat(DOUBLELITKIND)
-                  DoubleLit(-x.value)
-                case x: CHARLIT   =>
-                  eat(CHARLITKIND)
-                  IntLit(-x.value)
-                case _            =>
-                  Negation(term)
-              }
-            case LOGICNOT      =>
-              eat(LOGICNOT)
-              LogicNot(term)
-            case DECREMENT     =>
-              eat(DECREMENT)
-              PreDecrement(identifier)
-            case INCREMENT     =>
-              eat(INCREMENT)
-              PreIncrement(identifier)
-            case INTLITKIND    =>
-              intLit
-            case LONGLITKIND   =>
-              longLit
-            case FLOATLITKIND  =>
-              floatLit
-            case DOUBLELITKIND =>
-              doubleLit
-            case CHARLITKIND   =>
-              charLit
-            case STRLITKIND    =>
-              stringLit
-            case IDKIND        =>
-              val id = identifier
-              currentToken.kind match {
-                case INCREMENT =>
-                  eat(INCREMENT)
-                  PostIncrement(id)
-                case DECREMENT =>
-                  eat(DECREMENT)
-                  PostDecrement(id)
-                case LPAREN    =>
-                  eat(LPAREN)
-                  val exprs = commaList(expression)
-                  eat(RPAREN)
-                  MethodCall(This(), id, exprs) // Implicit this
-                case _         => id
-              }
-            case TRUE          =>
-              eat(TRUE)
-              True()
-            case FALSE         =>
-              eat(FALSE)
-              False()
-            case THIS          =>
-              eat(THIS)
-              This()
-            case NEW           =>
-              eat(NEW)
-              def primitiveArray(construct: () => TypeTree) = {
-                eat(currentToken.kind, LBRACKET)
-                val expr = expression
-                eat(RBRACKET)
-                NewArray(construct(), expr)
-              }
-              currentToken.kind match {
-                case INT     => primitiveArray(IntType)
-                case STRING  => primitiveArray(StringType)
-                case BOOLEAN => primitiveArray(BooleanType)
-                case _       =>
-                  val id = classIdentifier
-                  currentToken.kind match {
-                    case LPAREN   =>
-                      eat(LPAREN)
-                      val args = commaList(expression)
-                      eat(RPAREN)
-                      New(id, args)
-                    case LBRACKET =>
-                      eat(LBRACKET)
-                      val expr = expression
-                      eat(RBRACKET)
-                      NewArray(id, expr)
-                    case _        => expected(LPAREN, LBRACKET)
-                  }
-
-              }
-            case _             => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
-          }
-          tree.setPos(pos)
-        }
-
-        /**
-         * <termRest> ::= .length
-         * | .<identifier> "(" <expression> { "," <expression> } ")
-         * | "[" <expression> "]"
-         * | as <tpe>
-         */
-        def termRest(lhs: ExprTree): ExprTree = {
-          val pos = currentToken
-          var e = lhs
-          val tokens = List(DOT, LBRACKET, AS)
-
-          while (tokens.contains(currentToken.kind)) {
-            e = currentToken.kind match {
-              case DOT      =>
-                eat(DOT)
-                if (currentToken.kind == LENGTH) {
-                  eat(LENGTH)
-                  ArrayLength(e)
-                } else {
-                  val id = identifier
-                  eat(LPAREN)
-                  val exprs = commaList(expression)
-                  eat(RPAREN)
-                  MethodCall(e, id, exprs.toList)
-                }
-              case LBRACKET =>
-                eat(LBRACKET)
-                val expr = expression
-                eat(RBRACKET)
-                ArrayRead(e, expr)
-              case AS       =>
-                eat(AS)
-                As(e, tpe)
-              case _        => e
-            }
-          }
-
-          e.setPos(pos)
-        }
-        termRest(termFirst)
-      }
       assignment().setPos(pos)
+    }
+
+
+    /**
+     * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
+     * | <ternary> [ "[" <expression> "] = " <expression> ]
+     */
+    def assignment(expr: Option[ExprTree] = None) = {
+      val e = if (expr.isDefined) expr.get else ternary
+      def assignment(constructor: (Identifier, ExprTree) => ExprTree) = {
+        eat(currentToken.kind)
+        def assignmentExpr(id: Identifier) = if (constructor == Assign) expression else constructor(id, expression)
+        e match {
+          case ArrayRead(idExpr, index) =>
+            idExpr match {
+              case id: Identifier => ArrayAssign(id, index, assignmentExpr(id))
+              case _              => fatal("expected identifier on left side of array assignment.", e)
+            }
+          case id: Identifier           => Assign(id, assignmentExpr(id))
+          case _                        => fatal("expected identifier on left side of assignment.", e)
+        }
+      }
+
+      currentToken.kind match {
+        case EQSIGN       => assignment(Assign)
+        case PLUSEQ       => assignment(Plus)
+        case MINUSEQ      => assignment(Minus)
+        case MULEQ        => assignment(Times)
+        case DIVEQ        => assignment(Div)
+        case MODEQ        => assignment(Modulo)
+        case ANDEQ        => assignment(LogicAnd)
+        case OREQ         => assignment(LogicOr)
+        case XOREQ        => assignment(LogicXor)
+        case LEFTSHIFTEQ  => assignment(LeftShift)
+        case RIGHTSHIFTEQ => assignment(RightShift)
+        case _            => e
+      }
+    }
+
+    /** <ternary> ::= <or> [ ? <or> : <or> ] */
+    def ternary() = {
+      var e = or
+      val pos = currentToken
+      if (currentToken.kind == QUESTIONMARK) {
+        eat(QUESTIONMARK)
+        val thn = or
+        eat(COLON)
+        val els = or
+        e = Ternary(e, thn, els).setPos(pos)
+      }
+      e
+    }
+
+    /** <or> ::= <and> { || <and> } */
+    def or() = left(and, OR)
+
+    /** <and> ::= <logicOr> { && <logicOr> } */
+    def and() = left(logicOr, AND)
+
+    /** <logicOr> ::= <logicXor> { | <logicXor> } */
+    def logicOr() = left(logicXor, LOGICOR)
+
+    /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
+    def logicXor() = left(logicAnd, LOGICXOR)
+
+    /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
+    def logicAnd() = left(eqNotEq, LOGICAND)
+
+    /** <eqNotEq> ::= <instOf> { ( == | != ) <instOf> } */
+    def eqNotEq() = left(instOf, EQUALS, NOTEQUALS)
+
+    /** <instOf> ::= <comparison> { inst <identifier> } */
+    def instOf() = {
+      var e = comparison
+      while (currentToken.kind == INSTANCEOF) {
+        eat(INSTANCEOF)
+        e = Instance(e, identifier)
+      }
+      e
+    }
+
+    /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
+    def comparison() = left(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS)
+
+    /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
+    def bitShift() = left(plusMinus, LEFTSHIFT, RIGHTSHIFT)
+
+    /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
+    def plusMinus() = left(timesDivMod, PLUS, MINUS)
+
+    /** <timesDivMod> ::= <term> { ( * | / | % ) <term> } */
+    def timesDivMod() = left(term, TIMES, DIV, MODULO)
+
+    /**
+     * <term> ::= <termFirst> [ termRest ]
+     */
+    def term(): ExprTree = {
+      /**
+       * <termFirst> ::= "(" <expression> ")"
+       * | ! <expression>
+       * | - <expression>
+       * | -- <identifier>
+       * | ++ <identifier>
+       * | ~ <identifier>
+       * | <intLit>
+       * | <stringLit>
+       * | <identifier>
+       * | <identifier> ++
+       * | <identifier> --
+       * | <identifier> "(" <expression> { "," <expression> } ")"
+       * | true
+       * | false
+       * | this
+       * | new <tpe>"[" <expression> "]"
+       * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
+       */
+      def termFirst() = {
+        val pos = currentToken
+        val tree = currentToken.kind match {
+          case LPAREN        =>
+            eat(LPAREN)
+            val expr = expression
+            eat(RPAREN)
+            expr
+          case BANG          =>
+            eat(BANG)
+            Not(term)
+          case MINUS         =>
+            eat(MINUS)
+            currentToken match {
+              case x: INTLIT    =>
+                eat(INTLITKIND)
+                IntLit(-x.value)
+              case x: LONGLIT   =>
+                eat(LONGLITKIND)
+                LongLit(-x.value)
+              case x: FLOATLIT  =>
+                eat(FLOATLITKIND)
+                FloatLit(-x.value)
+              case x: DOUBLELIT =>
+                eat(DOUBLELITKIND)
+                DoubleLit(-x.value)
+              case x: CHARLIT   =>
+                eat(CHARLITKIND)
+                IntLit(-x.value)
+              case _            =>
+                Negation(term)
+            }
+          case LOGICNOT      =>
+            eat(LOGICNOT)
+            LogicNot(term)
+          case DECREMENT     =>
+            eat(DECREMENT)
+            PreDecrement(identifier)
+          case INCREMENT     =>
+            eat(INCREMENT)
+            PreIncrement(identifier)
+          case INTLITKIND    =>
+            intLit
+          case LONGLITKIND   =>
+            longLit
+          case FLOATLITKIND  =>
+            floatLit
+          case DOUBLELITKIND =>
+            doubleLit
+          case CHARLITKIND   =>
+            charLit
+          case STRLITKIND    =>
+            stringLit
+          case IDKIND        =>
+            val id = identifier
+            currentToken.kind match {
+              case INCREMENT =>
+                eat(INCREMENT)
+                PostIncrement(id)
+              case DECREMENT =>
+                eat(DECREMENT)
+                PostDecrement(id)
+              case LPAREN    =>
+                eat(LPAREN)
+                val exprs = commaList(expression)
+                eat(RPAREN)
+                MethodCall(This(), id, exprs) // Implicit this
+              case _         => id
+            }
+          case TRUE          =>
+            eat(TRUE)
+            True()
+          case FALSE         =>
+            eat(FALSE)
+            False()
+          case THIS          =>
+            eat(THIS)
+            This()
+          case NEW           =>
+            eat(NEW)
+            def primitiveArray(construct: () => TypeTree) = {
+              eat(currentToken.kind, LBRACKET)
+              val expr = expression
+              eat(RBRACKET)
+              NewArray(construct(), expr)
+            }
+            currentToken.kind match {
+              case INT     => primitiveArray(IntType)
+              case LONG    => primitiveArray(LongType)
+              case FLOAT   => primitiveArray(FloatType)
+              case DOUBLE  => primitiveArray(DoubleType)
+              case CHAR    => primitiveArray(CharType)
+              case STRING  => primitiveArray(StringType)
+              case BOOLEAN => primitiveArray(BooleanType)
+              case _       =>
+                val id = classIdentifier
+                currentToken.kind match {
+                  case LPAREN   =>
+                    eat(LPAREN)
+                    val args = commaList(expression)
+                    eat(RPAREN)
+                    New(id, args)
+                  case LBRACKET =>
+                    eat(LBRACKET)
+                    val expr = expression
+                    eat(RBRACKET)
+                    NewArray(id, expr)
+                  case _        => expected(LPAREN, LBRACKET)
+                }
+
+            }
+          case _             => expected(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
+        }
+        tree.setPos(pos)
+      }
+
+      /**
+       * <termRest> ::= .length
+       * | .<identifier> "(" <expression> { "," <expression> } ")
+       * | "[" <expression> "]"
+       * | as <tpe>
+       */
+      def termRest(lhs: ExprTree): ExprTree = {
+        val pos = currentToken
+        var e = lhs
+        val tokens = List(DOT, LBRACKET, AS)
+
+        while (tokens.contains(currentToken.kind)) {
+          e = currentToken.kind match {
+            case DOT      =>
+              eat(DOT)
+              if (currentToken.kind == LENGTH) {
+                eat(LENGTH)
+                ArrayLength(e)
+              } else {
+                val id = identifier
+                eat(LPAREN)
+                val exprs = commaList(expression)
+                eat(RPAREN)
+                MethodCall(e, id, exprs.toList)
+              }
+            case LBRACKET =>
+              eat(LBRACKET)
+              val expr = expression
+              eat(RBRACKET)
+              ArrayRead(e, expr)
+            case AS       =>
+              eat(AS)
+              As(e, tpe)
+            case _        => e
+          }
+        }
+
+        e.setPos(pos)
+      }
+      termRest(termFirst)
+    }
+
+    /**
+     * Parses expressions of type
+     * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
+     * Used to parse left associative expressions. *
+     */
+    def left(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
+      var expr = next()
+      while (kinds.contains(currentToken.kind)) {
+        kinds.foreach { kind =>
+          if (currentToken.kind == kind) {
+            val pos = currentToken
+            eat(kind)
+            expr = exprMap(kind)(expr, next()).setPos(pos)
+          }
+        }
+      }
+      expr
     }
 
     private var usedOneGreaterThan = false

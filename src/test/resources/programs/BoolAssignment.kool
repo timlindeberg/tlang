@@ -7,17 +7,17 @@ class Test {
     Def test(): String = {
         var b: Bool;
         b = true;
-        println(b); // true
+        println(b); // res: true
         b = false;
-        println(b); // false
+        println(b); // res: false
         b = false || true;
-        println(b); // true
+        println(b); // res: true
         b = true && false;
-        println(b); // false
+        println(b); // res: false
         b = false && this.foo();
-        println(b); // false
+        println(b); // res: false
         b = true || this.foo();
-        println(b); // true
+        println(b); // res: true
         return "";
     }
 

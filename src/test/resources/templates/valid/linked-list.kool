@@ -18,11 +18,15 @@ class Main {
 		var intSorter: 	  Sorter<LinkedList<Integer>, Integer> = new Sorter<LinkedList<Integer>, Integer>();
 		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
+		var intArray:	  Int[] = new Int[5];
 
 		for(i = 0; i < 100; i++){
         	intList.Add(new Integer(r.nextInt(10000)));
         }
 
+        println(intArray[2]);
+        println(intArray[2] = 5);
+        println(i = 1);
 		intSorter.sort(intList);
 
 		p.PrintList("Random");
