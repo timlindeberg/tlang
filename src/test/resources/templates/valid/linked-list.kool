@@ -18,15 +18,11 @@ class Main {
 		var intSorter: 	  Sorter<LinkedList<Integer>, Integer> = new Sorter<LinkedList<Integer>, Integer>();
 		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
-		var intArray:	  Int[] = new Int[5];
 
 		for(i = 0; i < 100; i++){
         	intList.Add(new Integer(r.nextInt(10000)));
         }
 
-        println(intArray[2]);
-        println(intArray[2] = 5);
-        println(i = 1);
 		intSorter.sort(intList);
 
 		p.PrintList("Random");
@@ -100,7 +96,7 @@ class Main {
 		println("----------------------------------------");
 		println(intList);
 		while(intList.Size() > 0){
-			intList.Pop().Get().Get();
+			intList.Pop().Value().Get();
 			println(intList);
 		}
 
@@ -117,7 +113,7 @@ class Main {
 class Integer {
 	var i: Int;
 
-	Def Integer(iarg: Int) = {
+	Def new(iarg: Int) = {
 		i = iarg;
 	}
 
@@ -145,7 +141,7 @@ class Integer {
 class KoolString {
 	var s: String;
 
-	Def KoolString(sarg: String) = {
+	Def new(sarg: String) = {
 		s = sarg;
 	}
 
@@ -176,7 +172,7 @@ class ListPrinter<T, U> {
 	var l1: LinkedList<T>;
 	var l2: LinkedList<U>;
 
-	Def ListPrinter(list1: LinkedList<T>, list2: LinkedList<U>) = {
+	Def new(list1: LinkedList<T>, list2: LinkedList<U>) = {
 		l1 = list1;
 		l2 = list2;
 	}
@@ -199,10 +195,10 @@ class Sorter<Container, T> {
 		var x: T;
 
         for(i = 1; i < N; i++){
-            x = c.Get(i).Get();
+            x = c.Get(i).Value();
         	j = i;
-        	while(j > 0 && c.Get(j-1).Get().CompareTo(x) > 0){
-        		c.Set(j, c.Get(j-1).Get());
+        	while(j > 0 && c.Get(j-1).Value().CompareTo(x) > 0){
+        		c.Set(j, c.Get(j-1).Value());
         		j = j - 1;
         	}
             c.Set(j, x);

@@ -2,18 +2,18 @@ package kool.std;
 
 class Option<T> {
 	var isDefined: Bool;
-	var t: 		   T;
+	var value: 	   T;
 
-	Def Option() = {
+	Def new() = {
 		isDefined = false;
 	}
 
-	Def Option(tArg: T) = {
-	    Add(tArg);
+	Def new(valueArg: T) = {
+	    Add(valueArg);
 	}
 
-	Def Add(tArg: T): Unit = {
-		t = tArg;
+	Def Add(valueArg: T): Unit = {
+		value = valueArg;
 		isDefined = true;
 	}
 
@@ -21,7 +21,11 @@ class Option<T> {
 		return isDefined;
 	}
 
-	Def Get(): T = {
-		return t;
+	Def Value(): T = {
+		return value;
+	}
+
+	Def toString(): String = {
+		return isDefined ? "Some(" + value.toString() + ")" : "None";
 	}
 }

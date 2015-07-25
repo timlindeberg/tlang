@@ -1,0 +1,264 @@
+package kool.std;
+
+import <Option>;
+
+class Vector<T> {
+
+	var InitialCapacity: Int = 16;
+	var size: Int = 0;
+	var data: T[];
+
+	Def new() = {
+		Clear();
+	}
+
+	Def new(initSize: Int, value: T) = {
+		var i: Int;
+		size = initSize;
+		data = new T[size];
+		for(i = 0; i < size; i++)
+			data[i] = value;
+	}
+
+	Def new(list: Vector<T>) = {
+		AddAll(list);
+	}
+
+    Def NonEmpty(): Bool = {
+    	return size != 0;
+    }
+
+	Def IsEmpty(): Bool = {
+    	return size == 0;
+	}
+
+	Def Clear(): Unit = {
+		size = 0;
+		data = new T[InitialCapacity];
+	}
+
+	Def Iterator(): VectorIterator<T> = {
+		return new VectorIterator<T>(this);
+	}
+
+	Def Push(value: T): Unit = {
+		if(size >= data.length)
+			increaseStorage();
+
+		data[size++] = value;
+	}
+
+	Def Pop(): Option<T> = {
+		var res: Option<T> = new Option<T>();
+		var i: Int;
+		if(size == 0)
+			return res;
+
+		res.Add(data[--size]);
+		return res;
+	}
+
+	Def Add(value: T): Unit = {
+		Add(0, value);
+	}
+
+	Def Add(index: Int, value: T): Bool = {
+		var i: Int;
+		if(index != size && !indexInRange(index))
+			return false;
+
+		if(size >= data.length)
+			increaseStorage();
+
+		for(i = size; i > index; i--)
+			data[i] = data[i - 1];
+
+		data[index] = value;
+		size++;
+	}
+
+    Def AddAll(list: Vector<T>): Unit = {
+		AddAll(size, list);
+    }
+
+	Def AddAll(index: Int, list: Vector<T>): Bool = {
+		var it: VectorIterator<T> = list.Iterator();
+		var i : Int;
+		var newData: T[] = new T[size + list.size];
+
+		if(index != size && !indexInRange(index))
+			return false;
+
+		for(i = 0; i < index; i++)
+			newData[i] = data[i];
+
+		for(i = 0; i < list.size; i++)
+			newData[i + index] = list.data[i];
+
+		for(i = 0; i < size - index; i++ )
+			newData[i + index + list.size] = data[index + i];
+
+		data = newData;
+		size += list.size;
+
+		return true;
+	}
+
+	Def Remove(index: Int): Bool = {
+		var i: Int;
+
+		if(!indexInRange(index))
+			return false;
+
+		for(i = index; i < size; i++)
+			data[i] = data[i + 1];
+
+		size--;
+		return true;
+	}
+
+	Def [](index: Int): Option<T> = {
+
+	}
+
+	Def []=(index: Int): Bool = {
+
+	}
+
+	Def +(rhs: Vector<T>, lhs: Vector<T>): Vector<T> = {
+
+	}
+
+	Def ++(value: Vector<T>): Vector<T> = {
+
+	}
+
+	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
+		lhs.Push(rhs);
+		return lhs;
+	}
+
+	Def Get(index: Int): Option<T> = {
+		var res: Option<T> = new Option<T>();
+		if(!indexInRange(index))
+			return res;
+
+		res.Add(data[index]);
+		return res;
+	}
+
+	Def Set(index: Int, value: T): Bool = {
+		if(!indexInRange(index))
+			return false;
+
+		data[index] = value;
+		return true;
+	}
+
+	Def IndexOf(value: T): Int = {
+		var i: Int;
+		for(i = 0; i < size; i++){
+			if(data[i].Equals(value)){
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	Def LastIndexOf(value: T): Int = {
+		var i: Int;
+		var res: Int = -1;
+		for(i = 0; i < size; i++){
+			if(data[i].Equals(value)){
+				res = -1;
+			}
+		}
+		return res;
+	}
+
+	Def Contains(value: T): Bool = {
+		return IndexOf(value) != -1;
+	}
+
+    Def toString(): String = {
+		var it: VectorIterator<T>;
+		var s: 	String;
+
+		if(size == 0)
+			return "[]";
+
+		it = Iterator();
+		s = "[ ";
+		while(it.HasNext()){
+			s = s + it.Next().toString();
+			if(it.HasNext()) s = s + ", ";
+		}
+		s = s + " ]";
+		return s;
+    }
+
+	Def Size(): Int = {
+		return size;
+	}
+
+	Def First(): Option<T> = {
+		return Get(0);
+	}
+
+	Def Last(): Option<T> = {
+    	return Get(size - 1);
+    }
+
+	Def Equals(other: Vector<T>): Bool = {
+		var thisIt:  VectorIterator<T>;
+		var otherIt: VectorIterator<T>;
+		var done:	 Bool;
+
+		if(size != other.size)
+			return false;
+
+		thisIt = Iterator();
+		otherIt = other.Iterator();
+		while(thisIt.HasNext()){
+			if(!thisIt.Next().Equals(otherIt.Next()))
+				return false;
+		}
+
+		return true;
+	}
+
+	def indexInRange(index: Int): Bool = {
+		return index >= 0 || index < size;
+	}
+
+	def increaseStorage(): Unit = {
+		var newCapacity: Int = (data.length * 3) / 2 + 1;
+		var newData: T[] = new T[newCapacity];
+		var i: Int;
+
+		for(i = 0; i < data.length; i++)
+			newData[i] = data[i];
+		data = newData;
+	}
+}
+
+class VectorIterator<T> {
+	var current: Int;
+	var hasNext: Bool;
+	var vector: Vector<T>;
+
+	Def new(list: Vector<T>) = {
+		current = 0;
+		hasNext = list.NonEmpty();
+		vector = list;
+	}
+
+	Def HasNext(): Bool = {
+		return hasNext;
+	}
+
+	Def Next(): T = {
+		hasNext = current < vector.Size() - 1;
+		return vector.Get(current++).Value();
+	}
+}
