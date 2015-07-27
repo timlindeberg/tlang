@@ -3,7 +3,6 @@ package ast
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.lexer.TokenKind
 import tcompiler.utils._
 
 object Trees {
@@ -64,7 +63,7 @@ object Trees {
 
   case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
   case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
-  case class OperatorDecl(var kind: TokenKind, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability, var id:Identifier = new Identifier("")) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability, var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String = this match {
@@ -105,8 +104,8 @@ object Trees {
 
   case class Assign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
-  case class FieldRead(obj: ExprTree, id: Identifier) extends  ExprTree
-  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends  ExprTree with StatTree
+  case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
+  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree with StatTree
 
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -194,6 +193,38 @@ object Trees {
   case class PreDecrement(id: Identifier) extends ExprTree with StatTree
   case class PostDecrement(id: Identifier) extends ExprTree with StatTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree with StatTree
+
+  case class Empty() extends ExprTree {
+    override def toString = ""
+  }
+
+  def operatorString(operatorSymbol: OperatorSymbol): String =
+    operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType))
+  def operatorString(exprTree: ExprTree, args: List[Type]): String = {
+    exprTree match {
+      case _: Plus              => args(0) + " + " + args(1)
+      case _: Minus             => args(0) + " - " + args(1)
+      case _: Times             => args(0) + " * " + args(1)
+      case _: Div               => args(0) + " / " + args(1)
+      case _: Modulo            => args(0) + " % " + args(1)
+      case _: LogicAnd          => args(0) + " & " + args(1)
+      case _: LogicOr           => args(0) + " | " + args(1)
+      case _: LogicXor          => args(0) + " ^ " + args(1)
+      case _: LeftShift         => args(0) + " << " + args(1)
+      case _: RightShift        => args(0) + " >> " + args(1)
+      case _: LessThan          => args(0) + " < " + args(1)
+      case _: LessThanEquals    => args(0) + " <= " + args(1)
+      case _: GreaterThan       => args(0) + " > " + args(1)
+      case _: GreaterThanEquals => args(0) + " >= " + args(1)
+      case _: Equals            => args(0) + " == " + args(1)
+      case _: NotEquals         => args(0) + " != " + args(1)
+      case _: LogicNot          => " ~ " + args(0)
+      case _: Not               => " ! " + args(0)
+      case _: PreIncrement      => " ++ " + args(0)
+      case _: PostIncrement     => args(0) + " ++ "
+      case _: PreDecrement      => " -- " + args(0)
+    }
+  }
 
   def traverse(t: Product, f: (Product, Product) => Any): Unit = {
     def trav(parent: Product, current: Product, f: (Product, Product) => Any): Unit = {

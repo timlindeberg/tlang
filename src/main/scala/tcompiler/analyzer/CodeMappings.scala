@@ -22,6 +22,8 @@ trait CodeMap {
   def arrayLoad(ch: CodeHandler): CodeHandler = ch
   def arrayStore(ch: CodeHandler): CodeHandler = ch
   def defaultConstant(ch: CodeHandler): CodeHandler = ch
+  def one(ch: CodeHandler) = ch
+
   def newArray(ch: CodeHandler): CodeHandler = ch
 
   // Comparisons
@@ -68,6 +70,7 @@ object IntCodeMap extends CodeMap {
   override def arrayLoad(ch: CodeHandler) = ch << IALOAD
   override def arrayStore(ch: CodeHandler) = ch << IASTORE
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0)
+  override def one(ch: CodeHandler) = ch << Ldc(1)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_INT)
 
   override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)
@@ -106,6 +109,7 @@ object LongCodeMap extends CodeMap {
   override def arrayLoad(ch: CodeHandler) = ch << LALOAD
   override def arrayStore(ch: CodeHandler) = ch << LASTORE
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0L)
+  override def one(ch: CodeHandler) = ch << Ldc(1l)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_LONG)
 
   override def cmpLt(ch: CodeHandler, id: String) = ch << LCMP << IfLt(id)
@@ -144,6 +148,7 @@ object FloatCodeMap extends CodeMap {
   override def arrayLoad(ch: CodeHandler) = ch << FALOAD
   override def arrayStore(ch: CodeHandler) = ch << FASTORE
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0.0f)
+  override def one(ch: CodeHandler) = ch << Ldc(1f)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_FLOAT)
 
   override def cmpLt(ch: CodeHandler, id: String) = ch << FCMPG << IfLt(id)
@@ -176,6 +181,7 @@ object DoubleCodeMap extends CodeMap {
   override def arrayLoad(ch: CodeHandler) = ch << DALOAD
   override def arrayStore(ch: CodeHandler) = ch << DASTORE
   override def defaultConstant(ch: CodeHandler) = ch << Ldc(0.0)
+  override def one(ch: CodeHandler) = ch << Ldc(1.0)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_DOUBLE)
 
   override def cmpLt(ch: CodeHandler, id: String) = ch << DCMPG << IfLt(id)
@@ -208,6 +214,7 @@ object CharCodeMap extends CodeMap {
   override def arrayLoad(ch: CodeHandler) = ch << CALOAD
   override def arrayStore(ch: CodeHandler) = ch << CASTORE
   override def defaultConstant(ch: CodeHandler) = ch << Ldc('\u0000')
+  override def one(ch: CodeHandler) = ch << Ldc(1)
   override def newArray(ch: CodeHandler) = ch << NewArray(T_CHAR)
 
   override def cmpLt(ch: CodeHandler, id: String) = ch << If_ICmpLt(id)

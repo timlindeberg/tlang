@@ -184,11 +184,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val pos = currentToken
       val access = accessRights(PRIVDEF, PUBDEF)
       val func = currentToken.kind match {
-        case NEW => constructor(access, className)
-        case PLUS | MINUS | TIMES | DIV | MODULO | LOGICAND | LOGICOR | LOGICXOR | LEFTSHIFT | RIGHTSHIFT |
-             LESSTHAN | LESSTHANEQUALS | GREATERTHAN | GREATERTHANEQUALS => binaryOperator(access)
-        //case INCREMENT | DECREMENT | LOGICNOT | BANG => //unaryOperator(access)
-        case _   => method(access)
+        case IDKIND => method(access)
+        case NEW    => constructor(access, className)
+        case _      => operator(access)
+        //case  => //unaryOperator(access)
       }
       func.setPos(pos)
     }
@@ -209,21 +208,62 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <binaryOperator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= ) "(" <formal> "," <formal> "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
+     * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
      */
-    private def binaryOperator(access: Accessability): OperatorDecl = {
-      val kind = currentToken.kind
-      eat(currentToken.kind)
-      eat(LPAREN)
-      val args = List(formal, formal)
+    private def operator(access: Accessability): OperatorDecl = {
+      def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal]) = {
+        eat(currentToken.kind)
+        val operatorType = constructor(Empty(), Empty())
+        eat(LPAREN)
+        val f1 = formal
+        eat(COMMA)
+        val f2 = formal
+        (operatorType, List(f1, f2))
+      }
+      def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal]) = {
+        eat(currentToken.kind)
+        val operatorType = constructor(Empty())
+        eat(LPAREN)
+        (operatorType, List(formal))
+      }
+
+      val (operatorType, args) = currentToken.kind match {
+        case PLUS              => binaryOperator(Plus)
+        case MINUS             => binaryOperator(Minus)
+        case TIMES             => binaryOperator(Times)
+        case DIV               => binaryOperator(Div)
+        case MODULO            => binaryOperator(Modulo)
+        case LOGICAND          => binaryOperator(LogicAnd)
+        case LOGICOR           => binaryOperator(LogicOr)
+        case LOGICXOR          => binaryOperator(LogicXor)
+        case LEFTSHIFT         => binaryOperator(LeftShift)
+        case RIGHTSHIFT        => binaryOperator(RightShift)
+        case LESSTHAN          => binaryOperator(LessThan)
+        case LESSTHANEQUALS    => binaryOperator(LessThanEquals)
+        case GREATERTHAN       => binaryOperator(GreaterThan)
+        case GREATERTHANEQUALS => binaryOperator(GreaterThanEquals)
+        case LOGICNOT          => unaryOperator(LogicNot)
+        case BANG              => unaryOperator(Not)
+        case INCREMENT         =>
+          eat(INCREMENT)
+          (PreIncrement(new Identifier("")), List(formal))
+        case DECREMENT         =>
+          eat(DECREMENT)
+          (PreDecrement(new Identifier("")), List(formal))
+        case _                 =>
+          expected(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT,
+          LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG)
+      }
+      eat(RPAREN)
       eat(COLON)
       val retType = tpe
       eat(EQSIGN, LBRACE)
       val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
       val stmts = until(statement, RBRACE)
       eat(RBRACE)
-      OperatorDecl(kind, retType, args, vars, stmts, access)
+      OperatorDecl(operatorType, retType, args, vars, stmts, access)
     }
+
     /**
      * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
      */
@@ -246,7 +286,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       eat(RBRACE)
       MethodDecl(retType, id, args, vars, stmts, access)
     }
-
 
 
     /**

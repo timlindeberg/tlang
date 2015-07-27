@@ -3,8 +3,9 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.Trees
+import tcompiler.ast.TreeGroups.{UnaryOperatorDecl, BinaryOperatorDecl}
 import tcompiler.ast.Trees.{ClassDecl, _}
+import tcompiler.ast.{Printer, Trees}
 import tcompiler.utils._
 
 object NameAnalysis extends Pipeline[Program, Program] {
@@ -85,6 +86,18 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case None         =>
             }
           case constructor: ConstructorDecl => // TODO
+          case operator: OperatorDecl =>
+            val operatorSymbol = operator.getSymbol
+            val argTypes = operator.args.map(_.tpe.getType)
+            operatorSymbol.classSymbol.parent match {
+              case Some(parent) =>
+                parent.lookupOperator(operator.operatorType, argTypes) match {
+                  case Some(parentMethSymbol) =>
+                    error("Operator overloads cannot be overriden.", operator)
+                  case None                   =>
+                }
+              case None         =>
+            }
         }
       }
     }
@@ -125,21 +138,21 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
 
       private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
-        case varDecl @ VarDecl(tpe, id, init, access)                         =>
+        case varDecl @ VarDecl(tpe, id, init, access)                                          =>
           val newSymbol = new VariableSymbol(id.value, access).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        case methodDecl @ MethodDecl(retType, id, args, vars, stats, access)  =>
+        case methodDecl @ MethodDecl(retType, id, args, vars, stats, access)                   =>
           val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
           id.setSymbol(newSymbol)
           methodDecl.setSymbol(newSymbol)
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        case constructorDecl @ ConstructorDecl(id, args, vars, stats, access) =>
+        case constructorDecl @ ConstructorDecl(id, args, vars, stats, access)                  =>
           val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
           newSymbol.setType(TUnit)
 
@@ -148,8 +161,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
+        case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, access, id) =>
+          val newSymbol = new OperatorSymbol(operatorType, s, access)
+          id.setSymbol(newSymbol)
+          operatorDecl.setSymbol(newSymbol)
 
-        case _ => throw new UnsupportedOperationException
+          args.foreach(addSymbols(_, newSymbol))
+          vars.foreach(addSymbols(_, newSymbol))
+        case _                                                                                 => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
@@ -214,36 +233,46 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           }
           bind(methods)
-        case methDecl @ MethodDecl(retType, id, args, vars, stats, access)    =>
+        case methDecl @ MethodDecl(retType, _, args, vars, stats, _)          =>
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
 
           bind(args)
-          vars.foreach { case VarDecl(tpe, id, init, _) =>
-            setType(tpe, id)
-            init match {
-              case Some(expr) => bind(expr, methDecl.getSymbol)
-              case None       =>
-            }
-          }
+          bindVars(vars, methDecl.getSymbol)
+
           ensureMethodNotDefined(methDecl)
 
           stats.foreach(bind(_, methDecl.getSymbol))
-        case constructorDecl @ ConstructorDecl(id, args, vars, stats, access) =>
+        case constructorDecl @ ConstructorDecl(_, args, vars, stats, _)       =>
           bind(args)
-          vars.foreach { case VarDecl(tpe, id, init, _) =>
-            setType(tpe, id)
-            init match {
-              case Some(expr) => bind(expr, constructorDecl.getSymbol)
-              case None       =>
-            }
-          }
+          bindVars(vars, constructorDecl.getSymbol)
+
           ensureMethodNotDefined(constructorDecl)
           stats.foreach(bind(_, constructorDecl.getSymbol))
+        case operatorDecl @ OperatorDecl(_, retType, args, vars, stats, _, _) =>
+          setType(retType)
+
+          operatorDecl.getSymbol.setType(retType.getType)
+
+          bind(args)
+          bindVars(vars, operatorDecl.getSymbol)
+
+          ensureOperatorNotDefined(operatorDecl)
+
+          stats.foreach(bind(_, operatorDecl.getSymbol))
         case Formal(tpe, id)                                                  => setType(tpe, id)
         case _                                                                => throw new UnsupportedOperationException
       }
+
+      private def bindVars(vars: List[VarDecl], symbol: MethodSymbol): Unit =
+        vars.foreach { case VarDecl(tpe, id, init, _) =>
+          setType(tpe, id)
+          init match {
+            case Some(expr) => bind(expr, symbol)
+            case None       =>
+          }
+        }
 
       private def bind(t: Tree, s: Symbol): Unit =
         Trees.traverse(t, (parent, current) => Some(current) collect {
@@ -288,6 +317,28 @@ object NameAnalysis extends Pipeline[Program, Program] {
             error("Method \'" + meth.signature + "\' is already defined at line " + oldMeth.line + ".", meth)
           case None          =>
             meth.getSymbol.classSymbol.methods += ((name, argTypes) -> meth.getSymbol)
+        }
+      }
+
+      private def ensureOperatorNotDefined(operator: OperatorDecl): Unit = {
+        val operatorType = operator.operatorType
+        val argTypes = operator.args.map(_.tpe.getType)
+        def errorString(expected: Int) = "Operator \'" + Printer(operatorType) + "\' has wrong number of arguments: \'" +
+          argTypes.mkString(", ") + "\'. Expected " + expected + " argument(s), found" + argTypes.size + "."
+
+        operatorType match {
+          case UnaryOperatorDecl(expr) if argTypes.size != 1      =>
+            error(errorString(1), operator)
+          case BinaryOperatorDecl(lhs, rhs) if argTypes.size != 2 =>
+            error(errorString(2), operator)
+          case _                                                  =>
+        }
+
+        operator.getSymbol.classSymbol.lookupOperator(operatorType, argTypes) match {
+          case Some(oldOperator) =>
+            error("Operator \'" + Trees.operatorString(operatorType, argTypes) + "\' is already defined at line " + oldOperator.line + ".", operator)
+          case None              =>
+            operator.getSymbol.classSymbol.addOperator(operatorType, argTypes, operator.getSymbol.asInstanceOf[OperatorSymbol])
         }
       }
 

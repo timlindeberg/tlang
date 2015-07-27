@@ -1,0 +1,28 @@
+main Main = {
+	new H().run();
+}
+
+class H {
+
+  Def run(): Unit = {
+    var a1: A = new A(1);
+    var a2: A = new A(2);
+
+    println(a1 + a2); // 3
+  }
+
+}
+
+class A {
+
+    Var I: Int;
+
+    Def new(i: Int) = {
+        I = i;
+    }
+
+    Def +(lhs: A, rhs: A): Int = {
+        return lhs.I + rhs.I;
+    }
+
+}

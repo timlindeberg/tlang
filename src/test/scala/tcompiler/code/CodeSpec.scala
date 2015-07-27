@@ -56,11 +56,11 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "Programs"
 
-  TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
-  TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
+//  TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
+//  TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
 
 
-  //testFile(new File(TestUtils.resources + "programs/Fields.kool"))
+  testFile(new File(TestUtils.resources + "programs/OperatorOverLoading.kool"))
 
 //  behavior of s"RandomTesting ($NumberOfTests x)"
 //
