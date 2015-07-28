@@ -67,7 +67,10 @@ object TestUtils {
     private def hasTypes(prog: Program) = {
       var hasTypes = true
       Trees.traverse(prog, (_, curr) => Some(curr) collect {
-        case node: Typed => hasTypes = node.getType != TUntyped
+        case _: Empty    =>
+        case node: Typed =>
+          assert(node.getType != TUntyped, node + " was untyped.")
+          if(node.getType == TUntyped) hasTypes = false
       })
       hasTypes
     }

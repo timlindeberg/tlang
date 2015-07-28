@@ -5,10 +5,42 @@ main Main = {
 class H {
 
   Def run(): Unit = {
-    var a1: A = new A(1);
-    var a2: A = new A(2);
+    var a: A = new A(1);
+    var b: A = new A(2);
 
-    println(a1 + a2); // 3
+    println(a + b); // res: 3
+    println(a - b); // res: -1
+    println(a * b); // res: 2
+    println(a / b); // res: 0
+    println(a % b); // res: 1
+
+    println(a & b); // res: 0
+    println(a | b); // res: 3
+    println(a ^ b); // res: 3
+
+    println(a << 1); // res: 2
+    println(a >> 1); // res: 0
+
+    println(a < b); // res: true
+    println(a <= b); // res: true
+    println(a > b); // res: false
+    println(a >= b); // res: false
+
+    println(a == b); // res: false
+    println(a != b); // res: true
+
+    println(a++); // res: 2
+    println(a); // res: 2
+    println(++a); // res: 3
+    println(a); // res: 3
+
+    println(a--); // res: 2
+    println(a); // res: 2
+    println(--a); // res: 1
+    println(a); // res: 1
+
+    println(~a); // res: -2
+    println(!a); // res: true
   }
 
 }
@@ -17,12 +49,41 @@ class A {
 
     Var I: Int;
 
-    Def new(i: Int) = {
-        I = i;
-    }
+    Def new(i: Int) = { I = i; }
 
-    Def +(lhs: A, rhs: A): Int = {
-        return lhs.I + rhs.I;
-    }
+    // Binary operators
+    Def +(a: A, b: A): Int = { return a.I + b.I; }
+    Def -(a: A, b: A): Int = { return a.I - b.I; }
+    Def *(a: A, b: A): Int = { return a.I * b.I; }
+    Def /(a: A, b: A): Int = { return a.I / b.I; }
+    Def %(a: A, b: A): Int = { return a.I % b.I; }
+
+    // Logical operators
+    Def &(a: A, b: A): Int = { return a.I & b.I; }
+    Def |(a: A, b: A): Int = { return a.I | b.I; }
+    Def ^(a: A, b: A): Int = { return a.I ^ b.I;}
+
+    // Shift operators
+    Def <<(a: A, shift: Int): Int = { return a.I << shift; }
+    Def >>(a: A, shift: Int): Int = { return a.I >> shift; }
+
+    // Comparisons
+    Def <(a: A, b: A): Bool = { return a.I < b.I; }
+    Def <=(a: A, b: A): Bool = { return a.I <= b.I; }
+    Def >(a: A, b: A): Bool = { return a.I > b.I; }
+    Def >=(a: A, b: A): Bool = { return a.I >= b.I; }
+
+    // Equlity
+    Def ==(a: A, b: A): Bool = { return a.I == b.I; }
+    Def !=(a: A, b: A): Bool = { return a.I != b.I; }
+
+     // Unary
+    Def ++(a: A): A = { a.I += 1; return a; }
+    Def --(a: A): A = { a.I -= 1; return a; }
+    Def ~(a: A): Int = { return ~a.I; }
+    Def !(a: A): Bool = { return a.I != 0; }
+
+
+    Def toString(): String = { return "" + I; }
 
 }

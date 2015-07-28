@@ -1,7 +1,9 @@
 package tcompiler
 package ast
 
+import tcompiler.analyzer.Types.TObject
 import tcompiler.ast.Trees._
+import tcompiler.analyzer.Symbols.{ClassSymbol, VariableSymbol}
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
 import tcompiler.utils._
@@ -227,6 +229,12 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         (operatorType, List(formal))
       }
 
+      def incrementDecrement(constructor: (Identifier) => ExprTree): (ExprTree, List[Formal]) = {
+        eat(currentToken.kind)
+        eat(LPAREN)
+        (constructor(new Identifier("")), List(formal))
+      }
+
       val (operatorType, args) = currentToken.kind match {
         case PLUS              => binaryOperator(Plus)
         case MINUS             => binaryOperator(Minus)
@@ -242,17 +250,15 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case LESSTHANEQUALS    => binaryOperator(LessThanEquals)
         case GREATERTHAN       => binaryOperator(GreaterThan)
         case GREATERTHANEQUALS => binaryOperator(GreaterThanEquals)
+        case EQUALS            => binaryOperator(Equals)
+        case NOTEQUALS         => binaryOperator(NotEquals)
         case LOGICNOT          => unaryOperator(LogicNot)
         case BANG              => unaryOperator(Not)
-        case INCREMENT         =>
-          eat(INCREMENT)
-          (PreIncrement(new Identifier("")), List(formal))
-        case DECREMENT         =>
-          eat(DECREMENT)
-          (PreDecrement(new Identifier("")), List(formal))
+        case INCREMENT         => incrementDecrement(PreIncrement)
+        case DECREMENT         => incrementDecrement(PreDecrement)
         case _                 =>
           expected(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT,
-          LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG)
+          LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG)
       }
       eat(RPAREN)
       eat(COLON)

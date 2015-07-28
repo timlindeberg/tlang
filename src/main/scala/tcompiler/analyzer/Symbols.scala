@@ -64,44 +64,52 @@ object Symbols {
     }
   }
 
-  private class OperatorKey(val operatorType: ExprTree, val args: List[Type]) {
-    def equals(other: OperatorKey): Boolean = {
-      if (operatorType.getClass != other.operatorType.getClass)
-        return false
-
-      if (args.size != other.args.size)
-        return false
-
-      args.zip(other.args).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
-    }
-
-    override def hashCode(): Int = {
-      operatorType.getClass.hashCode + args.hashCode
-    }
-  }
-
-
   class ClassSymbol(val name: String) extends Symbol {
-    var parent: Option[ClassSymbol] = None
-    var methods                     = new MethodMap()
-    private val operators = new scala.collection.mutable.HashMap[OperatorKey, OperatorSymbol]()
-    var members = Map[String, VariableSymbol]()
+    var parent   : Option[ClassSymbol]  = None
+    var methods: List[MethodSymbol]     = Nil
+    var operators: List[OperatorSymbol] = Nil
+    var members                         = Map[String, VariableSymbol]()
 
-    def addOperator(operatorType: ExprTree, args: List[Type], operatorSymbol: OperatorSymbol): Unit =
-      operators += new OperatorKey(operatorType, args) -> operatorSymbol
 
-    def lookupMethod(name: String, args: List[Type]): Option[MethodSymbol] = methods.get((name, args)) match {
+    def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
+    def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
+
+    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] = findMethod(name, args) match {
       case x @ Some(_) => x
-      case None        => if (parent.isDefined) parent.get.lookupMethod(name, args) else None
+      case None        => if (recursive && parent.isDefined) parent.get.lookupMethod(name, args) else None
     }
-    def lookupVar(name: String): Option[VariableSymbol] = members.get(name) match {
+
+    def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] = members.get(name) match {
       case x @ Some(_) => x
-      case None        => if (parent.isDefined) parent.get.lookupVar(name) else None
+      case None        => if (recursive && parent.isDefined) parent.get.lookupVar(name) else None
     }
-    def lookupOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] = {
-      operators.get(new OperatorKey(operatorType, args)) match {
+
+    def lookupOperator(operatorType: ExprTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] =
+      findOperator(operatorType, args) match {
         case x @ Some(_) => x
-        case None        => None // operators can't be inherited
+        case None        => if (recursive && parent.isDefined) parent.get.lookupOperator(operatorType, args) else None
+      }
+
+    private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
+      operators.find(symbol => {
+        sameOperatorType(operatorType, symbol.operatorType) &&
+          args.size == symbol.argList.size &&
+          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
+      })
+
+    private def findMethod(name: String, args: List[Type]) = {
+      methods.find(symbol => {
+        name == symbol.name &&
+          args.size == symbol.argList.size &&
+          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
+      })
+    }
+
+    private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
+      operatorType1 match {
+        case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
+        case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
+        case _ => operatorType1.getClass == operatorType2.getClass
       }
     }
   }
@@ -129,10 +137,11 @@ object Symbols {
   class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val access: Accessability)
     extends MethodSymbol(operatorType.toString, classSymbol, access) {
     def methodName = {
-      val name = operatorType.getClass.getName
+      val name = operatorType.getClass.getSimpleName
+      val types = argList.map(_.getType)
       name + (operatorType match {
-        case UnaryOperatorDecl(_)     => "$" + argList(0)
-        case BinaryOperatorDecl(_, _) => "$" + argList(0) + "$" + argList(1)
+        case UnaryOperatorDecl(_)     => "$" + types(0)
+        case BinaryOperatorDecl(_, _) => "$" + types(0) + "$" + types(1)
       })
     }
   }

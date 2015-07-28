@@ -130,6 +130,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   it should "LogicAnd" in logicOperator(LogicAnd)
   it should "LogicOr" in logicOperator(LogicOr)
   it should "LogicXor" in logicOperator(LogicXor)
+
   it should "LeftShift" in shiftOperator(LeftShift)
   it should "RightShift" in shiftOperator(RightShift)
 
@@ -140,6 +141,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   it should "LessThanEquals" in comparisonOperator(LessThanEquals)
   it should "GreaterThan" in comparisonOperator(GreaterThan)
   it should "GreaterThanEquals" in comparisonOperator(GreaterThanEquals)
+
   it should "Equals" in equalsOperator(Equals)
   it should "NotEquals" in equalsOperator(NotEquals)
 

@@ -288,8 +288,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case (_, _: TObject) | (_: TObject, _) => tcBinaryOperator(expression, argTypes)
           case (TBool, x)                        => typeError(x, "Bool", lhs)
           case (x, TBool)                        => typeError(x, "Bool", rhs)
-          case (tpe: TObject, x)                 => typeError(x, tpe, lhs)
-          case (x, tpe: TObject)                 => typeError(x, tpe, rhs)
           case (TDouble, _) | (_, TDouble)       => TDouble
           case (TFloat, _) | (_, TFloat)         => TFloat
           case (TLong, _) | (_, TLong)           => TLong
@@ -420,7 +418,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
         TBool
       case Not(expr)                    =>
         tcExpr(expr, TBool, Types.anyObject) match {
-          case x: TObject => tcUnaryOperator(expr, x, Some(TBool))
+          case x: TObject => tcUnaryOperator(expression, x, Some(TBool))
           case _          =>
         }
         TBool

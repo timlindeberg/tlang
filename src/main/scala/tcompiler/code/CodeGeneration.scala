@@ -240,6 +240,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case (_: TObject, _) | (_, _: TObject) =>
                 compileExpr(rhs)
                 compileOperatorCall(ch, expression, argTypes)
+                return
               case (TDouble, _) | (_, TDouble)       =>
                 lhs.getType.codes.toDouble(ch)
                 compileExpr(rhs)
@@ -263,7 +264,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case _: Times  => codes.mul(ch)
               case _: Div    => codes.div(ch)
               case _: Modulo => codes.mod(ch)
-              case _         =>
             }
           case LogicalOperator(lhs, rhs)        =>
             val argTypes = (lhs.getType, rhs.getType)
@@ -272,6 +272,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 compileExpr(lhs)
                 compileExpr(rhs)
                 compileOperatorCall(ch, expression, argTypes)
+                return
               case (TLong, _) | (_, TLong)           =>
                 compileExpr(lhs)
                 lhs.getType.codes.toLong(ch)
@@ -288,7 +289,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case _: LogicAnd => codes.and(ch)
               case _: LogicOr  => codes.or(ch)
               case _: LogicXor => codes.xor(ch)
-              case _: TObject  =>
             }
           case ShiftOperator(lhs, rhs)          =>
             compileExpr(lhs)
@@ -298,6 +298,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               case (_: TObject, _) | (_, _: TObject) =>
                 compileExpr(rhs)
                 compileOperatorCall(ch, expression, argTypes)
+                return
               case (TLong, _)                        =>
                 compileExpr(rhs)
                 rhs.getType.codes.toInt(ch)
@@ -314,7 +315,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             expression match {
               case _: LeftShift  => codes.leftShift(ch)
               case _: RightShift => codes.rightShift(ch)
-              case _             =>
             }
           case Assign(id, expr)                 =>
             store(id, () => {
@@ -418,6 +418,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 ch << Ldc(-1)
                 expr.getType.codes.xor(ch)
             }
+            // TODO: Fix post/pre increment for objects. Currently they work the same way.
           case PreDecrement(id)             =>
             val codes = id.getType.codes
             store(id, () => {
@@ -444,11 +445,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val codes = id.getType.codes
             store(id, () => {
               load(id)
-              if (duplicate)
-                codes.dup_x1(ch)
               id.getType match {
-                case x: TObject => compileOperatorCall(ch, expression, x)
+                case x: TObject =>
+                  compileOperatorCall(ch, expression, x)
+                  x.codes.dup(ch)
                 case _          =>
+                  if (duplicate)
+                    codes.dup_x1(ch)
                   codes.one(ch)
                   codes.sub(ch)
               }
@@ -457,11 +460,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val codes = id.getType.codes
             store(id, () => {
               load(id)
-              if (duplicate)
-                codes.dup_x1(ch)
               id.getType match {
                 case x: TObject => compileOperatorCall(ch, expression, x)
+                  x.codes.dup(ch)
                 case _          =>
+                  if (duplicate)
+                    codes.dup_x1(ch)
                   codes.one(ch)
                   codes.add(ch)
               }
@@ -525,23 +529,23 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             case (_: TObject, _) | (_, _: TObject) =>
               compileExpr(rhs)
               compileOperatorCall(ch, expression, argTypes)
-              ch << IfEq(thn.id)
-            case (TDouble, _) | (_, TDouble) =>
+              ch << IfNe(thn.id)
+            case (TDouble, _) | (_, TDouble)       =>
               lhs.getType.codes.toDouble(ch)
               compileExpr(rhs)
               rhs.getType.codes.toDouble(ch)
               comparison(DoubleCodeMap)
-            case (TFloat, _) | (_, TFloat)   =>
+            case (TFloat, _) | (_, TFloat)         =>
               lhs.getType.codes.toFloat(ch)
               compileExpr(rhs)
               rhs.getType.codes.toFloat(ch)
               comparison(FloatCodeMap)
-            case (TLong, _) | (_, TLong)     =>
+            case (TLong, _) | (_, TLong)           =>
               lhs.getType.codes.toLong(ch)
               compileExpr(rhs)
               rhs.getType.codes.toLong(ch)
               comparison(LongCodeMap)
-            case _                           =>
+            case _                                 =>
               lhs.getType.codes.toInt(ch)
               compileExpr(rhs)
               rhs.getType.codes.toInt(ch)
@@ -562,13 +566,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           argTypes match {
             case (_, objectType: TObject)        =>
               compileExpr(rhs)
-              if(compileOperatorCall(ch, expression, argTypes))
-                ch << IfEq(thn.id)
+              if (compileOperatorCall(ch, expression, argTypes))
+                ch << IfNe(thn.id)
               else
                 comparison(objectType.codes) // If no operator is defined, compare by reference
             case (objectType: TObject, _)        =>
               compileExpr(rhs)
-              if(compileOperatorCall(ch, expression, argTypes))
+              if (compileOperatorCall(ch, expression, argTypes))
                 ch << IfEq(thn.id)
               else
                 comparison(objectType.codes) // If no operator is defined, compare by reference
@@ -639,10 +643,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
             val operatorSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
             val methodHandle = classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.methodName, argTypes)
-            methodHandle.setFlags(Flags.FIELD_ACC_STATIC)
             methodHandle
         }
-        methodHandle.setFlags(getAccessFlag(mt.access))
+        mt match {
+          case _: OperatorDecl => methodHandle.setFlags((Flags.METHOD_ACC_STATIC | getAccessFlag(mt.access)).asInstanceOf[Short])
+          case _               => methodHandle.setFlags(getAccessFlag(mt.access))
+        }
         generateMethod(methodHandle.codeHandler, mt)
       }
 
@@ -679,8 +685,12 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       val methSym = mt.getSymbol
       val variableMap = mutable.HashMap[String, Int]()
 
+      val startIndex = mt match {
+        case _: OperatorDecl => 0
+        case _               => 1
+      }
       mt.args.zipWithIndex.foreach {
-        case (arg, i) => variableMap(arg.getSymbol.name) = i + 1
+        case (arg, i) => variableMap(arg.getSymbol.name) = i + startIndex
       }
 
       val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)

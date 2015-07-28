@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{UnaryOperatorDecl, BinaryOperatorDecl}
+import tcompiler.ast.TreeGroups.{IncrementDecrement, UnaryOperatorDecl, BinaryOperatorDecl}
 import tcompiler.ast.Trees.{ClassDecl, _}
 import tcompiler.ast.{Printer, Trees}
 import tcompiler.utils._
@@ -86,7 +86,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
               case None         =>
             }
           case constructor: ConstructorDecl => // TODO
-          case operator: OperatorDecl =>
+          case operator: OperatorDecl       =>
             val operatorSymbol = operator.getSymbol
             val argTypes = operator.args.map(_.tpe.getType)
             operatorSymbol.classSymbol.parent match {
@@ -208,12 +208,12 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
-        case Program(_, _, main, classes)                                     =>
+        case Program(_, _, main, classes)                                                =>
           if (main.isDefined)
             bind(main.get)
           bind(classes)
-        case main @ MainObject(id, stats)                                     => stats.foreach(bind(_, main.getSymbol))
-        case classDecl @ ClassDecl(id, parent, vars, methods)                 =>
+        case main @ MainObject(id, stats)                                                => stats.foreach(bind(_, main.getSymbol))
+        case classDecl @ ClassDecl(id, parent, vars, methods)                            =>
           setParent(id, parent, classDecl)
           val sym = classDecl.getSymbol
           sym.setType(TObject(sym))
@@ -233,7 +233,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           }
           bind(methods)
-        case methDecl @ MethodDecl(retType, _, args, vars, stats, _)          =>
+        case methDecl @ MethodDecl(retType, _, args, vars, stats, _)                     =>
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
@@ -244,25 +244,29 @@ object NameAnalysis extends Pipeline[Program, Program] {
           ensureMethodNotDefined(methDecl)
 
           stats.foreach(bind(_, methDecl.getSymbol))
-        case constructorDecl @ ConstructorDecl(_, args, vars, stats, _)       =>
+        case constructorDecl @ ConstructorDecl(_, args, vars, stats, _)                  =>
           bind(args)
           bindVars(vars, constructorDecl.getSymbol)
 
           ensureMethodNotDefined(constructorDecl)
           stats.foreach(bind(_, constructorDecl.getSymbol))
-        case operatorDecl @ OperatorDecl(_, retType, args, vars, stats, _, _) =>
+        case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, _, _) =>
           setType(retType)
 
           operatorDecl.getSymbol.setType(retType.getType)
-
+          operatorType.setType(retType.getType)
+          operatorType match {
+            case IncrementDecrement(id) => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
+            case _                      =>
+          }
           bind(args)
           bindVars(vars, operatorDecl.getSymbol)
 
           ensureOperatorNotDefined(operatorDecl)
 
           stats.foreach(bind(_, operatorDecl.getSymbol))
-        case Formal(tpe, id)                                                  => setType(tpe, id)
-        case _                                                                => throw new UnsupportedOperationException
+        case Formal(tpe, id)                                                             => setType(tpe, id)
+        case _                                                                           => throw new UnsupportedOperationException
       }
 
       private def bindVars(vars: List[VarDecl], symbol: MethodSymbol): Unit =
@@ -312,11 +316,11 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def ensureMethodNotDefined(meth: FuncTree): Unit = {
         val name = meth.id.value
         val argTypes = meth.args.map(_.tpe.getType)
-        meth.getSymbol.classSymbol.methods.get((name, argTypes)) match {
+        meth.getSymbol.classSymbol.lookupMethod(name, argTypes, recursive = false) match {
           case Some(oldMeth) =>
             error("Method \'" + meth.signature + "\' is already defined at line " + oldMeth.line + ".", meth)
           case None          =>
-            meth.getSymbol.classSymbol.methods += ((name, argTypes) -> meth.getSymbol)
+            meth.getSymbol.classSymbol.addMethod(meth.getSymbol)
         }
       }
 
@@ -334,11 +338,11 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case _                                                  =>
         }
 
-        operator.getSymbol.classSymbol.lookupOperator(operatorType, argTypes) match {
+        operator.getSymbol.classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>
             error("Operator \'" + Trees.operatorString(operatorType, argTypes) + "\' is already defined at line " + oldOperator.line + ".", operator)
           case None              =>
-            operator.getSymbol.classSymbol.addOperator(operatorType, argTypes, operator.getSymbol.asInstanceOf[OperatorSymbol])
+            operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
         }
       }
 

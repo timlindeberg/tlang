@@ -279,7 +279,7 @@ class A {
       //println("res: \n" + res)
       //println("sol: \n" + sol.mkString("\n"))
       val r = TestUtils.lines(res)
-      r.length should be(sol.length)
+      assert(r.length == sol.length, "Different amount of results and expected results.")
       flattenTuple(r.zip(sol).zipWithIndex).foreach { case (res, sol, i) =>
         assert(res.trim == sol.trim, ": error on test nr " + (i + 1))
       }

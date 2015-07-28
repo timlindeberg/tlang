@@ -218,11 +218,11 @@ object Trees {
       case _: GreaterThanEquals => args(0) + " >= " + args(1)
       case _: Equals            => args(0) + " == " + args(1)
       case _: NotEquals         => args(0) + " != " + args(1)
-      case _: LogicNot          => " ~ " + args(0)
-      case _: Not               => " ! " + args(0)
-      case _: PreIncrement      => " ++ " + args(0)
-      case _: PostIncrement     => args(0) + " ++ "
-      case _: PreDecrement      => " -- " + args(0)
+      case _: LogicNot          => "~" + args(0)
+      case _: Not               => "!" + args(0)
+      case _: PreIncrement      => "++" + args(0)
+      case _: PostIncrement     => args(0) + "++"
+      case _: PreDecrement      => "--" + args(0)
     }
   }
 
