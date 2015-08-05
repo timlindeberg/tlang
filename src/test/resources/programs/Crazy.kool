@@ -9,9 +9,9 @@ main Main = {
 }
 
 class A {
-  var value: Int;
-  var a: Bool;
-  var b: Bool;
+  var protected value: Int;
+  var protected a: Bool;
+  var protected b: Bool;
 
   Def bar(): Bool = { return !a && b; }
   Def bar2(): Bool = { return !(a && b); }

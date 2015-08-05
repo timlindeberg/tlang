@@ -7,6 +7,7 @@ import tcompiler.ast.Trees._
 import tcompiler.utils._
 
 object Symbols {
+
   trait Symbolic[S <: Symbol] {
     private var _sym: Option[S] = None
 
@@ -45,49 +46,36 @@ object Symbols {
 
   class GlobalScope {
     var mainClass: ClassSymbol = _
-    var classes                = Map[String, ClassSymbol]("Object" -> objectClass)
+    var classes = Map[String, ClassSymbol]("Object" -> objectClass)
 
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
 
-  class MethodMap extends scala.collection.mutable.HashMap[(String, List[Type]), MethodSymbol] {
-    protected override def elemEquals(key1: (String, List[Type]), key2: (String, List[Type])): Boolean = {
-      // TODO: This fails for some cases for some reason
-      val (name1, args1) = key1
-      val (name2, args2) = key2
-
-      if (name1 == name2 && args1.size == args2.size) {
-        args1.zip(args2).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
-      } else {
-        false
-      }
-    }
-  }
-
   class ClassSymbol(val name: String) extends Symbol {
-    var parent   : Option[ClassSymbol]  = None
-    var methods: List[MethodSymbol]     = Nil
+    var parent: Option[ClassSymbol] = None
+    var methods: List[MethodSymbol] = Nil
     var operators: List[OperatorSymbol] = Nil
-    var members                         = Map[String, VariableSymbol]()
+    var members = Map[String, VariableSymbol]()
 
 
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
+
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
 
     def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] = findMethod(name, args) match {
-      case x @ Some(_) => x
-      case None        => if (recursive && parent.isDefined) parent.get.lookupMethod(name, args) else None
+      case x@Some(_) => x
+      case None      => if (recursive && parent.isDefined) parent.get.lookupMethod(name, args) else None
     }
 
     def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] = members.get(name) match {
-      case x @ Some(_) => x
-      case None        => if (recursive && parent.isDefined) parent.get.lookupVar(name) else None
+      case x@Some(_) => x
+      case None      => if (recursive && parent.isDefined) parent.get.lookupVar(name) else None
     }
 
     def lookupOperator(operatorType: ExprTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] =
       findOperator(operatorType, args) match {
-        case x @ Some(_) => x
-        case None        => if (recursive && parent.isDefined) parent.get.lookupOperator(operatorType, args) else None
+        case x@Some(_) => x
+        case None      => if (recursive && parent.isDefined) parent.get.lookupOperator(operatorType, args) else None
       }
 
     private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
@@ -109,44 +97,54 @@ object Symbols {
       operatorType1 match {
         case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
         case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
-        case _ => operatorType1.getClass == operatorType2.getClass
+        case _                                  => operatorType1.getClass == operatorType2.getClass
       }
     }
   }
 
-  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val access: Accessability) extends Symbol {
-    var params                           = Map[String, VariableSymbol]()
-    var members                          = Map[String, VariableSymbol]()
-    var argList   : List[VariableSymbol] = Nil
+  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+    var params = Map[String, VariableSymbol]()
+    var members = Map[String, VariableSymbol]()
+    var argList: List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
 
-    def lookupVar(name: String): Option[VariableSymbol] = members.get(name) match {
-      case x @ Some(t) => x
-      case None        => params.get(name) match {
-        case x @ Some(t) => x
-        case None        => classSymbol.lookupVar(name)
-      }
+    def lookupVar(name: String): Option[VariableSymbol] = lookupLocalVar(name) match {
+      case x@Some(_) => x
+      case None      => lookupField(name)
     }
+
+    def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupVar(name)
+
+    def lookupLocalVar(name: String): Option[VariableSymbol] = members.get(name) match {
+      case x@Some(_) => x
+      case None      => params.get(name)
+    }
+
 
     def signature = {
       val argTypes = argList.map(_.getType.byteCodeName).mkString
       "(" + argTypes + ")" + getType.byteCodeName
     }
+
+
   }
 
-  class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val access: Accessability)
-    extends MethodSymbol(operatorType.toString, classSymbol, access) {
+  class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val modifiers: Set[Modifier])
+    extends MethodSymbol(operatorType.toString, classSymbol, modifiers) {
     def methodName = {
       val name = operatorType.getClass.getSimpleName
       val types = argList.map(_.getType)
       name + (operatorType match {
-        case UnaryOperatorDecl(_)     => "$" + types(0)
-        case BinaryOperatorDecl(_, _) => "$" + types(0) + "$" + types(1)
+        case UnaryOperatorDecl(_)     => "$" + types.head
+        case BinaryOperatorDecl(_, _) => "$" + types.head + "$" + types(1)
+        case ArrayRead(_, _)          => "$" + types.head
+        case ArrayAssign(_, _, _)     => "$" + types.head + "$" + types(1)
       })
     }
   }
 
-  class VariableSymbol(val name: String, val access: Accessability = Public) extends Symbol
+  class VariableSymbol(val name: String,  val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
 
   case class ErrorSymbol(name: String = "") extends Symbol
+
 }

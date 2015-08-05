@@ -29,7 +29,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val TestCtx        = new Context(reporter = new Reporter(quiet = false), file = testFile, outDir = Some(new File(TestFolder + "/")))
   val TypeCheckCtx   = new Context(reporter = new Reporter(quiet = true), file = testFile, outDir = None)
   val ClassSymbol    = new ClassSymbol("obj")
-  val MainMethod     = new MethodSymbol("main", ClassSymbol, Private).setType(TUnit)
+  val MainMethod     = new MethodSymbol("main", ClassSymbol, Set(Private)).setType(TUnit)
   val TypeChecker    = new TypeChecker(TypeCheckCtx, MainMethod)
 
   val MainName      = "Main"
@@ -56,11 +56,11 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "Programs"
 
-//  TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
-//  TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
+  TestUtils.programFiles(TestUtils.resources + "programs").foreach(testFile(_))
+  TestUtils.programFiles(TestUtils.resources + "given/programs").foreach(testFile(_))
 
 
-  testFile(new File(TestUtils.resources + "programs/OperatorOverLoading.kool"))
+  //testFile(new File(TestUtils.resources + "programs/OperatorOverLoading.kool"))
 
 //  behavior of s"RandomTesting ($NumberOfTests x)"
 //

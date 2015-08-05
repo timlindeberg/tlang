@@ -2,7 +2,7 @@ package tcompiler
 package modification
 
 import com.rits.cloning._
-import tcompiler.ast.Trees
+import tcompiler.ast.{Printer, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.utils.{Context, Pipeline, Positioned}
 
@@ -48,8 +48,9 @@ object Templates extends Pipeline[Program, Program] {
       cloner.registerConstant(Private)
       cloner.registerConstant(Public)
       cloner.registerConstant(Protected)
+      cloner.registerConstant(Static)
 
-      var generated       : Set[String]            = Set()
+      var generated: Set[String] = Set()
       var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
 
       def generate(prog: Program): List[ClassDecl] = {
@@ -90,10 +91,10 @@ object Templates extends Pipeline[Program, Program] {
         /* Helper functions to perform transformation */
         def updateType(t: TypeTree): TypeTree = {
           Some(t) collect {
-            case t @ ClassIdentifier(_, templateTypes) if t.isTemplated =>
+            case t@ClassIdentifier(_, templateTypes) if t.isTemplated =>
               t.templateTypes = templateTypes.map(updateType)
               generateClass(t)
-            case a @ ArrayType(tpe)                                     => a.tpe = updateType(tpe)
+            case a@ArrayType(tpe)                                     => a.tpe = updateType(tpe)
           }
           templateMap.getOrElse(t, t)
         }
@@ -113,6 +114,7 @@ object Templates extends Pipeline[Program, Program] {
           case f: Formal          => f.tpe = updateType(f.tpe)
           case m: MethodDecl      => m.retType = updateType(m.retType)
           case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))
+          case o: OperatorDecl    => o.retType = updateType(o.retType)
           case n: New             => n.tpe = updateTypeOfNewExpr(n)
           case n: NewArray        => n.tpe = updateType(n.tpe)
         })
@@ -154,11 +156,12 @@ object Templates extends Pipeline[Program, Program] {
         else tpe
 
       Trees.traverse(prog, (_, curr) => Some(curr) collect {
-        case c: ClassDecl  => c.parent = c.parent.map(replaceTypeId)
-        case m: MethodDecl => m.retType = replaceType(m.retType)
-        case v: VarDecl    => v.tpe = replaceType(v.tpe)
-        case f: Formal     => f.tpe = replaceType(f.tpe)
-        case n: New        => n.tpe = replaceTypeId(n.tpe)
+        case c: ClassDecl    => c.parent = c.parent.map(replaceTypeId)
+        case m: MethodDecl   => m.retType = replaceType(m.retType)
+        case o: OperatorDecl => o.retType = replaceType(o.retType)
+        case v: VarDecl      => v.tpe = replaceType(v.tpe)
+        case f: Formal       => f.tpe = replaceType(f.tpe)
+        case n: New          => n.tpe = replaceTypeId(n.tpe)
       })
       prog
     }

@@ -19,8 +19,9 @@ class Main {
 		var stringSorter: Sorter<LinkedList<KoolString>, KoolString> = new Sorter<LinkedList<KoolString>, KoolString>();
 		var i:            Int;
 
+		intList = intList + new Integer(r.nextInt(10000));
 		for(i = 0; i < 100; i++){
-        	intList.Add(new Integer(r.nextInt(10000)));
+        	intList += new Integer(r.nextInt(10000));
         }
 
 		intSorter.sort(intList);
@@ -39,40 +40,44 @@ class Main {
         	stringList.Push(new KoolString("s" + i + "s"));
 		}
 		p.PrintList("Initial");
-		
+
 		i = 0;
 
-		intList.Set(2, new Integer(15));
-		intList.Set(5, new Integer(15));
+		intList[2] = new Integer(15);
+		intList[5] = new Integer(15);
 		intList.Add(7, new Integer(15));
 
-		stringList.Set(2, new KoolString("s" + 15 + "s"));
-		stringList.Set(5, new KoolString("s" + 15 + "s"));
-		stringList.Add(7, new KoolString("s" + 15 + "s"));
+		stringList[2] = new KoolString("s" + 15 + "s");
+		stringList[5] = new KoolString("s" + 15 + "s");
+		stringList[7] = new KoolString("s" + 15 + "s");
 
-		p.PrintList("Set 10 and 40 to 15");
+		p.PrintList("Set 2, 5 and 7 to 15");
 
-		intList.Remove(0);
-	 	intList.Remove(3);
-		intList.Remove(intList.Size() - 1);
+		intList.RemoveIndex(0);
+	 	intList.Remove(new Integer(3));
+	 	intList -= new Integer(4);
+		intList.RemoveIndex(intList.Size() - 1);
 
-		stringList.Remove(0);
-		stringList.Remove(3);
-		stringList.Remove(intList.Size() - 1);
-		
+		stringList.RemoveIndex(0);
+		stringList.Remove(new KoolString("s" + 3 + "s"));
+        stringList -= new KoolString("s" + 4 + "s");
+		stringList.RemoveIndex(intList.Size() - 1);
+
+
+
 	 	p.PrintList("Removed first, 3, and last");
 
 		intSorter.sort(intList);
 		stringSorter.sort(stringList);
 
 		p.PrintList("Sorted");
-		
+
 		intList2 = new LinkedList<Integer>();
 
 		for(i = 0; i < 10; i++){
 			intList2.Push(new Integer(100 - i));
 		}
-		intList.AddAll(5, intList2);
+		intList += intList2;
 
 		intList.AddAll(0, intList2);
 		p.PrintList("AddAll");
@@ -89,14 +94,14 @@ class Main {
 		println(intList.Contains(new Integer(100)));
 		println(intList.Contains(new Integer(95)));
 		println(intList.Contains(new Integer(101)));
-        
+
         intSorter.sort(intList);
 		println("----------------------------------------");
 		println("-- Pop");
 		println("----------------------------------------");
 		println(intList);
 		while(intList.Size() > 0){
-			intList.Pop().Value().Get();
+			intList.Pop();
 			println(intList);
 		}
 
@@ -106,63 +111,48 @@ class Main {
         	intList2.Push(new Integer(i));
 		}
 
-		println(intList.Equals(intList2));
+		println(intList == intList2);
 	}
 }
 
 class Integer {
-	var i: Int;
+	Var Value: Int;
 
-	Def new(iarg: Int) = {
-		i = iarg;
-	}
-
-	Def Set(iarg: Int): Unit = {
-		i = iarg;
-	}
-
-	Def Get(): Int = {
-		return i;
+	Def new(value: Int) = {
+		Value = value;
 	}
 
 	Def toString(): String = {
-		return "" + i;
+		return "" + Value;
 	}
 
-	Def CompareTo(other: Integer): Int = {
-		return i - other.Get();
+	Def >(lhs: Integer, rhs: Integer): Bool = {
+		return lhs.Value > rhs.Value;
 	}
 
-	Def Equals(other: Integer): Bool = {
-		return i == other.Get();
+	Def ==(lhs: Integer, rhs: Integer): Bool = {
+		return lhs.Value == rhs.Value;
 	}
 }
 
 class KoolString {
-	var s: String;
 
-	Def new(sarg: String) = {
-		s = sarg;
-	}
+	Var Value: String;
 
-	Def Set(sarg: String): Unit = {
-		s = sarg;
-	}
-
-	Def Get(): String = {
-		return s;
+	Def new(value: String) = {
+		Value = value;
 	}
 
 	Def toString(): String = {
-		return s;
+		return Value;
 	}
 
-	Def CompareTo(other: KoolString): Int = {
-		return 1;
+	Def >(lhs: KoolString, rhs: KoolString): Bool = {
+		return true;
 	}
 
-	Def Equals(other: KoolString): Bool = {
-		return s == other.Get();
+	Def ==(lhs: KoolString, rhs: KoolString): Bool = {
+		return lhs.Value == rhs.Value;
 	}
 
 }
@@ -195,13 +185,13 @@ class Sorter<Container, T> {
 		var x: T;
 
         for(i = 1; i < N; i++){
-            x = c.Get(i).Value();
+            x = c[i].Value();
         	j = i;
-        	while(j > 0 && c.Get(j-1).Value().CompareTo(x) > 0){
-        		c.Set(j, c.Get(j-1).Value());
+        	while(j > 0 && c[j - 1].Value() > x){
+        		c[j] = c[j - 1].Value();
         		j = j - 1;
         	}
-            c.Set(j, x);
+            c[j] = x;
         }
 	}
 }

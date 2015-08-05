@@ -63,6 +63,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       "protected" -> PROTECTED,
       "Var" -> PUBVAR,
       "var" -> PRIVVAR,
+      "static" -> STATIC,
       "main" -> MAIN,
       "String" -> STRING,
       "extends" -> EXTENDS,

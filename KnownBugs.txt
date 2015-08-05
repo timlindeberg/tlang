@@ -1,1 +1,1 @@
-Not equals operator, no error given when given wrong type.
+PrintObject test case.

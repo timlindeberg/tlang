@@ -155,17 +155,17 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     /**
-     * <varDeclaration> ::= var <identifier> ":" <tpe> [ = <expression> ] ";"
+     * <varDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ] ";"
      */
     private def varDeclaration(): VarDecl = {
       val pos = currentToken
-      val access = accessRights(PRIVVAR, PUBVAR)
+      val mods = modifiers(PRIVVAR, PUBVAR)
       val id = identifier
       eat(COLON)
       val typ = tpe
       val init = optional(expression, EQSIGN)
       eat(SEMICOLON)
-      VarDecl(typ, id, init, access).setPos(pos)
+      VarDecl(typ, id, init, mods).setPos(pos)
     }
 
     /**
@@ -184,20 +184,43 @@ object Parser extends Pipeline[Iterator[Token], Program] {
      */
     private def methodDeclaration(className: String): FuncTree = {
       val pos = currentToken
-      val access = accessRights(PRIVDEF, PUBDEF)
+      val mods = modifiers(PRIVDEF, PUBDEF)
       val func = currentToken.kind match {
-        case IDKIND => method(access)
-        case NEW    => constructor(access, className)
-        case _      => operator(access)
+        case IDKIND => method(mods)
+        case NEW    => constructor(mods, className)
+        case _      => operator(mods)
         //case  => //unaryOperator(access)
       }
       func.setPos(pos)
     }
 
     /**
+     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
+     */
+    private def method(modifiers: Set[Modifier]): MethodDecl = {
+      val id = identifier
+      eat(LPAREN)
+      val args = commaList(formal)
+      eat(RPAREN)
+      eat(COLON)
+      val retType = if (currentToken.kind == UNIT) {
+        val pos = currentToken
+        eat(UNIT)
+        UnitType().setPos(pos)
+      } else {
+        tpe
+      }
+      eat(EQSIGN, LBRACE)
+      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+      val stmts = until(statement, RBRACE)
+      eat(RBRACE)
+      MethodDecl(retType, id, args, vars, stmts, modifiers)
+    }
+
+    /**
      * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  = {" { <varDeclaration> } { <statement> } "}"
      */
-    private def constructor(access: Accessability, className: String): ConstructorDecl = {
+    private def constructor(modifiers: Set[Modifier], className: String): ConstructorDecl = {
       eat(NEW)
       eat(LPAREN)
       val args = commaList(formal)
@@ -206,36 +229,38 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
       val stmts = until(statement, RBRACE)
       eat(RBRACE)
-      ConstructorDecl(new Identifier(className), args, vars, stmts, access)
+      ConstructorDecl(new Identifier(className), args, vars, stmts, modifiers)
     }
 
     /**
      * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
      */
-    private def operator(access: Accessability): OperatorDecl = {
-      def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal]) = {
+    private def operator(modifiers: Set[Modifier]): OperatorDecl = {
+      val pos = currentToken
+      def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
         eat(currentToken.kind)
         val operatorType = constructor(Empty(), Empty())
         eat(LPAREN)
         val f1 = formal
         eat(COMMA)
         val f2 = formal
-        (operatorType, List(f1, f2))
+        (operatorType, List(f1, f2), modifiers + Static)
       }
-      def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal]) = {
+
+      def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
         eat(currentToken.kind)
         val operatorType = constructor(Empty())
         eat(LPAREN)
-        (operatorType, List(formal))
+        (operatorType, List(formal), modifiers + Static)
       }
 
-      def incrementDecrement(constructor: (Identifier) => ExprTree): (ExprTree, List[Formal]) = {
+      def incrementDecrement(constructor: (Identifier) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
         eat(currentToken.kind)
         eat(LPAREN)
-        (constructor(new Identifier("")), List(formal))
+        (constructor(new Identifier("")), List(formal), modifiers + Static)
       }
 
-      val (operatorType, args) = currentToken.kind match {
+      val (operatorType, args, newModifiers) = currentToken.kind match {
         case PLUS              => binaryOperator(Plus)
         case MINUS             => binaryOperator(Minus)
         case TIMES             => binaryOperator(Times)
@@ -256,33 +281,36 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case BANG              => unaryOperator(Not)
         case INCREMENT         => incrementDecrement(PreIncrement)
         case DECREMENT         => incrementDecrement(PreDecrement)
+        case LBRACKET          =>
+          eat(LBRACKET, RBRACKET)
+          if(modifiers.contains(Static))
+            error("Indexing operator cannot be declared static!", pos)
+
+          currentToken.kind match {
+            case EQSIGN =>
+              val operatorType = ArrayAssign(new Identifier(""), Empty(), Empty())
+              eat(EQSIGN, LPAREN)
+              val f1 = formal
+              eat(COMMA)
+              val f2 = formal
+              (operatorType, List(f1, f2), modifiers)
+            case LPAREN =>
+              val operatorType = ArrayRead(new Identifier(""), Empty())
+              eat(LPAREN)
+              val f1 = formal
+              (operatorType, List(f1), modifiers)
+            case _ => expected(EQSIGN, LPAREN)
+          }
         case _                 =>
-          expected(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT,
-          LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG)
+          expected(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT, LESSTHAN,
+            LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
       }
       eat(RPAREN)
       eat(COLON)
-      val retType = tpe
-      eat(EQSIGN, LBRACE)
-      val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
-      val stmts = until(statement, RBRACE)
-      eat(RBRACE)
-      OperatorDecl(operatorType, retType, args, vars, stmts, access)
-    }
 
-    /**
-     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
-     */
-    private def method(access: Accessability): MethodDecl = {
-      val id = identifier
-      eat(LPAREN)
-      val args = commaList(formal)
-      eat(RPAREN)
-      eat(COLON)
-      val retType = if (currentToken.kind == UNIT) {
-        val pos = currentToken
+      val retType = if(operatorType.isInstanceOf[ArrayAssign]) {
         eat(UNIT)
-        UnitType().setPos(pos)
+        UnitType()
       } else {
         tpe
       }
@@ -290,9 +318,25 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
       val stmts = until(statement, RBRACE)
       eat(RBRACE)
-      MethodDecl(retType, id, args, vars, stmts, access)
+      OperatorDecl(operatorType, retType, args, vars, stmts, newModifiers)
     }
 
+
+
+    /**
+     * <modifiers> ::= (pub | priv [ protected ] ) [ static ]
+     */
+    private def modifiers(priv: TokenKind, pub: TokenKind): Set[Modifier] = {
+      val access = accessRights(priv, pub)
+      var modifiers: Set[Modifier] = Set(access)
+      currentToken.kind match {
+        case STATIC =>
+          eat(STATIC)
+          modifiers = modifiers + Static
+        case _ =>
+      }
+      modifiers
+    }
 
     /**
      * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }

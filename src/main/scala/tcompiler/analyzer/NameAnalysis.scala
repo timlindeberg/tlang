@@ -115,15 +115,15 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t
 
       match {
-        case Program(_, _, main, classes)                                                    =>
+        case Program(_, _, main, classes)                                                =>
           if (main.isDefined)
             addSymbols(main.get, globalScope)
           classes.foreach(addSymbols(_, globalScope))
-        case mainObject @ MainObject(id, stats)                                              =>
+        case mainObject@MainObject(id, stats)                                            =>
           globalScope.mainClass = new ClassSymbol(id.value).setPos(id)
           mainObject.setSymbol(globalScope.mainClass)
           id.setSymbol(globalScope.mainClass)
-        case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
+        case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
           val newSymbol = new ClassSymbol(name).setPos(id)
           ensureIdentiferNotDefined(globalScope.classes, id.value, id)
           id.setSymbol(newSymbol)
@@ -134,26 +134,26 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
           if (name == globalScope.mainClass.name)
             error("Class \'" + name + "\' has the same name as the main object.", id)
-        case _                                                                               => throw new UnsupportedOperationException
+        case _                                                                           => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
-        case varDecl @ VarDecl(tpe, id, init, access)                                          =>
-          val newSymbol = new VariableSymbol(id.value, access).setPos(id)
+        case varDecl@VarDecl(tpe, id, init, _)                                          =>
+          val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(s)).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        case methodDecl @ MethodDecl(retType, id, args, vars, stats, access)                   =>
-          val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
+        case methodDecl@MethodDecl(retType, id, args, vars, stats, _)                   =>
+          val newSymbol = new MethodSymbol(id.value, s, methodDecl.modifiers).setPos(id)
           id.setSymbol(newSymbol)
           methodDecl.setSymbol(newSymbol)
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        case constructorDecl @ ConstructorDecl(id, args, vars, stats, access)                  =>
-          val newSymbol = new MethodSymbol(id.value, s, access).setPos(id)
+        case constructorDecl@ConstructorDecl(id, args, vars, stats, _)                  =>
+          val newSymbol = new MethodSymbol(id.value, s, constructorDecl.modifiers).setPos(id)
           newSymbol.setType(TUnit)
 
           id.setSymbol(newSymbol)
@@ -161,19 +161,18 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, access, id) =>
-          val newSymbol = new OperatorSymbol(operatorType, s, access)
+        case operatorDecl@OperatorDecl(operatorType, retType, args, vars, stats, _, id) =>
+          val newSymbol = new OperatorSymbol(operatorType, s, operatorDecl.modifiers)
           id.setSymbol(newSymbol)
           operatorDecl.setSymbol(newSymbol)
 
           args.foreach(addSymbols(_, newSymbol))
           vars.foreach(addSymbols(_, newSymbol))
-        case _                                                                                 => throw new UnsupportedOperationException
       }
 
       private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
-        case varDecl @ VarDecl(tpe, id, init, _) =>
-          val newSymbol = new VariableSymbol(id.value).setPos(id)
+        case varDecl@VarDecl(tpe, id, init, _) =>
+          val newSymbol = new VariableSymbol(id.value, varDecl.modifiers).setPos(id)
           ensureIdentiferNotDefined(s.members, id.value, id)
           if (s.params.contains(id.value)) {
             val oldSymbol = s.params(id.value)
@@ -183,14 +182,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
           varDecl.setSymbol(newSymbol)
           variableUsage += newSymbol -> true
           s.members += (id.value -> newSymbol)
-        case formal @ Formal(tpe, id)            =>
+        case formal@Formal(tpe, id)            =>
           val newSymbol = new VariableSymbol(id.value).setPos(id)
           ensureIdentiferNotDefined(s.params, id.value, id)
           id.setSymbol(newSymbol)
           formal.setSymbol(newSymbol)
           s.params += (id.value -> newSymbol)
           s.argList ++= List(newSymbol)
-        case _                                   => throw new UnsupportedOperationException
+        case _                                 => throw new UnsupportedOperationException
       }
 
       private def ensureIdentiferNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
@@ -208,12 +207,13 @@ object NameAnalysis extends Pipeline[Program, Program] {
       private def bind(list: List[Tree]): Unit = list.foreach(bind)
 
       private def bind(t: Tree): Unit = t match {
-        case Program(_, _, main, classes)                                                =>
+        case Program(_, _, main, classes)                                              =>
           if (main.isDefined)
             bind(main.get)
           bind(classes)
-        case main @ MainObject(id, stats)                                                => stats.foreach(bind(_, main.getSymbol))
-        case classDecl @ ClassDecl(id, parent, vars, methods)                            =>
+        case main@MainObject(id, stats)                                                =>
+          stats.foreach(bind(_, main.getSymbol, isStatic = true))
+        case classDecl@ClassDecl(id, parent, vars, methods)                            =>
           setParent(id, parent, classDecl)
           val sym = classDecl.getSymbol
           sym.setType(TObject(sym))
@@ -225,87 +225,89 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 error("Field \'" + variable.getSymbol.name + "\' already defined in super class: ", variable)
             })
           }
-          vars.foreach { case VarDecl(tpe, id, init, _) =>
+          vars.foreach { case varDecl@VarDecl(tpe, id, init, _) =>
             setType(tpe, id)
             init match {
-              case Some(expr) => bind(expr, classDecl.getSymbol)
+              case Some(expr) => bind(expr, classDecl.getSymbol, varDecl.isStatic)
               case None       =>
             }
           }
           bind(methods)
-        case methDecl @ MethodDecl(retType, _, args, vars, stats, _)                     =>
+        case methDecl@MethodDecl(retType, _, args, vars, stats, _)                     =>
           setType(retType)
 
           methDecl.getSymbol.setType(retType.getType)
 
           bind(args)
-          bindVars(vars, methDecl.getSymbol)
+          bindVars(vars, methDecl.getSymbol, isStatic = false)
 
           ensureMethodNotDefined(methDecl)
 
-          stats.foreach(bind(_, methDecl.getSymbol))
-        case constructorDecl @ ConstructorDecl(_, args, vars, stats, _)                  =>
+          stats.foreach(bind(_, methDecl.getSymbol, methDecl.isStatic))
+        case constructorDecl@ConstructorDecl(_, args, vars, stats, _)                  =>
           bind(args)
-          bindVars(vars, constructorDecl.getSymbol)
+          bindVars(vars, constructorDecl.getSymbol, isStatic = false)
 
           ensureMethodNotDefined(constructorDecl)
-          stats.foreach(bind(_, constructorDecl.getSymbol))
-        case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, _, _) =>
+          stats.foreach(bind(_, constructorDecl.getSymbol, isStatic = false))
+        case operatorDecl@OperatorDecl(operatorType, retType, args, vars, stats, _, _) =>
           setType(retType)
 
           operatorDecl.getSymbol.setType(retType.getType)
           operatorType.setType(retType.getType)
           operatorType match {
             case IncrementDecrement(id) => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
+            case ArrayRead(id, _)       => id.asInstanceOf[Identifier].setSymbol(new VariableSymbol("")).setType(retType.getType)
+            case ArrayAssign(id, _, _)  => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
             case _                      =>
           }
           bind(args)
-          bindVars(vars, operatorDecl.getSymbol)
+          bindVars(vars, operatorDecl.getSymbol, operatorDecl.isStatic)
 
           ensureOperatorNotDefined(operatorDecl)
 
-          stats.foreach(bind(_, operatorDecl.getSymbol))
-        case Formal(tpe, id)                                                             => setType(tpe, id)
-        case _                                                                           => throw new UnsupportedOperationException
+          stats.foreach(bind(_, operatorDecl.getSymbol, operatorDecl.isStatic))
+        case Formal(tpe, id)                                                           => setType(tpe, id)
+        case _                                                                         => throw new UnsupportedOperationException
       }
 
-      private def bindVars(vars: List[VarDecl], symbol: MethodSymbol): Unit =
+      private def bindVars(vars: List[VarDecl], symbol: MethodSymbol, isStatic: Boolean): Unit =
         vars.foreach { case VarDecl(tpe, id, init, _) =>
           setType(tpe, id)
           init match {
-            case Some(expr) => bind(expr, symbol)
+            case Some(expr) => bind(expr, symbol, isStatic)
             case None       =>
           }
         }
 
-      private def bind(t: Tree, s: Symbol): Unit =
+      private def bind(t: Tree, s: Symbol, isStatic: Boolean): Unit =
         Trees.traverse(t, (parent, current) => Some(current) collect {
-          case MethodCall(obj, meth, args) =>
-            bind(obj, s)
-            args.foreach(bind(_, s))
-          case Instance(expr, id)          =>
-            bind(expr, s)
+          case m@MethodCall(obj, meth, args) =>
+            bind(obj, s, isStatic)
+            args.foreach(bind(_, s, isStatic))
+          case Instance(expr, id)            =>
+            bind(expr, s, isStatic)
             globalScope.lookupClass(id.value) match {
               case Some(classSymbol) =>
                 id.setSymbol(classSymbol)
                 id.setType(TObject(classSymbol))
               case None              => error("Type \'" + id.value + "\' was not declared:", id)
             }
-          case FieldRead(obj, id)          =>
-            bind(obj, s)
-          case FieldAssign(obj, id, expr)  =>
-            bind(obj, s)
-            bind(expr, s)
-          case id: Identifier              => parent match {
+          case FieldRead(obj, id)            =>
+            bind(obj, s, isStatic)
+          case FieldAssign(obj, id, expr)    =>
+            bind(obj, s, isStatic)
+            bind(expr, s, isStatic)
+          case id: Identifier                => parent match {
             case _: MethodCall  =>
             case _: Instance    =>
             case _: FieldRead   =>
             case _: FieldAssign =>
-            case _              => setVariable(id, s)
+            case _              => setVariable(id, s, isStatic)
           }
-          case id: ClassIdentifier         => setType(id)
-          case NewArray(tpe, size)         => setType(tpe)
-          case thisSym: This               =>
+          case id: ClassIdentifier           => setType(id)
+          case NewArray(tpe, size)           => setType(tpe)
+          case thisSym: This                 =>
             s match {
               case classSymbol: ClassSymbol   => thisSym.setSymbol(globalScope.mainClass)
               case methodSymbol: MethodSymbol => thisSym.setSymbol(methodSymbol.classSymbol)
@@ -352,7 +354,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           tpe.setType(t)
         }
         tpe match {
-          case tpeId @ ClassIdentifier(typeName, _) =>
+          case tpeId@ClassIdentifier(typeName, _) =>
             globalScope.lookupClass(typeName) match {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
@@ -361,23 +363,23 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 tpeId.setSymbol(new ErrorSymbol)
                 error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
-          case BooleanType()                        => set(TBool)
-          case IntType()                            => set(TInt)
-          case LongType()                           => set(TLong)
-          case FloatType()                          => set(TFloat)
-          case DoubleType()                         => set(TDouble)
-          case CharType()                           => set(TChar)
-          case ArrayType(arrayTpe)                  =>
+          case BooleanType()                      => set(TBool)
+          case IntType()                          => set(TInt)
+          case LongType()                         => set(TLong)
+          case FloatType()                        => set(TFloat)
+          case DoubleType()                       => set(TDouble)
+          case CharType()                         => set(TChar)
+          case ArrayType(arrayTpe)                =>
             setType(arrayTpe)
             set(TArray(arrayTpe.getType))
-          case StringType()                         => set(TString)
-          case UnitType()                           => set(TUnit)
+          case StringType()                       => set(TString)
+          case UnitType()                         => set(TUnit)
         }
       }
 
       private def setType(tpe: TypeTree): Unit = {
         tpe match {
-          case tpeId @ ClassIdentifier(typeName, _) =>
+          case tpeId@ClassIdentifier(typeName, _) =>
             globalScope.lookupClass(typeName) match {
               case Some(classSymbol) =>
                 tpeId.setSymbol(classSymbol)
@@ -386,31 +388,43 @@ object NameAnalysis extends Pipeline[Program, Program] {
                 tpeId.setSymbol(new ErrorSymbol)
                 error("Type \'" + tpeId.value + "\' was not declared:", tpeId)
             }
-          case BooleanType()                        => tpe.setType(TBool)
-          case IntType()                            => tpe.setType(TInt)
-          case LongType()                           => tpe.setType(TLong)
-          case FloatType()                          => tpe.setType(TFloat)
-          case DoubleType()                         => tpe.setType(TDouble)
-          case CharType()                           => tpe.setType(TChar)
-          case ArrayType(arrayTpe)                  =>
+          case BooleanType()                      => tpe.setType(TBool)
+          case IntType()                          => tpe.setType(TInt)
+          case LongType()                         => tpe.setType(TLong)
+          case FloatType()                        => tpe.setType(TFloat)
+          case DoubleType()                       => tpe.setType(TDouble)
+          case CharType()                         => tpe.setType(TChar)
+          case ArrayType(arrayTpe)                =>
             setType(arrayTpe)
             tpe.setType(TArray(arrayTpe.getType))
-          case StringType()                         => tpe.setType(TString)
-          case UnitType()                           => tpe.setType(TUnit)
+          case StringType()                       => tpe.setType(TString)
+          case UnitType()                         => tpe.setType(TUnit)
         }
       }
 
-      private def setVariable(id: Identifier, s: Symbol): Unit = {
-        def errorMsg(name: String) = "Variable \'" + name + "\' was not declared: "
+      private def setVariable(id: Identifier, s: Symbol, isStatic: Boolean): Unit = {
+        def errorMsg(name: String) = s"Can not resolve symbol '$name'."
+        val name = id.value
         s match {
           case methodSymbol: MethodSymbol =>
-            methodSymbol.lookupVar(id.value) match {
-              case Some(symbol) =>
-                id.setSymbol(symbol)
-                variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
-              case None         => error(errorMsg(id.value), id)
+            globalScope.lookupClass(name) match {
+              case Some(symbol) => id.setSymbol(symbol)
+              case None         => methodSymbol.lookupLocalVar(name) match {
+                case Some(symbol) =>
+                  id.setSymbol(symbol)
+                  variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
+                case None         => methodSymbol.lookupField(name) match {
+                  case Some(symbol) =>
+                    if (isStatic && !symbol.isStatic)
+                      error(s"Non-static field '${id.value}' cannot be accessed from a static function.", id)
+                    id.setSymbol(symbol)
+                    variableUsage += symbol.asInstanceOf[VariableSymbol] -> true
+                  case None         => error(errorMsg(id.value), id)
+                }
+              }
             }
-          case classSymbol: ClassSymbol   =>
+
+          case classSymbol: ClassSymbol =>
             classSymbol.lookupVar(id.value) match {
               case Some(symbol) =>
                 id.setSymbol(symbol)
@@ -424,10 +438,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
         if (parent.isDefined) {
           val p = parent.get
           globalScope.lookupClass(p.value) match {
-            case Some(parentSymbol) => {
+            case Some(parentSymbol) =>
               p.setSymbol(parentSymbol)
               classDecl.getSymbol.parent = Some(parentSymbol)
-            }
             case None               => error("Parent class \'" + p.value + "\' is not declared: ", p)
           }
         }

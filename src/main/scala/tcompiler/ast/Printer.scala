@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringEscapeUtils._
 
 object Printer {
 
-  var indent: Int   = 0
+  var indent: Int = 0
   var printIdNumber = false
 
   def l: String = {
@@ -36,17 +36,18 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)              => optional(pack, f) + all(imports) + n + optional(main, f) + all(classes)
-      case Package(identifiers)                               => "package " + identifiers.map(_.value).mkString(".") + ";" + n
-      case RegularImport(identifiers)                         => "import " + identifiers.map(_.value).mkString(".") + ";" + n
-      case WildCardImport(identifiers)                        => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
-      case GenericImport(identifiers)                         => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
-      case MainObject(id, stats)                              => "main " + f(id) + " = " + l + allStats(stats) + r
-      case ClassDecl(id, parent, vars, methods)               => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id, expr, access)                     => varDecl(access) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats, access) => definition(access) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
-      case ConstructorDecl(args, vars, stats, access)         => definition(access) + " new(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
-      case Formal(tpe, id)                                    => f(id) + ": " + f(tpe)
+      case Program(pack, imports, main, classes)                                => optional(pack, f) + all(imports) + n + optional(main, f) + all(classes)
+      case Package(identifiers)                                                 => "package " + identifiers.map(_.value).mkString(".") + ";" + n
+      case RegularImport(identifiers)                                           => "import " + identifiers.map(_.value).mkString(".") + ";" + n
+      case WildCardImport(identifiers)                                          => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
+      case GenericImport(identifiers)                                           => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
+      case MainObject(id, stats)                                                => "main " + f(id) + " = " + l + allStats(stats) + r
+      case ClassDecl(id, parent, vars, methods)                                 => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
+      case VarDecl(tpe, id, expr, modifiers)                                    => varDecl(modifiers) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
+      case MethodDecl(retType, id, args, vars, stats, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
+      case ConstructorDecl(id, args, vars, stats, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
+      case OperatorDecl(operatorType, retType, args, vars, stats, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
+      case Formal(tpe, id)                                                      => f(id) + ": " + f(tpe)
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"
       case IntType()      => "Int"
@@ -68,66 +69,82 @@ object Printer {
       case ArrayAssign(id, index, expr)     => f(id) + "[" + f(index) + "] = " + f(expr)
       case Return(expr)                     => "return " + optional(expr, f)
       // Expressions
-      case And(lhs, rhs)                     => "(" + f(lhs) + " && " + f(rhs) + ")"
-      case Or(lhs, rhs)                      => "(" + f(lhs) + " || " + f(rhs) + ")"
-      case Plus(lhs, rhs)                    => "(" + f(lhs) + " + " + f(rhs) + ")"
-      case Minus(lhs, rhs)                   => "(" + f(lhs) + " - " + f(rhs) + ")"
-      case LogicAnd(lhs, rhs)                => "(" + f(lhs) + " & " + f(rhs) + ")"
-      case LogicOr(lhs, rhs)                 => "(" + f(lhs) + " | " + f(rhs) + ")"
-      case LogicXor(lhs, rhs)                => "(" + f(lhs) + " ^ " + f(rhs) + ")"
-      case LeftShift(lhs, rhs)               => "(" + f(lhs) + " << " + f(rhs) + ")"
-      case RightShift(lhs, rhs)              => "(" + f(lhs) + " >> " + f(rhs) + ")"
-      case Times(lhs, rhs)                   => "(" + f(lhs) + " * " + f(rhs) + ")"
-      case Div(lhs, rhs)                     => "(" + f(lhs) + " / " + f(rhs) + ")"
-      case Modulo(lhs, rhs)                  => "(" + f(lhs) + " % " + f(rhs) + ")"
-      case LessThan(lhs, rhs)                => "(" + f(lhs) + " < " + f(rhs) + ")"
-      case LessThanEquals(lhs, rhs)          => "(" + f(lhs) + " <= " + f(rhs) + ")"
-      case GreaterThan(lhs, rhs)             => "(" + f(lhs) + " > " + f(rhs) + ")"
-      case GreaterThanEquals(lhs, rhs)       => "(" + f(lhs) + " >= " + f(rhs) + ")"
-      case Equals(lhs, rhs)                  => "(" + f(lhs) + " == " + f(rhs) + ")"
-      case NotEquals(lhs, rhs)               => "(" + f(lhs) + " != " + f(rhs) + ")"
-      case Instance(expr, id)                => "(" + f(expr) + " inst " + f(id) + ")"
-      case As(expr, tpe)                     => "(" + f(expr) + " as " + f(tpe) + ")"
-      case Not(expr)                         => "!(" + f(expr) + ")"
-      case Negation(expr)                    => "-(" + f(expr) + ")"
-      case LogicNot(expr)                    => "~(" + f(expr) + ")"
-      case ArrayRead(arr, index)             => f(arr) + "[" + f(index) + "]"
-      case ArrayLength(arr)                  => f(arr) + ".length"
-      case FieldRead(obj, id)                => f(obj) + "." + f(id)
-      case FieldAssign(obj, id, expr)        => f(obj) + "." + f(id) + " = " + f(expr)
-      case MethodCall(obj, meth, args)       => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
-      case IntLit(value)                     => value.toString
-      case LongLit(value)                    => value.toString + "L"
-      case FloatLit(value)                   => value.toString + "F"
-      case DoubleLit(value)                  => value.toString
-      case CharLit(value)                    => "'" + escapeJava("" + value) + "'"
-      case StringLit(value)                  => "\"" + escapeJava(value) + "\""
-      case True()                            => "true"
-      case False()                           => "false"
-      case id @ Identifier(value)            => value + symbol(id)
-      case id @ ClassIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "<" + commaList(list) + ">" else "")
-      case This()                            => "this"
-      case NewArray(tpe, size)               => "new " + f(tpe) + "[" + f(size) + "]"
-      case New(tpe, exprs)                   => "new " + f(tpe) + "(" + commaList(exprs) + ")"
-      case PreIncrement(id)                  => "++" + f(id)
-      case PostIncrement(id)                 => f(id) + "++"
-      case PreDecrement(id)                  => "--" + f(id)
-      case PostDecrement(id)                 => f(id) + "--"
-      case Ternary(condition, thn, els)      => f(condition) + " ? " + f(thn) + " : " + f(els)
+      case And(lhs, rhs)                   => "(" + f(lhs) + " && " + f(rhs) + ")"
+      case Or(lhs, rhs)                    => "(" + f(lhs) + " || " + f(rhs) + ")"
+      case Plus(lhs, rhs)                  => "(" + f(lhs) + " + " + f(rhs) + ")"
+      case Minus(lhs, rhs)                 => "(" + f(lhs) + " - " + f(rhs) + ")"
+      case LogicAnd(lhs, rhs)              => "(" + f(lhs) + " & " + f(rhs) + ")"
+      case LogicOr(lhs, rhs)               => "(" + f(lhs) + " | " + f(rhs) + ")"
+      case LogicXor(lhs, rhs)              => "(" + f(lhs) + " ^ " + f(rhs) + ")"
+      case LeftShift(lhs, rhs)             => "(" + f(lhs) + " << " + f(rhs) + ")"
+      case RightShift(lhs, rhs)            => "(" + f(lhs) + " >> " + f(rhs) + ")"
+      case Times(lhs, rhs)                 => "(" + f(lhs) + " * " + f(rhs) + ")"
+      case Div(lhs, rhs)                   => "(" + f(lhs) + " / " + f(rhs) + ")"
+      case Modulo(lhs, rhs)                => "(" + f(lhs) + " % " + f(rhs) + ")"
+      case LessThan(lhs, rhs)              => "(" + f(lhs) + " < " + f(rhs) + ")"
+      case LessThanEquals(lhs, rhs)        => "(" + f(lhs) + " <= " + f(rhs) + ")"
+      case GreaterThan(lhs, rhs)           => "(" + f(lhs) + " > " + f(rhs) + ")"
+      case GreaterThanEquals(lhs, rhs)     => "(" + f(lhs) + " >= " + f(rhs) + ")"
+      case Equals(lhs, rhs)                => "(" + f(lhs) + " == " + f(rhs) + ")"
+      case NotEquals(lhs, rhs)             => "(" + f(lhs) + " != " + f(rhs) + ")"
+      case Instance(expr, id)              => "(" + f(expr) + " inst " + f(id) + ")"
+      case As(expr, tpe)                   => "(" + f(expr) + " as " + f(tpe) + ")"
+      case Not(expr)                       => "!(" + f(expr) + ")"
+      case Negation(expr)                  => "-(" + f(expr) + ")"
+      case LogicNot(expr)                  => "~(" + f(expr) + ")"
+      case ArrayRead(arr, index)           => f(arr) + "[" + f(index) + "]"
+      case ArrayLength(arr)                => f(arr) + ".length"
+      case FieldRead(obj, id)              => f(obj) + "." + f(id)
+      case FieldAssign(obj, id, expr)      => f(obj) + "." + f(id) + " = " + f(expr)
+      case MethodCall(obj, meth, args)     => f(obj) + "." + f(meth) + "(" + commaList(args) + ")"
+      case IntLit(value)                   => value.toString
+      case LongLit(value)                  => value.toString + "L"
+      case FloatLit(value)                 => value.toString + "F"
+      case DoubleLit(value)                => value.toString
+      case CharLit(value)                  => "'" + escapeJava("" + value) + "'"
+      case StringLit(value)                => "\"" + escapeJava(value) + "\""
+      case True()                          => "true"
+      case False()                         => "false"
+      case id@Identifier(value)            => value + symbol(id)
+      case id@ClassIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "<" + commaList(list) + ">" else "")
+      case This()                          => "this"
+      case NewArray(tpe, size)             => "new " + f(tpe) + "[" + f(size) + "]"
+      case New(tpe, exprs)                 => "new " + f(tpe) + "(" + commaList(exprs) + ")"
+      case PreIncrement(id)                => "++" + f(id)
+      case PostIncrement(id)               => f(id) + "++"
+      case PreDecrement(id)                => "--" + f(id)
+      case PostDecrement(id)               => f(id) + "--"
+      case Ternary(condition, thn, els)    => f(condition) + " ? " + f(thn) + " : " + f(els)
     }
     s
   }
 
-  private def definition(a: Accessability) = a match {
-    case Private   => "def"
-    case Public    => "Def"
-    case Protected => "def protected"
+  private def definition(modifiers: Set[Modifier]) = {
+    val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
+      case Private   => "def"
+      case Public    => "Def"
+      case Protected => "def protected"
+    }
+
+    decl + staticModifier(modifiers)
   }
 
-  private def varDecl(a: Accessability) = a match {
-    case Private   => "var"
-    case Public    => "Var"
-    case Protected => "var protected"
+  private def varDecl(modifiers: Set[Modifier]) = {
+
+    val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
+      case Private   => "var"
+      case Public    => "Var"
+      case Protected => "var protected"
+    }
+
+    decl + staticModifier(modifiers)
+  }
+
+  private def staticModifier(modifiers: Set[Modifier]) = {
+    modifiers.find(_ == Static) match {
+      case Some(_) => " static"
+      case _       => ""
+    }
   }
 
   private def pos(t: Tree): String = "[" + t.line + ", " + t.col + "]"

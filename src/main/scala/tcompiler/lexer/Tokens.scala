@@ -103,6 +103,7 @@ object Tokens {
   case object PROTECTED extends TokenKind // protected
   case object PUBVAR extends TokenKind // Var
   case object PRIVVAR extends TokenKind // var
+  case object STATIC extends TokenKind // static
   case object UNIT extends TokenKind // unit
   case object MAIN extends TokenKind // main
   case object STRING extends TokenKind // string

@@ -8,9 +8,7 @@ class Vector<T> {
 	var size: Int = 0;
 	var data: T[];
 
-	Def new() = {
-		Clear();
-	}
+	Def new() = { Clear(); }
 
 	Def new(initSize: Int, value: T) = {
 		var i: Int;
@@ -22,6 +20,54 @@ class Vector<T> {
 
 	Def new(list: Vector<T>) = {
 		AddAll(list);
+	}
+
+	Def [](index: Int): Option<T> = {
+		var res: Option<T> = new Option<T>();
+		if(!indexInRange(index))
+			return res;
+
+		res.Add(data[index]);
+		return res;
+	}
+
+	Def []=(index: Int, value: T): Unit = {
+		if(!indexInRange(index))
+			return;
+
+		data[index] = value;
+	}
+
+	Def ==(lhs: Vector<T>, rhs: Vector<T>): Bool = {
+		var lhsIt:  VectorIterator<T>;
+		var rhsIt:  VectorIterator<T>;
+
+		if(lhs.size != rhs.size)
+			return false;
+
+		lhsIt = lhs.Iterator();
+		rhsIt = rhs.Iterator();
+		while(lhsIt.HasNext()){
+			if(lhsIt.Next() != rhsIt.Next())
+				return false;
+		}
+
+		return true;
+	}
+
+	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
+		lhs.Push(rhs);
+		return lhs;
+	}
+
+	Def +(lhs: Vector<T>, rhs: Vector<T>): Vector<T> = {
+		lhs.AddAll(rhs);
+		return lhs;
+	}
+
+	Def -(lhs: Vector<T>, rhs: T): Vector<T> = {
+		lhs.Remove(rhs);
+		return lhs;
 	}
 
     Def NonEmpty(): Bool = {
@@ -104,7 +150,7 @@ class Vector<T> {
 		return true;
 	}
 
-	Def Remove(index: Int): Bool = {
+	Def RemoveIndex(index: Int): Bool = {
 		var i: Int;
 
 		if(!indexInRange(index))
@@ -117,50 +163,19 @@ class Vector<T> {
 		return true;
 	}
 
-	Def [](index: Int): Option<T> = {
+	Def Remove(value: T): Bool = {
+		var index: Int = IndexOf(value);
+		if(index != -1)
+			return RemoveIndex(index);
 
-	}
-
-	Def []=(index: Int): Bool = {
-
-	}
-
-	Def +(rhs: Vector<T>, lhs: Vector<T>): Vector<T> = {
-
-	}
-
-	Def ++(value: Vector<T>): Vector<T> = {
-
-	}
-
-	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
-		lhs.Push(rhs);
-		return lhs;
-	}
-
-	Def Get(index: Int): Option<T> = {
-		var res: Option<T> = new Option<T>();
-		if(!indexInRange(index))
-			return res;
-
-		res.Add(data[index]);
-		return res;
-	}
-
-	Def Set(index: Int, value: T): Bool = {
-		if(!indexInRange(index))
-			return false;
-
-		data[index] = value;
-		return true;
+		return false;
 	}
 
 	Def IndexOf(value: T): Int = {
 		var i: Int;
 		for(i = 0; i < size; i++){
-			if(data[i].Equals(value)){
+			if(data[i] == value)
 				return i;
-			}
 		}
 		return -1;
 	}
@@ -169,7 +184,7 @@ class Vector<T> {
 		var i: Int;
 		var res: Int = -1;
 		for(i = 0; i < size; i++){
-			if(data[i].Equals(value)){
+			if(data[i] == value){
 				res = -1;
 			}
 		}
@@ -179,6 +194,18 @@ class Vector<T> {
 	Def Contains(value: T): Bool = {
 		return IndexOf(value) != -1;
 	}
+
+	Def Size(): Int = {
+		return size;
+	}
+
+	Def First(): Option<T> = {
+		return this[0];
+	}
+
+	Def Last(): Option<T> = {
+    	return this[size - 1];
+    }
 
     Def toString(): String = {
 		var it: VectorIterator<T>;
@@ -197,38 +224,8 @@ class Vector<T> {
 		return s;
     }
 
-	Def Size(): Int = {
-		return size;
-	}
-
-	Def First(): Option<T> = {
-		return Get(0);
-	}
-
-	Def Last(): Option<T> = {
-    	return Get(size - 1);
-    }
-
-	Def Equals(other: Vector<T>): Bool = {
-		var thisIt:  VectorIterator<T>;
-		var otherIt: VectorIterator<T>;
-		var done:	 Bool;
-
-		if(size != other.size)
-			return false;
-
-		thisIt = Iterator();
-		otherIt = other.Iterator();
-		while(thisIt.HasNext()){
-			if(!thisIt.Next().Equals(otherIt.Next()))
-				return false;
-		}
-
-		return true;
-	}
-
 	def indexInRange(index: Int): Bool = {
-		return index >= 0 || index < size;
+		return index >= 0 && index < size;
 	}
 
 	def increaseStorage(): Unit = {
@@ -259,6 +256,6 @@ class VectorIterator<T> {
 
 	Def Next(): T = {
 		hasNext = current < vector.Size() - 1;
-		return vector.Get(current++).Value();
+		return vector[current++].Value();
 	}
 }

@@ -26,6 +26,6 @@ class Option<T> {
 	}
 
 	Def toString(): String = {
-		return isDefined ? "Some(" + value.toString() + ")" : "None";
+		return isDefined ? "Some(" + value + ")" : "None";
 	}
 }

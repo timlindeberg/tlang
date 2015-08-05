@@ -20,6 +20,55 @@ class LinkedList<T> {
 		AddAll(list);
 	}
 
+	Def [](index: Int): Option<T> = {
+		var res:  Option<T>       = new Option<T>();
+		var node: Option<Node<T>> = find(index);
+
+		if(node.IsDefined()){
+			res.Add(node.Value().Value);
+		}
+		return res;
+	}
+
+	Def []=(index: Int, value: T): Unit = {
+		var node: Option<Node<T>> = find(index);
+
+		if(node.IsDefined())
+			node.Value().Value = value;
+	}
+
+	Def ==(lhs: LinkedList<T>, rhs: LinkedList<T>): Bool = {
+		var lhsIt:  LinkedListIterator<T>;
+		var rhsIt:  LinkedListIterator<T>;
+
+		if(lhs.size != rhs.size)
+			return false;
+
+		lhsIt = lhs.Iterator();
+		rhsIt = rhs.Iterator();
+		while(lhsIt.HasNext()){
+			if(lhsIt.Next() != rhsIt.Next())
+				return false;
+		}
+
+		return true;
+	}
+
+	Def +(lhs: LinkedList<T>, rhs: T): LinkedList<T> = {
+		lhs.Push(rhs);
+		return lhs;
+	}
+
+	Def +(lhs: LinkedList<T>, rhs: LinkedList<T>): LinkedList<T> = {
+		lhs.AddAll(rhs);
+		return lhs;
+	}
+
+	Def -(lhs: LinkedList<T>, rhs: T): LinkedList<T> = {
+		lhs.Remove(rhs);
+		return lhs;
+	}
+
     Def NonEmpty(): Bool = {
         return size != 0;
     }
@@ -34,8 +83,8 @@ class LinkedList<T> {
         size = 0;
 	}
 
-	Def Iterator(): ListIterator<T> = {
-		return new ListIterator<T>(this);
+	Def Iterator(): LinkedListIterator<T> = {
+		return new LinkedListIterator<T>(this);
 	}
 
 	Def Push(value: T): Unit = {
@@ -59,7 +108,7 @@ class LinkedList<T> {
 		    return res;
 
 		res.Add(last.Value().Value);
-		Remove(size - 1);
+		RemoveIndex(size - 1);
 		return res;
 	}
 
@@ -102,14 +151,14 @@ class LinkedList<T> {
 		return true;
 	}
 
-    Def AddAll(other: LinkedList<T>): Unit = {
-    	var it: ListIterator<T> = list.Iterator();
+    Def AddAll(list: LinkedList<T>): Unit = {
+    	var it: LinkedListIterator<T> = list.Iterator();
     	while(it.HasNext())
     		Push(it.Next());
     }
 
 	Def AddAll(index: Int, list: LinkedList<T>): Bool = {
-		var it: ListIterator<T> = list.Iterator();
+		var it: LinkedListIterator<T> = list.Iterator();
 
 		while(it.HasNext()){
 			if(!Add(index, it.Next()))
@@ -119,7 +168,15 @@ class LinkedList<T> {
 		return true;
 	}
 
-	Def Remove(index: Int): Bool = {
+	Def Remove(value: T): Bool = {
+		var index: Int = IndexOf(value);
+		if(index != -1)
+			return RemoveIndex(index);
+
+		return false;
+	}
+
+	Def RemoveIndex(index: Int): Bool = {
 		var node: 	Option<Node<T>>;
 		var next:	Option<Node<T>>;
 		var prev:	Option<Node<T>>;
@@ -153,32 +210,12 @@ class LinkedList<T> {
 		return true;
 	}
 
-	Def Get(index: Int): Option<T> = {
-		var res:  Option<T>       = new Option<T>();
-		var node: Option<Node<T>> = find(index);
-
-		if(node.IsDefined()){
-			res.Add(node.Value().Value);
-		}
-		return res;
-	}
-
-	Def Set(index: Int, value: T): Bool = {
-		var node: Option<Node<T>> = find(index);
-
-		if(node.IsDefined()){
-			node.Value().Value = value;
-			return true;
-		}
-		return false;
-	}
-
 	Def IndexOf(value: T): Int = {
 		var i: 	   Int;
-		var it:	   ListIterator<T> = Iterator();
+		var it:	   LinkedListIterator<T> = Iterator();
 
 		while(it.HasNext()){
-			if(it.Next().Equals(value))
+			if(it.Next() == value)
 				return i;
 			i++;
 		}
@@ -188,10 +225,10 @@ class LinkedList<T> {
 	Def LastIndexOf(value: T): Int = {
 		var index: Int = -1;
 		var i: 	   Int;
-		var it:	   ListIterator<T> = Iterator();
+		var it:	   LinkedListIterator<T> = Iterator();
 
 		while(it.HasNext()){
-			if(it.Next().Equals(value))
+			if(it.Next() == value)
 				index = i;
 			i++;
 		}
@@ -203,7 +240,7 @@ class LinkedList<T> {
 	}
 
     Def toString(): String = {
-        var it: ListIterator<T>;
+        var it: LinkedListIterator<T>;
         var s: 	String;
         
         if(size == 0)
@@ -223,24 +260,6 @@ class LinkedList<T> {
 		return size;
 	}
 
-	Def Equals(other: LinkedList<T>): Bool = {
-		var thisIt:  ListIterator<T>;
-		var otherIt: ListIterator<T>;
-		var done:	 Bool;
-
-        if(size != other.size)
-            return false;
-
-		thisIt = Iterator();
-		otherIt = other.Iterator();
-        while(thisIt.HasNext()){
-            if(!thisIt.Next().Equals(otherIt.Next()))
-                return false;
-        }
-
-		return true;
-	}
-
 	Def first(): Option<Node<T>> = {
 		return first;
 	}
@@ -253,7 +272,7 @@ class LinkedList<T> {
 		var tmp: 	Option<Node<T>>;
 		var i: 		Int;
 
-		if(index < 0 || index >= size)
+		if(!indexInRange(index))
 			return new Option<Node<T>>();
 		if(index == 0)
 			return first;
@@ -277,6 +296,10 @@ class LinkedList<T> {
 		}
 
 		return tmp;
+	}
+
+	def indexInRange(index: Int): Bool = {
+		return index >= 0 && index < size;
 	}
 }
 
@@ -314,7 +337,7 @@ class Node<T> {
 	}
 }
 
-class ListIterator<T> {
+class LinkedListIterator<T> {
 	var current: Node<T>;
 	var hasNext: Bool;
 
@@ -329,7 +352,7 @@ class ListIterator<T> {
 	}
 
 	Def Next(): T = {
-		var res: T = current.Data;
+		var res: T = current.Value;
 
 		hasNext = current.Next().IsDefined();
 		if(hasNext){

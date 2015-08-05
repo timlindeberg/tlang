@@ -41,6 +41,9 @@ class H {
 
     println(~a); // res: -2
     println(!a); // res: true
+
+    println(a[1]); // res: 2
+    println(a[1] = 2); // res: 2
   }
 
 }
@@ -50,6 +53,10 @@ class A {
     Var I: Int;
 
     Def new(i: Int) = { I = i; }
+
+
+    Def [](index: Int): Int = { return I + index; }
+    Def []=(index: Int, value: Int): Unit = { I = index + value; }
 
     // Binary operators
     Def +(a: A, b: A): Int = { return a.I + b.I; }
@@ -61,19 +68,19 @@ class A {
     // Logical operators
     Def &(a: A, b: A): Int = { return a.I & b.I; }
     Def |(a: A, b: A): Int = { return a.I | b.I; }
-    Def ^(a: A, b: A): Int = { return a.I ^ b.I;}
+    Def ^(a: A, b: A): Int = { return a.I ^ b.I; }
 
     // Shift operators
     Def <<(a: A, shift: Int): Int = { return a.I << shift; }
     Def >>(a: A, shift: Int): Int = { return a.I >> shift; }
 
     // Comparisons
-    Def <(a: A, b: A): Bool = { return a.I < b.I; }
+    Def <(a: A, b: A):  Bool = { return a.I <  b.I; }
     Def <=(a: A, b: A): Bool = { return a.I <= b.I; }
-    Def >(a: A, b: A): Bool = { return a.I > b.I; }
+    Def >(a: A, b: A):  Bool = { return a.I >  b.I; }
     Def >=(a: A, b: A): Bool = { return a.I >= b.I; }
 
-    // Equlity
+    // Equality
     Def ==(a: A, b: A): Bool = { return a.I == b.I; }
     Def !=(a: A, b: A): Bool = { return a.I != b.I; }
 

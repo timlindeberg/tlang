@@ -18,7 +18,7 @@ object ASTPrinterWithSymbols {
       case GenericImport(identifiers) => f(identifiers)
       case MainObject(id, stats) => f(id) + "," + f(stats)
       case ClassDecl(id, parent, vars, methods) => f(id) + "," + f(parent) + "," + f(vars) + "," + f(methods)
-      case VarDecl(tpe, id, init) => f(tpe) + "," + f(id) + "," + init
+      case VarDecl(tpe, id, init, modifiers) => f(tpe) + "," + f(id) + "," + f(init) + "," + f(modifiers)
       case MethodDecl(retType, id, args, vars, stats, access) => f(retType) + "," + f(id) + "," + f(args) + "," + f(vars) + "," + f(stats) + "," + f(access)
       case Formal(tpe, id) => f(tpe) + "," + f(id)
       case Block(stats) => f(stats)
@@ -63,6 +63,6 @@ object ASTPrinterWithSymbols {
   }
 
   private def f(t: Option[Tree]): String = t match { case Some(p) => "Some(" + f(p) + ")" case None => "None" }
-  private def f(trees: List[Tree]): String = "List(" + trees.map(f).mkString(",") + ")"
+  private def f(trees: Iterable[Tree]): String = "List(" + trees.map(f).mkString(",") + ")"
 
 }

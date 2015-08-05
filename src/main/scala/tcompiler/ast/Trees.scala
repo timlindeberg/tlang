@@ -10,7 +10,7 @@ object Trees {
   trait Tree extends Positioned with Product
 
 
-  case class Program(progPackage: Option[Package], imports: List[Import], main: Option[MainObject], var classes: List[ClassDecl]) extends Tree {
+  case class Program(progPackage: Option[Package], var imports: List[Import], main: Option[MainObject], var classes: List[ClassDecl]) extends Tree {
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
   }
 
@@ -34,61 +34,63 @@ object Trees {
   }
 
   trait ClassDecl extends Tree with Symbolic[ClassSymbol] {
-    var id     : ClassIdentifier
-    var parent : Option[ClassIdentifier]
-    val vars   : List[VarDecl]
+    var id: ClassIdentifier
+    var parent: Option[ClassIdentifier]
+    val vars: List[VarDecl]
     val methods: List[FuncTree]
+  }
+
+  trait Modifiable {
+    val modifiers: Set[Modifier]
+
+    def isStatic = modifiers.contains(Static)
+
+    def accessability = modifiers.find(_.isInstanceOf[Accessability]).get.asInstanceOf[Accessability]
+
   }
 
   case class InternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
   case class ExternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
-  case class VarDecl(var tpe: TypeTree, var id: Identifier, init: Option[ExprTree], access: Accessability) extends Tree with Symbolic[VariableSymbol]
+  case class VarDecl(var tpe: TypeTree, var id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) extends Tree with Symbolic[VariableSymbol] with Modifiable
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
-  trait Accessability extends Tree
+  trait Modifier extends Tree
+
+  trait Accessability extends Modifier
 
   case object Public extends Accessability
   case object Private extends Accessability
   case object Protected extends Accessability
 
-  trait FuncTree extends Tree with Symbolic[MethodSymbol] {
-    var id    : Identifier
-    var args  : List[Formal]
-    var vars  : List[VarDecl]
-    val stats : List[StatTree]
-    val access: Accessability
+  case object Static extends Modifier
+
+  trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
+    var id: Identifier
+    var args: List[Formal]
+    var vars: List[VarDecl]
+    val stats: List[StatTree]
+    val modifiers: Set[Modifier]
 
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
-  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], access: Accessability, var id: Identifier = new Identifier("")) extends FuncTree
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier]) extends FuncTree
+  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier]) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
-    def name: String = this match {
-      case ClassIdentifier(value, _) => value
-      case ArrayType(tpe)            => tpe.name + "[]"
-      case IntType()                 => "Int"
-      case LongType()                => "Long"
-      case FloatType()               => "Float"
-      case DoubleType()              => "Double"
-      case BooleanType()             => "Bool"
-      case CharType()                => "Char"
-      case StringType()              => "String"
-      case UnitType()                => "Unit"
-    }
+    def name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree
-  case class IntType() extends TypeTree
-  case class LongType() extends TypeTree
-  case class FloatType() extends TypeTree
-  case class DoubleType() extends TypeTree
-  case class BooleanType() extends TypeTree
-  case class CharType() extends TypeTree
-  case class StringType() extends TypeTree
-  case class UnitType() extends TypeTree
+  case class ArrayType(var tpe: TypeTree) extends TypeTree { def name = tpe.name + "[]"}
+  case class IntType() extends TypeTree  { def name = "Int" }
+  case class LongType() extends TypeTree { def name = "Long" }
+  case class FloatType() extends TypeTree { def name = "Float" }
+  case class DoubleType() extends TypeTree { def name = "Double" }
+  case class BooleanType() extends TypeTree { def name = "Bool" }
+  case class CharType() extends TypeTree { def name = "Char" }
+  case class StringType() extends TypeTree { def name = "String" }
+  case class UnitType() extends TypeTree { def name = "Unit" }
 
   trait StatTree extends Tree
 
@@ -149,6 +151,7 @@ object Trees {
       case ms: MethodSymbol   => ms.getType
       case es: ErrorSymbol    => TError
     }
+
     override def setType(tpe: Type) = {
       getSymbol.setType(tpe)
       this
@@ -157,7 +160,9 @@ object Trees {
 
   case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
     val StartEndSign = "-"
-    val Seperator    = "$"
+    val Seperator = "$"
+
+    def name = value
 
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
@@ -171,8 +176,11 @@ object Trees {
       getSymbol.setType(tpe)
       this
     }
+
     def isTemplated = templateTypes.nonEmpty
+
     def templatedClassName: String = templatedClassName(templateTypes)
+
     def templatedClassName(templateTypes: List[TypeTree]): String = {
       val tTypes = templateTypes.map {
         case x: ClassIdentifier if x.isTemplated => x.templatedClassName
@@ -200,6 +208,7 @@ object Trees {
 
   def operatorString(operatorSymbol: OperatorSymbol): String =
     operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType))
+
   def operatorString(exprTree: ExprTree, args: List[Type]): String = {
     exprTree match {
       case _: Plus              => args(0) + " + " + args(1)
@@ -223,8 +232,47 @@ object Trees {
       case _: PreIncrement      => "++" + args(0)
       case _: PostIncrement     => args(0) + "++"
       case _: PreDecrement      => "--" + args(0)
+      case _: ArrayRead         => "[" + args(0) + "]"
+      case _: ArrayAssign       => "[" + args(0) + "]= " + args(1)
     }
   }
+
+  def operatorString(exprTree: ExprTree): String = exprTree match {
+    case _: Plus              => "+"
+    case _: Minus             => "-"
+    case _: Times             => "*"
+    case _: Div               => "/"
+    case _: Modulo            => "%"
+    case _: LogicAnd          => "&"
+    case _: LogicOr           => "|"
+    case _: LogicXor          => "^"
+    case _: LeftShift         => "<<"
+    case _: RightShift        => ">>"
+    case _: LessThan          => "<"
+    case _: LessThanEquals    => "<="
+    case _: GreaterThan       => ">"
+    case _: GreaterThanEquals => ">="
+    case _: Equals            => "=="
+    case _: NotEquals         => "!="
+    case _: LogicNot          => "~"
+    case _: Not               => "!"
+    case _: PreIncrement      => "++"
+    case _: PostIncrement     => "++"
+    case _: PreDecrement      => "--"
+    case _: ArrayRead         => "[]"
+    case _: ArrayAssign       => "[]="
+  }
+
+  def isStaticCall(obj: ExprTree) =
+    obj match {
+      case id@Identifier(name) =>
+        id.getSymbol match {
+          case _: ClassSymbol => true
+          case _              => false
+        }
+      case _                   => false
+    }
+
 
   def traverse(t: Product, f: (Product, Product) => Any): Unit = {
     def trav(parent: Product, current: Product, f: (Product, Product) => Any): Unit = {
