@@ -1,1 +1,1 @@
-PrintObject test case.
+Crash on empty method. Fix: fix peek method in Cafebabe

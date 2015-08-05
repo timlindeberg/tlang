@@ -9,28 +9,24 @@ import org.apache.commons.lang3.StringEscapeUtils._
 
 object Printer {
 
-  var indent: Int = 0
-  var printIdNumber = false
+  private var indent: Int = 0
+  private var printIdNumber = false
 
-  def l: String = {
+  private def l: String = {
     indent += 1
     "{" + n
   }
 
-  def r: String = {
+  private def r: String = {
     indent -= 1
     n + "}"
   }
 
-  def n: String = "\n" + " " * (2 * indent)
-
-  def symbol[T <: Symbol](t: Symbolic[T]): String =
-    if (printIdNumber)
-      if (t.hasSymbol) "[" + t.getSymbol.getType + "]" else "??"
-    else ""
+  private def n: String = "\n" + " " * (2 * indent)
 
   def apply(t: Tree, printIdNumber: Boolean = false): String = {
     this.printIdNumber = printIdNumber
+    indent = 0
     f(t)
   }
 
@@ -119,6 +115,11 @@ object Printer {
     s
   }
 
+  private def symbol[T <: Symbol](t: Symbolic[T]): String =
+    if (printIdNumber)
+      if (t.hasSymbol) "[" + t.getSymbol.getType + "]" else "??"
+    else ""
+
   private def definition(modifiers: Set[Modifier]) = {
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
       case Private   => "def"
@@ -147,8 +148,6 @@ object Printer {
     }
   }
 
-  private def pos(t: Tree): String = "[" + t.line + ", " + t.col + "]"
-
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
 
   private def forAssign(list: List[Assign]) = list.map(a => a.id.value + " = " + f(a.expr)).mkString(", ")
@@ -167,10 +166,5 @@ object Printer {
     list.map(statement).mkString
 
   private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
-
-  private def typeOf(t: Tree): String = t match {
-    case typed: Typed => "[" + typed.getType + "]"
-    case _            => ""
-  }
 
 }

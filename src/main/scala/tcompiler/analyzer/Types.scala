@@ -2,7 +2,7 @@ package tcompiler
 package analyzer
 
 import Symbols._
-import tcompiler.code.CodeGeneration
+import tcompiler.code.{CodeGenerator, CodeGeneration}
 
 object Types {
 
@@ -139,7 +139,7 @@ object Types {
 
     override def toString = classSymbol.name
     override def byteCodeName: String = {
-      val name = if (this == anyObject) CodeGeneration.OBJECT else classSymbol.name
+      val name = if (this == anyObject) CodeGenerator.JavaObject else classSymbol.name
       "L" + name + ";"
     }
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name

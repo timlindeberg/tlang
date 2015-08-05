@@ -82,14 +82,14 @@ object Symbols {
       operators.find(symbol => {
         sameOperatorType(operatorType, symbol.operatorType) &&
           args.size == symbol.argList.size &&
-          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
+          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
       })
 
     private def findMethod(name: String, args: List[Type]) = {
       methods.find(symbol => {
         name == symbol.name &&
           args.size == symbol.argList.size &&
-          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg2.isSubTypeOf(arg1) }
+          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
       })
     }
 
