@@ -457,16 +457,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
   private def correctOperatorType(expr: ExprTree, args: List[Type], expectedType: Option[Type], found: Type): Type =
     expectedType match {
       case Some(expected) =>
-        if (found != expected) operatorReturnTypeError(expr, args, expected, found)
+        if (found != expected)
+          ErrorOperatorWrongReturnType(Trees.operatorString(expr, args), expected.toString, found.toString, expr)
         else found
       case _              => found
     }
-
-  private def operatorReturnTypeError(expr: ExprTree, args: List[Type], expected: Type, found: Type) =
-    if (found == TUntyped)
-      found
-    else
-      ErrorOperatorWrongReturnType(Trees.operatorString(expr, args), expected.toString, found.toString, expr)
 
   private def checkStaticMethodConstraints(obj: ExprTree, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {
     if (!methodSymbol.isStatic && isStaticCall(obj))

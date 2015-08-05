@@ -560,7 +560,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileExpr(size)
         tpe.getType.codes.newArray(ch)
 
-      case ast.Trees.New(tpe, args) =>
+      case ast.Trees.New(tpe, args)     =>
         val codes = tpe.getType.codes
         val obj = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
         ch << cafebabe.AbstractByteCodes.New(obj)
@@ -569,13 +569,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
         val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
         ch << InvokeSpecial(obj, CodeGenerator.ConstructorName, signature)
-      case Negation(expr)           =>
+      case Negation(expr)               =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, expression, x)
           case _          => expr.getType.codes.negation(ch)
         }
-      case LogicNot(expr)           =>
+      case LogicNot(expr)               =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, expression, x)
@@ -583,84 +583,41 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
         }
-      // TODO: Fix post/pre increment for objects. Currently they work the same way.
-      case PreIncrement(id)             =>
-        id.getType match {
-          case TInt       =>
-            ch << IInc(variableMap(id.value), 1)
-            if (duplicate)
-              load(id)
-          case x: TObject => store(id, () => {
-            load(id)
-            compileOperatorCall(ch, expression, x)
-          }, duplicate)
-          case _          => store(id, () => {
-            load(id)
-            val codes = id.getType.codes
-            codes.one(ch)
-            codes.add(ch)
-          }, duplicate)
+      case IncrementDecrement(id)       =>
+        val isPre = expression match {
+          case _: PreIncrement | _: PreDecrement => true
+          case _                                 => false
         }
-      case PreDecrement(id)             =>
-        id.getType match {
-          case TInt       =>
-            ch << IInc(variableMap(id.value), -1)
-            if (duplicate)
-              load(id)
-          case x: TObject => store(id, () => {
-            load(id)
-            compileOperatorCall(ch, expression, x)
-          }, duplicate)
-          case _          => store(id, () => {
-            load(id)
-            val codes = id.getType.codes
-            codes.one(ch)
-            codes.sub(ch)
-          }, duplicate)
+        val isIncrement = expression match {
+          case _: PreIncrement | _: PostIncrement => true
+          case _                                  => false
         }
-      case PostIncrement(id)            =>
+        val isLocal = variableMap.contains(id.value)
         val codes = id.getType.codes
 
         id.getType match {
-          case TInt       =>
-            if (duplicate)
+          case TInt if isLocal =>
+            if (!isPre && duplicate)
               load(id)
-            ch << IInc(variableMap(id.value), 1)
-          case x: TObject => store(id, () => {
-            load(id)
-            compileOperatorCall(ch, expression, x)
-            if (duplicate)
-              codes.dup(ch)
-          })
-          case _          => store(id, () => {
-            load(id)
-            if (duplicate)
-              codes.dup(ch)
-            codes.one(ch)
-            codes.add(ch)
-          })
-        }
-      case PostDecrement(id)            =>
-        val codes = id.getType.codes
-
-        id.getType match {
-          case TInt       =>
-            if (duplicate)
+            ch << IInc(variableMap(id.value), if (isIncrement) 1 else -1)
+            if (isPre && duplicate)
               load(id)
-            ch << IInc(variableMap(id.value), -1)
-          case x: TObject => store(id, () => {
-            load(id)
-            compileOperatorCall(ch, expression, x)
-            if (duplicate)
-              codes.dup(ch)
-          })
-          case _          => store(id, () => {
-            load(id)
-            if (duplicate)
-              codes.dup(ch)
-            codes.one(ch)
-            codes.sub(ch)
-          })
+          case x: TObject      =>
+            // TODO: Fix post/pre increment for objects. Currently they work the same way.
+            store(id, () => {
+              load(id)
+              compileOperatorCall(ch, expression, x)
+            }, duplicate)
+          case _               =>
+            store(id, () => {
+              load(id)
+              if (!isPre && duplicate) {
+                if (isLocal) codes.dup(ch)
+                else codes.dup_x1(ch)
+              }
+              codes.one(ch)
+              if (isIncrement) codes.add(ch) else codes.sub(ch)
+            }, duplicate && isPre)
         }
       case Ternary(condition, thn, els) =>
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
@@ -819,7 +776,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           codes.dup_x1(ch) // this value -> value this value
         ch << PutStatic(className, name, tp.byteCodeName)
       } else {
-        ch << ArgLoad(0) // put reference on the stack, default value is this pointer
+        ch << ArgLoad(0) // put this reference on stack
         put()
         if (duplicate)
           codes.dup_x1(ch) // this value -> value this value

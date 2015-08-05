@@ -3,6 +3,10 @@ main Main = {
 }
 
 class H {
+  
+  Var M: Int = 0;
+  Var N: Int = 0;
+
   Def run(): Unit = {
     var i: Int = 0;
     var j: Int = 0;
@@ -38,6 +42,21 @@ class H {
     println(l); // res: 0.0
     k++;
     println(k); // res: 1.0
+
+    M = N++;
+    println(N); // res: 1
+    println(M); // res: 0
+    M = N--;
+    println(N); // res: 0
+    println(M); // res: 1
+    M = --N;
+    println(N); // res: -1
+    println(M); // res: -1
+    M = ++N;
+    println(N); // res: 0
+    println(M); // res: 0
+    N++;
+    println(N); // res: 1
   }
 
 }

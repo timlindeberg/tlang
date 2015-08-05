@@ -94,7 +94,6 @@ object Types {
   }
 
   case object TBool extends Type {
-
     override def toString = "Bool"
     override def byteCodeName: String = "Z"
     override val codes = BoolCodeMap
