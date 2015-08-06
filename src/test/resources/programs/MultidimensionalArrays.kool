@@ -4,7 +4,7 @@ main Main = {
 
 class H {
 
-   var arr: Int[][] = new Int[2][2];
+   var arrField: Int[][] = new Int[2][2];
 
   Def run(): Unit = {
      var intArray: Int[][][][] = new Int[1][2][3][4];
@@ -12,6 +12,11 @@ class H {
      var j: Int;
      var k: Int;
      var l: Int;
+
+     run(1,
+         2,
+         3,
+         4)
 
      println(intArray.length); // res: 1
      println(intArray[0].length); // res: 2
@@ -79,7 +84,7 @@ class H {
    }
 
    def getFieldArray(): Int[][] = {
-      return arr;
+      return arrField;
    }
 
 }

@@ -1,25 +1,25 @@
-package kool.std;
+package kool.std
 
-import java.lang.Math;
+import java.lang.Math
 
 class Vector3<T> {
 
-    Var X: T;
-    Var Y: T;
-    Var Z: T;
+    Var X: T
+    Var Y: T
+    Var Z: T
 
     //------------------------------------------------------
     // Constructors
     //------------------------------------------------------
 
     Def new(x: T, y: T, z: T) = {
-        X = x;
-        Y = y;
-        Z = z;
+        X = x
+        Y = y
+        Z = z
     }
 
     Def new(value: T) = {
-        X = Y = Z = value;
+        X = Y = Z = value
     }
 
     //------------------------------------------------------
@@ -27,47 +27,47 @@ class Vector3<T> {
     //------------------------------------------------------
 
     Def +(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
-        return new Vector3<T>(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
+        return new Vector3<T>(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z)
     }
 
     Def -(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
-        return new Vector3<T>(lhs.X - rhs.X, lhs.Y - rhs.Y, lhs.Z - rhs.Z);
+        return new Vector3<T>(lhs.X - rhs.X, lhs.Y - rhs.Y, lhs.Z - rhs.Z)
     }
 
     Def *(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
-        return new Vector3<T>(lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z);
+        return new Vector3<T>(lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z)
     }
 
     Def *(lhs: T, rhs: Vector3<T>): Vector3<T> = {
-        return new Vector3<T>(lhs * rhs.X, lhs * rhs.Y, lhs * rhs.Z);
+        return new Vector3<T>(lhs * rhs.X, lhs * rhs.Y, lhs * rhs.Z)
     }
 
     Def *(lhs: Vector3<T>, rhs: T): Vector3<T> = {
-        return rhs * lhs;
+        return rhs * lhs
     }
 
     Def /(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
-        return new Vector3<T>(lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z);
+        return new Vector3<T>(lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z)
     }
 
     Def /(lhs: Vector3<T>, rhs: T): Vector3<T> = {
-        return new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs);
+        return new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
     }
 
     Def ==(lhs: Vector3<T>, rhs: Vector3<T>): Bool = {
-        return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Z == rhs.Z;
+        return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Z == rhs.Z
     }
 
     Def !=(lhs: Vector3<T>, rhs: Vector3<T>): Bool = {
-        return !(lhs == rhs);
+        return !(lhs == rhs)
     }
 
     Def ^(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
-        return lhs.Cross(rhs);
+        return lhs.Cross(rhs)
     }
 
     Def |(lhs: Vector3<T>, rhs: Vector3<T>): T = {
-        return lhs.Dot(rhs);
+        return lhs.Dot(rhs)
     }
 
     //------------------------------------------------------
@@ -75,21 +75,21 @@ class Vector3<T> {
     //------------------------------------------------------
 
     Def static Angle(lhs: Vector3<T>, rhs: Vector3<T>): Double = {
-        return Math.acos(Dot(lhs, rhs) / (lhs.Magnitude() * rhs.Magnitude()));
+        return Math.acos(Dot(lhs, rhs) / (lhs.Magnitude() * rhs.Magnitude()))
     }
 
     Def static Distance(lhs: Vector3<T>, rhs: Vector3<T>): Double = {
-        return (lhs - rhs).Magnitude();
+        return (lhs - rhs).Magnitude()
     }
 
     Def static Dot(lhs: Vector3<T>, rhs: Vector3<T>): T = {
-        return lhs.X * rhs.X + lhs.Y * rhs.Y + lhs.Z * rhs.Z;
+        return lhs.X * rhs.X + lhs.Y * rhs.Y + lhs.Z * rhs.Z
     }
 
     Def static Cross(lhs: Vector3<T>, rhs: Vector3<T>): Vector3<T> = {
         return new Vector3<T>(lhs.Y * rhs.Z - lhs.Z * rhs.Y,
                               lhs.Z * rhs.X - lhs.X * rhs.Z,
-                              lhs.X * rhs.Y - lhs.Y * rhs.X);
+                              lhs.X * rhs.Y - lhs.Y * rhs.X)
     }
 
 
@@ -98,32 +98,32 @@ class Vector3<T> {
     //------------------------------------------------------
 
     Def Magnitude(): Double = {
-        return Math.sqrt(X * X + Y * Y + Z * Z);
+        return Math.sqrt(X * X + Y * Y + Z * Z)
     }
 
     Def Normalized(): Vector3<T> = {
-        return this / Magnitude();
+        return this / Magnitude()
     }
 
 
     Def Angle(other: Vector3<T>): Double = {
-        return Angle(this, other);
+        return Angle(this, other)
     }
 
     Def Distance(other: Vector3<T>): Double = {
-        return Distance(this, other);
+        return Distance(this, other)
     }
 
     Def Dot(other: Vector3<T>): T = {
-        return Dot(this, other);
+        return Dot(this, other)
     }
 
     Def Cross(other: Vector3<T>): Vector3<T> = {
-        return Cross(this, other);
+        return Cross(this, other)
     }
 
     Def toString(): String = {
-        return "(" + X + ", " + Y + ", " + Z + ")";
+        return "(" + X + ", " + Y + ", " + Z + ")"
     }
 
 }

@@ -8,28 +8,36 @@ import tcompiler.utils._
 
 import scala.collection.mutable.ArrayBuffer
 
-object Parser extends Pipeline[Iterator[Token], Program] {
+object Parser extends Pipeline[List[Token], Program] {
 
-  def run(ctx: Context)(tokens: Iterator[Token]): Program = {
-    val astBuilder = new ASTBuilder(ctx, tokens)
+  def run(ctx: Context)(tokens: List[Token]): Program = {
+
+    val astBuilder = new ASTBuilder(ctx, tokens.toArray)
     astBuilder.parseGoal()
   }
 
 }
 
 
-class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
+class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   import ctx.reporter._
 
-  private var currentToken: Token = new Token(BAD)
+  private var currentIndex = 0
+  private var currentToken: Token = tokens(currentIndex)
+
+  private def nextToken =
+    if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
+
+  private def nextTokenKind = nextToken.kind
+
+
 
   /**
    * <goal> ::= [ <mainObject> ] { <classDeclaration> } <EOF>
    */
   def parseGoal() = {
-    readToken()
-    val pos = currentToken
+    val pos = nextToken
     val pack = optional(packageDecl, PACKAGE)
     val imp = untilNot(importDecl, IMPORT)
     val main = optional(mainObject, MAIN)
@@ -41,9 +49,9 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <packageDecl> ::= package <identifier> { . <identifier> }
    */
   def packageDecl() = {
-    val pos = currentToken
+    val pos = nextToken
     val identifiers = nonEmptyList(identifier, DOT)
-    eat(SEMICOLON)
+    endStatement()
     Package(identifiers).setPos(pos)
   }
 
@@ -51,31 +59,33 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <importDecl> ::= import [ "<" ] <identifier> { . ( <identifier> | * ) } [ ">" ]
    */
   def importDecl(): Import = {
-    val pos = currentToken
+    val pos = nextToken
     eat(IMPORT)
     val ids = new ArrayBuffer[Identifier]()
 
-    if (currentToken.kind == LESSTHAN) {
+    if (nextTokenKind == LESSTHAN) {
       eat(LESSTHAN)
       ids += identifier()
-      while (currentToken.kind == DOT) {
+      while (nextTokenKind == DOT) {
         eat(DOT)
         ids += identifier()
       }
-      eat(GREATERTHAN, SEMICOLON)
+      eat(GREATERTHAN)
+      endStatement()
       return GenericImport(ids.toList).setPos(pos)
     }
     ids += identifier()
-    while (currentToken.kind == DOT) {
+    while (nextTokenKind == DOT) {
       eat(DOT)
-      currentToken.kind match {
+      nextTokenKind match {
         case TIMES =>
-          eat(TIMES, SEMICOLON)
+          eat(TIMES)
+          endStatement()
           return WildCardImport(ids.toList).setPos(pos)
         case _     => ids += identifier
       }
     }
-    eat(SEMICOLON)
+    endStatement()
     RegularImport(ids.toList).setPos(pos)
   }
 
@@ -83,7 +93,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <mainObject> ::= object <identifier> "{" def main (): Unit = "{" { <statement> } "}" "}"
    */
   def mainObject(): MainObject = {
-    val pos = currentToken
+    val pos = nextToken
     val id = identifier()
     eat(EQSIGN, LBRACE)
     val stmts = until(statement, RBRACE)
@@ -96,7 +106,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * [ extends <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
    */
   def classDeclaration(): ClassDecl = {
-    val pos = currentToken
+    val pos = nextToken
     eat(CLASS)
     val id = classTypeIdentifier()
     val parent = optional(classIdentifier, EXTENDS)
@@ -111,13 +121,13 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <varDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ] ";"
    */
   def varDeclaration(): VarDecl = {
-    val pos = currentToken
+    val pos = nextToken
     val mods = modifiers(PRIVVAR, PUBVAR)
     val id = identifier()
     eat(COLON)
     val typ = tpe()
     val init = optional(expression, EQSIGN)
-    eat(SEMICOLON)
+    endStatement()
     VarDecl(typ, id, init, mods).setPos(pos)
   }
 
@@ -125,7 +135,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <formal> ::= <identifier> ":" <tpe>
    */
   def formal(): Formal = {
-    val pos = currentToken
+    val pos = nextToken
     val id = identifier()
     eat(COLON)
     val typ = tpe()
@@ -136,9 +146,9 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <methodDeclaration> ::= (Def | def [ protected ] ) ( <constructor> | <binaryOperator> | <method> )
    */
   def methodDeclaration(className: String): FuncTree = {
-    val pos = currentToken
+    val pos = nextToken
     val mods = modifiers(PRIVDEF, PUBDEF)
-    val func = currentToken.kind match {
+    val func = nextTokenKind match {
       case IDKIND => method(mods)
       case NEW    => constructor(mods, className)
       case _      => operator(mods)
@@ -156,8 +166,8 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
     val args = commaList(formal)
     eat(RPAREN)
     eat(COLON)
-    val retType = if (currentToken.kind == UNIT) {
-      val pos = currentToken
+    val retType = if (nextTokenKind == UNIT) {
+      val pos = nextToken
       eat(UNIT)
       UnitType().setPos(pos)
     } else {
@@ -189,9 +199,9 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
    */
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
-    val pos = currentToken
+    val pos = nextToken
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
-      eat(currentToken.kind)
+      eat(nextTokenKind)
       val operatorType = constructor(Empty(), Empty())
       eat(LPAREN)
       val f1 = formal()
@@ -201,19 +211,19 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
     }
 
     def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
-      eat(currentToken.kind)
+      eat(nextTokenKind)
       val operatorType = constructor(Empty())
       eat(LPAREN)
       (operatorType, List(formal()), modifiers + Static)
     }
 
     def incrementDecrement(constructor: (Identifier) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
-      eat(currentToken.kind)
+      eat(nextTokenKind)
       eat(LPAREN)
       (constructor(new Identifier("")), List(formal()), modifiers + Static)
     }
 
-    val (operatorType, args, newModifiers) = currentToken.kind match {
+    val (operatorType, args, newModifiers) = nextTokenKind match {
       case PLUS              => binaryOperator(Plus)
       case MINUS             => binaryOperator(Minus)
       case TIMES             => binaryOperator(Times)
@@ -236,7 +246,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
       case DECREMENT         => incrementDecrement(PreDecrement)
       case LBRACKET          =>
         eat(LBRACKET, RBRACKET)
-        currentToken.kind match {
+        nextTokenKind match {
           case EQSIGN =>
             if (modifiers.contains(Static))
               ErrorStaticIndexingOperator("[]=", pos)
@@ -282,7 +292,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   def modifiers(priv: TokenKind, pub: TokenKind): Set[Modifier] = {
     val access = accessRights(priv, pub)
     var modifiers: Set[Modifier] = Set(access)
-    currentToken.kind match {
+    nextTokenKind match {
       case STATIC =>
         eat(STATIC)
         modifiers = modifiers + Static
@@ -295,8 +305,8 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }
    */
   def tpe(): TypeTree = {
-    val pos = currentToken
-    val tpe = currentToken.kind match {
+    val pos = nextToken
+    val tpe = nextTokenKind match {
       case INT     =>
         eat(INT)
         IntType()
@@ -322,7 +332,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
     }
     var e = tpe
     var dimension = 0
-    while (currentToken.kind == LBRACKET) {
+    while (nextTokenKind == LBRACKET) {
       e.setPos(pos)
       eat(LBRACKET, RBRACKET)
       e = ArrayType(e)
@@ -359,8 +369,8 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] }
    */
   def statement(): StatTree = {
-    val pos = currentToken
-    val tree = currentToken.kind match {
+    val pos = nextToken
+    val tree = nextTokenKind match {
       case LBRACE  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
@@ -383,7 +393,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
         // Initiation
         val init = commaList(() => {
           val id = identifier()
-          currentToken.kind match {
+          nextTokenKind match {
             case EQSIGN | PLUSEQ | MINUSEQ |
                  DIVEQ | MODEQ | ANDEQ | OREQ |
                  XOREQ | LEFTSHIFTEQ | RIGHTSHIFTEQ =>
@@ -396,7 +406,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
         val condition = expression()
         eat(SEMICOLON)
         // Incrementation
-        val post = commaList(() => currentToken.kind match {
+        val post = commaList(() => nextTokenKind match {
           case INCREMENT =>
             eat(INCREMENT)
             PreIncrement(identifier())
@@ -405,7 +415,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
             PreDecrement(identifier())
           case IDKIND    =>
             val id = identifier()
-            currentToken.kind match {
+            nextTokenKind match {
               case PLUSEQ | MINUSEQ | DIVEQ |
                    MODEQ | ANDEQ | OREQ | XOREQ |
                    LEFTSHIFTEQ | RIGHTSHIFTEQ =>
@@ -425,21 +435,23 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
       case PRINT   =>
         eat(PRINT, LPAREN)
         val expr = expression()
-        eat(RPAREN, SEMICOLON)
+        eat(RPAREN)
+        endStatement()
         Print(expr)
       case PRINTLN =>
         eat(PRINTLN, LPAREN)
         val expr = expression()
-        eat(RPAREN, SEMICOLON)
+        eat(RPAREN)
+        endStatement()
         Println(expr)
       case RETURN  =>
         eat(RETURN)
-        val expr = if (currentToken.kind != SEMICOLON) Some(expression()) else None
-        eat(SEMICOLON)
+        val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
+        endStatement()
         Return(expr)
       case _       =>
         val expr = expression()
-        eat(SEMICOLON)
+        endStatement()
         expr match {
           case stat: StatTree => stat
           case _              => FatalInvalidStatement(expr)
@@ -448,12 +460,22 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
     tree.setPos(pos)
   }
 
+  /**
+   * <endStatement> ::= ( ; | \n ) { ; | \n }
+   */
+  def endStatement(): Unit = currentToken.kind match {
+    case SEMICOLON | NEWLINE =>
+      readToken()
+      while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
+        readToken()
+    case _                   => FatalWrongToken(SEMICOLON, NEWLINE)
+  }
 
   /**
    * <expression> ::= <assignment>
    */
   def expression(): ExprTree = {
-    val pos = currentToken
+    val pos = nextToken
     assignment().setPos(pos)
   }
 
@@ -466,7 +488,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
     val e = if (expr.isDefined) expr.get else ternary()
 
     def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
-      eat(currentToken.kind)
+      eat(nextTokenKind)
 
       def assignmentExpr(expr: ExprTree) = if (constructor.isDefined) constructor.get(expr, expression()) else expression()
 
@@ -478,7 +500,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
       }
     }
 
-    currentToken.kind match {
+    nextTokenKind match {
       case EQSIGN       => assignment(None)
       case PLUSEQ       => assignment(Some(Plus))
       case MINUSEQ      => assignment(Some(Minus))
@@ -497,8 +519,8 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /** <ternary> ::= <or> [ ? <or> : <or> ] */
   def ternary() = {
     var e = or()
-    val pos = currentToken
-    if (currentToken.kind == QUESTIONMARK) {
+    val pos = nextToken
+    if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       val thn = or()
       eat(COLON)
@@ -529,7 +551,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /** <instOf> ::= <comparison> { inst <identifier> } */
   def instOf() = {
     var e = comparison()
-    while (currentToken.kind == INSTANCEOF) {
+    while (nextTokenKind == INSTANCEOF) {
       eat(INSTANCEOF)
       e = Instance(e, identifier())
     }
@@ -572,8 +594,8 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
      * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
      */
     def termFirst() = {
-      val pos = currentToken
-      val tree = currentToken.kind match {
+      val pos = nextToken
+      val tree = nextTokenKind match {
         case LPAREN        =>
           eat(LPAREN)
           val expr = expression()
@@ -626,7 +648,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
           stringLit()
         case IDKIND        =>
           val id = identifier()
-          currentToken.kind match {
+          nextTokenKind match {
             case INCREMENT =>
               eat(INCREMENT)
               PostIncrement(id)
@@ -666,10 +688,10 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
 
 
           def primitiveArray(construct: () => TypeTree) = {
-            eat(currentToken.kind)
+            eat(nextTokenKind)
             NewArray(construct(), sizes())
           }
-          currentToken.kind match {
+          nextTokenKind match {
             case INT     => primitiveArray(IntType)
             case LONG    => primitiveArray(LongType)
             case FLOAT   => primitiveArray(FloatType)
@@ -679,7 +701,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
             case BOOLEAN => primitiveArray(BooleanType)
             case _       =>
               val id = classIdentifier()
-              currentToken.kind match {
+              nextTokenKind match {
                 case LPAREN   =>
                   eat(LPAREN)
                   val args = commaList(expression)
@@ -704,20 +726,20 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
      * | as <tpe>
      */
     def termRest(lhs: ExprTree): ExprTree = {
-      val pos = currentToken
+      val pos = nextToken
       var e = lhs
       val tokens = List(DOT, LBRACKET, AS)
 
-      while (tokens.contains(currentToken.kind)) {
-        e = currentToken.kind match {
+      while (tokens.contains(nextTokenKind)) {
+        e = nextTokenKind match {
           case DOT      =>
             eat(DOT)
-            if (currentToken.kind == LENGTH) {
+            if (nextTokenKind == LENGTH) {
               eat(LENGTH)
               ArrayLength(e)
             } else {
               val id = identifier()
-              if (currentToken.kind == LPAREN) {
+              if (nextTokenKind == LPAREN) {
                 eat(LPAREN)
                 val exprs = commaList(expression)
                 eat(RPAREN)
@@ -750,10 +772,10 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    */
   private def leftAssociative(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
     var expr = next()
-    while (kinds.contains(currentToken.kind)) {
+    while (kinds.contains(nextTokenKind)) {
       kinds.foreach { kind =>
-        if (currentToken.kind == kind) {
-          val pos = currentToken
+        if (nextTokenKind == kind) {
+          val pos = nextToken
           eat(kind)
           expr = ASTBuilder.tokenMap(kind)(expr, next()).setPos(pos)
         }
@@ -766,39 +788,46 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /** Store the current token, as read from the lexer. */
 
   private def readToken(): Unit = {
-    if (tokens.hasNext) {
-      // uses nextToken from the Lexer trait
-      currentToken = tokens.next()
 
+    currentIndex += 1
+    if (currentIndex < tokens.length) {
+      currentToken = tokens(currentIndex)
       // skips bad tokens
       while (currentToken.kind == BAD) {
-        currentToken = tokens.next()
+        currentIndex += 1
+        currentToken = tokens(currentIndex)
       }
+
     }
   }
 
+  private def eatNewLines(): Unit =
+    while (currentToken.kind == NEWLINE)
+      readToken()
+
   /** ''Eats'' the expected token, or terminates with an error. */
-  private def eat(kind: TokenKind*): Unit =
+  private def eat(kind: TokenKind*): Unit = {
+    eatNewLines()
     for (k <- kind) {
-      if (currentToken.kind == k) {
+      if (nextTokenKind == k) {
         readToken()
       } else {
         FatalWrongToken(k)
       }
     }
-
+  }
   /**
    * Parses the correct access rights given the private token and
    * public token to use.
    */
   private def accessRights(priv: TokenKind, pub: TokenKind) =
-    currentToken.kind match {
+    nextTokenKind match {
       case x if x == pub  =>
         eat(pub)
         Public
       case x if x == priv =>
         eat(priv)
-        if (currentToken.kind == PROTECTED) {
+        if (nextTokenKind == PROTECTED) {
           eat(PROTECTED)
           Protected
         }
@@ -813,7 +842,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * treating RIGHTSHIFT (>>) as two ">".
    */
   private def eatRightShiftOrGreaterThan() =
-    if (currentToken.kind == RIGHTSHIFT) {
+    if (nextTokenKind == RIGHTSHIFT) {
       if (usedOneGreaterThan) {
         eat(RIGHTSHIFT)
       }
@@ -825,10 +854,10 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
    */
-  private def classTypeIdentifier(): ClassIdentifier = currentToken match {
+  private def classTypeIdentifier(): ClassIdentifier = nextToken match {
     case id: ID =>
       eat(IDKIND)
-      val tIds = currentToken.kind match {
+      val tIds = nextTokenKind match {
         case LESSTHAN =>
           eat(LESSTHAN)
           val tmp = commaList(identifier)
@@ -844,9 +873,9 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <classIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
    */
   private def classIdentifier(): ClassIdentifier = {
-    val pos = currentToken
+    val pos = nextToken
     val ids = nonEmptyList(identifier, DOT)
-    val tIds = currentToken.kind match {
+    val tIds = nextTokenKind match {
       case LESSTHAN =>
         eat(LESSTHAN)
         val tmp = commaList(tpe)
@@ -861,7 +890,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
    */
-  private def identifier(): Identifier = currentToken match {
+  private def identifier(): Identifier = nextToken match {
     case id: ID =>
       eat(IDKIND)
       Identifier(id.value).setPos(id)
@@ -871,7 +900,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <stringLit> ::= sequence of arbitrary characters, except new lines and "
    */
-  private def stringLit(): StringLit = currentToken match {
+  private def stringLit(): StringLit = nextToken match {
     case strlit: STRLIT =>
       eat(STRLITKIND)
       StringLit(strlit.value).setPos(strlit)
@@ -881,7 +910,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <intLit> ::= sequence of digits, with no leading zeros
    */
-  private def intLit(): IntLit = currentToken match {
+  private def intLit(): IntLit = nextToken match {
     case intlit: INTLIT =>
       eat(INTLITKIND)
       IntLit(intlit.value).setPos(intlit)
@@ -891,7 +920,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <longLit> ::= sequence of digits, with no leading zeros ending with an 'l'
    */
-  private def longLit(): LongLit = currentToken match {
+  private def longLit(): LongLit = nextToken match {
     case longLit: LONGLIT =>
       eat(LONGLITKIND)
       LongLit(longLit.value).setPos(longLit)
@@ -901,7 +930,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <floatLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
    */
-  private def floatLit(): FloatLit = currentToken match {
+  private def floatLit(): FloatLit = nextToken match {
     case floatLit: FLOATLIT =>
       eat(FLOATLITKIND)
       FloatLit(floatLit.value).setPos(floatLit)
@@ -912,7 +941,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <doubleLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
    */
-  private def doubleLit(): DoubleLit = currentToken match {
+  private def doubleLit(): DoubleLit = nextToken match {
     case doubleLit: DOUBLELIT =>
       eat(DOUBLELITKIND)
       DoubleLit(doubleLit.value).setPos(doubleLit)
@@ -922,7 +951,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   /**
    * <charLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
    */
-  private def charLit(): CharLit = currentToken match {
+  private def charLit(): CharLit = nextToken match {
     case charLit: CHARLIT =>
       eat(CHARLITKIND)
       CharLit(charLit.value).setPos(charLit)
@@ -937,7 +966,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   private def nonEmptyList[T](parse: () => T, delimiter: TokenKind): List[T] = {
     val arrBuff = new ArrayBuffer[T]()
     arrBuff += parse()
-    while (currentToken.kind == delimiter) {
+    while (nextTokenKind == delimiter) {
       eat(delimiter)
       arrBuff += parse()
     }
@@ -949,12 +978,12 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <commaList> ::= [ parse { "," parse } ]
    */
   private def commaList[T](parse: () => T, stopSign: TokenKind = RPAREN): List[T] = {
-    if (currentToken.kind == stopSign) {
+    if (nextTokenKind == stopSign) {
       List()
     } else {
       val arrBuff = new ArrayBuffer[T]()
       arrBuff += parse()
-      while (currentToken.kind == COMMA) {
+      while (nextTokenKind == COMMA) {
         eat(COMMA)
         arrBuff += parse()
       }
@@ -967,7 +996,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
    * <optional> ::= [ parse ] and returns Option
    */
   private def optional[T](parse: () => T, kind: TokenKind): Option[T] = {
-    if (currentToken.kind == kind) {
+    if (nextTokenKind == kind) {
       eat(kind)
       Some(parse())
     } else {
@@ -976,18 +1005,18 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   }
 
   /**
-   * Continues parsing until the given token kind is encountered.
+   * Continues parsing until on of the given token kinds are encountered.
    */
   private def until[T](parse: () => T, kinds: TokenKind*): List[T] = {
-    val condition = () => !kinds.contains(currentToken.kind)
+    val condition = () => !kinds.contains(nextTokenKind)
     _until(condition, parse)
   }
 
   /**
-   * Continues parsing until a token different from the given token is encountered.
+   * Continues parsing until a token different from the given tokens are encountered.
    */
   private def untilNot[T](parse: () => T, kinds: TokenKind*): List[T] = {
-    val condition = () => kinds.contains(currentToken.kind)
+    val condition = () => kinds.contains(nextTokenKind)
     _until(condition, parse)
   }
 

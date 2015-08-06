@@ -6,10 +6,10 @@ import tcompiler.utils._
 import Tokens._
 import scala.io.Source
 
-object Lexer extends Pipeline[File, Iterator[Token]] {
+object Lexer extends Pipeline[File, List[Token]] {
 
-  def run(ctx: Context)(f: File): Iterator[Token] = new Tokenizer(f, ctx).tokenize(Source.fromFile(f).buffered.toList)
-  def run(chars: List[Char], f: File): Iterator[Token] = new Tokenizer(f, Context(new Reporter(), None, f)).tokenize(chars)
+  def run(ctx: Context)(f: File): List[Token] = new Tokenizer(f, ctx).tokenize(Source.fromFile(f).buffered.toList)
+  def run(chars: List[Char], f: File): List[Token] = new Tokenizer(f, Context(new Reporter(), None, f)).tokenize(chars)
 
 }
 
@@ -19,59 +19,59 @@ class Tokenizer(val file: File, ctx: Context) {
   private var line = 1
   private var column = 1
 
-  def tokenize(chars: List[Char]): Iterator[Token] = readTokens(chars).iterator
-
-  private def readTokens(chars: List[Char]): List[Token] = {
+  def tokenize(chars: List[Char]): List[Token] = {
     def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
-      case '\n' :: r                              =>
+      case '\n' :: r                                        =>
+        val token = createToken(NEWLINE, 1)
         column = 1
         line += 1
-        readTokens(r, tokens)
-      case (c :: r) if c.isWhitespace             =>
+        // Don't put two newline tokens in a row
+        readTokens(r, if(tokens.head.kind == NEWLINE) tokens else token :: tokens)
+      case (c :: r) if c.isWhitespace                       =>
         column += 1
         readTokens(r, tokens)
-      case '/' :: '/' :: r                        => readTokens(skipLine(r), tokens)
-      case '+' :: '=' :: r                        => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
-      case '-' :: '=' :: r                        => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
-      case '*' :: '=' :: r                        => readTokens(r, createToken(MULEQ, 2) :: tokens)
-      case '/' :: '=' :: r                        => readTokens(r, createToken(DIVEQ, 2) :: tokens)
-      case '%' :: '=' :: r                        => readTokens(r, createToken(MODEQ, 2) :: tokens)
-      case '&' :: '=' :: r                        => readTokens(r, createToken(ANDEQ, 2) :: tokens)
-      case '|' :: '=' :: r                        => readTokens(r, createToken(OREQ, 2) :: tokens)
-      case '^' :: '=' :: r                        => readTokens(r, createToken(XOREQ, 2) :: tokens)
-      case '<' :: '<' :: '=' :: r                 => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
-      case '>' :: '>' :: '=' :: r                 => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
-      case '<' :: '<' :: r                        => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
-      case '>' :: '>' :: r                        => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
-      case '+' :: '+' :: r                        => readTokens(r, createToken(INCREMENT, 2) :: tokens)
-      case '-' :: '-' :: r                        => readTokens(r, createToken(DECREMENT, 2) :: tokens)
-      case '<' :: '=' :: r                        => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
-      case '>' :: '=' :: r                        => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
-      case '=' :: '=' :: r                        => readTokens(r, createToken(EQUALS, 2) :: tokens)
-      case '!' :: '=' :: r                        => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
-      case '|' :: '|' :: r                        => readTokens(r, createToken(OR, 2) :: tokens)
-      case '&' :: '&' :: r                        => readTokens(r, createToken(AND, 2) :: tokens)
-      case '/' :: '*' :: r                        =>
+      case '/' :: '/' :: r                                  => readTokens(skipLine(r), tokens)
+      case '+' :: '=' :: r                                  => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
+      case '-' :: '=' :: r                                  => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
+      case '*' :: '=' :: r                                  => readTokens(r, createToken(MULEQ, 2) :: tokens)
+      case '/' :: '=' :: r                                  => readTokens(r, createToken(DIVEQ, 2) :: tokens)
+      case '%' :: '=' :: r                                  => readTokens(r, createToken(MODEQ, 2) :: tokens)
+      case '&' :: '=' :: r                                  => readTokens(r, createToken(ANDEQ, 2) :: tokens)
+      case '|' :: '=' :: r                                  => readTokens(r, createToken(OREQ, 2) :: tokens)
+      case '^' :: '=' :: r                                  => readTokens(r, createToken(XOREQ, 2) :: tokens)
+      case '<' :: '<' :: '=' :: r                           => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
+      case '>' :: '>' :: '=' :: r                           => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
+      case '<' :: '<' :: r                                  => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
+      case '>' :: '>' :: r                                  => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
+      case '+' :: '+' :: r                                  => readTokens(r, createToken(INCREMENT, 2) :: tokens)
+      case '-' :: '-' :: r                                  => readTokens(r, createToken(DECREMENT, 2) :: tokens)
+      case '<' :: '=' :: r                                  => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
+      case '>' :: '=' :: r                                  => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
+      case '=' :: '=' :: r                                  => readTokens(r, createToken(EQUALS, 2) :: tokens)
+      case '!' :: '=' :: r                                  => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
+      case '|' :: '|' :: r                                  => readTokens(r, createToken(OR, 2) :: tokens)
+      case '&' :: '&' :: r                                  => readTokens(r, createToken(AND, 2) :: tokens)
+      case '/' :: '*' :: r                                  =>
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
       case c :: r if Tokenizer.singleCharTokens.contains(c) => readTokens(r, createToken(Tokenizer.singleCharTokens(c), 1) :: tokens)
-      case c :: r if c.isLetter                   =>
+      case c :: r if c.isLetter                             =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
-      case '\'' :: r                              =>
+      case '\'' :: r                                        =>
         val (token, tail) = getCharLiteral(r)
         readTokens(tail, token :: tokens)
-      case '`' :: r                               =>
+      case '`' :: r                                         =>
         val (token, tail) = getMultiLineStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case '"' :: r                               =>
+      case '"' :: r                                         =>
         val (token, tail) = getStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case c :: r if c.isDigit                    =>
+      case c :: r if c.isDigit                              =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
-      case Nil                                    => new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens
-      case _ :: r                                 =>
+      case Nil                                              => new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens
+      case _ :: r                                           =>
         ErrorInvalidCharacter()
         readTokens(r, createToken(BAD, 1) :: tokens)
     }
@@ -284,7 +284,6 @@ class Tokenizer(val file: File, ctx: Context) {
     res._1.setPos(startPos)
     res
   }
-
 
   private def skipLine(chars: List[Char]): List[Char] = {
     def skip(chars: List[Char]): List[Char] =

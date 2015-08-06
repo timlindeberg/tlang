@@ -1,31 +1,31 @@
-package kool.std;
+package kool.std
 
 class Option<T> {
-	var isDefined: Bool;
-	var value: 	   T;
+	var isDefined: Bool
+	var value: 	   T
 
 	Def new() = {
-		isDefined = false;
+		isDefined = false
 	}
 
 	Def new(valueArg: T) = {
-	    Add(valueArg);
+	    Add(valueArg)
 	}
 
 	Def Add(valueArg: T): Unit = {
-		value = valueArg;
-		isDefined = true;
+		value = valueArg
+		isDefined = true
 	}
 
 	Def IsDefined(): Bool = {
-		return isDefined;
+		return isDefined
 	}
 
 	Def Value(): T = {
-		return value;
+		return value
 	}
 
 	Def toString(): String = {
-		return isDefined ? "Some(" + value + ")" : "None";
+		return isDefined ? "Some(" + value + ")" : "None"
 	}
 }

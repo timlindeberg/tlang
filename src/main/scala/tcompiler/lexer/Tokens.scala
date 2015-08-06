@@ -50,6 +50,7 @@ object Tokens {
   case object EOF extends TokenKind
   case object COLON extends TokenKind // :
   case object SEMICOLON extends TokenKind // ;
+  case object NEWLINE extends TokenKind // \n
   case object DOT extends TokenKind // .
   case object COMMA extends TokenKind // ,
   case object EQSIGN extends TokenKind // =

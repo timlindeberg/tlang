@@ -27,7 +27,7 @@ class LexerSpec extends FlatSpec with Matchers {
 
   behavior of "Created tests without reference"
 
-  def lexer(file: File): Iterator[Token] = Lexer.run(new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = None))(file)
+  def lexer(file: File): List[Token] = Lexer.run(new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = None))(file)
   def test(file: File, exception: Boolean = false) = {
     def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()).!!.split('\n').map(_.trim)
     def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()

@@ -351,6 +351,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             tpeId.setType(TObject(classSymbol))
           case None              =>
             ErrorTypeNotDeclared(tpeId.value, tpeId)
+            ErrorTypeNotDeclared(tpeId.value, tpeId)
         }
       case BooleanType()                        => tpe.setType(TBool)
       case IntType()                            => tpe.setType(TInt)
