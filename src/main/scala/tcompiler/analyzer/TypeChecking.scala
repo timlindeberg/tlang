@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups._
-import tcompiler.ast.Trees
+import tcompiler.ast.{ASTPrinterWithSymbols, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.utils._
 
@@ -109,9 +109,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
         fa.setType(tpe)
         tcExpr(expr, tpe)
         tpe
-      case NewArray(tpe, size)          =>
-        tcExpr(size, TInt)
-        TArray(tpe.getType)
+      case newArray@NewArray(tpe, sizes)          =>
+        sizes.foreach(tcExpr(_, TInt))
+        var arrayType = tpe.getType
+        for(i <- 1 to newArray.dimension)
+          arrayType = TArray(arrayType)
+        arrayType
       case Plus(lhs, rhs)               =>
         val types = List(Types.anyObject, TString, TBool) ::: Types.primitives
         val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
@@ -183,8 +186,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
             tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
             TDouble
         }
-      case ArrayAssign(id, index, expr) =>
-        tcExpr(id) match {
+      case ArrayAssign(arr, index, expr) =>
+        val arrTpe = tcExpr(arr)
+        arrTpe match {
           case TObject(classSymbol) =>
             val (indexType, exprType) = (tcExpr(index), tcExpr(expr))
 
@@ -206,6 +210,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
             tcExpr(index, TInt)
             arrayTpe match {
               case objType: TObject => tcExpr(expr, objType)
+              case arrType: TArray  => tcExpr(expr, arrType)
               case TString          => tcExpr(expr, TString)
               case TBool            => tcExpr(expr, TBool)
               case TChar            =>
@@ -223,9 +228,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
               case TDouble          =>
                 tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
                 TDouble
-              case _: TArray        => error("Arrays in arrays are not allowed.", id) // TODO: Support arrays in arrays
             }
-          case tpe                    => ErrorWrongType(id.getType + "[]", tpe, id)
+          case tpe                    => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
       case ComparisonOperator(lhs, rhs) =>
         val types = List(Types.anyObject, TString) ::: Types.primitives
@@ -299,7 +303,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
         tcExpr(expr, tpe.getType.getSuperTypes)
         tpe.getType
       case ArrayRead(arr, index)        =>
-        tcExpr(arr) match {
+        val arrTpe = tcExpr(arr)
+        arrTpe match {
           case TObject(classSymbol) =>
             val indexType = tcExpr(index)
             val argList = List(indexType)
@@ -580,9 +585,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
   private def ErrorNewPrimitive(tpe: String, pos: Positioned) =
     error(s"Cannot create a new instance of primitive type '$tpe'.", pos)
 
+  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
   private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(expected.toString, found, pos)
   private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, found.toString, pos)
-  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
   private def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
     error(s"Type error: expected: '$expected', found: '$found'.", pos)
 

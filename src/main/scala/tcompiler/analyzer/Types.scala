@@ -15,6 +15,7 @@ object Types {
       _tpe = tpe
       this
     }
+
     def getType: Type = _tpe
   }
 
@@ -108,11 +109,9 @@ object Types {
   }
 
   case class TArray(tpe: Type) extends Type {
-    override def isSubTypeOf(otherTpe: Type): Boolean = {
-      otherTpe match {
-        case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-        case _              => false
-      }
+    override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
+      case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
+      case _              => false
     }
     override def toString = tpe.toString + "[]"
     override def byteCodeName: String = "[" + tpe.byteCodeName
@@ -122,13 +121,13 @@ object Types {
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case obj@TObject(c) =>
+      case obj @ TObject(c) =>
         if (classSymbol.name == c.name || c.name == anyObject.classSymbol.name) true
         else classSymbol.parent match {
           case Some(x) => x.getType.isSubTypeOf(tpe)
           case None    => false
         }
-      case _              => false
+      case _                => false
     }
     override def getSuperTypes: List[Type] =
       List(this) ++ (classSymbol.parent match {

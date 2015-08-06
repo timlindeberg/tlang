@@ -290,8 +290,8 @@ object StringCodeMap extends CodeMap {
 object ArrayCodeMap extends CodeMap {
   override def load(ch: CodeHandler, index: Int) = ch << ALoad(index)
   override def store(ch: CodeHandler, index: Int) = ch << AStore(index)
-  override def arrayLoad(ch: CodeHandler) = ???
-  override def arrayStore(ch: CodeHandler) = ???
+  override def arrayLoad(ch: CodeHandler) = ch << AALOAD
+  override def arrayStore(ch: CodeHandler) = ch << AASTORE
   override def defaultConstant(ch: CodeHandler) = ch << ACONST_NULL
   override def newArray(ch: CodeHandler) = ???
 

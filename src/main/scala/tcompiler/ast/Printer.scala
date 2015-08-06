@@ -104,7 +104,7 @@ object Printer {
       case id@Identifier(value)            => value + symbol(id)
       case id@ClassIdentifier(value, list) => value + symbol(id) + (if (id.isTemplated) "<" + commaList(list) + ">" else "")
       case This()                          => "this"
-      case NewArray(tpe, size)             => "new " + f(tpe) + "[" + f(size) + "]"
+      case NewArray(tpe, sizes)            => "new " + f(tpe) + sizes.map("[" + f(_) + "]")
       case New(tpe, exprs)                 => "new " + f(tpe) + "(" + commaList(exprs) + ")"
       case PreIncrement(id)                => "++" + f(id)
       case PostIncrement(id)               => f(id) + "++"

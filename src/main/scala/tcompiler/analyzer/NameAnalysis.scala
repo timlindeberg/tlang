@@ -227,8 +227,6 @@ class NameAnalyser(ctx: Context, prog: Program) {
       operatorType.setType(retType.getType)
       operatorType match {
         case IncrementDecrement(id) => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
-        case ArrayRead(id, _)       => id.asInstanceOf[Identifier].setSymbol(new VariableSymbol("")).setType(retType.getType)
-        case ArrayAssign(id, _, _)  => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
         case _                      =>
       }
       args.foreach(bind)
@@ -336,11 +334,11 @@ class NameAnalyser(ctx: Context, prog: Program) {
       case FloatType()                          => set(TFloat)
       case DoubleType()                         => set(TDouble)
       case CharType()                           => set(TChar)
+      case StringType()                         => set(TString)
+      case UnitType()                           => set(TUnit)
       case ArrayType(arrayTpe)                  =>
         setType(arrayTpe)
         set(TArray(arrayTpe.getType))
-      case StringType()                         => set(TString)
-      case UnitType()                           => set(TUnit)
     }
   }
 
@@ -360,11 +358,11 @@ class NameAnalyser(ctx: Context, prog: Program) {
       case FloatType()                          => tpe.setType(TFloat)
       case DoubleType()                         => tpe.setType(TDouble)
       case CharType()                           => tpe.setType(TChar)
+      case StringType()                         => tpe.setType(TString)
+      case UnitType()                           => tpe.setType(TUnit)
       case ArrayType(arrayTpe)                  =>
         setType(arrayTpe)
         tpe.setType(TArray(arrayTpe.getType))
-      case StringType()                         => tpe.setType(TString)
-      case UnitType()                           => tpe.setType(TUnit)
     }
   }
 

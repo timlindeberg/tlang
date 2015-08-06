@@ -19,6 +19,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
 
 class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
+
   import ctx.reporter._
 
   private var currentToken: Token = new Token(BAD)
@@ -239,7 +240,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
           case EQSIGN =>
             if (modifiers.contains(Static))
               ErrorStaticIndexingOperator("[]=", pos)
-            val operatorType = ArrayAssign(new Identifier(""), Empty(), Empty())
+            val operatorType = ArrayAssign(Empty(), Empty(), Empty())
             eat(EQSIGN, LPAREN)
             val f1 = formal()
             eat(COMMA)
@@ -248,7 +249,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
           case LPAREN =>
             if (modifiers.contains(Static))
               ErrorStaticIndexingOperator("[]", pos)
-            val operatorType = ArrayRead(new Identifier(""), Empty())
+            val operatorType = ArrayRead(Empty(), Empty())
             eat(LPAREN)
             val f1 = formal()
             (operatorType, List(f1), modifiers)
@@ -320,11 +321,15 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
       case _       => classIdentifier()
     }
     var e = tpe
+    var dimension = 0
     while (currentToken.kind == LBRACKET) {
       e.setPos(pos)
       eat(LBRACKET, RBRACKET)
       e = ArrayType(e)
+      dimension += 1
     }
+    if (dimension > ASTBuilder.MaximumArraySize)
+      ErrorInvalidArrayDimension(dimension, pos)
     e.setPos(pos)
   }
 
@@ -466,14 +471,10 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
       def assignmentExpr(expr: ExprTree) = if (constructor.isDefined) constructor.get(expr, expression()) else expression()
 
       e match {
-        case ArrayRead(idExpr, index) =>
-          idExpr match {
-            case id: Identifier => ArrayAssign(id, index, assignmentExpr(e))
-            case _              => FatalExpectedIdArrayAssignment(e)
-          }
-        case FieldRead(obj, id)       => FieldAssign(obj, id, assignmentExpr(e))
-        case id: Identifier           => Assign(id, assignmentExpr(id))
-        case _                        => FatalExpectedIdAssignment(e)
+        case ArrayRead(arr, index) => ArrayAssign(arr, index, assignmentExpr(e))
+        case FieldRead(obj, id)    => FieldAssign(obj, id, assignmentExpr(e))
+        case id: Identifier        => Assign(id, assignmentExpr(id))
+        case _                     => FatalExpectedIdAssignment(e)
       }
     }
 
@@ -567,7 +568,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
      * | true
      * | false
      * | this
-     * | new <tpe>"[" <expression> "]"
+     * | new <tpe>"[" <expression> "] { "[" <expression> "]" }
      * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
      */
     def termFirst() = {
@@ -650,11 +651,23 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
           This()
         case NEW           =>
           eat(NEW)
+
+          def sizes(): List[ExprTree] = {
+            val sizes = untilNot(() => {
+              eat(LBRACKET)
+              val size = expression()
+              eat(RBRACKET)
+              size
+            }, LBRACKET)
+            if (sizes.size > ASTBuilder.MaximumArraySize)
+              ErrorInvalidArrayDimension(sizes.size, pos)
+            sizes
+          }
+
+
           def primitiveArray(construct: () => TypeTree) = {
-            eat(currentToken.kind, LBRACKET)
-            val expr = expression()
-            eat(RBRACKET)
-            NewArray(construct(), expr)
+            eat(currentToken.kind)
+            NewArray(construct(), sizes())
           }
           currentToken.kind match {
             case INT     => primitiveArray(IntType)
@@ -673,10 +686,7 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
                   eat(RPAREN)
                   New(id, args)
                 case LBRACKET =>
-                  eat(LBRACKET)
-                  val expr = expression()
-                  eat(RBRACKET)
-                  NewArray(id, expr)
+                  NewArray(id, sizes())
                 case _        => FatalWrongToken(LPAREN, LBRACKET)
               }
 
@@ -996,22 +1006,25 @@ class ASTBuilder(ctx: Context, tokens: Iterator[Token]) {
   private def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
     error(s"Indexing operator '$name' cannot be declared static!", pos)
 
+  private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
+    error(s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+
   private def FatalInvalidStatement(pos: Positioned) =
     fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)
-
-  private def FatalExpectedIdArrayAssignment(pos: Positioned) =
-    fatal("Expected identifier on left hand side of array assignment.", pos)
 
   private def FatalExpectedIdAssignment(pos: Positioned) =
     fatal("Expected identifier on left side of assignment.", pos)
 
   private def FatalWrongToken(kind: TokenKind, more: TokenKind*): Nothing = FatalWrongToken((kind :: more.toList).mkString(" or "), currentToken.toString, currentToken)
+
   private def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
     fatal(s"Expected $expected, found: $found.", pos)
 
 }
 
 object ASTBuilder {
+
+  private val MaximumArraySize = 255
 
   private val tokenMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
     OR -> Or,

@@ -105,7 +105,7 @@ object Trees {
   trait ExprTree extends Tree with Typed
 
   case class Assign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
+  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
   case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
   case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree with StatTree
 
@@ -191,7 +191,7 @@ object Trees {
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
-  case class NewArray(var tpe: TypeTree, size: ExprTree) extends ExprTree
+  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree { def dimension = sizes.size }
   case class New(var tpe: ClassIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree

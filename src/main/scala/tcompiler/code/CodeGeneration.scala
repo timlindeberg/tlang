@@ -55,7 +55,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
         case con: ConstructorDecl =>
           hasConstructor = true
-          generateConstructor(con, classFile, classDecl)
+          generateConstructor(Some(con), classFile, classDecl)
         case op: OperatorDecl     =>
           val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
           val operatorSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
@@ -66,7 +66,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     if (!hasConstructor)
-      classFile.addDefaultConstructor
+      generateDefaultConstructor(classFile, classDecl)
 
     val file = getFilePath(dir, sym)
     classFile.writeToFile(file)
@@ -95,22 +95,35 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     ch.freeze
   }
 
-  def generateConstructor(con: ConstructorDecl, classFile: ClassFile, ct: ClassDecl): MethodHandler = {
-    val argTypes = con.getSymbol.argList.map(_.getType.byteCodeName).mkString
-    val mh = classFile.addConstructor(argTypes)
+  def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl) = {
+    val mh = generateConstructor(None, classFile, classDecl)
+    val ch = mh.codeHandler
+    ch << RETURN
+    ch.freeze
+  }
+
+  def generateConstructor(con: Option[ConstructorDecl], classFile: ClassFile, classDecl: ClassDecl): MethodHandler = {
+    val mh = con match {
+      case Some(conDecl) =>
+        val argTypes = conDecl.getSymbol.argList.map(_.getType.byteCodeName).mkString
+        classFile.addConstructor(argTypes)
+      case _ =>
+        classFile.addConstructor(Nil)
+    }
+
     val ch = mh.codeHandler
 
     // Initialize fields after constructor
-    val codeGenerator = new CodeGenerator(ch, con.getSymbol.classSymbol.name, mutable.HashMap())
-    ct.vars.foreach {
+    val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
+    classDecl.vars.foreach {
       case VarDecl(varTpe, id, Some(expr), _) =>
         ch << ArgLoad(0) // put this-reference on stack
         codeGenerator.compileExpr(expr)
-        ch << PutField(con.getSymbol.classSymbol.name, id.value, varTpe.getType.byteCodeName)
+        ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
       case _                                  =>
     }
 
-    addSuperCall(mh, ct)
+    addSuperCall(mh, classDecl)
     mh
   }
 
@@ -165,13 +178,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def addReturnStatement(ch: CodeHandler, mt: FuncTree) = ch.peek match {
-    case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
-    case _                                                        =>
-      mt match {
-        case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.retType.getType)
-        case op: OperatorDecl   => addReturnValueAndStatement(ch, op.retType.getType)
-        case _: ConstructorDecl => ch << RETURN
-      }
+    case Some(byteCode) => byteCode match {
+      case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
+      case _                                                        =>
+        mt match {
+          case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.retType.getType)
+          case op: OperatorDecl   => addReturnValueAndStatement(ch, op.retType.getType)
+          case _: ConstructorDecl => ch << RETURN
+        }
+    }
+    case None           => ch << RETURN
   }
 
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
@@ -206,10 +222,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
 class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable.HashMap[String, Int]) {
 
-  private var currentLine: Int = 0
-
   def compileStat(statement: StatTree): Unit = {
-    putLineNumber(ch, statement.line)
+    ch << LineNumber(statement.line)
     statement match {
       case Block(stats)                     => stats.foreach(compileStat)
       case If(expr, thn, els)               =>
@@ -286,7 +300,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
     }
 
   def compileExpr(expression: ExprTree, duplicate: Boolean = true): Unit = {
-    putLineNumber(ch, expression.line)
+    ch << LineNumber(expression.line)
     expression match {
       case True()                           => ch << Ldc(1)
       case False()                          => ch << Ldc(0)
@@ -459,12 +473,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             case _                                => codes.toInt(ch)
           }
         }, duplicate)
-      case ArrayAssign(id, index, expr)     =>
-        load(id)
+      case ArrayAssign(arr, index, expr)     =>
+        compileExpr(arr)
         compileExpr(index)
         compileExpr(expr)
 
-        id.getType match {
+        arr.getType match {
           case obj @ TObject(classSymbol) =>
             if (duplicate)
               obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
@@ -556,11 +570,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
         if (!duplicate && mc.getType != TUnit)
           ch << POP
-      case ast.Trees.NewArray(tpe, size)    =>
-        compileExpr(size)
-        tpe.getType.codes.newArray(ch)
-
-      case ast.Trees.New(tpe, args)     =>
+      case newArray@ast.Trees.NewArray(tpe, sizes)    =>
+        sizes.foreach(compileExpr(_))
+        if(newArray.dimension == 1)
+          tpe.getType.codes.newArray(ch)
+        else
+          ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
+      case ast.Trees.New(tpe, args)         =>
         val codes = tpe.getType.codes
         val obj = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
         ch << cafebabe.AbstractByteCodes.New(obj)
@@ -569,13 +585,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
         val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
         ch << InvokeSpecial(obj, CodeGenerator.ConstructorName, signature)
-      case Negation(expr)               =>
+      case Negation(expr)                   =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, expression, x)
           case _          => expr.getType.codes.negation(ch)
         }
-      case LogicNot(expr)               =>
+      case LogicNot(expr)                   =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, expression, x)
@@ -583,43 +599,11 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
         }
-      case IncrementDecrement(id)       =>
-        val isPre = expression match {
-          case _: PreIncrement | _: PreDecrement => true
-          case _                                 => false
-        }
-        val isIncrement = expression match {
-          case _: PreIncrement | _: PostIncrement => true
-          case _                                  => false
-        }
-        val isLocal = variableMap.contains(id.value)
-        val codes = id.getType.codes
-
-        id.getType match {
-          case TInt if isLocal =>
-            if (!isPre && duplicate)
-              load(id)
-            ch << IInc(variableMap(id.value), if (isIncrement) 1 else -1)
-            if (isPre && duplicate)
-              load(id)
-          case x: TObject      =>
-            // TODO: Fix post/pre increment for objects. Currently they work the same way.
-            store(id, () => {
-              load(id)
-              compileOperatorCall(ch, expression, x)
-            }, duplicate)
-          case _               =>
-            store(id, () => {
-              load(id)
-              if (!isPre && duplicate) {
-                if (isLocal) codes.dup(ch)
-                else codes.dup_x1(ch)
-              }
-              codes.one(ch)
-              if (isIncrement) codes.add(ch) else codes.sub(ch)
-            }, duplicate && isPre)
-        }
-      case Ternary(condition, thn, els) =>
+      case PreIncrement(id)                 => compileIncrementDecrement(isPre = true, isIncrement = true, id)
+      case PreDecrement(id)                 => compileIncrementDecrement(isPre = true, isIncrement = false, id)
+      case PostIncrement(id)                => compileIncrementDecrement(isPre = false, isIncrement = true, id)
+      case PostDecrement(id)                => compileIncrementDecrement(isPre = false, isIncrement = false, id)
+      case Ternary(condition, thn, els)     =>
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
         val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
@@ -631,6 +615,36 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(elsLabel)
         compileExpr(els)
         ch << Label(afterLabel)
+    }
+
+    def compileIncrementDecrement(isPre: Boolean, isIncrement: Boolean, id: Identifier) = {
+      val isLocal = variableMap.contains(id.value)
+      val codes = id.getType.codes
+
+      id.getType match {
+        case TInt if isLocal =>
+          if (!isPre && duplicate) load(id)
+
+          ch << IInc(variableMap(id.value), if (isIncrement) 1 else -1)
+
+          if (isPre && duplicate) load(id)
+        case x: TObject      =>
+          // TODO: Fix post/pre increment for objects. Currently they work the same way.
+          store(id, () => {
+            load(id)
+            compileOperatorCall(ch, expression, x)
+          }, duplicate)
+        case _               =>
+          store(id, () => {
+            load(id)
+            if (!isPre && duplicate) {
+              if (isLocal) codes.dup(ch)
+              else codes.dup_x1(ch)
+            }
+            codes.one(ch)
+            if (isIncrement) codes.add(ch) else codes.sub(ch)
+          }, duplicate && isPre)
+      }
     }
   }
 
@@ -806,12 +820,6 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
     case _                           => false
   }
 
-
-  private def putLineNumber(ch: CodeHandler, line: Int) =
-    if (line != currentLine) {
-      currentLine = line
-      ch << LineNumber(line)
-    }
 }
 
 object CodeGenerator {
