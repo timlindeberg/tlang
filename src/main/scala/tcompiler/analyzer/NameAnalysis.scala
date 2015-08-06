@@ -203,7 +203,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
         }
       }
       methods.foreach(bind)
-    case methDecl @ MethodDecl(retType, _, args, vars, stats, _)                     =>
+    case methDecl @ MethodDecl(retType, _, args, vars, stat, _)                     =>
       setType(retType)
 
       methDecl.getSymbol.setType(retType.getType)
@@ -213,14 +213,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       ensureMethodNotDefined(methDecl)
 
-      stats.foreach(bind(_, methDecl.getSymbol, methDecl.isStatic))
-    case constructorDecl @ ConstructorDecl(_, args, vars, stats, _)                  =>
+      bind(stat, methDecl.getSymbol, methDecl.isStatic)
+    case constructorDecl @ ConstructorDecl(_, args, vars, stat, _)                  =>
       args.foreach(bind)
       bindVars(vars, constructorDecl.getSymbol, isStatic = false)
 
       ensureMethodNotDefined(constructorDecl)
-      stats.foreach(bind(_, constructorDecl.getSymbol, isStatic = false))
-    case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, _, _) =>
+      bind(stat, constructorDecl.getSymbol, isStatic = false)
+    case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stat, _, _) =>
       setType(retType)
 
       operatorDecl.getSymbol.setType(retType.getType)
@@ -234,7 +234,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       ensureOperatorNotDefined(operatorDecl)
 
-      stats.foreach(bind(_, operatorDecl.getSymbol, operatorDecl.isStatic))
+      bind(stat, operatorDecl.getSymbol, operatorDecl.isStatic)
     case Formal(tpe, id)                                                             => setType(tpe, id)
     case _                                                                           => throw new UnsupportedOperationException
   }

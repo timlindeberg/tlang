@@ -89,7 +89,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)
     initializeLocalVariables(mt, codeGenerator, variableMap)
 
-    mt.stats.foreach(codeGenerator.compileStat)
+    codeGenerator.compileStat(mt.stat)
 
     addReturnStatement(ch, mt)
     ch.freeze

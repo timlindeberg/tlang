@@ -51,15 +51,13 @@ class NameReplacer(ctx: Context, prog: Program) {
     })
 
     prog.classes.foreach {
-      _.methods.foreach {
-        _.stats.foreach { statement =>
-          Trees.traverse(statement, (_, t) => Some(t) collect {
+      _.methods.foreach { meth =>
+          Trees.traverse(meth.stat, (_, t) => Some(t) collect {
             case id: Identifier if id.value.charAt(0).isUpper =>
               handleImport(packString, id.value) collect {
                 case newName => id.value = newName // TODO: More effecient way of handling imports for regular identifiers?
               }
           })
-        }
       }
     }
     checkUnusedImports()
@@ -187,7 +185,7 @@ class Importer(ctx: Context, prog: Program) {
     val args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) => Formal(convertType(tpe), Identifier("arg" + i)) }.toList
     val modifiers = convertModifiers(meth)
 
-    MethodDecl(retType, id, args, List(), List(), modifiers)
+    MethodDecl(retType, id, args, List(), Block(List()), modifiers)
   }
 
   private def convertModifiers(obj: AccessFlags) = {

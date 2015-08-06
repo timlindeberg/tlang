@@ -3,12 +3,13 @@ package kool.std
 import <Option>
 
 class LinkedList<T> {
+
 	var first: Option<Node<T>> = new Option<Node<T>>()
 	var last:  Option<Node<T>> = new Option<Node<T>>()
 
 	var size: Int = 0
 
-	Def new() = { }
+	Def new() = {}
 
 	Def new(size: Int, value: T) = {
 		var i: Int = 0
@@ -16,17 +17,15 @@ class LinkedList<T> {
         	Push(value)
 	}
 
-	Def new(list: LinkedList<T>) = {
-		AddAll(list)
-	}
+	Def new(list: LinkedList<T>) = AddAll(list)
 
 	Def [](index: Int): Option<T> = {
 		var res:  Option<T>       = new Option<T>()
 		var node: Option<Node<T>> = find(index)
 
-		if(node.IsDefined()){
+		if(node.IsDefined())
 			res.Add(node.Value().Value)
-		}
+
 		return res
 	}
 
@@ -69,13 +68,9 @@ class LinkedList<T> {
 		return lhs
 	}
 
-    Def NonEmpty(): Bool = {
-        return size != 0
-    }
+    Def NonEmpty(): Bool = return size != 0
 
-	Def IsEmpty(): Bool = {
-		return size == 0
-	}
+	Def IsEmpty(): Bool = return size == 0
 
 	Def Clear(): Unit = {
 		first = new Option<Node<T>>()
@@ -83,9 +78,7 @@ class LinkedList<T> {
         size = 0
 	}
 
-	Def Iterator(): LinkedListIterator<T> = {
-		return new LinkedListIterator<T>(this)
-	}
+	Def Iterator(): LinkedListIterator<T> =	return new LinkedListIterator<T>(this)
 
 	Def Push(value: T): Unit = {
 		var node: Node<T> = new Node<T>(value)
@@ -93,7 +86,7 @@ class LinkedList<T> {
 		if(!first.IsDefined()){
 			first.Add(node)
 			last = first
-		}else{
+		} else {
 			node.SetPrev(last.Value())
 			last.Value().SetNext(node)
 			last = last.Value().Next()
@@ -112,10 +105,7 @@ class LinkedList<T> {
 		return res
 	}
 
-	Def Add(value: T): Unit = {
-	    Add(0, value)
-	}
-
+	Def Add(value: T): Unit = Add(0, value)
 	Def Add(index: Int, value: T): Bool = {
 		var node: Option<Node<T>>
 		var next: Option<Node<T>>
@@ -160,10 +150,9 @@ class LinkedList<T> {
 	Def AddAll(index: Int, list: LinkedList<T>): Bool = {
 		var it: LinkedListIterator<T> = list.Iterator()
 
-		while(it.HasNext()){
+		while(it.HasNext())
 			if(!Add(index, it.Next()))
 			    return false
-		}
 
 		return true
 	}
@@ -190,19 +179,19 @@ class LinkedList<T> {
 
         prev = node.Value().Prev()
         next = node.Value().Next()
-        if(prev.IsDefined() && next.IsDefined()){
+        if(prev.IsDefined() && next.IsDefined()) {
             // Node is in the middle of the list
             prev.Value().SetNext(next.Value())
             next.Value().SetPrev(prev.Value())
-        }else if(prev.IsDefined() && ! next.IsDefined()){
+        } else if(prev.IsDefined() && ! next.IsDefined()) {
             // Node is last element
             prev.Value().ClearNext()
             last = prev
-        }else if(!prev.IsDefined() && next.IsDefined()){
+        } else if(!prev.IsDefined() && next.IsDefined()) {
             // Node is first element
             next.Value().ClearPrev()
             first = next
-        }else{
+        } else {
             // Node is the only element
             Clear()
         }
@@ -235,9 +224,7 @@ class LinkedList<T> {
 		return index
 	}
 
-	Def Contains(value: T): Bool = {
-		return IndexOf(value) != -1
-	}
+	Def Contains(value: T): Bool = return IndexOf(value) != -1
 
     Def toString(): String = {
         var it: LinkedListIterator<T>
@@ -256,28 +243,19 @@ class LinkedList<T> {
         return s
     }
 
-	Def Size(): Int = {
-		return size
-	}
+	Def Size(): Int = return size
 
-	Def first(): Option<Node<T>> = {
-		return first
-	}
+	Def first(): Option<Node<T>> = return first
 
-	Def last(): Option<Node<T>> = {
-		return last
-	}
+	Def last(): Option<Node<T>> = return last
 
 	def find(index: Int): Option<Node<T>> = {
 		var tmp: 	Option<Node<T>>
 		var i: 		Int
 
-		if(!indexInRange(index))
-			return new Option<Node<T>>()
-		if(index == 0)
-			return first
-		if(index == size - 1)
-			return last
+		if(!indexInRange(index)) return new Option<Node<T>>()
+		if(index == 0)			 return first
+		if(index == size - 1)	 return last
 
 		if(index < (size / 2) + 1){
 			tmp = first
@@ -286,7 +264,7 @@ class LinkedList<T> {
 				i++
 				tmp = tmp.Value().Next()
 			}
-		}else{
+		} else {
 			tmp = last
 			i = size - 1
 			while(i > index && tmp.IsDefined()){
@@ -298,9 +276,7 @@ class LinkedList<T> {
 		return tmp
 	}
 
-	def indexInRange(index: Int): Bool = {
-		return index >= 0 && index < size
-	}
+	def indexInRange(index: Int): Bool = return index >= 0 && index < size
 }
 
 class Node<T> {
@@ -308,33 +284,19 @@ class Node<T> {
 	var next: Option<Node<T>> = new Option<Node<T>>()
 	var prev: Option<Node<T>> = new Option<Node<T>>()
 
-	Def new(v: T) = {
-		Value = v
-	}
+	Def new(v: T) = Value = v
 
-	Def Next(): Option<Node<T>> = {
-		return next
-	}
+	Def Next(): Option<Node<T>> = return next
 
-	Def Prev(): Option<Node<T>> = {
-		return prev
-	}
+	Def Prev(): Option<Node<T>> = return prev
 
-	Def ClearNext(): Unit = {
-		next = new Option<Node<T>>()
-	}
+	Def ClearNext(): Unit = next = new Option<Node<T>>()
 
-	Def ClearPrev(): Unit = {
-		prev = new Option<Node<T>>()
-	}
+	Def ClearPrev(): Unit = prev = new Option<Node<T>>()
 
-	Def SetNext(n: Node<T>): Unit = {
-		next = new Option<Node<T>>(n)
-	}
+	Def SetNext(n: Node<T>): Unit = next = new Option<Node<T>>(n)
 
-	Def SetPrev(n: Node<T>): Unit = {
-		prev = new Option<Node<T>>(n)
-	}
+	Def SetPrev(n: Node<T>): Unit = prev = new Option<Node<T>>(n)
 }
 
 class LinkedListIterator<T> {
@@ -347,9 +309,7 @@ class LinkedListIterator<T> {
 			current = list.first().Value()
 	}
 
-	Def HasNext(): Bool = {
-		return hasNext
-	}
+	Def HasNext(): Bool = return hasNext
 
 	Def Next(): T = {
 		var res: T = current.Value

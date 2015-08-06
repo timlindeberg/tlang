@@ -51,7 +51,6 @@ object Trees {
 
   case class InternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
   case class ExternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
-  case class VarDecl(var tpe: TypeTree, var id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) extends Tree with Symbolic[VariableSymbol] with Modifiable
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   trait Modifier extends Tree
@@ -68,15 +67,15 @@ object Trees {
     var id: Identifier
     var args: List[Formal]
     var vars: List[VarDecl]
-    val stats: List[StatTree]
+    val stat: StatTree
     val modifiers: Set[Modifier]
 
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier]) extends FuncTree
-  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stats: List[StatTree], modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String
@@ -94,6 +93,7 @@ object Trees {
 
   trait StatTree extends Tree
 
+  case class VarDecl(var tpe: TypeTree, var id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree

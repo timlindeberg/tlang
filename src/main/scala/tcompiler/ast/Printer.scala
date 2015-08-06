@@ -40,9 +40,9 @@ object Printer {
       case MainObject(id, stats)                                                => "main " + f(id) + " = " + l + allStats(stats) + r
       case ClassDecl(id, parent, vars, methods)                                 => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
       case VarDecl(tpe, id, expr, modifiers)                                    => varDecl(modifiers) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
-      case MethodDecl(retType, id, args, vars, stats, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
-      case ConstructorDecl(id, args, vars, stats, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + l + all(vars) + allStats(stats) + r + n
-      case OperatorDecl(operatorType, retType, args, vars, stats, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + allStats(stats) + r + n
+      case MethodDecl(retType, id, args, vars, stat, modifiers)                 => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + f(stat) + r + n
+      case ConstructorDecl(id, args, vars, stat, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + l + all(vars) + f(stat) + r + n
+      case OperatorDecl(operatorType, retType, args, vars, stat, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + f(stat) + r + n
       case Formal(tpe, id)                                                      => f(id) + ": " + f(tpe)
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"

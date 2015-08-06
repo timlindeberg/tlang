@@ -26,7 +26,7 @@ class Tokenizer(val file: File, ctx: Context) {
         column = 1
         line += 1
         // Don't put two newline tokens in a row
-        readTokens(r, if(tokens.head.kind == NEWLINE) tokens else token :: tokens)
+        readTokens(r, if (tokens.head.kind == NEWLINE) tokens else token :: tokens)
       case (c :: r) if c.isWhitespace                       =>
         column += 1
         readTokens(r, tokens)
@@ -286,17 +286,16 @@ class Tokenizer(val file: File, ctx: Context) {
   }
 
   private def skipLine(chars: List[Char]): List[Char] = {
-    def skip(chars: List[Char]): List[Char] =
-      chars match {
-        case '\n' :: r =>
-          line += 1
-          column = 1
-          r
-        case _ :: r    =>
-          column += 1
-          skip(r)
-        case Nil       => Nil
-      }
+    def skip(chars: List[Char]): List[Char] = chars match {
+      case '\n' :: r =>
+        line += 1
+        column = 1
+        r
+      case _ :: r    =>
+        column += 1
+        skip(r)
+      case Nil       => Nil
+    }
     column += 2
     skip(chars)
   }

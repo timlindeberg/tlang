@@ -8,8 +8,11 @@ class Vector<T> {
 	var size: Int = 0
 	var data: T[]
 
-	Def new() = {
+	Def new() = Clear()
+
+	Def new(list: Vector<T>) = {
 		Clear()
+		AddAll(list)
 	}
 
 	Def new(initSize: Int, value: T) = {
@@ -20,9 +23,6 @@ class Vector<T> {
 			data[i] = value
 	}
 
-	Def new(list: Vector<T>) = {
-		AddAll(list)
-	}
 
 	Def [](index: Int): Option<T> = {
 		var res: Option<T> = new Option<T>()
@@ -41,18 +41,15 @@ class Vector<T> {
 	}
 
 	Def ==(lhs: Vector<T>, rhs: Vector<T>): Bool = {
-		var lhsIt:  VectorIterator<T>
-		var rhsIt:  VectorIterator<T>
+		var lhsIt:  VectorIterator<T> = lhs.Iterator()
+		var rhsIt:  VectorIterator<T> = rhs.Iterator()
 
 		if(lhs.size != rhs.size)
 			return false
 
-		lhsIt = lhs.Iterator()
-		rhsIt = rhs.Iterator()
-		while(lhsIt.HasNext()){
+		while(lhsIt.HasNext())
 			if(lhsIt.Next() != rhsIt.Next())
 				return false
-		}
 
 		return true
 	}
@@ -72,22 +69,16 @@ class Vector<T> {
 		return lhs
 	}
 
-    Def NonEmpty(): Bool = {
-    	return size != 0
-    }
+    Def NonEmpty(): Bool = return size != 0
 
-	Def IsEmpty(): Bool = {
-    	return size == 0
-	}
+	Def IsEmpty(): Bool = return size == 0
 
 	Def Clear(): Unit = {
 		size = 0
 		data = new T[InitialCapacity]
 	}
 
-	Def Iterator(): VectorIterator<T> = {
-		return new VectorIterator<T>(this)
-	}
+	Def Iterator(): VectorIterator<T> =	return new VectorIterator<T>(this)
 
 	Def Push(value: T): Unit = {
 		if(size >= data.length)
@@ -106,10 +97,7 @@ class Vector<T> {
 		return res
 	}
 
-	Def Add(value: T): Unit = {
-		Add(0, value)
-	}
-
+	Def Add(value: T): Unit = Add(0, value)
 	Def Add(index: Int, value: T): Bool = {
 		var i: Int
 		if(index != size && !indexInRange(index))
@@ -125,13 +113,10 @@ class Vector<T> {
 		size++
 	}
 
-    Def AddAll(list: Vector<T>): Unit = {
-		AddAll(size, list)
-    }
-
+    Def AddAll(list: Vector<T>): Unit =	AddAll(size, list)
 	Def AddAll(index: Int, list: Vector<T>): Bool = {
 		var it: VectorIterator<T> = list.Iterator()
-		var i : Int
+		var i: Int
 		var newData: T[] = new T[size + list.size]
 
 		if(index != size && !indexInRange(index))
@@ -165,13 +150,7 @@ class Vector<T> {
 		return true
 	}
 
-	Def Remove(value: T): Bool = {
-		var index: Int = IndexOf(value)
-		if(index != -1)
-			return RemoveIndex(index)
-
-		return false
-	}
+	Def Remove(value: T): Bool = return RemoveIndex(IndexOf(value))
 
 	Def IndexOf(value: T): Int = {
 		var i: Int
@@ -193,21 +172,12 @@ class Vector<T> {
 		return res
 	}
 
-	Def Contains(value: T): Bool = {
-		return IndexOf(value) != -1
-	}
+	Def Contains(value: T): Bool = return IndexOf(value) != -1
 
-	Def Size(): Int = {
-		return size
-	}
+	Def Size(): Int = return size
 
-	Def First(): Option<T> = {
-		return this[0]
-	}
-
-	Def Last(): Option<T> = {
-    	return this[size - 1]
-    }
+	Def First(): Option<T> = return this[0]
+	Def Last(): Option<T> = return this[size - 1]
 
     Def toString(): String = {
 		var it: VectorIterator<T>
@@ -226,9 +196,8 @@ class Vector<T> {
 		return s
     }
 
-	def indexInRange(index: Int): Bool = {
-		return index >= 0 && index < size
-	}
+
+	def indexInRange(index: Int): Bool = return index >= 0 && index < size
 
 	def increaseStorage(): Unit = {
 		var newCapacity: Int = (data.length * 3) / 2 + 1
@@ -252,9 +221,7 @@ class VectorIterator<T> {
 		vector = list
 	}
 
-	Def HasNext(): Bool = {
-		return hasNext
-	}
+	Def HasNext(): Bool = return hasNext
 
 	Def Next(): T = {
 		hasNext = current < vector.Size() - 1

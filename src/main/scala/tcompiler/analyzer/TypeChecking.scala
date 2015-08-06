@@ -38,7 +38,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           case VarDecl(tpe, id, Some(expr), _) => typeChecker.tcExpr(expr, tpe.getType)
           case _                               =>
         }
-        method.stats.foreach(typeChecker.tcStat)
+        typeChecker.tcStat(method.stat)
       }
     }
     prog

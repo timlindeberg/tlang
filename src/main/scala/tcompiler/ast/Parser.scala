@@ -11,7 +11,6 @@ import scala.collection.mutable.ArrayBuffer
 object Parser extends Pipeline[List[Token], Program] {
 
   def run(ctx: Context)(tokens: List[Token]): Program = {
-
     val astBuilder = new ASTBuilder(ctx, tokens.toArray)
     astBuilder.parseGoal()
   }
@@ -152,7 +151,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case IDKIND => method(mods)
       case NEW    => constructor(mods, className)
       case _      => operator(mods)
-      //case  => //unaryOperator(access)
     }
     func.setPos(pos)
   }
@@ -173,11 +171,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     } else {
       tpe()
     }
-    eat(EQSIGN, LBRACE)
-    val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
-    val stmts = until(statement, RBRACE)
-    eat(RBRACE)
-    MethodDecl(retType, id, args, vars, stmts, modifiers)
+    eat(EQSIGN)
+
+    val (vars, stmt) = varsAndStatement()
+    MethodDecl(retType, id, args, vars, stmt, modifiers)
   }
 
   /**
@@ -188,11 +185,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
-    eat(EQSIGN, LBRACE)
-    val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
-    val stmts = until(statement, RBRACE)
-    eat(RBRACE)
-    ConstructorDecl(new Identifier(className), args, vars, stmts, modifiers)
+    eat(EQSIGN)
+
+    val (vars, stmt) = varsAndStatement()
+
+    ConstructorDecl(new Identifier(className), args, vars, stmt, modifiers)
   }
 
   /**
@@ -278,13 +275,30 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     } else {
       tpe()
     }
-    eat(EQSIGN, LBRACE)
-    val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
-    val stmts = until(statement, RBRACE)
-    eat(RBRACE)
-    OperatorDecl(operatorType, retType, args, vars, stmts, newModifiers)
+    eat(EQSIGN)
+
+    val (vars, stmt) = varsAndStatement()
+
+    OperatorDecl(operatorType, retType, args, vars, stmt, newModifiers)
   }
 
+  /**
+   * Ugly solution until proper scoping is implemented.
+   */
+  def varsAndStatement() = {
+    val stmt = statement()
+    val vars = stmt match {
+      case Block(statements) =>
+        statements.filter(_.isInstanceOf[VarDecl]).asInstanceOf[List[VarDecl]]
+      case _ => List()
+    }
+    val stat = stmt match {
+      case Block(statements) =>
+        Block(statements.filter(!_.isInstanceOf[VarDecl]))
+      case _ => stmt
+    }
+    (vars, stat)
+  }
 
   /**
    * <modifiers> ::= (pub | priv [ protected ] ) [ static ]
@@ -345,6 +359,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /**
    * <statement> ::= "{" { <statement> } "}
+   * | <varDeclaration>
    * | if"(" <expression> ")" <statement> [ else <statement> ]
    * | while"(" <expression> ")" <statement>
    * | for "("[ <assignment> { "," <assignment> } ";" <expression> ";" [ <expression> { "," <expression> } ] " ) <statement>
@@ -371,6 +386,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def statement(): StatTree = {
     val pos = nextToken
     val tree = nextTokenKind match {
+      case PUBVAR | PRIVVAR =>
+        varDeclaration()
       case LBRACE  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
