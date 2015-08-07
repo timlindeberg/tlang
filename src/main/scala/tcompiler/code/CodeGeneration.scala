@@ -68,7 +68,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     if (!hasConstructor)
       generateDefaultConstructor(classFile, classDecl)
 
-    val file = getFilePath(dir, sym)
+    val file = getFilePath(dir, sym.name)
     classFile.writeToFile(file)
   }
 
@@ -127,17 +127,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     mh
   }
 
-  def generateMainClassFile(sourceName: String, main: MainObject, dir: String) = {
+  def generateMainClassFile(sourceName: String, main: MethodDecl, dir: String) = {
     val mainClassFile = new ClassFile(main.id.value, None)
     mainClassFile.setSourceFile(sourceName)
-    generateMainMethod(mainClassFile.addMainMethod.codeHandler, main.stats, main.id.value)
-    mainClassFile.addDefaultConstructor
-    val file = getFilePath(dir, main.getSymbol)
+    generateMethod(mainClassFile.addMainMethod.codeHandler, main)
+    val file = getFilePath(dir, main.id.value)
     mainClassFile.writeToFile(file)
   }
 
-  def generateMainMethod(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
-    stmts.foreach(new CodeGenerator(ch, cname, mutable.HashMap()).compileStat)
+  def generateMainMethod(ch: CodeHandler, stat: StatTree, cname: String): Unit = {
+    new CodeGenerator(ch, cname, mutable.HashMap()).compileStat(stat)
     ch << RETURN
     ch.freeze
   }
@@ -158,8 +157,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     flags.asInstanceOf[Short]
   }
 
-  private def getFilePath(outDir: String, sym: ClassSymbol): String = {
-    val split = sym.name.split("/")
+  private def getFilePath(outDir: String, className: String): String = {
+    val split = className.split("/")
     val packageDir = split.take(split.size - 1).mkString("/")
     val filePath = outDir + packageDir
     val f = new File(filePath)
@@ -167,7 +166,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       if (!f.mkdirs())
         sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
     }
-    outDir + sym.name + ".class"
+    outDir + className + ".class"
   }
 
   private def addReturnValueAndStatement(ch: CodeHandler, tpe: Type) = tpe match {

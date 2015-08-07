@@ -21,9 +21,12 @@ object Templates extends Pipeline[Program, Program] {
 
 
   private def replaceTypes(prog: Program): Program = {
-    def replaceType(tpe: TypeTree) = tpe match {
-      case x: ClassIdentifier => replaceTypeId(x)
-      case x                  => x
+    def replaceType(tpe: TypeTree): TypeTree = tpe match {
+      case x: ClassIdentifier    => replaceTypeId(x)
+      case x @ ArrayType(arrTpe) =>
+        x.tpe = replaceType(arrTpe)
+        x
+      case x                     => x
     }
 
     def replaceTypeId(tpe: ClassIdentifier) =
@@ -36,6 +39,7 @@ object Templates extends Pipeline[Program, Program] {
       case o: OperatorDecl => o.retType = replaceType(o.retType)
       case v: VarDecl      => v.tpe = replaceType(v.tpe)
       case f: Formal       => f.tpe = replaceType(f.tpe)
+      case n: NewArray     => n.tpe = replaceType(n.tpe)
       case n: New          => n.tpe = replaceTypeId(n.tpe)
     })
     prog
@@ -56,7 +60,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
   private var generated: Set[String] = Set()
   private var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
-
 
 
   def generate: List[ClassDecl] = {
@@ -98,10 +101,10 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     /* Helper functions to perform transformation */
     def updateType(t: TypeTree): TypeTree = {
       Some(t) collect {
-        case t@ClassIdentifier(_, templateTypes) if t.isTemplated =>
+        case t @ ClassIdentifier(_, templateTypes) if t.isTemplated =>
           t.templateTypes = templateTypes.map(updateType)
           generateClass(t)
-        case a@ArrayType(tpe)                                     => a.tpe = updateType(tpe)
+        case a @ ArrayType(tpe)                                     => a.tpe = updateType(tpe)
       }
       templateMap.getOrElse(t, t)
     }

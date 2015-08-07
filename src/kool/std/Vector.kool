@@ -189,10 +189,10 @@ class Vector<T> {
 		it = Iterator()
 		s = "[ "
 		while(it.HasNext()){
-			s = s + it.Next().toString()
-			if(it.HasNext()) s = s + ", "
+			s += it.Next().toString()
+			if(it.HasNext()) s += ", "
 		}
-		s = s + " ]"
+		s += " ]"
 		return s
     }
 

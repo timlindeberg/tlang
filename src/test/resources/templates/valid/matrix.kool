@@ -1,0 +1,30 @@
+import <kool.std.Matrix>
+
+main Program = {
+	var m1: Matrix<Int> = new Matrix<Int>(2, 3)
+	var m2: Matrix<Int>
+	var row: Int[]
+	m1[0][0] = 1 ; m1[0][1] = 2 ; m1[0][2] = 3
+	m1[1][0] = 4 ; m1[1][1] = 5 ; m1[1][2] = 6
+
+	println(m1)
+	m2 = m1.Transpose()
+	println(m2)
+	row = new Int[2]
+	row[0] = 1 ; row[1] = 1
+	m2[1] = row
+	println(m2)
+}
+
+class Main {
+
+	Def static NewMatrix(size: Int): Matrix<Int> = {
+		var m: Matrix<Int> = new Matrix<Int>(size, size)
+		var i: Int
+		var j: Int
+		for(i = 0; i < size; i++)
+			for(j = 0; j < size; j++)
+				m[i][j] = i * j
+		return m
+	}
+}

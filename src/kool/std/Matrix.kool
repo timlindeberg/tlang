@@ -1,0 +1,130 @@
+package kool.std
+
+class Matrix<T> {
+
+    var columns: Int
+    var rows: Int
+    var data: MatrixRow<T>[]
+
+    Def new(size: Int)             = init(size, size)
+    Def new(row: Int, column: Int) = init(row, column)
+
+    Def [](index: Int): MatrixRow<T> = return data[index]
+    Def []=(index: Int, row: T[]): Unit = data[index] = new MatrixRow<T>(row)
+
+    Def +(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+        var m: Matrix<T> = new Matrix<T>(lhs.columns, lhs.rows)
+        var i: Int
+        var j: Int
+
+        for(i = 0; i < m.columns; i++)
+            for(j = 0; j < m.rows; j++)
+                m[i][j] = lhs[i][j] + rhs[i][j]
+
+        return m
+    }
+
+    Def -(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+        var m: Matrix<T> = new Matrix<T>(lhs.columns, lhs.rows)
+        var i: Int
+        var j: Int
+
+        for(i = 0; i < m.columns; i++)
+            for(j = 0; j < m.rows; j++)
+                m[i][j] = lhs[i][j] - rhs[i][j]
+
+        return m
+    }
+
+    Def *(matrix: Matrix<T>, scalar: T): Matrix<T> = return scalar * matrix
+    Def *(scalar: T, matrix: Matrix<T>): Matrix<T> = {
+        var m: Matrix<T> = new Matrix<T>(matrix.columns, matrix.rows)
+        var i: Int
+        var j: Int
+
+        for(i = 0; i < m.columns; i++)
+           for(j = 0; j < m.rows; j++)
+                m[i][j] = scalar * matrix[i][j]
+
+        return m
+    }
+
+    Def *(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+        var m: Matrix<T> = new Matrix<T>(lhs.rows, lhs.columns)
+        var i: Int
+        var j: Int
+        var k: Int
+
+        for(i = 0; i < m.columns; i++)
+            for(j = 0; j < m.rows; j++)
+                for(k = 0; k < lhs.columns; k++)
+                    m[i][j] += lhs[i][k] * rhs[k][j]
+
+        return m
+    }
+
+    Def -(matrix: Matrix<T>): Matrix<T> = return -1 * matrix
+
+    Def Transpose(): Matrix<T> = {
+        var m: Matrix<T> = new Matrix<T>(columns, rows)
+        var i: Int
+        var j: Int
+
+         for(i = 0; i < columns; i++)
+            for(j = 0; j < rows; j++)
+                m[i][j] = data[j][i]
+
+        return m
+    }
+
+    Def Columns(): Int = return columns
+    Def Rows(): Int = return rows
+
+    Def toString(): String = {
+        var s: String = ""
+        var i: Int
+
+        if(columns == 0 || rows == 0)
+            return "[]"
+
+        for(i = 0; i < rows; i++)
+            s += data[i] + "\n"
+        return s
+    }
+
+    def init(row: Int, column: Int): Unit = {
+        var i: Int
+        columns = column
+        rows = row
+        data = new MatrixRow<T>[rows]
+        for(i = 0; i < rows; i++)
+            data[i] = new MatrixRow<T>(columns)
+    }
+
+}
+
+class MatrixRow<T> {
+
+    var data: T[]
+
+    Def new(w: Int) = data = new T[w]
+    Def new(d: T[]) = data = d
+
+    Def [](index: Int): T = return data[index]
+
+    Def []=(index: Int, value: T): Unit = data[index] = value
+
+    Def toString(): String = {
+        var s: String
+        var i: Int
+        if(data.length == 0)
+            return "[]"
+
+        s = "[ "
+        for(i = 0; i < data.length; i++)
+            s += data[i] + " "
+        s += "]"
+        return s
+    }
+
+}

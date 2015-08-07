@@ -85,6 +85,7 @@ object TreeGroups {
       case IncrementDecrement(id) => Some(id)
       case LogicNot(expr)         => Some(expr)
       case Not(expr)              => Some(expr)
+      case Negation(expr)         => Some(expr)
       case _                      => None
     }
   }

@@ -57,6 +57,9 @@ class Vector3<T> {
     Def |(lhs: Vector3<T>, rhs: Vector3<T>): T =
         return lhs.Dot(rhs)
 
+    Def -(vec: Vector3<T>): Vector3<T> =
+        return new Vector3<T>(-vec.X, -vec.Y, -vec.Z)
+
     //------------------------------------------------------
     // Public static methods
     //------------------------------------------------------

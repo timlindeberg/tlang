@@ -41,6 +41,7 @@ class H {
 
     println(~a); // res: -2
     println(!a); // res: true
+    println(-a); // res: -1
 
     println(a[1]); // res: 2
     println(a[1] = 2); // res: 2
@@ -89,6 +90,7 @@ class A {
     Def --(a: A): A = { a.I -= 1; return a; }
     Def ~(a: A): Int = { return ~a.I; }
     Def !(a: A): Bool = { return a.I != 0; }
+    Def -(a: A): Int = { return -a.I; }
 
 
     Def toString(): String = { return "" + I; }

@@ -10,7 +10,7 @@ object Trees {
   trait Tree extends Positioned with Product
 
 
-  case class Program(progPackage: Option[Package], var imports: List[Import], main: Option[MainObject], var classes: List[ClassDecl]) extends Tree {
+  case class Program(progPackage: Option[Package], var imports: List[Import], main: Option[MethodDecl], var classes: List[ClassDecl]) extends Tree {
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
   }
 
@@ -23,7 +23,6 @@ object Trees {
   case class RegularImport(identifiers: List[Identifier]) extends Import
   case class WildCardImport(identifiers: List[Identifier]) extends Import
   case class GenericImport(identifiers: List[Identifier]) extends Import
-  case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
 
   object ClassDecl {
     def unapply(e: ClassDecl): Option[(ClassIdentifier, Option[ClassIdentifier], List[VarDecl], List[FuncTree])] = e match {
@@ -229,6 +228,7 @@ object Trees {
       case _: NotEquals         => args(0) + " != " + args(1)
       case _: LogicNot          => "~" + args(0)
       case _: Not               => "!" + args(0)
+      case _: Negation          => "-" + args(0)
       case _: PreIncrement      => "++" + args(0)
       case _: PostIncrement     => args(0) + "++"
       case _: PreDecrement      => "--" + args(0)
@@ -256,6 +256,7 @@ object Trees {
     case _: NotEquals         => "!="
     case _: LogicNot          => "~"
     case _: Not               => "!"
+    case _: Negation          => "-"
     case _: PreIncrement      => "++"
     case _: PostIncrement     => "++"
     case _: PreDecrement      => "--"

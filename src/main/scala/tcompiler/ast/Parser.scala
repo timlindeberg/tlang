@@ -91,13 +91,16 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
    * <mainObject> ::= object <identifier> "{" def main (): Unit = "{" { <statement> } "}" "}"
    */
-  def mainObject(): MainObject = {
+  def mainObject(): MethodDecl = {
     val pos = nextToken
     val id = identifier()
-    eat(EQSIGN, LBRACE)
-    val stmts = until(statement, RBRACE)
-    eat(RBRACE)
-    MainObject(id, stmts).setPos(pos)
+    eat(EQSIGN)
+
+    val (vars, stmt) = varsAndStatement()
+
+    val args = List(Formal(ArrayType(StringType()), Identifier("args")))
+    val modifiers: Set[Modifier] = Set(Public, Static)
+    MethodDecl(UnitType(), id, args, vars, stmt, modifiers).setPos(pos)
   }
 
   /**
@@ -222,7 +225,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
     val (operatorType, args, newModifiers) = nextTokenKind match {
       case PLUS              => binaryOperator(Plus)
-      case MINUS             => binaryOperator(Minus)
+      case MINUS             =>
+        eat(MINUS)
+        eat(LPAREN)
+        val f1 = formal()
+        nextTokenKind match {
+          case COMMA =>
+            eat(COMMA)
+            val f2 = formal()
+            (Minus(Empty(), Empty()), List(f1, f2), modifiers + Static)
+          case _ =>
+            (Negation(Empty()), List(f1), modifiers + Static)
+        }
       case TIMES             => binaryOperator(Times)
       case DIV               => binaryOperator(Div)
       case MODULO            => binaryOperator(Modulo)

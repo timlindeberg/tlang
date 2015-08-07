@@ -93,13 +93,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
     case Program(_, _, main, classes)                                                    =>
-      if (main.isDefined)
-        addSymbols(main.get, globalScope)
+      main match {
+        case Some(methDecl) =>
+          globalScope.mainClass = new ClassSymbol(methDecl.id.value).setPos(methDecl.id)
+          addSymbols(methDecl, globalScope.mainClass)
+          methDecl.id.setType(TUnit)
+        case _              =>
+      }
       classes.foreach(addSymbols(_, globalScope))
-    case mainObject @ MainObject(id, stats)                                              =>
-      globalScope.mainClass = new ClassSymbol(id.value).setPos(id)
-      mainObject.setSymbol(globalScope.mainClass)
-      id.setSymbol(globalScope.mainClass)
     case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
       val newSymbol = new ClassSymbol(name).setPos(id)
       ensureIdentiferNotDefined(globalScope.classes, id.value, id)
@@ -108,29 +109,26 @@ class NameAnalyser(ctx: Context, prog: Program) {
       globalScope.classes += (id.value -> newSymbol)
       vars.foreach(addSymbols(_, newSymbol))
       methods.foreach(addSymbols(_, newSymbol))
-
-      if (name == globalScope.mainClass.name)
-        ErrorSameNameAsMain(name, id)
     case _                                                                               => throw new UnsupportedOperationException
   }
 
-  private def addSymbols(t: Tree, s: ClassSymbol): Unit = t match {
+  private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
     case varDecl @ VarDecl(tpe, id, init, _)                                          =>
-      val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(s)).setPos(id)
-      ensureIdentiferNotDefined(s.members, id.value, id)
+      val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(classSymbol)).setPos(id)
+      ensureIdentiferNotDefined(classSymbol.members, id.value, id)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
       variableUsage += newSymbol -> true
-      s.members += (id.value -> newSymbol)
+      classSymbol.members += (id.value -> newSymbol)
     case methodDecl @ MethodDecl(retType, id, args, vars, stats, _)                   =>
-      val newSymbol = new MethodSymbol(id.value, s, methodDecl.modifiers).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl.modifiers).setPos(id)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
       vars.foreach(addSymbols(_, newSymbol))
     case constructorDecl @ ConstructorDecl(id, args, vars, stats, _)                  =>
-      val newSymbol = new MethodSymbol(id.value, s, constructorDecl.modifiers).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl.modifiers).setPos(id)
       newSymbol.setType(TUnit)
 
       id.setSymbol(newSymbol)
@@ -139,7 +137,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       args.foreach(addSymbols(_, newSymbol))
       vars.foreach(addSymbols(_, newSymbol))
     case operatorDecl @ OperatorDecl(operatorType, retType, args, vars, stats, _, id) =>
-      val newSymbol = new OperatorSymbol(operatorType, s, operatorDecl.modifiers)
+      val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl.modifiers)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
 
@@ -147,25 +145,25 @@ class NameAnalyser(ctx: Context, prog: Program) {
       vars.foreach(addSymbols(_, newSymbol))
   }
 
-  private def addSymbols(t: Tree, s: MethodSymbol): Unit = t match {
+  private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
     case varDecl @ VarDecl(tpe, id, init, _) =>
       val newSymbol = new VariableSymbol(id.value, varDecl.modifiers).setPos(id)
-      ensureIdentiferNotDefined(s.members, id.value, id)
-      if (s.params.contains(id.value)) {
-        val oldSymbol = s.params(id.value)
+      ensureIdentiferNotDefined(methSymbol.members, id.value, id)
+      if (methSymbol.params.contains(id.value)) {
+        val oldSymbol = methSymbol.params(id.value)
         ErrorLocalVarShadowsParamater(id.value, oldSymbol.line, id)
       }
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
       variableUsage += newSymbol -> true
-      s.members += (id.value -> newSymbol)
+      methSymbol.members += (id.value -> newSymbol)
     case formal @ Formal(tpe, id)            =>
       val newSymbol = new VariableSymbol(id.value).setPos(id)
-      ensureIdentiferNotDefined(s.params, id.value, id)
+      ensureIdentiferNotDefined(methSymbol.params, id.value, id)
       id.setSymbol(newSymbol)
       formal.setSymbol(newSymbol)
-      s.params += (id.value -> newSymbol)
-      s.argList ++= List(newSymbol)
+      methSymbol.params += (id.value -> newSymbol)
+      methSymbol.argList ++= List(newSymbol)
     case _                                   => throw new UnsupportedOperationException
   }
 
@@ -177,13 +175,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def bind(t: Tree): Unit = t match {
-    case Program(_, _, main, classes)                                                =>
-      if (main.isDefined)
-        bind(main.get)
+    case Program(_, _, main, classes)                                               =>
+      main match {
+        case Some(mainMethod) => bind(mainMethod)
+        case _                =>
+      }
       classes.foreach(bind)
-    case main @ MainObject(id, stats)                                                =>
-      stats.foreach(bind(_, main.getSymbol, isStatic = true))
-    case classDecl @ ClassDecl(id, parent, vars, methods)                            =>
+    case classDecl @ ClassDecl(id, parent, vars, methods)                           =>
       setParent(id, parent, classDecl)
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
@@ -235,8 +233,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
       ensureOperatorNotDefined(operatorDecl)
 
       bind(stat, operatorDecl.getSymbol, operatorDecl.isStatic)
-    case Formal(tpe, id)                                                             => setType(tpe, id)
-    case _                                                                           => throw new UnsupportedOperationException
+    case Formal(tpe, id)                                                            => setType(tpe, id)
+    case _                                                                          => throw new UnsupportedOperationException
   }
 
   private def bindVars(vars: List[VarDecl], symbol: MethodSymbol, isStatic: Boolean): Unit =
