@@ -351,6 +351,25 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case TChar      => TInt // Negation of char is int
           case x          => x
         }
+      case Hash(expr)                      =>
+        val exprType = tcExpr(expr, Types.anyObject :: Types.primitives)
+        exprType match {
+          case _: TObject =>
+            val argList = List(exprType)
+            val operatorType = typeCheckOperator(exprType, expression, argList) match {
+              case Some(tpe) => tpe match {
+                case TInt => tpe
+                case _    => ErrorWrongType(TInt, tpe, expression)
+              }
+              case _         => TInt
+            }
+            operatorType match {
+              case TInt => TInt
+              case _    =>
+                ErrorOperatorWrongReturnType(Trees.operatorString(expression, argList), "Int", operatorType.toString, expression)
+            }
+          case _          => TInt
+        }
       case IncrementDecrement(id)          =>
         tcExpr(id, Types.anyObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(x)) // Requires same return type as type

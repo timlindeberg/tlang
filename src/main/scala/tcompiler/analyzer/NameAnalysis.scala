@@ -102,6 +102,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
       }
       classes.foreach(addSymbols(_, globalScope))
     case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
+      if(name == globalScope.mainClass.name)
+        ErrorSameNameAsMain(name, id)
+
       val newSymbol = new ClassSymbol(name).setPos(id)
       ensureIdentiferNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)

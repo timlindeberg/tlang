@@ -193,6 +193,7 @@ object Trees {
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree { def dimension = sizes.size }
   case class New(var tpe: ClassIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
+  case class Hash(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree
   case class LogicNot(expr: ExprTree) extends ExprTree
   case class PreIncrement(id: Identifier) extends ExprTree with StatTree
@@ -229,6 +230,7 @@ object Trees {
       case _: LogicNot          => "~" + args(0)
       case _: Not               => "!" + args(0)
       case _: Negation          => "-" + args(0)
+      case _: Hash              => "#" + args(0)
       case _: PreIncrement      => "++" + args(0)
       case _: PostIncrement     => args(0) + "++"
       case _: PreDecrement      => "--" + args(0)
@@ -257,6 +259,7 @@ object Trees {
     case _: LogicNot          => "~"
     case _: Not               => "!"
     case _: Negation          => "-"
+    case _: Hash              => "#"
     case _: PreIncrement      => "++"
     case _: PostIncrement     => "++"
     case _: PreDecrement      => "--"

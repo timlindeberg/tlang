@@ -290,7 +290,7 @@ class Tokenizer(val file: File, ctx: Context) {
       case '\n' :: r =>
         line += 1
         column = 1
-        r
+        chars
       case _ :: r    =>
         column += 1
         skip(r)
@@ -394,6 +394,7 @@ object Tokenizer {
     '.' -> DOT,
     ',' -> COMMA,
     '!' -> BANG,
+    '#' -> HASH,
     '(' -> LPAREN,
     ')' -> RPAREN,
     '[' -> LBRACKET,

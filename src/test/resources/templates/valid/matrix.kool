@@ -16,7 +16,7 @@ main Program = {
 	println(m2)
 }
 
-class Main {
+class Program {
 
 	Def static NewMatrix(size: Int): Matrix<Int> = {
 		var m: Matrix<Int> = new Matrix<Int>(size, size)

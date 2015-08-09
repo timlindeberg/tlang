@@ -86,6 +86,7 @@ object TreeGroups {
       case LogicNot(expr)         => Some(expr)
       case Not(expr)              => Some(expr)
       case Negation(expr)         => Some(expr)
+      case Hash(expr)             => Some(expr)
       case _                      => None
     }
   }

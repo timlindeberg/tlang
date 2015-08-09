@@ -253,6 +253,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case NOTEQUALS         => binaryOperator(NotEquals)
       case LOGICNOT          => unaryOperator(LogicNot)
       case BANG              => unaryOperator(Not)
+      case HASH              => unaryOperator(Hash)
       case INCREMENT         => incrementDecrement(PreIncrement)
       case DECREMENT         => incrementDecrement(PreDecrement)
       case LBRACKET          =>
@@ -659,6 +660,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case LOGICNOT      =>
           eat(LOGICNOT)
           LogicNot(term())
+        case HASH =>
+          eat(HASH)
+          Hash(term())
         case DECREMENT     =>
           eat(DECREMENT)
           PreDecrement(identifier())
