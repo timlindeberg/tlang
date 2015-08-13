@@ -226,10 +226,6 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       operatorDecl.getSymbol.setType(retType.getType)
       operatorType.setType(retType.getType)
-      operatorType match {
-        case IncrementDecrement(id) => id.setSymbol(new VariableSymbol("")).setType(retType.getType)
-        case _                      =>
-      }
       args.foreach(bind)
       bindVars(vars, operatorDecl.getSymbol, operatorDecl.isStatic)
 

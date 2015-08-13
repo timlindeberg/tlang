@@ -177,21 +177,21 @@ class ListPrinter<T, U> {
 }
 
 class Sorter<Container, T> {
-	
-	Def sort(c: Container): Unit = {
-		var i: Int;
-		var j: Int;
-		var N: Int = c.Size();
-		var x: T;
 
-        for(i = 1; i < N; i++){
-            x = c[i].Value();
-        	j = i;
-        	while(j > 0 && c[j - 1].Value() > x){
-        		c[j] = c[j - 1].Value();
-        		j = j - 1;
+	Def sort(c: Container): Unit = {
+		var i: Int
+		var j: Int
+		var x: T
+
+        for(i = 1; i < c.Size(); i++){
+            x = c[i]
+        	j = i
+        	while(j > 0 && c[j - 1] > x){
+        		c[j] = c[j - 1]
+        		j = j - 1
         	}
-            c[j] = x;
+            c[j] = x
         }
 	}
 }
+

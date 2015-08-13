@@ -116,10 +116,15 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     // Initialize fields after constructor
     val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
     classDecl.vars.foreach {
-      case VarDecl(varTpe, id, Some(expr), _) =>
-        ch << ArgLoad(0) // put this-reference on stack
+      case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
+        if(!varDecl.isStatic)
+          ch << ArgLoad(0) // put this-reference on stack
+
         codeGenerator.compileExpr(expr)
-        ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+        if(varDecl.isStatic)
+          ch << PutStatic(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+        else
+          ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
       case _                                  =>
     }
 
@@ -267,6 +272,11 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case _: Println => "println"
         }
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, funcName, "(" + arg + ")V")
+      case Error(expr)                      =>
+        ch << cafebabe.AbstractByteCodes.New(CodeGenerator.JavaRuntimeException) << DUP
+        compileExpr(expr)
+        ch << InvokeSpecial(CodeGenerator.JavaRuntimeException, "<init>", "(L" + CodeGenerator.JavaString + ";)V")
+        ch << ATHROW
       case Return(Some(expr))               =>
         compileExpr(expr)
         expr.getType.codes.ret(ch)
@@ -551,8 +561,10 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           compileExpr(obj)
         compileExpr(expr)
         convertType()
-        if (duplicate)
-          id.getType.codes.dup_x1(ch) // ref value -> value ref value
+        if (duplicate){
+          if(static) id.getType.codes.dup(ch)
+          else id.getType.codes.dup_x1(ch) // ref value -> value ref value
+        }
         if (static) ch << PutStatic(className, id.value, id.getType.byteCodeName)
         else ch << PutField(className, id.value, id.getType.byteCodeName)
       case mc @ MethodCall(obj, meth, args)          =>
@@ -636,33 +648,59 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(afterLabel)
     }
 
-    def compileIncrementDecrement(isPre: Boolean, isIncrement: Boolean, id: Identifier) = {
-      val isLocal = variableMap.contains(id.value)
-      val codes = id.getType.codes
+    def compileIncrementDecrement(isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
+      println(isIncrement)
+      expr match {
+        case id: Identifier             =>
+          val isLocal = variableMap.contains(id.value)
+          val codes = id.getType.codes
+          expr.getType match {
+            case TInt if isLocal =>
+              if (!isPre && duplicate) compileExpr(expr)
 
-      id.getType match {
-        case TInt if isLocal =>
-          if (!isPre && duplicate) load(id)
+              ch << IInc(variableMap(id.value), if (isIncrement) 1 else -1)
 
-          ch << IInc(variableMap(id.value), if (isIncrement) 1 else -1)
+              if (isPre && duplicate) compileExpr(expr)
+            case x: TObject      =>
+              // TODO: Fix post/pre increment for objects. Currently they work the same way.
+              store(id, () => {
+                load(id)
+                compileOperatorCall(ch, expression, x)
+              }, duplicate)
+            case _               =>
+              store(id, () => {
+                load(id)
+                if (!isPre && duplicate) {
+                  if (isLocal) codes.dup(ch)
+                  else codes.dup_x1(ch)
+                }
+                codes.one(ch)
+                if (isIncrement) codes.add(ch) else codes.sub(ch)
+              }, duplicate && isPre)
+          }
+        case fr @ FieldRead(obj, id)    =>
+          if(!isPre && duplicate)
+            compileExpr(fr) // TODO: Use dup instead of compiling the whole expression
+          val assign = assignExpr(fr, isIncrement)
+          compileExpr(FieldAssign(obj, id, assign), isPre && duplicate)
+        case ar @ ArrayRead(arr, index) =>
+          if(!isPre && duplicate)
+            compileExpr(ar)
+          val assign = assignExpr(ar, isIncrement)
+          compileExpr(ArrayAssign(arr, index, assign), isPre && duplicate)
+      }
 
-          if (isPre && duplicate) load(id)
-        case x: TObject      =>
-          // TODO: Fix post/pre increment for objects. Currently they work the same way.
-          store(id, () => {
-            load(id)
-            compileOperatorCall(ch, expression, x)
-          }, duplicate)
-        case _               =>
-          store(id, () => {
-            load(id)
-            if (!isPre && duplicate) {
-              if (isLocal) codes.dup(ch)
-              else codes.dup_x1(ch)
-            }
-            codes.one(ch)
-            if (isIncrement) codes.add(ch) else codes.sub(ch)
-          }, duplicate && isPre)
+      def assignExpr(expr: ExprTree, isIncrement: Boolean) = {
+        val tpe = expr.getType
+        val one = tpe match {
+          case TInt    => IntLit(1)
+          case TChar   => IntLit(1)
+          case TLong   => LongLit(1l)
+          case TFloat  => FloatLit(1.0f)
+          case TDouble => DoubleLit(1.0)
+        }
+        one.setType(tpe)
+        if (isIncrement) Plus(expr, one).setType(tpe) else Minus(expr, one).setType(tpe)
       }
     }
   }
@@ -857,6 +895,7 @@ object CodeGenerator {
   val JavaFloat = "java/lang/Float"
   val JavaDouble = "java/lang/Double"
   val JavaLong = "java/lang/Long"
+  val JavaRuntimeException = "java/lang/RuntimeException"
 
 
   /* Labels */

@@ -11,8 +11,8 @@ import scala.io.Source
 import scala.sys.process.ProcessLogger
 
 object TestUtils {
-  val runScript      = "./reference/run.sh"
-  val resources      = "./src/test/resources/"
+  val runScript = "./reference/run.sh"
+  val resources = "./src/test/resources/"
   val solutionPrefix = ".kool-solution"
 
   val Interpreter = new Interpreter
@@ -47,10 +47,20 @@ object TestUtils {
     map("expectedErrors" -> expectedErrors, "quietReporter" -> quietReporter)
   }
 
-  val SolutionRegex = ".*// *res:(.*)".r
+  val SolutionRegex = """.*// *res:(.*)""".r
+  val SolutionOrderedRegex = """.*// *res(\d+):(.*)""".r
+
   def parseSolutions(file: File): List[String] = {
     val fileName = file.getPath
-    Source.fromFile(fileName).getLines().flatMap(line => SolutionRegex.findAllIn(line).matchData.map(_.group(1))).toList
+    var i = -1
+    val answers = Source.fromFile(fileName).getLines().map(_ match {
+      case SolutionOrderedRegex(num, result) => (num.toInt, result)
+      case SolutionRegex(result)             =>
+        i += 1
+        (i, result)
+      case _ => (-1, "")
+    })
+    answers.toList.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }
   object IgnoreErrorOutput extends ProcessLogger {
     def buffer[T](f: ⇒ T): T = f
@@ -70,7 +80,7 @@ object TestUtils {
         case _: Empty    =>
         case node: Typed =>
           assert(node.getType != TUntyped, node + " was untyped.")
-          if(node.getType == TUntyped) hasTypes = false
+          if (node.getType == TUntyped) hasTypes = false
       })
       hasTypes
     }

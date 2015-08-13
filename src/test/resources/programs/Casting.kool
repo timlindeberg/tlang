@@ -1,48 +1,31 @@
-main Main = {
-	new H().run();
+main Casting = {
+	var a: A
+    var b: A
+    var c: A
+    a = new B()
+    (a as B).testB() // res: B
 }
-
-class H {
-
-  Def run(): Unit = {
-     var a: A;
-     var b: A;
-     var c: A;
-     a = new B();
-     (a as B).testB(); // res: B
-  }
-
-}
-
 
 class A {
 
-    Def test(): Unit = {
-        println("A");
-    }
+    Def test(): Unit = println("A")
 
-    Def testA(): Unit = {
-        println("A");
-    }
+    Def testA(): Unit = println("A")
+
 }
+
 class B extends A {
 
-     Def test(): Unit = {
-        println("B");
-     }
+    Def test(): Unit = println("B")
 
-    Def testB(): Unit = {
-        println("B");
-    }
+    Def testB(): Unit = println("B")
+
 }
 
 class C extends B {
 
-     Def test(): Unit = {
-        println("C");
-     }
+    Def test(): Unit = println("C")
 
-    Def testC(): Unit = {
-        println("C");
-    }
+    Def testC(): Unit = println("C")
+
 }

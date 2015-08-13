@@ -217,12 +217,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       (operatorType, List(formal()), modifiers + Static)
     }
 
-    def incrementDecrement(constructor: (Identifier) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
-      eat(nextTokenKind)
-      eat(LPAREN)
-      (constructor(new Identifier("")), List(formal()), modifiers + Static)
-    }
-
     val (operatorType, args, newModifiers) = nextTokenKind match {
       case PLUS              => binaryOperator(Plus)
       case MINUS             =>
@@ -254,8 +248,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case LOGICNOT          => unaryOperator(LogicNot)
       case BANG              => unaryOperator(Not)
       case HASH              => unaryOperator(Hash)
-      case INCREMENT         => incrementDecrement(PreIncrement)
-      case DECREMENT         => incrementDecrement(PreDecrement)
+      case INCREMENT         => unaryOperator(PreIncrement)
+      case DECREMENT         => unaryOperator(PreDecrement)
       case LBRACKET          =>
         eat(LBRACKET, RBRACKET)
         nextTokenKind match {
@@ -476,6 +470,12 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         eat(RPAREN)
         endStatement()
         Println(expr)
+      case ERROR =>
+        eat(ERROR, LPAREN)
+        val expr = expression()
+        eat(RPAREN)
+        endStatement()
+        Error(expr)
       case RETURN  =>
         eat(RETURN)
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
@@ -603,7 +603,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def timesDivMod() = leftAssociative(term, TIMES, DIV, MODULO)
 
   /**
-   * <term> ::= <termFirst> [ termRest ]
+   * <term> ::= <termFirst> { termRest }
    */
   def term(): ExprTree = {
     /**
@@ -665,10 +665,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           Hash(term())
         case DECREMENT     =>
           eat(DECREMENT)
-          PreDecrement(identifier())
+          PreDecrement(expression())
         case INCREMENT     =>
           eat(INCREMENT)
-          PreIncrement(identifier())
+          PreIncrement(expression())
         case INTLITKIND    =>
           intLit()
         case LONGLITKIND   =>
@@ -759,11 +759,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
      * | .<identifier> "(" <expression> { "," <expression> } ")
      * | "[" <expression> "]"
      * | as <tpe>
+     * | ++
+     * | --
      */
     def termRest(lhs: ExprTree): ExprTree = {
       val pos = nextToken
       var e = lhs
-      val tokens = List(DOT, LBRACKET, AS)
+      val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)
 
       while (tokens.contains(nextTokenKind)) {
         e = nextTokenKind match {
@@ -791,6 +793,12 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case AS       =>
             eat(AS)
             As(e, tpe())
+          case INCREMENT =>
+            eat(INCREMENT)
+            PostIncrement(e)
+          case DECREMENT =>
+            eat(DECREMENT)
+            PostDecrement(e)
           case _        => e
         }
       }

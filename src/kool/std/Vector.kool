@@ -4,7 +4,7 @@ import <Option>
 
 class Vector<T> {
 
-	var InitialCapacity: Int = 16
+	var InitialCapacity: Int = 10
 	var size: Int = 0
 	var data: T[]
 
@@ -24,19 +24,13 @@ class Vector<T> {
 	}
 
 
-	Def [](index: Int): Option<T> = {
-		var res: Option<T> = new Option<T>()
-		if(!indexInRange(index))
-			return res
-
-		res.Add(data[index])
-		return res
+	Def [](index: Int): T = {
+		checkBounds(index)
+		return data[index]
 	}
 
 	Def []=(index: Int, value: T): Unit = {
-		if(!indexInRange(index))
-			return
-
+		checkBounds(index)
 		data[index] = value
 	}
 
@@ -87,21 +81,18 @@ class Vector<T> {
 		data[size++] = value
 	}
 
-	Def Pop(): Option<T> = {
-		var res: Option<T> = new Option<T>()
-		var i: Int
+	Def Pop(): T = {
 		if(size == 0)
-			return res
+			error("Cannot pop empty stack!")
 
-		res.Add(data[--size])
-		return res
+		return data[--size]
 	}
 
 	Def Add(value: T): Unit = Add(0, value)
-	Def Add(index: Int, value: T): Bool = {
+	Def Add(index: Int, value: T): Unit = {
 		var i: Int
-		if(index != size && !indexInRange(index))
-			return false
+		if(index != size)
+			checkBounds(index)
 
 		if(size >= data.length)
 			increaseStorage()
@@ -114,13 +105,13 @@ class Vector<T> {
 	}
 
     Def AddAll(list: Vector<T>): Unit =	AddAll(size, list)
-	Def AddAll(index: Int, list: Vector<T>): Bool = {
+	Def AddAll(index: Int, list: Vector<T>): Unit = {
 		var it: VectorIterator<T> = list.Iterator()
 		var i: Int
 		var newData: T[] = new T[size + list.size]
 
-		if(index != size && !indexInRange(index))
-			return false
+		if(index != size)
+        	checkBounds(index)
 
 		for(i = 0; i < index; i++)
 			newData[i] = data[i]
@@ -133,24 +124,28 @@ class Vector<T> {
 
 		data = newData
 		size += list.size
-
-		return true
 	}
 
-	Def RemoveIndex(index: Int): Bool = {
+	Def RemoveIndex(index: Int): Unit = {
 		var i: Int
 
-		if(!indexInRange(index))
-			return false
+		checkBounds(index)
 
 		for(i = index; i < size; i++)
 			data[i] = data[i + 1]
 
 		size--
-		return true
 	}
 
-	Def Remove(value: T): Bool = return RemoveIndex(IndexOf(value))
+	Def Remove(value: T): Bool = {
+	    var index: Int = IndexOf(value)
+
+	    if(index == -1)
+	        return false
+
+	    RemoveIndex(index)
+	    return true
+	}
 
 	Def IndexOf(value: T): Int = {
 		var i: Int
@@ -176,8 +171,8 @@ class Vector<T> {
 
 	Def Size(): Int = return size
 
-	Def First(): Option<T> = return this[0]
-	Def Last(): Option<T> = return this[size - 1]
+	Def First(): T = return this[0]
+	Def Last(): T = return this[size - 1]
 
     Def toString(): String = {
 		var it: VectorIterator<T>
@@ -196,9 +191,6 @@ class Vector<T> {
 		return s
     }
 
-
-	def indexInRange(index: Int): Bool = return index >= 0 && index < size
-
 	def increaseStorage(): Unit = {
 		var newCapacity: Int = (data.length * 3) / 2 + 1
 		var newData: T[] = new T[newCapacity]
@@ -208,6 +200,13 @@ class Vector<T> {
 			newData[i] = data[i]
 		data = newData
 	}
+
+	def checkBounds(index: Int): Bool =
+		if(index < 0 || index >= size)
+			outOfBoundsError(index)
+
+    def outOfBoundsError(index: Int): Unit = error("Index out of bounds: " + index + " (size: " + size + ")")
+
 }
 
 class VectorIterator<T> {
@@ -225,6 +224,6 @@ class VectorIterator<T> {
 
 	Def Next(): T = {
 		hasNext = current < vector.Size() - 1
-		return vector[current++].Value()
+		return vector[current++]
 	}
 }

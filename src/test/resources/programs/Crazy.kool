@@ -1,4 +1,4 @@
-main Main = {
+main Crazy = {
 	println(new A().bar());     // res: false
     println(new A().bar2());    // res: true
     println(new A().T());       // res: 0
@@ -34,7 +34,7 @@ class B extends A {
   }
   Def b(): Bool = {
     return b;
-  }    
+  }
 }
 
 class Test {

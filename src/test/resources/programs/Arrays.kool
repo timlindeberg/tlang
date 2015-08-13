@@ -1,64 +1,52 @@
-main Main = {
-	new H().run();
-}
+main Arrays = {
+	 var i: Int
+     var int: Int[]
+     var str: String[]
+     var bool: Bool[]
+     var a: A[]
 
-class H {
+     int = new Int[5]
+     str = new String[5]
+     bool = new Bool[5]
+     a = new A[5]
 
-  Def run(): Unit = {
-     var i: Int;
-     var int: Int[];
-     var str: String[];
-     var bool: Bool[];
-     var a: A[];
-
-     int = new Int[5];
-     str = new String[5];
-     bool = new Bool[5];
-     a = new A[5];
-
-     println(int.length); // res: 5
-     println(str.length); // res: 5
-     println(bool.length); // res: 5
-     println(a.length); // res: 5
+     println(int.length) // res: 5
+     println(str.length) // res: 5
+     println(bool.length) // res: 5
+     println(a.length) // res: 5
 
      for(i = 0; i < 5; i++){
-        int[i]  = i;
-        str[i]  = "" + i;
-        bool[i] = i % 2 == 0;
-        a[i]    = new A(i);
+        int[i]  = i
+        str[i]  = "" + i
+        bool[i] = i % 2 == 0
+        a[i]    = new A(i)
      }
 
      for(i = 0; i < 5; i++){
-        print(int[i] + " "); // res: 0 1 2 3 4
+        print(int[i] + " ") // res: 0 1 2 3 4
      }
-     println("");
+     println("")
      for(i = 0; i < 5; i++){
-        print(str[i] + " "); // res: 0 1 2 3 4
+        print(str[i] + " ") // res: 0 1 2 3 4
      }
-     println("");
+     println("")
      for(i = 0; i < 5; i++){
-        print(bool[i]); // res: true false true false true
-        print(" ");
+        print(bool[i]) // res: true false true false true
+        print(" ")
      }
-     println("");
+     println("")
      for(i = 0; i < 5; i++){
-        print(a[i]);    // res: 0 1 2 3 4
-        print(" ");
+        print(a[i])    // res: 0 1 2 3 4
+        print(" ")
      }
-  }
-
 }
 
 class A {
 
-  var int: Int;
+  var int: Int
 
-  Def new(i: Int) = {
-    int = i;
-  }
+  Def new(i: Int) = int = i
 
-  Def toString(): String = {
-    return "" + int;
-  }
+  Def toString(): String = return "" + int
 
 }

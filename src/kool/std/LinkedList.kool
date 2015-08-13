@@ -19,21 +19,14 @@ class LinkedList<T> {
 
 	Def new(list: LinkedList<T>) = AddAll(list)
 
-	Def [](index: Int): Option<T> = {
-		var res:  Option<T>       = new Option<T>()
-		var node: Option<Node<T>> = find(index)
-
-		if(node.IsDefined())
-			res.Add(node.Value().Value)
-
-		return res
+	Def [](index: Int): T = {
+		checkBounds(index)
+		return find(index).Value().Value
 	}
 
 	Def []=(index: Int, value: T): Unit = {
-		var node: Option<Node<T>> = find(index)
-
-		if(node.IsDefined())
-			node.Value().Value = value
+		checkBounds(index)
+		find(index).Value().Value = value
 	}
 
 	Def ==(lhs: LinkedList<T>, rhs: LinkedList<T>): Bool = {
@@ -94,19 +87,18 @@ class LinkedList<T> {
 		size++
 	}
 
-	Def Pop(): Option<T> = {
-		var res: Option<T> = new Option<T>()
-
+	Def Pop(): T = {
+		var res: T
 		if(size <= 0)
-		    return res
+		    error("Cannot pop empty stack!")
 
-		res.Add(last.Value().Value)
+		res = last.Value().Value
 		RemoveIndex(size - 1)
 		return res
 	}
 
 	Def Add(value: T): Unit = Add(0, value)
-	Def Add(index: Int, value: T): Bool = {
+	Def Add(index: Int, value: T): Unit = {
 		var node: Option<Node<T>>
 		var next: Option<Node<T>>
 		var prev: Option<Node<T>>
@@ -114,8 +106,8 @@ class LinkedList<T> {
 		var elem: Node<T>
 		var res:  Bool
 
-        if(index < 0 || index > size)
-            return false
+		if(index != size)
+			checkBounds(index)
 
         elem = new Node<T>(value)
         if(index == size){
@@ -137,8 +129,6 @@ class LinkedList<T> {
             node.Value().SetPrev(elem)
         }
         size++
-
-		return true
 	}
 
     Def AddAll(list: LinkedList<T>): Unit = {
@@ -147,36 +137,33 @@ class LinkedList<T> {
     		Push(it.Next())
     }
 
-	Def AddAll(index: Int, list: LinkedList<T>): Bool = {
+	Def AddAll(index: Int, list: LinkedList<T>): Unit = {
 		var it: LinkedListIterator<T> = list.Iterator()
 
-		while(it.HasNext())
-			if(!Add(index, it.Next()))
-			    return false
+		checkBounds(index)
 
-		return true
+		while(it.HasNext())
+			Add(index, it.Next())
 	}
 
 	Def Remove(value: T): Bool = {
 		var index: Int = IndexOf(value)
-		if(index != -1)
-			return RemoveIndex(index)
 
-		return false
+		if(index == -1)
+			return false
+
+		RemoveIndex(index)
+		return true
 	}
 
-	Def RemoveIndex(index: Int): Bool = {
+	Def RemoveIndex(index: Int): Unit = {
 		var node: 	Option<Node<T>>
 		var next:	Option<Node<T>>
 		var prev:	Option<Node<T>>
 
-        if(size <= 0)
-            return false
+		checkBounds(index)
 
 		node = find(index)
-		if(!node.IsDefined())
-		    return false
-
         prev = node.Value().Prev()
         next = node.Value().Next()
         if(prev.IsDefined() && next.IsDefined()) {
@@ -196,7 +183,6 @@ class LinkedList<T> {
             Clear()
         }
         size--
-		return true
 	}
 
 	Def IndexOf(value: T): Int = {
@@ -253,7 +239,6 @@ class LinkedList<T> {
 		var tmp: 	Option<Node<T>>
 		var i: 		Int
 
-		if(!indexInRange(index)) return new Option<Node<T>>()
 		if(index == 0)			 return first
 		if(index == size - 1)	 return last
 
@@ -276,7 +261,11 @@ class LinkedList<T> {
 		return tmp
 	}
 
-	def indexInRange(index: Int): Bool = return index >= 0 && index < size
+	def checkBounds(index: Int): Bool =
+		if(index < 0 || index >= size)
+			outOfBoundsError(index)
+
+	def outOfBoundsError(index: Int): Unit = error("Index out of bounds: " + index + " (size: " + size + ")")
 }
 
 class Node<T> {

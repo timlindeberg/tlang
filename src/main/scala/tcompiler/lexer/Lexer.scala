@@ -26,7 +26,8 @@ class Tokenizer(val file: File, ctx: Context) {
         column = 1
         line += 1
         // Don't put two newline tokens in a row
-        readTokens(r, if (tokens.head.kind == NEWLINE) tokens else token :: tokens)
+        val t = if(tokens.nonEmpty && tokens.head.kind != NEWLINE) token :: tokens else tokens
+        readTokens(r, t)
       case (c :: r) if c.isWhitespace                       =>
         column += 1
         readTokens(r, tokens)
@@ -449,6 +450,7 @@ object Tokenizer {
     "this" -> THIS,
     "new" -> NEW,
     "print" -> PRINT,
-    "println" -> PRINTLN)
+    "println" -> PRINTLN,
+    "error" -> ERROR)
 
 }

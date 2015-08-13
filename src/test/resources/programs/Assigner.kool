@@ -1,65 +1,60 @@
-main Main = {
-	new H().run();
-}
+main Assigner = {
+	var f: Foo
+    var t: Test
+    var a: A
+    var c: C
+    f = new Foo()
+    println(f.bar(10000))   // res: 5
+    println(f.baz(1))       // res: 1
+    println(f.foo())        // res: foo
+    t = new Test()
+    println(t.Method())     // res: String
+    t = new Test4()
+    println(t.Method())     // res: Test4
 
-class H {
-
-  Def run(): String = {
-    var f: Foo;
-    var t: Test;
-    var a: A;
-    var c: C;
-    f = new Foo();
-    println(f.bar(10000));   // res: 5
-    println(f.baz(1));       // res: 1
-    println(f.foo());        // res: foo
-    t = new Test();
-    println(t.Method());     // res: String
-    t = new Test4();
-    println(t.Method());     // res: Test4
-
-    a = new A();
-    println(a.foo(0, "yo")); // res: 0
-    a = new B();
-    println(a.foo(0, "yo")); // res: 1
-    c = new C();
-    println(c.foo());        // res: 0
-    c = new D();
-    println(c.foo());        // res: 1
-    return "!";
-  }
-
+    a = new A()
+    println(a.foo(0, "yo")) // res: 0
+    a = new B()
+    println(a.foo(0, "yo")) // res: 1
+    c = new C()
+    println(c.foo())        // res: 0
+    c = new D()
+    println(c.foo())        // res: 1
 }
 
 class Foo {
   Def bar(a: Int): Int = {
-    a = 5;
-    return a;
+    a = 5
+    return a
   }
   Def baz(a: Int): Int = {
-    return a;
+    return a
   }
 
-  Def foo():String = { return "foo"; }
+  Def foo():String = return "foo"
 }
 
-class Test { Def Method () : String = { return "String" ; } }
+class Test {
+    Def Method () : String = return "String"
+}
 class Test2 extends Test { }
 class Test3 extends Test2 { }
-class Test4 extends Test3 { Def Method () : String = { return "Test4" ; } }
+class Test4 extends Test3 {
+    Def Method () : String = return "Test4"
+}
 
 class A { 
-  Def foo(a: Int, b: String):Int = { return 0; }
+  Def foo(a: Int, b: String): Int = return 0
 }
 
 class B extends A {
-  Def foo(a: Int, b: String): Int = { return 1; }
+  Def foo(a: Int, b: String): Int = return 1
 }
 
 class C { 
-  Def foo():Int = { return 0; }
+  Def foo():Int = return 0
 }
 
 class D extends C {
-  Def foo(): Int = { return 1; }
+  Def foo(): Int = return 1
 }

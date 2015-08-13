@@ -60,7 +60,7 @@ object TreeGroups {
   }
 
   object IncrementDecrement {
-    def unapply(e: Tree): Option[Identifier] = e match {
+    def unapply(e: Tree): Option[ExprTree] = e match {
       case PreIncrement(id)  => Some(id)
       case PostIncrement(id) => Some(id)
       case PreDecrement(id)  => Some(id)

@@ -67,6 +67,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
       tcStat(stat)
     case PrintStatement(expr)             =>
       if (tcExpr(expr) == TUnit) ErrorPrintUnit(expr)
+    case Error(expr) =>
+      tcExpr(expr, TString)
     case Return(Some(expr))               =>
       tcExpr(expr, currentMethodSymbol.getType)
     case ret @ Return(None)               =>
@@ -371,6 +373,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case _          => TInt
         }
       case IncrementDecrement(id)          =>
+        id match {
+          case _: Identifier | _: ArrayRead | _: FieldRead =>
+          case _ => ErrorInvalidIncrementDecrementExpr(expression, id)
+        }
         tcExpr(id, Types.anyObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(x)) // Requires same return type as type
           case x          => x
@@ -605,6 +611,15 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
 
   private def ErrorNewPrimitive(tpe: String, pos: Positioned) =
     error(s"Cannot create a new instance of primitive type '$tpe'.", pos)
+
+  private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
+    val incrementOrDecrement = expr match {
+      case _: PreIncrement | _: PostIncrement => "increment"
+      case _: PreDecrement | _: PostDecrement => "decrement"
+    }
+    error(s"Invalid expression in $incrementOrDecrement expression.", pos)
+  }
+
 
   private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
   private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(expected.toString, found, pos)

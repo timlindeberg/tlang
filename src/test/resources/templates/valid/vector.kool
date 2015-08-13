@@ -4,189 +4,136 @@ import java.util.Random
 
 import <Vector>
 import <Vector3>
-import <Matrix>
 
-main Program = {
-	new Main().Run()
-}
+main VectorTest = {
+	var intList: 	  Vector<Integer> = new Vector<Integer>()
+	var intList2: 	  Vector<Integer> = new Vector<Integer>()
+	var stringList:   Vector<KoolString> = new Vector<KoolString>()
+	var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
+	var r:		      Random = new Random()
 
-class Main {
+	var intSorter: 	  Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
+	var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
+	var i:            Int
 
-	Def Run(): Unit = {
-		var intList: 	  Vector<Integer> = new Vector<Integer>()
-		var intList2: 	  Vector<Integer> = new Vector<Integer>()
-		var vector:       Vector3<Double> = new Vector3<Double>(1.0, 2.0, 3.0)
-		var stringList:   Vector<KoolString> = new Vector<KoolString>()
-		var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
-		var r:		      Random = new Random()
 
-		var intSorter: 	  Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
-		var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
-		var i:            Int
+	intList = intList + new Integer(r.nextInt(10000))
+	for(i = 0; i < 100; i++)
+		intList += new Integer(r.nextInt(10000))
 
-		intList = intList + new Integer(r.nextInt(10000))
-		for(i = 0; i < 100; i++){
-        	intList += new Integer(r.nextInt(10000))
-        }
+	intSorter.sort(intList)
 
-		intSorter.sort(intList)
+	p.PrintList("Random")
+	intList.Clear()
+	for(i = 0; i < 10; i++){
+		intList.Add(new Integer(i))
+		stringList.Add(0, new KoolString("s" + i + "s"))
+	}
 
-		p.PrintList("Random")
-		intList.Clear()
-		for(i = 0; i < 10; i++){
-		    intList.Add(new Integer(i))
-        	stringList.Add(0, new KoolString("s" + i + "s"))
-		}
+	p.PrintList("Add")
 
-		p.PrintList("Add")
+	for(i = 10; i > 0; i--){
+		intList.Push(new Integer(i))
+		stringList.Push(new KoolString("s" + i + "s"))
+	}
+	p.PrintList("Initial")
 
-		for(i = 10; i > 0; i--){
-		    intList.Push(new Integer(i))
-        	stringList.Push(new KoolString("s" + i + "s"))
-		}
-		p.PrintList("Initial")
+	i = 0
 
-		i = 0
+	intList[2] = new Integer(15)
+	intList[5] = new Integer(15)
+	intList.Add(7, new Integer(15))
 
-		intList[2] = new Integer(15)
-		intList[5] = new Integer(15)
-		intList.Add(7, new Integer(15))
+	stringList[2] = new KoolString("s" + 15 + "s")
+	stringList[5] = new KoolString("s" + 15 + "s")
+	stringList[7] = new KoolString("s" + 15 + "s")
 
-		stringList[2] = new KoolString("s" + 15 + "s")
-		stringList[5] = new KoolString("s" + 15 + "s")
-		stringList[7] = new KoolString("s" + 15 + "s")
+	p.PrintList("Set 2, 5 and 7 to 15")
 
-		p.PrintList("Set 2, 5 and 7 to 15")
+	intList.RemoveIndex(0)
+	intList.Remove(new Integer(3))
+	intList -= new Integer(4)
+	intList.RemoveIndex(intList.Size() - 1)
 
-		intList.RemoveIndex(0)
-	 	intList.Remove(new Integer(3))
-	 	intList -= new Integer(4)
-		intList.RemoveIndex(intList.Size() - 1)
-
-		stringList.RemoveIndex(0)
-		stringList.Remove(new KoolString("s" + 3 + "s"))
-        stringList -= new KoolString("s" + 4 + "s")
-		stringList.RemoveIndex(intList.Size() - 1)
+	stringList.RemoveIndex(0)
+	stringList.Remove(new KoolString("s" + 3 + "s"))
+	stringList -= new KoolString("s" + 4 + "s")
+	stringList.RemoveIndex(intList.Size() - 1)
 
 
 
-	 	p.PrintList("Removed first, 3, and last")
+	p.PrintList("Removed first, 3, and last")
 
-		intSorter.sort(intList)
-		stringSorter.sort(stringList)
+	intSorter.sort(intList)
+	stringSorter.sort(stringList)
 
-		p.PrintList("Sorted")
+	p.PrintList("Sorted")
 
-		intList2 = new Vector<Integer>()
+	intList2 = new Vector<Integer>()
 
-		for(i = 0; i < 10; i++){
-			intList2.Push(new Integer(100 - i))
-		}
-		intList += intList2
+	for(i = 0; i < 10; i++){
+		intList2.Push(new Integer(100 - i))
+	}
+	intList += intList2
 
-		intList.AddAll(0, intList2)
-		p.PrintList("AddAll")
+	intList.AddAll(0, intList2)
+	p.PrintList("AddAll")
 
-		println(intList2)
-		intList2.Clear()
-		println(intList2)
+	println(intList2)
+	intList2.Clear()
+	println(intList2)
 
-		intList2 = new Vector<Integer>(5, new Integer(5))
-		intList.AddAll(0, intList2)
+	intList2 = new Vector<Integer>(5, new Integer(5))
+	intList.AddAll(0, intList2)
 
-		p.PrintList("Constructor 2")
+	p.PrintList("Constructor 2")
 
-		println(intList.Contains(new Integer(100)))
-		println(intList.Contains(new Integer(95)))
-		println(intList.Contains(new Integer(101)))
+	println(intList.Contains(new Integer(100)))
+	println(intList.Contains(new Integer(95)))
+	println(intList.Contains(new Integer(101)))
 
-        intSorter.sort(intList)
-		println("----------------------------------------")
-		println("-- Pop")
-		println("----------------------------------------")
+	intSorter.sort(intList)
+	println("----------------------------------------")
+	println("-- Pop")
+	println("----------------------------------------")
+	println(intList)
+	while(intList.Size() > 0){
+		intList.Pop()
 		println(intList)
-		while(intList.Size() > 0){
-			intList.Pop()
-			println(intList)
-		}
-
-		intList.Clear()
-		for(i = 0; i < 10; i++){
-			intList.Push(new Integer(i))
-        	intList2.Push(new Integer(i))
-		}
-
-		println(intList == intList2)
-
-		matrixTest()
 	}
 
-	def matrixTest(): Unit = {
-		var m1: Matrix<Int> = new Matrix<Int>(2, 3)
-		var m2: Matrix<Int>
-		var row: Int[]
-		m1[0][0] = 1 ; m1[0][1] = 2 ; m1[0][2] = 3
-		m1[1][0] = 4 ; m1[1][1] = 5 ; m1[1][2] = 6
-
-		println(m1)
-		m2 = m1.Transpose()
-		println(m2)
-		row = new Int[2]
-		row[0] = 1 ; row[1] = 1
-		m2[1] = row
-		println(m2)
+	intList.Clear()
+	for(i = 0; i < 10; i++){
+		intList.Push(new Integer(i))
+		intList2.Push(new Integer(i))
 	}
 
-	def newMatrix(size: Int): Matrix<Int> = {
-		var m: Matrix<Int> = new Matrix<Int>(size, size)
-		var i: Int
-		var j: Int
-		for(i = 0; i < size; i++)
-			for(j = 0; j < size; j++)
-				m[i][j] = i * j
-		return m
-	}
+	println(intList == intList2)
 }
 
 class Integer {
 	Var Value: Int
 
-	Def new(value: Int) = {
-		Value = value
-	}
+	Def new(value: Int) = Value = value
 
-	Def toString(): String = {
-		return "" + Value
-	}
+	Def toString(): String = return "" + Value
 
-	Def >(lhs: Integer, rhs: Integer): Bool = {
-		return lhs.Value > rhs.Value
-	}
+	Def >(lhs: Integer, rhs: Integer): Bool = return lhs.Value > rhs.Value
 
-	Def ==(lhs: Integer, rhs: Integer): Bool = {
-		return lhs.Value == rhs.Value
-	}
+	Def ==(lhs: Integer, rhs: Integer): Bool = return lhs.Value == rhs.Value
 }
 
 class KoolString {
 
 	Var Value: String
 
-	Def new(value: String) = {
-		Value = value
-	}
+	Def new(value: String) = Value = value
 
-	Def toString(): String = {
-		return Value
-	}
+	Def toString(): String = return Value
 
-	Def >(lhs: KoolString, rhs: KoolString): Bool = {
-		return true
-	}
+	Def >(lhs: KoolString, rhs: KoolString): Bool = return true
 
-	Def ==(lhs: KoolString, rhs: KoolString): Bool = {
-		return lhs.Value == rhs.Value
-	}
+	Def ==(lhs: KoolString, rhs: KoolString): Bool = return lhs.Value == rhs.Value
 
 }
 
@@ -207,6 +154,7 @@ class ListPrinter<T, U> {
 		println(l1)
 		println(l2)
 	}
+
 }
 
 class Sorter<Container, T> {
@@ -214,14 +162,13 @@ class Sorter<Container, T> {
 	Def sort(c: Container): Unit = {
 		var i: Int
 		var j: Int
-		var N: Int = c.Size()
 		var x: T
 
-        for(i = 1; i < N; i++){
-            x = c[i].Value()
+        for(i = 1; i < c.Size(); i++){
+            x = c[i]
         	j = i
-        	while(j > 0 && c[j - 1].Value() > x){
-        		c[j] = c[j - 1].Value()
+        	while(j > 0 && c[j - 1] > x){
+        		c[j] = c[j - 1]
         		j = j - 1
         	}
             c[j] = x

@@ -2,8 +2,8 @@ package kool.std
 
 class Matrix<T> {
 
-    var columns: Int
     var rows: Int
+    var columns: Int
     var data: MatrixRow<T>[]
 
     Def new(size: Int)             = init(size, size)
@@ -17,6 +17,9 @@ class Matrix<T> {
         var i: Int
         var j: Int
 
+        if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
+            errorInvalidDimensions(lhs, rhs)
+
         for(i = 0; i < m.columns; i++)
             for(j = 0; j < m.rows; j++)
                 m[i][j] = lhs[i][j] + rhs[i][j]
@@ -28,6 +31,9 @@ class Matrix<T> {
         var m: Matrix<T> = new Matrix<T>(lhs.columns, lhs.rows)
         var i: Int
         var j: Int
+
+        if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
+            errorInvalidDimensions(lhs, rhs)
 
         for(i = 0; i < m.columns; i++)
             for(j = 0; j < m.rows; j++)
@@ -54,6 +60,9 @@ class Matrix<T> {
         var i: Int
         var j: Int
         var k: Int
+
+        if(lhs.columns != rhs.rows)
+            errorInvalidDimensions(lhs, rhs)
 
         for(i = 0; i < m.columns; i++)
             for(j = 0; j < m.rows; j++)
@@ -101,6 +110,8 @@ class Matrix<T> {
             data[i] = new MatrixRow<T>(columns)
     }
 
+    def errorInvalidDimensions(m1: Matrix<T>, m2: Matrix<T>) =
+        error("Invalid dimensions for matrix operaton: (" + m1.rows + ", " + m1.columns + ") and (" + m2.rows + ", " + m2.columns + ").")
 }
 
 class MatrixRow<T> {

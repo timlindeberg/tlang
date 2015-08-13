@@ -2,10 +2,10 @@ package kool.std
 
 class Option<T> {
 
-	var isDefined: Bool
+	var isDefined: Bool = false
 	var value: 	   T
 
-	Def new() = isDefined = false
+	Def new() = {}
 
 	Def new(valueArg: T) = Add(valueArg)
 
@@ -16,7 +16,11 @@ class Option<T> {
 
 	Def IsDefined(): Bool = return isDefined
 
-	Def Value(): T = return value
+	Def Value(): T = {
+		if(!isDefined)
+			error("Cannot access value of undefined option.")
+		return value
+	}
 
 	Def toString(): String = return isDefined ? "Some(" + value + ")" : "None"
 }

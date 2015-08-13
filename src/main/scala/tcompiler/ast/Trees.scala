@@ -99,6 +99,7 @@ object Trees {
   case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Print(expr: ExprTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
+  case class Error(expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
 
   trait ExprTree extends Tree with Typed
@@ -196,10 +197,10 @@ object Trees {
   case class Hash(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree
   case class LogicNot(expr: ExprTree) extends ExprTree
-  case class PreIncrement(id: Identifier) extends ExprTree with StatTree
-  case class PostIncrement(id: Identifier) extends ExprTree with StatTree
-  case class PreDecrement(id: Identifier) extends ExprTree with StatTree
-  case class PostDecrement(id: Identifier) extends ExprTree with StatTree
+  case class PreIncrement(id: ExprTree) extends ExprTree with StatTree
+  case class PostIncrement(id: ExprTree) extends ExprTree with StatTree
+  case class PreDecrement(id: ExprTree) extends ExprTree with StatTree
+  case class PostDecrement(id: ExprTree) extends ExprTree with StatTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree with StatTree
 
   case class Empty() extends ExprTree {
