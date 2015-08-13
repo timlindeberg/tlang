@@ -288,10 +288,7 @@ class Tokenizer(val file: File, ctx: Context) {
 
   private def skipLine(chars: List[Char]): List[Char] = {
     def skip(chars: List[Char]): List[Char] = chars match {
-      case '\n' :: r =>
-        line += 1
-        column = 1
-        chars
+      case '\n' :: r => chars
       case _ :: r    =>
         column += 1
         skip(r)

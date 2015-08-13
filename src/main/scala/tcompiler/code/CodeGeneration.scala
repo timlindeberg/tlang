@@ -630,10 +630,10 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case TDouble    => hashFunction(CodeGenerator.JavaDouble)
           case TLong      => hashFunction(CodeGenerator.JavaLong)
         }
-      case PreIncrement(id)                          => compileIncrementDecrement(isPre = true, isIncrement = true, id)
-      case PreDecrement(id)                          => compileIncrementDecrement(isPre = true, isIncrement = false, id)
-      case PostIncrement(id)                         => compileIncrementDecrement(isPre = false, isIncrement = true, id)
-      case PostDecrement(id)                         => compileIncrementDecrement(isPre = false, isIncrement = false, id)
+      case PreIncrement(expr)                          => compileIncrementDecrement(isPre = true, isIncrement = true, expr)
+      case PreDecrement(expr)                          => compileIncrementDecrement(isPre = true, isIncrement = false, expr)
+      case PostIncrement(expr)                         => compileIncrementDecrement(isPre = false, isIncrement = true, expr)
+      case PostDecrement(expr)                         => compileIncrementDecrement(isPre = false, isIncrement = false, expr)
       case Ternary(condition, thn, els)              =>
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
         val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
@@ -649,7 +649,6 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
     }
 
     def compileIncrementDecrement(isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
-      println(isIncrement)
       expr match {
         case id: Identifier             =>
           val isLocal = variableMap.contains(id.value)
@@ -685,7 +684,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           compileExpr(FieldAssign(obj, id, assign), isPre && duplicate)
         case ar @ ArrayRead(arr, index) =>
           if(!isPre && duplicate)
-            compileExpr(ar)
+            compileExpr(ar) // TODO: Use dup instead of compiling the whole expression
           val assign = assignExpr(ar, isIncrement)
           compileExpr(ArrayAssign(arr, index, assign), isPre && duplicate)
       }
@@ -700,7 +699,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case TDouble => DoubleLit(1.0)
         }
         one.setType(tpe)
-        if (isIncrement) Plus(expr, one).setType(tpe) else Minus(expr, one).setType(tpe)
+        (if (isIncrement) Plus(expr, one) else Minus(expr, one)).setType(tpe)
       }
     }
   }

@@ -85,7 +85,6 @@ main IncrementDecrement = {
     println(i) // res: 0
     arr[1]++
     println(arr[1]) // res: 1
-
 }
 
 class H {

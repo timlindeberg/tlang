@@ -617,7 +617,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
       case _: PreIncrement | _: PostIncrement => "increment"
       case _: PreDecrement | _: PostDecrement => "decrement"
     }
-    error(s"Invalid expression in $incrementOrDecrement expression.", pos)
+    error(s"Invalid $incrementOrDecrement expression.", pos)
   }
 
 
