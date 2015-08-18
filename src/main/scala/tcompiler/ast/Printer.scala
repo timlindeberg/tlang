@@ -32,17 +32,17 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)                               => optional(pack, f) + all(imports) + n + mainMethod(main) + all(classes)
-      case Package(identifiers)                                                => "package " + identifiers.map(_.value).mkString(".") + ";" + n
-      case RegularImport(identifiers)                                          => "import " + identifiers.map(_.value).mkString(".") + ";" + n
-      case WildCardImport(identifiers)                                         => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
-      case GenericImport(identifiers)                                          => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
-      case ClassDecl(id, parent, vars, methods)                                => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id, expr, modifiers)                                   => varDecl(modifiers) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
-      case MethodDecl(retType, id, args, vars, stat, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + f(stat) + r + n
-      case ConstructorDecl(id, args, vars, stat, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + l + all(vars) + f(stat) + r + n
-      case OperatorDecl(operatorType, retType, args, vars, stat, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + l + all(vars) + f(stat) + r + n
-      case Formal(tpe, id)                                                     => f(id) + ": " + f(tpe)
+      case Program(pack, imports, main, classes)                         => optional(pack, f) + all(imports) + n + mainMethod(main) + all(classes)
+      case Package(identifiers)                                          => "package " + identifiers.map(_.value).mkString(".") + ";" + n
+      case RegularImport(identifiers)                                    => "import " + identifiers.map(_.value).mkString(".") + ";" + n
+      case WildCardImport(identifiers)                                   => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
+      case GenericImport(identifiers)                                    => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
+      case ClassDecl(id, parent, vars, methods)                          => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
+      case VarDecl(tpe, id, expr, modifiers)                             => varDecl(modifiers) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
+      case MethodDecl(retType, id, args, stat, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + f(stat) + n
+      case ConstructorDecl(id, args, stat, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + f(stat) + n
+      case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + f(stat) + n
+      case Formal(tpe, id)                                               => f(id) + ": " + f(tpe)
       // Types
       case ArrayType(tpe) => f(tpe) + "[]"
       case IntType()      => "Int"
@@ -116,8 +116,8 @@ object Printer {
 
 
   private def mainMethod(meth: Option[MethodDecl]): String = meth match {
-    case Some(MethodDecl(_, id, _, _, stat, _)) => "main " + f(id) + " = " + l + f(stat) + r
-    case _                                      => ""
+    case Some(MethodDecl(_, id, _, stat, _)) => "main " + f(id) + " = " + f(stat) + n
+    case _                                   => ""
   }
 
   private def symbol[T <: Symbol](t: Symbolic[T]): String =
@@ -155,7 +155,7 @@ object Printer {
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
 
-  private def forAssign(list: List[Assign]) = list.map(a => a.id.value + " = " + f(a.expr)).mkString(", ")
+  private def forAssign(list: List[StatTree]) = list.map(f).mkString(", ")
 
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 

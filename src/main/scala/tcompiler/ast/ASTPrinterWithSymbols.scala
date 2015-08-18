@@ -18,7 +18,7 @@ object ASTPrinterWithSymbols {
       case GenericImport(identifiers) => f(identifiers)
       case ClassDecl(id, parent, vars, methods) => f(id) + "," + f(parent) + "," + f(vars) + "," + f(methods)
       case VarDecl(tpe, id, init, modifiers) => f(tpe) + "," + f(id) + "," + f(init) + "," + f(modifiers)
-      case MethodDecl(retType, id, args, vars, stats, access) => f(retType) + "," + f(id) + "," + f(args) + "," + f(vars) + "," + f(stats) + "," + f(access)
+      case MethodDecl(retType, id, args, stats, access) => f(retType) + "," + f(id) + "," + f(args) + "," + f(stats) + "," + f(access)
       case Formal(tpe, id) => f(tpe) + "," + f(id)
       case Block(stats) => f(stats)
       case If(expr, thn, els) => f(expr) + "," + f(thn) + "," + f(els)

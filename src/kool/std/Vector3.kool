@@ -18,7 +18,7 @@ class Vector3<T> {
         Z = z
     }
 
-    Def new(value: T) = X = Y = Z = value
+    Def new(value: T) = (X = Y = Z = value)
 
     //------------------------------------------------------
     // Operators

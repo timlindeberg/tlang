@@ -22,23 +22,20 @@ main Arrays = {
         a[i]    = new A(i)
      }
 
-     for(i = 0; i < 5; i++){
+     for(i = 0; i < 5; i++)
         print(int[i] + " ") // res: 0 1 2 3 4
-     }
      println("")
-     for(i = 0; i < 5; i++){
+
+     for(i = 0; i < 5; i++)
         print(str[i] + " ") // res: 0 1 2 3 4
-     }
      println("")
-     for(i = 0; i < 5; i++){
-        print(bool[i]) // res: true false true false true
-        print(" ")
-     }
+
+     for(i = 0; i < 5; i++)
+        print(bool[i] + " ") // res: true false true false true
      println("")
-     for(i = 0; i < 5; i++){
-        print(a[i])    // res: 0 1 2 3 4
-        print(" ")
-     }
+
+     for(i = 0; i < 5; i++)
+        print(a[i] + " ")    // res: 0 1 2 3 4
 }
 
 class A {

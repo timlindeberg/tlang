@@ -1,7 +1,5 @@
 main Casting = {
 	var a: A
-    var b: A
-    var c: A
     a = new B()
     (a as B).testB() // res: B
 }

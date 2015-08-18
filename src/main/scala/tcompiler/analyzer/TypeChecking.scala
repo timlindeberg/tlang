@@ -20,13 +20,8 @@ object TypeChecking extends Pipeline[Program, Program] {
       case Some(mainMethod) =>
         val mainTypeChecker = new TypeChecker(ctx, mainMethod.getSymbol)
         mainTypeChecker.tcStat(mainMethod.stat)
-        mainMethod.vars.foreach {
-          case VarDecl(tpe, id, Some(expr), _) => mainTypeChecker.tcExpr(expr, tpe.getType)
-          case _                               =>
-        }
       case _                =>
     }
-
     prog.classes.foreach { classDecl =>
       classDecl.vars.foreach {
         case VarDecl(tpe, id, Some(expr), _) =>
@@ -34,12 +29,9 @@ object TypeChecking extends Pipeline[Program, Program] {
           new TypeChecker(ctx, method).tcExpr(expr, tpe.getType)
         case _                               =>
       }
+
       classDecl.methods.foreach { method =>
         val typeChecker = new TypeChecker(ctx, method.getSymbol)
-        method.vars.foreach {
-          case VarDecl(tpe, id, Some(expr), _) => typeChecker.tcExpr(expr, tpe.getType)
-          case _                               =>
-        }
         typeChecker.tcStat(method.stat)
       }
     }
@@ -50,31 +42,37 @@ object TypeChecking extends Pipeline[Program, Program] {
 class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
 
   def tcStat(statement: StatTree): Unit = statement match {
-    case Block(stats)                     =>
+    case Block(stats)                      =>
       stats.foreach(tcStat)
-    case If(expr, thn, els)               =>
+    case VarDecl(tpe, id, init, modifiers) =>
+      init match {
+        case Some(expr) => tcExpr(expr, tpe.getType)
+        case _          =>
+      }
+    case If(expr, thn, els)                =>
       tcExpr(expr, TBool)
       tcStat(thn)
       if (els.isDefined)
         tcStat(els.get)
-    case While(expr, stat)                =>
+    case While(expr, stat)                 =>
       tcExpr(expr, TBool)
       tcStat(stat)
-    case For(init, condition, post, stat) =>
+
+    case For(init, condition, post, stat)  =>
       init.foreach(tcStat(_))
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
-    case PrintStatement(expr)             =>
+    case PrintStatement(expr)              =>
       if (tcExpr(expr) == TUnit) ErrorPrintUnit(expr)
-    case Error(expr) =>
+    case Error(expr)                       =>
       tcExpr(expr, TString)
-    case Return(Some(expr))               =>
+    case Return(Some(expr))                =>
       tcExpr(expr, currentMethodSymbol.getType)
-    case ret @ Return(None)               =>
+    case ret @ Return(None)                =>
       if (currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
-    case expr: ExprTree                   =>
+    case expr: ExprTree                    =>
       tcExpr(expr)
   }
 
@@ -375,7 +373,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
       case IncrementDecrement(id)          =>
         id match {
           case _: Identifier | _: ArrayRead | _: FieldRead =>
-          case _ => ErrorInvalidIncrementDecrementExpr(expression, id)
+          case _                                           => ErrorInvalidIncrementDecrementExpr(expression, id)
         }
         tcExpr(id, Types.anyObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(x)) // Requires same return type as type

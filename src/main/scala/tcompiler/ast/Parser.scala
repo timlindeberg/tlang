@@ -31,7 +31,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def nextTokenKind = nextToken.kind
 
 
-
   /**
    * <goal> ::= [ <mainObject> ] { <classDeclaration> } <EOF>
    */
@@ -96,11 +95,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val id = identifier()
     eat(EQSIGN)
 
-    val (vars, stmt) = varsAndStatement()
 
     val args = List(Formal(ArrayType(StringType()), Identifier("args")))
     val modifiers: Set[Modifier] = Set(Public, Static)
-    MethodDecl(UnitType(), id, args, vars, stmt, modifiers).setPos(pos)
+    MethodDecl(UnitType(), id, args, statement(), modifiers).setPos(pos)
   }
 
   /**
@@ -113,14 +111,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val id = classTypeIdentifier()
     val parent = optional(classIdentifier, EXTENDS)
     eat(LBRACE)
-    val vars = untilNot(varDeclaration, PUBVAR, PRIVVAR)
+    val vars = untilNot(() => {
+      val v = varDeclaration()
+      endStatement()
+      v
+    }, PUBVAR, PRIVVAR)
     val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
     eat(RBRACE)
     InternalClassDecl(id, parent, vars, methods).setPos(pos)
   }
 
   /**
-   * <varDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ] ";"
+   * <varDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ]
    */
   def varDeclaration(): VarDecl = {
     val pos = nextToken
@@ -129,7 +131,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(COLON)
     val typ = tpe()
     val init = optional(expression, EQSIGN)
-    endStatement()
     VarDecl(typ, id, init, mods).setPos(pos)
   }
 
@@ -176,8 +177,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
     eat(EQSIGN)
 
-    val (vars, stmt) = varsAndStatement()
-    MethodDecl(retType, id, args, vars, stmt, modifiers)
+    MethodDecl(retType, id, args, statement(), modifiers)
   }
 
   /**
@@ -190,9 +190,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(RPAREN)
     eat(EQSIGN)
 
-    val (vars, stmt) = varsAndStatement()
-
-    ConstructorDecl(new Identifier(className), args, vars, stmt, modifiers)
+    ConstructorDecl(new Identifier(className), args, statement(), modifiers)
   }
 
   /**
@@ -228,7 +226,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             eat(COMMA)
             val f2 = formal()
             (Minus(Empty(), Empty()), List(f1, f2), modifiers + Static)
-          case _ =>
+          case _     =>
             (Negation(Empty()), List(f1), modifiers + Static)
         }
       case TIMES             => binaryOperator(Times)
@@ -286,27 +284,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
     eat(EQSIGN)
 
-    val (vars, stmt) = varsAndStatement()
-
-    OperatorDecl(operatorType, retType, args, vars, stmt, newModifiers)
-  }
-
-  /**
-   * Ugly solution until proper scoping is implemented.
-   */
-  def varsAndStatement() = {
-    val stmt = statement()
-    val vars = stmt match {
-      case Block(statements) =>
-        statements.filter(_.isInstanceOf[VarDecl]).asInstanceOf[List[VarDecl]]
-      case _ => List()
-    }
-    val stat = stmt match {
-      case Block(statements) =>
-        Block(statements.filter(!_.isInstanceOf[VarDecl]))
-      case _ => stmt
-    }
-    (vars, stat)
+    OperatorDecl(operatorType, retType, args, statement(), newModifiers)
   }
 
   /**
@@ -371,117 +349,77 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * | <varDeclaration>
    * | if"(" <expression> ")" <statement> [ else <statement> ]
    * | while"(" <expression> ")" <statement>
-   * | for "("[ <assignment> { "," <assignment> } ";" <expression> ";" [ <expression> { "," <expression> } ] " ) <statement>
-   * | println"(" <expression> ");"
-   * | return [ <expression> ] ";"
-   * | <identifier> "=" <expression> ";"
-   * | <identifier> "+=" <expression> ";"
-   * | <identifier> "-=" <expression> ";"
-   * | <identifier> "*=" <expression> ";"
-   * | <identifier> "/=" <expression> ";"
-   * | <identifier> "%=" <expression> ";"
-   * | <identifier> "&=" <expression> ";"
-   * | <identifier> "|=" <expression> ";"
-   * | <identifier> "^=" <expression> ";"
-   * | <identifier> "<<=" <expression> ";"
-   * | <identifier> ">>=" <expression> ";"
-   * | <identifier> "[" <expression> "]" "=" <expression> ";"
-   * | <identifier> "++"
-   * | <identifier> "--"
-   * | "++" <identifier>
-   * | "--" <identifier>
-   * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] }
+   * | <forloop> <endStatement>
+   * | println"(" <expression> ")" <endStatement>
+   * | return [ <expression> ] <endStatement>
+   * | <identifier> "=" <expression> <endStatement>
+   * | <identifier> "+=" <expression> <endStatement>
+   * | <identifier> "-=" <expression> <endStatement>
+   * | <identifier> "*=" <expression> <endStatement>
+   * | <identifier> "/=" <expression> <endStatement>
+   * | <identifier> "%=" <expression> <endStatement>
+   * | <identifier> "&=" <expression> <endStatement>
+   * | <identifier> "|=" <expression> <endStatement>
+   * | <identifier> "^=" <expression> <endStatement>
+   * | <identifier> "<<=" <expression> <endStatement>
+   * | <identifier> ">>=" <expression> <endStatement>
+   * | <identifier> "[" <expression> "]" "=" <expression> <endStatement>
+   * | <identifier> "++" <endStatement>
+   * | <identifier> "--" <endStatement>
+   * | "++" <identifier> <endStatement>
+   * | "--" <identifier> <endStatement>
+   * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] } <endStatement>
    */
   def statement(): StatTree = {
     val pos = nextToken
     val tree = nextTokenKind match {
       case PUBVAR | PRIVVAR =>
-        varDeclaration()
-      case LBRACE  =>
+        val variable = varDeclaration()
+        endStatement()
+        variable
+      case LBRACE           =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
         Block(stmts)
-      case IF      =>
+      case IF               =>
         eat(IF, LPAREN)
         val expr = expression()
         eat(RPAREN)
         val stmt = statement()
         val els = optional(statement, ELSE)
         If(expr, stmt, els)
-      case WHILE   =>
+      case WHILE            =>
         eat(WHILE, LPAREN)
         val expr = expression()
         eat(RPAREN)
         While(expr, statement())
-      case FOR     =>
-        eat(FOR, LPAREN)
-        // Initiation
-        val init = commaList(() => {
-          val id = identifier()
-          nextTokenKind match {
-            case EQSIGN | PLUSEQ | MINUSEQ |
-                 DIVEQ | MODEQ | ANDEQ | OREQ |
-                 XOREQ | LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-            case _                                  => FatalWrongToken(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
-          }
-          assignment(Some(id)).asInstanceOf[Assign]
-        }, SEMICOLON)
-        eat(SEMICOLON)
-        // Condition
-        val condition = expression()
-        eat(SEMICOLON)
-        // Incrementation
-        val post = commaList(() => nextTokenKind match {
-          case INCREMENT =>
-            eat(INCREMENT)
-            PreIncrement(identifier())
-          case DECREMENT =>
-            eat(DECREMENT)
-            PreDecrement(identifier())
-          case IDKIND    =>
-            val id = identifier()
-            nextTokenKind match {
-              case PLUSEQ | MINUSEQ | DIVEQ |
-                   MODEQ | ANDEQ | OREQ | XOREQ |
-                   LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-                assignment(Some(id)).asInstanceOf[Assign]
-              case INCREMENT                  =>
-                eat(INCREMENT)
-                PostIncrement(id)
-              case DECREMENT                  =>
-                eat(DECREMENT)
-                PostDecrement(id)
-              case _                          => FatalWrongToken(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
-            }
-          case _         => FatalWrongToken(INCREMENT, DECREMENT, IDKIND)
-        })
-        eat(RPAREN)
-        For(init, condition, post, statement())
-      case PRINT   =>
+      case FOR              =>
+       forLoop()
+      case PRINT            =>
         eat(PRINT, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Print(expr)
-      case PRINTLN =>
+      case PRINTLN          =>
         eat(PRINTLN, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Println(expr)
-      case ERROR =>
+      case ERROR            =>
         eat(ERROR, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Error(expr)
-      case RETURN  =>
+      case RETURN           =>
         eat(RETURN)
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
         endStatement()
         Return(expr)
-      case _       =>
+      case _                =>
         val expr = expression()
         endStatement()
         expr match {
@@ -491,6 +429,72 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
     tree.setPos(pos)
   }
+
+  /**
+   * <forloop> ::= for "(" <forInit> ";" <expression> ";" <forIncrement> ")" <statement>
+   */
+  def forLoop(): For = {
+    eat(FOR, LPAREN)
+    val init = forInit()
+    eat(SEMICOLON)
+    val condition = expression()
+    eat(SEMICOLON)
+    val post = forIncrement()
+    eat(RPAREN)
+    For(init, condition, post, statement())
+  }
+
+  /**
+   * <forInit> ::= [ ( <assignment> | <varDeclaration> )  { "," ( <assignment> | <varDeclaration> ) }
+   */
+  def forInit(): List[StatTree] = {
+    commaList(() => {
+      nextTokenKind match {
+        case PRIVVAR | PUBVAR =>
+          varDeclaration()
+        case _                =>
+          val id = identifier()
+          nextTokenKind match {
+            case EQSIGN | PLUSEQ |
+                 MINUSEQ | DIVEQ |
+                 MODEQ | ANDEQ |
+                 OREQ | XOREQ |
+                 LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+            case _                          => FatalWrongToken(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
+          }
+          assignment(Some(id)).asInstanceOf[Assign]
+      }
+    }, SEMICOLON)
+  }
+
+  /**
+   * <forIncrement> ::= [ <expression> { "," <expression> } ]
+   */
+  def forIncrement(): List[StatTree] =
+    commaList(() => nextTokenKind match {
+      case INCREMENT =>
+        eat(INCREMENT)
+        PreIncrement(identifier())
+      case DECREMENT =>
+        eat(DECREMENT)
+        PreDecrement(identifier())
+      case IDKIND    =>
+        val id = identifier()
+        nextTokenKind match {
+          case PLUSEQ | MINUSEQ | DIVEQ |
+               MODEQ | ANDEQ | OREQ | XOREQ |
+               LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+            assignment(Some(id)).asInstanceOf[Assign]
+          case INCREMENT                  =>
+            eat(INCREMENT)
+            PostIncrement(id)
+          case DECREMENT                  =>
+            eat(DECREMENT)
+            PostDecrement(id)
+          case _                          => FatalWrongToken(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
+        }
+      case _         => FatalWrongToken(INCREMENT, DECREMENT, IDKIND)
+    })
 
   /**
    * <endStatement> ::= ( ; | \n ) { ; | \n }
@@ -660,7 +664,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case LOGICNOT      =>
           eat(LOGICNOT)
           LogicNot(term())
-        case HASH =>
+        case HASH          =>
           eat(HASH)
           Hash(term())
         case DECREMENT     =>
@@ -769,7 +773,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
       while (tokens.contains(nextTokenKind)) {
         e = nextTokenKind match {
-          case DOT      =>
+          case DOT       =>
             eat(DOT)
             if (nextTokenKind == LENGTH) {
               eat(LENGTH)
@@ -785,12 +789,12 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
                 FieldRead(e, id)
               }
             }
-          case LBRACKET =>
+          case LBRACKET  =>
             eat(LBRACKET)
             val expr = expression()
             eat(RBRACKET)
             ArrayRead(e, expr)
-          case AS       =>
+          case AS        =>
             eat(AS)
             As(e, tpe())
           case INCREMENT =>
@@ -799,7 +803,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case DECREMENT =>
             eat(DECREMENT)
             PostDecrement(e)
-          case _        => e
+          case _         => e
         }
       }
 

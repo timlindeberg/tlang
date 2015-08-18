@@ -71,9 +71,9 @@ class Tokenizer(val file: File, ctx: Context) {
       case c :: r if c.isDigit                              =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
-      case Nil                                              => new Token(Tokens.EOF).setPos(file, Position.encode(line, column - 1)) :: tokens
-      case _ :: r                                           =>
-        ErrorInvalidCharacter()
+      case Nil                                              => createToken(EOF, 1) :: tokens
+      case c :: r                                           =>
+        ErrorInvalidCharacter(c)
         readTokens(r, createToken(BAD, 1) :: tokens)
     }
     readTokens(chars, List[Token]()).reverse
@@ -89,10 +89,10 @@ class Tokenizer(val file: File, ctx: Context) {
       val end = (c: Char) => Tokenizer.singleCharTokens.contains(c) || c.isWhitespace
       val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
       chars match {
-        case (c :: r) if validChar(c) => getIdentifierOrKeyword(r, s + c)
-        case (c :: r) if end(c)       => (createIdentifierOrKeyWord(s), chars)
-        case (c :: r)                 =>
-          ErrorInvalidIdentifier(s.length)
+        case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c)
+        case c :: r if end(c)       => (createIdentifierOrKeyWord(s), chars)
+        case c :: r                 =>
+          ErrorInvalidIdentifier(c, s.length)
           (createToken(BAD, s.length), chars)
         case Nil                      => (createIdentifierOrKeyWord(s), chars)
       }
@@ -104,7 +104,7 @@ class Tokenizer(val file: File, ctx: Context) {
     val startPos = createToken(BAD, 0)
 
     def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
-      case '`' :: r  => (createToken(s, s.length + 6), r)
+      case '`' :: r  => (createToken(s, s.length + 2), r)
       case '\n' :: r =>
         line += 1
         column = 1
@@ -345,11 +345,11 @@ class Tokenizer(val file: File, ctx: Context) {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  private def ErrorInvalidCharacter() =
-    error("Invalid character.", 0)
+  private def ErrorInvalidCharacter(c: Char) =
+    error(s"Invalid character: '$c'.", 0)
 
-  private def ErrorInvalidIdentifier(length: Int) =
-    error("Invalid identifier.", length)
+  private def ErrorInvalidIdentifier(c: Char, length: Int) =
+    error(s"Invalid character in identifier: '$c'.", length)
 
   private def ErrorUnclosedMultilineString(pos: Token) =
     error("Unclosed multiline string literal.", pos)
@@ -411,7 +411,8 @@ object Tokenizer {
     '~' -> LOGICNOT,
     '&' -> LOGICAND,
     '|' -> LOGICOR,
-    '^' -> LOGICXOR)
+    '^' -> LOGICXOR
+  )
 
   private val keyWords = Map(
     "package" -> PACKAGE,
@@ -448,6 +449,7 @@ object Tokenizer {
     "new" -> NEW,
     "print" -> PRINT,
     "println" -> PRINTLN,
-    "error" -> ERROR)
+    "error" -> ERROR
+  )
 
 }

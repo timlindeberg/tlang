@@ -7,10 +7,10 @@ class Option<T> {
 
 	Def new() = {}
 
-	Def new(valueArg: T) = Add(valueArg)
+	Def new(value: T) = Add(value)
 
-	Def Add(valueArg: T): Unit = {
-		value = valueArg
+	Def Add(value: T): Unit = {
+		this.value = value
 		isDefined = true
 	}
 
@@ -23,4 +23,5 @@ class Option<T> {
 	}
 
 	Def toString(): String = return isDefined ? "Some(" + value + ")" : "None"
+
 }

@@ -65,16 +65,15 @@ object Trees {
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id: Identifier
     var args: List[Formal]
-    var vars: List[VarDecl]
     val stat: StatTree
     val modifiers: Set[Modifier]
 
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class ConstructorDecl(var id: Identifier, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], var vars: List[VarDecl], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
+  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class ConstructorDecl(var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String
@@ -96,7 +95,7 @@ object Trees {
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
-  case class For(init: List[Assign], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
+  case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Print(expr: ExprTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Error(expr: ExprTree) extends StatTree

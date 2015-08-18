@@ -6,6 +6,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.lexer.Token
+import tcompiler.utils.Positioned
 
 import scala.io.Source
 import scala.sys.process.ProcessLogger
@@ -79,7 +80,7 @@ object TestUtils {
       Trees.traverse(prog, (_, curr) => Some(curr) collect {
         case _: Empty    =>
         case node: Typed =>
-          assert(node.getType != TUntyped, node + " was untyped.")
+          assert(node.getType != TUntyped, node + " was untyped. (line: " + node.asInstanceOf[Positioned].line + ")")
           if (node.getType == TUntyped) hasTypes = false
       })
       hasTypes

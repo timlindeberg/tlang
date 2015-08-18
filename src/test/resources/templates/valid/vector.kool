@@ -1,44 +1,25 @@
 package kool.std
 
-import java.util.Random
 
 import <Vector>
-import <Vector3>
 
 main VectorTest = {
-	var intList: 	  Vector<Integer> = new Vector<Integer>()
-	var intList2: 	  Vector<Integer> = new Vector<Integer>()
+
+	var intList: Vector<Integer> = new Vector<Integer>()
 	var stringList:   Vector<KoolString> = new Vector<KoolString>()
-	var p: 			  ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
-	var r:		      Random = new Random()
-
-	var intSorter: 	  Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
-	var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
-	var i:            Int
-
-
-	intList = intList + new Integer(r.nextInt(10000))
-	for(i = 0; i < 100; i++)
-		intList += new Integer(r.nextInt(10000))
-
-	intSorter.sort(intList)
-
-	p.PrintList("Random")
-	intList.Clear()
-	for(i = 0; i < 10; i++){
+	for(var i: Int = 0; i < 10; i++){
 		intList.Add(new Integer(i))
 		stringList.Add(0, new KoolString("s" + i + "s"))
 	}
 
+	var p: ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
 	p.PrintList("Add")
 
-	for(i = 10; i > 0; i--){
+	for(var i: Int = 10; i > 0; i--){
 		intList.Push(new Integer(i))
 		stringList.Push(new KoolString("s" + i + "s"))
 	}
 	p.PrintList("Initial")
-
-	i = 0
 
 	intList[2] = new Integer(15)
 	intList[5] = new Integer(15)
@@ -64,14 +45,16 @@ main VectorTest = {
 
 	p.PrintList("Removed first, 3, and last")
 
+	var intSorter: Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
+	var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
 	intSorter.sort(intList)
 	stringSorter.sort(stringList)
 
 	p.PrintList("Sorted")
 
-	intList2 = new Vector<Integer>()
+	var intList2: Vector<Integer> = new Vector<Integer>()
 
-	for(i = 0; i < 10; i++){
+	for(var i: Int = 0; i < 10; i++){
 		intList2.Push(new Integer(100 - i))
 	}
 	intList += intList2
@@ -103,7 +86,7 @@ main VectorTest = {
 	}
 
 	intList.Clear()
-	for(i = 0; i < 10; i++){
+	for(var i: Int = 0; i < 10; i++){
 		intList.Push(new Integer(i))
 		intList2.Push(new Integer(i))
 	}
@@ -112,6 +95,7 @@ main VectorTest = {
 }
 
 class Integer {
+
 	Var Value: Int
 
 	Def new(value: Int) = Value = value
@@ -121,6 +105,7 @@ class Integer {
 	Def >(lhs: Integer, rhs: Integer): Bool = return lhs.Value > rhs.Value
 
 	Def ==(lhs: Integer, rhs: Integer): Bool = return lhs.Value == rhs.Value
+
 }
 
 class KoolString {
@@ -159,19 +144,14 @@ class ListPrinter<T, U> {
 
 class Sorter<Container, T> {
 
-	Def sort(c: Container): Unit = {
-		var i: Int
-		var j: Int
-		var x: T
-
-        for(i = 1; i < c.Size(); i++){
-            x = c[i]
-        	j = i
+	Def sort(c: Container): Unit =
+        for(var i: Int = 1; i < c.Size(); i++){
+            var x: T = c[i]
+        	var j: Int = i
         	while(j > 0 && c[j - 1] > x){
         		c[j] = c[j - 1]
         		j = j - 1
         	}
             c[j] = x
         }
-	}
 }

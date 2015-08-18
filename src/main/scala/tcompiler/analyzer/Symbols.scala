@@ -63,19 +63,19 @@ object Symbols {
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
 
     def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] = findMethod(name, args) match {
-      case x@Some(_) => x
-      case None      => if (recursive && parent.isDefined) parent.get.lookupMethod(name, args) else None
+      case x @ Some(_) => x
+      case None        => if (recursive && parent.isDefined) parent.get.lookupMethod(name, args) else None
     }
 
     def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] = members.get(name) match {
-      case x@Some(_) => x
-      case None      => if (recursive && parent.isDefined) parent.get.lookupVar(name) else None
+      case x @ Some(_) => x
+      case None        => if (recursive && parent.isDefined) parent.get.lookupVar(name) else None
     }
 
     def lookupOperator(operatorType: ExprTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] =
       findOperator(operatorType, args) match {
-        case x@Some(_) => x
-        case None      => if (recursive && parent.isDefined) parent.get.lookupOperator(operatorType, args) else None
+        case x @ Some(_) => x
+        case None        => if (recursive && parent.isDefined) parent.get.lookupOperator(operatorType, args) else None
       }
 
     private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
@@ -109,15 +109,16 @@ object Symbols {
     var overridden: Option[MethodSymbol] = None
 
     def lookupVar(name: String): Option[VariableSymbol] = lookupLocalVar(name) match {
-      case x@Some(_) => x
-      case None      => lookupField(name)
+      case x @ Some(_) => x
+      case None        => lookupField(name)
     }
 
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupVar(name)
+    def lookupArgument(name: String): Option[VariableSymbol] = params.get(name)
 
     def lookupLocalVar(name: String): Option[VariableSymbol] = members.get(name) match {
-      case x@Some(_) => x
-      case None      => params.get(name)
+      case x @ Some(_) => x
+      case None        => params.get(name)
     }
 
 
@@ -143,7 +144,7 @@ object Symbols {
     }
   }
 
-  class VariableSymbol(val name: String,  val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
+  class VariableSymbol(val name: String, val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
 
   case class ErrorSymbol(name: String = "") extends Symbol
 
