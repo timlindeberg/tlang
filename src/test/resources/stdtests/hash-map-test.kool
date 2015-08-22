@@ -1,0 +1,78 @@
+import <kool.std.HashMap>
+import <kool.std.Tester>
+
+main HashMapTest = {
+    Test.BasicTestInt()
+    Test.BasicTestString()
+    Test.TestLargeMap()
+    Test.TestInitialCapacity()
+    Test.TestToString()
+}
+
+class Test {
+
+    var static ti: Tester<Int> = new Tester<Int>()
+    var static ts: Tester<String> = new Tester<String>()
+
+
+    Def static BasicTestInt(): Unit = {
+        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+        map[1] = 2
+        ti.AssertEquals(map[1], 2)
+        ti.AssertEquals(map.Size(), 1)
+        map[1] = 3
+        ti.AssertEquals(map[1], 3)
+        ti.AssertEquals(map.Size(), 1)
+        map[5] = 5
+        ti.AssertEquals(map[5], 5)
+        ti.AssertEquals(map.Size(), 2)
+    }
+
+    Def static BasicTestString(): Unit = {
+        var map: HashMap<String, Int> = new HashMap<String, Int>()
+        map["1"] = 2
+        ti.AssertEquals(map["1"], 2)
+        ti.AssertEquals(map.Size(), 1)
+        map["1"] = 3
+        ti.AssertEquals(map["1"], 3)
+        ti.AssertEquals(map.Size(), 1)
+        map["5"] = 5
+        ti.AssertEquals(map["5"], 5)
+        ti.AssertEquals(map.Size(), 2)
+    }
+
+    Def static TestLargeMap(): Unit = {
+        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+        for(var i: Int = 0; i < 5000; i++){
+            map[i] = i + 1
+            ti.AssertEquals(map.Size(), i + 1)
+        }
+
+        for(var i: Int = 0; i < 5000; i++)
+            ti.AssertEquals(map[i], i + 1)
+    }
+
+
+    Def static TestInitialCapacity(): Unit = {
+        testCapacity(1, 2)
+        testCapacity(2, 2)
+        testCapacity(3, 4)
+        testCapacity(512, 512)
+        testCapacity(513, 1024)
+    }
+
+    Def static TestToString(): Unit = {
+        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+        map[1] = 5
+        map[2] = 2
+        map[64] = -1
+        // when string comparison works:
+        //ts.AssertEquals(map.toString(), "(1 -> 5)\n(2 -> 2)\n(64 -> -1)\n")
+    }
+
+    def static testCapacity(given: Int, expected: Int): Unit = {
+        var map: HashMap<Int, Int> = new HashMap<Int, Int>(given, 0.75)
+        ti.AssertEquals(map.Capacity(), expected)
+    }
+
+}
