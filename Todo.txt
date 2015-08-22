@@ -1,0 +1,9 @@
+Proper T-Language base classes (object, string etc.)
+Continue, break
+Do while loop
+Interfaces
+new primitives (for generics, eg new T())
+casting
+Static access to helperfunctions on primitives, eg Char.toLower()
+Type inference
+First class functions.

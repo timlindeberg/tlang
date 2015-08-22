@@ -228,7 +228,6 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
         val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
-
         branch(expr, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
         compileStat(thn)
@@ -267,6 +266,8 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         }
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, funcName, "(" + arg + ")V")
       case Error(expr)                      =>
+        ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
+        ch << InvokeVirtual(CodeGenerator.JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(CodeGenerator.JavaRuntimeException) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(CodeGenerator.JavaRuntimeException, "<init>", "(L" + CodeGenerator.JavaString + ";)V")
@@ -618,6 +619,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             compileExpr(expr)
             if (!compileOperatorCall(ch, expression, x))
               ch << InvokeVirtual(CodeGenerator.JavaObject, "hashCode", "()I")
+          case TString    => hashFunction(CodeGenerator.JavaString)
           case TInt       => hashFunction(CodeGenerator.JavaInt)
           case TChar      => hashFunction(CodeGenerator.JavaChar)
           case TFloat     => hashFunction(CodeGenerator.JavaFloat)
@@ -819,8 +821,11 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           comparison(IntCodeMap)
       }
       ch << Goto(els.id)
-    case mc @ MethodCall(obj, meth, args) =>
+    case mc : MethodCall =>
       compileExpr(mc)
+      ch << IfEq(els.id) << Goto(thn.id)
+    case fr : FieldRead =>
+      compileExpr(fr)
       ch << IfEq(els.id) << Goto(thn.id)
   }
 

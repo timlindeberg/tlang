@@ -46,6 +46,8 @@ class Vector<T> {
 		return true
 	}
 
+	Def !=(lhs: Vector<T>, rhs: Vector<T>): Bool = !(lhs == rhs)
+
 	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
 		lhs.Push(rhs)
 		return lhs
@@ -59,6 +61,14 @@ class Vector<T> {
 	Def -(lhs: Vector<T>, rhs: T): Vector<T> = {
 		lhs.Remove(rhs)
 		return lhs
+	}
+
+	Def #(vector: Vector<T>): Int = {
+		var res: Int = 0
+		for(var i: Int = 0; i < vector.size; i++)
+			res = 31 * res + #vector[i]
+
+		return res
 	}
 
     Def NonEmpty(): Bool = return size != 0

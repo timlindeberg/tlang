@@ -5,9 +5,24 @@ class Option<T> {
 	var isDefined: Bool = false
 	var value: 	   T
 
+	Def static Some(value: T): Option<T> = return new Option<T>(value)
+	Def static None(): Option<T> = return new Option<T>()
+
 	Def new() = {}
 
 	Def new(value: T) = Add(value)
+
+	Def ==(lhs: Option<T>, rhs: Option<T>): Bool = {
+		if(lhs.isDefined && rhs.isDefined)
+			return lhs.value == rhs.value
+
+		if(!lhs.isDefined && !rhs.isDefined)
+			return true
+
+		return false
+	}
+
+	Def !=(lhs: Option<T>, rhs: Option<T>): Bool = return !(lhs == rhs)
 
 	Def Add(value: T): Unit = {
 		this.value = value
@@ -23,5 +38,6 @@ class Option<T> {
 	}
 
 	Def toString(): String = return isDefined ? "Some(" + value + ")" : "None"
+
 
 }

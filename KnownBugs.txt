@@ -1,1 +1,4 @@
 Crash on empty method. Fix: fix peek method in Cafebabe
+Declare static accessor ( eg. var static lol = new Lol() in class Lol)
+Cant have static template symbols (eg. Test<Int>.Assert())
+Cant leave out condition in for loop

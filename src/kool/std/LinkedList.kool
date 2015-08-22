@@ -41,6 +41,9 @@ class LinkedList<T> {
 		return true
 	}
 
+	Def !=(lhs: LinkedList<T>, rhs: LinkedList<T>): Bool = !(lhs == rhs)
+
+
 	Def +(lhs: LinkedList<T>, rhs: T): LinkedList<T> = {
 		lhs.Push(rhs)
 		return lhs
@@ -54,6 +57,14 @@ class LinkedList<T> {
 	Def -(lhs: LinkedList<T>, rhs: T): LinkedList<T> = {
 		lhs.Remove(rhs)
 		return lhs
+	}
+
+	Def #(list: LinkedList<T>): Int = {
+		var res: Int
+		var it: LinkedListIterator<T> = list.Iterator()
+		while(it.HasNext())
+			res = 31 * res + #it.Next()
+		return res
 	}
 
     Def NonEmpty(): Bool = return size != 0

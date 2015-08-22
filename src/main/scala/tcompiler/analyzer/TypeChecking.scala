@@ -187,6 +187,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case TDouble          =>
             tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
             TDouble
+          case _ => TError
         }
       case ArrayAssign(arr, index, expr)   =>
         val arrTpe = tcExpr(arr)
@@ -352,7 +353,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case x          => x
         }
       case Hash(expr)                      =>
-        val exprType = tcExpr(expr, Types.anyObject :: Types.primitives)
+        val exprType = tcExpr(expr, TString :: Types.anyObject :: Types.primitives)
         exprType match {
           case _: TObject =>
             val argList = List(exprType)
