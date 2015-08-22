@@ -1,0 +1,352 @@
+package kool.std
+
+import <Option>
+import <Vector>
+
+class HashMap<K, V> {
+
+	var DefualtInitialCapacity: Int = 16
+	var DefaultLoadFactor: Double = 0.75
+
+	var entries: Option<Entry<K, V>>[]
+	var size: Int
+	var loadFactor: Double
+	var capacity: Int
+
+	Def new() = init(DefualtInitialCapacity, DefaultLoadFactor)
+	Def new(initialCapacity: Int) = init(initialCapacity, DefaultLoadFactor)
+	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
+	Def new(map: HashMap<K, V>) = {
+		init(map.capacity, map.loadFactor)
+		AddAll(map)
+	}
+
+	Def []=(key: K, value: V): Unit = {
+		if(size >= loadFactor * capacity)
+			resize()
+
+		var hash: Int = #key
+		var newEntry: Entry<K, V> = new Entry<K, V>(key, value, hash)
+		if(addTo(entries, index(hash, capacity), newEntry))
+			size++
+	}
+
+	Def [](key: K): V = {
+		var res: Option<V> = Get(key)
+		if(!res.IsDefined())
+			errorEntryNotFound(key)
+
+		return res.Value()
+	}
+
+	Def +(lhs: HashMap<K, V>, rhs: HashMap<K, V>): HashMap<K, V> = {
+		var newMap: HashMap<K, V> = new HashMap<K, V>(lhs.capacity + rhs.capacity, lhs.loadFactor);
+		newMap.AddAll(lhs)
+		newMap.AddAll(rhs)
+		return newMap
+	}
+
+	Def -(map: HashMap<K, V>, key: K): HashMap<K, V> = {
+		var newMap: HashMap<K, V> = new HashMap<K, V>(map.capacity, map.loadFactor);
+		newMap.AddAll(map)
+		newMap.Remove(key)
+		newMap.size = map.size - 1
+		return newMap
+	}
+
+	Def ==(lhs: HashMap<K, V>, rhs: HashMap<K, V>): Bool = {
+		if(lhs.Size() != rhs.Size())
+			return false;
+
+		var lhsIt: EntryIterator<K, V> = lhs.EntryIterator()
+		while(lhsIt.HasNext()){
+			var lhsEntry: Entry<K, V> = lhsIt.Next()
+			var maybeValue: Option<V> = rhs.Get(lhsEntry.Key)
+			if(!maybeValue.IsDefined())
+				return false
+
+			if(maybeValue.Value() != lhsEntry.Value)
+				return false
+		}
+		return true
+	}
+
+	Def !=(lhs: HashMap<K, V>, rhs: HashMap<K, V>): Bool = !(lhs == rhs)
+
+	Def #(map: HashMap<K, V>): Int = {
+		var res: Int = 0
+		var it: EntryIterator<K, V> = map.EntryIterator()
+		while(it.HasNext()){
+			var entry: Entry<K, V> = it.Next()
+			res += #entry.Key ^ #entry.Value
+		}
+		return res
+	}
+
+	Def AddAll(other: HashMap<K, V>): Unit = {
+		var it: EntryIterator<K, V> = other.EntryIterator()
+		while(it.HasNext()){
+			var entry: Entry<K, V> = it.Next()
+			this[entry.Key] = entry.Value
+		}
+	}
+
+	Def Get(key: K): Option<V> = {
+		var maybeEntry: Option<Entry<K, V>> = entries[index(#key, capacity)]
+		if(!maybeEntry.IsDefined())
+			return new Option<V>()
+
+		var it: EntryListIterator<K, V> = maybeEntry.Value().Iterator()
+		while(it.HasNext()){
+			var entry: Entry<K, V> = it.Next()
+			if(entry.Key == key)
+				return new Option<V>(entry.Value)
+		}
+		return new Option<V>()
+	}
+
+	Def Remove(key: K): Unit = {
+		var index: Int = index(#key, capacity)
+		var maybeEntry: Option<Entry<K, V>> = entries[index]
+
+		if(!maybeEntry.IsDefined())
+			return
+
+		var it: EntryListIterator<K, V> = maybeEntry.Value().Iterator()
+		var entry: Entry<K, V>
+		var previous: Option<Entry<K, V>> = new Option<Entry<K, V>>()
+		while(it.HasNext()){
+			entry = it.Next()
+			if(entry.Key == key){
+				if(!previous.IsDefined()){
+					entries[index] = new Option<Entry<K, V>>()
+				}else if(it.HasNext()){
+					previous.Value().Next = new Option<Entry<K, V>>(it.Next())
+				}else{
+					previous.Value().Next = new Option<Entry<K, V>>()
+				}
+				size--
+				return
+			}
+			previous = new Option<Entry<K, V>>(entry)
+		}
+	}
+
+	Def Clear(): Unit = {
+		entries = newDataContainer(capacity)
+		size = 0
+	}
+
+	Def Size(): Int = return size
+	Def Capacity(): Int = return capacity
+
+	Def IsEmpty(): Bool = return size == 0
+	Def NonEmpty(): Bool = return size != 0
+
+	Def ContainsKey(key: K): Bool = return Get(key).IsDefined()
+	Def ContainsValue(value: V): Bool = {
+		var it: EntryIterator<K, V> = EntryIterator()
+		while(it.HasNext())
+			if(it.Next().Value == value)
+				return true
+
+		return false
+	}
+
+	Def EntryIterator(): EntryIterator<K, V> = return new EntryIterator<K, V>(entries, this)
+	Def KeyIterator(): KeyIterator<K, V>     = return new KeyIterator<K, V>(entries, this)
+	Def ValueIterator(): ValueIterator<K, V> = return new ValueIterator<K, V>(entries, this)
+
+	Def toString(): String = {
+		var s: String = ""
+		var it: EntryIterator<K, V> = EntryIterator()
+		while(it.HasNext())
+			s += it.Next() + "\n"
+		return s
+	}
+
+	def init(initialCapacity: Int, loadFactor: Double): Unit = {
+		capacity = (initialCapacity % 2 == 0) ? initialCapacity : closestPowerOfTwo(initialCapacity)
+		this.loadFactor = loadFactor
+		Clear()
+	}
+
+	def newDataContainer(capacity: Int): Option<Entry<K, V>>[] = {
+		var data: Option<Entry<K, V>>[] = new Option<Entry<K, V>>[capacity]
+		for(var i: Int = 0; i < capacity; i++)
+			data[i] = new Option<Entry<K, V>>()
+		return data
+	}
+
+	def addTo(data: Option<Entry<K, V>>[], index: Int, newEntry: Entry<K, V>): Bool = {
+		var maybeEntry: Option<Entry<K, V>> = data[index]
+
+		if(!maybeEntry.IsDefined()){
+			maybeEntry.Add(newEntry)
+			return true
+		}
+
+		var it: EntryListIterator<K, V> = maybeEntry.Value().Iterator()
+		var entry: Entry<K, V>
+		while(it.HasNext()){
+			entry = it.Next()
+			if(entry.Key == newEntry.Key){
+				entry.Value = newEntry.Value
+				return false
+			}
+		}
+		entry.Next = new Option<Entry<K, V>>(newEntry)
+		return true
+	}
+
+	def resize(): Unit = {
+		var newCapacity: Int = capacity << 1
+		var newData: Option<Entry<K, V>>[] = newDataContainer(newCapacity)
+
+		for(var i: Int = 0; i < capacity; i++){
+			if(entries[i].IsDefined()){
+				var it: EntryListIterator<K, V> = entries[i].Value().Iterator()
+				while(it.HasNext()){
+					var entry: Entry<K, V> = it.Next()
+					entry.Next = new Option<Entry<K, V>>()
+					addTo(newData, index(entry.Hash, newCapacity), entry)
+				}
+			}
+		}
+		entries = newData
+		capacity = newCapacity
+	}
+
+	def closestPowerOfTwo(value: Int): Int = {
+		var i: Int = 2
+		for(; i < value; i <<= 1) {}
+		return i
+	}
+
+	def index(hashCode: Int, capacity: Int): Int = return improvedHash(hashCode) & capacity - 1
+
+	def improvedHash(h: Int): Int = {
+		h ^= (h >> 20) ^ (h >> 12)
+        return h ^ (h >> 7) ^ (h >> 4)
+	}
+
+	def errorEntryNotFound(key: K): Unit = error("No such key: " + key)
+
+}
+
+class Entry<K, V> {
+
+	Var Key: K
+	Var Value: V
+	Var Hash: Int
+	Var Next: Option<Entry<K, V>>
+
+	Def new(key: K, value: V, hash: Int) = {
+		Key = key
+		Value = value
+		Hash = hash
+		Next = new Option<Entry<K, V>>()
+	}
+
+	Def ==(lhs: Entry<K, V>, rhs: Entry<K, V>): Bool =
+		return lhs.Key == rhs.Key &&
+			   lhs.Value == rhs.Value
+
+	Def Iterator(): EntryListIterator<K, V> = return new EntryListIterator<K, V>(this)
+
+	Def toString(): String = return "(" + Key + " -> " + Value + ")"
+
+}
+
+class EntryListIterator<K, V> {
+
+	var hasNext: Bool
+	var current: Entry<K, V>
+
+	Def new(startEntry: Entry<K, V>) = {
+		hasNext = true
+		current = startEntry
+	}
+
+	Def HasNext(): Bool = return hasNext
+
+	Def Next(): Entry<K, V> = {
+		var res: Entry<K, V> = current
+		hasNext = current.Next.IsDefined()
+		if(hasNext)
+			current = current.Next.Value()
+		return res
+	}
+}
+
+class KeyIterator<K, V> {
+
+	var it: EntryIterator<K, V>
+
+	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) =
+		it = new EntryIterator<K, V>(entries, map)
+
+	Def HasNext(): Bool = return it.HasNext()
+
+	Def Next(): K = return it.Next().Key
+
+}
+
+class ValueIterator<K, V> {
+
+	var it: EntryIterator<K, V>
+
+	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) =
+		it = new EntryIterator<K, V>(entries, map)
+
+	Def HasNext():  Bool = return it.HasNext()
+
+	Def Next(): V = return it.Next().Value
+
+}
+
+class EntryIterator<K, V> {
+
+	var hasNext: Bool
+	var currentEntry: Option<Entry<K, V>>
+	var currentIndex: Int
+	var entries: Option<Entry<K, V>>[]
+	var map: HashMap<K, V>
+
+	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) = {
+		this.map = map
+		this.entries = entries
+		hasNext = map.NonEmpty()
+		currentEntry = nextDefinedEntry()
+	}
+
+	Def HasNext(): Bool = return hasNext
+
+	Def Next(): Entry<K, V> = {
+		var res: Entry<K, V> = currentEntry.Value()
+		currentEntry = nextEntry()
+		hasNext = currentEntry.IsDefined()
+		return res
+	}
+
+	def nextEntry(): Option<Entry<K, V>> = {
+		if(currentEntry.IsDefined() && currentEntry.Value().Next.IsDefined())
+			return currentEntry.Value().Next
+
+		return nextDefinedEntry()
+	}
+
+	def nextDefinedEntry(): Option<Entry<K, V>> = {
+		for(; currentIndex < map.Capacity(); currentIndex++){
+			if(entries[currentIndex].IsDefined()){
+				var res: Option<Entry<K, V>> = entries[currentIndex]
+				currentIndex++
+				return res
+			}
+		}
+
+		return new Option<Entry<K, V>>()
+	}
+
+
+}
