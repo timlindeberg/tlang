@@ -119,13 +119,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile) = {
     val staticFields = classDecl.vars.filter(v => v.init.isDefined && v.isStatic)
-    if(staticFields.nonEmpty){
+    if (staticFields.nonEmpty) {
       lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
       val codeGenerator = new CodeGenerator(staticCh, classDecl.getSymbol.name, mutable.HashMap())
       staticFields.foreach {
         case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
+          varDecl.getSymbol.getType
           codeGenerator.compileExpr(expr)
-          staticCh << PutStatic(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+          staticCh << PutStatic(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
       }
       staticCh << RETURN
       staticCh.freeze
@@ -136,10 +137,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val nonStaticFields = classDecl.vars.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
     nonStaticFields.foreach {
-      case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
-          ch << ArgLoad(0) // put this-reference on stack
-          codeGenerator.compileExpr(expr)
-          ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+      case varDecl @ VarDecl(_, id, Some(expr), _) =>
+        ch << ArgLoad(0) // put this-reference on stack
+        codeGenerator.compileExpr(expr)
+        ch << PutField(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
     }
   }
 
@@ -222,11 +223,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
   def compileStat(statement: StatTree): Unit = {
     ch << LineNumber(statement.line)
     statement match {
-      case Block(stats)                      => stats.foreach(compileStat)
-      case variable @ VarDecl(tpe, varId, init, modifiers) =>
-        val id = ch.getFreshVar(tpe.getType.size)
+      case Block(stats)                                    => stats.foreach(compileStat)
+      case variable @ VarDecl(_, varId, init, modifiers) =>
+        val tpe = variable.getSymbol.getType
+        val id = ch.getFreshVar(tpe.size)
         val sym = variable.getSymbol
-        val codes = tpe.getType.codes
+        val codes = tpe.codes
         variableMap(sym) = id
         init match {
           case Some(expr) =>
@@ -236,7 +238,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             codes.defaultConstant(ch)
             codes.store(ch, id)
         }
-      case If(expr, thn, els)               =>
+      case If(expr, thn, els)                              =>
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
         val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
@@ -247,7 +249,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(elsLabel)
         if (els.isDefined) compileStat(els.get)
         ch << Label(afterLabel)
-      case While(expr, stat)                =>
+      case While(expr, stat)                               =>
         val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
         branch(expr, Label(bodyLabel), Label(afterLabel))
@@ -255,7 +257,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileStat(stat)
         branch(expr, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
-      case For(init, condition, post, stat) =>
+      case For(init, condition, post, stat)                =>
         val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
         init.foreach(compileStat)
@@ -265,7 +267,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         post.foreach(compileStat)
         branch(condition, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
-      case PrintStatement(expr)             =>
+      case PrintStatement(expr)                            =>
         ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
@@ -277,19 +279,19 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case _: Println => "println"
         }
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, funcName, "(" + arg + ")V")
-      case Error(expr)                      =>
+      case Error(expr)                                     =>
         ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(CodeGenerator.JavaRuntimeException) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(CodeGenerator.JavaRuntimeException, "<init>", "(L" + CodeGenerator.JavaString + ";)V")
         ch << ATHROW
-      case Return(Some(expr))               =>
+      case Return(Some(expr))                              =>
         compileExpr(expr)
         expr.getType.codes.ret(ch)
-      case Return(None)                     =>
+      case Return(None)                                    =>
         ch << RETURN
-      case expr: ExprTree                   =>
+      case expr: ExprTree                                  =>
         // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)
     }
@@ -715,7 +717,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
   }
 
   def branch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
-    case Not(expr)                        =>
+    case Not(expr)                    =>
       expr.getType match {
         case x: TObject =>
           compileExpr(expr)
@@ -724,26 +726,26 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         case _          =>
           branch(expr, els, thn)
       }
-    case True()                           => ch << Goto(thn.id)
-    case False()                          => ch << Goto(els.id)
-    case And(lhs, rhs)                    =>
+    case True()                       => ch << Goto(thn.id)
+    case False()                      => ch << Goto(els.id)
+    case And(lhs, rhs)                =>
       val next = Label(ch.getFreshLabel(CodeGenerator.Next))
       branch(lhs, next, els)
       ch << next
       branch(rhs, thn, els)
-    case Or(lhs, rhs)                     =>
+    case Or(lhs, rhs)                 =>
       val next = Label(ch.getFreshLabel(CodeGenerator.Next))
       branch(lhs, thn, next)
       ch << next
       branch(rhs, thn, els)
-    case id @ Identifier(value)           =>
+    case id @ Identifier(value)       =>
       load(id)
       ch << IfEq(els.id) << Goto(thn.id)
-    case Instance(expr, id)               =>
+    case Instance(expr, id)           =>
       compileExpr(expr)
       ch << Ldc(1)
       ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
-    case ComparisonOperator(lhs, rhs)     =>
+    case ComparisonOperator(lhs, rhs) =>
       def comparison(codes: CodeMap) = {
         expression match {
           case _: LessThan          => codes.cmpLt(ch, thn.id)
@@ -782,7 +784,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
       }
 
       ch << Goto(els.id)
-    case EqualsOperator(lhs, rhs)         =>
+    case EqualsOperator(lhs, rhs)     =>
       def comparison(codes: CodeMap) = {
         expression match {
           case _: Equals    => codes.cmpEq(ch, thn.id)
@@ -833,10 +835,10 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           comparison(IntCodeMap)
       }
       ch << Goto(els.id)
-    case mc : MethodCall =>
+    case mc: MethodCall               =>
       compileExpr(mc)
       ch << IfEq(els.id) << Goto(thn.id)
-    case fr : FieldRead =>
+    case fr: FieldRead                =>
       compileExpr(fr)
       ch << IfEq(els.id) << Goto(thn.id)
   }

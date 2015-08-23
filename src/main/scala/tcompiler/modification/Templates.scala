@@ -37,7 +37,7 @@ object Templates extends Pipeline[Program, Program] {
       case c: ClassDecl    => c.parent = c.parent.map(replaceTypeId)
       case m: MethodDecl   => m.retType = replaceType(m.retType)
       case o: OperatorDecl => o.retType = replaceType(o.retType)
-      case v: VarDecl      => v.tpe = replaceType(v.tpe)
+      case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(replaceType(t))}
       case f: Formal       => f.tpe = replaceType(f.tpe)
       case n: NewArray     => n.tpe = replaceType(n.tpe)
       case n: New          => n.tpe = replaceTypeId(n.tpe)
@@ -72,7 +72,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
     def collect(f: Product, p: Product) = Some(p) collect {
       case c: ClassDecl => c.parent.foreach(generateIfTemplated)
-      case v: VarDecl   => generateIfTemplated(v.tpe)
+      case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
       case f: Formal    => generateIfTemplated(f.tpe)
       case n: New       => generateIfTemplated(n.tpe)
     }
@@ -120,7 +120,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     val newClass = cloner.deepClone(template)
     Trees.traverse(newClass, (_, current) => Some(current) collect {
       case c: ClassDecl       => c.id = templateName(c.id)
-      case v: VarDecl         => v.tpe = updateType(v.tpe)
+      case v: VarDecl         => v.tpe collect { case t => v.tpe = Some(updateType(t)) }
       case f: Formal          => f.tpe = updateType(f.tpe)
       case m: MethodDecl      => m.retType = updateType(m.retType)
       case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))

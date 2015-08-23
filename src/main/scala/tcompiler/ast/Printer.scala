@@ -38,7 +38,7 @@ object Printer {
       case WildCardImport(identifiers)                                   => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
       case GenericImport(identifiers)                                    => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
       case ClassDecl(id, parent, vars, methods)                          => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id, expr, modifiers)                             => varDecl(modifiers) + " " + f(id) + " : " + f(tpe) + optional(expr, t => " = " + f(t)) + ";" + n
+      case VarDecl(tpe, id, expr, modifiers)                             => varDecl(modifiers) + " " + f(id) + optional(tpe, t => " : " + f(t)) + optional(expr, t => " = " + f(t)) + ";" + n
       case MethodDecl(retType, id, args, stat, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + "): " + f(retType) + " = " + f(stat) + n
       case ConstructorDecl(id, args, stat, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + f(stat) + n
       case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + "): " + f(retType) + " = " + f(stat) + n

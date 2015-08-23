@@ -16,9 +16,9 @@ class Matrix<T> {
         if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
             errorInvalidDimensions(lhs, rhs)
 
-        var m: Matrix<T> = new Matrix<T>(lhs.columns, lhs.rows)
-        for(var i: Int = 0; i < m.columns; i++)
-            for(var j: Int = 0; j < m.rows; j++)
+        var m = new Matrix<T>(lhs.columns, lhs.rows)
+        for(var i = 0; i < m.columns; i++)
+            for(var j = 0; j < m.rows; j++)
                 m[i][j] = lhs[i][j] + rhs[i][j]
 
         return m
@@ -28,9 +28,9 @@ class Matrix<T> {
         if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
             errorInvalidDimensions(lhs, rhs)
 
-        var m: Matrix<T> = new Matrix<T>(lhs.columns, lhs.rows)
-        for(var i: Int = 0; i < m.columns; i++)
-            for(var j: Int = 0; j < m.rows; j++)
+        var m = new Matrix<T>(lhs.columns, lhs.rows)
+        for(var i = 0; i < m.columns; i++)
+            for(var j = 0; j < m.rows; j++)
                 m[i][j] = lhs[i][j] - rhs[i][j]
 
         return m
@@ -38,9 +38,9 @@ class Matrix<T> {
 
     Def *(matrix: Matrix<T>, scalar: T): Matrix<T> = return scalar * matrix
     Def *(scalar: T, matrix: Matrix<T>): Matrix<T> = {
-        var m: Matrix<T> = new Matrix<T>(matrix.columns, matrix.rows)
-        for(var i: Int = 0; i < m.columns; i++)
-           for(var j: Int = 0; j < m.rows; j++)
+        var m = new Matrix<T>(matrix.columns, matrix.rows)
+        for(var i = 0; i < m.columns; i++)
+           for(var j = 0; j < m.rows; j++)
                 m[i][j] = scalar * matrix[i][j]
 
         return m
@@ -50,10 +50,10 @@ class Matrix<T> {
         if(lhs.columns != rhs.rows)
             errorInvalidDimensions(lhs, rhs)
 
-        var m: Matrix<T> = new Matrix<T>(lhs.rows, lhs.columns)
-        for(var i: Int = 0; i < m.columns; i++)
-            for(var j: Int = 0; j < m.rows; j++)
-                for(var k: Int = 0; k < lhs.columns; k++)
+        var m = new Matrix<T>(lhs.rows, lhs.columns)
+        for(var i = 0; i < m.columns; i++)
+            for(var j = 0; j < m.rows; j++)
+                for(var k = 0; k < lhs.columns; k++)
                     m[i][j] += lhs[i][k] * rhs[k][j]
 
         return m
@@ -63,17 +63,17 @@ class Matrix<T> {
 
     Def #(matrix: Matrix<T>): Matrix<T> = {
         var res: Int
-        for(var i: Int = 0; i < columns; i++)
-           for(var j: Int = 0; j < rows; j++)
+        for(var i = 0; i < columns; i++)
+           for(var j = 0; j < rows; j++)
                res = 31 * res + #matrix[i][j]
 
         return res
     }
 
     Def Transpose(): Matrix<T> = {
-        var m: Matrix<T> = new Matrix<T>(columns, rows)
-        for(var i: Int = 0; i < columns; i++)
-           for(var j: Int = 0; j < rows; j++)
+        var m = new Matrix<T>(columns, rows)
+        for(var i = 0; i < columns; i++)
+           for(var j = 0; j < rows; j++)
                m[i][j] = data[j][i]
 
         return m
@@ -86,8 +86,8 @@ class Matrix<T> {
         if(columns == 0 || rows == 0)
             return "[]"
 
-        var s: String = ""
-        for(var i: Int = 0; i < rows; i++)
+        var s = ""
+        for(var i = 0; i < rows; i++)
             s += data[i] + "\n"
         return s
     }
@@ -96,7 +96,7 @@ class Matrix<T> {
         this.columns = columns
         this.rows = rows
         data = new MatrixRow<T>[rows]
-        for(var i: Int = 0; i < rows; i++)
+        for(var i = 0; i < rows; i++)
             data[i] = new MatrixRow<T>(columns)
     }
 
@@ -119,11 +119,9 @@ class MatrixRow<T> {
         if(data.length == 0)
             return "[]"
 
-        var s: String = "[ "
-        for(var i: Int = 0; i < data.length; i++)
-            s += data[i] + " "
-        s += "]"
-        return s
+        var s = "[ "
+        for(var i = 0; i < data.length; i++) s += data[i] + " "
+        return s + "]"
     }
 
 }

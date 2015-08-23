@@ -202,8 +202,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def bindFields(classDecl: ClassDecl) =
     classDecl.vars.foreach { case varDecl @ VarDecl(typeTree, varId, init, _) =>
-      val tpe = setType(typeTree)
-      varId.setType(tpe)
+      typeTree match {
+        case Some(t) =>
+          val tpe = setType(t)
+          varId.setType(tpe)
+        case None =>
+      }
+
       init match {
         case Some(expr) => new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(expr)
         case None       =>
@@ -311,20 +316,23 @@ class NameAnalyser(ctx: Context, prog: Program) {
           localVars
         case varDecl @ VarDecl(typeTree, id, init, modifiers) =>
           val newSymbol = new VariableSymbol(id.value, modifiers).setPos(id)
-          val tpe = setType(typeTree)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
-          id.setType(tpe)
+
+          typeTree match {
+            case Some(t) =>
+              val tpe = setType(t)
+              id.setType(tpe)
+            case None =>
+          }
 
           variableUsage += newSymbol -> false
 
           init collect { case expr => bind(expr, localVars, scopeLevel) }
 
-          localVars.get(id.value) match {
-            case Some(varId) =>
-              if (varId.scopeLevel == scopeLevel)
-                ErrorVariableAlreadyDefined(id.value, varId.symbol.line, id)
-            case _           =>
+          localVars.get(id.value) collect {
+            case varId if varId.scopeLevel == scopeLevel =>
+              ErrorVariableAlreadyDefined(id.value, varId.symbol.line, id)
           }
 
           localVars + (id.value -> new VariableIdentifier(newSymbol, scopeLevel))
@@ -370,7 +378,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 case c: ClassSymbol  => c
               }
               mc.obj = if (isStaticContext) Identifier(classSymbol.name).setSymbol(classSymbol) else This().setSymbol(classSymbol)
-            case _ => bind(obj, localVars, scopeLevel)
+            case _        => bind(obj, localVars, scopeLevel)
           }
           args.foreach(bind(_, localVars, scopeLevel))
         case Instance(expr, id)            =>
@@ -429,15 +437,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
         m
       }
       scope match {
-        case methodSymbol: MethodSymbol => // We're binding symbols inside a method
+        case methodSymbol: MethodSymbol => // Binding symbols inside a method
           lookupClass().getOrElse(
             lookupLocalVar().getOrElse(
               lookupArgument(methodSymbol).getOrElse(
                 lookupField(methodSymbol).getOrElse(
-                  ErrorCantResolveSymbol(name, id))
-              ))
-          )
-        case classSymbol: ClassSymbol   => // We're binding symbols inside a class (fields)
+                  ErrorCantResolveSymbol(name, id)))))
+        case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupVar(name).getOrElse(ErrorCantResolveSymbol(name, id))
       }
     }

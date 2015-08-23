@@ -25,7 +25,7 @@ object TypeChecking extends Pipeline[Program, Program] {
       classDecl.vars.foreach {
         case VarDecl(tpe, id, Some(expr), _) =>
           val method = new MethodSymbol("tmp", classDecl.getSymbol, Set(Private)).setType(TUnit)
-          new TypeChecker(ctx, method).tcExpr(expr, tpe.getType)
+          new TypeChecker(ctx, method).tcExpr(expr, tpe.get.getType)
         case _                               =>
       }
 
@@ -43,10 +43,19 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
   def tcStat(statement: StatTree): Unit = statement match {
     case Block(stats)                      =>
       stats.foreach(tcStat)
-    case VarDecl(tpe, id, init, modifiers) =>
-      init match {
-        case Some(expr) => tcExpr(expr, tpe.getType)
-        case _          =>
+    case varDecl @ VarDecl(tpe, id, init, modifiers) =>
+      tpe match {
+        case Some(t) => init match {
+            case Some(expr) => tcExpr(expr, t.getType)
+            case _          =>
+        }
+        case None => init match {
+          case Some(expr) =>
+            val inferedType = tcExpr(expr)
+            id.setType(inferedType)
+          case _          => ErrorNoTypeNoInitalizer(varDecl)
+        }
+
       }
     case If(expr, thn, els)                =>
       tcExpr(expr, TBool)
@@ -609,6 +618,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
 
   private def ErrorNewPrimitive(tpe: String, pos: Positioned) =
     error(s"Cannot create a new instance of primitive type '$tpe'.", pos)
+
+  private def ErrorNoTypeNoInitalizer(pos: Positioned) =
+    error("Cannot declare variable without type or initialization.", pos)
 
   private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
     val incrementOrDecrement = expr match {

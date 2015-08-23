@@ -4,7 +4,7 @@ import <Option>
 
 class Vector<T> {
 
-	var InitialCapacity: Int = 10
+	var static InitialCapacity: Int = 10
 	var size: Int = 0
 	var data: T[]
 
@@ -18,7 +18,7 @@ class Vector<T> {
 	Def new(initSize: Int, value: T) = {
 		size = initSize
 		data = new T[size]
-		for(var i: Int = 0; i < size; i++)
+		for(var i = 0; i < size; i++)
 			data[i] = value
 	}
 
@@ -46,7 +46,7 @@ class Vector<T> {
 		return true
 	}
 
-	Def !=(lhs: Vector<T>, rhs: Vector<T>): Bool = !(lhs == rhs)
+	Def !=(lhs: Vector<T>, rhs: Vector<T>): Bool = return !(lhs == rhs)
 
 	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
 		lhs.Push(rhs)
@@ -64,8 +64,8 @@ class Vector<T> {
 	}
 
 	Def #(vector: Vector<T>): Int = {
-		var res: Int = 0
-		for(var i: Int = 0; i < vector.size; i++)
+		var res = 0
+		for(var i = 0; i < vector.size; i++)
 			res = 31 * res + #vector[i]
 
 		return res
@@ -104,7 +104,7 @@ class Vector<T> {
 		if(size >= data.length)
 			increaseStorage()
 
-		for(var i: Int = size; i > index; i--)
+		for(var i = size; i > index; i--)
 			data[i] = data[i - 1]
 
 		data[index] = value
@@ -116,15 +116,15 @@ class Vector<T> {
 		if(index != size)
         	checkBounds(index)
 
-		var newData: T[] = new T[size + list.size]
+		var newData = new T[size + list.size]
 
-		for(var i: Int = 0; i < index; i++)
+		for(var i = 0; i < index; i++)
 			newData[i] = data[i]
 
-		for(var i: Int = 0; i < list.size; i++)
+		for(var i = 0; i < list.size; i++)
 			newData[i + index] = list.data[i]
 
-		for(var i: Int = 0; i < size - index; i++ )
+		for(var i = 0; i < size - index; i++ )
 			newData[i + index + list.size] = data[index + i]
 
 		data = newData
@@ -134,14 +134,14 @@ class Vector<T> {
 	Def RemoveIndex(index: Int): Unit = {
 		checkBounds(index)
 
-		for(var i: Int = index; i < size; i++)
+		for(var i = index; i < size; i++)
 			data[i] = data[i + 1]
 
 		size--
 	}
 
 	Def Remove(value: T): Bool = {
-	    var index: Int = IndexOf(value)
+	    var index = IndexOf(value)
 
 	    if(index == -1)
 	        return false
@@ -151,7 +151,7 @@ class Vector<T> {
 	}
 
 	Def IndexOf(value: T): Int = {
-		for(var i: Int = 0; i < size; i++){
+		for(var i = 0; i < size; i++){
 			if(data[i] == value)
 				return i
 		}
@@ -159,8 +159,8 @@ class Vector<T> {
 	}
 
 	Def LastIndexOf(value: T): Int = {
-		var res: Int = -1
-		for(var i: Int = 0; i < size; i++){
+		var res = -1
+		for(var i = 0; i < size; i++){
 			if(data[i] == value){
 				res = -1
 			}
@@ -179,21 +179,19 @@ class Vector<T> {
 		if(size == 0)
 			return "[]"
 
-		var it: VectorIterator<T> = Iterator()
-		var s: 	String = "[ "
-		while(it.HasNext()){
-			s += it.Next().toString()
-			if(it.HasNext())
+		var s = "[ "
+		for(var i = 0; i < size; i++){
+			s += this[i]
+			if(i != size  - 1)
 				s += ", "
 		}
-		s += " ]"
-		return s
+		return s + " ]"
     }
 
 	def increaseStorage(): Unit = {
-		var newData: T[] = new T[(data.length * 3) / 2 + 1]
+		var newData = new T[(data.length * 3) / 2 + 1]
 
-		for(var i: Int = 0; i < data.length; i++)
+		for(var i = 0; i < data.length; i++)
 			newData[i] = data[i]
 		data = newData
 	}

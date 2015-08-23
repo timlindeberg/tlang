@@ -173,7 +173,7 @@ class Importer(ctx: Context, prog: Program) {
   }
 
   private def convertField(field: Field) = 
-      new VarDecl(convertType(field.getType), Identifier(field.getName), None, convertModifiers(field))
+      new VarDecl(Some(convertType(field.getType)), Identifier(field.getName), None, convertModifiers(field))
 
   private def convertMethod(meth: Method, clazz: JavaClass): MethodDecl = {
     val name = meth.getName match {

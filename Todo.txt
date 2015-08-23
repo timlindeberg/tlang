@@ -5,5 +5,4 @@ Interfaces
 new primitives (for generics, eg new T())
 casting
 Static access to helperfunctions on primitives, eg Char.toLower()
-Type inference
 First class functions.

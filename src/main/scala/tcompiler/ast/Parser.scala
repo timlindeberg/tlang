@@ -112,7 +112,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val parent = optional(classIdentifier, EXTENDS)
     eat(LBRACE)
     val vars = untilNot(() => {
-      val v = varDeclaration()
+      val v = fieldDeclaration()
       endStatement()
       v
     }, PUBVAR, PRIVVAR)
@@ -122,16 +122,34 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <varDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ]
+   * <fieldDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ]
    */
-  def varDeclaration(): VarDecl = {
+  def fieldDeclaration(): VarDecl = {
     val pos = nextToken
     val mods = modifiers(PRIVVAR, PUBVAR)
     val id = identifier()
     eat(COLON)
     val typ = tpe()
     val init = optional(expression, EQSIGN)
-    VarDecl(typ, id, init, mods).setPos(pos)
+    VarDecl(Some(typ), id, init, mods).setPos(pos)
+  }
+
+  /**
+   * <varDeclaration> ::= var <identifier> [ ":" <tpe> ] [ = <expression> ]
+   */
+  def varDeclaration(): VarDecl = {
+    val pos = nextToken
+    eat(PRIVVAR)
+    val id = identifier()
+
+    val (typ, init) = nextTokenKind match {
+      case COLON =>
+        eat(COLON)
+        (Some(tpe()), optional(expression, EQSIGN))
+      case _ =>
+        (None, optional(expression, EQSIGN))
+    }
+    VarDecl(typ, id, init, Set()).setPos(pos)
   }
 
   /**
@@ -373,7 +391,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def statement(): StatTree = {
     val pos = nextToken
     val tree = nextTokenKind match {
-      case PUBVAR | PRIVVAR =>
+      case PRIVVAR =>
         val variable = varDeclaration()
         endStatement()
         variable
@@ -395,7 +413,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         eat(RPAREN)
         While(expr, statement())
       case FOR              =>
-       forLoop()
+        forLoop()
       case PRINT            =>
         eat(PRINT, LPAREN)
         val expr = expression()
@@ -431,13 +449,16 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <forloop> ::= for "(" <forInit> ";" <expression> ";" <forIncrement> ")" <statement>
+   * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
    */
   def forLoop(): For = {
     eat(FOR, LPAREN)
     val init = forInit()
     eat(SEMICOLON)
-    val condition = expression()
+    val condition = nextTokenKind match {
+      case SEMICOLON => True() // if condition is left out, use 'true'
+      case _         => expression()
+    }
     eat(SEMICOLON)
     val post = forIncrement()
     eat(RPAREN)
@@ -450,7 +471,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def forInit(): List[StatTree] = {
     commaList(() => {
       nextTokenKind match {
-        case PRIVVAR | PUBVAR =>
+        case PRIVVAR =>
           varDeclaration()
         case _                =>
           val id = identifier()
@@ -620,6 +641,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
      * | <intLit>
      * | <stringLit>
      * | <identifier>
+     * | <classIdentifier>
      * | <identifier> ++
      * | <identifier> --
      * | <identifier> "(" <expression> { "," <expression> } ")"
@@ -698,7 +720,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               eat(LPAREN)
               val exprs = commaList(expression)
               eat(RPAREN)
-              MethodCall(Empty(), id, exprs) // Implicit this
+              MethodCall(Empty(), id, exprs)
             case _         => id
           }
         case TRUE          =>
@@ -933,6 +955,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     ClassIdentifier(ids.map(_.value).mkString("."), tIds).setPos(pos)
   }
 
+  private def classIdentifier(id: Identifier): ClassIdentifier = {
+    val tIds = nextTokenKind match {
+      case LESSTHAN =>
+        eat(LESSTHAN)
+        val tmp = commaList(tpe)
+        eatRightShiftOrGreaterThan()
+        tmp
+      case _        => List()
+    }
+    ClassIdentifier(id.value, tIds).setPos(id)
+  }
+
 
   /**
    * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
@@ -1084,6 +1118,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
     error(s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+
+  private def ErrorNoTypeNoInitializer(pos: Positioned) =
+    error(s"Cannot declare variable without type or initializer.")
 
   private def FatalInvalidStatement(pos: Positioned) =
     fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)
