@@ -352,7 +352,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
         case Return(expr)                                     =>
           expr collect { case e => bind(e, localVars, scopeLevel) }
           localVars
-        case expr: ExprTree                                        =>
+        case expr: ExprTree                                   =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
       }
@@ -361,10 +361,19 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
     private def bindExpr(tree: ExprTree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Unit =
       Trees.traverse(tree, (parent, current) => Some(current) collect {
-        case MethodCall(obj, _, args)  =>
-          bind(obj, localVars, scopeLevel)
+        case mc @ MethodCall(obj, _, args) =>
+          obj match {
+            case _: Empty =>
+              // Replace empty with class name or this
+              val classSymbol = scope match {
+                case m: MethodSymbol => m.classSymbol
+                case c: ClassSymbol  => c
+              }
+              mc.obj = if (isStaticContext) Identifier(classSymbol.name).setSymbol(classSymbol) else This().setSymbol(classSymbol)
+            case _ => bind(obj, localVars, scopeLevel)
+          }
           args.foreach(bind(_, localVars, scopeLevel))
-        case Instance(expr, id)        =>
+        case Instance(expr, id)            =>
           bind(expr, localVars, scopeLevel)
           globalScope.lookupClass(id.value) match {
             case Some(classSymbol) =>
@@ -372,23 +381,27 @@ class NameAnalyser(ctx: Context, prog: Program) {
               id.setType(TObject(classSymbol))
             case None              => ErrorTypeNotDeclared(id.value, id)
           }
-        case FieldRead(obj, _)         =>
+        case FieldRead(obj, _)             =>
           bind(obj, localVars, scopeLevel)
-        case FieldAssign(obj, _, expr) =>
+        case FieldAssign(obj, _, expr)     =>
           bind(obj, localVars, scopeLevel)
           bind(expr, localVars, scopeLevel)
-        case id: Identifier            => parent match {
+        case id: Identifier                => parent match {
           case _: MethodCall  =>
           case _: Instance    =>
           case _: FieldRead   =>
           case _: FieldAssign =>
           case _              => setIdentiferSymbol(id, localVars)
         }
-        case typeTree: TypeTree        => setType(typeTree)
-        case NewArray(tpe, size)       => setType(tpe)
-        case thisSymbol: This          =>
+        case typeTree: TypeTree            => setType(typeTree)
+        case NewArray(tpe, size)           => setType(tpe)
+        case thisSymbol: This              =>
           scope match {
-            case methodSymbol: MethodSymbol => thisSymbol.setSymbol(methodSymbol.classSymbol)
+            case methodSymbol: MethodSymbol =>
+              if (isStaticContext)
+                ErrorThisInStaticContext(thisSymbol)
+              thisSymbol.setSymbol(methodSymbol.classSymbol)
+            case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
           }
       })
 
@@ -485,6 +498,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def ErrorParentNotDeclared(name: String, pos: Positioned) =
     error(s"Parent class '$name' was not declared. ", pos)
+
+  private def ErrorThisInStaticContext(pos: Positioned) =
+    error("'this' can not be used in a static context.", pos)
 
   private def WarningUnused(name: String, pos: Positioned) =
     warning(s"Variable '$name' is declared but never used:", pos)

@@ -1,7 +1,7 @@
 package tcompiler
 
 import utils._
-import java.io.File
+import java.io.{FileNotFoundException, File}
 import lexer.Lexer
 import lexer.PrintTokens
 import ast.Parser
@@ -86,6 +86,7 @@ object Main {
     } catch {
       // Reporter throws exception at fatal instead exiting program
       case e: CompilationException =>
+      case e: FileNotFoundException => System.err.println("Error: File not found: " + ctx.file.getPath)
     }
   }
 }

@@ -13,5 +13,6 @@ object Defaults {
   val defaultFieldAccessFlags: U2  = FIELD_ACC_PROTECTED
 
   val constructorName: String = "<init>"
+  val classInitializerName: String = "<clinit>"
   val constructorSig: String = "()V"
 }

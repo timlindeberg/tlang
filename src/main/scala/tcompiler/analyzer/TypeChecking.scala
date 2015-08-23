@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups._
-import tcompiler.ast.{ASTPrinterWithSymbols, Trees}
+import tcompiler.ast.{Printer, ASTPrinterWithSymbols, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.utils._
 
@@ -15,7 +15,6 @@ object TypeChecking extends Pipeline[Program, Program] {
    * attaching types to trees and potentially outputting error messages.
    */
   def run(ctx: Context)(prog: Program): Program = {
-
     prog.main match {
       case Some(mainMethod) =>
         val mainTypeChecker = new TypeChecker(ctx, mainMethod.getSymbol)

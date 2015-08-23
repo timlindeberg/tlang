@@ -5,6 +5,7 @@ import java.io.File
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
+import cafebabe.ClassFileTypes.U2
 import cafebabe._
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
@@ -44,6 +45,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name).setFlags(getFlags(varDecl))
     }
 
+    initializeStaticFields(classDecl, classFile)
 
     var hasConstructor = false
     classDecl.methods.foreach { methodDecl =>
@@ -110,25 +112,35 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         classFile.addConstructor(Nil)
     }
 
-    val ch = mh.codeHandler
-
-    // Initialize fields after constructor
-    val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
-    classDecl.vars.foreach {
-      case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
-        if (!varDecl.isStatic)
-          ch << ArgLoad(0) // put this-reference on stack
-
-        codeGenerator.compileExpr(expr)
-        if (varDecl.isStatic)
-          ch << PutStatic(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
-        else
-          ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
-      case _                                            =>
-    }
-
+    initializeNonStaticFields(classDecl, mh.codeHandler)
     addSuperCall(mh, classDecl)
     mh
+  }
+
+  def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile) = {
+    val staticFields = classDecl.vars.filter(v => v.init.isDefined && v.isStatic)
+    if(staticFields.nonEmpty){
+      lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
+      val codeGenerator = new CodeGenerator(staticCh, classDecl.getSymbol.name, mutable.HashMap())
+      staticFields.foreach {
+        case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
+          codeGenerator.compileExpr(expr)
+          staticCh << PutStatic(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+      }
+      staticCh << RETURN
+      staticCh.freeze
+    }
+  }
+
+  def initializeNonStaticFields(classDecl: ClassDecl, ch: CodeHandler) = {
+    val nonStaticFields = classDecl.vars.filter(v => v.init.isDefined && !v.isStatic)
+    val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
+    nonStaticFields.foreach {
+      case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
+          ch << ArgLoad(0) // put this-reference on stack
+          codeGenerator.compileExpr(expr)
+          ch << PutField(classDecl.getSymbol.name, id.value, varTpe.getType.byteCodeName)
+    }
   }
 
   def generateMainClassFile(sourceName: String, main: MethodDecl, dir: String) = {

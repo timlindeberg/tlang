@@ -8,7 +8,8 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   import ClassFileTypes._
   import Defaults._
 
-  private var magic: U4 = defaultMagic
+  private var
+  magic: U4 = defaultMagic
   private var minor: U2 = defaultMinor
   private var major: U2 = defaultMajor
 
@@ -105,6 +106,12 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
     methods = methods ::: (inf :: Nil)
     val mh = new MethodHandler(inf, code, constantPool, concatArgs)
+    mh
+  }
+
+  def addClassInitializer: MethodHandler = {
+    val mh = addMethod("V", classInitializerName, Nil)
+    mh.setFlags(Flags.METHOD_ACC_STATIC)
     mh
   }
 

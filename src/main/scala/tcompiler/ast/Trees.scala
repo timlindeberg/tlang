@@ -132,7 +132,7 @@ object Trees {
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArrayLength(arr: ExprTree) extends ExprTree
-  case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree
+  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree
   case class IntLit(value: Int) extends ExprTree
   case class LongLit(value: Long) extends ExprTree
   case class FloatLit(value: Float) extends ExprTree

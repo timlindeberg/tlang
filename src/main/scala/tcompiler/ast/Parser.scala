@@ -698,7 +698,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               eat(LPAREN)
               val exprs = commaList(expression)
               eat(RPAREN)
-              MethodCall(This(), id, exprs) // Implicit this
+              MethodCall(Empty(), id, exprs) // Implicit this
             case _         => id
           }
         case TRUE          =>
