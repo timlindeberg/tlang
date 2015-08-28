@@ -406,6 +406,7 @@ object Tokenizer {
     '>' -> GREATERTHAN,
     '/' -> DIV,
     '=' -> EQSIGN,
+    '≠' -> NOTEQUALS,
     '?' -> QUESTIONMARK,
     '%' -> MODULO,
     '~' -> LOGICNOT,

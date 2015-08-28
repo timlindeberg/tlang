@@ -29,7 +29,8 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val TestCtx        = new Context(reporter = new Reporter(quiet = false), file = testFile, outDir = Some(new File(TestFolder + "/")))
   val TypeCheckCtx   = new Context(reporter = new Reporter(quiet = true), file = testFile, outDir = None)
   val ClassSymbol    = new ClassSymbol("obj")
-  val MainMethod     = new MethodSymbol("main", ClassSymbol, Set(Private)).setType(TUnit)
+  val MethodDecl     = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+  val MainMethod     = new MethodSymbol("main", ClassSymbol, MethodDecl).setType(TUnit)
   val TypeChecker    = new TypeChecker(TypeCheckCtx, MainMethod)
 
   val MainName      = "Main"

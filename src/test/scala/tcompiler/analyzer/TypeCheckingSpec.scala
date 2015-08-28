@@ -89,9 +89,10 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 //
 //  }
 
+  val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
   val classSymbol = new ClassSymbol("obj")
   val varSymbol   = new VariableSymbol("var")
-  val mainMethod  = new MethodSymbol("main", classSymbol, Set(Private)).setType(TUnit)
+  val mainMethod  = new MethodSymbol("main", classSymbol, methodDecl).setType(TUnit)
   val testContext = Context(new tcompiler.utils.Reporter(), None, new File(""))
   val typeChecker = new TypeChecker(testContext, mainMethod)
 

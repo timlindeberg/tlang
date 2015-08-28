@@ -26,8 +26,8 @@ class Test {
     var static tb: Tester<Bool> = new Tester<Bool>()
 
 
-    Def static IntMap(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static IntMap() = {
+        var map = new HashMap<Int, Int>()
         map[1] = 2
         ti.AssertEquals(map[1], 2)
         ti.AssertEquals(map.Size(), 1)
@@ -39,8 +39,8 @@ class Test {
         ti.AssertEquals(map.Size(), 2)
     }
 
-    Def static StringMap(): Unit = {
-        var map: HashMap<String, Int> = new HashMap<String, Int>()
+    Def static StringMap() = {
+        var map = new HashMap<String, Int>()
         map["1"] = 2
         ti.AssertEquals(map["1"], 2)
         ti.AssertEquals(map.Size(), 1)
@@ -52,8 +52,8 @@ class Test {
         ti.AssertEquals(map.Size(), 2)
     }
 
-    Def static LargeMap(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static LargeMap() = {
+        var map = new HashMap<Int, Int>()
         for(var i: Int = 0; i < 5000; i++){
             map[i] = i + 1
             ti.AssertEquals(map.Size(), i + 1)
@@ -64,7 +64,7 @@ class Test {
     }
 
 
-    Def static InitialCapacity(): Unit = {
+    Def static InitialCapacity() = {
         testCapacity(1, 2)
         testCapacity(2, 2)
         testCapacity(3, 4)
@@ -72,8 +72,8 @@ class Test {
         testCapacity(513, 1024)
     }
 
-    Def static ToString(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static ToString() = {
+        var map = new HashMap<Int, Int>()
         map[1] = 5
         map[2] = 2
         map[64] = -1
@@ -81,8 +81,8 @@ class Test {
         //ts.AssertEquals(map.toString(), "(1 -> 5)\n(2 -> 2)\n(64 -> -1)\n")
     }
 
-    Def static Get(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static Get() = {
+        var map = new HashMap<Int, Int>()
         map[1] = 5
         map[2] = 4
         to.AssertEquals(map.Get(1), new Option<Int>(5))
@@ -90,8 +90,8 @@ class Test {
         to.AssertEquals(map.Get(3), new Option<Int>())
     }
 
-    Def static ContainsKey(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static ContainsKey() = {
+        var map = new HashMap<Int, Int>()
         map[1] = 5
         map[2] = 4
         tb.AssertEquals(map.ContainsKey(1), true)
@@ -99,8 +99,8 @@ class Test {
         tb.AssertEquals(map.ContainsKey(3), false)
     }
 
-    Def static ContainsValue(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static ContainsValue() = {
+        var map = new HashMap<Int, Int>()
         map[1] = 5
         map[2] = 4
         tb.AssertEquals(map.ContainsValue(5), true)
@@ -108,9 +108,9 @@ class Test {
         tb.AssertEquals(map.ContainsValue(1), false)
     }
 
-    Def static Iterators(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var entries: Entry<Int, Int>[] = new Entry<Int, Int>[4]
+    Def static Iterators() = {
+        var map = new HashMap<Int, Int>()
+        var entries = new Entry<Int, Int>[4]
         entries[0] = new Entry<Int, Int>(1, 1, 1)
         entries[1] = new Entry<Int, Int>(2, 6, 1)
         entries[2] = new Entry<Int, Int>(90, -5, 1)
@@ -120,31 +120,31 @@ class Test {
             map[entries[i].Key] = entries[i].Value
         }
 
-        var eit: EntryIterator<Int, Int> = map.EntryIterator()
+        var eit = map.EntryIterator()
         while(eit.HasNext()){
-            var entry: Entry<Int, Int> = eit.Next()
+            var entry = eit.Next()
             ti.Assert(containsEntry(entry, entries))
         }
 
-        var kit: KeyIterator<Int, Int> = map.KeyIterator()
+        var kit = map.KeyIterator()
         while(kit.HasNext()){
             var key: Int = kit.Next()
             ti.Assert(containsKey(key, entries))
         }
 
-        var vit: ValueIterator<Int, Int> = map.ValueIterator()
+        var vit = map.ValueIterator()
         while(vit.HasNext()){
             var value: Int = vit.Next()
             ti.Assert(containsValue(value, entries))
         }
     }
 
-    Def static Equals(): Unit = {
-        var map1: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var map2: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var map3: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var map4: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var map5: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static Equals() = {
+        var map1 = new HashMap<Int, Int>()
+        var map2 = new HashMap<Int, Int>()
+        var map3 = new HashMap<Int, Int>()
+        var map4 = new HashMap<Int, Int>()
+        var map5 = new HashMap<Int, Int>()
 
         map1[1] = 5
         map1[2] = 6
@@ -197,8 +197,8 @@ class Test {
         ti.Assert(map5 != map4)
     }
 
-    Def static Remove(): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static Remove() = {
+        var map = new HashMap<Int, Int>()
 
         map[5] = 10
         map[4] = 11
@@ -212,7 +212,7 @@ class Test {
         ti.Assert(map.ContainsKey(3))
         ti.Assert(map.ContainsValue(12))
 
-        var map2: HashMap<Int, Int> = map - 5
+        var map2 = map - 5
 
         ti.AssertEquals(map2.Size(), 2)
         ti.Assert(!map2.ContainsKey(5))
@@ -263,9 +263,9 @@ class Test {
         ti.Assert(!map.ContainsValue(12))
     }
 
-    Def static AddAll(): Unit = {
-        var map1: HashMap<Int, Int> = new HashMap<Int, Int>()
-        var map2: HashMap<Int, Int> = new HashMap<Int, Int>()
+    Def static AddAll() = {
+        var map1 = new HashMap<Int, Int>()
+        var map2 = new HashMap<Int, Int>()
 
         map1[1] = 2
         map1[2] = 3
@@ -291,33 +291,30 @@ class Test {
         tb.Assert(map1 == map2)
     }
 
-    def static testCapacity(given: Int, expected: Int): Unit = {
-        var map: HashMap<Int, Int> = new HashMap<Int, Int>(given, 0.75)
+    def static testCapacity(given: Int, expected: Int) = {
+        var map = new HashMap<Int, Int>(given, 0.75)
         ti.AssertEquals(map.Capacity(), expected)
     }
 
-    def static containsEntry(entry: Entry<Int, Int>, entries: Entry<Int, Int>[]): Bool = {
-        for(var i: Int = 0; i < entries.length; i++){
+    def static containsEntry(entry: Entry<Int, Int>, entries: Entry<Int, Int>[]) = {
+        for(var i = 0; i < entries.length; i++)
             if(entries[i] == entry)
                 return true
-        }
-        return false;
+        return false
     }
 
-    def static containsKey(key: Int, entries: Entry<Int, Int>[]): Bool = {
-        for(var i: Int = 0; i < entries.length; i++){
+    def static containsKey(key: Int, entries: Entry<Int, Int>[]) = {
+        for(var i = 0; i < entries.length; i++)
             if(entries[i].Key == key)
                 return true
-        }
-        return false;
+        return false
     }
 
-     def static containsValue(value: Int, entries: Entry<Int, Int>[]): Bool = {
-        for(var i: Int = 0; i < entries.length; i++){
+     def static containsValue(value: Int, entries: Entry<Int, Int>[]) = {
+        for(var i = 0; i < entries.length; i++)
             if(entries[i].Value == value)
                 return true
-        }
-        return false;
+        return false
     }
 
 }

@@ -8,7 +8,11 @@ import tcompiler.ast.{Printer, ASTPrinterWithSymbols, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.utils._
 
+import scala.collection.mutable.ArrayBuffer
+
 object TypeChecking extends Pipeline[Program, Program] {
+
+  val hasBeenTypechecked = scala.collection.mutable.Set[MethodSymbol]()
 
   /**
    * Typechecking does not produce a value, but has the side effect of
@@ -21,35 +25,64 @@ object TypeChecking extends Pipeline[Program, Program] {
         mainTypeChecker.tcStat(mainMethod.stat)
       case _                =>
     }
+
+    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
     prog.classes.foreach { classDecl =>
       classDecl.vars.foreach {
         case VarDecl(tpe, id, Some(expr), _) =>
-          val method = new MethodSymbol("tmp", classDecl.getSymbol, Set(Private)).setType(TUnit)
-          new TypeChecker(ctx, method).tcExpr(expr, tpe.get.getType)
+          new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl)).tcExpr(expr, tpe.get.getType)
         case _                               =>
       }
 
-      classDecl.methods.foreach { method =>
-        val typeChecker = new TypeChecker(ctx, method.getSymbol)
-        typeChecker.tcStat(method.stat)
-      }
+      classDecl.methods.foreach(method => new TypeChecker(ctx, method.getSymbol).tcMethod())
     }
     prog
   }
 }
 
-class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
+class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: List[MethodSymbol] = List()) {
+
+  val returnStatements = ArrayBuffer[(Return, Type)]()
+
+  def tcMethod(): Unit = {
+    if(TypeChecking.hasBeenTypechecked(currentMethodSymbol))
+      return
+
+    if(currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)){
+      ErrorCantInferTypeRecursiveMethod(currentMethodSymbol)
+      return
+    }
+
+    tcStat(currentMethodSymbol.ast.stat)
+
+    if(currentMethodSymbol.getType != TUntyped)
+      return
+
+    if (returnStatements.isEmpty) {
+      currentMethodSymbol.setType(TUnit)
+      return
+    }
+
+    if (returnStatements.map(_._2).toSet.size > 1) {
+      val s = returnStatements.map { case (stat, tpe) => "Line " + stat.line + ": " + tpe }.mkString(", ")
+      ErrorMultipleReturnTypes(s, returnStatements.head._1)
+      return
+    }
+
+    currentMethodSymbol.setType(returnStatements.head._2)
+    TypeChecking.hasBeenTypechecked += currentMethodSymbol
+  }
 
   def tcStat(statement: StatTree): Unit = statement match {
-    case Block(stats)                      =>
+    case Block(stats)                                =>
       stats.foreach(tcStat)
     case varDecl @ VarDecl(tpe, id, init, modifiers) =>
       tpe match {
         case Some(t) => init match {
-            case Some(expr) => tcExpr(expr, t.getType)
-            case _          =>
+          case Some(expr) => tcExpr(expr, t.getType)
+          case _          =>
         }
-        case None => init match {
+        case None    => init match {
           case Some(expr) =>
             val inferedType = tcExpr(expr)
             id.setType(inferedType)
@@ -57,30 +90,34 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
         }
 
       }
-    case If(expr, thn, els)                =>
+    case If(expr, thn, els)                          =>
       tcExpr(expr, TBool)
       tcStat(thn)
       if (els.isDefined)
         tcStat(els.get)
-    case While(expr, stat)                 =>
+    case While(expr, stat)                           =>
       tcExpr(expr, TBool)
       tcStat(stat)
 
-    case For(init, condition, post, stat)  =>
+    case For(init, condition, post, stat) =>
       init.foreach(tcStat(_))
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
-    case PrintStatement(expr)              =>
+    case PrintStatement(expr)             =>
       if (tcExpr(expr) == TUnit) ErrorPrintUnit(expr)
-    case Error(expr)                       =>
+    case Error(expr)                      =>
       tcExpr(expr, TString)
-    case Return(Some(expr))                =>
-      tcExpr(expr, currentMethodSymbol.getType)
-    case ret @ Return(None)                =>
-      if (currentMethodSymbol.getType != TUnit)
+    case ret @ Return(Some(expr))               =>
+      if(currentMethodSymbol.ast.retType.isDefined)
+        returnStatements += ((ret, tcExpr(expr, currentMethodSymbol.getType)))
+      else
+        returnStatements += ((ret, tcExpr(expr)))
+    case ret @ Return(None)               =>
+      if(currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
-    case expr: ExprTree                    =>
+      returnStatements += ((ret, TUnit))
+    case expr: ExprTree                   =>
       tcExpr(expr)
   }
 
@@ -195,7 +232,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case TDouble          =>
             tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
             TDouble
-          case _ => TError
+          case _                => TError
         }
       case ArrayAssign(arr, index, expr)   =>
         val arrTpe = tcExpr(arr)
@@ -208,6 +245,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
             val operatorType = classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol)
+                if(operatorSymbol.getType == TUntyped){
+                  new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
+                }
                 expression.setType(operatorSymbol.getType)
                 operatorSymbol.getType
               case None                 =>
@@ -323,6 +363,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
             classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol)
+                if(operatorSymbol.getType == TUntyped){
+                  new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
+                }
                 expression.setType(operatorSymbol.getType)
                 operatorSymbol.getType
               case None                 =>
@@ -427,6 +470,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
           case Some(methSymbol) =>
             checkMethodPrivacy(classSymbol, methSymbol)
             checkStaticMethodConstraints(obj, classSymbol, methSymbol, meth)
+            if(methSymbol.getType == TUntyped){
+              new TypeChecker(ctx, methSymbol, currentMethodSymbol :: methodStack).tcMethod()
+            }
             meth.setSymbol(methSymbol)
             meth.getType
           case None             =>
@@ -462,6 +508,33 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
     correctOperatorType(expr, argList, expectedType, operatorType)
   }
 
+
+  private def typeCheckOperator(classType: Type, expr: ExprTree, args: List[Type]): Option[Type] =
+    classType match {
+      case TObject(classSymbol) =>
+        classSymbol.lookupOperator(expr, args) match {
+          case Some(operatorSymbol) =>
+            checkOperatorPrivacy(classSymbol, operatorSymbol)
+            if(operatorSymbol.getType == TUntyped){
+              new TypeChecker(ctx, operatorSymbol, currentMethodSymbol:: methodStack).tcMethod()
+            }
+            expr.setType(operatorSymbol.getType)
+            Some(operatorSymbol.getType)
+          case None                 => None
+        }
+      case _                    => None
+    }
+
+  private def correctOperatorType(expr: ExprTree, args: List[Type], expectedType: Option[Type], found: Type): Type =
+    expectedType match {
+      case Some(expected) =>
+        if (found != expected)
+          ErrorOperatorWrongReturnType(Trees.operatorString(expr, args), expected.toString, found.toString, expr)
+        else found
+      case _              => found
+    }
+
+
   private def typeCheckField(obj: ExprTree, fieldId: Identifier, pos: Positioned) = {
     val objType = tcExpr(obj)
 
@@ -479,28 +552,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
       case _                    => ErrorFieldOnWrongType(objType.toString, pos)
     }
   }
-
-  private def typeCheckOperator(classType: Type, expr: ExprTree, args: List[Type]): Option[Type] =
-    classType match {
-      case TObject(classSymbol) =>
-        classSymbol.lookupOperator(expr, args) match {
-          case Some(operatorSymbol) =>
-            checkOperatorPrivacy(classSymbol, operatorSymbol)
-            expr.setType(operatorSymbol.getType)
-            Some(operatorSymbol.getType)
-          case None                 => None
-        }
-      case _                    => None
-    }
-
-  private def correctOperatorType(expr: ExprTree, args: List[Type], expectedType: Option[Type], found: Type): Type =
-    expectedType match {
-      case Some(expected) =>
-        if (found != expected)
-          ErrorOperatorWrongReturnType(Trees.operatorString(expr, args), expected.toString, found.toString, expr)
-        else found
-      case _              => found
-    }
 
   private def checkStaticMethodConstraints(obj: ExprTree, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {
     if (!methodSymbol.isStatic && isStaticCall(obj))
@@ -621,6 +672,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol) {
 
   private def ErrorNoTypeNoInitalizer(pos: Positioned) =
     error("Cannot declare variable without type or initialization.", pos)
+
+  private def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
+    error(s"Method contains return statements of multiple types: $typeList", pos)
+
+  private def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
+    error(s"Can't infer type of recursive method.", pos)
 
   private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
     val incrementOrDecrement = expr match {

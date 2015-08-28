@@ -185,7 +185,7 @@ class Importer(ctx: Context, prog: Program) {
     val args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) => Formal(convertType(tpe), Identifier("arg" + i)) }.toList
     val modifiers = convertModifiers(meth)
 
-    MethodDecl(retType, id, args, Block(List()), modifiers)
+    MethodDecl(Some(retType), id, args, Block(List()), modifiers)
   }
 
   private def convertModifiers(obj: AccessFlags) = {

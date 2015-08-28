@@ -119,13 +119,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
       variableUsage += newSymbol -> true
       classSymbol.members += (id.value -> newSymbol)
     case methodDecl @ MethodDecl(retType, id, args, stats, _)                   =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl.modifiers).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(id)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
     case constructorDecl @ ConstructorDecl(id, args, stats, _)                  =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl.modifiers).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(id)
       newSymbol.setType(TUnit)
 
       id.setSymbol(newSymbol)
@@ -133,7 +133,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       args.foreach(addSymbols(_, newSymbol))
     case operatorDecl @ OperatorDecl(operatorType, retType, args, stats, _, id) =>
-      val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl.modifiers)
+      val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
 
@@ -167,9 +167,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
       bindFields(classDecl)
       methods.foreach(bind)
     case methDecl @ MethodDecl(retType, _, args, stat, _)                     =>
-      setType(retType)
-
-      methDecl.getSymbol.setType(retType.getType)
+      retType collect { case tpe =>
+        setType(tpe)
+        methDecl.getSymbol.setType(tpe.getType)
+      }
 
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
@@ -182,10 +183,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       new StatementBinder(constructorDecl.getSymbol, false).bindStatement(stat)
     case operatorDecl @ OperatorDecl(operatorType, retType, args, stat, _, _) =>
-      setType(retType)
+      retType collect { case tpe =>
+        val t = setType(tpe)
+        operatorDecl.getSymbol.setType(t)
+        operatorType.setType(t)
+      }
 
-      operatorDecl.getSymbol.setType(retType.getType)
-      operatorType.setType(retType.getType)
+      //operatorType.setType(retType.getType)
       bindArguments(args)
 
       ensureOperatorNotDefined(operatorDecl)

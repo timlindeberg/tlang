@@ -64,6 +64,7 @@ object Trees {
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id: Identifier
+    var retType: Option[TypeTree]
     var args: List[Formal]
     val stat: StatTree
     val modifiers: Set[Modifier]
@@ -71,9 +72,9 @@ object Trees {
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: TypeTree, var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class ConstructorDecl(var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree, var retType: TypeTree, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
+  case class MethodDecl(var retType: Option[TypeTree], var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class ConstructorDecl(var retType: Option[TypeTree], var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree, var retType: Option[TypeTree], var args: List[Formal], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String

@@ -35,8 +35,8 @@ object Templates extends Pipeline[Program, Program] {
 
     Trees.traverse(prog, (_, curr) => Some(curr) collect {
       case c: ClassDecl    => c.parent = c.parent.map(replaceTypeId)
-      case m: MethodDecl   => m.retType = replaceType(m.retType)
-      case o: OperatorDecl => o.retType = replaceType(o.retType)
+      case m: MethodDecl   => m.retType collect { case t => m.retType = Some(replaceType(t))}
+      case o: OperatorDecl => o.retType collect { case t => o.retType = Some(replaceType(t))}
       case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(replaceType(t))}
       case f: Formal       => f.tpe = replaceType(f.tpe)
       case n: NewArray     => n.tpe = replaceType(n.tpe)
@@ -122,9 +122,9 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       case c: ClassDecl       => c.id = templateName(c.id)
       case v: VarDecl         => v.tpe collect { case t => v.tpe = Some(updateType(t)) }
       case f: Formal          => f.tpe = updateType(f.tpe)
-      case m: MethodDecl      => m.retType = updateType(m.retType)
+      case m: MethodDecl      => m.retType collect { case t => m.retType = Some(updateType(t))}
+      case o: OperatorDecl    => o.retType collect { case t => o.retType = Some(updateType(t))}
       case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))
-      case o: OperatorDecl    => o.retType = updateType(o.retType)
       case n: New             => n.tpe = updateTypeOfNewExpr(n)
       case n: NewArray        => n.tpe = updateType(n.tpe)
     })

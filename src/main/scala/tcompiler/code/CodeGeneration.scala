@@ -198,8 +198,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
       case _                                                        =>
         mt match {
-          case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.retType.getType)
-          case op: OperatorDecl   => addReturnValueAndStatement(ch, op.retType.getType)
+          case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.getSymbol.getType)
+          case op: OperatorDecl   => addReturnValueAndStatement(ch, op.getSymbol.getType)
           case _: ConstructorDecl => ch << RETURN
         }
     }

@@ -1,6 +1,7 @@
 package tcompiler
 package ast
 
+import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.Trees._
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
@@ -98,7 +99,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
     val args = List(Formal(ArrayType(StringType()), Identifier("args")))
     val modifiers: Set[Modifier] = Set(Public, Static)
-    MethodDecl(UnitType(), id, args, statement(), modifiers).setPos(pos)
+    MethodDecl(Some(UnitType()), id, args, statement(), modifiers).setPos(pos)
   }
 
   /**
@@ -185,14 +186,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
-    eat(COLON)
-    val retType = if (nextTokenKind == UNIT) {
-      val pos = nextToken
-      eat(UNIT)
-      UnitType().setPos(pos)
-    } else {
-      tpe()
-    }
+    val retType = optional(returnType, COLON)
     eat(EQSIGN)
 
     MethodDecl(retType, id, args, statement(), modifiers)
@@ -207,9 +201,21 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val args = commaList(formal)
     eat(RPAREN)
     eat(EQSIGN)
-
-    ConstructorDecl(new Identifier(className), args, statement(), modifiers)
+    val retType = Some(UnitType().setType(TUnit))
+    ConstructorDecl(retType, new Identifier(className), args, statement(), modifiers)
   }
+
+  /**
+   * <returnType> ::= Unit | <tpe>
+   */
+  def returnType(): TypeTree =
+    if (nextTokenKind == UNIT) {
+      val pos = nextToken
+      eat(UNIT)
+      UnitType().setPos(pos)
+    } else {
+      tpe()
+    }
 
   /**
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
@@ -292,14 +298,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
-    eat(COLON)
-
-    val retType = if (operatorType.isInstanceOf[ArrayAssign]) {
-      eat(UNIT)
-      UnitType()
-    } else {
-      tpe()
-    }
+    val retType = optional(returnType, COLON)
     eat(EQSIGN)
 
     OperatorDecl(operatorType, retType, args, statement(), newModifiers)
@@ -955,19 +954,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     ClassIdentifier(ids.map(_.value).mkString("."), tIds).setPos(pos)
   }
 
-  private def classIdentifier(id: Identifier): ClassIdentifier = {
-    val tIds = nextTokenKind match {
-      case LESSTHAN =>
-        eat(LESSTHAN)
-        val tmp = commaList(tpe)
-        eatRightShiftOrGreaterThan()
-        tmp
-      case _        => List()
-    }
-    ClassIdentifier(id.value, tIds).setPos(id)
-  }
-
-
   /**
    * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
    */
@@ -1064,8 +1050,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     } else {
       val arrBuff = new ArrayBuffer[T]()
       arrBuff += parse()
-      while (nextTokenKind == COMMA) {
-        eat(COMMA)
+      while (currentToken.kind == COMMA || currentToken.kind == NEWLINE) {
+        readToken()
         arrBuff += parse()
       }
       arrBuff.toList
@@ -1118,9 +1104,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
     error(s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
-
-  private def ErrorNoTypeNoInitializer(pos: Positioned) =
-    error(s"Cannot declare variable without type or initializer.")
 
   private def FatalInvalidStatement(pos: Positioned) =
     fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)

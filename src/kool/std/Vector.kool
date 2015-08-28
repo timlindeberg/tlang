@@ -23,17 +23,17 @@ class Vector<T> {
 	}
 
 
-	Def [](index: Int): T = {
+	Def [](index: Int) = {
 		checkBounds(index)
 		return data[index]
 	}
 
-	Def []=(index: Int, value: T): Unit = {
+	Def []=(index: Int, value: T) = {
 		checkBounds(index)
 		data[index] = value
 	}
 
-	Def ==(lhs: Vector<T>, rhs: Vector<T>): Bool = {
+	Def ==(lhs: Vector<T>, rhs: Vector<T>) = {
 		if(lhs.size != rhs.size)
 			return false
 
@@ -46,24 +46,24 @@ class Vector<T> {
 		return true
 	}
 
-	Def !=(lhs: Vector<T>, rhs: Vector<T>): Bool = return !(lhs == rhs)
+	Def !=(lhs: Vector<T>, rhs: Vector<T>) = return !(lhs == rhs)
 
-	Def +(lhs: Vector<T>, rhs: T): Vector<T> = {
+	Def +(lhs: Vector<T>, rhs: T) = {
 		lhs.Push(rhs)
 		return lhs
 	}
 
-	Def +(lhs: Vector<T>, rhs: Vector<T>): Vector<T> = {
+	Def +(lhs: Vector<T>, rhs: Vector<T>) = {
 		lhs.AddAll(rhs)
 		return lhs
 	}
 
-	Def -(lhs: Vector<T>, rhs: T): Vector<T> = {
+	Def -(lhs: Vector<T>, rhs: T) = {
 		lhs.Remove(rhs)
 		return lhs
 	}
 
-	Def #(vector: Vector<T>): Int = {
+	Def #(vector: Vector<T>) = {
 		var res = 0
 		for(var i = 0; i < vector.size; i++)
 			res = 31 * res + #vector[i]
@@ -71,33 +71,33 @@ class Vector<T> {
 		return res
 	}
 
-    Def NonEmpty(): Bool = return size != 0
+    Def NonEmpty() = return size != 0
 
-	Def IsEmpty(): Bool = return size == 0
+	Def IsEmpty() = return size == 0
 
-	Def Clear(): Unit = {
+	Def Clear() = {
 		size = 0
 		data = new T[InitialCapacity]
 	}
 
 	Def Iterator(): VectorIterator<T> =	return new VectorIterator<T>(this)
 
-	Def Push(value: T): Unit = {
+	Def Push(value: T) = {
 		if(size >= data.length)
 			increaseStorage()
 
 		data[size++] = value
 	}
 
-	Def Pop(): T = {
+	Def Pop() = {
 		if(size == 0)
 			error("Cannot pop empty stack!")
 
 		return data[--size]
 	}
 
-	Def Add(value: T): Unit = Add(0, value)
-	Def Add(index: Int, value: T): Unit = {
+	Def Add(value: T) = Add(0, value)
+	Def Add(index: Int, value: T) = {
 		if(index != size)
 			checkBounds(index)
 
@@ -111,8 +111,8 @@ class Vector<T> {
 		size++
 	}
 
-    Def AddAll(list: Vector<T>): Unit =	AddAll(size, list)
-	Def AddAll(index: Int, list: Vector<T>): Unit = {
+    Def AddAll(list: Vector<T>) = AddAll(size, list)
+	Def AddAll(index: Int, list: Vector<T>) = {
 		if(index != size)
         	checkBounds(index)
 
@@ -131,7 +131,7 @@ class Vector<T> {
 		size += list.size
 	}
 
-	Def RemoveIndex(index: Int): Unit = {
+	Def RemoveIndex(index: Int) = {
 		checkBounds(index)
 
 		for(var i = index; i < size; i++)
@@ -140,7 +140,7 @@ class Vector<T> {
 		size--
 	}
 
-	Def Remove(value: T): Bool = {
+	Def Remove(value: T) = {
 	    var index = IndexOf(value)
 
 	    if(index == -1)
@@ -150,7 +150,7 @@ class Vector<T> {
 	    return true
 	}
 
-	Def IndexOf(value: T): Int = {
+	Def IndexOf(value: T) = {
 		for(var i = 0; i < size; i++){
 			if(data[i] == value)
 				return i
@@ -158,7 +158,7 @@ class Vector<T> {
 		return -1
 	}
 
-	Def LastIndexOf(value: T): Int = {
+	Def LastIndexOf(value: T) = {
 		var res = -1
 		for(var i = 0; i < size; i++){
 			if(data[i] == value){
@@ -168,27 +168,27 @@ class Vector<T> {
 		return res
 	}
 
-	Def Contains(value: T): Bool = return IndexOf(value) != -1
-
-	Def Size(): Int = return size
-
-	Def First(): T = return this[0]
-	Def Last(): T = return this[size - 1]
-
-    Def toString(): String = {
-		if(size == 0)
-			return "[]"
-
-		var s = "[ "
+	Def MakeString(delimiter: String) = {
+		var s = ""
 		for(var i = 0; i < size; i++){
 			s += this[i]
 			if(i != size  - 1)
-				s += ", "
+				s += delimiter
 		}
-		return s + " ]"
-    }
+		return s
+	}
 
-	def increaseStorage(): Unit = {
+	Def Contains(value: T) = return IndexOf(value) != -1
+
+	Def Size() = return size
+
+	Def First() = return this[0]
+
+	Def Last() = return this[size - 1]
+
+    Def toString() = return "[" + MakeString(", ") + "]"
+
+	def increaseStorage() = {
 		var newData = new T[(data.length * 3) / 2 + 1]
 
 		for(var i = 0; i < data.length; i++)
@@ -196,11 +196,11 @@ class Vector<T> {
 		data = newData
 	}
 
-	def checkBounds(index: Int): Bool =
+	def checkBounds(index: Int) =
 		if(index < 0 || index >= size)
 			outOfBoundsError(index)
 
-    def outOfBoundsError(index: Int): Unit = error("Index out of bounds: " + index + " (size: " + size + ")")
+    def outOfBoundsError(index: Int) = error("Index out of bounds: " + index + " (size: " + size + ")")
 
 }
 
@@ -215,9 +215,9 @@ class VectorIterator<T> {
 		vector = list
 	}
 
-	Def HasNext(): Bool = return hasNext
+	Def HasNext() = return hasNext
 
-	Def Next(): T = {
+	Def Next() = {
 		hasNext = current < vector.Size() - 1
 		return vector[current++]
 	}

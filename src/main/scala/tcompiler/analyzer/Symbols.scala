@@ -102,7 +102,8 @@ object Symbols {
     }
   }
 
-  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val ast: FuncTree) extends Symbol with Modifiable {
+    val modifiers = ast.modifiers
     var params = Map[String, VariableSymbol]()
     var members = Map[String, VariableSymbol]()
     var argList: List[VariableSymbol] = Nil
@@ -130,8 +131,8 @@ object Symbols {
 
   }
 
-  class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val modifiers: Set[Modifier])
-    extends MethodSymbol(operatorType.toString, classSymbol, modifiers) {
+  class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val ast: FuncTree)
+    extends MethodSymbol(operatorType.toString, classSymbol, ast) {
     def methodName = {
       val name = operatorType.getClass.getSimpleName
       val types = argList.map(_.getType)
