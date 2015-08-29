@@ -9,10 +9,10 @@ class Matrix<T> {
     Def new(size: Int)               = init(size, size)
     Def new(rows: Int, columns: Int) = init(rows, columns)
 
-    Def [](index: Int): MatrixRow<T> = return data[index]
-    Def []=(index: Int, row: T[]): Unit = data[index] = new MatrixRow<T>(row)
+    Def [](index: Int) = return data[index]
+    Def []=(index: Int, row: T[]) = data[index] = new MatrixRow<T>(row)
 
-    Def +(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+    Def +(lhs: Matrix<T>, rhs: Matrix<T>) = {
         if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
             errorInvalidDimensions(lhs, rhs)
 
@@ -24,7 +24,7 @@ class Matrix<T> {
         return m
     }
 
-    Def -(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+    Def -(lhs: Matrix<T>, rhs: Matrix<T>) = {
         if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
             errorInvalidDimensions(lhs, rhs)
 
@@ -36,8 +36,8 @@ class Matrix<T> {
         return m
     }
 
-    Def *(matrix: Matrix<T>, scalar: T): Matrix<T> = return scalar * matrix
-    Def *(scalar: T, matrix: Matrix<T>): Matrix<T> = {
+    Def *(matrix: Matrix<T>, scalar: T) = return scalar * matrix
+    Def *(scalar: T, matrix: Matrix<T>) = {
         var m = new Matrix<T>(matrix.columns, matrix.rows)
         for(var i = 0; i < m.columns; i++)
            for(var j = 0; j < m.rows; j++)
@@ -46,7 +46,7 @@ class Matrix<T> {
         return m
     }
 
-    Def *(lhs: Matrix<T>, rhs: Matrix<T>): Matrix<T> = {
+    Def *(lhs: Matrix<T>, rhs: Matrix<T>) = {
         if(lhs.columns != rhs.rows)
             errorInvalidDimensions(lhs, rhs)
 
@@ -59,9 +59,9 @@ class Matrix<T> {
         return m
     }
 
-    Def -(matrix: Matrix<T>): Matrix<T> = return -1 * matrix
+    Def -(matrix: Matrix<T>) = return -1 * matrix
 
-    Def #(matrix: Matrix<T>): Matrix<T> = {
+    Def #(matrix: Matrix<T>) = {
         var res: Int
         for(var i = 0; i < columns; i++)
            for(var j = 0; j < rows; j++)
@@ -79,10 +79,10 @@ class Matrix<T> {
         return m
     }
 
-    Def Columns(): Int = return columns
-    Def Rows(): Int = return rows
+    Def Columns() = return columns
+    Def Rows() = return rows
 
-    Def toString(): String = {
+    Def toString() = {
         if(columns == 0 || rows == 0)
             return "[]"
 
@@ -92,7 +92,7 @@ class Matrix<T> {
         return s
     }
 
-    def init(rows: Int, columns: Int): Unit = {
+    def init(rows: Int, columns: Int) = {
         this.columns = columns
         this.rows = rows
         data = new MatrixRow<T>[rows]
@@ -111,11 +111,11 @@ class MatrixRow<T> {
     Def new(w: Int) = data = new T[w]
     Def new(d: T[]) = data = d
 
-    Def [](index: Int): T = return data[index]
+    Def [](index: Int) = return data[index]
 
-    Def []=(index: Int, value: T): Unit = data[index] = value
+    Def []=(index: Int, value: T) = data[index] = value
 
-    Def toString(): String = {
+    Def toString() = {
         if(data.length == 0)
             return "[]"
 

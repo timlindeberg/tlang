@@ -4,16 +4,16 @@ import <Option>
 
 class HashMap<K, V> {
 
-	var static DefualtInitialCapacity: Int = 16
-	var static DefaultLoadFactor: Double = 0.75
+	var static DefualtInitialCapacity = 16
+	var static DefaultLoadFactor = 0.75
 
 	var entries: Option<Entry<K, V>>[]
 	var size: Int
 	var loadFactor: Double
 	var capacity: Int
 
-	Def new() = 										init(DefualtInitialCapacity, DefaultLoadFactor)
-	Def new(initialCapacity: Int) = 					init(initialCapacity, DefaultLoadFactor)
+	Def new() =                                         init(DefualtInitialCapacity, DefaultLoadFactor)
+	Def new(initialCapacity: Int) =                     init(initialCapacity, DefaultLoadFactor)
 	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
 	Def new(map: HashMap<K, V>) = {
 		init(map.capacity, map.loadFactor)

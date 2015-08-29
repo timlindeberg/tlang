@@ -123,34 +123,35 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <fieldDeclaration> ::= (Var | var) <modifiers> <identifier> ":" <tpe> [ = <expression> ]
+   * <fieldDeclaration> ::= (Var | var) <modifiers> <variableEnd>
    */
   def fieldDeclaration(): VarDecl = {
     val pos = nextToken
-    val mods = modifiers(PRIVVAR, PUBVAR)
-    val id = identifier()
-    eat(COLON)
-    val typ = tpe()
-    val init = optional(expression, EQSIGN)
-    VarDecl(Some(typ), id, init, mods).setPos(pos)
+    varDeclEnd(modifiers(PRIVVAR, PUBVAR), pos)
   }
 
   /**
-   * <varDeclaration> ::= var <identifier> [ ":" <tpe> ] [ = <expression> ]
+   * <localVarDeclaration> ::= var <variableEnd>
    */
-  def varDeclaration(): VarDecl = {
+  def localVarDeclaration(): VarDecl = {
     val pos = nextToken
     eat(PRIVVAR)
-    val id = identifier()
+    varDeclEnd(Set(), pos)
+  }
 
+  /**
+   * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ = <expression> ]
+   */
+  def varDeclEnd(modifiers: Set[Modifier], pos: Positioned): VarDecl = {
+    val id = identifier()
     val (typ, init) = nextTokenKind match {
       case COLON =>
         eat(COLON)
         (Some(tpe()), optional(expression, EQSIGN))
-      case _ =>
+      case _     =>
         (None, optional(expression, EQSIGN))
     }
-    VarDecl(typ, id, init, Set()).setPos(pos)
+    VarDecl(typ, id, init, modifiers).setPos(pos)
   }
 
   /**
@@ -309,14 +310,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   def modifiers(priv: TokenKind, pub: TokenKind): Set[Modifier] = {
     val access = accessRights(priv, pub)
-    var modifiers: Set[Modifier] = Set(access)
+    val modifiers: Set[Modifier] = Set(access)
     nextTokenKind match {
       case STATIC =>
         eat(STATIC)
-        modifiers = modifiers + Static
-      case _      =>
+        modifiers + Static
+      case _      => modifiers
     }
-    modifiers
   }
 
   /**
@@ -391,52 +391,52 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val pos = nextToken
     val tree = nextTokenKind match {
       case PRIVVAR =>
-        val variable = varDeclaration()
+        val variable = localVarDeclaration()
         endStatement()
         variable
-      case LBRACE           =>
+      case LBRACE  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
         Block(stmts)
-      case IF               =>
+      case IF      =>
         eat(IF, LPAREN)
         val expr = expression()
         eat(RPAREN)
         val stmt = statement()
         val els = optional(statement, ELSE)
         If(expr, stmt, els)
-      case WHILE            =>
+      case WHILE   =>
         eat(WHILE, LPAREN)
         val expr = expression()
         eat(RPAREN)
         While(expr, statement())
-      case FOR              =>
+      case FOR     =>
         forLoop()
-      case PRINT            =>
+      case PRINT   =>
         eat(PRINT, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Print(expr)
-      case PRINTLN          =>
+      case PRINTLN =>
         eat(PRINTLN, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Println(expr)
-      case ERROR            =>
+      case ERROR   =>
         eat(ERROR, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Error(expr)
-      case RETURN           =>
+      case RETURN  =>
         eat(RETURN)
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
         endStatement()
         Return(expr)
-      case _                =>
+      case _       =>
         val expr = expression()
         endStatement()
         expr match {
@@ -471,8 +471,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     commaList(() => {
       nextTokenKind match {
         case PRIVVAR =>
-          varDeclaration()
-        case _                =>
+          localVarDeclaration()
+        case _       =>
           val id = identifier()
           nextTokenKind match {
             case EQSIGN | PLUSEQ |

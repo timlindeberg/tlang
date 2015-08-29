@@ -4,8 +4,8 @@ import <Option>
 
 class Vector<T> {
 
-	var static InitialCapacity: Int = 10
-	var size: Int = 0
+	var static InitialCapacity = 10
+	var size = 0
 	var data: T[]
 
 	Def new() = Clear()
@@ -37,8 +37,8 @@ class Vector<T> {
 		if(lhs.size != rhs.size)
 			return false
 
-		var lhsIt:  VectorIterator<T> = lhs.Iterator()
-		var rhsIt:  VectorIterator<T> = rhs.Iterator()
+		var lhsIt = lhs.Iterator()
+		var rhsIt = rhs.Iterator()
 		while(lhsIt.HasNext())
 			if(lhsIt.Next() != rhsIt.Next())
 				return false
@@ -80,7 +80,7 @@ class Vector<T> {
 		data = new T[InitialCapacity]
 	}
 
-	Def Iterator(): VectorIterator<T> =	return new VectorIterator<T>(this)
+	Def Iterator() = return new VectorIterator<T>(this)
 
 	Def Push(value: T) = {
 		if(size >= data.length)

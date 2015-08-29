@@ -28,12 +28,8 @@ object TypeChecking extends Pipeline[Program, Program] {
 
     val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
     prog.classes.foreach { classDecl =>
-      classDecl.vars.foreach {
-        case VarDecl(tpe, id, Some(expr), _) =>
-          new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl)).tcExpr(expr, tpe.get.getType)
-        case _                               =>
-      }
-
+      val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
+      classDecl.vars.foreach(typeChecker.tcStat(_))
       classDecl.methods.foreach(method => new TypeChecker(ctx, method.getSymbol).tcMethod())
     }
     prog
@@ -45,17 +41,17 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   val returnStatements = ArrayBuffer[(Return, Type)]()
 
   def tcMethod(): Unit = {
-    if(TypeChecking.hasBeenTypechecked(currentMethodSymbol))
+    if (TypeChecking.hasBeenTypechecked(currentMethodSymbol))
       return
 
-    if(currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)){
+    if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
       ErrorCantInferTypeRecursiveMethod(currentMethodSymbol)
       return
     }
 
     tcStat(currentMethodSymbol.ast.stat)
 
-    if(currentMethodSymbol.getType != TUntyped)
+    if (currentMethodSymbol.getType != TUntyped)
       return
 
     if (returnStatements.isEmpty) {
@@ -108,13 +104,13 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       if (tcExpr(expr) == TUnit) ErrorPrintUnit(expr)
     case Error(expr)                      =>
       tcExpr(expr, TString)
-    case ret @ Return(Some(expr))               =>
-      if(currentMethodSymbol.ast.retType.isDefined)
+    case ret @ Return(Some(expr))         =>
+      if (currentMethodSymbol.ast.retType.isDefined)
         returnStatements += ((ret, tcExpr(expr, currentMethodSymbol.getType)))
       else
         returnStatements += ((ret, tcExpr(expr)))
     case ret @ Return(None)               =>
-      if(currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
+      if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
     case expr: ExprTree                   =>
@@ -245,7 +241,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             val operatorType = classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol)
-                if(operatorSymbol.getType == TUntyped){
+                if (operatorSymbol.getType == TUntyped) {
                   new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
                 }
                 expression.setType(operatorSymbol.getType)
@@ -363,7 +359,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol)
-                if(operatorSymbol.getType == TUntyped){
+                if (operatorSymbol.getType == TUntyped) {
                   new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
                 }
                 expression.setType(operatorSymbol.getType)
@@ -470,7 +466,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case Some(methSymbol) =>
             checkMethodPrivacy(classSymbol, methSymbol)
             checkStaticMethodConstraints(obj, classSymbol, methSymbol, meth)
-            if(methSymbol.getType == TUntyped){
+            if (methSymbol.getType == TUntyped) {
               new TypeChecker(ctx, methSymbol, currentMethodSymbol :: methodStack).tcMethod()
             }
             meth.setSymbol(methSymbol)
@@ -515,8 +511,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         classSymbol.lookupOperator(expr, args) match {
           case Some(operatorSymbol) =>
             checkOperatorPrivacy(classSymbol, operatorSymbol)
-            if(operatorSymbol.getType == TUntyped){
-              new TypeChecker(ctx, operatorSymbol, currentMethodSymbol:: methodStack).tcMethod()
+            if (operatorSymbol.getType == TUntyped) {
+              new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
             }
             expr.setType(operatorSymbol.getType)
             Some(operatorSymbol.getType)

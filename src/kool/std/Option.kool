@@ -2,17 +2,19 @@ package kool.std
 
 class Option<T> {
 
-	var isDefined: Bool = false
-	var value: 	   T
+	var isDefined: Bool
+	var value: T
 
-	Def static Some(value: T): Option<T> = return new Option<T>(value)
-	Def static None(): Option<T> = return new Option<T>()
+	var static none = new Option<T>
+
+	Def static Some(value: T) = return new Option<T>(value)
+	Def static None() = return none
 
 	Def new() = {}
 
 	Def new(value: T) = Add(value)
 
-	Def ==(lhs: Option<T>, rhs: Option<T>): Bool = {
+	Def ==(lhs: Option<T>, rhs: Option<T>) = {
 		if(lhs.isDefined && rhs.isDefined)
 			return lhs.value == rhs.value
 
@@ -22,22 +24,22 @@ class Option<T> {
 		return false
 	}
 
-	Def !=(lhs: Option<T>, rhs: Option<T>): Bool = return !(lhs == rhs)
+	Def !=(lhs: Option<T>, rhs: Option<T>) = return !(lhs == rhs)
 
-	Def Add(value: T): Unit = {
+	Def Add(value: T) = {
 		this.value = value
 		isDefined = true
 	}
 
-	Def IsDefined(): Bool = return isDefined
+	Def IsDefined() = return isDefined
 
-	Def Value(): T = {
+	Def Value() = {
 		if(!isDefined)
 			error("Cannot access value of undefined option.")
 		return value
 	}
 
-	Def toString(): String = return isDefined ? "Some(" + value + ")" : "None"
+	Def toString() = return isDefined ? "Some(" + value + ")" : "None"
 
 
 }

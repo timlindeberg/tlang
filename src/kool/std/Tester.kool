@@ -2,26 +2,22 @@ package kool.std
 
 class Tester<T> {
 
-    Def new() = {}
-
-    Def static Assert(condition: Bool): Unit =
+    Def static Assert(condition: Bool) =
         if(!condition) error("Assertion failed.")
 
-    Def static Assert(condition: Bool, message: String): Unit =
+    Def static Assert(condition: Bool, message: String) =
         if(!condition) error("Assertion failed: " + message)
 
-    Def static AssertFalse(condition: Bool): Unit =
-        Assert(!condition)
-    Def static AssertFalse(condition: Bool, message: String): Unit =
-        Assert(!condition, message)
+    Def static AssertFalse(condition: Bool) = Assert(!condition)
+    Def static AssertFalse(condition: Bool, message: String) = Assert(!condition, message)
 
-    Def static AssertEquals(actual: T, expected: T): Unit =
+    Def static AssertEquals(actual: T, expected: T) =
         if(actual != expected) error("Assertion failed: '" + actual + "' did not equal '" + expected + "'.")
 
-    Def static AssertNotEquals(actual: T, expected: T): Unit =
+    Def static AssertNotEquals(actual: T, expected: T) =
         if(actual == expected) error("Assertion failed: '" + actual + "' was equal to '" + expected + "'.")
 
-    Def static Fail(): Unit = error("Test failed!")
-    Def static Fail(message: String): Unit = error("Test failed: " + message)
+    Def static Fail() = error("Test failed!")
+    Def static Fail(message: String) = error("Test failed: " + message)
 
 }
