@@ -1,19 +1,16 @@
-main HashOperator = {
-	var c: Char = 'a'
-	var i: Int = 5
-	var l: Long = 5l
-	var f: Float = 5f
-	var d: Double = 5.0
-	var a: A = new A()
+var c: Char = 'a'
+var i: Int = 5
+var l: Long = 5l
+var f: Float = 5f
+var d: Double = 5.0
+var a: A = new A()
 
-    println(#c) // res: 97
-    println(#i) // res: 5
-    println(#l) // res: 5
-    println(#f) // res: 1084227584
-    println(#d) // res: 1075052544
-    println(#a) // res: 85
-
-}
+println(#c) // res: 97
+println(#i) // res: 5
+println(#l) // res: 5
+println(#f) // res: 1084227584
+println(#d) // res: 1075052544
+println(#a) // res: 85
 
 class A {
 

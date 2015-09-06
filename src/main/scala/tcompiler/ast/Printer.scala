@@ -1,15 +1,16 @@
 package tcompiler
 package ast
 
-import Trees._
-import tcompiler.analyzer.Symbols._
-import tcompiler.analyzer.Types.Typed
 import org.apache.commons.lang3.StringEscapeUtils._
+import tcompiler.analyzer.Symbols._
+import tcompiler.ast.Trees._
 
 
 object Printer {
 
-  private var indent: Int = 0
+  val Indentation = 2
+
+  private var indent: Int   = 0
   private var printIdNumber = false
 
   private def l: String = {
@@ -22,7 +23,7 @@ object Printer {
     n + "}"
   }
 
-  private def n: String = "\n" + " " * (2 * indent)
+  private def n: String = "\n" + " " * (Indentation * indent)
 
   def apply(t: Tree, printIdNumber: Boolean = false): String = {
     this.printIdNumber = printIdNumber
@@ -32,15 +33,15 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)                         => optional(pack, f) + all(imports) + n + mainMethod(main) + all(classes)
-      case Package(identifiers)                                          => "package " + identifiers.map(_.value).mkString(".") + ";" + n
-      case RegularImport(identifiers)                                    => "import " + identifiers.map(_.value).mkString(".") + ";" + n
-      case WildCardImport(identifiers)                                   => "import " + identifiers.map(_.value).mkString(".") + ".*;" + n
-      case GenericImport(identifiers)                                    => "import <" + identifiers.map(_.value).mkString(".") + ">;" + n
-      case ClassDecl(id, parent, vars, methods)                          => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + all(methods) + "" + r
-      case VarDecl(tpe, id, expr, modifiers)                             => varDecl(modifiers) + " " + f(id) + optional(tpe, t => " : " + f(t)) + optional(expr, t => " = " + f(t)) + ";" + n
-      case MethodDecl(retType, id, args, stat, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + ")" + optional(retType, t => ": " + f(t)) + " = " + f(stat) + n
-      case ConstructorDecl(id, args, stat, modifiers)                    => definition(modifiers) + " new(" + commaList(args) + ") = " + f(stat) + n
+      case Program(pack, imports, main, classes)                         => optional(pack, f) + all(imports) + n + all(classes)
+      case Package(identifiers)                                          => "package " + identifiers.map(_.value).mkString(".") + n
+      case RegularImport(identifiers)                                    => "import " + identifiers.map(_.value).mkString(".") + n
+      case WildCardImport(identifiers)                                   => "import " + identifiers.map(_.value).mkString(".") + ".*" + n
+      case GenericImport(identifiers)                                    => "import <" + identifiers.map(_.value).mkString(".") + ">" + n
+      case ClassDecl(id, parent, vars, methods)                          => n + n + "class " + f(id) + optional(parent, t => " extends " + f(t.asInstanceOf[ClassIdentifier])) + " " + l + all(vars) + n + all(methods) + r
+      case VarDecl(tpe, id, expr, modifiers)                             => varDecl(modifiers) + " " + f(id) + optional(tpe, t => " : " + f(t)) + optional(expr, t => " = " + f(t)) + n
+      case MethodDecl(retType, id, args, stat, modifiers)                => definition(modifiers) + " " + f(id) + "(" + commaList(args) + ")" + optional(retType, t => ": " + f(t)) + " = " + f(stat)
+      case ConstructorDecl(_, id, args, stat, modifiers)                 => definition(modifiers) + " new(" + commaList(args) + ") = " + f(stat) + n
       case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => definition(modifiers) + " " + Trees.operatorString(operatorType) + "(" + commaList(args) + ")" + optional(retType, t => ": " + f(t)) + " = " + f(stat) + n
       case Formal(tpe, id)                                               => f(id) + ": " + f(tpe)
       // Types
@@ -55,14 +56,15 @@ object Printer {
       case UnitType()     => "Unit"
       // Statements
       case Block(stats)                     => l + allStats(stats) + r
-      case If(expr, thn, els)               => "if(" + f(expr) + ") " + statement(thn) + optional(els, stat => "else " + statement(stat.asInstanceOf[StatTree]))
-      case While(expr, stat)                => "while(" + f(expr) + ") " + statement(stat)
-      case For(init, condition, post, stat) => "for(" + forAssign(init) + " ; " + f(condition) + " ; " + commaList(post) + ") " + statement(stat)
+      case If(expr, thn, els)               => "if(" + f(expr) + ") " + statement(thn, true) + optional(els, stat => "else " + statement(stat.asInstanceOf[StatTree], true))
+      case While(expr, stat)                => "while(" + f(expr) + ") " + statement(stat, true)
+      case For(init, condition, post, stat) => "for(" + forAssign(init) + " ; " + f(condition) + " ; " + commaList(post) + ") " + statement(stat, true)
       case Print(expr)                      => "print(" + f(expr) + ")"
       case Println(expr)                    => "println(" + f(expr) + ")"
       case Assign(id, expr)                 => id.value + " = " + f(expr)
       case ArrayAssign(id, index, expr)     => f(id) + "[" + f(index) + "] = " + f(expr)
       case Return(expr)                     => "return " + optional(expr, f)
+      case Error(expr)                      => "error(" + f(expr) + ")"
       // Expressions
       case And(lhs, rhs)                     => "(" + f(lhs) + " && " + f(rhs) + ")"
       case Or(lhs, rhs)                      => "(" + f(lhs) + " || " + f(rhs) + ")"
@@ -87,6 +89,7 @@ object Printer {
       case Not(expr)                         => "!(" + f(expr) + ")"
       case Negation(expr)                    => "-(" + f(expr) + ")"
       case LogicNot(expr)                    => "~(" + f(expr) + ")"
+      case Hash(expr)                        => "#(" + f(expr) + ")"
       case ArrayRead(arr, index)             => f(arr) + "[" + f(index) + "]"
       case ArrayLength(arr)                  => f(arr) + ".length"
       case FieldRead(obj, id)                => f(obj) + "." + f(id)
@@ -110,6 +113,7 @@ object Printer {
       case PreDecrement(id)                  => "--" + f(id)
       case PostDecrement(id)                 => f(id) + "--"
       case Ternary(condition, thn, els)      => f(condition) + " ? " + f(thn) + " : " + f(els)
+      case Empty()                           => ""
     }
     s
   }
@@ -155,21 +159,31 @@ object Printer {
 
   private def optional(t: Option[Tree], f: (Tree) => String) = if (t.isDefined) f(t.get) else ""
 
-  private def forAssign(list: List[StatTree]) = list.map(f).mkString(", ")
+  private def forAssign(list: List[StatTree]) = list.map {
+    case VarDecl(tpe, id, expr, modifiers) => varDecl(modifiers) + " " + f(id) + optional(tpe, t => " : " + f(t)) + optional(expr, t => " = " + f(t))
+  }.mkString(", ")
 
   private def commaList(list: List[Tree]): String = list.map(f).mkString(", ")
 
-  private def statement(stat: StatTree): String = stat match {
-    case _: Block => f(stat)
-    case _: For   => f(stat) + n
-    case _: While => f(stat) + n
-    case _: If    => f(stat) + n
-    case _        => f(stat) + ";" + n
+  private def allStats(list: List[StatTree]): String = {
+    list.zipWithIndex.map { case (stat, i) =>
+      statement(stat, i == list.length - 1)
+    }.mkString
   }
 
-  private def allStats(list: List[StatTree]): String =
-    list.map(statement).mkString
 
-  private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_))
+  private def statement(stat: StatTree, last: Boolean): String = {
+    val s = stat match {
+      case _: Block                          => f(stat)
+      case _: For                            => f(stat)
+      case _: While                          => f(stat)
+      case _: If                             => f(stat)
+      case VarDecl(tpe, id, expr, modifiers) => varDecl(modifiers) + " " + f(id) + optional(tpe, t => " : " + f(t)) + optional(expr, t => " = " + f(t))
+      case _                                 => f(stat)
+    }
+    if (last) s else s + n
+  }
+
+  private def all(list: List[Tree], start: String = "") = list.foldLeft(start)(_ + f(_) + n)
 
 }

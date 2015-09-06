@@ -10,7 +10,7 @@ object Trees {
   trait Tree extends Positioned with Product
 
 
-  case class Program(progPackage: Option[Package], var imports: List[Import], main: Option[MethodDecl], var classes: List[ClassDecl]) extends Tree {
+  case class Program(progPackage: Option[Package], var imports: List[Import], var classes: List[ClassDecl]) extends Tree {
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
   }
 
@@ -35,8 +35,8 @@ object Trees {
   trait ClassDecl extends Tree with Symbolic[ClassSymbol] {
     var id: ClassIdentifier
     var parent: Option[ClassIdentifier]
-    val vars: List[VarDecl]
-    val methods: List[FuncTree]
+    var vars: List[VarDecl]
+    var methods: List[FuncTree]
   }
 
   trait Modifiable {
@@ -48,8 +48,8 @@ object Trees {
 
   }
 
-  case class InternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
-  case class ExternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], vars: List[VarDecl], methods: List[FuncTree]) extends ClassDecl
+  case class InternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
+  case class ExternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   trait Modifier extends Tree

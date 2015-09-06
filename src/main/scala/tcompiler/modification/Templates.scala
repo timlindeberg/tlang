@@ -79,7 +79,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
     checkTemplateClassDefs(templateClasses)
     Trees.traverse(prog.classes.filter(!_.id.isTemplated), collect)
-    Trees.traverse(prog.main, collect)
     generatedClasses.toList
   }
 

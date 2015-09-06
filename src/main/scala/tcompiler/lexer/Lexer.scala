@@ -55,7 +55,7 @@ class Tokenizer(val file: File, ctx: Context) {
       case '/' :: '*' :: r                                  =>
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
-      case c :: r if Tokenizer.singleCharTokens.contains(c) => readTokens(r, createToken(Tokenizer.singleCharTokens(c), 1) :: tokens)
+      case c :: r if Tokenizer.SingleCharTokens.contains(c) => readTokens(r, createToken(Tokenizer.SingleCharTokens(c), 1) :: tokens)
       case c :: r if c.isLetter                             =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
@@ -81,12 +81,12 @@ class Tokenizer(val file: File, ctx: Context) {
 
 
   private def createIdentifierOrKeyWord(s: String): Token =
-    if (Tokenizer.keyWords.contains(s)) createToken(Tokenizer.keyWords(s), s.length)
+    if (Tokenizer.KeyWords.contains(s)) createToken(Tokenizer.KeyWords(s), s.length)
     else createIdToken(s, s.length)
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
     def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-      val end = (c: Char) => Tokenizer.singleCharTokens.contains(c) || c.isWhitespace
+      val end = (c: Char) => Tokenizer.SingleCharTokens.contains(c) || c.isWhitespace
       val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
       chars match {
         case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c)
@@ -386,7 +386,7 @@ class Tokenizer(val file: File, ctx: Context) {
 
 object Tokenizer {
 
-  private val singleCharTokens = Map(
+  private val SingleCharTokens = Map(
     ':' -> COLON,
     ';' -> SEMICOLON,
     '.' -> DOT,
@@ -415,7 +415,7 @@ object Tokenizer {
     '^' -> LOGICXOR
   )
 
-  private val keyWords = Map(
+  private val KeyWords = Map(
     "package" -> PACKAGE,
     "import" -> IMPORT,
     "object" -> OBJECT,
@@ -426,7 +426,6 @@ object Tokenizer {
     "Var" -> PUBVAR,
     "var" -> PRIVVAR,
     "static" -> STATIC,
-    "main" -> MAIN,
     "String" -> STRING,
     "extends" -> EXTENDS,
     "Unit" -> UNIT,

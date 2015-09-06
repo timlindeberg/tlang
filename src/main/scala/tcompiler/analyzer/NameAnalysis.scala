@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{PrintStatement, IncrementDecrement, UnaryOperatorDecl, BinaryOperatorDecl}
+import tcompiler.ast.TreeGroups.{BinaryOperatorDecl, PrintStatement, UnaryOperatorDecl}
 import tcompiler.ast.Trees.{ClassDecl, _}
 import tcompiler.ast.{Printer, Trees}
 import tcompiler.utils._
@@ -88,19 +88,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-    case Program(_, _, main, classes)                                                    =>
-      main match {
-        case Some(methDecl) =>
-          globalScope.mainClass = new ClassSymbol(methDecl.id.value).setPos(methDecl.id)
-          addSymbols(methDecl, globalScope.mainClass)
-          methDecl.id.setType(TUnit)
-        case _              =>
-      }
+    case Program(_, _, classes)                                                    =>
       classes.foreach(addSymbols(_, globalScope))
     case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
-      if (name == globalScope.mainClass.name)
-        ErrorSameNameAsMain(name, id)
-
       val newSymbol = new ClassSymbol(name).setPos(id)
       ensureIdentiferNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)
@@ -124,7 +114,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       methodDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case constructorDecl @ ConstructorDecl(id, args, stats, _)                  =>
+    case constructorDecl @ ConstructorDecl(_, id, args, stats, _)                  =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(id)
       newSymbol.setType(TUnit)
 
@@ -152,11 +142,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case Program(_, _, main, classes)                                         =>
-      main match {
-        case Some(mainMethod) => bind(mainMethod)
-        case _                =>
-      }
+    case Program(_, _, classes)                                         =>
       classes.foreach(bind)
     case classDecl @ ClassDecl(id, parent, vars, methods)                     =>
       setParentSymbol(id, parent, classDecl)
@@ -176,7 +162,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       ensureMethodNotDefined(methDecl)
 
       new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(stat)
-    case constructorDecl @ ConstructorDecl(_, args, stat, _)                  =>
+    case constructorDecl @ ConstructorDecl(_, _, args, stat, _)                  =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)

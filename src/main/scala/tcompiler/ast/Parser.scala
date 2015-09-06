@@ -23,7 +23,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   import ctx.reporter._
 
-  private var currentIndex = 0
+  private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
 
   private def nextToken =
@@ -39,9 +39,58 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val pos = nextToken
     val pack = optional(packageDecl, PACKAGE)
     val imp = untilNot(importDecl, IMPORT)
-    val main = optional(mainObject, MAIN)
-    val classes = until(classDeclaration, EOF)
-    Program(pack, imp, main, classes).setPos(pos)
+
+
+    val fields = untilNot(() => {
+      val pos = nextToken
+      val v = varDeclEnd(modifiers(PRIVVAR, PUBVAR) + Static, pos)
+      endStatement()
+      v
+    }, PUBVAR, PRIVVAR)
+
+    val code = until(() => {
+      nextTokenKind match {
+        case CLASS            => classDeclaration()
+        case PUBDEF | PRIVDEF =>
+          var access = accessRights(PUBDEF, PRIVDEF)
+          if (nextTokenKind == STATIC) eat(STATIC)
+          method(Set(access, Static))
+        case _                => statement()
+      }
+    }, EOF)
+
+    var classes = createMainClass(fields, code)
+
+    Program(pack, imp, classes).setPos(pos)
+  }
+
+  private def createMainClass(fields: List[VarDecl], code: List[Tree]) = {
+    var classes = code.collect { case x: ClassDecl => x }
+    val methods = code.collect { case x: MethodDecl => x }
+    val stats = code.collect { case x: StatTree => x }
+
+    if(stats.nonEmpty || methods.nonEmpty || fields.nonEmpty){
+      val mainName = ctx.file.getName.dropRight(Main.FileEnding.length)
+      val mainClass = classes.find(_.id.value == mainName) match {
+        case Some(c) => c
+        case None    =>
+          val pos = if(stats.nonEmpty) stats.head else methods.head
+          val m = InternalClassDecl(ClassIdentifier(mainName), None, List(), List()).setPos(pos)
+          classes ::= m
+          m
+      }
+
+      mainClass.methods :::= methods
+
+      if (stats.nonEmpty) {
+        val args = List(Formal(ArrayType(StringType()), Identifier("args")))
+        val modifiers: Set[Modifier] = Set(Public, Static)
+        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Block(stats), modifiers).setPos(stats.head)
+        mainClass.methods ::= mainMethod
+      }
+      mainClass.vars :::= fields
+    }
+    classes
   }
 
   /**
@@ -89,9 +138,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <mainObject> ::= object <identifier> "{" def main (): Unit = "{" { <statement> } "}" "}"
+   * <main> ::= main <identifier> = <statement>
    */
-  def mainObject(): MethodDecl = {
+  def main(): MethodDecl = {
     val pos = nextToken
     val id = identifier()
     eat(EQSIGN)
@@ -136,7 +185,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def localVarDeclaration(): VarDecl = {
     val pos = nextToken
     eat(PRIVVAR)
-    varDeclEnd(Set(), pos)
+    varDeclEnd(Set(Private), pos)
   }
 
   /**
@@ -524,6 +573,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       readToken()
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
+    case EOF                 =>
     case _                   => FatalWrongToken(SEMICOLON, NEWLINE)
   }
 

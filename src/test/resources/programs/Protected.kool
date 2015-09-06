@@ -1,20 +1,10 @@
-main Main = {
-	new H().run();
-}
+var b: B;
+var a: A;
+b = new B();
+a = new A();
 
-class H {
-
-  Def run(): Unit = {
-    var b: B;
-    var a: A;
-    b = new B();
-    a = new A();
-
-    println(b.Test(0)); // res: 1
-    println(a.Test(0)); // res: 1
-  }
-
-}
+println(b.Test(0)); // res: 1
+println(a.Test(0)); // res: 1
 
 class A {
 

@@ -1,46 +1,44 @@
-main OperatorOverloading = {
-	var a: A = new A(1)
-    var b: A = new A(2)
+var a: A = new A(1)
+var b: A = new A(2)
 
-    println(a + b) // res: 3
-    println(a - b) // res: -1
-    println(a * b) // res: 2
-    println(a / b) // res: 0
-    println(a % b) // res: 1
+println(a + b) // res: 3
+println(a - b) // res: -1
+println(a * b) // res: 2
+println(a / b) // res: 0
+println(a % b) // res: 1
 
-    println(a & b) // res: 0
-    println(a | b) // res: 3
-    println(a ^ b) // res: 3
+println(a & b) // res: 0
+println(a | b) // res: 3
+println(a ^ b) // res: 3
 
-    println(a << 1) // res: 2
-    println(a >> 1) // res: 0
+println(a << 1) // res: 2
+println(a >> 1) // res: 0
 
-    println(a < b) // res: true
-    println(a <= b) // res: true
-    println(a > b) // res: false
-    println(a >= b) // res: false
+println(a < b) // res: true
+println(a <= b) // res: true
+println(a > b) // res: false
+println(a >= b) // res: false
 
-    println(a == b) // res: false
-    println(a != b) // res: true
+println(a == b) // res: false
+println(a != b) // res: true
 
-    println(a++) // res: 2
-    println(a) // res: 2
-    println(++a) // res: 3
-    println(a) // res: 3
+println(a++) // res: 2
+println(a) // res: 2
+println(++a) // res: 3
+println(a) // res: 3
 
-    println(a--) // res: 2
-    println(a) // res: 2
-    println(--a) // res: 1
-    println(a) // res: 1
+println(a--) // res: 2
+println(a) // res: 2
+println(--a) // res: 1
+println(a) // res: 1
 
-    println(~a) // res: -2
-    println(!a) // res: true
-    println(-a) // res: -1
-    println(#a) // res: 1
+println(~a) // res: -2
+println(!a) // res: true
+println(-a) // res: -1
+println(#a) // res: 1
 
-    println(a[1]) // res: 2
-    println(a[1] = 2) // res: 2
-}
+println(a[1]) // res: 2
+println(a[1] = 2) // res: 2
 
 class A {
 
@@ -82,10 +80,12 @@ class A {
     Def !(a: A): Bool = return a.I != 0
     Def -(a: A): Int = return -a.I
     Def #(a: A): Int = return a.I
+
     Def ++(a: A): A = { 
         a.I += 1
         return a 
     }
+
     Def --(a: A): A = {
         a.I -= 1
         return a 

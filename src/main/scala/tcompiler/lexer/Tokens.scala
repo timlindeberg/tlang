@@ -107,7 +107,6 @@ object Tokens {
   case object PRIVVAR extends TokenKind // var
   case object STATIC extends TokenKind // static
   case object UNIT extends TokenKind // unit
-  case object MAIN extends TokenKind // main
   case object STRING extends TokenKind // string
   case object EXTENDS extends TokenKind // extends
   case object INT extends TokenKind // int

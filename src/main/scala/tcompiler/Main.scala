@@ -1,5 +1,6 @@
 package tcompiler
 
+import tcompiler.ast.Trees._
 import utils._
 import java.io.{FileNotFoundException, File}
 import lexer.Lexer
@@ -14,11 +15,14 @@ import tcompiler.modification.{Imports, Templates}
 import scala.sys.process._
 
 object Main {
+
+  var FileEnding = ".kool"
+
   val tokensFlag = "--tokens"
-  val astFlag = "--ast"
-  val symId = "--symid"
-  val exec = "--exec"
-  val flags = HashMap(tokensFlag -> false, astFlag -> false, symId -> false, exec -> false)
+  val astFlag    = "--ast"
+  val symId      = "--symid"
+  val exec       = "--exec"
+  val flags      = HashMap(tokensFlag -> false, astFlag -> false, symId -> false, exec -> false)
 
   def processOptions(args: Array[String]): Context = {
 
@@ -73,20 +77,27 @@ object Main {
           val prog = (parsing andThen analysis).run(ctx)(ctx.file)
           CodeGeneration.run(ctx)(prog)
           System.out.flush()
-          if (flags(exec) && prog.main.isDefined) {
+          if (flags(exec) && containsMainMethod(prog)) {
             val cp = ctx.outDir match {
               case Some(dir) => "-cp " + dir.getPath
               case _         => ""
             }
-            val className = prog.main.get.id.value
-            println("java " + cp + " " + className !!)
+            println("java " + cp + " " + fileName(ctx) !!)
           }
         }
       }
     } catch {
-      // Reporter throws exception at fatal instead exiting program
-      case e: CompilationException =>
+      case e: CompilationException  => // Reporter throws exception at fatal instead exiting program
       case e: FileNotFoundException => System.err.println("Error: File not found: " + ctx.file.getPath)
     }
   }
+
+  def fileName(ctx: Context) = ctx.file.getName.dropRight(FileEnding.length)
+
+  private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists {
+    case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(StringType()), _) :: Nil, _, mods) if mainModifiers(mods) => true
+    case _ => false
+  })
+
+  private def mainModifiers(modifiers: Set[Modifier]) = modifiers.size == 2 && modifiers.contains(Public) && modifiers.contains(Static)
 }

@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups._
-import tcompiler.ast.{Printer, ASTPrinterWithSymbols, Trees}
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils._
 
@@ -19,17 +19,16 @@ object TypeChecking extends Pipeline[Program, Program] {
    * attaching types to trees and potentially outputting error messages.
    */
   def run(ctx: Context)(prog: Program): Program = {
-    prog.main match {
-      case Some(mainMethod) =>
-        val mainTypeChecker = new TypeChecker(ctx, mainMethod.getSymbol)
-        mainTypeChecker.tcStat(mainMethod.stat)
-      case _                =>
+    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+
+    // Typecheck fields
+    prog.classes.foreach { classDecl =>
+        val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
+        classDecl.vars.foreach(typeChecker.tcStat(_))
     }
 
-    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+    // Typecheck methods
     prog.classes.foreach { classDecl =>
-      val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
-      classDecl.vars.foreach(typeChecker.tcStat(_))
       classDecl.methods.foreach(method => new TypeChecker(ctx, method.getSymbol).tcMethod())
     }
     prog

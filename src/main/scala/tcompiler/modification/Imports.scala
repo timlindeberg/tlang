@@ -39,9 +39,6 @@ class NameReplacer(ctx: Context, prog: Program) {
   def replaceNames: Program = {
     val packString = prog.getPackageDirectory
 
-    if (prog.main.isDefined)
-      prog.main.get.id.value = packString + prog.main.get.id.value
-
     Trees.traverse(prog, (_, t) => Some(t) collect {
       case c: ClassIdentifier =>
         handleImport(packString, c.value) collect {

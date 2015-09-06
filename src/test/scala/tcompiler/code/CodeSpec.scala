@@ -3,7 +3,7 @@ package tcompiler.code
 import java.io._
 
 import org.scalatest._
-import tcompiler.TestUtils
+import tcompiler.{Main, TestUtils}
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecker, TypeChecking}
@@ -241,7 +241,7 @@ class A {
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.file)
 
-    execute(TestCtx.outDir.get, MainName, "").trim
+    execute(TestCtx.outDir.get, "").trim
   }
 
   def getScalaResult(operation: String) = {
@@ -273,7 +273,7 @@ class A {
 
     CodeGeneration.run(ctx)(program)
 
-    val res = execute(file, program.main.get.id.value, "./gen/")
+    val res = execute(file, "./gen/")
     // Try and compare result with solution file
     try {
       val sol = TestUtils.parseSolutions(file)
@@ -299,7 +299,7 @@ class A {
     case otherwise   => List(otherwise)
   }
 
-  def execute(f: File, main: String, prefix: String): String = "java -cp " + prefix + f.getName + " " + main !!
+  def execute(f: File, prefix: String): String = "java -cp " + prefix + f.getName + " " + f.getName.dropRight(Main.FileEnding.length) !!
 
   def getAnswer(file: File) = Seq(TestUtils.runScript, Flag + " " + file.toPath) !!
 

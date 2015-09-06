@@ -1,12 +1,10 @@
-main Fields = {
-	var a1: A = new A()
-    var a2: A = new A()
-    var b: B = new B()
-    a1.Test(a2)
-    b.Test2(a2)
-    println(a1.J = 1)      // res5: 1
-    println(a1.J += a1.J)  // res6: 2
-}
+var a1: A = new A()
+var a2: A = new A()
+var b: B = new B()
+a1.Test(a2)
+b.Test2(a2)
+println(a1.J = 1)      // res5: 1
+println(a1.J += a1.J)  // res6: 2
 
 class A {
 

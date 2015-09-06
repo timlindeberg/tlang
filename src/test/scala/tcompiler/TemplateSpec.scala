@@ -1,20 +1,16 @@
 package tcompiler
 
+import java.io.{File, FileNotFoundException}
+
 import org.scalatest._
-import scala.sys.process._
-import tcompiler.utils.Context
-import java.io.File
-import tcompiler.lexer.Lexer
+import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecking}
 import tcompiler.ast._
-import tcompiler.utils.CompilationException
-import scala.io.Source
-import tcompiler.analyzer.NameAnalysis
-import tcompiler.modification.{Imports, Templates}
-import tcompiler.analyzer.TypeChecking
 import tcompiler.code.CodeGeneration
-import tcompiler.ast.Trees.Program
-import tcompiler.analyzer.Symbols
-import java.io.FileNotFoundException
+import tcompiler.lexer.Lexer
+import tcompiler.modification.{Imports, Templates}
+import tcompiler.utils.{CompilationException, Context}
+
+import scala.io.Source
 
 class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
@@ -45,7 +41,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
       println(Printer(program))
       ctx.reporter.hasErrors should be(false)
       CodeGeneration.run(ctx)(program)
-      val res = execute(program, file)
+      val res = execute(ctx)
       try {
         val sol = readSolution(file + "-solution").toList
         val r = TestUtils.lines(res)
@@ -58,7 +54,7 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   }
 
-  def execute(prog: Program, f: File) = "java -cp ./gen/" + f.getName + " " + prog.main.get.id.value !!
+  def execute(ctx: Context) = "java -cp ./gen/" + ctx.file.getName + " " + Main.fileName(ctx)
   def readSolution(fileName: String): Iterator[String] = Source.fromFile(fileName).getLines()
 
 }

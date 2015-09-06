@@ -1,8 +1,6 @@
-main Casting = {
-	var a: A
-    a = new B()
-    (a as B).testB() // res: B
-}
+var a: A
+a = new B()
+(a as B).testB() // res: B
 
 class A {
 

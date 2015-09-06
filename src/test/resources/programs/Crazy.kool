@@ -1,12 +1,10 @@
-main Crazy = {
-	println(new A().bar());     // res: false
-    println(new A().bar2());    // res: true
-    println(new A().T());       // res: 0
-    println(new B().foo());     // res: 42
-    println(new B().a());       // res: false
-    println(new B().b());       // res: false
-    println(new Test().init()); // res: 1
-}
+println(new A().bar());     // res: false
+println(new A().bar2());    // res: true
+println(new A().T());       // res: 0
+println(new B().foo());     // res: 42
+println(new B().a());       // res: false
+println(new B().b());       // res: false
+println(new Test().init()); // res: 1
 
 class A {
   var protected value: Int;

@@ -24,9 +24,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val sourceName = ctx.file.getName
 
     // output code
-    if (prog.main.isDefined)
-      generateMainClassFile(sourceName, prog.main.get, outDir)
-
     prog.classes.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
       case _                    =>

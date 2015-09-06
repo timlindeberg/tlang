@@ -1,7 +1,4 @@
-main Main = {
-	new H().run();
-}
-
+new H().run();
 
 class H {
 

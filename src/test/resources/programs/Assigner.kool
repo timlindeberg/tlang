@@ -1,26 +1,24 @@
-main Assigner = {
-	var f: Foo
-    var t: Test
-    var a: A
-    var c: C
-    f = new Foo()
-    println(f.bar(10000))   // res: 5
-    println(f.baz(1))       // res: 1
-    println(f.foo())        // res: foo
-    t = new Test()
-    println(t.Method())     // res: String
-    t = new Test4()
-    println(t.Method())     // res: Test4
+var f: Foo
+var t: Test
+var a: A
+var c: C
+f = new Foo()
+println(f.bar(10000))   // res: 5
+println(f.baz(1))       // res: 1
+println(f.foo())        // res: foo
+t = new Test()
+println(t.Method())     // res: String
+t = new Test4()
+println(t.Method())     // res: Test4
 
-    a = new A()
-    println(a.foo(0, "yo")) // res: 0
-    a = new B()
-    println(a.foo(0, "yo")) // res: 1
-    c = new C()
-    println(c.foo())        // res: 0
-    c = new D()
-    println(c.foo())        // res: 1
-}
+a = new A()
+println(a.foo(0, "yo")) // res: 0
+a = new B()
+println(a.foo(0, "yo")) // res: 1
+c = new C()
+println(c.foo())        // res: 0
+c = new D()
+println(c.foo())        // res: 1
 
 class Foo {
   Def bar(a: Int): Int = {

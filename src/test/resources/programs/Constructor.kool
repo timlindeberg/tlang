@@ -1,5 +1,4 @@
-
-main Constructor =  println(new H("Construct").run()) // res: Construct
+println(new H("Construct").run()) // res: Construct
 
 class H {
 

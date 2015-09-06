@@ -1,6 +1,4 @@
-main Main = {
-	println(new Foo().bar(new A())); // res: Print A!
-}
+println(new Foo().bar(new A())); // res: Print A!
 
 class Foo {
   Def bar(a: Object): Object = {

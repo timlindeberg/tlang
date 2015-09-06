@@ -1,12 +1,10 @@
-main StaticFields = {
-    var a1: A = new A() // res: Init
-    var a2: A = new A()
-    var a3: A = new A()
+var a1: A = new A() // res: Init
+var a2: A = new A()
+var a3: A = new A()
 
-    println(A.i) // res: 15
-    println(A.j) // res: 16
-    println(A.k) // res: 5
-}
+println(A.i) // res: 15
+println(A.j) // res: 16
+println(A.k) // res: 5
 
 class A {
 

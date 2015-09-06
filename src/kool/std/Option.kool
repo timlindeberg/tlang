@@ -5,7 +5,7 @@ class Option<T> {
 	var isDefined: Bool
 	var value: T
 
-	var static none = new Option<T>
+	var static none = new Option<T>()
 
 	Def static Some(value: T) = return new Option<T>(value)
 	Def static None() = return none
@@ -25,6 +25,8 @@ class Option<T> {
 	}
 
 	Def !=(lhs: Option<T>, rhs: Option<T>) = return !(lhs == rhs)
+
+	Def #(option: Option<T>) = return option.isDefined ? #option.value : 0
 
 	Def Add(value: T) = {
 		this.value = value
