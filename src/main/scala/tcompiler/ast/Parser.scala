@@ -694,6 +694,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
      * | <identifier> ++
      * | <identifier> --
      * | <identifier> "(" <expression> { "," <expression> } ")"
+     * | "{" { <expression> } "}"
      * | true
      * | false
      * | this
@@ -708,6 +709,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           val expr = expression()
           eat(RPAREN)
           expr
+        case LBRACE =>
+          eat(LBRACE)
+          val expressions = commaList(expression, RBRACE)
+          eat(RBRACE)
+          ArrayLit(expressions)
         case BANG          =>
           eat(BANG)
           Not(term())

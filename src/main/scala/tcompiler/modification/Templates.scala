@@ -2,7 +2,7 @@ package tcompiler
 package modification
 
 import com.rits.cloning._
-import tcompiler.ast.{Printer, Trees}
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.{Context, Pipeline, Positioned}
 

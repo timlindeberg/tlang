@@ -277,8 +277,8 @@ class A {
     // Try and compare result with solution file
     try {
       val sol = TestUtils.parseSolutions(file)
-      //println("res: \n" + res)
-      //println("sol: \n" + sol.mkString("\n"))
+      println("res: \n" + res)
+      println("sol: \n" + sol.mkString("\n"))
       val r = TestUtils.lines(res)
       assert(r.length == sol.length, "Different amount of results and expected results.")
       flattenTuple(r.zip(sol).zipWithIndex).foreach { case (res, sol, i) =>

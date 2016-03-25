@@ -33,7 +33,7 @@ object Printer {
 
   private def f(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, main, classes)                         => optional(pack, f) + all(imports) + n + all(classes)
+      case Program(pack, imports, classes)                               => optional(pack, f) + all(imports) + n + all(classes)
       case Package(identifiers)                                          => "package " + identifiers.map(_.value).mkString(".") + n
       case RegularImport(identifiers)                                    => "import " + identifiers.map(_.value).mkString(".") + n
       case WildCardImport(identifiers)                                   => "import " + identifiers.map(_.value).mkString(".") + ".*" + n
@@ -101,6 +101,7 @@ object Printer {
       case DoubleLit(value)                  => value.toString
       case CharLit(value)                    => "'" + escapeJava("" + value) + "'"
       case StringLit(value)                  => "\"" + escapeJava(value) + "\""
+      case ArrayLit(expressions)             => "{ " + expressions.map(f).mkString(", ") + " }"
       case True()                            => "true"
       case False()                           => "false"
       case id @ Identifier(value)            => value + symbol(id)

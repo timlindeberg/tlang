@@ -15,6 +15,12 @@ class Vector<T> {
 		AddAll(list)
 	}
 
+	Def new(array: T[]) = {
+		Clear()
+		for(var i = 0; i < array.length; i++)
+			Push(array[i])
+	}
+
 	Def new(initSize: Int, value: T) = {
 		size = initSize
 		data = new T[size]

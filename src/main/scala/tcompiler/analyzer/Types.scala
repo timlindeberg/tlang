@@ -1,8 +1,8 @@
 package tcompiler
 package analyzer
 
-import Symbols._
-import tcompiler.code.{CodeGenerator, CodeGeneration}
+import tcompiler.analyzer.Symbols._
+import tcompiler.code.CodeGenerator
 
 object Types {
 
@@ -115,8 +115,12 @@ object Types {
     }
     override def toString = tpe.toString + "[]"
     override def byteCodeName: String = "[" + tpe.byteCodeName
-    override val codes = ArrayCodeMap
+    override val codes = new ArrayCodeMap(tpe.byteCodeName)
     override val size: Int = 1
+    def dimension: Int = tpe match {
+      case t: TArray => 1 + t.dimension
+      case _         => 1
+    }
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {

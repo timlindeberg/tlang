@@ -287,13 +287,13 @@ object StringCodeMap extends CodeMap {
 
 }
 
-object ArrayCodeMap extends CodeMap {
+class ArrayCodeMap(typeName: String) extends CodeMap {
   override def load(ch: CodeHandler, index: Int) = ch << ALoad(index)
   override def store(ch: CodeHandler, index: Int) = ch << AStore(index)
   override def arrayLoad(ch: CodeHandler) = ch << AALOAD
   override def arrayStore(ch: CodeHandler) = ch << AASTORE
   override def defaultConstant(ch: CodeHandler) = ch << ACONST_NULL
-  override def newArray(ch: CodeHandler) = ???
+  override def newArray(ch: CodeHandler) = ch << NewArray("[" + typeName)
 
   override def cmpEq(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)
   override def cmpNe(ch: CodeHandler, id: String) = ch << If_ACmpNe(id)

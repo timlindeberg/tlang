@@ -140,6 +140,7 @@ object Trees {
   case class DoubleLit(value: Double) extends ExprTree
   case class CharLit(value: Char) extends ExprTree
   case class StringLit(value: String) extends ExprTree
+  case class ArrayLit(expressions: List[ExprTree]) extends ExprTree
   case class True() extends ExprTree
   case class False() extends ExprTree
 

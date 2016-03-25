@@ -19,6 +19,7 @@ Equals()
 Remove()
 AddAll()
 
+
 println("All tests succeded!")
 
 Def IntMap() = {
@@ -111,9 +112,8 @@ Def Iterators() = {
     entries[2] = new Entry<Int, Int>(90, -5, 1)
     entries[3] = new Entry<Int, Int>(-2, 35, 1)
 
-    for(var i = 0; i < entries.length; i++){
+    for(var i = 0; i < entries.length; i++)
         map[entries[i].Key] = entries[i].Value
-    }
 
     {
         var it = map.EntryIterator()

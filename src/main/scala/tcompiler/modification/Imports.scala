@@ -41,9 +41,7 @@ class NameReplacer(ctx: Context, prog: Program) {
 
     Trees.traverse(prog, (_, t) => Some(t) collect {
       case c: ClassIdentifier =>
-        handleImport(packString, c.value) collect {
-          case newName => c.value = newName
-        }
+        handleImport(packString, c.value) collect { case newName => c.value = newName }
       case c: ConstructorDecl => if (originalClasses(c.id.value)) c.id.value = packString + c.id.value
     })
 
@@ -58,6 +56,9 @@ class NameReplacer(ctx: Context, prog: Program) {
       }
     }
     checkUnusedImports()
+
+    importStandardClasses()
+
     prog
   }
 
@@ -89,6 +90,10 @@ class NameReplacer(ctx: Context, prog: Program) {
         WarningUnusedImport(importName, imp)
       }
     })
+  }
+
+  private def importStandardClasses() = {
+
   }
 
   private def WarningUnusedImport(name: String, pos: Positioned) =

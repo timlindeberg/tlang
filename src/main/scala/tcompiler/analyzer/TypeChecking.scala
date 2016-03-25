@@ -23,8 +23,8 @@ object TypeChecking extends Pipeline[Program, Program] {
 
     // Typecheck fields
     prog.classes.foreach { classDecl =>
-        val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
-        classDecl.vars.foreach(typeChecker.tcStat(_))
+      val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
+      classDecl.vars.foreach(typeChecker.tcStat(_))
     }
 
     // Typecheck methods
@@ -83,7 +83,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             id.setType(inferedType)
           case _          => ErrorNoTypeNoInitalizer(varDecl)
         }
-
       }
     case If(expr, thn, els)                          =>
       tcExpr(expr, TBool)
@@ -130,6 +129,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       case _: StringLit                    => TString
       case _: True                         => TBool
       case _: False                        => TBool
+
       case id: Identifier                  =>
         id.getSymbol match {
           case varSymbol: VariableSymbol => varSymbol.classSymbol match {
@@ -157,6 +157,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         for (i <- 1 to newArray.dimension)
           arrayType = TArray(arrayType)
         arrayType
+      case ArrayLit(expressions)           =>
+        val tpes = expressions.map(tcExpr(_))
+        if(tpes.isEmpty){
+          TArray(Types.anyObject)
+        }else{
+          val typeSet = tpes.toSet
+          if (typeSet.size > 1)
+            ErrorMultipleArrayLitTypes(typeSet.mkString(", "), expression)
+          TArray(tpes.head)
+        }
       case Plus(lhs, rhs)                  =>
         val types = List(Types.anyObject, TString, TBool) ::: Types.primitives
         val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
@@ -670,6 +680,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   private def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
     error(s"Method contains return statements of multiple types: $typeList", pos)
+
+  private def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
+    error(s"Array literal contains multiple types: $typeList", pos)
 
   private def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
     error(s"Can't infer type of recursive method.", pos)

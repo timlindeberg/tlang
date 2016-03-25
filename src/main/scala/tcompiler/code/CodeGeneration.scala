@@ -5,7 +5,6 @@ import java.io.File
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
-import cafebabe.ClassFileTypes.U2
 import cafebabe._
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
@@ -19,7 +18,7 @@ import scala.collection.mutable
 object CodeGeneration extends Pipeline[Program, Unit] {
 
   def run(ctx: Context)(prog: Program): Unit = {
-
+    //println(Printer(prog))
     val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("")
     val sourceName = ctx.file.getName
 
@@ -220,7 +219,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
   def compileStat(statement: StatTree): Unit = {
     ch << LineNumber(statement.line)
     statement match {
-      case Block(stats)                                    => stats.foreach(compileStat)
+      case Block(stats)                                  => stats.foreach(compileStat)
       case variable @ VarDecl(_, varId, init, modifiers) =>
         val tpe = variable.getSymbol.getType
         val id = ch.getFreshVar(tpe.size)
@@ -235,7 +234,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             codes.defaultConstant(ch)
             codes.store(ch, id)
         }
-      case If(expr, thn, els)                              =>
+      case If(expr, thn, els)                            =>
         val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
         val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
@@ -246,7 +245,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(elsLabel)
         if (els.isDefined) compileStat(els.get)
         ch << Label(afterLabel)
-      case While(expr, stat)                               =>
+      case While(expr, stat)                             =>
         val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
         branch(expr, Label(bodyLabel), Label(afterLabel))
@@ -254,7 +253,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileStat(stat)
         branch(expr, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
-      case For(init, condition, post, stat)                =>
+      case For(init, condition, post, stat)              =>
         val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
         val afterLabel = ch.getFreshLabel(CodeGenerator.After)
         init.foreach(compileStat)
@@ -264,7 +263,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         post.foreach(compileStat)
         branch(condition, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
-      case PrintStatement(expr)                            =>
+      case PrintStatement(expr)                          =>
         ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
@@ -276,19 +275,19 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case _: Println => "println"
         }
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, funcName, "(" + arg + ")V")
-      case Error(expr)                                     =>
+      case Error(expr)                                   =>
         ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
         ch << InvokeVirtual(CodeGenerator.JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(CodeGenerator.JavaRuntimeException) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(CodeGenerator.JavaRuntimeException, "<init>", "(L" + CodeGenerator.JavaString + ";)V")
         ch << ATHROW
-      case Return(Some(expr))                              =>
+      case Return(Some(expr))                            =>
         compileExpr(expr)
         expr.getType.codes.ret(ch)
-      case Return(None)                                    =>
+      case Return(None)                                  =>
         ch << RETURN
-      case expr: ExprTree                                  =>
+      case expr: ExprTree                                =>
         // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)
     }
@@ -346,6 +345,27 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(els)
         ch << Ldc(0)
         ch << Label(after)
+      case arrLit @ ArrayLit(expressions)                     =>
+        val arrLitType = arrLit.getType.asInstanceOf[TArray]
+        val arrayType = arrLit.getType.asInstanceOf[TArray].tpe
+
+        ch << Ldc(arrLit.expressions.size)
+        arrayType.codes.newArray(ch)
+
+        expressions.zipWithIndex.foreach { case (expr, i) =>
+          arrayType.codes.dup(ch)
+          ch << Ldc(i)
+          compileExpr(expr)
+          arrayType.codes.arrayStore(ch)
+        }
+        if(!duplicate)
+          ch << POP
+      case newArray @ ast.Trees.NewArray(tpe, sizes) =>
+        sizes.foreach(compileExpr(_))
+        if (newArray.dimension == 1)
+          tpe.getType.codes.newArray(ch)
+        else
+          ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
       case Plus(lhs, rhs)                            =>
         val argTypes = (lhs.getType, rhs.getType)
         argTypes match {
@@ -587,12 +607,6 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
         if (!duplicate && mc.getType != TUnit)
           ch << POP
-      case newArray @ ast.Trees.NewArray(tpe, sizes) =>
-        sizes.foreach(compileExpr(_))
-        if (newArray.dimension == 1)
-          tpe.getType.codes.newArray(ch)
-        else
-          ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
       case ast.Trees.New(tpe, args)                  =>
         val codes = tpe.getType.codes
         val obj = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
@@ -804,9 +818,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             ch << IfEq(thn.id)
           else
             comparison(objectType.codes) // If no operator is defined, compare by reference
-        case (_, _: TArray) | (_: TArray, _) =>
+        case (_, arrType: TArray)  =>
           compileExpr(rhs)
-          comparison(ArrayCodeMap)
+          comparison(arrType.codes)
+        case (arrType: TArray, _) =>
+          compileExpr(rhs)
+          comparison(arrType.codes)
         case (TString, _) | (_, TString)     =>
           compileExpr(rhs)
           comparison(StringCodeMap)
@@ -898,24 +915,24 @@ object CodeGenerator {
 
   /* Java classes used by compiler */
   val JavaStringBuilder = "java/lang/StringBuilder"
-  val JavaString = "java/lang/String"
-  val JavaSystem = "java/lang/System"
-  val JavaPrintStream = "java/io/PrintStream"
-  val JavaObject = "java/lang/Object"
+  val JavaString        = "java/lang/String"
+  val JavaSystem        = "java/lang/System"
+  val JavaPrintStream   = "java/io/PrintStream"
+  val JavaObject        = "java/lang/Object"
 
-  val JavaInt = "java/lang/Integer"
-  val JavaChar = "java/lang/Character"
-  val JavaFloat = "java/lang/Float"
-  val JavaDouble = "java/lang/Double"
-  val JavaLong = "java/lang/Long"
+  val JavaInt              = "java/lang/Integer"
+  val JavaChar             = "java/lang/Character"
+  val JavaFloat            = "java/lang/Float"
+  val JavaDouble           = "java/lang/Double"
+  val JavaLong             = "java/lang/Long"
   val JavaRuntimeException = "java/lang/RuntimeException"
 
 
   /* Labels */
-  val Then = "then"
-  val Else = "else"
+  val Then  = "then"
+  val Else  = "else"
   val After = "after"
-  val Body = "body"
-  val Next = "next"
+  val Body  = "body"
+  val Next  = "next"
 
 }

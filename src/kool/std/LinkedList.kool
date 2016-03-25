@@ -33,10 +33,9 @@ class LinkedList<T> {
 
 		var lhsIt = lhs.Iterator()
 		var rhsIt = rhs.Iterator()
-		while(lhsIt.HasNext()){
+		while(lhsIt.HasNext())
 			if(lhsIt.Next() != rhsIt.Next())
 				return false
-		}
 
 		return true
 	}
@@ -227,12 +226,12 @@ class LinkedList<T> {
 		if(index == size - 1)	 return last
 
 		if(index < (size / 2) + 1){
-			var tmp =  first
+			var tmp = first
 			for(var i =  0 ; i < index && tmp.IsDefined(); i++)
 				tmp = tmp.Value().Next()
 		} else {
-			var tmp =  last
-			for(var i =  size - 1 ; i > index && tmp.IsDefined(); i++)
+			var tmp = last
+			for(var i = size - 1 ; i > index && tmp.IsDefined(); i++)
 				tmp = tmp.Value().Prev()
 		}
 

@@ -40,17 +40,16 @@ class HashMap<K, V> {
 	}
 
 	Def +(lhs: HashMap<K, V>, rhs: HashMap<K, V>)  = {
-		var newMap = new HashMap<K, V>(lhs.capacity + rhs.capacity, lhs.loadFactor);
+		var newMap = new HashMap<K, V>(lhs.capacity + rhs.capacity, lhs.loadFactor)
 		newMap.AddAll(lhs)
 		newMap.AddAll(rhs)
 		return newMap
 	}
 
 	Def -(map: HashMap<K, V>, key: K) = {
-		var newMap = new HashMap<K, V>(map.capacity, map.loadFactor);
+		var newMap = new HashMap<K, V>(map.capacity, map.loadFactor)
 		newMap.AddAll(map)
 		newMap.Remove(key)
-		newMap.size = map.size - 1
 		return newMap
 	}
 
@@ -118,13 +117,13 @@ class HashMap<K, V> {
 		while(it.HasNext()){
 			entry = it.Next()
 			if(entry.Key == key){
-				if(!previous.IsDefined()){
+				if(!previous.IsDefined())
 					entries[index] = new Option<Entry<K, V>>()
-				}else if(it.HasNext()){
+				else if(it.HasNext())
 					previous.Value().Next = new Option<Entry<K, V>>(it.Next())
-				}else{
+				else
 					previous.Value().Next = new Option<Entry<K, V>>()
-				}
+
 				size--
 				return
 			}
@@ -133,7 +132,7 @@ class HashMap<K, V> {
 	}
 
 	Def Clear() = {
-		entries = newDataContainer(capacity)
+		entries = getNewDataContainer(capacity)
 		size = 0
 	}
 
@@ -171,7 +170,7 @@ class HashMap<K, V> {
 		Clear()
 	}
 
-	def newDataContainer(capacity: Int) = {
+	def getNewDataContainer(capacity: Int) = {
 		var data = new Option<Entry<K, V>>[capacity]
 		for(var i: Int = 0; i < capacity; i++)
 			data[i] = new Option<Entry<K, V>>()
@@ -201,7 +200,7 @@ class HashMap<K, V> {
 
 	def resize() = {
 		var newCapacity = capacity << 1
-		var newData = newDataContainer(newCapacity)
+		var newData = getNewDataContainer(newCapacity)
 
 		for(var i: Int = 0; i < capacity; i++){
 			if(entries[i].IsDefined()){
