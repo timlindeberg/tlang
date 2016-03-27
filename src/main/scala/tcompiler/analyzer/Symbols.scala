@@ -57,7 +57,6 @@ object Symbols {
     var operators: List[OperatorSymbol] = Nil
     var members = Map[String, VariableSymbol]()
 
-
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
 
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
@@ -85,12 +84,23 @@ object Symbols {
           args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
       })
 
-    private def findMethod(name: String, args: List[Type]) = {
+    private def findMethod(name: String, args: List[Type]) =
       methods.find(symbol => {
-        name == symbol.name &&
-          args.size == symbol.argList.size &&
-          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
+          name == symbol.name &&
+          hasMatchingArgumentList(symbol, args)
       })
+
+    private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type]): Boolean = {
+      if(args.size != symbol.argList.size)
+        return false
+
+      if(args.size == 1){
+        val methodArg = symbol.argList.head.getType
+        val expectedArg = args.head
+        expectedArg.isSubTypeOf(methodArg) || methodArg.isImplicitlyConvertableFrom(expectedArg)
+      }else{
+        args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
+      }
     }
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {

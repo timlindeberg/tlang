@@ -24,11 +24,14 @@ for(var i = 0; i < m.length; i++)
 
 println("")
 
-
 Def Test() = return "Test"
 
 Def Test2(arr: Int[]) = {
     for(var i = 0; i < arr.length; i++)
         print(arr[i] + " ")
     println("")
+}
+
+Def Lol(f: Float) = {
+    println(f)
 }

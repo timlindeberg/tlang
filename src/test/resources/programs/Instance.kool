@@ -5,12 +5,12 @@ a = new A();
 b = new B();
 c = new B();
 
-println(a inst A); // res: true
-println(a inst B); // res: false
-println(b inst B); // res: true
-println(b inst A); // res: true
-println(c inst A); // res: true
-println(c inst B); // res: true
+println(a is A); // res: true
+println(a is B); // res: false
+println(b is B); // res: true
+println(b is A); // res: true
+println(c is A); // res: true
+println(c is B); // res: true
 
 class A {}
 class B extends A {}

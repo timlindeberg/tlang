@@ -232,6 +232,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
    */
   def method(modifiers: Set[Modifier]): MethodDecl = {
+    if(modifiers.contains(Implicit))
+      ErrorImplicitMethodOrOperator()
+
     val id = identifier()
     eat(LPAREN)
     val args = commaList(formal)
@@ -252,7 +255,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(RPAREN)
     eat(EQSIGN)
     val retType = Some(UnitType().setType(TUnit))
-    ConstructorDecl(retType, new Identifier(className), args, statement(), modifiers)
+    ConstructorDecl(retType, new Identifier("new"), args, statement(), modifiers)
   }
 
   /**
@@ -271,6 +274,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
    */
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
+    if(modifiers.contains(Implicit))
+      ErrorImplicitMethodOrOperator()
+
     val pos = nextToken
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
@@ -355,17 +361,24 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <modifiers> ::= (pub | priv [ protected ] ) [ static ]
+   * <modifiers> ::= (pub | priv [ protected ] ) [ static ] [ implicit ]
    */
   def modifiers(priv: TokenKind, pub: TokenKind): Set[Modifier] = {
     val access = accessRights(priv, pub)
-    val modifiers: Set[Modifier] = Set(access)
-    nextTokenKind match {
-      case STATIC =>
-        eat(STATIC)
-        modifiers + Static
-      case _      => modifiers
+    var modifiers: Set[Modifier] = Set(access)
+
+    while(nextTokenKind == STATIC || nextTokenKind == IMPLICIT){
+      modifiers += (nextTokenKind match {
+        case STATIC =>
+          eat(STATIC)
+          Static
+        case IMPLICIT =>
+          eat(IMPLICIT)
+          Implicit
+        case _ => ???
+      })
     }
+    modifiers
   }
 
   /**
@@ -1154,6 +1167,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
+
+  private def ErrorImplicitMethodOrOperator() =
+    error("Only constructors can be declared implicit.")
 
   private def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
     error(s"Indexing operator '$name' cannot be declared static!", pos)

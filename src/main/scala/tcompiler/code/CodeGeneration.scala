@@ -166,6 +166,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case Private   => flags |= (if (isMethod) Flags.METHOD_ACC_PRIVATE else Flags.FIELD_ACC_PRIVATE)
       case Protected => flags |= (if (isMethod) Flags.METHOD_ACC_PROTECTED else Flags.FIELD_ACC_PROTECTED)
       case Static    => flags |= (if (isMethod) Flags.METHOD_ACC_STATIC else Flags.FIELD_ACC_STATIC)
+      case Implicit  => // Do nothing
     }
     flags.asInstanceOf[Short]
   }
@@ -189,16 +190,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       tpe.codes.ret(ch)
   }
 
-  private def addReturnStatement(ch: CodeHandler, mt: FuncTree) = ch.peek match {
-    case Some(byteCode) => byteCode match {
-      case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
-      case _                                                        =>
-        mt match {
-          case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.getSymbol.getType)
-          case op: OperatorDecl   => addReturnValueAndStatement(ch, op.getSymbol.getType)
-          case _: ConstructorDecl => ch << RETURN
-        }
-    }
+  private def addReturnStatement(ch: CodeHandler, mt: FuncTree) = ch.lastRealInstruction match {
+    case Some(byteCode) =>
+      byteCode match {
+        case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>
+        case _                                                        =>
+          mt match {
+            case mt: MethodDecl     => addReturnValueAndStatement(ch, mt.getSymbol.getType)
+            case op: OperatorDecl   => addReturnValueAndStatement(ch, op.getSymbol.getType)
+            case _: ConstructorDecl => ch << RETURN
+          }
+      }
     case None           => ch << RETURN
   }
 
@@ -228,7 +230,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         variableMap(sym) = id
         init match {
           case Some(expr) =>
-            compileExpr(expr)
+            compileAssignmentValue(expr, tpe)
             codes.store(ch, variableMap(sym))
           case None       =>
             codes.defaultConstant(ch)
@@ -345,21 +347,8 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         ch << Label(els)
         ch << Ldc(0)
         ch << Label(after)
-      case arrLit @ ArrayLit(expressions)                     =>
-        val arrLitType = arrLit.getType.asInstanceOf[TArray]
-        val arrayType = arrLit.getType.asInstanceOf[TArray].tpe
-
-        ch << Ldc(arrLit.expressions.size)
-        arrayType.codes.newArray(ch)
-
-        expressions.zipWithIndex.foreach { case (expr, i) =>
-          arrayType.codes.dup(ch)
-          ch << Ldc(i)
-          compileExpr(expr)
-          arrayType.codes.arrayStore(ch)
-        }
-        if(!duplicate)
-          ch << POP
+      case arrLit @ ArrayLit(expressions)            =>
+        compileArrayLiteral(arrLit)
       case newArray @ ast.Trees.NewArray(tpe, sizes) =>
         sizes.foreach(compileExpr(_))
         if (newArray.dimension == 1)
@@ -497,21 +486,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case _: RightShift => codes.rightShift(ch)
         }
       case Assign(id, expr)                          =>
-        store(id, () => {
-          compileExpr(expr)
-          val codes = expr.getType.codes
-          id.getType match {
-            case _: TObject | _: TArray | TString =>
-            case TDouble                          => codes.toDouble(ch)
-            case TFloat                           => codes.toFloat(ch)
-            case TLong                            => codes.toLong(ch)
-            case _                                => codes.toInt(ch)
-          }
-        }, duplicate)
+        store(id, () => compileAssignmentValue(expr, id.getType), duplicate)
       case ArrayAssign(arr, index, expr)             =>
         compileExpr(arr)
         compileExpr(index)
-        compileExpr(expr)
+        val arrayType = arr.getType.asInstanceOf[TArray].tpe
+        compileAssignmentValue(expr, arrayType)
 
         arr.getType match {
           case obj @ TObject(classSymbol) =>
@@ -525,7 +505,8 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case TArray(arrayType)          =>
             val idCodes = arrayType.codes
             val exprCodes = expr.getType.codes
-            def convertType() = arrayType match {
+
+            arrayType match {
               case _: TObject | TString =>
               case TDouble              => exprCodes.toDouble(ch)
               case TFloat               => exprCodes.toFloat(ch)
@@ -533,7 +514,6 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
               case _                    => exprCodes.toInt(ch)
             }
 
-            convertType()
             if (duplicate)
               idCodes.dup_x2(ch) // arrayref index value -> value arrayref index value
             idCodes.arrayStore(ch)
@@ -542,8 +522,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileExpr(expr)
         ch << InstanceOf(id.value)
       case As(expr, tpe)                             =>
-        compileExpr(expr)
-        ch << CheckCast(tpe.name)
+        if(tpe.getType.isSubTypeOf(expr.getType)){
+          compileExpr(expr)
+          ch << CheckCast(tpe.name)
+        }else{
+          compileAssignmentValue(expr, tpe.getType)
+        }
       case ArrayRead(id, index)                      =>
         compileExpr(id)
         compileExpr(index)
@@ -595,13 +579,18 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         else ch << PutField(className, id.value, id.getType.byteCodeName)
       case mc @ MethodCall(obj, meth, args)          =>
         val className = obj.getType.asInstanceOf[TObject].classSymbol.name
-        val signature = meth.getSymbol.asInstanceOf[MethodSymbol].signature
+        val methSymbol = meth.getSymbol.asInstanceOf[MethodSymbol]
+        val signature = methSymbol.signature
         if (isStaticCall(obj) || isStatic(meth)) {
-          args.foreach(compileExpr(_))
+          methSymbol.argList.zip(args).foreach {
+            case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
+          }
           ch << InvokeStatic(className, meth.value, signature)
         } else {
           compileExpr(obj)
-          args.foreach(compileExpr(_))
+          methSymbol.argList.zip(args).foreach {
+            case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
+          }
           ch << InvokeVirtual(className, meth.value, signature)
         }
 
@@ -609,13 +598,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           ch << POP
       case ast.Trees.New(tpe, args)                  =>
         val codes = tpe.getType.codes
-        val obj = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
-        ch << cafebabe.AbstractByteCodes.New(obj)
+        val objName = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
+        ch << cafebabe.AbstractByteCodes.New(objName)
         codes.dup(ch)
         args.foreach(compileExpr(_))
 
         val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
-        ch << InvokeSpecial(obj, CodeGenerator.ConstructorName, signature)
+        ch << InvokeSpecial(objName, CodeGenerator.ConstructorName, signature)
       case Negation(expr)                            =>
         compileExpr(expr)
         expr.getType match {
@@ -727,6 +716,56 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
     }
   }
 
+  def compileAssignmentValue(expr: ExprTree, desiredType: Type): Unit = {
+    if (expr.getType.isSubTypeOf(desiredType)) {
+      compileExpr(expr)
+      return
+    }
+
+    val codes = expr.getType.codes
+    desiredType match {
+      case tpe: TObject =>
+        // Object has to be placed on stack before argument
+        val name = tpe.classSymbol.name
+        val objName = if (name == "Object") CodeGenerator.JavaObject else name
+        ch << cafebabe.AbstractByteCodes.New(objName)
+        desiredType.codes.dup(ch)
+        compileExpr(expr)
+        val signature = "(" + expr.getType.byteCodeName + ")V"
+        ch << InvokeSpecial(objName, CodeGenerator.ConstructorName, signature)
+      case arr: TArray  =>
+        // TODO: Safe cast?
+        compileArrayLiteral(expr.asInstanceOf[ArrayLit], Some(arr.tpe))
+      case _            =>
+        compileExpr(expr)
+        desiredType match {
+          case TDouble => codes.toDouble(ch)
+          case TFloat  => codes.toFloat(ch)
+          case TLong   => codes.toLong(ch)
+          case _       => codes.toInt(ch)
+        }
+    }
+  }
+
+  def compileArrayLiteral(arrLit: ArrayLit, desiredType: Option[Type] = None) = {
+    val expressions = arrLit.expressions
+    val arrayType = arrLit.getType.asInstanceOf[TArray].tpe
+    val newType = desiredType match {
+      case Some(tpe) => tpe
+      case None      => arrayType
+    }
+
+    ch << Ldc(arrLit.expressions.size)
+    newType.codes.newArray(ch)
+
+    expressions.zipWithIndex.foreach { case (expr, i) =>
+      arrLit.getType.codes.dup(ch)
+      ch << Ldc(i)
+      compileAssignmentValue(expr, newType)
+      newType.codes.arrayStore(ch)
+    }
+  }
+
   def branch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
     case Not(expr)                    =>
       expr.getType match {
@@ -806,43 +845,43 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
       val argTypes = (lhs.getType, rhs.getType)
       compileExpr(lhs)
       argTypes match {
-        case (_, objectType: TObject)        =>
+        case (_, objectType: TObject)    =>
           compileExpr(rhs)
           if (compileOperatorCall(ch, expression, argTypes))
             ch << IfNe(thn.id)
           else
             comparison(objectType.codes) // If no operator is defined, compare by reference
-        case (objectType: TObject, _)        =>
+        case (objectType: TObject, _)    =>
           compileExpr(rhs)
           if (compileOperatorCall(ch, expression, argTypes))
             ch << IfEq(thn.id)
           else
             comparison(objectType.codes) // If no operator is defined, compare by reference
-        case (_, arrType: TArray)  =>
+        case (_, arrType: TArray)        =>
           compileExpr(rhs)
           comparison(arrType.codes)
-        case (arrType: TArray, _) =>
+        case (arrType: TArray, _)        =>
           compileExpr(rhs)
           comparison(arrType.codes)
-        case (TString, _) | (_, TString)     =>
+        case (TString, _) | (_, TString) =>
           compileExpr(rhs)
           comparison(StringCodeMap)
-        case (TDouble, _) | (_, TDouble)     =>
+        case (TDouble, _) | (_, TDouble) =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case (TFloat, _) | (_, TFloat)       =>
+        case (TFloat, _) | (_, TFloat)   =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case (TLong, _) | (_, TLong)         =>
+        case (TLong, _) | (_, TLong)     =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
           comparison(LongCodeMap)
-        case _                               =>
+        case _                           =>
           lhs.getType.codes.toInt(ch)
           compileExpr(rhs)
           rhs.getType.codes.toInt(ch)
@@ -913,19 +952,22 @@ object CodeGenerator {
 
   val ConstructorName = "<init>"
 
-  /* Java classes used by compiler */
-  val JavaStringBuilder = "java/lang/StringBuilder"
-  val JavaString        = "java/lang/String"
-  val JavaSystem        = "java/lang/System"
-  val JavaPrintStream   = "java/io/PrintStream"
-  val JavaObject        = "java/lang/Object"
+  val JavaLang = "java/lang/"
+  val JavaIO   = "java/io/"
 
-  val JavaInt              = "java/lang/Integer"
-  val JavaChar             = "java/lang/Character"
-  val JavaFloat            = "java/lang/Float"
-  val JavaDouble           = "java/lang/Double"
-  val JavaLong             = "java/lang/Long"
-  val JavaRuntimeException = "java/lang/RuntimeException"
+  /* Java classes used by compiler */
+  val JavaStringBuilder = JavaLang + "StringBuilder"
+  val JavaString        = JavaLang + "String"
+  val JavaSystem        = JavaLang + "System"
+  val JavaPrintStream   = JavaIO + "PrintStream"
+  val JavaObject        = JavaLang + "Object"
+
+  val JavaInt              = JavaLang + "Integer"
+  val JavaChar             = JavaLang + "Character"
+  val JavaFloat            = JavaLang + "Float"
+  val JavaDouble           = JavaLang + "Double"
+  val JavaLong             = JavaLang + "Long"
+  val JavaRuntimeException = JavaLang + "RuntimeException"
 
 
   /* Labels */

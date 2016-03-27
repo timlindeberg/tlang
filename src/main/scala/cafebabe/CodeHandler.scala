@@ -21,10 +21,16 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
   private var frozen : Boolean = false
   protected[cafebabe] def isFrozen : Boolean = frozen
 
-  def peek: Option[AbstractByteCode] = {
-    if(abcBuffer.isEmpty) None
-    else
-      Some(abcBuffer.head)
+  def peek: Option[AbstractByteCode] = abcBuffer.headOption
+
+  def lastRealInstruction: Option[AbstractByteCode] = {
+    def lastRealInstruction(list: ListBuffer[AbstractByteCode]): Option[AbstractByteCode] = {
+      if(list.isEmpty) None
+      else if(list.head.isInstanceOf[LineNumber]) lastRealInstruction(list.tail)
+      else Some(list.head)
+    }
+
+    lastRealInstruction(abcBuffer.reverse)
   }
 
   private def append(abc: AbstractByteCode): Unit = if(!frozen) {

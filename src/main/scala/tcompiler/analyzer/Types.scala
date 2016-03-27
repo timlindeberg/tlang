@@ -2,6 +2,7 @@ package tcompiler
 package analyzer
 
 import tcompiler.analyzer.Symbols._
+import tcompiler.ast.Trees.Implicit
 import tcompiler.code.CodeGenerator
 
 object Types {
@@ -28,19 +29,29 @@ object Types {
 
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
+    def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+      val implicitTypes = implicitlyConvertableFrom()
+      tpe match {
+        case TArray(arrayTpe) => implicitTypes.contains(arrayTpe)
+        case _                => implicitTypes.contains(tpe)
+      }
+    }
     def getSuperTypes: List[Type] = List()
     def isPrimitive = primitives.contains(this)
 
+    def implicitlyConvertableFrom(): List[Type] = List()
+
+
     def byteCodeName: String
     val codes: CodeMap
-    val size: Int
+    val size : Int
   }
 
   case object TError extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = true
     override def toString = "[error]"
     override def byteCodeName: String = "ERROR"
-    override val codes = EmptyCodeMap
+    override val codes     = EmptyCodeMap
     override val size: Int = 0
   }
 
@@ -48,63 +59,67 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = false
     override def toString = "[untyped]"
     override def byteCodeName: String = "UNTYPED"
-    override val codes = EmptyCodeMap
+    override val codes     = EmptyCodeMap
     override val size: Int = 0
   }
 
   case object TUnit extends Type {
     override def toString = "Unit"
     override def byteCodeName: String = "V"
-    override val codes = EmptyCodeMap
+    override val codes     = EmptyCodeMap
     override val size: Int = 0
   }
 
   case object TInt extends Type {
+    override def implicitlyConvertableFrom() = List(TChar)
     override def toString = "Int"
     override def byteCodeName: String = "I"
-    override val codes = IntCodeMap
+    override val codes     = IntCodeMap
     override val size: Int = 1
   }
 
   case object TLong extends Type {
+    override def implicitlyConvertableFrom() = List(TChar, TInt)
     override def toString = "Long"
     override def byteCodeName: String = "J"
-    override val codes = LongCodeMap
+    override val codes     = LongCodeMap
     override val size: Int = 2
   }
 
   case object TFloat extends Type {
+    override def implicitlyConvertableFrom() = List(TLong, TChar, TInt)
     override def toString = "Float"
     override def byteCodeName: String = "F"
-    override val codes = FloatCodeMap
+    override val codes     = FloatCodeMap
     override val size: Int = 1
   }
 
   case object TDouble extends Type {
+    override def implicitlyConvertableFrom() = List(TFloat, TLong, TChar, TInt)
     override def toString = "Double"
     override def byteCodeName: String = "D"
-    override val codes = DoubleCodeMap
+    override val codes     = DoubleCodeMap
     override val size: Int = 2
   }
 
   case object TChar extends Type {
     override def toString = "Char"
     override def byteCodeName: String = "C"
-    override val codes = CharCodeMap
+    override val codes     = CharCodeMap
     override val size: Int = 1
   }
 
   case object TBool extends Type {
     override def toString = "Bool"
     override def byteCodeName: String = "Z"
-    override val codes = BoolCodeMap
+    override val codes     = BoolCodeMap
     override val size: Int = 1
   }
 
   case object TString extends Type {
     override def toString = "String"
     override def byteCodeName: String = "Ljava/lang/String;"
-    override val codes = StringCodeMap
+    override val codes     = StringCodeMap
     override val size: Int = 1
   }
 
@@ -113,9 +128,11 @@ object Types {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
       case _              => false
     }
+
+    override def implicitlyConvertableFrom() = tpe.implicitlyConvertableFrom()
     override def toString = tpe.toString + "[]"
     override def byteCodeName: String = "[" + tpe.byteCodeName
-    override val codes = new ArrayCodeMap(tpe.byteCodeName)
+    override val codes     = new ArrayCodeMap(tpe.byteCodeName)
     override val size: Int = 1
     def dimension: Int = tpe match {
       case t: TArray => 1 + t.dimension
@@ -133,6 +150,14 @@ object Types {
         }
       case _                => false
     }
+
+    override def implicitlyConvertableFrom() =
+      classSymbol.methods.filter(m =>
+        m.name == "new" &&
+          m.modifiers.contains(Implicit) &&
+          m.argList.size == 1).
+        map(_.argList.head.getType)
+
     override def getSuperTypes: List[Type] =
       List(this) ++ (classSymbol.parent match {
         case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
@@ -146,7 +171,7 @@ object Types {
     }
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 
-    override val codes = new ObjectCodeMap(classSymbol.name)
+    override val codes     = new ObjectCodeMap(classSymbol.name)
     override val size: Int = 1
   }
 

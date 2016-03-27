@@ -1,0 +1,49 @@
+print("")
+var impl: Implicit = 1
+
+println(impl) // res: 1
+impl = 5
+
+println(impl) // res: 5
+
+PrintImplicit(10) // res: 10
+PrintImplicit(GetInt()) // res: 5
+
+var implArray: Implicit[] = {1, 2, 3}
+
+implArray[1] = 5
+
+for(var i = 0; i < 3; i++)
+    print(implArray[i].GetValue() + " ") // res: 1 5 3
+println("")
+
+
+PrintImplicitArray({1, 2, 3}) // res: 1 2 3
+
+impl = 10 as Implicit
+println(impl) // res: 10
+
+Def GetInt() = return 5
+Def PrintImplicit(impl: Implicit): Unit = println(impl)
+Def PrintImplicitArray(implArray: Implicit[]) = {
+    for(var i = 0; i < implArray.length; i++)
+        print(implArray[i] + " ")
+    println("")
+}
+
+class Implicit {
+
+    Var x: Int
+
+    Def implicit new(i: Int) = x = i
+    Def GetValue()           = return x
+    Def toString()           = return "" + x
+}
+
+class Implicit2 {
+
+    Var impl: Implicit
+
+    Def implicit new(impl: Implicit) = this.impl = impl
+    Def toString()                   = return "" + impl.toString()
+}

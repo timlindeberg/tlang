@@ -391,7 +391,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
         tpe.getType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupMethod(tpe.value, argTypes) match {
+            classSymbol.lookupMethod("new", argTypes) match {
               case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol)
               case None                    =>
                 if (exprs.nonEmpty) {
@@ -449,9 +449,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
 
     // Check result and return a valid type in case of error
-    val res = if (expected.isEmpty) {
-      foundType
-    } else if (!expected.exists(e => foundType.isSubTypeOf(e))) {
+    val res =
+      if (expected.nonEmpty &&
+         (!expected.exists(e => foundType.isSubTypeOf(e) || e.isImplicitlyConvertableFrom(foundType)))) {
       ErrorWrongType(makeExpectedString(expected), foundType, expression)
     } else {
       foundType

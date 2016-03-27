@@ -3,6 +3,7 @@ package tcompiler.analyzer
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.CodeHandler
+import tcompiler.analyzer.Types.Type
 
 trait CodeMap {
 

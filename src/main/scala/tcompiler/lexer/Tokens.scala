@@ -106,15 +106,15 @@ object Tokens {
   case object PUBVAR extends TokenKind // Var
   case object PRIVVAR extends TokenKind // var
   case object STATIC extends TokenKind // static
-  case object UNIT extends TokenKind // unit
+  case object UNIT extends TokenKind // Unit
   case object STRING extends TokenKind // string
   case object EXTENDS extends TokenKind // extends
-  case object INT extends TokenKind // int
-  case object LONG extends TokenKind // int
-  case object FLOAT extends TokenKind // int
-  case object DOUBLE extends TokenKind // int
-  case object CHAR extends TokenKind // int
-  case object BOOLEAN extends TokenKind // boolean
+  case object INT extends TokenKind // Int
+  case object LONG extends TokenKind // Long
+  case object FLOAT extends TokenKind // Float
+  case object DOUBLE extends TokenKind // Double
+  case object CHAR extends TokenKind // Char
+  case object BOOLEAN extends TokenKind // Bool
   case object WHILE extends TokenKind // while
   case object FOR extends TokenKind // for
   case object IF extends TokenKind // if
@@ -125,6 +125,7 @@ object Tokens {
   case object FALSE extends TokenKind // false
   case object THIS extends TokenKind // this
   case object NEW extends TokenKind // new
+  case object IMPLICIT extends TokenKind // implicit
   case object PRINT extends TokenKind // println
   case object PRINTLN extends TokenKind // println
   case object ERROR extends TokenKind // error

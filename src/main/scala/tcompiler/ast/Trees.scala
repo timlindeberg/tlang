@@ -61,6 +61,7 @@ object Trees {
   case object Protected extends Accessability
 
   case object Static extends Modifier
+  case object Implicit extends Modifier
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id: Identifier
