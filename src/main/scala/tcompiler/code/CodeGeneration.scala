@@ -166,7 +166,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case Private   => flags |= (if (isMethod) Flags.METHOD_ACC_PRIVATE else Flags.FIELD_ACC_PRIVATE)
       case Protected => flags |= (if (isMethod) Flags.METHOD_ACC_PROTECTED else Flags.FIELD_ACC_PROTECTED)
       case Static    => flags |= (if (isMethod) Flags.METHOD_ACC_STATIC else Flags.FIELD_ACC_STATIC)
-      case Implicit  => // Do nothing
+      case _         =>
     }
     flags.asInstanceOf[Short]
   }
@@ -490,8 +490,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
       case ArrayAssign(arr, index, expr)             =>
         compileExpr(arr)
         compileExpr(index)
-        val arrayType = arr.getType.asInstanceOf[TArray].tpe
-        compileAssignmentValue(expr, arrayType)
+
 
         arr.getType match {
           case obj @ TObject(classSymbol) =>
@@ -499,10 +498,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
               obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
             classSymbol.lookupOperator(expression, List(index.getType, expr.getType)) match {
               case Some(operatorSymbol) =>
-                val className = classSymbol.name
+                compileAssignmentValue(expr, operatorSymbol.lookupArgument(1).getType) // second argument is value
+              val className = classSymbol.name
                 ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.signature)
             }
           case TArray(arrayType)          =>
+            compileAssignmentValue(expr, arrayType)
+
             val idCodes = arrayType.codes
             val exprCodes = expr.getType.codes
 
@@ -522,10 +524,10 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileExpr(expr)
         ch << InstanceOf(id.value)
       case As(expr, tpe)                             =>
-        if(tpe.getType.isSubTypeOf(expr.getType)){
+        if (tpe.getType.isSubTypeOf(expr.getType)) {
           compileExpr(expr)
           ch << CheckCast(tpe.name)
-        }else{
+        } else {
           compileAssignmentValue(expr, tpe.getType)
         }
       case ArrayRead(id, index)                      =>

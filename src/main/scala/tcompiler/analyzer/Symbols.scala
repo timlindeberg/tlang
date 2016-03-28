@@ -127,6 +127,8 @@ object Symbols {
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupVar(name)
     def lookupArgument(name: String): Option[VariableSymbol] = params.get(name)
 
+    def lookupArgument(index: Int): VariableSymbol = argList(index)
+
     def lookupLocalVar(name: String): Option[VariableSymbol] = members.get(name) match {
       case x @ Some(_) => x
       case None        => params.get(name)

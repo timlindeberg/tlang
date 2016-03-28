@@ -3,96 +3,93 @@ package kool.std
 
 import <Vector>
 
-main VectorTest = {
-
-	var intList: Vector<Integer> = new Vector<Integer>()
-	var stringList:   Vector<KoolString> = new Vector<KoolString>()
-	for(var i: Int = 0; i < 10; i++){
-		intList.Add(new Integer(i))
-		stringList.Add(0, new KoolString("s" + i + "s"))
-	}
-
-	var p: ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
-	p.PrintList("Add")
-
-	for(var i: Int = 10; i > 0; i--){
-		intList.Push(new Integer(i))
-		stringList.Push(new KoolString("s" + i + "s"))
-	}
-	p.PrintList("Initial")
-
-	intList[2] = new Integer(15)
-	intList[5] = new Integer(15)
-	intList.Add(7, new Integer(15))
-
-	stringList[2] = new KoolString("s" + 15 + "s")
-	stringList[5] = new KoolString("s" + 15 + "s")
-	stringList[7] = new KoolString("s" + 15 + "s")
-
-	p.PrintList("Set 2, 5 and 7 to 15")
-
-	intList.RemoveIndex(0)
-	intList.Remove(new Integer(3))
-	intList -= new Integer(4)
-	intList.RemoveIndex(intList.Size() - 1)
-
-	stringList.RemoveIndex(0)
-	stringList.Remove(new KoolString("s" + 3 + "s"))
-	stringList -= new KoolString("s" + 4 + "s")
-	stringList.RemoveIndex(intList.Size() - 1)
-
-
-
-	p.PrintList("Removed first, 3, and last")
-
-	var intSorter: Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
-	var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
-	intSorter.sort(intList)
-	stringSorter.sort(stringList)
-
-	p.PrintList("Sorted")
-
-	var intList2: Vector<Integer> = new Vector<Integer>()
-
-	for(var i: Int = 0; i < 10; i++){
-		intList2.Push(new Integer(100 - i))
-	}
-	intList += intList2
-
-	intList.AddAll(0, intList2)
-	p.PrintList("AddAll")
-
-	println(intList2)
-	intList2.Clear()
-	println(intList2)
-
-	intList2 = new Vector<Integer>(5, new Integer(5))
-	intList.AddAll(0, intList2)
-
-	p.PrintList("Constructor 2")
-
-	println(intList.Contains(new Integer(100)))
-	println(intList.Contains(new Integer(95)))
-	println(intList.Contains(new Integer(101)))
-
-	intSorter.sort(intList)
-	println("----------------------------------------")
-	println("-- Pop")
-	println("----------------------------------------")
-	println(intList)
-	while(intList.Size() > 0){
-		intList.Pop()
-		println(intList)
-	}
-
-	intList.Clear()
-	for(var i: Int = 0; i < 10; i++){
-		intList.Push(new Integer(i))
-		intList2.Push(new Integer(i))
-	}
-
-	println(intList == intList2)
+var intList: Vector<Integer> = new Vector<Integer>()
+var stringList:   Vector<KoolString> = new Vector<KoolString>()
+for(var i: Int = 0; i < 10; i++){
+	intList.Add(new Integer(i))
+	stringList.Add(0, new KoolString("s" + i + "s"))
 }
+
+var p: ListPrinter<Integer, KoolString> = new ListPrinter<Integer, KoolString>(intList, stringList)
+p.PrintList("Add")
+
+for(var i: Int = 10; i > 0; i--){
+	intList.Push(new Integer(i))
+	stringList.Push(new KoolString("s" + i + "s"))
+}
+p.PrintList("Initial")
+
+intList[2] = new Integer(15)
+intList[5] = new Integer(15)
+intList.Add(7, new Integer(15))
+
+stringList[2] = new KoolString("s" + 15 + "s")
+stringList[5] = new KoolString("s" + 15 + "s")
+stringList[7] = new KoolString("s" + 15 + "s")
+
+p.PrintList("Set 2, 5 and 7 to 15")
+
+intList.RemoveIndex(0)
+intList.Remove(new Integer(3))
+intList -= new Integer(4)
+intList.RemoveIndex(intList.Size() - 1)
+
+stringList.RemoveIndex(0)
+stringList.Remove(new KoolString("s" + 3 + "s"))
+stringList -= new KoolString("s" + 4 + "s")
+stringList.RemoveIndex(intList.Size() - 1)
+
+
+
+p.PrintList("Removed first, 3, and last")
+
+var intSorter: Sorter<Vector<Integer>, Integer> = new Sorter<Vector<Integer>, Integer>()
+var stringSorter: Sorter<Vector<KoolString>, KoolString> = new Sorter<Vector<KoolString>, KoolString>()
+intSorter.sort(intList)
+stringSorter.sort(stringList)
+
+p.PrintList("Sorted")
+
+var intList2: Vector<Integer> = new Vector<Integer>()
+
+for(var i: Int = 0; i < 10; i++){
+	intList2.Push(new Integer(100 - i))
+}
+intList += intList2
+
+intList.AddAll(0, intList2)
+p.PrintList("AddAll")
+
+println(intList2)
+intList2.Clear()
+println(intList2)
+
+intList2 = new Vector<Integer>(5, new Integer(5))
+intList.AddAll(0, intList2)
+
+p.PrintList("Constructor 2")
+
+println(intList.Contains(new Integer(100)))
+println(intList.Contains(new Integer(95)))
+println(intList.Contains(new Integer(101)))
+
+intSorter.sort(intList)
+println("----------------------------------------")
+println("-- Pop")
+println("----------------------------------------")
+println(intList)
+while(intList.Size() > 0){
+	intList.Pop()
+	println(intList)
+}
+
+intList.Clear()
+for(var i: Int = 0; i < 10; i++){
+	intList.Push(new Integer(i))
+	intList2.Push(new Integer(i))
+}
+
+println(intList == intList2)
 
 class Integer {
 

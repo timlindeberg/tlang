@@ -17,6 +17,12 @@ class LinkedList<T> {
 
 	Def new(list: LinkedList<T>) = AddAll(list)
 
+	Def implicit new(elements: T[]) = {
+		Clear()
+		for(var i = 0; i < elements.length; i++)
+			Push(elements[i])
+	}
+
 	Def [](index: Int) = {
 		checkBounds(index)
 		return find(index).Value().Value
@@ -260,9 +266,9 @@ class Node<T> {
 
 	Def ClearPrev() = prev = new Option<Node<T>>()
 
-	Def SetNext(n: Node<T>) = next = new Option<Node<T>>(n)
+	Def SetNext(n: Node<T>) = next = n
 
-	Def SetPrev(n: Node<T>) = prev = new Option<Node<T>>(n)
+	Def SetPrev(n: Node<T>) = prev = n
 }
 
 class LinkedListIterator<T> {

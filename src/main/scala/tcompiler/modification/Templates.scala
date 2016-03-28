@@ -57,6 +57,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   cloner.registerConstant(Public)
   cloner.registerConstant(Protected)
   cloner.registerConstant(Static)
+  cloner.registerConstant(Implicit)
 
   private var generated: Set[String] = Set()
   private var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
@@ -123,7 +124,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       case f: Formal          => f.tpe = updateType(f.tpe)
       case m: MethodDecl      => m.retType collect { case t => m.retType = Some(updateType(t))}
       case o: OperatorDecl    => o.retType collect { case t => o.retType = Some(updateType(t))}
-      case c: ConstructorDecl => c.id = Identifier(template.id.templatedClassName(templateTypes))
       case n: New             => n.tpe = updateTypeOfNewExpr(n)
       case n: NewArray        => n.tpe = updateType(n.tpe)
     })

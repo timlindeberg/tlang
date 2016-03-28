@@ -12,7 +12,7 @@ class Option<T> {
 
 	Def new() = {}
 
-	Def new(value: T) = Add(value)
+	Def implicit new(value: T) = Add(value)
 
 	Def ==(lhs: Option<T>, rhs: Option<T>) = {
 		if(lhs.isDefined && rhs.isDefined)

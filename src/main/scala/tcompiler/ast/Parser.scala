@@ -52,7 +52,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       nextTokenKind match {
         case CLASS            => classDeclaration()
         case PUBDEF | PRIVDEF =>
-          var access = accessRights(PUBDEF, PRIVDEF)
+          val access = accessRights(PUBDEF, PRIVDEF)
           if (nextTokenKind == STATIC) eat(STATIC)
           method(Set(access, Static))
         case _                => statement()

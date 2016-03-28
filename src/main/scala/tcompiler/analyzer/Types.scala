@@ -31,9 +31,13 @@ object Types {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
       val implicitTypes = implicitlyConvertableFrom()
+      if(implicitTypes.contains(tpe))
+        return true
+
+
       tpe match {
         case TArray(arrayTpe) => implicitTypes.contains(arrayTpe)
-        case _                => implicitTypes.contains(tpe)
+        case _                => false
       }
     }
     def getSuperTypes: List[Type] = List()

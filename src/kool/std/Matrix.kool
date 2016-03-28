@@ -8,7 +8,7 @@ class Matrix<T> {
 
     Def new(size: Int)               = init(size, size)
     Def new(rows: Int, columns: Int) = init(rows, columns)
-    Def new(arrays: T[][]) = {
+    Def implicit new(arrays: T[][]) = {
         if(arrays.length == 0 || arrays[0].length == 0){
             init(0, 0)
             return

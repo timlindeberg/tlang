@@ -121,14 +121,14 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   def tcExpr(expression: ExprTree, expected: List[Type]): Type = {
     val foundType = expression match {
-      case _: IntLit                       => TInt
-      case _: LongLit                      => TLong
-      case _: FloatLit                     => TFloat
-      case _: DoubleLit                    => TDouble
-      case _: CharLit                      => TChar
-      case _: StringLit                    => TString
-      case _: True                         => TBool
-      case _: False                        => TBool
+      case _: IntLit    => TInt
+      case _: LongLit   => TLong
+      case _: FloatLit  => TFloat
+      case _: DoubleLit => TDouble
+      case _: CharLit   => TChar
+      case _: StringLit => TString
+      case _: True      => TBool
+      case _: False     => TBool
 
       case id: Identifier                  =>
         id.getSymbol match {
@@ -159,9 +159,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         arrayType
       case ArrayLit(expressions)           =>
         val tpes = expressions.map(tcExpr(_))
-        if(tpes.isEmpty){
+        if (tpes.isEmpty) {
           TArray(Types.anyObject)
-        }else{
+        } else {
           val typeSet = tpes.toSet
           if (typeSet.size > 1)
             ErrorMultipleArrayLitTypes(typeSet.mkString(", "), expression)
@@ -393,11 +393,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case TObject(classSymbol) =>
             classSymbol.lookupMethod("new", argTypes) match {
               case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol)
-              case None                    =>
-                if (exprs.nonEmpty) {
-                  val methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
-                  ErrorDoesntHaveConstructor(classSymbol.name, methodSignature, newDecl)
-                }
+              case None if exprs.nonEmpty  =>
+                val methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
+                ErrorDoesntHaveConstructor(classSymbol.name, methodSignature, newDecl)
+              case _                       =>
             }
           case primitiveType        => ErrorNewPrimitive(primitiveType.toString, newDecl)
         }
@@ -451,11 +450,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     // Check result and return a valid type in case of error
     val res =
       if (expected.nonEmpty &&
-         (!expected.exists(e => foundType.isSubTypeOf(e) || e.isImplicitlyConvertableFrom(foundType)))) {
-      ErrorWrongType(makeExpectedString(expected), foundType, expression)
-    } else {
-      foundType
-    }
+        (!expected.exists(e => foundType.isSubTypeOf(e) || e.isImplicitlyConvertableFrom(foundType)))) {
+        ErrorWrongType(makeExpectedString(expected), foundType, expression)
+      } else {
+        foundType
+      }
     expression.setType(res)
     res
   }

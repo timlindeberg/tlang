@@ -20,6 +20,15 @@ class HashMap<K, V> {
 		AddAll(map)
 	}
 
+	Def implicit new(entries: Entry<K, V>[]) = {
+		init(entries.length, DefaultLoadFactor)
+		for(var i = 0; i < entries.length; i++){
+			var e = entries[i]
+			this[e.Key] = e.Value
+		}
+
+	}
+
 	Def []=(key: K, value: V) = {
 		if(size >= loadFactor * capacity)
 			resize()
@@ -76,8 +85,8 @@ class HashMap<K, V> {
 		var res = 0
 		var it = map.EntryIterator()
 		while(it.HasNext()){
-			var entry = it.Next()
-			res += #entry.Key ^ #entry.Value
+			var e = it.Next()
+			res += #e.Key ^ #e.Value
 		}
 		return res
 	}
@@ -85,8 +94,8 @@ class HashMap<K, V> {
 	Def AddAll(other: HashMap<K, V>) = {
 		var it = other.EntryIterator()
 		while(it.HasNext()){
-			var entry = it.Next()
-			this[entry.Key] = entry.Value
+			var e = it.Next()
+			this[e.Key] = e.Value
 		}
 	}
 
@@ -97,9 +106,9 @@ class HashMap<K, V> {
 
 		var it = maybeEntry.Value().Iterator()
 		while(it.HasNext()){
-			var entry = it.Next()
-			if(entry.Key == key)
-				return new Option<V>(entry.Value)
+			var e = it.Next()
+			if(e.Key == key)
+				return new Option<V>(e.Value)
 		}
 		return new Option<V>()
 	}
@@ -238,12 +247,8 @@ class Entry<K, V> {
 	Var Hash: Int
 	Var Next: Option<Entry<K, V>>
 
-	Def new(key: K, value: V, hash: Int) = {
-		Key = key
-		Value = value
-		Hash = hash
-		Next = new Option<Entry<K, V>>()
-	}
+	Def new(key: K, value: V) 			 = init(key, value, 0)
+	Def new(key: K, value: V, hash: Int) = init(key, value, hash)
 
 	Def ==(lhs: Entry<K, V>, rhs: Entry<K, V>) =
 		return lhs.Key == rhs.Key &&
@@ -252,6 +257,13 @@ class Entry<K, V> {
 	Def Iterator() = return new EntryListIterator<K, V>(this)
 
 	Def toString() = return "(" + Key + " -> " + Value + ")"
+
+	def init(key: K, value: V, hash: Int) = {
+		Key = key
+		Value = value
+		Hash = hash
+		Next = new Option<Entry<K, V>>()
+	}
 
 }
 

@@ -23,7 +23,7 @@ AddAll()
 println("All tests succeded!")
 
 Def IntMap() = {
-    var map = new HashMap<Int, Int>()
+    var map: HashMap<Int, Int> = {new Entry<Int, Int>(1, 2)}
     map[1] = 2
     ti.AssertEquals(map[1], 2)
     ti.AssertEquals(map.Size(), 1)
@@ -50,12 +50,13 @@ Def StringMap() = {
 
 Def LargeMap() = {
     var map = new HashMap<Int, Int>()
-    for(var i = 0; i < 5000; i++){
+    var count = 500000
+    for(var i = 0; i < count; i++){
         map[i] = i + 1
         ti.AssertEquals(map.Size(), i + 1)
     }
 
-    for(var i = 0; i < 5000; i++)
+    for(var i = 0; i < count; i++)
         ti.AssertEquals(map[i], i + 1)
 }
 
