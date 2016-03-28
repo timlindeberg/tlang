@@ -8,6 +8,8 @@ class Tester<T> {
     Def static Assert(condition: Bool, message: String) =
         if(!condition) error("Assertion failed: " + message)
 
+    Def static AssertTrue(condition: Bool) = Assert(condition)
+    Def static AssertTrue(condition: Bool, message: String) = Assert(condition, message)
     Def static AssertFalse(condition: Bool) = Assert(!condition)
     Def static AssertFalse(condition: Bool, message: String) = Assert(!condition, message)
 

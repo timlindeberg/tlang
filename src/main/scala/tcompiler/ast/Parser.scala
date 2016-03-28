@@ -40,14 +40,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val pack = optional(packageDecl, PACKAGE)
     val imp = untilNot(importDecl, IMPORT)
 
-
-    val fields = untilNot(() => {
-      val pos = nextToken
-      val v = varDeclEnd(modifiers(PRIVVAR, PUBVAR) + Static, pos)
-      endStatement()
-      v
-    }, PUBVAR, PRIVVAR)
-
     val code = until(() => {
       nextTokenKind match {
         case CLASS            => classDeclaration()
@@ -59,17 +51,17 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       }
     }, EOF)
 
-    var classes = createMainClass(fields, code)
+    val classes = createMainClass(code)
 
     Program(pack, imp, classes).setPos(pos)
   }
 
-  private def createMainClass(fields: List[VarDecl], code: List[Tree]) = {
+  private def createMainClass(code: List[Tree]) = {
     var classes = code.collect { case x: ClassDecl => x }
     val methods = code.collect { case x: MethodDecl => x }
     val stats = code.collect { case x: StatTree => x }
 
-    if(stats.nonEmpty || methods.nonEmpty || fields.nonEmpty){
+    if(stats.nonEmpty || methods.nonEmpty){
       val mainName = ctx.file.getName.dropRight(Main.FileEnding.length)
       val mainClass = classes.find(_.id.value == mainName) match {
         case Some(c) => c
@@ -88,7 +80,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Block(stats), modifiers).setPos(stats.head)
         mainClass.methods ::= mainMethod
       }
-      mainClass.vars :::= fields
     }
     classes
   }
