@@ -24,8 +24,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 class NameAnalyser(ctx: Context, prog: Program) {
 
-  import ctx.reporter._
-
   private var variableUsage: Map[VariableSymbol, Boolean] = Map()
 
   val globalScope = new GlobalScope
@@ -440,15 +438,19 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
 
-  private def error(msg: String, tree: Positioned) = {
+  private def error(errorCode: Int, msg: String, tree: Positioned) = {
     tree match {
       case id: Identifier      => id.setSymbol(new ErrorSymbol)
       case id: ClassIdentifier => id.setSymbol(new ErrorSymbol)
       case _                   =>
     }
 
-    ctx.reporter.error(msg, tree)
+    ctx.reporter.error("N", errorCode, msg, tree)
     new ErrorSymbol()
+  }
+
+  private def warning(errorCode: Int, msg: String, tree: Positioned) = {
+    ctx.reporter.warning("N", errorCode, msg, tree)
   }
 
   //---------------------------------------------------------------------------------------
@@ -459,47 +461,51 @@ class NameAnalyser(ctx: Context, prog: Program) {
     val inheritanceList =
       (if (set.size >= 2) set.map(_.name).mkString(" <: ")
       else c.name) + " <: " + c.name
-    error(s"A cycle was found in the inheritence graph: $inheritanceList", pos)
+    error(0, s"A cycle was found in the inheritence graph: $inheritanceList", pos)
   }
 
   private def ErrorOverloadOperator(pos: Positioned) =
-    error("Overloaded operators cannot be overriden.", pos)
+    error(1, "Overloaded operators cannot be overriden.", pos)
 
   private def ErrorSameNameAsMain(name: String, pos: Positioned) =
-    error(s"Class '$name' has the same name as the main object.", pos)
+    error(2, s"Class '$name' has the same name as the main object.", pos)
 
   private def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(s"Variable '$name' is already defined at line $line.", pos)
+    error(3, s"Variable '$name' is already defined at line $line.", pos)
 
   private def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned) =
-    error(s"Field '$name' is already defined in super class.", pos)
+    error(4, s"Field '$name' is already defined in super class.", pos)
 
   private def ErrorTypeNotDeclared(name: String, pos: Positioned) =
-    error(s"Type '$name' was not declared.", pos)
+    error(5, s"Type '$name' was not declared.", pos)
 
   private def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
-    error(s"Method '$methodSignature' is already defined at line $line.", pos)
+    error(6, s"Method '$methodSignature' is already defined at line $line.", pos)
 
   private def ErrorOperatorWrongNumArguments(operator: String, expected: Int, found: Int, pos: Positioned) =
-    error(s"Operator '$operator' has wrong number of arguments. Expected $expected argument(s), found $found.", pos)
+    error(7, s"Operator '$operator' has wrong number of arguments. Expected $expected argument(s), found $found.", pos)
 
   private def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned) =
-    error(s"Operator '$operator' is already defined at line $line.", pos)
+    error(8, s"Operator '$operator' is already defined at line $line.", pos)
 
   private def ErrorCantResolveSymbol(name: String, pos: Positioned) =
-    error(s"Can not resolve symbol '$name'.", pos)
+    error(9, s"Can not resolve symbol '$name'.", pos)
 
   private def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned) =
-    error(s"Non-static field '$name' cannot be accessed from a static function.", pos)
+    error(10, s"Non-static field '$name' cannot be accessed from a static function.", pos)
 
   private def ErrorParentNotDeclared(name: String, pos: Positioned) =
-    error(s"Parent class '$name' was not declared. ", pos)
+    error(11, s"Parent class '$name' was not declared. ", pos)
 
   private def ErrorThisInStaticContext(pos: Positioned) =
-    error("'this' can not be used in a static context.", pos)
+    error(12, "'this' can not be used in a static context.", pos)
+
+  //---------------------------------------------------------------------------------------
+  //  Warnings
+  //---------------------------------------------------------------------------------------
 
   private def WarningUnused(name: String, pos: Positioned) =
-    warning(s"Variable '$name' is declared but never used:", pos)
+    warning(0, s"Variable '$name' is declared but never used:", pos)
 
 
 }

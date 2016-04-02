@@ -48,7 +48,7 @@ object Main {
 
     processOption(args.toList)
 
-    if (files.size != 1) reporter.fatal("Exactly one file expected, " + files.size + " file(s) given.")
+    if (files.size != 1) reporter.fatal("M", 0, "Exactly one file expected, " + files.size + " file(s) given.")
 
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }

@@ -48,8 +48,6 @@ object Templates extends Pipeline[Program, Program] {
 
 class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDecl]) {
 
-  import ctx.reporter._
-
   private val cloner = new Cloner
   cloner.registerConstant(Nil)
   cloner.registerConstant(None)
@@ -157,22 +155,29 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   private val ErrorType = new ClassIdentifier("ERROR")
   private val ErrorClass = new InternalClassDecl(ErrorType, None, List(), List())
 
+  private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
+    ctx.reporter.error("G", errorCode, msg, pos)
+
+  //---------------------------------------------------------------------------------------
+  //  Error messages
+  //---------------------------------------------------------------------------------------
+
   private def ErrorWrongNumGenerics(expected: Int, found: Int, pos: Positioned) = {
-    error(s"Wrong number of generic parameters, expected $expected, found $found.", pos)
+    error(0, s"Wrong number of generic parameters, expected $expected, found $found.", pos)
     ErrorMap
   }
 
   private def ErrorNewPrimitive(tpe: String, pos: Positioned) = {
-    error(s"Cannot create a new instance of primitive type '$tpe'.", pos)
+    error(1, s"Cannot create a new instance of primitive type '$tpe'.", pos)
     ErrorType
   }
 
   private def ErrorDoesNotExist(name: String, pos: Positioned) = {
-    error(s"Can not find template class named '$name'.", pos)
+    error(2, s"Can not find template class named '$name'.", pos)
     ErrorClass
   }
 
   private def ErrorSameName(name: String, pos: Positioned) = {
-    error(s"Generic identifiers with the same name: '$name'.", pos)
+    error(3, s"Generic identifiers with the same name: '$name'.", pos)
   }
 }

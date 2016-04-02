@@ -22,8 +22,6 @@ object Imports extends Pipeline[Program, Program] {
 }
 
 class NameReplacer(ctx: Context, prog: Program) {
-  import ctx.reporter._
-
   private val originalClasses = prog.classes.map(_.id.value).toSet
 
   private var addedExternalClasses = Map[String, String]()
@@ -97,7 +95,7 @@ class NameReplacer(ctx: Context, prog: Program) {
   }
 
   private def WarningUnusedImport(name: String, pos: Positioned) =
-    warning(s"Unused import '$name'.", pos)
+    ctx.reporter.warning("I", 0, s"Unused import '$name'.", pos)
 
 
 }
@@ -228,8 +226,6 @@ class Importer(ctx: Context, prog: Program) {
 
 class GenericImporter(ctx: Context, prog: Program) {
 
-  import ctx.reporter._
-
   def importGenericClasses: List[ClassDecl] = {
     var importedClasses: ArrayBuffer[ClassDecl] = new ArrayBuffer()
     val genericImports = prog.imports.filter(_.isInstanceOf[GenericImport])
@@ -287,13 +283,19 @@ class GenericImporter(ctx: Context, prog: Program) {
       case _: CompilationException => None
     }
 
+  private def error(errorCode: Int, msg: String, pos: Positioned) =
+    ctx.reporter.error("I", errorCode, msg, pos)
+
+  private def warning(errorCode: Int, msg: String, pos: Positioned) =
+    ctx.reporter.warning("I", errorCode, msg, pos)
+
   private def ErrorImportParsing(fileName: String, pos: Positioned) =
-    error(s"Found parse error in import '$fileName'.", pos)
+    error(0, s"Found parse error in import '$fileName'.", pos)
 
   private def ErrorResolvingGenericImport(imp: String, pos: Positioned) =
-    error(s"Could not resolve generic import '$imp'.", pos)
+    error(1, s"Could not resolve generic import '$imp'.", pos)
 
   private def WarningNoGenerics(fileName: String, pos: Positioned) =
-    warning(s"Generic import '$fileName' did not contain any generic classes.", pos)
+    warning(1, s"Generic import '$fileName' did not contain any generic classes.", pos)
 
 }

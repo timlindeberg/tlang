@@ -1,0 +1,5 @@
+var a: Int = "hej" // res: T2000
+var b: Int = "hej" // res: T2000
+var c: Int = "hej" // res: T2000
+
+c.hej() // res: T2002

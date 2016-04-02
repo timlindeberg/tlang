@@ -9,14 +9,17 @@ import tcompiler.lexer.Token
 import tcompiler.utils.Positioned
 
 import scala.io.Source
-import scala.sys.process.ProcessLogger
+import scala.sys.process.{ProcessLogger, _}
 
 object TestUtils {
+
   val runScript = "./reference/run.sh"
   val resources = "./src/test/resources/"
   val solutionPrefix = ".kool-solution"
 
   val Interpreter = new Interpreter
+
+  def executeTProgram(f: File, prefix: String): String = "java -cp " + prefix + f.getName + " " + f.getName.dropRight(Main.FileEnding.length) !!
 
   def lines(str: String) = str.split("\\r?\\n").toList
 
@@ -47,7 +50,7 @@ object TestUtils {
     }
     map("expectedErrors" -> expectedErrors, "quietReporter" -> quietReporter)
   }
-
+  val ErrorRegex = """\[.*\] (Fatal|Warning|Error) \((.*)\).*""".r
   val SolutionRegex = """.*// *res:(.*)""".r
   val SolutionOrderedRegex = """.*// *res(\d+):(.*)""".r
 
@@ -63,6 +66,13 @@ object TestUtils {
     })
     answers.toList.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }
+
+  // Parses codes from error messages
+  def parseErrorCodes(errorMessages: String) =
+    errorMessages.split("\n\n\n").map(_.split("\n")(0)).collect {
+        case ErrorRegex(_, errorCode) => errorCode
+    }.toList
+
   object IgnoreErrorOutput extends ProcessLogger {
     def buffer[T](f: ⇒ T): T = f
     def err(s: ⇒ String): Unit = {}

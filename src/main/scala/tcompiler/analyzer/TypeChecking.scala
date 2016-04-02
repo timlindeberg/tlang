@@ -464,7 +464,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     val meth = mc.meth
     val methodCallArgs = mc.args
 
-    def methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
     val objType = tcExpr(obj)
     val argTypes = methodCallArgs.map(tcExpr(_))
 
@@ -480,6 +479,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             meth.setSymbol(methSymbol)
             meth.getType
           case None             =>
+            val methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
             ErrorClassDoesntHaveMethod(classSymbol.name, methodSignature, mc)
         }
       case _                    => ErrorMethodOnWrongType(objType.toString, mc)
@@ -604,50 +604,55 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     case n => expected.take(n - 1).mkString(", ") + " or " + expected.last
   }
 
-  private def error(msg: String, pos: Positioned) = {
-    ctx.reporter.error(msg, pos)
+  private def error(errorCode: Int, msg: String, pos: Positioned) = {
+    ctx.reporter.error("T", errorCode, msg, pos)
     TError
   }
 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
+  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
+  private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(expected.toString, found, pos)
+  private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, found.toString, pos)
+  private def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
+    error(0, s"Expected type: '$expected', found: '$found'.", pos)
 
   private def ErrorClassDoesntHaveMethod(className: String, methodSignature: String, pos: Positioned) =
-    error(s"Class '$className' does not contain a method '$methodSignature'.", pos)
+    error(1, s"Class '$className' does not contain a method '$methodSignature'.", pos)
 
   private def ErrorMethodOnWrongType(tpe: String, pos: Positioned) =
-    error(s"Cannot call method on type '$tpe'.", pos)
+    error(2, s"Cannot call method on type '$tpe'.", pos)
 
   private def ErrorClassDoesntHaveField(className: String, fieldName: String, pos: Positioned) =
-    error(s"Class '$className' does not contain a field '$fieldName'.", pos)
+    error(3, s"Class '$className' does not contain a field '$fieldName'.", pos)
 
   private def ErrorFieldOnWrongType(tpe: String, pos: Positioned) =
-    error(s"Cannot acces field on type '$tpe'.", pos)
+    error(4, s"Cannot acces field on type '$tpe'.", pos)
 
   private def ErrorNonStaticMethodAsStatic(methodName: String, pos: Positioned) =
-    error(s"Trying to call method '$methodName' statically but the method is not declared as static.", pos)
+    error(5, s"Trying to call method '$methodName' statically but the method is not declared as static.", pos)
 
   private def ErrorNonStaticMethodFromStatic(methodName: String, pos: Positioned) =
-    error(s"Cannot access non-static method '$methodName' from a static method.", pos)
+    error(6, s"Cannot access non-static method '$methodName' from a static method.", pos)
 
   private def ErrorNonStaticFieldAsStatic(fieldName: String, pos: Positioned) =
-    error(s"Trying to access field '$fieldName' statically but the field is not declared as static.", pos)
+    error(7, s"Trying to access field '$fieldName' statically but the field is not declared as static.", pos)
 
   private def ErrorNonStaticFieldFromStatic(fieldName: String, pos: Positioned) =
-    error(s"Cannot access non-static field '$fieldName' from a static method.", pos)
+    error(8, s"Cannot access non-static field '$fieldName' from a static method.", pos)
 
   private def ErrorConstructorPrivacy(accessability: String, className: String, callingClass: String, pos: Positioned) =
-    error(s"Cannot call $accessability constructor of '$className' from class '$callingClass'.", pos)
+    error(9, s"Cannot call $accessability constructor of '$className' from class '$callingClass'.", pos)
 
   private def ErrorMethodPrivacy(accessability: String, methodName: String, className: String, callingClass: String, pos: Positioned) =
-    error(s"Cannot call $accessability method '$methodName' in '$className' from class '$callingClass'.", pos)
+    error(10, s"Cannot call $accessability method '$methodName' in '$className' from class '$callingClass'.", pos)
 
   private def ErrorFieldPrivacy(accessability: String, fieldName: String, className: String, callingClass: String, pos: Positioned) =
-    error(s"Cannot access $accessability field '$fieldName' in '$className' from class '$callingClass'.", pos)
+    error(11, s"Cannot access $accessability field '$fieldName' in '$className' from class '$callingClass'.", pos)
 
   private def ErrorOperatorPrivacy(accessability: String, operatorName: String, className: String, callingClass: String, pos: Positioned) =
-    error(s"Cannot call $accessability operator '$operatorName' in '$className' from class '$callingClass'.", pos)
+    error(12, s"Cannot call $accessability operator '$operatorName' in '$className' from class '$callingClass'.", pos)
 
   private def ErrorOperatorNotFound(expr: ExprTree, args: (Type, Type), pos: Positioned): Type = ErrorOperatorNotFound(expr, List(args._1, args._2), pos)
   private def ErrorOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
@@ -656,49 +661,43 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     else
       "Class " + args.head + " does"
     val operatorName = Trees.operatorString(expr, args)
-    error(s"$classesString not contain an operator '$operatorName'.", pos)
+    error(13, s"$classesString not contain an operator '$operatorName'.", pos)
   }
 
   private def ErrorOperatorWrongReturnType(operator: String, expected: String, found: String, pos: Positioned) =
-    error(s"Operator '$operator' has wrong return type: expected '$expected', found '$found'.", pos)
+    error(14, s"Operator '$operator' has wrong return type: expected '$expected', found '$found'.", pos)
 
   private def ErrorPrintUnit(pos: Positioned) =
-    error("Cannot print type Unit.", pos)
+    error(15, "Cannot print type Unit.", pos)
 
   private def ErrorWrongReturnType(tpe: String, pos: Positioned) =
-    error(s"Expected a return value of type '$tpe'.", pos)
+    error(16, s"Expected a return value of type '$tpe'.", pos)
 
   private def ErrorDoesntHaveConstructor(className: String, methodSignature: String, pos: Positioned) =
-    error(s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
+    error(17, s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
 
   private def ErrorNewPrimitive(tpe: String, pos: Positioned) =
-    error(s"Cannot create a new instance of primitive type '$tpe'.", pos)
+    error(18, s"Cannot create a new instance of primitive type '$tpe'.", pos)
 
   private def ErrorNoTypeNoInitalizer(pos: Positioned) =
-    error("Cannot declare variable without type or initialization.", pos)
+    error(19, "Cannot declare variable without type or initialization.", pos)
 
   private def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
-    error(s"Method contains return statements of multiple types: $typeList", pos)
+    error(20, s"Method contains return statements of multiple types: $typeList", pos)
 
   private def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
-    error(s"Array literal contains multiple types: $typeList", pos)
+    error(21, s"Array literal contains multiple types: $typeList", pos)
 
   private def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
-    error(s"Can't infer type of recursive method.", pos)
+    error(22, s"Can't infer type of recursive method.", pos)
 
   private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
     val incrementOrDecrement = expr match {
       case _: PreIncrement | _: PostIncrement => "increment"
       case _: PreDecrement | _: PostDecrement => "decrement"
     }
-    error(s"Invalid $incrementOrDecrement expression.", pos)
+    error(23, s"Invalid $incrementOrDecrement expression.", pos)
   }
 
-
-  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
-  private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(expected.toString, found, pos)
-  private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, found.toString, pos)
-  private def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
-    error(s"Type error: expected: '$expected', found: '$found'.", pos)
 
 }

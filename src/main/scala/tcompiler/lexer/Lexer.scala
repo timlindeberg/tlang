@@ -332,54 +332,54 @@ class Tokenizer(val file: File, ctx: Context) {
     token
   }
 
-  def error(msg: String, colOffset: Int): Unit = {
+  private def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
     val bad = new Token(BAD).setPos(file, Position.encode(line, column + colOffset))
-    ctx.reporter.error(msg, bad)
+    error(errorCode, msg, bad)
   }
 
-  def error(msg: String, pos: Token): Unit = {
-    ctx.reporter.error(msg, pos)
-  }
+  private def error(errorCode: Int, msg: String, pos: Token): Unit =
+    ctx.reporter.error("L", errorCode, msg, pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
   private def ErrorInvalidCharacter(c: Char) =
-    error(s"Invalid character: '$c'.", 0)
+    error(0, s"Invalid character: '$c'.", 0)
 
   private def ErrorInvalidIdentifier(c: Char, length: Int) =
-    error(s"Invalid character in identifier: '$c'.", length)
+    error(1, s"Invalid character in identifier: '$c'.", length)
 
   private def ErrorUnclosedMultilineString(pos: Token) =
-    error("Unclosed multiline string literal.", pos)
+    error(2, "Unclosed multiline string literal.", pos)
 
   private def ErrorEmptyCharLiteral() =
-    error("Empty character literal.", 0)
+    error(3, "Empty character literal.", 0)
 
   private def ErrorInvalidEscapeSequence(length: Int) =
-    error("Invalid escape sequence.", length)
+    error(4, "Invalid escape sequence.", length)
 
   private def ErrorInvalidCharLiteral(length: Int) =
-    error("Invalid character literal.", length)
+    error(5, "Invalid character literal.", length)
 
   private def ErrorInvalidUnicode(length: Int) =
-    error("Invalid unicode escape sequence.", length)
+    error(6, "Invalid unicode escape sequence.", length)
 
   private def ErrorUnclosedCharLiteral(length: Int) =
-    error("Unclosed character literal.", length)
+    error(7, "Unclosed character literal.", length)
 
   private def ErrorUnclosedStringLiteral(pos: Token) =
-    error("Unclosed string literal.", pos)
+    error(8, "Unclosed string literal.", pos)
 
   private def ErrorNumberTooLarge(pos: Token) =
-    error("Number is too large to fit in datatype.", pos)
+    error(9, "Number is too large to fit in datatype.", pos)
 
   private def ErrorInvalidNumber(pos: Token) =
-    error("Invalid number.", pos)
+    error(10, "Invalid number.", pos)
 
   private def ErrorInvalidFloat(pos: Token) =
-    error("Invalid floating point number.", pos)
+    error(11, "Invalid floating point number.", pos)
 
 
 }

@@ -21,8 +21,6 @@ object Parser extends Pipeline[List[Token], Program] {
 
 class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
-  import ctx.reporter._
-
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
 
@@ -46,7 +44,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case PUBDEF | PRIVDEF =>
           val access = accessRights(PUBDEF, PRIVDEF)
           if (nextTokenKind == STATIC) eat(STATIC)
-          method(Set(access, Static))
+          method(Set(access, Static), access)
         case _                => statement()
       }
     }, EOF)
@@ -212,9 +210,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val pos = nextToken
     val mods = modifiers(PRIVDEF, PUBDEF)
     val func = nextTokenKind match {
-      case IDKIND => method(mods)
+      case IDKIND => method(mods, pos)
       case NEW    => constructor(mods, className)
-      case _      => operator(mods)
+      case _      => operator(mods, pos)
     }
     func.setPos(pos)
   }
@@ -222,9 +220,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
    */
-  def method(modifiers: Set[Modifier]): MethodDecl = {
+  def method(modifiers: Set[Modifier], pos: Positioned): MethodDecl = {
     if(modifiers.contains(Implicit))
-      ErrorImplicitMethodOrOperator()
+      ErrorImplicitMethodOrOperator(pos)
 
     val id = identifier()
     eat(LPAREN)
@@ -264,9 +262,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
    */
-  def operator(modifiers: Set[Modifier]): OperatorDecl = {
+  def operator(modifiers: Set[Modifier], p: Positioned): OperatorDecl = {
     if(modifiers.contains(Implicit))
-      ErrorImplicitMethodOrOperator()
+      ErrorImplicitMethodOrOperator(p)
 
     val pos = nextToken
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
@@ -1155,29 +1153,39 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     arrBuff.toList
   }
 
+  private def error(errorCode: Int, msg: String, pos: Positioned) =
+    ctx.reporter.error("P", errorCode, msg, pos)
+
+  private def fatal(errorCode: Int, msg: String, pos: Positioned) =
+    ctx.reporter.fatal("P", errorCode, msg, pos)
+
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  private def ErrorImplicitMethodOrOperator() =
-    error("Only constructors can be declared implicit.")
+  private def ErrorImplicitMethodOrOperator(pos: Positioned) =
+    error(0, "Only constructors can be declared implicit.", pos)
 
   private def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
-    error(s"Indexing operator '$name' cannot be declared static!", pos)
+    error(1, s"Indexing operator '$name' cannot be declared static!", pos)
 
   private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
-    error(s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+    error(2, s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+
+  //---------------------------------------------------------------------------------------
+  //  Fatal messages
+  //---------------------------------------------------------------------------------------
 
   private def FatalInvalidStatement(pos: Positioned) =
-    fatal("Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)
+    fatal(0, "Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)
 
   private def FatalExpectedIdAssignment(pos: Positioned) =
-    fatal("Expected identifier on left side of assignment.", pos)
+    fatal(1, "Expected identifier on left side of assignment.", pos)
 
   private def FatalWrongToken(kind: TokenKind, more: TokenKind*): Nothing = FatalWrongToken((kind :: more.toList).mkString(" or "), currentToken.toString, currentToken)
 
   private def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
-    fatal(s"Expected $expected, found: $found.", pos)
+    fatal(2, s"Expected $expected, found: $found.", pos)
 
 }
 
