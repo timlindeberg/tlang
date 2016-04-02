@@ -1,18 +1,15 @@
 package tcompiler.analyzer
 
-import org.scalatest._
-import scala.sys.process._
-import tcompiler.utils.Context
 import java.io.File
-import tcompiler.lexer.Token
-import tcompiler.lexer.Lexer
-import tcompiler.ast._
+
+import org.scalatest._
 import tcompiler.TestUtils
-import tcompiler.utils.CompilationException
-import scala.io.Source
-import tcompiler.ast.Trees.Program
+import tcompiler.ast._
+import tcompiler.lexer.Lexer
+import tcompiler.utils.{CompilationException, Context}
+
 import scala.collection.mutable.HashMap
-import tcompiler.analyzer.Types.TUntyped
+import scala.sys.process._
 
 class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val flag = "--ast --symid"
@@ -22,12 +19,12 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   behavior of "Positive tests"
-  TestUtils.programFiles(TestUtils.resources + "analyzer/name/valid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.Resources + "analyzer/name/valid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file)
   }
 
   behavior of "Negative tests"
-  TestUtils.programFiles(TestUtils.resources + "analyzer/name/invalid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.Resources + "analyzer/name/invalid/").foreach { file =>
     it should "name analyse program " + file.toPath() in test(file, true)
   }
   
@@ -42,7 +39,6 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
       val program = exec(ctx.file)
       val res = replaceTypeIdentifiers(ASTPrinterWithSymbols(program))
       val correct = replaceIDNumbers(getAnswer(file), res)
-      TestUtils.HasTypes.withoutMethodCalls(program) should be(true)
       res + "\n" should be(correct)
     }
   }
@@ -67,6 +63,6 @@ class NameAnalysisSpec extends FlatSpec with Matchers with BeforeAndAfter {
     idRegex.replaceAllIn(ast1, m => "#" + idMap(m.group(1).toInt))
   }
 
-  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !! TestUtils.IgnoreErrorOutput
+  def getAnswer(file: File) = Seq("", flag + " " + file.toPath()) !! TestUtils.IgnoreErrorOutput
 
 }

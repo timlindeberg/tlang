@@ -2,8 +2,10 @@ package tcompiler
 package lexer
 
 import java.io.File
+
+import tcompiler.lexer.Tokens._
 import tcompiler.utils._
-import Tokens._
+
 import scala.io.Source
 
 object Lexer extends Pipeline[File, List[Token]] {
@@ -13,80 +15,150 @@ object Lexer extends Pipeline[File, List[Token]] {
 
 }
 
+object Tokenizer {
+
+  private val SingleCharTokens = Map(
+    ':' -> COLON,
+    ';' -> SEMICOLON,
+    '.' -> DOT,
+    ',' -> COMMA,
+    '!' -> BANG,
+    '#' -> HASH,
+    '(' -> LPAREN,
+    ')' -> RPAREN,
+    '[' -> LBRACKET,
+    ']' -> RBRACKET,
+    '{' -> LBRACE,
+    '}' -> RBRACE,
+    '+' -> PLUS,
+    '-' -> MINUS,
+    '*' -> TIMES,
+    '<' -> LESSTHAN,
+    '>' -> GREATERTHAN,
+    '/' -> DIV,
+    '=' -> EQSIGN,
+    '≠' -> NOTEQUALS,
+    '?' -> QUESTIONMARK,
+    '%' -> MODULO,
+    '~' -> LOGICNOT,
+    '&' -> LOGICAND,
+    '|' -> LOGICOR,
+    '^' -> LOGICXOR
+  )
+
+  private val KeyWords = Map(
+    "package" -> PACKAGE,
+    "import" -> IMPORT,
+    "object" -> OBJECT,
+    "class" -> CLASS,
+    "Def" -> PUBDEF,
+    "def" -> PRIVDEF,
+    "protected" -> PROTECTED,
+    "Var" -> PUBVAR,
+    "var" -> PRIVVAR,
+    "static" -> STATIC,
+    "String" -> STRING,
+    "extends" -> EXTENDS,
+    "Unit" -> UNIT,
+    "Int" -> INT,
+    "Long" -> LONG,
+    "Float" -> FLOAT,
+    "Double" -> DOUBLE,
+    "Char" -> CHAR,
+    "Bool" -> BOOLEAN,
+    "while" -> WHILE,
+    "for" -> FOR,
+    "if" -> IF,
+    "else" -> ELSE,
+    "return" -> RETURN,
+    "length" -> LENGTH,
+    "is" -> INSTANCEOF,
+    "as" -> AS,
+    "true" -> TRUE,
+    "false" -> FALSE,
+    "this" -> THIS,
+    "new" -> NEW,
+    "implicit" -> IMPLICIT,
+    "print" -> PRINT,
+    "println" -> PRINTLN,
+    "error" -> ERROR
+  )
+}
 
 class Tokenizer(val file: File, ctx: Context) {
+
+  import Tokenizer._
 
   private var line   = 1
   private var column = 1
 
   def tokenize(chars: List[Char]): List[Token] = {
     def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
-      case '\n' :: r                                        =>
+      case '\n' :: r                              =>
         val token = createToken(NEWLINE, 1)
         column = 1
         line += 1
         // Don't put two newline tokens in a row
         val t = if (tokens.nonEmpty && tokens.head.kind != NEWLINE) token :: tokens else tokens
         readTokens(r, t)
-      case (c :: r) if c.isWhitespace                       =>
+      case (c :: r) if c.isWhitespace             =>
         column += 1
         readTokens(r, tokens)
-      case '/' :: '/' :: r                                  => readTokens(skipLine(r), tokens)
-      case '+' :: '=' :: r                                  => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
-      case '-' :: '=' :: r                                  => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
-      case '*' :: '=' :: r                                  => readTokens(r, createToken(MULEQ, 2) :: tokens)
-      case '/' :: '=' :: r                                  => readTokens(r, createToken(DIVEQ, 2) :: tokens)
-      case '%' :: '=' :: r                                  => readTokens(r, createToken(MODEQ, 2) :: tokens)
-      case '&' :: '=' :: r                                  => readTokens(r, createToken(ANDEQ, 2) :: tokens)
-      case '|' :: '=' :: r                                  => readTokens(r, createToken(OREQ, 2) :: tokens)
-      case '^' :: '=' :: r                                  => readTokens(r, createToken(XOREQ, 2) :: tokens)
-      case '<' :: '<' :: '=' :: r                           => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
-      case '>' :: '>' :: '=' :: r                           => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
-      case '<' :: '<' :: r                                  => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
-      case '>' :: '>' :: r                                  => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
-      case '+' :: '+' :: r                                  => readTokens(r, createToken(INCREMENT, 2) :: tokens)
-      case '-' :: '-' :: r                                  => readTokens(r, createToken(DECREMENT, 2) :: tokens)
-      case '<' :: '=' :: r                                  => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
-      case '>' :: '=' :: r                                  => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
-      case '=' :: '=' :: r                                  => readTokens(r, createToken(EQUALS, 2) :: tokens)
-      case '!' :: '=' :: r                                  => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
-      case '|' :: '|' :: r                                  => readTokens(r, createToken(OR, 2) :: tokens)
-      case '&' :: '&' :: r                                  => readTokens(r, createToken(AND, 2) :: tokens)
-      case '/' :: '*' :: r                                  =>
+      case '/' :: '/' :: r                        => readTokens(skipLine(r), tokens)
+      case '+' :: '=' :: r                        => readTokens(r, createToken(PLUSEQ, 2) :: tokens)
+      case '-' :: '=' :: r                        => readTokens(r, createToken(MINUSEQ, 2) :: tokens)
+      case '*' :: '=' :: r                        => readTokens(r, createToken(MULEQ, 2) :: tokens)
+      case '/' :: '=' :: r                        => readTokens(r, createToken(DIVEQ, 2) :: tokens)
+      case '%' :: '=' :: r                        => readTokens(r, createToken(MODEQ, 2) :: tokens)
+      case '&' :: '=' :: r                        => readTokens(r, createToken(ANDEQ, 2) :: tokens)
+      case '|' :: '=' :: r                        => readTokens(r, createToken(OREQ, 2) :: tokens)
+      case '^' :: '=' :: r                        => readTokens(r, createToken(XOREQ, 2) :: tokens)
+      case '<' :: '<' :: '=' :: r                 => readTokens(r, createToken(LEFTSHIFTEQ, 3) :: tokens)
+      case '>' :: '>' :: '=' :: r                 => readTokens(r, createToken(RIGHTSHIFTEQ, 3) :: tokens)
+      case '<' :: '<' :: r                        => readTokens(r, createToken(LEFTSHIFT, 2) :: tokens)
+      case '>' :: '>' :: r                        => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
+      case '+' :: '+' :: r                        => readTokens(r, createToken(INCREMENT, 2) :: tokens)
+      case '-' :: '-' :: r                        => readTokens(r, createToken(DECREMENT, 2) :: tokens)
+      case '<' :: '=' :: r                        => readTokens(r, createToken(LESSTHANEQUALS, 2) :: tokens)
+      case '>' :: '=' :: r                        => readTokens(r, createToken(GREATERTHANEQUALS, 2) :: tokens)
+      case '=' :: '=' :: r                        => readTokens(r, createToken(EQUALS, 2) :: tokens)
+      case '!' :: '=' :: r                        => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
+      case '|' :: '|' :: r                        => readTokens(r, createToken(OR, 2) :: tokens)
+      case '&' :: '&' :: r                        => readTokens(r, createToken(AND, 2) :: tokens)
+      case '/' :: '*' :: r                        =>
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
-      case c :: r if Tokenizer.SingleCharTokens.contains(c) => readTokens(r, createToken(Tokenizer.SingleCharTokens(c), 1) :: tokens)
-      case c :: r if c.isLetter                             =>
+      case c :: r if SingleCharTokens.contains(c) => readTokens(r, createToken(SingleCharTokens(c), 1) :: tokens)
+      case c :: r if c.isLetter                   =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
-      case '\'' :: r                                        =>
+      case '\'' :: r                              =>
         val (token, tail) = getCharLiteral(r)
         readTokens(tail, token :: tokens)
-      case '`' :: r                                         =>
+      case '`' :: r                               =>
         val (token, tail) = getMultiLineStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case '"' :: r                                         =>
+      case '"' :: r                               =>
         val (token, tail) = getStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case c :: r if c.isDigit                              =>
+      case c :: r if c.isDigit                    =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
-      case Nil                                              => createToken(EOF, 1) :: tokens
-      case c :: r                                           =>
+      case Nil                                    => createToken(EOF, 1) :: tokens
+      case c :: r                                 =>
         ErrorInvalidCharacter(c)
         readTokens(r, createToken(BAD, 1) :: tokens)
     }
     readTokens(chars, List[Token]()).reverse
   }
 
-
   private def createIdentifierOrKeyWord(s: String): Token =
-    if (Tokenizer.KeyWords.contains(s)) createToken(Tokenizer.KeyWords(s), s.length)
+    if (KeyWords.contains(s)) createToken(KeyWords(s), s.length)
     else createIdToken(s, s.length)
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
     def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-      val end = (c: Char) => Tokenizer.SingleCharTokens.contains(c) || c.isWhitespace
+      val end = (c: Char) => SingleCharTokens.contains(c) || c.isWhitespace
       val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
       chars match {
         case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c)
@@ -156,7 +228,8 @@ class Tokenizer(val file: File, ctx: Context) {
         case '\'' :: r                                                         =>
           ErrorInvalidUnicode(2)
           (createToken(BAD, 4), r)
-        case r => toEnd(r, 4, ErrorInvalidUnicode)
+        case r                                                                 =>
+          toEnd(r, 4, ErrorInvalidUnicode)
       }
 
       // Escaped characters
@@ -176,9 +249,9 @@ class Tokenizer(val file: File, ctx: Context) {
       case '\\' :: '\'' :: r      =>
         ErrorInvalidCharLiteral(3)
         (createToken(BAD, 4), r)
-      case c :: '\'' :: r =>
+      case c :: '\'' :: r         =>
         (createToken(c, 4), r)
-      case r              =>
+      case r                      =>
         toEnd(r, 4, ErrorInvalidCharLiteral)
     }
   }
@@ -251,9 +324,9 @@ class Tokenizer(val file: File, ctx: Context) {
     }
 
     def parseDoubleToken(numStr: String): Token = tryConversion(numStr, _.toDouble) match {
-        case Some(value) => createToken(value, numStr.length)
-        case None        => createToken(BAD, numStr.length)
-      }
+      case Some(value) => createToken(value, numStr.length)
+      case None        => createToken(BAD, numStr.length)
+    }
 
     var foundDecimal = false
     var foundE = false
@@ -396,77 +469,5 @@ class Tokenizer(val file: File, ctx: Context) {
 
   private def ErrorInvalidFloat(pos: Token) =
     error(11, "Invalid floating point number.", pos)
-
-
-}
-
-object Tokenizer {
-
-  private val SingleCharTokens = Map(
-    ':' -> COLON,
-    ';' -> SEMICOLON,
-    '.' -> DOT,
-    ',' -> COMMA,
-    '!' -> BANG,
-    '#' -> HASH,
-    '(' -> LPAREN,
-    ')' -> RPAREN,
-    '[' -> LBRACKET,
-    ']' -> RBRACKET,
-    '{' -> LBRACE,
-    '}' -> RBRACE,
-    '+' -> PLUS,
-    '-' -> MINUS,
-    '*' -> TIMES,
-    '<' -> LESSTHAN,
-    '>' -> GREATERTHAN,
-    '/' -> DIV,
-    '=' -> EQSIGN,
-    '≠' -> NOTEQUALS,
-    '?' -> QUESTIONMARK,
-    '%' -> MODULO,
-    '~' -> LOGICNOT,
-    '&' -> LOGICAND,
-    '|' -> LOGICOR,
-    '^' -> LOGICXOR
-  )
-
-  private val KeyWords = Map(
-    "package" -> PACKAGE,
-    "import" -> IMPORT,
-    "object" -> OBJECT,
-    "class" -> CLASS,
-    "Def" -> PUBDEF,
-    "def" -> PRIVDEF,
-    "protected" -> PROTECTED,
-    "Var" -> PUBVAR,
-    "var" -> PRIVVAR,
-    "static" -> STATIC,
-    "String" -> STRING,
-    "extends" -> EXTENDS,
-    "Unit" -> UNIT,
-    "Int" -> INT,
-    "Long" -> LONG,
-    "Float" -> FLOAT,
-    "Double" -> DOUBLE,
-    "Char" -> CHAR,
-    "Bool" -> BOOLEAN,
-    "while" -> WHILE,
-    "for" -> FOR,
-    "if" -> IF,
-    "else" -> ELSE,
-    "return" -> RETURN,
-    "length" -> LENGTH,
-    "is" -> INSTANCEOF,
-    "as" -> AS,
-    "true" -> TRUE,
-    "false" -> FALSE,
-    "this" -> THIS,
-    "new" -> NEW,
-    "implicit" -> IMPLICIT,
-    "print" -> PRINT,
-    "println" -> PRINTLN,
-    "error" -> ERROR
-  )
 
 }

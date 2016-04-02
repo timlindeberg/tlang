@@ -3,11 +3,11 @@ package tcompiler.code
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.CodeHandler
+import tcompiler.analyzer.Symbols._
+import tcompiler.analyzer.Types._
 import tcompiler.analyzer._
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
-import tcompiler.analyzer.Types._
-import tcompiler.analyzer.Symbols._
 
 import scala.collection._
 
@@ -48,6 +48,8 @@ object CodeGenerator {
 
 class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable.HashMap[VariableSymbol, Int]) {
 
+  import CodeGenerator._
+
   def compileStat(statement: StatTree): Unit = {
     ch << LineNumber(statement.line)
     statement match {
@@ -67,9 +69,9 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
             codes.store(ch, id)
         }
       case If(expr, thn, els)                            =>
-        val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
-        val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
-        val afterLabel = ch.getFreshLabel(CodeGenerator.After)
+        val thnLabel = ch.getFreshLabel(Then)
+        val elsLabel = ch.getFreshLabel(Else)
+        val afterLabel = ch.getFreshLabel(After)
         compileBranch(expr, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
         compileStat(thn)
@@ -78,16 +80,16 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         if (els.isDefined) compileStat(els.get)
         ch << Label(afterLabel)
       case While(expr, stat)                             =>
-        val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
-        val afterLabel = ch.getFreshLabel(CodeGenerator.After)
+        val bodyLabel = ch.getFreshLabel(Body)
+        val afterLabel = ch.getFreshLabel(After)
         compileBranch(expr, Label(bodyLabel), Label(afterLabel))
         ch << Label(bodyLabel)
         compileStat(stat)
         compileBranch(expr, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
       case For(init, condition, post, stat)              =>
-        val bodyLabel = ch.getFreshLabel(CodeGenerator.Body)
-        val afterLabel = ch.getFreshLabel(CodeGenerator.After)
+        val bodyLabel = ch.getFreshLabel(Body)
+        val afterLabel = ch.getFreshLabel(After)
         init.foreach(compileStat)
         compileBranch(condition, Label(bodyLabel), Label(afterLabel))
         ch << Label(bodyLabel)
@@ -96,23 +98,23 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         compileBranch(condition, Label(bodyLabel), Label(afterLabel))
         ch << Label(afterLabel)
       case PrintStatement(expr)                          =>
-        ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
+        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
-          case _: TObject => "L" + CodeGenerator.JavaObject + ";" // Call System.out.println(Object) for all other types
+          case _: TObject => "L" + JavaObject + ";" // Call System.out.println(Object) for all other types
           case _          => expr.getType.byteCodeName
         }
         val funcName = statement match {
           case _: Print   => "print"
           case _: Println => "println"
         }
-        ch << InvokeVirtual(CodeGenerator.JavaPrintStream, funcName, "(" + arg + ")V")
+        ch << InvokeVirtual(JavaPrintStream, funcName, "(" + arg + ")V")
       case Error(expr)                                   =>
-        ch << GetStatic(CodeGenerator.JavaSystem, "out", "L" + CodeGenerator.JavaPrintStream + ";")
-        ch << InvokeVirtual(CodeGenerator.JavaPrintStream, "flush", "()V")
-        ch << cafebabe.AbstractByteCodes.New(CodeGenerator.JavaRuntimeException) << DUP
+        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
+        ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
+        ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
-        ch << InvokeSpecial(CodeGenerator.JavaRuntimeException, "<init>", "(L" + CodeGenerator.JavaString + ";)V")
+        ch << InvokeSpecial(JavaRuntimeException, "<init>", "(L" + JavaString + ";)V")
         ch << ATHROW
       case Return(Some(expr))                            =>
         compileExpr(expr)
@@ -147,9 +149,9 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
            _: GreaterThan |
            _: GreaterThanEquals |
            _: Not                                              =>
-        val thn = ch.getFreshLabel(CodeGenerator.Then)
-        val els = ch.getFreshLabel(CodeGenerator.Else)
-        val after = ch.getFreshLabel(CodeGenerator.After)
+        val thn = ch.getFreshLabel(Then)
+        val els = ch.getFreshLabel(Else)
+        val after = ch.getFreshLabel(After)
         compileBranch(expression, Label(thn), Label(els))
         ch << Label(thn)
         ch << Ldc(1)
@@ -171,17 +173,17 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case (TString, _) | (_, TString)       =>
             def methSignature(expr: ExprTree) = {
               val arg = expr.getType match {
-                case TObject(tpe) => "L" + CodeGenerator.JavaObject + ";"
+                case TObject(tpe) => "L" + JavaObject + ";"
                 case _            => expr.getType.byteCodeName
               }
-              "(" + arg + ")L" + CodeGenerator.JavaStringBuilder + ";"
+              "(" + arg + ")L" + JavaStringBuilder + ";"
             }
-            ch << DefaultNew(CodeGenerator.JavaStringBuilder)
+            ch << DefaultNew(JavaStringBuilder)
             compileExpr(lhs)
-            ch << InvokeVirtual(CodeGenerator.JavaStringBuilder, "append", methSignature(lhs))
+            ch << InvokeVirtual(JavaStringBuilder, "append", methSignature(lhs))
             compileExpr(rhs)
-            ch << InvokeVirtual(CodeGenerator.JavaStringBuilder, "append", methSignature(rhs))
-            ch << InvokeVirtual(CodeGenerator.JavaStringBuilder, "toString", "()L" + CodeGenerator.JavaString + ";")
+            ch << InvokeVirtual(JavaStringBuilder, "append", methSignature(rhs))
+            ch << InvokeVirtual(JavaStringBuilder, "toString", "()L" + JavaString + ";")
           case (_: TObject, _) | (_, _: TObject) =>
             compileExpr(lhs)
             compileExpr(rhs)
@@ -415,13 +417,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           ch << POP
       case tcompiler.ast.Trees.New(tpe, args)                  =>
         val codes = tpe.getType.codes
-        val objName = if (tpe.value == "Object") CodeGenerator.JavaObject else tpe.value
+        val objName = if (tpe.value == "Object") JavaObject else tpe.value
         ch << cafebabe.AbstractByteCodes.New(objName)
         codes.dup(ch)
         args.foreach(compileExpr(_))
 
         val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
-        ch << InvokeSpecial(objName, CodeGenerator.ConstructorName, signature)
+        ch << InvokeSpecial(objName, ConstructorName, signature)
       case Negation(expr)                                      =>
         compileExpr(expr)
         expr.getType match {
@@ -441,7 +443,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         def hashFunction(className: String) = {
           ch << cafebabe.AbstractByteCodes.New(className) << DUP
           compileExpr(expr)
-          ch << InvokeSpecial(className, CodeGenerator.ConstructorName, "(" + expr.getType.byteCodeName + ")V") <<
+          ch << InvokeSpecial(className, ConstructorName, "(" + expr.getType.byteCodeName + ")V") <<
             InvokeVirtual(className, "hashCode", "()I")
         }
 
@@ -449,13 +451,13 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
           case x: TObject =>
             compileExpr(expr)
             if (!compileOperatorCall(ch, expression, x))
-              ch << InvokeVirtual(CodeGenerator.JavaObject, "hashCode", "()I")
-          case TString    => hashFunction(CodeGenerator.JavaString)
-          case TInt       => hashFunction(CodeGenerator.JavaInt)
-          case TChar      => hashFunction(CodeGenerator.JavaChar)
-          case TFloat     => hashFunction(CodeGenerator.JavaFloat)
-          case TDouble    => hashFunction(CodeGenerator.JavaDouble)
-          case TLong      => hashFunction(CodeGenerator.JavaLong)
+              ch << InvokeVirtual(JavaObject, "hashCode", "()I")
+          case TString    => hashFunction(JavaString)
+          case TInt       => hashFunction(JavaInt)
+          case TChar      => hashFunction(JavaChar)
+          case TFloat     => hashFunction(JavaFloat)
+          case TDouble    => hashFunction(JavaDouble)
+          case TLong      => hashFunction(JavaLong)
           case _          => ???
         }
       case PreIncrement(expr)                                  => compileIncrementDecrement(isPre = true, isIncrement = true, expr)
@@ -463,9 +465,9 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
       case PostIncrement(expr)                                 => compileIncrementDecrement(isPre = false, isIncrement = true, expr)
       case PostDecrement(expr)                                 => compileIncrementDecrement(isPre = false, isIncrement = false, expr)
       case Ternary(condition, thn, els)                        =>
-        val thnLabel = ch.getFreshLabel(CodeGenerator.Then)
-        val elsLabel = ch.getFreshLabel(CodeGenerator.Else)
-        val afterLabel = ch.getFreshLabel(CodeGenerator.After)
+        val thnLabel = ch.getFreshLabel(Then)
+        val elsLabel = ch.getFreshLabel(Else)
+        val afterLabel = ch.getFreshLabel(After)
 
         compileBranch(condition, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
@@ -566,12 +568,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
       case tpe: TObject =>
         // Object has to be placed on stack before argument
         val name = tpe.classSymbol.name
-        val objName = if (name == "Object") CodeGenerator.JavaObject else name
+        val objName = if (name == "Object") JavaObject else name
         ch << cafebabe.AbstractByteCodes.New(objName)
         desiredType.codes.dup(ch)
         compileExpr(expr)
         val signature = "(" + expr.getType.byteCodeName + ")V"
-        ch << InvokeSpecial(objName, CodeGenerator.ConstructorName, signature)
+        ch << InvokeSpecial(objName, ConstructorName, signature)
       case arr: TArray  =>
         // TODO: Safe cast?
         compileArrayLiteral(expr.asInstanceOf[ArrayLit], Some(arr.tpe))
@@ -618,12 +620,12 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
     case True()                       => ch << Goto(thn.id)
     case False()                      => ch << Goto(els.id)
     case And(lhs, rhs)                =>
-      val next = Label(ch.getFreshLabel(CodeGenerator.Next))
+      val next = Label(ch.getFreshLabel(Next))
       compileBranch(lhs, next, els)
       ch << next
       compileBranch(rhs, thn, els)
     case Or(lhs, rhs)                 =>
-      val next = Label(ch.getFreshLabel(CodeGenerator.Next))
+      val next = Label(ch.getFreshLabel(Next))
       compileBranch(lhs, thn, next)
       ch << next
       compileBranch(rhs, thn, els)

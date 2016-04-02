@@ -2,108 +2,21 @@ package tcompiler.analyzer
 
 import java.io.File
 
-import tcompiler.TestUtils
-import tcompiler.analyzer.Symbols.{VariableSymbol, ClassSymbol, MethodSymbol}
+import org.scalatest._
+import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
-import tcompiler.ast._
-import tcompiler.lexer.Lexer
-import tcompiler.utils.{CompilationException, Context}
-import org.scalatest._
+import tcompiler.utils.Context
 
 class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
-  val flag = "--ast --symid"
 
-  before {
-    Symbols.ID.reset()
-  }
-
-//  behavior of "Positive tests"
-//  TestUtils.programFiles(TestUtils.resources + "analyzer/type/valid/").foreach { file =>
-//    it should "type check program " + file.toPath in test(file)
-//  }
-//  TestUtils.programFiles(TestUtils.resources + "programs/").foreach { file =>
-//    it should "type check program " + file.toPath in test(file)
-//  }
-//  TestUtils.programFiles(TestUtils.resources + "given/programs/").foreach { file =>
-//    it should "type check given program " + file.toPath in test(file)
-//  }
-//
-//  behavior of "Negative tests"
-//  TestUtils.programFiles(TestUtils.resources + "analyzer/type/invalid/").foreach { file =>
-//    it should "type check invalid program " + file.toPath in test(file, exception = true)
-//  }
-//
-//  behavior of "Relations"
-//
-//  it should "work with primitive types" in {
-//
-//    val primitives = List(TInt, TString, TBool)
-//    val others = List(TError, anyObject, TObject(new ClassSymbol("")), TUntyped)
-//
-//    for (t1 <- primitives) {
-//      for (t2 <- primitives) {
-//        if (t1 == t2) {
-//          assert(t1.isSubTypeOf(t2))
-//        } else {
-//          assert(!t1.isSubTypeOf(t2))
-//        }
-//      }
-//      for (t2 <- others) {
-//        assert(!t1.isSubTypeOf(t2))
-//      }
-//    }
-//  }
-//
-//  it should "should work with class types" in {
-//    val C1 = anyObject.classSymbol
-//    val C2 = new ClassSymbol("C2")
-//    val C3 = new ClassSymbol("C3")
-//    val C4 = new ClassSymbol("C4")
-//    val C5 = new ClassSymbol("C5")
-//    C2.parent = Some(C1)
-//    C3.parent = Some(C2)
-//    C4.parent = Some(C3)
-//    C5.parent = Some(C4)
-//
-//    val T1 = anyObject
-//    val T2 = TObject(C2)
-//    val T3 = TObject(C3)
-//    val T4 = TObject(C4)
-//    val T5 = TObject(C5)
-//
-//    C2.setType(T2)
-//    C3.setType(T3)
-//    C4.setType(T4)
-//    C5.setType(T5)
-//
-//    val types = List(T1, T2, T3, T4, T5).zipWithIndex
-//    for ((t1, i) <- types) {
-//      for ((t2, j) <- types) {
-//        if (j >= i) {
-//          assert(t2.isSubTypeOf(t1), t2 + " is subtype of " + t1)
-//          if (j > i) assert(!t1.isSubTypeOf(t2), t1 + " is not subtype of " + t2)
-//        }
-//      }
-//    }
-//
-//  }
-
-  val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
-  val classSymbol = new ClassSymbol("obj")
-  val varSymbol   = new VariableSymbol("var")
-  val mainMethod  = new MethodSymbol("main", classSymbol, methodDecl).setType(TUnit)
-  val testContext = Context(new tcompiler.utils.Reporter(), None, new File(""))
-  val typeChecker = new TypeChecker(testContext, mainMethod)
-
-  def createIdentifier(tpe: Type) = Identifier("").setSymbol(new VariableSymbol("")).setType(tpe)
-
-  class TypeConstructor(val tpe: Type)
-    extends (() => Identifier) {
-    def apply(): Identifier = createIdentifier(tpe)
-    override def toString() = tpe.toString
-    def ==(rhs: TypeConstructor) = tpe.toString == rhs.tpe.toString
-  }
+  val Flag = "--ast --symid"
+  val MethodDecl = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+  val ClassSymbol = new ClassSymbol("obj")
+  val VarSymbol   = new VariableSymbol("var")
+  val MainMethod  = new MethodSymbol("main", ClassSymbol, MethodDecl).setType(TUnit)
+  val TestContext = Context(new tcompiler.utils.Reporter(), None, new File(""))
+  val TypeChecker = new TypeChecker(TestContext, MainMethod)
 
 
   val int    = new TypeConstructor(TInt)
@@ -114,11 +27,23 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val char   = new TypeConstructor(TChar)
   val string = new TypeConstructor(TString)
   val array  = new TypeConstructor(TArray(TInt))
-  val obj    = new TypeConstructor(TObject(classSymbol))
+  val obj    = new TypeConstructor(TObject(ClassSymbol))
 
   val allTypes        = List[() => Identifier](int, bool, long, float, double, char, string, array, obj)
   val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
+  private def createIdentifier(tpe: Type) = Identifier("").setSymbol(new VariableSymbol("")).setType(tpe)
+
+  class TypeConstructor(val tpe: Type)
+    extends (() => Identifier) {
+    def apply(): Identifier = createIdentifier(tpe)
+    override def toString() = tpe.toString
+    def ==(rhs: TypeConstructor) = tpe.toString == rhs.tpe.toString
+  }
+
+  before {
+    Symbols.ID.reset()
+  }
 
   behavior of "Operators"
 
@@ -161,8 +86,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
   it should "PostDecrement" in incrementDecrement(PostDecrement)
 
 
-  def plusOperator() =
-    new BinaryExpressionAsserter(Plus).valid(
+  private def plusOperator() =
+    BinaryExpressionAsserter.valid(Plus,
       (string, string, TString),
       (string, obj, TString),
       (string, int, TString),
@@ -193,8 +118,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble)
     )
 
-  def binaryOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def binaryOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (char, char, TInt),
 
       (int, int, TInt),
@@ -216,8 +141,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble)
     )
 
-  def logicOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def logicOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (int, int, TInt),
       (int, long, TLong),
       (int, char, TInt),
@@ -229,8 +154,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (bool, bool, TBool)
     )
 
-  def shiftOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def shiftOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (int, int, TInt),
       (int, long, TLong),
       (int, char, TInt),
@@ -241,7 +166,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (long, char, TLong)
     )
 
-  def assignOperator() =
+  private def assignOperator() =
     new AssignmentAsserter(Assign).valid(
       (bool, bool, TBool),
 
@@ -273,7 +198,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (array, array, array().getType)
     )
 
-  def arrayAssignOperator() =
+  private def arrayAssignOperator() =
     new ArrayAssignmentAsserter().valid(
       (char, char, TChar),
       (char, int, TChar),
@@ -303,8 +228,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (obj, obj, obj().getType)
     )
 
-  def comparisonOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def comparisonOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (char, char, TBool),
 
       (int, int, TBool),
@@ -326,8 +251,8 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TBool)
     )
 
-  def equalsOperator(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def equalsOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (char, char, TBool),
 
       (int, int, TBool),
@@ -357,23 +282,23 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (bool, bool, TBool)
     )
 
-  def andOr(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def andOr(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (bool, bool, TBool)
     )
 
-  def not(expressionType: Identifier => ExprTree) =
-    new UnaryExpressionAsserter(expressionType).valid(
+  private def not(expressionType: Identifier => ExprTree) =
+    UnaryExpressionAsserter.valid(expressionType,
       (bool, TBool)
     )
 
-  def instance(expressionType: (Identifier, Identifier) => ExprTree) =
-    new BinaryExpressionAsserter(expressionType).valid(
+  private def instance(expressionType: (Identifier, Identifier) => ExprTree) =
+    BinaryExpressionAsserter.valid(expressionType,
       (obj, obj, TBool)
     )
 
-  def negation(expressionType: Identifier => ExprTree) =
-    new UnaryExpressionAsserter(expressionType).valid(
+  private def negation(expressionType: Identifier => ExprTree) =
+    UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TInt),
       (long, TLong),
@@ -381,15 +306,15 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, TDouble)
     )
 
-  def logicalNot(expressionType: Identifier => ExprTree) =
-    new UnaryExpressionAsserter(expressionType).valid(
+  private def logicalNot(expressionType: Identifier => ExprTree) =
+    UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TInt),
       (long, TLong)
     )
 
-  def incrementDecrement(expressionType: Identifier => ExprTree) =
-    new UnaryExpressionAsserter(expressionType).valid(
+  private def incrementDecrement(expressionType: Identifier => ExprTree) =
+    UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TChar),
       (long, TLong),
@@ -399,38 +324,59 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
 
 
-  class UnaryExpressionAsserter(expressionType: Identifier => ExprTree) {
+  object UnaryExpressionAsserter {
 
     def getInvalidCombinations(validTpes: List[(() => Identifier, Type)]) =
       allTypes.filter(tpe => {
         !validTpes.exists(listElem => tpe == listElem._1)
       })
 
-    def valid(validTpes: (() => Identifier, Type)*): Unit = {
-
+    def valid(expressionType: Identifier => ExprTree, validTpes: (() => Identifier, Type)*): Unit = {
       validTpes.foreach { case (id, tpe) =>
-        testContext.reporter.clearErrors()
-
-        testContext.reporter.clearErrors()
-        val resType = typeChecker.tcExpr(expressionType(id()))
+        TestContext.reporter.clearErrors()
+        val resType = TypeChecker.tcExpr(expressionType(id()))
         assert(resType == tpe, "for " + id + "")
 
-        val noErrors = !testContext.reporter.hasErrors
+        val noErrors = !TestContext.reporter.hasErrors
         assert(noErrors, "for " + id + "")
       }
 
       getInvalidCombinations(validTpes.toList) foreach { id =>
-        typeChecker.tcExpr(expressionType(id()))
-        val invalid = testContext.reporter.hasErrors
+        TypeChecker.tcExpr(expressionType(id()))
+        val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for " + id + "")
-        testContext.reporter.clearErrors()
+        TestContext.reporter.clearErrors()
       }
     }
   }
 
-  class BinaryExpressionAsserter(expressionType: (Identifier, Identifier) => ExprTree) {
+  object BinaryExpressionAsserter {
 
-    def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
+    def valid(expressionType: (Identifier, Identifier) => ExprTree,
+              validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
+
+      validCombinations.foreach { case (lhs, rhs, tpe) =>
+        TestContext.reporter.clearErrors()
+
+        val resType1 = TypeChecker.tcExpr(expressionType(rhs(), lhs()))
+        assert(resType1 == tpe, "for (" + rhs + ", " + lhs + ")")
+
+        val resType2 = TypeChecker.tcExpr(expressionType(lhs(), rhs()))
+        assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
+
+        val noErrors = !TestContext.reporter.hasErrors
+        assert(noErrors, "for (" + lhs + ", " + rhs + ")")
+      }
+
+      getInvalidCombinations(validCombinations.toList).foreach { case (lhs, rhs) =>
+        TypeChecker.tcExpr(expressionType(rhs(), lhs()))
+        val invalid = TestContext.reporter.hasErrors
+        assert(invalid, "for (" + lhs + ", " + rhs + ")")
+        TestContext.reporter.clearErrors()
+      }
+    }
+
+    private def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -439,101 +385,59 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         })
       })
 
-    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
-
-      validCombinations.foreach { case (lhs, rhs, tpe) =>
-        testContext.reporter.clearErrors()
-
-        val resType1 = typeChecker.tcExpr(expressionType(rhs(), lhs()))
-        assert(resType1 == tpe, "for (" + rhs + ", " + lhs + ")")
-
-        val resType2 = typeChecker.tcExpr(expressionType(lhs(), rhs()))
-        assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
-
-        val noErrors = !testContext.reporter.hasErrors
-        assert(noErrors, "for (" + lhs + ", " + rhs + ")")
-      }
-
-      getInvalidCombinations(validCombinations.toList) foreach { case (lhs, rhs) =>
-        typeChecker.tcExpr(expressionType(rhs(), lhs()))
-        val invalid = testContext.reporter.hasErrors
-        assert(invalid, "for (" + lhs + ", " + rhs + ")")
-        testContext.reporter.clearErrors()
-      }
-    }
   }
 
   class AssignmentAsserter(expressionType: (Identifier, Identifier) => ExprTree) {
 
-    def invalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
+    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
+      validCombinations.foreach { case (id, expr, tpe) =>
+
+        TestContext.reporter.clearErrors()
+        val resType = TypeChecker.tcExpr(expressionType(id(), expr()))
+        assert(resType == tpe, "for (" + id + ", " + expr + ")")
+
+        val noErrors = !TestContext.reporter.hasErrors
+        assert(noErrors, "for (" + id + ", " + expr + ")")
+      }
+
+      getInvalidCombinations(validCombinations.toList) foreach { case (id, expr) =>
+        TypeChecker.tcExpr(expressionType(id(), expr()))
+        val invalid = TestContext.reporter.hasErrors
+        assert(invalid, "for (" + id + ", " + expr + ")")
+        TestContext.reporter.clearErrors()
+      }
+    }
+
+    protected def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
           combination == tuple1
         })
       })
-
-    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
-      validCombinations.foreach { case (id, expr, tpe) =>
-
-        testContext.reporter.clearErrors()
-        val resType = typeChecker.tcExpr(expressionType(id(), expr()))
-        assert(resType == tpe, "for (" + id + ", " + expr + ")")
-
-        val noErrors = !testContext.reporter.hasErrors
-        assert(noErrors, "for (" + id + ", " + expr + ")")
-      }
-
-      invalidCombinations(validCombinations.toList) foreach { case (id, expr) =>
-        typeChecker.tcExpr(expressionType(id(), expr()))
-        val invalid = testContext.reporter.hasErrors
-        assert(invalid, "for (" + id + ", " + expr + ")")
-        testContext.reporter.clearErrors()
-      }
-    }
   }
 
   class ArrayAssignmentAsserter() extends AssignmentAsserter(Assign) {
 
     override def valid(validCombinations: (() => Identifier, () => Identifier, Type)*) = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
-        testContext.reporter.clearErrors()
+        TestContext.reporter.clearErrors()
         val id = createIdentifier(TArray(identifier().getType))
 
-        val resType = typeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
+        val resType = TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
         assert(resType == tpe, "for (" + identifier + ", " + expr + ")")
 
-        val noErrors = !testContext.reporter.hasErrors
+        val noErrors = !TestContext.reporter.hasErrors
         assert(noErrors, "for (" + identifier + ", " + expr + ")")
       }
 
-      invalidCombinations(validCombinations.toList) foreach { case (identifier, expr) =>
+      getInvalidCombinations(validCombinations.toList) foreach { case (identifier, expr) =>
         val id = createIdentifier(TArray(identifier().getType))
-        typeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
-        val invalid = testContext.reporter.hasErrors
+        TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
+        val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + identifier + ", " + expr + ")")
-        testContext.reporter.clearErrors()
+        TestContext.reporter.clearErrors()
       }
     }
   }
-
-  def test(file: File, exception: Boolean = false) = {
-    val options = TestUtils.readOptions(file)
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = None)
-    val quietCtx = ctx.copy(reporter = new tcompiler.utils.Reporter(false))
-    val exec = Lexer andThen Parser andThen NameAnalysis andThen TypeChecking
-    if (exception) {
-      try {
-        exec.run(quietCtx)(file)
-        assert(false)
-      } catch {
-        case _: CompilationException => ctx.reporter.errors should be(options("expectedErrors"))
-      }
-    } else {
-      val program = exec.run(ctx)(file)
-      ctx.reporter.hasErrors should be(false)
-      TestUtils.HasTypes(program) should be(true)
-    }
-  }
-
 }

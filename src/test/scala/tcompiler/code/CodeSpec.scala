@@ -9,22 +9,21 @@ import tcompiler.ast._
 import tcompiler.lexer.Lexer
 import tcompiler.utils.{CompilationException, Context}
 
+
 class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
+  import TestUtils._
 
   before {
     Symbols.ID.reset()
   }
 
-  //behavior of "Correct Programs"
-  //TestUtils.programFiles(TestUtils.resources + "programs/valid").foreach(test(_, testPositive))
-
-  behavior of "Incorrect Programs"
-  TestUtils.programFiles(TestUtils.resources + "programs/invalid").foreach(test(_, testNegative))
+  behavior of "Correct Programs"
+  programFiles(Resources + "programs/valid").foreach(test(_, testPositive))
 
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory)
-      TestUtils.programFiles(file.getPath).foreach(test(_, testFunction))
+      programFiles(file.getPath).foreach(test(_, testFunction))
     else
       it should file.getName.toString in testFunction(file)
   }
@@ -35,34 +34,19 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     try {
       val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
-      TestUtils.HasTypes(program) should be(true)
+      hasTypes(program) should be(true)
       ctx.reporter.hasErrors should be(false)
 
       CodeGeneration.run(ctx)(program)
 
-      val res = TestUtils.lines(TestUtils.executeTProgram(file, "./gen/"))
-      val sol = TestUtils.parseSolutions(file)
+      val res = lines(executeTProgram(file, "./gen/"))
+      val sol = parseSolutions(file)
       assertCorrect(res, sol, "")
     } catch {
       case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
       case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
       case t: RuntimeException      => fail("Test failed, program execution failed.")
       case _                        => fail("Test failed!")
-    }
-  }
-
-  def testNegative(file: File): Unit = {
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter(quiet = true), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
-    val expectedErrors = TestUtils.parseSolutions(file)
-
-    try{
-      (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
-      fail("Test failed: No compilation exception was thrown!")
-    } catch {
-      case t: CompilationException =>
-        val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
-        assertCorrect(errorCodes, expectedErrors, t.getMessage)
-      case t: Throwable => fail("Test failed: " + t.getMessage)
     }
   }
 

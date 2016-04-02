@@ -1,7 +1,0 @@
-// Can't have variable declarations in main function
-
-object Program5 {
-  def main(): Unit = {
-    var a: Int;
-  }
-}

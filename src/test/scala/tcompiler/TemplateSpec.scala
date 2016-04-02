@@ -19,12 +19,12 @@ class TemplateSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   behavior of "Incorrect Templates"
-  TestUtils.programFiles(TestUtils.resources + "templates/invalid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.Resources + "templates/invalid/").foreach { file =>
     it should "not " + file.toPath() in test(file, true)
   }
 
   behavior of "Correct Templates"
-  TestUtils.programFiles(TestUtils.resources + "templates/valid/").foreach { file =>
+  TestUtils.programFiles(TestUtils.Resources + "templates/valid/").foreach { file =>
     it should "yes " + file.toPath() in test(file)
   }
   

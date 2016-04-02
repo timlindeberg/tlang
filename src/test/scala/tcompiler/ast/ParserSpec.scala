@@ -1,59 +1,8 @@
 package tcompiler.ast
 
-import org.scalatest._
-import scala.sys.process._
-import tcompiler.utils.Context
-import java.io.File
-import tcompiler.lexer.Token
-import tcompiler.lexer.Lexer
-import tcompiler.ast._
-import tcompiler.TestUtils
-import tcompiler.utils.CompilationException
-import scala.io.Source
-import tcompiler.ast.Trees.Program
+import tcompiler.{ErrorTester, TestUtils}
 
-class ParserSpec extends FlatSpec with Matchers {
-  val flag = "--ast"
-
-  behavior of "Created tests"
-  TestUtils.programFiles(TestUtils.resources + "ast/valid/").foreach { file =>
-    it should "parse valid program " + file.toPath() in test(file)
-  }
-
-  TestUtils.programFiles(TestUtils.resources + "ast/invalid/").foreach { file =>
-    it should "parse invalid program " + file.toPath() in test(file, true)
-  }
-
-  behavior of "Given tests"
-  TestUtils.programFiles(TestUtils.resources + "given/ast/valid/").foreach { file =>
-    it should "parse valid program " + file.toPath() in test(file)
-  }
-
-  TestUtils.programFiles(TestUtils.resources + "given/ast/invalid/").foreach { file =>
-    it should "parse invalid program " + file.toPath() in test(file, true)
-  }
-
-  def test(file: File, exception: Boolean = false) = {
-    val program = Source.fromFile(file).mkString
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter(quiet = true), file = file, outDir = None)
-    def parse(p: String) = Parser.run(ctx)(Lexer.run(p.toList, ctx.file))
-    def print(p: Program) = Printer(p)
-    if (exception) {
-      intercept[CompilationException] { 
-        parse(program) 
-      }
-    } else {
-      val p = parse(program)
-      val pPrint = print(p)
-      assert(pPrint === print(parse(pPrint))) // print(parse(program)) === print(parse(print(parse(program))))
-      assert(p === parse(pPrint))             // parse(program) === parse(print(parse(program)))
-      assert(replaceTypeIdentifiers(p.toString) + "\n" === getAnswer(file))
-    }
-  }
-
-  def getAnswer(file: File) = Seq(TestUtils.runScript, flag + " " + file.toPath()) !!
-
-  def replaceTypeIdentifiers(s: String) =
-    s.replaceAll("""TypeIdentifier\((.+?),List\(\)\)""", """Identifier\($1\)""")
-  
+class ParserSpec extends ErrorTester {
+  override def Name: String = "Parser"
+  override def Path: String = TestUtils.Resources + "ast"
 }

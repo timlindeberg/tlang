@@ -1,3 +1,0 @@
-object Program {
-  def main(): Unit = {}
-}
