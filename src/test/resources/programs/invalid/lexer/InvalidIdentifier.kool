@@ -1,0 +1,3 @@
+// Produces two errors
+var x@s: Int = 0 //res: L2001
+                 //res: L2000

@@ -1,0 +1,21 @@
+1e-10
+1e10
+1.e10
+1.e10f
+
+1e.10       // res: L2011
+1e1.0       // res: L2010
+1e1.0f      // res: L2010
+1e.10f      // res: L2011
+1e1.0f      // res: L2010
+1e.         // res: L2011
+1e          // res: L2011
+1e-         // res: L2011
+1e-f        // res: L2011
+1..f        // res: L2010
+1.......f   // res: L2010
+1eeeeeeee10 // res: L2011
+1eL         // res: L2011
+1e10L       // res: L2011
+1.eL        // res: L2011
+1.L         // res: L2011

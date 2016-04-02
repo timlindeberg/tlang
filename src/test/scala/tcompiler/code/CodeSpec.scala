@@ -42,7 +42,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
       val res = TestUtils.lines(TestUtils.executeTProgram(file, "./gen/"))
       val sol = TestUtils.parseSolutions(file)
-      assertCorrect(res, sol)
+      assertCorrect(res, sol, "")
     } catch {
       case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
       case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
@@ -52,32 +52,27 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   def testNegative(file: File): Unit = {
-    if (file.isDirectory) {
-      TestUtils.programFiles(file.getPath).foreach(testNegative)
-      return
-    }
-
     val ctx = new Context(reporter = new tcompiler.utils.Reporter(quiet = true), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try{
-      val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
       fail("Test failed: No compilation exception was thrown!")
     } catch {
       case t: CompilationException =>
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
-        assertCorrect(errorCodes, expectedErrors)
+        assertCorrect(errorCodes, expectedErrors, t.getMessage)
       case t: Throwable => fail("Test failed: " + t.getMessage)
     }
   }
 
-  private def assertCorrect(res: List[String], sol: List[String]) = {
-    assert(res.length == sol.length, "Different amount of results and expected results.")
+  private def assertCorrect(res: List[String], sol: List[String], errorMsg: String) = {
+    assert(res.length == sol.length, "Different amount of results and expected results.\n\n" + errorMsg)
 
     printResultsVersusSolution(res, sol)
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
       case (r, s, i) =>
-        assert(r.trim == s.trim, s": error on test ${i + 1}: expected '${s.trim}', found: '${r.trim}'")
+        assert(r.trim == s.trim, s": error on test ${i + 1} \n $errorMsg")
     }
   }
 

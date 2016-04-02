@@ -16,7 +16,7 @@ object Lexer extends Pipeline[File, List[Token]] {
 
 class Tokenizer(val file: File, ctx: Context) {
 
-  private var line = 1
+  private var line   = 1
   private var column = 1
 
   def tokenize(chars: List[Char]): List[Token] = {
@@ -26,7 +26,7 @@ class Tokenizer(val file: File, ctx: Context) {
         column = 1
         line += 1
         // Don't put two newline tokens in a row
-        val t = if(tokens.nonEmpty && tokens.head.kind != NEWLINE) token :: tokens else tokens
+        val t = if (tokens.nonEmpty && tokens.head.kind != NEWLINE) token :: tokens else tokens
         readTokens(r, t)
       case (c :: r) if c.isWhitespace                       =>
         column += 1
@@ -94,7 +94,7 @@ class Tokenizer(val file: File, ctx: Context) {
         case c :: r                 =>
           ErrorInvalidIdentifier(c, s.length)
           (createToken(BAD, s.length), chars)
-        case Nil                      => (createIdentifierOrKeyWord(s), chars)
+        case Nil                    => (createIdentifierOrKeyWord(s), chars)
       }
     }
     getIdentifierOrKeyword(chars.tail, chars.head.toString)
@@ -118,93 +118,108 @@ class Tokenizer(val file: File, ctx: Context) {
   }
 
 
-  private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = chars match {
-    case '\'' :: '\'' :: r      => (createToken('\'', 3), r)
-    case '\'' :: r              =>
-      ErrorEmptyCharLiteral()
-      (createToken(BAD, 1), chars)
-    case '\\' :: c :: '\'' :: r => c match {
-      case 't'  => (createToken('\t', 4), r)
-      case 'b'  => (createToken('\b', 4), r)
-      case 'n'  => (createToken('\n', 4), r)
-      case 'r'  => (createToken('\r', 4), r)
-      case 'f'  => (createToken('\f', 4), r)
-      case '''  => (createToken('\'', 4), r)
-      case '"'  => (createToken('\"', 4), r)
-      case '\\' => (createToken('\\', 4), r)
-      case _    =>
-        ErrorInvalidEscapeSequence(3)
+  private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = {
+    def toEnd(charList: List[Char], length: Int, errorFunction: Int => Unit): (Token, List[Char]) =
+      charList match {
+        case '\'' :: r =>
+          errorFunction(length)
+          (createToken(BAD, length), r)
+        case c :: r    =>
+          toEnd(r, length + 1, errorFunction)
+        case Nil       =>
+          ErrorUnclosedCharLiteral(length)
+          (createToken(BAD, length), Nil)
+      }
+
+    chars match {
+      case '\'' :: r =>
+        ErrorEmptyCharLiteral()
+        (createToken(BAD, 1), r)
+
+      // Unicodes
+      case '\\' :: 'u' :: r => r match {
+        case c1 :: c2 :: c3 :: c4 :: '\'' :: r if areHexDigits(c1, c2, c3, c4) =>
+          val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
+          (createToken(unicodeNumber.toChar, 8), r)
+        case c1 :: c2 :: c3 :: c4 :: '\'' :: r                                 =>
+          ErrorInvalidUnicode(6)
+          (createToken(BAD, 4), r)
+        case c1 :: c2 :: c3 :: '\'' :: r                                       =>
+          ErrorInvalidUnicode(5)
+          (createToken(BAD, 4), r)
+        case c1 :: c2 :: '\'' :: r                                             =>
+          ErrorInvalidUnicode(4)
+          (createToken(BAD, 4), r)
+        case c1 :: '\'' :: r                                                   =>
+          ErrorInvalidUnicode(3)
+          (createToken(BAD, 4), r)
+        case '\'' :: r                                                         =>
+          ErrorInvalidUnicode(2)
+          (createToken(BAD, 4), r)
+        case r => toEnd(r, 4, ErrorInvalidUnicode)
+      }
+
+      // Escaped characters
+      case '\\' :: c :: '\'' :: r => c match {
+        case 't'  => (createToken('\t', 4), r)
+        case 'b'  => (createToken('\b', 4), r)
+        case 'n'  => (createToken('\n', 4), r)
+        case 'r'  => (createToken('\r', 4), r)
+        case 'f'  => (createToken('\f', 4), r)
+        case '''  => (createToken('\'', 4), r)
+        case '"'  => (createToken('\"', 4), r)
+        case '\\' => (createToken('\\', 4), r)
+        case _    =>
+          ErrorInvalidEscapeSequence(3)
+          (createToken(BAD, 4), r)
+      }
+      case '\\' :: '\'' :: r      =>
+        ErrorInvalidCharLiteral(3)
         (createToken(BAD, 4), r)
+      case c :: '\'' :: r =>
+        (createToken(c, 4), r)
+      case r              =>
+        toEnd(r, 4, ErrorInvalidCharLiteral)
     }
-    case '\\' :: '\'' :: r      =>
-      ErrorInvalidCharLiteral(3)
-      (createToken(BAD, 4), r)
-    case '\\' :: 'u' :: r       => r match {
-      case c1 :: c2 :: c3 :: c4 :: '\'' :: r if areHexDigits(c1, c2, c3, c4) =>
-        val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
-        (createToken(unicodeNumber.toChar, 8), r)
-      case c1 :: c2 :: c3 :: c4 :: '\'' :: r                                 =>
-        ErrorInvalidUnicode(6)
-        (createToken(BAD, 4), r)
-      case c1 :: c2 :: c3 :: '\'' :: r                                       =>
-        ErrorInvalidUnicode(5)
-        (createToken(BAD, 4), r)
-      case c1 :: c2 :: '\'' :: r                                             =>
-        ErrorInvalidUnicode(4)
-        (createToken(BAD, 4), r)
-      case c1 :: '\'' :: r                                                   =>
-        ErrorInvalidUnicode(3)
-        (createToken(BAD, 4), r)
-      case '\'' :: r                                                         =>
-        ErrorInvalidUnicode(2)
-        (createToken(BAD, 4), r)
-    }
-    case c :: '\'' :: r         => (createToken(c, 4), r)
-    case c1 :: c2 :: '\'' :: r  =>
-      ErrorInvalidCharLiteral(4)
-      (createToken(BAD, 4), r)
-    case r                      =>
-      ErrorUnclosedCharLiteral(4)
-      (createToken(BAD, 4), r)
   }
 
   private def getStringLiteral(chars: List[Char]): (Token, List[Char]) = {
 
     val startPos = createToken(BAD, 0)
 
-    def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+    def getStringLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
       case '"' :: r  => (createToken(s, s.length + 2), r)
       case '\n' :: r =>
         ErrorUnclosedStringLiteral(startPos)
         (createToken(BAD, s.length), chars)
       case '\\' :: r => r match {
-        case 't' :: r  => getStringIdentifier(r, s + '\t')
-        case 'b' :: r  => getStringIdentifier(r, s + '\b')
-        case 'n' :: r  => getStringIdentifier(r, s + '\n')
-        case 'r' :: r  => getStringIdentifier(r, s + '\r')
-        case 'f' :: r  => getStringIdentifier(r, s + '\f')
-        case ''' :: r  => getStringIdentifier(r, s + '\'')
-        case '"' :: r  => getStringIdentifier(r, s + '\"')
-        case '\\' :: r => getStringIdentifier(r, s + '\\')
-        case '[' :: r  => getStringIdentifier(r, s + 27.toChar + '[')
+        case 't' :: r  => getStringLiteral(r, s + '\t')
+        case 'b' :: r  => getStringLiteral(r, s + '\b')
+        case 'n' :: r  => getStringLiteral(r, s + '\n')
+        case 'r' :: r  => getStringLiteral(r, s + '\r')
+        case 'f' :: r  => getStringLiteral(r, s + '\f')
+        case ''' :: r  => getStringLiteral(r, s + '\'')
+        case '"' :: r  => getStringLiteral(r, s + '\"')
+        case '\\' :: r => getStringLiteral(r, s + '\\')
+        case '[' :: r  => getStringLiteral(r, s + 27.toChar + '[')
         case 'u' :: r  => r match {
           case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
             val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
-            getStringIdentifier(r, s + unicodeNumber.toChar)
+            getStringLiteral(r, s + unicodeNumber.toChar)
           case _                                                         =>
             ErrorInvalidUnicode(s.length + 1)
-            getStringIdentifier(r, s)
+            getStringLiteral(r, s)
         }
         case _         =>
           ErrorInvalidEscapeSequence(s.length + 1)
-          getStringIdentifier(r, s)
+          getStringLiteral(r, s)
       }
-      case c :: r    => getStringIdentifier(r, s + c)
+      case c :: r    => getStringLiteral(r, s + c)
       case Nil       =>
         ErrorUnclosedStringLiteral(startPos)
         (createToken(BAD, s.length), chars)
     }
-    getStringIdentifier(chars, "")
+    getStringLiteral(chars, "")
   }
 
   private def getNumberLiteral(chars: List[Char]): (Token, List[Char]) = {
@@ -236,9 +251,9 @@ class Tokenizer(val file: File, ctx: Context) {
     }
 
     def parseDoubleToken(numStr: String): Token = tryConversion(numStr, _.toDouble) match {
-      case Some(value) => createToken(value, numStr.length)
-      case None        => createToken(BAD, numStr.length)
-    }
+        case Some(value) => createToken(value, numStr.length)
+        case None        => createToken(BAD, numStr.length)
+      }
 
     var foundDecimal = false
     var foundE = false
@@ -254,7 +269,7 @@ class Tokenizer(val file: File, ctx: Context) {
             (createToken(BAD, s.length), chars)
           }
         case ('e' | 'E') :: r    =>
-          if (!foundE && foundDecimal) {
+          if (!foundE) {
             foundE = true
             r match {
               case '-' :: c :: r if c.isDigit => getNumberLiteral(r, s + "E-" + c)
@@ -263,7 +278,6 @@ class Tokenizer(val file: File, ctx: Context) {
                 ErrorInvalidFloat(startPos)
                 (createToken(BAD, s.length), chars)
             }
-
           } else {
             ErrorInvalidFloat(startPos)
             (createToken(BAD, s.length), chars)
@@ -276,9 +290,11 @@ class Tokenizer(val file: File, ctx: Context) {
             ErrorInvalidFloat(startPos)
             (createToken(BAD, s.length), chars)
           }
-        case _                   =>
-          if (foundDecimal) (parseDoubleToken(s), chars)
-          else (parseIntToken(s), chars)
+        case r                   =>
+          if (foundDecimal || foundE)
+            (parseDoubleToken(s), r)
+          else
+            (parseIntToken(s), r)
       }
 
     val res = getNumberLiteral(chars, "")
