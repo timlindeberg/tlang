@@ -35,9 +35,16 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
 
     try {
       (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
-      fail("Test failed: No compilation exception was thrown!")
+      // Check for warnings:
+      if(ctx.reporter.warnings.isEmpty)
+        fail("Test failed: No errors or warnings!")
+
+      val warnings = ctx.reporter.warnings.mkString("\n\n")
+      val warningCodes = TestUtils.parseErrorCodes(warnings)
+      assertCorrect(warningCodes, expectedErrors, warnings)
     } catch {
       case t: CompilationException =>
+        println(t.getMessage)
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors, t.getMessage)
       case t: Throwable => fail("Test failed: " + t.getMessage)

@@ -2,44 +2,57 @@ package tcompiler
 package utils
 
 import java.io.File
+
+import org.backuity.ansi.AnsiFormatter.FormattedHelper
+
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
+class Reporter(quiet: Boolean = false) {
 
-  def info(msg: Any, pos: Positioned = NoPosition): Unit = {
-    report("Info", "", msg, pos)
-  }
+  var filesToLines = Map[File, IndexedSeq[String]]()
+  var errors = ArrayBuffer[String]()
+  var warnings = ArrayBuffer[String]()
 
   def warning(errorPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
-    report("Warning", constructErrorCode(errorPrefix, 1, errorCode), msg, pos)
+    val warning = report(constructErrorPrefix(errorPrefix, 1, errorCode), msg, pos)
+    warnings += warning
+    println(warning)
   }
 
-  var errors = ArrayBuffer[String]()
-
-  def clearErrors() = errors.clear()
-  def hasErrors = errors.nonEmpty
-
   def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =
-    errors += report("Error", constructErrorCode(errorPrefix, 2, errorCode), msg, pos)
+    errors += report(constructErrorPrefix(errorPrefix, 2, errorCode), msg, pos)
 
 
   def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
-    val error = report("Fatal", constructErrorCode(errorPrefix, 3, errorCode), msg, pos)
+    val error = report(constructErrorPrefix(errorPrefix, 3, errorCode), msg, pos)
     throw new CompilationException(error)
   }
 
-  var filesToLines = Map[File, IndexedSeq[String]]()
+  def clear() = {
+    errors.clear()
+    warnings.clear()
+  } 
+  def hasErrors = errors.nonEmpty
 
   def terminateIfErrors() =
-    if (hasErrors) {
-      if (!quiet) System.err.println("There were errors.")
+    if (hasErrors)
       throw new CompilationException(errors.mkString("\n\n"))
-    }
 
-  private def constructErrorCode(prefix: String, num: Int, code: Int) = prefix + num + leftPad(code)
+
+
+  private def constructErrorPrefix(errorPrefix: String, errorType: Int, errorCode: Int) = {
+    val code = leftPad(errorCode)
+
+    errorType match {
+      case 1 => ansi"%yellow{Warning} (%yellow{${errorPrefix}1$code})"
+      case 2 => ansi"%red{%bold{Error}} (%red{%bold{${errorPrefix}2$code}})"
+      case 3 => ansi"%red{%bold{Fatal}} (%red{%bold{${errorPrefix}3$code}})"
+      case _ => ???
+    }
+  }
 
   private def leftPad(num: Int) = num match {
     case x if x >= 0 && x < 10     => "00" + x
@@ -69,35 +82,50 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
   private def replaceTemplateNames(msg: String) = msg.split(' ').map(templateName).mkString(" ")
 
-  private def report(prefix: String, errorCode: String, msg: Any, pos: Positioned) ={
-    val error = errMessage(prefix, errorCode, msg, pos)
-    if(!quiet)
-      System.err.println(error)
-    error
+  private def report(prefix: String, msg: Any, pos: Positioned) = {
+    errMessage(prefix, msg, pos)
   }
 
 
-  private def errMessage(prefix: String, errorCode: String, msg: Any, pos: Positioned): String = {
-    val msgStr = msg.toString //replaceTemplateNames(msg.toString)
+  private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
+    val msgStr = colorMessage(msg.toString) //replaceTemplateNames(msg.toString)
     var s = ""
-    if (pos.hasPosition) {
-      s += s"[${pos.position}] $prefix ($errorCode): $msgStr \n"
-      val lines = getLines(pos.file)
+    if (pos.hasPosition)
+      s += filePrefix(pos)
 
-      if (pos.line - 1 < lines.size) {
-        val line = lines(pos.line - 1)
-        val tabs = line.count(_ == '\t')
+    s += s" $prefix: $msgStr"
 
-        s += line.replaceAll("\t", "    ") + "\n"
-        s += " " * (pos.col - 1 + (tabs * 3)) + "^" + "\n"
-      } else {
-        s += "<line unavailable in source file>"
-      }
+    if (pos.hasPosition)
+      s += locationIndicator(pos)
+
+    s
+  }
+
+  private def colorMessage(msg: String) = {
+      val citaionColor = Console.MAGENTA
+      val msgFormat = Console.RESET + Console.BOLD
+      val s = """'(.+?)'""".r.replaceAllIn(msg, "\'" + citaionColor + """$1""" + msgFormat + "\'")
+      msgFormat + s + Console.RESET
+  }
+
+
+  private def filePrefix(pos: Positioned) = ansi"%bold{[}${pos.position}%bold{]}"
+
+  private def locationIndicator(pos: Positioned) = {
+    val lines = getLines(pos.file)
+    var s = "\n"
+    if (pos.line - 1 < lines.size) {
+      val line = lines(pos.line - 1)
+      val firstNonWhiteSpace = line.indexWhere(c => !c.isWhitespace)
+
+      s += line.substring(firstNonWhiteSpace) + "\n"
+      s += " " * (pos.col - 1 - firstNonWhiteSpace) + "^" + "\n"
     } else {
-      s += prefix + ": " + msgStr
+      s += "<line unavailable in source file>"
     }
     s
   }
+
 
   private def getLines(f: File): IndexedSeq[String] = {
     filesToLines.get(f) match {
@@ -106,10 +134,7 @@ class Reporter(quiet: Boolean = false, ignoreFirstLine: Boolean = false) {
 
       case None =>
         val source = Source.fromFile(f).withPositioning(true)
-        var lines = source.getLines().toIndexedSeq
-        if (ignoreFirstLine) {
-          lines = lines.tail
-        }
+        val lines = source.getLines().toIndexedSeq
         source.close()
 
         filesToLines += f -> lines

@@ -13,7 +13,8 @@ libraryDependencies ++= Seq(
 	"uk.com.robust-it" % "cloning" % "1.9.2",
 	"org.apache.bcel" % "bcel" % "5.2",
 	"org.apache.commons" % "commons-lang3" % "3.4",
-	"org.scala-lang" % "scala-compiler" % "2.11.4"
+	"org.scala-lang" % "scala-compiler" % "2.11.4",
+	"org.backuity" %% "ansi-interpolator" % "1.1" % "provided"
 )
 
 // src/main/scala only

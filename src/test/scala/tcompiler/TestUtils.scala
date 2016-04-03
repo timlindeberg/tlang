@@ -72,9 +72,9 @@ object TestUtils {
 
   // Parses codes from error messages
   def parseErrorCodes(errorMessages: String) = {
-    val ErrorRegex = """\[.*\] (Fatal|Warning|Error) \((.*)\).*""".r
+    val ErrorRegex = """\[.+?\] (Fatal|Warning|Error) \((.+?)\).*""".r
 
-    errorMessages.split("\n\n\n").map(_.split("\n")(0)).collect {
+    removeANSIFormatting(errorMessages).split("\n\n\n").map(_.split("\n")(0)).collect {
       case ErrorRegex(_, errorCode) => errorCode
     }.toList
   }
@@ -88,6 +88,9 @@ object TestUtils {
     })
     hasTypes && correctTypes(prog)
   }
+
+  private def removeANSIFormatting(s: String) = """\x1b[^m]*m""".r.replaceAllIn(s, "")
+
 
   private def correctTypes(t: Tree): Boolean = {
     var types = true

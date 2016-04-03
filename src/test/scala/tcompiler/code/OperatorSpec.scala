@@ -159,7 +159,7 @@ class OperatorSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def exprTypeChecks(expr: ExprTree) = TypeChecker.tcExpr(expr) match {
     case TError                               => false
     case _ if TypeCheckCtx.reporter.hasErrors =>
-      TypeCheckCtx.reporter.clearErrors()
+      TypeCheckCtx.reporter.clear()
       false
     case _                                    =>
       true

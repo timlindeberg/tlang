@@ -1,0 +1,2 @@
+// res: N2006
+var x: Test = new Test() // res: N2006

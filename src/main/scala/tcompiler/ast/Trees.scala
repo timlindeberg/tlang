@@ -56,6 +56,7 @@ object Trees {
 
   trait Accessability extends Modifier
 
+  // TODO: Should maybe be object so positioned works?
   case object Public extends Accessability
   case object Private extends Accessability
   case object Protected extends Accessability

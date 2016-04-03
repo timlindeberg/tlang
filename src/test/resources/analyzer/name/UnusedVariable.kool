@@ -1,0 +1,11 @@
+var x: Int // res: N1000
+println(5)
+
+
+
+class A {
+   Def Test() = {
+     var x = 5 // res: N1000
+     println(5)
+   }
+}

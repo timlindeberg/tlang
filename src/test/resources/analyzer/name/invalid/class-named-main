@@ -1,6 +1,0 @@
-object Main {
-  def main() : Unit = {
-  }
-}
-
-class Main { }

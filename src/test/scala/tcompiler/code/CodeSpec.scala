@@ -45,7 +45,7 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     } catch {
       case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
       case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
-      case t: RuntimeException      => fail("Test failed, program execution failed.")
+      case t: RuntimeException      => fail("Test failed, program execution failed: " + t.getMessage)
       case _                        => fail("Test failed!")
     }
   }

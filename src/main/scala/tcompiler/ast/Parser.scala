@@ -18,8 +18,45 @@ object Parser extends Pipeline[List[Token], Program] {
 
 }
 
+object ASTBuilder {
+
+  private val MaximumArraySize = 255
+
+  private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
+    LOGICNOT -> LogicNot,
+    BANG -> Not,
+    HASH -> Hash,
+    INCREMENT -> PreIncrement,
+    DECREMENT -> PreDecrement
+  )
+
+
+  private val tokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
+    OR -> Or,
+    AND -> And,
+    LESSTHAN -> LessThan,
+    LESSTHANEQUALS -> LessThanEquals,
+    GREATERTHAN -> GreaterThan,
+    GREATERTHANEQUALS -> GreaterThanEquals,
+    EQUALS -> Equals,
+    NOTEQUALS -> NotEquals,
+    PLUS -> Plus,
+    MINUS -> Minus,
+    TIMES -> Times,
+    DIV -> Div,
+    MODULO -> Modulo,
+    LEFTSHIFT -> LeftShift,
+    RIGHTSHIFT -> RightShift,
+    LOGICAND -> LogicAnd,
+    LOGICOR -> LogicOr,
+    LOGICXOR -> LogicXor
+  )
+
+}
 
 class ASTBuilder(ctx: Context, tokens: Array[Token]) {
+
+  import ASTBuilder._
 
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
@@ -231,7 +268,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val retType = optional(returnType, COLON)
     eat(EQSIGN)
 
-    MethodDecl(retType, id, args, statement(), modifiers)
+    MethodDecl(retType, id, args, statement(), modifiers).setPos(id)
   }
 
   /**
@@ -265,6 +302,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def operator(modifiers: Set[Modifier], p: Positioned): OperatorDecl = {
     if(modifiers.contains(Implicit))
       ErrorImplicitMethodOrOperator(p)
+
+    // TODO: Find better way of parsing operators than hard coding how many
+    // arguments they should have. This is done because since minus can have both
+    // one or two operands. */
 
     val pos = nextToken
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
@@ -357,7 +398,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     var modifiers: Set[Modifier] = Set(access)
 
     while(nextTokenKind == STATIC || nextTokenKind == IMPLICIT){
-      modifiers += (nextTokenKind match {
+      val pos = nextToken
+      val modifier = nextTokenKind match {
         case STATIC =>
           eat(STATIC)
           Static
@@ -365,7 +407,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           eat(IMPLICIT)
           Implicit
         case _ => ???
-      })
+      }
+      modifiers += modifier
     }
     modifiers
   }
@@ -407,7 +450,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       e = ArrayType(e)
       dimension += 1
     }
-    if (dimension > ASTBuilder.MaximumArraySize)
+    if (dimension > MaximumArraySize)
       ErrorInvalidArrayDimension(dimension, pos)
     e.setPos(pos)
   }
@@ -799,7 +842,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               eat(RBRACKET)
               size
             }, LBRACKET)
-            if (sizes.size > ASTBuilder.MaximumArraySize)
+            if (sizes.size > MaximumArraySize)
               ErrorInvalidArrayDimension(sizes.size, pos)
             sizes
           }
@@ -903,7 +946,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         if (nextTokenKind == kind) {
           val pos = nextToken
           eat(kind)
-          expr = ASTBuilder.tokenMap(kind)(expr, next()).setPos(pos)
+          expr = tokenToBinaryOperatorAST(kind)(expr, next()).setPos(pos)
         }
       }
     }
@@ -1170,14 +1213,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     error(1, s"Indexing operator '$name' cannot be declared static!", pos)
 
   private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
-    error(2, s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+    error(2, s"Invalid array dimension: '$size', $MaximumArraySize is the maximum dimension of an array.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Fatal messages
   //---------------------------------------------------------------------------------------
 
   private def FatalInvalidStatement(pos: Positioned) =
-    fatal(0, "Not a valid statement, expected println, if, while, assignment, a method call or incrementation/decrementation. ", pos)
+    fatal(0, "Not a valid statement.", pos)
 
   private def FatalExpectedIdAssignment(pos: Positioned) =
     fatal(1, "Expected identifier on left side of assignment.", pos)
@@ -1186,32 +1229,5 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   private def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
     fatal(2, s"Expected $expected, found: $found.", pos)
-
-}
-
-object ASTBuilder {
-
-  private val MaximumArraySize = 255
-
-  private val tokenMap: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-    OR -> Or,
-    AND -> And,
-    LESSTHAN -> LessThan,
-    LESSTHANEQUALS -> LessThanEquals,
-    GREATERTHAN -> GreaterThan,
-    GREATERTHANEQUALS -> GreaterThanEquals,
-    EQUALS -> Equals,
-    NOTEQUALS -> NotEquals,
-    PLUS -> Plus,
-    MINUS -> Minus,
-    TIMES -> Times,
-    DIV -> Div,
-    MODULO -> Modulo,
-    LEFTSHIFT -> LeftShift,
-    RIGHTSHIFT -> RightShift,
-    LOGICAND -> LogicAnd,
-    LOGICOR -> LogicOr,
-    LOGICXOR -> LogicXor
-  )
 
 }

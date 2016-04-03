@@ -333,7 +333,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     def valid(expressionType: Identifier => ExprTree, validTpes: (() => Identifier, Type)*): Unit = {
       validTpes.foreach { case (id, tpe) =>
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
         val resType = TypeChecker.tcExpr(expressionType(id()))
         assert(resType == tpe, "for " + id + "")
 
@@ -345,7 +345,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         TypeChecker.tcExpr(expressionType(id()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for " + id + "")
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
       }
     }
   }
@@ -356,7 +356,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
               validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
 
       validCombinations.foreach { case (lhs, rhs, tpe) =>
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
 
         val resType1 = TypeChecker.tcExpr(expressionType(rhs(), lhs()))
         assert(resType1 == tpe, "for (" + rhs + ", " + lhs + ")")
@@ -372,7 +372,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         TypeChecker.tcExpr(expressionType(rhs(), lhs()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + lhs + ", " + rhs + ")")
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
       }
     }
 
@@ -392,7 +392,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
     def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
       validCombinations.foreach { case (id, expr, tpe) =>
 
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
         val resType = TypeChecker.tcExpr(expressionType(id(), expr()))
         assert(resType == tpe, "for (" + id + ", " + expr + ")")
 
@@ -404,7 +404,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         TypeChecker.tcExpr(expressionType(id(), expr()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + id + ", " + expr + ")")
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
       }
     }
 
@@ -421,7 +421,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     override def valid(validCombinations: (() => Identifier, () => Identifier, Type)*) = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
         val id = createIdentifier(TArray(identifier().getType))
 
         val resType = TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
@@ -436,7 +436,7 @@ class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
         TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + identifier + ", " + expr + ")")
-        TestContext.reporter.clearErrors()
+        TestContext.reporter.clear()
       }
     }
   }

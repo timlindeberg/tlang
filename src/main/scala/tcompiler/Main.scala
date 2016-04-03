@@ -22,7 +22,11 @@ object Main {
   val astFlag    = "--ast"
   val symId      = "--symid"
   val exec       = "--exec"
-  val flags      = HashMap(tokensFlag -> false, astFlag -> false, symId -> false, exec -> false)
+  val flags      = HashMap(
+    tokensFlag -> false,
+    astFlag -> false,
+    symId -> false,
+    exec -> false)
 
   def processOptions(args: Array[String]): Context = {
 
@@ -54,8 +58,8 @@ object Main {
   }
 
   def main(args: Array[String]) {
-    val ctx = processOptions(args)
     try {
+      val ctx = processOptions(args)
       if (flags(tokensFlag)) {
         // Lex the program and print all tokens
         (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
@@ -87,8 +91,10 @@ object Main {
         }
       }
     } catch {
-      case e: CompilationException  => // Reporter throws exception at fatal instead exiting program
-      case e: FileNotFoundException => System.err.println("Error: File not found: " + ctx.file.getPath)
+      case e: CompilationException  =>
+        println(e.getMessage)
+      // Reporter throws exception at fatal instead exiting program
+      case e: FileNotFoundException => System.err.println("Error: File not found!")
     }
   }
 

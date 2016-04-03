@@ -1,8 +1,0 @@
-object Main {
-  def main() : Unit = {
-  }
-}
-
-class A {
-  def foo(a: Int, a: String):Int = { return 0; }
-}

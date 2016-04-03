@@ -7,9 +7,9 @@ abstract class Pipeline[-F, +T] {
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: F): G = {
       val first = self.run(ctx)(v)
-      ctx.reporter.terminateIfErrors
+      ctx.reporter.terminateIfErrors()
       val second = thenn.run(ctx)(first)
-      ctx.reporter.terminateIfErrors
+      ctx.reporter.terminateIfErrors()
       second
     }
   }

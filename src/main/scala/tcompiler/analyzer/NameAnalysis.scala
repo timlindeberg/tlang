@@ -3,9 +3,9 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{BinaryOperatorDecl, PrintStatement, UnaryOperatorDecl}
+import tcompiler.ast.TreeGroups.PrintStatement
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees.{ClassDecl, _}
-import tcompiler.ast.{Printer, Trees}
 import tcompiler.utils._
 
 object NameAnalysis extends Pipeline[Program, Program] {
@@ -16,7 +16,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
     nameAnalyzer.bindIdentifiers()
     nameAnalyzer.checkInheritanceCycles()
     nameAnalyzer.checkVariableUsage()
-    nameAnalyzer.checkOverrideAndOverLoadConstraints()
     prog
   }
 
@@ -33,49 +32,25 @@ class NameAnalyser(ctx: Context, prog: Program) {
   def bindIdentifiers(): Unit = bind(prog)
 
   def checkInheritanceCycles(): Unit = {
+
+    var classesFoundInCycle = Set[ClassSymbol]()
     def checkInheritanceCycles(c: Option[ClassSymbol], set: Set[ClassSymbol]): Unit = c match {
       case Some(classSymbol) =>
-        if (set.contains(classSymbol))
+        if(classesFoundInCycle(classSymbol))
+          return
+
+        if (set.contains(classSymbol)){
+          classesFoundInCycle ++= set
           ErrorInheritanceCycle(set, classSymbol, classSymbol)
-        else
+        } else{
           checkInheritanceCycles(classSymbol.parent, set + classSymbol)
+        }
       case None              =>
     }
 
-    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(Some(classSymbol), Set()) }
+    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(Some(classSymbol), Set[ClassSymbol]()) }
   }
 
-  def checkOverrideAndOverLoadConstraints() =
-    prog.classes.foreach { klass =>
-      klass.methods.foreach {
-        case meth: MethodDecl             =>
-          val methSymbol = meth.getSymbol
-          val methName = meth.id.value
-          val argTypes = meth.args.map(_.tpe.getType)
-          methSymbol.classSymbol.parent match {
-            case Some(parent) =>
-              parent.lookupMethod(methName, argTypes) match {
-                case Some(parentMethSymbol) =>
-                  methSymbol.overridden = Some(parentMethSymbol)
-                case None                   =>
-              }
-            case None         =>
-          }
-        case constructor: ConstructorDecl => // TODO
-        case operator: OperatorDecl       =>
-          val operatorSymbol = operator.getSymbol
-          val argTypes = operator.args.map(_.tpe.getType)
-          operatorSymbol.classSymbol.parent match {
-            case Some(parent) =>
-              parent.lookupOperator(operator.operatorType, argTypes) match {
-                case Some(parentMethSymbol) =>
-                  ErrorOverloadOperator(operator)
-                case None                   =>
-              }
-            case None         =>
-          }
-      }
-    }
 
   def checkVariableUsage() = {
     variableUsage foreach {
@@ -90,7 +65,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       classes.foreach(addSymbols(_, globalScope))
     case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
       val newSymbol = new ClassSymbol(name).setPos(id)
-      ensureIdentiferNotDefined(globalScope.classes, id.value, id)
+      ensureClassNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)
       classDecl.setSymbol(newSymbol)
       globalScope.classes += (id.value -> newSymbol)
@@ -215,6 +190,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
       case None               =>
     }
 
+
+  private def ensureClassNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
+    if (map.contains(id)) {
+      val oldSymbol = map(id)
+      ErrorClassAlreadyDefined(id, oldSymbol.line, pos)
+    }
+  }
+
   private def ensureIdentiferNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
     if (map.contains(id)) {
       val oldSymbol = map(id)
@@ -235,19 +218,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
     val operatorType = operator.operatorType
     val argTypes = operator.args.map(_.tpe.getType)
 
-    operatorType match {
-      case UnaryOperatorDecl(expr) if argTypes.size != 1      =>
-        ErrorOperatorWrongNumArguments(Printer(operatorType), 1, argTypes.size, operator)
-      case BinaryOperatorDecl(lhs, rhs) if argTypes.size != 2 =>
-        ErrorOperatorWrongNumArguments(Printer(operatorType), 2, argTypes.size, operator)
-      case _                                                  =>
-    }
 
-    operator.getSymbol.classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
+    val classSymbol = operator.getSymbol.classSymbol
+    classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
       case Some(oldOperator) =>
         ErrorOperatorAlreadyDefined(Trees.operatorString(operatorType, argTypes), oldOperator.line, operator)
       case None              =>
-        operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
+        classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
+          case Some(oldOperator) =>
+            ErrorOverrideOperator(operator)
+          case None =>
+           operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
+        }
     }
   }
 
@@ -267,7 +249,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             tpeId.setSymbol(classSymbol)
             tpeId.setType(TObject(classSymbol))
           case None              =>
-            ErrorTypeNotDeclared(tpeId.value, tpeId)
+            ErrorUnknownType(tpeId.value, tpeId)
         }
       case ArrayType(arrayTpe)                  =>
         setType(arrayTpe)
@@ -375,7 +357,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case Some(classSymbol) =>
               id.setSymbol(classSymbol)
               id.setType(TObject(classSymbol))
-            case None              => ErrorTypeNotDeclared(id.value, id)
+            case None              => ErrorUnknownType(id.value, id)
           }
         case FieldRead(obj, _)             =>
           bind(obj, localVars, scopeLevel)
@@ -459,46 +441,43 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def ErrorInheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, pos: Positioned) = {
     val inheritanceList =
-      (if (set.size >= 2) set.map(_.name).mkString(" <: ")
-      else c.name) + " <: " + c.name
+      (if (set.size >= 2) set.map(c => s"'${c.name}'").mkString(" <: ")
+      else c.name) + " <: '" + c.name + "'"
     error(0, s"A cycle was found in the inheritence graph: $inheritanceList", pos)
   }
 
-  private def ErrorOverloadOperator(pos: Positioned) =
-    error(1, "Overloaded operators cannot be overriden.", pos)
+  private def ErrorOverrideOperator(pos: Positioned) =
+    error(1, "Operators cannot be overriden.", pos)
 
-  private def ErrorSameNameAsMain(name: String, pos: Positioned) =
-    error(2, s"Class '$name' has the same name as the main object.", pos)
+  private def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned) =
+    error(3, s"Class '$name' is already defined at line $line.", pos)
 
   private def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(3, s"Variable '$name' is already defined at line $line.", pos)
+    error(4, s"Variable '$name' is already defined at line $line.", pos)
 
   private def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned) =
-    error(4, s"Field '$name' is already defined in super class.", pos)
+    error(5, s"Field '$name' is already defined in super class.", pos)
 
-  private def ErrorTypeNotDeclared(name: String, pos: Positioned) =
-    error(5, s"Type '$name' was not declared.", pos)
+  private def ErrorUnknownType(name: String, pos: Positioned) =
+    error(6, s"Unknown type: '$name' was not declared.", pos)
 
   private def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
-    error(6, s"Method '$methodSignature' is already defined at line $line.", pos)
-
-  private def ErrorOperatorWrongNumArguments(operator: String, expected: Int, found: Int, pos: Positioned) =
-    error(7, s"Operator '$operator' has wrong number of arguments. Expected $expected argument(s), found $found.", pos)
+    error(7, s"Method '$methodSignature' is already defined at line $line.", pos)
 
   private def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned) =
-    error(8, s"Operator '$operator' is already defined at line $line.", pos)
+    error(9, s"Operator '$operator' is already defined at line $line.", pos)
 
   private def ErrorCantResolveSymbol(name: String, pos: Positioned) =
-    error(9, s"Can not resolve symbol '$name'.", pos)
+    error(10, s"Can not resolve symbol '$name'.", pos)
 
   private def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned) =
-    error(10, s"Non-static field '$name' cannot be accessed from a static function.", pos)
+    error(11, s"Non-static field '$name' cannot be accessed from a static function.", pos)
 
   private def ErrorParentNotDeclared(name: String, pos: Positioned) =
-    error(11, s"Parent class '$name' was not declared. ", pos)
+    error(12, s"Parent class '$name' was not declared. ", pos)
 
   private def ErrorThisInStaticContext(pos: Positioned) =
-    error(12, "'this' can not be used in a static context.", pos)
+    error(13, "'this' can not be used in a static context.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings
