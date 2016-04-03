@@ -241,9 +241,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <methodDeclaration> ::= (Def | def [ protected ] ) ( <constructor> | <binaryOperator> | <method> )
+   * <methodDeclaration> ::= (Def | def [ protected ] ) ( <constructor> | <operator> | <method> )
    */
   def methodDeclaration(className: String): FuncTree = {
+
     val pos = nextToken
     val mods = modifiers(PRIVDEF, PUBDEF)
     val func = nextTokenKind match {
@@ -275,13 +276,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  = {" { <varDeclaration> } { <statement> } "}"
    */
   def constructor(modifiers: Set[Modifier], className: String): ConstructorDecl = {
+    val pos = nextToken
     eat(NEW)
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
     eat(EQSIGN)
     val retType = Some(UnitType().setType(TUnit))
-    ConstructorDecl(retType, new Identifier("new"), args, statement(), modifiers)
+    ConstructorDecl(retType, new Identifier("new"), args, statement(), modifiers).setPos(pos)
   }
 
   /**
@@ -889,6 +891,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
      * | --
      */
     def termRest(lhs: ExprTree): ExprTree = {
+
+      // Cant be any rest if token is newline
+      if(currentToken.kind == NEWLINE)
+        return lhs
+
       val pos = nextToken
       var e = lhs
       val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)

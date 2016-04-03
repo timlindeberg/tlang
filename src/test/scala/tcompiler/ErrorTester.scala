@@ -47,7 +47,6 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
         println(t.getMessage)
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors, t.getMessage)
-      case t: Throwable => fail("Test failed: " + t.getMessage)
     }
   }
 

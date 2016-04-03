@@ -1,0 +1,10 @@
+class A {
+
+    Def Test() = {
+        if(true)
+            return 1
+        else
+            return "hej" // res: T2019
+    }
+
+}

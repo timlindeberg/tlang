@@ -75,20 +75,20 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
     case varDecl @ VarDecl(tpe, id, init, _)                                    =>
-      val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(classSymbol)).setPos(id)
+      val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, id)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
       variableUsage += newSymbol -> true
       classSymbol.members += (id.value -> newSymbol)
     case methodDecl @ MethodDecl(retType, id, args, stats, _)                   =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
     case constructorDecl @ ConstructorDecl(_, id, args, stats, _)                  =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(id)
+      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
       id.setSymbol(newSymbol)
@@ -222,7 +222,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
     val classSymbol = operator.getSymbol.classSymbol
     classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
       case Some(oldOperator) =>
-        ErrorOperatorAlreadyDefined(Trees.operatorString(operatorType, argTypes), oldOperator.line, operator)
+        val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
+        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.line, operator)
       case None              =>
         classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>

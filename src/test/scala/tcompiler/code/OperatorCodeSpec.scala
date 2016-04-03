@@ -18,7 +18,7 @@ import scala.util.Random
 /**
  * Created by Tim Lindeberg on 4/2/2016.
  */
-class OperatorSpec extends FlatSpec with Matchers with BeforeAndAfter {
+class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Flag = "--eval"
 

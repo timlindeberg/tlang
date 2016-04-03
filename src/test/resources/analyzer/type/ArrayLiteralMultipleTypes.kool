@@ -1,0 +1,4 @@
+var a = new A()
+var x = {1, "hej", new A(), a } // res: T2020
+
+class A {}

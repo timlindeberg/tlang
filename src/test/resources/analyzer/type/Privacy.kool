@@ -1,0 +1,60 @@
+var a1 = new A() // res: T2009
+var a2 = new A(1) // res: T2009
+var a = new A("")
+
+a.A() // res: T2010
+a.B() // res: T2010
+a.C()
+
+A.D() // res: T2010
+A.E() // res: T2010
+A.F()
+
+print(a.x) // res: T2011
+print(a.y) // res: T2011
+print(a.z)
+
+print(a1 + a2) // res: T2012
+print(a1 - a2) // res: T2012
+print(a1 * a2)
+
+print(a[1]) // res: T2012
+a[1] = 1 // res: T2012
+
+class A {
+
+    var x: Int = 1
+    var protected y: Int = 1
+    Var z: Int = 1
+
+    def new() = {}
+    def protected new(i: Int) = {}
+    Def new(s: String) = {}
+
+    def A() = return 1
+    def protected B() = return 1
+    Def C() = return 1
+
+    def static D() = return 1
+    def protected static E() = return 1
+    Def static F() = return 1
+
+    def +(lhs: A, rhs: A) = return 1
+    def protected -(lhs: A, rhs: A) = return 1
+    Def *(lhs: A, rhs: A) = return 1
+
+    def [](index: Int) = return 1
+    def protected []=(index: Int, value: Int) = {}
+
+}
+
+class B extends A {
+
+    Def G() = {
+        var a: A = new A(1)
+        print(a.B())
+        print(A.E())
+        a[1] = 1
+    }
+
+}

@@ -211,9 +211,9 @@ object Trees {
   }
 
   def operatorString(operatorSymbol: OperatorSymbol): String =
-    operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType))
+    operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType), Some(operatorSymbol.classSymbol.name))
 
-  def operatorString(exprTree: ExprTree, args: List[Type]): String = {
+  def operatorString(exprTree: ExprTree, args: List[Type], className: Option[String] = None): String = {
     exprTree match {
       case _: Plus              => args(0) + " + " + args(1)
       case _: Minus             => args(0) + " - " + args(1)
@@ -238,8 +238,9 @@ object Trees {
       case _: PreIncrement      => "++" + args(0)
       case _: PostIncrement     => args(0) + "++"
       case _: PreDecrement      => "--" + args(0)
-      case _: ArrayRead         => "[" + args(0) + "]"
-      case _: ArrayAssign       => "[" + args(0) + "]= " + args(1)
+      case _: PostDecrement      => args(0) + "--"
+      case _: ArrayRead         => className.getOrElse("") + "[" + args(0) + "]"
+      case _: ArrayAssign       => className.getOrElse("") + "[" + args(0) + "] = " + args(1)
     }
   }
 
@@ -267,6 +268,7 @@ object Trees {
     case _: PreIncrement      => "++"
     case _: PostIncrement     => "++"
     case _: PreDecrement      => "--"
+    case _: PostDecrement     => "--"
     case _: ArrayRead         => "[]"
     case _: ArrayAssign       => "[]="
   }

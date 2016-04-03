@@ -12,9 +12,9 @@ import scala.sys.process.{ProcessLogger, _}
 
 object TestUtils {
 
-  val Resources = "./src/test/resources/"
+  val Resources      = "./src/test/resources/"
   val SolutionPrefix = ".kool-solution"
-  val Interpreter = new Interpreter
+  val Interpreter    = new Interpreter
 
 
   def executeTProgram(f: File, prefix: String): String =
@@ -27,6 +27,9 @@ object TestUtils {
 
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
+    if (!f.isDirectory)
+      return Array(f)
+
     if (f.exists()) {
       f.listFiles.filter(x => !x.getName.contains(SolutionPrefix) && x.getName != ".DS_Store")
     } else {
@@ -65,7 +68,7 @@ object TestUtils {
       case SolutionRegex(result)             =>
         i += 1
         (i, result)
-      case _ => (-1, "")
+      case _                                 => (-1, "")
     })
     answers.toList.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }

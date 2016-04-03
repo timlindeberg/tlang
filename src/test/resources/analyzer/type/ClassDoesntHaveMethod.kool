@@ -1,0 +1,12 @@
+var a = new A()
+var b = 1
+a.Test() // res: T2001
+A.Test() // res: T2001
+
+b.Test() // res: T2002
+
+var c = a.x // res: T2003
+var d = A.x // res: T2003
+var e = b.x // res: T2004
+
+class A {}

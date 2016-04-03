@@ -19,7 +19,8 @@ class Reporter(quiet: Boolean = false) {
   def warning(errorPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
     val warning = report(constructErrorPrefix(errorPrefix, 1, errorCode), msg, pos)
     warnings += warning
-    println(warning)
+    if(!quiet)
+        println(warning)
   }
 
   def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =

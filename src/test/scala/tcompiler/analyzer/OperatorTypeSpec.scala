@@ -8,7 +8,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
 
-class TypeCheckingSpec extends FlatSpec with Matchers with BeforeAndAfter {
+class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Flag = "--ast --symid"
   val MethodDecl = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
