@@ -1,0 +1,7 @@
+var a = new A<Int>() // res: G2001
+
+class A<T> {
+
+    var t: T = new T()
+
+}

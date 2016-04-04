@@ -1,0 +1,3 @@
+import <kool.std.Vector3>
+
+var v = new Vector3<Int>(1, 2, 3)
