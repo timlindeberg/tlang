@@ -160,10 +160,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
 
     obj.modifiers.foreach {
-      case Public    => flags |= (if (isMethod) Flags.METHOD_ACC_PUBLIC else Flags.FIELD_ACC_PUBLIC)
-      case Private   => flags |= (if (isMethod) Flags.METHOD_ACC_PRIVATE else Flags.FIELD_ACC_PRIVATE)
-      case Protected => flags |= (if (isMethod) Flags.METHOD_ACC_PROTECTED else Flags.FIELD_ACC_PROTECTED)
-      case Static    => flags |= (if (isMethod) Flags.METHOD_ACC_STATIC else Flags.FIELD_ACC_STATIC)
+      case Public()    => flags |= (if (isMethod) Flags.METHOD_ACC_PUBLIC else Flags.FIELD_ACC_PUBLIC)
+      case Private()   => flags |= (if (isMethod) Flags.METHOD_ACC_PRIVATE else Flags.FIELD_ACC_PRIVATE)
+      case Protected() => flags |= (if (isMethod) Flags.METHOD_ACC_PROTECTED else Flags.FIELD_ACC_PROTECTED)
+      case Static()    => flags |= (if (isMethod) Flags.METHOD_ACC_STATIC else Flags.FIELD_ACC_STATIC)
       case _         =>
     }
     flags.asInstanceOf[Short]

@@ -1,2 +1,2 @@
-// res: N2006
-var x: Test = new Test() // res: N2006
+var x = new Lol() // res: N2006
+println(x)

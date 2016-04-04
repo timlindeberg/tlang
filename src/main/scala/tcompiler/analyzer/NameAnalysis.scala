@@ -36,13 +36,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
     var classesFoundInCycle = Set[ClassSymbol]()
     def checkInheritanceCycles(c: Option[ClassSymbol], set: Set[ClassSymbol]): Unit = c match {
       case Some(classSymbol) =>
-        if(classesFoundInCycle(classSymbol))
+        if (classesFoundInCycle(classSymbol))
           return
 
-        if (set.contains(classSymbol)){
+        if (set.contains(classSymbol)) {
           classesFoundInCycle ++= set
           ErrorInheritanceCycle(set, classSymbol, classSymbol)
-        } else{
+        } else {
           checkInheritanceCycles(classSymbol.parent, set + classSymbol)
         }
       case None              =>
@@ -61,7 +61,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-    case Program(_, _, classes)                                                    =>
+    case Program(_, _, classes)                                                          =>
       classes.foreach(addSymbols(_, globalScope))
     case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
       val newSymbol = new ClassSymbol(name).setPos(id)
@@ -87,7 +87,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       methodDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case constructorDecl @ ConstructorDecl(_, id, args, stats, _)                  =>
+    case constructorDecl @ ConstructorDecl(_, id, args, stats, _)               =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
@@ -115,7 +115,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case Program(_, _, classes)                                         =>
+    case Program(_, _, classes)                                               =>
       classes.foreach(bind)
     case classDecl @ ClassDecl(id, parent, vars, methods)                     =>
       setParentSymbol(id, parent, classDecl)
@@ -135,7 +135,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       ensureMethodNotDefined(methDecl)
 
       new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(stat)
-    case constructorDecl @ ConstructorDecl(_, _, args, stat, _)                  =>
+    case constructorDecl @ ConstructorDecl(_, _, args, stat, _)               =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
@@ -169,7 +169,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
         case Some(t) =>
           val tpe = setType(t)
           varId.setType(tpe)
-        case None =>
+        case None    =>
       }
 
       init match {
@@ -228,8 +228,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
         classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>
             ErrorOverrideOperator(operator)
-          case None =>
-           operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
+          case None              =>
+            operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
         }
     }
   }
@@ -294,7 +294,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case Some(t) =>
               val tpe = setType(t)
               id.setType(tpe)
-            case None =>
+            case None    =>
           }
 
           variableUsage += newSymbol -> false
@@ -347,6 +347,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
               val classSymbol = scope match {
                 case m: MethodSymbol => m.classSymbol
                 case c: ClassSymbol  => c
+                case _               => ???
               }
               mc.obj = if (isStaticContext) Identifier(classSymbol.name).setSymbol(classSymbol) else This().setSymbol(classSymbol)
             case _        => bind(obj, localVars, scopeLevel)
@@ -381,6 +382,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 ErrorThisInStaticContext(thisSymbol)
               thisSymbol.setSymbol(methodSymbol.classSymbol)
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
+            case _ => ???
           }
       })
 
@@ -416,6 +418,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
                   ErrorCantResolveSymbol(name, id)))))
         case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupVar(name).getOrElse(ErrorCantResolveSymbol(name, id))
+        case _                          => ???
       }
     }
   }

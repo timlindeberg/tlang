@@ -129,7 +129,7 @@ class Tokenizer(val file: File, ctx: Context) {
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
       case c :: r if SingleCharTokens.contains(c) => readTokens(r, createToken(SingleCharTokens(c), 1) :: tokens)
-      case c :: r if c.isLetter                   =>
+      case c :: r if c.isLetter || c == '_'       =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
       case '\'' :: r                              =>
@@ -158,8 +158,8 @@ class Tokenizer(val file: File, ctx: Context) {
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
     def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
-      val end = (c: Char) => SingleCharTokens.contains(c) || c.isWhitespace
-      val validChar = (c: Char) => c.isLetter || c.isDigit || c == '_'
+      def end(c: Char) = SingleCharTokens.contains(c) || c.isWhitespace
+      def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
         case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c)
         case c :: r if end(c)       => (createIdentifierOrKeyWord(s), chars)

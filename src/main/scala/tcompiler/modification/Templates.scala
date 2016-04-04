@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object Templates extends Pipeline[Program, Program] {
 
-  val StartEndSign = "-"
+  val StartEnd = "-"
   val Seperator = "$"
 
   def run(ctx: Context)(prog: Program): Program = {
@@ -142,15 +142,17 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   }
 
   private def checkTemplateClassDefs(templateClasses: List[ClassDecl]) =
-    templateClasses.foreach { x =>
+    templateClasses.foreach { tClass =>
       var set = Set[TypeTree]()
       var reportedFor = Set[TypeTree]()
-      x.id.templateTypes.foreach { x =>
-        if (set(x) && !reportedFor(x)) {
-          ErrorSameName(x.name, x)
-          reportedFor += x
+      val templateTypes = tClass.id.templateTypes
+      val id = tClass.id
+      templateTypes.foreach { tType =>
+        if (set(tType) && !reportedFor(tType)) {
+          ErrorSameName(tType.name, tType)
+          reportedFor += tType
         }
-        set += x
+        set += tType
       }
     }
 
@@ -166,7 +168,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   //---------------------------------------------------------------------------------------
 
   private def ErrorWrongNumGenerics(expected: Int, found: Int, pos: Positioned) = {
-    error(0, s"Wrong number of generic parameters, expected $expected, found $found.", pos)
+    error(0, s"Wrong number of template parameters, expected '$expected', found '$found'.", pos)
     ErrorMap
   }
 
@@ -181,6 +183,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   }
 
   private def ErrorSameName(name: String, pos: Positioned) = {
-    error(3, s"Generic identifiers with the same name: '$name'.", pos)
+    error(3, s"Generic parameter duplicate: '$name'.", pos)
   }
 }

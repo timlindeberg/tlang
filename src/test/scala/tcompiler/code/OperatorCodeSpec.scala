@@ -33,7 +33,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val TestCtx      = new Context(reporter = new Reporter(quiet = false), file = testFile, outDir = Some(testFolderFile))
   val TypeCheckCtx = new Context(reporter = new Reporter(quiet = true), file = testFile, outDir = None)
   val ClassSymbol  = new ClassSymbol("obj")
-  val MethodDecl   = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+  val MethodDecl   = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
   val MainMethod   = new MethodSymbol("main", ClassSymbol, MethodDecl).setType(TUnit)
   val TypeChecker  = new TypeChecker(TypeCheckCtx, MainMethod)
 
@@ -143,6 +143,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       case TInt | TLong | TFloat | TDouble | TChar => "0"
       case TBool                                   => "false"
       case TString                                 => "\"\""
+      case _ => ???
     }
     s"var $IdName: $scalaType = $defaultValue"
   }

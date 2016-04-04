@@ -11,7 +11,7 @@ import tcompiler.utils.Context
 class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Flag = "--ast --symid"
-  val MethodDecl = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+  val MethodDecl = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
   val ClassSymbol = new ClassSymbol("obj")
   val VarSymbol   = new VariableSymbol("var")
   val MainMethod  = new MethodSymbol("main", ClassSymbol, MethodDecl).setType(TUnit)

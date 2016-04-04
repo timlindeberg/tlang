@@ -9,7 +9,7 @@ import org.apache.bcel.generic.{BasicType, ObjectType, Type}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Trees}
 import tcompiler.lexer.Lexer
-import tcompiler.utils.{Positioned, CompilationException, Context, Pipeline}
+import tcompiler.utils.{CompilationException, Context, Pipeline, Positioned}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -191,12 +191,12 @@ class Importer(ctx: Context, prog: Program) {
   private def convertModifiers(obj: AccessFlags) = {
     var set: Set[Modifier] = Set()
     obj match {
-      case x if x.isPublic    => set += Public
-      case x if x.isProtected => set += Protected
-      case _                  => set += Private
+      case x if x.isPublic    => set += Public()
+      case x if x.isProtected => set += Protected()
+      case _                  => set += Private()
     }
 
-    if (obj.isStatic) set += Static
+    if (obj.isStatic) set += Static()
     set
   }
 

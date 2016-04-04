@@ -2,18 +2,19 @@ name := "koolc"
 
 version := "1.0"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.8"
+
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
-val scalaCompiler = "org.scala-lang" % "scala-compiler" % "2.11.4"
+val scalaCompiler = "org.scala-lang" % "scala-compiler" % "2.11.8"
 
 libraryDependencies ++= Seq(
 	"org.scalatest" %% "scalatest" % "2.2.4" % "test",
 	"uk.com.robust-it" % "cloning" % "1.9.2",
 	"org.apache.bcel" % "bcel" % "5.2",
 	"org.apache.commons" % "commons-lang3" % "3.4",
-	"org.scala-lang" % "scala-compiler" % "2.11.4",
+	"org.scala-lang" % "scala-compiler" % "2.11.8",
 	"org.backuity" %% "ansi-interpolator" % "1.1" % "provided"
 )
 

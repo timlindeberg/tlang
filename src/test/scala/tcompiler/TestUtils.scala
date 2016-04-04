@@ -75,9 +75,9 @@ object TestUtils {
 
   // Parses codes from error messages
   def parseErrorCodes(errorMessages: String) = {
-    val ErrorRegex = """\[.+?\] (Fatal|Warning|Error) \((.+?)\).*""".r
+    val ErrorRegex = """(Fatal|Warning|Error) \((.+?)\).*""".r
 
-    removeANSIFormatting(errorMessages).split("\n\n\n").map(_.split("\n")(0)).collect {
+    removeANSIFormatting(errorMessages).split("\n\n\n").map(_.split("\n")(1)).collect {
       case ErrorRegex(_, errorCode) => errorCode
     }.toList
   }

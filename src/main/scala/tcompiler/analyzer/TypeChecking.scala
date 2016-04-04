@@ -18,7 +18,7 @@ object TypeChecking extends Pipeline[Program, Program] {
    * attaching types to trees and potentially outputting error messages.
    */
   def run(ctx: Context)(prog: Program): Program = {
-    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private))
+    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
 
     // Typecheck fields
     prog.classes.foreach { classDecl =>
@@ -626,9 +626,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       ErrorOperatorPrivacy(accessabilityString(opSymbol), operatorString(opSymbol), classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
   private def checkPrivacy(classSymbol: ClassSymbol, access: Accessability) = access match {
-    case Public                                                                                => true
-    case Private if classSymbol == currentMethodSymbol.classSymbol                             => true
-    case Protected if currentMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) => true
+    case Public()                                                                                => true
+    case Private() if classSymbol == currentMethodSymbol.classSymbol                             => true
+    case Protected() if currentMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) => true
     case _                                                                                     => false
   }
 

@@ -71,7 +71,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <goal> ::= [ <mainObject> ] { <classDeclaration> } <EOF>
    */
   def parseGoal() = {
-    val pos = nextToken
+    val startPos = nextToken
     val pack = optional(packageDecl, PACKAGE)
     val imp = untilNot(importDecl, IMPORT)
 
@@ -81,14 +81,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case PUBDEF | PRIVDEF =>
           val access = accessRights(PUBDEF, PRIVDEF)
           if (nextTokenKind == STATIC) eat(STATIC)
-          method(Set(access, Static), access)
+          method(Set(access, Static()), access)
         case _                => statement()
       }
     }, EOF)
 
     val classes = createMainClass(code)
 
-    Program(pack, imp, classes).setPos(pos)
+    Program(pack, imp, classes).setPos(startPos, nextToken)
   }
 
   private def createMainClass(code: List[Tree]) = {
@@ -102,7 +102,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case Some(c) => c
         case None    =>
           val pos = if(stats.nonEmpty) stats.head else methods.head
-          val m = InternalClassDecl(ClassIdentifier(mainName), None, List(), List()).setPos(pos)
+          val m = InternalClassDecl(ClassIdentifier(mainName), None, List(), List()).setPos(pos, nextToken)
           classes ::= m
           m
       }
@@ -111,8 +111,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
       if (stats.nonEmpty) {
         val args = List(Formal(ArrayType(StringType()), Identifier("args")))
-        val modifiers: Set[Modifier] = Set(Public, Static)
-        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Block(stats), modifiers).setPos(stats.head)
+        val modifiers: Set[Modifier] = Set(Public(), Static())
+        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Block(stats), modifiers).setPos(stats.head, nextToken)
         mainClass.methods ::= mainMethod
       }
     }
@@ -123,17 +123,17 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <packageDecl> ::= package <identifier> { . <identifier> }
    */
   def packageDecl() = {
-    val pos = nextToken
+    val startPos = nextToken
     val identifiers = nonEmptyList(identifier, DOT)
     endStatement()
-    Package(identifiers).setPos(pos)
+    Package(identifiers).setPos(startPos, nextToken)
   }
 
   /**
    * <importDecl> ::= import [ "<" ] <identifier> { . ( <identifier> | * ) } [ ">" ]
    */
   def importDecl(): Import = {
-    val pos = nextToken
+    val startPos = nextToken
     eat(IMPORT)
     val ids = new ArrayBuffer[Identifier]()
 
@@ -146,7 +146,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       }
       eat(GREATERTHAN)
       endStatement()
-      return GenericImport(ids.toList).setPos(pos)
+      return GenericImport(ids.toList).setPos(startPos, nextToken)
     }
     ids += identifier()
     while (nextTokenKind == DOT) {
@@ -155,26 +155,26 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case TIMES =>
           eat(TIMES)
           endStatement()
-          return WildCardImport(ids.toList).setPos(pos)
+          return WildCardImport(ids.toList).setPos(startPos, nextToken)
         case _     => ids += identifier
       }
     }
     endStatement()
-    RegularImport(ids.toList).setPos(pos)
+    RegularImport(ids.toList).setPos(startPos, nextToken)
   }
 
   /**
    * <main> ::= main <identifier> = <statement>
    */
   def main(): MethodDecl = {
-    val pos = nextToken
+    val startPos = nextToken
     val id = identifier()
     eat(EQSIGN)
 
 
     val args = List(Formal(ArrayType(StringType()), Identifier("args")))
-    val modifiers: Set[Modifier] = Set(Public, Static)
-    MethodDecl(Some(UnitType()), id, args, statement(), modifiers).setPos(pos)
+    val modifiers: Set[Modifier] = Set(Public(), Static())
+    MethodDecl(Some(UnitType()), id, args, statement(), modifiers).setPos(startPos, nextToken)
   }
 
   /**
@@ -182,7 +182,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * [ extends <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
    */
   def classDeclaration(): ClassDecl = {
-    val pos = nextToken
+    val startPos = nextToken
     eat(CLASS)
     val id = classTypeIdentifier()
     val parent = optional(classIdentifier, EXTENDS)
@@ -194,7 +194,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }, PUBVAR, PRIVVAR)
     val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
     eat(RBRACE)
-    InternalClassDecl(id, parent, vars, methods).setPos(pos)
+    InternalClassDecl(id, parent, vars, methods).setPos(startPos, nextToken)
   }
 
   /**
@@ -211,13 +211,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   def localVarDeclaration(): VarDecl = {
     val pos = nextToken
     eat(PRIVVAR)
-    varDeclEnd(Set(Private), pos)
+    varDeclEnd(Set(Private()), pos)
   }
 
   /**
    * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ = <expression> ]
    */
-  def varDeclEnd(modifiers: Set[Modifier], pos: Positioned): VarDecl = {
+  def varDeclEnd(modifiers: Set[Modifier], startPos: Positioned): VarDecl = {
     val id = identifier()
     val (typ, init) = nextTokenKind match {
       case COLON =>
@@ -226,18 +226,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case _     =>
         (None, optional(expression, EQSIGN))
     }
-    VarDecl(typ, id, init, modifiers).setPos(pos)
+    VarDecl(typ, id, init, modifiers).setPos(startPos, nextToken)
   }
 
   /**
    * <formal> ::= <identifier> ":" <tpe>
    */
   def formal(): Formal = {
-    val pos = nextToken
+    val startPos = nextToken
     val id = identifier()
     eat(COLON)
     val typ = tpe()
-    Formal(typ, id).setPos(pos)
+    Formal(typ, id).setPos(startPos, nextToken)
   }
 
   /**
@@ -245,22 +245,21 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   def methodDeclaration(className: String): FuncTree = {
 
-    val pos = nextToken
+    val startPos = nextToken
     val mods = modifiers(PRIVDEF, PUBDEF)
-    val func = nextTokenKind match {
-      case IDKIND => method(mods, pos)
-      case NEW    => constructor(mods, className)
-      case _      => operator(mods, pos)
+    nextTokenKind match {
+      case IDKIND => method(mods, startPos)
+      case NEW    => constructor(mods, className, startPos)
+      case _      => operator(mods, startPos)
     }
-    func.setPos(pos)
   }
 
   /**
    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
    */
-  def method(modifiers: Set[Modifier], pos: Positioned): MethodDecl = {
-    if(modifiers.contains(Implicit))
-      ErrorImplicitMethodOrOperator(pos)
+  def method(modifiers: Set[Modifier], startPos: Positioned): MethodDecl = {
+    if(modifiers.contains(Implicit()))
+      ErrorImplicitMethodOrOperator(startPos)
 
     val id = identifier()
     eat(LPAREN)
@@ -269,21 +268,20 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val retType = optional(returnType, COLON)
     eat(EQSIGN)
 
-    MethodDecl(retType, id, args, statement(), modifiers).setPos(id)
+    MethodDecl(retType, id, args, statement(), modifiers).setPos(startPos, nextToken)
   }
 
   /**
    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  = {" { <varDeclaration> } { <statement> } "}"
    */
-  def constructor(modifiers: Set[Modifier], className: String): ConstructorDecl = {
-    val pos = nextToken
+  def constructor(modifiers: Set[Modifier], className: String, startPos: Positioned): ConstructorDecl = {
     eat(NEW)
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
     eat(EQSIGN)
     val retType = Some(UnitType().setType(TUnit))
-    ConstructorDecl(retType, new Identifier("new"), args, statement(), modifiers).setPos(pos)
+    ConstructorDecl(retType, Identifier("new"), args, statement(), modifiers).setPos(startPos, nextToken)
   }
 
   /**
@@ -291,9 +289,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   def returnType(): TypeTree =
     if (nextTokenKind == UNIT) {
-      val pos = nextToken
+      val startPos = nextToken
       eat(UNIT)
-      UnitType().setPos(pos)
+      UnitType().setPos(startPos, nextToken)
     } else {
       tpe()
     }
@@ -301,15 +299,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
    */
-  def operator(modifiers: Set[Modifier], p: Positioned): OperatorDecl = {
-    if(modifiers.contains(Implicit))
-      ErrorImplicitMethodOrOperator(p)
+  def operator(modifiers: Set[Modifier], startPos: Positioned): OperatorDecl = {
+    if(modifiers.contains(Implicit()))
+      ErrorImplicitMethodOrOperator(startPos)
 
     // TODO: Find better way of parsing operators than hard coding how many
     // arguments they should have. This is done because since minus can have both
     // one or two operands. */
 
-    val pos = nextToken
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
       val operatorType = constructor(Empty(), Empty())
@@ -317,14 +314,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       val f1 = formal()
       eat(COMMA)
       val f2 = formal()
-      (operatorType, List(f1, f2), modifiers + Static)
+      (operatorType, List(f1, f2), modifiers + Static())
     }
 
     def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
       val operatorType = constructor(Empty())
       eat(LPAREN)
-      (operatorType, List(formal()), modifiers + Static)
+      (operatorType, List(formal()), modifiers + Static())
     }
 
     val (operatorType, args, newModifiers) = nextTokenKind match {
@@ -337,9 +334,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case COMMA =>
             eat(COMMA)
             val f2 = formal()
-            (Minus(Empty(), Empty()), List(f1, f2), modifiers + Static)
+            (Minus(Empty(), Empty()), List(f1, f2), modifiers + Static())
           case _     =>
-            (Negation(Empty()), List(f1), modifiers + Static)
+            (Negation(Empty()), List(f1), modifiers + Static())
         }
       case TIMES             => binaryOperator(Times)
       case DIV               => binaryOperator(Div)
@@ -364,8 +361,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         eat(LBRACKET, RBRACKET)
         nextTokenKind match {
           case EQSIGN =>
-            if (modifiers.contains(Static))
-              ErrorStaticIndexingOperator("[]=", pos)
+            if (modifiers.contains(Static()))
+              ErrorStaticIndexingOperator("[]=", startPos)
             val operatorType = ArrayAssign(Empty(), Empty(), Empty())
             eat(EQSIGN, LPAREN)
             val f1 = formal()
@@ -373,8 +370,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             val f2 = formal()
             (operatorType, List(f1, f2), modifiers)
           case LPAREN =>
-            if (modifiers.contains(Static))
-              ErrorStaticIndexingOperator("[]", pos)
+            if (modifiers.contains(Static()))
+              ErrorStaticIndexingOperator("[]", startPos)
             val operatorType = ArrayRead(Empty(), Empty())
             eat(LPAREN)
             val f1 = formal()
@@ -389,7 +386,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val retType = optional(returnType, COLON)
     eat(EQSIGN)
 
-    OperatorDecl(operatorType, retType, args, statement(), newModifiers)
+    OperatorDecl(operatorType, retType, args, statement(), newModifiers).setPos(startPos, nextToken)
   }
 
   /**
@@ -399,15 +396,15 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val access = accessRights(priv, pub)
     var modifiers: Set[Modifier] = Set(access)
 
+    val startPos = nextToken
     while(nextTokenKind == STATIC || nextTokenKind == IMPLICIT){
-      val pos = nextToken
       val modifier = nextTokenKind match {
         case STATIC =>
           eat(STATIC)
-          Static
+          Static().setPos(startPos, nextToken)
         case IMPLICIT =>
           eat(IMPLICIT)
-          Implicit
+          Implicit().setPos(startPos, nextToken)
         case _ => ???
       }
       modifiers += modifier
@@ -419,7 +416,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }
    */
   def tpe(): TypeTree = {
-    val pos = nextToken
+    val startPos = nextToken
     val tpe = nextTokenKind match {
       case INT     =>
         eat(INT)
@@ -444,17 +441,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         StringType()
       case _       => classIdentifier()
     }
+    tpe.setPos(startPos, nextToken)
     var e = tpe
     var dimension = 0
     while (nextTokenKind == LBRACKET) {
-      e.setPos(pos)
+      e.setPos(startPos, nextToken)
       eat(LBRACKET, RBRACKET)
       e = ArrayType(e)
       dimension += 1
     }
     if (dimension > MaximumArraySize)
-      ErrorInvalidArrayDimension(dimension, pos)
-    e.setPos(pos)
+      ErrorInvalidArrayDimension(dimension, startPos)
+    e.setPos(startPos, nextToken)
   }
 
   /**
@@ -484,7 +482,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] } <endStatement>
    */
   def statement(): StatTree = {
-    val pos = nextToken
+    val startPos = nextToken
     val tree = nextTokenKind match {
       case PRIVVAR =>
         val variable = localVarDeclaration()
@@ -540,13 +538,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case _              => FatalInvalidStatement(expr)
         }
     }
-    tree.setPos(pos)
+    tree.setPos(startPos, nextToken)
   }
 
   /**
    * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
    */
   def forLoop(): For = {
+    val startPos = nextToken
     eat(FOR, LPAREN)
     val init = forInit()
     eat(SEMICOLON)
@@ -557,7 +556,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(SEMICOLON)
     val post = forIncrement()
     eat(RPAREN)
-    For(init, condition, post, statement())
+    For(init, condition, post, statement()).setPos(startPos, nextToken)
   }
 
   /**
@@ -565,6 +564,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   def forInit(): List[StatTree] = {
     commaList(() => {
+      val startPos = nextToken
       nextTokenKind match {
         case PRIVVAR =>
           localVarDeclaration()
@@ -578,7 +578,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
             case _                          => FatalWrongToken(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
           }
-          assignment(Some(id)).asInstanceOf[Assign]
+          assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
       }
     }, SEMICOLON)
   }
@@ -587,29 +587,33 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <forIncrement> ::= [ <expression> { "," <expression> } ]
    */
   def forIncrement(): List[StatTree] =
-    commaList(() => nextTokenKind match {
-      case INCREMENT =>
-        eat(INCREMENT)
-        PreIncrement(identifier())
-      case DECREMENT =>
-        eat(DECREMENT)
-        PreDecrement(identifier())
-      case IDKIND    =>
-        val id = identifier()
-        nextTokenKind match {
-          case PLUSEQ | MINUSEQ | DIVEQ |
-               MODEQ | ANDEQ | OREQ | XOREQ |
-               LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-            assignment(Some(id)).asInstanceOf[Assign]
-          case INCREMENT                  =>
-            eat(INCREMENT)
-            PostIncrement(id)
-          case DECREMENT                  =>
-            eat(DECREMENT)
-            PostDecrement(id)
-          case _                          => FatalWrongToken(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
-        }
-      case _         => FatalWrongToken(INCREMENT, DECREMENT, IDKIND)
+    commaList(() => {
+      val startPos = nextToken
+      val expr = nextTokenKind match {
+        case INCREMENT =>
+          eat(INCREMENT)
+          PreIncrement(identifier())
+        case DECREMENT =>
+          eat(DECREMENT)
+          PreDecrement(identifier())
+        case IDKIND    =>
+          val id = identifier()
+          nextTokenKind match {
+            case PLUSEQ | MINUSEQ | DIVEQ |
+                 MODEQ | ANDEQ | OREQ | XOREQ |
+                 LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+              assignment(Some(id)).asInstanceOf[Assign]
+            case INCREMENT                  =>
+              eat(INCREMENT)
+              PostIncrement(id)
+            case DECREMENT                  =>
+              eat(DECREMENT)
+              PostDecrement(id)
+            case _                          => FatalWrongToken(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
+          }
+        case _         => FatalWrongToken(INCREMENT, DECREMENT, IDKIND)
+      }
+      expr.setPos(startPos, nextToken)
     })
 
   /**
@@ -628,8 +632,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <expression> ::= <assignment>
    */
   def expression(): ExprTree = {
-    val pos = nextToken
-    assignment().setPos(pos)
+    val startPos = nextToken
+    assignment().setPos(startPos, nextToken)
   }
 
 
@@ -671,14 +675,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /** <ternary> ::= <or> [ ? <or> : <or> ] */
   def ternary() = {
+    val startPos = nextToken
     var e = or()
-    val pos = nextToken
     if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       val thn = or()
       eat(COLON)
       val els = or()
-      e = Ternary(e, thn, els).setPos(pos)
+      e = Ternary(e, thn, els).setPos(startPos, nextToken)
     }
     e
   }
@@ -703,10 +707,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /** <instOf> ::= <comparison> { inst <identifier> } */
   def instOf() = {
+    val startPos = nextToken
     var e = comparison()
     while (nextTokenKind == INSTANCEOF) {
       eat(INSTANCEOF)
-      e = Instance(e, identifier())
+      e = Instance(e, identifier()).setPos(startPos, nextToken)
     }
     e
   }
@@ -749,7 +754,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
      * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
      */
     def termFirst() = {
-      val pos = nextToken
+      val startPos = nextToken
       val tree = nextTokenKind match {
         case LPAREN        =>
           eat(LPAREN)
@@ -845,7 +850,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               size
             }, LBRACKET)
             if (sizes.size > MaximumArraySize)
-              ErrorInvalidArrayDimension(sizes.size, pos)
+              ErrorInvalidArrayDimension(sizes.size, startPos)
             sizes
           }
 
@@ -878,7 +883,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           }
         case _             => FatalWrongToken(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
       }
-      tree.setPos(pos)
+      tree.setPos(startPos, nextToken)
     }
 
     /**
@@ -896,7 +901,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       if(currentToken.kind == NEWLINE)
         return lhs
 
-      val pos = nextToken
+      val startPos = nextToken
       var e = lhs
       val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)
 
@@ -936,7 +941,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         }
       }
 
-      e.setPos(pos)
+      e.setPos(startPos, nextToken)
     }
     termRest(termFirst())
   }
@@ -951,9 +956,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     while (kinds.contains(nextTokenKind)) {
       kinds.foreach { kind =>
         if (nextTokenKind == kind) {
-          val pos = nextToken
+          val startPos = nextToken
           eat(kind)
-          expr = tokenToBinaryOperatorAST(kind)(expr, next()).setPos(pos)
+          expr = tokenToBinaryOperatorAST(kind)(expr, next()).setPos(startPos, nextToken)
         }
       }
     }
@@ -996,20 +1001,24 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * Parses the correct access rights given the private token and
    * public token to use.
    */
-  private def accessRights(priv: TokenKind, pub: TokenKind) =
-    nextTokenKind match {
+  private def accessRights(priv: TokenKind, pub: TokenKind) = {
+    var startPos = nextToken
+    val access = nextTokenKind match {
       case x if x == pub  =>
         eat(pub)
-        Public
+        Public()
       case x if x == priv =>
         eat(priv)
         if (nextTokenKind == PROTECTED) {
           eat(PROTECTED)
-          Protected
+          Protected()
         }
-        else Private
+        else Private()
       case _              => FatalWrongToken(pub, priv)
     }
+    access.setPos(startPos, nextToken)
+  }
+
 
   private var usedOneGreaterThan = false
 
@@ -1038,7 +1047,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           eat(LESSTHAN)
           val tmp = commaList(identifier)
           eatRightShiftOrGreaterThan()
-          tmp.map(x => new ClassIdentifier(x.value, List()))
+          tmp.map(x => ClassIdentifier(x.value, List()).setPos(x))
         case _        => List()
       }
       ClassIdentifier(id.value, tIds).setPos(id)
@@ -1046,10 +1055,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <classIdentifier> ::= <identifier> [ "[" <type> { "," <type> } "]" ]
+   * <classIdentifier> ::= <identifier> [ "<" <type> { "," <type> } ">" ]
    */
   private def classIdentifier(): ClassIdentifier = {
-    val pos = nextToken
+    val startPos = nextToken
     val ids = nonEmptyList(identifier, DOT)
     val tIds = nextTokenKind match {
       case LESSTHAN =>
@@ -1059,7 +1068,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         tmp
       case _        => List()
     }
-    ClassIdentifier(ids.map(_.value).mkString("."), tIds).setPos(pos)
+    ClassIdentifier(ids.map(_.value).mkString("."), tIds).setPos(startPos, nextToken)
   }
 
   /**
@@ -1068,7 +1077,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def identifier(): Identifier = nextToken match {
     case id: ID =>
       eat(IDKIND)
-      Identifier(id.value).setPos(id)
+      Identifier(id.value).setPos(id, nextToken)
     case _      => FatalWrongToken(IDKIND)
   }
 
@@ -1078,7 +1087,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def stringLit(): StringLit = nextToken match {
     case strlit: STRLIT =>
       eat(STRLITKIND)
-      StringLit(strlit.value).setPos(strlit)
+      StringLit(strlit.value).setPos(strlit, nextToken)
     case _              => FatalWrongToken(STRLITKIND)
   }
 
@@ -1088,7 +1097,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def intLit(): IntLit = nextToken match {
     case intlit: INTLIT =>
       eat(INTLITKIND)
-      IntLit(intlit.value).setPos(intlit)
+      IntLit(intlit.value).setPos(intlit, nextToken)
     case _              => FatalWrongToken(INTLITKIND)
   }
 
@@ -1098,7 +1107,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def longLit(): LongLit = nextToken match {
     case longLit: LONGLIT =>
       eat(LONGLITKIND)
-      LongLit(longLit.value).setPos(longLit)
+      LongLit(longLit.value).setPos(longLit, nextToken)
     case _                => FatalWrongToken(LONGLITKIND)
   }
 
@@ -1108,7 +1117,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def floatLit(): FloatLit = nextToken match {
     case floatLit: FLOATLIT =>
       eat(FLOATLITKIND)
-      FloatLit(floatLit.value).setPos(floatLit)
+      FloatLit(floatLit.value).setPos(floatLit, nextToken)
     case _                  => FatalWrongToken(FLOATLITKIND)
   }
 
@@ -1119,7 +1128,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def doubleLit(): DoubleLit = nextToken match {
     case doubleLit: DOUBLELIT =>
       eat(DOUBLELITKIND)
-      DoubleLit(doubleLit.value).setPos(doubleLit)
+      DoubleLit(doubleLit.value).setPos(doubleLit, nextToken)
     case _                    => FatalWrongToken(DOUBLELITKIND)
   }
 
@@ -1129,7 +1138,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def charLit(): CharLit = nextToken match {
     case charLit: CHARLIT =>
       eat(CHARLITKIND)
-      CharLit(charLit.value).setPos(charLit)
+      CharLit(charLit.value).setPos(charLit, nextToken)
     case _                => FatalWrongToken(CHARLITKIND)
   }
 

@@ -42,7 +42,7 @@ object Trees {
   trait Modifiable {
     val modifiers: Set[Modifier]
 
-    def isStatic = modifiers.contains(Static)
+    def isStatic = modifiers.contains(Static())
 
     def accessability = modifiers.find(_.isInstanceOf[Accessability]).get.asInstanceOf[Accessability]
 
@@ -57,12 +57,12 @@ object Trees {
   trait Accessability extends Modifier
 
   // TODO: Should maybe be object so positioned works?
-  case object Public extends Accessability
-  case object Private extends Accessability
-  case object Protected extends Accessability
+  case class Public() extends Accessability
+  case class Private() extends Accessability
+  case class Protected() extends Accessability
 
-  case object Static extends Modifier
-  case object Implicit extends Modifier
+  case class Static() extends Modifier
+  case class Implicit() extends Modifier
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id: Identifier
@@ -164,7 +164,7 @@ object Trees {
   case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
 
     import tcompiler.modification.Templates._
-    
+
     def name = value
 
     // The type of the identifier depends on the type of the symbol
@@ -189,7 +189,7 @@ object Trees {
         case x: ClassIdentifier if x.isTemplated => x.templatedClassName
         case x                                   => x.name
       }
-      StartEndSign + value + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEndSign
+      StartEnd + value + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEnd
     }
   }
 

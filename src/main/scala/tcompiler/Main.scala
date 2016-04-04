@@ -105,5 +105,5 @@ object Main {
     case _ => false
   })
 
-  private def mainModifiers(modifiers: Set[Modifier]) = modifiers.size == 2 && modifiers.contains(Public) && modifiers.contains(Static)
+  private def mainModifiers(modifiers: Set[Modifier]) = modifiers.size == 2 && modifiers.contains(Public()) && modifiers.contains(Static())
 }

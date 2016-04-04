@@ -132,9 +132,9 @@ object Printer {
 
   private def definition(modifiers: Set[Modifier]) = {
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private   => "def"
-      case Public    => "Def"
-      case Protected => "def protected"
+      case Private()   => "def"
+      case Public()    => "Def"
+      case Protected() => "def protected"
     }
 
     decl + staticModifier(modifiers)
@@ -143,9 +143,9 @@ object Printer {
   private def varDecl(modifiers: Set[Modifier]) = {
 
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private   => "var"
-      case Public    => "Var"
-      case Protected => "var protected"
+      case Private()   => "var"
+      case Public()    => "Var"
+      case Protected() => "var protected"
     }
 
     decl + staticModifier(modifiers)

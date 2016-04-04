@@ -158,7 +158,7 @@ object Types {
     override def implicitlyConvertableFrom() =
       classSymbol.methods.filter(m =>
         m.name == "new" &&
-          m.modifiers.contains(Implicit) &&
+          m.modifiers.contains(Implicit()) &&
           m.argList.size == 1).
         map(_.argList.head.getType)
 

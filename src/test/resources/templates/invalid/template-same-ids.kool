@@ -1,8 +1,0 @@
-object Program4 {
-  def/**/main () : Unit = {
-    println(new Test<Int, Int, String, String, String>());
-  }
-}
-
-class Test<T, T, T, T2, T2> {
-}
