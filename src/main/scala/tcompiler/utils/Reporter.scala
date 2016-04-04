@@ -7,20 +7,21 @@ import org.backuity.ansi.AnsiFormatter.FormattedHelper
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
+import scala.util.parsing.combinator.RegexParsers
 
 class CompilationException(message: String) extends Exception(message)
 
 class Reporter(quiet: Boolean = false) {
 
   var filesToLines = Map[File, IndexedSeq[String]]()
-  var errors = ArrayBuffer[String]()
-  var warnings = ArrayBuffer[String]()
+  var errors       = ArrayBuffer[String]()
+  var warnings     = ArrayBuffer[String]()
 
   def warning(errorPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
     val warning = report(constructErrorPrefix(errorPrefix, 1, errorCode), msg, pos)
     warnings += warning
-    if(!quiet)
-        println(warning)
+    if (!quiet)
+      println(warning)
   }
 
   def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =
@@ -35,13 +36,12 @@ class Reporter(quiet: Boolean = false) {
   def clear() = {
     errors.clear()
     warnings.clear()
-  } 
+  }
   def hasErrors = errors.nonEmpty
 
   def terminateIfErrors() =
     if (hasErrors)
       throw new CompilationException(errors.mkString("\n\n"))
-
 
 
   private def constructErrorPrefix(errorPrefix: String, errorType: Int, errorCode: Int) = {
@@ -62,26 +62,6 @@ class Reporter(quiet: Boolean = false) {
     case _                         => ???
   }
 
-  private def templateName(name: String): String = {
-    val start = name.indexOf("-")
-    val end = name.lastIndexOf("-")
-    val size = name.length
-
-    if (start != -1 && end != -1) {
-      val pre = if (start > 0) name.substring(0, start) else ""
-      val mid = name.substring(start + 1, end);
-      val post = if (end < size - 1) name.substring(end + 1, size - 1) else ""
-
-      templateName(pre + templateName(mid) + post)
-    } else if (name.contains('$')) {
-      val s = name.split('$')
-      s.tail.mkString(s.head + "<", ", ", ">")
-    } else {
-      name
-    }
-  }
-
-  private def replaceTemplateNames(msg: String) = msg.split(' ').map(templateName).mkString(" ")
 
   private def report(prefix: String, msg: Any, pos: Positioned) = {
     errMessage(prefix, msg, pos)
@@ -89,7 +69,7 @@ class Reporter(quiet: Boolean = false) {
 
 
   private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
-    val msgStr = colorMessage(msg.toString) //replaceTemplateNames(msg.toString)
+    val msgStr = handleQuoteLiterals(msg.toString) //replaceTemplateNames(msg.toString)
     var s = ""
     if (pos.hasPosition)
       s += filePrefix(pos)
@@ -102,11 +82,17 @@ class Reporter(quiet: Boolean = false) {
     s
   }
 
-  private def colorMessage(msg: String) = {
-      val citaionColor = Console.MAGENTA
-      val msgFormat = Console.RESET + Console.BOLD
-      val s = """'(.+?)'""".r.replaceAllIn(msg, "\'" + citaionColor + """$1""" + msgFormat + "\'")
-      msgFormat + s + Console.RESET
+  private def handleQuoteLiterals(msg: String) = {
+    val citationColor = Console.MAGENTA
+    val msgFormat = Console.RESET + Console.BOLD
+
+    val re = """'(.+?)'""".r
+
+    val s = re.replaceAllIn(msg, m => {
+      val name = TemplateNameParser.parseTemplateName(m.group(1))
+      "\'" + citationColor + name + msgFormat + "\'"
+    })
+    msgFormat + s + Console.RESET
   }
 
 
@@ -144,3 +130,40 @@ class Reporter(quiet: Boolean = false) {
     }
   }
 }
+
+object TemplateNameParser extends RegexParsers {
+
+  import tcompiler.modification.Templates._
+
+  def parseTemplateName(s: String): String = {
+    val first = s.indexOf('-')
+    if(first == -1)
+      return s
+    
+    val last = s.lastIndexOf('-')
+    if(last == -1)
+      return s
+    
+    val preFix = s.substring(0, first)
+    val middle = s.substring(first, last + 1)
+    val postFix = s.substring(last + 1, s.length)
+
+    parseAll(template, middle) match {
+      case Success(res, _) => preFix + res + postFix
+      case Failure(_, _)   => s
+    }
+  }
+
+  // Grammar
+
+  private def word: Parser[String] = """[a-zA-Z\d_]+""".r ^^ {_.toString }
+
+  private def typeList: Parser[String] = ((Seperator ~ ( word | template )) +) ^^ {
+    case list => list.map(_._2).mkString(", ")
+  }
+
+  private def template: Parser[String] = StartEndSign ~ word ~ typeList ~ StartEndSign ^^ {
+    case _ ~ w ~ args ~ _ => s"$w<$args>"
+  }
+}
+

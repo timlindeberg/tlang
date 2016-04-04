@@ -10,6 +10,9 @@ import scala.collection.mutable.ArrayBuffer
 
 object Templates extends Pipeline[Program, Program] {
 
+  val StartEndSign = "-"
+  val Seperator = "$"
+
   def run(ctx: Context)(prog: Program): Program = {
     val templateClasses = prog.classes.filter(_.id.isTemplated) ::: new GenericImporter(ctx, prog).importGenericClasses
     val newClasses = new ClassGenerator(ctx, prog, templateClasses).generate

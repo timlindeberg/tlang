@@ -223,7 +223,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
       case Some(oldOperator) =>
         val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
-        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.line, operator)
+        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.ast.line, operator)
       case None              =>
         classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>
@@ -460,7 +460,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     error(5, s"Field '$name' is already defined in super class.", pos)
 
   private def ErrorUnknownType(name: String, pos: Positioned) =
-    error(6, s"Unknown type: '$name' was not declared.", pos)
+    error(6, s"Unknown type: '$name'.", pos)
 
   private def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
     error(7, s"Method '$methodSignature' is already defined at line $line.", pos)

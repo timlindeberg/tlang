@@ -63,7 +63,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
 
     if (returnStatements.map(_._2).toSet.size > 1) {
-      val s = returnStatements.map { case (stat, tpe) => "Line " + stat.line + ": " + tpe }.mkString(", ")
+      val s = returnStatements.map { case (stat, tpe) => s"Line ${stat.line} -> '$tpe'" }.mkString(", ")
       ErrorMultipleReturnTypes(s, returnStatements.head._1)
       currentMethodSymbol.setType(TError)
       return
@@ -314,6 +314,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
               case TDouble          =>
                 tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
                 TDouble
+              case _                => ???
             }
           case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
@@ -455,7 +456,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             }
           case _          => TInt
         }
-      case IncrementDecrement(obj)          =>
+      case IncrementDecrement(obj)         =>
         obj match {
           case _: Identifier | _: ArrayRead | _: FieldRead =>
           case _                                           => ErrorInvalidIncrementDecrementExpr(expression, obj)
@@ -663,7 +664,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     error(3, s"Class '$className' does not contain a field '$fieldName'.", pos)
 
   private def ErrorFieldOnWrongType(tpe: String, pos: Positioned) =
-    error(4, s"Cannot acces field on type '$tpe'.", pos)
+    error(4, s"Cannot access field on type '$tpe'.", pos)
 
   private def ErrorNonStaticMethodAsStatic(methodName: String, pos: Positioned) =
     error(5, s"Trying to call method '$methodName' statically but the method is not declared as static.", pos)
@@ -721,13 +722,13 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
 
   private def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
-    error(19, s"Method contains return statements of multiple types: $typeList", pos)
+    error(19, s"Method contains return statements of multiple types: $typeList.", pos)
 
   private def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
     error(20, s"Array literal contains multiple types: $typeList", pos)
 
   private def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
-    error(21, s"Can't infer type of recursive method.", pos)
+    error(21, s"Cannot infer type of recursive method.", pos)
 
   private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
     val incrementOrDecrement = expr match {

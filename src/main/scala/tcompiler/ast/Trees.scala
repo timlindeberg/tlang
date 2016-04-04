@@ -162,9 +162,9 @@ object Trees {
   }
 
   case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
-    val StartEndSign = "-"
-    val Seperator = "$"
 
+    import tcompiler.modification.Templates._
+    
     def name = value
 
     // The type of the identifier depends on the type of the symbol
