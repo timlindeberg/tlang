@@ -14,6 +14,8 @@ import tcompiler.utils.{CompilationException, Context}
  */
 abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
 
+  import TestUtils._
+
   def Name: String
   def Path: String
 
@@ -31,7 +33,7 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
       it should file.getName.toString in testFile(file)
 
   private def testFile(file: File): Unit = {
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter(quiet = true), file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
+    val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {
@@ -51,21 +53,4 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
         assertCorrect(errorCodes, expectedErrors, t.getMessage)
     }
   }
-
-  private def assertCorrect(res: List[String], sol: List[String], errorMsg: String) = {
-    assert(res.length == sol.length, "Different amount of results and expected results.\n\n" + errorMsg)
-
-    flattenTuple(res.zip(sol).zipWithIndex).foreach {
-      case (r, s, i) =>
-        assert(r.trim == s.trim, s": error on test ${i + 1} \n ${resultsVersusSolution(res, sol)}")
-    }
-  }
-
-  private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
-
-  private def resultsVersusSolution(res: List[String], sol: List[String]) = {
-    val list: List[(String, String)] = ("Result:", "Solution:")::res.zip(sol)
-    list.map { case (r, s) => f"$r%-20s$s%-20s" }.mkString("\n")
-  }
-
 }

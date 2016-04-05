@@ -266,9 +266,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     val args = commaList(formal)
     eat(RPAREN)
     val retType = optional(returnType, COLON)
+    val endPos = nextToken
     eat(EQSIGN)
 
-    MethodDecl(retType, id, args, statement(), modifiers).setPos(startPos, nextToken)
+    MethodDecl(retType, id, args, statement(), modifiers).setPos(startPos, endPos)
   }
 
   /**

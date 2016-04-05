@@ -23,7 +23,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 class NameAnalyser(ctx: Context, prog: Program) {
 
-  private var variableUsage: Map[VariableSymbol, Boolean] = Map()
+  private val LocationPrefix                              = "N"
+  private var variableUsage = Map[VariableSymbol, Boolean]()
 
   val globalScope = new GlobalScope
 
@@ -56,7 +57,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     variableUsage foreach {
       case (variable, used) =>
         if (!used)
-          WarningUnused(variable.name, variable)
+          WarningUnusedVar(variable)
     }
   }
 
@@ -75,17 +76,22 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
     case varDecl @ VarDecl(tpe, id, init, _)                                    =>
-      val newSymbol = new VariableSymbol(id.value, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
+      val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(id)
       ensureIdentiferNotDefined(classSymbol.members, id.value, id)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
-      variableUsage += newSymbol -> true
+
+      // Check usage for private fields
+      varDecl.accessability match {
+        case Private() => variableUsage += newSymbol -> false
+        case _         => variableUsage += newSymbol -> true
+      }
+
       classSymbol.members += (id.value -> newSymbol)
     case methodDecl @ MethodDecl(retType, id, args, stats, _)                   =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
-
       args.foreach(addSymbols(_, newSymbol))
     case constructorDecl @ ConstructorDecl(_, id, args, stats, _)               =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
@@ -105,10 +111,17 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
     case formal @ Formal(tpe, id) =>
-      val newSymbol = new VariableSymbol(id.value).setPos(id)
+
+      val newSymbol = new VariableSymbol(id.value, Argument).setPos(id)
       ensureIdentiferNotDefined(methSymbol.params, id.value, id)
       id.setSymbol(newSymbol)
       formal.setSymbol(newSymbol)
+
+      // Don't put out warning when args is unused since it's implicitly defined
+      if (methSymbol.ast.isMain)
+        variableUsage += newSymbol -> true
+      else
+        variableUsage += newSymbol -> false
       methSymbol.params += (id.value -> newSymbol)
       methSymbol.argList ++= List(newSymbol)
   }
@@ -286,7 +299,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
           stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           localVars
         case varDecl @ VarDecl(typeTree, id, init, modifiers) =>
-          val newSymbol = new VariableSymbol(id.value, modifiers).setPos(id)
+          val newSymbol = new VariableSymbol(id.value, LocalVar, modifiers).setPos(id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
 
@@ -340,7 +353,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
     private def bindExpr(tree: ExprTree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Unit =
       Trees.traverse(tree, (parent, current) => Some(current) collect {
-        case mc @ MethodCall(obj, _, args) =>
+        case mc @ MethodCall(obj, methodName, args) =>
           obj match {
             case _: Empty =>
               // Replace empty with class name or this
@@ -382,7 +395,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 ErrorThisInStaticContext(thisSymbol)
               thisSymbol.setSymbol(methodSymbol.classSymbol)
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
-            case _ => ???
+            case _                          => ???
           }
       })
 
@@ -390,7 +403,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
       val symbol = getSymbolForIdentifier(id, localVars)
       id.setSymbol(symbol)
       symbol match {
-        case v: VariableSymbol => variableUsage += v -> true
+        case v: VariableSymbol =>
+          variableUsage += v -> true
         case _                 =>
       }
     }
@@ -431,12 +445,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
       case _                   =>
     }
 
-    ctx.reporter.error("N", errorCode, msg, tree)
+    ctx.reporter.error(LocationPrefix, errorCode, msg, tree)
     new ErrorSymbol()
   }
 
-  private def warning(errorCode: Int, msg: String, tree: Positioned) = {
-    ctx.reporter.warning("N", errorCode, msg, tree)
+  private def warning(errorCode: Int, msg: String, pos: Positioned) = {
+    ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
   }
 
   //---------------------------------------------------------------------------------------
@@ -487,8 +501,20 @@ class NameAnalyser(ctx: Context, prog: Program) {
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  private def WarningUnused(name: String, pos: Positioned) =
-    warning(0, s"Variable '$name' is declared but never used:", pos)
+  private def WarningUnusedVar(v: VariableSymbol) = v.varType match {
+    case Field    => WarningUnusedPrivateField(v.name, v)
+    case Argument => WarningUnusedArgument(v.name, v)
+    case LocalVar => WarningUnusedLocalVar(v.name, v)
+  }
+
+  private def WarningUnusedLocalVar(name: String, pos: Positioned) =
+    warning(0, s"Variable '$name' is never used.", pos)
+
+  private def WarningUnusedArgument(name: String, pos: Positioned) =
+    warning(1, s"Argument '$name' is never used.", pos)
+
+  private def WarningUnusedPrivateField(name: String, pos: Positioned) =
+    warning(2, s"Private field '$name' is never used.", pos)
 
 
 }

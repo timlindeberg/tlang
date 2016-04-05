@@ -140,7 +140,6 @@ object Symbols {
       "(" + argTypes + ")" + getType.byteCodeName
     }
 
-
   }
 
   class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val ast: FuncTree)
@@ -157,7 +156,12 @@ object Symbols {
     }
   }
 
-  class VariableSymbol(val name: String, val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
+  trait VariableType
+  case object Field extends VariableType
+  case object Argument extends VariableType
+  case object LocalVar extends VariableType
+
+  class VariableSymbol(val name: String, val varType: VariableType = LocalVar, val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
 
   case class ErrorSymbol(name: String = "") extends Symbol
 

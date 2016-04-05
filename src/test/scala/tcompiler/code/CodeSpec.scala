@@ -47,29 +47,4 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
     }
   }
-
-  private def assertCorrect(res: List[String], sol: List[String], errorMsg: String) = {
-    assert(res.length == sol.length, "Different amount of results and expected results.\n\n" + errorMsg)
-
-    printResultsVersusSolution(res, sol)
-    flattenTuple(res.zip(sol).zipWithIndex).foreach {
-      case (r, s, i) =>
-        assert(r.trim == s.trim, s": error on test ${i + 1} \n $errorMsg")
-    }
-  }
-
-  private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
-
-  private def printResultsVersusSolution(res: List[String], sol: List[String]) = {
-    val Length = 20
-    val PF = "%-" + Length + "s%-" + Length + "s\n"
-    printSeperator(100)
-    printf(PF, "Result:", "Solution:")
-    res.zip(sol).foreach { case (r, s) => printf(PF, r, s) }
-  }
-
-  private def printSeperator(length: Int) = {
-    (0 until length).foreach(_ => print("-"))
-    println()
-  }
 }

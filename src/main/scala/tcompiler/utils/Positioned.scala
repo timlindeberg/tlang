@@ -25,8 +25,8 @@ trait Positioned {
     _col = other._col
     _file = other._file
 
-    _endLine = other.line
-    _endCol = other.col
+    _endLine = other.endLine
+    _endCol = other.endCol
 
     this
   }

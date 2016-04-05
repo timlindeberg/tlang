@@ -2,6 +2,7 @@ package tcompiler
 
 import java.io.File
 
+import org.scalatest.FlatSpec
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
@@ -10,7 +11,7 @@ import tcompiler.lexer.Token
 import scala.io.Source
 import scala.sys.process.{ProcessLogger, _}
 
-object TestUtils {
+object TestUtils extends FlatSpec {
 
   val Resources      = "./src/test/resources/"
   val SolutionPrefix = ".kool-solution"
@@ -82,7 +83,23 @@ object TestUtils {
     }.toList
   }
 
-  def hasTypes(prog: Program) = {
+  def assertCorrect(res: List[String], sol: List[String], errorMsg: String) = {
+    assert(res.length == sol.length, "Different amount of results and expected results.\n\n" + errorMsg)
+
+    flattenTuple(res.zip(sol).zipWithIndex).foreach {
+      case (r, s, i) =>
+        assert(r.trim == s.trim, s": error on test ${i + 1} \n ${resultsVersusSolution(res, sol)}")
+    }
+  }
+
+  private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
+
+  private def resultsVersusSolution(res: List[String], sol: List[String]) = {
+    val list: List[(String, String)] = ("Result:", "Solution:") :: res.zip(sol)
+    list.map { case (r, s) => f"$r%-20s$s%-20s" }.mkString("\n")
+  }
+
+    def hasTypes(prog: Program) = {
     var hasTypes = true
     Trees.traverse(prog, (_, curr) => Some(curr) collect {
       case _: Empty    =>

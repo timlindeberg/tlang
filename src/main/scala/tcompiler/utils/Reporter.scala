@@ -12,26 +12,34 @@ import scala.util.parsing.combinator.RegexParsers
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(quiet: Boolean = false) {
+class Reporter(suppressWarnings: Boolean = false) {
+
+  var ErrorSeperator = "\n\n"
+  var QuoteColor = Console.MAGENTA
+  var MessageStyle = Console.BOLD
+  var WarningColor = Console.YELLOW
+  var ErrorColor = Console.RED
+  var FatalColor = Console.RED
 
   var errors   = ArrayBuffer[String]()
   var warnings = ArrayBuffer[String]()
 
   private var filesToLines = Map[File, IndexedSeq[String]]()
 
-  def warning(errorPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
-    val warning = report(constructErrorPrefix(errorPrefix, 1, errorCode), msg, pos)
+  def warning(locationPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
+    if(suppressWarnings)
+      return
+
+    val warning = errMessage(locationPrefix, 1, errorCode, msg, pos)
     warnings += warning
-    if (!quiet)
-      println(warning)
   }
 
-  def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =
-    errors += report(constructErrorPrefix(errorPrefix, 2, errorCode), msg, pos)
+  def error(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =
+    errors += errMessage(locationPrefix, 2, errorCode, msg, pos)
 
 
-  def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
-    val error = report(constructErrorPrefix(errorPrefix, 3, errorCode), msg, pos)
+  def fatal(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
+    val error = errMessage(locationPrefix, 3, errorCode, msg, pos)
     throw new CompilationException(error)
   }
 
@@ -41,16 +49,37 @@ class Reporter(quiet: Boolean = false) {
   }
 
   def hasErrors = errors.nonEmpty
+  def hasWarnings = warnings.nonEmpty
+
+  def errorsString = errors.mkString(ErrorSeperator)
+  def warningsString = warnings.mkString(ErrorSeperator)
 
   def terminateIfErrors() =
     if (hasErrors)
-      throw new CompilationException(errors.mkString("\n\n"))
+      throw new CompilationException(errorsString)
 
 
-  private def constructErrorPrefix(errorPrefix: String, errorType: Int, errorCode: Int) = {
+
+
+  private def errMessage(locationPrefix: String, errorLevel: Int, errorCode: Int, msg: Any, pos: Positioned) = {
+    val prefix = constructErrorPrefix(locationPrefix, errorLevel, errorCode)
+    val msgStr = handleQuoteLiterals(msg.toString)
+    var sb = new StringBuilder
+    if (pos.hasPosition)
+      sb ++= filePrefix(pos) + "\n"
+
+    sb ++= s"$prefix: $msgStr"
+
+    if (pos.hasPosition)
+      sb ++= locationIndicator(errorLevel, pos)
+
+    sb.toString()
+  }
+
+  private def constructErrorPrefix(errorPrefix: String, errorLevel: Int, errorCode: Int) = {
     val code = leftPad(errorCode)
 
-    errorType match {
+    errorLevel match {
       case 1 => ansi"%yellow{Warning} (%yellow{${errorPrefix}1$code})"
       case 2 => ansi"%red{%bold{Error}} (%red{%bold{${errorPrefix}2$code}})"
       case 3 => ansi"%red{%bold{Fatal}} (%red{%bold{${errorPrefix}3$code}})"
@@ -65,46 +94,30 @@ class Reporter(quiet: Boolean = false) {
     case _                         => ???
   }
 
-
-  private def report(prefix: String, msg: Any, pos: Positioned) = {
-    errMessage(prefix, msg, pos)
-  }
-
-
-  private def errMessage(prefix: String, msg: Any, pos: Positioned): String = {
-    val msgStr = handleQuoteLiterals(msg.toString)
-    var sb = new StringBuilder
-    if (pos.hasPosition)
-      sb ++= filePrefix(pos) + "\n"
-
-    sb ++= s"$prefix: $msgStr"
-
-    if (pos.hasPosition)
-      sb ++= locationIndicator(pos)
-
-    sb.toString()
-  }
+  private def filePrefix(pos: Positioned) = ansi"%bold{[}${pos.position}%bold{]}"
 
   private def handleQuoteLiterals(msg: String) = {
-    val citationColor = Console.MAGENTA
-    val msgFormat = Console.RESET + Console.BOLD
+    val msgFormat = Console.RESET + MessageStyle
 
     val re = """'(.+?)'""".r
 
     val s = re.replaceAllIn(msg, m => {
       val name = TemplateNameParser.parseTemplateName(m.group(1))
-      Matcher.quoteReplacement("\'" + citationColor + name + msgFormat + "\'") // escape dollar signs etc.
+      Matcher.quoteReplacement("\'" + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
     })
     msgFormat + s + Console.RESET
   }
 
-
-  private def filePrefix(pos: Positioned) = ansi"%bold{[}${pos.position}%bold{]}"
-
-  private def locationIndicator(pos: Positioned) = {
+  private def locationIndicator(errorLevel: Int, pos: Positioned) = {
     val lines = getLines(pos.file)
     var sb = new StringBuilder
     sb ++= "\n"
+    val errorStyle = errorLevel match {
+      case 1 => WarningColor
+      case 2 => ErrorColor
+      case 3 => FatalColor
+      case _ => ???
+    }
     if (pos.line - 1 < lines.size) {
       val line = lines(pos.line - 1)
       val firstNonWhiteSpace = line.indexWhere(c => !c.isWhitespace)
@@ -112,22 +125,26 @@ class Reporter(quiet: Boolean = false) {
       val l = line.substring(firstNonWhiteSpace)
 
       val start = pos.col - 1 - firstNonWhiteSpace
-      val end = if (pos.endLine == pos.line) {
+      var end = if (pos.endLine == pos.line) {
         pos.endCol - 1 - firstNonWhiteSpace
       } else {
-        val firstSlash = l.indexOf('/')
+        val firstSlash = l.indexOf("//")
         if (firstSlash != -1)
           firstSlash - 1
         else
           l.length
       }
 
-      sb ++= l.substring(0, start)
-      sb ++= Console.RED + Console.UNDERLINED
-      sb ++= l.substring(start, end)
-      sb ++= Console.RESET
-      sb ++= l.substring(end, l.length)
-      sb ++= "\n"
+
+      // Back cursor so we never underline whitespaces
+      while(l(end - 1).isWhitespace) {
+        end -= 1
+      }
+
+      val pre = l.substring(0, start)
+      val highlighted = l.substring(start, end)
+      val post = l.substring(end, l.length)
+      sb ++= pre ++ Console.UNDERLINED ++ errorStyle ++ highlighted ++ Console.RESET ++ post ++ "\n"
     } else {
       sb ++= "<line unavailable in source file>"
     }

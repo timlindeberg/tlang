@@ -11,7 +11,10 @@ import scala.collection.mutable.ArrayBuffer
 
 object TypeChecking extends Pipeline[Program, Program] {
 
+  val LocationPrefix = "T"
   val hasBeenTypechecked = scala.collection.mutable.Set[MethodSymbol]()
+  var methodUsage = Map[MethodSymbol, Boolean]()
+
 
   /**
    * Typechecking does not produce a value, but has the side effect of
@@ -28,13 +31,35 @@ object TypeChecking extends Pipeline[Program, Program] {
 
     // Typecheck methods
     prog.classes.foreach { classDecl =>
-      classDecl.methods.foreach(method => new TypeChecker(ctx, method.getSymbol).tcMethod())
+      classDecl.methods.foreach{ method =>
+        val methodSymbol = method.getSymbol
+        if(!methodUsage.contains(methodSymbol))
+          methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
+        new TypeChecker(ctx, methodSymbol).tcMethod()
+      }
     }
+
+    // Check method usage
+    // TODO: Refactoring of typechecker global variables etc.
+    methodUsage foreach {
+      case (method, used) =>
+        if (!used)
+          WarningUnusedPrivateField(method.ast.signature, method)
+    }
+
+    def warning(errorCode: Int, msg: String, pos: Positioned) =
+      ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
+
+    def WarningUnusedPrivateField(name: String, pos: Positioned) =
+      warning(0, s"Private method '$name' is never used.", pos)
+
     prog
   }
 }
 
 class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: List[MethodSymbol] = List()) {
+
+  import TypeChecking._
 
   val returnStatements = ArrayBuffer[(Return, Type)]()
 
@@ -503,6 +528,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case Some(methSymbol) =>
             checkMethodPrivacy(classSymbol, methSymbol, mc)
             checkStaticMethodConstraints(obj, classSymbol, methSymbol, meth)
+
+            TypeChecking.methodUsage += methSymbol -> true
             if (methSymbol.getType == TUntyped) {
               new TypeChecker(ctx, methSymbol, currentMethodSymbol :: methodStack).tcMethod()
             }
@@ -641,7 +668,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
   private def error(errorCode: Int, msg: String, pos: Positioned) = {
-    ctx.reporter.error("T", errorCode, msg, pos)
+    ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
     TError
   }
 

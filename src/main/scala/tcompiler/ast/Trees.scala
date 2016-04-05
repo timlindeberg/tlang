@@ -33,9 +33,9 @@ object Trees {
   }
 
   trait ClassDecl extends Tree with Symbolic[ClassSymbol] {
-    var id: ClassIdentifier
-    var parent: Option[ClassIdentifier]
-    var vars: List[VarDecl]
+    var id     : ClassIdentifier
+    var parent : Option[ClassIdentifier]
+    var vars   : List[VarDecl]
     var methods: List[FuncTree]
   }
 
@@ -65,11 +65,20 @@ object Trees {
   case class Implicit() extends Modifier
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
-    var id: Identifier
-    var retType: Option[TypeTree]
-    var args: List[Formal]
-    val stat: StatTree
+    var id       : Identifier
+    var retType  : Option[TypeTree]
+    var args     : List[Formal]
+    val stat     : StatTree
     val modifiers: Set[Modifier]
+
+    def isMain = this match {
+      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(StringType()), _) :: Nil, _, _) =>
+        modifiers.size == 2 &&
+          modifiers.contains(Public()) &&
+          modifiers.contains(Static()) &&
+          args.head.id.value == "args"
+      case _                                                                                                 => false
+    }
 
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
@@ -82,15 +91,33 @@ object Trees {
     def name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree { def name = tpe.name + "[]"}
-  case class IntType() extends TypeTree  { def name = "Int" }
-  case class LongType() extends TypeTree { def name = "Long" }
-  case class FloatType() extends TypeTree { def name = "Float" }
-  case class DoubleType() extends TypeTree { def name = "Double" }
-  case class BooleanType() extends TypeTree { def name = "Bool" }
-  case class CharType() extends TypeTree { def name = "Char" }
-  case class StringType() extends TypeTree { def name = "String" }
-  case class UnitType() extends TypeTree { def name = "Unit" }
+  case class ArrayType(var tpe: TypeTree) extends TypeTree {
+    def name = tpe.name + "[]"
+  }
+  case class IntType() extends TypeTree {
+    def name = "Int"
+  }
+  case class LongType() extends TypeTree {
+    def name = "Long"
+  }
+  case class FloatType() extends TypeTree {
+    def name = "Float"
+  }
+  case class DoubleType() extends TypeTree {
+    def name = "Double"
+  }
+  case class BooleanType() extends TypeTree {
+    def name = "Bool"
+  }
+  case class CharType() extends TypeTree {
+    def name = "Char"
+  }
+  case class StringType() extends TypeTree {
+    def name = "String"
+  }
+  case class UnitType() extends TypeTree {
+    def name = "Unit"
+  }
 
   trait StatTree extends Tree
 
@@ -194,7 +221,9 @@ object Trees {
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
-  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree { def dimension = sizes.size }
+  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
+    def dimension = sizes.size
+  }
   case class New(var tpe: ClassIdentifier, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
   case class Hash(expr: ExprTree) extends ExprTree
@@ -238,7 +267,7 @@ object Trees {
       case _: PreIncrement      => "++" + args(0)
       case _: PostIncrement     => args(0) + "++"
       case _: PreDecrement      => "--" + args(0)
-      case _: PostDecrement      => args(0) + "--"
+      case _: PostDecrement     => args(0) + "--"
       case _: ArrayRead         => className.getOrElse("") + "[" + args(0) + "]"
       case _: ArrayAssign       => className.getOrElse("") + "[" + args(0) + "] = " + args(1)
     }
@@ -275,12 +304,12 @@ object Trees {
 
   def isStaticCall(obj: ExprTree) =
     obj match {
-      case id@Identifier(name) =>
+      case id @ Identifier(name) =>
         id.getSymbol match {
           case _: ClassSymbol => true
           case _              => false
         }
-      case _                   => false
+      case _                     => false
     }
 
 

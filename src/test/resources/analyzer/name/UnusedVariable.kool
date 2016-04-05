@@ -1,11 +1,13 @@
-var x: Int // res: N1000
-println(5)
-
-
-
 class A {
-   Def Test() = {
-     var x = 5 // res: N1000
+
+   var b: Int // res: N1002
+
+   Def Test(c: Int) = { // res: N1001
+     var d = 5 // res: N1000
      println(5)
    }
+
+   def test(i: Int, t: String): String = {
+        return "1"
+   } // res: T1000
 }

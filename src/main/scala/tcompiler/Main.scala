@@ -1,36 +1,31 @@
 package tcompiler
 
+import java.io.{File, FileNotFoundException}
+
+import tcompiler.analyzer.{NameAnalysis, TypeChecking}
+import tcompiler.ast.Parser
 import tcompiler.ast.Trees._
-import utils._
-import java.io.{FileNotFoundException, File}
-import lexer.Lexer
-import lexer.PrintTokens
-import ast.Parser
-import ast.ASTPrinterWithSymbols
-import scala.collection.mutable.HashMap
-import tcompiler.analyzer.NameAnalysis
-import tcompiler.analyzer.TypeChecking
 import tcompiler.code.CodeGeneration
+import tcompiler.lexer.Lexer
 import tcompiler.modification.{Imports, Templates}
+import tcompiler.utils._
+
+import scala.collection.mutable.HashMap
 import scala.sys.process._
 
 object Main {
 
   var FileEnding = ".kool"
 
-  val tokensFlag = "--tokens"
-  val astFlag    = "--ast"
-  val symId      = "--symid"
   val exec       = "--exec"
+  val suppressWarnings   = "-sw"
   val flags      = HashMap(
-    tokensFlag -> false,
-    astFlag -> false,
-    symId -> false,
-    exec -> false)
+    exec -> false,
+    suppressWarnings -> false
+  )
 
   def processOptions(args: Array[String]): Context = {
 
-    val reporter = new Reporter()
     var outDir: Option[File] = None
     var files: List[File] = Nil
 
@@ -52,7 +47,9 @@ object Main {
 
     processOption(args.toList)
 
-    if (files.size != 1) reporter.fatal("M", 0, "Exactly one file expected, " + files.size + " file(s) given.")
+    val reporter = new Reporter(flags(suppressWarnings))
+
+    if (files.size != 1) reporter.fatal("M", 0, s"Exactly one file expected, '${files.size}' file(s) given.")
 
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }
@@ -60,38 +57,25 @@ object Main {
   def main(args: Array[String]) {
     try {
       val ctx = processOptions(args)
-      if (flags(tokensFlag)) {
-        // Lex the program and print all tokens
-        (Lexer andThen PrintTokens).run(ctx)(ctx.file).toList
-      } else {
-        val parsing = Lexer andThen Parser andThen Templates andThen Imports
-        val analysis = NameAnalysis andThen TypeChecking
-        if (flags(astFlag)) {
-          if (flags(symId)) {
-            // Run analysis and print AST tree with symbols
-            val program = (parsing andThen analysis).run(ctx)(ctx.file)
-            println(ASTPrinterWithSymbols(program))
-          } else {
-            // Parse and print AST tree
-            val program = parsing.run(ctx)(ctx.file)
-            println(program)
-          }
-        } else {
-          // Generate code
-          val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-          CodeGeneration.run(ctx)(prog)
-          System.out.flush()
-          if (flags(exec) && containsMainMethod(prog)) {
-            val cp = ctx.outDir match {
-              case Some(dir) => "-cp " + dir.getPath
-              case _         => ""
-            }
-            println("java " + cp + " " + fileName(ctx) !!)
-          }
+
+      val parsing = Lexer andThen Parser andThen Templates andThen Imports
+      val analysis = NameAnalysis andThen TypeChecking
+      // Generate code
+      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
+      CodeGeneration.run(ctx)(prog)
+      if (flags(exec) && containsMainMethod(prog)) {
+        val cp = ctx.outDir match {
+          case Some(dir) => "-cp " + dir.getPath
+          case _         => ""
         }
+        println("java " + cp + " " + fileName(ctx) !!)
       }
+      if(ctx.reporter.hasWarnings)
+        println(ctx.reporter.warningsString)
+
+      System.out.flush()
     } catch {
-      case e: CompilationException  =>
+      case e: CompilationException =>
         println(e.getMessage)
       // Reporter throws exception at fatal instead exiting program
       case e: FileNotFoundException => System.err.println("Error: File not found!")

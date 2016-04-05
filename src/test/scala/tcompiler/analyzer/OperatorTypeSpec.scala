@@ -3,7 +3,7 @@ package tcompiler.analyzer
 import java.io.File
 
 import org.scalatest._
-import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
+import tcompiler.analyzer.Symbols.{LocalVar, ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
