@@ -166,20 +166,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-   * <main> ::= main <identifier> = <statement>
-   */
-  def main(): MethodDecl = {
-    val startPos = nextToken
-    val id = identifier()
-    eat(EQSIGN)
-
-
-    val args = List(Formal(ArrayType(StringType()), Identifier("args")))
-    val modifiers: Set[Modifier] = Set(Public(), Static())
-    MethodDecl(Some(UnitType()), id, args, statement(), modifiers).setPos(startPos, nextToken)
-  }
-
-  /**
    * <classDeclaration> ::= class <classIdentifier>
    * [ extends <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
    */
@@ -203,32 +189,28 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * <fieldDeclaration> ::= (Var | var) <modifiers> <variableEnd>
    */
   def fieldDeclaration(): VarDecl = {
-    val pos = nextToken
-    varDeclEnd(modifiers(PRIVVAR, PUBVAR), pos)
+    val startPos = nextToken
+    varDeclEnd(modifiers(PRIVVAR, PUBVAR), startPos)
   }
 
   /**
    * <localVarDeclaration> ::= var <variableEnd>
    */
   def localVarDeclaration(): VarDecl = {
-    val pos = nextToken
+    val startPos = nextToken
     eat(PRIVVAR)
-    varDeclEnd(Set(Private()), pos)
+    varDeclEnd(Set(Private()), startPos)
   }
 
   /**
-   * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ = <expression> ]
+   * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ "=" <expression> ]
    */
   def varDeclEnd(modifiers: Set[Modifier], startPos: Positioned): VarDecl = {
     val id = identifier()
-    val (typ, init) = nextTokenKind match {
-      case COLON =>
-        eat(COLON)
-        (Some(tpe()), optional(expression, EQSIGN))
-      case _     =>
-        (None, optional(expression, EQSIGN))
-    }
-    VarDecl(typ, id, init, modifiers).setPos(startPos, nextToken)
+    val typ = optional(tpe, COLON)
+    val endPos = nextToken
+    val init = optional(expression, EQSIGN)
+    VarDecl(typ, id, init, modifiers).setPos(startPos, endPos)
   }
 
   /**
@@ -397,9 +379,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
+    val endPos = nextToken
     eat(EQSIGN)
 
-    OperatorDecl(operatorType, retType, args, statement(), newModifiers).setPos(startPos, nextToken)
+    OperatorDecl(operatorType, retType, args, statement(), newModifiers).setPos(startPos, endPos)
   }
 
   /**
@@ -499,11 +482,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   def statement(): StatTree = {
     val startPos = nextToken
-    val tree = nextTokenKind match {
+
+    // Variable needs custom end position in order to
+    // only highlight expression up to equals sign
+    nextTokenKind match {
       case PRIVVAR =>
         val variable = localVarDeclaration()
         endStatement()
-        variable
+        return variable
+      case _ =>
+    }
+
+    val tree = nextTokenKind match {
       case LBRACE  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
@@ -1116,9 +1106,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def intLit(): IntLit =
     nextToken match {
     case intLit: INTLIT =>
-      val startPos = intLit
       eat(INTLITKIND)
-      IntLit(intLit.value).setPos(startPos, nextToken)
+      IntLit(intLit.value).setPos(intLit, nextToken)
     case _              => FatalWrongToken(INTLITKIND)
   }
 
@@ -1127,9 +1116,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   private def longLit(): LongLit = nextToken match {
     case longLit: LONGLIT =>
-      val startPos = longLit
       eat(LONGLITKIND)
-      LongLit(longLit.value).setPos(startPos, nextToken)
+      LongLit(longLit.value).setPos(longLit, nextToken)
     case _                => FatalWrongToken(LONGLITKIND)
   }
 
@@ -1138,9 +1126,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   private def floatLit(): FloatLit = nextToken match {
     case floatLit: FLOATLIT =>
-      val startPos = floatLit
       eat(FLOATLITKIND)
-      FloatLit(floatLit.value).setPos(startPos, nextToken)
+      FloatLit(floatLit.value).setPos(floatLit, nextToken)
     case _                  => FatalWrongToken(FLOATLITKIND)
   }
 
@@ -1150,9 +1137,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   private def doubleLit(): DoubleLit = nextToken match {
     case doubleLit: DOUBLELIT =>
-      val startPos = doubleLit
       eat(DOUBLELITKIND)
-      DoubleLit(doubleLit.value).setPos(startPos, nextToken)
+      DoubleLit(doubleLit.value).setPos(doubleLit, nextToken)
     case _                    => FatalWrongToken(DOUBLELITKIND)
   }
 
@@ -1161,9 +1147,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    */
   private def charLit(): CharLit = nextToken match {
     case charLit: CHARLIT =>
-      val startPos = charLit
       eat(CHARLITKIND)
-      CharLit(charLit.value).setPos(startPos, nextToken)
+      CharLit(charLit.value).setPos(charLit, nextToken)
     case _                => FatalWrongToken(CHARLITKIND)
   }
 
@@ -1204,7 +1189,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * Parses an optional of the form
    * <optional> ::= [ parse ] and returns Option
    */
-  private def optional[T](parse: () => T, kind: TokenKind): Option[T] = {
+  private def optional[T](parse: () => T with Positioned, kind: TokenKind): Option[T] = {
     if (nextTokenKind == kind) {
       eat(kind)
       Some(parse())

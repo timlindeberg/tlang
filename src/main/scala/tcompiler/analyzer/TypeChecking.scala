@@ -11,9 +11,9 @@ import scala.collection.mutable.ArrayBuffer
 
 object TypeChecking extends Pipeline[Program, Program] {
 
-  val LocationPrefix = "T"
+  val LocationPrefix     = "T"
   val hasBeenTypechecked = scala.collection.mutable.Set[MethodSymbol]()
-  var methodUsage = Map[MethodSymbol, Boolean]()
+  var methodUsage        = Map[MethodSymbol, Boolean]()
 
 
   /**
@@ -31,9 +31,9 @@ object TypeChecking extends Pipeline[Program, Program] {
 
     // Typecheck methods
     prog.classes.foreach { classDecl =>
-      classDecl.methods.foreach{ method =>
+      classDecl.methods.foreach { method =>
         val methodSymbol = method.getSymbol
-        if(!methodUsage.contains(methodSymbol))
+        if (!methodUsage.contains(methodSymbol))
           methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
         new TypeChecker(ctx, methodSymbol).tcMethod()
       }
@@ -107,7 +107,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       val correctOperatorType = getCorrectOperatorType(op)
       correctOperatorType match {
         case Some(correctType) if tpe != correctType =>
-          ErrorOperatorWrongReturnType(operatorString(op), correctType.toString, tpe.toString, op.ast)
+          val pos = op.ast.retType match {
+            case Some(retType) => retType
+            case None          => op.ast
+          }
+          ErrorOperatorWrongReturnType(operatorString(op), correctType.toString, tpe.toString, pos)
         case _                                       => tpe
       }
     case _                  => tpe
@@ -527,7 +531,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         classSymbol.lookupMethod(meth.value, argTypes) match {
           case Some(methSymbol) =>
             checkMethodPrivacy(classSymbol, methSymbol, mc)
-            checkStaticMethodConstraints(obj, classSymbol, methSymbol, meth)
+            checkStaticMethodConstraints(obj, classSymbol, methSymbol, mc)
 
             TypeChecking.methodUsage += methSymbol -> true
             if (methSymbol.getType == TUntyped) {
@@ -609,8 +613,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       case TObject(classSymbol) =>
         classSymbol.lookupVar(fieldId.value) match {
           case Some(varSymbol) =>
-            checkFieldPrivacy(classSymbol, varSymbol, obj)
-            checkStaticFieldConstraints(obj, classSymbol, varSymbol, fieldId)
+            checkFieldPrivacy(classSymbol, varSymbol, pos)
+            checkStaticFieldConstraints(obj, classSymbol, varSymbol, pos)
             fieldId.setSymbol(varSymbol)
             fieldId.getType
           case None            =>
@@ -656,10 +660,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     case Public()                                                                                => true
     case Private() if classSymbol == currentMethodSymbol.classSymbol                             => true
     case Protected() if currentMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) => true
-    case _                                                                                     => false
+    case _                                                                                       => false
   }
 
-  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability.toString.toLowerCase
+  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability.toString.toLowerCase.dropRight(2)
 
   private def makeExpectedString(expected: List[Type]): String = expected.size match {
     case 0 => ""

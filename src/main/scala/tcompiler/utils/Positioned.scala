@@ -39,8 +39,8 @@ trait Positioned {
     _colStart = start._colStart
     _file = start._file
 
-    _lineEnd = end.line
-    _colEnd = end.col
+    _lineEnd = end._lineStart
+    _colEnd = end._colStart
 
     this
   }

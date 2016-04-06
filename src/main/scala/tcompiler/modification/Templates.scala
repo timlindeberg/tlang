@@ -91,13 +91,14 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     generated += typeId.templatedClassName
 
     templateClasses.find(_.id.value == typeId.value) match {
-      case Some(template) => generatedClasses += newTemplateClass(template, typeId.templateTypes)
+      case Some(template) => generatedClasses += newTemplateClass(template, typeId)
       case None           => ErrorDoesNotExist(typeId.value, typeId)
     }
   }
 
-  private def newTemplateClass(template: ClassDecl, templateTypes: List[TypeTree]): ClassDecl = {
-    val templateMap = constructTemplateMapping(template.id.templateTypes, templateTypes)
+  private def newTemplateClass(template: ClassDecl, typeId: ClassIdentifier): ClassDecl = {
+    val templateTypes = typeId.templateTypes
+    val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
     /* Helper functions to perform transformation */
     def updateType(t: TypeTree): TypeTree = {
@@ -131,11 +132,11 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     newClass
   }
 
-  private def constructTemplateMapping(templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
+  private def constructTemplateMapping(typedId: ClassIdentifier, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
     val diff = templateTypes.size - templateList.size
     if (diff != 0) {
       val index = if (diff > 0) templateList.size else templateTypes.size - 1
-      ErrorWrongNumGenerics(templateList.size, templateTypes.size, templateTypes(index))
+      ErrorWrongNumGenerics(templateList.size, templateTypes.size, typedId)
     } else {
       templateList.zip(templateTypes).toMap
     }

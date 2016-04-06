@@ -16,6 +16,8 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
 
   import TestUtils._
 
+  val Seperator = "---------------------------------------------------------------------"
+
   def Name: String
   def Path: String
 
@@ -44,12 +46,13 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
 
       val warnings = ctx.reporter.warnings.mkString("\n\n")
       println(warnings)
+      println(Seperator)
       val warningCodes = TestUtils.parseErrorCodes(warnings)
       assertCorrect(warningCodes, expectedErrors)
     } catch {
       case t: CompilationException =>
         println(t.getMessage)
-        println("---------------------------------------------------------------------")
+        println(Seperator)
         println
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors)

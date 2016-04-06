@@ -37,7 +37,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     var classesFoundInCycle = Set[ClassSymbol]()
     def checkInheritanceCycles(c: Option[ClassSymbol], set: Set[ClassSymbol]): Unit = c match {
       case Some(classSymbol) =>
-        if (classesFoundInCycle(classSymbol))
+        if (classesFoundInCycle.contains(classSymbol))
           return
 
         if (set.contains(classSymbol)) {
@@ -76,8 +76,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
     case varDecl @ VarDecl(tpe, id, init, _)                                    =>
-      val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(id)
-      ensureIdentiferNotDefined(classSymbol.members, id.value, id)
+      val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
+      ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
 
@@ -299,7 +299,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
           stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           localVars
         case varDecl @ VarDecl(typeTree, id, init, modifiers) =>
-          val newSymbol = new VariableSymbol(id.value, LocalVar, modifiers).setPos(id)
+          val newSymbol = new VariableSymbol(id.value, LocalVar, modifiers).setPos(varDecl)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
 
@@ -316,7 +316,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
           localVars.get(id.value) collect {
             case varId if varId.scopeLevel == scopeLevel =>
-              ErrorVariableAlreadyDefined(id.value, varId.symbol.line, id)
+              ErrorVariableAlreadyDefined(id.value, varId.symbol.line, varDecl)
           }
 
           localVars + (id.value -> new VariableIdentifier(newSymbol, scopeLevel))
@@ -486,7 +486,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     error(9, s"Operator '$operator' is already defined at line $line.", pos)
 
   private def ErrorCantResolveSymbol(name: String, pos: Positioned) =
-    error(10, s"Can not resolve symbol '$name'.", pos)
+    error(10, s"Could not resolve symbol '$name'.", pos)
 
   private def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned) =
     error(11, s"Non-static field '$name' cannot be accessed from a static function.", pos)

@@ -7,7 +7,6 @@ class A {
      println(5)
    }
 
-   def test(i: Int, t: String): String = {
-        return "1"
-   } // res: T1000
+   def test(): String = return "1" // res: T1000
+
 }
