@@ -146,7 +146,10 @@ class Tokenizer(val file: File, ctx: Context) {
       case c :: r if c.isDigit                    =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
-      case Nil                                    => createToken(EOF, 1) :: tokens
+      case Nil                                    =>
+        line += 1
+        column = 1
+        createToken(EOF, 1) :: tokens
       case c :: r                                 =>
         ErrorInvalidCharacter(c)
         readTokens(r, createToken(BAD, 1) :: tokens)
@@ -317,8 +320,8 @@ class Tokenizer(val file: File, ctx: Context) {
       }
 
     def parseIntToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toInt) match {
-      case Some(value) => createToken(value, numStr.length)
-      case None        => createToken(BAD, numStr.length)
+      case Some(value) => createToken(value, numStr.length )
+      case None        => createToken(BAD, numStr.length )
     }
 
     def parseLongToken(numStr: String): Token = tryConversion(numStr, numStr.length + 1, _.toLong) match {
