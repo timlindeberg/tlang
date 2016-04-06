@@ -5,14 +5,17 @@ import java.io.File
 
 trait Positioned {
   private[Positioned] var _file: Option[File] = None
-  private[Positioned] var _line: Int = 0
-  private[Positioned] var _col: Int = 0
-  private[Positioned] var _endLine: Int = 0
-  private[Positioned] var _endCol: Int = 0
+  private[Positioned] var _lineStart: Int = 0
+  private[Positioned] var _colStart: Int = 0
+  private[Positioned] var _lineEnd: Int = 0
+  private[Positioned] var _colEnd: Int = 0
 
-  def setPos(file: File, pos: Int): this.type = {
-    _line = Position.line(pos)
-    _col = Position.column(pos)
+  def setPos(file: File, start: Int, end: Int): this.type = {
+    _lineStart = Position.line(start)
+    _colStart = Position.column(start)
+
+    _lineEnd = Position.line(end)
+    _colEnd = Position.column(end)
     _file = Some(file)
 
     this
@@ -21,32 +24,32 @@ trait Positioned {
   def hasPosition = _file.isDefined
 
   def setPos(other: Positioned): this.type = {
-    _line = other._line
-    _col = other._col
+    _lineStart = other._lineStart
+    _colStart = other._colStart
     _file = other._file
 
-    _endLine = other.endLine
-    _endCol = other.endCol
+    _lineEnd = other.endLine
+    _colEnd = other.endCol
 
     this
   }
 
   def setPos(start: Positioned, end: Positioned): this.type = {
-    _line = start._line
-    _col = start._col
+    _lineStart = start._lineStart
+    _colStart = start._colStart
     _file = start._file
 
-    _endLine = end.line
-    _endCol = end.col
+    _lineEnd = end.line
+    _colEnd = end.col
 
     this
   }
 
   def file = _file.get
-  def line = _line
-  def col = _col
-  def endLine = _endLine
-  def endCol = _endCol
+  def line = _lineStart
+  def col = _colStart
+  def endLine = _lineEnd
+  def endCol = _colEnd
 
   def position: String = {
     if (hasPosition) {

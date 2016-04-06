@@ -17,6 +17,8 @@ object Lexer extends Pipeline[File, List[Token]] {
 
 object Tokenizer {
 
+  private val LocationPrefix = "L"
+
   private val SingleCharTokens = Map(
     ':' -> COLON,
     ';' -> SEMICOLON,
@@ -157,19 +159,22 @@ class Tokenizer(val file: File, ctx: Context) {
     else createIdToken(s, s.length)
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
-    def getIdentifierOrKeyword(chars: List[Char], s: String): (Token, List[Char]) = {
+
+    def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
       def end(c: Char) = SingleCharTokens.contains(c) || c.isWhitespace
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
-        case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c)
+        case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
         case c :: r if end(c)       => (createIdentifierOrKeyWord(s), chars)
         case c :: r                 =>
-          ErrorInvalidIdentifier(c, s.length)
-          (createToken(BAD, s.length), chars)
+          // Advance column here so only the invalid char gets highlighted
+          column += charsParsed
+          ErrorInvalidIdentifier(c, 1)
+          getIdentifierOrKeyword(r, s + c, 1)
         case Nil                    => (createIdentifierOrKeyWord(s), chars)
       }
     }
-    getIdentifierOrKeyword(chars.tail, chars.head.toString)
+    getIdentifierOrKeyword(chars.tail, chars.head.toString, 1)
   }
 
   private def getMultiLineStringLiteral(chars: List[Char]): (Token, List[Char]) = {
@@ -191,13 +196,13 @@ class Tokenizer(val file: File, ctx: Context) {
 
 
   private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = {
-    def toEnd(charList: List[Char], length: Int, errorFunction: Int => Unit): (Token, List[Char]) =
+    def toEnd(charList: List[Char], length: Int): (Token, List[Char]) =
       charList match {
         case '\'' :: r =>
-          errorFunction(length)
-          (createToken(BAD, length), r)
+          ErrorInvalidCharLiteral(length + 1)
+          (createToken(BAD, length + 1), r)
         case c :: r    =>
-          toEnd(r, length + 1, errorFunction)
+          toEnd(r, length + 1)
         case Nil       =>
           ErrorUnclosedCharLiteral(length)
           (createToken(BAD, length), Nil)
@@ -206,7 +211,7 @@ class Tokenizer(val file: File, ctx: Context) {
     chars match {
       case '\'' :: r =>
         ErrorEmptyCharLiteral()
-        (createToken(BAD, 1), r)
+        (createToken(BAD, 2), r)
 
       // Unicodes
       case '\\' :: 'u' :: r => r match {
@@ -214,22 +219,22 @@ class Tokenizer(val file: File, ctx: Context) {
           val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
           (createToken(unicodeNumber.toChar, 8), r)
         case c1 :: c2 :: c3 :: c4 :: '\'' :: r                                 =>
-          ErrorInvalidUnicode(6)
-          (createToken(BAD, 4), r)
+          ErrorInvalidUnicode(8)
+          (createToken(BAD, 8), r)
         case c1 :: c2 :: c3 :: '\'' :: r                                       =>
-          ErrorInvalidUnicode(5)
-          (createToken(BAD, 4), r)
+          ErrorInvalidUnicode(7)
+          (createToken(BAD, 7), r)
         case c1 :: c2 :: '\'' :: r                                             =>
+          ErrorInvalidUnicode(6)
+          (createToken(BAD, 6), r)
+        case c1 :: '\'' :: r                                                   =>
+          ErrorInvalidUnicode(5)
+          (createToken(BAD, 5), r)
+        case '\'' :: r                                                         =>
           ErrorInvalidUnicode(4)
           (createToken(BAD, 4), r)
-        case c1 :: '\'' :: r                                                   =>
-          ErrorInvalidUnicode(3)
-          (createToken(BAD, 4), r)
-        case '\'' :: r                                                         =>
-          ErrorInvalidUnicode(2)
-          (createToken(BAD, 4), r)
         case r                                                                 =>
-          toEnd(r, 4, ErrorInvalidUnicode)
+          toEnd(r, 3)
       }
 
       // Escaped characters
@@ -243,7 +248,7 @@ class Tokenizer(val file: File, ctx: Context) {
         case '"'  => (createToken('\"', 4), r)
         case '\\' => (createToken('\\', 4), r)
         case _    =>
-          ErrorInvalidEscapeSequence(3)
+          ErrorInvalidEscapeSequence(4)
           (createToken(BAD, 4), r)
       }
       case '\\' :: '\'' :: r      =>
@@ -252,7 +257,7 @@ class Tokenizer(val file: File, ctx: Context) {
       case c :: '\'' :: r         =>
         (createToken(c, 4), r)
       case r                      =>
-        toEnd(r, 4, ErrorInvalidCharLiteral)
+        toEnd(r, 1)
     }
   }
 
@@ -260,70 +265,73 @@ class Tokenizer(val file: File, ctx: Context) {
 
     val startPos = createToken(BAD, 0)
 
-    def getStringLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+    def getStringLiteral(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = chars match {
       case '"' :: r  => (createToken(s, s.length + 2), r)
       case '\n' :: r =>
         ErrorUnclosedStringLiteral(startPos)
         (createToken(BAD, s.length), chars)
       case '\\' :: r => r match {
-        case 't' :: r  => getStringLiteral(r, s + '\t')
-        case 'b' :: r  => getStringLiteral(r, s + '\b')
-        case 'n' :: r  => getStringLiteral(r, s + '\n')
-        case 'r' :: r  => getStringLiteral(r, s + '\r')
-        case 'f' :: r  => getStringLiteral(r, s + '\f')
-        case ''' :: r  => getStringLiteral(r, s + '\'')
-        case '"' :: r  => getStringLiteral(r, s + '\"')
-        case '\\' :: r => getStringLiteral(r, s + '\\')
-        case '[' :: r  => getStringLiteral(r, s + 27.toChar + '[')
+        case 't' :: r  => getStringLiteral(r, s + '\t', charsParsed + 1)
+        case 'b' :: r  => getStringLiteral(r, s + '\b', charsParsed + 1)
+        case 'n' :: r  => getStringLiteral(r, s + '\n', charsParsed + 1)
+        case 'r' :: r  => getStringLiteral(r, s + '\r', charsParsed + 1)
+        case 'f' :: r  => getStringLiteral(r, s + '\f', charsParsed + 1)
+        case ''' :: r  => getStringLiteral(r, s + '\'', charsParsed + 1)
+        case '"' :: r  => getStringLiteral(r, s + '\"', charsParsed + 1)
+        case '\\' :: r => getStringLiteral(r, s + '\\', charsParsed + 1)
+        case '[' :: r  => getStringLiteral(r, s + 27.toChar + '[', charsParsed + 1)
         case 'u' :: r  => r match {
           case c1 :: c2 :: c3 :: c4 :: r if areHexDigits(c1, c2, c3, c4) =>
             val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
-            getStringLiteral(r, s + unicodeNumber.toChar)
+            getStringLiteral(r, s + unicodeNumber.toChar, +1)
           case _                                                         =>
-            ErrorInvalidUnicode(s.length + 1)
-            getStringLiteral(r, s)
+            // Invalid Unicode
+            column += charsParsed
+            val firstWhitespace = r.take(5).indexWhere(_.isWhitespace)
+            val len = if (firstWhitespace == -1) 5 else firstWhitespace + 1
+            ErrorInvalidUnicode(len + 1)
+            getStringLiteral(r, s, 2)
         }
         case _         =>
-          ErrorInvalidEscapeSequence(s.length + 1)
-          getStringLiteral(r, s)
+          column += charsParsed
+          ErrorInvalidEscapeSequence(2)
+          getStringLiteral(r, s, 1)
       }
-      case c :: r    => getStringLiteral(r, s + c)
+      case c :: r    => getStringLiteral(r, s + c, charsParsed + 1)
       case Nil       =>
         ErrorUnclosedStringLiteral(startPos)
         (createToken(BAD, s.length), chars)
     }
-    getStringLiteral(chars, "")
+    getStringLiteral(chars, "", 1)
   }
 
   private def getNumberLiteral(chars: List[Char]): (Token, List[Char]) = {
 
-    val startPos = createToken(BAD, 0)
-
-    def tryConversion[T](numStr: String, conversion: (String) => T): Option[T] =
+    def tryConversion[T](numStr: String, tokenLength: Int, conversion: (String) => T): Option[T] =
       try {
         Some(conversion(numStr))
       } catch {
         case _: NumberFormatException =>
-          ErrorNumberTooLarge(startPos)
+          ErrorNumberTooLarge(tokenLength)
           None
       }
 
-    def parseIntToken(numStr: String): Token = tryConversion(numStr, _.toInt) match {
+    def parseIntToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toInt) match {
       case Some(value) => createToken(value, numStr.length)
       case None        => createToken(BAD, numStr.length)
     }
 
-    def parseLongToken(numStr: String): Token = tryConversion(numStr, _.toLong) match {
+    def parseLongToken(numStr: String): Token = tryConversion(numStr, numStr.length + 1, _.toLong) match {
       case Some(value) => createToken(value, numStr.length)
       case None        => createToken(BAD, numStr.length)
     }
 
-    def parseFloatToken(numStr: String): Token = tryConversion(numStr, _.toFloat) match {
+    def parseFloatToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toFloat) match {
       case Some(value) => createToken(value, numStr.length)
       case None        => createToken(BAD, numStr.length)
     }
 
-    def parseDoubleToken(numStr: String): Token = tryConversion(numStr, _.toDouble) match {
+    def parseDoubleToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toDouble) match {
       case Some(value) => createToken(value, numStr.length)
       case None        => createToken(BAD, numStr.length)
     }
@@ -338,7 +346,7 @@ class Tokenizer(val file: File, ctx: Context) {
             foundDecimal = true
             getNumberLiteral(r, s + ".")
           } else {
-            ErrorInvalidNumber(startPos)
+            ErrorInvalidNumber(s.length, r)
             (createToken(BAD, s.length), chars)
           }
         case ('e' | 'E') :: r    =>
@@ -348,11 +356,11 @@ class Tokenizer(val file: File, ctx: Context) {
               case '-' :: c :: r if c.isDigit => getNumberLiteral(r, s + "E-" + c)
               case c :: r if c.isDigit        => getNumberLiteral(r, s + "E" + c)
               case _                          =>
-                ErrorInvalidFloat(startPos)
+                ErrorInvalidFloat(s.length, r)
                 (createToken(BAD, s.length), chars)
             }
           } else {
-            ErrorInvalidFloat(startPos)
+            ErrorInvalidFloat(s.length, r)
             (createToken(BAD, s.length), chars)
           }
         case ('f' | 'F') :: r    => (parseFloatToken(s), r)
@@ -360,7 +368,7 @@ class Tokenizer(val file: File, ctx: Context) {
           if (!foundE && !foundDecimal) {
             (parseLongToken(s), r)
           } else {
-            ErrorInvalidFloat(startPos)
+            ErrorInvalidFloat(s.length, r)
             (createToken(BAD, s.length), chars)
           }
         case r                   =>
@@ -370,9 +378,7 @@ class Tokenizer(val file: File, ctx: Context) {
             (parseIntToken(s), r)
       }
 
-    val res = getNumberLiteral(chars, "")
-    res._1.setPos(startPos)
-    res
+    getNumberLiteral(chars, "")
   }
 
   private def skipLine(chars: List[Char]): List[Char] = {
@@ -416,18 +422,20 @@ class Tokenizer(val file: File, ctx: Context) {
   private def createToken(char: Char, tokenLength: Int): Token = createToken(new CHARLIT(char), tokenLength)
   private def createToken(string: String, tokenLength: Int): Token = createToken(new STRLIT(string), tokenLength)
   private def createToken[T](token: Token, tokenLength: Int): Token = {
-    token.setPos(file, Position.encode(line, column))
+    token.setPos(file, Position.encode(line, column), Position.encode(line, column + tokenLength))
     column += tokenLength
     token
   }
 
-  private def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
-    val bad = new Token(BAD).setPos(file, Position.encode(line, column + colOffset))
-    error(errorCode, msg, bad)
+  private def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
+    val bad = new Token(BAD).setPos(file, Position.encode(startPos.line, startPos.col), Position.encode(startPos.line + 1, 1))
+    ctx.reporter.error(LocationPrefix, errorCode, msg, bad)
   }
 
-  private def error(errorCode: Int, msg: String, pos: Token): Unit =
-    ctx.reporter.error("L", errorCode, msg, pos)
+  private def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
+    val bad = new Token(BAD).setPos(file, Position.encode(line, column), Position.encode(line, column + colOffset))
+    ctx.reporter.error(LocationPrefix, errorCode, msg, bad)
+  }
 
 
   //---------------------------------------------------------------------------------------
@@ -435,16 +443,16 @@ class Tokenizer(val file: File, ctx: Context) {
   //---------------------------------------------------------------------------------------
 
   private def ErrorInvalidCharacter(c: Char) =
-    error(0, s"Invalid character: '$c'.", 0)
+    error(0, s"Invalid character: '$c'.", 1)
 
   private def ErrorInvalidIdentifier(c: Char, length: Int) =
     error(1, s"Invalid character in identifier: '$c'.", length)
 
-  private def ErrorUnclosedMultilineString(pos: Token) =
-    error(2, "Unclosed multiline string literal.", pos)
+  private def ErrorUnclosedMultilineString(startPos: Positioned) =
+    error(2, "Unclosed multiline string literal.", startPos)
 
   private def ErrorEmptyCharLiteral() =
-    error(3, "Empty character literal.", 0)
+    error(3, "Empty character literal.", 2)
 
   private def ErrorInvalidEscapeSequence(length: Int) =
     error(4, "Invalid escape sequence.", length)
@@ -458,16 +466,16 @@ class Tokenizer(val file: File, ctx: Context) {
   private def ErrorUnclosedCharLiteral(length: Int) =
     error(7, "Unclosed character literal.", length)
 
-  private def ErrorUnclosedStringLiteral(pos: Token) =
-    error(8, "Unclosed string literal.", pos)
+  private def ErrorUnclosedStringLiteral(startPos: Positioned) =
+    error(8, "Unclosed string literal.", startPos)
 
-  private def ErrorNumberTooLarge(pos: Token) =
-    error(9, "Number is too large to fit in datatype.", pos)
+  private def ErrorNumberTooLarge(length: Int) =
+    error(9, "Number is too large to fit in datatype.", length)
 
-  private def ErrorInvalidNumber(pos: Token) =
-    error(10, "Invalid number.", pos)
+  private def ErrorInvalidNumber(length: Int, rest: List[Char]) =
+    error(10, "Invalid number.", length + rest.indexWhere(_.isWhitespace) + 1)
 
-  private def ErrorInvalidFloat(pos: Token) =
-    error(11, "Invalid floating point number.", pos)
+  private def ErrorInvalidFloat(length: Int, rest: List[Char]) =
+    error(11, "Invalid floating point number.", length + rest.indexWhere(_.isWhitespace) + 1)
 
 }

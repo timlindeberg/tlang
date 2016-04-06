@@ -1,18 +1,62 @@
 // Valid:
-'\t'
-'\b'
-'\n'
-'\r'
-'\f'
-'\''
-'\"'
-'\\'
+prefix '\t' postfix
+prefix '\b' postfix
+prefix '\n' postfix
+prefix '\r' postfix
+prefix '\f' postfix
+prefix '\'' postfix
+prefix '\"' postfix
+prefix '\\' postfix
+
+prefix '\u123a' postfix
+prefix '\uabcd' postfix
+prefix '\u1234' postfix
 
 // Invalid:
-'\a' // res: L2004
-'\x' // res: L2004
-'\y' // res: L2004
+prefix '\a' postfix // res: L2004
+prefix '\x' postfix // res: L2004
+prefix '\y' postfix // res: L2004
+prefix '\ydasd' postfix // res: L2005
+prefix 'dasd\y' postfix // res: L2005
 
-"\a" // res: L2004
-"\x" // res: L2004
-"\y" // res: L2004
+// Invalid Unicode:
+prefix '\u' postfix // res: L2006
+prefix '\u1' postfix // res: L2006
+prefix '\u12' postfix // res: L2006
+prefix '\u123' postfix // res: L2006
+prefix '\u123g' postfix // res: L2006
+prefix '\ulolo' postfix // res: L2006
+prefix '\u12345' postfix // res: L2005
+prefix '\u12345343123casddas' postfix // res: L2005
+prefix '\u1g345343123casddas' postfix // res: L2005
+
+prefix "dsad \u ads" postfix // res: L2006
+prefix "dsad \u1 ads" postfix // res: L2006
+prefix "dsad \u12 ads" postfix // res: L2006
+prefix "dsad \u123 ads" postfix // res: L2006
+prefix "dsad \u123g ads" postfix // res: L2006
+prefix "dsad \ulolo ads" postfix // res: L2006
+prefix "dsad \u12345 ads" postfix
+prefix "dsad \u12345343123casddas ads" postfix
+prefix "dsad \u123a ads" postfix
+prefix "dsad \uabcd ads" postfix
+prefix "dsad \u1234 ads" postfix
+
+// Three invalid escape sequence errors
+prefix "dd aa \a dasd \a asd \a" postfix// res: L2004
+// res: L2004
+// res: L2004
+
+// Three invalid unicode errors
+prefix "dd aa \u123 dasd \u12 asd \u12g45 a" postfix// res: L2006
+// res: L2006
+// res: L2006
+
+prefix  "\xdasd" postfix // res: L2004
+prefix "dasd\y" postfix // res: L2004
+
+// Three errors and unclosed string
+prefix "dd aa \u123 dasd \u12 asd \u12g45 a // res: L2006
+// res: L2006
+// res: L2006
+// res: L2008

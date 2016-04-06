@@ -45,12 +45,14 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
       val warnings = ctx.reporter.warnings.mkString("\n\n")
       println(warnings)
       val warningCodes = TestUtils.parseErrorCodes(warnings)
-      assertCorrect(warningCodes, expectedErrors, warnings)
+      assertCorrect(warningCodes, expectedErrors)
     } catch {
       case t: CompilationException =>
         println(t.getMessage)
+        println("---------------------------------------------------------------------")
+        println
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
-        assertCorrect(errorCodes, expectedErrors, t.getMessage)
+        assertCorrect(errorCodes, expectedErrors)
     }
   }
 }

@@ -1,8 +1,9 @@
-´ //res: L2000
-$ //res: L2000
-@ //res: L2000
-£ //res: L2000
-§ //res: L2000
-½ //res: L2000
+//res: L2001
+dasd  dasd d d$as´ddd //res: L2001
+d _das$dasd //res: L2001
+ @ //res: L2000
+£     //res: L2000
+§___das //res: L2000
+dsa34324½ //res: L2001
 
 // There are of course more invalid characters

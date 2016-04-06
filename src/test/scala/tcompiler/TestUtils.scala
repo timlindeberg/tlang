@@ -83,8 +83,8 @@ object TestUtils extends FlatSpec {
     }.toList
   }
 
-  def assertCorrect(res: List[String], sol: List[String], errorMsg: String) = {
-    assert(res.length == sol.length, "Different amount of results and expected results.\n\n" + errorMsg)
+  def assertCorrect(res: List[String], sol: List[String]) = {
+    assert(res.length == sol.length, "Different amount of results and expected results.")
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
       case (r, s, i) =>
@@ -95,8 +95,10 @@ object TestUtils extends FlatSpec {
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
   private def resultsVersusSolution(res: List[String], sol: List[String]) = {
-    val list: List[(String, String)] = ("Result:", "Solution:") :: res.zip(sol)
-    list.map { case (r, s) => f"$r%-20s$s%-20s" }.mkString("\n")
+    val numbers = (1 to res.size).map(_.toString)
+    val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
+    val list = ("", "Result:", "Solution:") :: numbered
+    list.map { case (i, r, s) => f"$i%-4s$r%-20s$s%-20s" }.mkString("\n")
   }
 
     def hasTypes(prog: Program) = {

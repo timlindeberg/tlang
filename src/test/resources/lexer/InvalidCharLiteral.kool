@@ -1,20 +1,10 @@
 // Invalid:
-'ss' // res: L2005
-'dasdsad' // res: L2005
-'\\\' // res: L2005
+// res: L2005
+prefix 'ss' 'ss1' // res: L2005
+prefix 'dasdsad' // res: L2005
+prefix '\\\' // res: L2005
 
-// Invalid Unicode:
-'\u' // res: L2006
-'\u1' // res: L2006
-'\u12' // res: L2006
-'\u123' // res: L2006
-'\u123g' // res: L2006
-'\ulolo' // res: L2006
-'\u12345' // res: L2006
-'\u12345343123casddas' // res: L2006
-'\u123a'
-'\uabcd'
-'\u1234'
+
 
 // Unclosed:
-'dasdasd // res: L2007
+prefix 'dasdasd // res: L2007
