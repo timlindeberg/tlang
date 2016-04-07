@@ -42,7 +42,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val MainName      = "Main"
   val IdName        = "x"
   val StringLength  = 5
-  val NumberOfTests = 1
+  val NumberOfTests = 0
 
   val int    = () => IntLit(Rand.nextInt).setType(TInt)
   val bool   = () => (if (Rand.nextBoolean) True() else False()).setType(TBool)

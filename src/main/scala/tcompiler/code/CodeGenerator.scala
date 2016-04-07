@@ -178,6 +178,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
               }
               "(" + arg + ")L" + JavaStringBuilder + ";"
             }
+            // TODO: Print array in a nicer way?
             ch << DefaultNew(JavaStringBuilder)
             compileExpr(lhs)
             ch << InvokeVirtual(JavaStringBuilder, "append", methSignature(lhs))

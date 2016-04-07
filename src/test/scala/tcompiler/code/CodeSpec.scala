@@ -22,10 +22,14 @@ class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   programFiles(Resources + "programs/valid").foreach(test(_, testPositive))
 
   def test(file: File, testFunction: File => Unit): Unit = {
-    if (file.isDirectory)
+    if (file.isDirectory){
       programFiles(file.getPath).foreach(test(_, testFunction))
-    else
+    } else{
+      if(shouldBeIgnored(file))
+      ignore should file.getName.toString in testFunction(file)
+        else
       it should file.getName.toString in testFunction(file)
+    }
   }
 
   def testPositive(file: File): Unit = {

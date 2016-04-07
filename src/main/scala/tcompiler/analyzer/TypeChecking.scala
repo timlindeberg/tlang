@@ -227,11 +227,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           TArray(tpes.head)
         }
       case Plus(lhs, rhs)                  =>
-        val types = List(Types.anyObject, TString, TBool) ::: Types.primitives
-        val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
+        val argTypes = (tcExpr(lhs), tcExpr(rhs))
         argTypes match {
-          case (TString, _) | (_, TString)       => TString
+          case (TString, _)   | (_, TString)     => TString
           case (_, _: TObject) | (_: TObject, _) => tcBinaryOperator(expression, argTypes)
+          case (a: TArray, x)                    => ErrorWrongType(x, a, lhs)
+          case (x, a: TArray)                    => ErrorWrongType(x, a, rhs)
           case (TBool, x)                        => ErrorWrongType(x, "Bool", lhs)
           case (x, TBool)                        => ErrorWrongType(x, "Bool", rhs)
           case (TDouble, _) | (_, TDouble)       => TDouble
@@ -378,19 +379,14 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
                   ErrorOperatorNotFound(expression, argList, expression)
               case _      => correctOperatorType(expression, argList, Some(TBool), operatorType)
             }
-          case _                                 =>
-            lhsType match {
-              case arrayType: TArray =>
-                if (!rhsType.isSubTypeOf(arrayType))
-                  ErrorWrongType(arrayType, rhsType, expression)
-              case TString           =>
-                if (!rhsType.isSubTypeOf(TString))
-                  ErrorWrongType("String", rhsType, expression)
-              case TBool             =>
-                if (!rhsType.isSubTypeOf(TBool))
-                  ErrorWrongType("Bool", rhsType, expression)
-              case _                 =>
-            }
+          case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
+          case (TBool, _)     => ErrorWrongType(lhsType, rhsType, rhs)
+          case (_, TBool)     => ErrorWrongType(rhsType, lhsType, lhs)
+          case (_: TArray, _) => ErrorWrongType(lhsType, rhsType, rhs)
+          case (_, _: TArray) => ErrorWrongType(lhsType, lhsType, lhs)
+          case (TString, _)   => ErrorWrongType(lhsType, rhsType, rhs)
+          case (_, TString)   => ErrorWrongType(lhsType, lhsType, lhs)
+          case _ => // valid
         }
         TBool
       case And(lhs, rhs)                   =>
@@ -667,7 +663,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   private def makeExpectedString(expected: List[Type]): String = expected.size match {
     case 0 => ""
-    case 1 => "'" + expected.head.toString + "'"
+    case 1 => s"'${expected.head}'"
     case n => expected.take(n - 1).map(t => s"'$t'").mkString(", ") + " or '" + expected.last + "'"
   }
 
@@ -679,11 +675,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
-  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(expected.toString, found.toString, pos)
-  private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(expected.toString, found, pos)
-  private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, found.toString, pos)
+  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(s"'$expected'", s"'$found'", pos)
+  private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(s"'$expected'", found, pos)
+  private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, s"'$found'", pos)
   private def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
-    error(0, s"Expected type: $expected, found: '$found'.", pos)
+    error(0, s"Expected type: $expected, found: $found.", pos)
 
   private def ErrorClassDoesntHaveMethod(className: String, methodSignature: String, pos: Positioned) =
     error(1, s"Class '$className' does not contain a method '$methodSignature'.", pos)
@@ -729,10 +725,17 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   private def ErrorOperatorNotFound(expr: ExprTree, args: (Type, Type), pos: Positioned): Type =
     ErrorOperatorNotFound(expr, List(args._1, args._2), pos)
   private def ErrorOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
-    val classesString = if (args.size == 2 && args.head != args(1))
-      "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
-    else
+    val classesString = if(args.size != 2 || args(0) == args(1)){
       "The class \'" + args.head + "\' does not"
+    }else{
+      if(!args(0).isInstanceOf[TObject]){
+        "The class \'" + args(1) + "\' does not"
+      }else if(!args(1).isInstanceOf[TObject]){
+        "The class \'" + args(0) + "\' does not"
+      }else{
+        "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
+      }
+    }
     val operatorName = operatorString(expr, args)
     error(13, s"$classesString contain an operator '$operatorName'.", pos)
   }

@@ -3,7 +3,7 @@ package tcompiler.analyzer
 import java.io.File
 
 import org.scalatest._
-import tcompiler.analyzer.Symbols.{LocalVar, ClassSymbol, MethodSymbol, VariableSymbol}
+import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
@@ -96,6 +96,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (string, double, TString),
       (string, char, TString),
       (string, bool, TString),
+      (string, array, TString),
 
       (char, char, TInt),
 
@@ -224,6 +225,8 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       (double, char, TDouble),
 
       (string, string, TString),
+
+      (array, array, array().getType),
 
       (obj, obj, obj().getType)
     )
@@ -369,7 +372,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
 
       getInvalidCombinations(validCombinations.toList).foreach { case (lhs, rhs) =>
-        TypeChecker.tcExpr(expressionType(rhs(), lhs()))
+        TypeChecker.tcExpr(expressionType(lhs(), rhs()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + lhs + ", " + rhs + ")")
         TestContext.reporter.clear()

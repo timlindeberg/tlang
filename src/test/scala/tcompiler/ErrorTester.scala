@@ -16,7 +16,7 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
 
   import TestUtils._
 
-  val Seperator = "---------------------------------------------------------------------"
+  val Seperator = "---------------------------------------------------------------------\n"
 
   def Name: String
   def Path: String
@@ -29,10 +29,14 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
   TestUtils.programFiles(Path).foreach(test)
 
   def test(file: File): Unit =
-    if (file.isDirectory)
-      TestUtils.programFiles(file.getPath).foreach(test)
-    else
-      it should file.getName.toString in testFile(file)
+    if (file.isDirectory){
+      programFiles(file.getPath).foreach(testFile)
+    } else{
+      if(shouldBeIgnored(file))
+        ignore should file.getName.toString in testFile(file)
+      else
+        it should file.getName.toString in testFile(file)
+    }
 
   private def testFile(file: File): Unit = {
     val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
@@ -45,15 +49,14 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
         fail("Test failed: No errors or warnings!")
 
       val warnings = ctx.reporter.warnings.mkString("\n\n")
-      println(warnings)
       println(Seperator)
+      println(warnings)
       val warningCodes = TestUtils.parseErrorCodes(warnings)
       assertCorrect(warningCodes, expectedErrors)
     } catch {
       case t: CompilationException =>
-        println(t.getMessage)
         println(Seperator)
-        println
+        println(t.getMessage)
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors)
     }

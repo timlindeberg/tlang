@@ -1,2 +1,3 @@
+// ignore
 var a = new Int() // Res: T2017
 var b = new String() // Res: T2017

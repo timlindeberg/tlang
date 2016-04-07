@@ -31,13 +31,13 @@ object Types {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
       val implicitTypes = implicitlyConvertableFrom()
-      if(implicitTypes.contains(tpe))
+      if (implicitTypes.contains(tpe))
         return true
 
 
-      tpe match {
-        case TArray(arrayTpe) => implicitTypes.contains(arrayTpe)
-        case _                => false
+      (this, tpe) match {
+        case (TArray(a1), TArray(a2)) => a1.isImplicitlyConvertableFrom(a2)
+        case _ => false
       }
     }
     def getSuperTypes: List[Type] = List()
@@ -130,29 +130,29 @@ object Types {
   case class TArray(tpe: Type) extends Type {
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-      case _              => false
+      case _ => false
     }
 
-    override def implicitlyConvertableFrom() = tpe.implicitlyConvertableFrom()
+    override def implicitlyConvertableFrom() = List()
     override def toString = tpe.toString + "[]"
     override def byteCodeName: String = "[" + tpe.byteCodeName
     override val codes     = new ArrayCodeMap(tpe.byteCodeName)
     override val size: Int = 1
     def dimension: Int = tpe match {
       case t: TArray => 1 + t.dimension
-      case _         => 1
+      case _ => 1
     }
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case obj @ TObject(c) =>
+      case obj@TObject(c) =>
         if (classSymbol.name == c.name || c.name == anyObject.classSymbol.name) true
         else classSymbol.parent match {
           case Some(x) => x.getType.isSubTypeOf(tpe)
-          case None    => false
+          case None => false
         }
-      case _                => false
+      case _ => false
     }
 
     override def implicitlyConvertableFrom() =
@@ -165,7 +165,7 @@ object Types {
     override def getSuperTypes: List[Type] =
       List(this) ++ (classSymbol.parent match {
         case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
-        case None               => List()
+        case None => List()
       })
 
     override def toString = classSymbol.name

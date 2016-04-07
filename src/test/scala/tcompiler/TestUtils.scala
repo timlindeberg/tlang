@@ -17,6 +17,16 @@ object TestUtils extends FlatSpec {
   val SolutionPrefix = ".kool-solution"
   val Interpreter    = new Interpreter
 
+  def test(file: File, testFunction: File => Unit): Unit = {
+    if (file.isDirectory){
+      programFiles(file.getPath).foreach(test(_, testFunction))
+    } else{
+      if(shouldBeIgnored(file))
+        ignore should file.getName.toString in testFunction(file)
+      else
+        it should file.getName.toString in testFunction(file)
+    }
+  }
 
   def executeTProgram(f: File, prefix: String): String =
     executeTProgram(prefix + f.getName, f.getName.dropRight(Main.FileEnding.length))
@@ -59,8 +69,8 @@ object TestUtils extends FlatSpec {
 
 
   def parseSolutions(file: File): List[String] = {
-    val SolutionRegex = """.*// *res:(.*)""".r
-    val SolutionOrderedRegex = """.*// *res(\d+):(.*)""".r
+    val SolutionRegex = """.*// *[R|r]es:(.*)""".r
+    val SolutionOrderedRegex = """.*// *[R|r]es(\d+):(.*)""".r
 
     val fileName = file.getPath
     var i = -1
@@ -72,6 +82,11 @@ object TestUtils extends FlatSpec {
       case _                                 => (-1, "")
     })
     answers.toList.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
+  }
+
+  def shouldBeIgnored(file: File): Boolean  = {
+    val firstLine = Source.fromFile(file.getPath).getLines().take(1).toList.head
+    firstLine.matches(""".*// *[I|i]gnore.*""")
   }
 
   // Parses codes from error messages
