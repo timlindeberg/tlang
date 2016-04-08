@@ -224,7 +224,7 @@ object Trees {
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
     def dimension = sizes.size
   }
-  case class New(var tpe: ClassIdentifier, args: List[ExprTree]) extends ExprTree
+  case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
   case class Hash(expr: ExprTree) extends ExprTree
   case class Negation(expr: ExprTree) extends ExprTree

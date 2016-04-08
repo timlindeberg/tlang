@@ -7,6 +7,7 @@ import tcompiler.TestUtils
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast._
 import tcompiler.lexer.Lexer
+import tcompiler.modification.{Imports, Templates}
 import tcompiler.utils.{CompilationException, Context}
 
 
@@ -32,7 +33,7 @@ class CodeSpec extends FlatSpec with Matchers {
     val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
 
     try {
-      val program = (Lexer andThen Parser andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      val program = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
       hasTypes(program) should be(true)
       ctx.reporter.hasErrors should be(false)

@@ -3,7 +3,6 @@ package tcompiler.analyzer
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.CodeHandler
-import tcompiler.analyzer.Types.Type
 
 trait CodeMap {
 
@@ -275,7 +274,7 @@ object StringCodeMap extends CodeMap {
   override def store(ch: CodeHandler, index: Int) = ch << AStore(index)
   override def arrayLoad(ch: CodeHandler) = ch << AALOAD
   override def arrayStore(ch: CodeHandler) = ch << AASTORE
-  override def defaultConstant(ch: CodeHandler) = ch << ACONST_NULL
+  override def defaultConstant(ch: CodeHandler) = ch << Ldc("")
   override def newArray(ch: CodeHandler) = ch << NewArray("java/lang/String")
 
   override def cmpEq(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)

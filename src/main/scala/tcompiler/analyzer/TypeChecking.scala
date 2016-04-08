@@ -442,11 +442,18 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             classSymbol.lookupMethod("new", argTypes) match {
               case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
               case None if exprs.nonEmpty  =>
-                val methodSignature = tpe.value + exprs.map(_.getType).mkString("(", " , ", ")")
+                val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
                 ErrorDoesntHaveConstructor(classSymbol.name, methodSignature, newDecl)
               case _                       =>
             }
-          case primitiveType        => ErrorNewPrimitive(primitiveType.toString, newDecl)
+          case primitiveType        =>
+            if(exprs.size > 1){
+              ErrorNewPrimitive(tpe.name, argTypes, newDecl)
+            }else if(exprs.size == 1){
+              val arg = exprs.head.getType
+              if(!primitiveType.isImplicitlyConvertableFrom(arg))
+                ErrorNewPrimitive(tpe.name, argTypes, newDecl)
+            }
         }
         tpe.getType
       case Negation(expr)                =>
@@ -751,8 +758,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   private def ErrorDoesntHaveConstructor(className: String, methodSignature: String, pos: Positioned) =
     error(16, s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
 
-  private def ErrorNewPrimitive(tpe: String, pos: Positioned) =
-    error(17, s"Cannot create a new instance of primitive type '$tpe'.", pos)
+  private def ErrorNewPrimitive(tpe: String, args: List[Type], pos: Positioned) =
+    error(17, s"Cannot construct primitive '$tpe' with arguments '(${args.mkString(", ")})'.", pos)
 
   private def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)

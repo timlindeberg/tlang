@@ -1,3 +1,5 @@
-// ignore
-var a = new Int() // Res: T2017
-var b = new String() // Res: T2017
+var a = new Int(1, 2) // Res: T2017
+var b = new String(1, "") // Res: T2017
+var c = new Int("") // Res: T2017
+var d = new Bool(1) // Res: T2017
+var e = new Float(1)

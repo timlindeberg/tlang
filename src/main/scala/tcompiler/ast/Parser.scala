@@ -285,7 +285,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /**
    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
-   */
+    **/
   def operator(modifiers: Set[Modifier], startPos: Positioned): OperatorDecl = {
     modifiers.find(_.isInstanceOf[Implicit]) match {
       case Some(impl) => ErrorImplicitMethodOrOperator(impl)
@@ -481,7 +481,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
    * | "++" <identifier> <endStatement>
    * | "--" <identifier> <endStatement>
    * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] } <endStatement>
-   */
+    **/
   def statement(): StatTree = {
     val startPos = nextToken
 
@@ -648,7 +648,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
    * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
    * | <ternary> [ "[" <expression> "] = " <expression> ]
-   */
+    **/
   def assignment(expr: Option[ExprTree] = None) = {
     val e = if (expr.isDefined) expr.get else ternary()
 
@@ -863,32 +863,40 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             sizes
           }
 
-
-          def primitiveArray(construct: () => TypeTree) = {
-            eat(nextTokenKind)
-            NewArray(construct(), sizes())
+          val tpe = nextTokenKind match {
+            case INT     =>
+              eat(INT)
+              IntType()
+            case LONG    =>
+              eat(LONG)
+              LongType()
+            case FLOAT   =>
+              eat(FLOAT)
+              FloatType()
+            case DOUBLE  =>
+              eat(DOUBLE)
+              DoubleType()
+            case CHAR    =>
+              eat(CHAR)
+              CharType()
+            case STRING  =>
+              eat(STRING)
+              StringType()
+            case BOOLEAN =>
+              eat(BOOLEAN)
+              BooleanType()
+            case _       => classIdentifier()
           }
-          nextTokenKind match {
-            case INT     => primitiveArray(IntType)
-            case LONG    => primitiveArray(LongType)
-            case FLOAT   => primitiveArray(FloatType)
-            case DOUBLE  => primitiveArray(DoubleType)
-            case CHAR    => primitiveArray(CharType)
-            case STRING  => primitiveArray(StringType)
-            case BOOLEAN => primitiveArray(BooleanType)
-            case _       =>
-              val id = classIdentifier()
-              nextTokenKind match {
-                case LPAREN   =>
-                  eat(LPAREN)
-                  val args = commaList(expression)
-                  eat(RPAREN)
-                  New(id, args)
-                case LBRACKET =>
-                  NewArray(id, sizes())
-                case _        => FatalWrongToken(LPAREN, LBRACKET)
-              }
 
+          nextTokenKind match {
+            case LPAREN   =>
+              eat(LPAREN)
+              val args = commaList(expression)
+              eat(RPAREN)
+              New(tpe, args)
+            case LBRACKET =>
+              NewArray(tpe, sizes())
+            case _        => FatalWrongToken(LPAREN, LBRACKET)
           }
         case _             => FatalWrongToken(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
       }

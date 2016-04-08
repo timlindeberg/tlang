@@ -43,7 +43,7 @@ object Templates extends Pipeline[Program, Program] {
       case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(replaceType(t))}
       case f: Formal       => f.tpe = replaceType(f.tpe)
       case n: NewArray     => n.tpe = replaceType(n.tpe)
-      case n: New          => n.tpe = replaceTypeId(n.tpe)
+      case n: New          => n.tpe = replaceType(n.tpe)
     })
     prog
   }
@@ -111,11 +111,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       templateMap.getOrElse(t, t)
     }
 
-    def updateTypeOfNewExpr(newExpr: New) = updateType(newExpr.tpe) match {
-      case t: ClassIdentifier => t
-      case t                  => ErrorNewPrimitive(t.name, newExpr.tpe)
-    }
-
     def templateName(id: ClassIdentifier) =
       id.copy(value = template.id.templatedClassName(templateTypes), templateTypes = List())
 
@@ -126,7 +121,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       case f: Formal          => f.tpe = updateType(f.tpe)
       case m: MethodDecl      => m.retType collect { case t => m.retType = Some(updateType(t))}
       case o: OperatorDecl    => o.retType collect { case t => o.retType = Some(updateType(t))}
-      case n: New             => n.tpe = updateTypeOfNewExpr(n)
+      case n: New             => n.tpe = updateType(n.tpe)
       case n: NewArray        => n.tpe = updateType(n.tpe)
     })
     newClass
@@ -135,7 +130,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   private def constructTemplateMapping(typedId: ClassIdentifier, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
     val diff = templateTypes.size - templateList.size
     if (diff != 0) {
-      val index = if (diff > 0) templateList.size else templateTypes.size - 1
       ErrorWrongNumGenerics(templateList.size, templateTypes.size, typedId)
     } else {
       templateList.zip(templateTypes).toMap
@@ -147,7 +141,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       var set = Set[TypeTree]()
       var reportedFor = Set[TypeTree]()
       val templateTypes = tClass.id.templateTypes
-      val id = tClass.id
       templateTypes.foreach { tType =>
         if (set(tType) && !reportedFor(tType)) {
           ErrorSameName(tType.name, tType)
@@ -173,17 +166,12 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     ErrorMap
   }
 
-  private def ErrorNewPrimitive(tpe: String, pos: Positioned) = {
-    error(1, s"Cannot create a new instance of primitive type '$tpe'.", pos)
-    ErrorType
-  }
-
   private def ErrorDoesNotExist(name: String, pos: Positioned) = {
-    error(2, s"Can not find template class named '$name'.", pos)
+    error(1, s"Can not find template class named '$name'.", pos)
     ErrorClass
   }
 
   private def ErrorSameName(name: String, pos: Positioned) = {
-    error(3, s"Generic parameter duplicate: '$name'.", pos)
+    error(2, s"Generic parameter duplicate: '$name'.", pos)
   }
 }

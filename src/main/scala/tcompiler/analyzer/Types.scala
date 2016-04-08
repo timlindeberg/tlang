@@ -30,6 +30,9 @@ object Types {
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+      if(this == tpe)
+        return true
+
       val implicitTypes = implicitlyConvertableFrom()
       if (implicitTypes.contains(tpe))
         return true
