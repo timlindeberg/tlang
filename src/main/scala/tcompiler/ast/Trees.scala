@@ -131,12 +131,12 @@ object Trees {
   case class Error(expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
 
-  trait ExprTree extends Tree with Typed
+  trait ExprTree extends StatTree with Typed
 
-  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree with StatTree
-  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ExprTree with StatTree
+  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree
+  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ExprTree
   case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
-  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree with StatTree
+  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree
 
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -162,7 +162,7 @@ object Trees {
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArrayLength(arr: ExprTree) extends ExprTree
-  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree with StatTree
+  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
   case class IntLit(value: Int) extends ExprTree
   case class LongLit(value: Long) extends ExprTree
   case class FloatLit(value: Float) extends ExprTree
@@ -233,7 +233,7 @@ object Trees {
   case class PostIncrement(id: ExprTree) extends ExprTree with StatTree
   case class PreDecrement(id: ExprTree) extends ExprTree with StatTree
   case class PostDecrement(id: ExprTree) extends ExprTree with StatTree
-  case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree with StatTree
+  case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
 
   case class Empty() extends ExprTree {
     override def toString = ""

@@ -5,6 +5,20 @@ import tcompiler.ast.Trees._
 object TreeGroups {
 
 
+  object UselessStatement {
+    def unapply(e: StatTree): Option[ExprTree] = e match {
+      case _: Assign |
+           _: ArrayAssign |
+           _: FieldAssign |
+           _: PreIncrement |
+           _: PostIncrement |
+           _: PreDecrement |
+           _: MethodCall |
+           _: PostDecrement => None
+      case expr:ExprTree => Some(expr)
+      case _ => None
+    }
+  }
 
 
   object BinaryOperator {

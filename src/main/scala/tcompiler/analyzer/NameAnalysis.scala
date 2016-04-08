@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.PrintStatement
+import tcompiler.ast.TreeGroups.{PrintStatement, UselessStatement}
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees.{ClassDecl, _}
 import tcompiler.utils._
@@ -23,8 +23,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 class NameAnalyser(ctx: Context, prog: Program) {
 
-  private val LocationPrefix                              = "N"
-  private var variableUsage = Map[VariableSymbol, Boolean]()
+  private val LocationPrefix = "N"
+  private var variableUsage  = Map[VariableSymbol, Boolean]()
 
   val globalScope = new GlobalScope
 
@@ -62,9 +62,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-    case Program(_, _, classes)                                                          =>
+    case Program(_, _, classes)                                                      =>
       classes.foreach(addSymbols(_, globalScope))
-    case classDecl @ ClassDecl(id @ ClassIdentifier(name, types), parent, vars, methods) =>
+    case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
       val newSymbol = new ClassSymbol(name).setPos(id)
       ensureClassNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)
@@ -75,7 +75,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl @ VarDecl(tpe, id, init, _)                                    =>
+    case varDecl@VarDecl(tpe, id, init, _)                                    =>
       val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
@@ -88,12 +88,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
       }
 
       classSymbol.members += (id.value -> newSymbol)
-    case methodDecl @ MethodDecl(retType, id, args, stats, _)                   =>
+    case methodDecl@MethodDecl(retType, id, args, stats, _)                   =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
       args.foreach(addSymbols(_, newSymbol))
-    case constructorDecl @ ConstructorDecl(_, id, args, stats, _)               =>
+    case constructorDecl@ConstructorDecl(_, id, args, stats, _)               =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
@@ -101,7 +101,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       constructorDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case operatorDecl @ OperatorDecl(operatorType, retType, args, stats, _, id) =>
+    case operatorDecl@OperatorDecl(operatorType, retType, args, stats, _, id) =>
       val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
@@ -110,7 +110,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
-    case formal @ Formal(tpe, id) =>
+    case formal@Formal(tpe, id) =>
 
       val newSymbol = new VariableSymbol(id.value, Argument).setPos(id)
       ensureIdentiferNotDefined(methSymbol.params, id.value, id)
@@ -128,9 +128,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case Program(_, _, classes)                                               =>
+    case Program(_, _, classes)                                             =>
       classes.foreach(bind)
-    case classDecl @ ClassDecl(id, parent, vars, methods)                     =>
+    case classDecl@ClassDecl(id, parent, vars, methods)                     =>
       setParentSymbol(id, parent, classDecl)
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
@@ -138,7 +138,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       checkConflictingFieldsInParent(vars, classDecl.getSymbol.parent)
       bindFields(classDecl)
       methods.foreach(bind)
-    case methDecl @ MethodDecl(retType, _, args, stat, _)                     =>
+    case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
       retType collect { case tpe =>
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
@@ -148,13 +148,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
       ensureMethodNotDefined(methDecl)
 
       new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(stat)
-    case constructorDecl @ ConstructorDecl(_, _, args, stat, _)               =>
+    case constructorDecl@ConstructorDecl(_, _, args, stat, _)               =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
       new StatementBinder(constructorDecl.getSymbol, false).bindStatement(stat)
-    case operatorDecl @ OperatorDecl(operatorType, retType, args, stat, _, _) =>
+    case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, _) =>
       retType collect { case tpe =>
         val t = setType(tpe)
         operatorDecl.getSymbol.setType(t)
@@ -177,7 +177,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     }
 
   private def bindFields(classDecl: ClassDecl) =
-    classDecl.vars.foreach { case varDecl @ VarDecl(typeTree, varId, init, _) =>
+    classDecl.vars.foreach { case varDecl@VarDecl(typeTree, varId, init, _) =>
       typeTree match {
         case Some(t) =>
           val tpe = setType(t)
@@ -249,15 +249,15 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def setType(tpe: TypeTree): Type = {
     tpe match {
-      case BooleanType()                        => tpe.setType(TBool)
-      case IntType()                            => tpe.setType(TInt)
-      case LongType()                           => tpe.setType(TLong)
-      case FloatType()                          => tpe.setType(TFloat)
-      case DoubleType()                         => tpe.setType(TDouble)
-      case CharType()                           => tpe.setType(TChar)
-      case StringType()                         => tpe.setType(TString)
-      case UnitType()                           => tpe.setType(TUnit)
-      case tpeId @ ClassIdentifier(typeName, _) =>
+      case BooleanType()                      => tpe.setType(TBool)
+      case IntType()                          => tpe.setType(TInt)
+      case LongType()                         => tpe.setType(TLong)
+      case FloatType()                        => tpe.setType(TFloat)
+      case DoubleType()                       => tpe.setType(TDouble)
+      case CharType()                         => tpe.setType(TChar)
+      case StringType()                       => tpe.setType(TString)
+      case UnitType()                         => tpe.setType(TUnit)
+      case tpeId@ClassIdentifier(typeName, _) =>
         globalScope.lookupClass(typeName) match {
           case Some(classSymbol) =>
             tpeId.setSymbol(classSymbol)
@@ -265,7 +265,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
           case None              =>
             ErrorUnknownType(tpeId.value, tpeId)
         }
-      case ArrayType(arrayTpe)                  =>
+      case ArrayType(arrayTpe)                =>
         setType(arrayTpe)
         tpe.setType(TArray(arrayTpe.getType))
     }
@@ -295,10 +295,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
     private def bind(statement: Tree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Map[String, VariableIdentifier] =
       statement match {
-        case Block(stats)                                     =>
+        case Block(stats)                                   =>
+          stats.dropRight(1).foreach {
+            case UselessStatement(expr) => WarningUselessStatement(expr)
+            case _                      =>
+          }
           stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           localVars
-        case varDecl @ VarDecl(typeTree, id, init, modifiers) =>
+        case varDecl@VarDecl(typeTree, id, init, modifiers) =>
           val newSymbol = new VariableSymbol(id.value, LocalVar, modifiers).setPos(varDecl)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
@@ -320,31 +324,31 @@ class NameAnalyser(ctx: Context, prog: Program) {
           }
 
           localVars + (id.value -> new VariableIdentifier(newSymbol, scopeLevel))
-        case For(init, condition, post, stat)                 =>
+        case For(init, condition, post, stat)               =>
           val newVars = init.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           bind(condition, newVars, scopeLevel)
           post.foreach(bind(_, newVars, scopeLevel))
           bind(stat, newVars, scopeLevel)
           localVars
-        case If(expr, thn, els)                               =>
+        case If(expr, thn, els)                             =>
           bind(expr, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel)
           els collect { case e => bind(e, localVars, scopeLevel) }
           localVars
-        case While(expr, stat)                                =>
+        case While(expr, stat)                              =>
           bind(expr, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel)
           localVars
-        case PrintStatement(expr)                             =>
+        case PrintStatement(expr)                           =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Error(expr)                                      =>
+        case Error(expr)                                    =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Return(expr)                                     =>
+        case Return(expr)                                   =>
           expr collect { case e => bind(e, localVars, scopeLevel) }
           localVars
-        case expr: ExprTree                                   =>
+        case expr: ExprTree                                 =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
       }
@@ -353,7 +357,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
     private def bindExpr(tree: ExprTree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Unit =
       Trees.traverse(tree, (parent, current) => Some(current) collect {
-        case mc @ MethodCall(obj, methodName, args) =>
+        case mc@MethodCall(obj, methodName, args) =>
           obj match {
             case _: Empty =>
               // Replace empty with class name or this
@@ -366,7 +370,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case _        => bind(obj, localVars, scopeLevel)
           }
           args.foreach(bind(_, localVars, scopeLevel))
-        case Instance(expr, id)            =>
+        case Instance(expr, id)                   =>
           bind(expr, localVars, scopeLevel)
           globalScope.lookupClass(id.value) match {
             case Some(classSymbol) =>
@@ -374,21 +378,21 @@ class NameAnalyser(ctx: Context, prog: Program) {
               id.setType(TObject(classSymbol))
             case None              => ErrorUnknownType(id.value, id)
           }
-        case FieldRead(obj, _)             =>
+        case FieldRead(obj, _)                    =>
           bind(obj, localVars, scopeLevel)
-        case FieldAssign(obj, _, expr)     =>
+        case FieldAssign(obj, _, expr)            =>
           bind(obj, localVars, scopeLevel)
           bind(expr, localVars, scopeLevel)
-        case id: Identifier                => parent match {
+        case id: Identifier                       => parent match {
           case _: MethodCall  =>
           case _: Instance    =>
           case _: FieldRead   =>
           case _: FieldAssign =>
           case _              => setIdentiferSymbol(id, localVars)
         }
-        case typeTree: TypeTree            => setType(typeTree)
-        case NewArray(tpe, size)           => setType(tpe)
-        case thisSymbol: This              =>
+        case typeTree: TypeTree                   => setType(typeTree)
+        case NewArray(tpe, size)                  => setType(tpe)
+        case thisSymbol: This                     =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)
@@ -515,6 +519,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def WarningUnusedPrivateField(name: String, pos: Positioned) =
     warning(2, s"Private field '$name' is never used.", pos)
+
+  private def WarningUselessStatement(pos: Positioned) =
+    warning(3, s"Statement has no effect.", pos)
 
 
 }

@@ -4,7 +4,7 @@ import java.io.File
 
 import org.scalatest.{FlatSpec, Matchers}
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
-import tcompiler.ast.Parser
+import tcompiler.ast.{Parser, Printer}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.{Imports, Templates}
 import tcompiler.utils.{CompilationException, Context}
@@ -41,7 +41,9 @@ abstract class ErrorTester extends FlatSpec with Matchers {
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {
-      (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      val p = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      println(Printer(p))
+
       // Check for warnings:
       if(ctx.reporter.warnings.isEmpty)
         fail("Test failed: No errors or warnings!")

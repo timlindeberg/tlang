@@ -16,7 +16,7 @@ class CodeSpec extends FlatSpec with Matchers {
   import TestUtils._
 
   behavior of "Correct Programs"
-  programFiles(Resources + "programs/valid").foreach(test(_, testPositive))
+  programFiles(Resources + "code").foreach(test(_, testPositive))
 
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory){
