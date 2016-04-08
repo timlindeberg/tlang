@@ -25,21 +25,7 @@ object Symbols {
   }
 
   sealed abstract class Symbol extends Positioned with Typed {
-    val id: Int = ID.next
     val name: String
-  }
-
-  object ID {
-
-    def reset() = c = 0
-
-    private var c: Int = 0
-
-    def next: Int = {
-      val ret = c
-      c = c + 1
-      ret
-    }
   }
 
   val objectClass = new ClassSymbol("Object").setType(Types.tObject)

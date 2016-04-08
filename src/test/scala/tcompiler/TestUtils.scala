@@ -68,20 +68,20 @@ object TestUtils extends FlatSpec {
   }
 
 
-  def parseSolutions(file: File): List[String] = {
+  def parseSolutions(file: File): List[(Int, String)] = {
     val SolutionRegex = """.*// *[R|r]es:(.*)""".r
     val SolutionOrderedRegex = """.*// *[R|r]es(\d+):(.*)""".r
 
     val fileName = file.getPath
     var i = -1
-    val answers = Source.fromFile(fileName).getLines().map(_ match {
-      case SolutionOrderedRegex(num, result) => (num.toInt, result)
-      case SolutionRegex(result)             =>
+    val answers = Source.fromFile(fileName).getLines().zipWithIndex.map {
+      case (SolutionOrderedRegex(num, result), line) => (num.toInt, (line + 1, result))
+      case (SolutionRegex(result), line)             =>
         i += 1
-        (i, result)
-      case _                                 => (-1, "")
-    })
-    answers.toList.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
+        (i, (line + 1, result))
+      case _                                 => (-1, (0, ""))
+    }.toList
+    answers.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }
 
   def shouldBeIgnored(file: File): Boolean  = {
@@ -98,22 +98,26 @@ object TestUtils extends FlatSpec {
     }.toList
   }
 
-  def assertCorrect(res: List[String], sol: List[String]) = {
+  def assertCorrect(res: List[String], sol: List[(Int, String)]) = {
     assert(res.length == sol.length, "Different amount of results and expected results.")
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
-      case (r, s, i) =>
-        assert(r.trim == s.trim, s": error on test ${i + 1} \n ${resultsVersusSolution(res, sol)}")
+      case (r, (line, s), i) =>
+        assert(r.trim == s.trim, s": error on line $line \n ${resultsVersusSolution(i + 1, res, sol.map(_._2))}")
     }
   }
 
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
-  private def resultsVersusSolution(res: List[String], sol: List[String]) = {
+  private def resultsVersusSolution(failedTest: Int, res: List[String], sol: List[String]) = {
     val numbers = (1 to res.size).map(_.toString)
     val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
     val list = ("", "Result:", "Solution:") :: numbered
-    list.map { case (i, r, s) => f"$i%-4s$r%-20s$s%-20s" }.mkString("\n")
+    list.map { case (i, r, s) =>
+      val line = f"$i%-4s$r%-20s$s%-20s"
+      if(i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
+      else line
+    }.mkString("\n")
   }
 
     def hasTypes(prog: Program) = {

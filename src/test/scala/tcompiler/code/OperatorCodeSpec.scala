@@ -5,7 +5,7 @@ import java.io.{File, FileWriter, IOException}
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
-import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecker, TypeChecking}
+import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
 import tcompiler.lexer.Lexer
@@ -64,7 +64,6 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   before {
     testFolderFile.mkdir()
-    Symbols.ID.reset()
   }
 
   after {

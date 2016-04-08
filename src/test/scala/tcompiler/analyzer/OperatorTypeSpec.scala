@@ -8,7 +8,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
 
-class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
+class OperatorTypeSpec extends FlatSpec with Matchers {
 
   val Flag = "--ast --symid"
   val MethodDecl = new MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
@@ -39,10 +39,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     def apply(): Identifier = createIdentifier(tpe)
     override def toString() = tpe.toString
     def ==(rhs: TypeConstructor) = tpe.toString == rhs.tpe.toString
-  }
-
-  before {
-    Symbols.ID.reset()
   }
 
   behavior of "Operators"
@@ -89,6 +85,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def plusOperator() =
     BinaryExpressionAsserter.valid(Plus,
       (string, string, TString),
+      (string, obj, TString),
       (string, int, TString),
       (string, long, TString),
       (string, float, TString),

@@ -237,9 +237,28 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           TArray(tpes.head)
         }
       case Plus(lhs, rhs)                =>
-        val args = (tcExpr(lhs), tcExpr(rhs))
+        val args@(lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(tObject)       => tcBinaryOperator(expression, args)
+          case _ if args.anyIs(tObject) =>
+            // Operator overloads have precedence over string addition
+            val argList = List(lhsType, rhsType)
+            val operatorType = typeCheckOperator(lhsType, expression, argList) match {
+              case Some(tpe)                  => tpe
+              case None if lhsType != rhsType =>
+                typeCheckOperator(rhsType, expression, argList) match {
+                  case Some(tpe) => tpe
+                  case None      => TError
+                }
+              case _                          => TError
+            }
+
+            if (operatorType != TError)
+              return operatorType
+
+            if (args.anyIs(TString))
+              TString // If other object is a string they can still be added
+            else
+              ErrorOverloadedOperatorNotFound(expression, argList, expression)
           case _ if args.anyIs(TString)       => TString
           case _ if args.anyIs(TBool, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
           case _ if args.anyIs(TDouble)       => TDouble
@@ -375,7 +394,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
               case TError =>
                 // If both are objects they can be compared by reference
                 if (!lhsType.isInstanceOf[TObject] || !rhsType.isInstanceOf[TObject])
-                  ErrorOperatorNotFound(expression, argList, expression)
+                  ErrorOverloadedOperatorNotFound(expression, argList, expression)
               case _      => correctOperatorType(expression, argList, Some(TBool), operatorType)
             }
           case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
@@ -550,9 +569,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       case None if args._1 != args._2 =>
         typeCheckOperator(args._2, expr, argList) match {
           case Some(tpe) => tpe
-          case None      => ErrorOperatorNotFound(expr, argList, expr)
+          case None      => ErrorOverloadedOperatorNotFound(expr, argList, expr)
         }
-      case _                          => ErrorOperatorNotFound(expr, argList, expr)
+      case _                          => ErrorOverloadedOperatorNotFound(expr, argList, expr)
     }
     correctOperatorType(expr, argList, expectedType, operatorType)
   }
@@ -561,7 +580,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     val argList = List(arg)
     val operatorType = typeCheckOperator(arg, expr, argList) match {
       case Some(tpe) => tpe
-      case None      => ErrorOperatorNotFound(expr, argList, expr)
+      case None      => ErrorOverloadedOperatorNotFound(expr, argList, expr)
     }
     correctOperatorType(expr, argList, expectedType, operatorType)
   }
@@ -719,7 +738,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
   }
 
-  private def ErrorOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
+  private def ErrorOverloadedOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
     val classesString = if (args.size != 2 || args(0) == args(1)) {
       "The class \'" + args.head + "\' does not"
     } else {

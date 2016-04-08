@@ -4,19 +4,15 @@ import java.io._
 
 import org.scalatest._
 import tcompiler.TestUtils
-import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecking}
+import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast._
 import tcompiler.lexer.Lexer
 import tcompiler.utils.{CompilationException, Context}
 
 
-class CodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
+class CodeSpec extends FlatSpec with Matchers {
 
   import TestUtils._
-
-  before {
-    Symbols.ID.reset()
-  }
 
   behavior of "Correct Programs"
   programFiles(Resources + "programs/valid").foreach(test(_, testPositive))

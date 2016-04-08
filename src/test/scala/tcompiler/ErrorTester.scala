@@ -2,8 +2,8 @@ package tcompiler
 
 import java.io.File
 
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import tcompiler.analyzer.{NameAnalysis, Symbols, TypeChecking}
+import org.scalatest.{FlatSpec, Matchers}
+import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Parser
 import tcompiler.lexer.Lexer
 import tcompiler.modification.{Imports, Templates}
@@ -12,20 +12,16 @@ import tcompiler.utils.{CompilationException, Context}
 /**
  * Created by Tim Lindeberg on 4/2/2016.
  */
-abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
+abstract class ErrorTester extends FlatSpec with Matchers {
 
   import TestUtils._
 
-  val Seperator = "---------------------------------------------------------------------\n"
+  def Seperator = "---------------------------------------------------------------------\n"
 
   val PrintErrors = false
 
   def Name: String
   def Path: String
-
-  before {
-    Symbols.ID.reset()
-  }
 
   behavior of Name
   TestUtils.programFiles(Path).foreach(test)
@@ -41,7 +37,7 @@ abstract class ErrorTester extends FlatSpec with Matchers with BeforeAndAfter {
     }
 
   private def testFile(file: File): Unit = {
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
+    val ctx = Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {

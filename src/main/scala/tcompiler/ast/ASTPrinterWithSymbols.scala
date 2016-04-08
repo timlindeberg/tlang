@@ -1,9 +1,8 @@
 package tcompiler
 package ast
 
-import Trees._
-import analyzer.Symbols._
-import analyzer.Types._
+import tcompiler.analyzer.Types._
+import tcompiler.ast.Trees._
 
 object ASTPrinterWithSymbols {
 
@@ -48,17 +47,12 @@ object ASTPrinterWithSymbols {
       case Not(expr) => f(expr)
       case _ => ""
     }
-    t.getClass.getSimpleName + symbol(t) + "(" + s + ")"
+    t.getClass.getSimpleName + "(" + s + ")"
   }
 
   def typeOf(t: Tree): String = t match {
     case typed: Typed => "[" + typed.getType + "]"
     case _            => ""
-  }
-
-  def symbol(t: Tree): String = t match {
-    case sym: Symbolic[_] if sym.hasSymbol => "#" + sym.getSymbol.id
-    case _                                 => ""
   }
 
   private def f(t: Option[Tree]): String = t match { case Some(p) => "Some(" + f(p) + ")" case None => "None" }
