@@ -47,6 +47,8 @@ object TypeChecking extends Pipeline[Program, Program] {
           WarningUnusedPrivateField(method.ast.signature, method)
     }
 
+    methodUsage = Map[MethodSymbol, Boolean]()
+
     def warning(errorCode: Int, msg: String, pos: Positioned) =
       ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
 
@@ -237,28 +239,17 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           TArray(tpes.head)
         }
       case Plus(lhs, rhs)                =>
-        val args@(lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
+        val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(tObject) =>
+          case _ if args.anyIs(tObject)       =>
             // Operator overloads have precedence over string addition
-            val argList = List(lhsType, rhsType)
-            val operatorType = typeCheckOperator(lhsType, expression, argList) match {
-              case Some(tpe)                  => tpe
-              case None if lhsType != rhsType =>
-                typeCheckOperator(rhsType, expression, argList) match {
-                  case Some(tpe) => tpe
-                  case None      => TError
-                }
-              case _                          => TError
+            val operatorType = tcBinaryOperatorNoErrors(expression, args)
+
+            operatorType match {
+              case TError if args.anyIs(TString) => TString // If other object is a string they can still be added
+              case TError                        => ErrorOverloadedOperatorNotFound(expression, List(args._1, args._2), expression)
+              case _                             => operatorType
             }
-
-            if (operatorType != TError)
-              return operatorType
-
-            if (args.anyIs(TString))
-              TString // If other object is a string they can still be added
-            else
-              ErrorOverloadedOperatorNotFound(expression, argList, expression)
           case _ if args.anyIs(TString)       => TString
           case _ if args.anyIs(TBool, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
           case _ if args.anyIs(TDouble)       => TDouble
@@ -380,22 +371,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         args match {
           case _ if args.anyIs(tObject)                       =>
             val argList = List(lhsType, rhsType)
-            val operatorType = typeCheckOperator(lhsType, expression, argList) match {
-              case Some(tpe)                  => tpe
-              case None if lhsType != rhsType =>
-                typeCheckOperator(rhsType, expression, argList) match {
-                  case Some(tpe) => tpe
-                  case None      => TError
-                }
-              case _                          => TError
-            }
-
+            val operatorType = tcBinaryOperatorNoErrors(expression, args)
             operatorType match {
-              case TError =>
-                // If both are objects they can be compared by reference
-                if (!lhsType.isInstanceOf[TObject] || !rhsType.isInstanceOf[TObject])
-                  ErrorOverloadedOperatorNotFound(expression, argList, expression)
-              case _      => correctOperatorType(expression, argList, Some(TBool), operatorType)
+              case TError if args.bothAre(tObject) => // If both are objects they can be compared by reference
+              case TError                          => ErrorOverloadedOperatorNotFound(expression, argList, expression)
+              case _                               => correctOperatorType(expression, argList, Some(TBool), operatorType)
             }
           case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
           case _ if args.anyIs(TBool, TString, tArray)        => ErrorOperatorDoesNotExist(expression, args, expression)
@@ -558,22 +538,30 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     tpe
   }
 
-  def tcBinaryOperator(expr: ExprTree, args: (Type, Type), expectedType: Option[Type] = None): Type = {
+
+  def tcBinaryOperatorNoErrors(expr: ExprTree, args: (Type, Type)): Type = {
     if (args._1 == TError || args._2 == TError)
       return TError
 
     val argList = List(args._1, args._2)
-    val operatorType = typeCheckOperator(args._1, expr, argList) match {
-      case Some(tpe)                  =>
-        tpe
+    typeCheckOperator(args._1, expr, argList) match {
+      case Some(tpe)                  => tpe
       case None if args._1 != args._2 =>
         typeCheckOperator(args._2, expr, argList) match {
           case Some(tpe) => tpe
-          case None      => ErrorOverloadedOperatorNotFound(expr, argList, expr)
+          case None      => TError
         }
-      case _                          => ErrorOverloadedOperatorNotFound(expr, argList, expr)
+      case _                          => TError
     }
-    correctOperatorType(expr, argList, expectedType, operatorType)
+  }
+
+  def tcBinaryOperator(expr: ExprTree, args: (Type, Type), expectedType: Option[Type] = None): Type = {
+    val operatorType = tcBinaryOperatorNoErrors(expr, args)
+    val argList = List(args._1, args._2)
+    if (operatorType == TError)
+      ErrorOverloadedOperatorNotFound(expr, argList, expr)
+    else
+      correctOperatorType(expr, argList, expectedType, operatorType)
   }
 
   def tcUnaryOperator(expr: ExprTree, arg: Type, expectedType: Option[Type] = None): Type = {

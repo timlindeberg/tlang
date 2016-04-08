@@ -18,7 +18,7 @@ abstract class ErrorTester extends FlatSpec with Matchers {
 
   def Seperator = "---------------------------------------------------------------------\n"
 
-  val PrintErrors = false
+  val PrintErrors = true
 
   def Name: String
   def Path: String

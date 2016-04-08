@@ -298,7 +298,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
     def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
-      val operatorType = constructor(Empty(), Empty())
+      val operatorType = constructor(Empty(), Empty()).setType(TUnit)
       eat(LPAREN)
       val f1 = formal()
       eat(COMMA)
@@ -308,7 +308,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
     def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
-      val operatorType = constructor(Empty())
+      val operatorType = constructor(Empty()).setType(TUnit)
       eat(LPAREN)
       (operatorType, List(formal()), modifiers + Static())
     }
@@ -323,9 +323,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case COMMA =>
             eat(COMMA)
             val f2 = formal()
-            (Minus(Empty(), Empty()), List(f1, f2), modifiers + Static())
+            val operatorType = Minus(Empty(), Empty()).setType(TUnit)
+            (operatorType, List(f1, f2), modifiers + Static())
           case _     =>
-            (Negation(Empty()), List(f1), modifiers + Static())
+            val operatorType = Negation(Empty()).setType(TUnit)
+            (operatorType, List(f1), modifiers + Static())
         }
       case TIMES             => binaryOperator(Times)
       case DIV               => binaryOperator(Div)

@@ -314,14 +314,14 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
 
         arr.getType match {
-          case obj@TObject(classSymbol) =>
-            if (duplicate)
-              obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
-
+          case obj @ TObject(classSymbol) =>
             classSymbol.lookupOperator(expression, List(index.getType, expr.getType)) match {
               case Some(operatorSymbol) =>
                 compileAssignmentValue(expr, operatorSymbol.lookupArgument(1).getType) // second argument is value
-              val className = classSymbol.name
+
+                if (duplicate)
+                  obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
+                val className = classSymbol.name
                 ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.signature)
               case None                 => ??? // This shouldnt happen
             }

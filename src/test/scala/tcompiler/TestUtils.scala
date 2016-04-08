@@ -18,10 +18,10 @@ object TestUtils extends FlatSpec {
   val Interpreter    = new Interpreter
 
   def test(file: File, testFunction: File => Unit): Unit = {
-    if (file.isDirectory){
+    if (file.isDirectory) {
       programFiles(file.getPath).foreach(test(_, testFunction))
-    } else{
-      if(shouldBeIgnored(file))
+    } else {
+      if (shouldBeIgnored(file))
         ignore should file.getName.toString in testFunction(file)
       else
         it should file.getName.toString in testFunction(file)
@@ -79,12 +79,12 @@ object TestUtils extends FlatSpec {
       case (SolutionRegex(result), line)             =>
         i += 1
         (i, (line + 1, result))
-      case _                                 => (-1, (0, ""))
+      case _                                         => (-1, (0, ""))
     }.toList
     answers.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }
 
-  def shouldBeIgnored(file: File): Boolean  = {
+  def shouldBeIgnored(file: File): Boolean = {
     val firstLine = Source.fromFile(file.getPath).getLines().take(1).toList.head
     firstLine.matches(""".*// *[I|i]gnore.*""")
   }
@@ -115,17 +115,20 @@ object TestUtils extends FlatSpec {
     val list = ("", "Result:", "Solution:") :: numbered
     list.map { case (i, r, s) =>
       val line = f"$i%-4s$r%-20s$s%-20s"
-      if(i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
+      if (i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
       else line
     }.mkString("\n")
   }
 
-    def hasTypes(prog: Program) = {
+  def hasTypes(prog: Program) = {
     var hasTypes = true
     Trees.traverse(prog, (_, curr) => Some(curr) collect {
       case _: Empty    =>
       case node: Typed =>
-        if (node.getType == TUntyped) hasTypes = false
+        if (node.getType == TUntyped)
+          hasTypes = false
+        assert(node.getType != TUntyped)
+
     })
     hasTypes && correctTypes(prog)
   }
