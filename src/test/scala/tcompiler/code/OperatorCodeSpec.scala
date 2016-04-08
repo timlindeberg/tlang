@@ -42,7 +42,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val MainName      = "Main"
   val IdName        = "x"
   val StringLength  = 5
-  val NumberOfTests = 0
+  val NumberOfTests = 1
 
   val int    = () => IntLit(Rand.nextInt).setType(TInt)
   val bool   = () => (if (Rand.nextBoolean) True() else False()).setType(TBool)
@@ -73,32 +73,32 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     testFolderFile.delete()
   }
 
-  behavior of s"RandomTesting ($NumberOfTests x)"
-
-  it should "Plus" in testOperator(Plus)
-  it should "Minus" in testOperator(Minus)
-  it should "Times" in testOperator(Times)
-  it should "Div" in testOperator(Div)
-  it should "Mod" in testOperator(Modulo)
-
-  it should "LogicAnd" in testOperator(LogicAnd)
-  it should "LogicOr" in testOperator(LogicOr)
-  it should "LogicXor" in testOperator(LogicXor)
-
-  it should "LeftShift" in testOperator(LeftShift)
-  it should "RightShift" in testOperator(RightShift)
-
-  it should "Assign" in testAssignmentOperator(Assign)
-  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
-
-  it should "LessThan" in testOperator(LessThan)
-  it should "LessThanEquals" in testOperator(LessThanEquals)
-  it should "GreaterThan" in testOperator(GreaterThan)
-  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
-
-  // TODO: Support String equality
-  ignore should "Equals" in testOperator(Equals)
-  ignore should "NotEquals" in testOperator(NotEquals)
+//  behavior of s"RandomTesting ($NumberOfTests x)"
+//
+//  it should "Plus" in testOperator(Plus)
+//  it should "Minus" in testOperator(Minus)
+//  it should "Times" in testOperator(Times)
+//  it should "Div" in testOperator(Div)
+//  it should "Mod" in testOperator(Modulo)
+//
+//  it should "LogicAnd" in testOperator(LogicAnd)
+//  it should "LogicOr" in testOperator(LogicOr)
+//  it should "LogicXor" in testOperator(LogicXor)
+//
+//  it should "LeftShift" in testOperator(LeftShift)
+//  it should "RightShift" in testOperator(RightShift)
+//
+//  it should "Assign" in testAssignmentOperator(Assign)
+//  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
+//
+//  it should "LessThan" in testOperator(LessThan)
+//  it should "LessThanEquals" in testOperator(LessThanEquals)
+//  it should "GreaterThan" in testOperator(GreaterThan)
+//  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
+//
+//  // TODO: Support String equality
+//  ignore should "Equals" in testOperator(Equals)
+//  ignore should "NotEquals" in testOperator(NotEquals)
 
 
   def testOperator(operator: (ExprTree, ExprTree) => ExprTree) = {

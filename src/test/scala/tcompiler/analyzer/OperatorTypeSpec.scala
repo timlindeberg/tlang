@@ -89,7 +89,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def plusOperator() =
     BinaryExpressionAsserter.valid(Plus,
       (string, string, TString),
-      (string, obj, TString),
       (string, int, TString),
       (string, long, TString),
       (string, float, TString),
@@ -406,6 +405,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       getInvalidCombinations(validCombinations.toList) foreach { case (id, expr) =>
         TypeChecker.tcExpr(expressionType(id(), expr()))
         val invalid = TestContext.reporter.hasErrors
+
         assert(invalid, "for (" + id + ", " + expr + ")")
         TestContext.reporter.clear()
       }
@@ -438,6 +438,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers with BeforeAndAfter {
         val id = createIdentifier(TArray(identifier().getType))
         TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
         val invalid = TestContext.reporter.hasErrors
+
         assert(invalid, "for (" + identifier + ", " + expr + ")")
         TestContext.reporter.clear()
       }

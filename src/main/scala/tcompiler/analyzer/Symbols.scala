@@ -42,7 +42,7 @@ object Symbols {
     }
   }
 
-  val objectClass = new ClassSymbol("Object").setType(Types.anyObject)
+  val objectClass = new ClassSymbol("Object").setType(Types.tObject)
 
   class GlobalScope {
     var mainClass: ClassSymbol = _

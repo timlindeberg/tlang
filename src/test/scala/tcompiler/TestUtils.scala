@@ -39,7 +39,7 @@ object TestUtils extends FlatSpec {
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
     if (!f.isDirectory)
-      return Array(f)
+      return Array[File](f)
 
     if (f.exists()) {
       f.listFiles.filter(x => !x.getName.contains(SolutionPrefix) && x.getName != ".DS_Store")
@@ -138,7 +138,7 @@ object TestUtils extends FlatSpec {
         case x: Identifier      => x.getType != TUntyped && x.getType != TError
         case x: ClassIdentifier => x.getType != TUntyped && x.getType != TError
         case x: IntType         => x.getType == TInt
-        case x: ArrayType       => x.getType == TArray
+        case x: ArrayType       => x.getType == tArray
         case x: BooleanType     => x.getType == TBool
         case x: StringType      => x.getType == TString
         case x: True            => x.getType == TBool

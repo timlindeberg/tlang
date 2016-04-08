@@ -17,9 +17,9 @@ object TypeChecking extends Pipeline[Program, Program] {
 
 
   /**
-   * Typechecking does not produce a value, but has the side effect of
-   * attaching types to trees and potentially outputting error messages.
-   */
+    * Typechecking does not produce a value, but has the side effect of
+    * attaching types to trees and potentially outputting error messages.
+    */
   def run(ctx: Context)(prog: Program): Program = {
     val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
 
@@ -57,7 +57,17 @@ object TypeChecking extends Pipeline[Program, Program] {
   }
 }
 
+
 class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: List[MethodSymbol] = List()) {
+
+  implicit class TypeTuple(t: (Type, Type)) {
+
+    val c1 = t._1.getClass
+    val c2 = t._2.getClass
+
+    def anyIs(types: Type*) = types.map(_.getClass).exists(c => c == c1 || c == c2)
+    def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
+  }
 
   import TypeChecking._
 
@@ -129,9 +139,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
 
   def tcStat(statement: StatTree): Unit = statement match {
-    case Block(stats)                                =>
+    case Block(stats)                              =>
       stats.foreach(tcStat)
-    case varDecl @ VarDecl(tpe, id, init, modifiers) =>
+    case varDecl@VarDecl(tpe, id, init, modifiers) =>
       tpe match {
         case Some(t) => init match {
           case Some(expr) => tcExpr(expr, t.getType)
@@ -144,12 +154,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case _          => ErrorNoTypeNoInitalizer(varDecl.id.value, varDecl)
         }
       }
-    case If(expr, thn, els)                          =>
+    case If(expr, thn, els)                        =>
       tcExpr(expr, TBool)
       tcStat(thn)
       if (els.isDefined)
         tcStat(els.get)
-    case While(expr, stat)                           =>
+    case While(expr, stat)                         =>
       tcExpr(expr, TBool)
       tcStat(stat)
 
@@ -161,12 +171,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     case PrintStatement(expr)             => tcExpr(expr) // TODO: Allow unit for println
     case Error(expr)                      =>
       tcExpr(expr, TString)
-    case ret @ Return(Some(expr))         =>
+    case ret@Return(Some(expr))           =>
       if (currentMethodSymbol.ast.retType.isDefined)
         returnStatements += ((ret, tcExpr(expr, currentMethodSymbol.getType)))
       else
         returnStatements += ((ret, tcExpr(expr)))
-    case ret @ Return(None)               =>
+    case ret@Return(None)                 =>
       if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
@@ -189,7 +199,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       case _: True      => TBool
       case _: False     => TBool
 
-      case id: Identifier                  =>
+      case id: Identifier                =>
         id.getSymbol match {
           case varSymbol: VariableSymbol => varSymbol.classSymbol match {
             case Some(clazz) => checkFieldPrivacy(clazz, varSymbol, id)
@@ -198,85 +208,75 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case _                         =>
         }
         id.getType
-      case id: ClassIdentifier             => id.getType
-      case th: This                        => th.getSymbol.getType
-      case mc: MethodCall                  => tcMethodCall(mc)
-      case fr @ FieldRead(obj, id)         =>
+      case id: ClassIdentifier           => id.getType
+      case th: This                      => th.getSymbol.getType
+      case mc: MethodCall                => tcMethodCall(mc)
+      case fr@FieldRead(obj, id)         =>
         val tpe = typeCheckField(obj, id, fr)
         fr.setType(tpe)
         tpe
-      case fa @ FieldAssign(obj, id, expr) =>
+      case fa@FieldAssign(obj, id, expr) =>
         val tpe = typeCheckField(obj, id, fa)
         fa.setType(tpe)
         tcExpr(expr, tpe)
         tpe
-      case newArray @ NewArray(tpe, sizes) =>
+      case newArray@NewArray(tpe, sizes) =>
         sizes.foreach(tcExpr(_, TInt))
         var arrayType = tpe.getType
         for (i <- 1 to newArray.dimension)
           arrayType = TArray(arrayType)
         arrayType
-      case ArrayLit(expressions)           =>
+      case ArrayLit(expressions)         =>
         val tpes = expressions.map(tcExpr(_))
         if (tpes.isEmpty) {
-          TArray(Types.anyObject)
+          TArray(Types.tObject)
         } else {
           val typeSet = tpes.toSet
           if (typeSet.size > 1)
             ErrorMultipleArrayLitTypes(typeSet.map(t => s"'$t'").mkString(", "), expression)
           TArray(tpes.head)
         }
-      case Plus(lhs, rhs)                  =>
-        val argTypes = (tcExpr(lhs), tcExpr(rhs))
-        argTypes match {
-          case (TString, _)   | (_, TString)     => TString
-          case (_, _: TObject) | (_: TObject, _) => tcBinaryOperator(expression, argTypes)
-          case (a: TArray, x)                    => ErrorWrongType(x, a, lhs)
-          case (x, a: TArray)                    => ErrorWrongType(x, a, rhs)
-          case (TBool, x)                        => ErrorWrongType(x, "Bool", lhs)
-          case (x, TBool)                        => ErrorWrongType(x, "Bool", rhs)
-          case (TDouble, _) | (_, TDouble)       => TDouble
-          case (TFloat, _) | (_, TFloat)         => TFloat
-          case (TLong, _) | (_, TLong)           => TLong
-          case _                                 => TInt
+      case Plus(lhs, rhs)                =>
+        val args = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)       => tcBinaryOperator(expression, args)
+          case _ if args.anyIs(TString)       => TString
+          case _ if args.anyIs(TBool, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _ if args.anyIs(TDouble)       => TDouble
+          case _ if args.anyIs(TFloat)        => TFloat
+          case _ if args.anyIs(TLong)         => TLong
+          case _                              => TInt
         }
-      case BinaryOperator(lhs, rhs)        =>
-        val types = List(Types.anyObject, TString) ::: Types.primitives
-        val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
-        argTypes match {
-          case (_, _: TObject) | (_: TObject, _) => tcBinaryOperator(expression, argTypes)
-          case (TString, _) | (_, TString)       => ErrorOperatorNotFound(expression, argTypes, expression)
-          case (TDouble, _) | (_, TDouble)       => TDouble
-          case (TFloat, _) | (_, TFloat)         => TFloat
-          case (TLong, _) | (_, TLong)           => TLong
-          case _                                 => TInt
+      case BinaryOperator(lhs, rhs)      =>
+        val args = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)                => tcBinaryOperator(expression, args)
+          case _ if args.anyIs(TString, TBool, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _ if args.anyIs(TDouble)                => TDouble
+          case _ if args.anyIs(TFloat)                 => TFloat
+          case _ if args.anyIs(TLong)                  => TLong
+          case _                                       => TInt
         }
-      case LogicalOperator(lhs, rhs)       =>
-        val types = List(Types.anyObject, TString, TBool, TInt, TLong, TChar)
-        val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
-        argTypes match {
-          case (_: TObject, _) | (_, _: TObject) => tcBinaryOperator(expression, argTypes)
-          case (TString, _) | (_, TString)       => ErrorOperatorNotFound(expression, argTypes, expression)
-          case (TBool, TBool)                    => TBool
-          case (TBool, x)                        => ErrorWrongType(x, "Bool", lhs)
-          case (x, TBool)                        => ErrorWrongType(x, "Bool", rhs)
-          case (TLong, _) | (_, TLong)           => TLong
-          case (TInt, _) | (_, TInt)             => TInt
-          case (TChar, TChar)                    => TInt
-          case (TChar, x)                        => ErrorWrongType(x, "Char", lhs)
-          case (x, TChar)                        => ErrorWrongType(x, "Char", rhs)
-          case _                                 => TError
+      case LogicalOperator(lhs, rhs)     =>
+        val args = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)                                 => tcBinaryOperator(expression, args)
+          case _ if args.bothAre(TBool)                                 => TBool
+          case _ if args.anyIs(TBool, TFloat, TDouble, TString, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _ if args.anyIs(TLong)                                   => TLong
+          case _ if args.anyIs(TInt)                                    => TInt
+          case _ if args.bothAre(TChar)                                 => TInt
+          case _                                                        => ErrorOperatorDoesNotExist(expression, args, expression)
         }
-      case ShiftOperator(lhs, rhs)         =>
-        val types = List(Types.anyObject, TString, TInt, TLong, TChar)
-        val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
-        argTypes match {
-          case (_: TObject, _) | (_, _: TObject) => tcBinaryOperator(expression, argTypes)
-          case (TString, _) | (_, TString)       => ErrorOperatorNotFound(expression, argTypes, expression)
-          case (TLong, _) | (_, TLong)           => TLong
-          case _                                 => TInt
+      case ShiftOperator(lhs, rhs)       =>
+        val args = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)                                 => tcBinaryOperator(expression, args)
+          case _ if args.anyIs(TBool, TFloat, TDouble, TString, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _ if args.anyIs(TLong)                                   => TLong
+          case _                                                        => TInt
         }
-      case Assign(id, expr)                =>
+      case Assign(id, expr)              =>
         id.getType match {
           case objType: TObject => tcExpr(expr, objType)
           case arrType: TArray  => tcExpr(expr, arrType)
@@ -299,7 +299,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             TDouble
           case _                => TError
         }
-      case ArrayAssign(arr, index, expr)   =>
+      case ArrayAssign(arr, index, expr) =>
         val arrTpe = tcExpr(arr)
         arrTpe match {
           case TObject(classSymbol) =>
@@ -348,19 +348,18 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             }
           case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
-      case ComparisonOperator(lhs, rhs)    =>
-        val types = List(Types.anyObject, TString) ::: Types.primitives
-        val argTypes = (tcExpr(lhs, types), tcExpr(rhs, types))
-        argTypes match {
-          case (_: TObject, _) | (_, _: TObject) => tcBinaryOperator(expression, argTypes, Some(TBool))
-          case (TString, _) | (_, TString)       => ErrorOperatorNotFound(expression, argTypes, expression)
-          case _                                 =>
+      case ComparisonOperator(lhs, rhs)  =>
+        // TODO: String should be allowed
+        val args = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)                => tcBinaryOperator(expression, args, Some(TBool))
+          case _ if args.anyIs(TBool, TString, tArray) => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _                                       => TBool
         }
-        TBool
-      case EqualsOperator(lhs, rhs)        =>
-        val argTypes @ (lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
-        argTypes match {
-          case (_: TObject, _) | (_, _: TObject) =>
+      case EqualsOperator(lhs, rhs)      =>
+        val args@(lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
+        args match {
+          case _ if args.anyIs(tObject)                       =>
             val argList = List(lhsType, rhsType)
             val operatorType = typeCheckOperator(lhsType, expression, argList) match {
               case Some(tpe)                  => tpe
@@ -380,30 +379,25 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
               case _      => correctOperatorType(expression, argList, Some(TBool), operatorType)
             }
           case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
-          case (TBool, _)     => ErrorWrongType(lhsType, rhsType, rhs)
-          case (_, TBool)     => ErrorWrongType(rhsType, lhsType, lhs)
-          case (_: TArray, _) => ErrorWrongType(lhsType, rhsType, rhs)
-          case (_, _: TArray) => ErrorWrongType(lhsType, lhsType, lhs)
-          case (TString, _)   => ErrorWrongType(lhsType, rhsType, rhs)
-          case (_, TString)   => ErrorWrongType(lhsType, lhsType, lhs)
-          case _ => // valid
+          case _ if args.anyIs(TBool, TString, tArray)        => ErrorOperatorDoesNotExist(expression, args, expression)
+          case _                                              => // Valid
         }
         TBool
-      case And(lhs, rhs)                   =>
+      case And(lhs, rhs)                 =>
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
         TBool
-      case Or(lhs, rhs)                    =>
+      case Or(lhs, rhs)                  =>
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
         TBool
-      case Not(expr)                       =>
-        tcExpr(expr, TBool, Types.anyObject) match {
+      case Not(expr)                     =>
+        tcExpr(expr, TBool, Types.tObject) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(TBool))
           case _          =>
         }
         TBool
-      case Instance(expr, id)              =>
+      case Instance(expr, id)            =>
         val tpe = tcExpr(expr)
         tpe match {
           case t: TObject =>
@@ -411,10 +405,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             TBool
           case _          => ErrorWrongType("object", tpe, expr)
         }
-      case As(expr, tpe)                   =>
+      case As(expr, tpe)                 =>
         tcExpr(expr, tpe.getType.getSuperTypes)
         tpe.getType
-      case ArrayRead(arr, index)           =>
+      case ArrayRead(arr, index)         =>
         val arrTpe = tcExpr(arr)
         arrTpe match {
           case TObject(classSymbol) =>
@@ -437,12 +431,12 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             arrTpe
           case tpe                  => ErrorWrongType("array", tpe, arr)
         }
-      case ArrayLength(arr)                =>
+      case ArrayLength(arr)              =>
         tcExpr(arr) match {
           case TArray(_) => TInt
           case tpe       => ErrorWrongType("array", tpe, arr)
         }
-      case newDecl @ New(tpe, exprs)       =>
+      case newDecl@New(tpe, exprs)       =>
         val argTypes = exprs.map(tcExpr(_))
         tpe.getType match {
           case TObject(classSymbol) =>
@@ -456,14 +450,14 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case primitiveType        => ErrorNewPrimitive(primitiveType.toString, newDecl)
         }
         tpe.getType
-      case Negation(expr)                  =>
-        tcExpr(expr, Types.anyObject :: Types.primitives) match {
+      case Negation(expr)                =>
+        tcExpr(expr, Types.tObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x)
           case TChar      => TInt // Negation of char is int
           case x          => x
         }
-      case Hash(expr)                      =>
-        val exprType = tcExpr(expr, TString :: Types.anyObject :: Types.primitives)
+      case Hash(expr)                    =>
+        val exprType = tcExpr(expr, TString :: Types.tObject :: Types.primitives)
         exprType match {
           case _: TObject =>
             val argList = List(exprType)
@@ -481,22 +475,22 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             }
           case _          => TInt
         }
-      case IncrementDecrement(obj)         =>
+      case IncrementDecrement(obj)       =>
         obj match {
           case _: Identifier | _: ArrayRead | _: FieldRead =>
           case _                                           => ErrorInvalidIncrementDecrementExpr(expression, obj)
         }
-        tcExpr(obj, Types.anyObject :: Types.primitives) match {
+        tcExpr(obj, Types.tObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(x)) // Requires same return type as type
           case x          => x
         }
-      case LogicNot(expr)                  =>
-        tcExpr(expr, Types.anyObject, TInt, TLong, TChar) match {
+      case LogicNot(expr)                =>
+        tcExpr(expr, Types.tObject, TInt, TLong, TChar) match {
           case x: TObject => tcUnaryOperator(expression, x)
           case TLong      => TLong
           case _          => TInt
         }
-      case Ternary(condition, thn, els)    =>
+      case Ternary(condition, thn, els)  =>
         tcExpr(condition, TBool)
         val thenType = tcExpr(thn)
         tcExpr(els, thenType)
@@ -546,6 +540,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
   def tcBinaryOperator(expr: ExprTree, args: (Type, Type), expectedType: Option[Type] = None): Type = {
+    if (args._1 == TError || args._2 == TError)
+      return TError
+
     val argList = List(args._1, args._2)
     val operatorType = typeCheckOperator(args._1, expr, argList) match {
       case Some(tpe)                  =>
@@ -722,17 +719,15 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
   }
 
-  private def ErrorOperatorNotFound(expr: ExprTree, args: (Type, Type), pos: Positioned): Type =
-    ErrorOperatorNotFound(expr, List(args._1, args._2), pos)
   private def ErrorOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
-    val classesString = if(args.size != 2 || args(0) == args(1)){
+    val classesString = if (args.size != 2 || args(0) == args(1)) {
       "The class \'" + args.head + "\' does not"
-    }else{
-      if(!args(0).isInstanceOf[TObject]){
+    } else {
+      if (!args(0).isInstanceOf[TObject]) {
         "The class \'" + args(1) + "\' does not"
-      }else if(!args(1).isInstanceOf[TObject]){
+      } else if (!args(1).isInstanceOf[TObject]) {
         "The class \'" + args(0) + "\' does not"
-      }else{
+      } else {
         "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
       }
     }
@@ -770,6 +765,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       case _: PreDecrement | _: PostDecrement => "decrement"
     }
     error(22, s"Invalid $incrementOrDecrement expression.", pos)
+  }
+
+  private def ErrorOperatorDoesNotExist(expr: ExprTree, args: (Type, Type), pos: Positioned): Type = {
+    val operator = operatorString(expr, List(args._1, args._2))
+    error(23, s"Operator '$operator' does not exist.", pos)
   }
 
 }

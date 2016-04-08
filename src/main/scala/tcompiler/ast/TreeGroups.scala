@@ -3,6 +3,10 @@ package tcompiler.ast
 import tcompiler.ast.Trees._
 
 object TreeGroups {
+
+
+
+
   object BinaryOperator {
     def unapply(e: ExprTree): Option[(ExprTree, ExprTree)] = e match {
       case Plus(lhs, rhs)   => Some((lhs, rhs))

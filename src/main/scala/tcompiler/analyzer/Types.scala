@@ -147,7 +147,7 @@ object Types {
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case obj@TObject(c) =>
-        if (classSymbol.name == c.name || c.name == anyObject.classSymbol.name) true
+        if (classSymbol.name == c.name || c.name == tObject.classSymbol.name) true
         else classSymbol.parent match {
           case Some(x) => x.getType.isSubTypeOf(tpe)
           case None => false
@@ -170,7 +170,7 @@ object Types {
 
     override def toString = classSymbol.name
     override def byteCodeName: String = {
-      val name = if (this == anyObject) CodeGenerator.JavaObject else classSymbol.name
+      val name = if (this == tObject) CodeGenerator.JavaObject else classSymbol.name
       "L" + name + ";"
     }
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
@@ -180,5 +180,6 @@ object Types {
   }
 
   // special object to implement the fact that all objects are its subclasses
-  val anyObject = TObject(new ClassSymbol("Object"))
+  val tObject = TObject(new ClassSymbol("Object"))
+  val tArray  = TArray(tObject)
 }
