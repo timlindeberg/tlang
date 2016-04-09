@@ -53,6 +53,7 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
   def compileStat(statement: StatTree): Unit = {
     ch << LineNumber(statement.line)
     statement match {
+      case UselessStatement(expr)                      => // Don't compile useless statements
       case Block(stats)                                => stats.foreach(compileStat)
       case variable@VarDecl(_, varId, init, modifiers) =>
         val tpe = variable.getSymbol.getType

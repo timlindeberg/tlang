@@ -13,7 +13,6 @@ object TreeGroups {
            _: PreIncrement |
            _: PostIncrement |
            _: PreDecrement |
-           _: MethodCall |
            _: PostDecrement => None
       case expr:ExprTree => Some(expr)
       case _ => None

@@ -261,8 +261,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
 
   private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
-      case UselessStatement(e) => Return(Some(e))
-      case _                   => stat
+    case Block(stmts) if stmts.nonEmpty =>
+      stmts.last match {
+        case UselessStatement(e) => Block(stmts.updated(stmts.size - 1, Return(Some(e))))
+        case _                   => stat
+      }
+    case UselessStatement(e)            => Return(Some(e))
+    case _                              => stat
   }
 
   /**
@@ -507,13 +512,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
-
-        if (stmts.nonEmpty) {
-          val stat = replaceExprWithReturnStat(stmts.last)
-          Block(stmts.updated(stmts.size - 1, stat))
-        } else {
-          Block(List())
-        }
+        Block(stmts)
       case IF      =>
         eat(IF, LPAREN)
         val expr = expression()
@@ -642,7 +641,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       readToken()
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
-    case EOF                 =>
+    case EOF | RBRACE        =>
     case _                   => FatalWrongToken(SEMICOLON, NEWLINE)
   }
 

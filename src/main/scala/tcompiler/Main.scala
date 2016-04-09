@@ -3,7 +3,7 @@ package tcompiler
 import java.io.{File, FileNotFoundException}
 
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
-import tcompiler.ast.Parser
+import tcompiler.ast.{Parser, Printer}
 import tcompiler.ast.Trees._
 import tcompiler.code.CodeGeneration
 import tcompiler.lexer.Lexer
@@ -62,6 +62,7 @@ object Main {
       val analysis = NameAnalysis andThen TypeChecking
       // Generate code
       val prog = (parsing andThen analysis).run(ctx)(ctx.file)
+      println(Printer(prog))
       CodeGeneration.run(ctx)(prog)
       if (flags(exec) && containsMainMethod(prog)) {
         val cp = ctx.outDir match {

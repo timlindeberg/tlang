@@ -19,7 +19,7 @@ object Tokenizer {
 
   private val LocationPrefix = "L"
 
-  private val SingleCharTokens = Map(
+  val SingleCharTokens = Map(
     ':' -> COLON,
     ';' -> SEMICOLON,
     '.' -> DOT,
@@ -48,7 +48,7 @@ object Tokenizer {
     '^' -> LOGICXOR
   )
 
-  private val KeyWords = Map(
+  val Keywords = Map(
     "package" -> PACKAGE,
     "import" -> IMPORT,
     "object" -> OBJECT,
@@ -158,7 +158,7 @@ class Tokenizer(val file: File, ctx: Context) {
   }
 
   private def createIdentifierOrKeyWord(s: String): Token =
-    if (KeyWords.contains(s)) createToken(KeyWords(s), s.length)
+    if (Keywords.contains(s)) createToken(Keywords(s), s.length)
     else createIdToken(s, s.length)
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {

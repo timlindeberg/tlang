@@ -7,3 +7,4 @@ class A {
     Def -(a: A) = return 2 // res: N2009
 
 }
+

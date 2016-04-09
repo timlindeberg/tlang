@@ -16,7 +16,7 @@ class CodeSpec extends FlatSpec with Matchers {
   import TestUtils._
 
   behavior of "Correct Programs"
-  programFiles(Resources + "code").foreach(test(_, testPositive))
+  programFiles(Resources + "code/ImplicitReturnStatement.kool").foreach(test(_, testPositive))
 
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory){
@@ -35,6 +35,7 @@ class CodeSpec extends FlatSpec with Matchers {
     try {
       val program = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
 
+      println(Printer(program))
       hasTypes(program) should be(true)
       ctx.reporter.hasErrors should be(false)
 

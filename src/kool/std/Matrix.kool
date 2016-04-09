@@ -1,5 +1,8 @@
 package kool.std
 
+var m = new Matrix<Int>(5)
+println(m)
+
 class Matrix<T> {
 
     var rows: Int
