@@ -15,6 +15,8 @@ import scala.collection.mutable.ArrayBuffer
 
 object Imports extends Pipeline[Program, Program] {
 
+  val LocationPrefix = "I"
+
   def run(ctx: Context)(prog: Program): Program = {
     new NameReplacer(ctx, prog).replaceNames
   }
@@ -22,6 +24,9 @@ object Imports extends Pipeline[Program, Program] {
 }
 
 class NameReplacer(ctx: Context, prog: Program) {
+
+  import Imports._
+
   private val originalClasses = prog.classes.map(_.id.value).toSet
 
   private var addedExternalClasses = Map[String, String]()
@@ -47,6 +52,7 @@ class NameReplacer(ctx: Context, prog: Program) {
       _.methods.foreach { meth =>
           Trees.traverse(meth.stat, (_, t) => Some(t) collect {
             case id: Identifier if id.value.charAt(0).isUpper =>
+              println(id)
               handleImport(packString, id.value) collect {
                 case newName => id.value = newName // TODO: More effecient way of handling imports for regular identifiers?
               }
@@ -95,7 +101,7 @@ class NameReplacer(ctx: Context, prog: Program) {
   }
 
   private def WarningUnusedImport(name: String, pos: Positioned) =
-    ctx.reporter.warning("I", 0, s"Unused import '$name'.", pos)
+    ctx.reporter.warning(LocationPrefix, 0, s"Unused import '$name'.", pos)
 
 
 }
@@ -172,7 +178,7 @@ class Importer(ctx: Context, prog: Program) {
       Some(ClassIdentifier(convertName(parent.getClassName), List()))
   }
 
-  private def convertField(field: Field) = 
+  private def convertField(field: Field) =
       new VarDecl(Some(convertType(field.getType)), Identifier(field.getName), None, convertModifiers(field))
 
   private def convertMethod(meth: Method, clazz: JavaClass): MethodDecl = {
@@ -225,6 +231,8 @@ class Importer(ctx: Context, prog: Program) {
 }
 
 class GenericImporter(ctx: Context, prog: Program) {
+
+  import Imports._
 
   def importGenericClasses: List[ClassDecl] = {
     var importedClasses: ArrayBuffer[ClassDecl] = new ArrayBuffer()
@@ -284,10 +292,10 @@ class GenericImporter(ctx: Context, prog: Program) {
     }
 
   private def error(errorCode: Int, msg: String, pos: Positioned) =
-    ctx.reporter.error("I", errorCode, msg, pos)
+    ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
 
   private def warning(errorCode: Int, msg: String, pos: Positioned) =
-    ctx.reporter.warning("I", errorCode, msg, pos)
+    ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
 
   private def ErrorImportParsing(fileName: String, pos: Positioned) =
     error(0, s"Found parse error in import '$fileName'.", pos)

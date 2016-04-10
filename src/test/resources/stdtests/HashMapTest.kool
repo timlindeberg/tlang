@@ -20,7 +20,7 @@ println("All tests succeded.") // res: All tests succeded.
 
 Def IntMap() = {
     var t = new Tester<Int>()
-    var map: HashMap<Int, Int> = {new Entry<Int, Int>(1, 2)}
+    var map: HashMap<Int, Int> = { new Entry<Int, Int>(1, 2) }
     map[1] = 2
     t.AssertEquals(map[1], 2)
     t.AssertEquals(map.Size(), 1)

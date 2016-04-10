@@ -31,7 +31,7 @@ class Vector<T> {
 
 	Def [](index: Int) = {
 		checkBounds(index)
-		return data[index]
+		data[index]
 	}
 
 	Def []=(index: Int, value: T) = {
@@ -49,24 +49,24 @@ class Vector<T> {
 			if(lhsIt.Next() != rhsIt.Next())
 				return false
 
-		return true
+		true
 	}
 
-	Def !=(lhs: Vector<T>, rhs: Vector<T>) = return !(lhs == rhs)
+	Def !=(lhs: Vector<T>, rhs: Vector<T>) = !(lhs == rhs)
 
 	Def +(lhs: Vector<T>, rhs: T) = {
 		lhs.Push(rhs)
-		return lhs
+		lhs
 	}
 
 	Def +(lhs: Vector<T>, rhs: Vector<T>) = {
 		lhs.AddAll(rhs)
-		return lhs
+		lhs
 	}
 
 	Def -(lhs: Vector<T>, rhs: T) = {
 		lhs.Remove(rhs)
-		return lhs
+		lhs
 	}
 
 	Def #(vector: Vector<T>) = {
@@ -74,19 +74,19 @@ class Vector<T> {
 		for(var i = 0; i < vector.size; i++)
 			res = 31 * res + #vector[i]
 
-		return res
+		res
 	}
 
-    Def NonEmpty() = return size != 0
+    Def NonEmpty() = size != 0
 
-	Def IsEmpty() = return size == 0
+	Def IsEmpty() = size == 0
 
 	Def Clear() = {
 		size = 0
 		data = new T[InitialCapacity]
 	}
 
-	Def Iterator() = return new VectorIterator<T>(this)
+	Def Iterator() = new VectorIterator<T>(this)
 
 	Def Push(value: T) = {
 		if(size >= data.length)
@@ -99,7 +99,7 @@ class Vector<T> {
 		if(size == 0)
 			error("Cannot pop empty stack!")
 
-		return data[--size]
+		data[--size]
 	}
 
 	Def Add(value: T) = Add(0, value)
@@ -153,7 +153,7 @@ class Vector<T> {
 	        return false
 
 	    RemoveIndex(index)
-	    return true
+	    true
 	}
 
 	Def IndexOf(value: T) = {
@@ -161,7 +161,7 @@ class Vector<T> {
 			if(data[i] == value)
 				return i
 		}
-		return -1
+		-1
 	}
 
 	Def LastIndexOf(value: T) = {
@@ -171,7 +171,7 @@ class Vector<T> {
 				res = -1
 			}
 		}
-		return res
+		res
 	}
 
 	Def MakeString(delimiter: String) = {
@@ -181,18 +181,18 @@ class Vector<T> {
 			if(i != size  - 1)
 				s += delimiter
 		}
-		return s
+		s
 	}
 
-	Def Contains(value: T) = return IndexOf(value) != -1
+	Def Contains(value: T) = IndexOf(value) != -1
 
-	Def Size() = return size
+	Def Size() = size
 
-	Def First() = return this[0]
+	Def First() = this[0]
 
-	Def Last() = return this[size - 1]
+	Def Last() = this[size - 1]
 
-    Def toString() = return "[" + MakeString(", ") + "]"
+    Def toString() = "[" + MakeString(", ") + "]"
 
 	def increaseStorage() = {
 		var newData = new T[(data.length * 3) / 2 + 1]
@@ -221,10 +221,10 @@ class VectorIterator<T> {
 		vector = list
 	}
 
-	Def HasNext() = return hasNext
+	Def HasNext() = hasNext
 
 	Def Next() = {
 		hasNext = current < vector.Size() - 1
-		return vector[current++]
+		vector[current++]
 	}
 }

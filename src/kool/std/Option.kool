@@ -7,8 +7,8 @@ class Option<T> {
 
 	var static none = new Option<T>()
 
-	Def static Some(value: T) = return new Option<T>(value)
-	Def static None() = return none
+	Def static Some(value: T) = new Option<T>(value)
+	Def static None() = none
 
 	Def new() = {}
 
@@ -21,27 +21,27 @@ class Option<T> {
 		if(!lhs.isDefined && !rhs.isDefined)
 			return true
 
-		return false
+		false
 	}
 
-	Def !=(lhs: Option<T>, rhs: Option<T>) = return !(lhs == rhs)
+	Def !=(lhs: Option<T>, rhs: Option<T>) = !(lhs == rhs)
 
-	Def #(option: Option<T>) = return option.isDefined ? #option.value : 0
+	Def #(option: Option<T>) = option.isDefined ? #option.value : 0
 
 	Def Add(value: T) = {
 		this.value = value
 		isDefined = true
 	}
 
-	Def IsDefined() = return isDefined
+	Def IsDefined() = isDefined
 
 	Def Value() = {
 		if(!isDefined)
 			error("Cannot access value of undefined option.")
-		return value
+		value
 	}
 
-	Def toString() = return isDefined ? "Some(" + value + ")" : "None"
+	Def toString() = isDefined ? "Some(" + value + ")" : "None"
 
 
 }

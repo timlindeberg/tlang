@@ -26,7 +26,6 @@ class HashMap<K, V> {
 			var e = entries[i]
 			this[e.Key] = e.Value
 		}
-
 	}
 
 	Def []=(key: K, value: V) = {
@@ -79,7 +78,7 @@ class HashMap<K, V> {
 		true
 	}
 
-	Def !=(lhs: HashMap<K, V>, rhs: HashMap<K, V>) = return !(lhs == rhs)
+	Def !=(lhs: HashMap<K, V>, rhs: HashMap<K, V>) = !(lhs == rhs)
 
 	Def #(map: HashMap<K, V>) = {
 		var res = 0
@@ -181,7 +180,7 @@ class HashMap<K, V> {
 
 	def getNewDataContainer(capacity: Int) = {
 		var data = new Option<Entry<K, V>>[capacity]
-		for(var i: Int = 0; i < capacity; i++)
+		for(var i = 0; i < capacity; i++)
 			data[i] = new Option<Entry<K, V>>()
 		data
 	}

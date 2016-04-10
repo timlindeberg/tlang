@@ -41,8 +41,12 @@ abstract class ErrorTester extends FlatSpec with Matchers {
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {
-      val p = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
+      val parsing = Lexer andThen Parser andThen Templates andThen Imports
+      val analysis = NameAnalysis andThen TypeChecking
 
+      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
+
+      println(Printer(prog))
       // Check for warnings:
       if(ctx.reporter.warnings.isEmpty)
         fail("Test failed: No errors or warnings!")

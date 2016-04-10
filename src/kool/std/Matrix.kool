@@ -23,8 +23,8 @@ class Matrix<T> {
                this[i][j] = arrays[i][j]
     }
 
-    Def [](index: Int) = return data[index]
-    Def []=(index: Int, row: T[]) = data[index] = new MatrixRow<T>(row)
+    Def [](index: Int) = data[index]
+    Def []=(index: Int, row: T[]) = (data[index] = new MatrixRow<T>(row))
 
     Def +(lhs: Matrix<T>, rhs: Matrix<T>) = {
         if(lhs.rows != rhs.rows || lhs.columns != rhs.columns)
@@ -35,7 +35,7 @@ class Matrix<T> {
             for(var j = 0; j < m.rows; j++)
                 m[i][j] = lhs[i][j] + rhs[i][j]
 
-        return m
+        m
     }
 
     Def -(lhs: Matrix<T>, rhs: Matrix<T>) = {
@@ -47,17 +47,17 @@ class Matrix<T> {
             for(var j = 0; j < m.rows; j++)
                 m[i][j] = lhs[i][j] - rhs[i][j]
 
-        return m
+        m
     }
 
-    Def *(matrix: Matrix<T>, scalar: T) = return scalar * matrix
+    Def *(matrix: Matrix<T>, scalar: T) = scalar * matrix
     Def *(scalar: T, matrix: Matrix<T>) = {
         var m = new Matrix<T>(matrix.columns, matrix.rows)
         for(var i = 0; i < m.columns; i++)
            for(var j = 0; j < m.rows; j++)
                 m[i][j] = scalar * matrix[i][j]
 
-        return m
+        m
     }
 
     Def *(lhs: Matrix<T>, rhs: Matrix<T>) = {
@@ -70,10 +70,10 @@ class Matrix<T> {
                 for(var k = 0; k < lhs.columns; k++)
                     m[i][j] += lhs[i][k] * rhs[k][j]
 
-        return m
+        m
     }
 
-    Def -(matrix: Matrix<T>) = return -1 * matrix
+    Def -(matrix: Matrix<T>) = -1 * matrix
 
     Def #(matrix: Matrix<T>) = {
         var res: Int
@@ -81,7 +81,7 @@ class Matrix<T> {
            for(var j = 0; j < matrix.rows; j++)
                res = 31 * res + #matrix[i][j]
 
-        return res
+        res
     }
 
     Def Transpose(): Matrix<T> = {
@@ -90,11 +90,11 @@ class Matrix<T> {
            for(var j = 0; j < rows; j++)
                m[i][j] = data[j][i]
 
-        return m
+        m
     }
 
-    Def Columns() = return columns
-    Def Rows() = return rows
+    Def Columns() = columns
+    Def Rows() = rows
 
     Def toString() = {
         if(columns == 0 || rows == 0)
@@ -103,7 +103,7 @@ class Matrix<T> {
         var s = ""
         for(var i = 0; i < rows; i++)
             s += data[i] + "\n"
-        return s
+        s
     }
 
     def init(rows: Int, columns: Int) = {
@@ -122,10 +122,10 @@ class MatrixRow<T> {
 
     var data: T[]
 
-    Def new(w: Int) = data = new T[w]
-    Def new(d: T[]) = data = d
+    Def new(w: Int) = (data = new T[w])
+    Def new(d: T[]) = (data = d)
 
-    Def [](index: Int) = return data[index]
+    Def [](index: Int) = data[index]
 
     Def []=(index: Int, value: T) = data[index] = value
 
@@ -134,8 +134,9 @@ class MatrixRow<T> {
             return "[]"
 
         var s = "[ "
-        for(var i = 0; i < data.length; i++) s += data[i] + " "
-        return s + "]"
+        for(var i = 0; i < data.length; i++)
+            s += data[i] + " "
+        s + "]"
     }
 
 }
