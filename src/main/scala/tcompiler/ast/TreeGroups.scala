@@ -7,7 +7,8 @@ object TreeGroups {
 
   object UselessStatement {
     def unapply(e: StatTree): Option[ExprTree] = e match {
-      case _: Assign |
+      case _: MethodCall |
+           _: Assign |
            _: ArrayAssign |
            _: FieldAssign |
            _: PreIncrement |

@@ -5,6 +5,7 @@ println(a.Test3()) // res: 5
 println(a.Test4(6)) // res: 25
 println(a.Test4(5)) // res: 10
 println(a.Test5(6)) // res: 25
+println(a) // res: 0
 a.Test6(6)
 println(a) // res: 6
 println(a.Test7()) // res: test
@@ -33,15 +34,13 @@ class A {
     Def Test5(x: Int) = {
         x == 5 ? 10 : 25
     }
-    Def Test6(x: Int) = {
-        Assign(x)
-        5
-    }
+
+    Def Test6(x: Int) = Assign(x)
 
     Def Test7() = Test()
     Def Test8() = { Test() }
 
-    Def Assign(x: Int) = i = x
+    Def Assign(x: Int) = (i = x)
 
     Def toString() = "" + i
 }

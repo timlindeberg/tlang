@@ -1,4 +1,4 @@
 class A<T, T> { } // res: G2002
 
-// res: G2003
+// res: G2002
 class A<B, T, B, T> { } // res: G2002

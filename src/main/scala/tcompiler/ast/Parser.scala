@@ -263,9 +263,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
     case Block(stmts) if stmts.nonEmpty =>
       stmts.last match {
+        case m: MethodCall       => Block(stmts.updated(stmts.size - 1, Return(Some(m))))
         case UselessStatement(e) => Block(stmts.updated(stmts.size - 1, Return(Some(e))))
         case _                   => stat
       }
+    case m: MethodCall                  => Return(Some(m))
     case UselessStatement(e)            => Return(Some(e))
     case _                              => stat
   }
@@ -1264,9 +1266,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   //---------------------------------------------------------------------------------------
   //  Fatal messages
   //---------------------------------------------------------------------------------------
-
-  private def FatalInvalidStatement(pos: Positioned) =
-    fatal(0, "Not a valid statement.", pos)
 
   private def FatalExpectedIdAssignment(pos: Positioned) =
     fatal(1, "Expected identifier on left side of assignment.", pos)

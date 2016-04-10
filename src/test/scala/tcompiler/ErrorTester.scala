@@ -18,7 +18,7 @@ abstract class ErrorTester extends FlatSpec with Matchers {
 
   def Seperator = "---------------------------------------------------------------------\n"
 
-  val PrintErrors = true
+  val PrintErrors = false
 
   def Name: String
   def Path: String
@@ -42,7 +42,6 @@ abstract class ErrorTester extends FlatSpec with Matchers {
 
     try {
       val p = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
-      println(Printer(p))
 
       // Check for warnings:
       if(ctx.reporter.warnings.isEmpty)

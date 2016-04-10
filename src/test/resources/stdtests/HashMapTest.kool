@@ -16,7 +16,7 @@ Remove()
 AddAll()
 
 
-println("All tests succeded!")
+println("All tests succeded.") // res: All tests succeded.
 
 Def IntMap() = {
     var t = new Tester<Int>()

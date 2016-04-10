@@ -38,29 +38,29 @@ object Printer {
     }
 
     private def evaluate(obj: Any): String = obj match {
-      case L                            => L()
-      case R                            => R()
-      case N                            => N()
-      case t: Tree                      =>
+      case L             => L()
+      case R             => R()
+      case N             => N()
+      case t: Tree       =>
         t match {
           case _: Identifier | _: ClassIdentifier                  => color(t, IdentifierColor)
           case _: StringLit | _: CharLit                           => color(t, StringColor)
           case _: IntLit | _: LongLit | _: FloatLit | _: DoubleLit => color(t, NumColor)
           case _                                                   => prettyPrint(t)
         }
-      case Some(t: Tree)                => evaluate(t)
-      case None                         => ""
-      case l: List[Tree]                => mkString(l)
-      case s: String                    => s
-      case x                            => x.toString
+      case Some(t: Tree) => evaluate(t)
+      case None          => ""
+      case l: List[Tree] => mkString(l)
+      case s: String     => s
+      case x             => x.toString
     }
 
     private def mkString(list: List[Tree]) = {
       val it = list.iterator
       var s = ""
-      while(it.hasNext){
+      while (it.hasNext) {
         s += evaluate(it.next)
-        if(it.hasNext)
+        if (it.hasNext)
           s += N()
       }
       s
@@ -134,7 +134,7 @@ object Printer {
       case StringType()  => p"String"
       case UnitType()    => p"Unit"
       // Statements
-      case Block(stats)                     => block(stats)
+      case Block(stats)                     => if (stats.isEmpty) "{ }" else p"$L$stats$R"
       case If(expr, thn, els)               => p"if($expr) $thn${optional(els)(stat => p"else $stat")}"
       case While(expr, stat)                => p"while($expr) $stat"
       case For(init, condition, post, stat) => p"for(${comma(init)} ; $condition ; ${comma(post)}) $stat"
@@ -198,19 +198,15 @@ object Printer {
     s
   }
 
-  private def block(stats: List[StatTree]): String = if(stats.isEmpty) "{ }" else p"$L$stats$R"
-
   private def varsAndMethods(vars: List[VarDecl], methods: List[FuncTree]): String = {
-    if(vars.isEmpty && methods.isEmpty)
+    if (vars.isEmpty && methods.isEmpty)
       return "{ }"
 
-    if(vars.isEmpty){
+    if (vars.isEmpty)
       return p"$L$N$methods$R"
-    }
 
-    if(methods.isEmpty){
+    if (methods.isEmpty)
       return p"$L$N$vars$N$R"
-    }
 
     p"$L$N$vars$N$N$methods$R"
   }
@@ -239,16 +235,12 @@ object Printer {
     decl + mods(modifiers)
   }
 
-  private def mods(modifiers: Set[Modifier]) = {
-    val s = modifiers.find(_ == Static) match {
-      case Some(_) => p" static"
-      case _       => ""
-    }
-    s + (modifiers.find(_ == Implicit) match {
-      case Some(_) => p" implicit"
-      case _       => ""
-    })
-  }
+  private def mods(modifiers: Set[Modifier]) =
+    modifiers.map {
+      case Static()   => p"static"
+      case Implicit() => p"implicit"
+      case _          => ""
+    }.mkString(" ")
 
   private def optional[T](t: Option[T])(f: (T => String)) = if (t.isDefined) f(t.get) else ""
 
