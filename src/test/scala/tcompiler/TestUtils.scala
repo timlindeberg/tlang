@@ -9,6 +9,7 @@ import tcompiler.ast.Trees._
 import tcompiler.lexer.Token
 
 import scala.io.Source
+
 import scala.sys.process.{ProcessLogger, _}
 
 object TestUtils extends FlatSpec {

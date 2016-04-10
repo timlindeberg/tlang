@@ -50,9 +50,20 @@ object Printer {
         }
       case Some(t: Tree)                => evaluate(t)
       case None                         => ""
-      case l: List[Tree]                => l.foldLeft("")(_ + evaluate(_) + N())
+      case l: List[Tree]                => mkString(l)
       case s: String                    => s
       case x                            => x.toString
+    }
+
+    private def mkString(list: List[Tree]) = {
+      val it = list.iterator
+      var s = ""
+      while(it.hasNext){
+        s += evaluate(it.next)
+        if(it.hasNext)
+          s += N()
+      }
+      s
     }
 
     private def color(tree: Tree, color: String) =
@@ -71,6 +82,7 @@ object Printer {
   }
 
   private var indent: Int = 0
+
 
   object L {
     def apply() = {
@@ -104,7 +116,7 @@ object Printer {
       case RegularImport(identifiers)                                    => p"import ${packageIds(identifiers)}$N"
       case WildCardImport(identifiers)                                   => p"import ${packageIds(identifiers)}.*$N"
       case GenericImport(identifiers)                                    => p"import <${packageIds(identifiers)}>$N"
-      case ClassDecl(id, parent, vars, methods)                          => p"$N${N}class $id${optional(parent)(t => p" extends $t")} $L$N$vars$N$N$methods$R"
+      case ClassDecl(id, parent, vars, methods)                          => p"$N${N}class $id${optional(parent)(t => p" extends $t")} ${varsAndMethods(vars, methods)}"
       case VarDecl(tpe, id, expr, modifiers)                             => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
       case MethodDecl(retType, id, args, stat, modifiers)                => p"${definition(modifiers)} $id(${comma(args)})${optional(retType)(t => p": $t")} = $stat$N"
       case ConstructorDecl(_, id, args, stat, modifiers)                 => p"${definition(modifiers)} new(${comma(args)}) = $stat$N"
@@ -122,7 +134,7 @@ object Printer {
       case StringType()  => p"String"
       case UnitType()    => p"Unit"
       // Statements
-      case Block(stats)                     => if(stats.isEmpty) "{ }" else p"$L$stats$R"
+      case Block(stats)                     => block(stats)
       case If(expr, thn, els)               => p"if($expr) $thn${optional(els)(stat => p"else $stat")}"
       case While(expr, stat)                => p"while($expr) $stat"
       case For(init, condition, post, stat) => p"for(${comma(init)} ; $condition ; ${comma(post)}) $stat"
@@ -169,12 +181,12 @@ object Printer {
       case CharLit(value)                  => p"'${escapeJava(p"$value")}'"
       case StringLit(value)                => "\"" + p"${escapeJava(p"$value")}" + "\""
       case ArrayLit(expressions)           => p"{ ${comma(expressions)} }"
-      case True()                          => "true"
-      case False()                         => "false"
+      case True()                          => p"true"
+      case False()                         => p"false"
       case Identifier(value)               => p"$value"
       case id@ClassIdentifier(value, list) => p"$value${templateList(id)}"
       case This()                          => p"this"
-      case NewArray(tpe, sizes)            => p"new $tpe${sizes.map(s => p"[$s]")}"
+      case NewArray(tpe, sizes)            => p"new $tpe${arrayList(sizes)}"
       case New(tpe, exprs)                 => p"new $tpe(${comma(exprs)})"
       case PreIncrement(id)                => p"++$id"
       case PostIncrement(id)               => p"$id++"
@@ -186,6 +198,24 @@ object Printer {
     s
   }
 
+  private def block(stats: List[StatTree]): String = if(stats.isEmpty) "{ }" else p"$L$stats$R"
+
+  private def varsAndMethods(vars: List[VarDecl], methods: List[FuncTree]): String = {
+    if(vars.isEmpty && methods.isEmpty)
+      return "{ }"
+
+    if(vars.isEmpty){
+      return p"$L$N$methods$R"
+    }
+
+    if(methods.isEmpty){
+      return p"$L$N$vars$N$R"
+    }
+
+    p"$L$N$vars$N$N$methods$R"
+  }
+
+  private def arrayList(sizes: List[ExprTree]) = sizes.map(s => p"[$s]").mkString("")
   private def templateList(id: ClassIdentifier) = if (id.isTemplated) p"<${comma(id.templateTypes)}>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {

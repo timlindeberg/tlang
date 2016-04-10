@@ -18,10 +18,13 @@ object Main {
   var FileEnding = ".kool"
 
   val exec       = "--exec"
-  val suppressWarnings   = "-sw"
+  val suppressWarnings   = "--sw"
+  val printGeneratedCode = "--printcode"
+
   val flags      = HashMap(
     exec -> false,
-    suppressWarnings -> false
+    suppressWarnings -> false,
+    printGeneratedCode -> false
   )
 
   def processOptions(args: Array[String]): Context = {
@@ -34,8 +37,8 @@ object Main {
         outDir = Some(new File(out))
         processOption(args)
 
-      case flag :: args if flags.contains(flag) =>
-        flags(flag) = true
+      case flag :: args if flags.contains(flag.toLowerCase) =>
+        flags(flag.toLowerCase) = true
         processOption(args)
 
       case f :: args =>
@@ -62,7 +65,9 @@ object Main {
       val analysis = NameAnalysis andThen TypeChecking
       // Generate code
       val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-      println(Printer(prog))
+      if(flags(printGeneratedCode))
+        println(Printer(prog))
+
       CodeGeneration.run(ctx)(prog)
       if (flags(exec) && containsMainMethod(prog)) {
         val cp = ctx.outDir match {
