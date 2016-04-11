@@ -124,18 +124,20 @@ class HashMap<K, V> {
 		var previous = new Option<Entry<K, V>>()
 		while(it.HasNext()){
 			entry = it.Next()
-			if(entry.Key == key){
-				if(!previous.IsDefined())
-					entries[index] = new Option<Entry<K, V>>()
-				else if(it.HasNext())
-					previous.Value().Next = new Option<Entry<K, V>>(it.Next())
-				else
-					previous.Value().Next = new Option<Entry<K, V>>()
-
-				size--
-				return
+			if(entry.Key != key){
+                previous = new Option<Entry<K, V>>(entry)
+                continue
 			}
-			previous = new Option<Entry<K, V>>(entry)
+
+            if(!previous.IsDefined())
+                entries[index] = new Option<Entry<K, V>>()
+            else if(it.HasNext())
+                previous.Value().Next = new Option<Entry<K, V>>(it.Next())
+            else
+                previous.Value().Next = new Option<Entry<K, V>>()
+
+            size--
+            return
 		}
 	}
 
@@ -210,15 +212,16 @@ class HashMap<K, V> {
 		var newCapacity = capacity << 1
 		var newData = getNewDataContainer(newCapacity)
 
-		for(var i: Int = 0; i < capacity; i++){
-			if(entries[i].IsDefined()){
-				var it = entries[i].Value().Iterator()
-				while(it.HasNext()){
-					var entry = it.Next()
-					entry.Next = new Option<Entry<K, V>>()
-					addTo(newData, index(entry.Hash, newCapacity), entry)
-				}
-			}
+		for(var i = 0; i < capacity; i++){
+		    if(!entries[i].IsDefined())
+		        continue
+
+            var it = entries[i].Value().Iterator()
+            while(it.HasNext()){
+                var entry = it.Next()
+                entry.Next = new Option<Entry<K, V>>()
+                addTo(newData, index(entry.Hash, newCapacity), entry)
+            }
 		}
 		entries = newData
 		capacity = newCapacity
@@ -347,11 +350,12 @@ class EntryIterator<K, V> {
 
 	def nextDefinedEntry() = {
 		for(; currentIndex < map.Capacity(); currentIndex++){
-			if(entries[currentIndex].IsDefined()){
-				var res = entries[currentIndex]
-				currentIndex++
-				return res
-			}
+		    if(!entries[currentIndex].IsDefined())
+		        continue
+
+            var res = entries[currentIndex]
+            currentIndex++
+            return res
 		}
 
 		new Option<Entry<K, V>>()

@@ -157,20 +157,17 @@ class Vector<T> {
 	}
 
 	Def IndexOf(value: T) = {
-		for(var i = 0; i < size; i++){
+		for(var i = 0; i < size; i++)
 			if(data[i] == value)
 				return i
-		}
 		-1
 	}
 
 	Def LastIndexOf(value: T) = {
 		var res = -1
-		for(var i = 0; i < size; i++){
-			if(data[i] == value){
+		for(var i = 0; i < size; i++)
+			if(data[i] == value)
 				res = -1
-			}
-		}
 		res
 	}
 

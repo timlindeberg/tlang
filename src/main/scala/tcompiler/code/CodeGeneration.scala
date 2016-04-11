@@ -21,8 +21,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("")
     val sourceName = ctx.file.getName
 
-    // output code
-    prog.classes.foreach {
+    // output code in parallell
+    prog.classes.par.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
       case _                    =>
     }

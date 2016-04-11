@@ -2,40 +2,18 @@ package tcompiler
 
 import java.io.File
 
-import org.scalatest.{FlatSpec, Matchers}
-import tcompiler.ast.Printer
-import tcompiler.ast.Trees.Program
-import tcompiler.utils.{CompilationException, Context, Pipeline}
+import tcompiler.utils.{CompilationException, Context}
 
 /**
  * Created by Tim Lindeberg on 4/2/2016.
  */
-abstract class ErrorTester extends FlatSpec with Matchers {
+abstract class ErrorTester extends Tester {
 
   import TestUtils._
 
   def Seperator = "---------------------------------------------------------------------\n"
 
-  val PrintErrors = false
-
-  def Name: String
-  def Path: String
-  def Pipeline: Pipeline[File, Program]
-
-  behavior of Name
-  TestUtils.programFiles(Path).foreach(test)
-
-  def test(file: File): Unit =
-    if (file.isDirectory){
-      programFiles(file.getPath).foreach(testFile)
-    } else{
-      if(shouldBeIgnored(file))
-        ignore should file.getName.toString in testFile(file)
-      else
-        it should file.getName.toString in testFile(file)
-    }
-
-  private def testFile(file: File): Unit = {
+  def testFile(file: File): Unit = {
     val ctx = Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
     val expectedErrors = TestUtils.parseSolutions(file)
 

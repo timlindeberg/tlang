@@ -1,53 +1,11 @@
 package tcompiler.code
 
-import java.io._
-
-import org.scalatest._
-import tcompiler.TestUtils
-import tcompiler.analyzer.{NameAnalysis, TypeChecking}
-import tcompiler.ast._
-import tcompiler.lexer.Lexer
-import tcompiler.modification.{Imports, Templates}
-import tcompiler.utils.{CompilationException, Context}
+import tcompiler.{TestUtils, ValidTester}
 
 
-class CodeSpec extends FlatSpec with Matchers {
+class CodeSpec extends ValidTester {
 
-  import TestUtils._
+  override def Name: String = "ValidCode"
+  override def Path: String = TestUtils.Resources + "code"
 
-  behavior of "Correct Programs"
-  programFiles(Resources + "code").foreach(test(_, testPositive))
-
-  behavior of "STD Test"
-  programFiles(Resources + "stdtests").foreach(test(_, testPositive))
-
-  def test(file: File, testFunction: File => Unit): Unit = {
-    if (file.isDirectory){
-      programFiles(file.getPath).foreach(test(_, testFunction))
-    } else{
-      if(shouldBeIgnored(file))
-      ignore should file.getName.toString in testFunction(file)
-        else
-      it should file.getName.toString in testFunction(file)
-    }
-  }
-
-  def testPositive(file: File): Unit = {
-    val ctx = new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
-
-    try {
-      val program = (Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking).run(ctx)(ctx.file)
-
-      //hasTypes(program) should be(true)
-      ctx.reporter.hasErrors should be(false)
-
-      CodeGeneration.run(ctx)(program)
-      val res = lines(executeTProgram(file, "./gen/"))
-      val sol = parseSolutions(file)
-      assertCorrect(res, sol)
-    } catch {
-      case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
-      case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
-    }
-  }
 }

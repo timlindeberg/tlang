@@ -48,7 +48,6 @@ class LinkedList<T> {
 
 	Def !=(lhs: LinkedList<T>, rhs: LinkedList<T>) = !(lhs == rhs)
 
-
 	Def +(lhs: LinkedList<T>, rhs: T) = {
         var newList = new LinkedList<T>(lhs)
         newList.Push(rhs)

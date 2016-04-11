@@ -182,7 +182,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
-    case _: Break | _: Continue => // do nothing
+    case _: Break | _: Continue =>
     case expr: ExprTree                   =>
       tcExpr(expr)
   }
