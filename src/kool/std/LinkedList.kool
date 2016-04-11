@@ -19,7 +19,7 @@ class LinkedList<T> {
 
 	Def implicit new(elements: T[]) = {
 		Clear()
-		for(var i = 0; i < elements.length; i++)
+		for(var i = 0; i < elements.Size(); i++)
 			Push(elements[i])
 	}
 

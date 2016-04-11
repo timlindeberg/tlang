@@ -1,27 +1,39 @@
-name := "koolc"
 
-version := "1.0"
+crossPaths := false
 
-scalaVersion := "2.11.8"
-
-
-scalacOptions ++= Seq("-deprecation", "-unchecked")
-
-val scalaCompiler = "org.scala-lang" % "scala-compiler" % "2.11.8"
-
-libraryDependencies ++= Seq(
-	"org.scalatest" %% "scalatest" % "2.2.4" % "test",
-	"uk.com.robust-it" % "cloning" % "1.9.2",
-	"org.apache.bcel" % "bcel" % "5.2",
-	"org.apache.commons" % "commons-lang3" % "3.4",
-	"org.scala-lang" % "scala-compiler" % "2.11.8",
-	"org.backuity" %% "ansi-interpolator" % "1.1" % "provided"
+lazy val commonSettings = Seq(
+	scalaVersion := "2.11.8",
+	organization := "com.tcompiler",
+	version := "1.0"
 )
 
-// src/main/scala only
+scalacOptions ++= Seq(
+	"-deprecation",
+	"-unchecked",
+	"-language:implicitConversions")
 
-unmanagedSourceDirectories in Compile := (scalaSource in Compile).value :: Nil
+lazy val core = (project in file(".")).
+	dependsOn(macroSub).
+	settings(commonSettings: _*).
+	settings(
+		name := "T Compiler",
+		libraryDependencies ++= Seq(
+			"com.novocode" % "junit-interface" % "0.8" % "test->default",
+			"org.scalatest" %% "scalatest" % "2.2.4" % "test",
+			"junit" % "junit" % "4.11" % "test",
+			"uk.com.robust-it" % "cloning" % "1.9.2",
+			"org.apache.bcel" % "bcel" % "5.2",
+			"org.apache.commons" % "commons-lang3" % "3.4",
+			"org.scala-lang" % "scala-compiler" % "2.11.8",
+			"org.backuity" %% "ansi-interpolator" % "1.1" % "provided"
+		),
 
-// src/test/scala only
+		scalaSource in Compile := baseDirectory.value / "src/scala",
+		scalaSource in Test := baseDirectory.value / "test/scala"
+	)
 
-unmanagedSourceDirectories in Test := (scalaSource in Test).value :: Nil
+lazy val macroSub = (project in file("macro")).
+	settings(commonSettings: _*).
+	settings(
+		libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+	)

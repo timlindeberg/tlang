@@ -19,8 +19,8 @@ class Vector3<T> {
     }
 
     Def implicit new(arr: T[]) = {
-        if(arr.length != 3)
-            error("Cannot initialize Vector3 with array of dimension" + arr.length)
+        if(arr.Size() != 3)
+            error("Cannot initialize Vector3 with array of dimension" + arr.Size())
 
         X = arr[0]
         Y = arr[1]

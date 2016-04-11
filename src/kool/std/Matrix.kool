@@ -12,12 +12,12 @@ class Matrix<T> {
     Def new(size: Int)               = init(size, size)
     Def new(rows: Int, columns: Int) = init(rows, columns)
     Def implicit new(arrays: T[][]) = {
-        if(arrays.length == 0 || arrays[0].length == 0){
+        if(arrays.Size() == 0 || arrays[0].Size() == 0){
             init(0, 0)
             return
         }
 
-        init(arrays.length, arrays[0].length)
+        init(arrays.Size(), arrays[0].Size())
         for(var i = 0; i < columns; i++)
            for(var j = 0; j < rows; j++)
                this[i][j] = arrays[i][j]
@@ -130,11 +130,11 @@ class MatrixRow<T> {
     Def []=(index: Int, value: T) = data[index] = value
 
     Def toString() = {
-        if(data.length == 0)
+        if(data.Size() == 0)
             return "[]"
 
         var s = "[ "
-        for(var i = 0; i < data.length; i++)
+        for(var i = 0; i < data.Size(); i++)
             s += data[i] + " "
         s + "]"
     }

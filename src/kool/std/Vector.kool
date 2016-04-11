@@ -17,7 +17,7 @@ class Vector<T> {
 
 	Def implicit new(array: T[]) = {
 		Clear()
-		for(var i = 0; i < array.length; i++)
+		for(var i = 0; i < array.Size(); i++)
 			Push(array[i])
 	}
 
@@ -89,7 +89,7 @@ class Vector<T> {
 	Def Iterator() = new VectorIterator<T>(this)
 
 	Def Push(value: T) = {
-		if(size >= data.length)
+		if(size >= data.Size())
 			increaseStorage()
 
 		data[size++] = value
@@ -107,7 +107,7 @@ class Vector<T> {
 		if(index != size)
 			checkBounds(index)
 
-		if(size >= data.length)
+		if(size >= data.Size())
 			increaseStorage()
 
 		for(var i = size; i > index; i--)
@@ -192,9 +192,9 @@ class Vector<T> {
     Def toString() = "[" + MakeString(", ") + "]"
 
 	def increaseStorage() = {
-		var newData = new T[(data.length * 3) / 2 + 1]
+		var newData = new T[(data.Size() * 3) / 2 + 1]
 
-		for(var i = 0; i < data.length; i++)
+		for(var i = 0; i < data.Size(); i++)
 			newData[i] = data[i]
 		data = newData
 	}

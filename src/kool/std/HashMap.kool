@@ -21,8 +21,8 @@ class HashMap<K, V> {
 	}
 
 	Def implicit new(entries: Entry<K, V>[]) = {
-		init(entries.length, DefaultLoadFactor)
-		for(var i = 0; i < entries.length; i++){
+		init(entries.Size(), DefaultLoadFactor)
+		for(var i = 0; i < entries.Size(); i++){
 			var e = entries[i]
 			this[e.Key] = e.Value
 		}
