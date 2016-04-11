@@ -73,7 +73,6 @@ object Tokenizer {
     "if" -> IF,
     "else" -> ELSE,
     "return" -> RETURN,
-    "length" -> LENGTH,
     "is" -> INSTANCEOF,
     "as" -> AS,
     "true" -> TRUE,

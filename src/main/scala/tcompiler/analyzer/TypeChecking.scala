@@ -62,15 +62,6 @@ object TypeChecking extends Pipeline[Program, Program] {
 
 class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: List[MethodSymbol] = List()) {
 
-  implicit class TypeTuple(t: (Type, Type)) {
-
-    val c1 = t._1.getClass
-    val c2 = t._2.getClass
-
-    def anyIs(types: Type*) = types.map(_.getClass).exists(c => c == c1 || c == c2)
-    def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
-  }
-
   import TypeChecking._
 
   val returnStatements = ArrayBuffer[(Return, Type)]()
@@ -431,11 +422,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             arrTpe
           case tpe                  => ErrorWrongType("array", tpe, arr)
         }
-      case ArrayLength(arr)              =>
-        tcExpr(arr) match {
-          case TArray(_) => TInt
-          case tpe       => ErrorWrongType("array", tpe, arr)
-        }
       case newDecl@New(tpe, exprs)       =>
         val argTypes = exprs.map(tcExpr(_))
         tpe.getType match {
@@ -523,6 +509,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     val objType = tcExpr(obj)
     val argTypes = methodCallArgs.map(tcExpr(_))
 
+    def methSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
+
     val tpe = objType match {
       case TObject(classSymbol) =>
         classSymbol.lookupMethod(meth.value, argTypes) match {
@@ -537,10 +525,14 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             meth.setSymbol(methSymbol)
             meth.getType
           case None             =>
-            val methodSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
-            ErrorClassDoesntHaveMethod(classSymbol.name, methodSignature, mc)
+            ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, mc)
         }
-      case _                    => ErrorMethodOnWrongType(objType.toString, mc)
+      case TArray(arrTpe) =>
+        if(methodCallArgs.nonEmpty || meth.value != "Size")
+          ErrorMethodOnWrongType(methSignature, objType.toString, mc)
+        TInt
+      case _                    =>
+        ErrorMethodOnWrongType(methSignature, objType.toString, mc)
     }
     mc.setType(tpe)
     tpe
@@ -696,8 +688,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   private def ErrorClassDoesntHaveMethod(className: String, methodSignature: String, pos: Positioned) =
     error(1, s"Class '$className' does not contain a method '$methodSignature'.", pos)
 
-  private def ErrorMethodOnWrongType(tpe: String, pos: Positioned) =
-    error(2, s"Cannot call method on type '$tpe'.", pos)
+  private def ErrorMethodOnWrongType(method: String, tpe: String, pos: Positioned) =
+    error(2, s"Cannot call method '$method' on type '$tpe'.", pos)
 
   private def ErrorClassDoesntHaveField(className: String, fieldName: String, pos: Positioned) =
     error(3, s"Class '$className' does not contain a field '$fieldName'.", pos)

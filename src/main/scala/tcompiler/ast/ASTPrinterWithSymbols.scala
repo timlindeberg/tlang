@@ -36,7 +36,6 @@ object ASTPrinterWithSymbols {
       case LessThan(lhs, rhs) => f(lhs) + "," + f(rhs)
       case Equals(lhs, rhs) => f(lhs) + "," + f(rhs)
       case ArrayRead(arr, index) => f(arr) + "," + f(index)
-      case ArrayLength(arr) => f(arr)
       case MethodCall(obj, meth, args) => f(obj) + "," + f(meth) + "," + f(args)
       case IntLit(value) => value
       case StringLit(value) => value

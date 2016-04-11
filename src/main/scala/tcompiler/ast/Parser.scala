@@ -924,8 +924,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
 
     /**
-      * <termRest> ::= .length
-      * | .<identifier>
+      * <termRest> ::= .<identifier>
       * | .<identifier> "(" <expression> { "," <expression> } ")
       * | "[" <expression> "]"
       * | as <tpe>
@@ -947,19 +946,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         e = nextTokenKind match {
           case DOT       =>
             eat(DOT)
-            if (nextTokenKind == LENGTH) {
-              eat(LENGTH)
-              ArrayLength(e)
+            val id = identifier()
+            if (nextTokenKind == LPAREN) {
+              eat(LPAREN)
+              val exprs = commaList(expression)
+              eat(RPAREN)
+              MethodCall(e, id, exprs.toList)
             } else {
-              val id = identifier()
-              if (nextTokenKind == LPAREN) {
-                eat(LPAREN)
-                val exprs = commaList(expression)
-                eat(RPAREN)
-                MethodCall(e, id, exprs.toList)
-              } else {
-                FieldRead(e, id)
-              }
+              FieldRead(e, id)
             }
           case LBRACKET  =>
             eat(LBRACKET)

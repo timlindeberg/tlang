@@ -3,10 +3,10 @@ var str: String[] = new String[5]
 var bool: Bool[] = new Bool[5]
 var a: A[] = new A[5]
 
-println(int.length) // res: 5
-println(str.length) // res: 5
-println(bool.length) // res: 5
-println(a.length) // res: 5
+println(int.Size()) // res: 5
+println(str.Size()) // res: 5
+println(bool.Size()) // res: 5
+println(a.Size()) // res: 5
 
 for(var i = 0; i < 5; i++){
     int[i]  = i

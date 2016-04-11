@@ -7,6 +7,17 @@ import tcompiler.code.CodeGenerator
 
 object Types {
 
+  implicit class TypeTuple(t: (Type, Type)) {
+
+    val c1 = t._1.getClass
+    val c2 = t._2.getClass
+
+    def anyIs(types: Type*) = types.map(_.getClass).exists(c => c == c1 || c == c2)
+    def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
+  }
+
+
+
   trait Typed {
     self =>
 
@@ -186,3 +197,4 @@ object Types {
   val tObject = TObject(new ClassSymbol("Object"))
   val tArray  = TArray(tObject)
 }
+

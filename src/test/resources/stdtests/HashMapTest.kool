@@ -116,7 +116,7 @@ Def Iterators() = {
     entries[2] = new Entry<Int, Int>(90, -5, 1)
     entries[3] = new Entry<Int, Int>(-2, 35, 1)
 
-    for(var i = 0; i < entries.length; i++)
+    for(var i = 0; i < entries.Size(); i++)
         map[entries[i].Key] = entries[i].Value
 
     {
@@ -303,21 +303,21 @@ def testCapacity(given: Int, expected: Int) = {
 }
 
 def containsEntry(entry: Entry<Int, Int>, entries: Entry<Int, Int>[]) = {
-    for(var i = 0; i < entries.length; i++)
+    for(var i = 0; i < entries.Size(); i++)
         if(entries[i] == entry)
             return true
     return false
 }
 
 def containsKey(key: Int, entries: Entry<Int, Int>[]) = {
-    for(var i = 0; i < entries.length; i++)
+    for(var i = 0; i < entries.Size(); i++)
         if(entries[i].Key == key)
             return true
     return false
 }
 
 def containsValue(value: Int, entries: Entry<Int, Int>[]) = {
-    for(var i = 0; i < entries.length; i++)
+    for(var i = 0; i < entries.Size(); i++)
         if(entries[i].Value == value)
             return true
     return false

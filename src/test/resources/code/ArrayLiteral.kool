@@ -1,5 +1,5 @@
 var intArray = {1 + 1, 2, 3}
-println(intArray.length) // res: 3
+println(intArray.Size()) // res: 3
 println(intArray[0]) // res: 2
 println(intArray[1]) // res: 2
 println(intArray[2]) // res: 3
@@ -13,13 +13,13 @@ Test2({1, 8, 6, 9, 3}) // res: 1 8 6 9 3
 
 var m: Int[][][] = {{{1, 2}, {3, 4}}, {{5, 6}, {7, 8}}}
 
-println(m.length) // res: 2
-println(m[0].length) // res: 2
-println(m[0][0].length) // res: 2
+println(m.Size()) // res: 2
+println(m[0].Size()) // res: 2
+println(m[0][0].Size()) // res: 2
 
-for(var i = 0; i < m.length; i++)
-    for(var j = 0; j < m[0].length; j++)
-        for(var k = 0; k < m[0][0].length; k++)
+for(var i = 0; i < m.Size(); i++)
+    for(var j = 0; j < m[0].Size(); j++)
+        for(var k = 0; k < m[0][0].Size(); k++)
             print(m[i][j][k] + " ") // res: 1 2 3 4 5 6 7 8
 
 println("")
@@ -27,7 +27,7 @@ println("")
 Def Test() = return "Test"
 
 Def Test2(arr: Int[]) = {
-    for(var i = 0; i < arr.length; i++)
+    for(var i = 0; i < arr.Size(); i++)
         print(arr[i] + " ")
     println("")
 }

@@ -93,7 +93,6 @@ object Printer {
       case LogicNot(expr)                  => p"~($expr)"
       case Hash(expr)                      => p"#($expr)"
       case ArrayRead(arr, index)           => p"$arr[$index]"
-      case ArrayLength(arr)                => p"$arr.length"
       case FieldRead(obj, id)              => p"$obj.$id"
       case FieldAssign(obj, id, expr)      => p"$obj.$id = $expr"
       case MethodCall(obj, meth, args)     => p"$obj.$meth(${Separated(args, ", ")})"
