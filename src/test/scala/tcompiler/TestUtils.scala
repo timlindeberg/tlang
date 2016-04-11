@@ -100,25 +100,36 @@ object TestUtils extends FlatSpec {
   }
 
   def assertCorrect(res: List[String], sol: List[(Int, String)]) = {
-    assert(res.length == sol.length, "Different amount of results and expected results.")
+    assert(res.length == sol.length, resultsVersusSolution(-1, res, sol.map(_._2)))
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
       case (r, (line, s), i) =>
-        assert(r.trim == s.trim, s": error on line $line \n ${resultsVersusSolution(i + 1, res, sol.map(_._2))}")
+        assert(r.trim == s.trim, s": error on line $line ${resultsVersusSolution(i + 1, res, sol.map(_._2))}")
     }
   }
 
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
-  private def resultsVersusSolution(failedTest: Int, res: List[String], sol: List[String]) = {
+  private def resultsVersusSolution(failedTest: Int, result: List[String], solution: List[String]) = {
+    var res = result
+    var sol = solution
+    if(res.size < sol.size)
+      res = res ::: List.fill(sol.size - res.size)("")
+    else if(sol.size < res.size)
+      sol = sol ::: List.fill(res.size - sol.size)("")
+
+    val colLength = (result ::: solution).map(_.length).max + 2
     val numbers = (1 to res.size).map(_.toString)
     val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
     val list = ("", "Result:", "Solution:") :: numbered
     list.map { case (i, r, s) =>
-      val line = f"$i%-4s$r%-20s$s%-20s"
+      val lineNum = "" + i
+      val size = s"%-${colLength}s"
+      val format = s"%-4s$size$size"
+      val line = String.format(format, lineNum, r, s)
       if (i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
       else line
-    }.mkString("\n")
+    }.mkString("\n", "\n", "\n")
   }
 
   def hasTypes(prog: Program) = {

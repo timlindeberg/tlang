@@ -129,6 +129,8 @@ object Tokens {
   case object PRINT extends TokenKind // println
   case object PRINTLN extends TokenKind // println
   case object ERROR extends TokenKind // error
+  case object BREAK extends TokenKind // break
+  case object CONTINUE extends TokenKind // continue
 
   // Identifiers
   class ID(val value: String) extends Token(IDKIND) {

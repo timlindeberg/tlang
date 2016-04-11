@@ -2,6 +2,8 @@ class A {
 
     Def Lol() = {
         1 + 1 // res: N1003
+        var a = new Test()
+        var b = new Test[3]
         A.Test()
         A.Test() + 1 // res: N1003
         A.Test() + 1

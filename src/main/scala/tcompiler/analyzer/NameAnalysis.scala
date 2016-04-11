@@ -107,10 +107,16 @@ class NameAnalyser(ctx: Context, prog: Program) {
       operatorDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
+
+      val isStaticOperator = operatorDecl.modifiers.contains(Static())
+      val argTypes = args.map(_.tpe.name)
+      if (isStaticOperator && !argTypes.contains(classSymbol.name)) {
+        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
+      }
   }
 
   private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
-    case formal@Formal(tpe, id) =>
+    case formal@Formal(_, id) =>
 
       val newSymbol = new VariableSymbol(id.value, Argument).setPos(id)
       ensureIdentiferNotDefined(methSymbol.params, id.value, id)
@@ -293,14 +299,17 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
     def bindStatement(tree: Tree): Unit = bind(tree, Map(), 0)
 
-    private def bind(statement: Tree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Map[String, VariableIdentifier] =
+    private def bind(statement: Tree,
+                     localVars: Map[String, VariableIdentifier],
+                     scopeLevel: Int,
+                     canBreakContinue: Boolean = false): Map[String, VariableIdentifier] =
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1).foreach {
             case UselessStatement(expr) => WarningUselessStatement(expr)
             case _                      =>
           }
-          stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
+          stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue))
           localVars
         case varDecl@VarDecl(typeTree, id, init, modifiers) =>
           val newSymbol = new VariableSymbol(id.value, LocalVar, modifiers).setPos(varDecl)
@@ -316,7 +325,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
           variableUsage += newSymbol -> false
 
-          init collect { case expr => bind(expr, localVars, scopeLevel) }
+          init collect { case expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
 
           localVars.get(id.value) collect {
             case varId if varId.scopeLevel == scopeLevel =>
@@ -327,17 +336,17 @@ class NameAnalyser(ctx: Context, prog: Program) {
         case For(init, condition, post, stat)               =>
           val newVars = init.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           bind(condition, newVars, scopeLevel)
-          post.foreach(bind(_, newVars, scopeLevel))
-          bind(stat, newVars, scopeLevel)
+          post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
+          bind(stat, newVars, scopeLevel, canBreakContinue = true)
           localVars
         case If(expr, thn, els)                             =>
           bind(expr, localVars, scopeLevel)
-          bind(thn, localVars, scopeLevel)
-          els collect { case e => bind(e, localVars, scopeLevel) }
+          bind(thn, localVars, scopeLevel, canBreakContinue)
+          els collect { case e => bind(e, localVars, scopeLevel, canBreakContinue) }
           localVars
         case While(expr, stat)                              =>
           bind(expr, localVars, scopeLevel)
-          bind(stat, localVars, scopeLevel)
+          bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
         case PrintStatement(expr)                           =>
           bind(expr, localVars, scopeLevel)
@@ -347,6 +356,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
           localVars
         case Return(expr)                                   =>
           expr collect { case e => bind(e, localVars, scopeLevel) }
+          localVars
+        case _: Break | _: Continue =>
+          if(!canBreakContinue)
+            ErrorBreakContinueOutsideLoop(statement, statement)
           localVars
         case expr: ExprTree                                 =>
           bindExpr(expr, localVars, scopeLevel)
@@ -500,6 +513,16 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def ErrorThisInStaticContext(pos: Positioned) =
     error(13, "'this' can not be used in a static context.", pos)
+
+  private def ErrorOperatorWrongTypes(operatorType: ExprTree, argTypes: List[String], clazz: String, pos: Positioned) = {
+    val op = operatorString(operatorType, argTypes)
+    error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
+  }
+
+  private def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {
+    val breakOrContinue = if(stat.isInstanceOf[Break]) "break" else "continue"
+    error(15, s"Can not use $breakOrContinue statement outside of a loop.", pos)
+  }
 
   //---------------------------------------------------------------------------------------
   //  Warnings

@@ -7,6 +7,4 @@ class A {
      println(5)
    }
 
-   def test(): String = return "1" // res: T1000
-
 }

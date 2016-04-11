@@ -3,11 +3,9 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.{FlatSpec, Matchers}
-import tcompiler.analyzer.{NameAnalysis, TypeChecking}
-import tcompiler.ast.{Parser, Printer}
-import tcompiler.lexer.Lexer
-import tcompiler.modification.{Imports, Templates}
-import tcompiler.utils.{CompilationException, Context}
+import tcompiler.ast.Printer
+import tcompiler.ast.Trees.Program
+import tcompiler.utils.{CompilationException, Context, Pipeline}
 
 /**
  * Created by Tim Lindeberg on 4/2/2016.
@@ -22,6 +20,7 @@ abstract class ErrorTester extends FlatSpec with Matchers {
 
   def Name: String
   def Path: String
+  def Pipeline: Pipeline[File, Program]
 
   behavior of Name
   TestUtils.programFiles(Path).foreach(test)
@@ -41,12 +40,9 @@ abstract class ErrorTester extends FlatSpec with Matchers {
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {
-      val parsing = Lexer andThen Parser andThen Templates andThen Imports
-      val analysis = NameAnalysis andThen TypeChecking
+      val prog = Pipeline.run(ctx)(ctx.file)
 
-      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-
-      println(Printer(prog))
+      //println(Printer(prog))
       // Check for warnings:
       if(ctx.reporter.warnings.isEmpty)
         fail("Test failed: No errors or warnings!")

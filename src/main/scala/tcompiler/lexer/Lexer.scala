@@ -83,7 +83,9 @@ object Tokenizer {
     "implicit" -> IMPLICIT,
     "print" -> PRINT,
     "println" -> PRINTLN,
-    "error" -> ERROR
+    "error" -> ERROR,
+    "break" -> BREAK,
+    "continue" -> CONTINUE
   )
 }
 

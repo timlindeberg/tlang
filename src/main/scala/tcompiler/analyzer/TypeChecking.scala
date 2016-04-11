@@ -182,6 +182,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
+    case _: Break | _: Continue => // do nothing
     case expr: ExprTree                   =>
       tcExpr(expr)
   }
@@ -581,16 +582,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
 
-  private def typeCheckOperator(classType: Type, expr: ExprTree, args: List[Type]): Option[Type] =
+  private def typeCheckOperator(classType: Type, operator: ExprTree, args: List[Type]): Option[Type] =
     classType match {
       case TObject(classSymbol) =>
-        classSymbol.lookupOperator(expr, args) match {
+        classSymbol.lookupOperator(operator, args) match {
           case Some(operatorSymbol) =>
-            checkOperatorPrivacy(classSymbol, operatorSymbol, expr)
+            checkOperatorPrivacy(classSymbol, operatorSymbol, operator)
             if (operatorSymbol.getType == TUntyped) {
               new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
             }
-            expr.setType(operatorSymbol.getType)
+            operator.setType(operatorSymbol.getType)
             Some(operatorSymbol.getType)
           case None                 => None
         }
@@ -785,5 +786,6 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     val operator = operatorString(expr, List(args._1, args._2))
     error(23, s"Operator '$operator' does not exist.", pos)
   }
+
 
 }

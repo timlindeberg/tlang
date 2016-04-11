@@ -42,6 +42,7 @@ object CodeGenerator {
   val Else  = "else"
   val After = "after"
   val Body  = "body"
+  val Post  = "post"
   val Next  = "next"
 
 }
@@ -50,11 +51,11 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
 
   import CodeGenerator._
 
-  def compileStat(statement: StatTree): Unit = {
+  def compileStat(statement: StatTree, before: Option[String] = None, after: Option[String] = None): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                      => // Don't compile useless statements
-      case Block(stats)                                => stats.foreach(compileStat)
+      case Block(stats)                                => stats.foreach(compileStat(_, before, after))
       case variable@VarDecl(_, varId, init, modifiers) =>
         val tpe = variable.getSymbol.getType
         val id = ch.getFreshVar(tpe.size)
@@ -75,29 +76,41 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         val afterLabel = ch.getFreshLabel(After)
         compileBranch(expr, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
-        compileStat(thn)
+        compileStat(thn, before, after)
         ch << Goto(afterLabel)
         ch << Label(elsLabel)
-        if (els.isDefined) compileStat(els.get)
+        if (els.isDefined) compileStat(els.get, before, after)
         ch << Label(afterLabel)
       case While(expr, stat)                           =>
-        val bodyLabel = ch.getFreshLabel(Body)
-        val afterLabel = ch.getFreshLabel(After)
-        compileBranch(expr, Label(bodyLabel), Label(afterLabel))
-        ch << Label(bodyLabel)
-        compileStat(stat)
-        compileBranch(expr, Label(bodyLabel), Label(afterLabel))
-        ch << Label(afterLabel)
-      case For(init, condition, post, stat)            =>
-        val bodyLabel = ch.getFreshLabel(Body)
-        val afterLabel = ch.getFreshLabel(After)
-        init.foreach(compileStat)
-        compileBranch(condition, Label(bodyLabel), Label(afterLabel))
-        ch << Label(bodyLabel)
-        compileStat(stat)
-        post.foreach(compileStat)
-        compileBranch(condition, Label(bodyLabel), Label(afterLabel))
-        ch << Label(afterLabel)
+        val body = ch.getFreshLabel(Body)
+        val continue = ch.getFreshLabel(Post)
+        val after = ch.getFreshLabel(After)
+        val bodyLabel = Label(body)
+        val afterLabel = Label(after)
+        val continueLabel = Label(continue)
+
+        ch << continueLabel
+        compileBranch(expr, bodyLabel, afterLabel)
+        ch << bodyLabel
+        compileStat(stat, Some(continue), Some(after))
+        compileBranch(expr, bodyLabel, afterLabel)
+        ch << afterLabel
+      case For(init, condition, postExprs, stat)            =>
+        val body = ch.getFreshLabel(Body)
+        val continue = ch.getFreshLabel(Post)
+        val after = ch.getFreshLabel(After)
+        val bodyLabel = Label(body)
+        val afterLabel = Label(after)
+        val continueLabel = Label(continue)
+
+        init.foreach(compileStat(_))
+        compileBranch(condition, bodyLabel, afterLabel)
+        ch << bodyLabel
+        compileStat(stat, Some(continue), Some(after))
+        ch << continueLabel
+        postExprs.foreach(compileStat(_))
+        compileBranch(condition, bodyLabel, afterLabel)
+        ch << afterLabel
       case PrintStatement(expr)                        =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
@@ -122,6 +135,10 @@ class CodeGenerator(val ch: CodeHandler, className: String, variableMap: mutable
         expr.getType.codes.ret(ch)
       case Return(None)                                =>
         ch << RETURN
+      case Break() =>
+        ch << Goto(after.get)
+      case Continue() =>
+        ch << Goto(before.get)
       case expr: ExprTree                              =>
         // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)

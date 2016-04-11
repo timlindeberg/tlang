@@ -130,6 +130,8 @@ object Trees {
   case class Println(expr: ExprTree) extends StatTree
   case class Error(expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
+  case class Break() extends StatTree
+  case class Continue() extends StatTree
 
   trait ExprTree extends StatTree with Typed
 
@@ -242,7 +244,7 @@ object Trees {
   def operatorString(operatorSymbol: OperatorSymbol): String =
     operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType), Some(operatorSymbol.classSymbol.name))
 
-  def operatorString(exprTree: ExprTree, args: List[Type], className: Option[String] = None): String = {
+  def operatorString(exprTree: ExprTree, args: List[Any], className: Option[String] = None): String = {
     exprTree match {
       case _: Plus              => args(0) + " + " + args(1)
       case _: Minus             => args(0) + " - " + args(1)

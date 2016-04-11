@@ -14,7 +14,8 @@ object Parser extends Pipeline[List[Token], Program] {
 
   def run(ctx: Context)(tokens: List[Token]): Program = {
     val astBuilder = new ASTBuilder(ctx, tokens.toArray)
-    astBuilder.parseGoal()
+    val lol = astBuilder.parseGoal()
+    lol
   }
 
 }
@@ -552,6 +553,14 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
         endStatement()
         Return(expr)
+      case BREAK =>
+        eat(BREAK)
+        endStatement()
+        Break()
+      case CONTINUE =>
+        eat(CONTINUE)
+        endStatement()
+        Continue()
       case _       =>
         val expr = expression()
         endStatement()

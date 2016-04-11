@@ -50,9 +50,13 @@ class NameReplacer(ctx: Context, prog: Program) {
 
     prog.classes.foreach {
       _.methods.foreach { meth =>
+        // TODO: FIX THIS SHIT
           Trees.traverse(meth.stat, (_, t) => Some(t) collect {
+            case MethodCall(id @ Identifier(name), _, _s) =>
+              // Static call
+            case New(ClassIdentifier(name, _), _) =>
+            case NewArray(ClassIdentifier(name, _), _) =>
             case id: Identifier if id.value.charAt(0).isUpper =>
-              println(id)
               handleImport(packString, id.value) collect {
                 case newName => id.value = newName // TODO: More effecient way of handling imports for regular identifiers?
               }
