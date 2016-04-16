@@ -10,6 +10,7 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils._
+import tcompiler.utils.Extensions._
 import scala.collection.mutable
 
 object CodeGeneration extends Pipeline[Program, Unit] {
@@ -30,7 +31,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(sourceName: String, classDecl: ClassDecl, dir: String): Unit = {
     val sym = classDecl.getSymbol
-    val classFile = new ClassFile(sym.name, sym.parent.map(_.name))
+    val parent = if(sym.parents.isEmpty) None else Some(sym.parents.head.name)
+    val classFile = new ClassFile(sym.name, parent)
 
     classFile.setSourceFile(classDecl.file.getName)
 
@@ -84,7 +86,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
     val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)
 
-    codeGenerator.compileStat(methTree.stat)
+    methTree.stat.ifDefined(codeGenerator.compileStat(_))
 
     addReturnStatement(ch, methTree)
     ch.freeze
@@ -188,10 +190,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
-    val superClassName = ct.parent match {
-      case Some(name) => name.value
-      case None       => JavaObject
-    }
+
+    val superClassName =
+      if(ct.parents.isEmpty) JavaObject
+      else ct.parents.head.value
 
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, CodeGenerator.ConstructorName, "()V")

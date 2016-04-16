@@ -30,7 +30,7 @@ trait ValidTester extends Tester {
       CodeGeneration.run(ctx)(program)
       val res = lines(executeTProgram(file, "./gen/"))
       val sol = parseSolutions(file)
-      assertCorrect(res, sol)
+      assertCorrect(res, sol, "")
     } catch {
       case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
       case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)

@@ -1,0 +1,15 @@
+trait A {
+
+    Def Test(): String
+    Def Test2(): String
+    Def Test3(): String = "Test"
+
+    Def +(a: A, b: A): A
+}
+
+class B : A {
+
+    Def Test(): Int = 1  // res: T2025
+                         // res: T2025
+                         // res: T2026
+}

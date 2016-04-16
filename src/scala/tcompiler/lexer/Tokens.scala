@@ -9,37 +9,38 @@ sealed class Token(val kind: TokenKind) extends Positioned {
 
 sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
   def compare(that: TokenKind) = str.length - that.str.length
+  override def toString = str
 }
 
 object Tokens {
 
 
   object IDKIND extends TokenKind("") {
-    override def toString = "identifier"
+    override def toString = "Identifier"
   }
 
   object INTLITKIND extends TokenKind("") {
-    override def toString = "integer literal"
+    override def toString = "Int literal"
   }
 
   object LONGLITKIND extends TokenKind("") {
-    override def toString = "long literal"
+    override def toString = "Long literal"
   }
 
   object FLOATLITKIND extends TokenKind("") {
-    override def toString = "float literal"
+    override def toString = "Float literal"
   }
 
   object DOUBLELITKIND extends TokenKind("") {
-    override def toString = "double literal"
+    override def toString = "Double literal"
   }
 
   object CHARLITKIND extends TokenKind("") {
-    override def toString = "char literal"
+    override def toString = "Char literal"
   }
 
   object STRLITKIND extends TokenKind("") {
-    override def toString = "string literal"
+    override def toString = "String literal"
   }
 
   // @formatter:off
@@ -97,6 +98,7 @@ object Tokens {
   case object AS                extends TokenKind("as")
   case object OBJECT            extends TokenKind("object")
   case object CLASS             extends TokenKind("class")
+  case object TRAIT             extends TokenKind("trait")
   case object PUBDEF            extends TokenKind("Def")
   case object PRIVDEF           extends TokenKind("def")
   case object PROTECTED         extends TokenKind("protected")

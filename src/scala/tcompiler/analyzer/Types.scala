@@ -161,12 +161,9 @@ object Types {
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case obj@TObject(c) =>
+      case TObject(c) =>
         if (classSymbol.name == c.name || c.name == tObject.classSymbol.name) true
-        else classSymbol.parent match {
-          case Some(x) => x.getType.isSubTypeOf(tpe)
-          case None => false
-        }
+        else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
       case _ => false
     }
 
@@ -178,10 +175,7 @@ object Types {
         map(_.argList.head.getType)
 
     override def getSuperTypes: List[Type] =
-      List(this) ++ (classSymbol.parent match {
-        case Some(parentSymbol) => parentSymbol.getType.getSuperTypes
-        case None => List()
-      })
+      List(this) ::: classSymbol.parents.flatMap(_.getType.getSuperTypes)
 
     override def toString = classSymbol.name
     override def byteCodeName: String = {
@@ -195,7 +189,7 @@ object Types {
   }
 
   // special object to implement the fact that all objects are its subclasses
-  val tObject = TObject(new ClassSymbol("Object"))
+  val tObject = TObject(new ClassSymbol("Object", false))
   val tArray  = TArray(tObject)
 }
 

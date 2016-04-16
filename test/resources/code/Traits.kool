@@ -31,4 +31,3 @@ trait D {
 
     Def implemented(i: Int) = return method(i) + 2
 }
-scal

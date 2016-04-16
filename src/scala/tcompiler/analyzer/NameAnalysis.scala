@@ -5,7 +5,8 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups.{PrintStatement, UselessStatement}
 import tcompiler.ast.Trees
-import tcompiler.ast.Trees.{ClassDecl, _}
+import tcompiler.ast.Trees._
+import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 object NameAnalysis extends Pipeline[Program, Program] {
@@ -16,6 +17,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     nameAnalyzer.bindIdentifiers()
     nameAnalyzer.checkInheritanceCycles()
     nameAnalyzer.checkVariableUsage()
+    nameAnalyzer.checkValidParenting()
     prog
   }
 
@@ -35,21 +37,20 @@ class NameAnalyser(ctx: Context, prog: Program) {
   def checkInheritanceCycles(): Unit = {
 
     var classesFoundInCycle = Set[ClassSymbol]()
-    def checkInheritanceCycles(c: Option[ClassSymbol], set: Set[ClassSymbol]): Unit = c match {
-      case Some(classSymbol) =>
-        if (classesFoundInCycle.contains(classSymbol))
-          return
+    def checkInheritanceCycles(classSymbol: ClassSymbol, set: Set[ClassSymbol]): Unit = {
+      if (classesFoundInCycle.contains(classSymbol))
+        return
 
-        if (set.contains(classSymbol)) {
-          classesFoundInCycle ++= set
-          ErrorInheritanceCycle(set, classSymbol, classSymbol)
-        } else {
-          checkInheritanceCycles(classSymbol.parent, set + classSymbol)
-        }
-      case None              =>
+      if (set.contains(classSymbol)) {
+        classesFoundInCycle ++= set
+        ErrorInheritanceCycle(set, classSymbol, classSymbol)
+      } else {
+        val newSet = set + classSymbol
+        classSymbol.parents.foreach(checkInheritanceCycles(_, newSet))
+      }
     }
 
-    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(Some(classSymbol), Set[ClassSymbol]()) }
+    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
   }
 
 
@@ -61,11 +62,27 @@ class NameAnalyser(ctx: Context, prog: Program) {
     }
   }
 
+  def checkValidParenting(): Unit =
+    prog.classes.foreach { classDecl =>
+
+      val nonTraits = classDecl.parents.filter(!_.getSymbol.isTrait)
+      if (nonTraits.size > 1) {
+        ErrorExtendMultipleClasses(nonTraits(1))
+        return
+      }
+
+      val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isTrait)
+      if (nonTraitsAfterFirst.nonEmpty)
+        ErrorNonFirstArgumentIsClass(nonTraits.head)
+    }
+
+
   private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
     case Program(_, _, classes)                                                      =>
       classes.foreach(addSymbols(_, globalScope))
     case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
-      val newSymbol = new ClassSymbol(name).setPos(id)
+      val isTrait = classDecl.isInstanceOf[Trait]
+      val newSymbol = new ClassSymbol(name, isTrait).setPos(id)
       ensureClassNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)
       classDecl.setSymbol(newSymbol)
@@ -75,7 +92,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl@VarDecl(tpe, id, init, _)                                    =>
+    case varDecl@VarDecl(tpe, id, init, _)                                =>
       val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
@@ -88,12 +105,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
       }
 
       classSymbol.members += (id.value -> newSymbol)
-    case methodDecl@MethodDecl(retType, id, args, stats, _)                   =>
+    case methodDecl@MethodDecl(retType, id, args, stat, _)                =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
       args.foreach(addSymbols(_, newSymbol))
-    case constructorDecl@ConstructorDecl(_, id, args, stats, _)               =>
+
+      if (!classSymbol.isTrait && stat.isEmpty)
+        ErrorClassUnimplementedMethod(methodDecl)
+
+      if (classSymbol.isTrait && retType.isEmpty && stat.isEmpty)
+        ErrorUnimplementedMethodNoReturnType(methodDecl.signature, methodDecl)
+    case constructorDecl@ConstructorDecl(_, id, args, _, _)               =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
@@ -101,7 +124,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       constructorDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case operatorDecl@OperatorDecl(operatorType, retType, args, stats, _, id) =>
+    case operatorDecl@OperatorDecl(operatorType, retType, args, _, _, id) =>
       val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
@@ -136,12 +159,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
   private def bind(tree: Tree): Unit = tree match {
     case Program(_, _, classes)                                             =>
       classes.foreach(bind)
-    case classDecl@ClassDecl(id, parent, vars, methods)                     =>
-      setParentSymbol(id, parent, classDecl)
+    case classDecl@ClassDecl(id, parents, vars, methods)                    =>
+      setParentSymbol(id, parents, classDecl)
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
 
-      checkConflictingFieldsInParent(vars, classDecl.getSymbol.parent)
+      checkConflictingFieldsInParent(vars, classDecl.getSymbol.parents)
       bindFields(classDecl)
       methods.foreach(bind)
     case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
@@ -153,13 +176,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
 
-      new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(stat)
+      stat.ifDefined(new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(_))
     case constructorDecl@ConstructorDecl(_, _, args, stat, _)               =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
-      new StatementBinder(constructorDecl.getSymbol, false).bindStatement(stat)
+      stat.ifDefined(new StatementBinder(constructorDecl.getSymbol, false).bindStatement(_))
     case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, _) =>
       retType collect { case tpe =>
         val t = setType(tpe)
@@ -172,7 +195,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       ensureOperatorNotDefined(operatorDecl)
 
-      new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(stat)
+      stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(_))
   }
 
 
@@ -191,24 +214,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
         case None    =>
       }
 
-      init match {
-        case Some(expr) => new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(expr)
-        case None       =>
+      init.ifDefined(new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_))
+    }
+
+  private def checkConflictingFieldsInParent(vars: List[VarDecl], parents: List[ClassSymbol]) =
+    parents.foreach { parentSymbol =>
+      vars.foreach { varDecl =>
+        parentSymbol.lookupVar(varDecl.id.value) match {
+          case Some(_) => ErrorFieldDefinedInSuperClass(varDecl.getSymbol.name, varDecl)
+          case None    =>
+        }
       }
     }
-
-  private def checkConflictingFieldsInParent(vars: List[VarDecl], parent: Option[ClassSymbol]) =
-    parent match {
-      case Some(parentSymbol) =>
-        vars.foreach { varDecl =>
-          parentSymbol.lookupVar(varDecl.id.value) match {
-            case Some(_) => ErrorFieldDefinedInSuperClass(varDecl.getSymbol.name, varDecl)
-            case None    =>
-          }
-        }
-      case None               =>
-    }
-
 
   private def ensureClassNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
     if (map.contains(id)) {
@@ -279,17 +296,15 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
 
-  private def setParentSymbol(id: ClassIdentifier, parent: Option[ClassIdentifier], classDecl: ClassDecl): Unit =
-    parent match {
-      case Some(parentId) =>
-        globalScope.lookupClass(parentId.value) match {
-          case Some(parentSymbol) =>
-            parentId.setSymbol(parentSymbol)
-            classDecl.getSymbol.parent = Some(parentSymbol)
-          case None               =>
-            ErrorParentNotDeclared(parentId.value, parentId)
-        }
-      case _              =>
+  private def setParentSymbol(id: ClassIdentifier, parents: List[ClassIdentifier], classDecl: ClassDecl): Unit =
+    parents.foreach { parentId =>
+      globalScope.lookupClass(parentId.value) match {
+        case Some(parentSymbol) =>
+          parentId.setSymbol(parentSymbol)
+          classDecl.getSymbol.parents = parentSymbol :: classDecl.getSymbol.parents
+        case None               =>
+          ErrorParentNotDeclared(parentId.value, parentId)
+      }
     }
 
 
@@ -300,9 +315,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
     def bindStatement(tree: Tree): Unit = bind(tree, Map(), 0)
 
     private def bind(statement: Tree,
-                     localVars: Map[String, VariableIdentifier],
-                     scopeLevel: Int,
-                     canBreakContinue: Boolean = false): Map[String, VariableIdentifier] =
+      localVars: Map[String, VariableIdentifier],
+      scopeLevel: Int,
+      canBreakContinue: Boolean = false): Map[String, VariableIdentifier] =
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1).foreach {
@@ -357,8 +372,8 @@ class NameAnalyser(ctx: Context, prog: Program) {
         case Return(expr)                                   =>
           expr collect { case e => bind(e, localVars, scopeLevel) }
           localVars
-        case _: Break | _: Continue =>
-          if(!canBreakContinue)
+        case _: Break | _: Continue                         =>
+          if (!canBreakContinue)
             ErrorBreakContinueOutsideLoop(statement, statement)
           localVars
         case expr: ExprTree                                 =>
@@ -458,7 +473,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   private def error(errorCode: Int, msg: String, tree: Positioned) = {
     tree match {
       case id: Identifier      => id.setSymbol(new ErrorSymbol)
-      case id: ClassIdentifier => id.setSymbol(new ErrorSymbol)
+      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR", false))
       case _                   =>
     }
 
@@ -520,9 +535,21 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {
-    val breakOrContinue = if(stat.isInstanceOf[Break]) "break" else "continue"
+    val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
     error(15, s"Can not use $breakOrContinue statement outside of a loop.", pos)
   }
+
+  private def ErrorExtendMultipleClasses(pos: Positioned) =
+    error(16, s"Can only extend from multiple traits, not classes.", pos)
+
+  private def ErrorNonFirstArgumentIsClass(pos: Positioned) =
+    error(17, s"Only the first parent can be a class.", pos)
+
+  private def ErrorClassUnimplementedMethod(pos: Positioned) =
+    error(18, s"Only traits can have unimplemented methods.", pos)
+
+  private def ErrorUnimplementedMethodNoReturnType(method: String, pos: Positioned) =
+    error(19, s"Unimplemented method '$method' needs a return type.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings

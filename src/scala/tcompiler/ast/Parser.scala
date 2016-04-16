@@ -81,7 +81,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
     val code = until(() => {
       nextTokenKind match {
-        case CLASS            => classDeclaration()
+        case CLASS | TRAIT    => classDeclaration()
         case PUBDEF | PRIVDEF =>
           val access = accessRights(PUBDEF, PRIVDEF)
           if (nextTokenKind == STATIC) eat(STATIC)
@@ -106,7 +106,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = InternalClassDecl(ClassIdentifier(mainName), None, List(), List()).setPos(pos, nextToken)
+          val m = InternalClassDecl(ClassIdentifier(mainName), List(), List(), List()).setPos(pos, nextToken)
           classes ::= m
           m
       }
@@ -116,7 +116,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       if (stats.nonEmpty) {
         val args = List(Formal(ArrayType(StringType()), Identifier("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
-        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Block(stats), modifiers).setPos(stats.head, nextToken)
+        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
         mainClass.methods ::= mainMethod
       }
     }
@@ -168,14 +168,22 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <classDeclaration> ::= class <classIdentifier>
-    * [ : <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
+    * <classDeclaration> ::= (class|trait) <classIdentifier> <parents>
+    * "{" { <varDeclaration> } { <methodDeclaration> } "}"
     */
   def classDeclaration(): ClassDecl = {
     val startPos = nextToken
-    eat(CLASS)
+    val classType = nextTokenKind match {
+      case CLASS =>
+        eat(CLASS)
+        InternalClassDecl
+      case TRAIT =>
+        eat(TRAIT)
+        Trait
+      case _     => FatalWrongToken(CLASS, TRAIT)
+    }
     val id = classTypeIdentifier()
-    val parent = optional(classIdentifier, COLON)
+    val parents = parentsDeclaration()
     eat(LBRACE)
     val vars = untilNot(() => {
       val v = fieldDeclaration()
@@ -184,7 +192,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }, PUBVAR, PRIVVAR)
     val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
     eat(RBRACE)
-    InternalClassDecl(id, parent, vars, methods).setPos(startPos, nextToken)
+    classType(id, parents, vars, methods).setPos(startPos, nextToken)
+  }
+
+  /**
+    * <parentsDeclaration> ::= [ : <classIdentifier> { "," <classIdentifier> } ]
+    */
+  def parentsDeclaration(): List[ClassIdentifier] = nextTokenKind match {
+    case COLON =>
+      eat(COLON)
+      nonEmptyList(classIdentifier, COMMA)
+    case _     =>
+      List()
   }
 
   /**
@@ -241,7 +260,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) "= {" { <varDeclaration> } { <statement> } "}"
+    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) <methodBody>
     */
   def method(modifiers: Set[Modifier], startPos: Positioned): MethodDecl = {
     modifiers.find(_.isInstanceOf[Implicit]) match {
@@ -255,10 +274,15 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(RPAREN)
     val retType = optional(returnType, COLON)
     val endPos = nextToken
-    eat(EQSIGN)
-    val stat = replaceExprWithReturnStat(statement())
-    MethodDecl(retType, id, args, stat, modifiers).setPos(startPos, endPos)
+
+    val methBody = methodBody()
+    MethodDecl(retType, id, args, methBody, modifiers).setPos(startPos, endPos)
   }
+
+  /**
+    * [ "=" <statement> ]
+    */
+  def methodBody(): Option[StatTree] = optional(() => replaceExprWithReturnStat(statement()), EQSIGN)
 
 
   private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
@@ -274,16 +298,16 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  = {" { <varDeclaration> } { <statement> } "}"
+    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  "=" <statement>
     */
   def constructor(modifiers: Set[Modifier], className: String, startPos: Positioned): ConstructorDecl = {
     eat(NEW)
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
-    eat(EQSIGN)
     val retType = Some(UnitType().setType(TUnit))
-    ConstructorDecl(retType, Identifier("new"), args, statement(), modifiers).setPos(startPos, nextToken)
+    val methBody = methodBody()
+    ConstructorDecl(retType, Identifier("new"), args, methBody, modifiers).setPos(startPos, nextToken)
   }
 
   /**
@@ -397,9 +421,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(RPAREN)
     val retType = optional(returnType, COLON)
     val endPos = nextToken
-    eat(EQSIGN)
-    val stat = replaceExprWithReturnStat(statement())
-    OperatorDecl(operatorType, retType, args, stat, newModifiers).setPos(startPos, endPos)
+    val methBody = methodBody()
+
+    OperatorDecl(operatorType, retType, args, methBody, newModifiers).setPos(startPos, endPos)
   }
 
   /**
@@ -511,49 +535,49 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
 
     val tree = nextTokenKind match {
-      case LBRACE  =>
+      case LBRACE   =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
         Block(stmts)
-      case IF      =>
+      case IF       =>
         eat(IF, LPAREN)
         val expr = expression()
         eat(RPAREN)
         val stmt = statement()
         val els = optional(statement, ELSE)
         If(expr, stmt, els)
-      case WHILE   =>
+      case WHILE    =>
         eat(WHILE, LPAREN)
         val expr = expression()
         eat(RPAREN)
         While(expr, statement())
-      case FOR     =>
+      case FOR      =>
         forLoop()
-      case PRINT   =>
+      case PRINT    =>
         eat(PRINT, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Print(expr)
-      case PRINTLN =>
+      case PRINTLN  =>
         eat(PRINTLN, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Println(expr)
-      case ERROR   =>
+      case ERROR    =>
         eat(ERROR, LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
         Error(expr)
-      case RETURN  =>
+      case RETURN   =>
         eat(RETURN)
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
         endStatement()
         Return(expr)
-      case BREAK =>
+      case BREAK    =>
         eat(BREAK)
         endStatement()
         Break()
@@ -561,7 +585,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         eat(CONTINUE)
         endStatement()
         Continue()
-      case _       =>
+      case _        =>
         val expr = expression()
         endStatement()
         expr
@@ -918,7 +942,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               NewArray(tpe, sizes())
             case _        => FatalWrongToken(LPAREN, LBRACKET)
           }
-        case _             => FatalWrongToken(LPAREN, BANG, INTLITKIND, STRLITKIND, IDKIND, TRUE, FALSE, THIS, NEW)
+        case _             => FatalUnexpectedToken()
       }
       tree.setPos(startPos, nextToken)
     }
@@ -1179,7 +1203,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /**
     * Parses lists of the form
-    * <nonEmptyList> ::= parse { delimiter parse }
+    * <nonEmptyList> ::= <parse> { <delimiter> <parse> }
     */
 
   private def nonEmptyList[T](parse: () => T, delimiter: TokenKind): List[T] = {
@@ -1194,7 +1218,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /**
     * Parses a commalist of the form
-    * <commaList> ::= [ parse { "," parse } ]
+    * <commaList> ::= [ <parse> { "," <parse> } ]
     */
   private def commaList[T](parse: () => T, stopSign: TokenKind = RPAREN): List[T] = {
     if (nextTokenKind == stopSign) {
@@ -1273,9 +1297,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   private def FatalExpectedIdAssignment(pos: Positioned) =
     fatal(1, "Expected identifier on left side of assignment.", pos)
 
-  private def FatalWrongToken(kind: TokenKind, more: TokenKind*): Nothing = FatalWrongToken((kind :: more.toList).mkString(" or "), currentToken.toString, currentToken)
+  private def FatalWrongToken(kind: TokenKind, more: TokenKind*): Nothing =
+    FatalWrongToken((kind :: more.toList).map(k => s"'$k'").mkString(" or "), currentToken.toString, currentToken)
 
   private def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
-    fatal(2, s"Expected $expected, found: $found.", pos)
+    fatal(2, s"Expected $expected, found: '$found'.", pos)
+
+  private def FatalUnexpectedToken() =
+    fatal(3, s"Unexpected token: '$currentToken'", currentToken)
 
 }

@@ -111,12 +111,12 @@ object TestUtils extends FlatSpec {
     }.toList
   }
 
-  def assertCorrect(res: List[String], sol: List[(Int, String)]) = {
-    assert(res.length == sol.length, resultsVersusSolution(-1, res, sol.map(_._2)))
+  def assertCorrect(res: List[String], sol: List[(Int, String)], errors: String) = {
+    assert(res.length == sol.length, resultsVersusSolution(-1, res, sol.map(_._2), errors))
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
       case (r, (line, s), i) =>
-        assert(r.trim == s.trim, s": error on line $line ${resultsVersusSolution(i + 1, res, sol.map(_._2))}")
+        assert(r.trim == s.trim, s": error on line $line ${resultsVersusSolution(i + 1, res, sol.map(_._2), errors)}")
     }
   }
 
@@ -135,7 +135,7 @@ object TestUtils extends FlatSpec {
 
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
-  private def resultsVersusSolution(failedTest: Int, result: List[String], solution: List[String]) = {
+  private def resultsVersusSolution(failedTest: Int, result: List[String], solution: List[String], errors: String) = {
     var res = result
     var sol = solution
     if (res.size < sol.size)
@@ -147,7 +147,7 @@ object TestUtils extends FlatSpec {
     val numbers = (1 to res.size).map(_.toString)
     val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
     val list = ("", "Result:", "Solution:") :: numbered
-    list.map { case (i, r, s) =>
+    val results = list.map { case (i, r, s) =>
       val lineNum = "" + i
       val sizedStr = s"%-${colLength}s"
       val format = s"%-4s$sizedStr$sizedStr"
@@ -155,6 +155,10 @@ object TestUtils extends FlatSpec {
       if (i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
       else line
     }.mkString("\n", "\n", "\n")
+    if(errors == "")
+      results
+    else
+      results + "\n" + Console.RESET + errors
   }
 
   val AnsiRegex = """\x1b[^m]*m""".r

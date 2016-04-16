@@ -168,18 +168,23 @@ class Importer(ctx: Context, prog: Program) {
     val name = clazz.getClassName
 
     val id = ClassIdentifier(convertName(name), List())
-    val parent = convertParent(clazz.getSuperClass)
+    val parents = convertParents(clazz)
     val fields = clazz.getFields.map(convertField).toList
     val methods = clazz.getMethods.map(convertMethod(_, clazz)).toList
-    ExternalClassDecl(id, parent, fields, methods)
+    // TODO: Handle importing interfaces
+    ExternalClassDecl(id, parents, fields, methods)
   }
 
-  private def convertParent(parent: JavaClass) = parent match {
-    case null                                                => None
-    case parent if parent.getClassName == "java.lang.Object" => None
-    case parent                                              =>
-      prog.classes = findClass(parent) :: prog.classes
-      Some(ClassIdentifier(convertName(parent.getClassName), List()))
+  private def convertParents(clazz: JavaClass) = {
+    // TODO: Handle importing interfaces
+
+    clazz.getSuperClass match {
+      case null                                                => List()
+      case parent if parent.getClassName == "java.lang.Object" => List()
+      case parent                                              =>
+        prog.classes = findClass(parent) :: prog.classes
+        List(ClassIdentifier(convertName(parent.getClassName), List()))
+    }
   }
 
   private def convertField(field: Field) =
@@ -187,7 +192,7 @@ class Importer(ctx: Context, prog: Program) {
 
   private def convertMethod(meth: Method, clazz: JavaClass): MethodDecl = {
     val name = meth.getName match {
-      case "<init>" => convertName(clazz.getClassName)
+      case "<init>" => "new"
       case name     => convertName(name)
     }
     val id = Identifier(name)
@@ -195,7 +200,7 @@ class Importer(ctx: Context, prog: Program) {
     val args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) => Formal(convertType(tpe), Identifier("arg" + i)) }.toList
     val modifiers = convertModifiers(meth)
 
-    MethodDecl(Some(retType), id, args, Block(List()), modifiers)
+    MethodDecl(Some(retType), id, args, Some(Block(List())), modifiers)
   }
 
   private def convertModifiers(obj: AccessFlags) = {

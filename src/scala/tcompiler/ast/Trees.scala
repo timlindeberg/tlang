@@ -25,18 +25,21 @@ object Trees {
   case class GenericImport(identifiers: List[Identifier]) extends Import
 
   object ClassDecl {
-    def unapply(e: ClassDecl): Option[(ClassIdentifier, Option[ClassIdentifier], List[VarDecl], List[FuncTree])] = e match {
-      case InternalClassDecl(id, parent, vars, methods) => Some((id, parent, vars, methods))
-      case ExternalClassDecl(id, parent, vars, methods) => Some((id, parent, vars, methods))
-      case _                                            => None
+    def unapply(e: ClassDecl): Option[(ClassIdentifier, List[ClassIdentifier], List[VarDecl], List[FuncTree])] = e match {
+      case InternalClassDecl(id, parents, vars, methods) => Some((id, parents, vars, methods))
+      case ExternalClassDecl(id, parents, vars, methods) => Some((id, parents, vars, methods))
+      case Trait(id, parents, vars, methods)             => Some((id, parents, vars, methods))
+      case _                                             => None
     }
   }
 
   trait ClassDecl extends Tree with Symbolic[ClassSymbol] {
     var id     : ClassIdentifier
-    var parent : Option[ClassIdentifier]
+    var parents: List[ClassIdentifier]
     var vars   : List[VarDecl]
     var methods: List[FuncTree]
+
+    def getImplementedTraits = parents.filter(c => c.getSymbol.isTrait)
   }
 
   trait Modifiable {
@@ -48,15 +51,16 @@ object Trees {
 
   }
 
-  case class InternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
-  case class ExternalClassDecl(var id: ClassIdentifier, var parent: Option[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
+  case class InternalClassDecl(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
+  case class Trait(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
+  case class ExternalClassDecl(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
+
   case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
 
   trait Modifier extends Tree
 
   trait Accessability extends Modifier
 
-  // TODO: Should maybe be object so positioned works?
   case class Public() extends Accessability
   case class Private() extends Accessability
   case class Protected() extends Accessability
@@ -68,7 +72,7 @@ object Trees {
     var id       : Identifier
     var retType  : Option[TypeTree]
     var args     : List[Formal]
-    val stat     : StatTree
+    val stat     : Option[StatTree]
     val modifiers: Set[Modifier]
 
     def isMain = this match {
@@ -83,9 +87,22 @@ object Trees {
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
-  case class MethodDecl(var retType: Option[TypeTree], var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class ConstructorDecl(var retType: Option[TypeTree], var id: Identifier, var args: List[Formal], stat: StatTree, modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree, var retType: Option[TypeTree], var args: List[Formal], stat: StatTree, modifiers: Set[Modifier], var id: Identifier = new Identifier("")) extends FuncTree
+  case class MethodDecl(var retType: Option[TypeTree],
+    var id: Identifier,
+    var args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier]) extends FuncTree
+  case class ConstructorDecl(var retType: Option[TypeTree],
+    var id: Identifier,
+    var args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier]) extends FuncTree
+  case class OperatorDecl(var operatorType: ExprTree,
+    var retType: Option[TypeTree],
+    var args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier],
+    var id: Identifier = new Identifier("")) extends FuncTree
 
   trait TypeTree extends Tree with Typed {
     def name: String
@@ -189,19 +206,14 @@ object Trees {
     }
   }
 
-  case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[Symbol] {
+  case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[ClassSymbol] {
 
     import tcompiler.modification.Templates._
 
     def name = value
 
     // The type of the identifier depends on the type of the symbol
-    override def getType: Type = getSymbol match {
-      case cs: ClassSymbol    => TObject(cs)
-      case vs: VariableSymbol => vs.getType
-      case ms: MethodSymbol   => ms.getType
-      case es: ErrorSymbol    => TError
-    }
+    override def getType: Type = TObject(getSymbol)
 
     override def setType(tpe: Type) = {
       getSymbol.setType(tpe)
@@ -305,12 +317,12 @@ object Trees {
 
   def isStaticCall(obj: ExprTree) =
     obj match {
-      case id @ Identifier(name) =>
+      case id@Identifier(name) =>
         id.getSymbol match {
           case _: ClassSymbol => true
           case _              => false
         }
-      case _                     => false
+      case _                   => false
     }
 
 

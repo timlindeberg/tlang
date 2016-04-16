@@ -39,7 +39,7 @@ object Printer {
       case RegularImport(identifiers)                                    => p"import ${Separated(identifiers, ".")}"
       case WildCardImport(identifiers)                                   => p"import ${Separated(identifiers, ".")}.*"
       case GenericImport(identifiers)                                    => p"import <${Separated(identifiers, ".")}>"
-      case ClassDecl(id, parent, vars, methods)                          => p"$N${N}class $id${optional(parent)(t => p" extends $t")} ${varsAndMethods(vars, methods)}"
+      case ClassDecl(id, parents, vars, methods)                         => p"$N$N${classOrTrait(t)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
       case VarDecl(tpe, id, expr, modifiers)                             => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
       case MethodDecl(retType, id, args, stat, modifiers)                => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
       case ConstructorDecl(_, id, args, stat, modifiers)                 => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
@@ -118,6 +118,18 @@ object Printer {
       case Empty()                         => ""
     }
     s
+  }
+
+  private def classOrTrait(t: Tree) = t match {
+    case _: Trait => p"trait"
+    case _        => p"class"
+  }
+
+  private def parentList(parents: List[ClassIdentifier]) = {
+    if (parents.isEmpty) ""
+    else {
+      p": ${Separated(parents, ", ")}"
+    }
   }
 
   private def varsAndMethods(vars: List[VarDecl], methods: List[FuncTree]): String = {

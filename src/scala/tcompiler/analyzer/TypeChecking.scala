@@ -6,6 +6,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
 import tcompiler.utils._
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -21,7 +22,7 @@ object TypeChecking extends Pipeline[Program, Program] {
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(prog: Program): Program = {
-    val methodDecl = MethodDecl(None, Identifier(""), List(), Block(List()), Set(Private()))
+    val methodDecl = MethodDecl(None, Identifier(""), List(), None, Set(Private()))
 
     // Typecheck fields
     prog.classes.foreach { classDecl =>
@@ -39,24 +40,16 @@ object TypeChecking extends Pipeline[Program, Program] {
       }
     }
 
-    // Check method usage
-    // TODO: Refactoring of typechecker global variables etc.
-    methodUsage foreach {
-      case (method, used) =>
-        if (!used)
-          WarningUnusedPrivateField(method.ast.signature, method)
-    }
 
-    methodUsage = Map[MethodSymbol, Boolean]()
+    val c = new ClassSymbol("", false)
+    val tc = new TypeChecker(ctx, new MethodSymbol("", c, methodDecl))
 
-    def warning(errorCode: Int, msg: String, pos: Positioned) =
-      ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
-
-    def WarningUnusedPrivateField(name: String, pos: Positioned) =
-      warning(0, s"Private method '$name' is never used.", pos)
-
+    tc.checkMethodUsage()
+    tc.checkTraitsAreImplemented(prog)
     prog
   }
+
+
 }
 
 
@@ -75,7 +68,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       return
     }
 
-    tcStat(currentMethodSymbol.ast.stat)
+    currentMethodSymbol.ast.stat.ifDefined(tcStat)
 
     if (currentMethodSymbol.getType != TUntyped) {
       currentMethodSymbol.setType(tcOperator(currentMethodSymbol.getType))
@@ -426,6 +419,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         val argTypes = exprs.map(tcExpr(_))
         tpe.getType match {
           case TObject(classSymbol) =>
+            if(classSymbol.isTrait)
+              ErrorInstantiateTrait(classSymbol.name, newDecl)
+
+
             classSymbol.lookupMethod("new", argTypes) match {
               case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
               case None if exprs.nonEmpty  =>
@@ -573,6 +570,46 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     correctOperatorType(expr, argList, expectedType, operatorType)
   }
 
+  def checkMethodUsage() = {
+    // Check method usage
+    // TODO: Refactoring of typechecker global variables etc.
+    methodUsage foreach {
+      case (method, used) =>
+        if (!used)
+          WarningUnusedPrivateField(method.ast.signature, method)
+    }
+    methodUsage = Map[MethodSymbol, Boolean]()
+  }
+
+  def checkTraitsAreImplemented(prog: Program) =
+    prog.classes.foreach { classDecl =>
+      classDecl.getImplementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
+    }
+
+  private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
+    val unimplementedMethods = implementedTrait.methods.filter(!_.isImplemented)
+    unimplementedMethods.foreach { unimplementedMethod =>
+      classDecl.getSymbol.lookupMethod(unimplementedMethod.name, unimplementedMethod.argTypes) match {
+        case None =>
+          ErrorUnimplementedMethodFromParentTrait(classDecl.id.value,
+            unimplementedMethod.ast.signature,
+            implementedTrait.name, classDecl)
+        case _    =>
+      }
+    }
+
+    val unimplementedOperators = implementedTrait.operators.filter(!_.isImplemented)
+    unimplementedOperators.foreach { unimplementedOperator =>
+      classDecl.getSymbol.lookupOperator(unimplementedOperator.operatorType, unimplementedOperator.argTypes) match {
+        case None =>
+          ErrorUnimplementedOperatorFromParentTrait(classDecl.id.value,
+            operatorString(unimplementedOperator),
+            implementedTrait.name, classDecl)
+        case _    =>
+      }
+    }
+  }
+
 
   private def typeCheckOperator(classType: Type, operator: ExprTree, args: List[Type]): Option[Type] =
     classType match {
@@ -675,6 +712,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
     TError
   }
+
+  private def warning(errorCode: Int, msg: String, pos: Positioned) =
+    ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Error messages
@@ -779,5 +820,20 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     error(23, s"Operator '$operator' does not exist.", pos)
   }
 
+  private def ErrorInstantiateTrait(tr: String, pos: Positioned) =
+    error(24, s"Cannot instantiate trait '$tr'.", pos)
+
+  private def ErrorUnimplementedMethodFromParentTrait(clazz: String, method: String, tr: String, pos: Positioned) =
+    error(25, s"Class '$clazz' does not implement method '$method' from parent trait '$tr'.", pos)
+
+  private def ErrorUnimplementedOperatorFromParentTrait(clazz: String, operator: String, tr: String, pos: Positioned) =
+    error(26, s"Class '$clazz' does not implement operator '$operator' from parent trait '$tr'.", pos)
+
+  //---------------------------------------------------------------------------------------
+  //  Warnings
+  //---------------------------------------------------------------------------------------
+
+  private def WarningUnusedPrivateField(name: String, pos: Positioned) =
+    warning(0, s"Private method '$name' is never used.", pos)
 
 }

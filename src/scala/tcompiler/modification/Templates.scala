@@ -36,7 +36,7 @@ object Templates extends Pipeline[Program, Program] {
       else tpe
 
     Trees.traverse(prog, (_, curr) => Some(curr) collect {
-      case c: ClassDecl    => c.parent = c.parent.map(replaceTypeId)
+      case c: ClassDecl    => c.parents = c.parents.map(replaceTypeId)
       case m: MethodDecl   => m.retType collect { case t => m.retType = Some(replaceType(t))}
       case o: OperatorDecl => o.retType collect { case t => o.retType = Some(replaceType(t))}
       case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(replaceType(t))}
@@ -72,7 +72,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     }
 
     def collect(f: Product, p: Product) = Some(p) collect {
-      case c: ClassDecl => c.parent.foreach(generateIfTemplated)
+      case c: ClassDecl => c.parents.foreach(generateIfTemplated)
       case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
       case f: Formal    => generateIfTemplated(f.tpe)
       case n: New       => generateIfTemplated(n.tpe)
@@ -151,7 +151,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
   private val ErrorMap = Map[TypeTree, TypeTree]()
   private val ErrorType = new ClassIdentifier("ERROR")
-  private val ErrorClass = new InternalClassDecl(ErrorType, None, List(), List())
+  private val ErrorClass = new InternalClassDecl(ErrorType, List(), List(), List())
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
     ctx.reporter.error("G", errorCode, msg, pos)
