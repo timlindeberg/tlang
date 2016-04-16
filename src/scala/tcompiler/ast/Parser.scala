@@ -169,13 +169,13 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
 
   /**
     * <classDeclaration> ::= class <classIdentifier>
-    * [ extends <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
+    * [ : <classIdentifier> ] "{" { <varDeclaration> } { <methodDeclaration> } "}"
     */
   def classDeclaration(): ClassDecl = {
     val startPos = nextToken
     eat(CLASS)
     val id = classTypeIdentifier()
-    val parent = optional(classIdentifier, EXTENDS)
+    val parent = optional(classIdentifier, COLON)
     eat(LBRACE)
     val vars = untilNot(() => {
       val v = fieldDeclaration()

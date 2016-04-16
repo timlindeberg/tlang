@@ -13,5 +13,5 @@ println(c is A); // res: true
 println(c is B); // res: true
 
 class A {}
-class B extends A {}
+class B : A {}
 

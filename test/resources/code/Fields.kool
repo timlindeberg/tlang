@@ -19,7 +19,7 @@ class A {
 
 }
 
-class B extends A {
+class B : A {
 
   Def Test2(a: A): Unit = {
     println(a.k = 1)       // res3: 1

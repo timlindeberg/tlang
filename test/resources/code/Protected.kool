@@ -17,7 +17,7 @@ class A {
   }
 }
 
-class B extends A {
+class B : A {
 
   Def Test(i: Int): Int = {
     return test(i);

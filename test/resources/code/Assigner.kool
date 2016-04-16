@@ -35,9 +35,9 @@ class Foo {
 class Test {
     Def Method () : String = return "String"
 }
-class Test2 extends Test { }
-class Test3 extends Test2 { }
-class Test4 extends Test3 {
+class Test2 : Test { }
+class Test3 : Test2 { }
+class Test4 : Test3 {
     Def Method () : String = return "Test4"
 }
 
@@ -45,7 +45,7 @@ class A {
   Def foo(a: Int, b: String): Int = return 0
 }
 
-class B extends A {
+class B : A {
   Def foo(a: Int, b: String): Int = return 1
 }
 
@@ -53,6 +53,6 @@ class C {
   Def foo():Int = return 0
 }
 
-class D extends C {
+class D : C {
   Def foo(): Int = return 1
 }

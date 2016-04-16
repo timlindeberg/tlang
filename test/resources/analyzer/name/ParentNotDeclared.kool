@@ -1,1 +1,1 @@
-class A extends B {} // res: N2012
+class A : B {} // res: N2012

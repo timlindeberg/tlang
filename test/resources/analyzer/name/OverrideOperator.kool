@@ -2,6 +2,6 @@ class A {
     Def +(lhs: A, rhs: A) = return 1
 }
 
-class B extends A {
+class B : A {
     Def +(lhs: B, rhs: B) = return 2 // res: N2001
 }

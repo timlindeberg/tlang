@@ -10,7 +10,7 @@ class A {
 
 }
 
-class B extends A {
+class B : A {
 
     Def test(): Unit = println("B")
 
@@ -18,7 +18,7 @@ class B extends A {
 
 }
 
-class C extends B {
+class C : B {
 
     Def test(): Unit = println("C")
 

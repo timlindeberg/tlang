@@ -22,7 +22,7 @@ class A {
   }
 }
 
-class B extends A {
+class B : A {
   Def foo(): Int = {
     value = 42;
     return value;

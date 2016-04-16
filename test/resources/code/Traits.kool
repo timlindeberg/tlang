@@ -6,7 +6,7 @@ println(a.lol()) // res: lol
 println(a.implemented(0)) // res: 3
 
 
-class A extends B, C, D {
+class A : B, C, D {
 
     Def method(i: Int) = return i + 1
 

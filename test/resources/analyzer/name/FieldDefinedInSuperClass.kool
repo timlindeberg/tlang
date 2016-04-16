@@ -2,6 +2,6 @@ class A {
     var x: Int
 }
 
-class B extends A {
+class B : A {
     var x: Int // res: N2005
 }

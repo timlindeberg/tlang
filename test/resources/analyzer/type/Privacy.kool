@@ -48,7 +48,7 @@ class A {
 
 }
 
-class B extends A {
+class B : A {
 
     Def G() = {
         var a: A = new A(1)

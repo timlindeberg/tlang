@@ -13,7 +13,7 @@ import tcompiler.utils._
 import scala.collection.mutable
 import scala.sys.process._
 
-
+// These have to be defined before the main object or the macro wont work
 sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
 
   implicit def flag2String(f: Flag): String = f.flag
@@ -65,23 +65,44 @@ object Main {
 
   lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
 
-  val flagActive = mutable.Map() ++ Flags.map(f => (f.flag, false)).toMap
+  val flagActive = mutable.Map() ++ Flags.map(f => (f.flag, false))
 
   var FileEnding    = ".kool"
   var VersionNumber = "0.0.1"
 
-  def printVersion() = println(s"T-Compiler $VersionNumber")
 
-  def printHelp() = println(
-      s"""
-         |Usage: tcomp <options> <source file>
-         |Options:
-         |
-         |${Flags.map(_.format).mkString}
-    """.stripMargin
-    )
+  def main(args: Array[String]) {
+    try {
+      val ctx = processOptions(args)
 
-  def processOptions(args: Array[String]): Context = {
+      val parsing = Lexer andThen Parser andThen Templates andThen Imports
+      val analysis = NameAnalysis andThen TypeChecking
+      // Generate code
+      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
+      if (flagActive(PrintGeneratedCode))
+        println(Printer(prog))
+
+      CodeGeneration.run(ctx)(prog)
+      if (flagActive(Exec) && containsMainMethod(prog)) {
+        val cp = ctx.outDir match {
+          case Some(dir) => "-cp " + dir.getPath
+          case _         => ""
+        }
+        println("java " + cp + " " + fileName(ctx) !!)
+      }
+      if (ctx.reporter.hasWarnings)
+        println(ctx.reporter.warningsString)
+
+      System.out.flush()
+    } catch {
+      case e: CompilationException =>
+        println(e.getMessage)
+      // Reporter throws exception at fatal instead exiting program
+      case e: FileNotFoundException => System.err.println("Error: File not found!")
+    }
+  }
+
+  private def processOptions(args: Array[String]): Context = {
     var outDir: Option[File] = None
     var files: List[File] = Nil
 
@@ -121,43 +142,18 @@ object Main {
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }
 
-  def main(args: Array[String]) {
-    try {
-      val ctx = processOptions(args)
+  private def printVersion() = println(s"T-Compiler $VersionNumber")
 
-      val parsing = Lexer andThen Parser andThen Templates andThen Imports
-      val analysis = NameAnalysis andThen TypeChecking
-      // Generate code
-      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-      if (flagActive(PrintGeneratedCode))
-        println(Printer(prog))
+  private def printHelp() = println(
+      s"""
+         |Usage: tcomp <options> <source file>
+         |Options:
+         |
+         |${Flags.map(_.format).mkString}
+    """.stripMargin
+    )
 
-      CodeGeneration.run(ctx)(prog)
-      if (flagActive(Exec) && containsMainMethod(prog)) {
-        val cp = ctx.outDir match {
-          case Some(dir) => "-cp " + dir.getPath
-          case _         => ""
-        }
-        println("java " + cp + " " + fileName(ctx) !!)
-      }
-      if (ctx.reporter.hasWarnings)
-        println(ctx.reporter.warningsString)
+  private def fileName(ctx: Context) = ctx.file.getName.dropRight(FileEnding.length)
 
-      System.out.flush()
-    } catch {
-      case e: CompilationException =>
-        println(e.getMessage)
-      // Reporter throws exception at fatal instead exiting program
-      case e: FileNotFoundException => System.err.println("Error: File not found!")
-    }
-  }
-
-  def fileName(ctx: Context) = ctx.file.getName.dropRight(FileEnding.length)
-
-  private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists {
-    case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(StringType()), _) :: Nil, _, mods) if mainModifiers(mods) => true
-    case _                                                                                                                           => false
-  })
-
-  private def mainModifiers(modifiers: Set[Modifier]) = modifiers.size == 2 && modifiers.contains(Public()) && modifiers.contains(Static())
+  private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists(_.isMain))
 }
