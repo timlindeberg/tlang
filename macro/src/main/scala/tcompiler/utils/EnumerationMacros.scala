@@ -23,26 +23,16 @@ object EnumerationMacros {
       c.enclosingPosition,
       "Can only enumerate values of a sealed trait or class."
     ) else {
-      val siblingSubclasses: List[Symbol] = scala.util.Try {
-        val enclosingModule = c.enclosingClass.asInstanceOf[ModuleDef]
-        enclosingModule.impl.body.filter { x =>
-          scala.util.Try(x.symbol.asModule.moduleClass.asClass.baseClasses.contains(symbol))
-            .getOrElse(false)
-        }.map(_.symbol)
-      } getOrElse {
-        Nil
-      }
+      val children = symbol.asClass.knownDirectSubclasses.toList
 
-      val children = symbol.asClass.knownDirectSubclasses.toList ::: siblingSubclasses
-      if (!children.forall(x => x.isModuleClass || x.isModule)) c.abort(
+      if (!children.forall(_.isModuleClass)) c.abort(
         c.enclosingPosition,
         "All children must be objects."
       ) else c.Expr[Set[A]] {
         def sourceModuleRef(sym: Symbol) = Ident(
-          if (sym.isModule) sym else
-            sym.asInstanceOf[
-              scala.reflect.internal.Symbols#Symbol
-              ].sourceModule.asInstanceOf[Symbol]
+          sym.asInstanceOf[
+            scala.reflect.internal.Symbols#Symbol
+            ].sourceModule.asInstanceOf[Symbol]
         )
 
         Apply(

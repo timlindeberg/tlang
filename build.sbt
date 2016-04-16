@@ -10,7 +10,8 @@ lazy val commonSettings = Seq(
 scalacOptions ++= Seq(
 	"-deprecation",
 	"-unchecked",
-	"-language:implicitConversions")
+	"–encoding UTF8"
+)
 
 lazy val core = (project in file(".")).
 	dependsOn(macroSub).

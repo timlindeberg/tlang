@@ -15,7 +15,6 @@ object Lexer extends Pipeline[File, List[Token]] {
 
 }
 
-
 class Tokenizer(val file: File, ctx: Context) {
 
   private val LocationPrefix = "L"

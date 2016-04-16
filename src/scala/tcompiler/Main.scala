@@ -3,56 +3,120 @@ package tcompiler
 import java.io.{File, FileNotFoundException}
 
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
-import tcompiler.ast.{Parser, Printer}
 import tcompiler.ast.Trees._
+import tcompiler.ast.{Parser, Printer}
 import tcompiler.code.CodeGeneration
 import tcompiler.lexer.Lexer
 import tcompiler.modification.{Imports, Templates}
 import tcompiler.utils._
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 import scala.sys.process._
+
+
+sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
+
+  implicit def flag2String(f: Flag): String = f.flag
+
+  val flag       : String
+  val description: String
+  val arg: String = ""
+  def format: String = f"  ${flag + " " + arg}%-20s$description%-50s\n"
+  def compare(that: Flag) = flag.length - that.flag.length
+}
+
+case object Exec extends Flag {
+  override val flag        = "-exec"
+  override val description = "Executes the program after compilation."
+}
+
+case object SuppressWarnings extends Flag {
+  override val flag        = "-nowarn"
+  override val description = "Suppresses warning messages."
+}
+
+case object PrintGeneratedCode extends Flag {
+  override val flag        = "-printcode"
+  override val description = "Pretty prints the AST as it looks before code generation takes place."
+}
+
+case object Help extends Flag {
+  override val flag        = "-help"
+  override val description = "Prints help information and exits."
+}
+
+case object Directory extends Flag {
+  override val flag        = "-d"
+  override val description = "Specify the path where generated classes are placed."
+  override val arg         = "<directory>"
+}
+
+case object Version extends Flag {
+  override val flag        = "-version"
+  override val description = "Prints version information and exits."
+}
+
+case object WarningIsError extends Flag {
+  override val flag        = "-Werror"
+  override val description = "Treats warnings as errors and exits compilation."
+}
 
 object Main {
 
-  var FileEnding = ".kool"
+  lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
 
-  val exec       = "--exec"
-  val suppressWarnings   = "--sw"
-  val printGeneratedCode = "--printcode"
+  val flagActive = mutable.Map() ++ Flags.map(f => (f.flag, false)).toMap
 
-  val flags      = HashMap(
-    exec -> false,
-    suppressWarnings -> false,
-    printGeneratedCode -> false
-  )
+  var FileEnding    = ".kool"
+  var VersionNumber = "0.0.1"
+
+  def printVersion() = println(s"T-Compiler $VersionNumber")
+
+  def printHelp() = println(
+      s"""
+         |Usage: tcomp <options> <source file>
+         |Options:
+         |
+         |${Flags.map(_.format).mkString}
+    """.stripMargin
+    )
 
   def processOptions(args: Array[String]): Context = {
-
     var outDir: Option[File] = None
     var files: List[File] = Nil
 
     def processOption(args: List[String]): Unit = args match {
-      case "-d" :: out :: args =>
+      case Directory.flag :: out :: args                         =>
         outDir = Some(new File(out))
         processOption(args)
-
-      case flag :: args if flags.contains(flag.toLowerCase) =>
-        flags(flag.toLowerCase) = true
+      case Version.flag :: _                               =>
+        printVersion()
+        sys.exit
+      case Help.flag :: _                                        =>
+        printHelp()
+        sys.exit
+      case flag :: args if flagActive.contains(flag.toLowerCase) =>
+        flagActive(flag.toLowerCase) = true
         processOption(args)
-
-      case f :: args =>
+      case f :: args                                             =>
         files = new File(f) :: files
         processOption(args)
 
       case Nil =>
     }
 
+    if (args.isEmpty) {
+      printHelp()
+      sys.exit
+    }
+
+
     processOption(args.toList)
 
-    val reporter = new Reporter(flags(suppressWarnings))
+    val reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError))
 
-    if (files.size != 1) reporter.fatal("M", 0, s"Exactly one file expected, '${files.size}' file(s) given.")
+    if (files.size != 1)
+      reporter.fatal("M", 0, s"Exactly one file expected, '${files.size}' file(s) given.")
 
     Context(reporter = reporter, file = files.head, outDir = outDir)
   }
@@ -65,18 +129,18 @@ object Main {
       val analysis = NameAnalysis andThen TypeChecking
       // Generate code
       val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-      if(flags(printGeneratedCode))
+      if (flagActive(PrintGeneratedCode))
         println(Printer(prog))
 
       CodeGeneration.run(ctx)(prog)
-      if (flags(exec) && containsMainMethod(prog)) {
+      if (flagActive(Exec) && containsMainMethod(prog)) {
         val cp = ctx.outDir match {
           case Some(dir) => "-cp " + dir.getPath
           case _         => ""
         }
         println("java " + cp + " " + fileName(ctx) !!)
       }
-      if(ctx.reporter.hasWarnings)
+      if (ctx.reporter.hasWarnings)
         println(ctx.reporter.warningsString)
 
       System.out.flush()
@@ -92,7 +156,7 @@ object Main {
 
   private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists {
     case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(StringType()), _) :: Nil, _, mods) if mainModifiers(mods) => true
-    case _ => false
+    case _                                                                                                                           => false
   })
 
   private def mainModifiers(modifiers: Set[Modifier]) = modifiers.size == 2 && modifiers.contains(Public()) && modifiers.contains(Static())

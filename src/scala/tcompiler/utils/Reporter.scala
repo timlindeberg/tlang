@@ -12,7 +12,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(suppressWarnings: Boolean = false) {
+class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = false) {
 
   var ErrorSeperator = "\n\n"
   var QuoteColor = Console.MAGENTA
@@ -26,7 +26,12 @@ class Reporter(suppressWarnings: Boolean = false) {
 
   private var filesToLines = Map[File, IndexedSeq[String]]()
 
-  def warning(locationPrefix: String, errorCode: Int, msg: Any, pos: Positioned = NoPosition): Unit = {
+  def warning(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+    if(warningIsError){
+      error(locationPrefix, errorCode, msg, pos)
+      return
+    }
+
     if(suppressWarnings)
       return
 

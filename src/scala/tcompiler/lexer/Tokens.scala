@@ -13,11 +13,6 @@ sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
 
 object Tokens {
 
-  // These need to be lazy otherwise the program crashes
-
-  lazy val Tokens                                   = EnumerationMacros.sealedInstancesOf[TokenKind]
-  lazy val SingleCharTokens: Map[Char, TokenKind]   = Tokens.filter(_.str.length == 1).map(t => t.str(0) -> t).toMap
-  lazy val Keywords        : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 1 && t.str.matches("[A-Za-z]*")).map(t => t.str -> t).toMap
 
   object IDKIND extends TokenKind("") {
     override def toString = "identifier"
@@ -169,4 +164,10 @@ object Tokens {
   class STRLIT(val value: String) extends Token(STRLITKIND) {
     override def toString = "STR(" + value + ")"
   }
+
+  // These need to be lazy otherwise the program crashes
+  lazy val Tokens          : Set[TokenKind]         = EnumerationMacros.sealedInstancesOf[TokenKind]
+  lazy val SingleCharTokens: Map[Char, TokenKind]   = Tokens.filter(_.str.length == 1).map(t => t.str(0) -> t).toMap
+  lazy val Keywords        : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 1 && t.str.matches("[A-Za-z]*")).map(t => t.str -> t).toMap
+
 }
