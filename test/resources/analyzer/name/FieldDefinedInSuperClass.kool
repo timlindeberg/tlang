@@ -1,7 +1,0 @@
-class A {
-    var x: Int
-}
-
-class B : A {
-    var x: Int // res: N2005
-}

@@ -106,7 +106,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = InternalClassDecl(ClassIdentifier(mainName), List(), List(), List()).setPos(pos, nextToken)
+          val m = InternalClassDecl(ClassIdentifier(mainName), List() , List(), List()).setPos(pos, nextToken)
           classes ::= m
           m
       }
@@ -803,6 +803,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       * | true
       * | false
       * | this
+      * | super.<identifier>
+      * | super.<identifier> "(" <expression> { "," <expression> } ")
       * | new <tpe>"[" <expression> "] { "[" <expression> "]" }
       * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
       */
@@ -892,6 +894,19 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case THIS          =>
           eat(THIS)
           This()
+        case SUPER =>
+          eat(SUPER)
+          val sup = Super().setPos(startPos, nextToken)
+          eat(DOT)
+          val id = identifier()
+          if (nextTokenKind == LPAREN) {
+            eat(LPAREN)
+            val exprs = commaList(expression)
+            eat(RPAREN)
+            MethodCall(sup, id, exprs.toList)
+          } else {
+            FieldRead(sup, id)
+          }
         case NEW           =>
           eat(NEW)
 

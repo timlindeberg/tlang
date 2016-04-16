@@ -234,6 +234,7 @@ object Trees {
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
+  case class Super() extends ExprTree with Symbolic[ClassSymbol]
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
     def dimension = sizes.size
   }

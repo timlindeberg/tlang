@@ -29,17 +29,18 @@ object Symbols {
     val name: String
   }
 
-  val objectClass = new ClassSymbol("Object", false).setType(Types.tObject)
+  val ObjectClass: ClassSymbol = new ClassSymbol("Object", false)
+  ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
     var mainClass: ClassSymbol = _
-    var classes                = Map[String, ClassSymbol]("Object" -> objectClass)
+    var classes                = Map[String, ClassSymbol]("Object" -> ObjectClass)
 
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
 
   class ClassSymbol(val name: String, val isTrait: Boolean) extends Symbol {
-    var parents   : List[ClassSymbol]  = List()
+    var parents  : List[ClassSymbol]    = List()
     var methods  : List[MethodSymbol]   = Nil
     var operators: List[OperatorSymbol] = Nil
     var members                         = Map[String, VariableSymbol]()
@@ -48,36 +49,49 @@ object Symbols {
 
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
 
+    def implementsMethod(method: MethodSymbol): Boolean = {
+      findMethod(method.name, method.argTypes) match {
+        case Some(meth) if meth.hasImplementation => true
+        case None                                 => parents.exists(p => p.implementsMethod(method))
+        case _                                    => false
+      }
+    }
+
+    def lookupParentMethod(name: String, args: List[Type]): Option[MethodSymbol] = {
+      val matchingMethods = parents.map(_.lookupMethod(name, args)).filter(_.isDefined)
+      if (matchingMethods.isEmpty)
+        None
+      else
+        matchingMethods.head
+    }
+
     def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] =
       findMethod(name, args) match {
-        case Some(meth) if meth.isImplemented      => Some(meth)
-        case None if recursive && parents.nonEmpty =>
-          val matchingMethods = parents.map(_.lookupMethod(name, args))
-          matchingMethods.head
+        case Some(meth)                            => Some(meth)
+        case None if recursive && parents.nonEmpty => lookupParentMethod(name, args)
         case _                                     => None
       }
 
     def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] =
       members.get(name) match {
-        case x@Some(_) => x
+        case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
           val matchingVars = parents.map(_.lookupVar(name))
           matchingVars.head
-        case _      => None
+        case _                                     => None
       }
 
     def lookupOperator(operatorType: ExprTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] =
       findOperator(operatorType, args) match {
-        case x@Some(_) => x
+        case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
           val matchingOperators = parents.map(_.lookupOperator(operatorType, args))
           matchingOperators.head
-        case _      => None
+        case _                                     => None
       }
 
-    def unimplementedMethods(): List[MethodSymbol] =
-      methods.filter(!_.isImplemented) ::: parents.flatMap(_.unimplementedMethods())
-
+    def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
+      methods.filter(!_.hasImplementation).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
 
     private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
       operators.find(symbol => {
@@ -87,10 +101,10 @@ object Symbols {
       })
 
     private def findMethod(name: String, args: List[Type]) =
-      methods.find(symbol => {
+      methods.find(symbol =>
         name == symbol.name &&
           hasMatchingArgumentList(symbol, args)
-      })
+      )
 
     private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type]): Boolean = {
       if (args.size != symbol.argList.size)
@@ -120,7 +134,7 @@ object Symbols {
     var members                          = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
-    var isImplemented                    = ast.stat.isDefined
+    var hasImplementation                = ast.stat.isDefined
 
     def lookupVar(name: String): Option[VariableSymbol] = lookupLocalVar(name) match {
       case x@Some(_) => x

@@ -45,6 +45,7 @@ object TypeChecking extends Pipeline[Program, Program] {
     val tc = new TypeChecker(ctx, new MethodSymbol("", c, methodDecl))
 
     tc.checkMethodUsage()
+    tc.checkCorrectOverrideReturnTypes(prog)
     tc.checkTraitsAreImplemented(prog)
     prog
   }
@@ -197,6 +198,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         id.getType
       case id: ClassIdentifier           => id.getType
       case th: This                      => th.getSymbol.getType
+      case su: Super                     => su.getSymbol.getType
       case mc: MethodCall                => tcMethodCall(mc)
       case fr@FieldRead(obj, id)         =>
         val tpe = typeCheckField(obj, id, fr)
@@ -581,32 +583,38 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     methodUsage = Map[MethodSymbol, Boolean]()
   }
 
+  def checkCorrectOverrideReturnTypes(prog: Program) =
+    prog.classes.foreach { clazz =>
+      clazz.methods.foreach { meth =>
+        val classSymbol = clazz.getSymbol
+        val methSymbol = meth.getSymbol
+
+        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes) match {
+          case Some(parentMeth) if parentMeth.getType != meth.getSymbol.getType =>
+            ErrorOverridingMethodDifferentReturnType(meth.signature,
+              classSymbol.name,
+              meth.getSymbol.getType.toString,
+              parentMeth.classSymbol.name,
+              parentMeth.getType.toString,
+              meth)
+          case _ =>
+        }
+      }
+    }
+
+
   def checkTraitsAreImplemented(prog: Program) =
-    prog.classes.foreach { classDecl =>
+    prog.classes.filter(!_.isInstanceOf[Trait]).foreach { classDecl =>
       classDecl.getImplementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 
   private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
-    val unimplementedMethods = implementedTrait.methods.filter(!_.isImplemented)
-    unimplementedMethods.foreach { unimplementedMethod =>
-      classDecl.getSymbol.lookupMethod(unimplementedMethod.name, unimplementedMethod.argTypes) match {
-        case None =>
-          ErrorUnimplementedMethodFromParentTrait(classDecl.id.value,
-            unimplementedMethod.ast.signature,
-            implementedTrait.name, classDecl)
-        case _    =>
-      }
-    }
-
-    val unimplementedOperators = implementedTrait.operators.filter(!_.isImplemented)
-    unimplementedOperators.foreach { unimplementedOperator =>
-      classDecl.getSymbol.lookupOperator(unimplementedOperator.operatorType, unimplementedOperator.argTypes) match {
-        case None =>
-          ErrorUnimplementedOperatorFromParentTrait(classDecl.id.value,
-            operatorString(unimplementedOperator),
-            implementedTrait.name, classDecl)
-        case _    =>
-      }
+    val unimplementedMethods = implementedTrait.unimplementedMethods()
+    unimplementedMethods.foreach { case (method, owningTrait) =>
+      if(!classDecl.getSymbol.implementsMethod(method))
+        ErrorUnimplementedMethodFromTrait(classDecl.id.value,
+          method.ast.signature,
+          owningTrait.name, classDecl.id)
     }
   }
 
@@ -823,11 +831,15 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   private def ErrorInstantiateTrait(tr: String, pos: Positioned) =
     error(24, s"Cannot instantiate trait '$tr'.", pos)
 
-  private def ErrorUnimplementedMethodFromParentTrait(clazz: String, method: String, tr: String, pos: Positioned) =
-    error(25, s"Class '$clazz' does not implement method '$method' from parent trait '$tr'.", pos)
+  private def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, tr: String, pos: Positioned) =
+    error(25, s"Class '$clazz' does not implement method '$method' from trait '$tr'.", pos)
 
-  private def ErrorUnimplementedOperatorFromParentTrait(clazz: String, operator: String, tr: String, pos: Positioned) =
-    error(26, s"Class '$clazz' does not implement operator '$operator' from parent trait '$tr'.", pos)
+  private def ErrorUnimplementedOperatorFromTrait(clazz: String, operator: String, tr: String, pos: Positioned) =
+    error(26, s"Class '$clazz' does not implement operator '$operator' from trait '$tr'.", pos)
+
+  private def ErrorOverridingMethodDifferentReturnType(method: String, clazz: String, retType: String, parent: String, parentType: String, pos: Positioned) =
+    error(27, s"Overriding method '$method' in class '$clazz' has return " +
+      s"type '$retType' while the method in parent '$parent' has return type '$parentType'.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings

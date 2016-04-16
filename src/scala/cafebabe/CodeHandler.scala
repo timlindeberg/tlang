@@ -250,9 +250,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
         }
         case MULTIANEWARRAY => codeArray(pc+1) match {
           case RawBytes(idx) => codeArray(pc+3) match {
-            case RawByte(dimension) =>
-              println(dimension)
-              setHeight(from + 4, there - dimension + 1)
+            case RawByte(dimension) => setHeight(from + 4, there - dimension + 1)
             case _ => throw CodeFreezingException("Expected RawByte after the RawBytes in MULTINEWARRAY.")
           }
           case _ => throw CodeFreezingException("Expected RawBytes after MULTINEWARRAY.")

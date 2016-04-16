@@ -92,7 +92,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl@VarDecl(tpe, id, init, _)                                =>
+    case varDecl@VarDecl(tpe, id, init, _)                                   =>
       val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
@@ -105,7 +105,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       }
 
       classSymbol.members += (id.value -> newSymbol)
-    case methodDecl@MethodDecl(retType, id, args, stat, _)                =>
+    case methodDecl@MethodDecl(retType, id, args, stat, _)                   =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
@@ -116,7 +116,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       if (classSymbol.isTrait && retType.isEmpty && stat.isEmpty)
         ErrorUnimplementedMethodNoReturnType(methodDecl.signature, methodDecl)
-    case constructorDecl@ConstructorDecl(_, id, args, _, _)               =>
+    case constructorDecl@ConstructorDecl(_, id, args, _, _)                  =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
@@ -124,7 +124,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       constructorDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case operatorDecl@OperatorDecl(operatorType, retType, args, _, _, id) =>
+    case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, id) =>
       val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
@@ -133,6 +133,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       val isStaticOperator = operatorDecl.modifiers.contains(Static())
       val argTypes = args.map(_.tpe.name)
+      if (stat.isEmpty)
+        ErrorAbstractOperator(operatorDecl)
+
       if (isStaticOperator && !argTypes.contains(classSymbol.name)) {
         ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
       }
@@ -147,7 +150,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       formal.setSymbol(newSymbol)
 
       // Don't put out warning when args is unused since it's implicitly defined
-      if (methSymbol.ast.isMain)
+      if (methSymbol.ast.isMain || methSymbol.classSymbol.isTrait)
         variableUsage += newSymbol -> true
       else
         variableUsage += newSymbol -> false
@@ -164,7 +167,6 @@ class NameAnalyser(ctx: Context, prog: Program) {
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
 
-      checkConflictingFieldsInParent(vars, classDecl.getSymbol.parents)
       bindFields(classDecl)
       methods.foreach(bind)
     case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
@@ -217,16 +219,6 @@ class NameAnalyser(ctx: Context, prog: Program) {
       init.ifDefined(new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_))
     }
 
-  private def checkConflictingFieldsInParent(vars: List[VarDecl], parents: List[ClassSymbol]) =
-    parents.foreach { parentSymbol =>
-      vars.foreach { varDecl =>
-        parentSymbol.lookupVar(varDecl.id.value) match {
-          case Some(_) => ErrorFieldDefinedInSuperClass(varDecl.getSymbol.name, varDecl)
-          case None    =>
-        }
-      }
-    }
-
   private def ensureClassNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
     if (map.contains(id)) {
       val oldSymbol = map(id)
@@ -244,9 +236,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
   private def ensureMethodNotDefined(meth: FuncTree): Unit = {
     val name = meth.id.value
     val argTypes = meth.args.map(_.tpe.getType)
-    meth.getSymbol.classSymbol.lookupMethod(name, argTypes, recursive = false) match {
+    val classSymbol = meth.getSymbol.classSymbol
+    classSymbol.lookupMethod(name, argTypes, recursive = false) match {
       case Some(oldMeth) => ErrorMethodAlreadyDefined(meth.signature, oldMeth.line, meth)
-      case None          => meth.getSymbol.classSymbol.addMethod(meth.getSymbol)
+      case None          => classSymbol.addMethod(meth.getSymbol)
     }
   }
 
@@ -395,6 +388,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 case _               => ???
               }
               mc.obj = if (isStaticContext) Identifier(classSymbol.name).setSymbol(classSymbol) else This().setSymbol(classSymbol)
+            case _: Super => // otherwise super gets bound twice
             case _        => bind(obj, localVars, scopeLevel)
           }
           args.foreach(bind(_, localVars, scopeLevel))
@@ -427,6 +421,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 ErrorThisInStaticContext(thisSymbol)
               thisSymbol.setSymbol(methodSymbol.classSymbol)
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
+            case _                          => ???
+          }
+        case superSymbol: Super                   =>
+          scope match {
+            case methodSymbol: MethodSymbol =>
+              if (isStaticContext)
+                ErrorSuperInStaticContext(superSymbol)
+              val parents = methodSymbol.classSymbol.parents
+
+              val symbol = if (parents.isEmpty) Symbols.ObjectClass else parents.last
+              superSymbol.setSymbol(symbol)
+            case _: ClassSymbol             => ErrorSuperInStaticContext(superSymbol)
             case _                          => ???
           }
       })
@@ -550,6 +556,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def ErrorUnimplementedMethodNoReturnType(method: String, pos: Positioned) =
     error(19, s"Unimplemented method '$method' needs a return type.", pos)
+
+  private def ErrorAbstractOperator(pos: Positioned) =
+    error(19, s"Operators cannot be abstract.", pos)
+
+  private def ErrorSuperInStaticContext(pos: Positioned) =
+    error(20, "'super' can not be used in a static context.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings

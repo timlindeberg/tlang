@@ -121,6 +121,7 @@ object Tokens {
   case object TRUE              extends TokenKind("true")
   case object FALSE             extends TokenKind("false")
   case object THIS              extends TokenKind("this")
+  case object SUPER             extends TokenKind("super")
   case object NEW               extends TokenKind("new")
   case object IMPLICIT          extends TokenKind("implicit")
   case object PRINT             extends TokenKind("print")

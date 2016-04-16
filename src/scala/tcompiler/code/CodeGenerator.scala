@@ -8,7 +8,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.analyzer._
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
-
+import tcompiler.utils.Extensions._
 import scala.collection._
 
 
@@ -162,6 +162,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
       case StringLit(value)                                  => ch << Ldc(value)
       case id: Identifier                                    => load(id)
       case This()                                            => ch << ArgLoad(0)
+      case Super()                                           => ch << ArgLoad(0)
       case _: And |
            _: Or |
            _: Equals |
@@ -415,17 +416,21 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
             val className = classSymbol.name
             val methSymbol = meth.getSymbol.asInstanceOf[MethodSymbol]
             val signature = methSymbol.signature
+
+            def compileArgs() = methSymbol.argList.zip(args).foreach {
+              case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
+            }
+
             if (isStaticCall(obj) || isStatic(meth)) {
-              methSymbol.argList.zip(args).foreach {
-                case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
-              }
+              compileArgs()
               ch << InvokeStatic(className, meth.value, signature)
             } else {
               compileExpr(obj)
-              methSymbol.argList.zip(args).foreach {
-                case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
-              }
-              ch << InvokeVirtual(className, meth.value, signature)
+              compileArgs()
+              if(obj.isInstanceOf[Super])
+                ch << InvokeSpecial(className, meth.value, signature)
+              else
+                ch << InvokeVirtual(className, meth.value, signature)
             }
 
             if (!duplicate && mc.getType != TUnit)
