@@ -38,7 +38,7 @@ object TestUtils extends FlatSpec {
     executeTProgram(prefix + f.getName, f.getName.dropRight(Main.FileEnding.length))
 
   def executeTProgram(classPath: String, mainName: String): String = {
-    val f = Future(blocking(s"java -cp $classPath $mainName" !!))
+    val f = Future(blocking(s"java -noverify -cp $classPath $mainName" !!))
     try {
       Await.result(f, Timeout)
     } catch {

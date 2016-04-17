@@ -2,13 +2,16 @@ package tcompiler.code
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
+import cafebabe.ClassFileTypes._
 import cafebabe.CodeHandler
+import cafebabe.Flags._
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer._
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
+
 import scala.collection._
 
 
@@ -16,6 +19,9 @@ import scala.collection._
   * Created by Tim Lindeberg on 4/2/2016.
   */
 object CodeGenerator {
+
+  val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
+  val ClassFlags: U2 =  CLASS_ACC_PUBLIC
 
   val ConstructorName = "<init>"
 

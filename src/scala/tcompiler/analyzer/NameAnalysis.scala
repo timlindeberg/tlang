@@ -289,16 +289,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
 
-  private def setParentSymbol(id: ClassIdentifier, parents: List[ClassIdentifier], classDecl: ClassDecl): Unit =
-    parents.foreach { parentId =>
-      globalScope.lookupClass(parentId.value) match {
-        case Some(parentSymbol) =>
-          parentId.setSymbol(parentSymbol)
-          classDecl.getSymbol.parents = parentSymbol :: classDecl.getSymbol.parents
-        case None               =>
-          ErrorParentNotDeclared(parentId.value, parentId)
-      }
-    }
+  private def setParentSymbol(id: ClassIdentifier, parents: List[ClassIdentifier], classDecl: ClassDecl): Unit = {
+   parents.foreach { parentId =>
+     globalScope.lookupClass(parentId.value) match {
+       case Some(parentSymbol) =>
+         parentId.setSymbol(parentSymbol)
+         // This takes O(n), shouldnt be a big problem though
+         classDecl.getSymbol.parents = classDecl.getSymbol.parents :+ parentSymbol
+       case None               =>
+         ErrorParentNotDeclared(parentId.value, parentId)
+     }
+   }
+ }
 
 
   private class StatementBinder(scope: Symbol, isStaticContext: Boolean) {

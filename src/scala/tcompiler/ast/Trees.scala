@@ -84,6 +84,8 @@ object Trees {
       case _                                                                                                 => false
     }
 
+    def isAbstract = stat.isEmpty
+
     def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 

@@ -5,12 +5,15 @@ import java.io.File
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
+import cafebabe.ClassFileTypes._
+import cafebabe.Flags._
 import cafebabe._
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
-import tcompiler.utils._
 import tcompiler.utils.Extensions._
+import tcompiler.utils._
+
 import scala.collection.mutable
 
 object CodeGeneration extends Pipeline[Program, Unit] {
@@ -24,17 +27,14 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     // output code in parallell
     prog.classes.par.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
+      case c: Trait             => generateClassFile(sourceName, c, outDir)
       case _                    =>
     }
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(sourceName: String, classDecl: ClassDecl, dir: String): Unit = {
-    val sym = classDecl.getSymbol
-    val parent = if(sym.parents.isEmpty) None else Some(sym.parents.head.name)
-    val classFile = new ClassFile(sym.name, parent)
-
-    classFile.setSourceFile(classDecl.file.getName)
+    val classFile = makeClassFile(classDecl)
 
     classDecl.vars.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -59,15 +59,43 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           val operatorSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
           classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.methodName, argTypes)
       }
-      methodHandle.setFlags(getFlags(methodDecl))
+      var flags: U2 = getFlags(methodDecl)
+      if (methodDecl.isAbstract)
+        flags |= METHOD_ACC_ABSTRACT
+      methodHandle.setFlags(flags)
       generateMethod(methodHandle.codeHandler, methodDecl)
     }
 
     if (!hasConstructor)
       generateDefaultConstructor(classFile, classDecl)
 
-    val file = getFilePath(dir, sym.name)
+    val file = getFilePath(dir, classDecl.id.value)
     classFile.writeToFile(file)
+  }
+
+  private def makeClassFile(classDecl: ClassDecl) = {
+    val classSymbol = classDecl.getSymbol
+    val parents = classSymbol.parents
+    val className = classSymbol.name
+
+    val (parent, traits) = if(classSymbol.isTrait)
+      (None, parents)
+    else if (parents.isEmpty)
+      (None, List())
+    else if (parents.head.isTrait)
+      (None, parents)
+    else
+      (Some(parents.head.name), parents.drop(1))
+
+    val classFile = new ClassFile(className, parent)
+    traits.foreach(t => classFile.addInterface(t.name))
+    classFile.setSourceFile(classDecl.file.getName)
+
+    val flags = if(classSymbol.isTrait) TraitFlags else ClassFlags
+    classFile.setFlags(flags)
+    // Defualt is public
+
+    classFile
   }
 
   private def generateMethod(ch: CodeHandler, methTree: FuncTree): Unit = {
@@ -92,7 +120,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     ch.freeze
   }
 
-  private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl) = {
+  private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl): Unit = {
+    if(classDecl.getSymbol.isTrait)
+      return
+
     val mh = generateConstructor(None, classFile, classDecl)
     val ch = mh.codeHandler
     ch << RETURN
@@ -119,7 +150,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
       val codeGenerator = new CodeGenerator(staticCh, classDecl.getSymbol.name, mutable.HashMap())
       staticFields.foreach {
-        case varDecl @ VarDecl(varTpe, id, Some(expr), _) =>
+        case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
           varDecl.getSymbol.getType
           codeGenerator.compileExpr(expr)
           staticCh << PutStatic(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
@@ -133,7 +164,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val nonStaticFields = classDecl.vars.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
     nonStaticFields.foreach {
-      case varDecl @ VarDecl(_, id, Some(expr), _) =>
+      case varDecl@VarDecl(_, id, Some(expr), _) =>
         ch << ArgLoad(0) // put this-reference on stack
         codeGenerator.compileExpr(expr)
         ch << PutField(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
@@ -141,20 +172,20 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def getFlags(obj: Modifiable) = {
-    var flags: Int = 0
+    var flags: U2 = 0
     val isMethod = obj match {
       case _: MethodDecl | _: ConstructorDecl | _: OperatorDecl => true
       case _                                                    => false
     }
 
     obj.modifiers.foreach {
-      case Public()    => flags |= (if (isMethod) Flags.METHOD_ACC_PUBLIC else Flags.FIELD_ACC_PUBLIC)
-      case Private()   => flags |= (if (isMethod) Flags.METHOD_ACC_PRIVATE else Flags.FIELD_ACC_PRIVATE)
-      case Protected() => flags |= (if (isMethod) Flags.METHOD_ACC_PROTECTED else Flags.FIELD_ACC_PROTECTED)
-      case Static()    => flags |= (if (isMethod) Flags.METHOD_ACC_STATIC else Flags.FIELD_ACC_STATIC)
-      case _         =>
+      case Public()    => flags |= (if (isMethod) METHOD_ACC_PUBLIC else FIELD_ACC_PUBLIC)
+      case Private()   => flags |= (if (isMethod) METHOD_ACC_PRIVATE else FIELD_ACC_PRIVATE)
+      case Protected() => flags |= (if (isMethod) METHOD_ACC_PROTECTED else FIELD_ACC_PROTECTED)
+      case Static()    => flags |= (if (isMethod) METHOD_ACC_STATIC else FIELD_ACC_STATIC)
+      case _           =>
     }
-    flags.asInstanceOf[Short]
+    flags
   }
 
   private def getFilePath(outDir: String, className: String): String = {
@@ -162,8 +193,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val packageDir = split.take(split.size - 1).mkString("/")
     val filePath = outDir + packageDir
     val f = new File(filePath)
-    if (!f.getAbsoluteFile.exists() && ! f.mkdirs()) {
-        sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
+    if (!f.getAbsoluteFile.exists() && !f.mkdirs()) {
+      sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
     }
     outDir + className + ".class"
   }
@@ -192,7 +223,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
 
     val superClassName =
-      if(ct.parents.isEmpty) JavaObject
+      if (ct.parents.isEmpty) JavaObject
       else ct.parents.head.value
 
     mh.codeHandler << ALOAD_0

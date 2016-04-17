@@ -108,6 +108,7 @@ object Printer {
       case Identifier(value)               => p"$value"
       case id@ClassIdentifier(value, list) => p"$value${templateList(id)}"
       case This()                          => p"this"
+      case Super()                         => p"super"
       case NewArray(tpe, sizes)            => p"new $tpe${arrayList(sizes)}"
       case New(tpe, exprs)                 => p"new $tpe(${Separated(exprs, ", ")})"
       case PreIncrement(id)                => p"++$id"
