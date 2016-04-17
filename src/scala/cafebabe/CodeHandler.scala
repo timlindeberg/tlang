@@ -1,7 +1,7 @@
 package cafebabe
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.{Map=>MutableMap}
+import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map => MutableMap}
 
 /** A code handler contains methods to help the generation of method bodies.
  * The general usage is to generate abstract byte codes, then freeze the code,
@@ -10,9 +10,9 @@ import scala.collection.mutable.{Map=>MutableMap}
  * <code>CodeHandler</code>s should not be created manually, but rather obtained
  * from the corresponding <code>MethodHandler</code>. */
 class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic : Boolean) {
-  import ClassFileTypes._
   import AbstractByteCodes._
   import ByteCodes._
+  import ClassFileTypes._
 
   private val code: CodeAttributeInfo = c
   protected[cafebabe] val constantPool: ConstantPool = cp
@@ -133,7 +133,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       for(abc <- abcList) {
         abc match {
           case co: ControlOperator => {
-            co.offset = (labels.getOrElse(co.target, 0) - pc)
+            co.offset = labels.getOrElse(co.target, 0) - pc
           }
           case _ => ;
         }
@@ -141,12 +141,32 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       }
     }
 
+    println(abcList)
+    locally {
+      var pc : Int = 0
+      for(abc <- abcList) {
+        abc match {
+          case co: ControlOperator => {
+            co.offset = labels.getOrElse(co.target, 0) - pc
+          }
+          case _ => ;
+        }
+        pc = pc + abc.size
+      }
+    }
+
+    val stackMapFrames = ArrayBuffer[StackMapFrame]()
+    val localVariables = mutable.Stack[VerificationTypeInfo]()
+
+
     // we build the line number table.
-    if(!lineInfo.isEmpty) {
+    if(lineInfo.nonEmpty) {
       val lnta = new LineNumberTableAttributeInfo(constantPool.addString("LineNumberTable"))
       lnta.setEntries(lineInfo.toSeq)
       code.attributes = lnta +: code.attributes
     }
+
+    val smta = new StackMapTableAttribute(constantPool.addString("StackMapTable"))
 
     // we now compute the maximum stack height.
     code.maxStack = computeMaxStack(abcList)

@@ -8,8 +8,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   import ClassFileTypes._
   import Defaults._
 
-  private var
-  magic: U4 = defaultMagic
+  private var magic: U4 = defaultMagic
   private var minor: U2 = defaultMinor
   private var major: U2 = defaultMajor
 
