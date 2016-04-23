@@ -2,16 +2,14 @@ package cafebabe
 
 import cafebabe.ClassFileTypes._
 
-class StackMapTableAttribute(val nameIndex : U2) extends AttributeInfo(nameIndex, Nil) {
-  private var _stackMapFrames : List[StackMapFrame] = List()
-
+class StackMapTableAttribute(val nameIndex : U2, stackMapFrames: List[StackMapFrame]) extends AttributeInfo(nameIndex, Nil) {
 
   override def toStream(stream : ByteStream) : ByteStream = {
-    val stackMapSize: U4 = 2 +_stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
-    val ne: U2 = _stackMapFrames.size
+    val stackMapSize: U4 = 2 +stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
+    val ne: U2 = stackMapFrames.size
 
     stream << nameIndex << stackMapSize << ne
-    _stackMapFrames.foreach(stream << _)
+    stackMapFrames.foreach(stream << _)
     stream
   }
 }
@@ -53,12 +51,8 @@ case class DoubleVariableInfo()                      extends VerificationTypeInf
 case class LongVariableInfo()                        extends VerificationTypeInfo(Long, 1)
 case class NullVariableInfo()                        extends VerificationTypeInfo(Null, 1)
 case class UninitializedThisVariableInfo()           extends VerificationTypeInfo(UninitializedThis, 1)
-case class ObjectVariableInfo()                      extends VerificationTypeInfo(Object, 3) {
-  val constantPoolIndex: Option[U2] = None
-  override def toStream(stream: ByteStream): ByteStream = constantPoolIndex match {
-    case Some(index) => super.toStream(stream) << index
-    case None => sys.error("Object variable info needs a constant pool index!")
-  }
+case class ObjectVariableInfo(constantPoolIndex: U2) extends VerificationTypeInfo(Object, 3) {
+  override def toStream(stream: ByteStream): ByteStream = super.toStream(stream) << constantPoolIndex
 }
 case class UninitializedVariableInfo()               extends VerificationTypeInfo(Uninitialized, 3){
   val offset: Option[U2] = None
@@ -127,14 +121,12 @@ case class AppendFrame(frameType: U1, offsetDelta: U2, locals: Array[Verificatio
   val size = 3 + VerificationTypeInfoTags.size(locals)
 }
 
-case class FullFrame(frameType: U1,
-  offsetDelta: U2,
+case class FullFrame(offsetDelta: U2,
   numberOfLocals: U2,
   locals: Array[VerificationTypeInfo],
   numberOfStackItems: U2,
   stack: Array[VerificationTypeInfo]
-) extends StackMapFrame(frameType) {
-  assert(StackMapFrameTypes.FullFrame.contains(frameType))
+) extends StackMapFrame(255) {
   assert(locals.length == numberOfLocals)
   assert(stack.length == numberOfStackItems)
 

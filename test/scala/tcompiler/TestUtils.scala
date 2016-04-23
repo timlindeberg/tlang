@@ -7,6 +7,7 @@ import tcompiler.analyzer.Types.{TUntyped, Typed}
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees.{Empty, Program}
 import tcompiler.lexer.Token
+import tcompiler.utils.Context
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
@@ -15,7 +16,8 @@ import scala.sys.process.{ProcessLogger, _}
 
 object TestUtils extends FlatSpec {
 
-  val Resources      = "./test/resources/"
+  val TestDirectory = "gen"
+  val Resources      = "test/resources/"
   val SolutionPrefix = ".kool-solution"
   val Interpreter    = new Interpreter
   val Timeout        = duration.Duration(2, "sec")
@@ -34,11 +36,20 @@ object TestUtils extends FlatSpec {
     }
   }
 
-  def executeTProgram(f: File, prefix: String): String =
-    executeTProgram(prefix + f.getName, f.getName.dropRight(Main.FileEnding.length))
+  def getTestContext(file: File) = {
+    val mainName = file.getName.replaceAll(Main.FileEnding, "")
+    val outDir = new File(s"$TestUtils/$mainName/")
+    new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(outDir))
+  }
+
+  def executeTProgram(testFile: File): String = {
+    val mainName = testFile.getName.replaceAll(Main.FileEnding, "")
+    val outDir = new File(s"$TestUtils/$mainName/")
+    executeTProgram(outDir.getAbsolutePath, mainName)
+  }
 
   def executeTProgram(classPath: String, mainName: String): String = {
-    val f = Future(blocking(s"java -noverify -cp $classPath $mainName" !!))
+    val f = Future(blocking("java -cp \"" + classPath + "\" " + mainName !!))
     try {
       Await.result(f, Timeout)
     } catch {
@@ -61,6 +72,7 @@ object TestUtils extends FlatSpec {
       Array[File]()
     }
   }
+
   def format(token: Token): String = token + "(" + token.line + ":" + token.col + ")"
 
   def readOptions(file: File): Map[String, Any] = {

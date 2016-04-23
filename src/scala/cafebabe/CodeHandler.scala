@@ -1,7 +1,6 @@
 package cafebabe
 
-import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map => MutableMap}
+import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
 /** A code handler contains methods to help the generation of method bodies.
  * The general usage is to generate abstract byte codes, then freeze the code,
@@ -51,7 +50,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     val bc = typesToTypesAndBytes(paramTypes)
     // that's a dirty trick, but this info is very private..
     // only used for the ArgLoad ABC.
-    if(isStatic) bc else (("L;", 1) +: bc)
+    if(isStatic) bc else ("L;", 1) +: bc
   }
   protected[cafebabe] val argSlotMap : Map[Int,(String,Int)] = {
     var acc : Int = 0
@@ -141,22 +140,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       }
     }
 
-    println(abcList)
-    locally {
-      var pc : Int = 0
-      for(abc <- abcList) {
-        abc match {
-          case co: ControlOperator => {
-            co.offset = labels.getOrElse(co.target, 0) - pc
-          }
-          case _ => ;
-        }
-        pc = pc + abc.size
-      }
-    }
 
-    val stackMapFrames = ArrayBuffer[StackMapFrame]()
-    val localVariables = mutable.Stack[VerificationTypeInfo]()
 
 
     // we build the line number table.
@@ -165,8 +149,6 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       lnta.setEntries(lineInfo.toSeq)
       code.attributes = lnta +: code.attributes
     }
-
-    val smta = new StackMapTableAttribute(constantPool.addString("StackMapTable"))
 
     // we now compute the maximum stack height.
     code.maxStack = computeMaxStack(abcList)

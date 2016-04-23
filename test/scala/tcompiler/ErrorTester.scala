@@ -2,7 +2,7 @@ package tcompiler
 
 import java.io.File
 
-import tcompiler.utils.{CompilationException, Context}
+import tcompiler.utils.CompilationException
 
 /**
  * Created by Tim Lindeberg on 4/2/2016.
@@ -14,7 +14,7 @@ abstract class ErrorTester extends Tester {
   def Seperator = "---------------------------------------------------------------------\n"
 
   def testFile(file: File): Unit = {
-    val ctx = Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(new File("./gen/" + file.getName + "/")))
+    val ctx = getTestContext(file)
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {

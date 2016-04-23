@@ -26,7 +26,8 @@ lazy val core = (project in file(".")).
 			"org.apache.bcel" % "bcel" % "5.2",
 			"org.apache.commons" % "commons-lang3" % "3.4",
 			"org.scala-lang" % "scala-compiler" % "2.11.8",
-			"org.backuity" %% "ansi-interpolator" % "1.1" % "provided"
+			"org.backuity" %% "ansi-interpolator" % "1.1" % "provided",
+			"org.ow2.asm" % "asm-all" % "5.1"
 		),
 
 		scalaSource in Compile := baseDirectory.value / "src/scala",

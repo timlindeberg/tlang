@@ -1,13 +1,14 @@
 package tcompiler
 package code
 
-import java.io.File
+import java.io.{BufferedInputStream, File, FileInputStream, FileOutputStream}
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.ClassFileTypes._
 import cafebabe.Flags._
 import cafebabe._
+import org.objectweb.asm.{ClassReader, ClassWriter}
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
@@ -21,19 +22,18 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   import CodeGenerator._
 
   def run(ctx: Context)(prog: Program): Unit = {
-    val outDir = ctx.outDir.map(_.getPath + "/").getOrElse("")
     val sourceName = ctx.file.getName
 
     // output code in parallell
-    prog.classes.par.foreach {
-      case c: InternalClassDecl => generateClassFile(sourceName, c, outDir)
-      case c: Trait             => generateClassFile(sourceName, c, outDir)
+    prog.classes.foreach {
+      case c: InternalClassDecl => generateClassFile(sourceName, c, ctx.outDir)
+      case c: Trait             => generateClassFile(sourceName, c, ctx.outDir)
       case _                    =>
     }
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(sourceName: String, classDecl: ClassDecl, dir: String): Unit = {
+  private def generateClassFile(sourceName: String, classDecl: ClassDecl, dir: Option[File]): Unit = {
     val classFile = makeClassFile(classDecl)
 
     classDecl.vars.foreach { varDecl =>
@@ -69,8 +69,27 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     if (!hasConstructor)
       generateDefaultConstructor(classFile, classDecl)
 
-    val file = getFilePath(dir, classDecl.id.value)
+    val className = classDecl.id.value
+    val file = getFilePath(dir, className)
     classFile.writeToFile(file)
+
+    generateStackMapFrames(file)
+  }
+
+  private def generateStackMapFrames(file: String) = {
+    // Uses ASM libary to generate the stack map frames
+    // since Cafebabe does not support this.
+    val cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
+    val is = new BufferedInputStream(new FileInputStream(file))
+    val cr = new ClassReader(is)
+
+    cr.accept(cw, ClassReader.SKIP_FRAMES)
+    val bytes = cw.toByteArray
+    is.close()
+
+    val fileStream = new FileOutputStream(file)
+    fileStream.write(bytes)
+    fileStream.close()
   }
 
   private def makeClassFile(classDecl: ClassDecl) = {
@@ -188,15 +207,18 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     flags
   }
 
-  private def getFilePath(outDir: String, className: String): String = {
+  private def getFilePath(outDir: Option[File], className: String): String = {
+    val prefix = outDir.map(_.getAbsolutePath.replaceAll("\\\\", "/") + "/").getOrElse("")
+
     val split = className.split("/")
-    val packageDir = split.take(split.size - 1).mkString("/")
-    val filePath = outDir + packageDir
+    val packageDir = split.dropRight(1).mkString("/")
+    val filePath = prefix + packageDir
     val f = new File(filePath)
     if (!f.getAbsoluteFile.exists() && !f.mkdirs()) {
       sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
     }
-    outDir + className + ".class"
+
+    prefix + className + ".class"
   }
 
   private def addReturnValueAndStatement(ch: CodeHandler, tpe: Type) = tpe match {

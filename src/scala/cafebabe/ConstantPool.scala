@@ -17,11 +17,17 @@ class ConstantPool extends Streamable {
   private val methodRefMap: HashMap[(U2,U2),U2] = new HashMap[(U2,U2),U2]
   private val nameAndTypeMap: HashMap[(U2,U2),U2] = new HashMap[(U2,U2),U2]
 
+  /** Opposite maps */
+  private val classOppositeMap: HashMap[U2, U2] = new HashMap[U2, U2]
+  private val stringOppositeMap: HashMap[U2, String] = new HashMap[U2, String]
+
   /** The list of all entries in that constant pool. */
   private var entries: List[CPEntry] = Nil
 
   /** Returns the number of entries. */
   def size: U2 = entries.length
+
+  def getClassName(idx: U2): String = stringOppositeMap(classOppositeMap(idx))
 
   private var nextIndex: U2 = 1
 
@@ -77,6 +83,7 @@ class ConstantPool extends Streamable {
   def addString(s: String): U2 = stringMap.getOrElse(s, {
     val idx = addEntry(CPUtf8Info(encodeString(s)).setSource(s))
     stringMap += (s -> idx)
+    stringOppositeMap += (idx -> s)
     idx
   })
   def addStringConstant(strID: U2): U2 = stringConstMap.getOrElse(strID, {
@@ -87,6 +94,7 @@ class ConstantPool extends Streamable {
   def addClass(nameID: U2): U2 = classMap.getOrElse(nameID, {
     val idx = addEntry(CPClassInfo(nameID))
     classMap += (nameID -> idx)
+    classOppositeMap += (idx -> nameID)
     idx
   })
   def addFieldRef(classID: U2, natID: U2): U2 = fieldRefMap.getOrElse((classID,natID), {
