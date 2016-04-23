@@ -1,0 +1,8 @@
+trait A  {
+
+    var static A: Int = 1
+
+    var a: Int = 1 // res: N2022
+    Var B = 1 // res: N2022
+
+}

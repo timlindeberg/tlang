@@ -167,8 +167,8 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
       case DoubleLit(value)                                  => ch << Ldc(value)
       case StringLit(value)                                  => ch << Ldc(value)
       case id: Identifier                                    => load(id)
-      case This()                                            => ch << ArgLoad(0)
-      case Super()                                           => ch << ArgLoad(0)
+      case _: This                                           => ch << ArgLoad(0)
+      case _: Super                                          => ch << ArgLoad(0)
       case _: And |
            _: Or |
            _: Equals |

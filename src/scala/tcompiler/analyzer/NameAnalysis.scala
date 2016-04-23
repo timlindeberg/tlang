@@ -65,13 +65,13 @@ class NameAnalyser(ctx: Context, prog: Program) {
   def checkValidParenting(): Unit =
     prog.classes.foreach { classDecl =>
 
-      val nonTraits = classDecl.parents.filter(!_.getSymbol.isTrait)
+      val nonTraits = classDecl.parents.filter(!_.getSymbol.isInstanceOf[TraitSymbol])
       if (nonTraits.size > 1) {
         ErrorExtendMultipleClasses(nonTraits(1))
         return
       }
 
-      val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isTrait)
+      val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isInstanceOf[TraitSymbol])
       if (nonTraitsAfterFirst.nonEmpty)
         ErrorNonFirstArgumentIsClass(nonTraits.head)
     }
@@ -81,8 +81,11 @@ class NameAnalyser(ctx: Context, prog: Program) {
     case Program(_, _, classes)                                                      =>
       classes.foreach(addSymbols(_, globalScope))
     case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
-      val isTrait = classDecl.isInstanceOf[Trait]
-      val newSymbol = new ClassSymbol(name, isTrait).setPos(id)
+      val newSymbol = classDecl match {
+        case _: Trait => new TraitSymbol(name)
+        case _        => new ClassSymbol(name)
+      }
+      newSymbol.setPos(id)
       ensureClassNotDefined(globalScope.classes, id.value, id)
       id.setSymbol(newSymbol)
       classDecl.setSymbol(newSymbol)
@@ -92,11 +95,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl@VarDecl(tpe, id, init, _)                                   =>
-      val newSymbol = new VariableSymbol(id.value, Field, varDecl.modifiers, Some(classSymbol)).setPos(varDecl)
+    case varDecl@VarDecl(tpe, id, init, modifiers)                                   =>
+      val newSymbol = new VariableSymbol(id.value, Field, modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
+
+      if(classSymbol.isInstanceOf[TraitSymbol] && !modifiers.contains(Static()))
+        ErrorNonStaticFieldInTrait(varDecl)
 
       // Check usage for private fields
       varDecl.accessability match {
@@ -111,10 +117,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
       methodDecl.setSymbol(newSymbol)
       args.foreach(addSymbols(_, newSymbol))
 
-      if (!classSymbol.isTrait && stat.isEmpty)
+      if (!classSymbol.isInstanceOf[TraitSymbol] && stat.isEmpty)
         ErrorClassUnimplementedMethod(methodDecl)
 
-      if (classSymbol.isTrait && retType.isEmpty && stat.isEmpty)
+      if (classSymbol.isInstanceOf[TraitSymbol] && retType.isEmpty && stat.isEmpty)
         ErrorUnimplementedMethodNoReturnType(methodDecl.signature, methodDecl)
     case constructorDecl@ConstructorDecl(_, id, args, _, _)                  =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
@@ -150,7 +156,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
       formal.setSymbol(newSymbol)
 
       // Don't put out warning when args is unused since it's implicitly defined
-      if (methSymbol.ast.isMain || methSymbol.classSymbol.isTrait)
+      if (methSymbol.ast.isMain || methSymbol.classSymbol.isInstanceOf[TraitSymbol])
         variableUsage += newSymbol -> true
       else
         variableUsage += newSymbol -> false
@@ -290,17 +296,17 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
 
   private def setParentSymbol(id: ClassIdentifier, parents: List[ClassIdentifier], classDecl: ClassDecl): Unit = {
-   parents.foreach { parentId =>
-     globalScope.lookupClass(parentId.value) match {
-       case Some(parentSymbol) =>
-         parentId.setSymbol(parentSymbol)
-         // This takes O(n), shouldnt be a big problem though
-         classDecl.getSymbol.parents = classDecl.getSymbol.parents :+ parentSymbol
-       case None               =>
-         ErrorParentNotDeclared(parentId.value, parentId)
-     }
-   }
- }
+    parents.foreach { parentId =>
+      globalScope.lookupClass(parentId.value) match {
+        case Some(parentSymbol) =>
+          parentId.setSymbol(parentSymbol)
+          // This takes O(n), shouldnt be a big problem though
+          classDecl.getSymbol.parents = classDecl.getSymbol.parents :+ parentSymbol
+        case None               =>
+          ErrorParentNotDeclared(parentId.value, parentId)
+      }
+    }
+  }
 
 
   private class StatementBinder(scope: Symbol, isStaticContext: Boolean) {
@@ -425,15 +431,27 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
             case _                          => ???
           }
-        case superSymbol: Super                   =>
+        case superSymbol@Super(specifier)         =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)
                 ErrorSuperInStaticContext(superSymbol)
               val parents = methodSymbol.classSymbol.parents
 
-              val symbol = if (parents.isEmpty) Symbols.ObjectClass else parents.last
-              superSymbol.setSymbol(symbol)
+              specifier match {
+                case Some(spec)              =>
+                  parents.find(_.name == spec.value) match {
+                    case Some(p) =>
+                      superSymbol.setSymbol(p)
+                    case None    =>
+                      ErrorSuperSpecifierDoesNotExist(spec.value, methodSymbol.classSymbol.name, spec)
+                  }
+                case None if parents.isEmpty =>
+                  superSymbol.setSymbol(Symbols.ObjectClass)
+                case _                       =>
+                  superSymbol.setSymbol(methodSymbol.classSymbol)
+                // Set symbol to this and let typchecker decide later.
+              }
             case _: ClassSymbol             => ErrorSuperInStaticContext(superSymbol)
             case _                          => ???
           }
@@ -481,7 +499,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
   private def error(errorCode: Int, msg: String, tree: Positioned) = {
     tree match {
       case id: Identifier      => id.setSymbol(new ErrorSymbol)
-      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR", false))
+      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR"))
       case _                   =>
     }
 
@@ -564,6 +582,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def ErrorSuperInStaticContext(pos: Positioned) =
     error(20, "'super' can not be used in a static context.", pos)
+
+  private def ErrorSuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, pos: Positioned) =
+    error(21, s"Super refers to class '$inheritedClass' which '$clazz' does not inherit from.", pos)
+
+  private def ErrorNonStaticFieldInTrait(pos: Positioned) =
+    error(22, s"Traits can only declare static fields.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings

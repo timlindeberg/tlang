@@ -1,6 +1,5 @@
 // Res: C
-// Res: B
-// Res: Base1
+// Res: Base2
 new C().Print()
 
 trait Base1 {

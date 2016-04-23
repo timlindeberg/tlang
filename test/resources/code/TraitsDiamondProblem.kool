@@ -1,9 +1,9 @@
-// ignore
-new CowboyArtist().draw() // res: A pretty painting
+new CowboyArtist().Draw() // res: A pretty painting
 
 trait Drawable {
 
     Def Draw(): Unit
+
 }
 
 trait Cowboy : Drawable {
@@ -14,4 +14,4 @@ trait Artist : Drawable {
     Def Draw() = println("A pretty painting")
 }
 
-class CowboyArtist : Cowboy, Artist
+class CowboyArtist : Cowboy, Artist {}

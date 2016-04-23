@@ -13,7 +13,6 @@ object ByteCodes {
   }
 
   private implicit def intToOptionInt(i: Int) = Some(i)
-  private implicit def verificationTypeToOption(v: VerificationTypeInfo) = Some(v)
 
   // @formatter:off
   case object AALOAD          extends ByteCode(0x32, -1, 1)

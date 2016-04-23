@@ -41,7 +41,7 @@ object TypeChecking extends Pipeline[Program, Program] {
     }
 
 
-    val c = new ClassSymbol("", false)
+    val c = new ClassSymbol("")
     val tc = new TypeChecker(ctx, new MethodSymbol("", c, methodDecl))
 
     tc.checkMethodUsage()
@@ -155,7 +155,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
-    case PrintStatement(expr)             => tcExpr(expr) // TODO: Allow unit for println
+    case PrintStatement(expr)             =>
+      tcExpr(expr) // TODO: Allow unit for println
+      if(expr.getType == TUnit)
+        ErrorCantPrintUnitType(expr)
     case Error(expr)                      =>
       tcExpr(expr, TString)
     case ret@Return(Some(expr))           =>
@@ -421,16 +424,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         val argTypes = exprs.map(tcExpr(_))
         tpe.getType match {
           case TObject(classSymbol) =>
-            if(classSymbol.isTrait)
-              ErrorInstantiateTrait(classSymbol.name, newDecl)
-
-
-            classSymbol.lookupMethod("new", argTypes) match {
-              case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
-              case None if exprs.nonEmpty  =>
-                val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
-                ErrorDoesntHaveConstructor(classSymbol.name, methodSignature, newDecl)
-              case _                       =>
+            classSymbol match {
+              case _: TraitSymbol => ErrorInstantiateTrait(classSymbol.name, newDecl)
+              case _ =>
+                classSymbol.lookupMethod("new", argTypes) match {
+                  case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
+                  case None if exprs.nonEmpty  =>
+                    val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
+                    ErrorDoesntHaveConstructor(classSymbol.name, methodSignature, newDecl)
+                  case _                       =>
+                }
             }
           case primitiveType        =>
             if(exprs.size > 1){
@@ -500,15 +503,35 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     res
   }
 
-  def tcMethodCall(mc: MethodCall) = {
+  def tcMethodCall(mc: MethodCall): Type = {
     val obj = mc.obj
     val meth = mc.meth
     val methodCallArgs = mc.args
 
-    val objType = tcExpr(obj)
+    var objType = tcExpr(obj)
     val argTypes = methodCallArgs.map(tcExpr(_))
 
     def methSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
+
+
+    // Set type of super call based on the method called
+    // if it needs to be looked up dynamically
+    obj match {
+      case s@Super(None) if s.getSymbol.parents.nonEmpty =>
+        // supers symbol is set to this in name analyzer so we can look up the
+        // desired method
+        val thisSymbol = s.getSymbol
+        thisSymbol.lookupParentMethod(meth.value, argTypes) match {
+          case Some(methodSymbol) =>
+            val classSymbol = methodSymbol.classSymbol
+            objType = classSymbol.getType
+            s.setSymbol(classSymbol)
+            s.setType(objType)
+          case None =>
+            return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, mc)
+        }
+      case _ =>
+    }
 
     val tpe = objType match {
       case TObject(classSymbol) =>
@@ -651,8 +674,27 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
 
-  private def typeCheckField(obj: ExprTree, fieldId: Identifier, pos: Positioned) = {
-    val objType = tcExpr(obj)
+  private def typeCheckField(obj: ExprTree, fieldId: Identifier, pos: Positioned): Type = {
+    var objType = tcExpr(obj)
+    val fieldName = fieldId.value
+
+    // Set type of super call based on the method called
+    // if it needs to be looked up dynamically
+    obj match {
+      case s@Super(None) if s.getSymbol.parents.nonEmpty =>
+        // supers symbol is set to this in name analyzer so we can look up the
+        // desired method
+        val thisSymbol = s.getSymbol
+        thisSymbol.lookupParentVar(fieldName) match {
+          case Some(variableSymbol) =>
+            val classSymbol = variableSymbol.classSymbol.get
+            objType = classSymbol.getType
+            s.setSymbol(classSymbol)
+            s.setType(objType)
+          case None => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, pos)
+        }
+      case _ =>
+    }
 
     objType match {
       case TObject(classSymbol) =>
@@ -840,6 +882,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   private def ErrorOverridingMethodDifferentReturnType(method: String, clazz: String, retType: String, parent: String, parentType: String, pos: Positioned) =
     error(27, s"Overriding method '$method' in class '$clazz' has return " +
       s"type '$retType' while the method in parent '$parent' has return type '$parentType'.", pos)
+
+  private def ErrorCantPrintUnitType(pos: Positioned) =
+    error(28, s"Cannot print an expression of type Unit.", pos)
+
+  private def ErrorNoSuperTypeHasMethod(clazz: String, method: String, pos: Positioned) =
+    error(29, s"No super type of class '$clazz' implements a method '$method'.", pos)
+
+  private def ErrorNoSuperTypeHasField(clazz: String, field: String, pos: Positioned) =
+    error(30, s"No super type of class '$clazz' has a field '$field'.", pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Warnings

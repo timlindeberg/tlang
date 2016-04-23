@@ -784,6 +784,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
     * <term> ::= <termFirst> { termRest }
     */
+
+
+
   def term(): ExprTree = {
     /**
       * <termFirst> ::= "(" <expression> ")"
@@ -803,8 +806,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       * | true
       * | false
       * | this
-      * | super.<identifier>
-      * | super.<identifier> "(" <expression> { "," <expression> } ")
+      * | <superCall>.<identifier>
+      * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
       * | new <tpe>"[" <expression> "] { "[" <expression> "]" }
       * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
       */
@@ -895,10 +898,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           eat(THIS)
           This()
         case SUPER =>
-          eat(SUPER)
-          val sup = Super().setPos(startPos, nextToken)
+          val sup = superCall()
           eat(DOT)
           val id = identifier()
+
           if (nextTokenKind == LPAREN) {
             eat(LPAREN)
             val exprs = commaList(expression)
@@ -1018,6 +1021,19 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     termRest(termFirst())
   }
 
+  /**
+    * <superCall> ::= super [ "<" <identifier> "> ]
+    */
+  def superCall(): ExprTree = {
+    val startPos = nextToken
+    eat(SUPER)
+    val specifier = optional(() => {
+      val id = identifier()
+      eat(GREATERTHAN)
+      id
+    }, LESSTHAN)
+    Super(specifier).setPos(startPos, nextToken)
+  }
 
   /**
     * Parses expressions of type

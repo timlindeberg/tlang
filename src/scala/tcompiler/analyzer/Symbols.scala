@@ -29,7 +29,7 @@ object Symbols {
     val name: String
   }
 
-  val ObjectClass: ClassSymbol = new ClassSymbol("Object", false)
+  val ObjectClass: ClassSymbol = new ClassSymbol("Object")
   ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
@@ -39,7 +39,7 @@ object Symbols {
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
 
-  class ClassSymbol(val name: String, val isTrait: Boolean) extends Symbol {
+  class ClassSymbol(val name: String) extends Symbol {
     var parents  : List[ClassSymbol]    = List()
     var methods  : List[MethodSymbol]   = Nil
     var operators: List[OperatorSymbol] = Nil
@@ -71,6 +71,15 @@ object Symbols {
         case None if recursive && parents.nonEmpty => lookupParentMethod(name, args)
         case _                                     => None
       }
+
+
+    def lookupParentVar(name: String): Option[VariableSymbol] = {
+      val matchingVars = parents.map(_.lookupVar(name)).filter(_.isDefined)
+      if (matchingVars.isEmpty)
+        None
+      else
+        matchingVars.head
+    }
 
     def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] =
       members.get(name) match {
@@ -127,6 +136,8 @@ object Symbols {
       }
     }
   }
+
+  class TraitSymbol(override val name: String) extends ClassSymbol(name)
 
   class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val ast: FuncTree) extends Symbol with Modifiable {
     val modifiers                        = ast.modifiers

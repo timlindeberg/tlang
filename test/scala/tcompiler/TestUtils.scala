@@ -38,15 +38,16 @@ object TestUtils extends FlatSpec {
 
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
-    val outDir = new File(s"$TestUtils/$mainName/")
+    val outDir = getOutDir(mainName)
     new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(outDir))
   }
 
   def executeTProgram(testFile: File): String = {
     val mainName = testFile.getName.replaceAll(Main.FileEnding, "")
-    val outDir = new File(s"$TestUtils/$mainName/")
+    val outDir = getOutDir(mainName)
     executeTProgram(outDir.getAbsolutePath, mainName)
   }
+
 
   def executeTProgram(classPath: String, mainName: String): String = {
     val f = Future(blocking("java -cp \"" + classPath + "\" " + mainName !!))
@@ -144,6 +145,8 @@ object TestUtils extends FlatSpec {
     })
     hasTypes
   }
+
+  private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")
 
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 

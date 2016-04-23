@@ -5,14 +5,26 @@
 object TestMain {
   def main(args: Array[String]) {
     val a = new A
-    val b = a.anImplementedMethod(1)
+    val b = a.anImplementedMethod()
+    println(b)
   }
 }
 
-class A extends Test
+class A extends Test1 with Test2 {
+  override def anImplementedMethod(): Int = super[Test1].anImplementedMethod()
+}
 
-trait Test {
 
-  def anImplementedMethod(i: Int): Int = 1
+trait Test1 {
+
+  def anImplementedMethod(): Int = 1
 
 }
+
+
+trait Test2 {
+
+  def anImplementedMethod(): Int = 2
+
+}
+

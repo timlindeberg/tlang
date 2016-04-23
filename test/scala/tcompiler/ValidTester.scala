@@ -32,8 +32,8 @@ trait ValidTester extends Tester {
       val sol = parseSolutions(file)
       assertCorrect(res, sol, "")
     } catch {
-      case t: CompilationException  => fail("Compilation failed:\n" + t.getMessage)
-      case t: FileNotFoundException => fail("Invalid test, file not found: " + file.getPath)
+      case t: CompilationException  => fail(s"Compilation failed:\n ${t.getMessage}")
+      case t: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
     }
   }
 

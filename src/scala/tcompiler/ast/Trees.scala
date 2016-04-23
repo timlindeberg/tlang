@@ -39,7 +39,7 @@ object Trees {
     var vars   : List[VarDecl]
     var methods: List[FuncTree]
 
-    def getImplementedTraits = parents.filter(c => c.getSymbol.isTrait)
+    def getImplementedTraits = parents.filter(c => c.getSymbol.isInstanceOf[TraitSymbol])
   }
 
   trait Modifiable {
@@ -236,7 +236,7 @@ object Trees {
   }
 
   case class This() extends ExprTree with Symbolic[ClassSymbol]
-  case class Super() extends ExprTree with Symbolic[ClassSymbol]
+  case class Super(specifier: Option[Identifier]) extends ExprTree with Symbolic[ClassSymbol]
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
     def dimension = sizes.size
   }

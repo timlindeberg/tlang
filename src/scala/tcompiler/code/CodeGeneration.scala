@@ -12,7 +12,6 @@ import org.objectweb.asm.{ClassReader, ClassWriter}
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
-import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.collection.mutable
@@ -25,7 +24,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val sourceName = ctx.file.getName
 
     // output code in parallell
-    prog.classes.foreach {
+    prog.classes.par.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, ctx.outDir)
       case c: Trait             => generateClassFile(sourceName, c, ctx.outDir)
       case _                    =>
@@ -38,7 +37,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     classDecl.vars.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
-      classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name).setFlags(getFlags(varDecl))
+      val flags = getFieldFlags(varDecl)
+      classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name).setFlags(flags)
     }
 
     initializeStaticFields(classDecl, classFile)
@@ -59,11 +59,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           val operatorSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
           classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.methodName, argTypes)
       }
-      var flags: U2 = getFlags(methodDecl)
+      var flags: U2 = getMethodFlags(methodDecl)
       if (methodDecl.isAbstract)
         flags |= METHOD_ACC_ABSTRACT
       methodHandle.setFlags(flags)
-      generateMethod(methodHandle.codeHandler, methodDecl)
+      generateMethod(methodHandle, methodDecl)
     }
 
     if (!hasConstructor)
@@ -79,13 +79,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   private def generateStackMapFrames(file: String) = {
     // Uses ASM libary to generate the stack map frames
     // since Cafebabe does not support this.
-    val cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
-    val is = new BufferedInputStream(new FileInputStream(file))
-    val cr = new ClassReader(is)
+    val classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
+    val inputStream = new BufferedInputStream(new FileInputStream(file))
+    val classReader = new ClassReader(inputStream)
 
-    cr.accept(cw, ClassReader.SKIP_FRAMES)
-    val bytes = cw.toByteArray
-    is.close()
+    classReader.accept(classWriter, ClassReader.SKIP_FRAMES)
+    inputStream.close()
+    val bytes = classWriter.toByteArray
 
     val fileStream = new FileOutputStream(file)
     fileStream.write(bytes)
@@ -97,11 +97,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val parents = classSymbol.parents
     val className = classSymbol.name
 
-    val (parent, traits) = if(classSymbol.isTrait)
+    val (parent, traits) = if (classSymbol.isInstanceOf[TraitSymbol])
       (None, parents)
     else if (parents.isEmpty)
       (None, List())
-    else if (parents.head.isTrait)
+    else if (parents.head.isInstanceOf[TraitSymbol])
       (None, parents)
     else
       (Some(parents.head.name), parents.drop(1))
@@ -110,14 +110,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     traits.foreach(t => classFile.addInterface(t.name))
     classFile.setSourceFile(classDecl.file.getName)
 
-    val flags = if(classSymbol.isTrait) TraitFlags else ClassFlags
+    val flags = classSymbol match {
+      case _: TraitSymbol => TraitFlags
+      case _: ClassSymbol => ClassFlags
+    }
     classFile.setFlags(flags)
     // Defualt is public
 
     classFile
   }
 
-  private def generateMethod(ch: CodeHandler, methTree: FuncTree): Unit = {
+  private def generateMethod(mh: MethodHandler, methTree: FuncTree): Unit = {
     val methSym = methTree.getSymbol
     val variableMap = mutable.HashMap[VariableSymbol, Int]()
 
@@ -131,16 +134,17 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           offset += 1
         }
     }
-    val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)
-
-    methTree.stat.ifDefined(codeGenerator.compileStat(_))
-
-    addReturnStatement(ch, methTree)
-    ch.freeze
+    if (!methTree.isAbstract) {
+      val ch = mh.codeHandler
+      val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)
+      codeGenerator.compileStat(methTree.stat.get)
+      addReturnStatement(ch, methTree)
+      ch.freeze
+    }
   }
 
   private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl): Unit = {
-    if(classDecl.getSymbol.isTrait)
+    if (classDecl.getSymbol.isInstanceOf[TraitSymbol])
       return
 
     val mh = generateConstructor(None, classFile, classDecl)
@@ -190,20 +194,37 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     }
   }
 
-  private def getFlags(obj: Modifiable) = {
+  private def getMethodFlags(method: FuncTree) = {
     var flags: U2 = 0
-    val isMethod = obj match {
-      case _: MethodDecl | _: ConstructorDecl | _: OperatorDecl => true
-      case _                                                    => false
-    }
 
-    obj.modifiers.foreach {
-      case Public()    => flags |= (if (isMethod) METHOD_ACC_PUBLIC else FIELD_ACC_PUBLIC)
-      case Private()   => flags |= (if (isMethod) METHOD_ACC_PRIVATE else FIELD_ACC_PRIVATE)
-      case Protected() => flags |= (if (isMethod) METHOD_ACC_PROTECTED else FIELD_ACC_PROTECTED)
-      case Static()    => flags |= (if (isMethod) METHOD_ACC_STATIC else FIELD_ACC_STATIC)
+    method.modifiers.foreach {
+      case Public()    => flags |= METHOD_ACC_PUBLIC
+      case Private()   => flags |= METHOD_ACC_PRIVATE
+      case Protected() => flags |= METHOD_ACC_PROTECTED
+      case Static()    => flags |= METHOD_ACC_STATIC
       case _           =>
     }
+    flags
+  }
+
+  private def getFieldFlags(varDecl: VarDecl) = {
+    var flags: U2 = 0
+
+    varDecl.modifiers.foreach {
+      case Public()    => flags |= FIELD_ACC_PUBLIC
+      case Private()   => flags |= FIELD_ACC_PRIVATE
+      case Protected() => flags |= FIELD_ACC_PROTECTED
+      case Static()    => flags |= FIELD_ACC_STATIC
+      case _           =>
+    }
+
+    // TODO: Add final variables. For now all static fields in interfaces are
+    // implicitly final
+    val classSymbol = varDecl.getSymbol.classSymbol.get
+    if(classSymbol.isInstanceOf[TraitSymbol])
+      flags |= FIELD_ACC_FINAL
+
+
     flags
   }
 
@@ -214,9 +235,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val packageDir = split.dropRight(1).mkString("/")
     val filePath = prefix + packageDir
     val f = new File(filePath)
-    if (!f.getAbsoluteFile.exists() && !f.mkdirs()) {
+    if (!f.getAbsoluteFile.exists() && !f.mkdirs())
       sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
-    }
+
 
     prefix + className + ".class"
   }
@@ -243,10 +264,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
-
-    val superClassName =
-      if (ct.parents.isEmpty) JavaObject
-      else ct.parents.head.value
+    val superClassName = ct.getSymbol.parents match {
+      case (_: TraitSymbol) :: tail => JavaObject
+      case (c: ClassSymbol) :: tail => c.name
+      case Nil                      => JavaObject
+    }
 
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, CodeGenerator.ConstructorName, "()V")
