@@ -13,7 +13,7 @@ trait Tester extends FlatSpec with Matchers {
 
   import TestUtils._
 
-  val PrintErrors = true
+  val PrintErrors = false
 
   def Name: String
   def Path: String

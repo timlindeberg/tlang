@@ -14,14 +14,14 @@ println(f.TestV1()) // res: E
 
 trait A {
 
-    Var static V = "A"
+    Val static V = "A"
     Def Test() = "A"
 
 }
 
 trait B {
 
-    Var static V = "B"
+    Val static V = "B"
     Def Test() = "B"
 
 }
@@ -42,7 +42,7 @@ class D: A, B {
 
 trait E {
 
-    Var static V1 = "E"
+    Val static V1 = "E"
     Def Test2() = "E"
 
 }

@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{PrintStatement, UselessStatement}
+import tcompiler.ast.TreeGroups.{IncrementDecrement, PrintStatement, UselessStatement}
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
@@ -17,6 +17,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     nameAnalyzer.bindIdentifiers()
     nameAnalyzer.checkInheritanceCycles()
     nameAnalyzer.checkVariableUsage()
+    nameAnalyzer.checkVariableReassignments()
     nameAnalyzer.checkValidParenting()
     prog
   }
@@ -25,8 +26,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 class NameAnalyser(ctx: Context, prog: Program) {
 
-  private val LocationPrefix = "N"
-  private var variableUsage  = Map[VariableSymbol, Boolean]()
+  private val LocationPrefix       = "N"
+  private var variableUsage        = Map[VariableSymbol, Boolean]()
+  private var variableReassignment = Map[VariableSymbol, Boolean]()
 
   val globalScope = new GlobalScope
 
@@ -59,6 +61,14 @@ class NameAnalyser(ctx: Context, prog: Program) {
       case (variable, used) =>
         if (!used)
           WarningUnusedVar(variable)
+    }
+  }
+
+  def checkVariableReassignments() = {
+    variableReassignment foreach {
+      case (variable, reassigned) =>
+        if (!reassigned)
+          WarningCouldBeVal(variable.name, variable)
     }
   }
 
@@ -95,14 +105,15 @@ class NameAnalyser(ctx: Context, prog: Program) {
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl@VarDecl(tpe, id, init, modifiers)                                   =>
+    case varDecl@VarDecl(tpe, id, init, modifiers)                           =>
       val newSymbol = new VariableSymbol(id.value, Field, modifiers, Some(classSymbol)).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
 
-      if(classSymbol.isInstanceOf[TraitSymbol] && !modifiers.contains(Static()))
-        ErrorNonStaticFieldInTrait(varDecl)
+      val isStaticFinal = modifiers.contains(Static()) && modifiers.contains(Final())
+      if (classSymbol.isInstanceOf[TraitSymbol] && !isStaticFinal)
+        ErrorNonStaticFinalFieldInTrait(varDecl)
 
       // Check usage for private fields
       varDecl.accessability match {
@@ -149,14 +160,15 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
     case formal@Formal(_, id) =>
-
-      val newSymbol = new VariableSymbol(id.value, Argument).setPos(id)
+      val modifiers: Set[Modifier] = Set(Private(), Final())
+      val newSymbol = new VariableSymbol(id.value, Argument, modifiers).setPos(id)
       ensureIdentiferNotDefined(methSymbol.params, id.value, id)
       id.setSymbol(newSymbol)
       formal.setSymbol(newSymbol)
 
       // Don't put out warning when args is unused since it's implicitly defined
-      if (methSymbol.ast.isMain || methSymbol.classSymbol.isInstanceOf[TraitSymbol])
+      // or if the method is abstract
+      if (methSymbol.ast.isMain || methSymbol.ast.isAbstract)
         variableUsage += newSymbol -> true
       else
         variableUsage += newSymbol -> false
@@ -340,6 +352,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
           }
 
           variableUsage += newSymbol -> false
+          val isFinal = modifiers.contains(Final())
+          if (!isFinal)
+            variableReassignment += newSymbol -> false
 
           init collect { case expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
 
@@ -382,7 +397,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
           localVars
       }
 
-    def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)
+    def bindExpr(tree: ExprTree): Unit = {
+      bindExpr(tree, Map(), 0)
+    }
 
     private def bindExpr(tree: ExprTree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Unit =
       Trees.traverse(tree, (parent, current) => Some(current) collect {
@@ -410,19 +427,35 @@ class NameAnalyser(ctx: Context, prog: Program) {
           }
         case FieldRead(obj, _)                    =>
           bind(obj, localVars, scopeLevel)
-        case FieldAssign(obj, _, expr)            =>
+        case pos@FieldAssign(obj, id, expr)       =>
           bind(obj, localVars, scopeLevel)
           bind(expr, localVars, scopeLevel)
-        case id: Identifier                       => parent match {
+        case pos@Assign(id, expr)                 =>
+          checkReassignment(id, pos)
+          id.getSymbol match {
+            case v: VariableSymbol => variableReassignment += v -> true
+            case _                 => ???
+          }
+        case pos@IncrementDecrement(expr) =>
+          expr match {
+            case id: Identifier =>
+              checkReassignment(id, pos)
+              id.getSymbol match {
+                case v: VariableSymbol => variableReassignment += v -> true
+                case _                 => ???
+              }
+            case _ =>
+          }
+        case id: Identifier               => parent match {
           case _: MethodCall  =>
           case _: Instance    =>
           case _: FieldRead   =>
           case _: FieldAssign =>
           case _              => setIdentiferSymbol(id, localVars)
         }
-        case typeTree: TypeTree                   => setType(typeTree)
-        case NewArray(tpe, size)                  => setType(tpe)
-        case thisSymbol: This                     =>
+        case typeTree: TypeTree           => setType(typeTree)
+        case NewArray(tpe, size)          => setType(tpe)
+        case thisSymbol: This             =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)
@@ -431,7 +464,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
             case _                          => ???
           }
-        case superSymbol@Super(specifier)         =>
+        case superSymbol@Super(specifier) =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)
@@ -456,6 +489,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case _                          => ???
           }
       })
+
+    private def checkReassignment(id: Identifier, pos: Positioned) = {
+      val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
+      if (varSymbol.modifiers.contains(Final()))
+        ErrorReassignmentToVal(id.value, pos)
+    }
 
     private def setIdentiferSymbol(id: Identifier, localVars: Map[String, VariableIdentifier]): Unit = {
       val symbol = getSymbolForIdentifier(id, localVars)
@@ -586,8 +625,12 @@ class NameAnalyser(ctx: Context, prog: Program) {
   private def ErrorSuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, pos: Positioned) =
     error(21, s"Super refers to class '$inheritedClass' which '$clazz' does not inherit from.", pos)
 
-  private def ErrorNonStaticFieldInTrait(pos: Positioned) =
-    error(22, s"Traits can only declare static fields.", pos)
+  private def ErrorNonStaticFinalFieldInTrait(pos: Positioned) =
+    error(22, s"Fields in traits need to be static and final.", pos)
+
+  private def ErrorReassignmentToVal(value: String, pos: Positioned) =
+    error(23, s"Cannot reassign value '$value'.", pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Warnings
@@ -610,6 +653,9 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
   private def WarningUselessStatement(pos: Positioned) =
     warning(3, s"Statement has no effect.", pos)
+
+  private def WarningCouldBeVal(value: String, pos: Positioned) =
+    warning(4, s"Variable '$value' could be val since it's never reassigned.", pos)
 
 
 }

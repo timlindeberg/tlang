@@ -161,10 +161,14 @@ object Printer {
   }
 
   private def varDecl(modifiers: Set[Modifier]) = {
+    val isFinal = modifiers.contains(Final())
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private()   => p"var"
-      case Public()    => p"Var"
-      case Protected() => p"var protected"
+      case Private() if isFinal   => p"val"
+      case Private()              => p"var"
+      case Public() if isFinal    => p"Val"
+      case Public()               => p"Var"
+      case Protected() if isFinal => p"val protected"
+      case Protected()            => p"var protected"
     }
 
     decl + mods(modifiers)

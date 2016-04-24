@@ -1,3 +1,4 @@
+// ignore
 var a = new A()
 
 a.lol() // res: lol

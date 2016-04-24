@@ -48,7 +48,6 @@ object Tokens {
   case object EOF               extends TokenKind("")
   case object COLON             extends TokenKind(":")
   case object SEMICOLON         extends TokenKind(";")
-  case object NEWLINE           extends TokenKind("\n")
   case object DOT               extends TokenKind(".")
   case object COMMA             extends TokenKind(",")
   case object EQSIGN            extends TokenKind("=")
@@ -103,7 +102,9 @@ object Tokens {
   case object PRIVDEF           extends TokenKind("def")
   case object PROTECTED         extends TokenKind("protected")
   case object PUBVAR            extends TokenKind("Var")
+  case object PUBVAL            extends TokenKind("Val")
   case object PRIVVAR           extends TokenKind("var")
+  case object PRIVVAL           extends TokenKind("val")
   case object STATIC            extends TokenKind("static")
   case object UNIT              extends TokenKind("Unit")
   case object STRING            extends TokenKind("String")
@@ -130,6 +131,11 @@ object Tokens {
   case object BREAK             extends TokenKind("break")
   case object CONTINUE          extends TokenKind("continue")
   // @formatter:on
+
+  case object NEWLINE           extends TokenKind("\n") {
+    override def toString = "<newline>"
+  }
+
 
 
   // Identifiers

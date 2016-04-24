@@ -1,0 +1,10 @@
+class A {
+
+    Def Test() = {
+        B.F = 2 // res: T2031
+    }
+}
+
+class B {
+    Val static F = 1
+}

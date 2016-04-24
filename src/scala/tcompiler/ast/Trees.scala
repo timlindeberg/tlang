@@ -67,6 +67,7 @@ object Trees {
 
   case class Static() extends Modifier
   case class Implicit() extends Modifier
+  case class Final() extends Modifier
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id       : Identifier

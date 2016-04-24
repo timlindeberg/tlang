@@ -4,7 +4,8 @@ println(new Loopy2().run(100)); // res: 300
 println(new Loopy3().run(100)); // res: 0
 
 class Looper {
-  Def run(times: Int): Int = {
+  Def run(t: Int): Int = {
+    var times = t
     var value: Int;
     value = 0;
     while((true || (1/0 == 1)) && value < times) {
@@ -72,7 +73,8 @@ class Loopy2 {
 }
 
 class Loopy3 {
-  Def run(times: Int): Int = {
+  Def run(t: Int): Int = {
+    var times = t
     var l: Loopy3;
     while (!(times < 1)) {
       l = new Loopy3();

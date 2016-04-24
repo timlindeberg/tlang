@@ -157,7 +157,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       tcStat(stat)
     case PrintStatement(expr)             =>
       tcExpr(expr) // TODO: Allow unit for println
-      if(expr.getType == TUnit)
+      if (expr.getType == TUnit)
         ErrorCantPrintUnitType(expr)
     case Error(expr)                      =>
       tcExpr(expr, TString)
@@ -170,7 +170,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
-    case _: Break | _: Continue =>
+    case _: Break | _: Continue           =>
     case expr: ExprTree                   =>
       tcExpr(expr)
   }
@@ -211,6 +211,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         val tpe = typeCheckField(obj, id, fa)
         fa.setType(tpe)
         tcExpr(expr, tpe)
+        checkReassignment(id, fa)
         tpe
       case newArray@NewArray(tpe, sizes) =>
         sizes.foreach(tcExpr(_, TInt))
@@ -426,7 +427,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case TObject(classSymbol) =>
             classSymbol match {
               case _: TraitSymbol => ErrorInstantiateTrait(classSymbol.name, newDecl)
-              case _ =>
+              case _              =>
                 classSymbol.lookupMethod("new", argTypes) match {
                   case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
                   case None if exprs.nonEmpty  =>
@@ -436,11 +437,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
                 }
             }
           case primitiveType        =>
-            if(exprs.size > 1){
+            if (exprs.size > 1) {
               ErrorNewPrimitive(tpe.name, argTypes, newDecl)
-            }else if(exprs.size == 1){
+            } else if (exprs.size == 1) {
               val arg = exprs.head.getType
-              if(!primitiveType.isImplicitlyConvertableFrom(arg))
+              if (!primitiveType.isImplicitlyConvertableFrom(arg))
                 ErrorNewPrimitive(tpe.name, argTypes, newDecl)
             }
         }
@@ -472,8 +473,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         }
       case IncrementDecrement(obj)       =>
         obj match {
-          case _: Identifier | _: ArrayRead | _: FieldRead =>
-          case _                                           => ErrorInvalidIncrementDecrementExpr(expression, obj)
+          case id: Identifier              => checkReassignment(id, expression)
+          case _: ArrayRead | _: FieldRead =>
+          case _                           => ErrorInvalidIncrementDecrementExpr(expression, obj)
         }
         tcExpr(obj, Types.tObject :: Types.primitives) match {
           case x: TObject => tcUnaryOperator(expression, x, Some(x)) // Requires same return type as type
@@ -527,10 +529,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             objType = classSymbol.getType
             s.setSymbol(classSymbol)
             s.setType(objType)
-          case None =>
+          case None               =>
             return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, mc)
         }
-      case _ =>
+      case _                                             =>
     }
 
     val tpe = objType match {
@@ -549,8 +551,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case None             =>
             ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, mc)
         }
-      case TArray(arrTpe) =>
-        if(methodCallArgs.nonEmpty || meth.value != "Size")
+      case TArray(arrTpe)       =>
+        if (methodCallArgs.nonEmpty || meth.value != "Size")
           ErrorMethodOnWrongType(methSignature, objType.toString, mc)
         TInt
       case _                    =>
@@ -620,7 +622,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
               parentMeth.classSymbol.name,
               parentMeth.getType.toString,
               meth)
-          case _ =>
+          case _                                                                =>
         }
       }
     }
@@ -631,10 +633,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       classDecl.getImplementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 
+  private def checkReassignment(id: Identifier, pos: Positioned) = {
+    val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
+    if (varSymbol.modifiers.contains(Final()))
+      ErrorReassignmentToVal(id.value, pos)
+  }
+
   private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
     val unimplementedMethods = implementedTrait.unimplementedMethods()
     unimplementedMethods.foreach { case (method, owningTrait) =>
-      if(!classDecl.getSymbol.implementsMethod(method))
+      if (!classDecl.getSymbol.implementsMethod(method))
         ErrorUnimplementedMethodFromTrait(classDecl.id.value,
           method.ast.signature,
           owningTrait.name, classDecl.id)
@@ -691,9 +699,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             objType = classSymbol.getType
             s.setSymbol(classSymbol)
             s.setType(objType)
-          case None => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, pos)
+          case None                 => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, pos)
         }
-      case _ =>
+      case _                                             =>
     }
 
     objType match {
@@ -891,6 +899,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   private def ErrorNoSuperTypeHasField(clazz: String, field: String, pos: Positioned) =
     error(30, s"No super type of class '$clazz' has a field '$field'.", pos)
+
+  private def ErrorReassignmentToVal(value: String, pos: Positioned) =
+    error(31, s"Cannot reassign value '$value'.", pos)
 
 
   //---------------------------------------------------------------------------------------

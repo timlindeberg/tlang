@@ -83,9 +83,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       nextTokenKind match {
         case CLASS | TRAIT    => classDeclaration()
         case PUBDEF | PRIVDEF =>
-          val access = accessRights(PUBDEF, PRIVDEF)
-          if (nextTokenKind == STATIC) eat(STATIC)
-          method(Set(access, Static()), access)
+          val pos = nextToken
+          val modifiers = methodModifiers()
+          method(modifiers + Static(), pos)
         case _                => statement()
       }
     }, EOF)
@@ -106,7 +106,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = InternalClassDecl(ClassIdentifier(mainName), List() , List(), List()).setPos(pos, nextToken)
+          val m = InternalClassDecl(ClassIdentifier(mainName), List(), List(), List()).setPos(pos, nextToken)
           classes ::= m
           m
       }
@@ -189,7 +189,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       val v = fieldDeclaration()
       endStatement()
       v
-    }, PUBVAR, PRIVVAR)
+    }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
     eat(RBRACE)
     classType(id, parents, vars, methods).setPos(startPos, nextToken)
@@ -207,20 +207,28 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <fieldDeclaration> ::= (Var | var) <modifiers> <variableEnd>
+    * <fieldDeclaration> ::= <fieldModifiers> <variableEnd>
     */
   def fieldDeclaration(): VarDecl = {
     val startPos = nextToken
-    varDeclEnd(modifiers(PRIVVAR, PUBVAR), startPos)
+    varDeclEnd(fieldModifiers(), startPos)
   }
 
   /**
-    * <localVarDeclaration> ::= var <variableEnd>
+    * <localVarDeclaration> ::= (var | val) <variableEnd>
     */
   def localVarDeclaration(): VarDecl = {
     val startPos = nextToken
-    eat(PRIVVAR)
-    varDeclEnd(Set(Private()), startPos)
+    val modifiers: Set[Modifier] = nextTokenKind match {
+      case PRIVVAR =>
+        eat(PRIVVAR)
+        Set(Private())
+      case PRIVVAL =>
+        eat(PRIVVAL)
+        Set(Private(), Final())
+      case _       => FatalWrongToken(PRIVVAR, PRIVVAL)
+    }
+    varDeclEnd(modifiers, startPos)
   }
 
   /**
@@ -246,12 +254,12 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <methodDeclaration> ::= (Def | def [ protected ] ) ( <constructor> | <operator> | <method> )
+    * <methodDeclaration> ::= <methodModifiers> ( <constructor> | <operator> | <method> )
     */
   def methodDeclaration(className: String): FuncTree = {
 
     val startPos = nextToken
-    val mods = modifiers(PRIVDEF, PUBDEF)
+    val mods = methodModifiers()
     nextTokenKind match {
       case IDKIND => method(mods, startPos)
       case NEW    => constructor(mods, className, startPos)
@@ -284,18 +292,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     */
   def methodBody(): Option[StatTree] = optional(() => replaceExprWithReturnStat(statement()), EQSIGN)
 
-
-  private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
-    case Block(stmts) if stmts.nonEmpty =>
-      stmts.last match {
-        case m: MethodCall       => Block(stmts.updated(stmts.size - 1, Return(Some(m))))
-        case UselessStatement(e) => Block(stmts.updated(stmts.size - 1, Return(Some(e))))
-        case _                   => stat
-      }
-    case m: MethodCall                  => Return(Some(m))
-    case UselessStatement(e)            => Return(Some(e))
-    case _                              => stat
-  }
 
   /**
     * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  "=" <statement>
@@ -427,24 +423,71 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <modifiers> ::= (pub | priv [ protected ] ) [ static ] [ implicit ]
+    * <methodModifiers> ::= ( Def | def [ protected ])) [ static ] [ implicit ]
     */
-  def modifiers(priv: TokenKind, pub: TokenKind): Set[Modifier] = {
-    val access = accessRights(priv, pub)
-    var modifiers: Set[Modifier] = Set(access)
-
+  def methodModifiers(): Set[Modifier] = {
     val startPos = nextToken
+
+    var modifiers: Set[Modifier] = nextTokenKind match {
+      case PUBDEF  =>
+        eat(PUBDEF)
+        Set(Public().setPos(startPos, nextToken))
+      case PRIVDEF =>
+        eat(PRIVDEF)
+        Set(protectedOrPrivate().setPos(startPos, nextToken))
+      case _       => FatalWrongToken(PUBDEF, PRIVDEF)
+    }
+
     while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
+      val pos = nextToken
       val modifier = nextTokenKind match {
         case STATIC   =>
           eat(STATIC)
-          Static().setPos(startPos, nextToken)
+          Static().setPos(pos, nextToken)
         case IMPLICIT =>
           eat(IMPLICIT)
-          Implicit().setPos(startPos, nextToken)
+          Implicit().setPos(pos, nextToken)
         case _        => ???
       }
       modifiers += modifier
+    }
+    modifiers
+  }
+
+  private def protectedOrPrivate() = nextTokenKind match {
+    case PROTECTED =>
+      eat(PROTECTED)
+      Protected()
+    case _ => Private()
+  }
+
+  /**
+    * <fieldModifiers> ::= ( Var | Val | (var | val [ protected ])) [ static ] [ implicit ]
+    */
+  def fieldModifiers(): Set[Modifier] = {
+    val startPos = nextToken
+    var modifiers: Set[Modifier] = nextTokenKind match {
+      case PUBVAR  =>
+        eat(PUBVAR)
+        Set(Public().setPos(startPos, nextToken))
+      case PRIVVAR =>
+        eat(PRIVVAR)
+        Set(protectedOrPrivate().setPos(startPos, nextToken))
+      case PUBVAL  =>
+        eat(PUBVAL)
+        Set(Public().setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
+      case PRIVVAL =>
+        eat(PRIVVAL)
+        Set(protectedOrPrivate().setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
+      case _       => FatalWrongToken(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+    }
+
+    val pos = nextToken
+    nextTokenKind match {
+      case STATIC =>
+        eat(STATIC)
+        modifiers += Static().setPos(pos, nextToken)
+      case _      =>
     }
     modifiers
   }
@@ -527,7 +570,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     // Variable needs custom end position in order to
     // only highlight expression up to equals sign
     nextTokenKind match {
-      case PRIVVAR =>
+      case PRIVVAR | PRIVVAL =>
         val variable = localVarDeclaration()
         endStatement()
         return variable
@@ -786,7 +829,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     */
 
 
-
   def term(): ExprTree = {
     /**
       * <termFirst> ::= "(" <expression> ")"
@@ -897,7 +939,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case THIS          =>
           eat(THIS)
           This()
-        case SUPER =>
+        case SUPER         =>
           val sup = superCall()
           eat(DOT)
           val id = identifier()
@@ -1035,6 +1077,18 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     Super(specifier).setPos(startPos, nextToken)
   }
 
+  private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
+    case Block(stmts) if stmts.nonEmpty =>
+      stmts.last match {
+        case m: MethodCall       => Block(stmts.updated(stmts.size - 1, Return(Some(m))))
+        case UselessStatement(e) => Block(stmts.updated(stmts.size - 1, Return(Some(e))))
+        case _                   => stat
+      }
+    case m: MethodCall                  => Return(Some(m))
+    case UselessStatement(e)            => Return(Some(e))
+    case _                              => stat
+  }
+
   /**
     * Parses expressions of type
     * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
@@ -1086,28 +1140,6 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       }
     }
   }
-  /**
-    * Parses the correct access rights given the private token and
-    * public token to use.
-    */
-  private def accessRights(priv: TokenKind, pub: TokenKind) = {
-    val startPos = nextToken
-    val access = nextTokenKind match {
-      case x if x == pub  =>
-        eat(pub)
-        Public()
-      case x if x == priv =>
-        eat(priv)
-        if (nextTokenKind == PROTECTED) {
-          eat(PROTECTED)
-          Protected()
-        }
-        else Private()
-      case _              => FatalWrongToken(pub, priv)
-    }
-    access.setPos(startPos, nextToken)
-  }
-
 
   private var usedOneGreaterThan = false
 

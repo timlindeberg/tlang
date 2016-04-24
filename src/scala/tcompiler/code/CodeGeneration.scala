@@ -215,16 +215,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case Private()   => flags |= FIELD_ACC_PRIVATE
       case Protected() => flags |= FIELD_ACC_PROTECTED
       case Static()    => flags |= FIELD_ACC_STATIC
+      case Final()     => flags |= FIELD_ACC_FINAL
       case _           =>
     }
-
-    // TODO: Add final variables. For now all static fields in interfaces are
-    // implicitly final
-    val classSymbol = varDecl.getSymbol.classSymbol.get
-    if(classSymbol.isInstanceOf[TraitSymbol])
-      flags |= FIELD_ACC_FINAL
-
-
     flags
   }
 

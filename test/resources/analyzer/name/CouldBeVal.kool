@@ -1,0 +1,8 @@
+class A {
+
+    Def Test() = {
+        val y = 10
+        var x = 5 // res: N1004
+        return x + y
+    }
+}

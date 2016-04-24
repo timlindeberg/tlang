@@ -12,6 +12,7 @@ object TestMain {
 
 class A extends Test1 with Test2 {
   override def anImplementedMethod(): Int = super[Test1].anImplementedMethod()
+
 }
 
 

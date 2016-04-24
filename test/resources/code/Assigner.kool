@@ -22,8 +22,7 @@ println(c.foo())        // res: 1
 
 class Foo {
   Def bar(a: Int): Int = {
-    a = 5
-    return a
+    return 5
   }
   Def baz(a: Int): Int = {
     return a
