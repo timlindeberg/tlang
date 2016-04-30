@@ -616,12 +616,16 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
         classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes) match {
           case Some(parentMeth) if parentMeth.getType != meth.getSymbol.getType =>
-            ErrorOverridingMethodDifferentReturnType(meth.signature,
-              classSymbol.name,
-              meth.getSymbol.getType.toString,
-              parentMeth.classSymbol.name,
-              parentMeth.getType.toString,
-              meth)
+            val parentType = parentMeth.getType
+            val tpe = meth.getSymbol.getType
+            if (!tpe.isSubTypeOf(parentType)){
+              ErrorOverridingMethodDifferentReturnType(meth.signature,
+                classSymbol.name,
+                meth.getSymbol.getType.toString,
+                parentMeth.classSymbol.name,
+                parentMeth.getType.toString,
+                meth)
+            }
           case _                                                                =>
         }
       }

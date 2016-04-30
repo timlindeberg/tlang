@@ -5,6 +5,7 @@ import com.rits.cloning._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.{Context, Pipeline, Positioned}
+
 import scala.collection.mutable.ArrayBuffer
 
 object Templates extends Pipeline[Program, Program] {
@@ -19,6 +20,7 @@ object Templates extends Pipeline[Program, Program] {
     val newProg = prog.copy(classes = oldClasses ++ newClasses)
 
     replaceTypes(newProg)
+    newProg
   }
 
 
@@ -53,11 +55,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   private val cloner = new Cloner
   cloner.registerConstant(Nil)
   cloner.registerConstant(None)
-  cloner.registerConstant(Private)
-  cloner.registerConstant(Public)
-  cloner.registerConstant(Protected)
-  cloner.registerConstant(Static)
-  cloner.registerConstant(Implicit)
 
   private var generated: Set[String] = Set()
   private var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
@@ -65,10 +62,12 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
   def generate: List[ClassDecl] = {
 
-    def generateIfTemplated(tpe: TypeTree): Unit = Some(tpe) collect {
-      case x: ClassIdentifier if x.isTemplated =>
-        x.templateTypes.foreach(generateIfTemplated)
-        generateClass(x)
+    def generateIfTemplated(tpe: TypeTree): Unit = {
+      Some(tpe) collect {
+        case x: ClassIdentifier if x.isTemplated =>
+          x.templateTypes.foreach(generateIfTemplated)
+          generateClass(x)
+      }
     }
 
     def collect(f: Product, p: Product) = Some(p) collect {
@@ -79,13 +78,14 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     }
 
     checkTemplateClassDefs(templateClasses)
-    Trees.traverse(prog.classes.filter(!_.id.isTemplated), collect)
+    Trees.traverse(prog.classes, collect)
     generatedClasses.toList
   }
 
   private def generateClass(typeId: ClassIdentifier): Unit = {
     if (generated(typeId.templatedClassName))
       return
+
 
     generated += typeId.templatedClassName
 
@@ -96,6 +96,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   }
 
   private def newTemplateClass(template: ClassDecl, typeId: ClassIdentifier): ClassDecl = {
+
     val templateTypes = typeId.templateTypes
     val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
@@ -115,7 +116,9 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
     val newClass = cloner.deepClone(template)
     Trees.traverse(newClass, (_, current) => Some(current) collect {
-      case c: ClassDecl       => c.id = templateName(c.id)
+      case c: ClassDecl       =>
+        c.id = templateName(c.id)
+        c.parents = c.parents.map(p => updateType(p).asInstanceOf[ClassIdentifier])
       case v: VarDecl         => v.tpe collect { case t => v.tpe = Some(updateType(t)) }
       case f: Formal          => f.tpe = updateType(f.tpe)
       case m: MethodDecl      => m.retType collect { case t => m.retType = Some(updateType(t))}

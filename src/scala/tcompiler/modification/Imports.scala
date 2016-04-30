@@ -2,7 +2,6 @@ package tcompiler
 package modification
 
 import java.io.File
-
 import org.apache.bcel._
 import org.apache.bcel.classfile.{JavaClass, Method, _}
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
@@ -203,7 +202,7 @@ class Importer(ctx: Context, prog: Program) {
     MethodDecl(Some(retType), id, args, Some(Block(List())), modifiers)
   }
 
-  private def convertModifiers(obj: AccessFlags) = {
+  private def convertModifiers(obj: AccessFlags): Set[Modifier] = {
     var set: Set[Modifier] = Set()
     obj match {
       case x if x.isPublic    => set += Public()
@@ -239,43 +238,53 @@ class Importer(ctx: Context, prog: Program) {
   }
 }
 
-class GenericImporter(ctx: Context, prog: Program) {
+
+
+
+class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mutable.Set[String] = scala.collection.mutable.Set()) {
 
   import Imports._
 
   def importGenericClasses: List[ClassDecl] = {
-    var importedClasses: ArrayBuffer[ClassDecl] = new ArrayBuffer()
+    val importedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
     val genericImports = prog.imports.filter(_.isInstanceOf[GenericImport])
-
     genericImports.foreach { imp =>
       val fileName = mkImportString(imp, "/") + ".kool"
-      var found = false
-
-      getClassPaths.foreach { path =>
-        val file = new File(path + "/" + fileName)
-
-        if (file.exists()) {
-          found = true
-          parseGenericFile(ctx, file) match {
-            case Some(importedProg) =>
-              // Recursively import generics
-              val genericsInImportedProg = new GenericImporter(ctx, importedProg).importGenericClasses
-              val genericClasses = importedProg.classes.filter(_.id.isTemplated) ::: genericsInImportedProg
-              prog.imports = prog.imports ::: importedProg.imports // Add imports as a side effect, ugly
-              if (genericClasses.nonEmpty)
-                importedClasses ++= genericClasses
-              else
-                WarningNoGenerics(file.getName, imp)
-
-            case None => ErrorImportParsing(file.getName, imp)
-          }
-
+      if(!imported(fileName)){
+        val newClasses = importClass(fileName, imp)
+        if(newClasses.nonEmpty){
+          importedClasses ++= newClasses
+          imported += fileName
+        }else{
+          ErrorResolvingGenericImport(mkImportString(imp, "."), imp)
         }
       }
-      if (!found)
-        ErrorResolvingGenericImport(mkImportString(imp, "."), imp)
     }
     importedClasses.toList
+  }
+
+  private def importClass(fileName: String, imp: Import): ArrayBuffer[ClassDecl] = {
+    val importedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
+    getClassPaths.foreach { path =>
+      val file = new File(path + "/" + fileName)
+      if (file.exists()) {
+        parseGenericFile(ctx, file) match {
+          case Some(importedProg) =>
+            // Recursively import generics
+            val genericsInImportedProg = new GenericImporter(ctx, importedProg, imported).importGenericClasses
+            val genericClasses = importedProg.classes.filter(_.id.isTemplated) ::: genericsInImportedProg
+            prog.imports = prog.imports ::: importedProg.imports.filter(!_.isInstanceOf[GenericImport]) // Add imports as a side effect, ugly
+            if (genericClasses.nonEmpty)
+              importedClasses ++= genericClasses
+            else
+              WarningNoGenerics(file.getName, imp)
+
+          case None => ErrorImportParsing(file.getName, imp)
+        }
+        return importedClasses
+      }
+    }
+    importedClasses
   }
 
   private def mkImportString(imp: Import, sep: String) = {
@@ -287,10 +296,11 @@ class GenericImporter(ctx: Context, prog: Program) {
     }
   }
 
-  private def getClassPaths = {
-    // TODO decide a system for the kool std
-    val koolStdLibPath = "src"
-    List("", koolStdLibPath)
+  private def getClassPaths: List[String] = {
+    if(!sys.env.contains("T_HOME"))
+      return List("", "C:/Users/Tim Lindeberg/IdeaProjects/T-Compiler/src/stdlib")
+
+    List("", sys.env("T_HOME"))
   }
 
   private def parseGenericFile(ctx: Context, file: File): Option[Program] =

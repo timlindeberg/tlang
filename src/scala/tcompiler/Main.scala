@@ -37,7 +37,7 @@ case object SuppressWarnings extends Flag {
 
 case object PrintGeneratedCode extends Flag {
   override val flag        = "-printcode"
-  override val description = "Pretty prints the AST as it looks before code generation takes place."
+  override val description = "Pretty prints the AST as it looks before analysis takes place."
 }
 
 case object Help extends Flag {
@@ -78,10 +78,12 @@ object Main {
       val parsing = Lexer andThen Parser andThen Templates andThen Imports
       val analysis = NameAnalysis andThen TypeChecking
       // Generate code
-      val prog = (parsing andThen analysis).run(ctx)(ctx.file)
-      if (flagActive(PrintGeneratedCode))
-        println(Printer(prog))
+      val preProg = parsing.run(ctx)(ctx.file)
 
+
+      val prog = analysis.run(ctx)(preProg)
+      if (flagActive(PrintGeneratedCode))
+        println(Printer(preProg))
       CodeGeneration.run(ctx)(prog)
       if (flagActive(Exec) && containsMainMethod(prog)) {
         val cp = ctx.outDir match {

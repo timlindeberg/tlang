@@ -1,6 +1,6 @@
 package tcompiler.code
 
-import cafebabe.AbstractByteCodes._
+import cafebabe.AbstractByteCodes.{InvokeVirtual, _}
 import cafebabe.ByteCodes._
 import cafebabe.ClassFileTypes._
 import cafebabe.CodeHandler
@@ -123,6 +123,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
         ch << afterLabel
       case PrintStatement(expr)                        =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
+        ch << DUP
         compileExpr(expr)
         val arg = expr.getType match {
           case _: TObject => "L" + JavaObject + ";" // Call System.out.println(Object) for all other types
@@ -133,6 +134,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
           case _: Println => "println"
         }
         ch << InvokeVirtual(JavaPrintStream, funcName, "(" + arg + ")V")
+        ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
       case Error(expr)                                 =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
@@ -433,8 +435,11 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
             } else {
               compileExpr(obj)
               compileArgs()
-              if(obj.isInstanceOf[Super])
-                ch << InvokeSpecial(className, meth.value, signature)
+
+              if(classSymbol.isInstanceOf[TraitSymbol])
+                ch << InvokeInterface(className, meth.value, signature)
+              else if(obj.isInstanceOf[Super])
+                 ch << InvokeSpecial(className, meth.value, signature)
               else
                 ch << InvokeVirtual(className, meth.value, signature)
             }
@@ -621,7 +626,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
       case TObject(classSymbol) =>
         classSymbol.lookupOperator(expr, args) match {
           case Some(operatorSymbol) =>
-            ch << InvokeStatic(classSymbol.name, operatorSymbol.methodName, operatorSymbol.signature)
+            ch << InvokeStatic(operatorSymbol.classSymbol.name, operatorSymbol.methodName, operatorSymbol.signature)
             true
           case None                 => false
         }

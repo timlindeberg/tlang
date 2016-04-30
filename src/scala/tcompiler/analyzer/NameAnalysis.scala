@@ -626,7 +626,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     error(21, s"Super refers to class '$inheritedClass' which '$clazz' does not inherit from.", pos)
 
   private def ErrorNonStaticFinalFieldInTrait(pos: Positioned) =
-    error(22, s"Fields in traits need to be static and final.", pos)
+    error(22, s"Fields in traits need to be val static.", pos)
 
   private def ErrorReassignmentToVal(value: String, pos: Positioned) =
     error(23, s"Cannot reassign value '$value'.", pos)
@@ -655,7 +655,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
     warning(3, s"Statement has no effect.", pos)
 
   private def WarningCouldBeVal(value: String, pos: Positioned) =
-    warning(4, s"Variable '$value' could be val since it's never reassigned.", pos)
+    warning(4, s"Variable '$value' could be val.", pos)
 
 
 }

@@ -152,6 +152,7 @@ object Types {
   }
 
   case class TObject(classSymbol: ClassSymbol) extends Type {
+
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
         if (classSymbol.name == c.name || c.name == tObject.classSymbol.name) true

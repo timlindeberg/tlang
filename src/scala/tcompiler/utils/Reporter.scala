@@ -116,7 +116,8 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   private def locationIndicator(errorLevel: Int, pos: Positioned) = {
     val lines = getLines(pos.file)
     var sb = new StringBuilder
-    sb ++= "\n"
+    val numColor = Console.BOLD + QuoteColor
+    sb ++= s"\n$numColor${pos.line}${Console.RESET}:   "
     val errorStyle = errorLevel match {
       case 1 => WarningColor
       case 2 => ErrorColor

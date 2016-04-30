@@ -1,6 +1,8 @@
 package tcompiler
 package ast
 
+import java.util
+
 import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.TreeGroups.UselessStatement
 import tcompiler.ast.Trees._
@@ -1096,10 +1098,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     */
   private def leftAssociative(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
     var expr = next()
-    while (kinds.contains(nextTokenKind)) {
+    while (kinds.contains(currentToken.kind)) {
       kinds.foreach { kind =>
-        if (nextTokenKind == kind) {
-          val startPos = nextToken
+        if (currentToken.kind == kind) {
+          val startPos = currentToken
           eat(kind)
           expr = tokenToBinaryOperatorAST(kind)(expr, next()).setPos(startPos, nextToken)
         }

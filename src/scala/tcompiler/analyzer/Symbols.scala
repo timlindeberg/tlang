@@ -45,6 +45,13 @@ object Symbols {
     var operators: List[OperatorSymbol] = Nil
     var members                         = Map[String, VariableSymbol]()
 
+    def isImplementedInSuperClass(name: String, args: List[Type]) = {
+      findMethod(name, args) match {
+        case Some(m) => false
+        case None => true
+      }
+    }
+
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
 
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
