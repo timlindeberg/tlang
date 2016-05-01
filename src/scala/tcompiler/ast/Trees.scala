@@ -146,6 +146,7 @@ object Trees {
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
   case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
+  case class ForEach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
   case class Print(expr: ExprTree) extends StatTree
   case class Println(expr: ExprTree) extends StatTree
   case class Error(expr: ExprTree) extends StatTree

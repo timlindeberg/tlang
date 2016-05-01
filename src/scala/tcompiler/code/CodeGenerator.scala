@@ -12,8 +12,6 @@ import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 
-import scala.collection._
-
 
 /**
   * Created by Tim Lindeberg on 4/2/2016.
@@ -53,9 +51,29 @@ object CodeGenerator {
 
 }
 
-class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.HashMap[VariableSymbol, Int]) {
+class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.collection.mutable.HashMap[VariableSymbol, Int]) {
 
   import CodeGenerator._
+
+  var iteratorNum = 0
+  def getUniqueIteratorName(name: String) = {
+    iteratorNum += 1
+    s"$$$name$iteratorNum"
+  }
+
+  def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type) = {
+    val modifiers = scala.collection.immutable.Set[Modifier](Private())
+
+    val name = getUniqueIteratorName(idName)
+    val id = Identifier(name)
+    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
+    val symbol = new VariableSymbol(idName)
+    symbol.setType(tpe)
+    varDecl.setSymbol(symbol)
+    id.setSymbol(symbol)
+    id.setType(tpe)
+    varDecl
+  }
 
   def compileStat(statement: StatTree, before: Option[String] = None, after: Option[String] = None): Unit = {
     ch << LineNumber(statement.line)
@@ -64,7 +82,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
       // Don't compile useless statements
       case Block(stats)                                =>
         stats.foreach(compileStat(_, before, after))
-      case v@VarDecl(_, varId, init, modifiers) =>
+      case v@VarDecl(_, _, init, _) =>
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
@@ -121,6 +139,42 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: mutable.Has
         postExprs.foreach(compileStat(_))
         compileBranch(condition, bodyLabel, afterLabel)
         ch << afterLabel
+      case ForEach(varDecl, container, stat) =>
+        val code = container.getType match {
+          case TArray(arrTpe) =>
+
+            // Compile to an index based for loop
+            val indexDecl = createVarDecl("i", IntLit(0), TInt)
+            val containerDecl = createVarDecl("container", container, container.getType)
+            val containerId = containerDecl.id
+
+            val comparison = LessThan(indexDecl.id, MethodCall(container, Identifier("Size"), List()))
+            val post = PostIncrement(indexDecl.id)
+
+            val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id)))
+            val stats = Block(List(valInit, stat))
+            val indexedForLoop = For(List(indexDecl), comparison, List(post), stats)
+            Block(List(containerDecl, indexedForLoop))
+          case TObject(classSymbol) =>
+            // Compile to an iterator call
+            val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
+            val methId =  iteratorMethodSymbol.ast.id
+            val iteratorCall = MethodCall(container, methId, List())
+            val iteratorDecl = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
+            val iteratorId = iteratorDecl.id
+            val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
+
+            val hasNextMethod = iteratorClass.lookupMethod("HasNext", List()).get.ast.id
+            val nextMethod = iteratorClass.lookupMethod("Next", List()).get.ast.id
+
+            val comparison = MethodCall(iteratorId, hasNextMethod, List())
+            val valInit = varDecl.copy(init = Some(MethodCall(iteratorId, nextMethod, List())))
+            val stats = Block(List(valInit, stat))
+
+            val whileLoop = While(comparison, stats)
+            Block(List(iteratorDecl, whileLoop))
+        }
+        compileStat(code)
       case PrintStatement(expr)                        =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << DUP

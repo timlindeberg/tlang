@@ -72,6 +72,18 @@ object Symbols {
         matchingMethods.head
     }
 
+    def lookupParent(name: String): Option[ClassSymbol] = {
+      parents.find(_.name == name) match {
+        case v@Some(p) => v
+        case None =>
+          parents.foreach(p => p.lookupParent(name) match {
+          case v@Some(p) => return v
+          case None =>
+        })
+          None
+      }
+    }
+
     def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] =
       findMethod(name, args) match {
         case Some(meth)                            => Some(meth)

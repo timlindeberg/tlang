@@ -1,8 +1,6 @@
-package kool.std
 
-import <Iterator>
 
-trait Collection<T> {
+trait Collection<T>: Iterable<T> {
 
     /**
     * Returns the number of elements in the collection.
@@ -14,11 +12,6 @@ trait Collection<T> {
     * Clears the collection. After this method is called Size() will return 0.
     */
     Def Clear(): Unit
-
-    /**
-    * Returns an iterator over this collection.
-    */
-    Def Iterator(): Iterator<T>
 
    /**
    * Adds the given value to the collection.

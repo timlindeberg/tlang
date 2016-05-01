@@ -155,6 +155,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
+    case f: ForEach                       =>
+      typeCheckForeachLoop(f)
     case PrintStatement(expr)             =>
       tcExpr(expr) // TODO: Allow unit for println
       if (expr.getType == TUnit)
@@ -311,9 +313,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             val operatorType = classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol, expression)
-                if (operatorSymbol.getType == TUntyped) {
-                  new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
-                }
+                inferTypeOfMethod(operatorSymbol)
                 expression.setType(operatorSymbol.getType)
                 operatorSymbol.getType
               case None                 =>
@@ -408,9 +408,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             classSymbol.lookupOperator(expression, argList) match {
               case Some(operatorSymbol) =>
                 checkOperatorPrivacy(classSymbol, operatorSymbol, expression)
-                if (operatorSymbol.getType == TUntyped) {
-                  new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
-                }
+                inferTypeOfMethod(operatorSymbol)
                 expression.setType(operatorSymbol.getType)
                 operatorSymbol.getType
               case None                 =>
@@ -543,9 +541,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             checkStaticMethodConstraints(obj, classSymbol, methSymbol, mc)
 
             TypeChecking.methodUsage += methSymbol -> true
-            if (methSymbol.getType == TUntyped) {
-              new TypeChecker(ctx, methSymbol, currentMethodSymbol :: methodStack).tcMethod()
-            }
+            inferTypeOfMethod(methSymbol)
             meth.setSymbol(methSymbol)
             meth.getType
           case None             =>
@@ -618,7 +614,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
           case Some(parentMeth) if parentMeth.getType != meth.getSymbol.getType =>
             val parentType = parentMeth.getType
             val tpe = meth.getSymbol.getType
-            if (!tpe.isSubTypeOf(parentType)){
+            if (!tpe.isSubTypeOf(parentType)) {
               ErrorOverridingMethodDifferentReturnType(meth.signature,
                 classSymbol.name,
                 meth.getSymbol.getType.toString,
@@ -653,6 +649,62 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
   }
 
+  private def typeCheckForeachLoop(forEach: ForEach): Unit = {
+    val varDecl = forEach.varDecl
+    val container = forEach.container
+    val containerType = tcExpr(container)
+    val expectedVarType = containerType match {
+      case TArray(arrTpe)       =>
+        arrTpe
+      case TObject(classSymbol) =>
+        getIteratorType(classSymbol) match {
+          case Some(t) => t
+          case None    =>
+            ErrorForeachContainNotIterable(containerType, container)
+            return
+        }
+      case _                    =>
+        ErrorForeachContainNotIterable(containerType, container)
+        return
+    }
+    val varId = varDecl.id
+    varId.getType match {
+      case TUntyped                      => varId.setType(expectedVarType)
+      case tpe if tpe != expectedVarType =>
+        ErrorWrongType(expectedVarType, tpe, varId)
+    }
+  }
+
+  private def getIteratorType(classSymbol: ClassSymbol): Option[Type] = {
+    classSymbol.lookupMethod("Iterator", List()) match {
+      case Some(methSymbol) =>
+        inferTypeOfMethod(methSymbol)
+        methSymbol.getType match {
+          case TObject(methodClassSymbol) =>
+            methodClassSymbol.lookupMethod("HasNext", List()) match {
+              case Some(hasNextMethod) =>
+                inferTypeOfMethod(hasNextMethod)
+                if (hasNextMethod.getType != TBool)
+                  return None
+              case None                => return None
+            }
+            methodClassSymbol.lookupMethod("Next", List()) match {
+              case Some(nextMethod) =>
+                inferTypeOfMethod(nextMethod)
+                return Some(nextMethod.getType)
+              case None             =>
+            }
+          case _                          =>
+        }
+      case None             =>
+    }
+    None
+  }
+
+  private def inferTypeOfMethod(methodSymbol: MethodSymbol) = {
+    if (methodSymbol.getType == TUntyped)
+      new TypeChecker(ctx, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+  }
 
   private def typeCheckOperator(classType: Type, operator: ExprTree, args: List[Type]): Option[Type] =
     classType match {
@@ -660,9 +712,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         classSymbol.lookupOperator(operator, args) match {
           case Some(operatorSymbol) =>
             checkOperatorPrivacy(classSymbol, operatorSymbol, operator)
-            if (operatorSymbol.getType == TUntyped) {
-              new TypeChecker(ctx, operatorSymbol, currentMethodSymbol :: methodStack).tcMethod()
-            }
+            inferTypeOfMethod(operatorSymbol)
             operator.setType(operatorSymbol.getType)
             Some(operatorSymbol.getType)
           case None                 => None
@@ -906,6 +956,9 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   private def ErrorReassignmentToVal(value: String, pos: Positioned) =
     error(31, s"Cannot reassign value '$value'.", pos)
+
+  private def ErrorForeachContainNotIterable(tpe: Type, pos: Positioned) =
+    error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
 
 
   //---------------------------------------------------------------------------------------

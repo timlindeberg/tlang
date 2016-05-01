@@ -132,10 +132,12 @@ class VectorIterator<T>: Iterator<T> {
 		vector = list
 	}
 
-	Def HasNext() = hasNext
+    Def HasNext(): Bool = hasNext
 
 	Def Next() = {
-		hasNext = current < vector.Size() - 1
-		vector[current++]
+	    val v = vector[current]
+	    hasNext = ++current < vector.Size() - 1
+	    v
 	}
+
 }

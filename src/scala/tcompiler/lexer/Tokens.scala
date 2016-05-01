@@ -130,6 +130,7 @@ object Tokens {
   case object ERROR             extends TokenKind("error")
   case object BREAK             extends TokenKind("break")
   case object CONTINUE          extends TokenKind("continue")
+  case object IN                extends TokenKind("in")
   // @formatter:on
 
   case object NEWLINE           extends TokenKind("\n") {

@@ -368,31 +368,36 @@ class NameAnalyser(ctx: Context, prog: Program) {
           val newVars = init.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
           bind(condition, newVars, scopeLevel)
           post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
-          bind(stat, newVars, scopeLevel, canBreakContinue = true)
+          bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case If(expr, thn, els)                             =>
+        case ForEach(varDecl, container, stat)              =>
+          val newVars = bind(varDecl, localVars, scopeLevel)
+          bind(container, localVars, scopeLevel)
+          bind(stat, newVars, scopeLevel + 1)
+          localVars
+        case If(expr, thn, els)     =>
           bind(expr, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel, canBreakContinue)
           els collect { case e => bind(e, localVars, scopeLevel, canBreakContinue) }
           localVars
-        case While(expr, stat)                              =>
+        case While(expr, stat)      =>
           bind(expr, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
-        case PrintStatement(expr)                           =>
+        case PrintStatement(expr)   =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Error(expr)                                    =>
+        case Error(expr)            =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Return(expr)                                   =>
+        case Return(expr)           =>
           expr collect { case e => bind(e, localVars, scopeLevel) }
           localVars
-        case _: Break | _: Continue                         =>
+        case _: Break | _: Continue =>
           if (!canBreakContinue)
             ErrorBreakContinueOutsideLoop(statement, statement)
           localVars
-        case expr: ExprTree                                 =>
+        case expr: ExprTree         =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
       }
@@ -436,7 +441,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case v: VariableSymbol => variableReassignment += v -> true
             case _                 => ???
           }
-        case pos@IncrementDecrement(expr) =>
+        case pos@IncrementDecrement(expr)         =>
           expr match {
             case id: Identifier =>
               checkReassignment(id, pos)
@@ -444,18 +449,18 @@ class NameAnalyser(ctx: Context, prog: Program) {
                 case v: VariableSymbol => variableReassignment += v -> true
                 case _                 => ???
               }
-            case _ =>
+            case _              =>
           }
-        case id: Identifier               => parent match {
+        case id: Identifier                       => parent match {
           case _: MethodCall  =>
           case _: Instance    =>
           case _: FieldRead   =>
           case _: FieldAssign =>
           case _              => setIdentiferSymbol(id, localVars)
         }
-        case typeTree: TypeTree           => setType(typeTree)
-        case NewArray(tpe, size)          => setType(tpe)
-        case thisSymbol: This             =>
+        case typeTree: TypeTree                   => setType(typeTree)
+        case NewArray(tpe, size)                  => setType(tpe)
+        case thisSymbol: This                     =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)
@@ -464,7 +469,7 @@ class NameAnalyser(ctx: Context, prog: Program) {
             case _: ClassSymbol             => ErrorThisInStaticContext(thisSymbol)
             case _                          => ???
           }
-        case superSymbol@Super(specifier) =>
+        case superSymbol@Super(specifier)         =>
           scope match {
             case methodSymbol: MethodSymbol =>
               if (isStaticContext)

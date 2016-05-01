@@ -460,7 +460,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case PROTECTED =>
       eat(PROTECTED)
       Protected()
-    case _ => Private()
+    case _         => Private()
   }
 
   /**
@@ -576,7 +576,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         val variable = localVarDeclaration()
         endStatement()
         return variable
-      case _       =>
+      case _                 =>
     }
 
     val tree = nextTokenKind match {
@@ -641,9 +641,30 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   /**
     * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
-  def forLoop(): For = {
+  def forLoop(): StatTree = {
     val startPos = nextToken
     eat(FOR, LPAREN)
+
+    nextTokenKind match {
+      case PRIVVAR | PRIVVAL =>
+        val varDecl = localVarDeclaration()
+        nextTokenKind match {
+          case IN =>
+            forEachLoop(varDecl, startPos)
+          case _  =>
+            if (nextTokenKind == COMMA)
+              eat(COMMA)
+            regularForLoop(Some(varDecl), startPos)
+        }
+      case _                 =>
+        regularForLoop(None, startPos)
+    }
+  }
+
+  /**
+    * <regularForLoop> ::= <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
+    */
+  def regularForLoop(firstVarDecl: Option[VarDecl], startPos: Positioned) = {
     val init = forInit()
     eat(SEMICOLON)
     val condition = nextTokenKind match {
@@ -653,13 +674,27 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(SEMICOLON)
     val post = forIncrement()
     eat(RPAREN)
-    For(init, condition, post, statement()).setPos(startPos, nextToken)
+    val vars = firstVarDecl match {
+      case Some(v) => v :: init
+      case None    => init
+    }
+    For(vars, condition, post, statement()).setPos(startPos, nextToken)
+  }
+
+  /**
+    * <forEachLoop> ::= in <expression> ")" <statement>
+    */
+  def forEachLoop(varDecl: VarDecl, startPos: Positioned) = {
+    eat(IN)
+    val container = expression()
+    eat(RPAREN)
+    ForEach(varDecl, container, statement()).setPos(startPos, nextToken)
   }
 
   /**
     * <forInit> ::= [ ( <assignment> | <varDeclaration> )  { "," ( <assignment> | <varDeclaration> ) }
     */
-  def forInit(): List[StatTree] = {
+  def forInit(): List[StatTree] =
     commaList(() => {
       val startPos = nextToken
       nextTokenKind match {
@@ -678,7 +713,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
       }
     }, SEMICOLON)
-  }
+
 
   /**
     * <forIncrement> ::= [ <expression> { "," <expression> } ]
