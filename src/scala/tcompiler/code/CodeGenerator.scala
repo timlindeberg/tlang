@@ -19,7 +19,7 @@ import tcompiler.utils.Extensions._
 object CodeGenerator {
 
   val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
-  val ClassFlags: U2 =  CLASS_ACC_PUBLIC
+  val ClassFlags: U2 = CLASS_ACC_PUBLIC
 
   val ConstructorName = "<init>"
 
@@ -55,34 +55,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
 
   import CodeGenerator._
 
-  var iteratorNum = 0
-  def getUniqueIteratorName(name: String) = {
-    iteratorNum += 1
-    s"$$$name$iteratorNum"
-  }
-
-  def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type) = {
-    val modifiers = scala.collection.immutable.Set[Modifier](Private())
-
-    val name = getUniqueIteratorName(idName)
-    val id = Identifier(name)
-    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
-    val symbol = new VariableSymbol(idName)
-    symbol.setType(tpe)
-    varDecl.setSymbol(symbol)
-    id.setSymbol(symbol)
-    id.setType(tpe)
-    varDecl
-  }
-
   def compileStat(statement: StatTree, before: Option[String] = None, after: Option[String] = None): Unit = {
     ch << LineNumber(statement.line)
     statement match {
-      case UselessStatement(expr)                      =>
+      case UselessStatement(expr) =>
       // Don't compile useless statements
-      case Block(stats)                                =>
+      case Block(stats)                          =>
         stats.foreach(compileStat(_, before, after))
-      case v@VarDecl(_, _, init, _) =>
+      case v@VarDecl(_, _, init, _)              =>
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
@@ -97,7 +77,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             codes.defaultConstant(ch)
             codes.store(ch, id)
         }
-      case If(expr, thn, els)                          =>
+      case If(expr, thn, els)                    =>
         val thnLabel = ch.getFreshLabel(Then)
         val elsLabel = ch.getFreshLabel(Else)
         val afterLabel = ch.getFreshLabel(After)
@@ -109,7 +89,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << Label(elsLabel)
         if (els.isDefined) compileStat(els.get, before, after)
         ch << Label(afterLabel)
-      case While(expr, stat)                           =>
+      case While(expr, stat)                     =>
         val body = ch.getFreshLabel(Body)
         val continue = ch.getFreshLabel(Post)
         val after = ch.getFreshLabel(After)
@@ -123,7 +103,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         compileStat(stat, Some(continue), Some(after))
         compileBranch(expr, bodyLabel, afterLabel)
         ch << afterLabel
-      case For(init, condition, postExprs, stat)            =>
+      case For(init, condition, postExprs, stat) =>
         val body = ch.getFreshLabel(Body)
         val continue = ch.getFreshLabel(Post)
         val after = ch.getFreshLabel(After)
@@ -139,43 +119,9 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         postExprs.foreach(compileStat(_))
         compileBranch(condition, bodyLabel, afterLabel)
         ch << afterLabel
-      case ForEach(varDecl, container, stat) =>
-        val code = container.getType match {
-          case TArray(arrTpe) =>
-
-            // Compile to an index based for loop
-            val indexDecl = createVarDecl("i", IntLit(0), TInt)
-            val containerDecl = createVarDecl("container", container, container.getType)
-            val containerId = containerDecl.id
-
-            val comparison = LessThan(indexDecl.id, MethodCall(container, Identifier("Size"), List()))
-            val post = PostIncrement(indexDecl.id)
-
-            val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id)))
-            val stats = Block(List(valInit, stat))
-            val indexedForLoop = For(List(indexDecl), comparison, List(post), stats)
-            Block(List(containerDecl, indexedForLoop))
-          case TObject(classSymbol) =>
-            // Compile to an iterator call
-            val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
-            val methId =  iteratorMethodSymbol.ast.id
-            val iteratorCall = MethodCall(container, methId, List())
-            val iteratorDecl = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
-            val iteratorId = iteratorDecl.id
-            val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
-
-            val hasNextMethod = iteratorClass.lookupMethod("HasNext", List()).get.ast.id
-            val nextMethod = iteratorClass.lookupMethod("Next", List()).get.ast.id
-
-            val comparison = MethodCall(iteratorId, hasNextMethod, List())
-            val valInit = varDecl.copy(init = Some(MethodCall(iteratorId, nextMethod, List())))
-            val stats = Block(List(valInit, stat))
-
-            val whileLoop = While(comparison, stats)
-            Block(List(iteratorDecl, whileLoop))
-        }
-        compileStat(code)
-      case PrintStatement(expr)                        =>
+      case Foreach(varDecl, container, stat)     =>
+        compileStat(transformForeachLoop(varDecl, container, stat))
+      case PrintStatement(expr)                  =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << DUP
         compileExpr(expr)
@@ -189,23 +135,23 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         }
         ch << InvokeVirtual(JavaPrintStream, funcName, "(" + arg + ")V")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
-      case Error(expr)                                 =>
+      case Error(expr)                           =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(JavaRuntimeException, "<init>", "(L" + JavaString + ";)V")
         ch << ATHROW
-      case Return(Some(expr))                          =>
+      case Return(Some(expr))                    =>
         compileExpr(expr)
         expr.getType.codes.ret(ch)
-      case Return(None)                                =>
+      case Return(None)                          =>
         ch << RETURN
-      case Break() =>
+      case Break()                               =>
         ch << Goto(after.get)
-      case Continue() =>
+      case Continue()                            =>
         ch << Goto(before.get)
-      case expr: ExprTree                              =>
+      case expr: ExprTree                        =>
         // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)
     }
@@ -255,7 +201,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case Plus(lhs, rhs)                                    =>
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(TString)    =>
+          case _ if args.anyIs(TString) =>
             if (operatorDefinedFor(expression, args)) {
               compileExpr(lhs)
               compileExpr(rhs)
@@ -282,25 +228,25 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             compileExpr(lhs)
             compileExpr(rhs)
             compileOperatorCall(ch, expression, args)
-          case _ if args.anyIs(TDouble)       =>
+          case _ if args.anyIs(TDouble) =>
             compileExpr(lhs)
             lhs.getType.codes.toDouble(ch)
             compileExpr(rhs)
             rhs.getType.codes.toDouble(ch)
             ch << DADD
-          case _ if args.anyIs(TFloat)         =>
+          case _ if args.anyIs(TFloat)  =>
             compileExpr(lhs)
             lhs.getType.codes.toFloat(ch)
             compileExpr(rhs)
             rhs.getType.codes.toFloat(ch)
             ch << FADD
-          case _ if args.anyIs(TLong)           =>
+          case _ if args.anyIs(TLong)   =>
             compileExpr(lhs)
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toLong(ch)
             ch << LADD
-          case _                                 =>
+          case _                        =>
             compileExpr(lhs)
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
@@ -316,19 +262,19 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             compileExpr(rhs)
             compileOperatorCall(ch, expression, args)
             return
-          case _ if args.anyIs(TDouble)       =>
+          case _ if args.anyIs(TDouble) =>
             lhs.getType.codes.toDouble(ch)
             compileExpr(rhs)
             rhs.getType.codes.toDouble(ch)
-          case _ if args.anyIs(TFloat)         =>
+          case _ if args.anyIs(TFloat)  =>
             lhs.getType.codes.toFloat(ch)
             compileExpr(rhs)
             rhs.getType.codes.toFloat(ch)
-          case _ if args.anyIs(TLong)           =>
+          case _ if args.anyIs(TLong)   =>
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toLong(ch)
-          case _                                 =>
+          case _                        =>
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
@@ -348,12 +294,12 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             compileExpr(rhs)
             compileOperatorCall(ch, expression, args)
             return
-          case _ if args.anyIs(TLong)           =>
+          case _ if args.anyIs(TLong)   =>
             compileExpr(lhs)
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toLong(ch)
-          case _                                 =>
+          case _                        =>
             compileExpr(lhs)
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
@@ -374,14 +320,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             compileExpr(rhs)
             compileOperatorCall(ch, expression, args)
             return
-          case (TLong, _)                        =>
+          case (TLong, _)               =>
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case (_, TLong)                        =>
+          case (_, TLong)               =>
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case _                                 =>
+          case _                        =>
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
@@ -470,7 +416,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         else ch << PutField(className, id.value, id.getType.byteCodeName)
       case mc@MethodCall(obj, meth, args)                    =>
         obj.getType match {
-          case TArray(tpe) =>
+          case TArray(tpe)          =>
             assert(meth.value == "Size" && args.isEmpty)
             compileExpr(obj)
             ch << ARRAYLENGTH
@@ -490,17 +436,17 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               compileExpr(obj)
               compileArgs()
 
-              if(classSymbol.isInstanceOf[TraitSymbol])
+              if (classSymbol.isInstanceOf[TraitSymbol])
                 ch << InvokeInterface(className, meth.value, signature)
-              else if(obj.isInstanceOf[Super])
-                 ch << InvokeSpecial(className, meth.value, signature)
+              else if (obj.isInstanceOf[Super])
+                ch << InvokeSpecial(className, meth.value, signature)
               else
                 ch << InvokeVirtual(className, meth.value, signature)
             }
 
             if (!duplicate && mc.getType != TUnit)
               ch << POP
-          case _ => ???
+          case _                    => ???
         }
       case tcompiler.ast.Trees.New(tpe, args)                =>
         tpe.getType match {
@@ -859,6 +805,101 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     case fr: FieldRead                =>
       compileExpr(fr)
       ch << IfEq(els.id) << Goto(thn.id)
+  }
+
+
+  private var iteratorNum = 0
+  private def getUniqueIteratorName(name: String) = {
+    iteratorNum += 1
+    s"$name$$$iteratorNum"
+  }
+
+  private def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type) = {
+    val modifiers = scala.collection.immutable.Set[Modifier](Private())
+
+    initExpression.setType(tpe)
+    val name = getUniqueIteratorName(idName)
+    val id = Identifier(name)
+    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
+    val symbol = new VariableSymbol(idName)
+    symbol.setType(tpe)
+    varDecl.setSymbol(symbol)
+    id.setSymbol(symbol)
+    id.setType(tpe)
+    varDecl
+  }
+
+  private def transformForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) =
+    container.getType match {
+      case TArray(arrTpe)       => transformArrayForeachLoop(varDecl, container, stat)
+      case TObject(classSymbol) => transformIteratorForeachLoop(classSymbol, varDecl, container, stat)
+      case _                    => ???
+    }
+
+  private def transformArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
+    /*
+    Compile to an indexed for loop:
+       for(<varDecl> in <container>)
+          <code>
+
+       becomes:
+
+       {
+          val container$x = <container>
+          for(var i$x = 0; i$x < container$x.Size(); i++){
+              <varDecl> = container$x[i$x]
+              <code>
+          }
+       }
+    */
+    val indexDecl = createVarDecl("i", IntLit(0), TInt)
+    val containerDecl = createVarDecl("container", container, container.getType)
+    val containerId = containerDecl.id
+
+    val comparison = LessThan(indexDecl.id, MethodCall(container, Identifier("Size"), List()).setType(TInt)).setType(TBool)
+    val post = PostIncrement(indexDecl.id).setType(TInt)
+
+    val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType)))
+    valInit.setSymbol(varDecl.getSymbol)
+    val stats = Block(List(valInit, stat))
+    val indexedForLoop = For(List(indexDecl), comparison, List(post), stats)
+    Block(List(containerDecl, indexedForLoop))
+  }
+
+  private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
+    /*
+    Compile to an iterator call:
+       for(<varDecl> in <container>)
+          <code>
+
+       becomes:
+
+       {
+          val it$x = <container>.Iterator()
+          while(it$x.HasNext()){
+              <varDecl> = it$x.Iterator()
+              <code>
+          }
+       }
+    */
+    val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
+    val methId = iteratorMethodSymbol.ast.id
+    val iteratorCall = MethodCall(container, methId, List())
+    val iteratorDecl = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
+    val iteratorId = iteratorDecl.id
+    val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
+
+    val hasNextMethod = iteratorClass.lookupMethod("HasNext", List()).get.ast.id
+    val nextMethod = iteratorClass.lookupMethod("Next", List()).get.ast.id
+
+    val comparison = MethodCall(iteratorId, hasNextMethod, List()).setType(TBool)
+    val init = Some(MethodCall(iteratorId, nextMethod, List()).setType(nextMethod.getType))
+    val valInit = VarDecl(varDecl.tpe, varDecl.id, init, varDecl.modifiers)
+    valInit.setSymbol(varDecl.getSymbol)
+    val stats = Block(List(valInit, stat))
+
+    val whileLoop = While(comparison, stats)
+    Block(List(iteratorDecl, whileLoop))
   }
 
   private def store(id: Identifier, put: () => Unit, duplicate: Boolean = false): CodeHandler = {

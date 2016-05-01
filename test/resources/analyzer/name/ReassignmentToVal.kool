@@ -24,6 +24,15 @@ class A {
         ++F // res: N2023
         F-- // res: N2023
         --F // res: N2023
+
+        for(val i in {1, 2, 3}){
+            i = 5 // res: N2023
+        }
+
+        for(val i = 0; i < 5; i++){ // res: N2023
+        }
+
+
     }
 }
 

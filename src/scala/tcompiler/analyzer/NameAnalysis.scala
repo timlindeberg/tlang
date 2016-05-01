@@ -370,17 +370,17 @@ class NameAnalyser(ctx: Context, prog: Program) {
           post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case ForEach(varDecl, container, stat)              =>
+        case Foreach(varDecl, container, stat)              =>
           val newVars = bind(varDecl, localVars, scopeLevel)
           bind(container, localVars, scopeLevel)
           bind(stat, newVars, scopeLevel + 1)
           localVars
-        case If(expr, thn, els)     =>
+        case If(expr, thn, els)                             =>
           bind(expr, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel, canBreakContinue)
           els collect { case e => bind(e, localVars, scopeLevel, canBreakContinue) }
           localVars
-        case While(expr, stat)      =>
+        case While(expr, stat)                              =>
           bind(expr, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars

@@ -648,13 +648,19 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     nextTokenKind match {
       case PRIVVAR | PRIVVAL =>
         val varDecl = localVarDeclaration()
-        nextTokenKind match {
-          case IN =>
-            forEachLoop(varDecl, startPos)
-          case _  =>
-            if (nextTokenKind == COMMA)
-              eat(COMMA)
-            regularForLoop(Some(varDecl), startPos)
+        if (varDecl.init.isDefined) {
+          if (nextTokenKind == COMMA)
+            eat(COMMA)
+          regularForLoop(Some(varDecl), startPos)
+        } else {
+          nextTokenKind match {
+            case IN =>
+              forEachLoop(varDecl, startPos)
+            case _  =>
+              if (nextTokenKind == COMMA)
+                eat(COMMA)
+              regularForLoop(Some(varDecl), startPos)
+          }
         }
       case _                 =>
         regularForLoop(None, startPos)
@@ -688,7 +694,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     eat(IN)
     val container = expression()
     eat(RPAREN)
-    ForEach(varDecl, container, statement()).setPos(startPos, nextToken)
+    Foreach(varDecl, container, statement()).setPos(startPos, nextToken)
   }
 
   /**

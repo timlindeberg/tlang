@@ -155,7 +155,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
-    case f: ForEach                       =>
+    case f: Foreach                       =>
       typeCheckForeachLoop(f)
     case PrintStatement(expr)             =>
       tcExpr(expr) // TODO: Allow unit for println
@@ -649,7 +649,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
   }
 
-  private def typeCheckForeachLoop(forEach: ForEach): Unit = {
+  private def typeCheckForeachLoop(forEach: Foreach): Unit = {
     val varDecl = forEach.varDecl
     val container = forEach.container
     val containerType = tcExpr(container)
@@ -667,12 +667,13 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
         ErrorForeachContainNotIterable(containerType, container)
         return
     }
-    val varId = varDecl.id
-    varId.getType match {
-      case TUntyped                      => varId.setType(expectedVarType)
-      case tpe if tpe != expectedVarType =>
-        ErrorWrongType(expectedVarType, tpe, varId)
+    varDecl.id.getType match {
+      case TUntyped => varDecl.id.setType(expectedVarType)
+      case tpe      =>
+        if (tpe != expectedVarType)
+          ErrorWrongType(expectedVarType, tpe, varDecl.id)
     }
+    tcStat(forEach.stat)
   }
 
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] = {
