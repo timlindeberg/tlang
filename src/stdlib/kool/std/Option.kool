@@ -12,34 +12,29 @@ class Option<T> {
 
 	Def new() = {}
 
-	Def implicit new(value: T) = Add(value)
+	Def new(value: T) = {
+        this.value = value
+        isDefined = true
+	}
+
+	Def IsDefined() = isDefined
+
+	Def Get() = {
+		if(!isDefined)
+			error("Cannot access value of undefined option.")
+		value
+	}
 
 	Def ==(lhs: Option<T>, rhs: Option<T>) = {
 		if(lhs.isDefined && rhs.isDefined)
 			return lhs.value == rhs.value
 
-		if(!lhs.isDefined && !rhs.isDefined)
-			return true
-
-		false
+		return !lhs.isDefined && !rhs.isDefined
 	}
 
 	Def !=(lhs: Option<T>, rhs: Option<T>) = !(lhs == rhs)
 
 	Def #(option: Option<T>) = option.isDefined ? #option.value : 0
-
-	Def Add(value: T) = {
-		this.value = value
-		isDefined = true
-	}
-
-	Def IsDefined() = isDefined
-
-	Def Value() = {
-		if(!isDefined)
-			error("Cannot access value of undefined option.")
-		value
-	}
 
 	Def toString() = isDefined ? "Some(" + value + ")" : "None"
 

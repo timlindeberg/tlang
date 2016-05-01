@@ -1,4 +1,6 @@
+package kool.std
 
+import <Iterable>
 
 trait Collection<T>: Iterable<T> {
 
@@ -52,21 +54,17 @@ trait Collection<T>: Iterable<T> {
    * Adds all the elements in the given collection to this collection.
    * @param list the collection of elements to add
    */
-   Def AddAll(elements: Collection<T>) = {
-       val it = elements.Iterator()
-       while(it.HasNext())
-           Add(it.Next())
-   }
+   Def AddAll(elements: Collection<T>) =
+       for(val e in elements)
+           Add(e)
 
   /**
    * Adds all the elements in the given collection to this collection.
    * @param list the collection of elements to add
    */
-   Def RemoveAll(elements: Collection<T>) = {
-       val it = elements.Iterator()
-       while(it.HasNext())
-           Remove(it.Next())
-   }
+   Def RemoveAll(elements: Collection<T>) =
+       for(val e in elements)
+           Remove(e)
 
    /**
    * Returns true if the collection contains all of the given element.
@@ -75,9 +73,8 @@ trait Collection<T>: Iterable<T> {
                      false otherwise
    */
    Def ContainsAll(elements: Collection<T>) = {
-       val it = elements.Iterator()
-       while(it.HasNext())
-           if(!Contains(it.Next()))
+       for(val e in elements)
+           if(!Contains(e))
                return false
        true
    }
@@ -89,10 +86,10 @@ trait Collection<T>: Iterable<T> {
     */
     Def ToArray(): T[] = {
         val data = new T[Size()]
-        val it = Iterator()
         var i = 0
-        while(it.HasNext())
-            data[i++] = it.Next()
+        for(val e in this)
+            data[i++] = e
+
         data
     }
 
@@ -171,9 +168,8 @@ trait Collection<T>: Iterable<T> {
     */
     Def #(elements: Collection<T>) = {
         var res = 0
-        val it = elements.Iterator()
-        while(it.HasNext())
-            res = 31 * res ^ #it.Next()
+        for(val e in elements)
+            res = 31 * res ^ #e
 
         res
     }

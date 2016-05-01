@@ -279,7 +279,7 @@ class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mu
             else
               WarningNoGenerics(file.getName, imp)
 
-          case None => ErrorImportParsing(file.getName, imp)
+          case None =>
         }
         return importedClasses
       }
@@ -307,7 +307,9 @@ class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mu
     try {
       Some((Lexer andThen Parser).run(ctx)(file))
     } catch {
-      case _: CompilationException => None
+      case e: CompilationException =>
+        println(e.getMessage)
+        None
     }
 
   private def error(errorCode: Int, msg: String, pos: Positioned) =
@@ -315,9 +317,6 @@ class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mu
 
   private def warning(errorCode: Int, msg: String, pos: Positioned) =
     ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
-
-  private def ErrorImportParsing(fileName: String, pos: Positioned) =
-    error(0, s"Found parse error in import '$fileName'.", pos)
 
   private def ErrorResolvingGenericImport(imp: String, pos: Positioned) =
     error(1, s"Could not resolve generic import '$imp'.", pos)

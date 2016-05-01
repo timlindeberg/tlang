@@ -1,11 +1,12 @@
 package kool.std
 
 import <Option>
+import <List>
 
-class LinkedList<T> {
+class LinkedList<T> : List<T> {
 
-	var first = new Option<Node<T>>()
-	var last  = new Option<Node<T>>()
+	var first = new Option<LinkedListNode<T>>()
+	var last  = new Option<LinkedListNode<T>>()
 
 	var size = 0
 
@@ -13,237 +14,130 @@ class LinkedList<T> {
 
 	Def new(size: Int, value: T) =
         for(var i = 0; i < size; i++)
-        	Push(value)
+        	Add(value)
 
-	Def new(list: LinkedList<T>) = AddAll(list)
+	Def new(elements: Collection<T>) = AddAll(elements)
 
 	Def implicit new(elements: T[]) = {
 		Clear()
-		for(var i = 0; i < elements.Size(); i++)
-			Push(elements[i])
+		for(val e in elements)
+			Add(e)
 	}
 
-	Def [](index: Int) = {
-		checkBounds(index)
-		find(index).Value().Value
-	}
+    Def Get(index: Int) = {
+        checkBounds(index)
+    	find(index).Value
+    }
 
-	Def []=(index: Int, value: T) = {
-		checkBounds(index)
-		find(index).Value().Value = value
-	}
+    Def Set(index: Int, value: T) = {
+        checkBounds(index)
+    	find(index).Value = value
+    }
 
-	Def ==(lhs: LinkedList<T>, rhs: LinkedList<T>) = {
-		if(lhs.size != rhs.size)
-			return false
-
-		var lhsIt = lhs.Iterator()
-		var rhsIt = rhs.Iterator()
-		while(lhsIt.HasNext())
-			if(lhsIt.Next() != rhsIt.Next())
-				return false
-
-		true
-	}
-
-	Def !=(lhs: LinkedList<T>, rhs: LinkedList<T>) = !(lhs == rhs)
-
-	Def +(lhs: LinkedList<T>, rhs: T) = {
-        var newList = new LinkedList<T>(lhs)
-        newList.Push(rhs)
-        newList
-	}
-
-	Def +(lhs: LinkedList<T>, rhs: LinkedList<T>) = {
-	    var newList = new LinkedList<T>(lhs)
-	    newList.AddAll(rhs)
-		newList
-	}
-
-	Def -(lhs: LinkedList<T>, rhs: T) = {
-        var newList = new LinkedList<T>(lhs)
-        newList.Remove(rhs)
-        newList
-	}
-
-	Def #(list: LinkedList<T>) = {
-		var res = 0
-		var it = list.Iterator()
-		while(it.HasNext())
-			res = 31 * res + #it.Next()
-		res
-	}
-
-    Def NonEmpty() = size != 0
-
-	Def IsEmpty() = size == 0
+	Def Size() = size
 
 	Def Clear() = {
-		first = new Option<Node<T>>()
-        last = new Option<Node<T>>()
+		first = new Option<LinkedListNode<T>>()
+        last = new Option<LinkedListNode<T>>()
         size = 0
 	}
 
-	Def Iterator() = new LinkedListIterator<T>(this)
+	Def Iterator(): Iterator<T> = new LinkedListIterator<T>(first)
 
-	Def Push(value: T) = {
-		var node = new Node<T>(value)
-
-		if(!first.IsDefined()){
-			first.Add(node)
-			last = first
-		} else {
-			node.SetPrev(last.Value())
-			last.Value().SetNext(node)
-			last = last.Value().Next()
-		}
-		size++
-	}
-
-	Def Pop() = {
-		if(size <= 0)
-		    error("Cannot pop empty stack!")
-
-		var res = last.Value().Value
-		RemoveIndex(size - 1)
-		res
-	}
-
-	Def Add(value: T) = Add(0, value)
 	Def Add(index: Int, value: T) = {
 		if(index != size)
 			checkBounds(index)
 
-        var elem = new Node<T>(value)
-        if(index == size){
-            Push(value)
-        }else if(index == 0){
-            first.Value().SetPrev(elem)
-            elem.SetNext(first.Value())
-            first = new Option<Node<T>>(elem)
-        }else{
-            var node = find(index)
-            var prev = node.Value().Prev()
-            var next = node.Value().Next()
+        val elem = new LinkedListNode<T>(value)
+        val elemOp = new Option<LinkedListNode<T>>(elem)
+        if(size == 0){
+            // Empty list
+            first = elemOp
+            last = first
+        } else if(index == size) {
+            // Insert at end of the list
+            elem.Prev = last
+            last.Get().Next = elemOp
+            last = elemOp
+        } else if(index == 0) {
+            // Insert at beginning of the list
+            elem.Next = first
+            first.Get().Prev = elemOp
+            first = elemOp
+        } else {
+            // Insert in the middle of the list
+            val node = find(index)
+            val prev = node.Prev.Get()
 
-            prev.Value().SetNext(elem)
-            elem.SetPrev(prev.Value())
+            elem.Prev = new Option<LinkedListNode<T>>(prev)
+            elem.Next = new Option<LinkedListNode<T>>(node)
 
-            elem.SetNext(node.Value())
-            node.Value().SetPrev(elem)
+            prev.Next = elemOp
+            node.Prev = elemOp
         }
         size++
 	}
 
-    Def AddAll(list: LinkedList<T>) = {
-    	var it =  list.Iterator()
-    	while(it.HasNext())
-    		Push(it.Next())
-    }
+	Def AddAll(index: Int, elements: Collection<T>) = {
+	    if(elements.IsEmpty())
+	        return
 
-	Def AddAll(index: Int, list: LinkedList<T>) = {
-		checkBounds(index)
+        checkBounds(index)
 
-		var it =  list.Iterator()
-		while(it.HasNext())
-			Add(index, it.Next())
+        var node = find(index)
+        val post = node.Next
+		for(val e in elements){
+		    val n = new LinkedListNode<T>(e)
+		    n.Prev = new Option<LinkedListNode<T>>(node)
+		    node.Next = new Option<LinkedListNode<T>>(n)
+		    node = n
+		}
+		if(post.IsDefined())
+		    node.Next = post
 	}
 
-	Def Remove(value) = {
-		var index = IndexOf(value)
-
-		if(index == -1)
-			return false
-
-		RemoveIndex(index)
-		true
-	}
-
-	Def RemoveIndex(index) =  {
+	Def RemoveIndex(index: Int) =  {
 		checkBounds(index)
 
-		var node =  find(index)
-        var prev =  node.Value().Prev()
-        var next =  node.Value().Next()
+		val node = find(index)
+        val prev = node.Prev
+        val next = node.Next
         if(prev.IsDefined() && next.IsDefined()) {
-            // Node is in the middle of the list
-            prev.Value().SetNext(next.Value())
-            next.Value().SetPrev(prev.Value())
-        } else if(prev.IsDefined() && ! next.IsDefined()) {
-            // Node is last element
-            prev.Value().ClearNext()
+            // LinkedListNode is in the middle of the list
+            prev.Get().Next = next
+            next.Get().Prev = prev
+        } else if(prev.IsDefined() && !next.IsDefined()) {
+            // LinkedListNode is last element
+            prev.Get().Next = new Option<LinkedListNode<T>>()
             last = prev
         } else if(!prev.IsDefined() && next.IsDefined()) {
-            // Node is first element
-            next.Value().ClearPrev()
+            // LinkedListNode is first element
+            next.Get().Prev = new Option<LinkedListNode<T>>()
             first = next
         } else {
-            // Node is the only element
+            // LinkedListNode is the only element
             Clear()
+            size = 1
         }
         size--
 	}
 
-	Def IndexOf(value: T) = {
-		var i = 0
-		var it = Iterator()
-		while(it.HasNext()){
-			if(it.Next() == value)
-				return i
-			i++
-		}
-		-1
-	}
-
-	Def LastIndexOf(value: T) = {
-		var index =  -1
-		var i = 0
-		var it = Iterator()
-
-		while(it.HasNext()){
-			if(it.Next() == value)
-				index = i
-			i++
-		}
-		index
-	}
-
-	Def Contains(value: T) = IndexOf(value) != -1
-
-	Def MakeString(delimiter: String) = {
-		var it = Iterator()
-		var s = ""
-		while(it.HasNext()){
-			s += it.Next()
-			if(it.HasNext())
-				s += delimiter
-		}
-		s
-	}
-
-    Def toString() = "[" + MakeString(", ") + "]"
-
-	Def Size() = size
-
-	Def first() = first
-
-	Def last() = last
+	Def FirstNode() = first
+	Def LastNode() = last
 
 	def find(index: Int) = {
-		if(index == 0)			 return first
-		if(index == size - 1)	 return last
-
+        var tmp: Option<LinkedListNode<T>>
 		if(index < (size / 2) + 1){
-			var tmp = first
-			for(var i =  0 ; i < index && tmp.IsDefined(); i++)
-				tmp = tmp.Value().Next()
+			tmp = first
+			for(var i = 0; i < index; i++)
+				tmp = tmp.Get().Next
 		} else {
-			var tmp = last
-			for(var i = size - 1 ; i > index && tmp.IsDefined(); i++)
-				tmp = tmp.Value().Prev()
+			tmp = last
+			for(var i = size - 1; i > index; i--)
+				tmp = tmp.Get().Prev
 		}
 
-		tmp
+		tmp.Get()
 	}
 
 	def checkBounds(index: Int) =
@@ -253,44 +147,33 @@ class LinkedList<T> {
 	def outOfBoundsError(index: Int) = error("Index out of bounds: " + index + " (size: " + size + ")")
 }
 
-class Node<T> {
+class LinkedListNode<T> {
+
 	Var Value: T
-	var next: Option<Node<T>> = new Option<Node<T>>()
-	var prev: Option<Node<T>> = new Option<Node<T>>()
+	Var Next: Option<LinkedListNode<T>> = new Option<LinkedListNode<T>>()
+	Var Prev: Option<LinkedListNode<T>> = new Option<LinkedListNode<T>>()
 
 	Def new(v: T) = Value = v
-
-	Def Next() = next
-
-	Def Prev() = prev
-
-	Def ClearNext() = (next = new Option<Node<T>>())
-
-	Def ClearPrev() = (prev = new Option<Node<T>>())
-
-	Def SetNext(n: Node<T>) = (next = n)
-
-	Def SetPrev(n: Node<T>) = (prev = n)
 }
 
-class LinkedListIterator<T> {
-	var current: Node<T>
+class LinkedListIterator<T> : Iterator<T> {
+	var current: LinkedListNode<T>
 	var hasNext: Bool
 
-	Def new(list: LinkedList<T>) = {
-		hasNext = list.NonEmpty()
-		if(list.first().IsDefined())
-			current = list.first().Value()
+	Def new(first: Option<LinkedListNode<T>>) = {
+		hasNext = first.IsDefined()
+		if(hasNext)
+			current = first.Get()
 	}
 
 	Def HasNext() = hasNext
 
 	Def Next() = {
-		var res =  current.Value
+		val res =  current.Value
 
-		hasNext = current.Next().IsDefined()
+		hasNext = current.Next.IsDefined()
 		if(hasNext)
-			current = current.Next().Value()
+			current = current.Next.Get()
 		res
 	}
 }

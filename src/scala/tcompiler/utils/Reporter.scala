@@ -45,6 +45,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
 
   def fatal(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
     val error = errMessage(locationPrefix, 3, errorCode, msg, pos)
+    errors += error
     throw new CompilationException(error)
   }
 

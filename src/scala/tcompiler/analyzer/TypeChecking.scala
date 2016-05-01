@@ -634,9 +634,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
 
   private def checkReassignment(id: Identifier, pos: Positioned) = {
-    val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
-    if (varSymbol.modifiers.contains(Final()))
-      ErrorReassignmentToVal(id.value, pos)
+    if(id.hasSymbol){
+      val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
+      if (varSymbol.modifiers.contains(Final()))
+        ErrorReassignmentToVal(id.value, pos)
+    }
   }
 
   private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
@@ -822,7 +824,8 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
   private def error(errorCode: Int, msg: String, pos: Positioned) = {
-    ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
+    if(!msg.contains(s"'$TError'"))
+      ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
     TError
   }
 

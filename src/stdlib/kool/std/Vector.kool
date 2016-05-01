@@ -12,15 +12,15 @@ class Vector<T>: List<T> {
 
 	Def new() = Clear()
 
-	Def new(list: Vector<T>) = {
+	Def new(elements: Collection<T>) = {
 		Clear()
-		AddAll(list)
+		AddAll(elements)
 	}
 
 	Def implicit new(array: T[]) = {
 		Clear()
-		for(var i = 0; i < array.Size(); i++)
-			Add(array[i])
+		for(val e in array)
+		    Add(e)
 	}
 
 	Def new(initSize: Int, value: T) = {
@@ -34,8 +34,6 @@ class Vector<T>: List<T> {
     Def Set(index: Int, value: T) = (data[index] = value)
 
 	Def Size() = size
-
-	Def IsEmpty() = size == 0
 
 	Def Clear() = {
 		size = 0
@@ -87,21 +85,6 @@ class Vector<T>: List<T> {
 		size--
 	}
 
-	Def IndexOf(value: T) = {
-		for(var i = 0; i < size; i++)
-			if(data[i] == value)
-                return i
-		-1
-	}
-
-	Def LastIndexOf(value: T) = {
-		var res = -1
-		for(var i = 0; i < size; i++)
-			if(data[i] == value)
-				res = i
-		res
-	}
-
     /**
     * Increases the size of the underlying storage.
     */
@@ -132,12 +115,11 @@ class VectorIterator<T>: Iterator<T> {
 		vector = list
 	}
 
-    Def HasNext(): Bool = hasNext
+	Def HasNext() = hasNext
 
 	Def Next() = {
-	    val v = vector[current]
-	    hasNext = ++current < vector.Size() - 1
-	    v
+		hasNext = current < vector.Size() - 1
+		vector[current++]
 	}
 
 }

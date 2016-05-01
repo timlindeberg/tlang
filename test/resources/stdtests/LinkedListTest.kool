@@ -1,4 +1,4 @@
-import <kool.std.Vector>
+import <kool.std.LinkedList>
 import <kool.std.Tester>
 
 Construction()
@@ -16,28 +16,29 @@ Equals()
 MakeString()
 Hash()
 Foreach()
+Nodes()
 
 println("All tests succeded.") // res: All tests succeded.
 
 Def Construction() = {
     val t = new Tester<Int>()
-    val v1: Vector<Int> = {1, 2, 3}
+    val v1: LinkedList<Int> = {1, 2, 3}
     t.AssertEquals(v1.Get(0), 1)
     t.AssertEquals(v1.Get(1), 2)
     t.AssertEquals(v1.Get(2), 3)
     t.AssertEquals(v1.Size(), 3)
 
-    val v2: Vector<Int> = new Vector<Int>()
+    val v2: LinkedList<Int> = new LinkedList<Int>()
     t.AssertEquals(v2.Size(), 0)
     t.AssertTrue(v2.IsEmpty())
 
-    val v3: Vector<Int> = new Vector<Int>(v1)
+    val v3: LinkedList<Int> = new LinkedList<Int>(v1)
     t.AssertEquals(v3[0], 1)
     t.AssertEquals(v3[1], 2)
     t.AssertEquals(v3[2], 3)
     t.AssertEquals(v3.Size(), 3)
 
-    val v4: Vector<Int> = new Vector<Int>(3, 1)
+    val v4: LinkedList<Int> = new LinkedList<Int>(3, 1)
     t.AssertEquals(v4[0], 1)
     t.AssertEquals(v4[1], 1)
     t.AssertEquals(v4[2], 1)
@@ -46,7 +47,7 @@ Def Construction() = {
 
 Def Set() = {
     val t = new Tester<Int>()
-    val v1: Vector<Int> = {1, 2, 3}
+    val v1: LinkedList<Int> = {1, 2, 3}
 
     v1.Set(1, 1)
     v1[2] = 1
@@ -58,8 +59,8 @@ Def Set() = {
 
 Def IsEmpty() = {
     val t = new Tester<Int>()
-    val v1: Vector<Int> = {1, 2, 3}
-    val v2: Vector<Int> = new Vector<Int>()
+    val v1: LinkedList<Int> = {1, 2, 3}
+    val v2: LinkedList<Int> = new LinkedList<Int>()
 
     t.AssertTrue(v1.NonEmpty())
     t.AssertFalse(v1.IsEmpty())
@@ -70,7 +71,7 @@ Def IsEmpty() = {
 
 Def Clear() = {
     val t = new Tester<Int>()
-    val v1: Vector<Int> = {1, 2, 3}
+    val v1: LinkedList<Int> = {1, 2, 3}
     v1.Clear()
 
     t.AssertTrue(v1.IsEmpty())
@@ -79,7 +80,7 @@ Def Clear() = {
 
 Def Iterator() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 3}
+    val v: LinkedList<Int> = {1, 2, 3}
     val it = v.Iterator()
 
     t.AssertTrue(it.HasNext())
@@ -93,7 +94,7 @@ Def Iterator() = {
 
 Def Add() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1}
+    val v: LinkedList<Int> = {1}
     v.AddFirst(0)
     t.AssertEquals(v[0], 0)
     t.AssertEquals(v[1], 1)
@@ -112,8 +113,9 @@ Def Add() = {
     t.AssertEquals(v[3], 3)
     t.AssertEquals(v.Size(), 4)
 
-    val v2: Vector<Int> = {4, 5, 6}
+    val v2: LinkedList<Int> = {4, 5, 6}
     v.AddAll(v2)
+
     t.AssertEquals(v[0], 0)
     t.AssertEquals(v[1], 2)
     t.AssertEquals(v[2], 1)
@@ -126,8 +128,8 @@ Def Add() = {
 
 Def Remove() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 3, 4, 5}
-    val v2: Vector<Int> = {2, 3}
+    val v: LinkedList<Int> = {1, 2, 3, 4, 5}
+    val v2: LinkedList<Int> = {2, 3}
 
     t.AssertFalse(v.Remove(0))
     t.AssertFalse(v.Remove(6))
@@ -159,7 +161,7 @@ Def Remove() = {
 
 Def RemoveIndex() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 3, 4, 5}
+    val v: LinkedList<Int> = {1, 2, 3, 4, 5}
 
     v.RemoveIndex(3)
     t.AssertEquals(v[0], 1)
@@ -182,7 +184,7 @@ Def RemoveIndex() = {
 
 Def IndexOf() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+    val v: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
 
     t.AssertEquals(v.IndexOf(1), 0)
     t.AssertEquals(v.IndexOf(2), 1)
@@ -201,7 +203,7 @@ Def IndexOf() = {
 
 Def FirstLast() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 2, 4, 5}
+    val v: LinkedList<Int> = {1, 2, 2, 4, 5}
 
     t.AssertEquals(v.First(), 1)
     t.AssertEquals(v.Last(), 5)
@@ -209,8 +211,8 @@ Def FirstLast() = {
 
 Def Contains() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
-    val v2: Vector<Int> = {1, 4, 5}
+    val v: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
+    val v2: LinkedList<Int> = {1, 4, 5}
 
     t.AssertTrue(v.Contains(1))
     t.AssertTrue(v.Contains(2))
@@ -226,7 +228,7 @@ Def Contains() = {
 
 Def ToArray() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+    val v: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
     val a: Int[] = v.ToArray()
     t.AssertEquals(a.Size(), 6)
     t.AssertEquals(a[0], 1)
@@ -240,7 +242,7 @@ Def ToArray() = {
 Def MakeString() = {
     // TODO: Uncomment when string comparison works
     //val t = new Tester<String>()
-    //val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+    //val v: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
     // t.AssertEquals(v.MakeString(", "), "1, 2, 2, 4, 5, 1")
     // t.AssertEquals(v.toString(), "[ 1, 2, 2, 4, 5, 1 ]")
 }
@@ -248,10 +250,10 @@ Def MakeString() = {
 Def Equals() = {
     val t = new Tester<Int>()
 
-    val v1: Vector<Int> = {1, 2, 2, 4, 5, 1}
-    val v2: Vector<Int> = {1, 2, 2, 4, 5, 1}
-    val v3: Vector<Int> = {1, 2, 3, 4, 5, 1}
-    val v4: Vector<Int> = {1, 4, 5}
+    val v1: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
+    val v2: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
+    val v3: LinkedList<Int> = {1, 2, 3, 4, 5, 1}
+    val v4: LinkedList<Int> = {1, 4, 5}
 
     t.AssertTrue(v1 == v1)
     t.AssertTrue(v1 == v2)
@@ -277,15 +279,28 @@ Def Equals() = {
 Def Hash() = {
     val t = new Tester<Int>()
 
-    val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+    val v: LinkedList<Int> = {1, 2, 2, 4, 5, 1}
     t.AssertEquals(#v, 26718529)
 }
 
 Def Foreach() = {
     val t = new Tester<Int>()
-    val v: Vector<Int> = {1, 2, 3, 4, 5, 6}
+    val v: LinkedList<Int> = {1, 2, 3, 4, 5, 6}
 
     var i = 1
-    for(var value in v)
+    for(val value in v)
         t.AssertEquals(i++, value)
+}
+
+Def Nodes() = {
+    val t = new Tester<Int>()
+    val v: LinkedList<Int> = {1, 2, 3, 4, 5, 6}
+
+    var i = 1
+    var node = v.FirstNode()
+    while(node.IsDefined()){
+        val n = node.Get()
+        t.AssertEquals(i++, n.Value)
+        node = n.Next
+    }
 }

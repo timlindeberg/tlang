@@ -941,10 +941,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           Hash(term())
         case DECREMENT     =>
           eat(DECREMENT)
-          PreDecrement(expression())
+          PreDecrement(term())
         case INCREMENT     =>
           eat(INCREMENT)
-          PreIncrement(expression())
+          PreIncrement(term())
         case INTLITKIND    =>
           intLit()
         case LONGLITKIND   =>

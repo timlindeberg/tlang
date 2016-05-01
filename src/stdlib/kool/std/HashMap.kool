@@ -44,7 +44,7 @@ class HashMap<K, V> {
 		if(!res.IsDefined())
 			errorEntryNotFound(key)
 
-		res.Value()
+		res.Get()
 	}
 
 	Def +(lhs: HashMap<K, V>, rhs: HashMap<K, V>)  = {
@@ -72,7 +72,7 @@ class HashMap<K, V> {
 			if(!maybeValue.IsDefined())
 				return false
 
-			if(maybeValue.Value() != lhsEntry.Value)
+			if(maybeValue.Get() != lhsEntry.Value)
 				return false
 		}
 		true
@@ -103,7 +103,7 @@ class HashMap<K, V> {
 		if(!maybeEntry.IsDefined())
 			return new Option<V>()
 
-		val it = maybeEntry.Value().Iterator()
+		val it = maybeEntry.Get().Iterator()
 		while(it.HasNext()){
 			val e = it.Next()
 			if(e.Key == key)
@@ -119,7 +119,7 @@ class HashMap<K, V> {
 		if(!maybeEntry.IsDefined())
 			return
 
-		val it = maybeEntry.Value().Iterator()
+		val it = maybeEntry.Get().Iterator()
 		var entry: Entry<K, V>
 		var previous = new Option<Entry<K, V>>()
 		while(it.HasNext()){
@@ -132,9 +132,9 @@ class HashMap<K, V> {
             if(!previous.IsDefined())
                 entries[index] = new Option<Entry<K, V>>()
             else if(it.HasNext())
-                previous.Value().Next = new Option<Entry<K, V>>(it.Next())
+                previous.Get().Next = new Option<Entry<K, V>>(it.Next())
             else
-                previous.Value().Next = new Option<Entry<K, V>>()
+                previous.Get().Next = new Option<Entry<K, V>>()
 
             size--
             return
@@ -191,11 +191,11 @@ class HashMap<K, V> {
 		val maybeEntry = data[index]
 
 		if(!maybeEntry.IsDefined()){
-			maybeEntry.Add(newEntry)
+		    data[index] = new Option<Entry<K, V>>(newEntry)
 			return true
 		}
 
-		val it = maybeEntry.Value().Iterator()
+		val it = maybeEntry.Get().Iterator()
 		var entry: Entry<K, V>
 		while(it.HasNext()){
 			entry = it.Next()
@@ -216,7 +216,7 @@ class HashMap<K, V> {
 		    if(!entries[i].IsDefined())
 		        continue
 
-            val it = entries[i].Value().Iterator()
+            val it = entries[i].Get().Iterator()
             while(it.HasNext()){
                 val entry = it.Next()
                 entry.Next = new Option<Entry<K, V>>()
@@ -287,7 +287,7 @@ class EntryListIterator<K, V> {
 		val res = current
 		hasNext = current.Next.IsDefined()
 		if(hasNext)
-			current = current.Next.Value()
+			current = current.Next.Get()
 		res
 	}
 }
@@ -336,15 +336,15 @@ class EntryIterator<K, V> {
 	Def HasNext() = hasNext
 
 	Def Next() = {
-		val res = currentEntry.Value()
+		val res = currentEntry.Get()
 		currentEntry = nextEntry()
 		hasNext = currentEntry.IsDefined()
 		return res
 	}
 
 	def nextEntry() = {
-		if(currentEntry.IsDefined() && currentEntry.Value().Next.IsDefined())
-			return currentEntry.Value().Next
+		if(currentEntry.IsDefined() && currentEntry.Get().Next.IsDefined())
+			return currentEntry.Get().Next
 
 		nextDefinedEntry()
 	}

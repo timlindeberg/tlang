@@ -406,7 +406,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         val className = obj.getType.asInstanceOf[TObject].classSymbol.name
         if (!static)
           compileExpr(obj)
-        compileExpr(expr)
+        compileAssignmentValue(expr, fieldType)
         convertType(ch, expr.getType, fieldType)
         if (duplicate) {
           if (static) id.getType.codes.dup(ch)
@@ -456,8 +456,12 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             ch << cafebabe.AbstractByteCodes.New(objName)
             codes.dup(ch)
             args.foreach(compileExpr(_))
+            val argTypes = args.map(_.getType)
 
-            val signature = "(" + args.map(_.getType.byteCodeName).mkString + ")V"
+            val signature = classSymbol.lookupMethod("new", argTypes) match {
+              case Some(m) => m.signature
+              case _       => "()V"
+            }
             ch << InvokeSpecial(objName, ConstructorName, signature)
           case primitiveType        =>
             if (args.size == 1) {
@@ -856,7 +860,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     val containerDecl = createVarDecl("container", container, container.getType)
     val containerId = containerDecl.id
 
-    val comparison = LessThan(indexDecl.id, MethodCall(container, Identifier("Size"), List()).setType(TInt)).setType(TBool)
+    val comparison = LessThan(indexDecl.id, MethodCall(containerId, Identifier("Size"), List()).setType(TInt)).setType(TBool)
     val post = PostIncrement(indexDecl.id).setType(TInt)
 
     val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType)))

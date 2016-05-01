@@ -1,7 +1,6 @@
 package kool.std
 
 import <Collection>
-import <Iterator>
 
 /**
 * An ordered collection of elements.
@@ -30,13 +29,6 @@ trait List<T>: Collection<T> {
     Def Add(index: Int, value: T): Unit
 
     /**
-    * Adds all the elements in the given list at the position specified by the given index.
-    * @param index the position to add the new elements at
-    * @param list  the list of values to add
-    */
-    Def AddAll(index: Int, list: Collection<T>): Unit
-
-    /**
     * Removes the element at the given index.
     * @param index the position to remove
     */
@@ -48,7 +40,15 @@ trait List<T>: Collection<T> {
     * @return      the first found index containing the given value or -1 if the list
     *              does not contain the value
     */
-    Def IndexOf(value: T): Int
+    Def IndexOf(value: T): Int = {
+        var i = 0
+        for(val e in this){
+            if(e == value)
+                return i
+            i++
+        }
+        -1
+    }
 
     /**
     * Returns the last found index containing the given value.
@@ -56,7 +56,16 @@ trait List<T>: Collection<T> {
     * @return      the last found index containing the given value or -1 if the list
     *              does not contain the value
     */
-    Def LastIndexOf(value: T): Int
+    Def LastIndexOf(value: T): Int = {
+        var res = -1
+        var i = 0
+        for(val e in this){
+            if(e == value)
+                res = i
+            i++
+        }
+        res
+    }
 
     //------------------------------------------------------------
     // Default methods
@@ -73,6 +82,16 @@ trait List<T>: Collection<T> {
     * @param value the value to add
     */
     Def Add(value: T): Unit = Add(Size(), value)
+
+    /**
+    * Adds all the elements in the given list at the position specified by the given index.
+    * @param index the position to add the new elements at
+    * @param list  the list of values to add
+    */
+    Def AddAll(index: Int, list: Collection<T>): Unit = {
+        for(val e in list)
+            Add(index, e)
+    }
 
     /**
     * Returns the first element of this list.
@@ -106,16 +125,6 @@ trait List<T>: Collection<T> {
 
         RemoveIndex(index)
         true
-    }
-
-    /**
-    * Removes all of the given elements from this list.
-    * @param list the elements to remove
-    */
-    Def RemoveAll(list: Collection<T>): Unit = {
-        val it = list.Iterator()
-        while(it.HasNext())
-            Remove(it.Next())
     }
 
     //------------------------------------------------------------
