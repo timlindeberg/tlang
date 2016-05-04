@@ -184,6 +184,7 @@ object Trees {
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
+  case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) extends ExprTree
   case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
   case class IntLit(value: Int) extends ExprTree
   case class LongLit(value: Long) extends ExprTree

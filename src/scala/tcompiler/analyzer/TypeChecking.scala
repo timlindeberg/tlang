@@ -3,11 +3,10 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.Printer
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
-import tcompiler.utils._
 import tcompiler.utils.Extensions._
+import tcompiler.utils._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -420,6 +419,10 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
             arrTpe
           case tpe                  => ErrorWrongType("array", tpe, arr)
         }
+      case ArraySlice(arr, start, end)   =>
+        start.ifDefined(tcExpr(_, TInt))
+        end.ifDefined(tcExpr(_, TInt))
+        tcExpr(arr)
       case newDecl@New(tpe, exprs)       =>
         val argTypes = exprs.map(tcExpr(_))
         tpe.getType match {
@@ -635,7 +638,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     }
 
   private def checkReassignment(id: Identifier, pos: Positioned) = {
-    if(id.hasSymbol){
+    if (id.hasSymbol) {
       val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
       if (varSymbol.modifiers.contains(Final()))
         ErrorReassignmentToVal(id.value, pos)
@@ -825,7 +828,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
   }
 
   private def error(errorCode: Int, msg: String, pos: Positioned) = {
-    if(!msg.contains(s"'$TError'"))
+    if (!msg.contains(s"'$TError'"))
       ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
     TError
   }

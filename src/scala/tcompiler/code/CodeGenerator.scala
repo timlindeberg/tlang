@@ -120,7 +120,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         compileBranch(condition, bodyLabel, afterLabel)
         ch << afterLabel
       case Foreach(varDecl, container, stat)     =>
-        compileStat(transformForeachLoop(varDecl, container, stat))
+        transformForeachLoop(varDecl, container, stat)
       case PrintStatement(expr)                  =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << DUP
@@ -158,7 +158,8 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   }
 
   def compileExpr(expression: ExprTree, duplicate: Boolean = true): Unit = {
-    ch << LineNumber(expression.line)
+    if (expression.hasPosition)
+      ch << LineNumber(expression.line)
     expression match {
       case True()                                            => ch << Ldc(1)
       case False()                                           => ch << Ldc(0)
@@ -390,6 +391,8 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             arrayType.codes.arrayLoad(ch)
           case _                    => ???
         }
+      case arraySlice: ArraySlice                            =>
+        constructArraySlice(arraySlice)
       case FieldRead(obj, id)                                =>
         val className = obj.getType.asInstanceOf[TObject].classSymbol.name
 
@@ -822,7 +825,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     s"$name$$$iteratorNum"
   }
 
-  private def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type) = {
+  private def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type): (VarDecl, Identifier) = {
     val modifiers = scala.collection.immutable.Set[Modifier](Private())
 
     initExpression.setType(tpe)
@@ -834,38 +837,94 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     varDecl.setSymbol(symbol)
     id.setSymbol(symbol)
     id.setType(tpe)
-    varDecl
+    (varDecl, id)
   }
 
-  private def transformForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) =
-    container.getType match {
+  /**
+    * Generates the following code:
+    * var container$x = <arr>
+    * var start$x = < 0|slice.start >            // 0 if slice.start is undefined
+    * var end$x = < container.Size()|slice.end > // container.Size() if slice.end is undefined
+    * var slice$x = new <arrTpe>[start$x - end$x]
+    * for(var i$x = start$x; i < end$x; i++)
+    * slice$x[start$x - i$x] = container[i$x]
+    * slice$x
+    *
+    * A reference to the generated slice is left on the stack.
+    */
+  private def constructArraySlice(arraySlice: ArraySlice) = {
+    val arr = arraySlice.arr
+    val arrayType = arr.getType
+    val arrType = arrayType.asInstanceOf[TArray].tpe
+    val (containerDecl, containerId) = createVarDecl("container", arr, arrayType)
+
+    val start = arraySlice.start.getOrElse(IntLit(0).setType(TInt))
+    val end = arraySlice.end.getOrElse(MethodCall(containerId, Identifier("Size"), List()).setType(TInt))
+
+    val (startDecl, startId) = createVarDecl("start", start, TInt)
+    val (endDecl, endId) = createVarDecl("end", end, TInt)
+
+    val size = List(Minus(endId, startId).setType(TInt))
+    val typeTree = getTypeTree(arrayType.asInstanceOf[TArray].tpe)
+    val newArray = tcompiler.ast.Trees.NewArray(typeTree, size)
+    val (sliceDecl, sliceId) = createVarDecl("slice", newArray, arrayType)
+    val (indexDecl, indexId) = createVarDecl("i", startId, TInt)
+    val comparison = LessThan(indexDecl.id, endId).setType(TBool)
+    val post = PostIncrement(indexDecl.id).setType(TInt)
+
+    val copyValue = ArrayAssign(sliceId, Minus(indexId, startId).setType(TInt), ArrayRead(containerId, indexId).setType(arrType)).setType(arrType)
+    val forLoop = For(List(indexDecl), comparison, List(post), copyValue)
+    val decls = Block(List(containerDecl, startDecl, endDecl, sliceDecl))
+    compileStat(decls)
+    compileStat(forLoop)
+    compileExpr(sliceId)
+  }
+
+  private def getTypeTree(tpe: Type): TypeTree =
+    (tpe match {
+      case TUnit                => UnitType()
+      case TChar                => CharType()
+      case TBool                => BooleanType()
+      case TInt                 => IntType()
+      case TLong                => LongType()
+      case TFloat               => FloatType()
+      case TDouble              => DoubleType()
+      case TString              => StringType()
+      case TArray(t)            => ArrayType(getTypeTree(t))
+      case TObject(classSymbol) => ClassIdentifier(classSymbol.name).setSymbol(classSymbol)
+    }).setType(tpe)
+
+  private def transformForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
+    val code = container.getType match {
       case TArray(arrTpe)       => transformArrayForeachLoop(varDecl, container, stat)
       case TObject(classSymbol) => transformIteratorForeachLoop(classSymbol, varDecl, container, stat)
       case _                    => ???
     }
+    compileStat(code)
+  }
+
 
   /**
     * Compile to an indexed for loop:
     * for(<varDecl> in <container>)
-    *  <code>
-
+    * <code>
+    *
     * becomes:
-
+    *
     * {
-    *    val container$x = <container>
-    *    for(var i$x = 0; i$x < container$x.Size(); i++){
-    *       <varDecl> = container$x[i$x]
-    *       <code>
-    *    }
+    * val container$x = <container>
+    * for(var i$x = 0; i$x < container$x.Size(); i++){
+    * <varDecl> = container$x[i$x]
+    * <code>
+    * }
     * }
     */
   private def transformArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val indexDecl = createVarDecl("i", IntLit(0), TInt)
-    val containerDecl = createVarDecl("container", container, container.getType)
-    val containerId = containerDecl.id
+    val (indexDecl, indexId) = createVarDecl("i", IntLit(0), TInt)
+    val (containerDecl, containerId) = createVarDecl("container", container, container.getType)
 
-    val comparison = LessThan(indexDecl.id, MethodCall(containerId, Identifier("Size"), List()).setType(TInt)).setType(TBool)
-    val post = PostIncrement(indexDecl.id).setType(TInt)
+    val comparison = LessThan(indexId, MethodCall(containerId, Identifier("Size"), List()).setType(TInt)).setType(TBool)
+    val post = PostIncrement(indexId).setType(TInt)
 
     val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType)))
     valInit.setSymbol(varDecl.getSymbol)
@@ -877,24 +936,23 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   /**
     * Compile a foreach loop to an iterator call:
     * for(<varDecl> in <container>)
-    *   <code>
+    * <code>
     *
     * becomes:
     *
     * {
-    *    val it$x = <container>.Iterator()
-    *    while(it$x.HasNext()){
-    *        <varDecl> = it$x.Iterator()
-    *        <code>
-    *    }
+    * val it$x = <container>.Iterator()
+    * while(it$x.HasNext()){
+    * <varDecl> = it$x.Iterator()
+    * <code>
+    * }
     * }
     */
   private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
     val methId = iteratorMethodSymbol.ast.id
     val iteratorCall = MethodCall(container, methId, List())
-    val iteratorDecl = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
-    val iteratorId = iteratorDecl.id
+    val (iteratorDecl, iteratorId) = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
     val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
 
     val hasNextMethod = iteratorClass.lookupMethod("HasNext", List()).get.ast.id

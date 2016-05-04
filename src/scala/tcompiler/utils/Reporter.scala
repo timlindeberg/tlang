@@ -14,6 +14,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
 
   private val ErrorSeperator = "\n\n"
   private def QuoteColor = GetColor(Console.MAGENTA)
+  private def NumColor = GetColor(Console.BLUE)
   private def MessageStyle = GetColor(Console.BOLD)
   private def WarningColor = GetColor(Console.YELLOW)
   private def ErrorColor = GetColor(Console.RED + Console.BOLD)
@@ -105,13 +106,15 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   }
 
   private def filePrefix(pos: Positioned) = {
-    val Style = Bold + QuoteColor
-    val fileSplit = pos.file.getPath.split("""(\\|/|\\\\)""")
-    var file = fileSplit.dropRight(1).mkString("/")
-    file = s"$file/$Style${fileSplit.last}$EndColor"
-    val rest = s":$Style${pos.line}$EndColor:$Style${pos.col}$EndColor"
+    val Style = Bold + NumColor
+    var position = pos.position
+    if(useColor){
+      val fileName = pos.file.getName.replaceAll(Main.FileEnding, "")
+      position = position.replaceAll("(\\d)", s"$Style$$1$EndColor")
+      position = position.replaceAll(fileName, s"$Style$fileName$EndColor")
+    }
 
-    s"$Bold[$EndColor$file$rest$Bold]$EndColor"
+    s"$Bold[$EndColor$position$Bold]$EndColor"
   }
 
   private def handleQuoteLiterals(msg: String) = {
@@ -128,7 +131,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
 
   private def locationIndicator(errorLevel: Int, pos: Positioned): String = {
     val lines = getLines(pos.file)
-    val numColor = Bold + QuoteColor
+    val numColor = Bold + NumColor
     val prefix = s"$numColor${pos.line}$EndColor:   "
 
     var sb = new StringBuilder

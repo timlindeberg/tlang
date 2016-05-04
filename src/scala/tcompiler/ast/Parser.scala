@@ -546,25 +546,11 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     * | if"(" <expression> ")" <statement> [ else <statement> ]
     * | while"(" <expression> ")" <statement>
     * | <forloop> <endStatement>
-    * | println"(" <expression> ")" <endStatement>
+    * | (print|println|error)"(" <expression> ")" <endStatement>
+    * | break
+    * | continue
     * | return [ <expression> ] <endStatement>
-    * | <identifier> "=" <expression> <endStatement>
-    * | <identifier> "+=" <expression> <endStatement>
-    * | <identifier> "-=" <expression> <endStatement>
-    * | <identifier> "*=" <expression> <endStatement>
-    * | <identifier> "/=" <expression> <endStatement>
-    * | <identifier> "%=" <expression> <endStatement>
-    * | <identifier> "&=" <expression> <endStatement>
-    * | <identifier> "|=" <expression> <endStatement>
-    * | <identifier> "^=" <expression> <endStatement>
-    * | <identifier> "<<=" <expression> <endStatement>
-    * | <identifier> ">>=" <expression> <endStatement>
-    * | <identifier> "[" <expression> "]" "=" <expression> <endStatement>
-    * | <identifier> "++" <endStatement>
-    * | <identifier> "--" <endStatement>
-    * | "++" <identifier> <endStatement>
-    * | "--" <identifier> <endStatement>
-    * | <expression>"."<identifier>"(" [ <expression> { "," <expression> } ] [ "."<identifier>"(" [ <expression> { "," <expression> } ] } <endStatement>
+    * | <expression> <endStatement>
     **/
   def statement(): StatTree = {
     val startPos = nextToken
@@ -580,57 +566,52 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
 
     val tree = nextTokenKind match {
-      case LBRACE   =>
+      case LBRACE                  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
         eat(RBRACE)
         Block(stmts)
-      case IF       =>
+      case IF                      =>
         eat(IF, LPAREN)
         val expr = expression()
         eat(RPAREN)
         val stmt = statement()
         val els = optional(statement, ELSE)
         If(expr, stmt, els)
-      case WHILE    =>
+      case WHILE                   =>
         eat(WHILE, LPAREN)
         val expr = expression()
         eat(RPAREN)
         While(expr, statement())
-      case FOR      =>
+      case FOR                     =>
         forLoop()
-      case PRINT    =>
-        eat(PRINT, LPAREN)
+      case PRINT | PRINTLN | ERROR =>
+        val t = nextTokenKind
+        eat(t)
+        eat(LPAREN)
         val expr = expression()
         eat(RPAREN)
         endStatement()
-        Print(expr)
-      case PRINTLN  =>
-        eat(PRINTLN, LPAREN)
-        val expr = expression()
-        eat(RPAREN)
-        endStatement()
-        Println(expr)
-      case ERROR    =>
-        eat(ERROR, LPAREN)
-        val expr = expression()
-        eat(RPAREN)
-        endStatement()
-        Error(expr)
-      case RETURN   =>
+        t match {
+          case PRINT   => Print(expr)
+          case PRINTLN => Println(expr)
+          case ERROR   => Error(expr)
+          case _       => ???
+        }
+      case RETURN                  =>
         eat(RETURN)
         val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression()) else None
         endStatement()
         Return(expr)
-      case BREAK    =>
+      case BREAK                   =>
         eat(BREAK)
         endStatement()
         Break()
-      case CONTINUE =>
+      case CONTINUE                =>
         eat(CONTINUE)
         endStatement()
         Continue()
-      case _        =>
+      case _                       =>
         val expr = expression()
         endStatement()
         expr
@@ -893,8 +874,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       * | this
       * | <superCall>.<identifier>
       * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
-      * | new <tpe>"[" <expression> "] { "[" <expression> "]" }
-      * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
+      * | <newExpression>
       */
     def termFirst() = {
       val startPos = nextToken
@@ -912,27 +892,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case BANG          =>
           eat(BANG)
           Not(term())
-        case MINUS         =>
-          eat(MINUS)
-          currentToken match {
-            case x: INTLIT    =>
-              eat(INTLITKIND)
-              IntLit(-x.value)
-            case x: LONGLIT   =>
-              eat(LONGLITKIND)
-              LongLit(-x.value)
-            case x: FLOATLIT  =>
-              eat(FLOATLITKIND)
-              FloatLit(-x.value)
-            case x: DOUBLELIT =>
-              eat(DOUBLELITKIND)
-              DoubleLit(-x.value)
-            case x: CHARLIT   =>
-              eat(CHARLITKIND)
-              IntLit(-x.value)
-            case _            =>
-              Negation(term())
-          }
+        case MINUS         => negation()
         case LOGICNOT      =>
           eat(LOGICNOT)
           LogicNot(term())
@@ -995,56 +955,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           } else {
             FieldRead(sup, id)
           }
-        case NEW           =>
-          eat(NEW)
-
-          def sizes(): List[ExprTree] = {
-            val sizes = untilNot(() => {
-              eat(LBRACKET)
-              val size = expression()
-              eat(RBRACKET)
-              size
-            }, LBRACKET)
-            if (sizes.size > MaximumArraySize)
-              ErrorInvalidArrayDimension(sizes.size, startPos)
-            sizes
-          }
-
-          val tpe = nextTokenKind match {
-            case INT     =>
-              eat(INT)
-              IntType()
-            case LONG    =>
-              eat(LONG)
-              LongType()
-            case FLOAT   =>
-              eat(FLOAT)
-              FloatType()
-            case DOUBLE  =>
-              eat(DOUBLE)
-              DoubleType()
-            case CHAR    =>
-              eat(CHAR)
-              CharType()
-            case STRING  =>
-              eat(STRING)
-              StringType()
-            case BOOLEAN =>
-              eat(BOOLEAN)
-              BooleanType()
-            case _       => classIdentifier()
-          }
-
-          nextTokenKind match {
-            case LPAREN   =>
-              eat(LPAREN)
-              val args = commaList(expression)
-              eat(RPAREN)
-              New(tpe, args)
-            case LBRACKET =>
-              NewArray(tpe, sizes())
-            case _        => FatalWrongToken(LPAREN, LBRACKET)
-          }
+        case NEW           => newExpression()
         case _             => FatalUnexpectedToken()
       }
       tree.setPos(startPos, nextToken)
@@ -1053,7 +964,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     /**
       * <termRest> ::= .<identifier>
       * | .<identifier> "(" <expression> { "," <expression> } ")
-      * | "[" <expression> "]"
+      * | <arrayIndexing>
       * | as <tpe>
       * | ++
       * | --
@@ -1083,10 +994,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
               FieldRead(e, id)
             }
           case LBRACKET  =>
-            eat(LBRACKET)
-            val expr = expression()
-            eat(RBRACKET)
-            ArrayRead(e, expr)
+            arrayIndexing(e)
           case AS        =>
             eat(AS)
             As(e, tpe())
@@ -1104,6 +1012,129 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       e
     }
     termRest(termFirst())
+  }
+
+  /**
+    * <negation> ::= - <term>
+    */
+  def negation(): ExprTree = {
+    eat(MINUS)
+    currentToken match {
+      case x: INTLIT    =>
+        eat(INTLITKIND)
+        IntLit(-x.value)
+      case x: LONGLIT   =>
+        eat(LONGLITKIND)
+        LongLit(-x.value)
+      case x: FLOATLIT  =>
+        eat(FLOATLITKIND)
+        FloatLit(-x.value)
+      case x: DOUBLELIT =>
+        eat(DOUBLELITKIND)
+        DoubleLit(-x.value)
+      case x: CHARLIT   =>
+        eat(CHARLITKIND)
+        IntLit(-x.value)
+      case _            =>
+        Negation(term())
+    }
+  }
+
+  /**
+    * <newExpression> ::= new <tpe>"[" <expression> "] { "[" <expression> "]" }
+    * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
+    */
+  def newExpression(): ExprTree = {
+    val startPos = nextToken
+    eat(NEW)
+
+    def sizes(): List[ExprTree] = {
+      val sizes = untilNot(() => {
+        eat(LBRACKET)
+        val size = expression()
+        eat(RBRACKET)
+        size
+      }, LBRACKET)
+      if (sizes.size > MaximumArraySize)
+        ErrorInvalidArrayDimension(sizes.size, startPos)
+      sizes
+    }
+
+    val tpe = nextTokenKind match {
+      case INT     =>
+        eat(INT)
+        IntType()
+      case LONG    =>
+        eat(LONG)
+        LongType()
+      case FLOAT   =>
+        eat(FLOAT)
+        FloatType()
+      case DOUBLE  =>
+        eat(DOUBLE)
+        DoubleType()
+      case CHAR    =>
+        eat(CHAR)
+        CharType()
+      case STRING  =>
+        eat(STRING)
+        StringType()
+      case BOOLEAN =>
+        eat(BOOLEAN)
+        BooleanType()
+      case _       => classIdentifier()
+    }
+
+    nextTokenKind match {
+      case LPAREN   =>
+        eat(LPAREN)
+        val args = commaList(expression)
+        eat(RPAREN)
+        New(tpe, args)
+      case LBRACKET =>
+        NewArray(tpe, sizes())
+      case _        => FatalWrongToken(LPAREN, LBRACKET)
+    }
+  }
+
+  /**
+    * <arrayIndexing> ::= "[" <expression> "]"
+    * | "[" [ <expression> ] : [ <expression> ] "]"
+    */
+  def arrayIndexing(e: ExprTree): ExprTree = {
+    eat(LBRACKET)
+    nextTokenKind match {
+      case COLON =>
+        eat(COLON)
+        nextTokenKind match {
+          case RBRACKET =>
+            eat(RBRACKET)
+            ArraySlice(e, None, None)
+          case _        =>
+            val expr = expression()
+            eat(RBRACKET)
+            ArraySlice(e, None, Some(expr))
+        }
+      case _     =>
+        val expr = expression()
+        nextTokenKind match {
+          case COLON    =>
+            eat(COLON)
+            nextTokenKind match {
+              case RBRACKET =>
+                eat(RBRACKET)
+                ArraySlice(e, Some(expr), None)
+              case _        =>
+                val end = expression()
+                eat(RBRACKET)
+                ArraySlice(e, Some(expr), Some(end))
+            }
+          case RBRACKET =>
+            eat(RBRACKET)
+            ArrayRead(e, expr)
+          case _        => FatalWrongToken(COLON, RBRACKET)
+        }
+    }
   }
 
   /**
