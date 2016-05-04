@@ -20,7 +20,7 @@ lazy val core = (project in file(".")).
 		name := "T Compiler",
 		libraryDependencies ++= Seq(
 			"com.novocode" % "junit-interface" % "0.8" % "test->default",
-			"org.scalatest" %% "scalatest" % "2.2.4" % "test",
+			"org.scalatest" %% "scalatest" % "2.2.6" % "test",
 			"junit" % "junit" % "4.11" % "test",
 			"uk.com.robust-it" % "cloning" % "1.9.2",
 			"org.apache.bcel" % "bcel" % "5.2",

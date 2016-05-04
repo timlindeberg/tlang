@@ -3,6 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
+import tcompiler.ast.Printer
 import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
 import tcompiler.utils._

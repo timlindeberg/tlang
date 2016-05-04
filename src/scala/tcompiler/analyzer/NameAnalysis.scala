@@ -570,10 +570,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
     error(1, "Operators cannot be overriden.", pos)
 
   private def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(3, s"Class '$name' is already defined at line $line.", pos)
+    error(3, s"Class '$name' is already defined at line '$line'.", pos)
 
   private def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(4, s"Variable '$name' is already defined at line $line.", pos)
+    error(4, s"Variable '$name' is already defined at line '$line'.", pos)
 
   private def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned) =
     error(5, s"Field '$name' is already defined in super class.", pos)
@@ -582,10 +582,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
     error(6, s"Unknown type: '$name'.", pos)
 
   private def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
-    error(7, s"Method '$methodSignature' is already defined at line $line.", pos)
+    error(7, s"Method '$methodSignature' is already defined at line '$line'.", pos)
 
   private def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned) =
-    error(9, s"Operator '$operator' is already defined at line $line.", pos)
+    error(9, s"Operator '$operator' is already defined at line '$line'.", pos)
 
   private def ErrorCantResolveSymbol(name: String, pos: Positioned) =
     error(10, s"Could not resolve symbol '$name'.", pos)

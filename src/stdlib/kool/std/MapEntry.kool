@@ -1,0 +1,10 @@
+package kool.std
+
+trait MapEntry<K, V> {
+
+    Def Key(): K
+    Def Value(): V
+
+    Def toString() = "(" + Key() + " -> " + Value() + ")"
+
+}

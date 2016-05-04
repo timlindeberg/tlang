@@ -436,11 +436,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               compileExpr(obj)
               compileArgs()
 
-              if (classSymbol.isInstanceOf[TraitSymbol])
-                ch << InvokeInterface(className, meth.value, signature)
-              else if (obj.isInstanceOf[Super])
+              if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
+              // Super calls and private calls are executed with invokespecial
                 ch << InvokeSpecial(className, meth.value, signature)
+              else if (classSymbol.isInstanceOf[TraitSymbol])
+              // Methods called on traits are always called with invokeinterface
+                ch << InvokeInterface(className, meth.value, signature)
               else
+              // rest are called with invokevirtual
                 ch << InvokeVirtual(className, meth.value, signature)
             }
 
@@ -462,6 +465,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               case Some(m) => m.signature
               case _       => "()V"
             }
+            // Constructors are always called with InvokeSpecial
             ch << InvokeSpecial(objName, ConstructorName, signature)
           case primitiveType        =>
             if (args.size == 1) {
@@ -840,22 +844,22 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case _                    => ???
     }
 
-  private def transformArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    /*
-    Compile to an indexed for loop:
-       for(<varDecl> in <container>)
-          <code>
+  /**
+    * Compile to an indexed for loop:
+    * for(<varDecl> in <container>)
+    *  <code>
 
-       becomes:
+    * becomes:
 
-       {
-          val container$x = <container>
-          for(var i$x = 0; i$x < container$x.Size(); i++){
-              <varDecl> = container$x[i$x]
-              <code>
-          }
-       }
+    * {
+    *    val container$x = <container>
+    *    for(var i$x = 0; i$x < container$x.Size(); i++){
+    *       <varDecl> = container$x[i$x]
+    *       <code>
+    *    }
+    * }
     */
+  private def transformArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val indexDecl = createVarDecl("i", IntLit(0), TInt)
     val containerDecl = createVarDecl("container", container, container.getType)
     val containerId = containerDecl.id
@@ -870,22 +874,22 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     Block(List(containerDecl, indexedForLoop))
   }
 
-  private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    /*
-    Compile to an iterator call:
-       for(<varDecl> in <container>)
-          <code>
-
-       becomes:
-
-       {
-          val it$x = <container>.Iterator()
-          while(it$x.HasNext()){
-              <varDecl> = it$x.Iterator()
-              <code>
-          }
-       }
+  /**
+    * Compile a foreach loop to an iterator call:
+    * for(<varDecl> in <container>)
+    *   <code>
+    *
+    * becomes:
+    *
+    * {
+    *    val it$x = <container>.Iterator()
+    *    while(it$x.HasNext()){
+    *        <varDecl> = it$x.Iterator()
+    *        <code>
+    *    }
+    * }
     */
+  private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
     val methId = iteratorMethodSymbol.ast.id
     val iteratorCall = MethodCall(container, methId, List())

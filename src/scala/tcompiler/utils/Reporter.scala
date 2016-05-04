@@ -4,27 +4,31 @@ package utils
 import java.io.File
 import java.util.regex.Matcher
 
-import org.backuity.ansi.AnsiFormatter.FormattedHelper
-
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = false) {
+class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = false, useColor: Boolean = true) {
 
-  var ErrorSeperator = "\n\n"
-  var QuoteColor = Console.MAGENTA
-  var MessageStyle = Console.BOLD
-  var WarningColor = Console.YELLOW
-  var ErrorColor = Console.RED
-  var FatalColor = Console.RED
+  private val ErrorSeperator = "\n\n"
+  private def QuoteColor = GetColor(Console.MAGENTA)
+  private def MessageStyle = GetColor(Console.BOLD)
+  private def WarningColor = GetColor(Console.YELLOW)
+  private def ErrorColor = GetColor(Console.RED + Console.BOLD)
+  private def FatalColor = GetColor(Console.RED)
+  private def Underline = GetColor(Console.UNDERLINED)
+  private def Bold = GetColor(Console.BOLD)
+  private def EndColor = GetColor(Console.RESET)
+
+  // Only output color to consoles
+  private def GetColor(color: String) = if(useColor) color else ""
+  private var filesToLines = Map[File, IndexedSeq[String]]()
 
   var errors   = ArrayBuffer[String]()
   var warnings = ArrayBuffer[String]()
 
-  private var filesToLines = Map[File, IndexedSeq[String]]()
 
   def warning(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
     if(warningIsError){
@@ -86,9 +90,9 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
     val code = leftPad(errorCode)
 
     errorLevel match {
-      case 1 => ansi"%yellow{Warning} (%yellow{${errorPrefix}1$code})"
-      case 2 => ansi"%red{%bold{Error}} (%red{%bold{${errorPrefix}2$code}})"
-      case 3 => ansi"%red{%bold{Fatal}} (%red{%bold{${errorPrefix}3$code}})"
+      case 1 => s"${WarningColor}Warning$EndColor ($WarningColor${errorPrefix}1$code$EndColor)"
+      case 2 => s"${ErrorColor}Error$EndColor ($ErrorColor${errorPrefix}2$code$EndColor)"
+      case 3 => s"${FatalColor}Fatal$EndColor ($FatalColor${errorPrefix}3$code$EndColor)"
       case _ => ???
     }
   }
@@ -100,10 +104,18 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
     case _                         => ???
   }
 
-  private def filePrefix(pos: Positioned) = ansi"%bold{[}${pos.position}%bold{]}"
+  private def filePrefix(pos: Positioned) = {
+    val Style = Bold + QuoteColor
+    val fileSplit = pos.file.getPath.split("""(\\|/|\\\\)""")
+    var file = fileSplit.dropRight(1).mkString("/")
+    file = s"$file/$Style${fileSplit.last}$EndColor"
+    val rest = s":$Style${pos.line}$EndColor:$Style${pos.col}$EndColor"
+
+    s"$Bold[$EndColor$file$rest$Bold]$EndColor"
+  }
 
   private def handleQuoteLiterals(msg: String) = {
-    val msgFormat = Console.RESET + MessageStyle
+    val msgFormat = EndColor + MessageStyle
 
     val re = """'(.+?)'""".r
 
@@ -111,50 +123,59 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
       val name = TemplateNameParser.parseTemplateName(m.group(1))
       Matcher.quoteReplacement("\'" + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
     })
-    msgFormat + s + Console.RESET
+    msgFormat + s + EndColor
   }
 
-  private def locationIndicator(errorLevel: Int, pos: Positioned) = {
+  private def locationIndicator(errorLevel: Int, pos: Positioned): String = {
     val lines = getLines(pos.file)
+    val numColor = Bold + QuoteColor
+    val prefix = s"$numColor${pos.line}$EndColor:   "
+
     var sb = new StringBuilder
-    val numColor = Console.BOLD + QuoteColor
-    sb ++= s"\n$numColor${pos.line}${Console.RESET}:   "
-    val errorStyle = errorLevel match {
-      case 1 => WarningColor
-      case 2 => ErrorColor
-      case 3 => FatalColor
-      case _ => ???
-    }
-    if (pos.line - 1 < lines.size) {
-      val line = lines(pos.line - 1)
-      val firstNonWhiteSpace = line.indexWhere(c => !c.isWhitespace)
-
-      val l = line.substring(firstNonWhiteSpace)
-
-      val start = pos.col - 1 - firstNonWhiteSpace
-      var end = if (pos.endLine == pos.line) {
-        pos.endCol - 1 - firstNonWhiteSpace
-      } else {
-        val firstSlash = l.indexOf("//")
-        if (firstSlash != -1)
-          firstSlash - 1
-        else
-          l.length
-      }
+    sb ++= "\n" ++ prefix
 
 
-      // Back cursor so we never underline whitespaces
-      while(l(end - 1).isWhitespace) {
-        end -= 1
-      }
+    if(pos.line - 1 >= lines.size)
+      return sb.toString() + "<line unavailable in source file>"
 
-      val pre = l.substring(0, start)
-      val highlighted = l.substring(start, end)
-      val post = l.substring(end, l.length)
-      sb ++= pre ++ Console.UNDERLINED ++ errorStyle ++ highlighted ++ Console.RESET ++ post ++ "\n"
+    val line = lines(pos.line - 1)
+    val firstNonWhiteSpace = line.indexWhere(c => !c.isWhitespace)
+
+    val leftTrimmedLine = line.substring(firstNonWhiteSpace)
+
+    val start = pos.col - firstNonWhiteSpace - 1
+    var end = if (pos.endLine == pos.line) {
+      pos.endCol - firstNonWhiteSpace - 1
     } else {
-      sb ++= "<line unavailable in source file>"
+      val firstSlash = leftTrimmedLine.indexOf("//")
+      if (firstSlash != -1)
+        firstSlash - 1
+      else
+        leftTrimmedLine.length
     }
+
+
+    // Back cursor so we never underline whitespaces
+    while(leftTrimmedLine(end - 1).isWhitespace)
+      end -= 1
+
+
+    if(useColor){
+      val errorStyle = errorLevel match {
+        case 1 => WarningColor
+        case 2 => ErrorColor
+        case 3 => FatalColor
+        case _ => ???
+      }
+
+      val pre         = leftTrimmedLine.substring(0, start)
+      val highlighted = leftTrimmedLine.substring(start, end)
+      val post        = leftTrimmedLine.substring(end, leftTrimmedLine.length)
+      sb ++= pre ++ Underline ++ errorStyle ++ highlighted ++ EndColor ++ post
+    } else {
+      sb ++= leftTrimmedLine ++ "\n" ++ " "*(start + prefix.length) ++ "~"*(end - start)
+    }
+    sb ++= "\n"
     sb.toString
   }
 

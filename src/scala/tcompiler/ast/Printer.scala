@@ -117,6 +117,8 @@ object Printer {
       case PreDecrement(id)                => p"--$id"
       case PostDecrement(id)               => p"$id--"
       case Ternary(condition, thn, els)    => p"$condition ? $thn : $els"
+      case Break()                         => p"break"
+      case Continue()                      => p"continue"
       case Empty()                         => "<EMPTY>"
     }
     s

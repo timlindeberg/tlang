@@ -61,6 +61,11 @@ case object WarningIsError extends Flag {
   override val description = "Treats warnings as errors and exits compilation."
 }
 
+case object NoColor extends Flag {
+  override val flag = "-nocolor"
+  override val description = "Prints error messages without ANSI-coloring."
+}
+
 object Main {
 
   lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
@@ -136,7 +141,7 @@ object Main {
 
     processOption(args.toList)
 
-    val reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError))
+    val reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError), !flagActive(NoColor))
 
     if (files.size != 1)
       reporter.fatal("M", 0, s"Exactly one file expected, '${files.size}' file(s) given.")

@@ -8,7 +8,7 @@ LargeMap()
 InitialCapacity()
 ToString()
 Get()
-ContainsKey()
+Contains()
 ContainsValue()
 Iterators()
 Equals()
@@ -20,7 +20,7 @@ println("All tests succeded.") // res: All tests succeded.
 
 Def IntMap() = {
     val t = new Tester<Int>()
-    val map: HashMap<Int, Int> = { new Entry<Int, Int>(1, 2) }
+    val map = new HashMap<Int, Int>()
     map[1] = 2
     t.AssertEquals(map[1], 2)
     t.AssertEquals(map.Size(), 1)
@@ -87,14 +87,14 @@ Def Get() = {
     to.AssertEquals(map.Get(3), new Option<Int>())
 }
 
-Def ContainsKey() = {
+Def Contains() = {
     val t = new Tester<Bool>()
     val map = new HashMap<Int, Int>()
     map[1] = 5
     map[2] = 4
-    t.Assert(map.ContainsKey(1))
-    t.Assert(map.ContainsKey(2))
-    t.AssertFalse(map.ContainsKey(3))
+    t.Assert(map.Contains(1))
+    t.Assert(map.Contains(2))
+    t.AssertFalse(map.Contains(3))
 }
 
 Def ContainsValue() = {
@@ -117,10 +117,10 @@ Def Iterators() = {
     entries[3] = new Entry<Int, Int>(-2, 35, 1)
 
     for(var i = 0; i < entries.Size(); i++)
-        map[entries[i].Key] = entries[i].Value
+        map[entries[i].Key()] = entries[i].Value()
 
     {
-        val it = map.EntryIterator()
+        val it = map.Iterator()
         while(it.HasNext())
             t.Assert(containsEntry(it.Next(), entries))
     }
@@ -209,61 +209,51 @@ Def Remove() = {
     map[3] = 12
 
     t.AssertEquals(map.Size(), 3)
-    t.Assert(map.ContainsKey(5))
+    t.Assert(map.Contains(5))
     t.Assert(map.ContainsValue(10))
-    t.Assert(map.ContainsKey(4))
+    t.Assert(map.Contains(4))
     t.Assert(map.ContainsValue(11))
-    t.Assert(map.ContainsKey(3))
+    t.Assert(map.Contains(3))
     t.Assert(map.ContainsValue(12))
-
-    val map2 = map - 5
-
-    t.AssertEquals(map2.Size(), 2)
-    t.AssertFalse(map2.ContainsKey(5))
-    t.AssertFalse(map2.ContainsValue(10))
-    t.Assert(map2.ContainsKey(4))
-    t.Assert(map2.ContainsValue(11))
-    t.Assert(map2.ContainsKey(3))
-    t.Assert(map2.ContainsValue(12))
 
     map.Remove(5)
 
     t.AssertEquals(map.Size(), 2)
-    t.AssertFalse(map.ContainsKey(5))
+    t.AssertFalse(map.Contains(5))
     t.AssertFalse(map.ContainsValue(10))
-    t.Assert(map.ContainsKey(4))
+    t.Assert(map.Contains(4))
     t.Assert(map.ContainsValue(11))
-    t.Assert(map.ContainsKey(3))
+    t.Assert(map.Contains(3))
     t.Assert(map.ContainsValue(12))
 
     map.Remove(4)
 
     t.AssertEquals(map.Size(), 1)
-    t.AssertFalse(map.ContainsKey(5))
+    t.AssertFalse(map.Contains(5))
     t.AssertFalse(map.ContainsValue(10))
-    t.AssertFalse(map.ContainsKey(4))
+    t.AssertFalse(map.Contains(4))
     t.AssertFalse(map.ContainsValue(11))
-    t.Assert(map.ContainsKey(3))
+    t.Assert(map.Contains(3))
     t.Assert(map.ContainsValue(12))
 
     map.Remove(3)
 
     t.AssertEquals(map.Size(), 0)
-    t.AssertFalse(map.ContainsKey(5))
+    t.AssertFalse(map.Contains(5))
     t.AssertFalse(map.ContainsValue(10))
-    t.AssertFalse(map.ContainsKey(4))
+    t.AssertFalse(map.Contains(4))
     t.AssertFalse(map.ContainsValue(11))
-    t.AssertFalse(map.ContainsKey(3))
+    t.AssertFalse(map.Contains(3))
     t.AssertFalse(map.ContainsValue(12))
 
     map.Remove(2)
 
     t.AssertEquals(map.Size(), 0)
-    t.AssertFalse(map.ContainsKey(5))
+    t.AssertFalse(map.Contains(5))
     t.AssertFalse(map.ContainsValue(10))
-    t.AssertFalse(map.ContainsKey(4))
+    t.AssertFalse(map.Contains(4))
     t.AssertFalse(map.ContainsValue(11))
-    t.AssertFalse(map.ContainsKey(3))
+    t.AssertFalse(map.Contains(3))
     t.AssertFalse(map.ContainsValue(12))
 }
 
@@ -281,10 +271,10 @@ Def AddAll() = {
 
     map1.AddAll(map2)
     t.AssertEquals(map1.Size(), 4)
-    t.Assert(map1.ContainsKey(1))
-    t.Assert(map1.ContainsKey(2))
-    t.Assert(map1.ContainsKey(3))
-    t.Assert(map1.ContainsKey(4))
+    t.Assert(map1.Contains(1))
+    t.Assert(map1.Contains(2))
+    t.Assert(map1.Contains(3))
+    t.Assert(map1.Contains(4))
 
     t.Assert(map1.ContainsValue(2))
     t.Assert(map1.ContainsValue(3))
@@ -302,23 +292,23 @@ def testCapacity(given: Int, expected: Int) = {
     t.AssertEquals(map.Capacity(), expected)
 }
 
-def containsEntry(entry: Entry<Int, Int>, entries: Entry<Int, Int>[]) = {
+def containsEntry(entry: MapEntry<Int, Int>, entries: MapEntry<Int, Int>[]) = {
     for(var i = 0; i < entries.Size(); i++)
         if(entries[i] == entry)
             return true
     return false
 }
 
-def containsKey(key: Int, entries: Entry<Int, Int>[]) = {
+def containsKey(key: Int, entries: MapEntry<Int, Int>[]) = {
     for(var i = 0; i < entries.Size(); i++)
-        if(entries[i].Key == key)
+        if(entries[i].Key() == key)
             return true
     return false
 }
 
-def containsValue(value: Int, entries: Entry<Int, Int>[]) = {
+def containsValue(value: Int, entries: MapEntry<Int, Int>[]) = {
     for(var i = 0; i < entries.Size(); i++)
-        if(entries[i].Value == value)
+        if(entries[i].Value() == value)
             return true
     return false
 }
