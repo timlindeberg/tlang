@@ -41,9 +41,9 @@ object ASTBuilder {
     OR -> Or,
     AND -> And,
     LESSTHAN -> LessThan,
-    LESSTHANEQUALS -> LessThanEquals,
+    LESSTHANE -> LessThanEquals,
     GREATERTHAN -> GreaterThan,
-    GREATERTHANEQUALS -> GreaterThanEquals,
+    GREATERTHANEQ -> GreaterThanEquals,
     EQUALS -> Equals,
     NOTEQUALS -> NotEquals,
     PLUS -> Plus,
@@ -368,24 +368,24 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         }
       case TIMES             => binaryOperator(Times)
       case DIV               => binaryOperator(Div)
-      case MODULO            => binaryOperator(Modulo)
-      case LOGICAND          => binaryOperator(LogicAnd)
-      case LOGICOR           => binaryOperator(LogicOr)
-      case LOGICXOR          => binaryOperator(LogicXor)
-      case LEFTSHIFT         => binaryOperator(LeftShift)
-      case RIGHTSHIFT        => binaryOperator(RightShift)
-      case LESSTHAN          => binaryOperator(LessThan)
-      case LESSTHANEQUALS    => binaryOperator(LessThanEquals)
-      case GREATERTHAN       => binaryOperator(GreaterThan)
-      case GREATERTHANEQUALS => binaryOperator(GreaterThanEquals)
-      case EQUALS            => binaryOperator(Equals)
-      case NOTEQUALS         => binaryOperator(NotEquals)
-      case LOGICNOT          => unaryOperator(LogicNot)
-      case BANG              => unaryOperator(Not)
-      case HASH              => unaryOperator(Hash)
-      case INCREMENT         => unaryOperator(PreIncrement)
-      case DECREMENT         => unaryOperator(PreDecrement)
-      case LBRACKET          =>
+      case MODULO        => binaryOperator(Modulo)
+      case LOGICAND      => binaryOperator(LogicAnd)
+      case LOGICOR       => binaryOperator(LogicOr)
+      case LOGICXOR      => binaryOperator(LogicXor)
+      case LEFTSHIFT     => binaryOperator(LeftShift)
+      case RIGHTSHIFT    => binaryOperator(RightShift)
+      case LESSTHAN      => binaryOperator(LessThan)
+      case LESSTHANE     => binaryOperator(LessThanEquals)
+      case GREATERTHAN   => binaryOperator(GreaterThan)
+      case GREATERTHANEQ => binaryOperator(GreaterThanEquals)
+      case EQUALS        => binaryOperator(Equals)
+      case NOTEQUALS     => binaryOperator(NotEquals)
+      case LOGICNOT      => unaryOperator(LogicNot)
+      case BANG          => unaryOperator(Not)
+      case HASH          => unaryOperator(Hash)
+      case INCREMENT     => unaryOperator(PreIncrement)
+      case DECREMENT     => unaryOperator(PreDecrement)
+      case LBRACKET      =>
         eat(LBRACKET, RBRACKET)
         nextTokenKind match {
           case EQSIGN =>
@@ -412,9 +412,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             (operatorType, List(f1), modifiers)
           case _      => FatalWrongToken(EQSIGN, LPAREN)
         }
-      case _                 =>
+      case _             =>
         FatalWrongToken(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT, LESSTHAN,
-          LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
+          LESSTHANE, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
@@ -495,7 +495,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /**
-    * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" }
+    * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" } [ "?" ]
     */
   def tpe(): TypeTree = {
     val startPos = nextToken
@@ -537,7 +537,12 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     if (dimension > MaximumArraySize)
       ErrorInvalidArrayDimension(dimension, e)
 
-    e
+    if(nextTokenKind == QUESTIONMARK){
+      eat(QUESTIONMARK)
+      NullableType(e)
+    }else{
+      e
+    }
   }
 
   /**
@@ -837,7 +842,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
   }
 
   /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
-  def comparison() = leftAssociative(bitShift, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS)
+  def comparison() = leftAssociative(bitShift, LESSTHAN, LESSTHANE, GREATERTHAN, GREATERTHANEQ)
 
   /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
   def bitShift() = leftAssociative(plusMinus, LEFTSHIFT, RIGHTSHIFT)
@@ -872,6 +877,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       * | true
       * | false
       * | this
+      * | null
       * | <superCall>.<identifier>
       * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
       * | <newExpression>
@@ -942,6 +948,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case THIS          =>
           eat(THIS)
           This()
+        case NULL =>
+          eat(NULL)
+          Null()
         case SUPER         =>
           val sup = superCall()
           eat(DOT)

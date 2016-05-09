@@ -22,3 +22,18 @@ println(slice.Size()) // res: 2
 for(val v in slice)
     print(v) // res: 45
 println("")
+
+slice = a[:1]
+println(slice.Size()) // res: 1
+for(val v in slice)
+    print(v) // res: 1
+println("")
+
+slice = a[9:]
+println(slice.Size()) // res: 1
+for(val v in slice)
+    print(v) // res: 10
+println("")
+
+slice = a[0:0]
+println(slice.Size()) // res: 0

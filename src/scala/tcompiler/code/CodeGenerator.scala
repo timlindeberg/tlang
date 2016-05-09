@@ -847,7 +847,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     * var end$x = < container.Size()|slice.end > // container.Size() if slice.end is undefined
     * var slice$x = new <arrTpe>[start$x - end$x]
     * for(var i$x = start$x; i < end$x; i++)
-    * slice$x[start$x - i$x] = container[i$x]
+    *   slice$x[start$x - i$x] = container[i$x]
     * slice$x
     *
     * A reference to the generated slice is left on the stack.

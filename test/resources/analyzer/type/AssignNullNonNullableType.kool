@@ -1,0 +1,22 @@
+var a: A? = new A()
+
+a = null
+
+var b: A = new A()
+
+b = null // res: T2032
+
+var c = new A()
+
+c = null // res: T2032
+
+var i: Int? = 1
+
+i = null
+
+var j = 1
+
+j = null // res: T2032
+
+
+class A {}

@@ -114,6 +114,9 @@ object Trees {
   case class ArrayType(var tpe: TypeTree) extends TypeTree {
     def name = tpe.name + "[]"
   }
+  case class NullableType(var tpe: TypeTree) extends TypeTree {
+    def name = tpe.name + "?"
+  }
   case class IntType() extends TypeTree {
     def name = "Int"
   }
@@ -195,6 +198,7 @@ object Trees {
   case class ArrayLit(expressions: List[ExprTree]) extends ExprTree
   case class True() extends ExprTree
   case class False() extends ExprTree
+  case class Null() extends ExprTree
 
   case class Identifier(var value: String) extends ExprTree with Symbolic[Symbol] {
     // The type of the identifier depends on the type of the symbol

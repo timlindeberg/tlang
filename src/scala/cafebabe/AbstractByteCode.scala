@@ -27,15 +27,11 @@ object AbstractByteCodes {
 
   // To put "raw bytes" in the stream
   case class RawByte(u1: U1) extends AbstractByteCode {
-    if(u1 == 18)
-      println("lel")
     override val size: Int = 1
     override def toStream(bs: ByteStream): ByteStream = bs << u1
   }
 
   case class RawBytes(u2: U2) extends AbstractByteCode {
-    if(u2 == 18)
-      println("lel")
     override val size: Int = 2
     override def toStream(bs: ByteStream): ByteStream = bs << u2
   }
