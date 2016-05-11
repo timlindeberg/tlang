@@ -3,9 +3,9 @@
  */
 
 object TestMain {
-  def main(args: Array[String]): Unit = {
-    println("abc".getClass)
-  }
+  //def main(args: Array[String]): Unit = {
+  //  println("abc".getClass)
+  //}
 
 
 }

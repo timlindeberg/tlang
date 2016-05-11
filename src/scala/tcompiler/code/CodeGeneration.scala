@@ -22,7 +22,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   def run(ctx: Context)(prog: Program): Unit = {
     val sourceName = ctx.file.getName
-
+    "hej".toInt
     // output code in parallell
     prog.classes.par.foreach {
       case c: InternalClassDecl => generateClassFile(sourceName, c, ctx.outDir)

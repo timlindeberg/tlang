@@ -173,7 +173,7 @@ object Types {
     override def toString = classSymbol.name
     override def byteCodeName: String = {
       val name = if (this == tObject) CodeGenerator.JavaObject else classSymbol.name
-      "L" + name + ";"
+      "L" + name.replaceAll("\\.", "/") + ";"
     }
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 

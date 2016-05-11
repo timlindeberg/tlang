@@ -1,0 +1,147 @@
+package kool.lang
+
+import java.lang.String
+import java.lang.StringBuilder
+import java.lang.Integer
+import java.util.Locale
+import java.nio.charset.Charset
+
+class String: Iterable<Char> {
+
+    var s: java.lang.String
+
+    Def new()                               = (this.s = java.lang.String())
+    Def implicit new(str: java.lang.String) = (this.s = str)
+    Def implicit new(chars: Char[])         = (this.s = new java.lang.String(chars))
+
+    Def Size() = s.length()
+    Def IsEmpty() = Size() == 0
+    Def NonEmpty() = !IsEmpty()
+    Def Iterator(): Iterator<Char> = new StringIterator(s)
+
+    //----------------------------------------------------
+    // Conversion methods
+    //----------------------------------------------------
+
+    Def ToInt()           = java.lang.Integer.parseInt(s)
+    Def ToInt(radix: Int) = java.lang.Integer.parseInt(s, radix)
+
+    // TODO: Long, Float, Double probably can't be keywords if this is to work
+    // Def ToLong()           = java.lang.Long.parseLong(s)
+    // Def ToLong(radix: Int) = java.lang.Long.parseInt(s, radix)
+
+    // Def ToFloat()           = java.lang.Float.parseFloat(s)
+    // Def ToFloat(radix: Int) = java.lang.Float.parseFloat(s, radix)
+
+    // Def ToDouble()           = java.lang.Double.parseDouble(s)
+    // Def ToDouble(radix: Int) = java.lang.Double.parseDouble(s, radix)
+
+
+    //----------------------------------------------------
+    // Operators
+    //----------------------------------------------------
+
+    Def ==(lhs: String, rhs: String) = lhs.s.equals(rhs.s)
+    Def !=(lhs: String, rhs: String) = !(lhs == rhs)
+
+    Def <(lhs: String, rhs: String)  = lhs.s.compareTo(rhs.s) < 0
+    Def <=(lhs: String, rhs: String) = lhs.s.compareTo(rhs.s) <= 0
+    Def >(lhs: String, rhs: String)  = lhs.s.compareTo(rhs.s) > 0
+    Def >=(lhs: String, rhs: String) = lhs.s.compareTo(rhs.s) >= 0
+
+    Def +(lhs: String, rhs: String) = lhs.Concat(rhs)
+    Def *(str: String, times: Int) = {
+        val b = new java.lang.StringBuilder()
+        val v = str.s
+        for(var i = 0; i < times; i++)
+            b.append(v)
+        new String(b.toString())
+    }
+
+    Def [](index: Int) = CharAt(index)
+    Def #(str: String) = s.hashCode()
+
+    //----------------------------------------------------
+    // Wrappers for java.lang.String methods
+    //----------------------------------------------------
+
+    Def CharAt(index: Int) = s.charAt(index)
+    Def CodePointAt(index: Int) = s.codePointAt(index)
+    Def CodePointBefore(index: Int) = s.codePointBefore(index)
+    Def CodePointCount(beginIndex: Int, endIndex: Int) = s.codePointCount(beginIndex, endIndex)
+    Def Concat(str: String) = new String(s.concat(str))
+    Def Contains(str: String) = s.contains(str.s)
+    Def EndsWith(str: String) = s.endsWith(str.s)
+
+    // TODO: Define format methods when var args is implemented
+    //Def Format(l: Locale, format: String, args: Object*)
+    //Def Format(format: String, args: Object*)
+
+    // TODO: Define getByte methods when bytes are implemented
+    //Def GetBytes() = s.getBytes()
+    //Def GetBytes(charset: Charset) = s.getBytes(charset)
+    //Def GetBytes(charsetName: String) = s.getBytes(charsetName.s)
+    Def GetChars(srcBegin: Int, srcEnd: Int, dst: Char[], dstBegin: Int) = s.getChars(srcBegin, srcEnd, dst, dstBegin)
+
+    Def IndexOf(c: Char)                     = s.indexOf(c)
+    Def IndexOf(c: Char, fromIndex: Int)     = s.indexOf(c, fromIndex)
+    Def IndexOf(str: String)                 = s.indexOf(str.s)
+    Def IndexOf(str: String, fromIndex: Int) = s.indexOf(str.s, fromIndex)
+
+    Def LastIndexOf(c: Char)                 = s.lastIndexOf(c)
+    Def LastIndexOf(c: Char, fromIndex: Int) = s.lastIndexOf(c, fromIndex)
+    Def LastIndexOf(str: String)                 = s.lastIndexOf(str.s)
+    Def LastIndexOf(str: String, fromIndex: Int) = s.lastIndexOf(str.s, fromIndex)
+
+    Def Matches(regex: String) = s.matches(regex.s)
+    Def Matches(regex: String) = s.matches(regex.s)
+
+    Def OffsetByCodePoints(index: Int, codePointOffset: Int) = s.offsetByCodePoints(index, codePointOffset)
+    Def RegionMatches(ignoreCase: Bool, toffset: Int, other: String, ooffset: Int, len: Int) = s.regionMatches(ignoreCase, toffset, other.s, ooffset, len)
+    Def RegionMatches(toffset: Int, other: String, ooffset: Int, len: Int) = s.regionMatches(toffset, other.s, ooffset, len)
+    Def Replace(oldChar: Char, newChar: Char)            = new String(s.replace(oldChar, newChar))
+    Def Replace(target: String, replacement: String)     = new String(s.replace(target.s, replacement.s))
+    Def ReplaceAll(regex: String, replacement: String)   = new String(s.replaceAll(regex.s, replacement.s))
+    Def ReplaceFirst(regex: String, replacement: String) = new String(s.replaceFirst(regex.s, replacement.s))
+
+    Def Split(regex: String)             = s.split(regex.s)
+    Def Split(regex: String, limit: Int) = s.split(regex.s, limit)
+
+    Def StartsWith(prefix: String)               = s.startsWith(prefix.s)
+    Def StartsWith(prefix: String, toffset: Int) = s.startsWith(prefix.s, toffset)
+
+    Def ToArray() = s.toCharArray()
+    Def ToLowerCase()               = new String(s.toLowerCase())
+    Def ToLowerCase(locale: Locale) = new String(s.toLowerCase(locale))
+
+    Def ToUpperCase()               = new String(s.toUpperCase())
+    Def ToUpperCase(locale: Locale) = new String(s.toUpperCase(locale))
+
+    Def ToString() = this
+
+    Def Trim() = new String(s.trim())
+
+    Def static ValueOf(data: Char[], offset: Int, count: Int) = java.lang.String.valueOf(data, offset, count)
+    Def static ValueOf(data: Char[]) = java.lang.String.valueOf(data)
+    Def static ValueOf(c: Char)      = java.lang.String.valueOf(c)
+    Def static ValueOf(b: Bool)      = java.lang.String.valueOf(b)
+    Def static ValueOf(d: Double)    = java.lang.String.valueOf(d)
+    Def static ValueOf(f: Float)     = java.lang.String.valueOf(f)
+    Def static ValueOf(i: Int)       = java.lang.String.valueOf(i)
+    Def static ValueOf(l: Long)      = java.lang.String.valueOf(l)
+    Def static ValueOf(o: Object)    = o.ToString()
+
+}
+
+class StringIterator: Iterator<Char> {
+
+    val s: java.lang.String
+    val index: Int = 0
+
+    Def new(str: java.lang.String) = (this.s = str)
+
+    Def HasNext() = index < s.length()
+    Def Next() = s.charAt(index++)
+
+
+}

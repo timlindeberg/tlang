@@ -4,6 +4,8 @@ package utils
 import java.io.File
 
 case class Context(
-  val reporter: Reporter,
-  val outDir: Option[File],
-  val file: File)
+  reporter: Reporter,
+  file: File,
+  classPaths: List[String] = List(),
+  outDir: Option[File] = None
+  )

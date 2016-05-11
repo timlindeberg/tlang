@@ -1,6 +1,7 @@
 package tcompiler
 
-import java.io.{File, FileNotFoundException}
+import java.io.File
+import java.nio.file.{InvalidPathException, Paths}
 
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
@@ -37,7 +38,7 @@ case object SuppressWarnings extends Flag {
 
 case object PrintGeneratedCode extends Flag {
   override val flag        = "-printcode"
-  override val description = "Pretty prints the AST as it looks before analysis takes place."
+  override val description = "Pretty prints the AST as it looks before code is generated."
 }
 
 case object Help extends Flag {
@@ -62,62 +63,86 @@ case object WarningIsError extends Flag {
 }
 
 case object NoColor extends Flag {
-  override val flag = "-nocolor"
+  override val flag        = "-nocolor"
   override val description = "Prints error messages without ANSI-coloring."
+}
+
+case object ClassPath extends Flag {
+  override val flag        = "-cp"
+  override val description = "Specify a path where classes should be searched for."
+  override val arg         = "<directory>"
 }
 
 object Main {
 
-  lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
+  val FileEnding    = ".kool"
+  val VersionNumber = "0.0.1"
+  val THome         = "T_HOME"
 
+  var TDirectory = ""
+  var Ctx: Context = null
+  var Reporter: Reporter = null
+
+  lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
   val flagActive = mutable.Map() ++ Flags.map(f => (f.flag, false))
 
-  var FileEnding    = ".kool"
-  var VersionNumber = "0.0.1"
 
+  private val ErrorPrefix = "M"
 
   def main(args: Array[String]) {
     try {
-      val ctx = processOptions(args)
+      Ctx = processOptions(args)
+      if (!sys.env.contains(THome))
+        FatalCantFindTHome()
+
+      TDirectory = sys.env(THome)
+
+      if(!isValidTHomeDirectory(TDirectory))
+        FatalInvalidTHomeDirectory(TDirectory)
 
       val parsing = Lexer andThen Parser andThen Templates andThen Imports
       val analysis = NameAnalysis andThen TypeChecking
       // Generate code
-      val preProg = parsing.run(ctx)(ctx.file)
+      val preProg = parsing.run(Ctx)(Ctx.file)
 
 
-      val prog = analysis.run(ctx)(preProg)
+      val prog = analysis.run(Ctx)(preProg)
       if (flagActive(PrintGeneratedCode))
-        println(Printer(preProg))
-      CodeGeneration.run(ctx)(prog)
-      if (flagActive(Exec) && containsMainMethod(prog)) {
-        val cp = ctx.outDir match {
-          case Some(dir) => "-cp " + dir.getPath
-          case _         => ""
-        }
-        println("java " + cp + " " + fileName(ctx) !!)
-      }
-      if (ctx.reporter.hasWarnings)
-        println(ctx.reporter.warningsString)
+        println(Printer(prog))
+      CodeGeneration.run(Ctx)(prog)
+      if (Ctx.reporter.hasWarnings)
+        println(Ctx.reporter.warningsString)
 
-      System.out.flush()
+      if (flagActive(Exec))
+        executeProgram(prog)
     } catch {
-      case e: CompilationException =>
-        println(e.getMessage)
-      // Reporter throws exception at fatal instead exiting program
-      case e: FileNotFoundException => System.err.println("Error: File not found!")
+      case e: CompilationException  => println(e.getMessage)
     }
   }
 
-  private def processOptions(args: Array[String]): Context = {
-    var outDir: Option[File] = None
-    var files: List[File] = Nil
+  private def executeProgram(prog: Program): Unit = {
+    if(!containsMainMethod(prog))
+      return
 
+    val cp = Ctx.outDir match {
+      case Some(dir) => "-cp " + dir.getPath
+      case _         => ""
+    }
+    println("java " + cp + " " + fileName(Ctx) !!)
+  }
+
+  private def processOptions(args: Array[String]): Context = {
+    var outDir: Option[String] = None
+    var files: List[File] = Nil
+    var classPaths: List[String] = List()
     def processOption(args: List[String]): Unit = args match {
       case Directory.flag :: out :: args                         =>
-        outDir = Some(new File(out))
+        outDir = Some(out)
         processOption(args)
-      case Version.flag :: _                               =>
+      case ClassPath.flag :: dir :: args =>
+        classPaths ::= dir
+        processOption(args)
+      case Version.flag :: _                                     =>
         printVersion()
         sys.exit
       case Help.flag :: _                                        =>
@@ -141,26 +166,122 @@ object Main {
 
     processOption(args.toList)
 
-    val reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError), !flagActive(NoColor))
+    Reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError), !flagActive(NoColor))
 
     if (files.size != 1)
-      reporter.fatal("M", 0, s"Exactly one file expected, '${files.size}' file(s) given.")
+      FatalWrongNumFilesGiven(files.length)
 
-    Context(reporter = reporter, file = files.head, outDir = outDir)
+    val file = files.head
+    if(!file.exists())
+      FatalCannotFindFile(file.getPath)
+
+    checkValidClassPaths(classPaths)
+
+    val dir = outDir match {
+      case Some(dir) =>
+        if(!isValidPath(dir))
+          FatalInvalidOutputDirectory(dir)
+        Some(new File(dir))
+      case None => None
+    }
+    Context(Reporter, file, classPaths, dir)
+  }
+
+  private def checkValidClassPaths(classPaths: List[String]): Unit =
+    for(path <- classPaths)
+      if(!isValidPath(path))
+        FatalInvalidOutputDirectory(path)
+
+
+  private def isValidPath(path: String): Boolean = {
+    try {
+      Paths.get(path)
+    }catch{
+      case e: InvalidPathException =>
+        return false
+    }
+    val f = new File(path)
+    if(f.isFile)
+      return false
+
+    if(!f.exists()){
+      val canCreate = f.mkdirs()
+      // TODO: delete doesnt delete parent directories
+      f.delete()
+      if(canCreate)
+        return false
+    }
+    true
   }
 
   private def printVersion() = println(s"T-Compiler $VersionNumber")
 
   private def printHelp() = println(
-      s"""
-         |Usage: tcomp <options> <source file>
-         |Options:
-         |
+    s"""
+       |Usage: tcomp <options> <source file>
+       |Options:
+       |
          |${Flags.map(_.format).mkString}
     """.stripMargin
+  )
+
+  private def isValidTHomeDirectory(path: String): Boolean = {
+    val files = listFiles(new File(path))
+    println(path)
+    val neededFiles = List(
+      "kool",
+      "kool/lang",
+      "kool/lang/Object.kool",
+      "kool/lang/String.kool",
+      "kool/std"
     )
+    val fileMap = mutable.Map() ++ neededFiles.map((_, false))
+    for(f <- files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/")))
+      fileMap(f) = true
+
+    for((f, found) <- fileMap)
+      if(!found)
+        return false
+
+    true
+  }
+
+  def listFiles(f: File): Array[File] = {
+    val these = f.listFiles
+    if(these == null)
+      return Array[File]()
+    these ++ these.filter(_.isDirectory).flatMap(listFiles)
+  }
 
   private def fileName(ctx: Context) = ctx.file.getName.dropRight(FileEnding.length)
 
   private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists(_.isMain))
+
+  private def fatal(errorCode: Int, msg: String) =
+    Reporter.fatal(ErrorPrefix, errorCode, msg)
+
+  //---------------------------------------------------------------------------------------
+  // Errors
+  //---------------------------------------------------------------------------------------
+
+  private def FatalWrongNumFilesGiven(numFiles: Int) =
+    fatal(0, s"Exactly one file expected, '$numFiles' file(s) given.")
+
+  private def FatalCannotFindFile(fileName: String) =
+    fatal(1, s"Cannot find file '$fileName'.")
+
+  private def FatalInvalidOutputDirectory(outDir: String) =
+    fatal(2, s"Invalid output directory: '$outDir'.")
+
+  private def FatalOutputDirectoryCouldNotBeCreated(outDir: String) =
+    fatal(3, s"Output directory '$outDir' does not exist and could not be created.")
+
+  private def FatalInvalidClassPath(classPath: String) =
+    fatal(4, s"Invalid output class path: '$classPath'.")
+
+  private def FatalCantFindTHome() =
+    fatal(5, s"$THome environment variable is not set.")
+
+  private def FatalInvalidTHomeDirectory(path: String) =
+    fatal(6, s"'$path' is not a valid $THome directory.")
 }

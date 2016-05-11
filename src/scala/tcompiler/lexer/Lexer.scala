@@ -11,8 +11,6 @@ import scala.io.Source
 object Lexer extends Pipeline[File, List[Token]] {
 
   def run(ctx: Context)(f: File): List[Token] = new Tokenizer(f, ctx).tokenize(Source.fromFile(f).buffered.toList)
-  def run(chars: List[Char], f: File): List[Token] = new Tokenizer(f, Context(new Reporter(), None, f)).tokenize(chars)
-
 }
 
 class Tokenizer(val file: File, ctx: Context) {

@@ -1,0 +1,14 @@
+package kool.lang
+
+import java.lang.Object
+
+class Object: java.lang.Object {
+
+    Def ToString() = new String(toString())
+    Def GetClass() = getClass()
+
+    Def #(o: Object) = o.hashCode()
+    Def ==(lhs: Object, rhs: Object) = lhs.equals(rhs)
+    Def !=(lhs: Object, rhs: Object) = !(lhs == rhs)
+
+}

@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups.{IncrementDecrement, PrintStatement, UselessStatement}
-import tcompiler.ast.Trees
+import tcompiler.ast.{Printer, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -12,6 +12,7 @@ import tcompiler.utils._
 object NameAnalysis extends Pipeline[Program, Program] {
 
   def run(ctx: Context)(prog: Program): Program = {
+    println(Printer(prog))
     val nameAnalyzer = new NameAnalyser(ctx, prog)
     nameAnalyzer.addSymbols()
     nameAnalyzer.bindIdentifiers()

@@ -1,8 +1,6 @@
 package tcompiler
 package ast
 
-import java.util
-
 import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.TreeGroups.UselessStatement
 import tcompiler.ast.Trees._
@@ -205,7 +203,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
     case _     =>
-      List()
+      List(ClassIdentifier("Object"))
   }
 
   /**
@@ -351,8 +349,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
 
     val (operatorType, args, newModifiers) = nextTokenKind match {
-      case PLUS              => binaryOperator(Plus)
-      case MINUS             =>
+      case PLUS          => binaryOperator(Plus)
+      case MINUS         =>
         eat(MINUS)
         eat(LPAREN)
         val f1 = formal()
@@ -366,8 +364,8 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             val operatorType = Negation(Empty()).setType(TUnit)
             (operatorType, List(f1), modifiers + Static())
         }
-      case TIMES             => binaryOperator(Times)
-      case DIV               => binaryOperator(Div)
+      case TIMES         => binaryOperator(Times)
+      case DIV           => binaryOperator(Div)
       case MODULO        => binaryOperator(Modulo)
       case LOGICAND      => binaryOperator(LogicAnd)
       case LOGICOR       => binaryOperator(LogicOr)
@@ -537,10 +535,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     if (dimension > MaximumArraySize)
       ErrorInvalidArrayDimension(dimension, e)
 
-    if(nextTokenKind == QUESTIONMARK){
+    if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       NullableType(e)
-    }else{
+    } else {
       e
     }
   }
@@ -551,7 +549,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     * | if"(" <expression> ")" <statement> [ else <statement> ]
     * | while"(" <expression> ")" <statement>
     * | <forloop> <endStatement>
-    * | (print|println|error)"(" <expression> ")" <endStatement>
+    * | (print|println|error)"(" [ <expression> ] ")" <endStatement>
     * | break
     * | continue
     * | return [ <expression> ] <endStatement>
@@ -594,7 +592,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         val t = nextTokenKind
         eat(t)
         eat(LPAREN)
-        val expr = expression()
+        val expr = nextTokenKind match {
+          case RPAREN => StringLit("")
+          case _ => expression()
+        }
         eat(RPAREN)
         endStatement()
         t match {
@@ -700,9 +701,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
                  MODEQ | ANDEQ |
                  OREQ | XOREQ |
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
             case _                          => FatalWrongToken(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
           }
-          assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
       }
     }, SEMICOLON)
 
@@ -766,12 +767,15 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     * | <ternary> [ "[" <expression> "] = " <expression> ]
     **/
   def assignment(expr: Option[ExprTree] = None) = {
-    val e = if (expr.isDefined) expr.get else ternary()
+    val e = expr.getOrElse(ternary)
 
     def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
       eat(nextTokenKind)
 
-      def assignmentExpr(expr: ExprTree) = if (constructor.isDefined) constructor.get(expr, expression()) else expression()
+      def assignmentExpr(expr: ExprTree) = constructor match {
+        case Some(cons) => cons(expr, expression())
+        case None       => expression()
+      }
 
       e match {
         case ArrayRead(arr, index) => ArrayAssign(arr, index, assignmentExpr(e))
@@ -948,7 +952,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case THIS          =>
           eat(THIS)
           This()
-        case NULL =>
+        case NULL          =>
           eat(NULL)
           Null()
         case SUPER         =>

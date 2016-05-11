@@ -2,6 +2,7 @@ package tcompiler
 package modification
 
 import java.io.File
+
 import org.apache.bcel._
 import org.apache.bcel.classfile.{JavaClass, Method, _}
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
@@ -10,6 +11,7 @@ import tcompiler.ast.{Parser, Trees}
 import tcompiler.lexer.Lexer
 import tcompiler.utils.{CompilationException, Context, Pipeline, Positioned}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Imports extends Pipeline[Program, Program] {
@@ -29,17 +31,18 @@ class NameReplacer(ctx: Context, prog: Program) {
   private val originalClasses = prog.classes.map(_.id.value).toSet
 
   private var addedExternalClasses = Map[String, String]()
-  private var addedClasses = Set[String]()
-  private var triedToImport = Set[String]()
-  private val importer = new Importer(ctx, prog)
+  private var addedClasses         = Set[String]()
+  private var triedToImport        = Set[String]()
+  private val importer             = new Importer(ctx, prog)
 
   /**
-   * Replaces the names of the classes declared in this file by
-   * the name expected by the JVM for the given package. For example,
-   * class Foo declared in package bar.baz will be replaced by bar/baz/Foo.
-   */
+    * Replaces the names of the classes declared in this file by
+    * the name expected by the JVM for the given package. For example,
+    * class Foo declared in package bar.baz will be replaced by bar/baz/Foo.
+    */
   def replaceNames: Program = {
-    val packString = prog.getPackageDirectory
+    val packString = prog.getPackageDirectory.replaceAll("/", ".")
+
 
     Trees.traverse(prog, (_, t) => Some(t) collect {
       case c: ClassIdentifier =>
@@ -50,18 +53,19 @@ class NameReplacer(ctx: Context, prog: Program) {
     prog.classes.foreach {
       _.methods.foreach { meth =>
         // TODO: FIX THIS SHIT
-          Trees.traverse(meth.stat, (_, t) => Some(t) collect {
-            case MethodCall(id @ Identifier(name), _, _s) =>
-              // Static call
-            case New(ClassIdentifier(name, _), _) =>
-            case NewArray(ClassIdentifier(name, _), _) =>
-            case id: Identifier if id.value.charAt(0).isUpper =>
-              handleImport(packString, id.value) collect {
-                case newName => id.value = newName // TODO: More effecient way of handling imports for regular identifiers?
-              }
-          })
+        Trees.traverse(meth.stat, (_, t) => Some(t) collect {
+          case MethodCall(id@Identifier(name), _, _s) =>
+          // Static call
+          case New(ClassIdentifier(name, _), _)             =>
+          case NewArray(ClassIdentifier(name, _), _)        =>
+          case id: Identifier if id.value.charAt(0).isUpper =>
+            handleImport(packString, id.value) collect {
+              case newName => id.value = newName // TODO: More effecient way of handling imports for regular identifiers?
+            }
+        })
       }
     }
+    addSecondClassImports()
     checkUnusedImports()
 
     importStandardClasses()
@@ -69,9 +73,14 @@ class NameReplacer(ctx: Context, prog: Program) {
     prog
   }
 
-  private def handleImport(packString: String, name: String): Option[String] = {
-    val packString = prog.getPackageDirectory
+  private def addSecondClassImports() = {
+    val classes = importer.secondClassImports.
+      filter(name => !prog.classes.exists(_.id.value == name)).
+      map(name => ExternalClassDecl(ClassIdentifier(name), List(), List(), List())).toList
+    prog.classes :::= classes
+  }
 
+  private def handleImport(packString: String, name: String): Option[String] = {
     if (originalClasses(name)) {
       addedClasses += packString + name
       return Some(packString + name)
@@ -111,20 +120,19 @@ class NameReplacer(ctx: Context, prog: Program) {
 
 class Importer(ctx: Context, prog: Program) {
 
-  var usedImports = Set[Import]()
+  val usedImports = mutable.Set[Import]()
 
   val regImports = prog.imports.filter(_.isInstanceOf[RegularImport]).asInstanceOf[List[RegularImport]]
-  val wcImports = prog.imports.filter(_.isInstanceOf[WildCardImport]).asInstanceOf[List[WildCardImport]]
+  val wcImports  = prog.imports.filter(_.isInstanceOf[WildCardImport]).asInstanceOf[List[WildCardImport]]
 
+  val secondClassImports = mutable.Set[String]()
 
   def importClass(className: String): Option[String] = {
     if (className == "")
       return None
 
-    val fullName = className.replaceAll("\\.", "/")
-    if (addImport(fullName)) {
-      return Some(fullName)
-    }
+    if (addImport(className))
+      return Some(className)
 
     for (imp <- regImports) {
       if (imp.identifiers.last.value == className) {
@@ -146,7 +154,7 @@ class Importer(ctx: Context, prog: Program) {
     None
   }
 
-  private def addImport(className: String) = {
+  private def addImport(className: String): Boolean = {
     getClass(className) match {
       case Some(clazz) =>
         prog.classes = findClass(clazz) :: prog.classes
@@ -161,12 +169,12 @@ class Importer(ctx: Context, prog: Program) {
     } catch {
       case _: ClassNotFoundException   => None
       case e: IllegalArgumentException => None
+      case e: ClassFormatException => println(e.getMessage); None
     }
 
   private def findClass(clazz: JavaClass): ClassDecl = {
     val name = clazz.getClassName
-
-    val id = ClassIdentifier(convertName(name), List())
+    val id = ClassIdentifier(name, List())
     val parents = convertParents(clazz)
     val fields = clazz.getFields.map(convertField).toList
     val methods = clazz.getMethods.map(convertMethod(_, clazz)).toList
@@ -179,20 +187,19 @@ class Importer(ctx: Context, prog: Program) {
 
     clazz.getSuperClass match {
       case null                                                => List()
-      case parent if parent.getClassName == "java.lang.Object" => List()
       case parent                                              =>
         prog.classes = findClass(parent) :: prog.classes
-        List(ClassIdentifier(convertName(parent.getClassName), List()))
+        List(ClassIdentifier(parent.getClassName, List()))
     }
   }
 
   private def convertField(field: Field) =
-      new VarDecl(Some(convertType(field.getType)), Identifier(field.getName), None, convertModifiers(field))
+    new VarDecl(Some(convertType(field.getType)), Identifier(field.getName), None, convertModifiers(field))
 
   private def convertMethod(meth: Method, clazz: JavaClass): MethodDecl = {
     val name = meth.getName match {
       case "<init>" => "new"
-      case name     => convertName(name)
+      case n        => n
     }
     val id = Identifier(name)
     val retType = convertType(meth.getReturnType)
@@ -214,10 +221,6 @@ class Importer(ctx: Context, prog: Program) {
     set
   }
 
-  private def convertName(name: String): String =
-    if (name == "java.lang.Object") "Object"
-    else name.replaceAll("\\.", "/")
-
   private def convertType(tpe: Type): TypeTree = tpe match {
     case x: BasicType                         => x match {
       case Type.BOOLEAN => BooleanType()
@@ -229,16 +232,12 @@ class Importer(ctx: Context, prog: Program) {
       case Type.VOID    => UnitType()
       case _            => IntType()
     }
-    case x: ObjectType                        => x match {
-      case Type.STRING => StringType()
-      case Type.OBJECT => ClassIdentifier(convertName(x.getClassName))
-      case _           => StringType()
-    }
+    case x: ObjectType                        =>
+      secondClassImports += x.getClassName
+      ClassIdentifier(x.getClassName)
     case x: org.apache.bcel.generic.ArrayType => ArrayType(convertType(x.getBasicType))
   }
 }
-
-
 
 
 class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mutable.Set[String] = scala.collection.mutable.Set()) {
@@ -250,12 +249,12 @@ class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mu
     val genericImports = prog.imports.filter(_.isInstanceOf[GenericImport])
     genericImports.foreach { imp =>
       val fileName = mkImportString(imp, "/") + ".kool"
-      if(!imported(fileName)){
+      if (!imported(fileName)) {
         val newClasses = importClass(fileName, imp)
-        if(newClasses.nonEmpty){
+        if (newClasses.nonEmpty) {
           importedClasses ++= newClasses
           imported += fileName
-        }else{
+        } else {
           ErrorResolvingGenericImport(mkImportString(imp, "."), imp)
         }
       }
@@ -297,10 +296,7 @@ class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mu
   }
 
   private def getClassPaths: List[String] = {
-    if(!sys.env.contains("T_HOME"))
-      return List("", "C:/Users/Tim Lindeberg/IdeaProjects/T-Compiler/src/stdlib")
-
-    List("", sys.env("T_HOME"))
+    List("", Main.TDirectory)
   }
 
   private def parseGenericFile(ctx: Context, file: File): Option[Program] =

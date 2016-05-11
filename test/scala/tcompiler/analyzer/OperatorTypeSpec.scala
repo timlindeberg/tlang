@@ -15,7 +15,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val ClassSymbol = new ClassSymbol("obj")
   val VarSymbol   = new VariableSymbol("var")
   val MainMethod  = new MethodSymbol("main", ClassSymbol, MethodDecl).setType(TUnit)
-  val TestContext = Context(new tcompiler.utils.Reporter(), None, new File(""))
+  val TestContext = Context(new tcompiler.utils.Reporter(), new File(""))
   val TypeChecker = new TypeChecker(TestContext, MainMethod)
 
 
