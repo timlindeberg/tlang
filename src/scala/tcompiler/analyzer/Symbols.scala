@@ -33,7 +33,6 @@ object Symbols {
   ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
-    var mainClass: ClassSymbol = _
     var classes                = Map[String, ClassSymbol]("Object" -> ObjectClass)
 
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)

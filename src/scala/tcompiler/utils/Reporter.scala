@@ -10,7 +10,11 @@ import scala.util.parsing.combinator.RegexParsers
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = false, useColor: Boolean = true) {
+class Reporter(
+  suppressWarnings: Boolean = false,
+  warningIsError: Boolean = false,
+  useColor: Boolean = true,
+  maxErrors: Int = 100) {
 
   private val ErrorSeperator = "\n\n"
   private def QuoteColor = GetColor(Console.MAGENTA)
@@ -23,8 +27,11 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   private def Bold = GetColor(Console.BOLD)
   private def EndColor = GetColor(Console.RESET)
 
+  private var hitMaxErrors = false
+
+
   // Only output color to consoles
-  private def GetColor(color: String) = if(useColor) color else ""
+  private def GetColor(color: String) = if (useColor) color else ""
   private var filesToLines = Map[File, IndexedSeq[String]]()
 
   var errors   = ArrayBuffer[String]()
@@ -32,20 +39,32 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
 
 
   def warning(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
-    if(warningIsError){
+    if (warningIsError) {
       error(locationPrefix, errorCode, msg, pos)
       return
     }
 
-    if(suppressWarnings)
+    if (suppressWarnings)
       return
 
     val warning = errMessage(locationPrefix, 1, errorCode, msg, pos)
     warnings += warning
   }
 
-  def error(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit =
-    errors += errMessage(locationPrefix, 2, errorCode, msg, pos)
+
+  def error(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+    if(maxErrors == -1 || errors.size < maxErrors){
+      errors += errMessage(locationPrefix, 2, errorCode, msg, pos)
+      return
+    }
+
+    if(hitMaxErrors)
+      return
+
+    val num = s"$ErrorColor$maxErrors$EndColor"
+    errors.insert(0, s"There were more than $num errors, only showing the first $num:")
+    hitMaxErrors = true
+}
 
 
   def fatal(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
@@ -57,6 +76,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   def clear() = {
     errors.clear()
     warnings.clear()
+    hitMaxErrors = false
   }
 
   def hasErrors = errors.nonEmpty
@@ -68,8 +88,6 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   def terminateIfErrors() =
     if (hasErrors)
       throw new CompilationException(errorsString)
-
-
 
 
   private def errMessage(locationPrefix: String, errorLevel: Int, errorCode: Int, msg: Any, pos: Positioned) = {
@@ -108,7 +126,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
   private def filePrefix(pos: Positioned) = {
     val Style = Bold + NumColor
     var position = pos.position
-    if(useColor){
+    if (useColor) {
       val fileName = pos.file.getName.replaceAll(Main.FileEnding, "")
       position = position.replaceAll("(\\d)", s"$Style$$1$EndColor")
       position = position.replaceAll(fileName, s"$Style$fileName$EndColor")
@@ -138,7 +156,7 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
     sb ++= "\n" ++ prefix
 
 
-    if(pos.line - 1 >= lines.size)
+    if (pos.line - 1 >= lines.size)
       return sb.toString() + "<line unavailable in source file>"
 
     val line = lines(pos.line - 1)
@@ -159,11 +177,11 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
 
 
     // Back cursor so we never underline whitespaces
-    while(leftTrimmedLine(end - 1).isWhitespace)
+    while (leftTrimmedLine(end - 1).isWhitespace)
       end -= 1
 
 
-    if(useColor){
+    if (useColor) {
       val errorStyle = errorLevel match {
         case 1 => WarningColor
         case 2 => ErrorColor
@@ -171,12 +189,12 @@ class Reporter(suppressWarnings: Boolean = false, warningIsError: Boolean = fals
         case _ => ???
       }
 
-      val pre         = leftTrimmedLine.substring(0, start)
+      val pre = leftTrimmedLine.substring(0, start)
       val highlighted = leftTrimmedLine.substring(start, end)
-      val post        = leftTrimmedLine.substring(end, leftTrimmedLine.length)
+      val post = leftTrimmedLine.substring(end, leftTrimmedLine.length)
       sb ++= pre ++ Underline ++ errorStyle ++ highlighted ++ EndColor ++ post
     } else {
-      sb ++= leftTrimmedLine ++ "\n" ++ " "*(start + prefix.length) ++ "~"*(end - start)
+      sb ++= leftTrimmedLine ++ "\n" ++ " " * (start + prefix.length) ++ "~" * (end - start)
     }
     sb ++= "\n"
     sb.toString
@@ -226,9 +244,10 @@ object TemplateNameParser extends RegexParsers {
 
   // Grammar
 
-  private def word: Parser[String] = """[a-zA-Z\d_]+""".r ^^ {
-    _.toString
-  }
+  private def word: Parser[String] =
+    """[a-zA-Z\d_]+""".r ^^ {
+      _.toString
+    }
 
   private def typeList: Parser[String] = ((Seperator ~ (word | template)) +) ^^ {
     case list => list.map(_._2).mkString(", ")

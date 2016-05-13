@@ -22,7 +22,13 @@ sealed abstract class Flag extends Ordered[Flag] with Product with Serializable 
   val flag       : String
   val description: String
   val arg: String = ""
-  def format: String = f"  ${flag + " " + arg}%-20s$description%-50s\n"
+  def format: String = {
+    val lines = description.split("\n")
+    val format = f"  ${flag + " " + arg}%-20s${lines.head}\n"
+
+    val space = " "
+    lines.tail.foldLeft(format)((format, s) => format + f"  $space%-20s$s%-50s\n")
+  }
   def compare(that: Flag) = flag.length - that.flag.length
 }
 
@@ -73,14 +79,20 @@ case object ClassPath extends Flag {
   override val arg         = "<directory>"
 }
 
+case object MaxErrors extends Flag {
+  override val flag        = "-maxerrors"
+  override val description = "Specify the maximum number of errors to report. The default is 100.\nEnter -1 to show all errors."
+  override val arg         = "<num>"
+}
+
 object Main {
 
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"
   val THome         = "T_HOME"
 
-  var TDirectory = ""
-  var Ctx: Context = null
+  var TDirectory         = ""
+  var Ctx     : Context  = null
   var Reporter: Reporter = null
 
   lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
@@ -97,31 +109,31 @@ object Main {
 
       TDirectory = sys.env(THome)
 
-      if(!isValidTHomeDirectory(TDirectory))
+      if (!isValidTHomeDirectory(TDirectory))
         FatalInvalidTHomeDirectory(TDirectory)
 
       val parsing = Lexer andThen Parser andThen Templates andThen Imports
       val analysis = NameAnalysis andThen TypeChecking
-      // Generate code
       val preProg = parsing.run(Ctx)(Ctx.file)
-
-
       val prog = analysis.run(Ctx)(preProg)
+
       if (flagActive(PrintGeneratedCode))
         println(Printer(prog))
-      CodeGeneration.run(Ctx)(prog)
+
       if (Ctx.reporter.hasWarnings)
         println(Ctx.reporter.warningsString)
+
+      CodeGeneration.run(Ctx)(prog)
 
       if (flagActive(Exec))
         executeProgram(prog)
     } catch {
-      case e: CompilationException  => println(e.getMessage)
+      case e: CompilationException => println(e.getMessage)
     }
   }
 
   private def executeProgram(prog: Program): Unit = {
-    if(!containsMainMethod(prog))
+    if (!containsMainMethod(prog))
       return
 
     val cp = Ctx.outDir match {
@@ -135,12 +147,23 @@ object Main {
     var outDir: Option[String] = None
     var files: List[File] = Nil
     var classPaths: List[String] = List()
+    var maxErrors = 100
+
     def processOption(args: List[String]): Unit = args match {
       case Directory.flag :: out :: args                         =>
         outDir = Some(out)
         processOption(args)
-      case ClassPath.flag :: dir :: args =>
+      case ClassPath.flag :: dir :: args                         =>
         classPaths ::= dir
+        processOption(args)
+      case MaxErrors.flag :: num :: args                         =>
+        try {
+          maxErrors = num.toInt
+        } catch {
+          case e: NumberFormatException =>
+            Reporter = new Reporter()
+            FatalInvalidMaxErrors(num)
+        }
         processOption(args)
       case Version.flag :: _                                     =>
         printVersion()
@@ -166,49 +189,53 @@ object Main {
 
     processOption(args.toList)
 
-    Reporter = new Reporter(flagActive(SuppressWarnings), flagActive(WarningIsError), !flagActive(NoColor))
+    Reporter = new Reporter(
+      flagActive(SuppressWarnings),
+      flagActive(WarningIsError),
+      !flagActive(NoColor),
+      maxErrors)
 
     if (files.size != 1)
       FatalWrongNumFilesGiven(files.length)
 
     val file = files.head
-    if(!file.exists())
+    if (!file.exists())
       FatalCannotFindFile(file.getPath)
 
     checkValidClassPaths(classPaths)
 
     val dir = outDir match {
       case Some(dir) =>
-        if(!isValidPath(dir))
+        if (!isValidPath(dir))
           FatalInvalidOutputDirectory(dir)
         Some(new File(dir))
-      case None => None
+      case None      => None
     }
     Context(Reporter, file, classPaths, dir)
   }
 
   private def checkValidClassPaths(classPaths: List[String]): Unit =
-    for(path <- classPaths)
-      if(!isValidPath(path))
+    for (path <- classPaths)
+      if (!isValidPath(path))
         FatalInvalidOutputDirectory(path)
 
 
   private def isValidPath(path: String): Boolean = {
     try {
       Paths.get(path)
-    }catch{
+    } catch {
       case e: InvalidPathException =>
         return false
     }
     val f = new File(path)
-    if(f.isFile)
+    if (f.isFile)
       return false
 
-    if(!f.exists()){
+    if (!f.exists()) {
       val canCreate = f.mkdirs()
       // TODO: delete doesnt delete parent directories
       f.delete()
-      if(canCreate)
+      if (canCreate)
         return false
     }
     true
@@ -236,11 +263,11 @@ object Main {
       "kool/std"
     )
     val fileMap = mutable.Map() ++ neededFiles.map((_, false))
-    for(f <- files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/")))
+    for (f <- files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/")))
       fileMap(f) = true
 
-    for((f, found) <- fileMap)
-      if(!found)
+    for ((f, found) <- fileMap)
+      if (!found)
         return false
 
     true
@@ -248,7 +275,7 @@ object Main {
 
   def listFiles(f: File): Array[File] = {
     val these = f.listFiles
-    if(these == null)
+    if (these == null)
       return Array[File]()
     these ++ these.filter(_.isDirectory).flatMap(listFiles)
   }
@@ -284,4 +311,7 @@ object Main {
 
   private def FatalInvalidTHomeDirectory(path: String) =
     fatal(6, s"'$path' is not a valid $THome directory.")
+
+  private def FatalInvalidMaxErrors(num: String) =
+    fatal(7, s"'$num' is not a valid argument to the flag '${MaxErrors.flag}'. Needs a number as argument.")
 }
