@@ -14,116 +14,46 @@ import tcompiler.utils._
 import scala.collection.mutable
 import scala.sys.process._
 
-// These have to be defined before the main object or the macro wont work
-sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
+object Main extends MainErrors {
 
-  implicit def flag2String(f: Flag): String = f.flag
+  import Flags._
 
-  val flag       : String
-  val description: String
-  val arg: String = ""
-  def format: String = {
-    val lines = description.split("\n")
-    val format = f"  ${flag + " " + arg}%-20s${lines.head}\n"
+  lazy val AllFlags = EnumerationMacros.sealedInstancesOf[Flag]
 
-    val space = " "
-    lines.tail.foldLeft(format)((format, s) => format + f"  $space%-20s$s%-50s\n")
-  }
-  def compare(that: Flag) = flag.length - that.flag.length
-}
-
-case object Exec extends Flag {
-  override val flag        = "-exec"
-  override val description = "Executes the program after compilation."
-}
-
-case object SuppressWarnings extends Flag {
-  override val flag        = "-nowarn"
-  override val description = "Suppresses warning messages."
-}
-
-case object PrintGeneratedCode extends Flag {
-  override val flag        = "-printcode"
-  override val description = "Pretty prints the AST as it looks before code is generated."
-}
-
-case object Help extends Flag {
-  override val flag        = "-help"
-  override val description = "Prints help information and exits."
-}
-
-case object Directory extends Flag {
-  override val flag        = "-d"
-  override val description = "Specify the path where generated classes are placed."
-  override val arg         = "<directory>"
-}
-
-case object Version extends Flag {
-  override val flag        = "-version"
-  override val description = "Prints version information and exits."
-}
-
-case object WarningIsError extends Flag {
-  override val flag        = "-Werror"
-  override val description = "Treats warnings as errors and exits compilation."
-}
-
-case object NoColor extends Flag {
-  override val flag        = "-nocolor"
-  override val description = "Prints error messages without ANSI-coloring."
-}
-
-case object ClassPath extends Flag {
-  override val flag        = "-cp"
-  override val description = "Specify a path where classes should be searched for."
-  override val arg         = "<directory>"
-}
-
-case object MaxErrors extends Flag {
-  override val flag        = "-maxerrors"
-  override val description = "Specify the maximum number of errors to report. The default is 100.\nEnter -1 to show all errors."
-  override val arg         = "<num>"
-}
-
-object Main {
+  override var ctx     : Context  = null
 
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"
   val THome         = "T_HOME"
 
   var TDirectory         = ""
-  var Ctx     : Context  = null
   var Reporter: Reporter = null
 
-  lazy val Flags = EnumerationMacros.sealedInstancesOf[Flag]
-  val flagActive = mutable.Map() ++ Flags.map(f => (f.flag, false))
-
-
-  private val ErrorPrefix = "M"
+  val flagActive = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
 
   def main(args: Array[String]) {
     try {
-      Ctx = processOptions(args)
+      ctx = processOptions(args)
       if (!sys.env.contains(THome))
-        FatalCantFindTHome()
+        FatalCantFindTHome(THome)
 
       TDirectory = sys.env(THome)
 
       if (!isValidTHomeDirectory(TDirectory))
-        FatalInvalidTHomeDirectory(TDirectory)
+        FatalInvalidTHomeDirectory(TDirectory, THome)
 
       val parsing = Lexer andThen Parser andThen Templates andThen Imports
       val analysis = NameAnalysis andThen TypeChecking
-      val preProg = parsing.run(Ctx)(Ctx.file)
-      val prog = analysis.run(Ctx)(preProg)
+      val preProg = parsing.run(ctx)(ctx.file)
+      val prog = analysis.run(ctx)(preProg)
 
       if (flagActive(PrintGeneratedCode))
         println(Printer(prog))
 
-      if (Ctx.reporter.hasWarnings)
-        println(Ctx.reporter.warningsString)
+      if (ctx.reporter.hasWarnings)
+        println(ctx.reporter.warningsString)
 
-      CodeGeneration.run(Ctx)(prog)
+      CodeGeneration.run(ctx)(prog)
 
       if (flagActive(Exec))
         executeProgram(prog)
@@ -136,18 +66,18 @@ object Main {
     if (!containsMainMethod(prog))
       return
 
-    val cp = Ctx.outDir match {
+    val cp = ctx.outDir match {
       case Some(dir) => "-cp " + dir.getPath
       case _         => ""
     }
-    println("java " + cp + " " + fileName(Ctx) !!)
+    println("java " + cp + " " + fileName(ctx) !!)
   }
 
   private def processOptions(args: Array[String]): Context = {
     var outDir: Option[String] = None
     var files: List[File] = Nil
     var classPaths: List[String] = List()
-    var maxErrors = 100
+    var maxErrors = MaxErrors.DefaultMax
 
     def processOption(args: List[String]): Unit = args match {
       case Directory.flag :: out :: args                         =>
@@ -177,7 +107,6 @@ object Main {
       case f :: args                                             =>
         files = new File(f) :: files
         processOption(args)
-
       case Nil =>
     }
 
@@ -214,10 +143,10 @@ object Main {
     Context(Reporter, file, classPaths, dir)
   }
 
-  private def checkValidClassPaths(classPaths: List[String]): Unit =
-    for (path <- classPaths)
-      if (!isValidPath(path))
-        FatalInvalidOutputDirectory(path)
+  private def checkValidClassPaths(classPaths: List[String]) =
+    classPaths.find(!isValidPath(_)) collect {
+      case path => FatalInvalidOutputDirectory(path)
+    }
 
 
   private def isValidPath(path: String): Boolean = {
@@ -248,7 +177,7 @@ object Main {
        |Usage: tcomp <options> <source file>
        |Options:
        |
-         |${Flags.map(_.format).mkString}
+       |${AllFlags.map(_.format).mkString}
     """.stripMargin
   )
 
@@ -266,9 +195,8 @@ object Main {
     for (f <- files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/")))
       fileMap(f) = true
 
-    for ((f, found) <- fileMap)
-      if (!found)
-        return false
+    if(fileMap.exists(!_._2))
+      return false
 
     true
   }
@@ -284,34 +212,4 @@ object Main {
 
   private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists(_.isMain))
 
-  private def fatal(errorCode: Int, msg: String) =
-    Reporter.fatal(ErrorPrefix, errorCode, msg)
-
-  //---------------------------------------------------------------------------------------
-  // Errors
-  //---------------------------------------------------------------------------------------
-
-  private def FatalWrongNumFilesGiven(numFiles: Int) =
-    fatal(0, s"Exactly one file expected, '$numFiles' file(s) given.")
-
-  private def FatalCannotFindFile(fileName: String) =
-    fatal(1, s"Cannot find file '$fileName'.")
-
-  private def FatalInvalidOutputDirectory(outDir: String) =
-    fatal(2, s"Invalid output directory: '$outDir'.")
-
-  private def FatalOutputDirectoryCouldNotBeCreated(outDir: String) =
-    fatal(3, s"Output directory '$outDir' does not exist and could not be created.")
-
-  private def FatalInvalidClassPath(classPath: String) =
-    fatal(4, s"Invalid output class path: '$classPath'.")
-
-  private def FatalCantFindTHome() =
-    fatal(5, s"$THome environment variable is not set.")
-
-  private def FatalInvalidTHomeDirectory(path: String) =
-    fatal(6, s"'$path' is not a valid $THome directory.")
-
-  private def FatalInvalidMaxErrors(num: String) =
-    fatal(7, s"'$num' is not a valid argument to the flag '${MaxErrors.flag}'. Needs a number as argument.")
 }

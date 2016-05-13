@@ -38,23 +38,23 @@ class Reporter(
   var warnings = ArrayBuffer[String]()
 
 
-  def warning(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+  def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
     if (warningIsError) {
-      error(locationPrefix, errorCode, msg, pos)
+      error(errorPrefix, errorCode, msg, pos)
       return
     }
 
     if (suppressWarnings)
       return
 
-    val warning = errMessage(locationPrefix, 1, errorCode, msg, pos)
+    val warning = errMessage(errorPrefix, 1, errorCode, msg, pos)
     warnings += warning
   }
 
 
-  def error(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+  def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
     if(maxErrors == -1 || errors.size < maxErrors){
-      errors += errMessage(locationPrefix, 2, errorCode, msg, pos)
+      errors += errMessage(errorPrefix, 2, errorCode, msg, pos)
       return
     }
 
@@ -67,8 +67,8 @@ class Reporter(
 }
 
 
-  def fatal(locationPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
-    val error = errMessage(locationPrefix, 3, errorCode, msg, pos)
+  def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
+    val error = errMessage(errorPrefix, 3, errorCode, msg, pos)
     errors += error
     throw new CompilationException(error)
   }

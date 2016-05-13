@@ -53,8 +53,10 @@ object TypeChecking extends Pipeline[Program, Program] {
 
 }
 
-
-class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: List[MethodSymbol] = List()) {
+class TypeChecker(
+  override var ctx: Context,
+  currentMethodSymbol: MethodSymbol,
+  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 
   import TypeChecking._
 
@@ -164,10 +166,11 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     case Error(expr)                      =>
       tcExpr(expr, TString)
     case ret@Return(Some(expr))           =>
-      if (currentMethodSymbol.ast.retType.isDefined)
-        returnStatements += ((ret, tcExpr(expr, currentMethodSymbol.getType)))
-      else
-        returnStatements += ((ret, tcExpr(expr)))
+      val t = currentMethodSymbol.ast.retType match {
+        case Some(retType) => tcExpr(expr, currentMethodSymbol.getType)
+        case None          => tcExpr(expr)
+      }
+      returnStatements += ((ret, t))
     case ret@Return(None)                 =>
       if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
@@ -499,7 +502,7 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     val res =
       if (expected.nonEmpty &&
         (!expected.exists(e => foundType.isSubTypeOf(e) || e.isImplicitlyConvertableFrom(foundType)))) {
-        ErrorWrongType(makeExpectedString(expected), foundType, expression)
+        ErrorWrongType(expected, foundType, expression)
       } else {
         foundType
       }
@@ -798,19 +801,19 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
 
   private def checkConstructorPrivacy(classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned): Unit =
     if (!checkPrivacy(classSymbol, methodSymbol.accessability))
-      ErrorConstructorPrivacy(accessabilityString(methodSymbol), classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
+      ErrorConstructorPrivacy(methodSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
   private def checkMethodPrivacy(classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned): Unit =
     if (!checkPrivacy(classSymbol, methodSymbol.accessability))
-      ErrorMethodPrivacy(accessabilityString(methodSymbol), methodSymbol.ast.signature, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
+      ErrorMethodPrivacy(methodSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
   private def checkFieldPrivacy(classSymbol: ClassSymbol, varSymbol: VariableSymbol, pos: Positioned): Unit =
     if (!checkPrivacy(classSymbol, varSymbol.accessability))
-      ErrorFieldPrivacy(accessabilityString(varSymbol), varSymbol.name, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
+      ErrorFieldPrivacy(varSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
   private def checkOperatorPrivacy(classSymbol: ClassSymbol, opSymbol: OperatorSymbol, pos: Positioned): Unit =
     if (!checkPrivacy(classSymbol, opSymbol.accessability))
-      ErrorOperatorPrivacy(accessabilityString(opSymbol), operatorString(opSymbol), classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
+      ErrorOperatorPrivacy(opSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
   private def checkPrivacy(classSymbol: ClassSymbol, access: Accessability) = access match {
     case Public()                                                                                => true
@@ -818,162 +821,5 @@ class TypeChecker(ctx: Context, currentMethodSymbol: MethodSymbol, methodStack: 
     case Protected() if currentMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) => true
     case _                                                                                       => false
   }
-
-  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability.toString.toLowerCase.dropRight(2)
-
-  private def makeExpectedString(expected: List[Type]): String = expected.size match {
-    case 0 => ""
-    case 1 => s"'${expected.head}'"
-    case n => expected.take(n - 1).map(t => s"'$t'").mkString(", ") + " or '" + expected.last + "'"
-  }
-
-  private def error(errorCode: Int, msg: String, pos: Positioned) = {
-    if (!msg.contains(s"'$TError'"))
-      ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
-    TError
-  }
-
-  private def warning(errorCode: Int, msg: String, pos: Positioned) =
-    ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
-
-
-  //---------------------------------------------------------------------------------------
-  //  Error messages
-  //---------------------------------------------------------------------------------------
-  private def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(s"'$expected'", s"'$found'", pos)
-  private def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(s"'$expected'", found, pos)
-  private def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, s"'$found'", pos)
-  private def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
-    error(0, s"Expected type: $expected, found: $found.", pos)
-
-  private def ErrorClassDoesntHaveMethod(className: String, methodSignature: String, pos: Positioned) =
-    error(1, s"Class '$className' does not contain a method '$methodSignature'.", pos)
-
-  private def ErrorMethodOnWrongType(method: String, tpe: String, pos: Positioned) =
-    error(2, s"Cannot call method '$method' on type '$tpe'.", pos)
-
-  private def ErrorClassDoesntHaveField(className: String, fieldName: String, pos: Positioned) =
-    error(3, s"Class '$className' does not contain a field '$fieldName'.", pos)
-
-  private def ErrorFieldOnWrongType(tpe: String, pos: Positioned) =
-    error(4, s"Cannot access field on type '$tpe'.", pos)
-
-  private def ErrorNonStaticMethodAsStatic(methodName: String, pos: Positioned) =
-    error(5, s"Trying to call method '$methodName' statically but the method is not declared as static.", pos)
-
-  private def ErrorNonStaticMethodFromStatic(methodName: String, pos: Positioned) =
-    error(6, s"Cannot access non-static method '$methodName' from a static method.", pos)
-
-  private def ErrorNonStaticFieldAsStatic(fieldName: String, pos: Positioned) =
-    error(7, s"Trying to access field '$fieldName' statically but the field is not declared as static.", pos)
-
-  private def ErrorNonStaticFieldFromStatic(fieldName: String, pos: Positioned) =
-    error(8, s"Cannot access non-static field '$fieldName' from a static method.", pos)
-
-  private def ErrorConstructorPrivacy(accessability: String, className: String, callingClass: String, pos: Positioned) =
-    error(9, s"Cannot call $accessability constructor of '$className' from class '$callingClass'.", pos)
-
-  private def ErrorMethodPrivacy(accessability: String, methodName: String, className: String, callingClass: String, pos: Positioned) =
-    error(10, s"Cannot call $accessability method '$methodName' defined in '$className' from class '$callingClass'.", pos)
-
-  private def ErrorFieldPrivacy(accessability: String, fieldName: String, className: String, callingClass: String, pos: Positioned) =
-    error(11, s"Cannot access $accessability field '$fieldName' defined in '$className' from class '$callingClass'.", pos)
-
-  private def ErrorOperatorPrivacy(accessability: String, operatorName: String, className: String, callingClass: String, pos: Positioned) =
-    error(12, s"Cannot call $accessability operator '$operatorName' defined in '$className' from class '$callingClass'.", pos)
-
-  private def ErrorIndexingOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned, className: String) = {
-    val operatorName = operatorString(expr, args, Some(className))
-    error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
-  }
-
-  private def ErrorOverloadedOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
-    val classesString = if (args.size != 2 || args(0) == args(1)) {
-      "The class \'" + args.head + "\' does not"
-    } else {
-      if (!args(0).isInstanceOf[TObject]) {
-        "The class \'" + args(1) + "\' does not"
-      } else if (!args(1).isInstanceOf[TObject]) {
-        "The class \'" + args(0) + "\' does not"
-      } else {
-        "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
-      }
-    }
-    val operatorName = operatorString(expr, args)
-    error(13, s"$classesString contain an operator '$operatorName'.", pos)
-  }
-
-  private def ErrorOperatorWrongReturnType(operator: String, expected: String, found: String, pos: Positioned) =
-    error(14, s"Operator '$operator' has wrong return type: expected '$expected', found '$found'.", pos)
-
-  private def ErrorWrongReturnType(tpe: String, pos: Positioned) =
-    error(15, s"Expected a return value of type '$tpe'.", pos)
-
-  private def ErrorDoesntHaveConstructor(className: String, methodSignature: String, pos: Positioned) =
-    error(16, s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
-
-  private def ErrorNewPrimitive(tpe: String, args: List[Type], pos: Positioned) =
-    error(17, s"Cannot construct primitive '$tpe' with arguments '(${args.mkString(", ")})'.", pos)
-
-  private def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
-    error(18, s"Variable '$name' declared with no type or initialization.", pos)
-
-  private def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
-    error(19, s"Method contains return statements of multiple types: $typeList.", pos)
-
-  private def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
-    error(20, s"Array literal contains multiple types: $typeList", pos)
-
-  private def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
-    error(21, s"Cannot infer type of recursive method.", pos)
-
-  private def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
-    val incrementOrDecrement = expr match {
-      case _: PreIncrement | _: PostIncrement => "increment"
-      case _: PreDecrement | _: PostDecrement => "decrement"
-    }
-    error(22, s"Invalid $incrementOrDecrement expression.", pos)
-  }
-
-  private def ErrorOperatorDoesNotExist(expr: ExprTree, args: (Type, Type), pos: Positioned): Type = {
-    val operator = operatorString(expr, List(args._1, args._2))
-    error(23, s"Operator '$operator' does not exist.", pos)
-  }
-
-  private def ErrorInstantiateTrait(tr: String, pos: Positioned) =
-    error(24, s"Cannot instantiate trait '$tr'.", pos)
-
-  private def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, tr: String, pos: Positioned) =
-    error(25, s"Class '$clazz' does not implement method '$method' from trait '$tr'.", pos)
-
-  private def ErrorUnimplementedOperatorFromTrait(clazz: String, operator: String, tr: String, pos: Positioned) =
-    error(26, s"Class '$clazz' does not implement operator '$operator' from trait '$tr'.", pos)
-
-  private def ErrorOverridingMethodDifferentReturnType(method: String, clazz: String, retType: String, parent: String, parentType: String, pos: Positioned) =
-    error(27, s"Overriding method '$method' in class '$clazz' has return " +
-      s"type '$retType' while the method in parent '$parent' has return type '$parentType'.", pos)
-
-  private def ErrorCantPrintUnitType(pos: Positioned) =
-    error(28, s"Cannot print an expression of type Unit.", pos)
-
-  private def ErrorNoSuperTypeHasMethod(clazz: String, method: String, pos: Positioned) =
-    error(29, s"No super type of class '$clazz' implements a method '$method'.", pos)
-
-  private def ErrorNoSuperTypeHasField(clazz: String, field: String, pos: Positioned) =
-    error(30, s"No super type of class '$clazz' has a field '$field'.", pos)
-
-  private def ErrorReassignmentToVal(value: String, pos: Positioned) =
-    error(31, s"Cannot reassign value '$value'.", pos)
-
-  private def ErrorForeachContainNotIterable(tpe: Type, pos: Positioned) =
-    error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
-
-
-  //---------------------------------------------------------------------------------------
-  //  Warnings
-  //---------------------------------------------------------------------------------------
-
-  private def WarningUnusedPrivateField(name: String, pos: Positioned) =
-    warning(0, s"Private method '$name' is never used.", pos)
 
 }

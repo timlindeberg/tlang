@@ -10,15 +10,13 @@ import scala.io.Source
 
 object Lexer extends Pipeline[File, List[Token]] {
 
-  def run(ctx: Context)(f: File): List[Token] = new Tokenizer(f, ctx).tokenize(Source.fromFile(f).buffered.toList)
+  def run(ctx: Context)(f: File): List[Token] = new Tokenizer(ctx, f).tokenize(Source.fromFile(f).buffered.toList)
 }
 
-class Tokenizer(val file: File, ctx: Context) {
+class Tokenizer(override var ctx: Context, override val file: File) extends LexerErrors {
 
-  private val LocationPrefix = "L"
-
-  private var line   = 1
-  private var column = 1
+  override var line   = 1
+  override var column = 1
 
   def tokenize(chars: List[Char]): List[Token] = {
     def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
@@ -355,56 +353,4 @@ class Tokenizer(val file: File, ctx: Context) {
     column += tokenLength
     token
   }
-
-  private def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
-    val bad = new Token(BAD).setPos(file, Position.encode(startPos.line, startPos.col), Position.encode(startPos.line + 1, 1))
-    ctx.reporter.error(LocationPrefix, errorCode, msg, bad)
-  }
-
-  private def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
-    val bad = new Token(BAD).setPos(file, Position.encode(line, column), Position.encode(line, column + colOffset))
-    ctx.reporter.error(LocationPrefix, errorCode, msg, bad)
-  }
-
-
-  //---------------------------------------------------------------------------------------
-  //  Error messages
-  //---------------------------------------------------------------------------------------
-
-  private def ErrorInvalidCharacter(c: Char) =
-    error(0, s"Invalid character: '$c'.", 1)
-
-  private def ErrorInvalidIdentifier(c: Char, length: Int) =
-    error(1, s"Invalid character in identifier: '$c'.", length)
-
-  private def ErrorUnclosedMultilineString(startPos: Positioned) =
-    error(2, "Unclosed multiline string literal.", startPos)
-
-  private def ErrorEmptyCharLiteral() =
-    error(3, "Empty character literal.", 2)
-
-  private def ErrorInvalidEscapeSequence(length: Int) =
-    error(4, "Invalid escape sequence.", length)
-
-  private def ErrorInvalidCharLiteral(length: Int) =
-    error(5, "Invalid character literal.", length)
-
-  private def ErrorInvalidUnicode(length: Int) =
-    error(6, "Invalid unicode escape sequence.", length)
-
-  private def ErrorUnclosedCharLiteral(length: Int) =
-    error(7, "Unclosed character literal.", length)
-
-  private def ErrorUnclosedStringLiteral(startPos: Positioned) =
-    error(8, "Unclosed string literal.", startPos)
-
-  private def ErrorNumberTooLarge(length: Int) =
-    error(9, "Number is too large to fit in datatype.", length)
-
-  private def ErrorInvalidNumber(length: Int, rest: List[Char]) =
-    error(10, "Invalid number.", length + rest.indexWhere(_.isWhitespace) + 1)
-
-  private def ErrorInvalidFloat(length: Int, rest: List[Char]) =
-    error(11, "Invalid floating point number.", length + rest.indexWhere(_.isWhitespace) + 1)
-
 }

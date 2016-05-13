@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups.{IncrementDecrement, PrintStatement, UselessStatement}
-import tcompiler.ast.{Printer, Trees}
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -12,7 +12,6 @@ import tcompiler.utils._
 object NameAnalysis extends Pipeline[Program, Program] {
 
   def run(ctx: Context)(prog: Program): Program = {
-    println(Printer(prog))
     val nameAnalyzer = new NameAnalyser(ctx, prog)
     nameAnalyzer.addSymbols()
     nameAnalyzer.bindIdentifiers()
@@ -25,9 +24,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 }
 
-class NameAnalyser(ctx: Context, prog: Program) {
+class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysisErrors {
 
-  private val LocationPrefix       = "N"
   private var variableUsage        = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
@@ -189,10 +187,10 @@ class NameAnalyser(ctx: Context, prog: Program) {
       bindFields(classDecl)
       methods.foreach(bind)
     case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
-      retType collect { case tpe =>
+      retType.ifDefined(tpe => {
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
-      }
+      })
 
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
@@ -205,11 +203,11 @@ class NameAnalyser(ctx: Context, prog: Program) {
 
       stat.ifDefined(new StatementBinder(constructorDecl.getSymbol, false).bindStatement(_))
     case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, _) =>
-      retType collect { case tpe =>
+      retType.ifDefined(tpe => {
         val t = setType(tpe)
         operatorDecl.getSymbol.setType(t)
         operatorType.setType(t)
-      }
+      })
 
       //operatorType.setType(retType.getType)
       bindArguments(args)
@@ -539,129 +537,4 @@ class NameAnalyser(ctx: Context, prog: Program) {
       }
     }
   }
-
-
-  private def error(errorCode: Int, msg: String, tree: Positioned) = {
-    tree match {
-      case id: Identifier      => id.setSymbol(new ErrorSymbol)
-      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR"))
-      case _                   =>
-    }
-
-    ctx.reporter.error(LocationPrefix, errorCode, msg, tree)
-    new ErrorSymbol()
-  }
-
-  private def warning(errorCode: Int, msg: String, pos: Positioned) = {
-    ctx.reporter.warning(LocationPrefix, errorCode, msg, pos)
-  }
-
-  //---------------------------------------------------------------------------------------
-  //  Error messages
-  //---------------------------------------------------------------------------------------
-
-  private def ErrorInheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, pos: Positioned) = {
-    val inheritanceList =
-      (if (set.size >= 2) set.map(c => s"'${c.name}'").mkString(" <: ")
-      else c.name) + " <: '" + c.name + "'"
-    error(0, s"A cycle was found in the inheritence graph: $inheritanceList", pos)
-  }
-
-  private def ErrorOverrideOperator(pos: Positioned) =
-    error(1, "Operators cannot be overriden.", pos)
-
-  private def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(3, s"Class '$name' is already defined at line '$line'.", pos)
-
-  private def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(4, s"Variable '$name' is already defined at line '$line'.", pos)
-
-  private def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned) =
-    error(5, s"Field '$name' is already defined in super class.", pos)
-
-  private def ErrorUnknownType(name: String, pos: Positioned) =
-    error(6, s"Unknown type: '$name'.", pos)
-
-  private def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
-    error(7, s"Method '$methodSignature' is already defined at line '$line'.", pos)
-
-  private def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned) =
-    error(9, s"Operator '$operator' is already defined at line '$line'.", pos)
-
-  private def ErrorCantResolveSymbol(name: String, pos: Positioned) =
-    error(10, s"Could not resolve symbol '$name'.", pos)
-
-  private def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned) =
-    error(11, s"Non-static field '$name' cannot be accessed from a static function.", pos)
-
-  private def ErrorParentNotDeclared(name: String, pos: Positioned) =
-    error(12, s"Parent class '$name' was not declared. ", pos)
-
-  private def ErrorThisInStaticContext(pos: Positioned) =
-    error(13, "'this' can not be used in a static context.", pos)
-
-  private def ErrorOperatorWrongTypes(operatorType: ExprTree, argTypes: List[String], clazz: String, pos: Positioned) = {
-    val op = operatorString(operatorType, argTypes)
-    error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
-  }
-
-  private def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {
-    val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
-    error(15, s"Can not use $breakOrContinue statement outside of a loop.", pos)
-  }
-
-  private def ErrorExtendMultipleClasses(pos: Positioned) =
-    error(16, s"Can only extend from multiple traits, not classes.", pos)
-
-  private def ErrorNonFirstArgumentIsClass(pos: Positioned) =
-    error(17, s"Only the first parent can be a class.", pos)
-
-  private def ErrorClassUnimplementedMethod(pos: Positioned) =
-    error(18, s"Only traits can have unimplemented methods.", pos)
-
-  private def ErrorUnimplementedMethodNoReturnType(method: String, pos: Positioned) =
-    error(19, s"Unimplemented method '$method' needs a return type.", pos)
-
-  private def ErrorAbstractOperator(pos: Positioned) =
-    error(19, s"Operators cannot be abstract.", pos)
-
-  private def ErrorSuperInStaticContext(pos: Positioned) =
-    error(20, "'super' can not be used in a static context.", pos)
-
-  private def ErrorSuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, pos: Positioned) =
-    error(21, s"Super refers to class '$inheritedClass' which '$clazz' does not inherit from.", pos)
-
-  private def ErrorNonStaticFinalFieldInTrait(pos: Positioned) =
-    error(22, s"Fields in traits need to be val static.", pos)
-
-  private def ErrorReassignmentToVal(value: String, pos: Positioned) =
-    error(23, s"Cannot reassign value '$value'.", pos)
-
-
-  //---------------------------------------------------------------------------------------
-  //  Warnings
-  //---------------------------------------------------------------------------------------
-
-  private def WarningUnusedVar(v: VariableSymbol) = v.varType match {
-    case Field    => WarningUnusedPrivateField(v.name, v)
-    case Argument => WarningUnusedArgument(v.name, v)
-    case LocalVar => WarningUnusedLocalVar(v.name, v)
-  }
-
-  private def WarningUnusedLocalVar(name: String, pos: Positioned) =
-    warning(0, s"Variable '$name' is never used.", pos)
-
-  private def WarningUnusedArgument(name: String, pos: Positioned) =
-    warning(1, s"Argument '$name' is never used.", pos)
-
-  private def WarningUnusedPrivateField(name: String, pos: Positioned) =
-    warning(2, s"Private field '$name' is never used.", pos)
-
-  private def WarningUselessStatement(pos: Positioned) =
-    warning(3, s"Statement has no effect.", pos)
-
-  private def WarningCouldBeVal(value: String, pos: Positioned) =
-    warning(4, s"Variable '$value' could be val.", pos)
-
-
 }

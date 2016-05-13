@@ -22,9 +22,7 @@ object Parser extends Pipeline[List[Token], Program] {
 
 object ASTBuilder {
 
-  private val LocationPrefix = "P"
-
-  private val MaximumArraySize = 255
+  val MaximumArraySize = 255
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
     LOGICNOT -> LogicNot,
@@ -58,7 +56,7 @@ object ASTBuilder {
 
 }
 
-class ASTBuilder(ctx: Context, tokens: Array[Token]) {
+class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
 
   import ASTBuilder._
 
@@ -180,7 +178,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case TRAIT =>
         eat(TRAIT)
         Trait
-      case _     => FatalWrongToken(CLASS, TRAIT)
+      case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
     }
     val id = classTypeIdentifier()
     val parents = parentsDeclaration()
@@ -226,7 +224,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(Private(), Final())
-      case _       => FatalWrongToken(PRIVVAR, PRIVVAL)
+      case _       => FatalWrongToken(currentToken, PRIVVAR, PRIVVAL)
     }
     varDeclEnd(modifiers, startPos)
   }
@@ -408,10 +406,10 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             eat(LPAREN)
             val f1 = formal()
             (operatorType, List(f1), modifiers)
-          case _      => FatalWrongToken(EQSIGN, LPAREN)
+          case _      => FatalWrongToken(currentToken, EQSIGN, LPAREN)
         }
       case _             =>
-        FatalWrongToken(PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT, LESSTHAN,
+        FatalWrongToken(currentToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT, LESSTHAN,
           LESSTHANE, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
@@ -435,7 +433,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case PRIVDEF =>
         eat(PRIVDEF)
         Set(protectedOrPrivate().setPos(startPos, nextToken))
-      case _       => FatalWrongToken(PUBDEF, PRIVDEF)
+      case _       => FatalWrongToken(currentToken, PUBDEF, PRIVDEF)
     }
 
     while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
@@ -479,7 +477,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(protectedOrPrivate().setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
-      case _       => FatalWrongToken(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+      case _       => FatalWrongToken(currentToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     }
 
     val pos = nextToken
@@ -702,7 +700,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
                  OREQ | XOREQ |
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
               assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
-            case _                          => FatalWrongToken(EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
+            case _                          => FatalWrongToken(currentToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
           }
       }
     }, SEMICOLON)
@@ -734,9 +732,9 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             case DECREMENT                  =>
               eat(DECREMENT)
               PostDecrement(id)
-            case _                          => FatalWrongToken(PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
+            case _                          => FatalWrongToken(currentToken, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
           }
-        case _         => FatalWrongToken(INCREMENT, DECREMENT, IDKIND)
+        case _         => FatalWrongToken(currentToken, INCREMENT, DECREMENT, IDKIND)
       }
       expr.setPos(startPos, nextToken)
     })
@@ -750,7 +748,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
     case EOF | RBRACE        =>
-    case _                   => FatalWrongToken(SEMICOLON, NEWLINE)
+    case _                   => FatalWrongToken(currentToken, SEMICOLON, NEWLINE)
   }
 
   /**
@@ -969,7 +967,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
             FieldRead(sup, id)
           }
         case NEW           => newExpression()
-        case _             => FatalUnexpectedToken()
+        case _             => FatalUnexpectedToken(currentToken)
       }
       tree.setPos(startPos, nextToken)
     }
@@ -1106,7 +1104,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         New(tpe, args)
       case LBRACKET =>
         NewArray(tpe, sizes())
-      case _        => FatalWrongToken(LPAREN, LBRACKET)
+      case _        => FatalWrongToken(currentToken, LPAREN, LBRACKET)
     }
   }
 
@@ -1145,7 +1143,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
           case RBRACKET =>
             eat(RBRACKET)
             ArrayRead(e, expr)
-          case _        => FatalWrongToken(COLON, RBRACKET)
+          case _        => FatalWrongToken(currentToken, COLON, RBRACKET)
         }
     }
   }
@@ -1223,7 +1221,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       if (nextTokenKind == k) {
         readToken()
       } else {
-        FatalWrongToken(k)
+        FatalWrongToken(currentToken, k)
       }
     }
   }
@@ -1259,7 +1257,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
         case _        => List()
       }
       ClassIdentifier(id.value, tIds).setPos(id)
-    case _      => FatalWrongToken(IDKIND)
+    case _      => FatalWrongToken(currentToken, IDKIND)
   }
 
   /**
@@ -1286,7 +1284,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case id: ID =>
       eat(IDKIND)
       Identifier(id.value).setPos(id, nextToken)
-    case _      => FatalWrongToken(IDKIND)
+    case _      => FatalWrongToken(currentToken, IDKIND)
   }
 
   /**
@@ -1296,7 +1294,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case strlit: STRLIT =>
       eat(STRLITKIND)
       StringLit(strlit.value).setPos(strlit, nextToken)
-    case _              => FatalWrongToken(STRLITKIND)
+    case _              => FatalWrongToken(currentToken, STRLITKIND)
   }
 
   /**
@@ -1307,7 +1305,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
       case intLit: INTLIT =>
         eat(INTLITKIND)
         IntLit(intLit.value).setPos(intLit, nextToken)
-      case _              => FatalWrongToken(INTLITKIND)
+      case _              => FatalWrongToken(currentToken, INTLITKIND)
     }
 
   /**
@@ -1317,7 +1315,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case longLit: LONGLIT =>
       eat(LONGLITKIND)
       LongLit(longLit.value).setPos(longLit, nextToken)
-    case _                => FatalWrongToken(LONGLITKIND)
+    case _                => FatalWrongToken(currentToken, LONGLITKIND)
   }
 
   /**
@@ -1327,7 +1325,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case floatLit: FLOATLIT =>
       eat(FLOATLITKIND)
       FloatLit(floatLit.value).setPos(floatLit, nextToken)
-    case _                  => FatalWrongToken(FLOATLITKIND)
+    case _                  => FatalWrongToken(currentToken, FLOATLITKIND)
   }
 
 
@@ -1338,7 +1336,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case doubleLit: DOUBLELIT =>
       eat(DOUBLELITKIND)
       DoubleLit(doubleLit.value).setPos(doubleLit, nextToken)
-    case _                    => FatalWrongToken(DOUBLELITKIND)
+    case _                    => FatalWrongToken(currentToken, DOUBLELITKIND)
   }
 
   /**
@@ -1348,7 +1346,7 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     case charLit: CHARLIT =>
       eat(CHARLITKIND)
       CharLit(charLit.value).setPos(charLit, nextToken)
-    case _                => FatalWrongToken(CHARLITKIND)
+    case _                => FatalWrongToken(currentToken, CHARLITKIND)
   }
 
   /**
@@ -1420,40 +1418,4 @@ class ASTBuilder(ctx: Context, tokens: Array[Token]) {
     }
     arrBuff.toList
   }
-
-  private def error(errorCode: Int, msg: String, pos: Positioned) =
-    ctx.reporter.error(LocationPrefix, errorCode, msg, pos)
-
-  private def fatal(errorCode: Int, msg: String, pos: Positioned) =
-    ctx.reporter.fatal(LocationPrefix, errorCode, msg, pos)
-
-  //---------------------------------------------------------------------------------------
-  //  Error messages
-  //---------------------------------------------------------------------------------------
-
-  private def ErrorImplicitMethodOrOperator(pos: Positioned) =
-    error(0, "Only constructors can be declared implicit.", pos)
-
-  private def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
-    error(1, s"Indexing operator '$name' cannot be declared static!", pos)
-
-  private def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
-    error(2, s"Invalid array dimension: '$size', $MaximumArraySize is the maximum dimension of an array.", pos)
-
-  //---------------------------------------------------------------------------------------
-  //  Fatal messages
-  //---------------------------------------------------------------------------------------
-
-  private def FatalExpectedIdAssignment(pos: Positioned) =
-    fatal(1, "Expected identifier on left side of assignment.", pos)
-
-  private def FatalWrongToken(kind: TokenKind, more: TokenKind*): Nothing =
-    FatalWrongToken((kind :: more.toList).map(k => s"'$k'").mkString(" or "), currentToken.toString, currentToken)
-
-  private def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
-    fatal(2, s"Expected $expected, found: '$found'.", pos)
-
-  private def FatalUnexpectedToken() =
-    fatal(3, s"Unexpected token: '$currentToken'", currentToken)
-
 }
