@@ -22,11 +22,9 @@ object TypeChecking extends Pipeline[Program, Program] {
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(prog: Program): Program = {
-    val methodDecl = MethodDecl(None, Identifier(""), List(), None, Set(Private()))
-
     // Typecheck fields
     prog.classes.foreach { classDecl =>
-      val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, methodDecl))
+      val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.vars.foreach(typeChecker.tcStat(_))
     }
 
@@ -42,7 +40,7 @@ object TypeChecking extends Pipeline[Program, Program] {
 
 
     val c = new ClassSymbol("")
-    val tc = new TypeChecker(ctx, new MethodSymbol("", c, methodDecl))
+    val tc = new TypeChecker(ctx, new MethodSymbol("", c, None, Set()))
 
     tc.checkMethodUsage()
     tc.checkCorrectOverrideReturnTypes(prog)
@@ -71,7 +69,7 @@ class TypeChecker(
       return
     }
 
-    currentMethodSymbol.ast.stat.ifDefined(tcStat)
+    currentMethodSymbol.stat.ifDefined(tcStat)
 
     if (currentMethodSymbol.getType != TUntyped) {
       currentMethodSymbol.setType(tcOperator(currentMethodSymbol.getType))
@@ -106,11 +104,7 @@ class TypeChecker(
       val correctOperatorType = getCorrectOperatorType(op)
       correctOperatorType match {
         case Some(correctType) if tpe != correctType =>
-          val pos = op.ast.retType match {
-            case Some(retType) => retType
-            case None          => op.ast
-          }
-          ErrorOperatorWrongReturnType(operatorString(op), correctType.toString, tpe.toString, pos)
+          ErrorOperatorWrongReturnType(operatorString(op), correctType.toString, tpe.toString, op)
         case _                                       => tpe
       }
     case _                  => tpe
@@ -166,13 +160,13 @@ class TypeChecker(
     case Error(expr)                      =>
       tcExpr(expr, TString)
     case ret@Return(Some(expr))           =>
-      val t = currentMethodSymbol.ast.retType match {
-        case Some(retType) => tcExpr(expr, currentMethodSymbol.getType)
-        case None          => tcExpr(expr)
+      val t = currentMethodSymbol.getType match {
+        case TUntyped => tcExpr(expr)
+        case retType  => tcExpr(expr, retType)
       }
       returnStatements += ((ret, t))
     case ret@Return(None)                 =>
-      if (currentMethodSymbol.ast.retType.isDefined && currentMethodSymbol.getType != TUnit)
+      if (currentMethodSymbol.getType != TUntyped && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
     case _: Break | _: Continue           =>
@@ -606,7 +600,7 @@ class TypeChecker(
     methodUsage foreach {
       case (method, used) =>
         if (!used)
-          WarningUnusedPrivateField(method.ast.signature, method)
+          WarningUnusedPrivateField(method.signature, method)
     }
     methodUsage = Map[MethodSymbol, Boolean]()
   }
@@ -622,7 +616,7 @@ class TypeChecker(
             val parentType = parentMeth.getType
             val tpe = meth.getSymbol.getType
             if (!tpe.isSubTypeOf(parentType)) {
-              ErrorOverridingMethodDifferentReturnType(meth.signature,
+              ErrorOverridingMethodDifferentReturnType(meth.getSymbol.signature,
                 classSymbol.name,
                 meth.getSymbol.getType.toString,
                 parentMeth.classSymbol.name,
@@ -653,7 +647,7 @@ class TypeChecker(
     unimplementedMethods.foreach { case (method, owningTrait) =>
       if (!classDecl.getSymbol.implementsMethod(method))
         ErrorUnimplementedMethodFromTrait(classDecl.id.value,
-          method.ast.signature,
+          method.signature,
           owningTrait.name, classDecl.id)
     }
   }

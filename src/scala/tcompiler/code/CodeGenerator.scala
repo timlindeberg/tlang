@@ -354,7 +354,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
                 if (duplicate)
                   obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
               val className = classSymbol.name
-                ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.signature)
+                ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
               case None                 => ??? // This shouldnt happen
             }
           case TArray(arrayType)        =>
@@ -384,7 +384,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             classSymbol.lookupOperator(expression, List(index.getType)) match {
               case Some(operatorSymbol) =>
                 val className = classSymbol.name
-                ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.signature)
+                ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
               case None                 => ???
             }
           case TArray(arrayType)    =>
@@ -426,7 +426,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case TObject(classSymbol) =>
             val className = classSymbol.name
             val methSymbol = meth.getSymbol.asInstanceOf[MethodSymbol]
-            val signature = methSymbol.signature
+            val signature = methSymbol.byteCodeSignature
 
             def compileArgs() = methSymbol.argList.zip(args).foreach {
               case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
@@ -465,7 +465,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             val argTypes = args.map(_.getType)
 
             val signature = classSymbol.lookupMethod("new", argTypes) match {
-              case Some(m) => m.signature
+              case Some(m) => m.byteCodeSignature
               case _       => "()V"
             }
             // Constructors are always called with InvokeSpecial
@@ -637,7 +637,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case TObject(classSymbol) =>
         classSymbol.lookupOperator(expr, args) match {
           case Some(operatorSymbol) =>
-            ch << InvokeStatic(operatorSymbol.classSymbol.name, operatorSymbol.methodName, operatorSymbol.signature)
+            ch << InvokeStatic(operatorSymbol.classSymbol.name, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
             true
           case None                 => false
         }
@@ -840,6 +840,8 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     (varDecl, id)
   }
 
+  private def createMethodId(methodSymbol: MethodSymbol) = Identifier(methodSymbol.name).setSymbol(methodSymbol)
+
   /**
     * Generates the following code:
     * var container$x = <arr>
@@ -951,16 +953,16 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     */
   private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
-    val methId = iteratorMethodSymbol.ast.id
-    val iteratorCall = MethodCall(container, methId, List())
+    val iteratorMethodId = createMethodId(iteratorMethodSymbol)
+    val iteratorCall = MethodCall(container, iteratorMethodId, List())
     val (iteratorDecl, iteratorId) = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
     val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
 
-    val hasNextMethod = iteratorClass.lookupMethod("HasNext", List()).get.ast.id
-    val nextMethod = iteratorClass.lookupMethod("Next", List()).get.ast.id
+    val hasNextMethodId = createMethodId(iteratorClass.lookupMethod("HasNext", List()).get)
+    val nextMethodId = createMethodId(iteratorClass.lookupMethod("Next", List()).get)
 
-    val comparison = MethodCall(iteratorId, hasNextMethod, List()).setType(TBool)
-    val init = Some(MethodCall(iteratorId, nextMethod, List()).setType(nextMethod.getType))
+    val comparison = MethodCall(iteratorId, hasNextMethodId, List()).setType(TBool)
+    val init = Some(MethodCall(iteratorId, nextMethodId, List()).setType(nextMethodId.getType))
     val valInit = VarDecl(varDecl.tpe, varDecl.id, init, varDecl.modifiers)
     valInit.setSymbol(varDecl.getSymbol)
     val stats = Block(List(valInit, stat))

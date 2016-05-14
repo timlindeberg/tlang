@@ -86,8 +86,6 @@ object Trees {
     }
 
     def isAbstract = stat.isEmpty
-
-    def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
   }
 
   case class MethodDecl(var retType: Option[TypeTree],

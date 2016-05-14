@@ -63,7 +63,7 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorMethodPrivacy(methodSymbol: MethodSymbol, className: String, callingClass: String, pos: Positioned) = {
     val accessability = accessabilityString(methodSymbol)
-    val methodName = methodSymbol.ast.signature
+    val methodName = methodSymbol.signature
     error(10, s"Cannot call $accessability method '$methodName' defined in '$className' from class '$callingClass'.", pos)
   }
 

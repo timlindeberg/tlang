@@ -121,8 +121,8 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       }
 
       classSymbol.members += (id.value -> newSymbol)
-    case methodDecl@MethodDecl(retType, id, args, stat, _)                   =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, methodDecl).setPos(methodDecl)
+    case methodDecl@MethodDecl(retType, id, args, stat, modifiers)                   =>
+      val newSymbol = new MethodSymbol(id.value, classSymbol, stat, modifiers).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
       args.foreach(addSymbols(_, newSymbol))
@@ -131,17 +131,18 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
         ErrorClassUnimplementedMethod(methodDecl)
 
       if (classSymbol.isInstanceOf[TraitSymbol] && retType.isEmpty && stat.isEmpty)
-        ErrorUnimplementedMethodNoReturnType(methodDecl.signature, methodDecl)
-    case constructorDecl@ConstructorDecl(_, id, args, _, _)                  =>
-      val newSymbol = new MethodSymbol(id.value, classSymbol, constructorDecl).setPos(constructorDecl)
+        ErrorUnimplementedMethodNoReturnType(newSymbol.signature, methodDecl)
+    case constructorDecl@ConstructorDecl(_, id, args, stat, modifiers)                  =>
+      // TODO: Make sure constructors arent declared as abstract
+      val newSymbol = new MethodSymbol(id.value, classSymbol, stat, modifiers).setPos(constructorDecl)
       newSymbol.setType(TUnit)
 
       id.setSymbol(newSymbol)
       constructorDecl.setSymbol(newSymbol)
 
       args.foreach(addSymbols(_, newSymbol))
-    case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, id) =>
-      val newSymbol = new OperatorSymbol(operatorType, classSymbol, operatorDecl)
+    case operatorDecl@OperatorDecl(operatorType, retType, args, stat, modifiers, id) =>
+      val newSymbol = new OperatorSymbol(operatorType, classSymbol, stat, modifiers).setPos(operatorDecl)
       id.setSymbol(newSymbol)
       operatorDecl.setSymbol(newSymbol)
 
@@ -165,14 +166,15 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       id.setSymbol(newSymbol)
       formal.setSymbol(newSymbol)
 
+      methSymbol.params += (id.value -> newSymbol)
+      methSymbol.argList ++= List(newSymbol)
+
       // Don't put out warning when args is unused since it's implicitly defined
       // or if the method is abstract
-      if (methSymbol.ast.isMain || methSymbol.ast.isAbstract)
+      if (methSymbol.isMainMethod || methSymbol.isAbstract)
         variableUsage += newSymbol -> true
       else
         variableUsage += newSymbol -> false
-      methSymbol.params += (id.value -> newSymbol)
-      methSymbol.argList ++= List(newSymbol)
   }
 
 
@@ -255,7 +257,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     val argTypes = meth.args.map(_.tpe.getType)
     val classSymbol = meth.getSymbol.classSymbol
     classSymbol.lookupMethod(name, argTypes, recursive = false) match {
-      case Some(oldMeth) => ErrorMethodAlreadyDefined(meth.signature, oldMeth.line, meth)
+      case Some(oldMeth) => ErrorMethodAlreadyDefined(meth.getSymbol.signature, oldMeth.line, meth)
       case None          => classSymbol.addMethod(meth.getSymbol)
     }
   }
@@ -269,7 +271,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
       case Some(oldOperator) =>
         val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
-        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.ast.line, operator)
+        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.line, operator)
       case None              =>
         classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>

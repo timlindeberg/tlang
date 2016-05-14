@@ -27,12 +27,11 @@ class Reporter(
   private def Bold = GetColor(Console.BOLD)
   private def EndColor = GetColor(Console.RESET)
 
-  private var hitMaxErrors = false
-
-
   // Only output color to consoles
   private def GetColor(color: String) = if (useColor) color else ""
   private var filesToLines = Map[File, IndexedSeq[String]]()
+
+  private var hitMaxErrors = false
 
   var errors   = ArrayBuffer[String]()
   var warnings = ArrayBuffer[String]()

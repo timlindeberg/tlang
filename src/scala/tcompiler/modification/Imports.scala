@@ -3,15 +3,12 @@ package modification
 
 import java.io.File
 
-import org.apache.bcel._
-import org.apache.bcel.classfile.{JavaClass, Method, _}
-import org.apache.bcel.generic.{BasicType, ObjectType, Type}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Trees}
+import tcompiler.imports.Importer
 import tcompiler.lexer.Lexer
 import tcompiler.utils.{CompilationException, Context, Pipeline, Positioned}
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Imports extends Pipeline[Program, Program] {
@@ -93,9 +90,10 @@ class NameReplacer(ctx: Context, prog: Program) {
       }
     }
     if (addedExternalClasses.contains(name)) {
-      return Some(addedExternalClasses(name))
+      Some(addedExternalClasses(name))
+    }else{
+      None
     }
-    None
   }
 
 
@@ -117,128 +115,6 @@ class NameReplacer(ctx: Context, prog: Program) {
 
 
 }
-
-class Importer(ctx: Context, prog: Program) {
-
-  val usedImports = mutable.Set[Import]()
-
-  val regImports = prog.imports.filter(_.isInstanceOf[RegularImport]).asInstanceOf[List[RegularImport]]
-  val wcImports  = prog.imports.filter(_.isInstanceOf[WildCardImport]).asInstanceOf[List[WildCardImport]]
-
-  val secondClassImports = mutable.Set[String]()
-
-  def importClass(className: String): Option[String] = {
-    if (className == "")
-      return None
-
-    if (addImport(className))
-      return Some(className)
-
-    for (imp <- regImports) {
-      if (imp.identifiers.last.value == className) {
-        val fullName = imp.identifiers.map(_.value).mkString("/")
-        if (addImport(fullName)) {
-          usedImports += imp
-          return Some(fullName)
-        }
-      }
-    }
-
-    for (imp <- wcImports) {
-      val fullName = imp.identifiers.map(_.value).mkString("/") + "/" + className
-      if (addImport(fullName)) {
-        usedImports += imp
-        return Some(fullName)
-      }
-    }
-    None
-  }
-
-  private def addImport(className: String): Boolean = {
-    getClass(className) match {
-      case Some(clazz) =>
-        prog.classes = findClass(clazz) :: prog.classes
-        true
-      case None        => false
-    }
-  }
-
-  private def getClass(name: String): Option[JavaClass] =
-    try {
-      Some(Repository.lookupClass(name))
-    } catch {
-      case _: ClassNotFoundException   => None
-      case e: IllegalArgumentException => None
-      case e: ClassFormatException => println(e.getMessage); None
-    }
-
-  private def findClass(clazz: JavaClass): ClassDecl = {
-    val name = clazz.getClassName
-    val id = ClassIdentifier(name, List())
-    val parents = convertParents(clazz)
-    val fields = clazz.getFields.map(convertField).toList
-    val methods = clazz.getMethods.map(convertMethod(_, clazz)).toList
-    // TODO: Handle importing interfaces
-    ExternalClassDecl(id, parents, fields, methods)
-  }
-
-  private def convertParents(clazz: JavaClass) = {
-    // TODO: Handle importing interfaces
-
-    clazz.getSuperClass match {
-      case null                                                => List()
-      case parent                                              =>
-        prog.classes = findClass(parent) :: prog.classes
-        List(ClassIdentifier(parent.getClassName, List()))
-    }
-  }
-
-  private def convertField(field: Field) =
-    new VarDecl(Some(convertType(field.getType)), Identifier(field.getName), None, convertModifiers(field))
-
-  private def convertMethod(meth: Method, clazz: JavaClass): MethodDecl = {
-    val name = meth.getName match {
-      case "<init>" => "new"
-      case n        => n
-    }
-    val id = Identifier(name)
-    val retType = convertType(meth.getReturnType)
-    val args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) => Formal(convertType(tpe), Identifier("arg" + i)) }.toList
-    val modifiers = convertModifiers(meth)
-
-    MethodDecl(Some(retType), id, args, Some(Block(List())), modifiers)
-  }
-
-  private def convertModifiers(obj: AccessFlags): Set[Modifier] = {
-    var set: Set[Modifier] = Set()
-    obj match {
-      case x if x.isPublic    => set += Public()
-      case x if x.isProtected => set += Protected()
-      case _                  => set += Private()
-    }
-
-    if (obj.isStatic) set += Static()
-    set
-  }
-
-  private def convertType(tpe: Type): TypeTree = tpe match {
-    case x: BasicType                         => x match {
-      case Type.BOOLEAN => BooleanType()
-      case Type.INT     => IntType()
-      case Type.CHAR    => CharType()
-      case Type.LONG    => LongType()
-      case Type.FLOAT   => FloatType()
-      case Type.DOUBLE  => DoubleType()
-      case Type.VOID    => UnitType()
-      case _            => IntType()
-    }
-    case x: ObjectType                        =>
-      secondClassImports += x.getClassName
-      ClassIdentifier(x.getClassName)
-    case x: org.apache.bcel.generic.ArrayType => ArrayType(convertType(x.getBasicType))
-  }
-}
-
 
 class GenericImporter(ctx: Context, prog: Program, imported: scala.collection.mutable.Set[String] = scala.collection.mutable.Set()) {
 

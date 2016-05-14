@@ -33,7 +33,7 @@ object Symbols {
   ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
-    var classes                = Map[String, ClassSymbol]("Object" -> ObjectClass)
+    var classes = Map[String, ClassSymbol]("Object" -> ObjectClass)
 
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
@@ -47,7 +47,7 @@ object Symbols {
     def isImplementedInSuperClass(name: String, args: List[Type]) = {
       findMethod(name, args) match {
         case Some(m) => false
-        case None => true
+        case None    => true
       }
     }
 
@@ -57,9 +57,9 @@ object Symbols {
 
     def implementsMethod(method: MethodSymbol): Boolean = {
       findMethod(method.name, method.argTypes) match {
-        case Some(meth) if meth.hasImplementation => true
-        case None                                 => parents.exists(p => p.implementsMethod(method))
-        case _                                    => false
+        case Some(meth) if !meth.isAbstract => true
+        case None                           => parents.exists(p => p.implementsMethod(method))
+        case _                              => false
       }
     }
 
@@ -74,11 +74,11 @@ object Symbols {
     def lookupParent(name: String): Option[ClassSymbol] = {
       parents.find(_.name == name) match {
         case v@Some(p) => v
-        case None =>
+        case None      =>
           parents.foreach(p => p.lookupParent(name) match {
-          case v@Some(p) => return v
-          case None =>
-        })
+            case v@Some(p) => return v
+            case None      =>
+          })
           None
       }
     }
@@ -118,7 +118,7 @@ object Symbols {
       }
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
-      methods.filter(!_.hasImplementation).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
+      methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
 
     private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
       operators.find(symbol => {
@@ -157,13 +157,17 @@ object Symbols {
 
   class TraitSymbol(override val name: String) extends ClassSymbol(name)
 
-  class MethodSymbol(val name: String, val classSymbol: ClassSymbol, val ast: FuncTree) extends Symbol with Modifiable {
-    val modifiers                        = ast.modifiers
+  class MethodSymbol(
+    val name: String,
+    val classSymbol: ClassSymbol,
+    val stat: Option[StatTree],
+    val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+
+    val isAbstract                       = stat.isEmpty
     var params                           = Map[String, VariableSymbol]()
     var members                          = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
-    var hasImplementation                = ast.stat.isDefined
 
     def lookupVar(name: String): Option[VariableSymbol] = lookupLocalVar(name) match {
       case x@Some(_) => x
@@ -182,15 +186,36 @@ object Symbols {
 
     def argTypes = argList.map(_.getType)
 
-    def signature = {
+    def signature = name + argList.map(_.name).mkString("(", ", ", ")")
+
+    def byteCodeSignature = {
       val types = argTypes.map(_.byteCodeName).mkString
-      "(" + types + ")" + getType.byteCodeName
+      s"($types)${getType.byteCodeName}"
+    }
+
+    def isMainMethod: Boolean = {
+      // Since we can't know a lot about the method at all stages the definition
+      // of a main method is quite loose
+      if (name != "main")
+        return false
+
+      if (argList.size != 1 || argList.head.name != "args")
+        return false
+
+      if (modifiers.size != 2 || !modifiers.contains(Static()) || !modifiers.contains(Public()))
+        return false
+
+      true
     }
 
   }
 
-  class OperatorSymbol(val operatorType: ExprTree, override val classSymbol: ClassSymbol, override val ast: FuncTree)
-    extends MethodSymbol(operatorType.toString, classSymbol, ast) {
+  class OperatorSymbol(
+    val operatorType: ExprTree,
+    override val classSymbol: ClassSymbol,
+    override val stat: Option[StatTree],
+    override val modifiers: Set[Modifier]
+  ) extends MethodSymbol(operatorType.toString, classSymbol, stat, modifiers) {
     def methodName = {
       val name = operatorType.getClass.getSimpleName
       val types = argList.map(_.getType)
