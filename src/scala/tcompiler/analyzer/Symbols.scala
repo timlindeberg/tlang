@@ -2,8 +2,8 @@ package tcompiler
 package analyzer
 
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{BinaryOperatorDecl, UnaryOperatorDecl}
 import tcompiler.ast.Trees._
+import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils._
 
 
@@ -25,24 +25,65 @@ object Symbols {
     }
   }
 
-  sealed abstract class Symbol extends Positioned with Typed {
-    val name: String
-  }
+  sealed abstract class Symbol extends Positioned with Typed
 
-  val ObjectClass: ClassSymbol = new ClassSymbol("Object")
+  val ObjectClass: ClassSymbol = new ClassSymbol("Object", false)
   ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
     var classes = Map[String, ClassSymbol]("Object" -> ObjectClass)
 
-    def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
+    def lookupClass(name: String): Option[ClassSymbol] =
+      classes.get(name) match {
+        case Some(classSymbol) => Some(classSymbol)
+        case None              =>
+          ClassSymbolLocator.findSymbol(name) match {
+            case Some(classSymbol) =>
+              classes += classSymbol.name -> classSymbol
+              Some(classSymbol)
+            case None              => None
+          }
+      }
   }
 
-  class ClassSymbol(val name: String) extends Symbol {
-    var parents  : List[ClassSymbol]    = List()
-    var methods  : List[MethodSymbol]   = Nil
-    var operators: List[OperatorSymbol] = Nil
-    var members                         = Map[String, VariableSymbol]()
+  class ClassSymbol(
+    var name: String,
+    var isAbstract: Boolean,
+    var isComplete: Boolean = true) extends Symbol {
+
+    name = name.replaceAll("\\.", "/")
+
+    var parents: List[ClassSymbol] = Nil
+
+    private var _methods: List[MethodSymbol] = Nil
+    def methods = {
+      completeClassSymbol()
+      _methods
+    }
+    def methods_=(l: List[MethodSymbol]) = _methods = l
+
+    private var _operators: List[OperatorSymbol] = Nil
+    def operators = {
+      completeClassSymbol()
+      _operators
+    }
+    def operators_=(l: List[OperatorSymbol]) = _operators = l
+
+    private var _fields = Map[String, VariableSymbol]()
+    def fields = {
+      completeClassSymbol()
+      _fields
+    }
+
+    var writtenName = ""
+
+    def fields_=(m: Map[String, VariableSymbol]) = _fields = m
+
+    def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
+
+    def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
+
+    def addField(varSymbol: VariableSymbol): Unit = fields += (varSymbol.name -> varSymbol)
 
     def isImplementedInSuperClass(name: String, args: List[Type]) = {
       findMethod(name, args) match {
@@ -50,10 +91,6 @@ object Symbols {
         case None    => true
       }
     }
-
-    def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
-
-    def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
 
     def implementsMethod(method: MethodSymbol): Boolean = {
       findMethod(method.name, method.argTypes) match {
@@ -68,7 +105,7 @@ object Symbols {
       if (matchingMethods.isEmpty)
         None
       else
-        matchingMethods.head
+        matchingMethods.head // TODO: Conflicting error
     }
 
     def lookupParent(name: String): Option[ClassSymbol] = {
@@ -83,13 +120,13 @@ object Symbols {
       }
     }
 
-    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] =
+    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] = {
       findMethod(name, args) match {
         case Some(meth)                            => Some(meth)
         case None if recursive && parents.nonEmpty => lookupParentMethod(name, args)
         case _                                     => None
       }
-
+    }
 
     def lookupParentVar(name: String): Option[VariableSymbol] = {
       val matchingVars = parents.map(_.lookupVar(name)).filter(_.isDefined)
@@ -99,16 +136,17 @@ object Symbols {
         matchingVars.head
     }
 
-    def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] =
-      members.get(name) match {
+    def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] = {
+      fields.get(name) match {
         case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
           val matchingVars = parents.map(_.lookupVar(name))
           matchingVars.head
         case _                                     => None
       }
+    }
 
-    def lookupOperator(operatorType: ExprTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] =
+    def lookupOperator(operatorType: OperatorTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] = {
       findOperator(operatorType, args) match {
         case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
@@ -116,9 +154,18 @@ object Symbols {
           matchingOperators.head
         case _                                     => None
       }
+    }
+
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
+
+
+    private[Symbols] def completeClassSymbol() =
+      if (!isComplete) {
+        ClassSymbolLocator.fillClassSymbol(this)
+        isComplete = true
+      }
 
     private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
       operators.find(symbol => {
@@ -147,15 +194,14 @@ object Symbols {
     }
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
-      operatorType1 match {
-        case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
-        case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
-        case _                                  => operatorType1.getClass == operatorType2.getClass
-      }
+      def isIncrement(e: ExprTree) = e.isInstanceOf[PreIncrement] || e.isInstanceOf[PostIncrement]
+      def isDecrement(e: ExprTree) = e.isInstanceOf[PreDecrement] || e.isInstanceOf[PostDecrement]
+
+      (isIncrement(operatorType1) && isIncrement(operatorType2)) ||
+        (isDecrement(operatorType1) && isDecrement(operatorType2)) ||
+        (operatorType1.getClass == operatorType2.getClass)
     }
   }
-
-  class TraitSymbol(override val name: String) extends ClassSymbol(name)
 
   class MethodSymbol(
     val name: String,
@@ -163,7 +209,7 @@ object Symbols {
     val stat: Option[StatTree],
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
-    val isAbstract                       = stat.isEmpty
+    var isAbstract                       = stat.isEmpty
     var params                           = Map[String, VariableSymbol]()
     var members                          = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
@@ -211,19 +257,20 @@ object Symbols {
   }
 
   class OperatorSymbol(
-    val operatorType: ExprTree,
+    val operatorType: OperatorTree,
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]
   ) extends MethodSymbol(operatorType.toString, classSymbol, stat, modifiers) {
+
+    def operatorString = operatorType.operatorString(argList)
+
     def methodName = {
       val name = operatorType.getClass.getSimpleName
       val types = argList.map(_.getType)
       name + (operatorType match {
-        case UnaryOperatorDecl(_)     => "$" + types.head
-        case BinaryOperatorDecl(_, _) => "$" + types.head + "$" + types(1)
-        case ArrayRead(_, _)          => "$" + types.head
-        case ArrayAssign(_, _, _)     => "$" + types.head + "$" + types(1)
+        case UnaryOperatorTree(_) | ArrayRead(_, _)          => "$" + types.head
+        case BinaryOperatorTree(_, _) | ArrayAssign(_, _, _) => "$" + types.head + "$" + types(1)
       })
     }
   }

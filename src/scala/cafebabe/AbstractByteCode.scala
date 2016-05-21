@@ -2,8 +2,8 @@ package cafebabe
 
 object AbstractByteCodes {
 
-  import ClassFileTypes._
   import ByteCodes._
+  import ClassFileTypes._
 
   trait AbstractByteCode extends Streamable {
     def size: Int

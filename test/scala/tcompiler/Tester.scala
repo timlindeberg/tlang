@@ -17,7 +17,7 @@ trait Tester extends FlatSpec with Matchers {
 
   def Name: String
   def Path: String
-  def Pipeline: Pipeline[File, Program]
+  def Pipeline: Pipeline[List[File], List[Program]]
 
   behavior of Name
   TestUtils.programFiles(Path).foreach(test)

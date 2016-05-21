@@ -80,12 +80,16 @@ class ConstantPool extends Streamable {
     doubleMap += (d -> idx)
     idx
   })
-  def addString(s: String): U2 = stringMap.getOrElse(s, {
-    val idx = addEntry(CPUtf8Info(encodeString(s)).setSource(s))
-    stringMap += (s -> idx)
-    stringOppositeMap += (idx -> s)
-    idx
-  })
+  def addString(s: String): U2 = {
+    if(s.contains("UNTYPED"))
+      sys.error("UNTYPED!")
+    stringMap.getOrElse(s, {
+      val idx = addEntry(CPUtf8Info(encodeString(s)).setSource(s))
+      stringMap += (s -> idx)
+      stringOppositeMap += (idx -> s)
+      idx
+    })
+  }
   def addStringConstant(strID: U2): U2 = stringConstMap.getOrElse(strID, {
     val idx = addEntry(CPStringInfo(strID))
     stringConstMap += (strID -> idx)

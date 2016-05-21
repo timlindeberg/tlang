@@ -39,7 +39,7 @@ object TestUtils extends FlatSpec {
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    new Context(reporter = new tcompiler.utils.Reporter, file = file, outDir = Some(outDir))
+    new Context(reporter = new tcompiler.utils.Reporter, files = List(file), outDir = Some(outDir))
   }
 
   def executeTProgram(testFile: File): String = {

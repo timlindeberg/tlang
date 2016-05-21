@@ -10,7 +10,7 @@ import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
 import tcompiler.lexer.Lexer
-import tcompiler.modification.{Imports, Templates}
+import tcompiler.modification.Templates
 import tcompiler.utils.{Context, Reporter}
 
 import scala.util.Random
@@ -28,11 +28,11 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   var testFolderFile = new File(TestFolder)
   var testFile       = new File(TestFilePath)
 
-  val Compiler     = Lexer andThen Parser andThen Templates andThen Imports andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  val Compiler     = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
   val Rand         = new Random()
-  val TestCtx      = new Context(reporter = new Reporter(suppressWarnings = true), file = testFile, outDir = Some(testFolderFile))
-  val TypeCheckCtx = new Context(reporter = new Reporter(suppressWarnings = true), file = testFile, outDir = None)
-  val ClassSymbol  = new ClassSymbol("obj")
+  val TestCtx      = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = Some(testFolderFile))
+  val TypeCheckCtx = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = None)
+  val ClassSymbol  = new ClassSymbol("obj", false)
   val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   val TypeChecker  = new TypeChecker(TypeCheckCtx, MainMethod)
 
@@ -217,8 +217,8 @@ println($IdName[0])
 
   private def getResult(program: String) = {
     setTestProgram(program)
-    Compiler.run(TestCtx)(TestCtx.file)
-    val mainName = TestCtx.file.getName.dropRight(Main.FileEnding.length)
+    Compiler.run(TestCtx)(TestCtx.files)
+    val mainName = TestCtx.files.head.getName.dropRight(Main.FileEnding.length)
     TestUtils.executeTProgram(TestFolder, mainName).trim
   }
 

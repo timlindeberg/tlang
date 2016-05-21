@@ -5,59 +5,57 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.utils._
 
+
 object Trees {
 
   trait Tree extends Positioned with Product
 
+  /**
+    * Signals that the node is a leaf and no further recursion is necessary
+    */
+  trait LeafTree
 
-  case class Program(progPackage: Option[Package], var imports: List[Import], var classes: List[ClassDecl]) extends Tree {
-    def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/") + "/").getOrElse("")
+  /*-------------------------------- Top level Trees --------------------------------*/
+
+  case class Program(
+    progPackage: Option[Package],
+    var imports: List[Import],
+    var classes: List[ClassDecl],
+    importMap: Map[String, String]) extends Tree {
+    def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/")).getOrElse("")
+    def getPackageName(name: String) = progPackage match {
+      case Some(pack) => (pack.identifiers.map(_.value) :+ name).mkString(".")
+      case None       => name
+    }
   }
 
+  /*-------------------------------- Package and Import Trees --------------------------------*/
+
+  case class Package(identifiers: List[Identifier]) extends Tree
 
   trait Import extends Tree {
     val identifiers: List[Identifier]
   }
-
-  case class Package(identifiers: List[Identifier]) extends Tree
   case class RegularImport(identifiers: List[Identifier]) extends Import
   case class WildCardImport(identifiers: List[Identifier]) extends Import
-  case class GenericImport(identifiers: List[Identifier]) extends Import
+  case class TemplateImport(identifiers: List[Identifier]) extends Import
 
-  object ClassDecl {
-    def unapply(e: ClassDecl): Option[(ClassIdentifier, List[ClassIdentifier], List[VarDecl], List[FuncTree])] = e match {
-      case InternalClassDecl(id, parents, vars, methods) => Some((id, parents, vars, methods))
-      case ExternalClassDecl(id, parents, vars, methods) => Some((id, parents, vars, methods))
-      case Trait(id, parents, vars, methods)             => Some((id, parents, vars, methods))
-      case _                                             => None
-    }
+
+  /*-------------------------------- Class Declaration Trees --------------------------------*/
+
+  case class ClassDecl(
+    var id: ClassIdentifier,
+    var parents: List[ClassIdentifier],
+    var fields: List[VarDecl],
+    var methods: List[FuncTree],
+    var isTrait: Boolean) extends Tree with Symbolic[ClassSymbol] {
+    def implementedTraits = parents.filter(_.getSymbol.isAbstract)
   }
 
-  trait ClassDecl extends Tree with Symbolic[ClassSymbol] {
-    var id     : ClassIdentifier
-    var parents: List[ClassIdentifier]
-    var vars   : List[VarDecl]
-    var methods: List[FuncTree]
 
-    def getImplementedTraits = parents.filter(c => c.getSymbol.isInstanceOf[TraitSymbol])
-  }
+  /*-------------------------------- Modifier Trees --------------------------------*/
 
-  trait Modifiable {
-    val modifiers: Set[Modifier]
-
-    def isStatic = modifiers.contains(Static())
-
-    def accessability = modifiers.find(_.isInstanceOf[Accessability]).get.asInstanceOf[Accessability]
-
-  }
-
-  case class InternalClassDecl(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
-  case class Trait(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
-  case class ExternalClassDecl(var id: ClassIdentifier, var parents: List[ClassIdentifier], var vars: List[VarDecl], var methods: List[FuncTree]) extends ClassDecl
-
-  case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
-
-  trait Modifier extends Tree
+  trait Modifier extends Tree with LeafTree
 
   trait Accessability extends Modifier
 
@@ -68,6 +66,22 @@ object Trees {
   case class Static() extends Modifier
   case class Implicit() extends Modifier
   case class Final() extends Modifier
+
+  trait Modifiable {
+    val modifiers: Set[Modifier]
+    def isStatic = modifiers.contains(Static())
+    def accessability = modifiers.find(_.isInstanceOf[Accessability]).get.asInstanceOf[Accessability]
+  }
+
+  /*-------------------------------- Function Declaration Trees --------------------------------*/
+
+
+  object FuncTree {
+    def unapply(f: FuncTree): Option[(Identifier, Option[TypeTree], List[Formal], Option[StatTree], Set[Modifier])] = f match {
+      case f: FuncTree => Some(f.id, f.retType, f.args, f.stat, f.modifiers)
+      case _           => None
+    }
+  }
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     var id       : Identifier
@@ -98,49 +112,46 @@ object Trees {
     var args: List[Formal],
     stat: Option[StatTree],
     modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: ExprTree,
+  case class OperatorDecl(var operatorType: OperatorTree,
     var retType: Option[TypeTree],
     var args: List[Formal],
     stat: Option[StatTree],
     modifiers: Set[Modifier],
     var id: Identifier = new Identifier("")) extends FuncTree
 
+  case class Formal(var tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+
+  /*-------------------------------- Type Trees --------------------------------*/
+
   trait TypeTree extends Tree with Typed {
-    def name: String
+    val name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree {
-    def name = tpe.name + "[]"
-  }
-  case class NullableType(var tpe: TypeTree) extends TypeTree {
-    def name = tpe.name + "?"
-  }
-  case class IntType() extends TypeTree {
-    def name = "Int"
-  }
-  case class LongType() extends TypeTree {
-    def name = "Long"
-  }
-  case class FloatType() extends TypeTree {
-    def name = "Float"
-  }
-  case class DoubleType() extends TypeTree {
-    def name = "Double"
-  }
-  case class BooleanType() extends TypeTree {
-    def name = "Bool"
-  }
-  case class CharType() extends TypeTree {
-    def name = "Char"
-  }
-  case class StringType() extends TypeTree {
-    def name = "String"
-  }
-  case class UnitType() extends TypeTree {
-    def name = "Unit"
-  }
+  case class ArrayType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
+  case class NullableType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
+  case class IntType() extends TypeTree with LeafTree {val name = "Int"}
+  case class LongType() extends TypeTree with LeafTree {val name = "Long"}
+  case class FloatType() extends TypeTree with LeafTree {val name = "Float"}
+  case class DoubleType() extends TypeTree with LeafTree {val name = "Double"}
+  case class BooleanType() extends TypeTree with LeafTree {val name = "Bool"}
+  case class CharType() extends TypeTree with LeafTree {val name = "Char"}
+  case class StringType() extends TypeTree with LeafTree {val name = "String"}
+  case class UnitType() extends TypeTree with LeafTree {val name = "Unit"}
+
+  /*-------------------------------- Statement Trees --------------------------------*/
 
   trait StatTree extends Tree
+
+  trait PrintStatTree extends StatTree {
+    val expr: ExprTree
+  }
+  object PrintStatTree {
+    def unapply(e: StatTree): Option[ExprTree] = e match {
+      case e: PrintStatTree => Some(e.expr)
+      case _                => None
+    }
+  }
+
 
   case class VarDecl(var tpe: Option[TypeTree], var id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
@@ -148,57 +159,184 @@ object Trees {
   case class While(expr: ExprTree, stat: StatTree) extends StatTree
   case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
-  case class Print(expr: ExprTree) extends StatTree
-  case class Println(expr: ExprTree) extends StatTree
+
   case class Error(expr: ExprTree) extends StatTree
   case class Return(expr: Option[ExprTree]) extends StatTree
-  case class Break() extends StatTree
-  case class Continue() extends StatTree
+  case class Break() extends StatTree with LeafTree
+  case class Continue() extends StatTree with LeafTree
+
+
+  case class Print(expr: ExprTree) extends PrintStatTree
+  case class Println(expr: ExprTree) extends PrintStatTree
+
+  /*-------------------------------- Binary Operator Trees --------------------------------*/
 
   trait ExprTree extends StatTree with Typed
 
-  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree
-  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ExprTree
-  case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
-  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree
 
-  case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Plus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Minus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Times(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Div(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  trait OperatorTree extends ExprTree {
+    val op: String
+    def operatorString(args: List[Any]): String
+  }
 
-  case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
+  trait BinaryOperatorTree extends OperatorTree {
+    val lhs: ExprTree
+    val rhs: ExprTree
+
+    def operatorString(args: List[Any]): String = s"${args(0)} $op ${args(1)}"
+  }
+
+  object BinaryOperatorTree {
+    def unapply(e: BinaryOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: BinaryOperatorTree => Some(e.lhs, e.rhs)
+      case _                     => None
+    }
+  }
+
+  trait ArithmeticOperatorTree extends BinaryOperatorTree
+  object ArithmeticOperatorTree {
+    def unapply(e: ArithmeticOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: ArithmeticOperatorTree => Some(e.lhs, e.rhs)
+      case _                         => None
+    }
+  }
+
+  trait ShiftOperatorTree extends BinaryOperatorTree
+  object ShiftOperatorTree {
+    def unapply(e: ShiftOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: ShiftOperatorTree => Some(e.lhs, e.rhs)
+      case _                    => None
+    }
+  }
+
+  trait LogicalOperatorTree extends BinaryOperatorTree
+  object LogicalOperatorTree {
+    def unapply(e: LogicalOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: LogicalOperatorTree => Some(e.lhs, e.rhs)
+      case _                      => None
+    }
+  }
+
+  trait ComparisonOperatorTree extends BinaryOperatorTree
+  object ComparisonOperatorTree {
+    def unapply(e: ComparisonOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: ComparisonOperatorTree => Some(e.lhs, e.rhs)
+      case _                         => None
+    }
+  }
+
+  trait EqualsOperatorTree extends BinaryOperatorTree
+  object EqualsOperatorTree {
+    def unapply(e: EqualsOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: EqualsOperatorTree => Some(e.lhs, e.rhs)
+      case _                     => None
+    }
+  }
+
+  case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "+"}
+  case class Minus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "-"}
+  case class Times(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "*"}
+  case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "/"}
+  case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "%"}
+
+  case class And(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "&&"}
+  case class Or(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "||"}
+  case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "&"}
+  case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "|"}
+  case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "^"}
+
+  case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = "<<"}
+  case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = ">>"}
+
+  case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<"}
+  case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<="}
+  case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = ">"}
+  case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = ">="}
+
+  case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "=="}
+  case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "!="}
 
   case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
   case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
-  case class Equals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends ExprTree
-  case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) extends ExprTree
   case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
-  case class IntLit(value: Int) extends ExprTree
-  case class LongLit(value: Long) extends ExprTree
-  case class FloatLit(value: Float) extends ExprTree
-  case class DoubleLit(value: Double) extends ExprTree
-  case class CharLit(value: Char) extends ExprTree
-  case class StringLit(value: String) extends ExprTree
-  case class ArrayLit(expressions: List[ExprTree]) extends ExprTree
-  case class True() extends ExprTree
-  case class False() extends ExprTree
-  case class Null() extends ExprTree
 
-  case class Identifier(var value: String) extends ExprTree with Symbolic[Symbol] {
+  /*-------------------------------- Unary Operator Trees --------------------------------*/
+
+  trait UnaryOperatorTree extends OperatorTree {
+    val expr: ExprTree
+    def operatorString(args: List[Any]) = op + args.head
+  }
+
+  object UnaryOperatorTree {
+    def unapply(e: UnaryOperatorTree): Option[(ExprTree)] = e match {
+      case e: UnaryOperatorTree => Some(e.expr)
+      case _                    => None
+    }
+  }
+
+  trait IncrementDecrementTree extends UnaryOperatorTree
+  object IncrementDecrementTree {
+    def unapply(e: IncrementDecrementTree): Option[(ExprTree)] = e match {
+      case e: IncrementDecrementTree => Some(e.expr)
+      case _                         => None
+    }
+  }
+
+  case class Not(expr: ExprTree) extends UnaryOperatorTree {val op = "!"}
+  case class Hash(expr: ExprTree) extends UnaryOperatorTree {val op = "#"}
+  case class Negation(expr: ExprTree) extends UnaryOperatorTree {val op = "-"}
+  case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val op = "~"}
+
+  case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {val op = "++"}
+  case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree {val op = "--"}
+  case class PostIncrement(expr: ExprTree) extends IncrementDecrementTree {
+    val op = "++"
+    override def operatorString(args: List[Any]) = args.head + op
+  }
+  case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
+    val op = "--"
+    override def operatorString(args: List[Any]) = args.head + op
+  }
+
+  /*-------------------------------- Array Operator Trees --------------------------------*/
+
+  trait ArrayOperatorTree extends OperatorTree {
+    val arr  : ExprTree
+    val index: ExprTree
+    def operatorString(args: List[Any], className: String): String = className + operatorString(args)
+  }
+
+  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
+    override val op: String = "[]="
+    override def operatorString(args: List[Any]): String = "[" + args(0) + "] = " + args(1)
+  }
+  case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree {
+    override val op: String = "[]"
+    override def operatorString(args: List[Any]): String = "[" + args(0) + "]"
+  }
+
+  /*-------------------------------- Literal Trees --------------------------------*/
+
+
+  trait Literal[T] extends ExprTree with LeafTree {
+    val value: T
+  }
+
+  case class IntLit(value: Int) extends Literal[Int]
+  case class LongLit(value: Long) extends Literal[Long]
+  case class FloatLit(value: Float) extends Literal[Float]
+  case class DoubleLit(value: Double) extends Literal[Double]
+  case class CharLit(value: Char) extends Literal[Char]
+  case class StringLit(value: String) extends Literal[String]
+  case class ArrayLit(value: List[ExprTree]) extends ExprTree
+  case class True() extends ExprTree with LeafTree
+  case class False() extends ExprTree with LeafTree
+  case class Null() extends ExprTree with LeafTree
+
+  trait IdentifierTree[T <: Symbol] extends Literal[String] with Symbolic[T]
+
+  case class Identifier(value: String) extends IdentifierTree[Symbol] {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol    => TObject(cs)
@@ -213,11 +351,11 @@ object Trees {
     }
   }
 
-  case class ClassIdentifier(var value: String, var templateTypes: List[TypeTree] = List()) extends TypeTree with ExprTree with Symbolic[ClassSymbol] {
+  case class ClassIdentifier(value: String, var templateTypes: List[TypeTree] = List()) extends IdentifierTree[ClassSymbol] with TypeTree {
 
     import tcompiler.modification.Templates._
 
-    def name = value
+    val name = value
 
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = TObject(getSymbol)
@@ -240,88 +378,18 @@ object Trees {
     }
   }
 
-  case class This() extends ExprTree with Symbolic[ClassSymbol]
+  /*-------------------------------- Expression Trees --------------------------------*/
+
+  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree
+  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree
+  case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
+  case class This() extends ExprTree with Symbolic[ClassSymbol] with LeafTree
   case class Super(specifier: Option[Identifier]) extends ExprTree with Symbolic[ClassSymbol]
-  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
-    def dimension = sizes.size
-  }
+  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
-  case class Not(expr: ExprTree) extends ExprTree
-  case class Hash(expr: ExprTree) extends ExprTree
-  case class Negation(expr: ExprTree) extends ExprTree
-  case class LogicNot(expr: ExprTree) extends ExprTree
-  case class PreIncrement(id: ExprTree) extends ExprTree with StatTree
-  case class PostIncrement(id: ExprTree) extends ExprTree with StatTree
-  case class PreDecrement(id: ExprTree) extends ExprTree with StatTree
-  case class PostDecrement(id: ExprTree) extends ExprTree with StatTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
+  case class Empty() extends ExprTree with LeafTree {override def toString = "<EMPTY>"}
 
-  case class Empty() extends ExprTree {
-    override def toString = ""
-  }
-
-  def operatorString(operatorSymbol: OperatorSymbol): String =
-    operatorString(operatorSymbol.operatorType, operatorSymbol.argList.map(_.getType), Some(operatorSymbol.classSymbol.name))
-
-  def operatorString(exprTree: ExprTree, args: List[Any], className: Option[String] = None): String = {
-    exprTree match {
-      case _: Plus              => args(0) + " + " + args(1)
-      case _: Minus             => args(0) + " - " + args(1)
-      case _: Times             => args(0) + " * " + args(1)
-      case _: Div               => args(0) + " / " + args(1)
-      case _: Modulo            => args(0) + " % " + args(1)
-      case _: LogicAnd          => args(0) + " & " + args(1)
-      case _: LogicOr           => args(0) + " | " + args(1)
-      case _: LogicXor          => args(0) + " ^ " + args(1)
-      case _: LeftShift         => args(0) + " << " + args(1)
-      case _: RightShift        => args(0) + " >> " + args(1)
-      case _: LessThan          => args(0) + " < " + args(1)
-      case _: LessThanEquals    => args(0) + " <= " + args(1)
-      case _: GreaterThan       => args(0) + " > " + args(1)
-      case _: GreaterThanEquals => args(0) + " >= " + args(1)
-      case _: Equals            => args(0) + " == " + args(1)
-      case _: NotEquals         => args(0) + " != " + args(1)
-      case _: LogicNot          => "~" + args(0)
-      case _: Not               => "!" + args(0)
-      case _: Negation          => "-" + args(0)
-      case _: Hash              => "#" + args(0)
-      case _: PreIncrement      => "++" + args(0)
-      case _: PostIncrement     => args(0) + "++"
-      case _: PreDecrement      => "--" + args(0)
-      case _: PostDecrement     => args(0) + "--"
-      case _: ArrayRead         => className.getOrElse("") + "[" + args(0) + "]"
-      case _: ArrayAssign       => className.getOrElse("") + "[" + args(0) + "] = " + args(1)
-    }
-  }
-
-  def operatorString(exprTree: ExprTree): String = exprTree match {
-    case _: Plus              => "+"
-    case _: Minus             => "-"
-    case _: Times             => "*"
-    case _: Div               => "/"
-    case _: Modulo            => "%"
-    case _: LogicAnd          => "&"
-    case _: LogicOr           => "|"
-    case _: LogicXor          => "^"
-    case _: LeftShift         => "<<"
-    case _: RightShift        => ">>"
-    case _: LessThan          => "<"
-    case _: LessThanEquals    => "<="
-    case _: GreaterThan       => ">"
-    case _: GreaterThanEquals => ">="
-    case _: Equals            => "=="
-    case _: NotEquals         => "!="
-    case _: LogicNot          => "~"
-    case _: Not               => "!"
-    case _: Negation          => "-"
-    case _: Hash              => "#"
-    case _: PreIncrement      => "++"
-    case _: PostIncrement     => "++"
-    case _: PreDecrement      => "--"
-    case _: PostDecrement     => "--"
-    case _: ArrayRead         => "[]"
-    case _: ArrayAssign       => "[]="
-  }
 
   def isStaticCall(obj: ExprTree) =
     obj match {
@@ -334,17 +402,18 @@ object Trees {
     }
 
 
-  def traverse(t: Product, f: (Product, Product) => Any): Unit = {
-    def trav(parent: Product, current: Product, f: (Product, Product) => Any): Unit = {
-      current.productIterator.foreach(Some(_) collect {
-        case x: List[_]     =>
-          x.foreach(Some(_) collect { case x: Product => trav(current, x, f) })
+  def traverse(t: Tree, f: (Tree, Tree) => Any): Unit = {
+    def trav(parent: Tree, current: Tree): Unit = {
+      current.productIterator.foreach {
+        case x: Iterable[_] =>
+          x.foreach(Some(_) collect { case x: Tree => trav(current, x) })
         case x: Option[Any] =>
-          x collect { case x: Product => trav(current, x, f) }
-        case x: Product     => trav(current, x, f)
-      })
+          x collect { case x: Tree => trav(current, x) }
+        case x: Tree        => trav(current, x)
+        case _              =>
+      }
       f(parent, current)
     }
-    trav(t, t, f)
+    trav(t, t)
   }
 }

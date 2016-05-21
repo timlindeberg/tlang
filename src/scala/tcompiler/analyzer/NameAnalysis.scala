@@ -3,37 +3,50 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{IncrementDecrement, PrintStatement, UselessStatement}
+import tcompiler.ast.TreeGroups.UselessStatement
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
-object NameAnalysis extends Pipeline[Program, Program] {
+object NameAnalysis extends Pipeline[List[Program], List[Program]] {
 
-  def run(ctx: Context)(prog: Program): Program = {
-    val nameAnalyzer = new NameAnalyser(ctx, prog)
-    nameAnalyzer.addSymbols()
-    nameAnalyzer.bindIdentifiers()
-    nameAnalyzer.checkInheritanceCycles()
-    nameAnalyzer.checkVariableUsage()
-    nameAnalyzer.checkVariableReassignments()
-    nameAnalyzer.checkValidParenting()
-    prog
+  var globalScope: GlobalScope = null
+
+  def run(ctx: Context)(progs: List[Program]): List[Program] = {
+    globalScope = new GlobalScope
+
+    // Add all symbols first so each program instance can access
+    // all symbols in binding
+    val analyzers = progs.map { prog =>
+      val nameAnalyzer = new NameAnalyser(ctx, prog)
+      nameAnalyzer.addSymbols()
+      nameAnalyzer
+    }
+
+    analyzers.foreach { nameAnalyzer =>
+      nameAnalyzer.bindIdentifiers()
+      nameAnalyzer.checkInheritanceCycles()
+      nameAnalyzer.checkVariableUsage()
+      nameAnalyzer.checkVariableReassignments()
+      nameAnalyzer.checkValidParenting()
+    }
+    progs
   }
 
 }
 
 class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysisErrors {
 
+  import NameAnalysis._
+
   private var variableUsage        = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
-  val globalScope = new GlobalScope
 
-  def addSymbols(): Unit = addSymbols(prog, globalScope)
+  def addSymbols(): Unit = prog.classes.foreach(addSymbols)
 
-  def bindIdentifiers(): Unit = bind(prog)
+  def bindIdentifiers(): Unit = prog.classes.foreach(bind)
 
   def checkInheritanceCycles(): Unit = {
 
@@ -56,7 +69,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
 
   def checkVariableUsage() = {
-    variableUsage foreach {
+    variableUsage.foreach {
       case (variable, used) =>
         if (!used)
           WarningUnusedVar(variable)
@@ -64,7 +77,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
   }
 
   def checkVariableReassignments() = {
-    variableReassignment foreach {
+    variableReassignment.foreach {
       case (variable, reassigned) =>
         if (!reassigned)
           WarningCouldBeVal(variable.name, variable)
@@ -74,28 +87,25 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
   def checkValidParenting(): Unit =
     prog.classes.foreach { classDecl =>
 
-      val nonTraits = classDecl.parents.filter(!_.getSymbol.isInstanceOf[TraitSymbol])
+      val nonTraits = classDecl.parents.filter(!_.getSymbol.isAbstract)
       if (nonTraits.size > 1) {
         ErrorExtendMultipleClasses(nonTraits(1))
         return
       }
 
-      val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isInstanceOf[TraitSymbol])
+      val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isAbstract)
       if (nonTraitsAfterFirst.nonEmpty)
         ErrorNonFirstArgumentIsClass(nonTraits.head)
     }
 
 
-  private def addSymbols(t: Tree, globalScope: GlobalScope): Unit = t match {
-    case Program(_, _, classes)                                                      =>
-      classes.foreach(addSymbols(_, globalScope))
-    case classDecl@ClassDecl(id@ClassIdentifier(name, types), parent, vars, methods) =>
-      val newSymbol = classDecl match {
-        case _: Trait => new TraitSymbol(name)
-        case _        => new ClassSymbol(name)
-      }
+  private def addSymbols(classDecl: ClassDecl): Unit = classDecl match {
+    case ClassDecl(id@ClassIdentifier(name, _), _, vars, methods, isTrait) =>
+      val fullName = prog.getPackageName(name)
+      val newSymbol = new ClassSymbol(fullName, isTrait)
+      newSymbol.writtenName = name
       newSymbol.setPos(id)
-      ensureClassNotDefined(globalScope.classes, id.value, id)
+      ensureClassNotDefined(id)
       id.setSymbol(newSymbol)
       classDecl.setSymbol(newSymbol)
       globalScope.classes += (id.value -> newSymbol)
@@ -106,12 +116,12 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
     case varDecl@VarDecl(tpe, id, init, modifiers)                           =>
       val newSymbol = new VariableSymbol(id.value, Field, modifiers, Some(classSymbol)).setPos(varDecl)
-      ensureIdentiferNotDefined(classSymbol.members, id.value, varDecl)
+      ensureIdentiferNotDefined(classSymbol.fields, id.value, varDecl)
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
 
       val isStaticFinal = modifiers.contains(Static()) && modifiers.contains(Final())
-      if (classSymbol.isInstanceOf[TraitSymbol] && !isStaticFinal)
+      if (classSymbol.isAbstract && !isStaticFinal)
         ErrorNonStaticFinalFieldInTrait(varDecl)
 
       // Check usage for private fields
@@ -120,17 +130,17 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
         case _         => variableUsage += newSymbol -> true
       }
 
-      classSymbol.members += (id.value -> newSymbol)
+      classSymbol.addField(newSymbol)
     case methodDecl@MethodDecl(retType, id, args, stat, modifiers)                   =>
       val newSymbol = new MethodSymbol(id.value, classSymbol, stat, modifiers).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
       args.foreach(addSymbols(_, newSymbol))
 
-      if (!classSymbol.isInstanceOf[TraitSymbol] && stat.isEmpty)
+      if (!classSymbol.isAbstract && stat.isEmpty)
         ErrorClassUnimplementedMethod(methodDecl)
 
-      if (classSymbol.isInstanceOf[TraitSymbol] && retType.isEmpty && stat.isEmpty)
+      if (classSymbol.isAbstract && retType.isEmpty && stat.isEmpty)
         ErrorUnimplementedMethodNoReturnType(newSymbol.signature, methodDecl)
     case constructorDecl@ConstructorDecl(_, id, args, stat, modifiers)                  =>
       // TODO: Make sure constructors arent declared as abstract
@@ -179,9 +189,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case Program(_, _, classes)                                             =>
-      classes.foreach(bind)
-    case classDecl@ClassDecl(id, parents, vars, methods)                    =>
+    case classDecl@ClassDecl(id, parents, vars, methods, _)                    =>
       setParentSymbol(id, parents, classDecl)
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
@@ -227,7 +235,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     }
 
   private def bindFields(classDecl: ClassDecl) =
-    classDecl.vars.foreach { case varDecl@VarDecl(typeTree, varId, init, _) =>
+    classDecl.fields.foreach { case varDecl@VarDecl(typeTree, varId, init, _) =>
       typeTree match {
         case Some(t) =>
           val tpe = setType(t)
@@ -238,10 +246,12 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       init.ifDefined(new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_))
     }
 
-  private def ensureClassNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
-    if (map.contains(id)) {
-      val oldSymbol = map(id)
-      ErrorClassAlreadyDefined(id, oldSymbol.line, pos)
+  private def ensureClassNotDefined(id: ClassIdentifier): Unit = {
+    val name = id.value
+    val map = globalScope.classes
+    if (map.contains(name)) {
+      val oldSymbol = map(name)
+      ErrorClassAlreadyDefined(name, oldSymbol.line, id)
     }
   }
 
@@ -271,13 +281,15 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
       case Some(oldOperator) =>
         val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
-        ErrorOperatorAlreadyDefined(Trees.operatorString(op), oldOperator.line, operator)
+
+        ErrorOperatorAlreadyDefined(op.operatorString, oldOperator.line, operator)
       case None              =>
         classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
           case Some(oldOperator) =>
             ErrorOverrideOperator(operator)
           case None              =>
-            operator.getSymbol.classSymbol.addOperator(operator.getSymbol.asInstanceOf[OperatorSymbol])
+            val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
+            operator.getSymbol.classSymbol.addOperator(op)
         }
     }
   }
@@ -293,12 +305,13 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       case StringType()                       => tpe.setType(TString)
       case UnitType()                         => tpe.setType(TUnit)
       case tpeId@ClassIdentifier(typeName, _) =>
-        globalScope.lookupClass(typeName) match {
+        val name = getFullName(typeName)
+        globalScope.lookupClass(name) match {
           case Some(classSymbol) =>
             tpeId.setSymbol(classSymbol)
             tpeId.setType(TObject(classSymbol))
           case None              =>
-            ErrorUnknownType(tpeId.value, tpeId)
+            ErrorUnknownType(typeName, tpeId)
         }
       case ArrayType(arrayTpe)                =>
         setType(arrayTpe)
@@ -307,6 +320,13 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     tpe.getType
   }
 
+  private def getFullName(name: String) = {
+    val impMap = prog.importMap
+    if(impMap.contains(name))
+      impMap(name)
+    else
+      name
+  }
 
   private def setParentSymbol(id: ClassIdentifier, parents: List[ClassIdentifier], classDecl: ClassDecl): Unit = {
     parents.foreach { parentId =>
@@ -385,7 +405,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           bind(expr, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
-        case PrintStatement(expr)   =>
+        case PrintStatTree(expr)   =>
           bind(expr, localVars, scopeLevel)
           localVars
         case Error(expr)            =>
@@ -425,7 +445,8 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           args.foreach(bind(_, localVars, scopeLevel))
         case Instance(expr, id)                   =>
           bind(expr, localVars, scopeLevel)
-          globalScope.lookupClass(id.value) match {
+          val name = getFullName(id.value)
+          globalScope.lookupClass(name) match {
             case Some(classSymbol) =>
               id.setSymbol(classSymbol)
               id.setType(TObject(classSymbol))
@@ -442,7 +463,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
             case v: VariableSymbol => variableReassignment += v -> true
             case _                 => ???
           }
-        case pos@IncrementDecrement(expr)         =>
+        case pos@IncrementDecrementTree(expr)         =>
           expr match {
             case id: Identifier =>
               checkReassignment(id, pos)

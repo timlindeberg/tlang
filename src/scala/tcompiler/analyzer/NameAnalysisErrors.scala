@@ -14,7 +14,7 @@ trait NameAnalysisErrors extends Errors {
   def error(errorCode: Int, msg: String, tree: Positioned): Symbol = {
     tree match {
       case id: Identifier      => id.setSymbol(new ErrorSymbol)
-      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR"))
+      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR", false))
       case _                   =>
     }
 
@@ -64,14 +64,14 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorThisInStaticContext(pos: Positioned) =
     error(13, "'this' can not be used in a static context.", pos)
 
-  protected def ErrorOperatorWrongTypes(operatorType: ExprTree, argTypes: List[String], clazz: String, pos: Positioned) = {
-    val op = operatorString(operatorType, argTypes)
+  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[String], clazz: String, pos: Positioned) = {
+    val op = operatorType.operatorString(argTypes)
     error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
   }
 
   protected def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {
     val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
-    error(15, s"Can not use $breakOrContinue statement outside of a loop.", pos)
+    error(15, s"Can not use '$breakOrContinue' statement outside of a loop.", pos)
   }
 
   protected def ErrorExtendMultipleClasses(pos: Positioned) =

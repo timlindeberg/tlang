@@ -16,7 +16,7 @@ class Reporter(
   useColor: Boolean = true,
   maxErrors: Int = 100) {
 
-  private val ErrorSeperator = "\n\n"
+  private val ErrorSeperator = "\n"
   private def QuoteColor = GetColor(Console.MAGENTA)
   private def NumColor = GetColor(Console.BLUE)
   private def MessageStyle = GetColor(Console.BOLD)

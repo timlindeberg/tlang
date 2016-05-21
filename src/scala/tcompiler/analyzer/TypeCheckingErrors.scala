@@ -75,23 +75,24 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorOperatorPrivacy(opSymbol: OperatorSymbol, className: String, callingClass: String, pos: Positioned) = {
     val accessability = accessabilityString(opSymbol)
-    val operatorName = operatorString(opSymbol)
+    val operatorName = opSymbol.operatorString
     error(12, s"Cannot call $accessability operator '$operatorName' defined in '$className' from class '$callingClass'.", pos)
   }
 
-  protected def ErrorIndexingOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned, className: String) = {
-    val operatorName = operatorString(expr, args, Some(className))
+  protected def ErrorIndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], pos: Positioned, className: String) = {
+    val operatorName = expr.operatorString(args, className)
     error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
   }
 
-  protected def ErrorOverloadedOperatorNotFound(expr: ExprTree, args: List[Type], pos: Positioned): Type = {
+  protected def ErrorOverloadedOperatorNotFound(op: OperatorTree, args: List[Type], pos: Positioned): Type = {
     val classesString = overloadedOperatorClassesString(args)
-    val operatorName = operatorString(expr, args)
+    val operatorName = op.operatorString(args)
     error(13, s"$classesString contain an operator '$operatorName'.", pos)
   }
 
-  protected def ErrorOperatorWrongReturnType(operator: String, expected: String, found: String, pos: Positioned) =
-    error(14, s"Operator '$operator' has wrong return type: expected '$expected', found '$found'.", pos)
+  protected def ErrorOperatorWrongReturnType(op: String, expected: String, found: String, pos: Positioned) = {
+    error(14, s"Operator '$op' has wrong return type: expected '$expected', found '$found'.", pos)
+  }
 
   protected def ErrorWrongReturnType(tpe: String, pos: Positioned) =
     error(15, s"Expected a return value of type '$tpe'.", pos)
@@ -117,8 +118,8 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) =
     error(22, s"Invalid ${incrementOrDecrement(expr)} expression.", pos)
 
-  protected def ErrorOperatorDoesNotExist(expr: ExprTree, args: (Type, Type), pos: Positioned): Type = {
-    val operator = operatorString(expr, List(args._1, args._2))
+  protected def ErrorOperatorDoesNotExist(expr: OperatorTree, args: (Type, Type), pos: Positioned): Type = {
+    val operator = expr.operatorString(List(args._1, args._2))
     error(23, s"Operator '$operator' does not exist.", pos)
   }
 

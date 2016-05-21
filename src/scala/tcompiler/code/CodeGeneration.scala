@@ -16,25 +16,22 @@ import tcompiler.utils._
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[Program, Unit] {
+object CodeGeneration extends Pipeline[List[Program], Unit] {
 
   import CodeGenerator._
 
-  def run(ctx: Context)(prog: Program): Unit = {
-    val sourceName = ctx.file.getName
+  def run(ctx: Context)(progs: List[Program]): Unit = {
+    val classes = progs.flatMap(p => p.classes)
+
     // output code in parallell
-    prog.classes.par.foreach {
-      case c: InternalClassDecl => generateClassFile(sourceName, c, ctx.outDir)
-      case c: Trait             => generateClassFile(sourceName, c, ctx.outDir)
-      case _                    =>
-    }
+    classes.par.foreach(generateClassFile(_, ctx.outDir))
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(sourceName: String, classDecl: ClassDecl, dir: Option[File]): Unit = {
+  private def generateClassFile(classDecl: ClassDecl, dir: Option[File]): Unit = {
     val classFile = makeClassFile(classDecl)
 
-    classDecl.vars.foreach { varDecl =>
+    classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
       val flags = getFieldFlags(varDecl)
       classFile.addField(varSymbol.getType.byteCodeName, varSymbol.name).setFlags(flags)
@@ -76,7 +73,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def generateStackMapFrames(file: String) = {
-    // Uses ASM libary to generate the stack map frames
+    // Use ASM libary to generate the stack map frames
     // since Cafebabe does not support this.
     val classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     val inputStream = new BufferedInputStream(new FileInputStream(file))
@@ -96,11 +93,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     val parents = classSymbol.parents
     val className = classSymbol.name
 
-    val (parent, traits) = if (classSymbol.isInstanceOf[TraitSymbol])
+    val (parent, traits) = if (classSymbol.isAbstract)
       (None, parents)
     else if (parents.isEmpty)
       (None, List())
-    else if (parents.head.isInstanceOf[TraitSymbol])
+    else if (parents.head.isAbstract)
       (None, parents)
     else
       (Some(parents.head.name), parents.drop(1))
@@ -109,10 +106,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     traits.foreach(t => classFile.addInterface(t.name))
     classFile.setSourceFile(classDecl.file.getName)
 
-    val flags = classSymbol match {
-      case _: TraitSymbol => TraitFlags
-      case _: ClassSymbol => ClassFlags
-    }
+    val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
     classFile.setFlags(flags)
     // Defualt is public
 
@@ -143,7 +137,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl): Unit = {
-    if (classDecl.getSymbol.isInstanceOf[TraitSymbol])
+    if (classDecl.getSymbol.isAbstract)
       return
 
     val mh = generateConstructor(None, classFile, classDecl)
@@ -167,7 +161,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile) = {
-    val staticFields = classDecl.vars.filter(v => v.init.isDefined && v.isStatic)
+    val staticFields = classDecl.fields.filter(v => v.init.isDefined && v.isStatic)
     if (staticFields.nonEmpty) {
       lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
       val codeGenerator = new CodeGenerator(staticCh, classDecl.getSymbol.name, mutable.HashMap())
@@ -183,7 +177,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
   }
 
   private def initializeNonStaticFields(classDecl: ClassDecl, ch: CodeHandler) = {
-    val nonStaticFields = classDecl.vars.filter(v => v.init.isDefined && !v.isStatic)
+    val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
     nonStaticFields.foreach {
       case varDecl@VarDecl(_, id, Some(expr), _) =>
@@ -257,9 +251,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
     val superClassName = ct.getSymbol.parents match {
-      case (_: TraitSymbol) :: tail => JavaObject
-      case (c: ClassSymbol) :: tail => c.name
-      case Nil                      => JavaObject
+      case (c: ClassSymbol) :: _ => if(c.isAbstract) JavaObject else c.name
+      case Nil                   => JavaObject
     }
 
     mh.codeHandler << ALOAD_0

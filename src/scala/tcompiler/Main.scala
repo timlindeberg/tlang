@@ -8,7 +8,7 @@ import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
 import tcompiler.code.CodeGeneration
 import tcompiler.lexer.Lexer
-import tcompiler.modification.{Imports, Templates}
+import tcompiler.modification.Templates
 import tcompiler.utils._
 
 import scala.collection.mutable
@@ -42,21 +42,20 @@ object Main extends MainErrors {
       if (!isValidTHomeDirectory(TDirectory))
         FatalInvalidTHomeDirectory(TDirectory, THome)
 
-      val parsing = Lexer andThen Parser andThen Templates andThen Imports
-      val analysis = NameAnalysis andThen TypeChecking
-      val preProg = parsing.run(ctx)(ctx.file)
-      val prog = analysis.run(ctx)(preProg)
+      val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
+      val progs = frontEnd.run(ctx)(ctx.files)
 
       if (flagActive(PrintGeneratedCode))
-        println(Printer(prog))
+        progs.foreach(p => println(Printer(p)))
+
 
       if (ctx.reporter.hasWarnings)
         println(ctx.reporter.warningsString)
 
-      CodeGeneration.run(ctx)(prog)
+      CodeGeneration.run(ctx)(progs)
 
       if (flagActive(Exec))
-        executeProgram(prog)
+        progs.foreach(executeProgram)
     } catch {
       case e: CompilationException => println(e.getMessage)
     }
@@ -70,7 +69,7 @@ object Main extends MainErrors {
       case Some(dir) => "-cp " + dir.getPath
       case _         => ""
     }
-    println("java " + cp + " " + fileName(ctx) !!)
+    println("java " + cp + " " + fileName(prog) !!)
   }
 
   private def processOptions(args: Array[String]): Context = {
@@ -110,6 +109,7 @@ object Main extends MainErrors {
       case Nil =>
     }
 
+
     if (args.isEmpty) {
       printHelp()
       sys.exit
@@ -117,6 +117,9 @@ object Main extends MainErrors {
 
 
     processOption(args.toList)
+
+
+    println(files)
 
     Reporter = new Reporter(
       flagActive(SuppressWarnings),
@@ -140,7 +143,7 @@ object Main extends MainErrors {
         Some(new File(dir))
       case None      => None
     }
-    Context(Reporter, file, classPaths, dir)
+    Context(Reporter, files, classPaths, dir)
   }
 
   private def checkValidClassPaths(classPaths: List[String]) =
@@ -208,7 +211,7 @@ object Main extends MainErrors {
     these ++ these.filter(_.isDirectory).flatMap(listFiles)
   }
 
-  private def fileName(ctx: Context) = ctx.file.getName.dropRight(FileEnding.length)
+  private def fileName(prog: Program) = prog.file.getName.dropRight(FileEnding.length)
 
   private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists(_.isMain))
 

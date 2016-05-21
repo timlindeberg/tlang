@@ -12,7 +12,6 @@ import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 
-
 /**
   * Created by Tim Lindeberg on 4/2/2016.
   */
@@ -39,7 +38,6 @@ object CodeGenerator {
   val JavaDouble           = JavaLang + "Double"
   val JavaLong             = JavaLang + "Long"
   val JavaRuntimeException = JavaLang + "RuntimeException"
-
 
   /* Labels */
   val Then  = "then"
@@ -121,7 +119,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << afterLabel
       case Foreach(varDecl, container, stat)     =>
         transformForeachLoop(varDecl, container, stat)
-      case PrintStatement(expr)                  =>
+      case PrintStatTree(expr)                  =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         ch << DUP
         compileExpr(expr)
@@ -199,14 +197,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           tpe.getType.codes.newArray(ch)
         else
           ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
-      case Plus(lhs, rhs)                                    =>
+      case plusOp@Plus(lhs, rhs)                                    =>
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(TString) =>
-            if (operatorDefinedFor(expression, args)) {
+            if (operatorDefinedFor(plusOp, args)) {
               compileExpr(lhs)
               compileExpr(rhs)
-              compileOperatorCall(ch, expression, args)
+              compileOperatorCall(ch, plusOp, args)
               return
             }
 
@@ -228,7 +226,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _ if args.anyIs(tObject) =>
             compileExpr(lhs)
             compileExpr(rhs)
-            compileOperatorCall(ch, expression, args)
+            compileOperatorCall(ch, plusOp, args)
           case _ if args.anyIs(TDouble) =>
             compileExpr(lhs)
             lhs.getType.codes.toDouble(ch)
@@ -254,14 +252,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             rhs.getType.codes.toInt(ch)
             ch << IADD
         }
-      case BinaryOperator(lhs, rhs)                          =>
+      case arOp@ArithmeticOperatorTree(lhs, rhs)                          =>
         compileExpr(lhs)
 
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(tObject) =>
             compileExpr(rhs)
-            compileOperatorCall(ch, expression, args)
+            compileOperatorCall(ch, arOp, args)
             return
           case _ if args.anyIs(TDouble) =>
             lhs.getType.codes.toDouble(ch)
@@ -287,13 +285,13 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: Div    => codes.div(ch)
           case _: Modulo => codes.mod(ch)
         }
-      case LogicalOperator(lhs, rhs)                         =>
+      case logicOp@LogicalOperatorTree(lhs, rhs)                         =>
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(tObject) =>
             compileExpr(lhs)
             compileExpr(rhs)
-            compileOperatorCall(ch, expression, args)
+            compileOperatorCall(ch, logicOp, args)
             return
           case _ if args.anyIs(TLong)   =>
             compileExpr(lhs)
@@ -312,14 +310,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: LogicOr  => codes.or(ch)
           case _: LogicXor => codes.xor(ch)
         }
-      case ShiftOperator(lhs, rhs)                           =>
+      case shiftOp@ShiftOperatorTree(lhs, rhs)                           =>
         compileExpr(lhs)
 
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(tObject) =>
             compileExpr(rhs)
-            compileOperatorCall(ch, expression, args)
+            compileOperatorCall(ch, shiftOp, args)
             return
           case (TLong, _)               =>
             compileExpr(rhs)
@@ -340,14 +338,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         }
       case Assign(id, expr)                                  =>
         store(id, () => compileAssignmentValue(expr, id.getType), duplicate)
-      case ArrayAssign(arr, index, expr)                     =>
+      case arrAssign@ArrayAssign(arr, index, expr)                     =>
         compileExpr(arr)
         compileExpr(index)
 
 
         arr.getType match {
           case obj@TObject(classSymbol) =>
-            classSymbol.lookupOperator(expression, List(index.getType, expr.getType)) match {
+            classSymbol.lookupOperator(arrAssign, List(index.getType, expr.getType)) match {
               case Some(operatorSymbol) =>
                 compileAssignmentValue(expr, operatorSymbol.lookupArgument(1).getType) // second argument is value
 
@@ -376,12 +374,12 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         } else {
           compileAssignmentValue(expr, tpe.getType)
         }
-      case ArrayRead(id, index)                              =>
+      case arrRead@ArrayRead(id, index)                              =>
         compileExpr(id)
         compileExpr(index)
         id.getType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupOperator(expression, List(index.getType)) match {
+            classSymbol.lookupOperator(arrRead, List(index.getType)) match {
               case Some(operatorSymbol) =>
                 val className = classSymbol.name
                 ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
@@ -428,21 +426,17 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             val methSymbol = meth.getSymbol.asInstanceOf[MethodSymbol]
             val signature = methSymbol.byteCodeSignature
 
-            def compileArgs() = methSymbol.argList.zip(args).foreach {
-              case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
-            }
-
             if (isStaticCall(obj) || isStatic(meth)) {
-              compileArgs()
+              compileArguments(methSymbol, args)
               ch << InvokeStatic(className, meth.value, signature)
             } else {
               compileExpr(obj)
-              compileArgs()
+              compileArguments(methSymbol, args)
 
               if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
               // Super calls and private calls are executed with invokespecial
                 ch << InvokeSpecial(className, meth.value, signature)
-              else if (classSymbol.isInstanceOf[TraitSymbol])
+              else if (classSymbol.isAbstract)
               // Methods called on traits are always called with invokeinterface
                 ch << InvokeInterface(className, meth.value, signature)
               else
@@ -457,15 +451,16 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case tcompiler.ast.Trees.New(tpe, args)                =>
         tpe.getType match {
           case TObject(classSymbol) =>
+            val argTypes = args.map(_.getType)
+            val objName = if (tpe.name == "Object") JavaObject else classSymbol.name
             val codes = tpe.getType.codes
-            val objName = if (tpe.name == "Object") JavaObject else tpe.name
             ch << cafebabe.AbstractByteCodes.New(objName)
             codes.dup(ch)
-            args.foreach(compileExpr(_))
-            val argTypes = args.map(_.getType)
 
             val signature = classSymbol.lookupMethod("new", argTypes) match {
-              case Some(m) => m.byteCodeSignature
+              case Some(methodSymbol) =>
+                compileArguments(methodSymbol, args)
+                methodSymbol.byteCodeSignature
               case _       => "()V"
             }
             // Constructors are always called with InvokeSpecial
@@ -480,21 +475,21 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             }
         }
 
-      case Negation(expr)               =>
+      case negOp@Negation(expr)               =>
         compileExpr(expr)
         expr.getType match {
-          case x: TObject => compileOperatorCall(ch, expression, x)
+          case x: TObject => compileOperatorCall(ch, negOp, x)
           case _          => expr.getType.codes.negation(ch)
         }
-      case LogicNot(expr)               =>
+      case notOp@LogicNot(expr)               =>
         compileExpr(expr)
         expr.getType match {
-          case x: TObject => compileOperatorCall(ch, expression, x)
+          case x: TObject => compileOperatorCall(ch, notOp, x)
           case _          =>
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
         }
-      case Hash(expr)                   =>
+      case hashOp@Hash(expr)                   =>
 
         def hashFunction(className: String) = {
           ch << cafebabe.AbstractByteCodes.New(className) << DUP
@@ -506,7 +501,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         expr.getType match {
           case x: TObject =>
             compileExpr(expr)
-            if (!compileOperatorCall(ch, expression, x))
+            if (!compileOperatorCall(ch, hashOp, x))
               ch << InvokeVirtual(JavaObject, "hashCode", "()I")
           case TString    => hashFunction(JavaString)
           case TInt       => hashFunction(JavaInt)
@@ -516,10 +511,10 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case TLong      => hashFunction(JavaLong)
           case _          => ???
         }
-      case PreIncrement(expr)           => compileIncrementDecrement(isPre = true, isIncrement = true, expr)
-      case PreDecrement(expr)           => compileIncrementDecrement(isPre = true, isIncrement = false, expr)
-      case PostIncrement(expr)          => compileIncrementDecrement(isPre = false, isIncrement = true, expr)
-      case PostDecrement(expr)          => compileIncrementDecrement(isPre = false, isIncrement = false, expr)
+      case incDec@PreIncrement(expr)           => compileIncrementDecrement(incDec, isPre = true, isIncrement = true, expr)
+      case incDec@PreDecrement(expr)           => compileIncrementDecrement(incDec, isPre = true, isIncrement = false, expr)
+      case incDec@PostIncrement(expr)          => compileIncrementDecrement(incDec, isPre = false, isIncrement = true, expr)
+      case incDec@PostDecrement(expr)          => compileIncrementDecrement(incDec, isPre = false, isIncrement = false, expr)
       case Ternary(condition, thn, els) =>
         val thnLabel = ch.getFreshLabel(Then)
         val elsLabel = ch.getFreshLabel(Else)
@@ -534,7 +529,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << Label(afterLabel)
     }
 
-    def compileIncrementDecrement(isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
+    def compileIncrementDecrement(incDec: IncrementDecrementTree, isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
       expr match {
         case id: Identifier           =>
           val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
@@ -551,7 +546,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               // TODO: Fix post/pre increment for objects. Currently they work the same way.
               store(id, () => {
                 load(id)
-                compileOperatorCall(ch, expression, x)
+                compileOperatorCall(ch, incDec, x)
               }, duplicate)
             case _               =>
               store(id, () => {
@@ -609,39 +604,44 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     t.setType(tpe)
   }
 
-  private def operatorDefinedFor(expr: ExprTree, args: (Type, Type)): Boolean = {
+  private def operatorDefinedFor(op: OperatorTree, args: (Type, Type)): Boolean = {
     val argList = List(args._1, args._2)
-    operatorDefinedFor(args._1, expr, argList) || operatorDefinedFor(args._2, expr, argList)
+    operatorDefinedFor(args._1, op, argList) || operatorDefinedFor(args._2, op, argList)
   }
 
-  private def operatorDefinedFor(classType: Type, expr: ExprTree, args: List[Type]): Boolean =
+  private def operatorDefinedFor(classType: Type, op: OperatorTree, args: List[Type]): Boolean =
     classType match {
       case TObject(classSymbol) =>
-        classSymbol.lookupOperator(expr, args) match {
+        classSymbol.lookupOperator(op, args) match {
           case Some(operatorSymbol) => true
           case None                 => false
         }
       case _                    => false
     }
 
-  private def compileOperatorCall(ch: CodeHandler, expr: ExprTree, args: (Type, Type)): Boolean = {
+  private def compileOperatorCall(ch: CodeHandler, op: OperatorTree, args: (Type, Type)): Boolean = {
     val argsList = List(args._1, args._2)
-    compileOperatorCall(ch, args._1, expr, argsList) || compileOperatorCall(ch, args._2, expr, argsList)
+    compileOperatorCall(ch, args._1, op, argsList) || compileOperatorCall(ch, args._2, op, argsList)
   }
 
-  private def compileOperatorCall(ch: CodeHandler, expr: ExprTree, arg: Type): Boolean =
-    compileOperatorCall(ch, arg, expr, List(arg))
+  private def compileOperatorCall(ch: CodeHandler, op: OperatorTree, arg: Type): Boolean =
+    compileOperatorCall(ch, arg, op, List(arg))
 
-  private def compileOperatorCall(ch: CodeHandler, classType: Type, expr: ExprTree, args: List[Type]): Boolean =
+  private def compileOperatorCall(ch: CodeHandler, classType: Type, op: OperatorTree, args: List[Type]): Boolean =
     classType match {
       case TObject(classSymbol) =>
-        classSymbol.lookupOperator(expr, args) match {
+        classSymbol.lookupOperator(op, args) match {
           case Some(operatorSymbol) =>
             ch << InvokeStatic(operatorSymbol.classSymbol.name, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
             true
           case None                 => false
         }
       case _                    => false
+    }
+
+  private def compileArguments(methodSymbol: MethodSymbol, args: List[ExprTree]) =
+    methodSymbol.argList.zip(args).foreach {
+      case (expected, givenExpr) => compileAssignmentValue(givenExpr, expected.getType)
     }
 
   private def compileAssignmentValue(expr: ExprTree, desiredType: Type): Unit = {
@@ -670,14 +670,14 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   }
 
   private def compileArrayLiteral(arrLit: ArrayLit, desiredType: Option[Type] = None) = {
-    val expressions = arrLit.expressions
+    val expressions = arrLit.value
     val arrayType = arrLit.getType.asInstanceOf[TArray].tpe
     val newType = desiredType match {
       case Some(tpe) => tpe
       case None      => arrayType
     }
 
-    ch << Ldc(arrLit.expressions.size)
+    ch << Ldc(arrLit.value.size)
     newType.codes.newArray(ch)
 
     expressions.zipWithIndex.foreach { case (expr, i) =>
@@ -689,11 +689,11 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   }
 
   private def compileBranch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
-    case Not(expr)                    =>
+    case notOp@Not(expr)                    =>
       expr.getType match {
         case x: TObject =>
           compileExpr(expr)
-          compileOperatorCall(ch, expression, x)
+          compileOperatorCall(ch, notOp, x)
           ch << IfEq(els.id) << Goto(thn.id)
         case _          =>
           compileBranch(expr, els, thn)
@@ -717,7 +717,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       compileExpr(expr)
       ch << Ldc(1)
       ch << InstanceOf(id.value) << If_ICmpEq(thn.id) << Goto(els.id)
-    case ComparisonOperator(lhs, rhs) =>
+    case compOp@ComparisonOperatorTree(lhs, rhs) =>
       def comparison(codes: CodeMap) = {
         expression match {
           case _: LessThan          => codes.cmpLt(ch, thn.id)
@@ -731,7 +731,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       argTypes match {
         case (_: TObject, _) | (_, _: TObject) =>
           compileExpr(rhs)
-          compileOperatorCall(ch, expression, argTypes)
+          compileOperatorCall(ch, compOp, argTypes)
           ch << IfNe(thn.id)
         case (TDouble, _) | (_, TDouble)       =>
           lhs.getType.codes.toDouble(ch)
@@ -756,7 +756,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       }
 
       ch << Goto(els.id)
-    case EqualsOperator(lhs, rhs)     =>
+    case eqOp@EqualsOperatorTree(lhs, rhs)     =>
       def comparison(codes: CodeMap) = {
         expression match {
           case _: Equals    => codes.cmpEq(ch, thn.id)
@@ -769,13 +769,13 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       argTypes match {
         case (_, objectType: TObject)    =>
           compileExpr(rhs)
-          if (compileOperatorCall(ch, expression, argTypes))
+          if (compileOperatorCall(ch, eqOp, argTypes))
             ch << IfNe(thn.id)
           else
             comparison(objectType.codes) // If no operator is defined, compare by reference
         case (objectType: TObject, _)    =>
           compileExpr(rhs)
-          if (compileOperatorCall(ch, expression, argTypes))
+          if (compileOperatorCall(ch, eqOp, argTypes))
             ch << IfEq(thn.id)
           else
             comparison(objectType.codes) // If no operator is defined, compare by reference

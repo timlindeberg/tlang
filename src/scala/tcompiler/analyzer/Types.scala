@@ -24,7 +24,7 @@ object Types {
     def getType: Type = _tpe
   }
 
-  val primitives = List[Type](
+  val Primitives = List[Type](
     TInt,
     TLong,
     TFloat,
@@ -48,7 +48,7 @@ object Types {
       }
     }
     def getSuperTypes: List[Type] = List()
-    def isPrimitive = primitives.contains(this)
+    def isPrimitive = Primitives.contains(this)
 
     def implicitlyConvertableFrom(): List[Type] = List()
 
@@ -168,13 +168,14 @@ object Types {
         map(_.argList.head.getType)
 
     override def getSuperTypes: List[Type] =
-      List(this) ::: classSymbol.parents.flatMap(_.getType.getSuperTypes)
+      this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)
 
     override def toString = classSymbol.name
     override def byteCodeName: String = {
       val name = if (this == tObject) CodeGenerator.JavaObject else classSymbol.name
       "L" + name.replaceAll("\\.", "/") + ";"
     }
+
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 
     override val codes     = new ObjectCodeMap(classSymbol.name)

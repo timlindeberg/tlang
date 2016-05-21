@@ -34,16 +34,16 @@ object Printer {
 
   def prettyPrint(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, classes)                               => p"$pack$N$imports$N$classes"
-      case Package(identifiers)                                          => p"package ${Separated(identifiers, ".")}"
-      case RegularImport(identifiers)                                    => p"import ${Separated(identifiers, ".")}"
-      case WildCardImport(identifiers)                                   => p"import ${Separated(identifiers, ".")}.*"
-      case GenericImport(identifiers)                                    => p"import <${Separated(identifiers, ".")}>"
-      case ClassDecl(id, parents, vars, methods)                         => p"$N$N${classOrTrait(t)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
-      case VarDecl(tpe, id, expr, modifiers)                             => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
-      case MethodDecl(retType, id, args, stat, modifiers)                => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
+      case Program(pack, imports, classes, _)             => p"$pack$N$imports$N$classes"
+      case Package(identifiers)                           => p"package ${Separated(identifiers, ".")}"
+      case RegularImport(identifiers)                     => p"import ${Separated(identifiers, ".")}"
+      case WildCardImport(identifiers)                    => p"import ${Separated(identifiers, ".")}.*"
+      case TemplateImport(identifiers)                    => p"import <${Separated(identifiers, ".")}>"
+      case ClassDecl(id, parents, vars, methods, isTrait) => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
+      case VarDecl(tpe, id, expr, modifiers)              => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
+      case MethodDecl(retType, id, args, stat, modifiers) => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
       case ConstructorDecl(_, id, args, stat, modifiers)                 => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
-      case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => p"${definition(modifiers)} ${operatorString(operatorType)}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
+      case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
       case Formal(tpe, id)                                               => p"$id: $tpe"
       // Types
       case ArrayType(tpe) => p"$tpe[]"
@@ -123,10 +123,7 @@ object Printer {
     s
   }
 
-  private def classOrTrait(t: Tree) = t match {
-    case _: Trait => p"trait"
-    case _        => p"class"
-  }
+  private def classOrTrait(isTrait: Boolean) = if(isTrait) p"trait" else p"class"
 
   private def parentList(parents: List[ClassIdentifier]) = {
     if (parents.isEmpty) ""

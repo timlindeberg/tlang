@@ -1,0 +1,4 @@
+import java.lang.String
+import kool.lang.String // res: I2001
+
+println("")

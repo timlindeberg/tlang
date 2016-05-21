@@ -3,20 +3,22 @@ package ast
 
 import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.TreeGroups.UselessStatement
-import tcompiler.ast.Trees._
+import tcompiler.ast.Trees.{OperatorTree, _}
+import tcompiler.imports.ClassSymbolLocator
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
 import tcompiler.utils._
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable.ArrayBuffer
 
-object Parser extends Pipeline[List[Token], Program] {
+object Parser extends Pipeline[List[List[Token]], List[Program]] {
 
-  def run(ctx: Context)(tokens: List[Token]): Program = {
-    val astBuilder = new ASTBuilder(ctx, tokens.toArray)
-    val lol = astBuilder.parseGoal()
-    lol
-  }
+  def run(ctx: Context)(tokenList: List[List[Token]]): List[Program] =
+    tokenList.map { tokens =>
+      val astBuilder = new ASTBuilder(ctx, tokens.toArray)
+      astBuilder.parseGoal()
+    }
 
 }
 
@@ -90,8 +92,35 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val classes = createMainClass(code)
 
-    Program(pack, imp, classes).setPos(startPos, nextToken)
+    val importMap = createImportMap(imp)
+    Program(pack, imp, classes, importMap).setPos(startPos, nextToken)
   }
+
+  private def createImportMap(imports: List[Import]) = {
+    val regImports = imports.filterType(classOf[RegularImport])
+    val wcImports = imports.filterType(classOf[WildCardImport])
+    var importMap = Map[String, String]()
+
+    // TODO: Use classpath flags
+    for (imp <- regImports) {
+      val fullName = importName(imp)
+      val shortName = imp.identifiers.last.value
+      if(ClassSymbolLocator.classExists(fullName)){
+        if(importMap.contains(shortName))
+          ErrorConflictingImport(fullName, importMap(shortName), imp)
+        importMap += (shortName -> fullName)
+      }else{
+        ErrorCantResolveImport(fullName, imp)
+      }
+    }
+
+    // TODO: Support wild card imports. Need to be able to search the full classpath
+
+    importMap
+  }
+
+  private def importName(imp: Import): String = importName(imp.identifiers)
+  private def importName(packageIds: List[Identifier]): String = packageIds.map(_.value).mkString(".")
 
   private def createMainClass(code: List[Tree]) = {
     var classes = code.collect { case x: ClassDecl => x }
@@ -99,12 +128,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val stats = code.collect { case x: StatTree => x }
 
     if (stats.nonEmpty || methods.nonEmpty) {
-      val mainName = ctx.file.getName.dropRight(Main.FileEnding.length)
+      val mainName = currentToken.file.getName.dropRight(Main.FileEnding.length)
       val mainClass = classes.find(_.id.value == mainName) match {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = InternalClassDecl(ClassIdentifier(mainName), List(), List(), List()).setPos(pos, nextToken)
+          val m = ClassDecl(ClassIdentifier(mainName), List(), List(), List(), isTrait = false)
+          m.setPos(pos, nextToken)
           classes ::= m
           m
       }
@@ -148,7 +178,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       }
       eat(GREATERTHAN)
       endStatement()
-      return GenericImport(ids.toList).setPos(startPos, nextToken)
+      return TemplateImport(ids.toList).setPos(startPos, nextToken)
     }
     ids += identifier()
     while (nextTokenKind == DOT) {
@@ -171,13 +201,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def classDeclaration(): ClassDecl = {
     val startPos = nextToken
-    val classType = nextTokenKind match {
+    val isTrait = nextTokenKind match {
       case CLASS =>
         eat(CLASS)
-        InternalClassDecl
+        false
       case TRAIT =>
         eat(TRAIT)
-        Trait
+        true
       case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
     }
     val id = classTypeIdentifier()
@@ -190,7 +220,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
     eat(RBRACE)
-    classType(id, parents, vars, methods).setPos(startPos, nextToken)
+    ClassDecl(id, parents, vars, methods, isTrait).setPos(startPos, nextToken)
   }
 
   /**
@@ -201,7 +231,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
     case _     =>
-      List(ClassIdentifier("Object"))
+    List()
+    //List(ClassIdentifier("Object"))
   }
 
   /**
@@ -329,7 +360,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     // arguments they should have. This is done because since minus can have both
     // one or two operands. */
 
-    def binaryOperator(constructor: (ExprTree, ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
+    def binaryOperator(constructor: (ExprTree, ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
       val operatorType = constructor(Empty(), Empty()).setType(TUnit)
       eat(LPAREN)
@@ -339,9 +370,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       (operatorType, List(f1, f2), modifiers + Static())
     }
 
-    def unaryOperator(constructor: (ExprTree) => ExprTree): (ExprTree, List[Formal], Set[Modifier]) = {
+    def unaryOperator(constructor: (ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
       eat(nextTokenKind)
-      val operatorType = constructor(Empty()).setType(TUnit)
+      val operatorType: OperatorTree = constructor(Empty()).setType(TUnit)
       eat(LPAREN)
       (operatorType, List(formal()), modifiers + Static())
     }
@@ -390,7 +421,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
               case None         =>
             }
 
-            val operatorType = ArrayAssign(Empty(), Empty(), Empty())
+            val operatorType: OperatorTree = ArrayAssign(Empty(), Empty(), Empty())
             eat(EQSIGN, LPAREN)
             val f1 = formal()
             eat(COMMA)
@@ -402,7 +433,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
               case None         =>
             }
 
-            val operatorType = ArrayRead(Empty(), Empty())
+            val operatorType: OperatorTree = ArrayRead(Empty(), Empty())
             eat(LPAREN)
             val f1 = formal()
             (operatorType, List(f1), modifiers)
@@ -491,9 +522,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <tpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> ) { "[]" } [ "?" ]
+    * <basicTpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> )
     */
-  def tpe(): TypeTree = {
+  def basicTpe(): TypeTree = {
     val startPos = nextToken
     val tpe = nextTokenKind match {
       case INT     =>
@@ -520,7 +551,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _       => classIdentifier()
     }
     tpe.setPos(startPos, nextToken)
-    var e = tpe
+  }
+
+  /**
+    * <tpe> ::= <basicTpe> { "[]" } [ "?" ]
+    */
+  def tpe(): TypeTree = {
+    val startPos = nextToken
+    var e = basicTpe()
     var dimension = 0
     while (nextTokenKind == LBRACKET) {
       e.setPos(startPos, nextToken)
@@ -1052,8 +1090,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <newExpression> ::= new <tpe>"[" <expression> "] { "[" <expression> "]" }
-    * | new <classIdentifier> "(" [ <expression> { "," <expression> } ")"
+    * <newExpression> ::= new <basicTpe> "(" [ <expression> { "," <expression> } ] ")"
+    *                   | new <basicTpe>  "[" <expression> "]" { "[" <expression> "]" }
     */
   def newExpression(): ExprTree = {
     val startPos = nextToken
@@ -1070,31 +1108,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         ErrorInvalidArrayDimension(sizes.size, startPos)
       sizes
     }
-
-    val tpe = nextTokenKind match {
-      case INT     =>
-        eat(INT)
-        IntType()
-      case LONG    =>
-        eat(LONG)
-        LongType()
-      case FLOAT   =>
-        eat(FLOAT)
-        FloatType()
-      case DOUBLE  =>
-        eat(DOUBLE)
-        DoubleType()
-      case CHAR    =>
-        eat(CHAR)
-        CharType()
-      case STRING  =>
-        eat(STRING)
-        StringType()
-      case BOOLEAN =>
-        eat(BOOLEAN)
-        BooleanType()
-      case _       => classIdentifier()
-    }
+    val tpe = basicTpe()
 
     nextTokenKind match {
       case LPAREN   =>
@@ -1261,7 +1275,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <classIdentifier> ::= <identifier> [ "<" <type> { "," <type> } ">" ]
+    * <classIdentifier> ::= <identifier> { . <identifier> } [ "<" <type> { "," <type> } ">" ]
     */
   private def classIdentifier(): ClassIdentifier = {
     val startPos = nextToken

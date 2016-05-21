@@ -18,7 +18,7 @@ abstract class ErrorTester extends Tester {
     val expectedErrors = TestUtils.parseSolutions(file)
 
     try {
-      val prog = Pipeline.run(ctx)(ctx.file)
+      val prog = Pipeline.run(ctx)(List(file))
 
       //println(Printer(prog))
       // Check for warnings:

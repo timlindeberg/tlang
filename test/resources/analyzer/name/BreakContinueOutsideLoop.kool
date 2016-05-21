@@ -9,7 +9,19 @@ for(var i = 0; i < 6; i++){
             break
 }
 
+
 while(true){
+    while(true){
+        break
+    }
+    if(false)
+        continue
+    else
+        while(true)
+            break
+}
+
+for(val v in {1,2 3, 4}){
     while(true){
         break
     }

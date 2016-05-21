@@ -1,0 +1,26 @@
+import java.util.Locale
+import java.util.Random
+import java.lang.System
+
+new A().AD() // res: 1
+new A().BC() // res: 0
+new A().TimeZone() // res: Europe/Berlin
+
+val locale = new Locale("sv", "SE")
+println(locale.getDisplayLanguage()) // res: Swedish
+
+val ran = new Random(0)
+println(ran.nextInt()) // res: -1155484576
+
+//System.exit(0)
+
+
+class A : java.util.GregorianCalendar {
+
+    Def AD() = println(AD)
+    Def BC() = println(BC)
+
+    Def TimeZone() = println(getTimeZone().getID())
+
+}
+

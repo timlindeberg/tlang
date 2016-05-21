@@ -8,9 +8,13 @@ import tcompiler.utils.{Pipeline, _}
 
 import scala.io.Source
 
-object Lexer extends Pipeline[File, List[Token]] {
+object Lexer extends Pipeline[List[File], List[List[Token]]] {
 
-  def run(ctx: Context)(f: File): List[Token] = new Tokenizer(ctx, f).tokenize(Source.fromFile(f).buffered.toList)
+  def run(ctx: Context)(files: List[File]): List[List[Token]] = {
+    files.map { f =>
+      new Tokenizer(ctx, f).tokenize(Source.fromFile(f).buffered.toList)
+    }
+  }
 }
 
 class Tokenizer(override var ctx: Context, override val file: File) extends LexerErrors {

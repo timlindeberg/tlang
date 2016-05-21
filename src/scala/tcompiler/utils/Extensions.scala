@@ -20,5 +20,10 @@ object Extensions {
     def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
   }
 
+  implicit class ListExt[T](l: List[T]) {
+
+    def filterType[A](clazz: Class[A]) = l.filter(_.getClass == clazz).asInstanceOf[List[A]]
+
+  }
 
 }

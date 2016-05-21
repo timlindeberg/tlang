@@ -26,6 +26,12 @@ trait ParserErrors extends Errors {
   protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
     error(2, s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
 
+  protected def ErrorCantResolveImport(imp: String, pos: Positioned) =
+    error(3, s"Cannot resolve import '$imp'.", pos)
+
+  protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned) =
+    error(4, s"Imports '$imp1' and '$imp2' are conflicting.", pos)
+
   //---------------------------------------------------------------------------------------
   //  Fatal messages
   //---------------------------------------------------------------------------------------

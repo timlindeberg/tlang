@@ -4,23 +4,31 @@ package modification
 import com.rits.cloning._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
+import tcompiler.imports.TemplateImporter
 import tcompiler.utils.{Context, Pipeline, Positioned}
 
 import scala.collection.mutable.ArrayBuffer
 
-object Templates extends Pipeline[Program, Program] {
+object Templates extends Pipeline[List[Program], List[Program]] {
 
   val StartEnd = "-"
   val Seperator = "$"
 
-  def run(ctx: Context)(prog: Program): Program = {
-    val templateClasses = prog.classes.filter(_.id.isTemplated) ::: new GenericImporter(ctx, prog).importGenericClasses
-    val newClasses = new ClassGenerator(ctx, prog, templateClasses).generate
-    val oldClasses = prog.classes.filter(!_.id.isTemplated)
-    val newProg = prog.copy(classes = oldClasses ++ newClasses)
+  def run(ctx: Context)(progs: List[Program]): List[Program] = {
 
-    replaceTypes(newProg)
-    newProg
+    def templatedClasses(prog:Program) = prog.classes.filter(_.id.isTemplated)
+
+    progs.map { prog =>
+      val templateImporter = new TemplateImporter(ctx, prog)
+      val templateProgs = templateImporter()
+
+      val templateClasses = templatedClasses(prog) ::: templateProgs.flatMap(templatedClasses)
+      val newClasses = new ClassGenerator(ctx, prog, templateClasses).generate()
+      val oldClasses = prog.classes.filter(!_.id.isTemplated)
+      val newProg = prog.copy(classes = oldClasses ++ newClasses)
+      newProg.setPos(prog)
+      replaceTypes(newProg)
+    }
   }
 
 
@@ -60,7 +68,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   private var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
 
 
-  def generate: List[ClassDecl] = {
+  def generate(): List[ClassDecl] = {
 
     def generateIfTemplated(tpe: TypeTree): Unit = {
       Some(tpe) collect {
@@ -70,7 +78,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       }
     }
 
-    def collect(f: Product, p: Product) = Some(p) collect {
+    def collect(f: Tree, p: Tree) = Some(p) collect {
       case c: ClassDecl => c.parents.foreach(generateIfTemplated)
       case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
       case f: Formal    => generateIfTemplated(f.tpe)
@@ -78,7 +86,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     }
 
     checkTemplateClassDefs(templateClasses)
-    Trees.traverse(prog.classes, collect)
+    prog.classes.foreach(clazz => Trees.traverse(clazz, collect))
     generatedClasses.toList
   }
 
@@ -91,7 +99,8 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
     templateClasses.find(_.id.value == typeId.value) match {
       case Some(template) => generatedClasses += newTemplateClass(template, typeId)
-      case None           => ErrorDoesNotExist(typeId.value, typeId)
+      case None           =>
+        ErrorDoesNotExist(typeId.value, typeId)
     }
   }
 
@@ -154,7 +163,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
 
   private val ErrorMap = Map[TypeTree, TypeTree]()
   private val ErrorType = new ClassIdentifier("ERROR")
-  private val ErrorClass = new InternalClassDecl(ErrorType, List(), List(), List())
+  private val ErrorClass = new ClassDecl(ErrorType, List(), List(), List(), false)
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
     ctx.reporter.error("G", errorCode, msg, pos)
