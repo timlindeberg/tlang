@@ -9,6 +9,7 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer._
 import tcompiler.ast.TreeGroups._
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 
@@ -191,7 +192,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << Label(after)
       case arrLit@ArrayLit(expressions)                      =>
         compileArrayLiteral(arrLit)
-      case newArray@tcompiler.ast.Trees.NewArray(tpe, sizes) =>
+      case newArray@Trees.NewArray(tpe, sizes) =>
         sizes.foreach(compileExpr(_))
         if (newArray.dimension == 1)
           tpe.getType.codes.newArray(ch)
@@ -448,7 +449,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               ch << POP
           case _                    => ???
         }
-      case tcompiler.ast.Trees.New(tpe, args)                =>
+      case Trees.New(tpe, args)                =>
         tpe.getType match {
           case TObject(classSymbol) =>
             val argTypes = args.map(_.getType)
@@ -868,7 +869,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
 
     val size = List(Minus(endId, startId).setType(TInt))
     val typeTree = getTypeTree(arrayType.asInstanceOf[TArray].tpe)
-    val newArray = tcompiler.ast.Trees.NewArray(typeTree, size)
+    val newArray = Trees.NewArray(typeTree, size)
     val (sliceDecl, sliceId) = createVarDecl("slice", newArray, arrayType)
     val (indexDecl, indexId) = createVarDecl("i", startId, TInt)
     val comparison = LessThan(indexDecl.id, endId).setType(TBool)

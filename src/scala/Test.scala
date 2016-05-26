@@ -1,13 +1,14 @@
+
+
 /**
  * Created by Tim Lindeberg on 4/2/2016.
  */
-import java._
 
 object TestMain {
-  def main(args: Array[String]): Unit = {
-    val r = new util.Random
+  //def main(args: Array[String]): Unit = {
+  //}
 
-  }
+
 
 
 }

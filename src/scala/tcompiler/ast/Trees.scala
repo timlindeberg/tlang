@@ -5,10 +5,34 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.utils._
 
-
 object Trees {
 
-  trait Tree extends Positioned with Product
+  trait Tree extends Positioned with Product {
+    def copyAttrs(t: Tree): this.type = {
+      setPos(t)
+      copySymbol(this, t)
+
+      this match {
+        case typed: Typed if t.isInstanceOf[Typed] =>
+          val tpe = t.asInstanceOf[Typed]
+          typed.setType(tpe.getType)
+        case _                                     =>
+      }
+      this
+    }
+
+    private def copySymbol[T <: Symbol](to: Tree, from: Tree) = {
+      if (to.isInstanceOf[Symbolic[T]] && from.isInstanceOf[Symbolic[T]]) {
+        val toSymbolic = to.asInstanceOf[Symbolic[T]]
+        val toSym = toSymbolic.getSymbol
+        val fromSym = from.asInstanceOf[Symbolic[T]].getSymbol
+        if (toSym.getClass == fromSym.getClass)
+          toSymbolic.setSymbol(fromSym)
+      }
+    }
+
+  }
+
 
   /**
     * Signals that the node is a leaf and no further recursion is necessary
@@ -33,6 +57,12 @@ object Trees {
 
   case class Package(identifiers: List[Identifier]) extends Tree
 
+  object Import {
+    def unapply(i: Import): Option[List[Identifier]] = i match {
+      case i: Import => Some(i.identifiers)
+      case _         => None
+    }
+  }
   trait Import extends Tree {
     val identifiers: List[Identifier]
   }
@@ -165,7 +195,6 @@ object Trees {
   case class Break() extends StatTree with LeafTree
   case class Continue() extends StatTree with LeafTree
 
-
   case class Print(expr: ExprTree) extends PrintStatTree
   case class Println(expr: ExprTree) extends PrintStatTree
 
@@ -219,9 +248,12 @@ object Trees {
 
   trait ComparisonOperatorTree extends BinaryOperatorTree
   object ComparisonOperatorTree {
-    def unapply(e: ComparisonOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: ComparisonOperatorTree => Some(e.lhs, e.rhs)
-      case _                         => None
+    def unapply(e: OperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case LessThan(lhs, rhs)          => Some((lhs, rhs))
+      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
+      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
+      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
+      case _                           => None
     }
   }
 
@@ -255,11 +287,6 @@ object Trees {
 
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "=="}
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "!="}
-
-  case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
-  case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
-  case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) extends ExprTree
-  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
 
   /*-------------------------------- Unary Operator Trees --------------------------------*/
 
@@ -302,21 +329,24 @@ object Trees {
   /*-------------------------------- Array Operator Trees --------------------------------*/
 
   trait ArrayOperatorTree extends OperatorTree {
-    val arr  : ExprTree
-    val index: ExprTree
+    val arr: ExprTree
     def operatorString(args: List[Any], className: String): String = className + operatorString(args)
   }
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
     override val op: String = "[]="
-    override def operatorString(args: List[Any]): String = "[" + args(0) + "] = " + args(1)
+    override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree {
     override val op: String = "[]"
-    override def operatorString(args: List[Any]): String = "[" + args(0) + "]"
+    override def operatorString(args: List[Any]): String = s"[${args(0)}]"
+  }
+  case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) extends ArrayOperatorTree {
+    override val op: String = "[:]"
+    override def operatorString(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
   }
 
-  /*-------------------------------- Literal Trees --------------------------------*/
+  /*-------------------------------- Literal and Identifer Trees --------------------------------*/
 
 
   trait Literal[T] extends ExprTree with LeafTree {
@@ -334,9 +364,11 @@ object Trees {
   case class False() extends ExprTree with LeafTree
   case class Null() extends ExprTree with LeafTree
 
-  trait IdentifierTree[T <: Symbol] extends Literal[String] with Symbolic[T]
+  trait IdentifierTree[T <: Symbol] extends ExprTree with Symbolic[T] {
+    val value: String
+  }
 
-  case class Identifier(value: String) extends IdentifierTree[Symbol] {
+  case class Identifier(value: String) extends IdentifierTree[Symbol] with LeafTree {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol    => TObject(cs)
@@ -388,6 +420,10 @@ object Trees {
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
+  case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
+  case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
+  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
+
   case class Empty() extends ExprTree with LeafTree {override def toString = "<EMPTY>"}
 
 
@@ -406,9 +442,13 @@ object Trees {
     def trav(parent: Tree, current: Tree): Unit = {
       current.productIterator.foreach {
         case x: Iterable[_] =>
-          x.foreach(Some(_) collect { case x: Tree => trav(current, x) })
+          x.foreach(Some(_) collect {
+            case x: Tree => trav(current, x)
+          })
         case x: Option[Any] =>
-          x collect { case x: Tree => trav(current, x) }
+          x collect {
+            case x: Tree => trav(current, x)
+          }
         case x: Tree        => trav(current, x)
         case _              =>
       }

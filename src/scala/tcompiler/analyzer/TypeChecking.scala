@@ -3,6 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
+import tcompiler.ast.Printer
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -44,6 +45,9 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
       tc.checkMethodUsage()
       tc.checkCorrectOverrideReturnTypes(prog)
       tc.checkTraitsAreImplemented(prog)
+
+      println(Printer(prog))
+
       prog
     }
   }
@@ -151,7 +155,7 @@ class TypeChecker(
       tcStat(stat)
     case f: Foreach                       =>
       typeCheckForeachLoop(f)
-    case PrintStatTree(expr)             =>
+    case PrintStatTree(expr)              =>
       tcExpr(expr)
       if (expr.getType == TUnit)
         ErrorCantPrintUnitType(expr)
@@ -342,7 +346,7 @@ class TypeChecker(
             }
           case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
-      case compOp@ComparisonOperatorTree(lhs, rhs)     =>
+      case compOp@ComparisonOperatorTree(lhs, rhs) =>
         // TODO: String should be allowed
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
@@ -350,7 +354,7 @@ class TypeChecker(
           case _ if args.anyIs(TBool, TString, tArray) => ErrorOperatorDoesNotExist(compOp, args, expression)
           case _                                       => TBool
         }
-      case eqOp@EqualsOperatorTree(lhs, rhs)           =>
+      case eqOp@EqualsOperatorTree(lhs, rhs)       =>
         val args@(lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
         args match {
           case _ if args.anyIs(tObject)                       =>
@@ -374,7 +378,7 @@ class TypeChecker(
         tcExpr(lhs, TBool)
         tcExpr(rhs, TBool)
         TBool
-      case notOp@Not(expr)                               =>
+      case notOp@Not(expr)                         =>
         tcExpr(expr, TBool, Types.tObject) match {
           case x: TObject => tcUnaryOperator(notOp, x, Some(TBool))
           case _          =>
@@ -441,13 +445,13 @@ class TypeChecker(
             }
         }
         tpe.getType
-      case ngeOp@Negation(expr)                          =>
+      case negOp@Negation(expr)                    =>
         tcExpr(expr, Types.tObject :: Types.Primitives) match {
-          case x: TObject => tcUnaryOperator(ngeOp, x)
+          case x: TObject => tcUnaryOperator(negOp, x)
           case TChar      => TInt // Negation of char is int
           case x          => x
         }
-      case hashOp@Hash(expr)                              =>
+      case hashOp@Hash(expr)                       =>
         val exprType = tcExpr(expr, TString :: Types.tObject :: Types.Primitives)
         exprType match {
           case _: TObject =>
@@ -466,7 +470,7 @@ class TypeChecker(
             }
           case _          => TInt
         }
-      case incOp@IncrementDecrementTree(obj)                 =>
+      case incOp@IncrementDecrementTree(obj)       =>
         obj match {
           case id: Identifier              => checkReassignment(id, expression)
           case _: ArrayRead | _: FieldRead =>
@@ -476,7 +480,7 @@ class TypeChecker(
           case x: TObject => tcUnaryOperator(incOp, x, Some(x)) // Requires same return type as type
           case x          => x
         }
-      case notOp@LogicNot(expr)                          =>
+      case notOp@LogicNot(expr)                    =>
         tcExpr(expr, Types.tObject, TInt, TLong, TChar) match {
           case x: TObject => tcUnaryOperator(notOp, x)
           case TLong      => TLong

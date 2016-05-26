@@ -181,7 +181,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
         throw CodeFreezingException("No bytecode at pc=" + from + ". Missing instructions?", abcList)
 
       if(there < 0)
-        throw CodeFreezingException("Negative stack height at pc=" + from + " (which is " + codeArray(from) + ").", abcList)
+        throw CodeFreezingException("Negative stack height (" + there + ") at pc=" + from + " (which is " + codeArray(from) + ").", abcList)
 
       if(heightArray(from) != UninitializedHeight) { // If another paths led to the same pc.
         if(heightArray(from) == there) { 
