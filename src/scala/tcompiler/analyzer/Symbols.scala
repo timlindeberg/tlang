@@ -2,6 +2,7 @@ package tcompiler
 package analyzer
 
 import tcompiler.analyzer.Types._
+import tcompiler.ast.TreeGroups.{BinaryOperatorDecl, UnaryOperatorDecl}
 import tcompiler.ast.Trees._
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils._
@@ -167,7 +168,7 @@ object Symbols {
         isComplete = true
       }
 
-    private def findOperator(operatorType: ExprTree, args: List[Type]): Option[OperatorSymbol] =
+    private def findOperator(operatorType: OperatorTree, args: List[Type]): Option[OperatorSymbol] =
       operators.find(symbol => {
         sameOperatorType(operatorType, symbol.operatorType) &&
           args.size == symbol.argList.size &&
@@ -194,12 +195,11 @@ object Symbols {
     }
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
-      def isIncrement(e: ExprTree) = e.isInstanceOf[PreIncrement] || e.isInstanceOf[PostIncrement]
-      def isDecrement(e: ExprTree) = e.isInstanceOf[PreDecrement] || e.isInstanceOf[PostDecrement]
-
-      (isIncrement(operatorType1) && isIncrement(operatorType2)) ||
-        (isDecrement(operatorType1) && isDecrement(operatorType2)) ||
-        (operatorType1.getClass == operatorType2.getClass)
+      operatorType1 match {
+        case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
+        case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
+        case _                                  => operatorType1.getClass == operatorType2.getClass
+      }
     }
   }
 
@@ -263,14 +263,16 @@ object Symbols {
     override val modifiers: Set[Modifier]
   ) extends MethodSymbol(operatorType.toString, classSymbol, stat, modifiers) {
 
-    def operatorString = operatorType.operatorString(argList)
+    def operatorString = operatorType.operatorString(argList.map(_.getType))
 
     def methodName = {
       val name = operatorType.getClass.getSimpleName
       val types = argList.map(_.getType)
       name + (operatorType match {
-        case UnaryOperatorTree(_) | ArrayRead(_, _)          => "$" + types.head
-        case BinaryOperatorTree(_, _) | ArrayAssign(_, _, _) => "$" + types.head + "$" + types(1)
+        case UnaryOperatorDecl(_)     => "$" + types.head
+        case BinaryOperatorDecl(_, _) => "$" + types.head + "$" + types(1)
+        case ArrayRead(_, _)          => "$" + types.head
+        case ArrayAssign(_, _, _)     => "$" + types.head + "$" + types(1)
       })
     }
   }

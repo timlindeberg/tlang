@@ -118,8 +118,9 @@ object TestUtils extends FlatSpec {
 
   private val ErrorRegex = """(Fatal|Warning|Error) \((.+?)\).*""".r
   // Parses codes from error messages
+
   def parseErrorCodes(errorMessages: String) = {
-    removeANSIFormatting(errorMessages).split("\n\n\n").map(_.split("\n")(1)).collect {
+    removeANSIFormatting(errorMessages).split("\n\n").map(_.split("\n")(1)).collect {
       case ErrorRegex(_, errorCode) => errorCode
     }.toList
   }
@@ -176,7 +177,7 @@ object TestUtils extends FlatSpec {
       results + "\n" + Console.RESET + errors
   }
 
-  val AnsiRegex = """\x1b[^m]*m""".r
+  private val AnsiRegex = """\x1b[^m]*m""".r
   private def removeANSIFormatting(s: String) = AnsiRegex.replaceAllIn(s, "")
 
   object IgnoreErrorOutput extends ProcessLogger {

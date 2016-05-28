@@ -100,9 +100,9 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
 
   private def addSymbols(classDecl: ClassDecl): Unit = classDecl match {
-    case ClassDecl(id@ClassIdentifier(name, _), _, vars, methods, isTrait) =>
+    case ClassDecl(id@ClassIdentifier(name, _), _, vars, methods, isAbstract) =>
       val fullName = prog.getPackageName(name)
-      val newSymbol = new ClassSymbol(fullName, isTrait)
+      val newSymbol = new ClassSymbol(fullName, isAbstract)
       newSymbol.writtenName = name
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
@@ -394,7 +394,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
         case Foreach(varDecl, container, stat)              =>
           val newVars = bind(varDecl, localVars, scopeLevel)
           bind(container, localVars, scopeLevel)
-          bind(stat, newVars, scopeLevel + 1)
+          bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
         case If(expr, thn, els)                             =>
           bind(expr, localVars, scopeLevel)
@@ -423,9 +423,8 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           localVars
       }
 
-    def bindExpr(tree: ExprTree): Unit = {
-      bindExpr(tree, Map(), 0)
-    }
+    def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)
+
 
     private def bindExpr(tree: ExprTree, localVars: Map[String, VariableIdentifier], scopeLevel: Int): Unit =
       Trees.traverse(tree, (parent, current) => Some(current) collect {

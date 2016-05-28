@@ -37,6 +37,8 @@ object ClassSymbolLocator {
 
   def classExists(name: String) = findClass(name).isDefined
 
+  def clearCache() = Repository.clearCache()
+
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     classSymbol.methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
     classSymbol.parents = convertParents(clazz)

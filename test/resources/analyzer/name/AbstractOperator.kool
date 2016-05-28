@@ -1,5 +1,3 @@
-import java.lang
-
 trait A {
 
     def +(a: A, b: A): A // res: N2019

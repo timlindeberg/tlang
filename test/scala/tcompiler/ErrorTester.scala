@@ -25,7 +25,7 @@ abstract class ErrorTester extends Tester {
       if(ctx.reporter.warnings.isEmpty)
         fail("Test failed: No errors or warnings!")
 
-      val warnings = ctx.reporter.warnings.mkString("\n\n")
+      val warnings = ctx.reporter.warningsString
       if(PrintErrors){
         println(Seperator)
         println(warnings)
@@ -41,6 +41,8 @@ abstract class ErrorTester extends Tester {
         }
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors, t.getMessage)
+      case e: Exception =>
+        fail(e.getMessage)
     }
   }
 }

@@ -78,7 +78,7 @@ object Trees {
     var parents: List[ClassIdentifier],
     var fields: List[VarDecl],
     var methods: List[FuncTree],
-    var isTrait: Boolean) extends Tree with Symbolic[ClassSymbol] {
+    var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
     def implementedTraits = parents.filter(_.getSymbol.isAbstract)
   }
 
@@ -176,7 +176,7 @@ object Trees {
     val expr: ExprTree
   }
   object PrintStatTree {
-    def unapply(e: StatTree): Option[ExprTree] = e match {
+    def unapply(e: PrintStatTree): Option[ExprTree] = e match {
       case e: PrintStatTree => Some(e.expr)
       case _                => None
     }
@@ -248,12 +248,9 @@ object Trees {
 
   trait ComparisonOperatorTree extends BinaryOperatorTree
   object ComparisonOperatorTree {
-    def unapply(e: OperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case LessThan(lhs, rhs)          => Some((lhs, rhs))
-      case LessThanEquals(lhs, rhs)    => Some((lhs, rhs))
-      case GreaterThan(lhs, rhs)       => Some((lhs, rhs))
-      case GreaterThanEquals(lhs, rhs) => Some((lhs, rhs))
-      case _                           => None
+    def unapply(e: ComparisonOperatorTree): Option[(ExprTree, ExprTree)] = e match {
+      case e: ComparisonOperatorTree => Some(e.lhs, e.rhs)
+      case _                         => None
     }
   }
 
@@ -271,8 +268,6 @@ object Trees {
   case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "/"}
   case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "%"}
 
-  case class And(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "&&"}
-  case class Or(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "||"}
   case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "&"}
   case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "|"}
   case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "^"}
@@ -287,6 +282,9 @@ object Trees {
 
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "=="}
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "!="}
+
+  case class And(lhs: ExprTree, rhs: ExprTree) extends BinaryOperatorTree {val op = "&&"}
+  case class Or(lhs: ExprTree, rhs: ExprTree) extends BinaryOperatorTree {val op = "||"}
 
   /*-------------------------------- Unary Operator Trees --------------------------------*/
 

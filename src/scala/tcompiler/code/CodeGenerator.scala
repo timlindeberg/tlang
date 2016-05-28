@@ -120,26 +120,25 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << afterLabel
       case Foreach(varDecl, container, stat)     =>
         transformForeachLoop(varDecl, container, stat)
-      case PrintStatTree(expr)                  =>
-        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
-        ch << DUP
+      case PrintStatement(expr)                  =>
+        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";") << DUP
         compileExpr(expr)
         val arg = expr.getType match {
-          case _: TObject => "L" + JavaObject + ";" // Call System.out.println(Object) for all other types
+          case _: TObject => s"L$JavaObject;" // Call System.out.println(Object) for all other types
           case _          => expr.getType.byteCodeName
         }
         val funcName = statement match {
           case _: Print   => "print"
           case _: Println => "println"
         }
-        ch << InvokeVirtual(JavaPrintStream, funcName, "(" + arg + ")V")
+        ch << InvokeVirtual(JavaPrintStream, funcName, s"($arg)V")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
       case Error(expr)                           =>
-        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
+        ch << GetStatic(JavaSystem, "out", s"L$JavaPrintStream;")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
-        ch << InvokeSpecial(JavaRuntimeException, "<init>", "(L" + JavaString + ";)V")
+        ch << InvokeSpecial(JavaRuntimeException, "<init>", s"(L$JavaString;)V")
         ch << ATHROW
       case Return(Some(expr))                    =>
         compileExpr(expr)

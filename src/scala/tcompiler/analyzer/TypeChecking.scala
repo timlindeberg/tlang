@@ -3,7 +3,6 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.Printer
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -45,9 +44,6 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
       tc.checkMethodUsage()
       tc.checkCorrectOverrideReturnTypes(prog)
       tc.checkTraitsAreImplemented(prog)
-
-      println(Printer(prog))
-
       prog
     }
   }
@@ -247,11 +243,11 @@ class TypeChecker(
           case _ if args.anyIs(TLong)         => TLong
           case _                              => TInt
         }
-      case binaryOp@BinaryOperatorTree(lhs, rhs)   =>
+      case arithmeticOp@ArithmeticOperatorTree(lhs, rhs)   =>
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(tObject)                => tcBinaryOperator(binaryOp, args)
-          case _ if args.anyIs(TString, TBool, tArray) => ErrorOperatorDoesNotExist(binaryOp, args, expression)
+          case _ if args.anyIs(tObject)                => tcBinaryOperator(arithmeticOp, args)
+          case _ if args.anyIs(TString, TBool, tArray) => ErrorOperatorDoesNotExist(arithmeticOp, args, expression)
           case _ if args.anyIs(TDouble)                => TDouble
           case _ if args.anyIs(TFloat)                 => TFloat
           case _ if args.anyIs(TLong)                  => TLong
@@ -630,7 +626,7 @@ class TypeChecker(
 
 
   def checkTraitsAreImplemented(prog: Program) =
-    prog.classes.filter(_.isTrait).foreach { classDecl =>
+    prog.classes.filter(!_.isAbstract).foreach { classDecl =>
       classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 

@@ -133,7 +133,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = ClassDecl(ClassIdentifier(mainName), List(), List(), List(), isTrait = false)
+          val m = ClassDecl(ClassIdentifier(mainName), List(), List(), List(), isAbstract = false)
           m.setPos(pos, nextToken)
           classes ::= m
           m

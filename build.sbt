@@ -31,7 +31,8 @@ lazy val core = (project in file(".")).
 		),
 
 		scalaSource in Compile := baseDirectory.value / "src/scala",
-		scalaSource in Test := baseDirectory.value / "test/scala"
+		scalaSource in Test := baseDirectory.value / "test/scala",
+		parallelExecution in Test := false
 	)
 
 lazy val macroSub = (project in file("macro")).
