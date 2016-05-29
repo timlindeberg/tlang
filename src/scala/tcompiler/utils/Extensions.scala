@@ -11,6 +11,10 @@ object Extensions {
     def ifDefined(f: T => Unit): Unit = if(o.isDefined) f(o.get)
   }
 
+  implicit def ifInstanceOf(any: Any) = new {
+    def ifInstanceOf[T](f: T => Unit) = if(any.isInstanceOf[T]) f(any.asInstanceOf[T])
+  }
+
   implicit class TypeTuple(t: (Type, Type)) {
 
     val c1 = t._1.getClass
@@ -25,5 +29,6 @@ object Extensions {
     def filterType[A](clazz: Class[A]) = l.filter(_.getClass == clazz).asInstanceOf[List[A]]
 
   }
+
 
 }

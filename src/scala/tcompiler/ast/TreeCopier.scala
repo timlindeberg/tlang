@@ -129,7 +129,7 @@ abstract class TreeCopier {
 
   def Assign(t: Tree, id: Identifier, expr: ExprTree): Assign
   def FieldAssign(t: Tree, obj: ExprTree, id: Identifier, expr: ExprTree): FieldAssign
-  def FieldRead(t: Tree, obj: ExprTree, id: Identifier): FieldRead
+  def FieldRead(t: Tree, obj: ExprTree, id: Identifier): FieldAccess
   def This(t: Tree): This
   def Super(t: Tree, specifier: Option[Identifier]): Super
   def NewArray(t: Tree, tpe: TypeTree, sizes: List[ExprTree]): NewArray
@@ -350,7 +350,7 @@ class StrictTreeCopier extends TreeCopier {
   override def FieldAssign(t: Tree, obj: ExprTree, id: Identifier, expr: ExprTree) =
     new FieldAssign(obj, id, expr).copyAttrs(t)
   override def FieldRead(t: Tree, obj: ExprTree, id: Identifier) =
-    new FieldRead(obj, id).copyAttrs(t)
+    new FieldAccess(obj, id).copyAttrs(t)
   override def This(t: Tree) =
     new This().copyAttrs(t)
   override def Super(t: Tree, specifier: Option[Identifier]) =
@@ -380,462 +380,483 @@ class LazyTreeCopier extends TreeCopier {
         if progPackage0 == progPackage && imports0 == imports && classes0 == classes && importMap0 == importMap0 => t
       case _                                                                                                     => strictCopier.Program(tree, progPackage, imports, classes, importMap)
     }
-
-  override def Package(tree: Tree, identifiers: List[Identifier]) = tree match {
+  override def Package(tree: Tree, identifiers: List[Identifier]): Package = tree match {
     case t@Package(identifiers0)
-      if identifiers == identifiers0 => t
-    case _                           => strictCopier.Package(tree, identifiers)
+      if (identifiers eq identifiers0) => t
+    case _ => strictCopier.Package(tree, identifiers)
   }
-  override def RegularImport(tree: Tree, identifiers: List[Identifier]) = tree match {
+  override def RegularImport(tree: Tree, identifiers: List[Identifier]): RegularImport = tree match {
     case t@RegularImport(identifiers0)
-      if identifiers == identifiers0 => t
-    case _                           => strictCopier.RegularImport(tree, identifiers)
+      if (identifiers eq identifiers0) => t
+    case _ => strictCopier.RegularImport(tree, identifiers)
   }
-  override def WildCardImport(tree: Tree, identifiers: List[Identifier]) = tree match {
+  override def WildCardImport(tree: Tree, identifiers: List[Identifier]): WildCardImport = tree match {
     case t@WildCardImport(identifiers0)
-      if identifiers == identifiers0 => t
-    case _                           => strictCopier.WildCardImport(tree, identifiers)
+      if (identifiers eq identifiers0) => t
+    case _ => strictCopier.WildCardImport(tree, identifiers)
   }
-  override def TemplateImport(tree: Tree, identifiers: List[Identifier]) = tree match {
+  override def TemplateImport(tree: Tree, identifiers: List[Identifier]): TemplateImport = tree match {
     case t@TemplateImport(identifiers0)
-      if identifiers == identifiers0 => t
-    case _                           => strictCopier.TemplateImport(tree, identifiers)
+      if (identifiers eq identifiers0) => t
+    case _ => strictCopier.TemplateImport(tree, identifiers)
   }
-  override def ClassDecl(tree: Tree, id: ClassIdentifier, parents: List[ClassIdentifier], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean) = tree match {
+  override def ClassDecl(tree: Tree, id: ClassIdentifier, parents: List[ClassIdentifier], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean): ClassDecl = tree match {
     case t@ClassDecl(id0, parents0, fields0, methods0, isTrait0)
-      if id == id0 && parents == parents0 && fields == fields0 && methods == methods0 && isTrait == isTrait0 => t
-    case _                                                                                                   => strictCopier.ClassDecl(tree, id, parents, fields, methods, isTrait)
+      if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) && (isTrait == isTrait0) => t
+    case _ => strictCopier.ClassDecl(tree, id, parents, fields, methods, isTrait)
   }
-  override def Public(tree: Tree) = tree match {
+  override def Public(tree: Tree): Public = tree match {
     case t@Public() => t
-    case _          => strictCopier.Public(tree)
+    case _ => strictCopier.Public(tree)
   }
-  override def Private(tree: Tree) = tree match {
+  override def Private(tree: Tree): Private = tree match {
     case t@Private() => t
-    case _           => strictCopier.Private(tree)
+    case _ => strictCopier.Private(tree)
   }
-  override def Protected(tree: Tree) = tree match {
+  override def Protected(tree: Tree): Protected = tree match {
     case t@Protected() => t
-    case _             => strictCopier.Protected(tree)
+    case _ => strictCopier.Protected(tree)
   }
-  override def Static(tree: Tree) = tree match {
+  override def Static(tree: Tree): Static = tree match {
     case t@Static() => t
-    case _          => strictCopier.Static(tree)
+    case _ => strictCopier.Static(tree)
   }
-  override def Implicit(tree: Tree) = tree match {
+  override def Implicit(tree: Tree): Implicit = tree match {
     case t@Implicit() => t
-    case _            => strictCopier.Implicit(tree)
+    case _ => strictCopier.Implicit(tree)
   }
-  override def Final(tree: Tree) = tree match {
+  override def Final(tree: Tree): Final = tree match {
     case t@Final() => t
-    case _         => strictCopier.Final(tree)
+    case _ => strictCopier.Final(tree)
   }
-  override def MethodDecl(tree: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) = tree match {
+  override def MethodDecl(tree: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]): MethodDecl = tree match {
     case t@MethodDecl(retType0, id0, args0, stat0, modifiers0)
-      if retType == retType0 && id == id0 && args == args0 && stat == stat0 && modifiers == modifiers0 => t
-    case _                                                                                             => strictCopier.MethodDecl(tree, retType, id, args, stat, modifiers)
+      if (retType eq retType0) && (id eq id0) && (args eq args0) && (stat eq stat0) && (modifiers eq modifiers0) => t
+    case _ => strictCopier.MethodDecl(tree, retType, id, args, stat, modifiers)
   }
-  override def ConstructorDecl(tree: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) = tree match {
+  override def ConstructorDecl(tree: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]): ConstructorDecl = tree match {
     case t@ConstructorDecl(retType0, id0, args0, stat0, modifiers0)
-      if retType == retType0 && id == id0 && args == args0 && stat == stat0 && modifiers == modifiers0 => t
-    case _                                                                                             => strictCopier.ConstructorDecl(tree, retType, id, args, stat, modifiers)
+      if (retType eq retType0) && (id eq id0) && (args eq args0) && (stat eq stat0) && (modifiers eq modifiers0) => t
+    case _ => strictCopier.ConstructorDecl(tree, retType, id, args, stat, modifiers)
   }
-  override def OperatorDecl(tree: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier], id: Identifier) = tree match {
+  override def OperatorDecl(tree: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier], id: Identifier = new Identifier("")): OperatorDecl = tree match {
     case t@OperatorDecl(operatorType0, retType0, args0, stat0, modifiers0, id0)
-      if operatorType == operatorType0 && retType == retType0 && args == args0 && stat == stat0 && modifiers == modifiers0 && id == id0 => t
-    case _                                                                                                                              => strictCopier.OperatorDecl(tree, operatorType, retType, args, stat, modifiers, id)
+      if (operatorType eq operatorType0) && (retType eq retType0) && (args eq args0) && (stat eq stat0) && (modifiers eq modifiers0) && (id eq id0) => t
+    case _ => strictCopier.OperatorDecl(tree, operatorType, retType, args, stat, modifiers, id)
   }
-  override def Formal(tree: Tree, tpe: TypeTree, id: Identifier) = tree match {
+  override def Formal(tree: Tree, tpe: TypeTree, id: Identifier): Formal = tree match {
     case t@Formal(tpe0, id0)
-      if tpe == tpe0 && id == id0 => t
-    case _                        => strictCopier.Formal(tree, tpe, id)
+      if (tpe eq tpe0) && (id eq id0) => t
+    case _ => strictCopier.Formal(tree, tpe, id)
   }
-  override def ArrayType(tree: Tree, tpe: TypeTree) = tree match {
+  override def ArrayType(tree: Tree, tpe: TypeTree): ArrayType = tree match {
     case t@ArrayType(tpe0)
-      if tpe == tpe0 => t
-    case _           => strictCopier.ArrayType(tree, tpe)
+      if (tpe eq tpe0) => t
+    case _ => strictCopier.ArrayType(tree, tpe)
   }
-  override def NullableType(tree: Tree, tpe: TypeTree) = tree match {
+  override def NullableType(tree: Tree, tpe: TypeTree): NullableType = tree match {
     case t@NullableType(tpe0)
-      if tpe == tpe0 => t
-    case _           => strictCopier.NullableType(tree, tpe)
+      if (tpe eq tpe0) => t
+    case _ => strictCopier.NullableType(tree, tpe)
   }
-  override def IntType(tree: Tree) = tree match {
+  override def IntType(tree: Tree): IntType = tree match {
     case t@IntType() => t
-    case _           => strictCopier.IntType(tree)
+    case _ => strictCopier.IntType(tree)
   }
-  override def LongType(tree: Tree) = tree match {
+  override def LongType(tree: Tree): LongType = tree match {
     case t@LongType() => t
-    case _            => strictCopier.LongType(tree)
+    case _ => strictCopier.LongType(tree)
   }
-  override def FloatType(tree: Tree) = tree match {
+  override def FloatType(tree: Tree): FloatType = tree match {
     case t@FloatType() => t
-    case _             => strictCopier.FloatType(tree)
+    case _ => strictCopier.FloatType(tree)
   }
-  override def DoubleType(tree: Tree) = tree match {
+  override def DoubleType(tree: Tree): DoubleType = tree match {
     case t@DoubleType() => t
-    case _              => strictCopier.DoubleType(tree)
+    case _ => strictCopier.DoubleType(tree)
   }
-  override def BooleanType(tree: Tree) = tree match {
+  override def BooleanType(tree: Tree): BooleanType = tree match {
     case t@BooleanType() => t
-    case _               => strictCopier.BooleanType(tree)
+    case _ => strictCopier.BooleanType(tree)
   }
-  override def CharType(tree: Tree) = tree match {
+  override def CharType(tree: Tree): CharType = tree match {
     case t@CharType() => t
-    case _            => strictCopier.CharType(tree)
+    case _ => strictCopier.CharType(tree)
   }
-  override def StringType(tree: Tree) = tree match {
+  override def StringType(tree: Tree): StringType = tree match {
     case t@StringType() => t
-    case _              => strictCopier.StringType(tree)
+    case _ => strictCopier.StringType(tree)
   }
-  override def UnitType(tree: Tree) = tree match {
+  override def UnitType(tree: Tree): UnitType = tree match {
     case t@UnitType() => t
-    case _            => strictCopier.UnitType(tree)
+    case _ => strictCopier.UnitType(tree)
   }
-  override def VarDecl(tree: Tree, tpe: Option[TypeTree], id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) = tree match {
+  override def VarDecl(tree: Tree, tpe: Option[TypeTree], id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]): VarDecl = tree match {
     case t@VarDecl(tpe0, id0, init0, modifiers0)
-      if tpe == tpe0 && id == id0 && init == init0 && modifiers == modifiers0 => t
-    case _                                                                    => strictCopier.VarDecl(tree, tpe, id, init, modifiers)
+      if (tpe eq tpe0) && (id eq id0) && (init eq init0) && (modifiers eq modifiers0) => t
+    case _ => strictCopier.VarDecl(tree, tpe, id, init, modifiers)
   }
-  override def Block(tree: Tree, stats: List[StatTree]) = tree match {
+  override def Block(tree: Tree, stats: List[StatTree]): Block = tree match {
     case t@Block(stats0)
-      if stats == stats0 => t
-    case _               => strictCopier.Block(tree, stats)
+      if (stats eq stats0) => t
+    case _ => strictCopier.Block(tree, stats)
   }
-  override def If(tree: Tree, expr: ExprTree, thn: StatTree, els: Option[StatTree]) = tree match {
+  override def If(tree: Tree, expr: ExprTree, thn: StatTree, els: Option[StatTree]): If = tree match {
     case t@If(expr0, thn0, els0)
-      if expr == expr0 && thn == thn0 && els == els0 => t
-    case _                                           => strictCopier.If(tree, expr, thn, els)
+      if (expr eq expr0) && (thn eq thn0) && (els eq els0) => t
+    case _ => strictCopier.If(tree, expr, thn, els)
   }
-  override def While(tree: Tree, expr: ExprTree, stat: StatTree) = tree match {
+  override def While(tree: Tree, expr: ExprTree, stat: StatTree): While = tree match {
     case t@While(expr0, stat0)
-      if expr == expr0 && stat == stat0 => t
-    case _                              => strictCopier.While(tree, expr, stat)
+      if (expr eq expr0) && (stat eq stat0) => t
+    case _ => strictCopier.While(tree, expr, stat)
   }
-  override def For(tree: Tree, init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) = tree match {
+  override def For(tree: Tree, init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree): For = tree match {
     case t@For(init0, condition0, post0, stat0)
-      if init == init0 && condition == condition0 && post == post0 && stat == stat0 => t
-    case _                                                                          => strictCopier.For(tree, init, condition, post, stat)
+      if (init eq init0) && (condition eq condition0) && (post eq post0) && (stat eq stat0) => t
+    case _ => strictCopier.For(tree, init, condition, post, stat)
   }
-  override def Foreach(tree: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree) = tree match {
+  override def Foreach(tree: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree): Foreach = tree match {
     case t@Foreach(varDecl0, container0, stat0)
-      if varDecl == varDecl0 && container == container0 && stat == stat0 => t
-    case _                                                               => strictCopier.Foreach(tree, varDecl, container, stat)
+      if (varDecl eq varDecl0) && (container eq container0) && (stat eq stat0) => t
+    case _ => strictCopier.Foreach(tree, varDecl, container, stat)
   }
-  override def Error(tree: Tree, expr: ExprTree) = tree match {
+  override def Error(tree: Tree, expr: ExprTree): Error = tree match {
     case t@Error(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Error(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Error(tree, expr)
   }
-  override def Return(tree: Tree, expr: Option[ExprTree]) = tree match {
+  override def Return(tree: Tree, expr: Option[ExprTree]): Return = tree match {
     case t@Return(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Return(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Return(tree, expr)
   }
-  override def Break(tree: Tree) = tree match {
+  override def Break(tree: Tree): Break = tree match {
     case t@Break() => t
-    case _         => strictCopier.Break(tree)
+    case _ => strictCopier.Break(tree)
   }
-  override def Continue(tree: Tree) = tree match {
+  override def Continue(tree: Tree): Continue = tree match {
     case t@Continue() => t
-    case _            => strictCopier.Continue(tree)
+    case _ => strictCopier.Continue(tree)
   }
-  override def Print(tree: Tree, expr: ExprTree) = tree match {
+  override def Print(tree: Tree, expr: ExprTree): Print = tree match {
     case t@Print(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Print(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Print(tree, expr)
   }
-  override def Println(tree: Tree, expr: ExprTree) = tree match {
+  override def Println(tree: Tree, expr: ExprTree): Println = tree match {
     case t@Println(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Println(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Println(tree, expr)
   }
-
-  override def Plus(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Plus(tree: Tree, lhs: ExprTree, rhs: ExprTree): Plus = tree match {
     case t@Plus(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Plus(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Plus(tree, lhs, rhs)
   }
-  override def Minus(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Minus(tree: Tree, lhs: ExprTree, rhs: ExprTree): Minus = tree match {
     case t@Minus(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Minus(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Minus(tree, lhs, rhs)
   }
-  override def Times(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Times(tree: Tree, lhs: ExprTree, rhs: ExprTree): Times = tree match {
     case t@Times(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Times(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Times(tree, lhs, rhs)
   }
-  override def Div(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Div(tree: Tree, lhs: ExprTree, rhs: ExprTree): Div = tree match {
     case t@Div(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Div(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Div(tree, lhs, rhs)
   }
-  override def Modulo(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Modulo(tree: Tree, lhs: ExprTree, rhs: ExprTree): Modulo = tree match {
     case t@Modulo(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Modulo(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Modulo(tree, lhs, rhs)
   }
-
-  override def And(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def And(tree: Tree, lhs: ExprTree, rhs: ExprTree): And = tree match {
     case t@And(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.And(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.And(tree, lhs, rhs)
   }
-  override def Or(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Or(tree: Tree, lhs: ExprTree, rhs: ExprTree): Or = tree match {
     case t@Or(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Or(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Or(tree, lhs, rhs)
   }
-  override def LogicAnd(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LogicAnd(tree: Tree, lhs: ExprTree, rhs: ExprTree): LogicAnd = tree match {
     case t@LogicAnd(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LogicAnd(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LogicAnd(tree, lhs, rhs)
   }
-  override def LogicOr(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LogicOr(tree: Tree, lhs: ExprTree, rhs: ExprTree): LogicOr = tree match {
     case t@LogicOr(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LogicOr(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LogicOr(tree, lhs, rhs)
   }
-  override def LogicXor(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LogicXor(tree: Tree, lhs: ExprTree, rhs: ExprTree): LogicXor = tree match {
     case t@LogicXor(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LogicXor(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LogicXor(tree, lhs, rhs)
   }
-
-  override def LeftShift(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LeftShift(tree: Tree, lhs: ExprTree, rhs: ExprTree): LeftShift = tree match {
     case t@LeftShift(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LeftShift(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LeftShift(tree, lhs, rhs)
   }
-  override def RightShift(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def RightShift(tree: Tree, lhs: ExprTree, rhs: ExprTree): RightShift = tree match {
     case t@RightShift(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.RightShift(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.RightShift(tree, lhs, rhs)
   }
-
-  override def LessThan(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LessThan(tree: Tree, lhs: ExprTree, rhs: ExprTree): LessThan = tree match {
     case t@LessThan(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LessThan(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LessThan(tree, lhs, rhs)
   }
-  override def LessThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def LessThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree): LessThanEquals = tree match {
     case t@LessThanEquals(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.LessThanEquals(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.LessThanEquals(tree, lhs, rhs)
   }
-  override def GreaterThan(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def GreaterThan(tree: Tree, lhs: ExprTree, rhs: ExprTree): GreaterThan = tree match {
     case t@GreaterThan(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.GreaterThan(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.GreaterThan(tree, lhs, rhs)
   }
-  override def GreaterThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def GreaterThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree): GreaterThanEquals = tree match {
     case t@GreaterThanEquals(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.GreaterThanEquals(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.GreaterThanEquals(tree, lhs, rhs)
   }
-
-  override def Equals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def Equals(tree: Tree, lhs: ExprTree, rhs: ExprTree): Equals = tree match {
     case t@Equals(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.Equals(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.Equals(tree, lhs, rhs)
   }
-  override def NotEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+  override def NotEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree): NotEquals = tree match {
     case t@NotEquals(lhs0, rhs0)
-      if lhs == lhs0 && rhs == rhs0 => t
-    case _                          => strictCopier.NotEquals(tree, lhs, rhs)
+      if (lhs eq lhs0) && (rhs eq rhs0) => t
+    case _ => strictCopier.NotEquals(tree, lhs, rhs)
   }
-  override def Not(tree: Tree, expr: ExprTree) = tree match {
+  override def Not(tree: Tree, expr: ExprTree): Not = tree match {
     case t@Not(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Not(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Not(tree, expr)
   }
-  override def Hash(tree: Tree, expr: ExprTree) = tree match {
+  override def Hash(tree: Tree, expr: ExprTree): Hash = tree match {
     case t@Hash(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Hash(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Hash(tree, expr)
   }
-  override def Negation(tree: Tree, expr: ExprTree) = tree match {
+  override def Negation(tree: Tree, expr: ExprTree): Negation = tree match {
     case t@Negation(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.Negation(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.Negation(tree, expr)
   }
-  override def LogicNot(tree: Tree, expr: ExprTree) = tree match {
+  override def LogicNot(tree: Tree, expr: ExprTree): LogicNot = tree match {
     case t@LogicNot(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.LogicNot(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.LogicNot(tree, expr)
   }
-  override def PreIncrement(tree: Tree, expr: ExprTree) = tree match {
+  override def PreIncrement(tree: Tree, expr: ExprTree): PreIncrement = tree match {
     case t@PreIncrement(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.PreIncrement(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.PreIncrement(tree, expr)
   }
-  override def PreDecrement(tree: Tree, expr: ExprTree) = tree match {
+  override def PreDecrement(tree: Tree, expr: ExprTree): PreDecrement = tree match {
     case t@PreDecrement(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.PreDecrement(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.PreDecrement(tree, expr)
   }
-  override def PostIncrement(tree: Tree, expr: ExprTree) = tree match {
+  override def PostIncrement(tree: Tree, expr: ExprTree): PostIncrement = tree match {
     case t@PostIncrement(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.PostIncrement(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.PostIncrement(tree, expr)
   }
-  override def PostDecrement(tree: Tree, expr: ExprTree) = tree match {
+  override def PostDecrement(tree: Tree, expr: ExprTree): PostDecrement = tree match {
     case t@PostDecrement(expr0)
-      if expr == expr0 => t
-    case _             => strictCopier.PostDecrement(tree, expr)
+      if (expr eq expr0) => t
+    case _ => strictCopier.PostDecrement(tree, expr)
   }
-  override def ArrayAssign(tree: Tree, arr: ExprTree, index: ExprTree, expr: ExprTree) = tree match {
+  override def ArrayAssign(tree: Tree, arr: ExprTree, index: ExprTree, expr: ExprTree): ArrayAssign = tree match {
     case t@ArrayAssign(arr0, index0, expr0)
-      if arr == arr0 && index == index0 && expr == expr0 => t
-    case _                                               => strictCopier.ArrayAssign(tree, arr, index, expr)
+      if (arr eq arr0) && (index eq index0) && (expr eq expr0) => t
+    case _ => strictCopier.ArrayAssign(tree, arr, index, expr)
   }
-  override def ArrayRead(tree: Tree, arr: ExprTree, index: ExprTree) = tree match {
+  override def ArrayRead(tree: Tree, arr: ExprTree, index: ExprTree): ArrayRead = tree match {
     case t@ArrayRead(arr0, index0)
-      if arr == arr0 && index == index0 => t
-    case _                              => strictCopier.ArrayRead(tree, arr, index)
+      if (arr eq arr0) && (index eq index0) => t
+    case _ => strictCopier.ArrayRead(tree, arr, index)
   }
-  override def ArraySlice(tree: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) = tree match {
+  override def ArraySlice(tree: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]): ArraySlice = tree match {
     case t@ArraySlice(arr0, start0, end0)
-      if arr == arr0 && start == start0 && end == end0 => t
-    case _                                             => strictCopier.ArraySlice(tree, arr, start, end)
+      if (arr eq arr0) && (start eq start0) && (end eq end0) => t
+    case _ => strictCopier.ArraySlice(tree, arr, start, end)
   }
-  override def IntLit(tree: Tree, value: Int) = tree match {
+  override def IntLit(tree: Tree, value: Int): IntLit = tree match {
     case t@IntLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.IntLit(tree, value)
+      if (value == value0) => t
+    case _ => strictCopier.IntLit(tree, value)
   }
-  override def LongLit(tree: Tree, value: Long) = tree match {
+  override def LongLit(tree: Tree, value: Long): LongLit = tree match {
     case t@LongLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.LongLit(tree, value)
+      if (value == value0) => t
+    case _ => strictCopier.LongLit(tree, value)
   }
-  override def FloatLit(tree: Tree, value: Float) = tree match {
+  override def FloatLit(tree: Tree, value: Float): FloatLit = tree match {
     case t@FloatLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.FloatLit(tree, value)
+      if (value == value0) => t
+    case _ => strictCopier.FloatLit(tree, value)
   }
-  override def DoubleLit(tree: Tree, value: Double) = tree match {
+  override def DoubleLit(tree: Tree, value: Double): DoubleLit = tree match {
     case t@DoubleLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.DoubleLit(tree, value)
+      if (value == value0) => t
+    case _ => strictCopier.DoubleLit(tree, value)
   }
-  override def CharLit(tree: Tree, value: Char) = tree match {
+  override def CharLit(tree: Tree, value: Char): CharLit = tree match {
     case t@CharLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.CharLit(tree, value)
+      if (value == value0) => t
+    case _ => strictCopier.CharLit(tree, value)
   }
-  override def StringLit(tree: Tree, value: String) = tree match {
+  override def StringLit(tree: Tree, value: String): StringLit = tree match {
     case t@StringLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.StringLit(tree, value)
+      if (value eq value0) => t
+    case _ => strictCopier.StringLit(tree, value)
   }
-  override def ArrayLit(tree: Tree, value: List[ExprTree]) = tree match {
+  override def ArrayLit(tree: Tree, value: List[ExprTree]): ArrayLit = tree match {
     case t@ArrayLit(value0)
-      if value == value0 => t
-    case _               => strictCopier.ArrayLit(tree, value)
+      if (value eq value0) => t
+    case _ => strictCopier.ArrayLit(tree, value)
   }
-  override def True(tree: Tree) = tree match {
+  override def True(tree: Tree): True = tree match {
     case t@True() => t
-    case _        => strictCopier.True(tree)
+    case _ => strictCopier.True(tree)
   }
-  override def False(tree: Tree) = tree match {
+  override def False(tree: Tree): False = tree match {
     case t@False() => t
-    case _         => strictCopier.False(tree)
+    case _ => strictCopier.False(tree)
   }
-  override def Null(tree: Tree) = tree match {
+  override def Null(tree: Tree): Null = tree match {
     case t@Null() => t
-    case _        => strictCopier.Null(tree)
+    case _ => strictCopier.Null(tree)
   }
-  override def Identifier(tree: Tree, value: String) = tree match {
+  override def Identifier(tree: Tree, value: String): Identifier = tree match {
     case t@Identifier(value0)
-      if value == value0 => t
-    case _               => strictCopier.Identifier(tree, value)
+      if (value eq value0) => t
+    case _ => strictCopier.Identifier(tree, value)
   }
-  override def ClassIdentifier(tree: Tree, value: String, templateTypes: List[TypeTree] = List()) = tree match {
+  override def ClassIdentifier(tree: Tree, value: String, templateTypes: List[TypeTree] = List()): ClassIdentifier = tree match {
     case t@ClassIdentifier(value0, templateTypes0)
-      if value == value0 && templateTypes == templateTypes0 => t
-    case _                                                  => strictCopier.ClassIdentifier(tree, value, templateTypes)
+      if (value eq value0) && (templateTypes eq templateTypes0) => t
+    case _ => strictCopier.ClassIdentifier(tree, value, templateTypes)
   }
-  override def Assign(tree: Tree, id: Identifier, expr: ExprTree) = tree match {
+  override def Assign(tree: Tree, id: Identifier, expr: ExprTree): Assign = tree match {
     case t@Assign(id0, expr0)
-      if id == id0 && expr == expr0 => t
-    case _                          => strictCopier.Assign(tree, id, expr)
+      if (id eq id0) && (expr eq expr0) => t
+    case _ => strictCopier.Assign(tree, id, expr)
   }
-  override def FieldAssign(tree: Tree, obj: ExprTree, id: Identifier, expr: ExprTree) = tree match {
+  override def FieldAssign(tree: Tree, obj: ExprTree, id: Identifier, expr: ExprTree): FieldAssign = tree match {
     case t@FieldAssign(obj0, id0, expr0)
-      if obj == obj0 && id == id0 && expr == expr0 => t
-    case _                                         => strictCopier.FieldAssign(tree, obj, id, expr)
+      if (obj eq obj0) && (id eq id0) && (expr eq expr0) => t
+    case _ => strictCopier.FieldAssign(tree, obj, id, expr)
   }
-  override def FieldRead(tree: Tree, obj: ExprTree, id: Identifier) = tree match {
-    case t@FieldRead(obj0, id0)
-      if obj == obj0 && id == id0 => t
-    case _                        => strictCopier.FieldRead(tree, obj, id)
+  override def FieldRead(tree: Tree, obj: ExprTree, id: Identifier): FieldAccess = tree match {
+    case t@FieldAccess(obj0, id0)
+      if (obj eq obj0) && (id eq id0) => t
+    case _ => strictCopier.FieldRead(tree, obj, id)
   }
-  override def This(tree: Tree) = tree match {
+  override def This(tree: Tree): This = tree match {
     case t@This() => t
-    case _        => strictCopier.This(tree)
+    case _ => strictCopier.This(tree)
   }
-  override def Super(tree: Tree, specifier: Option[Identifier]) = tree match {
+  override def Super(tree: Tree, specifier: Option[Identifier]): Super = tree match {
     case t@Super(specifier0)
-      if specifier == specifier0 => t
-    case _                       => strictCopier.Super(tree, specifier)
+      if (specifier eq specifier0) => t
+    case _ => strictCopier.Super(tree, specifier)
   }
-  override def NewArray(tree: Tree, tpe: TypeTree, sizes: List[ExprTree]) = tree match {
+  override def NewArray(tree: Tree, tpe: TypeTree, sizes: List[ExprTree]): NewArray = tree match {
     case t@NewArray(tpe0, sizes0)
-      if tpe == tpe0 && sizes == sizes0 => t
-    case _                              => strictCopier.NewArray(tree, tpe, sizes)
+      if (tpe eq tpe0) && (sizes eq sizes0) => t
+    case _ => strictCopier.NewArray(tree, tpe, sizes)
   }
-  override def New(tree: Tree, tpe: TypeTree, args: List[ExprTree]) = tree match {
+  override def New(tree: Tree, tpe: TypeTree, args: List[ExprTree]): New = tree match {
     case t@New(tpe0, args0)
-      if tpe == tpe0 && args == args0 => t
-    case _                            => strictCopier.New(tree, tpe, args)
+      if (tpe eq tpe0) && (args eq args0) => t
+    case _ => strictCopier.New(tree, tpe, args)
   }
-  override def Ternary(tree: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree) = tree match {
+  override def Ternary(tree: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree): Ternary = tree match {
     case t@Ternary(condition0, thn0, els0)
-      if condition == condition0 && thn == thn0 && els == els0 => t
-    case _                                                     => strictCopier.Ternary(tree, condition, thn, els)
+      if (condition eq condition0) && (thn eq thn0) && (els eq els0) => t
+    case _ => strictCopier.Ternary(tree, condition, thn, els)
   }
-  override def Instance(tree: Tree, expr: ExprTree, id: Identifier) = tree match {
+  override def Instance(tree: Tree, expr: ExprTree, id: Identifier): Instance = tree match {
     case t@Instance(expr0, id0)
-      if expr == expr0 && id == id0 => t
-    case _                          => strictCopier.Instance(tree, expr, id)
+      if (expr eq expr0) && (id eq id0) => t
+    case _ => strictCopier.Instance(tree, expr, id)
   }
-  override def As(tree: Tree, expr: ExprTree, tpe: TypeTree) = tree match {
+  override def As(tree: Tree, expr: ExprTree, tpe: TypeTree): As = tree match {
     case t@As(expr0, tpe0)
-      if expr == expr0 && tpe == tpe0 => t
-    case _                            => strictCopier.As(tree, expr, tpe)
+      if (expr eq expr0) && (tpe eq tpe0) => t
+    case _ => strictCopier.As(tree, expr, tpe)
   }
-  override def MethodCall(tree: Tree, obj: ExprTree, meth: Identifier, args: List[ExprTree]) = tree match {
+  override def MethodCall(tree: Tree, obj: ExprTree, meth: Identifier, args: List[ExprTree]): MethodCall = tree match {
     case t@MethodCall(obj0, meth0, args0)
-      if obj == obj0 && meth == meth0 && args == args0 => t
-    case _                                             => strictCopier.MethodCall(tree, obj, meth, args)
+      if (obj eq obj0) && (meth eq meth0) && (args eq args0) => t
+    case _ => strictCopier.MethodCall(tree, obj, meth, args)
   }
-  override def Empty(tree: Tree) = tree match {
+  override def Empty(tree: Tree): Empty = tree match {
     case t@Empty() => t
-    case _         => strictCopier.Empty(tree)
+    case _ => strictCopier.Empty(tree)
   }
+}
+
+object GenLazyCopier {
+
+  /*
+  def main(args: Array[String]): Unit = {
+    val s = "def Package(t: Tree, identifiers: List[Identifier]): Package\n  def RegularImport(t: Tree, identifiers: List[Identifier]): RegularImport\n  def WildCardImport(t: Tree, identifiers: List[Identifier]): WildCardImport\n  def TemplateImport(t: Tree, identifiers: List[Identifier]): TemplateImport\n\n  /*-------------------------------- Class Declaration Trees --------------------------------*/\n\n  def ClassDecl(t: Tree, id: ClassIdentifier, parents: List[ClassIdentifier], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean): ClassDecl\n\n  /*-------------------------------- Modifier Trees --------------------------------*/\n\n  def Public(t: Tree): Public\n  def Private(t: Tree): Private\n  def Protected(t: Tree): Protected\n  def Static(t: Tree): Static\n  def Implicit(t: Tree): Implicit\n  def Final(t: Tree): Final\n\n  /*-------------------------------- Function Declaration Trees --------------------------------*/\n\n  def MethodDecl(t: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]): MethodDecl\n  def ConstructorDecl(t: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]): ConstructorDecl\n  def OperatorDecl(t: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier], id: Identifier = new Identifier(\"\")): OperatorDecl\n  def Formal(t: Tree, tpe: TypeTree, id: Identifier): Formal\n\n  /*-------------------------------- Type Trees --------------------------------*/\n\n  def ArrayType(t: Tree, tpe: TypeTree): ArrayType\n  def NullableType(t: Tree, tpe: TypeTree): NullableType\n  def IntType(t: Tree): IntType\n  def LongType(t: Tree): LongType\n  def FloatType(t: Tree): FloatType\n  def DoubleType(t: Tree): DoubleType\n  def BooleanType(t: Tree): BooleanType\n  def CharType(t: Tree): CharType\n  def StringType(t: Tree): StringType\n  def UnitType(t: Tree): UnitType\n\n  /*-------------------------------- Statement Trees --------------------------------*/\n\n  def VarDecl(t: Tree, tpe: Option[TypeTree], id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]): VarDecl\n  def Block(t: Tree, stats: List[StatTree]): Block\n  def If(t: Tree, expr: ExprTree, thn: StatTree, els: Option[StatTree]): If\n  def While(t: Tree, expr: ExprTree, stat: StatTree): While\n  def For(t: Tree, init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree): For\n  def Foreach(t: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree): Foreach\n  def Error(t: Tree, expr: ExprTree): Error\n  def Return(t: Tree, expr: Option[ExprTree]): Return\n  def Break(t: Tree): Break\n  def Continue(t: Tree): Continue\n  def Print(t: Tree, expr: ExprTree): Print\n  def Println(t: Tree, expr: ExprTree): Println\n\n  /*-------------------------------- Binary Operator Trees --------------------------------*/\n\n\n  def Plus(t: Tree, lhs: ExprTree, rhs: ExprTree): Plus\n  def Minus(t: Tree, lhs: ExprTree, rhs: ExprTree): Minus\n  def Times(t: Tree, lhs: ExprTree, rhs: ExprTree): Times\n  def Div(t: Tree, lhs: ExprTree, rhs: ExprTree): Div\n  def Modulo(t: Tree, lhs: ExprTree, rhs: ExprTree): Modulo\n\n  def And(t: Tree, lhs: ExprTree, rhs: ExprTree): And\n  def Or(t: Tree, lhs: ExprTree, rhs: ExprTree): Or\n  def LogicAnd(t: Tree, lhs: ExprTree, rhs: ExprTree): LogicAnd\n  def LogicOr(t: Tree, lhs: ExprTree, rhs: ExprTree): LogicOr\n  def LogicXor(t: Tree, lhs: ExprTree, rhs: ExprTree): LogicXor\n\n  def LeftShift(t: Tree, lhs: ExprTree, rhs: ExprTree): LeftShift\n  def RightShift(t: Tree, lhs: ExprTree, rhs: ExprTree): RightShift\n\n  def LessThan(t: Tree, lhs: ExprTree, rhs: ExprTree): LessThan\n  def LessThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree): LessThanEquals\n  def GreaterThan(t: Tree, lhs: ExprTree, rhs: ExprTree): GreaterThan\n  def GreaterThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree): GreaterThanEquals\n\n  def Equals(t: Tree, lhs: ExprTree, rhs: ExprTree): Equals\n  def NotEquals(t: Tree, lhs: ExprTree, rhs: ExprTree): NotEquals\n\n  /*-------------------------------- Unary Operator Trees --------------------------------*/\n\n  def Not(t: Tree, expr: ExprTree): Not\n  def Hash(t: Tree, expr: ExprTree): Hash\n  def Negation(t: Tree, expr: ExprTree): Negation\n  def LogicNot(t: Tree, expr: ExprTree): LogicNot\n\n  def PreIncrement(t: Tree, expr: ExprTree): PreIncrement\n  def PreDecrement(t: Tree, expr: ExprTree): PreDecrement\n  def PostIncrement(t: Tree, expr: ExprTree): PostIncrement\n  def PostDecrement(t: Tree, expr: ExprTree): PostDecrement\n\n  /*-------------------------------- Array Operator Trees --------------------------------*/\n\n\n  def ArrayAssign(t: Tree, arr: ExprTree, index: ExprTree, expr: ExprTree): ArrayAssign\n  def ArrayRead(t: Tree, arr: ExprTree, index: ExprTree): ArrayRead\n  def ArraySlice(t: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]): ArraySlice\n\n  /*-------------------------------- Literal and Identifer Trees --------------------------------*/\n\n  def IntLit(t: Tree, value: Int): IntLit\n  def LongLit(t: Tree, value: Long): LongLit\n  def FloatLit(t: Tree, value: Float): FloatLit\n  def DoubleLit(t: Tree, value: Double): DoubleLit\n  def CharLit(t: Tree, value: Char): CharLit\n  def StringLit(t: Tree, value: String): StringLit\n  def ArrayLit(t: Tree, value: List[ExprTree]): ArrayLit\n  def True(t: Tree): True\n  def False(t: Tree): False\n  def Null(t: Tree): Null\n  def Identifier(t: Tree, value: String): Identifier\n  def ClassIdentifier(t: Tree, value: String, templateTypes: List[TypeTree] = List()): ClassIdentifier\n\n  /*-------------------------------- Expression Trees --------------------------------*/\n\n  def Assign(t: Tree, id: Identifier, expr: ExprTree): Assign\n  def FieldAssign(t: Tree, obj: ExprTree, id: Identifier, expr: ExprTree): FieldAssign\n  def FieldRead(t: Tree, obj: ExprTree, id: Identifier): FieldRead\n  def This(t: Tree): This\n  def Super(t: Tree, specifier: Option[Identifier]): Super\n  def NewArray(t: Tree, tpe: TypeTree, sizes: List[ExprTree]): NewArray\n  def New(t: Tree, tpe: TypeTree, args: List[ExprTree]): New\n  def Ternary(t: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree): Ternary\n  def Instance(t: Tree, expr: ExprTree, id: Identifier): Instance\n  def As(t: Tree, expr: ExprTree, tpe: TypeTree): As\n  def MethodCall(t: Tree, obj: ExprTree, meth: Identifier, args: List[ExprTree]): MethodCall\n\n  def Empty(t: Tree): Empty"
+    formatAllCode(s)
+  }
+  */
+
+  private def formatAllCode(s: String) = s.split("\n").foreach(formatCode)
 
   /**
     * Used to generate the above code.
     *
     */
-  private def formatCode(s: String): Unit = {
+  private def formatCode(str: String): Unit = {
+    var s = str.trim
+    s = s.replace("t: Tree", "tree: Tree")
     if(s.length == 0 || s.trim.startsWith("/*"))
       return
+
+
     val className = """def (.+?)\(""".r.findFirstMatchIn(s).get.group(1)
     val p = """\((.+?)\)""".r.findFirstMatchIn(s).get.group(1)
+    val tpes = p.split(",").map(x => {
+      val split = x.split(":")
+      (split(0).trim, split(1).trim)
+    }).toMap
     val params = p.split(",").map(_.split(":")(0).trim())
 
-    println(s"$s tree match {")
+    println(s"override $s = tree match {")
     print(s"   case t@$className(${params.drop(1).map(_ + "0").mkString(", ")})")
     if(params.size > 1) {
-      println(s"\n   if ${params.drop(1).map(x => s"$x == ${x}0").mkString(" && ")} => t")
+      println(s"\n   if ${params.drop(1).map(x => s"($x ${eqOrEquals(tpes, x)} ${x}0)").mkString(" && ")} => t")
     }else{
       println(" => t")
     }
     println(s"   case _ => strictCopier.$className(${params.mkString(", ")})")
     println("}")
+  }
+
+  private def eqOrEquals(tpes: Map[String, String], id: String) = {
+    tpes(id) match {
+        case "Int" | "Char" | "Long" | "Double" | "Float" | "Boolean" => "=="
+        case _ => "eq"
+    }
   }
 
 }

@@ -32,6 +32,7 @@ class TreeTransformer {
       case True()        => treeCopy.True(t)
       case False()       => treeCopy.False(t)
       case Null()        => treeCopy.Null(t)
+      case This()        => treeCopy.This(t)
       case Empty()       => treeCopy.Empty(t)
 
       case Program(progPackage, imports, classes, importMap) =>
@@ -72,21 +73,21 @@ class TreeTransformer {
         treeCopy.For(t, tList(init), trans(condition), tList(post), trans(stat))
       case Foreach(varDecl, container, stat) =>
         treeCopy.Foreach(t, trans(varDecl), trans(container), trans(stat))
-      case Print(expr)                       =>
+      case Print(expr)                   =>
         treeCopy.Print(t, trans(expr))
-      case Println(expr)                     =>
+      case Println(expr)                 =>
         treeCopy.Println(t, trans(expr))
-      case Error(expr)                       =>
+      case Error(expr)                   =>
         treeCopy.Error(t, trans(expr))
-      case Return(expr)                      =>
+      case Return(expr)                  =>
         treeCopy.Return(t, tOption(expr))
-      case Assign(id, expr)                  =>
+      case Assign(id, expr)              =>
         treeCopy.Assign(t, trans(id), trans(expr))
-      case ArrayAssign(arr, index, expr)     =>
+      case ArrayAssign(arr, index, expr) =>
         treeCopy.ArrayAssign(t, trans(arr), trans(index), trans(expr))
-      case FieldRead(obj, id)                =>
+      case FieldAccess(obj, id)          =>
         treeCopy.FieldRead(t, trans(obj), trans(id))
-      case FieldAssign(obj, id, expr)        =>
+      case FieldAssign(obj, id, expr)    =>
         treeCopy.FieldAssign(t, trans(obj), trans(id), trans(expr))
 
       case And(lhs, rhs)        =>

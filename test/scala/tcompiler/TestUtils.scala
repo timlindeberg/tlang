@@ -7,7 +7,7 @@ import tcompiler.analyzer.Types.{TUntyped, Typed}
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees.{Empty, Program}
 import tcompiler.lexer.Token
-import tcompiler.utils.Context
+import tcompiler.utils.{Context, Reporter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
@@ -39,7 +39,8 @@ object TestUtils extends FlatSpec {
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    new Context(reporter = new tcompiler.utils.Reporter, files = List(file), outDir = Some(outDir))
+    val reporter = new Reporter(useColor = false)
+    new Context(reporter = reporter, files = List(file), outDir = Some(outDir))
   }
 
   def executeTProgram(testFile: File): String = {

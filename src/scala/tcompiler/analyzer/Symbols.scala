@@ -34,17 +34,27 @@ object Symbols {
   class GlobalScope {
     var classes = Map[String, ClassSymbol]("Object" -> ObjectClass)
 
-    def lookupClass(name: String): Option[ClassSymbol] =
-      classes.get(name) match {
+    def lookupClass(prog: Program, name: String): Option[ClassSymbol] = {
+      val fullName = getFullName(prog, name)
+      classes.get(fullName) match {
         case Some(classSymbol) => Some(classSymbol)
         case None              =>
-          ClassSymbolLocator.findSymbol(name) match {
+          ClassSymbolLocator.findSymbol(fullName) match {
             case Some(classSymbol) =>
               classes += classSymbol.name -> classSymbol
               Some(classSymbol)
             case None              => None
           }
       }
+    }
+
+    private def getFullName(prog: Program, name: String) = {
+      val impMap = prog.importMap
+      if (impMap.contains(name))
+        impMap(name)
+      else
+        name
+    }
   }
 
   class ClassSymbol(

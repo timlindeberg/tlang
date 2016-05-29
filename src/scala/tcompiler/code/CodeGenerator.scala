@@ -374,7 +374,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         } else {
           compileAssignmentValue(expr, tpe.getType)
         }
-      case arrRead@ArrayRead(id, index)                              =>
+      case arrRead@ArrayRead(id, index) =>
         compileExpr(id)
         compileExpr(index)
         id.getType match {
@@ -389,9 +389,9 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             arrayType.codes.arrayLoad(ch)
           case _                    => ???
         }
-      case arraySlice: ArraySlice                            =>
+      case arraySlice: ArraySlice       =>
         constructArraySlice(arraySlice)
-      case FieldRead(obj, id)                                =>
+      case FieldAccess(obj, id)         =>
         val className = obj.getType.asInstanceOf[TObject].classSymbol.name
 
         if (isStaticCall(obj) || isStatic(id)) {
@@ -400,7 +400,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           compileExpr(obj)
           ch << GetField(className, id.value, id.getType.byteCodeName)
         }
-      case FieldAssign(obj, id, expr)                        =>
+      case FieldAssign(obj, id, expr)   =>
         val fieldType = id.getType
         val static = isStaticCall(obj) || isStatic(id)
 
@@ -559,7 +559,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
                 if (isIncrement) codes.add(ch) else codes.sub(ch)
               }, duplicate && isPre)
           }
-        case fr@FieldRead(obj, id)    =>
+        case fr@FieldAccess(obj, id)  =>
           if (!isPre && duplicate)
             compileExpr(fr) // TODO: Use dup instead of compiling the whole expression
         val assign = assignExpr(fr, isIncrement)
@@ -756,7 +756,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       }
 
       ch << Goto(els.id)
-    case eqOp@EqualsOperatorTree(lhs, rhs)     =>
+    case eqOp@EqualsOperatorTree(lhs, rhs) =>
       def comparison(codes: CodeMap) = {
         expression match {
           case _: Equals    => codes.cmpEq(ch, thn.id)
@@ -810,10 +810,10 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           comparison(IntCodeMap)
       }
       ch << Goto(els.id)
-    case mc: MethodCall               =>
+    case mc: MethodCall                    =>
       compileExpr(mc)
       ch << IfEq(els.id) << Goto(thn.id)
-    case fr: FieldRead                =>
+    case fr: FieldAccess                   =>
       compileExpr(fr)
       ch << IfEq(els.id) << Goto(thn.id)
   }

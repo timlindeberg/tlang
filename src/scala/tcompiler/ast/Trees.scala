@@ -8,9 +8,44 @@ import tcompiler.utils._
 object Trees {
 
   trait Tree extends Positioned with Product {
+
+    def foreach(f: Tree => Unit) = {
+      val traverser = new TreeTraverser {
+        override def traverse(t: Tree) = {
+          f(t)
+          super.traverse(t)
+        }
+      }
+      traverser.traverse(this)
+    }
+
+    def find(p: Tree => Boolean): Option[Tree] = {
+      val traverser = new TreeTraverser {
+        var result: Option[Tree] = None
+
+        override def traverse(t: Tree) =
+          if (p(t)) result = Some(t)
+          else super.traverse(t)
+      }
+      traverser.traverse(this)
+      traverser.result
+    }
+
+    def children: List[Tree] = {
+      def subtrees(x: Any): List[Tree] = x match {
+        case Empty()     => Nil
+        case t: Tree     => List(t)
+        case xs: List[_] => xs.flatMap(subtrees)
+        case _           => Nil
+      }
+      productIterator.toList.flatMap(subtrees)
+    }
+
+    def exists(p: Tree => Boolean): Boolean = find(p).isDefined
+
     def copyAttrs(t: Tree): this.type = {
       setPos(t)
-      copySymbol(this, t)
+      copySymbolTrees(this, t)
 
       this match {
         case typed: Typed if t.isInstanceOf[Typed] =>
@@ -21,18 +56,25 @@ object Trees {
       this
     }
 
-    private def copySymbol[T <: Symbol](to: Tree, from: Tree) = {
-      if (to.isInstanceOf[Symbolic[T]] && from.isInstanceOf[Symbolic[T]]) {
-        val toSymbolic = to.asInstanceOf[Symbolic[T]]
-        val toSym = toSymbolic.getSymbol
-        val fromSym = from.asInstanceOf[Symbolic[T]].getSymbol
-        if (toSym.getClass == fromSym.getClass)
-          toSymbolic.setSymbol(fromSym)
+    private def copySymbolTrees[T <: Symbol, U <: Symbol](to: Tree, from: Tree): Unit = {
+      if (to.getClass != from.getClass)
+        return
+
+      if (!from.isInstanceOf[Symbolic[_]] || !from.asInstanceOf[Symbolic[_]].hasSymbol)
+        return
+
+      // This is not very elegant but is one way to get around type erasure
+      from match {
+        case x: ClassDecl  => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
+        case x: Identifier => to.asInstanceOf[Identifier].setSymbol(x.getSymbol)
+        case x: FuncTree   => to.asInstanceOf[FuncTree].setSymbol(x.getSymbol)
+        case x: Formal     => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
+        case x: VarDecl    => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
+        case x: This       => to.asInstanceOf[This].setSymbol(x.getSymbol)
+        case x: Super      => to.asInstanceOf[Super].setSymbol(x.getSymbol)
       }
     }
-
   }
-
 
   /**
     * Signals that the node is a leaf and no further recursion is necessary
@@ -130,6 +172,9 @@ object Trees {
     }
 
     def isAbstract = stat.isEmpty
+
+    def signature = id.value + args.map(_.tpe.name).mkString("(", ", ", ")")
+
   }
 
   case class MethodDecl(var retType: Option[TypeTree],
@@ -351,6 +396,13 @@ object Trees {
     val value: T
   }
 
+  object Literal {
+    def unapply(e: Literal[_]): Option[Any] = e match {
+      case e: Literal[_] => Some(e.value)
+      case _             => None
+    }
+  }
+
   case class IntLit(value: Int) extends Literal[Int]
   case class LongLit(value: Long) extends Literal[Long]
   case class FloatLit(value: Float) extends Literal[Float]
@@ -412,7 +464,7 @@ object Trees {
 
   case class Assign(id: Identifier, expr: ExprTree) extends ExprTree
   case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree
-  case class FieldRead(obj: ExprTree, id: Identifier) extends ExprTree
+  case class FieldAccess(var obj: ExprTree, id: Identifier) extends ExprTree
   case class This() extends ExprTree with Symbolic[ClassSymbol] with LeafTree
   case class Super(specifier: Option[Identifier]) extends ExprTree with Symbolic[ClassSymbol]
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}

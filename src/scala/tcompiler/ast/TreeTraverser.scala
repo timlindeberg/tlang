@@ -35,7 +35,7 @@ class TreeTraverser {
     case ClassIdentifier(_, templateTypes)            => traverse(templateTypes)
     case Assign(id, expr)                             => traverse(id, expr)
     case FieldAssign(obj, id, expr)                   => traverse(obj, id, expr)
-    case FieldRead(obj, id)                           => traverse(obj, id)
+    case FieldAccess(obj, id)                         => traverse(obj, id)
     case Super(specifier)                             => traverse(specifier)
     case NewArray(tpe, sizes)                         => traverse(tpe, sizes)
     case New(tpe, args)                               => traverse(tpe, args)
@@ -43,14 +43,17 @@ class TreeTraverser {
     case Instance(expr, id)                           => traverse(expr, id)
     case As(expr, tpe)                                => traverse(expr, tpe)
     case MethodCall(obj, meth, args)                  => traverse(obj, meth, args)
+    case ArrayLit(value)                              => traverse(value)
   }
 
-  def traverseTrees(trees: List[Tree]) = trees foreach traverse
+  def traverse(trees: List[Tree]): Unit = trees foreach traverse
+  def traverse(trees: Set[Tree]): Unit = trees foreach traverse
 
   def traverse(t: Any*): Unit = t foreach {
     case t: Tree         => traverse(t)
+    case t: List[Tree]   => traverse(t)
+    case t: Set[Tree]    => traverse(t)
     case t: Option[Tree] => t ifDefined traverse
-    case t: List[Tree]   => traverseTrees(t)
   }
 }
 

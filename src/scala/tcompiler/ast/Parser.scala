@@ -815,7 +815,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
       e match {
         case ArrayRead(arr, index) => ArrayAssign(arr, index, assignmentExpr(e))
-        case FieldRead(obj, id)    => FieldAssign(obj, id, assignmentExpr(e))
+        case FieldAccess(obj, id)  => FieldAssign(obj, id, assignmentExpr(e))
         case id: Identifier        => Assign(id, assignmentExpr(id))
         case _                     =>
           FatalExpectedIdAssignment(e)
@@ -1002,7 +1002,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
             eat(RPAREN)
             MethodCall(sup, id, exprs.toList)
           } else {
-            FieldRead(sup, id)
+            FieldAccess(sup, id)
           }
         case NEW           => newExpression()
         case _             => FatalUnexpectedToken(currentToken)
@@ -1040,7 +1040,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
               eat(RPAREN)
               MethodCall(e, id, exprs.toList)
             } else {
-              FieldRead(e, id)
+              FieldAccess(e, id)
             }
           case LBRACKET  =>
             arrayIndexing(e)
