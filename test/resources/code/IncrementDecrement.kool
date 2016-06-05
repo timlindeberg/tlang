@@ -5,6 +5,7 @@ Test()
      var j: Int = 0
      var k: Float = 0.0f
      var l: Float = 0.0f
+     var b: Bool = true
      var h: H = new H()
      var arr: Int[] = new Int[3]
 
@@ -87,6 +88,8 @@ Test()
      println(i) // res: 0
      arr[1]++
      println(arr[1]) // res: 1
+
+
  }
 
 class H {

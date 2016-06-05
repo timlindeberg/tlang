@@ -30,7 +30,6 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(classDecl: ClassDecl, dir: Option[File]): Unit = {
     val classFile = makeClassFile(classDecl)
-
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
       val flags = getFieldFlags(varDecl)

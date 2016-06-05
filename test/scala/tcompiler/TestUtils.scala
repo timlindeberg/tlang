@@ -46,12 +46,13 @@ object TestUtils extends FlatSpec {
   def executeTProgram(testFile: File): String = {
     val mainName = testFile.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    executeTProgram(outDir.getAbsolutePath, mainName)
+    executeTProgram(List(outDir.getAbsolutePath, Main.TDirectory), mainName)
   }
 
 
-  def executeTProgram(classPath: String, mainName: String): String = {
-    val f = Future(blocking("java -cp \"" + classPath + "\" " + mainName !!))
+  def executeTProgram(classPaths: List[String], mainName: String): String = {
+    val c = classPaths.map(cp => "\"" + cp + "\"").mkString(";")
+    val f = Future(blocking(s"java -cp $c $mainName " !!))
     try {
       Await.result(f, Timeout)
     } catch {

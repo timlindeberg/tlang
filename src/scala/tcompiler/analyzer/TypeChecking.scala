@@ -68,6 +68,7 @@ class TypeChecker(
     }
 
     currentMethodSymbol.stat.ifDefined(tcStat)
+    hasBeenTypechecked += currentMethodSymbol
 
     if (currentMethodSymbol.getType != TUntyped) {
       currentMethodSymbol.setType(tcOperator(currentMethodSymbol.getType))
@@ -93,7 +94,6 @@ class TypeChecker(
 
 
     currentMethodSymbol.setType(tcOperator(inferedType))
-    TypeChecking.hasBeenTypechecked += currentMethodSymbol
   }
 
   def tcOperator(tpe: Type) = currentMethodSymbol match {
@@ -448,7 +448,7 @@ class TypeChecker(
           case x          => x
         }
       case hashOp@Hash(expr)                             =>
-        val exprType = tcExpr(expr, TString :: Types.tObject :: Types.Primitives)
+        val exprType = tcExpr(expr)
         exprType match {
           case _: TObject =>
             val argList = List(exprType)
@@ -472,6 +472,7 @@ class TypeChecker(
           case _: ArrayRead | _: FieldAccess =>
           case _                             => ErrorInvalidIncrementDecrementExpr(expression, obj)
         }
+        // TODO: Allow increment decrement for Bool types?
         tcExpr(obj, Types.tObject :: Types.Primitives) match {
           case x: TObject => tcUnaryOperator(incOp, x, Some(x)) // Requires same return type as type
           case x          => x
@@ -740,10 +741,10 @@ class TypeChecker(
     var objType = tcExpr(obj)
     val fieldName = fieldId.value
 
-    // Set type of super call based on the method called
+    // Set type of super call based on the field accessed
     // if it needs to be looked up dynamically
     obj match {
-      case s@Super(None) if s.getSymbol.parents.nonEmpty =>
+      case s@Super(None) =>
         // supers symbol is set to this in name analyzer so we can look up the
         // desired method
         val thisSymbol = s.getSymbol

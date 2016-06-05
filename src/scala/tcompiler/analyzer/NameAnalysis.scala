@@ -111,7 +111,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       ensureClassNotDefined(id)
       id.setSymbol(newSymbol)
       classDecl.setSymbol(newSymbol)
-      globalScope.classes += (id.value -> newSymbol)
+      globalScope.classes += (fullName -> newSymbol)
       vars.foreach(addSymbols(_, newSymbol))
       methods.foreach(addSymbols(_, newSymbol))
   }
@@ -161,14 +161,8 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
       args.foreach(addSymbols(_, newSymbol))
 
-      val isStaticOperator = operatorDecl.modifiers.contains(Static())
-      val argTypes = args.map(_.tpe.name)
       if (stat.isEmpty)
         ErrorAbstractOperator(operatorDecl)
-
-      if (isStaticOperator && !argTypes.contains(classSymbol.name)) {
-        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
-      }
   }
 
   private def addSymbols(t: Tree, methSymbol: MethodSymbol): Unit = t match {
@@ -219,10 +213,10 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       bindFields(classDecl)
       methods.foreach(bind)
     case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
-      retType.ifDefined(tpe => {
+      retType.ifDefined { tpe =>
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
-      })
+      }
 
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
@@ -235,16 +229,25 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
       stat.ifDefined(new StatementBinder(constructorDecl.getSymbol, false).bindStatement(_))
     case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _, _) =>
-      retType.ifDefined(tpe => {
+      retType.ifDefined { tpe =>
         val t = setType(tpe)
         operatorDecl.getSymbol.setType(t)
         operatorType.setType(t)
-      })
+      }
 
       //operatorType.setType(retType.getType)
       bindArguments(args)
 
       ensureOperatorNotDefined(operatorDecl)
+
+      val isStaticOperator = operatorDecl.modifiers.contains(Static())
+      val argTypes = args.map(_.getSymbol.getType)
+      val argClassSymbols = argTypes.collect { case TObject(c) => c }
+      val classSymbol = operatorDecl.getSymbol.classSymbol
+
+      // Ensure that operator pertains to the class defined in
+      if (isStaticOperator && !argClassSymbols.contains(classSymbol))
+        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
 
       stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(_))
   }
@@ -291,11 +294,9 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
 
-          typeTree match {
-            case Some(t) =>
-              val tpe = setType(t)
-              id.setType(tpe)
-            case None    =>
+          typeTree ifDefined { t =>
+            val tpe = setType(t)
+            id.setType(tpe)
           }
 
           variableUsage += newSymbol -> false
@@ -303,10 +304,10 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           if (!isFinal)
             variableReassignment += newSymbol -> false
 
-          init collect { case expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
+          init ifDefined {expr => bind(expr, localVars, scopeLevel, canBreakContinue)}
 
-          localVars.get(id.value) collect {
-            case varId if varId.scopeLevel == scopeLevel =>
+          localVars.get(id.value) ifDefined { varId =>
+            if(varId.scopeLevel == scopeLevel)
               ErrorVariableAlreadyDefined(id.value, varId.symbol.line, varDecl)
           }
 
@@ -378,25 +379,24 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
             traverse(obj, expr)
           case acc@FieldAccess(obj, id)             =>
             // Same as with method call, we can't traverse 'id' until typechecking stage
-            val idList = flattenAccess(acc)
-            if (idList.isEmpty) {
-              // Object is not an identifier
-              traverse(obj)
-            } else {
-              val firstId = idList.head
-              lookupSymbol(firstId, localVars) match {
-                case Some(symbol) =>
-                  // If the first identifier was in scope we treat this as regular
-                  // field access
-                  setIdentiferSymbol(firstId, symbol)
-                case None         =>
-                  // Otherwise we treat the identifiers as one identifier
-                  // eg, java.lang.math as "java.lang.math"
-                  val idName = idList.dropRight(1).map(_.value).mkString(".")
-                  val obj = Identifier(idName).setSymbol(new VariableSymbol(idName))
-                  setIdentiferSymbol(obj, localVars)
-                  acc.obj = obj
-              }
+            getIdentifiers(acc) match {
+              case Nil =>
+                // Object is not an identifier
+                traverse(obj)
+              case ids@(firstId :: _) =>
+                lookupSymbol(firstId, localVars) match {
+                  case Some(symbol) =>
+                    // If the first identifier was in scope we treat this as regular
+                    // field access
+                    setIdentiferSymbol(firstId, symbol)
+                  case None         =>
+                    // Otherwise we treat the identifiers as one identifier
+                    // eg, java.lang.math as "java.lang.math"
+                    val idName = ids.dropRight(1).map(_.value).mkString(".")
+                    val obj = Identifier(idName).setSymbol(new VariableSymbol(idName))
+                    setIdentiferSymbol(obj, localVars)
+                    acc.obj = obj
+                }
             }
           case Instance(expr, id)                   =>
             traverse(expr)
@@ -446,8 +446,6 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
                       case None    =>
                         ErrorSuperSpecifierDoesNotExist(spec.value, methodSymbol.classSymbol.name, spec)
                     }
-                  case None if parents.isEmpty =>
-                    superSymbol.setSymbol(Symbols.ObjectClass)
                   case _                       =>
                     superSymbol.setSymbol(methodSymbol.classSymbol)
                   // Set symbol to this and let the typechecker decide later.
@@ -463,7 +461,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       traverser.traverse(startingTree)
     }
 
-    private def flattenAccess(access: FieldAccess) = {
+    private def getIdentifiers(access: FieldAccess) = {
       var idList: List[Identifier] = Nil
       var accessTree: Tree = access
       while (accessTree.isInstanceOf[FieldAccess]) {
@@ -508,9 +506,9 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     private def lookupSymbol(id: Identifier, localVars: Map[String, VariableIdentifier]): Option[Symbol] = {
       val name = id.value
 
-      def lookupClass() = globalScope.lookupClass(prog, name)
       def lookupLocalVar() = localVars.get(name).map(_.symbol)
       def lookupArgument(methodSymbol: MethodSymbol) = methodSymbol.lookupArgument(name)
+      def lookupClass() = globalScope.lookupClass(prog, name)
       def lookupField(methodSymbol: MethodSymbol) = {
         val m = methodSymbol.lookupField(name)
         m collect {
@@ -521,11 +519,11 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       }
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
-          lookupClass().orElse(
             lookupLocalVar().orElse(
               lookupArgument(methodSymbol).orElse(
-                lookupField(methodSymbol)
-              )))
+                lookupField(methodSymbol).orElse(
+                  lookupClass()
+                  )))
         case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupVar(name)
         case _                          => ???

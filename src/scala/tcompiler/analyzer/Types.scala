@@ -3,13 +3,9 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
-import tcompiler.code.CodeGenerator
 
 
 object Types {
-
-
-
 
   trait Typed {
     self =>
@@ -155,7 +151,7 @@ object Types {
 
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c.name == tObject.classSymbol.name) true
+        if (classSymbol.name == c.name || c == tObject.classSymbol) true
         else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
       case _ => false
     }
@@ -172,18 +168,18 @@ object Types {
 
     override def toString = classSymbol.name
     override def byteCodeName: String = {
-      val name = if (this == tObject) CodeGenerator.JavaObject else classSymbol.name
-      "L" + name.replaceAll("\\.", "/") + ";"
+      val name = classSymbol.name.replaceAll("\\.", "/")
+      s"L$name;"
     }
 
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 
-    override val codes     = new ObjectCodeMap(classSymbol.name)
-    override val size: Int = 1
+    override val codes = new ObjectCodeMap(classSymbol.name)
+    override val size = 1
   }
 
-  // special object to implement the fact that all objects are its subclasses
-  val tObject = TObject(Symbols.ObjectClass)
+  // For checking of a type is an object
+  val tObject = TObject(new ClassSymbol("kool/lang/Object", false))
   val tArray  = TArray(tObject)
 }
 

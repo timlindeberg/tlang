@@ -1,6 +1,7 @@
 package tcompiler.analyzer
 
 import tcompiler.analyzer.Symbols.{ClassSymbol, _}
+import tcompiler.analyzer.Types.Type
 import tcompiler.ast.Trees.{Break, Tree, _}
 import tcompiler.utils.{Errors, Positioned}
 
@@ -64,7 +65,7 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorThisInStaticContext(pos: Positioned) =
     error(13, "'this' can not be used in a static context.", pos)
 
-  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[String], clazz: String, pos: Positioned) = {
+  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], clazz: String, pos: Positioned) = {
     val op = operatorType.operatorString(argTypes)
     error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
   }

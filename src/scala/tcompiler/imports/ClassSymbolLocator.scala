@@ -3,6 +3,7 @@ package tcompiler.imports
 import org.apache.bcel.Repository
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
+import org.apache.bcel.util.{ClassPath, SyntheticRepository}
 import tcompiler.analyzer.Symbols.{Field => _, _}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
@@ -11,6 +12,11 @@ import tcompiler.ast.Trees._
   * Created by Tim Lindeberg on 5/14/2016.
   */
 object ClassSymbolLocator {
+
+  def setClassPath(classPaths: List[String]) = {
+    val rep = SyntheticRepository.getInstance(new ClassPath(classPaths.mkString(";")))
+    Repository.setRepository(rep)
+  }
 
   def findSymbol(className: String): Option[ClassSymbol] = {
     findClass(className) match {

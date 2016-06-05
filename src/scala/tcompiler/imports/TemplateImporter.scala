@@ -47,7 +47,6 @@ class TemplateImporter(
         parseGenericFile(ctx, file) match {
           case Some(importedProg) =>
             importedPrograms += importedProg
-
             // Recursively import generics
             val templateImporter = new TemplateImporter(ctx, importedProg, imported)
             importedPrograms ++= templateImporter()

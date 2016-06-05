@@ -1,13 +1,10 @@
 package kool.lang
 
-import java.lang.Object
-
 class Object: java.lang.Object {
 
-    Def ToString() = new String(toString())
-    Def GetClass() = getClass().getAnnotations()[0]
-    Def #(o: Object) = o.hashCode()
-    Def ==(lhs: Object, rhs: Object) = lhs.equals(rhs)
-    Def !=(lhs: Object, rhs: Object) = !(lhs == rhs)
+    Def ToString(): String = new String(toString())
+    Def #(o: Object): Int = o.hashCode()
+    Def ==(lhs: Object, rhs: Object): Bool = lhs.equals(rhs)
+    Def !=(lhs: Object, rhs: Object): Bool = !(lhs == rhs)
 
 }

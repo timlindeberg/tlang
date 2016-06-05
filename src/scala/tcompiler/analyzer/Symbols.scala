@@ -2,7 +2,6 @@ package tcompiler
 package analyzer
 
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.{BinaryOperatorDecl, UnaryOperatorDecl}
 import tcompiler.ast.Trees._
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils._
@@ -32,7 +31,7 @@ object Symbols {
   ObjectClass.setType(Types.tObject)
 
   class GlobalScope {
-    var classes = Map[String, ClassSymbol]("Object" -> ObjectClass)
+    var classes = Map[String, ClassSymbol]()
 
     def lookupClass(prog: Program, name: String): Option[ClassSymbol] = {
       val fullName = getFullName(prog, name)
@@ -41,7 +40,7 @@ object Symbols {
         case None              =>
           ClassSymbolLocator.findSymbol(fullName) match {
             case Some(classSymbol) =>
-              classes += classSymbol.name -> classSymbol
+              classes += fullName -> classSymbol
               Some(classSymbol)
             case None              => None
           }
@@ -275,16 +274,8 @@ object Symbols {
 
     def operatorString = operatorType.operatorString(argList.map(_.getType))
 
-    def methodName = {
-      val name = operatorType.getClass.getSimpleName
-      val types = argList.map(_.getType)
-      name + (operatorType match {
-        case UnaryOperatorDecl(_)     => "$" + types.head
-        case BinaryOperatorDecl(_, _) => "$" + types.head + "$" + types(1)
-        case ArrayRead(_, _)          => "$" + types.head
-        case ArrayAssign(_, _, _)     => "$" + types.head + "$" + types(1)
-      })
-    }
+    def methodName = "$" + operatorType.getClass.getSimpleName
+
   }
 
   trait VariableType

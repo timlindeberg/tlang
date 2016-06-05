@@ -1,4 +1,4 @@
-var x: A = a // res: N2010
+var x: A = doesNotExist // res: N2010
 B.Test() // res: N2010
 
 class A {

@@ -219,7 +219,7 @@ println($IdName[0])
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.files)
     val mainName = TestCtx.files.head.getName.dropRight(Main.FileEnding.length)
-    TestUtils.executeTProgram(TestFolder, mainName).trim
+    TestUtils.executeTProgram(List(TestFolder, Main.TDirectory), mainName).trim
   }
 
   private def getScalaResult(operation: String) = {

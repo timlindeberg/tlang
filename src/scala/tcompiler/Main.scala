@@ -26,7 +26,7 @@ object Main extends MainErrors {
   val VersionNumber = "0.0.1"
   val THome         = "T_HOME"
 
-  var TDirectory         = ""
+  var TDirectory         = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\src\\stdlib"
   var Reporter: Reporter = null
 
   val flagActive = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
@@ -117,9 +117,6 @@ object Main extends MainErrors {
 
 
     processOption(args.toList)
-
-
-    println(files)
 
     Reporter = new Reporter(
       flagActive(SuppressWarnings),

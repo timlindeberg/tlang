@@ -56,6 +56,11 @@ object ASTBuilder {
     LOGICXOR -> LogicXor
   )
 
+  private val DefaultImports = List[String](
+    "kool.lang.Object",
+    "kool.lang.String"
+  )
+
 }
 
 class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
@@ -99,17 +104,23 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   private def createImportMap(imports: List[Import]) = {
     val regImports = imports.filterType(classOf[RegularImport])
     val wcImports = imports.filterType(classOf[WildCardImport])
+
     var importMap = Map[String, String]()
+
+    for (imp <- DefaultImports) {
+      val s = imp.split("\\.")
+      importMap += (s.last -> imp)
+    }
 
     // TODO: Use classpath flags
     for (imp <- regImports) {
       val fullName = importName(imp)
       val shortName = imp.identifiers.last.value
-      if(ClassSymbolLocator.classExists(fullName)){
-        if(importMap.contains(shortName))
+      if (ClassSymbolLocator.classExists(fullName)) {
+        if (importMap.contains(shortName))
           ErrorConflictingImport(fullName, importMap(shortName), imp)
         importMap += (shortName -> fullName)
-      }else{
+      } else {
         ErrorCantResolveImport(fullName, imp)
       }
     }
@@ -211,7 +222,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
     }
     val id = classTypeIdentifier()
-    val parents = parentsDeclaration()
+    val parents = parentsDeclaration(isTrait)
     eat(LBRACE)
     val vars = untilNot(() => {
       val v = fieldDeclaration()
@@ -226,13 +237,15 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <parentsDeclaration> ::= [ : <classIdentifier> { "," <classIdentifier> } ]
     */
-  def parentsDeclaration(): List[ClassIdentifier] = nextTokenKind match {
+  def parentsDeclaration(isTrait: Boolean): List[ClassIdentifier] = nextTokenKind match {
     case COLON =>
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
     case _     =>
-    List()
-    //List(ClassIdentifier("Object"))
+      if (isTrait)
+        List()
+      else
+        List(ClassIdentifier("kool.lang.Object"))
   }
 
   /**
@@ -357,7 +370,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
 
     // TODO: Find better way of parsing operators than hard coding how many
-    // arguments they should have. This is done because since minus can have both
+    // arguments they should have. This is done since minus can have both
     // one or two operands. */
 
     def binaryOperator(constructor: (ExprTree, ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
@@ -630,7 +643,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         eat(LPAREN)
         val expr = nextTokenKind match {
           case RPAREN => StringLit("")
-          case _ => expression()
+          case _      => expression()
         }
         eat(RPAREN)
         endStatement()
@@ -1091,7 +1104,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
   /**
     * <newExpression> ::= new <basicTpe> "(" [ <expression> { "," <expression> } ] ")"
-    *                   | new <basicTpe>  "[" <expression> "]" { "[" <expression> "]" }
+    * | new <basicTpe>  "[" <expression> "]" { "[" <expression> "]" }
     */
   def newExpression(): ExprTree = {
     val startPos = nextToken
