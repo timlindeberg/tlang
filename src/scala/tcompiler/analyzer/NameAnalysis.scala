@@ -4,7 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeGroups.UselessStatement
-import tcompiler.ast.TreeTraverser
+import tcompiler.ast.{Printer, TreeTraverser}
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -15,7 +15,6 @@ object NameAnalysis extends Pipeline[List[Program], List[Program]] {
 
   def run(ctx: Context)(progs: List[Program]): List[Program] = {
     globalScope = new GlobalScope
-
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
@@ -105,6 +104,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
   private def addSymbols(classDecl: ClassDecl): Unit = classDecl match {
     case ClassDecl(id@ClassIdentifier(name, _), _, vars, methods, isAbstract) =>
       val fullName = prog.getPackageName(name)
+
       val newSymbol = new ClassSymbol(fullName, isAbstract)
       newSymbol.writtenName = name
       newSymbol.setPos(id)

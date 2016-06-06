@@ -9,7 +9,7 @@ import tcompiler.ast.Trees._
 
 class TreeTransformer {
 
-  val treeCopy = new LazyTreeCopier
+  val treeCopy: TreeCopier = new LazyTreeCopier
 
   def transform(t: Tree): Tree = {
     t match {
@@ -183,10 +183,10 @@ class TreeTransformer {
     }
   }
 
-  private def trans[T <: Tree](tree: T) = transform(tree).asInstanceOf[T]
-  private def tList[T <: Tree](list: List[T]) = list.map(transform).asInstanceOf[List[T]]
-  private def tSet[T <: Tree](set: Set[T]) = set.map(transform).asInstanceOf[Set[T]]
-  private def tOption[T <: Tree](op: Option[T]) = op match {
+  protected def trans[T <: Tree](tree: T) = transform(tree).asInstanceOf[T]
+  protected def tList[T <: Tree](list: List[T]) = list.map(transform).asInstanceOf[List[T]]
+  protected def tSet[T <: Tree](set: Set[T]) = set.map(transform).asInstanceOf[Set[T]]
+  protected def tOption[T <: Tree](op: Option[T]) = op match {
     case Some(p) => Some(transform(p).asInstanceOf[T])
     case None    => None
   }

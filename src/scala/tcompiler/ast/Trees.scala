@@ -43,6 +43,13 @@ object Trees {
 
     def exists(p: Tree => Boolean): Boolean = find(p).isDefined
 
+    def copyTree(): this.type = {
+      val copier = new TreeTransformer {
+        override val treeCopy = new StrictTreeCopier()
+      }
+      copier.transform(this).asInstanceOf[this.type]
+    }
+
     def copyAttrs(t: Tree): this.type = {
       setPos(t)
       copySymbolTrees(this, t)
@@ -105,9 +112,11 @@ object Trees {
       case _         => None
     }
   }
+
   trait Import extends Tree {
     val identifiers: List[Identifier]
   }
+
   case class RegularImport(identifiers: List[Identifier]) extends Import
   case class WildCardImport(identifiers: List[Identifier]) extends Import
   case class TemplateImport(identifiers: List[Identifier]) extends Import
@@ -420,15 +429,21 @@ object Trees {
 
   case class Identifier(value: String) extends IdentifierTree[Symbol] with LeafTree {
     // The type of the identifier depends on the type of the symbol
-    override def getType: Type = getSymbol match {
-      case cs: ClassSymbol    => TObject(cs)
-      case vs: VariableSymbol => vs.getType
-      case ms: MethodSymbol   => ms.getType
-      case es: ErrorSymbol    => TError
+    override def getType: Type = {
+      if(!hasSymbol)
+        return TUntyped
+
+      getSymbol match {
+        case cs: ClassSymbol    => TObject(cs)
+        case vs: VariableSymbol => vs.getType
+        case ms: MethodSymbol   => ms.getType
+        case es: ErrorSymbol    => TError
+      }
     }
 
     override def setType(tpe: Type) = {
-      getSymbol.setType(tpe)
+      if(hasSymbol)
+        getSymbol.setType(tpe)
       this
     }
   }
@@ -440,10 +455,11 @@ object Trees {
     val name = value
 
     // The type of the identifier depends on the type of the symbol
-    override def getType: Type = TObject(getSymbol)
+    override def getType: Type = if(hasSymbol) TObject(getSymbol) else TUntyped
 
     override def setType(tpe: Type) = {
-      getSymbol.setType(tpe)
+      if(hasSymbol)
+        getSymbol.setType(tpe)
       this
     }
 
@@ -476,7 +492,6 @@ object Trees {
 
   case class Empty() extends ExprTree with LeafTree {override def toString = "<EMPTY>"}
 
-
   def isStaticCall(obj: ExprTree) =
     obj match {
       case id@Identifier(name) =>
@@ -486,24 +501,4 @@ object Trees {
         }
       case _                   => false
     }
-
-
-  def traverse(t: Tree, f: (Tree, Tree) => Any): Unit = {
-    def trav(parent: Tree, current: Tree): Unit = {
-      current.productIterator.foreach {
-        case x: Iterable[_] =>
-          x.foreach(Some(_) collect {
-            case x: Tree => trav(current, x)
-          })
-        case x: Option[Any] =>
-          x collect {
-            case x: Tree => trav(current, x)
-          }
-        case x: Tree        => trav(current, x)
-        case _              =>
-      }
-      f(parent, current)
-    }
-    trav(t, t)
-  }
 }

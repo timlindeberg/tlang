@@ -24,6 +24,9 @@ object Parser extends Pipeline[List[List[Token]], List[Program]] {
 
 object ASTBuilder {
 
+  val TLangObject = "kool.lang.Object"
+  val TLangString = "kool.lang.String"
+
   val MaximumArraySize = 255
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
@@ -57,8 +60,8 @@ object ASTBuilder {
   )
 
   private val DefaultImports = List[String](
-    "kool.lang.Object",
-    "kool.lang.String"
+    TLangObject,
+    TLangString
   )
 
 }
@@ -245,7 +248,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       if (isTrait)
         List()
       else
-        List(ClassIdentifier("kool.lang.Object"))
+        List(ClassIdentifier(TLangObject))
   }
 
   /**
