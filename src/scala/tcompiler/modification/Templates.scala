@@ -1,7 +1,6 @@
 package tcompiler
 package modification
 
-import tcompiler.ast.ForeachTraverser
 import tcompiler.ast.Trees._
 import tcompiler.imports.TemplateImporter
 import tcompiler.utils.{Context, Pipeline, Positioned}
@@ -44,8 +43,7 @@ object Templates extends Pipeline[List[Program], List[Program]] {
       if (tpe.isTemplated) new ClassIdentifier(tpe.templatedClassName).setPos(tpe)
       else tpe
 
-
-    val replacer = new ForeachTraverser({
+    prog foreach {
       case c: ClassDecl    => c.parents = c.parents.map(replaceTypeId)
       case m: MethodDecl   => m.retType collect { case t => m.retType = Some(replaceType(t)) }
       case o: OperatorDecl => o.retType collect { case t => o.retType = Some(replaceType(t)) }
@@ -55,7 +53,6 @@ object Templates extends Pipeline[List[Program], List[Program]] {
       case n: New          => n.tpe = replaceType(n.tpe)
       case _               =>
     })
-    replacer.traverse(prog)
     prog
   }
 }
@@ -68,7 +65,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
   def generate(): List[ClassDecl] = {
     checkTemplateClassDefs()
 
-    val templateGenerator = new ForeachTraverser({
+    prog foreach {
       case c: ClassDecl => c.parents.foreach(generateIfTemplated)
       case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
       case f: Formal    => generateIfTemplated(f.tpe)
@@ -76,7 +73,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       case _            =>
     })
 
-    templateGenerator.traverse(prog)
     generatedClasses.toList
   }
 
@@ -120,7 +116,7 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
     }
 
     val newClass = template.copyTree()
-    new ForeachTraverser({
+    newClass foreach {
       case c: ClassDecl    =>
         val templateName = template.id.templatedClassName(templateTypes)
         c.id = c.id.copy(value = templateName, templateTypes = List())
@@ -133,8 +129,6 @@ class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDec
       case n: NewArray     => n.tpe = updateType(n.tpe)
       case _               =>
     }
-    ).traverse(newClass)
-
     newClass
   }
 
