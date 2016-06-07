@@ -5,6 +5,7 @@ import tcompiler.ast.Trees._
 import tcompiler.imports.TemplateImporter
 import tcompiler.utils.{Context, Pipeline, Positioned}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Templates extends Pipeline[List[Program], List[Program]] {
@@ -16,12 +17,16 @@ object Templates extends Pipeline[List[Program], List[Program]] {
 
     def templatedClasses(prog: Program) = prog.classes.filter(_.id.isTemplated)
 
-    progs.map { prog =>
+    // Keep same set of generated classes across all program instances so no class is
+    // generated twice
+    val generatedClasses = mutable.HashSet[String]()
+
+    progs map { prog =>
       val templateImporter = new TemplateImporter(ctx, prog)
       val templateProgs = templateImporter()
 
       val templateClasses = templatedClasses(prog) ::: templateProgs.flatMap(templatedClasses)
-      val newClasses = new ClassGenerator(ctx, prog, templateClasses).generate()
+      val newClasses = new ClassGenerator(ctx, prog, templateClasses, generatedClasses).generate()
       val oldClasses = prog.classes.filter(!_.id.isTemplated)
       val newProg = prog.copy(classes = oldClasses ++ newClasses)
       newProg.setPos(prog)
@@ -57,9 +62,8 @@ object Templates extends Pipeline[List[Program], List[Program]] {
   }
 }
 
-class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDecl]) {
+class ClassGenerator(ctx: Context, prog: Program, templateClasses: List[ClassDecl], generated: mutable.HashSet[String]) {
 
-  private var generated       : Set[String]            = Set()
   private var generatedClasses: ArrayBuffer[ClassDecl] = ArrayBuffer()
 
   def generate(): List[ClassDecl] = {

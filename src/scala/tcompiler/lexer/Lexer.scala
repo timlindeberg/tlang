@@ -2,6 +2,7 @@ package tcompiler
 package lexer
 
 import java.io.File
+import java.math.BigInteger
 
 import tcompiler.lexer.Tokens._
 import tcompiler.utils.{Pipeline, _}
@@ -21,6 +22,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
 
   override var line   = 1
   override var column = 1
+
 
   def tokenize(chars: List[Char]): List[Token] = {
     def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
@@ -71,6 +73,12 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '"' :: r                               =>
         val (token, tail) = getStringLiteral(r)
         readTokens(tail, token :: tokens)
+      case '0' :: 'x' :: r                        =>
+        val (token, tail) = getHexadecimalLiteral(r)
+        readTokens(tail, token :: tokens)
+      case '0' :: 'b' :: r                        =>
+        val (token, tail) = getBinaryLiteral(r)
+        readTokens(tail, token :: tokens)
       case c :: r if c.isDigit                    =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
@@ -92,17 +100,16 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
 
     def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
-      def end(c: Char) = SingleCharTokens.contains(c) || c.isWhitespace
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
-        case c :: r if validChar(c) => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
-        case c :: r if end(c)       => (createIdentifierOrKeyWord(s), chars)
-        case c :: r                 =>
+        case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
+        case c :: r if isEndingChar(c) => (createIdentifierOrKeyWord(s), chars)
+        case c :: r                    =>
           // Advance column here so only the invalid char gets highlighted
           column += charsParsed
           ErrorInvalidIdentifier(c, 1)
           getIdentifierOrKeyword(r, s + c, 1)
-        case Nil                    => (createIdentifierOrKeyWord(s), chars)
+        case Nil                       => (createIdentifierOrKeyWord(s), chars)
       }
     }
     getIdentifierOrKeyword(chars.tail, chars.head.toString, 1)
@@ -236,41 +243,57 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     getStringLiteral(chars, "", 1)
   }
 
+
+  private def getHexadecimalLiteral(chars: List[Char]) = {
+
+    def invalid(len: Int) = {
+      ErrorInvalidHexadecimalLiteral(len, chars)
+      (createToken(BAD, len), chars)
+    }
+
+    def getHexadecimalLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+      case '_' :: r                  => getHexadecimalLiteral(r, s)
+      case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c)
+      case ('l' | 'L') :: r          => (parseLongToken(s), r)
+      case c :: r if isEndingChar(c) => (parseIntToken(s), chars)
+      case _                         => invalid(s.length)
+    }
+
+    if (isEndingChar(chars.head))
+      invalid(2)
+    else
+      getHexadecimalLiteral(chars, "0x")
+  }
+
+  private def getBinaryLiteral(chars: List[Char]) = {
+
+    def invalid(len: Int) = {
+      ErrorInvalidBinaryLiteral(len, chars)
+      (createToken(BAD, len), chars)
+    }
+
+    def getBinaryLiteral(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+      case '_' :: r                  => getBinaryLiteral(r, s)
+      case '0' :: r                  => getBinaryLiteral(r, s + '0')
+      case '1' :: r                  => getBinaryLiteral(r, s + '1')
+      case ('l' | 'L') :: r          => (parseLongToken(s), r)
+      case c :: r if isEndingChar(c) => (parseIntToken(s), chars)
+      case _                         => invalid(s.length)
+    }
+
+    if (isEndingChar(chars.head))
+      invalid(2)
+    else
+      getBinaryLiteral(chars, "0b")
+  }
+
+
   private def getNumberLiteral(chars: List[Char]): (Token, List[Char]) = {
-
-    def tryConversion[T](numStr: String, tokenLength: Int, conversion: (String) => T): Option[T] =
-      try {
-        Some(conversion(numStr))
-      } catch {
-        case _: NumberFormatException =>
-          ErrorNumberTooLarge(tokenLength)
-          None
-      }
-
-    def parseIntToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toInt) match {
-      case Some(value) => createToken(value, numStr.length )
-      case None        => createToken(BAD, numStr.length )
-    }
-
-    def parseLongToken(numStr: String): Token = tryConversion(numStr, numStr.length + 1, _.toLong) match {
-      case Some(value) => createToken(value, numStr.length)
-      case None        => createToken(BAD, numStr.length)
-    }
-
-    def parseFloatToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toFloat) match {
-      case Some(value) => createToken(value, numStr.length)
-      case None        => createToken(BAD, numStr.length)
-    }
-
-    def parseDoubleToken(numStr: String): Token = tryConversion(numStr, numStr.length, _.toDouble) match {
-      case Some(value) => createToken(value, numStr.length)
-      case None        => createToken(BAD, numStr.length)
-    }
-
     var foundDecimal = false
     var foundE = false
     def getNumberLiteral(chars: List[Char], s: String): (Token, List[Char]) =
       chars match {
+        case '_' :: r            => getNumberLiteral(r, s)
         case c :: r if c.isDigit => getNumberLiteral(r, s + c)
         case '.' :: r            =>
           if (!foundDecimal && !foundE) {
@@ -342,7 +365,65 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     skip(chars)
   }
 
-  private def areHexDigits(chars: Char*) = chars.forall(c => c.isDigit || "abcdef".contains(c.toLower))
+  private def parseIntToken(numStr: String): Token = {
+    def invalid(len: Int) = {
+      ErrorNumberTooLargeForInt(len)
+      createToken(BAD, len)
+    }
+
+    val len = numStr.length
+    val isHex = numStr.startsWith("0x")
+    val isBin = numStr.startsWith("0b")
+    if (isHex || isBin) {
+      val num = numStr.drop(2)
+      val radix = if (isHex) 16 else 2
+      val maxSize = if (isHex) 8 else 32
+      if (num.length > maxSize)
+        invalid(len)
+      else
+        createToken(java.lang.Long.parseLong(num, radix).asInstanceOf[Int], len)
+    } else {
+      try {
+        createToken(numStr.toInt, len)
+      } catch {
+        case _: NumberFormatException => invalid(len)
+      }
+    }
+  }
+
+  private def parseLongToken(numStr: String): Token = {
+    def invalid(len: Int) = {
+      ErrorNumberTooLargeForLong(len)
+      createToken(BAD, len)
+    }
+
+    val len = numStr.length
+    val isHex = numStr.startsWith("0x")
+    val isBin = numStr.startsWith("0b")
+    if (isHex || isBin) {
+      val num = numStr.drop(2)
+      val radix = if (isHex) 16 else 2
+      val maxSize = if (isHex) 16 else 64
+      if (num.length > maxSize)
+        invalid(len)
+      else
+        createToken(new BigInteger(num, radix).longValue(), len)
+    } else {
+      try {
+        createToken(numStr.toLong, len)
+      } catch {
+        case _: NumberFormatException => invalid(len)
+      }
+    }
+  }
+
+  // Only accepts valid float and double strings
+  private def parseFloatToken(numStr: String): Token = createToken(numStr.toFloat, numStr.length)
+  private def parseDoubleToken(numStr: String): Token = createToken(numStr.toDouble, numStr.length)
+
+  private def isEndingChar(c: Char) = c.isWhitespace || SingleCharTokens.contains(c)
+  private def areHexDigits(chars: Char*) = chars forall isHexDigit
+  private def isHexDigit(c: Char) = c.isDigit || "abcdef".contains(c.toLower)
 
   private def createToken(int: Int, tokenLength: Int): Token = createToken(new INTLIT(int), tokenLength)
   private def createToken(long: Long, tokenLength: Int): Token = createToken(new LONGLIT(long), tokenLength)

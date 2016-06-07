@@ -31,14 +31,26 @@ object Trees {
       traverser.result
     }
 
+    def forAll(p: Tree => Boolean): Boolean = {
+      val traverser = new TreeTraverser {
+        var result = true
+
+        override def traverse(t: Tree) =
+          if (!p(t)) result = false
+          else super.traverse(t)
+      }
+      traverser.traverse(this)
+      traverser.result
+    }
+
     def children: List[Tree] = {
       def subtrees(x: Any): List[Tree] = x match {
         case Empty()     => Nil
         case t: Tree     => List(t)
-        case xs: List[_] => xs.flatMap(subtrees)
+        case xs: List[_] => xs flatMap subtrees
         case _           => Nil
       }
-      productIterator.toList.flatMap(subtrees)
+      productIterator.toList flatMap subtrees
     }
 
     def exists(p: Tree => Boolean): Boolean = find(p).isDefined
@@ -83,9 +95,8 @@ object Trees {
     }
   }
 
-  /**
-    * Signals that the node is a leaf and no further recursion is necessary
-    */
+
+  // Signals that the node is a leaf and no further recursion is necessary
   trait LeafTree
 
   /*-------------------------------- Top level Trees --------------------------------*/
@@ -94,7 +105,8 @@ object Trees {
     progPackage: Option[Package],
     var imports: List[Import],
     var classes: List[ClassDecl],
-    importMap: Map[String, String]) extends Tree {
+    importMap: Map[String, String]) extends Tree
+  {
     def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/")).getOrElse("")
     def getPackageName(name: String) = progPackage match {
       case Some(pack) => (pack.identifiers.map(_.value) :+ name).mkString(".")

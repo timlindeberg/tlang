@@ -42,6 +42,7 @@ abstract class ErrorTester extends Tester {
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
         assertCorrect(errorCodes, expectedErrors, t.getMessage)
       case e: Exception =>
+        e.printStackTrace()
         fail(e.getMessage)
     }
   }
