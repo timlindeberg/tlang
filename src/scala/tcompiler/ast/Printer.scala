@@ -31,17 +31,35 @@ object Printer {
     prettyPrint(t)
   }
 
+  private def programComment(prog: Tree) = {
+    val progName = if (prog.hasPosition)
+                     prog.file.getName
+                   else
+                     "PROGRAM (no file)"
 
-  def prettyPrint(t: Tree): String = {
+    val importMap = prog.asInstanceOf[Program].importMap.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
+
+    s"""
+       |//-------------------------------------------------------------
+       |//--- $progName
+       |//-------------------------------------------------------------
+       |
+       |// ImportMap:
+       |$importMap
+       |
+    """.stripMargin
+  }
+
+
+  private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, classes, _)             => p"$pack$N$imports$N$classes"
-      case Package(identifiers)                           => p"package ${Separated(identifiers, ".")}"
-      case RegularImport(identifiers)                     => p"import ${Separated(identifiers, ".")}"
-      case WildCardImport(identifiers)                    => p"import ${Separated(identifiers, ".")}.*"
-      case TemplateImport(identifiers)                    => p"import <${Separated(identifiers, ".")}>"
-      case ClassDecl(id, parents, vars, methods, isTrait) => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
-      case VarDecl(tpe, id, expr, modifiers)              => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
-      case MethodDecl(retType, id, args, stat, modifiers) => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
+      case Program(pack, imports, classes, _)                            => p"${programComment(t)}$pack$N$imports$N$classes"
+      case Package(identifiers)                                          => p"package ${Separated(identifiers, "::")}"
+      case RegularImport(identifiers)                                    => p"import ${Separated(identifiers, "::")}"
+      case WildCardImport(identifiers)                                   => p"import ${Separated(identifiers, "::")}.*"
+      case ClassDecl(id, parents, vars, methods, isTrait)                => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
+      case VarDecl(tpe, id, expr, modifiers)                             => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
+      case MethodDecl(retType, id, args, stat, modifiers)                => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
       case ConstructorDecl(_, id, args, stat, modifiers)                 => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
       case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
       case Formal(tpe, id)                                               => p"$id: $tpe"
@@ -84,24 +102,24 @@ object Printer {
       case LessThanEquals(lhs, rhs)        => p"($lhs <= $rhs)"
       case GreaterThan(lhs, rhs)           => p"($lhs > $rhs)"
       case GreaterThanEquals(lhs, rhs)     => p"($lhs >= $rhs)"
-      case Equals(lhs, rhs)            => p"($lhs == $rhs)"
-      case NotEquals(lhs, rhs)         => p"($lhs != $rhs)"
-      case Instance(expr, id)          => p"($expr is $id)"
-      case As(expr, tpe)               => p"($expr as $tpe)"
-      case Not(expr)                   => p"!($expr)"
-      case Negation(expr)              => p"-($expr)"
-      case LogicNot(expr)              => p"~($expr)"
-      case Hash(expr)                  => p"#($expr)"
-      case ArrayRead(arr, index)       => p"$arr[$index]"
-      case FieldAccess(obj, id)        => p"$obj.$id"
-      case FieldAssign(obj, id, expr)  => p"$obj.$id = $expr"
-      case MethodCall(obj, meth, args) => p"$obj.$meth(${Separated(args, ", ")})"
-      case IntLit(value)               => p"$value"
-      case LongLit(value)              => p"${value}L"
-      case FloatLit(value)             => p"${value}F"
-      case DoubleLit(value)            => p"$value"
-      case CharLit(value)              => p"'${escapeJava(p"$value")}'"
-      case StringLit(value)            => "\"" + p"${escapeJava(p"$value")}" + "\""
+      case Equals(lhs, rhs)                => p"($lhs == $rhs)"
+      case NotEquals(lhs, rhs)             => p"($lhs != $rhs)"
+      case Instance(expr, id)              => p"($expr is $id)"
+      case As(expr, tpe)                   => p"($expr as $tpe)"
+      case Not(expr)                       => p"!($expr)"
+      case Negation(expr)                  => p"-($expr)"
+      case LogicNot(expr)                  => p"~($expr)"
+      case Hash(expr)                      => p"#($expr)"
+      case ArrayRead(arr, index)           => p"$arr[$index]"
+      case FieldAccess(obj, id)            => p"$obj.$id"
+      case FieldAssign(obj, id, expr)      => p"$obj.$id = $expr"
+      case MethodCall(obj, meth, args)     => p"$obj.$meth(${Separated(args, ", ")})"
+      case IntLit(value)                   => p"$value"
+      case LongLit(value)                  => p"${value}L"
+      case FloatLit(value)                 => p"${value}F"
+      case DoubleLit(value)                => p"$value"
+      case CharLit(value)                  => p"'${escapeJava(p"$value")}'"
+      case StringLit(value)                => "\"" + p"${escapeJava(p"$value")}" + "\""
       case ArrayLit(expressions)           => p"{ ${Separated(expressions, ", ")} }"
       case True()                          => p"true"
       case False()                         => p"false"
@@ -123,7 +141,7 @@ object Printer {
     s
   }
 
-  private def classOrTrait(isTrait: Boolean) = if(isTrait) p"trait" else p"class"
+  private def classOrTrait(isTrait: Boolean) = if (isTrait) p"trait" else p"class"
 
   private def parentList(parents: List[ClassIdentifier]) = {
     if (parents.isEmpty) ""

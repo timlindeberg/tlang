@@ -1,0 +1,34 @@
+import kool::std::Vector
+
+val v = new Vector<Int>()
+
+
+v.Add(1)
+println(v[0]) // res: 1
+
+val v1 = new kool::std::Vector3<Int>(0)
+
+println(v1) // res: (0, 0, 0)
+
+
+// TODO: Support static template methods
+//println(kool::lang::Vector3<Int>.Dot(v1, v2))
+
+for(val i in new A())
+    print(i + " ") // res: 0 1 2 3 4
+println()
+
+class A : kool::std::Iterable<Int> {
+
+    Def Iterator() = new AIterator()
+
+}
+
+class AIterator : kool::std::Iterator<Int> {
+
+    var i = 0
+
+    Def HasNext() = i < 5
+    Def Next() = return i++
+
+}

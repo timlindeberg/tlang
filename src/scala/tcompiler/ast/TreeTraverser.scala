@@ -46,8 +46,7 @@ class TreeTraverser {
     case ArrayLit(value)                              => traverse(value)
   }
 
-  def traverse(trees: List[Tree]): Unit = trees foreach traverse
-  def traverse(trees: Set[Tree]): Unit = trees foreach traverse
+  def traverse(trees: Iterable[Tree]): Unit = trees foreach traverse
 
   def traverse(t: Any*): Unit = t foreach {
     case t: Tree         => traverse(t)

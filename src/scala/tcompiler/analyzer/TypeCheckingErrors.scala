@@ -147,7 +147,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
     error(31, s"Cannot reassign value '$value'.", pos)
 
-  protected def ErrorForeachContainNotIterable(tpe: Type, pos: Positioned) =
+  protected def ErrorForeachNotIterable(tpe: Type, pos: Positioned) =
     error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
 
 

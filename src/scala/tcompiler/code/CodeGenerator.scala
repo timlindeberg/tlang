@@ -8,7 +8,6 @@ import cafebabe.Flags._
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer._
-import tcompiler.ast.TreeGroups._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
@@ -121,7 +120,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << afterLabel
       case Foreach(varDecl, container, stat)     =>
         transformForeachLoop(varDecl, container, stat)
-      case PrintStatement(expr)                  =>
+      case PrintStatTree(expr)                   =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";") << DUP
         compileExpr(expr)
         val arg = expr.getType match {
@@ -369,7 +368,9 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         compileExpr(expr)
         ch << InstanceOf(id.value)
       case As(expr, tpe)                           =>
-        if (tpe.getType.isSubTypeOf(expr.getType)) {
+        if (expr.getType == tpe.getType) {
+          compileExpr(expr)
+        } else if (tpe.getType.isSubTypeOf(expr.getType)) {
           compileExpr(expr)
           ch << CheckCast(tpe.name)
         } else {

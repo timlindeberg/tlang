@@ -1,7 +1,4 @@
-package kool.std
-
-var m = new Matrix<Int>(5)
-println(m)
+package kool::std
 
 class Matrix<T> {
 

@@ -21,7 +21,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
   import CodeGenerator._
 
   def run(ctx: Context)(progs: List[Program]): Unit = {
-    val classes = progs.flatMap(p => p.classes)
+    val classes = progs.flatMap(_.classes)
 
     // output code in parallell
     classes.par.foreach(generateClassFile(_, ctx.outDir))
@@ -64,7 +64,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
     if (!hasConstructor)
       generateDefaultConstructor(classFile, classDecl)
 
-    val className = classDecl.id.value
+    val className = classDecl.getSymbol.name
     val file = getFilePath(dir, className)
     classFile.writeToFile(file)
 

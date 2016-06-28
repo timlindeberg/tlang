@@ -34,7 +34,7 @@ object Symbols {
     var classes = Map[String, ClassSymbol]()
 
     def lookupClass(prog: Program, name: String): Option[ClassSymbol] = {
-      val fullName = getFullName(prog, name)
+      val fullName = prog.getFullName(name)
       classes.get(fullName) match {
         case Some(classSymbol) => Some(classSymbol)
         case None              =>
@@ -47,13 +47,7 @@ object Symbols {
       }
     }
 
-    private def getFullName(prog: Program, name: String) = {
-      val impMap = prog.importMap
-      if (impMap.contains(name))
-        impMap(name)
-      else
-        name
-    }
+
   }
 
   class ClassSymbol(

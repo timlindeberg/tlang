@@ -1,5 +1,4 @@
-package kool.std
-
+package kool::std
 import <Option>
 import <Map>
 import <MapEntry>

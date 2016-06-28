@@ -1,4 +1,4 @@
-package kool.std
+package kool::std
 
 trait Iterator<T> {
 

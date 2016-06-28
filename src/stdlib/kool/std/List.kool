@@ -1,6 +1,6 @@
-package kool.std
+package kool::std
 
-import <Collection>
+import kool::std::Collection
 
 /**
 * An ordered collection of elements.

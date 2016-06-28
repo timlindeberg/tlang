@@ -4,7 +4,7 @@ import java.io.File
 
 import tcompiler.Main
 import tcompiler.ast.Parser
-import tcompiler.ast.Trees.{Import, Program, TemplateImport}
+import tcompiler.ast.Trees._
 import tcompiler.lexer.Lexer
 import tcompiler.utils.{CompilationException, Context}
 
@@ -14,62 +14,64 @@ import scala.collection.mutable.ArrayBuffer
 /**
   * Created by Tim Lindeberg on 5/15/2016.
   */
+
+object TemplateImporter {
+
+  val importedFiles = mutable.Map[String, File]()
+
+}
+
 class TemplateImporter(
   override var ctx: Context,
-  prog: Program,
-  imported: mutable.Set[String] = mutable.Set()) extends ImportErrors
-{
+  imported: mutable.Set[String] = mutable.Set()) extends ImportErrors {
 
-  def apply(): List[Program] = {
-    val importedPrograms: ArrayBuffer[Program] = ArrayBuffer()
-    val genericImports = prog.imports.filter(_.isInstanceOf[TemplateImport])
+  import TemplateImporter._
 
-    genericImports.foreach { imp =>
-      val fileName = mkImportString(imp, "/") + Main.FileEnding
-      if (!imported(fileName)) {
-        val newClasses = importProgram(fileName, imp)
-        if (newClasses.nonEmpty) {
-          importedPrograms ++= newClasses
-          imported += fileName
-        } else {
-          ErrorResolvingGenericImport(mkImportString(imp, "."), imp)
+  def classExists(importName: String) = findClassFile(importName).isDefined
+
+  def findClassFile(importName: String): Option[File] = {
+    val fileName = importName.replaceAll("\\.", "/") + Main.FileEnding
+    importedFiles.get(fileName) match {
+      case Some(f) => Some(f)
+      case None    =>
+        ctx.getClassPaths foreach { path =>
+          val file = new File(s"$path/$fileName")
+          if (file.exists()) {
+            importedFiles(fileName) = file
+            return Some(file)
+          }
         }
-      }
+        None
     }
-    importedPrograms.toList
   }
 
-  private def importProgram(fileName: String, imp: Import): List[Program] = {
-    val importedPrograms: ArrayBuffer[Program] = ArrayBuffer()
-    ctx.getClassPaths.foreach { path =>
-      val file = new File(path + "/" + fileName)
-      if (file.exists()) {
+
+  def importPrograms(importName: String): List[Program] = {
+    if (imported(importName))
+      return Nil
+
+    imported += importName
+    findClassFile(importName) match {
+      case Some(file) =>
         parseGenericFile(ctx, file) match {
           case Some(importedProg) =>
-            importedPrograms += importedProg
             // Recursively import generics
-            val templateImporter = new TemplateImporter(ctx, importedProg, imported)
-            importedPrograms ++= templateImporter()
-          case None =>
+            val importedPrograms: ArrayBuffer[Program] = ArrayBuffer(importedProg)
+            importedProg.importNames foreach { recursiveImport =>
+              val templateImporter = new TemplateImporter(ctx, imported)
+              importedPrograms ++= templateImporter.importPrograms(recursiveImport)
+            }
+            importedPrograms.toList
+          case None               => Nil
         }
-        return importedPrograms.toList
-      }
-    }
-    List()
-  }
-
-  private def mkImportString(imp: Import, sep: String) = {
-    val id = imp.identifiers
-    if (id.length == 1) {
-      prog.getPackageDirectory + "/" + id.head.value
-    } else {
-      imp.identifiers.map(_.value).mkString(sep)
+      case None       => Nil
     }
   }
 
   private def parseGenericFile(ctx: Context, file: File): Option[Program] =
     try {
-      Some((Lexer andThen Parser).run(ctx)(List(file)).head)
+      val parsedProgram = (Lexer andThen Parser).run(ctx)(List(file)).head
+      Some(parsedProgram)
     } catch {
       case e: CompilationException =>
         println(e.getMessage)

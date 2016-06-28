@@ -1,6 +1,6 @@
-package kool.std
+package kool::std
 
-import java.lang.Math
+import java::lang::Math
 
 class Vector3<T> {
 
@@ -12,10 +12,28 @@ class Vector3<T> {
     // Constructors
     //------------------------------------------------------
 
-    Def new(x: T, y: T, z: T) = {
-        X = x
-        Y = y
-        Z = z
+    Def new(x: Int, y: Int, z: Int) = {
+        X = x as T
+        Y = y as T
+        Z = z as T
+    }
+
+    Def new(x: Long, y: Long, z: Long) = {
+        X = x as T
+        Y = y as T
+        Z = z as T
+    }
+
+    Def new(x: Float, y: Float, z: Float) = {
+        X = x as T
+        Y = y as T
+        Z = z as T
+    }
+
+    Def new(x: Double, y: Double, z: Double) = {
+        X = x as T
+        Y = y as T
+        Z = z as T
     }
 
     Def implicit new(arr: T[]) = {
@@ -39,13 +57,25 @@ class Vector3<T> {
 
     Def *(lhs: Vector3<T>, rhs: Vector3<T>) = new Vector3<T>(lhs.X * rhs.X, lhs.Y * rhs.Y, lhs.Z * rhs.Z)
 
-    Def *(lhs: T, rhs: Vector3<T>) = new Vector3<T>(lhs * rhs.X, lhs * rhs.Y, lhs * rhs.Z)
-
-    Def *(lhs: Vector3<T>, rhs: T) = rhs * lhs
+    Def *(lhs: Vector3<T>, rhs: Double) = new Vector3<T>(lhs.X * rhs, lhs.Y * rhs, lhs.Z * rhs)
+    Def *(lhs: Vector3<T>, rhs: Float)  = new Vector3<T>(lhs.X * rhs, lhs.Y * rhs, lhs.Z * rhs)
+    Def *(lhs: Vector3<T>, rhs: Int)    = new Vector3<T>(lhs.X * rhs, lhs.Y * rhs, lhs.Z * rhs)
+    Def *(lhs: Vector3<T>, rhs: Long)   = new Vector3<T>(lhs.X * rhs, lhs.Y * rhs, lhs.Z * rhs)
+    Def *(lhs: Double, rhs: Vector3<T>) = rhs * lhs
+    Def *(lhs: Float, rhs: Vector3<T>)  = rhs * lhs
+    Def *(lhs: Int, rhs: Vector3<T>)    = rhs * lhs
+    Def *(lhs: Long, rhs: Vector3<T>)   = rhs * lhs
 
     Def /(lhs: Vector3<T>, rhs: Vector3<T>) = new Vector3<T>(lhs.X / rhs.X, lhs.Y / rhs.Y, lhs.Z / rhs.Z)
 
-    Def /(lhs: Vector3<T>, rhs: T) = new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
+    Def /(lhs: Vector3<T>, rhs: Double) = new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
+    Def /(lhs: Vector3<T>, rhs: Float)  = new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
+    Def /(lhs: Vector3<T>, rhs: Int)    = new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
+    Def /(lhs: Vector3<T>, rhs: Long)   = new Vector3<T>(lhs.X / rhs, lhs.Y / rhs, lhs.Z / rhs)
+    Def /(lhs: Double, rhs: Vector3<T>) = rhs / lhs
+    Def /(lhs: Float, rhs: Vector3<T>)  = rhs / lhs
+    Def /(lhs: Int, rhs: Vector3<T>)    = rhs / lhs
+    Def /(lhs: Long, rhs: Vector3<T>)   = rhs / lhs
 
     Def ==(lhs: Vector3<T>, rhs: Vector3<T>) = lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Z == rhs.Z
 

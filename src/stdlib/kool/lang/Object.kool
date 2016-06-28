@@ -1,6 +1,6 @@
-package kool.lang
+package kool::lang
 
-class Object: java.lang.Object {
+class Object : java::lang::Object {
 
     Def ToString(): String = new String(toString())
     Def #(o: Object): Int = o.hashCode()

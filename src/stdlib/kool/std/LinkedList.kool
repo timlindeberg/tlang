@@ -1,7 +1,8 @@
-package kool.std
+package kool::std
 
-import <Option>
-import <List>
+import kool::std::Option
+import kool::std::List
+import kool::std::Collection
 
 class LinkedList<T> : List<T> {
 

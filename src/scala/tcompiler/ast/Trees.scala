@@ -4,6 +4,7 @@ package ast
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.utils._
+import scala.collection.mutable
 
 object Trees {
 
@@ -102,15 +103,30 @@ object Trees {
   /*-------------------------------- Top level Trees --------------------------------*/
 
   case class Program(
-    progPackage: Option[Package],
+    pack: Option[Package],
     var imports: List[Import],
     var classes: List[ClassDecl],
-    importMap: Map[String, String]) extends Tree
-  {
-    def getPackageDirectory = progPackage.map(_.identifiers.map(_.value).mkString("/")).getOrElse("")
-    def getPackageName(name: String) = progPackage match {
+    importMap: mutable.Map[String, String]) extends Tree {
+    def getPackageDirectory = pack.map(_.identifiers.map(_.value).mkString("/")).getOrElse("")
+    def getPackageName(name: String) = pack match {
       case Some(pack) => (pack.identifiers.map(_.value) :+ name).mkString(".")
       case None       => name
+    }
+
+    def importNames = imports map importName
+
+    def importName(imp: Import): String = {
+      val importName = imp.identifiers.map(_.value).mkString(".")
+      getFullName(importName)
+    }
+
+    def importName(typeId: ClassIdentifier): String = {
+      val name = typeId.value.replaceAll("::", ".")
+      getFullName(name)
+    }
+
+    def getFullName(name: String) = {
+      importMap.getOrElse(name, name).replaceAll("::", ".")
     }
   }
 
@@ -131,7 +147,6 @@ object Trees {
 
   case class RegularImport(identifiers: List[Identifier]) extends Import
   case class WildCardImport(identifiers: List[Identifier]) extends Import
-  case class TemplateImport(identifiers: List[Identifier]) extends Import
 
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
@@ -442,7 +457,7 @@ object Trees {
   case class Identifier(value: String) extends IdentifierTree[Symbol] with LeafTree {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = {
-      if(!hasSymbol)
+      if (!hasSymbol)
         return TUntyped
 
       getSymbol match {
@@ -454,7 +469,7 @@ object Trees {
     }
 
     override def setType(tpe: Type) = {
-      if(hasSymbol)
+      if (hasSymbol)
         getSymbol.setType(tpe)
       this
     }
@@ -467,10 +482,10 @@ object Trees {
     val name = value
 
     // The type of the identifier depends on the type of the symbol
-    override def getType: Type = if(hasSymbol) TObject(getSymbol) else TUntyped
+    override def getType: Type = if (hasSymbol) TObject(getSymbol) else TUntyped
 
     override def setType(tpe: Type) = {
-      if(hasSymbol)
+      if (hasSymbol)
         getSymbol.setType(tpe)
       this
     }
@@ -484,7 +499,14 @@ object Trees {
         case x: ClassIdentifier if x.isTemplated => x.templatedClassName
         case x                                   => x.name
       }
-      StartEnd + value + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEnd
+
+      val s = value.split("::")
+      val prefix = if (s.size == 1)
+                     ""
+                   else
+                     s.dropRight(1).mkString("::") + "::"
+      val name = s.last
+      prefix + StartEnd + name + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEnd
     }
   }
 
@@ -499,7 +521,7 @@ object Trees {
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
-  case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
+  case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
   case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
 
   case class Empty() extends ExprTree with LeafTree {override def toString = "<EMPTY>"}
@@ -513,4 +535,20 @@ object Trees {
         }
       case _                   => false
     }
+
+  /**
+    * Statements that have no effect on their own.
+    */
+  object UselessStatement {
+    def unapply(e: StatTree): Option[ExprTree] = e match {
+      case _: MethodCall             => None
+      case IncrementDecrementTree(_) => None
+      case _: Assign |
+           _: ArrayAssign |
+           _: FieldAssign            => None
+      case expr: ExprTree            => Some(expr)
+      case _                         => None
+    }
+  }
+
 }

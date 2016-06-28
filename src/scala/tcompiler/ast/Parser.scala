@@ -2,14 +2,14 @@ package tcompiler
 package ast
 
 import tcompiler.analyzer.Types.TUnit
-import tcompiler.ast.TreeGroups.UselessStatement
 import tcompiler.ast.Trees.{OperatorTree, _}
-import tcompiler.imports.ClassSymbolLocator
+import tcompiler.imports.{ClassSymbolLocator, TemplateImporter}
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
 import tcompiler.utils._
 import tcompiler.utils.Extensions._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Parser extends Pipeline[List[List[Token]], List[Program]] {
@@ -24,8 +24,8 @@ object Parser extends Pipeline[List[List[Token]], List[Program]] {
 
 object ASTBuilder {
 
-  val TLangObject = "kool.lang.Object"
-  val TLangString = "kool.lang.String"
+  val TLangObject = "kool::lang::Object"
+  val TLangString = "kool::lang::String"
 
   val MaximumArraySize = 255
 
@@ -100,32 +100,39 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val classes = createMainClass(code)
 
-    val importMap = createImportMap(imp)
+    val importMap = createImportMap(imp, pack)
     Program(pack, imp, classes, importMap).setPos(startPos, nextToken)
   }
 
-  private def createImportMap(imports: List[Import]) = {
+
+  private def createImportMap(imports: List[Import], pack: Option[Package]) = {
+
+    def importName(imp: Import): String = imp.identifiers.map(_.value).mkString(".")
+
     val regImports = imports.filterType(classOf[RegularImport])
     val wcImports = imports.filterType(classOf[WildCardImport])
 
-    var importMap = Map[String, String]()
+    var importMap = mutable.Map[String, String]()
 
     for (imp <- DefaultImports) {
-      val s = imp.split("\\.")
-      importMap += (s.last -> imp)
+      val s = imp.split("::")
+      importMap += (s.last -> imp.replaceAll("::", "."))
     }
 
     // TODO: Use classpath flags
     for (imp <- regImports) {
       val fullName = importName(imp)
       val shortName = imp.identifiers.last.value
-      if (ClassSymbolLocator.classExists(fullName)) {
-        if (importMap.contains(shortName))
-          ErrorConflictingImport(fullName, importMap(shortName), imp)
+      def writtenName = fullName.replaceAll("\\.", "::")
+
+      val templateImporter = new TemplateImporter(ctx)
+
+      if (importMap.contains(shortName))
+        ErrorConflictingImport(writtenName, importMap(shortName), imp)
+      else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
+             ErrorCantResolveImport(writtenName, imp)
+      else
         importMap += (shortName -> fullName)
-      } else {
-        ErrorCantResolveImport(fullName, imp)
-      }
     }
 
     // TODO: Support wild card imports. Need to be able to search the full classpath
@@ -133,8 +140,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     importMap
   }
 
-  private def importName(imp: Import): String = importName(imp.identifiers)
-  private def importName(packageIds: List[Identifier]): String = packageIds.map(_.value).mkString(".")
 
   private def createMainClass(code: List[Tree]) = {
     var classes = code.collect { case x: ClassDecl => x }
@@ -170,33 +175,22 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def packageDecl() = {
     val startPos = nextToken
-    val identifiers = nonEmptyList(identifier, DOT)
+    val identifiers = nonEmptyList(identifier, COLON, COLON)
     endStatement()
     Package(identifiers).setPos(startPos, nextToken)
   }
 
   /**
-    * <importDecl> ::= import [ "<" ] <identifier> { . ( <identifier> | * ) } [ ">" ]
+    * <importDecl> ::= import <identifier> { . ( <identifier> | * ) }
     */
   def importDecl(): Import = {
     val startPos = nextToken
     eat(IMPORT)
     val ids = new ArrayBuffer[Identifier]()
 
-    if (nextTokenKind == LESSTHAN) {
-      eat(LESSTHAN)
-      ids += identifier()
-      while (nextTokenKind == DOT) {
-        eat(DOT)
-        ids += identifier()
-      }
-      eat(GREATERTHAN)
-      endStatement()
-      return TemplateImport(ids.toList).setPos(startPos, nextToken)
-    }
     ids += identifier()
-    while (nextTokenKind == DOT) {
-      eat(DOT)
+    while (nextTokenKind == COLON) {
+      eat(COLON, COLON)
       nextTokenKind match {
         case TIMES =>
           eat(TIMES)
@@ -912,171 +906,168 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <term> ::= <termFirst> { termRest }
     */
+  def term(): ExprTree = termRest(termFirst())
 
 
-  def term(): ExprTree = {
-    /**
-      * <termFirst> ::= "(" <expression> ")"
-      * | ! <expression>
-      * | - <expression>
-      * | -- <identifier>
-      * | ++ <identifier>
-      * | ~ <identifier>
-      * | <intLit>
-      * | <stringLit>
-      * | <identifier>
-      * | <classIdentifier>
-      * | <identifier> ++
-      * | <identifier> --
-      * | <identifier> "(" <expression> { "," <expression> } ")"
-      * | "{" { <expression> } "}"
-      * | true
-      * | false
-      * | this
-      * | null
-      * | <superCall>.<identifier>
-      * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
-      * | <newExpression>
-      */
-    def termFirst() = {
-      val startPos = nextToken
-      val tree = nextTokenKind match {
-        case LPAREN        =>
+  /**
+    * <termFirst> ::= "(" <expression> ")"
+    * | "{" [ <expression> { "," <expression> } ] "}"
+    * | ! <term>
+    * | - <term>
+    * | ~ <term>
+    * | # <term>
+    * | -- <term>
+    * | ++ <term>
+    * | <intLit>
+    * | <longLit>
+    * | <floatLit>
+    * | <doubleLit>
+    * | <charLit>
+    * | <stringLit>
+    * | <identifier>
+    * | <identifier> "(" <expression> { "," <expression> } ")"
+    * | "{" { <expression> } "}"
+    * | true
+    * | false
+    * | this
+    * | null
+    * | <superCall>.<identifier>
+    * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
+    * | <newExpression>
+    */
+  def termFirst() = {
+    val startPos = nextToken
+    val tree = nextTokenKind match {
+      case LPAREN        =>
+        eat(LPAREN)
+        val expr = expression()
+        eat(RPAREN)
+        expr
+      case LBRACE        =>
+        eat(LBRACE)
+        val expressions = commaList(expression, RBRACE)
+        eat(RBRACE)
+        ArrayLit(expressions)
+      case BANG          =>
+        eat(BANG)
+        Not(term())
+      case MINUS         => negation()
+      case LOGICNOT      =>
+        eat(LOGICNOT)
+        LogicNot(term())
+      case HASH          =>
+        eat(HASH)
+        Hash(term())
+      case DECREMENT     =>
+        eat(DECREMENT)
+        PreDecrement(term())
+      case INCREMENT     =>
+        eat(INCREMENT)
+        PreIncrement(term())
+      case INTLITKIND    =>
+        intLit()
+      case LONGLITKIND   =>
+        longLit()
+      case FLOATLITKIND  =>
+        floatLit()
+      case DOUBLELITKIND =>
+        doubleLit()
+      case CHARLITKIND   =>
+        charLit()
+      case STRLITKIND    =>
+        stringLit()
+      case IDKIND        =>
+        var id = identifier()
+        while (nextTokenKind == COLON) {
+          eat(COLON, COLON)
+          val newName = s"${id.value}::${identifier().value}"
+          id = Identifier(newName).setPos(startPos, nextToken)
+        }
+
+        nextTokenKind match {
+          case LPAREN =>
+            eat(LPAREN)
+            val exprs = commaList(expression)
+            eat(RPAREN)
+            MethodCall(Empty(), id, exprs)
+          case _      => id
+        }
+      case TRUE          =>
+        eat(TRUE)
+        True()
+      case FALSE         =>
+        eat(FALSE)
+        False()
+      case THIS          =>
+        eat(THIS)
+        This()
+      case NULL          =>
+        eat(NULL)
+        Null()
+      case SUPER         =>
+        val sup = superCall()
+        eat(DOT)
+        val id = identifier()
+
+        if (nextTokenKind == LPAREN) {
           eat(LPAREN)
-          val expr = expression()
+          val exprs = commaList(expression)
           eat(RPAREN)
-          expr
-        case LBRACE        =>
-          eat(LBRACE)
-          val expressions = commaList(expression, RBRACE)
-          eat(RBRACE)
-          ArrayLit(expressions)
-        case BANG          =>
-          eat(BANG)
-          Not(term())
-        case MINUS         => negation()
-        case LOGICNOT      =>
-          eat(LOGICNOT)
-          LogicNot(term())
-        case HASH          =>
-          eat(HASH)
-          Hash(term())
-        case DECREMENT     =>
-          eat(DECREMENT)
-          PreDecrement(term())
-        case INCREMENT     =>
-          eat(INCREMENT)
-          PreIncrement(term())
-        case INTLITKIND    =>
-          intLit()
-        case LONGLITKIND   =>
-          longLit()
-        case FLOATLITKIND  =>
-          floatLit()
-        case DOUBLELITKIND =>
-          doubleLit()
-        case CHARLITKIND   =>
-          charLit()
-        case STRLITKIND    =>
-          stringLit()
-        case IDKIND        =>
-          val id = identifier()
-          nextTokenKind match {
-            case INCREMENT =>
-              eat(INCREMENT)
-              PostIncrement(id)
-            case DECREMENT =>
-              eat(DECREMENT)
-              PostDecrement(id)
-            case LPAREN    =>
-              eat(LPAREN)
-              val exprs = commaList(expression)
-              eat(RPAREN)
-              MethodCall(Empty(), id, exprs)
-            case _         => id
-          }
-        case TRUE          =>
-          eat(TRUE)
-          True()
-        case FALSE         =>
-          eat(FALSE)
-          False()
-        case THIS          =>
-          eat(THIS)
-          This()
-        case NULL          =>
-          eat(NULL)
-          Null()
-        case SUPER         =>
-          val sup = superCall()
+          MethodCall(sup, id, exprs.toList)
+        } else {
+          FieldAccess(sup, id)
+        }
+      case NEW           => newExpression()
+      case _             => FatalUnexpectedToken(currentToken)
+    }
+    tree.setPos(startPos, nextToken)
+  }
+
+  /**
+    * <termRest> ::= .<identifier>
+    * | .<identifier> "(" <expression> { "," <expression> } ")
+    * | <arrayIndexing>
+    * | as <tpe>
+    * | ++
+    * | --
+    */
+  def termRest(lhs: ExprTree): ExprTree = {
+    var e = lhs
+    val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)
+
+    // Uses current token since a newline should stop the iteration
+    while (tokens.contains(currentToken.kind)) {
+      val startPos = nextToken
+
+      e = currentToken.kind match {
+        case DOT       =>
           eat(DOT)
           val id = identifier()
-
           if (nextTokenKind == LPAREN) {
             eat(LPAREN)
             val exprs = commaList(expression)
             eat(RPAREN)
-            MethodCall(sup, id, exprs.toList)
+            MethodCall(e, id, exprs.toList)
           } else {
-            FieldAccess(sup, id)
+            FieldAccess(e, id)
           }
-        case NEW           => newExpression()
-        case _             => FatalUnexpectedToken(currentToken)
+        case LBRACKET  =>
+          arrayIndexing(e)
+        case AS        =>
+          eat(AS)
+          As(e, tpe())
+        case INCREMENT =>
+          eat(INCREMENT)
+          PostIncrement(e)
+        case DECREMENT =>
+          eat(DECREMENT)
+          PostDecrement(e)
+        case _         => ???
       }
-      tree.setPos(startPos, nextToken)
+      e.setPos(startPos, nextToken)
     }
 
-    /**
-      * <termRest> ::= .<identifier>
-      * | .<identifier> "(" <expression> { "," <expression> } ")
-      * | <arrayIndexing>
-      * | as <tpe>
-      * | ++
-      * | --
-      */
-    def termRest(lhs: ExprTree): ExprTree = {
-
-      // Cant be any rest if token is newline
-      if (currentToken.kind == NEWLINE)
-        return lhs
-
-      var e = lhs
-      val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)
-
-      while (tokens.contains(nextTokenKind)) {
-        val startPos = nextToken
-
-        e = nextTokenKind match {
-          case DOT       =>
-            eat(DOT)
-            val id = identifier()
-            if (nextTokenKind == LPAREN) {
-              eat(LPAREN)
-              val exprs = commaList(expression)
-              eat(RPAREN)
-              MethodCall(e, id, exprs.toList)
-            } else {
-              FieldAccess(e, id)
-            }
-          case LBRACKET  =>
-            arrayIndexing(e)
-          case AS        =>
-            eat(AS)
-            As(e, tpe())
-          case INCREMENT =>
-            eat(INCREMENT)
-            PostIncrement(e)
-          case DECREMENT =>
-            eat(DECREMENT)
-            PostDecrement(e)
-          case _         => ???
-        }
-        e.setPos(startPos, nextToken)
-      }
-
-      e
-    }
-    termRest(termFirst())
+    e
   }
 
   /**
@@ -1194,11 +1185,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
   private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
     case Block(stmts) if stmts.nonEmpty =>
-      stmts.last match {
-        case m: MethodCall       => Block(stmts.updated(stmts.size - 1, Return(Some(m))))
-        case UselessStatement(e) => Block(stmts.updated(stmts.size - 1, Return(Some(e))))
-        case _                   => stat
-      }
+      val replaced = replaceExprWithReturnStat(stmts.last)
+      Block(stmts.updated(stmts.size - 1, replaced))
     case m: MethodCall                  => Return(Some(m))
     case UselessStatement(e)            => Return(Some(e))
     case _                              => stat
@@ -1291,11 +1279,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <classIdentifier> ::= <identifier> { . <identifier> } [ "<" <type> { "," <type> } ">" ]
+    * <classIdentifier> ::= <identifier> { :: <identifier> } [ "<" <type> { "," <type> } ">" ]
     */
   private def classIdentifier(): ClassIdentifier = {
     val startPos = nextToken
-    val ids = nonEmptyList(identifier, DOT)
+    val ids = nonEmptyList(identifier, COLON, COLON)
+    val id = ids.toList.map(_.value).mkString("::")
     val tIds = nextTokenKind match {
       case LESSTHAN =>
         eat(LESSTHAN)
@@ -1304,7 +1293,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         tmp
       case _        => List()
     }
-    ClassIdentifier(ids.map(_.value).mkString("."), tIds).setPos(startPos, nextToken)
+    ClassIdentifier(id, tIds).setPos(startPos, nextToken)
   }
 
   /**
@@ -1384,11 +1373,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <nonEmptyList> ::= <parse> { <delimiter> <parse> }
     */
 
-  private def nonEmptyList[T](parse: () => T, delimiter: TokenKind): List[T] = {
+  private def nonEmptyList[T](parse: () => T, delimiters: TokenKind*): List[T] = {
     val arrBuff = new ArrayBuffer[T]()
     arrBuff += parse()
-    while (nextTokenKind == delimiter) {
-      eat(delimiter)
+    val first = delimiters.head
+    while (nextTokenKind == first) {
+      delimiters.foreach(eat(_))
       arrBuff += parse()
     }
     arrBuff.toList

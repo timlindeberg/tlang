@@ -1,19 +1,19 @@
-package kool.lang
+package kool::lang
 
-import java.lang.StringBuilder
-import java.lang.Integer
-import java.util.Locale
-import java.nio.charset.Charset
-import kool.std.Iterable
-import kool.std.Iterator
+import java::lang::StringBuilder
+import java::lang::Integer
+import java::util::Locale
+import java::nio::charset::Charset
+import kool::std::Iterable
+import kool::std::Iterator
 
-class String: Iterable<Char> {
+class String : Iterable<Char> {
 
-    var s: java.lang.String
+    var s: java::lang::String
 
-    Def new()                               = (s = new java.lang.String())
-    Def implicit new(str: java.lang.String) = (s = str)
-    Def implicit new(chars: Char[])         = (s = new java.lang.String(chars))
+    Def new()                               = (s = new java::lang::String())
+    Def implicit new(str: java::lang::String) = (s = str)
+    Def implicit new(chars: Char[])         = (s = new java::lang::String(chars))
 
     Def Size() = s.length()
     Def IsEmpty() = Size() == 0
@@ -24,18 +24,18 @@ class String: Iterable<Char> {
     // Conversion methods
     //----------------------------------------------------
 
-    Def ToInt()           = java.lang.Integer.parseInt(s)
-    Def ToInt(radix: Int) = java.lang.Integer.parseInt(s, radix)
+    Def ToInt()           = java::lang::Integer.parseInt(s)
+    Def ToInt(radix: Int) = java::lang::Integer.parseInt(s, radix)
 
     // TODO: Long, Float, Double probably can't be keywords if this is to work
-    // Def ToLong()           = java.lang.Long.parseLong(s)
-    // Def ToLong(radix: Int) = java.lang.Long.parseInt(s, radix)
+    // Def ToLong()           = java::lang::Long.parseLong(s)
+    // Def ToLong(radix: Int) = java::lang::Long.parseInt(s, radix)
 
-    // Def ToFloat()           = java.lang.Float.parseFloat(s)
-    // Def ToFloat(radix: Int) = java.lang.Float.parseFloat(s, radix)
+    // Def ToFloat()           = java::lang::Float.parseFloat(s)
+    // Def ToFloat(radix: Int) = java::lang::Float.parseFloat(s, radix)
 
-    // Def ToDouble()           = java.lang.Double.parseDouble(s)
-    // Def ToDouble(radix: Int) = java.lang.Double.parseDouble(s, radix)
+    // Def ToDouble()           = java::lang::Double.parseDouble(s)
+    // Def ToDouble(radix: Int) = java::lang::Double.parseDouble(s, radix)
 
 
     //----------------------------------------------------
@@ -99,7 +99,7 @@ class String: Iterable<Char> {
 
     Def *(times: Int, str: String) = str * times
     Def *(str: String, times: Int) = {
-        val b = new java.lang.StringBuilder()
+        val b = new java::lang::StringBuilder()
         val v = str.s
         for(var i = 0; i < times; i++)
             b.append(v)
@@ -168,21 +168,21 @@ class String: Iterable<Char> {
 
     Def Trim() = new String(s.trim())
 
-    Def static ValueOf(data: Char[], offset: Int, count: Int) = java.lang.String.valueOf(data, offset, count)
-    Def static ValueOf(data: Char[]) = java.lang.String.valueOf(data)
-    Def static ValueOf(c: Char)      = java.lang.String.valueOf(c)
-    Def static ValueOf(b: Bool)      = java.lang.String.valueOf(b)
-    Def static ValueOf(d: Double)    = java.lang.String.valueOf(d)
-    Def static ValueOf(f: Float)     = java.lang.String.valueOf(f)
-    Def static ValueOf(i: Int)       = java.lang.String.valueOf(i)
-    Def static ValueOf(l: Long)      = java.lang.String.valueOf(l)
+    Def static ValueOf(data: Char[], offset: Int, count: Int) = java::lang::String.valueOf(data, offset, count)
+    Def static ValueOf(data: Char[]) = java::lang::String.valueOf(data)
+    Def static ValueOf(c: Char)      = java::lang::String.valueOf(c)
+    Def static ValueOf(b: Bool)      = java::lang::String.valueOf(b)
+    Def static ValueOf(d: Double)    = java::lang::String.valueOf(d)
+    Def static ValueOf(f: Float)     = java::lang::String.valueOf(f)
+    Def static ValueOf(i: Int)       = java::lang::String.valueOf(i)
+    Def static ValueOf(l: Long)      = java::lang::String.valueOf(l)
     Def static ValueOf(o: Object)    = o.ToString()
 
 }
 
 class StringIterator: Iterator<Char> {
 
-    val s: java.lang.String
+    val s: java::lang::String
     var index = 0
 
     Def new(str: String) = (this.s = str.s)

@@ -3,8 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeGroups.UselessStatement
-import tcompiler.ast.{Printer, TreeTraverser}
+import tcompiler.ast.TreeTraverser
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -16,15 +15,17 @@ object NameAnalysis extends Pipeline[List[Program], List[Program]] {
   def run(ctx: Context)(progs: List[Program]): List[Program] = {
     globalScope = new GlobalScope
 
+
+
     // Add all symbols first so each program instance can access
     // all symbols in binding
-    val analyzers = progs.map { prog =>
+    val analyzers = progs map { prog =>
       val nameAnalyzer = new NameAnalyser(ctx, prog)
       nameAnalyzer.addSymbols()
       nameAnalyzer
     }
 
-    analyzers.foreach { nameAnalyzer =>
+    analyzers foreach { nameAnalyzer =>
       nameAnalyzer.bindIdentifiers()
       nameAnalyzer.checkInheritanceCycles()
       nameAnalyzer.checkVariableUsage()
@@ -106,6 +107,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       val fullName = prog.getPackageName(name)
 
       val newSymbol = new ClassSymbol(fullName, isAbstract)
+      prog.importMap(name) = fullName
       newSymbol.writtenName = name
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
@@ -186,10 +188,10 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
 
   private def ensureClassNotDefined(id: ClassIdentifier): Unit = {
     val name = id.value
-    val map = globalScope.classes
-    if (map.contains(name)) {
-      val oldSymbol = map(name)
-      ErrorClassAlreadyDefined(name, oldSymbol.line, id)
+    val fullName = prog.getFullName(name)
+    globalScope.classes.get(fullName) match {
+      case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
+      case None =>
     }
   }
 
@@ -377,27 +379,9 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           case FieldAssign(obj, id, expr)           =>
             // Same as with method call, we can't traverse 'id' until typechecking stage
             traverse(obj, expr)
-          case acc@FieldAccess(obj, id)             =>
+          case FieldAccess(obj, id)             =>
             // Same as with method call, we can't traverse 'id' until typechecking stage
-            getIdentifiers(acc) match {
-              case Nil =>
-                // Object is not an identifier
-                traverse(obj)
-              case ids@(firstId :: _) =>
-                lookupSymbol(firstId, localVars) match {
-                  case Some(symbol) =>
-                    // If the first identifier was in scope we treat this as regular
-                    // field access
-                    setIdentiferSymbol(firstId, symbol)
-                  case None         =>
-                    // Otherwise we treat the identifiers as one identifier
-                    // eg, java.lang.math as "java.lang.math"
-                    val idName = ids.dropRight(1).map(_.value).mkString(".")
-                    val obj = Identifier(idName).setSymbol(new VariableSymbol(idName))
-                    setIdentiferSymbol(obj, localVars)
-                    acc.obj = obj
-                }
-            }
+            traverse(obj)
           case Instance(expr, id)                   =>
             traverse(expr)
             globalScope.lookupClass(prog, id.value) match {
@@ -459,21 +443,6 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
         }
       }
       traverser.traverse(startingTree)
-    }
-
-    private def getIdentifiers(access: FieldAccess) = {
-      var idList: List[Identifier] = Nil
-      var accessTree: Tree = access
-      while (accessTree.isInstanceOf[FieldAccess]) {
-        val a = accessTree.asInstanceOf[FieldAccess]
-        idList ::= a.id
-        accessTree = a.obj
-      }
-      // If last one is not an identifier this is a regular field access
-      accessTree match {
-        case id: Identifier => id :: idList
-        case _              => Nil
-      }
     }
 
     private def setVariableUsed(id: Identifier) =

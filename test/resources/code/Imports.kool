@@ -1,6 +1,6 @@
-import java.util.Locale
-import java.util.Random
-import java.lang.System
+import java::util::Locale
+import java::util::Random
+import java::lang::System
 
 new A().AD() // res: 1
 new A().BC() // res: 0
@@ -13,39 +13,22 @@ val ran = new Random(0)
 println(ran.nextInt()) // res: -1155484576
 
 
-val st = new java.util.IntSummaryStatistics()
+val st = new java::util::IntSummaryStatistics()
 st.accept(8)
 println(st.getMin()) // res: 8
 
-println(1 + java.lang.Math.PI + 1) // res: 5.141592653589793
+println(1 + java::lang::Math.PI + 1) // res: 5.141592653589793
 
-
-val java = new Java()
-
-// when java is in scope that has precedence
-println(1 + java.lang.Math.PI + 1) // res: 3
 
 System.exit(0)
 
 println("This never not happen")
 
-class A : java.util.GregorianCalendar {
+class A : java::util::GregorianCalendar {
 
     Def AD() = println(AD)
     Def BC() = println(BC)
 
     Def TimeZone() = println(getTimeZone().getID())
 
-}
-
-class Java {
-    Val lang = new Lang()
-}
-
-class Lang {
-    Val Math = new Math()
-}
-
-class Math {
-    Val PI = 1
 }

@@ -1,6 +1,6 @@
-package kool.std
+package kool::std
 
-import <Iterable>
+import kool::std::Iterable
 
 trait Collection<T>: Iterable<T> {
 

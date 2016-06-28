@@ -1,6 +1,7 @@
 package tcompiler.ast
 
 import tcompiler.ast.Trees._
+import scala.collection.mutable
 
 /**
   * Created by Tim Lindeberg on 5/22/2016.
@@ -8,14 +9,13 @@ import tcompiler.ast.Trees._
 
 abstract class TreeCopier {
 
-  def Program(t: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: Map[String, String]): Program
+  def Program(t: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]): Program
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
   def Package(t: Tree, identifiers: List[Identifier]): Package
   def RegularImport(t: Tree, identifiers: List[Identifier]): RegularImport
   def WildCardImport(t: Tree, identifiers: List[Identifier]): WildCardImport
-  def TemplateImport(t: Tree, identifiers: List[Identifier]): TemplateImport
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
@@ -144,7 +144,7 @@ abstract class TreeCopier {
 }
 
 class StrictTreeCopier extends TreeCopier {
-  override def Program(t: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: Map[String, String]) =
+  override def Program(t: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
     new Program(progPackage, imports, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
@@ -155,9 +155,6 @@ class StrictTreeCopier extends TreeCopier {
     new RegularImport(identifiers).copyAttrs(t)
   override def WildCardImport(t: Tree, identifiers: List[Identifier]) =
     new WildCardImport(identifiers).copyAttrs(t)
-  override def TemplateImport(t: Tree, identifiers: List[Identifier]) =
-    new TemplateImport(identifiers).copyAttrs(t)
-
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
@@ -374,7 +371,7 @@ class StrictTreeCopier extends TreeCopier {
 class LazyTreeCopier extends TreeCopier {
   val strictCopier = new StrictTreeCopier
 
-  override def Program(tree: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: Map[String, String]) =
+  override def Program(tree: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
     tree match {
       case t@Program(progPackage0, imports0, classes0, importMap0)
         if progPackage0 == progPackage && imports0 == imports && classes0 == classes && importMap0 == importMap0 => t
@@ -394,11 +391,6 @@ class LazyTreeCopier extends TreeCopier {
     case t@WildCardImport(identifiers0)
       if (identifiers eq identifiers0) => t
     case _ => strictCopier.WildCardImport(tree, identifiers)
-  }
-  override def TemplateImport(tree: Tree, identifiers: List[Identifier]): TemplateImport = tree match {
-    case t@TemplateImport(identifiers0)
-      if (identifiers eq identifiers0) => t
-    case _ => strictCopier.TemplateImport(tree, identifiers)
   }
   override def ClassDecl(tree: Tree, id: ClassIdentifier, parents: List[ClassIdentifier], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean): ClassDecl = tree match {
     case t@ClassDecl(id0, parents0, fields0, methods0, isTrait0)

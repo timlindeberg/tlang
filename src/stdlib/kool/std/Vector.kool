@@ -1,8 +1,9 @@
-package kool.std
+package kool::std
 
-import <Option>
-import <Iterator>
-import <List>
+import kool::std::List
+import kool::std::Collection
+import kool::std::Option
+import kool::std::Iterator
 
 class Vector<T>: List<T> {
 

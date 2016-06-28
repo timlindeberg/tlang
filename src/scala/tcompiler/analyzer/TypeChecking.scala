@@ -20,7 +20,7 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(progs: List[Program]): List[Program] = {
-    progs.map { prog =>
+    progs.foreach { prog =>
       // Typecheck fields
       prog.classes.foreach { classDecl =>
         val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, None, Set()))
@@ -44,8 +44,8 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
       tc.checkMethodUsage()
       tc.checkCorrectOverrideReturnTypes(prog)
       tc.checkTraitsAreImplemented(prog)
-      prog
     }
+    progs
   }
 }
 
@@ -143,32 +143,48 @@ class TypeChecker(
     case While(expr, stat)                         =>
       tcExpr(expr, TBool)
       tcStat(stat)
-
-    case For(init, condition, post, stat) =>
+    case For(init, condition, post, stat)          =>
       init.foreach(tcStat(_))
       tcExpr(condition, TBool)
       post.foreach(tcStat)
       tcStat(stat)
-    case f: Foreach                       =>
-      typeCheckForeachLoop(f)
-    case PrintStatTree(expr)              =>
+    case Foreach(varDecl, container, stat)         =>
+      val containerType = tcExpr(container)
+      val expectedVarType = containerType match {
+        case TArray(arrTpe)       =>
+          arrTpe
+        case TObject(classSymbol) =>
+          getIteratorType(classSymbol) match {
+            case Some(t) => t
+            case None    => ErrorForeachNotIterable(containerType, container)
+          }
+        case _                    => ErrorForeachNotIterable(containerType, container)
+      }
+      varDecl.id.getType match {
+        case TUntyped => varDecl.id.setType(expectedVarType)
+        case tpe      =>
+          if (tpe != expectedVarType)
+            ErrorWrongType(expectedVarType, tpe, varDecl.id)
+      }
+      tcStat(stat)
+    case PrintStatTree(expr)                       =>
       tcExpr(expr)
       if (expr.getType == TUnit)
         ErrorCantPrintUnitType(expr)
-    case Error(expr)                      =>
+    case Error(expr)                               =>
       tcExpr(expr, TString)
-    case ret@Return(Some(expr))           =>
+    case ret@Return(Some(expr))                    =>
       val t = currentMethodSymbol.getType match {
         case TUntyped => tcExpr(expr)
         case retType  => tcExpr(expr, retType)
       }
       returnStatements += ((ret, t))
-    case ret@Return(None)                 =>
+    case ret@Return(None)                          =>
       if (currentMethodSymbol.getType != TUntyped && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
-    case _: Break | _: Continue           =>
-    case expr: ExprTree                   =>
+    case _: Break | _: Continue                    =>
+    case expr: ExprTree                            =>
       tcExpr(expr)
   }
 
@@ -185,7 +201,7 @@ class TypeChecker(
       case _: True      => TBool
       case _: False     => TBool
 
-      case id: Identifier                =>
+      case id: Identifier                                =>
         id.getSymbol match {
           case varSymbol: VariableSymbol => varSymbol.classSymbol match {
             case Some(clazz) => checkFieldPrivacy(clazz, varSymbol, id)
@@ -194,21 +210,21 @@ class TypeChecker(
           case _                         =>
         }
         id.getType
-      case id: ClassIdentifier           => id.getType
-      case th: This                      => th.getSymbol.getType
-      case su: Super                     => su.getSymbol.getType
-      case mc: MethodCall                => tcMethodCall(mc)
-      case fr@FieldAccess(obj, id)       =>
+      case id: ClassIdentifier                           => id.getType
+      case th: This                                      => th.getSymbol.getType
+      case su: Super                                     => su.getSymbol.getType
+      case mc: MethodCall                                => tcMethodCall(mc)
+      case fr@FieldAccess(obj, id)                       =>
         val tpe = typeCheckField(obj, id, fr)
         fr.setType(tpe)
         tpe
-      case fa@FieldAssign(obj, id, expr) =>
+      case fa@FieldAssign(obj, id, expr)                 =>
         val tpe = typeCheckField(obj, id, fa)
         fa.setType(tpe)
         tcExpr(expr, tpe)
         checkReassignment(id, fa)
         tpe
-      case newArray@NewArray(tpe, sizes) =>
+      case newArray@NewArray(tpe, sizes)                 =>
         sizes.foreach(tcExpr(_, TInt))
         var arrayType = tpe.getType
         for (i <- 1 to newArray.dimension)
@@ -649,33 +665,13 @@ class TypeChecker(
     }
   }
 
-  private def typeCheckForeachLoop(forEach: Foreach): Unit = {
-    val varDecl = forEach.varDecl
-    val container = forEach.container
-    val containerType = tcExpr(container)
-    val expectedVarType = containerType match {
-      case TArray(arrTpe)       =>
-        arrTpe
-      case TObject(classSymbol) =>
-        getIteratorType(classSymbol) match {
-          case Some(t) => t
-          case None    =>
-            ErrorForeachContainNotIterable(containerType, container)
-            return
-        }
-      case _                    =>
-        ErrorForeachContainNotIterable(containerType, container)
-        return
-    }
-    varDecl.id.getType match {
-      case TUntyped => varDecl.id.setType(expectedVarType)
-      case tpe      =>
-        if (tpe != expectedVarType)
-          ErrorWrongType(expectedVarType, tpe, varDecl.id)
-    }
-    tcStat(forEach.stat)
-  }
-
+  /**
+    * This is hardcoded and does not depend on the trait Iterable.
+    * This allows for classes which do not implement the Itreable trait
+    * but which does provide an Iterator method which returns an Iterator
+    * with the methods HasNext and Next of correct types to still be
+    * applicable for ForEach loops.
+    */
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] = {
     classSymbol.lookupMethod("Iterator", List()) match {
       case Some(methSymbol) =>
@@ -756,7 +752,7 @@ class TypeChecker(
             s.setType(objType)
           case None                 => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, pos)
         }
-      case _                                             =>
+      case _             =>
     }
 
     objType match {

@@ -102,14 +102,14 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
-        case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
-        case c :: r if isEndingChar(c) => (createIdentifierOrKeyWord(s), chars)
-        case c :: r                    =>
+        case c :: r if validChar(c)               => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
+        case c :: r if isEndingChar(c)            => (createIdentifierOrKeyWord(s), chars)
+        case c :: r                               =>
           // Advance column here so only the invalid char gets highlighted
           column += charsParsed
           ErrorInvalidIdentifier(c, 1)
           getIdentifierOrKeyword(r, s + c, 1)
-        case Nil                       => (createIdentifierOrKeyWord(s), chars)
+        case Nil                                  => (createIdentifierOrKeyWord(s), chars)
       }
     }
     getIdentifierOrKeyword(chars.tail, chars.head.toString, 1)

@@ -44,8 +44,6 @@ class TreeTransformer {
         treeCopy.RegularImport(t, tList(identifiers))
       case WildCardImport(identifiers)                                    =>
         treeCopy.WildCardImport(t, tList(identifiers))
-      case TemplateImport(identifiers)                                    =>
-        treeCopy.TemplateImport(t, tList(identifiers))
       case ClassDecl(id, parents, fields, methods, isTrait)               =>
         treeCopy.ClassDecl(t, trans(id), tList(parents), tList(fields), tList(methods), isTrait)
       case MethodDecl(retType, id, args, stat, modifiers)                 =>
