@@ -22,7 +22,7 @@ lazy val core = (project in file(".")).
 			"com.novocode" % "junit-interface" % "0.8" % "test->default",
 			"org.scalatest" %% "scalatest" % "2.2.6" % "test",
 			"junit" % "junit" % "4.11" % "test",
-			"org.apache.bcel" % "bcel" % "5.2",
+			"com.google.code.findbugs" % "bcel-findbugs" % "6.0",
 			"org.apache.commons" % "commons-lang3" % "3.4",
 			"org.scala-lang" % "scala-compiler" % "2.11.8",
 			"org.backuity" %% "ansi-interpolator" % "1.1" % "provided",
