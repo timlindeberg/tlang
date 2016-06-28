@@ -191,7 +191,7 @@ object Symbols {
       if (args.size == 1) {
         val methodArg = symbol.argList.head.getType
         val expectedArg = args.head
-        expectedArg.isSubTypeOf(methodArg) || methodArg.isImplicitlyConvertableFrom(expectedArg)
+        expectedArg.isSubTypeOf(methodArg)
       } else {
         args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
       }
@@ -235,7 +235,7 @@ object Symbols {
 
     def argTypes = argList.map(_.getType)
 
-    def signature = name + argList.map(_.name).mkString("(", ", ", ")")
+    def signature = name + argTypes.mkString("(", ", ", ")")
 
     def byteCodeSignature = {
       val types = argTypes.map(_.byteCodeName).mkString

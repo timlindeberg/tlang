@@ -204,7 +204,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <classDeclaration> ::= (class|trait) <classIdentifier> <parents>
+    * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parents>
     * "{" { <varDeclaration> } { <methodDeclaration> } "}"
     */
   def classDeclaration(): ClassDecl = {
@@ -555,9 +555,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case CHAR    =>
         eat(CHAR)
         CharType()
-      case STRING  =>
-        eat(STRING)
-        StringType()
       case _       => classIdentifier()
     }
     tpe.setPos(startPos, nextToken)
@@ -924,8 +921,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | <doubleLit>
     * | <charLit>
     * | <stringLit>
-    * | <identifier>
-    * | <identifier> "(" <expression> { "," <expression> } ")"
+    * | <identifier> { :: <identifier> } [ "(" <expression> { "," <expression> } ")" ]
+    * | <classIdentifier>
     * | "{" { <expression> } "}"
     * | true
     * | false
@@ -977,12 +974,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case STRLITKIND    =>
         stringLit()
       case IDKIND        =>
-        var id = identifier()
-        while (nextTokenKind == COLON) {
-          eat(COLON, COLON)
-          val newName = s"${id.value}::${identifier().value}"
-          id = Identifier(newName).setPos(startPos, nextToken)
-        }
+        val ids = nonEmptyList(identifier, COLON, COLON)
+        val id = Identifier(ids.map(_.value).mkString("::"))
 
         nextTokenKind match {
           case LPAREN =>
@@ -1279,13 +1272,20 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <classIdentifier> ::= <identifier> { :: <identifier> } [ "<" <type> { "," <type> } ">" ]
+    * <classIdentifier> ::= <identifier> { :: <identifier> } <templateList>
     */
   private def classIdentifier(): ClassIdentifier = {
     val startPos = nextToken
     val ids = nonEmptyList(identifier, COLON, COLON)
     val id = ids.toList.map(_.value).mkString("::")
-    val tIds = nextTokenKind match {
+    ClassIdentifier(id, templateList()).setPos(startPos, nextToken)
+  }
+
+  /**
+    * <templateList> ::= [ "<" <type> { "," <type> } ">" ]
+    */
+  private def templateList(): List[TypeTree] = {
+    nextTokenKind match {
       case LESSTHAN =>
         eat(LESSTHAN)
         val tmp = commaList(tpe)
@@ -1293,7 +1293,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         tmp
       case _        => List()
     }
-    ClassIdentifier(id, tIds).setPos(startPos, nextToken)
   }
 
   /**

@@ -2,6 +2,9 @@ package kool::std
 
 class Tester<T> {
 
+    // Private constructor
+    //def new() = {}
+
     Def static Assert(condition: Bool) =
         if(!condition) error("Assertion failed.")
 

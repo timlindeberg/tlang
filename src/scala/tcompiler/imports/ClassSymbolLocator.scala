@@ -67,10 +67,13 @@ object ClassSymbolLocator {
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
-    clazz.getSuperClass match {
+    val parent = clazz.getSuperClass match {
       case null   => List()
       case parent => List(incompleteClass(parent.getClassName, parent.isAbstract))
     }
+    val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, true)).toList
+    parent ::: traits
+
   }
 
   private def convertField(owningClass: ClassSymbol, field: Field): VariableSymbol = {
@@ -131,11 +134,7 @@ object ClassSymbolLocator {
       case Type.DOUBLE  => TDouble
       case Type.VOID    => TUnit
     }
-    case x: ObjectType                        =>
-      if(x.getClassName == "java.lang.String")
-        TString
-      else
-        TObject(incompleteClass(x))
+    case x: ObjectType                        => TObject(incompleteClass(x))
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
 

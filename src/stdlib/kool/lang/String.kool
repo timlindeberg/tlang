@@ -11,9 +11,9 @@ class String : Iterable<Char> {
 
     var s: java::lang::String
 
-    Def new()                               = (s = new java::lang::String())
+    Def new()                                 = (s = new java::lang::String())
     Def implicit new(str: java::lang::String) = (s = str)
-    Def implicit new(chars: Char[])         = (s = new java::lang::String(chars))
+    Def implicit new(chars: Char[])           = (s = new java::lang::String(chars))
 
     Def Size() = s.length()
     Def IsEmpty() = Size() == 0
@@ -37,6 +37,7 @@ class String : Iterable<Char> {
     // Def ToDouble()           = java::lang::Double.parseDouble(s)
     // Def ToDouble(radix: Int) = java::lang::Double.parseDouble(s, radix)
 
+    Def ToJavaString() = s
 
     //----------------------------------------------------
     // Operators
@@ -51,55 +52,56 @@ class String : Iterable<Char> {
     Def >=(lhs: String, rhs: String) = lhs.s.compareTo(rhs.s) >= 0
 
     Def +(lhs: String, rhs: String) = lhs.Concat(rhs)
-    Def +(lhs: String, rhs: Object) = lhs.Concat(rhs.ToString())
-    Def +(lhs: String, rhs: Object) = rhs + lhs
 
-    Def +(lhs: java.lang.String, rhs: String) = rhs + lhs
-    Def +(lhs: String, rhs: java.lang.String) = lhs.s.concat(rhs)
+    Def +(lhs: String, rhs: Object) = lhs.Concat(rhs.ToString())
+    Def +(lhs: Object, rhs: String) = rhs + lhs
+
+    Def +(lhs: java::lang::String, rhs: String) = rhs + lhs
+    Def +(lhs: String, rhs: java::lang::String) = lhs.s.concat(rhs)
 
     Def +(lhs: String, rhs: Char) = rhs + lhs
     Def +(lhs: Char, rhs: String) = {
         val sb = new StringBuilder()
         sb.append(lhs)
-        sb.append(rhs)
-        sb.toString()
+        sb.append(rhs.s)
+        new String(sb.toString())
     }
 
     Def +(lhs: String, rhs: Int) = rhs + lhs
     Def +(lhs: Int, rhs: String) = {
         val sb = new StringBuilder()
         sb.append(lhs)
-        sb.append(rhs)
-        sb.toString()
+        sb.append(rhs.s)
+        new String(sb.toString())
     }
 
     Def +(lhs: String, rhs: Long) = rhs + lhs
     Def +(lhs: Long, rhs: String) = {
         val sb = new StringBuilder()
         sb.append(lhs)
-        sb.append(rhs)
-        sb.toString()
+        sb.append(rhs.s)
+        new String(sb.toString())
     }
 
     Def +(lhs: String, rhs: Float) = rhs + lhs
     Def +(lhs: Float, rhs: String) = {
         val sb = new StringBuilder()
         sb.append(lhs)
-        sb.append(rhs)
-        sb.toString()
+        sb.append(rhs.s)
+        new String(sb.toString())
     }
 
     Def +(lhs: String, rhs: Double) = rhs + lhs
     Def +(lhs: Double, rhs: String) = {
         val sb = new StringBuilder()
         sb.append(lhs)
-        sb.append(rhs)
-        sb.toString()
+        sb.append(rhs.s)
+        new String(sb.toString())
     }
 
     Def *(times: Int, str: String) = str * times
     Def *(str: String, times: Int) = {
-        val b = new java::lang::StringBuilder()
+        val b = new StringBuilder()
         val v = str.s
         for(var i = 0; i < times; i++)
             b.append(v)
@@ -107,7 +109,7 @@ class String : Iterable<Char> {
     }
 
     Def [](index: Int) = CharAt(index)
-    Def #(str: String) = str.hashCode()
+    Def #(str: String) = str.s.hashCode()
 
     //----------------------------------------------------
     // Wrappers for java.lang.String methods
@@ -117,7 +119,7 @@ class String : Iterable<Char> {
     Def CodePointAt(index: Int) = s.codePointAt(index)
     Def CodePointBefore(index: Int) = s.codePointBefore(index)
     Def CodePointCount(beginIndex: Int, endIndex: Int) = s.codePointCount(beginIndex, endIndex)
-    Def Concat(str: String) = new String(s.concat(str))
+    Def Concat(str: String) = new String(s.concat(str.s))
     Def Contains(str: String) = s.contains(str.s)
     Def EndsWith(str: String) = s.endsWith(str.s)
 
@@ -131,13 +133,13 @@ class String : Iterable<Char> {
     //Def GetBytes(charsetName: String) = s.getBytes(charsetName.s)
     Def GetChars(srcBegin: Int, srcEnd: Int, dst: Char[], dstBegin: Int) = s.getChars(srcBegin, srcEnd, dst, dstBegin)
 
-    Def IndexOf(c: Char)                     = s.indexOf(c)
-    Def IndexOf(c: Char, fromIndex: Int)     = s.indexOf(c, fromIndex)
+    Def IndexOf(c: Char)                     = s.indexOf(c as Int)
+    Def IndexOf(c: Char, fromIndex: Int)     = s.indexOf(c as Int, fromIndex)
     Def IndexOf(str: String)                 = s.indexOf(str.s)
     Def IndexOf(str: String, fromIndex: Int) = s.indexOf(str.s, fromIndex)
 
-    Def LastIndexOf(c: Char)                 = s.lastIndexOf(c)
-    Def LastIndexOf(c: Char, fromIndex: Int) = s.lastIndexOf(c, fromIndex)
+    Def LastIndexOf(c: Char)                 = s.lastIndexOf(c as Int)
+    Def LastIndexOf(c: Char, fromIndex: Int) = s.lastIndexOf(c as Int, fromIndex)
     Def LastIndexOf(str: String)                 = s.lastIndexOf(str.s)
     Def LastIndexOf(str: String, fromIndex: Int) = s.lastIndexOf(str.s, fromIndex)
 
@@ -182,11 +184,11 @@ class String : Iterable<Char> {
 
 class StringIterator: Iterator<Char> {
 
-    val s: java::lang::String
+    var s: java::lang::String
     var index = 0
 
-    Def new(str: String) = (this.s = str.s)
-    Def new(str: java.lang.String) = (this.s = str)
+    Def new(str: String) = (this.s = str.ToJavaString())
+    Def new(str: java::lang::String) = (this.s = str)
 
     Def HasNext() = index < s.length()
     Def Next() = s.charAt(index++)

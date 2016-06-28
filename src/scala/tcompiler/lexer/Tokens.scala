@@ -107,7 +107,6 @@ object Tokens {
   case object PRIVVAL       extends TokenKind("val")
   case object STATIC        extends TokenKind("static")
   case object UNIT          extends TokenKind("Unit")
-  case object STRING        extends TokenKind("String")
   case object INT           extends TokenKind("Int")
   case object LONG          extends TokenKind("Long")
   case object FLOAT         extends TokenKind("Float")
