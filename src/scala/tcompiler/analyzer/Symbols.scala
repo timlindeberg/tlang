@@ -173,22 +173,30 @@ object Symbols {
 
     private def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
       val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
+      findMethodPrioritiseExactMatch(ops, name, args, exactTypes)
+    }
+
+
+    private def findMethod(name: String, args: List[Type], exactTypes: Boolean) = {
+      val meths = methods.filter(_.name == name)
+      findMethodPrioritiseExactMatch(meths, name, args, exactTypes)
+    }
+
+    private def findMethodPrioritiseExactMatch[T <: MethodSymbol](
+      container: List[T],
+      name: String,
+      args: List[Type],
+      exactTypes: Boolean) = {
       // Prioritise exact match
-      ops.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true)) match {
+      container.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true)) match {
         case Some(x) => Some(x)
         case None    =>
           if (!exactTypes)
-            ops.find(sym => hasMatchingArgumentList(sym, args, exactTypes = false))
+            container.find(sym => hasMatchingArgumentList(sym, args, exactTypes = false))
           else
             None
       }
     }
-
-
-    private def findMethod(name: String, args: List[Type], exactTypes: Boolean) =
-      methods.find { symbol =>
-        name == symbol.name && hasMatchingArgumentList(symbol, args, exactTypes)
-      }
 
     private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
       if (args.size != symbol.argList.size)
