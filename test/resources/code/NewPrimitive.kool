@@ -15,17 +15,11 @@ d = new Double()
 println(d) // res: 0.0
 
 
-
-var s: String = new String()
-println("test" + s) // res: test
-s = new String("hej")
-println(s) // res: hej
-
 var a1 = new A<Int>()
 println(a1) // res: 0
 
 var a2 = new A<String>()
-println("test" + a2.toString()) // res: test
+println("test" + a2.ToString()) // res: test
 
 var a3 = new A<Float>()
 println(a3) // res: 0.0
@@ -38,6 +32,6 @@ class A<T> {
 
     Def new() = (t = new T())
 
-    Def toString() = return "" + t
+    Def ToString() = return "" + t
 
 }

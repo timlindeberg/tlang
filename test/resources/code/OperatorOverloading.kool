@@ -91,6 +91,6 @@ class A {
         return a
     }
 
-    Def toString(): String = return "" + I
+    Def ToString(): String = return "" + I
 
 }

@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTraverser
+import tcompiler.ast.{ASTBuilder, TreeTraverser}
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -15,7 +15,9 @@ object NameAnalysis extends Pipeline[List[Program], List[Program]] {
   def run(ctx: Context)(progs: List[Program]): List[Program] = {
     globalScope = new GlobalScope
 
-
+    // Set up string and object types
+    Types.String = TObject(globalScope.lookupClass(progs.head, ASTBuilder.TLangString).get)
+    Types.Object = TObject(globalScope.lookupClass(progs.head, ASTBuilder.TLangObject).get)
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
@@ -107,7 +109,8 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       val fullName = prog.getPackageName(name)
 
       val newSymbol = new ClassSymbol(fullName, isAbstract)
-      prog.importMap(name) = fullName
+      if(name != fullName)
+        prog.importMap(name) = fullName
       newSymbol.writtenName = name
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
@@ -513,26 +516,18 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
   }
 
   private def ensureOperatorNotDefined(operator: OperatorDecl): Unit = {
-    // This is done in the binding stage since we are then gauranteed that
+    // This is done in the binding stage since we are then guaranteed that
     // all types have been added to the global scope
     val operatorType = operator.operatorType
     val argTypes = operator.args.map(_.tpe.getType)
 
-
+    val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
     val classSymbol = operator.getSymbol.classSymbol
-    classSymbol.lookupOperator(operatorType, argTypes, recursive = false) match {
+    classSymbol.lookupOperator(operatorType, argTypes, exactTypes = true) match {
       case Some(oldOperator) =>
-        val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
-
         ErrorOperatorAlreadyDefined(op.operatorString, oldOperator.line, operator)
       case None              =>
-        classSymbol.lookupOperator(operatorType, argTypes, recursive = true) match {
-          case Some(oldOperator) =>
-            ErrorOverrideOperator(operator)
-          case None              =>
-            val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
-            operator.getSymbol.classSymbol.addOperator(op)
-        }
+        operator.getSymbol.classSymbol.addOperator(op)
     }
   }
 
@@ -544,7 +539,6 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       case FloatType()                    => tpe.setType(TFloat)
       case DoubleType()                   => tpe.setType(TDouble)
       case CharType()                     => tpe.setType(TChar)
-      case StringType()                   => tpe.setType(TString)
       case UnitType()                     => tpe.setType(TUnit)
       case tpeId@ClassIdentifier(name, _) =>
         globalScope.lookupClass(prog, name) match {

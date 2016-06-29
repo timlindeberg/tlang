@@ -71,7 +71,6 @@ object Printer {
       case DoubleType()   => p"Double"
       case BooleanType()  => p"Bool"
       case CharType()     => p"Char"
-      case StringType()   => p"String"
       case UnitType()     => p"Unit"
       // Statements
       case Block(stats)                      => if (stats.isEmpty) "{}" else p"$L$stats$R"

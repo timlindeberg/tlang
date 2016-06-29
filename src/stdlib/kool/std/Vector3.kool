@@ -119,6 +119,6 @@ class Vector3<T> {
 
     Def Cross(other: Vector3<T>) = Cross(this, other)
 
-    Def toString() = "(" + X + ", " + Y + ", " + Z + ")"
+    Def ToString() = "(" + X + ", " + Y + ", " + Z + ")"
 
 }

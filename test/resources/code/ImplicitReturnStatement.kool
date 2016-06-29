@@ -42,5 +42,5 @@ class A {
 
     Def Assign(x: Int) = (i = x)
 
-    Def toString() = "" + i
+    Def ToString() = "" + i
 }

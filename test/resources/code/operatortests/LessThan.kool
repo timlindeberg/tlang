@@ -40,5 +40,5 @@ println(c < d);  // res: false
 println(c < c);  // res: false
 
 class A {
-   Def toString(): String = return "A";
+   Def ToString(): String = return "A";
 }

@@ -15,5 +15,5 @@ println(l << l);  // res: 8
 println(l << c);  // res: 17179869184
 
 class A {
-   Def toString(): String = return "A";
+   Def ToString(): String = return "A";
 }

@@ -109,7 +109,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         val bodyLabel = Label(body)
         val afterLabel = Label(after)
         val continueLabel = Label(continue)
-
         init.foreach(compileStat(_))
         compileBranch(condition, bodyLabel, afterLabel)
         ch << bodyLabel
@@ -121,23 +120,34 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case Foreach(varDecl, container, stat)     =>
         transformForeachLoop(varDecl, container, stat)
       case PrintStatTree(expr)                   =>
-        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";") << DUP
+        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
-          case _: TObject => s"L$JavaObject;" // Call System.out.println(Object) for all other types
+          case o: TObject =>
+            if(o.classSymbol.name != JavaString){
+              // First convert to
+              val stringName = Types.String.byteCodeName
+              ch << InvokeVirtual(expr.getType.byteCodeName, "ToString", s"()$stringName")
+              ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
+            }
+            s"L$JavaString;" // Call System.out.println(String) for all other types
           case _          => expr.getType.byteCodeName
         }
         val funcName = statement match {
           case _: Print   => "print"
           case _: Println => "println"
         }
+
         ch << InvokeVirtual(JavaPrintStream, funcName, s"($arg)V")
-        ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
+        //ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
       case Error(expr)                           =>
         ch << GetStatic(JavaSystem, "out", s"L$JavaPrintStream;")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
+        // First TString to JavaString
+        val stringName = Types.String.byteCodeName
+        ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
         ch << InvokeSpecial(JavaRuntimeException, "<init>", s"(L$JavaString;)V")
         ch << ATHROW
       case Return(Some(expr))                    =>
@@ -166,7 +176,12 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case CharLit(value)                          => ch << Ldc(value)
       case FloatLit(value)                         => ch << Ldc(value)
       case DoubleLit(value)                        => ch << Ldc(value)
-      case StringLit(value)                        => ch << Ldc(value)
+      case StringLit(value)                        =>
+        val objName = Types.String.classSymbol.name
+        ch << cafebabe.AbstractByteCodes.New(objName)
+        Types.String.codes.dup(ch)
+        ch << Ldc(value)
+        ch << InvokeSpecial(objName, ConstructorName, s"(L$JavaString;)V")
       case id: Identifier                          => load(id)
       case _: This                                 => ch << ArgLoad(0)
       case _: Super                                => ch << ArgLoad(0)
@@ -200,30 +215,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case plusOp@Plus(lhs, rhs)                   =>
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(TString) =>
-            if (operatorDefinedFor(plusOp, args)) {
-              compileExpr(lhs)
-              compileExpr(rhs)
-              compileOperatorCall(ch, plusOp, args)
-              return
-            }
-
-            def methSignature(expr: ExprTree) = {
-              val arg = expr.getType match {
-                case TObject(_) => "L" + JavaObject + ";"
-                case _          => expr.getType.byteCodeName
-              }
-              "(" + arg + ")L" + JavaStringBuilder + ";"
-            }
-
-            // TODO: Print array in a nicer way?
-            ch << DefaultNew(JavaStringBuilder)
-            compileExpr(lhs)
-            ch << InvokeVirtual(JavaStringBuilder, "append", methSignature(lhs))
-            compileExpr(rhs)
-            ch << InvokeVirtual(JavaStringBuilder, "append", methSignature(rhs))
-            ch << InvokeVirtual(JavaStringBuilder, "toString", "()L" + JavaString + ";")
-          case _ if args.anyIs(tObject) =>
+          case _ if args.anyIs(Object)  =>
             compileExpr(lhs)
             compileExpr(rhs)
             compileOperatorCall(ch, plusOp, args)
@@ -257,7 +249,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
 
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(tObject) =>
+          case _ if args.anyIs(Object)  =>
             compileExpr(rhs)
             compileOperatorCall(ch, arOp, args)
             return
@@ -288,17 +280,17 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case logicOp@LogicalOperatorTree(lhs, rhs)   =>
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(tObject) =>
+          case _ if args.anyIs(Object) =>
             compileExpr(lhs)
             compileExpr(rhs)
             compileOperatorCall(ch, logicOp, args)
             return
-          case _ if args.anyIs(TLong)   =>
+          case _ if args.anyIs(TLong)  =>
             compileExpr(lhs)
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toLong(ch)
-          case _                        =>
+          case _                       =>
             compileExpr(lhs)
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
@@ -315,18 +307,18 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
 
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(tObject) =>
+          case _ if args.anyIs(Object) =>
             compileExpr(rhs)
             compileOperatorCall(ch, shiftOp, args)
             return
-          case (TLong, _)               =>
+          case (TLong, _)              =>
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case (_, TLong)               =>
+          case (_, TLong)              =>
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case _                        =>
+          case _                       =>
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
@@ -454,10 +446,8 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         tpe.getType match {
           case TObject(classSymbol) =>
             val argTypes = args.map(_.getType)
-            val objName = if (tpe.name == "Object") JavaObject else classSymbol.name
-            val codes = tpe.getType.codes
-            ch << cafebabe.AbstractByteCodes.New(objName)
-            codes.dup(ch)
+            ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
+            tpe.getType.codes.dup(ch)
 
             val signature = classSymbol.lookupMethod("new", argTypes) match {
               case Some(methodSymbol) =>
@@ -466,13 +456,12 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
               case _                  => "()V"
             }
             // Constructors are always called with InvokeSpecial
-            ch << InvokeSpecial(objName, ConstructorName, signature)
+            ch << InvokeSpecial(classSymbol.name, ConstructorName, signature)
           case primitiveType        =>
             if (args.size == 1) {
               compileExpr(args.head)
               convertType(ch, args.head.getType, primitiveType)
-            }
-            else {
+            } else {
               primitiveType.codes.defaultConstant(ch)
             }
         }
@@ -505,7 +494,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             compileExpr(expr)
             if (!compileOperatorCall(ch, hashOp, x))
               ch << InvokeVirtual(JavaObject, "hashCode", "()I")
-          case TString    => hashFunction(JavaString)
           case TInt       => hashFunction(JavaInt)
           case TChar      => hashFunction(JavaChar)
           case TFloat     => hashFunction(JavaFloat)
@@ -588,11 +576,11 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   private def convertType(ch: CodeHandler, toConvert: Type, desiredType: Type) = {
     val codes = toConvert.codes
     desiredType match {
-      case _: TObject | TString =>
-      case TDouble              => codes.toDouble(ch)
-      case TFloat               => codes.toFloat(ch)
-      case TLong                => codes.toLong(ch)
-      case _                    => codes.toInt(ch)
+      case _: TObject =>
+      case TDouble    => codes.toDouble(ch)
+      case TFloat     => codes.toFloat(ch)
+      case TLong      => codes.toLong(ch)
+      case _          => codes.toInt(ch)
     }
   }
 
@@ -789,9 +777,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         case (arrType: TArray, _)        =>
           compileExpr(rhs)
           comparison(arrType.codes)
-        case (TString, _) | (_, TString) =>
-          compileExpr(rhs)
-          comparison(StringCodeMap)
         case (TDouble, _) | (_, TDouble) =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
@@ -895,7 +880,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       case TLong                => LongType()
       case TFloat               => FloatType()
       case TDouble              => DoubleType()
-      case TString              => StringType()
       case TArray(t)            => ArrayType(getTypeTree(t))
       case TObject(classSymbol) => ClassIdentifier(classSymbol.name).setSymbol(classSymbol)
       case _                    => ???

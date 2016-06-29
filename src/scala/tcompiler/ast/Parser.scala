@@ -142,9 +142,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
 
   private def createMainClass(code: List[Tree]) = {
-    var classes = code.collect { case x: ClassDecl => x }
-    val methods = code.collect { case x: MethodDecl => x }
-    val stats = code.collect { case x: StatTree => x }
+    var classes = code collect { case x: ClassDecl => x }
+    val methods = code collect { case x: MethodDecl => x }
+    val stats = code collect { case x: StatTree => x }
 
     if (stats.nonEmpty || methods.nonEmpty) {
       val mainName = currentToken.file.getName.dropRight(Main.FileEnding.length)
@@ -161,7 +161,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       mainClass.methods :::= methods
 
       if (stats.nonEmpty) {
-        val args = List(Formal(ArrayType(StringType()), Identifier("args")))
+        val args = List(Formal(ArrayType(ClassIdentifier("java::lang::String", List())), Identifier("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
         val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
         mainClass.methods ::= mainMethod
@@ -296,7 +296,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <methodDeclaration> ::= <methodModifiers> ( <constructor> | <operator> | <method> )
     */
   def methodDeclaration(className: String): FuncTree = {
-
     val startPos = nextToken
     val mods = methodModifiers()
     nextTokenKind match {

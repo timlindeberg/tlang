@@ -6,7 +6,7 @@ new A().AD() // res: 1
 new A().BC() // res: 0
 new A().TimeZone() // res: Europe/Berlin
 
-val locale = new Locale("sv", "SE")
+val locale = new Locale("sv".ToJavaString(), "SE".ToJavaString())
 println(locale.getDisplayLanguage()) // res: Swedish
 
 val ran = new Random(0)

@@ -28,7 +28,7 @@ object Symbols {
   sealed abstract class Symbol extends Positioned with Typed
 
   val ObjectClass: ClassSymbol = new ClassSymbol("Object", false)
-  ObjectClass.setType(Types.tObject)
+  ObjectClass.setType(Types.Object)
 
   class GlobalScope {
     var classes = Map[String, ClassSymbol]()
@@ -90,14 +90,14 @@ object Symbols {
     def addField(varSymbol: VariableSymbol): Unit = fields += (varSymbol.name -> varSymbol)
 
     def isImplementedInSuperClass(name: String, args: List[Type]) = {
-      findMethod(name, args) match {
+      findMethod(name, args, exactTypes = false) match {
         case Some(m) => false
         case None    => true
       }
     }
 
     def implementsMethod(method: MethodSymbol): Boolean = {
-      findMethod(method.name, method.argTypes) match {
+      findMethod(method.name, method.argTypes, exactTypes = false) match {
         case Some(meth) if !meth.isAbstract => true
         case None                           => parents.exists(p => p.implementsMethod(method))
         case _                              => false
@@ -124,8 +124,8 @@ object Symbols {
       }
     }
 
-    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true): Option[MethodSymbol] = {
-      findMethod(name, args) match {
+    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true, exactTypes: Boolean = false): Option[MethodSymbol] = {
+      findMethod(name, args, exactTypes) match {
         case Some(meth)                            => Some(meth)
         case None if recursive && parents.nonEmpty => lookupParentMethod(name, args)
         case _                                     => None
@@ -150,13 +150,13 @@ object Symbols {
       }
     }
 
-    def lookupOperator(operatorType: OperatorTree, args: List[Type], recursive: Boolean = true): Option[OperatorSymbol] = {
-      findOperator(operatorType, args) match {
-        case x@Some(_)                             => x
-        case None if recursive && parents.nonEmpty =>
-          val matchingOperators = parents.map(_.lookupOperator(operatorType, args))
+    def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false): Option[OperatorSymbol] = {
+      findOperator(operatorType, args, exactTypes) match {
+        case x@Some(_)                => x
+        case None if parents.nonEmpty =>
+          val matchingOperators = parents.map(_.lookupOperator(operatorType, args, exactTypes))
           matchingOperators.head
-        case _                                     => None
+        case _                        => None
       }
     }
 
@@ -171,29 +171,35 @@ object Symbols {
         isComplete = true
       }
 
-    private def findOperator(operatorType: OperatorTree, args: List[Type]): Option[OperatorSymbol] =
-      operators.find(symbol => {
-        sameOperatorType(operatorType, symbol.operatorType) &&
-          args.size == symbol.argList.size &&
-          args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
-      })
+    private def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
+      val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
+      // Prioritise exact match
+      ops.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true)) match {
+        case Some(x) => Some(x)
+        case None    =>
+          if (!exactTypes)
+            ops.find(sym => hasMatchingArgumentList(sym, args, exactTypes = false))
+          else
+            None
+      }
+    }
 
-    private def findMethod(name: String, args: List[Type]) =
-      methods.find(symbol =>
-        name == symbol.name &&
-          hasMatchingArgumentList(symbol, args)
-      )
 
-    private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type]): Boolean = {
+    private def findMethod(name: String, args: List[Type], exactTypes: Boolean) =
+      methods.find { symbol =>
+        name == symbol.name && hasMatchingArgumentList(symbol, args, exactTypes)
+      }
+
+    private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
       if (args.size != symbol.argList.size)
         return false
 
-      if (args.size == 1) {
-        val methodArg = symbol.argList.head.getType
-        val expectedArg = args.head
-        expectedArg.isSubTypeOf(methodArg)
-      } else {
-        args.zip(symbol.argList.map(_.getType)).forall { case (arg1, arg2) => arg1.isSubTypeOf(arg2) }
+      args.zip(symbol.argList.map(_.getType)).forall {
+        case (expectedArg, methodArg) =>
+          if (exactTypes)
+            expectedArg == methodArg
+          else
+            expectedArg.isSubTypeOf(methodArg) || methodArg.isImplicitlyConvertableFrom(expectedArg)
       }
     }
 

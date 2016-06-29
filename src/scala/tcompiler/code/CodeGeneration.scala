@@ -24,7 +24,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
     val classes = progs.flatMap(_.classes)
 
     // output code in parallell
-    classes.par.foreach(generateClassFile(_, ctx.outDir))
+    classes.foreach(generateClassFile(_, ctx.outDir))
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */

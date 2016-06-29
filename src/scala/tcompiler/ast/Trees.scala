@@ -200,7 +200,7 @@ object Trees {
     val modifiers: Set[Modifier]
 
     def isMain = this match {
-      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(StringType()), _) :: Nil, _, _) =>
+      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassIdentifier(ASTBuilder.TLangString, List())), _) :: Nil, _, _) =>
         modifiers.size == 2 &&
           modifiers.contains(Public()) &&
           modifiers.contains(Static()) &&
@@ -247,7 +247,6 @@ object Trees {
   case class DoubleType() extends TypeTree with LeafTree {val name = "Double"}
   case class BooleanType() extends TypeTree with LeafTree {val name = "Bool"}
   case class CharType() extends TypeTree with LeafTree {val name = "Char"}
-  case class StringType() extends TypeTree with LeafTree {val name = "String"}
   case class UnitType() extends TypeTree with LeafTree {val name = "Unit"}
 
   /*-------------------------------- Statement Trees --------------------------------*/

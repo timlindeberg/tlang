@@ -123,13 +123,6 @@ object Types {
     override val size: Int = 1
   }
 
-  case object TString extends Type {
-    override def toString = "String"
-    override def byteCodeName: String = "Ljava/lang/String;"
-    override val codes     = StringCodeMap
-    override val size: Int = 1
-  }
-
   case class TArray(tpe: Type) extends Type {
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
@@ -151,7 +144,7 @@ object Types {
 
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c == tObject.classSymbol) true
+        if (classSymbol.name == c.name || c == Object.classSymbol) true
         else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
       case _ => false
     }
@@ -179,7 +172,8 @@ object Types {
   }
 
   // For checking of a type is an object
-  val tObject = TObject(new ClassSymbol("kool/lang/Object", false))
-  val tArray  = TArray(tObject)
+  var Object = TObject(new ClassSymbol("kool/lang/Object", false))
+  var String = TObject(new ClassSymbol("kool/lang/String", false))
+  val tArray = TArray(Object)
 }
 

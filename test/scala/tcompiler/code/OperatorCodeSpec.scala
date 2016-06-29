@@ -49,7 +49,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val float  = () => FloatLit(Rand.nextFloat).setType(TFloat)
   val double = () => DoubleLit(Rand.nextDouble % Float.MaxValue).setType(TDouble)
   val char   = () => CharLit(randChar).setType(TChar)
-  val string = () => StringLit(Rand.nextString(StringLength)).setType(TString)
+  val string = () => StringLit(Rand.nextString(StringLength)).setType(String)
 
   val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
   val combinations = for (x <- types; y <- types) yield (x, y)
@@ -140,8 +140,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val defaultValue = tpe match {
       case TInt | TLong | TFloat | TDouble | TChar => "0"
       case TBool                                   => "false"
-      case TString                                 => "\"\""
-      case _ => ???
+      case _                                       => ???
     }
     s"var $IdName: $scalaType = $defaultValue"
   }

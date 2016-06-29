@@ -20,7 +20,9 @@ for(val v in arr)
 println("")
 
 class A {
-    Def toString() = "A"
+
+    Def ToString() = "A"
+
 }
 
 class Container {

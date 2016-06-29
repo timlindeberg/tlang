@@ -47,7 +47,6 @@ abstract class TreeCopier {
   def DoubleType(t: Tree): DoubleType
   def BooleanType(t: Tree): BooleanType
   def CharType(t: Tree): CharType
-  def StringType(t: Tree): StringType
   def UnitType(t: Tree): UnitType
 
   /*-------------------------------- Statement Trees --------------------------------*/
@@ -206,8 +205,6 @@ class StrictTreeCopier extends TreeCopier {
     new BooleanType().copyAttrs(t)
   override def CharType(t: Tree) =
     new CharType().copyAttrs(t)
-  override def StringType(t: Tree) =
-    new StringType().copyAttrs(t)
   override def UnitType(t: Tree) =
     new UnitType().copyAttrs(t)
 
@@ -474,10 +471,6 @@ class LazyTreeCopier extends TreeCopier {
   override def CharType(tree: Tree): CharType = tree match {
     case t@CharType() => t
     case _ => strictCopier.CharType(tree)
-  }
-  override def StringType(tree: Tree): StringType = tree match {
-    case t@StringType() => t
-    case _ => strictCopier.StringType(tree)
   }
   override def UnitType(tree: Tree): UnitType = tree match {
     case t@UnitType() => t

@@ -2,7 +2,7 @@ package kool::lang
 
 class Object : java::lang::Object {
 
-    Def ToString(): String = new String(toString())
+    Def ToString() = new String(toString())
     Def #(o: Object): Int = o.hashCode()
     Def ==(lhs: Object, rhs: Object): Bool = lhs.equals(rhs)
     Def !=(lhs: Object, rhs: Object): Bool = !(lhs == rhs)

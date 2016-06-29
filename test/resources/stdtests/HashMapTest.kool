@@ -73,7 +73,7 @@ Def ToString() = {
     map[2] = 2
     map[64] = -1
     // when string comparison works:
-    //ts.AssertEquals(map.toString(), "(1 -> 5)\n(2 -> 2)\n(64 -> -1)\n")
+    //ts.AssertEquals(map.ToString(), "(1 -> 5)\n(2 -> 2)\n(64 -> -1)\n")
 }
 
 Def Get() = {

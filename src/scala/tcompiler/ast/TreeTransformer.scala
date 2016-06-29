@@ -25,7 +25,6 @@ class TreeTransformer {
       case DoubleType()  => treeCopy.DoubleType(t)
       case BooleanType() => treeCopy.BooleanType(t)
       case CharType()    => treeCopy.CharType(t)
-      case StringType()  => treeCopy.StringType(t)
       case UnitType()    => treeCopy.UnitType(t)
       case Break()       => treeCopy.Break(t)
       case Continue()    => treeCopy.Continue(t)

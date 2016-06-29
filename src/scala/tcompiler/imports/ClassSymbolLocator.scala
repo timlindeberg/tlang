@@ -46,16 +46,17 @@ object ClassSymbolLocator {
   def clearCache() = Repository.clearCache()
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
-    classSymbol.methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
+    val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
+    classSymbol.methods = methods.filter(!_.isInstanceOf[OperatorSymbol])
+    classSymbol.operators = methods.filter(_.isInstanceOf[OperatorSymbol]).asInstanceOf[List[OperatorSymbol]]
     classSymbol.parents = convertParents(clazz)
-    classSymbol.fields = clazz.getFields.map{ field =>
+    classSymbol.fields = clazz.getFields.map { field =>
       val f = convertField(classSymbol, field)
       (f.name, f)
     }.toMap
     classSymbol.setType(TObject(classSymbol))
     classSymbol.writtenName = classSymbol.name
   }
-
 
 
   private def convertClass(clazz: JavaClass): ClassSymbol = {
@@ -73,7 +74,6 @@ object ClassSymbolLocator {
     }
     val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, true)).toList
     parent ::: traits
-
   }
 
   private def convertField(owningClass: ClassSymbol, field: Field): VariableSymbol = {
@@ -84,24 +84,28 @@ object ClassSymbolLocator {
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
+    val modifiers = convertModifiers(meth)
     val name = meth.getName match {
       case "<init>" => "new"
       case name     => name
     }
-    val modifiers = convertModifiers(meth)
-    val methodSymbol = new MethodSymbol(name, owningClass, None, modifiers)
 
-    methodSymbol.setType(convertType(meth.getReturnType))
+    val symbol = name.head match {
+      case '$' =>
+        val operatorType = getOperatorType(name)
+        new OperatorSymbol(operatorType, owningClass, None, modifiers)
+      case _   => new MethodSymbol(name, owningClass, None, modifiers)
+    }
 
-    methodSymbol.argList = meth.getArgumentTypes.zipWithIndex.map {
+    symbol.setType(convertType(meth.getReturnType))
+
+    symbol.argList = meth.getArgumentTypes.zipWithIndex.map {
       case (tpe, i) => convertArgument(tpe, s"arg$i")
     }.toList
 
-    methodSymbol.isAbstract = meth.isAbstract
+    symbol.isAbstract = meth.isAbstract
 
-
-
-    methodSymbol
+    symbol
   }
 
   private def convertArgument(tpe: Type, newName: String) = {
@@ -136,6 +140,35 @@ object ClassSymbolLocator {
     }
     case x: ObjectType                        => TObject(incompleteClass(x))
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
+  }
+
+  private def getOperatorType(name: String) = {
+    name.drop(1) match {
+      case "Plus"              => Plus(Empty(), Empty())
+      case "Minus"             => Minus(Empty(), Empty())
+      case "Times"             => Times(Empty(), Empty())
+      case "Div"               => Div(Empty(), Empty())
+      case "Modulo"            => Modulo(Empty(), Empty())
+      case "LogicAnd"          => LogicAnd(Empty(), Empty())
+      case "LogicOr"           => LogicOr(Empty(), Empty())
+      case "LogicXor"          => LogicXor(Empty(), Empty())
+      case "LeftShift"         => LeftShift(Empty(), Empty())
+      case "RightShift"        => RightShift(Empty(), Empty())
+      case "LessThan"          => LessThan(Empty(), Empty())
+      case "LessThanEquals"    => LessThanEquals(Empty(), Empty())
+      case "GreaterThan"       => GreaterThan(Empty(), Empty())
+      case "GreaterThanEquals" => GreaterThanEquals(Empty(), Empty())
+      case "Equals"            => Equals(Empty(), Empty())
+      case "NotEquals"         => NotEquals(Empty(), Empty())
+      case "LogicNot"          => LogicNot(Empty())
+      case "Not"               => Not(Empty())
+      case "Hash"              => Hash(Empty())
+      case "PreIncrement"      => PreIncrement(Empty())
+      case "PreDecrement"      => PreDecrement(Empty())
+      case "ArrayRead"         => ArrayRead(Empty(), Empty())
+      case "ArrayAssign"       => ArrayAssign(Empty(), Empty(), Empty())
+      case x                   => ???
+    }
   }
 
   private def incompleteClass(tpe: ObjectType): ClassSymbol =

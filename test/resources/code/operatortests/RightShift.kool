@@ -15,5 +15,5 @@ println(l >> l);  // res: 0
 println(l >> c);  // res: 0
 
 class A {
-   Def toString(): String = return "A";
+   Def ToString(): String = return "A";
 }

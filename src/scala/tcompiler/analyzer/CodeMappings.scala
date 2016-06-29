@@ -269,24 +269,6 @@ object BoolCodeMap extends CodeMap {
 
 }
 
-object StringCodeMap extends CodeMap {
-  override def load(ch: CodeHandler, index: Int) = ch << ALoad(index)
-  override def store(ch: CodeHandler, index: Int) = ch << AStore(index)
-  override def arrayLoad(ch: CodeHandler) = ch << AALOAD
-  override def arrayStore(ch: CodeHandler) = ch << AASTORE
-  override def defaultConstant(ch: CodeHandler) = ch << Ldc("")
-  override def newArray(ch: CodeHandler) = ch << NewArray("java/lang/String")
-
-  override def cmpEq(ch: CodeHandler, id: String) = ch << If_ACmpEq(id)
-  override def cmpNe(ch: CodeHandler, id: String) = ch << If_ACmpNe(id)
-
-  override def ret(ch: CodeHandler) = ch << ARETURN
-  override def dup(ch: CodeHandler) = ch << DUP
-  override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
-  override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
-
-}
-
 class ArrayCodeMap(typeName: String) extends CodeMap {
   override def load(ch: CodeHandler, index: Int) = ch << ALoad(index)
   override def store(ch: CodeHandler, index: Int) = ch << AStore(index)

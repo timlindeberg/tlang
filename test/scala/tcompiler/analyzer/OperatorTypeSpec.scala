@@ -24,11 +24,10 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val float  = new TypeConstructor(TFloat)
   val double = new TypeConstructor(TDouble)
   val char   = new TypeConstructor(TChar)
-  val string = new TypeConstructor(TString)
   val array  = new TypeConstructor(TArray(TInt))
   val obj    = new TypeConstructor(TObject(ClassSymbol))
 
-  val allTypes        = List[() => Identifier](int, bool, long, float, double, char, string, array, obj)
+  val allTypes        = List[() => Identifier](int, bool, long, float, double, char, array, obj)
   val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
   private def createIdentifier(tpe: Type) = Identifier("").setSymbol(new VariableSymbol("")).setType(tpe)
@@ -42,11 +41,11 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   behavior of "Operators"
 
-  it should "Plus" in plusOperator
-  it should "Minus" in binaryOperator(Minus)
-  it should "Times" in binaryOperator(Times)
-  it should "Div" in binaryOperator(Div)
-  it should "Modulo" in binaryOperator(Modulo)
+  it should "Plus" in arithmeticOperator(Plus)
+  it should "Minus" in arithmeticOperator(Minus)
+  it should "Times" in arithmeticOperator(Times)
+  it should "Div" in arithmeticOperator(Div)
+  it should "Modulo" in arithmeticOperator(Modulo)
 
   it should "LogicAnd" in logicOperator(LogicAnd)
   it should "LogicOr" in logicOperator(LogicOr)
@@ -81,40 +80,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   it should "PostDecrement" in incrementDecrement(PostDecrement)
 
 
-  private def plusOperator() =
-    BinaryExpressionAsserter.valid(Plus,
-      (string, string, TString),
-      (string, obj, TString),
-      (string, int, TString),
-      (string, long, TString),
-      (string, float, TString),
-      (string, double, TString),
-      (string, char, TString),
-      (string, bool, TString),
-      (string, array, TString),
-
-      (char, char, TInt),
-
-      (int, int, TInt),
-      (int, long, TLong),
-      (int, float, TFloat),
-      (int, double, TDouble),
-      (int, char, TInt),
-
-      (long, long, TLong),
-      (long, float, TFloat),
-      (long, double, TDouble),
-      (long, char, TLong),
-
-      (float, float, TFloat),
-      (float, double, TDouble),
-      (float, char, TFloat),
-
-      (double, double, TDouble),
-      (double, char, TDouble)
-    )
-
-  private def binaryOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def arithmeticOperator(expressionType: (Identifier, Identifier) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, TInt),
 
@@ -187,8 +153,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, long, TDouble),
       (double, char, TDouble),
 
-      (string, string, TString),
-
       (obj, obj, obj().getType),
 
       (array, array, array().getType)
@@ -218,8 +182,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, int, TDouble),
       (double, long, TDouble),
       (double, char, TDouble),
-
-      (string, string, TString),
 
       (array, array, array().getType),
 
@@ -270,8 +232,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
       (double, double, TBool),
       (double, char, TBool),
-
-      (string, string, TBool),
 
       (obj, obj, TBool),
 

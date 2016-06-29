@@ -1,12 +1,4 @@
-// ignore
-var s = "New string"
-
-val list = new kool.lang.Vector<Int>()
-
-kool.lang.Vector<Int>.CallStaticFunction()
-
-def func(lol: kool.lang.Vector<Int>)
-
-
-
-s.
+var s = "New String"
+println(s) // res: New String
+println(s + " " + s) // res: New String New String
+println(s + 1) // res: New String1

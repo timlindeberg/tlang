@@ -12,7 +12,7 @@ class A {
 
     Def +(a: A, s: String) = return new A(a.x + s + s)
 
-    Def toString() = return x
+    Def ToString() = return x
 }
 
 class B {
@@ -21,6 +21,6 @@ class B {
 
     Def new(s: String) = (x = s)
 
-    Def toString() = return x
+    Def ToString() = return x
 
 }

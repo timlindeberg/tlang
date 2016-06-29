@@ -12,6 +12,7 @@ class String : Iterable<Char> {
     var s: java::lang::String
 
     Def new()                                 = (s = new java::lang::String())
+    Def new(str: String)                      = (s = str.s)
     Def implicit new(str: java::lang::String) = (s = str)
     Def implicit new(chars: Char[])           = (s = new java::lang::String(chars))
 
@@ -54,50 +55,28 @@ class String : Iterable<Char> {
     Def +(lhs: String, rhs: String) = lhs.Concat(rhs)
 
     Def +(lhs: String, rhs: Object) = lhs.Concat(rhs.ToString())
-    Def +(lhs: Object, rhs: String) = rhs + lhs
+    Def +(lhs: Object, rhs: String) = lhs.ToString().Concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: String) = rhs + lhs
-    Def +(lhs: String, rhs: java::lang::String) = lhs.s.concat(rhs)
+    Def +(lhs: java::lang::String, rhs: String) = new String(lhs.concat(rhs.s))
+    Def +(lhs: String, rhs: java::lang::String) = new String(lhs.s.concat(rhs))
 
-    Def +(lhs: String, rhs: Char) = rhs + lhs
-    Def +(lhs: Char, rhs: String) = {
-        val sb = new StringBuilder()
-        sb.append(lhs)
-        sb.append(rhs.s)
-        new String(sb.toString())
-    }
+    Def +(lhs: String, rhs: Char) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Char, rhs: String) = ValueOf(lhs).Concat(rhs)
 
-    Def +(lhs: String, rhs: Int) = rhs + lhs
-    Def +(lhs: Int, rhs: String) = {
-        val sb = new StringBuilder()
-        sb.append(lhs)
-        sb.append(rhs.s)
-        new String(sb.toString())
-    }
+    Def +(lhs: String, rhs: Int) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Int, rhs: String) = ValueOf(lhs).Concat(rhs)
 
-    Def +(lhs: String, rhs: Long) = rhs + lhs
-    Def +(lhs: Long, rhs: String) = {
-        val sb = new StringBuilder()
-        sb.append(lhs)
-        sb.append(rhs.s)
-        new String(sb.toString())
-    }
+    Def +(lhs: String, rhs: Long) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Long, rhs: String) = ValueOf(lhs).Concat(rhs)
 
-    Def +(lhs: String, rhs: Float) = rhs + lhs
-    Def +(lhs: Float, rhs: String) = {
-        val sb = new StringBuilder()
-        sb.append(lhs)
-        sb.append(rhs.s)
-        new String(sb.toString())
-    }
+    Def +(lhs: String, rhs: Float) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Float, rhs: String) = ValueOf(lhs).Concat(rhs)
 
-    Def +(lhs: String, rhs: Double) = rhs + lhs
-    Def +(lhs: Double, rhs: String) = {
-        val sb = new StringBuilder()
-        sb.append(lhs)
-        sb.append(rhs.s)
-        new String(sb.toString())
-    }
+    Def +(lhs: String, rhs: Double) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Double, rhs: String) = ValueOf(lhs).Concat(rhs)
+
+    Def +(lhs: String, rhs: Bool) = lhs.Concat(ValueOf(rhs))
+    Def +(lhs: Bool, rhs: String) = ValueOf(lhs).Concat(rhs)
 
     Def *(times: Int, str: String) = str * times
     Def *(str: String, times: Int) = {
@@ -167,17 +146,18 @@ class String : Iterable<Char> {
     Def ToUpperCase(locale: Locale) = new String(s.toUpperCase(locale))
 
     Def ToString() = this
+    Def toString() = s
 
     Def Trim() = new String(s.trim())
 
-    Def static ValueOf(data: Char[], offset: Int, count: Int) = java::lang::String.valueOf(data, offset, count)
-    Def static ValueOf(data: Char[]) = java::lang::String.valueOf(data)
-    Def static ValueOf(c: Char)      = java::lang::String.valueOf(c)
-    Def static ValueOf(b: Bool)      = java::lang::String.valueOf(b)
-    Def static ValueOf(d: Double)    = java::lang::String.valueOf(d)
-    Def static ValueOf(f: Float)     = java::lang::String.valueOf(f)
-    Def static ValueOf(i: Int)       = java::lang::String.valueOf(i)
-    Def static ValueOf(l: Long)      = java::lang::String.valueOf(l)
+    Def static ValueOf(data: Char[], offset: Int, count: Int) = new String(java::lang::String.valueOf(data, offset, count))
+    Def static ValueOf(data: Char[]) = new String(java::lang::String.valueOf(data))
+    Def static ValueOf(c: Char)      = new String(java::lang::String.valueOf(c))
+    Def static ValueOf(b: Bool)      = new String(java::lang::String.valueOf(b))
+    Def static ValueOf(d: Double)    = new String(java::lang::String.valueOf(d))
+    Def static ValueOf(f: Float)     = new String(java::lang::String.valueOf(f))
+    Def static ValueOf(i: Int)       = new String(java::lang::String.valueOf(i))
+    Def static ValueOf(l: Long)      = new String(java::lang::String.valueOf(l))
     Def static ValueOf(o: Object)    = o.ToString()
 
 }

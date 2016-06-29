@@ -1,4 +1,2 @@
-//res: T2022
-println("hej"++) //res: T2000
-
 println(1++) //res: T2022
+println(5.0++) //res: T2022
