@@ -26,6 +26,13 @@ println(sixtyFour.ToInt() == 64) // res: true
 println(sixtyFourHex.ToInt(16) == 64) // res: true
 println(sixtyFourBinary.ToInt(2) == 64) // res: true
 
+println(sixtyFour.ToLong() == 64) // res: true
+println(sixtyFourHex.ToLong(16) == 64) // res: true
+println(sixtyFourBinary.ToLong(2) == 64) // res: true
+
+println(sixtyFour.ToFloat() == 64.0f) // res: true
+println(sixtyFour.ToDouble() == 64.0) // res: true
+
 // TODO: ToLong, ToFloat, ToDouble
 
 // Equality
@@ -61,6 +68,7 @@ println(empty * 25) // res:
 println(25 * empty) // res:
 println(s * 3) // res: StringStringString
 println(3 * s) // res: StringStringString
+println(s + " " * 10 + s) // res: String          String
 
 // Accessor
 println(s[0]) // res: S

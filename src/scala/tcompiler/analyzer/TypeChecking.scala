@@ -39,7 +39,6 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
         }
       }
 
-
       val c = new ClassSymbol("", false)
       val tc = new TypeChecker(ctx, new MethodSymbol("", c, None, Set()))
 

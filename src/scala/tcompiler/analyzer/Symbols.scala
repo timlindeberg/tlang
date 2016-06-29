@@ -31,6 +31,7 @@ object Symbols {
   ObjectClass.setType(Types.Object)
 
   class GlobalScope {
+
     var classes = Map[String, ClassSymbol]()
 
     def lookupClass(prog: Program, name: String): Option[ClassSymbol] = {
@@ -164,6 +165,7 @@ object Symbols {
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
 
+    override def toString = name
 
     private[Symbols] def completeClassSymbol() =
       if (!isComplete) {
@@ -271,6 +273,9 @@ object Symbols {
       true
     }
 
+    override def toString = signature
+
+
   }
 
   class OperatorSymbol(
@@ -283,6 +288,8 @@ object Symbols {
     def operatorString = operatorType.operatorString(argList.map(_.getType))
 
     def methodName = "$" + operatorType.getClass.getSimpleName
+
+    override def toString = operatorString
 
   }
 

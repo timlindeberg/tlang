@@ -25,18 +25,14 @@ class String : Iterable<Char> {
     // Conversion methods
     //----------------------------------------------------
 
-    Def ToInt()           = java::lang::Integer.parseInt(s)
-    Def ToInt(radix: Int) = java::lang::Integer.parseInt(s, radix)
+    Def ToInt()            = java::lang::Integer.parseInt(s)
+    Def ToInt(radix: Int)  = java::lang::Integer.parseInt(s, radix)
 
-    // TODO: Long, Float, Double probably can't be keywords if this is to work
-    // Def ToLong()           = java::lang::Long.parseLong(s)
-    // Def ToLong(radix: Int) = java::lang::Long.parseInt(s, radix)
+    Def ToLong()           = java::lang::Long.parseLong(s)
+    Def ToLong(radix: Int) = java::lang::Long.parseLong(s, radix)
 
-    // Def ToFloat()           = java::lang::Float.parseFloat(s)
-    // Def ToFloat(radix: Int) = java::lang::Float.parseFloat(s, radix)
-
-    // Def ToDouble()           = java::lang::Double.parseDouble(s)
-    // Def ToDouble(radix: Int) = java::lang::Double.parseDouble(s, radix)
+    Def ToFloat()          = java::lang::Float.parseFloat(s)
+    Def ToDouble()         = java::lang::Double.parseDouble(s)
 
     Def ToJavaString() = s
 

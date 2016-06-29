@@ -347,14 +347,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <returnType> ::= Unit | <tpe>
     */
-  def returnType(): TypeTree =
-    if (nextTokenKind == UNIT) {
-      val startPos = nextToken
-      eat(UNIT)
-      UnitType().setPos(startPos, nextToken)
-    } else {
-      tpe()
+  def returnType(): TypeTree = {
+    val t = tpe()
+    t match {
+      case ClassIdentifier("Unit", _) => UnitType().setPos(t)
+      case _                          => t
     }
+  }
 
   /**
     * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
@@ -535,26 +534,15 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def basicTpe(): TypeTree = {
     val startPos = nextToken
-    val tpe = nextTokenKind match {
-      case INT     =>
-        eat(INT)
-        IntType()
-      case LONG    =>
-        eat(LONG)
-        LongType()
-      case FLOAT   =>
-        eat(FLOAT)
-        FloatType()
-      case DOUBLE  =>
-        eat(DOUBLE)
-        DoubleType()
-      case BOOLEAN =>
-        eat(BOOLEAN)
-        BooleanType()
-      case CHAR    =>
-        eat(CHAR)
-        CharType()
-      case _       => classIdentifier()
+    val id = classIdentifier()
+    val tpe = id.value match {
+      case "Int"    => IntType()
+      case "Long"   => LongType()
+      case "Float"  => FloatType()
+      case "Double" => DoubleType()
+      case "Bool"   => BooleanType()
+      case "Char"   => CharType()
+      case _        => id
     }
     tpe.setPos(startPos, nextToken)
   }

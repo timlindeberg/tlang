@@ -15,9 +15,7 @@ object NameAnalysis extends Pipeline[List[Program], List[Program]] {
   def run(ctx: Context)(progs: List[Program]): List[Program] = {
     globalScope = new GlobalScope
 
-    // Set up string and object types
-    Types.String = TObject(globalScope.lookupClass(progs.head, ASTBuilder.TLangString).get)
-    Types.Object = TObject(globalScope.lookupClass(progs.head, ASTBuilder.TLangObject).get)
+
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
@@ -34,6 +32,11 @@ object NameAnalysis extends Pipeline[List[Program], List[Program]] {
       nameAnalyzer.checkVariableReassignments()
       nameAnalyzer.checkValidParenting()
     }
+
+    // Set up string and object types for typechecking
+    globalScope.lookupClass(progs.head, ASTBuilder.TLangString).ifDefined(sym => Types.String = TObject(sym))
+    globalScope.lookupClass(progs.head, ASTBuilder.TLangString).ifDefined(sym => Types.Object = TObject(sym))
+
     progs
   }
 
@@ -509,7 +512,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     val name = meth.id.value
     val argTypes = meth.args.map(_.tpe.getType)
     val classSymbol = meth.getSymbol.classSymbol
-    classSymbol.lookupMethod(name, argTypes, recursive = false) match {
+    classSymbol.lookupMethod(name, argTypes, recursive = false, exactTypes = true) match {
       case Some(oldMeth) => ErrorMethodAlreadyDefined(meth.getSymbol.signature, oldMeth.line, meth)
       case None          => classSymbol.addMethod(meth.getSymbol)
     }
