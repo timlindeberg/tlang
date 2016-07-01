@@ -14,9 +14,9 @@ trait NameAnalysisErrors extends Errors {
 
   def error(errorCode: Int, msg: String, tree: Positioned): Symbol = {
     tree match {
-      case id: Identifier      => id.setSymbol(new ErrorSymbol)
-      case id: ClassIdentifier => id.setSymbol(new ClassSymbol("ERROR", false))
-      case _                   =>
+      case id: ClassID    => id.setSymbol(new ClassSymbol("ERROR", false))
+      case id: VariableID => id.setSymbol(new VariableSymbol("ERROR"))
+      case _              =>
     }
 
     ctx.reporter.error(ErrorPrefix, errorCode, msg, tree)
@@ -110,20 +110,16 @@ trait NameAnalysisErrors extends Errors {
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  protected def WarningUnusedVar(v: VariableSymbol) = v.varType match {
-    case Field    => WarningUnusedprotectedField(v.name, v)
-    case Argument => WarningUnusedArgument(v.name, v)
-    case LocalVar => WarningUnusedLocalVar(v.name, v)
+  protected def WarningUnusedVar(v: VariableSymbol): Unit = v match {
+    case _: FieldSymbol => WarningUnusedPrivateField(v.name, v)
+    case _              => WarningUnusedVar(v.name, v)
   }
 
-  protected def WarningUnusedLocalVar(name: String, pos: Positioned) =
+  protected def WarningUnusedVar(name: String, pos: Positioned): Unit =
     warning(0, s"Variable '$name' is never used.", pos)
 
-  protected def WarningUnusedArgument(name: String, pos: Positioned) =
-    warning(1, s"Argument '$name' is never used.", pos)
-
-  protected def WarningUnusedprotectedField(name: String, pos: Positioned) =
-    warning(2, s"protected field '$name' is never used.", pos)
+  protected def WarningUnusedPrivateField(name: String, pos: Positioned) =
+    warning(2, s"Private field '$name' is never used.", pos)
 
   protected def WarningUselessStatement(pos: Positioned) =
     warning(3, s"Statement has no effect.", pos)
@@ -138,9 +134,9 @@ trait NameAnalysisErrors extends Errors {
 
   private def inheritenceList(set: Set[ClassSymbol], c: ClassSymbol) = {
     val first = if (set.size >= 2)
-      set.map(c => s"'${c.name}'").mkString(" <: ")
-    else
-      c.name
+                  set.map(c => s"'${c.name}'").mkString(" <: ")
+                else
+                  c.name
     first + " <: '" + c.name + "'"
   }
 

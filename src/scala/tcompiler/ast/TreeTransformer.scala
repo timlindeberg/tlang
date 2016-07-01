@@ -35,22 +35,22 @@ class TreeTransformer {
       case Empty()       => treeCopy.Empty(t)
 
       case Program(progPackage, imports, classes, importMap) =>
-        treeCopy.Program(t, tOption(progPackage), tList(imports), tList(classes), importMap)
-      case Package(identifiers)                              =>
-        treeCopy.Package(t, tList(identifiers))
+        treeCopy.Program(t, progPackage, tList(imports), tList(classes), importMap)
+      case Package(adress)                              =>
+        treeCopy.Package(t, adress)
 
-      case RegularImport(identifiers)                                     =>
-        treeCopy.RegularImport(t, tList(identifiers))
-      case WildCardImport(identifiers)                                    =>
-        treeCopy.WildCardImport(t, tList(identifiers))
+      case RegularImport(adress)                                     =>
+        treeCopy.RegularImport(t, adress)
+      case WildCardImport(adress)                                    =>
+        treeCopy.WildCardImport(t, adress)
       case ClassDecl(id, parents, fields, methods, isTrait)               =>
         treeCopy.ClassDecl(t, trans(id), tList(parents), tList(fields), tList(methods), isTrait)
       case MethodDecl(retType, id, args, stat, modifiers)                 =>
         treeCopy.MethodDecl(t, tOption(retType), trans(id), tList(args), tOption(stat), tSet(modifiers))
       case ConstructorDecl(retType, id, args, stat, modifiers)            =>
         treeCopy.ConstructorDecl(t, tOption(retType), trans(id), tList(args), tOption(stat), tSet(modifiers))
-      case OperatorDecl(operatorType, retType, args, stat, modifiers, id) =>
-        treeCopy.OperatorDecl(t, trans(operatorType), tOption(retType), tList(args), tOption(stat), tSet(modifiers), trans(id))
+      case OperatorDecl(operatorType, retType, args, stat, modifiers) =>
+        treeCopy.OperatorDecl(t, trans(operatorType), tOption(retType), tList(args), tOption(stat), tSet(modifiers))
 
       case Formal(tpe, id)                   =>
         treeCopy.Formal(t, trans(tpe), trans(id))
@@ -120,15 +120,15 @@ class TreeTransformer {
       case GreaterThanEquals(lhs, rhs) =>
         treeCopy.GreaterThanEquals(t, trans(lhs), trans(rhs))
 
-      case Instance(expr, id)                    =>
+      case Is(expr, id)          =>
         treeCopy.Instance(t, trans(expr), trans(id))
-      case As(expr, tpe)                         =>
+      case As(expr, tpe)         =>
         treeCopy.As(t, trans(expr), trans(tpe))
-      case Equals(lhs, rhs)                      =>
+      case Equals(lhs, rhs)      =>
         treeCopy.Equals(t, trans(lhs), trans(rhs))
-      case NotEquals(lhs, rhs)                   =>
+      case NotEquals(lhs, rhs)   =>
         treeCopy.NotEquals(t, trans(lhs), trans(rhs))
-      case ArrayRead(arr, index)                 =>
+      case ArrayRead(arr, index) =>
         treeCopy.ArrayRead(t, trans(arr), trans(index))
       case ArraySlice(arr, start, end)           =>
         treeCopy.ArraySlice(t, trans(arr), tOption(start), tOption(end))
@@ -136,31 +136,33 @@ class TreeTransformer {
         treeCopy.MethodCall(t, trans(meth), tList(args))
       case IntLit(value)                         =>
         treeCopy.IntLit(t, value)
-      case LongLit(value)                        =>
+      case LongLit(value)                =>
         treeCopy.LongLit(t, value)
-      case FloatLit(value)                       =>
+      case FloatLit(value)               =>
         treeCopy.FloatLit(t, value)
-      case DoubleLit(value)                      =>
+      case DoubleLit(value)              =>
         treeCopy.DoubleLit(t, value)
-      case CharLit(value)                        =>
+      case CharLit(value)                =>
         treeCopy.CharLit(t, value)
-      case StringLit(value)                      =>
+      case StringLit(value)              =>
         treeCopy.StringLit(t, value)
-      case ArrayLit(expressions)                 =>
+      case ArrayLit(expressions)         =>
         treeCopy.ArrayLit(t, tList(expressions))
-      case Identifier(value)                     =>
-        treeCopy.Identifier(t, value)
-      case ClassIdentifier(value, templateTypes) =>
+      case ClassID(value, templateTypes) =>
         treeCopy.ClassIdentifier(t, value, tList(templateTypes))
-      case Super(specifier)                      =>
+      case VariableID(value)             =>
+        treeCopy.VarIdentifier(t, value)
+      case MethodID(value)               =>
+        treeCopy.MethodIdentifier(t, value)
+      case Super(specifier)              =>
         treeCopy.Super(t, tOption(specifier))
-      case NewArray(tpe, sizes)                  =>
+      case NewArray(tpe, sizes)          =>
         treeCopy.NewArray(t, trans(tpe), tList(sizes))
-      case New(tpe, args)                        =>
+      case New(tpe, args)                =>
         treeCopy.New(t, trans(tpe), tList(args))
-      case Not(expr)                             =>
+      case Not(expr)                     =>
         treeCopy.Not(t, trans(expr))
-      case Hash(expr)                            =>
+      case Hash(expr)                    =>
         treeCopy.Hash(t, trans(expr))
       case Negation(expr)                        =>
         treeCopy.Negation(t, trans(expr))

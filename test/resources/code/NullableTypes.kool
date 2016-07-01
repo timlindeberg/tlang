@@ -1,3 +1,4 @@
+// Ignore
 var i: Int? = GetNullableInt1(0)
 
 if(i != null)

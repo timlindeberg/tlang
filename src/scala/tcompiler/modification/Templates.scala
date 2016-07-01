@@ -29,7 +29,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     progs foreach { prog =>
       prog.classes.filter(_.id.isTemplated) foreach { clazz =>
         checkDuplicateTemplateNames(clazz)
-        templatePrograms(clazz.id.value) = prog
+        templatePrograms(clazz.id.name) = prog
       }
     }
 
@@ -65,25 +65,25 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     }
 
     def replaceType(tpe: TypeTree): TypeTree = tpe match {
-      case x: ClassIdentifier  => replaceTypeId(x)
+      case x: ClassID          => replaceTypeId(x)
       case x@ArrayType(arrTpe) =>
         x.tpe = replaceType(arrTpe)
         x
       case x                   => x
     }
 
-    def replaceTypeId(tpe: ClassIdentifier) =
+    def replaceTypeId(tpe: ClassID) =
       if (tpe.isTemplated) {
         val newName = tpe.templatedClassName
-        val shortName = tpe.value.split("::").last
+        val shortName = tpe.name.split("::").last
         if (prog.importMap.contains(shortName)) {
-          val fullName = prog.importMap(tpe.value)
+          val fullName = prog.importMap(tpe.name)
           val prefix = fullName.split("\\.").dropRight(1).mkString(".")
           val importEntry = newName -> s"$prefix.$newName"
           prog.importMap += importEntry
         }
 
-        new ClassIdentifier(tpe.templatedClassName).setPos(tpe)
+        new ClassID(tpe.templatedClassName).setPos(tpe)
       } else {
         tpe
       }
@@ -134,13 +134,13 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     private def generateIfTemplated(tpe: TypeTree): Unit =
       tpe match {
-        case x: ClassIdentifier if x.isTemplated =>
+        case x: ClassID if x.isTemplated =>
           x.templateTypes foreach generateIfTemplated
           generateClass(x)
-        case _                                   =>
+        case _                           =>
       }
 
-    private def generateClass(typeId: ClassIdentifier): Unit = {
+    private def generateClass(typeId: ClassID): Unit = {
       val shortName = typeId.templatedClassName.split("::").last
 
       if (generatedClassNames(shortName))
@@ -153,24 +153,24 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
       findTemplateProgram(typeId) match {
         case Some(templateProgram) =>
-          val shortName = typeId.value.split("::").last
-          val templateClass = templateProgram.classes.find(_.id.value == shortName).get
+          val shortName = typeId.name.split("::").last
+          val templateClass = templateProgram.classes.find(_.id.name == shortName).get
           val generatedClass = newTemplateClass(templateClass, typeId)
           templateProgram.classes ::= generatedClass
 
-        case None => ErrorDoesNotExist(typeId.value, typeId)
+        case None => ErrorDoesNotExist(typeId.name, typeId)
       }
     }
 
-    private def updateImportMap(prog: Program, typeId: ClassIdentifier) =
-      if (prog.importMap.contains(typeId.value)) {
+    private def updateImportMap(prog: Program, typeId: ClassID) =
+      if (prog.importMap.contains(typeId.name)) {
         val className = typeId.templatedClassName
-        val fullName = prog.importMap(typeId.value)
+        val fullName = prog.importMap(typeId.name)
         val prefix = fullName.split("\\.").dropRight(1).mkString(".")
         prog.importMap(className) = s"$prefix.$className"
       }
 
-    private def findTemplateProgram(typeId: ClassIdentifier): Option[Program] = {
+    private def findTemplateProgram(typeId: ClassID): Option[Program] = {
       val className = typeId.name.split("::").last
       if (templatePrograms.contains(className))
         return Some(templatePrograms(className))
@@ -181,7 +181,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
       importedPrograms foreach { prog =>
         prog.classes foreach { clazz =>
-          templatePrograms(clazz.id.value) = prog
+          templatePrograms(clazz.id.name) = prog
         }
       }
 
@@ -189,7 +189,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       templatePrograms.get(className)
     }
 
-    private def newTemplateClass(template: ClassDecl, typeId: ClassIdentifier): ClassDecl = {
+    private def newTemplateClass(template: ClassDecl, typeId: ClassID): ClassDecl = {
       checkDuplicateTemplateNames(template)
 
       val templateTypes = typeId.templateTypes
@@ -198,12 +198,12 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       /* Helper functions to perform transformation */
       def updateType(t: TypeTree): TypeTree = {
         t match {
-          case t@ClassIdentifier(_, templateTypes) if t.isTemplated =>
+          case t@ClassID(_, templateTypes) if t.isTemplated =>
             t.templateTypes = templateTypes.map(updateType)
             generateClass(t)
-          case a@ArrayType(tpe)                                     =>
+          case a@ArrayType(tpe)                             =>
             a.tpe = updateType(tpe)
-          case _                                                    =>
+          case _                                            =>
         }
         templateMap.getOrElse(t, t)
       }
@@ -212,8 +212,8 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       newClass foreach {
         case t: ClassDecl    =>
           val templateName = template.id.templatedClassName(templateTypes)
-          t.id = t.id.copy(value = templateName, templateTypes = List())
-          t.parents = t.parents.map(p => updateType(p).asInstanceOf[ClassIdentifier])
+          t.id = t.id.copy(name = templateName, templateTypes = List())
+          t.parents = t.parents.map(p => updateType(p).asInstanceOf[ClassID])
         case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(updateType(t)) }
         case f: Formal       => f.tpe = updateType(f.tpe)
         case m: MethodDecl   => m.retType collect { case t => m.retType = Some(updateType(t)) }
@@ -228,7 +228,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
 
 
-    private def constructTemplateMapping(typedId: ClassIdentifier, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
+    private def constructTemplateMapping(typedId: ClassID, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
       if (templateTypes.size != templateList.size) {
         ErrorWrongNumGenerics(templateList.size, templateTypes.size, typedId)
         Map()

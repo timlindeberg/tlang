@@ -133,7 +133,7 @@ class TypeChecker(
           case Some(expr) =>
             val inferedType = tcExpr(expr)
             id.setType(inferedType)
-          case _          => ErrorNoTypeNoInitalizer(varDecl.id.value, varDecl)
+          case _          => ErrorNoTypeNoInitalizer(varDecl.id.name, varDecl)
         }
       }
     case If(expr, thn, els)                        =>
@@ -193,30 +193,27 @@ class TypeChecker(
 
   def tcExpr(expression: ExprTree, expected: List[Type]): Type = {
     val foundType = expression match {
-      case _: StringLit                                  => String
-      case _: IntLit                                     => TInt
-      case _: LongLit                                    => TLong
-      case _: FloatLit                                   => TFloat
-      case _: DoubleLit                                  => TDouble
-      case _: CharLit                                    => TChar
-      case _: True                                       => TBool
-      case _: False                                      => TBool
-      case _: Null                                       => TNull
-      case id: Identifier                                =>
+      case _: StringLit                  => String
+      case _: IntLit                     => TInt
+      case _: LongLit                    => TLong
+      case _: FloatLit                   => TFloat
+      case _: DoubleLit                  => TDouble
+      case _: CharLit                    => TChar
+      case _: True                       => TBool
+      case _: False                      => TBool
+      case _: Null                       => TNull
+      case id: VariableID                =>
         id.getSymbol match {
-          case varSymbol: VariableSymbol => varSymbol.classSymbol match {
-            case Some(clazz) => checkFieldPrivacy(clazz, varSymbol, id)
-            case None        =>
-          }
-          case _                         =>
+          case sym: FieldSymbol => checkFieldPrivacy(sym.classSymbol, sym, id)
+          case _                =>
         }
         id.getType
-      case id: ClassIdentifier                           => id.getType
-      case th: This                                      => th.getSymbol.getType
-      case su: Super                                     => su.getSymbol.getType
-      case acc: Access                                   => tcAccess(acc)
-      case assign: Assign                                => tcAssignment(assign)
-      case newArray@NewArray(tpe, sizes)                 =>
+      case id: ClassID                   => id.getType
+      case th: This                      => th.getSymbol.getType
+      case su: Super                     => su.getSymbol.getType
+      case acc: Access                   => tcAccess(acc)
+      case assign: Assign                => tcAssignment(assign)
+      case newArray@NewArray(tpe, sizes) =>
         sizes.foreach(tcExpr(_, TInt))
         var arrayType = tpe.getType
         for (i <- 1 to newArray.dimension)
@@ -298,7 +295,7 @@ class TypeChecker(
           case _          =>
         }
         TBool
-      case Instance(expr, id)                            =>
+      case Is(expr, id)                                  =>
         val tpe = tcExpr(expr)
         tpe match {
           case t: TObject =>
@@ -377,9 +374,9 @@ class TypeChecker(
         }
       case incOp@IncrementDecrementTree(obj)             =>
         obj match {
-          case id: Identifier                => checkReassignment(id, expression)
+          case id: VariableID           => checkReassignment(id, expression)
           case _: ArrayRead | _: Access =>
-          case _                             => ErrorInvalidIncrementDecrementExpr(expression, obj)
+          case _                        => ErrorInvalidIncrementDecrementExpr(expression, obj)
         }
         // TODO: Allow increment decrement for Bool types?
         tcExpr(obj, Types.Object :: Types.Primitives) match {
@@ -421,7 +418,7 @@ class TypeChecker(
 
     def methSignature = {
       val methodCall = app.asInstanceOf[MethodCall]
-      methodCall.meth.value + argTypes.get.mkString("(", ", ", ")")
+      methodCall.meth.name + argTypes.get.mkString("(", ", ", ")")
     }
 
     val objType = tcAccessObject(acc, argTypes, methSignature)
@@ -429,10 +426,10 @@ class TypeChecker(
     // Most of the duplication here is to give a different error message for
     // fields and methods
     val tpe = app match {
-      case MethodCall(meth, args)        =>
+      case MethodCall(meth, args)          =>
         objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupMethod(meth.value, argTypes.get) match {
+            classSymbol.lookupMethod(meth.name, argTypes.get) match {
               case Some(methSymbol) =>
                 checkMethodPrivacy(classSymbol, methSymbol, app)
                 checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
@@ -445,15 +442,15 @@ class TypeChecker(
                 ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, app)
             }
           case TArray(arrTpe)       =>
-            if (args.nonEmpty || meth.value != "Size")
+            if (args.nonEmpty || meth.name != "Size")
               ErrorMethodOnWrongType(methSignature, objType.toString, app)
             TInt
           case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
         }
-      case fieldId@Identifier(fieldName) =>
+      case fieldId @ VariableID(fieldName) =>
         objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupVar(fieldName) match {
+            classSymbol.lookupField(fieldName) match {
               case Some(varSymbol) =>
                 checkFieldPrivacy(classSymbol, varSymbol, app)
                 checkStaticFieldConstraints(acc, classSymbol, varSymbol, app)
@@ -484,14 +481,14 @@ class TypeChecker(
         val thisSymbol = sup.getSymbol
         val classSymbol = app match {
           case MethodCall(meth, args) =>
-            thisSymbol.lookupParentMethod(meth.value, argTypes.get) match {
+            thisSymbol.lookupParentMethod(meth.name, argTypes.get) match {
               case Some(methodSymbol) => methodSymbol.classSymbol
               case None               => return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, app)
             }
           case Identifier(fieldName)  =>
-            thisSymbol.lookupParentVar(fieldName) match {
-              case Some(variableSymbol) => variableSymbol.classSymbol.get
-              case None                 => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, app)
+            thisSymbol.lookupParentField(fieldName) match {
+              case Some(fieldSymbol) => fieldSymbol.classSymbol
+              case None              => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, app)
             }
           case _                      => ???
         }
@@ -528,18 +525,18 @@ class TypeChecker(
       case _            => ???
     }
     to match {
-      case id: Identifier            =>
+      case id: VariableID           =>
         val toTpe = tcExpr(to)
         checkReassignment(id, assignment)
         tcAssignmentExpr(toTpe)
       case Access(obj, application) =>
         val toTpe = tcExpr(to)
         application match {
-          case _: MethodCall => ErrorAssignValueToMethodCall(assignment)
-          case id: Identifier =>
+          case _: MethodCall  => ErrorAssignValueToMethodCall(assignment)
+          case id: VariableID =>
             checkReassignment(id, assignment)
             tcAssignmentExpr(toTpe)
-          case _             => ???
+          case _              => ???
         }
       case ArrayRead(arr, index)    =>
         val arrTpe = tcExpr(arr)
@@ -649,13 +646,10 @@ class TypeChecker(
       classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 
-  private def checkReassignment(id: Identifier, pos: Positioned) = {
-    if (id.hasSymbol) {
-      val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
-      if (varSymbol.modifiers.contains(Final()))
-        ErrorReassignmentToVal(id.value, pos)
-    }
-  }
+  private def checkReassignment(id: VariableID, pos: Positioned) =
+    if (id.hasSymbol && id.getSymbol.isFinal)
+      ErrorReassignmentToVal(id.name, pos)
+
 
   private def checkNullAssignment(to: Type, from: Type, pos: Positioned) =
     if (from == TNull && !to.isInstanceOf[TNullable])
@@ -666,7 +660,7 @@ class TypeChecker(
     val unimplementedMethods = implementedTrait.unimplementedMethods()
     unimplementedMethods.foreach { case (method, owningTrait) =>
       if (!classDecl.getSymbol.implementsMethod(method))
-        ErrorUnimplementedMethodFromTrait(classDecl.id.value,
+        ErrorUnimplementedMethodFromTrait(classDecl.id.name,
           method.signature,
           owningTrait.name, classDecl.id)
     }
@@ -747,7 +741,7 @@ class TypeChecker(
       ErrorNonStaticMethodFromStatic(methodSymbol.name, pos)
   }
 
-  private def checkStaticFieldConstraints(acc: Access, classSymbol: ClassSymbol, varSymbol: VariableSymbol, pos: Positioned) = {
+  private def checkStaticFieldConstraints(acc: Access, classSymbol: ClassSymbol, varSymbol: FieldSymbol, pos: Positioned) = {
     if (!varSymbol.isStatic && acc.isStatic)
       ErrorNonStaticFieldAsStatic(varSymbol.name, pos)
 
@@ -763,7 +757,7 @@ class TypeChecker(
     if (!checkPrivacy(classSymbol, methodSymbol.accessability))
       ErrorMethodPrivacy(methodSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 
-  private def checkFieldPrivacy(classSymbol: ClassSymbol, varSymbol: VariableSymbol, pos: Positioned): Unit =
+  private def checkFieldPrivacy(classSymbol: ClassSymbol, varSymbol: FieldSymbol, pos: Positioned): Unit =
     if (!checkPrivacy(classSymbol, varSymbol.accessability))
       ErrorFieldPrivacy(varSymbol, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
 

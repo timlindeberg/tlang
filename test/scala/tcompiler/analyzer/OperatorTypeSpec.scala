@@ -27,14 +27,14 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val array  = new TypeConstructor(TArray(TInt))
   val obj    = new TypeConstructor(TObject(ClassSymbol))
 
-  val allTypes        = List[() => Identifier](int, bool, long, float, double, char, array, obj)
+  val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
   val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
-  private def createIdentifier(tpe: Type) = Identifier("").setSymbol(new VariableSymbol("")).setType(tpe)
+  private def createIdentifier(tpe: Type) = VariableID("").setSymbol(new VariableSymbol("")).setType(tpe)
 
   class TypeConstructor(val tpe: Type)
-    extends (() => Identifier) {
-    def apply(): Identifier = createIdentifier(tpe)
+    extends (() => VariableID) {
+    def apply(): VariableID = createIdentifier(tpe)
     override def toString() = tpe.toString
     def ==(rhs: TypeConstructor) = tpe.toString == rhs.tpe.toString
   }
@@ -69,8 +69,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   it should "Or" in andOr(Or)
   it should "Not" in not(Not)
 
-  it should "Instance" in instance(Instance)
-
   it should "Negation" in negation(Negation)
   it should "LogicalNot" in logicalNot(LogicNot)
 
@@ -80,7 +78,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   it should "PostDecrement" in incrementDecrement(PostDecrement)
 
 
-  private def arithmeticOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def arithmeticOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, TInt),
 
@@ -103,7 +101,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, char, TDouble)
     )
 
-  private def logicOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def logicOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, TInt),
       (int, long, TLong),
@@ -116,7 +114,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (bool, bool, TBool)
     )
 
-  private def shiftOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def shiftOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, TInt),
       (int, long, TLong),
@@ -188,7 +186,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (obj, obj, obj().getType)
     )
 
-  private def comparisonOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def comparisonOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, TBool),
 
@@ -211,7 +209,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, char, TBool)
     )
 
-  private def equalsOperator(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def equalsOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, TBool),
 
@@ -240,22 +238,17 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (bool, bool, TBool)
     )
 
-  private def andOr(expressionType: (Identifier, Identifier) => ExprTree) =
+  private def andOr(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (bool, bool, TBool)
     )
 
-  private def not(expressionType: Identifier => ExprTree) =
+  private def not(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (bool, TBool)
     )
 
-  private def instance(expressionType: (Identifier, Identifier) => ExprTree) =
-    BinaryExpressionAsserter.valid(expressionType,
-      (obj, obj, TBool)
-    )
-
-  private def negation(expressionType: Identifier => ExprTree) =
+  private def negation(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TInt),
@@ -264,14 +257,14 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, TDouble)
     )
 
-  private def logicalNot(expressionType: Identifier => ExprTree) =
+  private def logicalNot(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TInt),
       (long, TLong)
     )
 
-  private def incrementDecrement(expressionType: Identifier => ExprTree) =
+  private def incrementDecrement(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, TInt),
       (char, TChar),
@@ -284,12 +277,12 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   object UnaryExpressionAsserter {
 
-    def getInvalidCombinations(validTpes: List[(() => Identifier, Type)]) =
+    def getInvalidCombinations(validTpes: List[(() => VariableID, Type)]) =
       allTypes.filter(tpe => {
         !validTpes.exists(listElem => tpe == listElem._1)
       })
 
-    def valid(expressionType: Identifier => ExprTree, validTpes: (() => Identifier, Type)*): Unit = {
+    def valid(expressionType: VariableID => ExprTree, validTpes: (() => VariableID, Type)*): Unit = {
       validTpes.foreach { case (id, tpe) =>
         TestContext.reporter.clear()
         val resType = TypeChecker.tcExpr(expressionType(id()))
@@ -310,8 +303,8 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   object BinaryExpressionAsserter {
 
-    def valid(expressionType: (Identifier, Identifier) => ExprTree,
-              validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
+    def valid(expressionType: (VariableID, VariableID) => ExprTree,
+              validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
 
       validCombinations.foreach { case (lhs, rhs, tpe) =>
         TestContext.reporter.clear()
@@ -334,7 +327,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       }
     }
 
-    private def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
+    private def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -345,9 +338,9 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   }
 
-  class AssignmentAsserter(expressionType: (Identifier, Identifier) => ExprTree) {
+  class AssignmentAsserter(expressionType: (VariableID, VariableID) => ExprTree) {
 
-    def valid(validCombinations: (() => Identifier, () => Identifier, Type)*): Unit = {
+    def valid(validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
       validCombinations.foreach { case (id, expr, tpe) =>
 
         TestContext.reporter.clear()
@@ -367,7 +360,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       }
     }
 
-    protected def getInvalidCombinations(validCombinations: List[(() => Identifier, () => Identifier, Type)]) =
+    protected def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -378,12 +371,12 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   class ArrayAssignmentAsserter() extends AssignmentAsserter(Assign) {
 
-    override def valid(validCombinations: (() => Identifier, () => Identifier, Type)*) = {
+    override def valid(validCombinations: (() => VariableID, () => VariableID, Type)*) = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
         TestContext.reporter.clear()
         val id = createIdentifier(TArray(identifier().getType))
 
-        val resType = TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
+        val resType = TypeChecker.tcExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
         assert(resType == tpe, "for (" + identifier + ", " + expr + ")")
 
         val noErrors = !TestContext.reporter.hasErrors
@@ -392,7 +385,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
       getInvalidCombinations(validCombinations.toList) foreach { case (identifier, expr) =>
         val id = createIdentifier(TArray(identifier().getType))
-        TypeChecker.tcExpr(ArrayAssign(id, IntLit(0), expr()))
+        TypeChecker.tcExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
         val invalid = TestContext.reporter.hasErrors
 
         assert(invalid, "for (" + identifier + ", " + expr + ")")

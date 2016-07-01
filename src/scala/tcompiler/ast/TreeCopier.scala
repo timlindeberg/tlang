@@ -9,21 +9,21 @@ import scala.collection.mutable
   */
 
 class TreeCopier {
-  def Program(t: Tree, progPackage: Option[Package], imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
+  def Program(t: Tree, progPackage: Package, imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
     new Program(progPackage, imports, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
-  def Package(t: Tree, identifiers: List[Identifier]) =
-    new Package(identifiers).copyAttrs(t)
-  def RegularImport(t: Tree, identifiers: List[Identifier]) =
-    new RegularImport(identifiers).copyAttrs(t)
-  def WildCardImport(t: Tree, identifiers: List[Identifier]) =
-    new WildCardImport(identifiers).copyAttrs(t)
+  def Package(t: Tree, adress: List[String]) =
+    new Package(adress).copyAttrs(t)
+  def RegularImport(t: Tree, adress: List[String]) =
+    new RegularImport(adress).copyAttrs(t)
+  def WildCardImport(t: Tree, adress: List[String]) =
+    new WildCardImport(adress).copyAttrs(t)
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
-  def ClassDecl(t: Tree, id: ClassIdentifier, parents: List[ClassIdentifier], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean) =
+  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean) =
     new ClassDecl(id, parents, fields, methods, isTrait).copyAttrs(t)
 
   /*-------------------------------- Modifier Trees --------------------------------*/
@@ -43,13 +43,13 @@ class TreeCopier {
 
   /*-------------------------------- Function Declaration Trees --------------------------------*/
 
-  def MethodDecl(t: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
+  def MethodDecl(t: Tree, retType: Option[TypeTree], id: MethodID, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
     new MethodDecl(retType, id, args, stat, modifiers).copyAttrs(t)
-  def ConstructorDecl(t: Tree, retType: Option[TypeTree], id: Identifier, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
+  def ConstructorDecl(t: Tree, retType: Option[TypeTree], id: MethodID, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
     new ConstructorDecl(retType, id, args, stat, modifiers).copyAttrs(t)
-  def OperatorDecl(t: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier], id: Identifier) =
-    new OperatorDecl(operatorType, retType, args, stat, modifiers, id).copyAttrs(t)
-  def Formal(t: Tree, tpe: TypeTree, id: Identifier) =
+  def OperatorDecl(t: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
+    new OperatorDecl(operatorType, retType, args, stat, modifiers).copyAttrs(t)
+  def Formal(t: Tree, tpe: TypeTree, id: VariableID) =
     new Formal(tpe, id).copyAttrs(t)
 
 
@@ -77,7 +77,7 @@ class TreeCopier {
 
   /*-------------------------------- Statement Trees --------------------------------*/
 
-  def VarDecl(t: Tree, tpe: Option[TypeTree], id: Identifier, init: Option[ExprTree], modifiers: Set[Modifier]) =
+  def VarDecl(t: Tree, tpe: Option[TypeTree], id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) =
     new VarDecl(tpe, id, init, modifiers).copyAttrs(t)
   def Block(t: Tree, stats: List[StatTree]) =
     new Block(stats).copyAttrs(t)
@@ -198,10 +198,12 @@ class TreeCopier {
     new False().copyAttrs(t)
   def Null(t: Tree) =
     new Null().copyAttrs(t)
-  def Identifier(t: Tree, value: String) =
-    new Identifier(value).copyAttrs(t)
-  def ClassIdentifier(t: Tree, value: String, templateTypes: List[TypeTree] = List()) =
-    new ClassIdentifier(value, templateTypes).copyAttrs(t)
+  def ClassIdentifier(t: Tree, name: String, templateTypes: List[TypeTree] = List()) =
+    new ClassID(name, templateTypes).copyAttrs(t)
+  def VarIdentifier(t: Tree, name: String) =
+    new VariableID(name).copyAttrs(t)
+  def MethodIdentifier(t: Tree, name: String) =
+    new MethodID(name).copyAttrs(t)
 
   /*-------------------------------- Access Trees --------------------------------*/
 
@@ -214,12 +216,12 @@ class TreeCopier {
 
   def Assign(t: Tree, to: ExprTree, expr: ExprTree) =
     new Assign(to, expr).copyAttrs(t)
-  def MethodCall(t: Tree, meth: Identifier, args: List[ExprTree]) =
+  def MethodCall(t: Tree, meth: MethodID, args: List[ExprTree]) =
     new MethodCall(meth, args).copyAttrs(t)
 
   def This(t: Tree) =
     new This().copyAttrs(t)
-  def Super(t: Tree, specifier: Option[Identifier]) =
+  def Super(t: Tree, specifier: Option[ClassID]) =
     new Super(specifier).copyAttrs(t)
   def NewArray(t: Tree, tpe: TypeTree, sizes: List[ExprTree]) =
     new NewArray(tpe, sizes).copyAttrs(t)
@@ -229,11 +231,10 @@ class TreeCopier {
     new Ternary(condition, thn, els).copyAttrs(t)
   def Elvis(t: Tree, nullableValue: ExprTree, ifNull:ExprTree) =
     new Elvis(nullableValue, ifNull).copyAttrs(t)
-  def Instance(t: Tree, expr: ExprTree, id: Identifier) =
-    new Instance(expr, id).copyAttrs(t)
+  def Instance(t: Tree, expr: ExprTree, id: ClassID) =
+    new Is(expr, id).copyAttrs(t)
   def As(t: Tree, expr: ExprTree, tpe: TypeTree) =
     new As(expr, tpe).copyAttrs(t)
-
   def Empty(t: Tree) =
     new Empty().copyAttrs(t)
 }

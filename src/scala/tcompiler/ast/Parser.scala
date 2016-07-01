@@ -84,7 +84,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def parseGoal() = {
     val startPos = nextToken
-    val pack = optional(packageDecl, PACKAGE)
+    val pack = packageDecl()
     val imp = untilNot(importDecl, IMPORT)
 
     val code = until(() => {
@@ -100,17 +100,17 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val classes = createMainClass(code)
 
-    val importMap = createImportMap(imp, pack)
+    val importMap = createImportMap(imp)
     Program(pack, imp, classes, importMap).setPos(startPos, nextToken)
   }
 
 
-  private def createImportMap(imports: List[Import], pack: Option[Package]) = {
-
-    def importName(imp: Import): String = imp.identifiers.map(_.value).mkString(".")
+  private def createImportMap(imports: List[Import]) = {
 
     val regImports = imports.filterType(classOf[RegularImport])
-    val wcImports = imports.filterType(classOf[WildCardImport])
+
+    // TODO: Support wild card imports. Need to be able to search the full classpath
+    //val wcImports = imports.filterType(classOf[WildCardImport])
 
     var importMap = mutable.Map[String, String]()
 
@@ -120,21 +120,18 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
 
     for (imp <- regImports) {
-      val fullName = importName(imp)
-      val shortName = imp.identifiers.last.value
-      def writtenName = fullName.replaceAll("\\.", "::")
-
+      val fullName = imp.name
+      val shortName = imp.shortName
       val templateImporter = new TemplateImporter(ctx)
 
       if (importMap.contains(shortName))
-        ErrorConflictingImport(writtenName, importMap(shortName), imp)
+        ErrorConflictingImport(imp.writtenName, importMap(shortName), imp)
       else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
-             ErrorCantResolveImport(writtenName, imp)
+             ErrorCantResolveImport(imp.writtenName, imp)
       else
         importMap += (shortName -> fullName)
     }
 
-    // TODO: Support wild card imports. Need to be able to search the full classpath
 
     importMap
   }
@@ -147,11 +144,11 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     if (stats.nonEmpty || methods.nonEmpty) {
       val mainName = currentToken.file.getName.dropRight(Main.FileEnding.length)
-      val mainClass = classes.find(_.id.value == mainName) match {
+      val mainClass = classes.find(_.id.name == mainName) match {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = ClassDecl(ClassIdentifier(mainName), List(), List(), List(), isAbstract = false)
+          val m = ClassDecl(ClassID(mainName), List(), List(), List(), isAbstract = false)
           m.setPos(pos, nextToken)
           classes ::= m
           m
@@ -161,9 +158,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
       if (stats.nonEmpty) {
         // TODO: Main args should be kool::lang::String
-        val args = List(Formal(ArrayType(ClassIdentifier("java::lang::String", List())), Identifier("args")))
+        val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
-        val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
+        val mainMethod = MethodDecl(Some(UnitType()), MethodID("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
         mainClass.methods ::= mainMethod
       }
     }
@@ -174,10 +171,15 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <packageDecl> ::= package <identifier> { . <identifier> }
     */
   def packageDecl() = {
-    val startPos = nextToken
-    val identifiers = nonEmptyList(identifier, COLON, COLON)
-    endStatement()
-    Package(identifiers).setPos(startPos, nextToken)
+    nextTokenKind match {
+      case PACKAGE =>
+        eat(PACKAGE)
+        val startPos = nextToken
+        val adress = nonEmptyList(() => identifierName(), COLON, COLON)
+        endStatement()
+        Package(adress).setPos(startPos, nextToken)
+      case _       => Package(Nil)
+    }
   }
 
   /**
@@ -186,9 +188,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   def importDecl(): Import = {
     val startPos = nextToken
     eat(IMPORT)
-    val ids = new ArrayBuffer[Identifier]()
+    val ids = new ArrayBuffer[String]()
 
-    ids += identifier()
+    ids += identifierName()
     while (nextTokenKind == COLON) {
       eat(COLON, COLON)
       nextTokenKind match {
@@ -196,7 +198,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
           eat(TIMES)
           endStatement()
           return WildCardImport(ids.toList).setPos(startPos, nextToken)
-        case _     => ids += identifier
+        case _     => ids += identifierName()
       }
     }
     endStatement()
@@ -226,7 +228,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       endStatement()
       v
     }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
-    val methods = untilNot(() => methodDeclaration(id.value), PRIVDEF, PUBDEF)
+    val methods = untilNot(() => methodDeclaration(id.name), PRIVDEF, PUBDEF)
     eat(RBRACE)
     ClassDecl(id, parents, vars, methods, isTrait).setPos(startPos, nextToken)
   }
@@ -234,7 +236,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <parentsDeclaration> ::= [ : <classIdentifier> { "," <classIdentifier> } ]
     */
-  def parentsDeclaration(isTrait: Boolean): List[ClassIdentifier] = nextTokenKind match {
+  def parentsDeclaration(isTrait: Boolean): List[ClassID] = nextTokenKind match {
     case COLON =>
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
@@ -242,7 +244,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       if (isTrait)
         List()
       else
-        List(ClassIdentifier(TLangObject))
+        List(ClassID(TLangObject))
   }
 
   /**
@@ -274,7 +276,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ "=" <expression> ]
     */
   def varDeclEnd(modifiers: Set[Modifier], startPos: Positioned): VarDecl = {
-    val id = identifier()
+    val id = varIdentifier()
     val typ = optional(tpe, COLON)
     val endPos = nextToken
     val init = optional(expression, EQSIGN)
@@ -286,7 +288,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def formal(): Formal = {
     val startPos = nextToken
-    val id = identifier()
+    val id = varIdentifier()
     eat(COLON)
     val typ = tpe()
     Formal(typ, id).setPos(startPos, nextToken)
@@ -314,7 +316,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case None       =>
     }
 
-    val id = identifier()
+    val id = methodIdentifier()
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
@@ -335,13 +337,15 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  "=" <statement>
     */
   def constructor(modifiers: Set[Modifier], className: String, startPos: Positioned): ConstructorDecl = {
+    val pos = nextToken
     eat(NEW)
+    val methId = MethodID("new").setPos(pos, nextToken)
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
     val retType = Some(UnitType().setType(TUnit))
     val methBody = methodBody()
-    ConstructorDecl(retType, Identifier("new"), args, methBody, modifiers).setPos(startPos, nextToken)
+    ConstructorDecl(retType, methId, args, methBody, modifiers).setPos(startPos, nextToken)
   }
 
   /**
@@ -350,8 +354,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   def returnType(): TypeTree = {
     val t = tpe()
     t match {
-      case ClassIdentifier("Unit", _) => UnitType().setPos(t)
-      case _                          => t
+      case ClassID("Unit", _) => UnitType().setPos(t)
+      case _                  => t
     }
   }
 
@@ -539,7 +543,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     // These are kind of keywords but are parsed by the lexer.
     // This enables names like java::lang::Long to be valid.
-    val tpe = id.value match {
+    val tpe = id.name match {
       case "Int"    => IntType()
       case "Long"   => LongType()
       case "Float"  => FloatType()
@@ -728,7 +732,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case PRIVVAR =>
           localVarDeclaration()
         case _       =>
-          val id = identifier()
+          val id = varIdentifier()
           nextTokenKind match {
             case EQSIGN | PLUSEQ |
                  MINUSEQ | DIVEQ |
@@ -751,12 +755,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       val expr = nextTokenKind match {
         case INCREMENT =>
           eat(INCREMENT)
-          PreIncrement(identifier())
+          PreIncrement(varIdentifier())
         case DECREMENT =>
           eat(DECREMENT)
-          PreDecrement(identifier())
+          PreDecrement(varIdentifier())
         case IDKIND    =>
-          val id = identifier()
+          val id = varIdentifier()
           nextTokenKind match {
             case PLUSEQ | MINUSEQ | DIVEQ |
                  MODEQ | ANDEQ | OREQ | XOREQ |
@@ -814,7 +818,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       e match {
         case _: ArrayRead |
              _: Access |
-             _: Identifier => Assign(e, assignmentExpr(e))
+             _: VariableID => Assign(e, assignmentExpr(e))
         case _             => FatalExpectedIdAssignment(e)
       }
     }
@@ -868,13 +872,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /** <eqNotEq> ::= <is> { ( == | != ) <is> } */
   def eqNotEq() = leftAssociative(is, EQUALS, NOTEQUALS)
 
-  /** <is> ::= <comparison> { inst <identifier> } */
+  /** <is> ::= <comparison> { inst <classIdentifier> } */
   def is() = {
     val startPos = nextToken
     var e = comparison()
     while (nextTokenKind == IS) {
       eat(IS)
-      e = Instance(e, identifier()).setPos(startPos, nextToken)
+      e = Is(e, classIdentifier()).setPos(startPos, nextToken)
     }
     e
   }
@@ -965,18 +969,18 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case STRLITKIND    =>
         stringLit()
       case IDKIND        =>
-        val ids = nonEmptyList(identifier, COLON, COLON)
-        val id = Identifier(ids.map(_.value).mkString("::"))
-
+        val ids = nonEmptyList(identifierName, COLON, COLON)
+        val name = ids.mkString("::")
         val methStartPos = nextToken
         nextTokenKind match {
           case LPAREN =>
             eat(LPAREN)
             val exprs = commaList(expression)
             eat(RPAREN)
+            val id = MethodID(name)
             val meth = MethodCall(id, exprs).setPos(methStartPos, nextToken)
             NormalAccess(Empty(), meth)
-          case _      => id
+          case _      => VariableID(name)
         }
       case TRUE          =>
         eat(TRUE)
@@ -1053,13 +1057,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
 
     val methStartPos = nextToken
-    val id = identifier()
+    val id = varIdentifier()
     val application = nextTokenKind match {
       case LPAREN =>
         eat(LPAREN)
         val exprs = commaList(expression)
         eat(RPAREN)
-        MethodCall(id, exprs.toList).setPos(methStartPos, nextToken)
+        val methId = MethodID(id.name)
+        MethodCall(methId, exprs.toList).setPos(methStartPos, nextToken)
       case _      => id
     }
     access(obj, application).setPos(startPos, nextToken)
@@ -1165,13 +1170,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <superCall> ::= super [ "<" <identifier> "> ]
+    * <superCall> ::= super [ "<" <classIdentifier> "> ]
     */
   def superCall(): ExprTree = {
     val startPos = nextToken
     eat(SUPER)
     val specifier = optional(() => {
-      val id = identifier()
+      val id = classIdentifier()
       eat(GREATERTHAN)
       id
     }, LESSTHAN)
@@ -1250,29 +1255,29 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
     */
-  private def classTypeIdentifier(): ClassIdentifier = nextToken match {
+  private def classTypeIdentifier(): ClassID = nextToken match {
     case id: ID =>
       eat(IDKIND)
       val tIds = nextTokenKind match {
         case LESSTHAN =>
           eat(LESSTHAN)
-          val tmp = commaList(identifier)
+          val tmp = commaList(varIdentifier)
           eatRightShiftOrGreaterThan()
-          tmp.map(x => ClassIdentifier(x.value, List()).setPos(x))
+          tmp.map(x => ClassID(x.name, List()).setPos(x))
         case _        => List()
       }
-      ClassIdentifier(id.value, tIds).setPos(id)
+      ClassID(id.value, tIds).setPos(id)
     case _      => FatalWrongToken(nextToken, IDKIND)
   }
 
   /**
     * <classIdentifier> ::= <identifier> { :: <identifier> } <templateList>
     */
-  private def classIdentifier(): ClassIdentifier = {
+  private def classIdentifier(): ClassID = {
     val startPos = nextToken
-    val ids = nonEmptyList(identifier, COLON, COLON)
-    val id = ids.toList.map(_.value).mkString("::")
-    ClassIdentifier(id, templateList()).setPos(startPos, nextToken)
+    val ids = nonEmptyList(identifierName, COLON, COLON)
+    val id = ids.mkString("::")
+    ClassID(id, templateList()).setPos(startPos, nextToken)
   }
 
   /**
@@ -1290,12 +1295,32 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <identifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
+    * Fetches the name of the identifer without creating an identifier object.
     */
-  private def identifier(): Identifier = nextToken match {
+  private def identifierName(): String = nextToken match {
     case id: ID =>
       eat(IDKIND)
-      Identifier(id.value).setPos(id, nextToken)
+      id.value
+    case _      => FatalWrongToken(nextToken, IDKIND)
+  }
+
+  /**
+    * <varIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
+    */
+  private def varIdentifier(): VariableID = nextToken match {
+    case id: ID =>
+      eat(IDKIND)
+      VariableID(id.value).setPos(id, nextToken)
+    case _      => FatalWrongToken(nextToken, IDKIND)
+  }
+
+  /**
+    * <methodIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
+    */
+  private def methodIdentifier(): MethodID = nextToken match {
+    case id: ID =>
+      eat(IDKIND)
+      MethodID(id.value).setPos(id, nextToken)
     case _      => FatalWrongToken(nextToken, IDKIND)
   }
 

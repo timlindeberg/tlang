@@ -9,7 +9,7 @@ import tcompiler.utils.Extensions._
 class TreeTraverser {
 
   def traverse(t: Tree): Unit = t match {
-    case _: LeafTree                                  => // No need to recurse further
+    case _: Leaf                                      => // No need to recurse further
     case Program(progPackage, imports, classes, _)    => traverse(progPackage, imports, classes)
     case Package(identifiers)                         => traverse(identifiers)
     case Import(identifiers)                          => traverse(identifiers)
@@ -26,32 +26,31 @@ class TreeTraverser {
     case For(init, condition, post, stat)             => traverse(init, condition, post, stat)
     case Foreach(varDecl, container, stat)            => traverse(varDecl, container, stat)
     case Error(expr)                                  => traverse(expr)
-    case Return(expr)                                 => traverse(expr)
-    case BinaryOperatorTree(lhs, rhs)                 => traverse(lhs, rhs)
-    case UnaryOperatorTree(expr)                      => traverse(expr)
-    case Access(obj, application)                     => traverse(obj, application)
-    case ArrayAssign(arr, index, expr)                => traverse(arr, index, expr)
-    case ArrayRead(arr, index)                        => traverse(arr, index)
-    case ArraySlice(arr, start, end)                  => traverse(arr, start, end)
-    case ClassIdentifier(_, templateTypes)            => traverse(templateTypes)
-    case Assign(id, expr)                             => traverse(id, expr)
-    case Super(specifier)                             => traverse(specifier)
-    case NewArray(tpe, sizes)                         => traverse(tpe, sizes)
-    case New(tpe, args)                               => traverse(tpe, args)
-    case Ternary(condition, thn, els)                 => traverse(condition, thn, els)
-    case Instance(expr, id)                           => traverse(expr, id)
+    case Return(expr)                  => traverse(expr)
+    case BinaryOperatorTree(lhs, rhs)  => traverse(lhs, rhs)
+    case UnaryOperatorTree(expr)       => traverse(expr)
+    case Access(obj, application)      => traverse(obj, application)
+    case ArrayAssign(arr, index, expr) => traverse(arr, index, expr)
+    case ArrayRead(arr, index)         => traverse(arr, index)
+    case ArraySlice(arr, start, end)   => traverse(arr, start, end)
+    case ClassID(_, templateTypes)     => traverse(templateTypes)
+    case Assign(id, expr)              => traverse(id, expr)
+    case Super(specifier)              => traverse(specifier)
+    case NewArray(tpe, sizes)          => traverse(tpe, sizes)
+    case New(tpe, args)                => traverse(tpe, args)
+    case Ternary(condition, thn, els)  => traverse(condition, thn, els)
+    case Is(expr, id)                  => traverse(expr, id)
     case As(expr, tpe)                                => traverse(expr, tpe)
     case MethodCall(meth, args)                       => traverse(meth, args)
     case ArrayLit(value)                              => traverse(value)
   }
 
-  def traverse(trees: Iterable[Tree]): Unit = trees foreach traverse
+  def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse
 
   def traverse(t: Any*): Unit = t foreach {
-    case t: Tree         => traverse(t)
-    case t: List[Tree]   => traverse(t)
-    case t: Set[Tree]    => traverse(t)
-    case t: Option[Tree] => t ifDefined traverse
+    case t: Tree              => traverse(t)
+    case t: Traversable[Tree] => traverse(t)
+    case t: Option[Tree]      => t ifDefined traverse
   }
 }
 

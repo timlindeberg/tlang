@@ -169,7 +169,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
         case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
           varDecl.getSymbol.getType
           codeGenerator.compileExpr(expr)
-          staticCh << PutStatic(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
+          staticCh << PutStatic(classDecl.getSymbol.name, id.name, varDecl.getSymbol.getType.byteCodeName)
       }
       staticCh << RETURN
       staticCh.freeze
@@ -183,7 +183,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
       case varDecl@VarDecl(_, id, Some(expr), _) =>
         ch << ArgLoad(0) // put this-reference on stack
         codeGenerator.compileExpr(expr)
-        ch << PutField(classDecl.getSymbol.name, id.value, varDecl.getSymbol.getType.byteCodeName)
+        ch << PutField(classDecl.getSymbol.name, id.name, varDecl.getSymbol.getType.byteCodeName)
     }
   }
 

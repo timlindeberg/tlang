@@ -72,7 +72,7 @@ object Symbols {
     }
     def operators_=(l: List[OperatorSymbol]) = _operators = l
 
-    private var _fields = Map[String, VariableSymbol]()
+    private var _fields = Map[String, FieldSymbol]()
     def fields = {
       completeClassSymbol()
       _fields
@@ -80,13 +80,13 @@ object Symbols {
 
     var writtenName = ""
 
-    def fields_=(m: Map[String, VariableSymbol]) = _fields = m
+    def fields_=(m: Map[String, FieldSymbol]) = _fields = m
 
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
 
     def addMethod(methodSymbol: MethodSymbol): Unit = methods = methodSymbol :: methods
 
-    def addField(varSymbol: VariableSymbol): Unit = fields += (varSymbol.name -> varSymbol)
+    def addField(varSymbol: FieldSymbol): Unit = fields += (varSymbol.name -> varSymbol)
 
     def isImplementedInSuperClass(name: String, args: List[Type]) = {
       findMethod(name, args, exactTypes = false) match {
@@ -131,19 +131,19 @@ object Symbols {
       }
     }
 
-    def lookupParentVar(name: String): Option[VariableSymbol] = {
-      val matchingVars = parents.map(_.lookupVar(name)).filter(_.isDefined)
+    def lookupParentField(name: String): Option[FieldSymbol] = {
+      val matchingVars = parents.map(_.lookupField(name)).filter(_.isDefined)
       if (matchingVars.isEmpty)
         None
       else
         matchingVars.head
     }
 
-    def lookupVar(name: String, recursive: Boolean = true): Option[VariableSymbol] = {
+    def lookupField(name: String, recursive: Boolean = true): Option[FieldSymbol] = {
       fields.get(name) match {
         case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
-          val matchingVars = parents.map(_.lookupVar(name))
+          val matchingVars = parents.map(_.lookupField(name))
           matchingVars.head
         case _                                     => None
       }
@@ -175,7 +175,6 @@ object Symbols {
       val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
       findMethodPrioritiseExactMatch(ops, name, args, exactTypes)
     }
-
 
     private def findMethod(name: String, args: List[Type], exactTypes: Boolean) = {
       val meths = methods.filter(_.name == name)
@@ -237,7 +236,7 @@ object Symbols {
       case None      => lookupField(name)
     }
 
-    def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupVar(name)
+    def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = params.get(name)
 
     def lookupArgument(index: Int): VariableSymbol = argList(index)
@@ -291,12 +290,14 @@ object Symbols {
 
   }
 
-  trait VariableType
-  case object Field extends VariableType
-  case object Argument extends VariableType
-  case object LocalVar extends VariableType
+  class VariableSymbol(
+    val name: String,
+    val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable
 
-  class VariableSymbol(val name: String, val varType: VariableType = LocalVar, val modifiers: Set[Modifier] = Set(), val classSymbol: Option[ClassSymbol] = None) extends Symbol with Modifiable
+  class FieldSymbol(
+    override val name: String,
+    override val modifiers: Set[Modifier] = Set(),
+    val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
   case class ErrorSymbol(name: String = "") extends Symbol
 

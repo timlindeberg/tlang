@@ -4,7 +4,7 @@ import org.apache.bcel.Repository
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
 import org.apache.bcel.util.{ClassPath, SyntheticRepository}
-import tcompiler.analyzer.Symbols.{Field => _, _}
+import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 
@@ -76,8 +76,8 @@ object ClassSymbolLocator {
     parent ::: traits
   }
 
-  private def convertField(owningClass: ClassSymbol, field: Field): VariableSymbol = {
-    val f = new VariableSymbol(field.getName, tcompiler.analyzer.Symbols.Field, convertModifiers(field), Some(owningClass))
+  private def convertField(owningClass: ClassSymbol, field: Field): FieldSymbol = {
+    val f = new FieldSymbol(field.getName, convertModifiers(field), owningClass)
     val tpe = convertType(field.getType)
     f.setType(tpe)
     f
@@ -110,7 +110,7 @@ object ClassSymbolLocator {
 
   private def convertArgument(tpe: Type, newName: String) = {
     val modifiers: Set[Modifier] = Set(Private(), Final())
-    new VariableSymbol(newName, tcompiler.analyzer.Symbols.Argument, modifiers).setType(convertType(tpe))
+    new VariableSymbol(newName, modifiers).setType(convertType(tpe))
   }
 
   private def convertModifiers(obj: AccessFlags): Set[Modifier] = {

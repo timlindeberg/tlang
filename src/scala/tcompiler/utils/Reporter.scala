@@ -100,8 +100,6 @@ class Reporter(
 
     if (pos.hasPosition){
       sb ++= locationIndicator(errorLevel, pos)
-    } else {
-      sys.error(s"Warning: $pos has no position.")
     }
 
     sb.toString()

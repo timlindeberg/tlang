@@ -108,10 +108,10 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  def testAssignmentOperator(operator: (Identifier, ExprTree) => ExprTree) =
+  def testAssignmentOperator(operator: (VariableID, ExprTree) => ExprTree) =
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
-      val id = Identifier(IdName).setSymbol(new VariableSymbol(IdName)).setType(tpe)
+      val id = VariableID(IdName).setSymbol(new VariableSymbol(IdName)).setType(tpe)
       id.setType(tpe)
       def expr = () => operator(id, rhs())
       if (exprTypeChecks(expr())) {
@@ -119,10 +119,10 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     }
 
-   def testArrayAssignmentOperator(operator: (Identifier, ExprTree, ExprTree) => ExprTree) =
+   def testArrayAssignmentOperator(operator: (VariableID, ExprTree, ExprTree) => ExprTree) =
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
-      val id = Identifier(IdName).setSymbol(new VariableSymbol(IdName)).setType(TArray(tpe))
+      val id = VariableID(IdName).setSymbol(new VariableSymbol(IdName)).setType(TArray(tpe))
       def expr = () => operator(id, IntLit(0), rhs())
       println(tpe + ",  " + rhs().getType)
       if (exprTypeChecks(expr())) {

@@ -53,16 +53,16 @@ object Printer {
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, classes, _)                            => p"${programComment(t)}$pack$N$imports$N$classes"
-      case Package(identifiers)                                          => p"package ${Separated(identifiers, "::")}"
-      case RegularImport(identifiers)                                    => p"import ${Separated(identifiers, "::")}"
-      case WildCardImport(identifiers)                                   => p"import ${Separated(identifiers, "::")}.*"
-      case ClassDecl(id, parents, vars, methods, isTrait)                => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
-      case VarDecl(tpe, id, expr, modifiers)                             => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
-      case MethodDecl(retType, id, args, stat, modifiers)                => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
-      case ConstructorDecl(_, id, args, stat, modifiers)                 => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
-      case OperatorDecl(operatorType, retType, args, stat, modifiers, _) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
-      case Formal(tpe, id)                                               => p"$id: $tpe"
+      case Program(pack, imports, classes, _)                         => p"${programComment(t)}$pack$N$imports$N$classes"
+      case Package(adress)                                            => p"package ${adress.mkString("::")}"
+      case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
+      case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
+      case ClassDecl(id, parents, vars, methods, isTrait)             => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
+      case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
+      case MethodDecl(retType, id, args, stat, modifiers)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
+      case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
+      case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
+      case Formal(tpe, id)                                            => p"$id: $tpe"
       // Types
       case ArrayType(tpe) => p"$tpe[]"
       case IntType()      => p"Int"
@@ -103,7 +103,7 @@ object Printer {
       case GreaterThanEquals(lhs, rhs)     => p"($lhs >= $rhs)"
       case Equals(lhs, rhs)                => p"($lhs == $rhs)"
       case NotEquals(lhs, rhs)             => p"($lhs != $rhs)"
-      case Instance(expr, id)              => p"($expr is $id)"
+      case Is(expr, id)                    => p"($expr is $id)"
       case As(expr, tpe)                   => p"($expr as $tpe)"
       case Not(expr)                       => p"!($expr)"
       case Negation(expr)                  => p"-($expr)"
@@ -114,35 +114,35 @@ object Printer {
       case SafeAccess(obj, application)    => p"$obj?.$application"
       case MethodCall(meth, args)          => p"$meth(${Separated(args, ", ")})"
       case IntLit(value)                   => p"$value"
-      case LongLit(value)                  => p"${value}L"
-      case FloatLit(value)                 => p"${value}F"
-      case DoubleLit(value)                => p"$value"
-      case CharLit(value)                  => p"'${escapeJava(p"$value")}'"
-      case StringLit(value)                => "\"" + p"${escapeJava(p"$value")}" + "\""
-      case ArrayLit(expressions)           => p"{ ${Separated(expressions, ", ")} }"
-      case True()                          => p"true"
-      case False()                         => p"false"
-      case Identifier(value)               => p"$value"
-      case id@ClassIdentifier(value, list) => p"$value${templateList(id)}"
-      case This()                          => p"this"
-      case Super(specifier)                => p"super${optional(specifier)(spec => p"<$spec>")}"
-      case NewArray(tpe, sizes)            => p"new $tpe${arrayList(sizes)}"
-      case New(tpe, exprs)                 => p"new $tpe(${Separated(exprs, ", ")})"
-      case PreIncrement(id)                => p"++$id"
-      case PostIncrement(id)               => p"$id++"
-      case PreDecrement(id)                => p"--$id"
-      case PostDecrement(id)               => p"$id--"
-      case Ternary(condition, thn, els)    => p"$condition ? $thn : $els"
-      case Break()                         => p"break"
-      case Continue()                      => p"continue"
-      case Empty()                         => "<EMPTY>"
+      case LongLit(value)               => p"${value}L"
+      case FloatLit(value)              => p"${value}F"
+      case DoubleLit(value)             => p"$value"
+      case CharLit(value)               => p"'${escapeJava(p"$value")}'"
+      case StringLit(value)             => "\"" + p"${escapeJava(p"$value")}" + "\""
+      case ArrayLit(expressions)        => p"{ ${Separated(expressions, ", ")} }"
+      case True()                       => p"true"
+      case False()                      => p"false"
+      case id@ClassID(value, list)      => p"$value${templateList(id)}"
+      case Identifier(value)            => p"$value"
+      case This()                       => p"this"
+      case Super(specifier)             => p"super${optional(specifier)(spec => p"<$spec>")}"
+      case NewArray(tpe, sizes)         => p"new $tpe${arrayList(sizes)}"
+      case New(tpe, exprs)              => p"new $tpe(${Separated(exprs, ", ")})"
+      case PreIncrement(id)             => p"++$id"
+      case PostIncrement(id)            => p"$id++"
+      case PreDecrement(id)             => p"--$id"
+      case PostDecrement(id)            => p"$id--"
+      case Ternary(condition, thn, els) => p"$condition ? $thn : $els"
+      case Break()                      => p"break"
+      case Continue()                   => p"continue"
+      case Empty()                      => "<EMPTY>"
     }
     s
   }
 
   private def classOrTrait(isTrait: Boolean) = if (isTrait) p"trait" else p"class"
 
-  private def parentList(parents: List[ClassIdentifier]) = {
+  private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""
     else {
       p": ${Separated(parents, ", ")}"
@@ -164,7 +164,7 @@ object Printer {
 
   private def arrayList(sizes: List[ExprTree]) = sizes.map(s => p"[$s]").mkString("")
 
-  private def templateList(id: ClassIdentifier) = if (id.isTemplated) p"<${Separated(id.templateTypes, ", ")}>" else ""
+  private def templateList(id: ClassID) = if (id.isTemplated) p"<${Separated(id.templateTypes, ", ")}>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
@@ -258,15 +258,15 @@ object Printer {
       case f: Formatter  => f()
       case t: Tree       =>
         t match {
-          case _: Identifier |
-               _: ClassIdentifier => color(t, IdentifierColor)
+          case _: Identifier[_] |
+               _: ClassID   => color(t, IdentifierColor)
           case _: StringLit |
-               _: CharLit         => color(t, StringColor)
+               _: CharLit   => color(t, StringColor)
           case _: IntLit |
                _: LongLit |
                _: FloatLit |
-               _: DoubleLit       => color(t, NumColor)
-          case _                  => prettyPrint(t)
+               _: DoubleLit => color(t, NumColor)
+          case _            => prettyPrint(t)
         }
       case Some(t: Tree) => evaluate(t)
       case None          => ""

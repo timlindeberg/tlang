@@ -153,7 +153,7 @@ object Visualizer {
     }
 
     private def getLabel(t: Tree) = t match {
-      case c: ClassDecl     => c.id.value
+      case c: ClassDecl     => c.id.name
       case m: MethodDecl    => m.modifiers.map(_.getClass.getSimpleName).mkString(" ") + " " + m.signature
       case op: OperatorTree => op.op
       case Identifier(v)    => s"$v"
