@@ -31,17 +31,17 @@ object Printer {
     prettyPrint(t)
   }
 
-  private def programComment(prog: Tree) = {
-    val progName = if (prog.hasPosition)
-                     prog.file.getName
-                   else
-                     "PROGRAM (no file)"
+  private def cuComment(cu: Tree) = {
+    val cuName = if (cu.hasPosition)
+                   cu.file.getName
+                 else
+                   "PROGRAM (no file)"
 
-    val importMap = prog.asInstanceOf[Program].importMap.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
+    val importMap = cu.asInstanceOf[CompilationUnit].importMap.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
 
     s"""
        |//-------------------------------------------------------------
-       |//--- $progName
+       |//--- $cuName
        |//-------------------------------------------------------------
        |
        |// ImportMap:
@@ -53,7 +53,7 @@ object Printer {
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case Program(pack, imports, classes, _)                         => p"${programComment(t)}$pack$N$imports$N$classes"
+      case CompilationUnit(pack, imports, classes, _)                 => p"${cuComment(t)}$pack$N$imports$N$classes"
       case Package(adress)                                            => p"package ${adress.mkString("::")}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
@@ -85,57 +85,57 @@ object Printer {
       case ArrayAssign(id, index, expr)      => p"$id[$index] = $expr"
       case Return(expr)                      => p"return $expr"
       // Expressions
-      case And(lhs, rhs)                   => p"($lhs && $rhs)"
-      case Or(lhs, rhs)                    => p"($lhs || $rhs)"
-      case Plus(lhs, rhs)                  => p"($lhs + $rhs)"
-      case Minus(lhs, rhs)                 => p"($lhs - $rhs)"
-      case LogicAnd(lhs, rhs)              => p"($lhs & $rhs)"
-      case LogicOr(lhs, rhs)               => p"($lhs | $rhs)"
-      case LogicXor(lhs, rhs)              => p"($lhs ^ $rhs)"
-      case LeftShift(lhs, rhs)             => p"($lhs << $rhs)"
-      case RightShift(lhs, rhs)            => p"($lhs >> $rhs)"
-      case Times(lhs, rhs)                 => p"($lhs * $rhs)"
-      case Div(lhs, rhs)                   => p"($lhs / $rhs)"
-      case Modulo(lhs, rhs)                => p"($lhs % $rhs)"
-      case LessThan(lhs, rhs)              => p"($lhs < $rhs)"
-      case LessThanEquals(lhs, rhs)        => p"($lhs <= $rhs)"
-      case GreaterThan(lhs, rhs)           => p"($lhs > $rhs)"
-      case GreaterThanEquals(lhs, rhs)     => p"($lhs >= $rhs)"
-      case Equals(lhs, rhs)                => p"($lhs == $rhs)"
-      case NotEquals(lhs, rhs)             => p"($lhs != $rhs)"
-      case Is(expr, id)                    => p"($expr is $id)"
-      case As(expr, tpe)                   => p"($expr as $tpe)"
-      case Not(expr)                       => p"!($expr)"
-      case Negation(expr)                  => p"-($expr)"
-      case LogicNot(expr)                  => p"~($expr)"
-      case Hash(expr)                      => p"#($expr)"
-      case ArrayRead(arr, index)           => p"$arr[$index]"
-      case NormalAccess(obj, application)  => p"$obj.$application"
-      case SafeAccess(obj, application)    => p"$obj?.$application"
-      case MethodCall(meth, args)          => p"$meth(${Separated(args, ", ")})"
-      case IntLit(value)                   => p"$value"
-      case LongLit(value)               => p"${value}L"
-      case FloatLit(value)              => p"${value}F"
-      case DoubleLit(value)             => p"$value"
-      case CharLit(value)               => p"'${escapeJava(p"$value")}'"
-      case StringLit(value)             => "\"" + p"${escapeJava(p"$value")}" + "\""
-      case ArrayLit(expressions)        => p"{ ${Separated(expressions, ", ")} }"
-      case True()                       => p"true"
-      case False()                      => p"false"
-      case id@ClassID(value, list)      => p"$value${templateList(id)}"
-      case Identifier(value)            => p"$value"
-      case This()                       => p"this"
-      case Super(specifier)             => p"super${optional(specifier)(spec => p"<$spec>")}"
-      case NewArray(tpe, sizes)         => p"new $tpe${arrayList(sizes)}"
-      case New(tpe, exprs)              => p"new $tpe(${Separated(exprs, ", ")})"
-      case PreIncrement(id)             => p"++$id"
-      case PostIncrement(id)            => p"$id++"
-      case PreDecrement(id)             => p"--$id"
-      case PostDecrement(id)            => p"$id--"
-      case Ternary(condition, thn, els) => p"$condition ? $thn : $els"
-      case Break()                      => p"break"
-      case Continue()                   => p"continue"
-      case Empty()                      => "<EMPTY>"
+      case And(lhs, rhs)                  => p"($lhs && $rhs)"
+      case Or(lhs, rhs)                   => p"($lhs || $rhs)"
+      case Plus(lhs, rhs)                 => p"($lhs + $rhs)"
+      case Minus(lhs, rhs)                => p"($lhs - $rhs)"
+      case LogicAnd(lhs, rhs)             => p"($lhs & $rhs)"
+      case LogicOr(lhs, rhs)              => p"($lhs | $rhs)"
+      case LogicXor(lhs, rhs)             => p"($lhs ^ $rhs)"
+      case LeftShift(lhs, rhs)            => p"($lhs << $rhs)"
+      case RightShift(lhs, rhs)           => p"($lhs >> $rhs)"
+      case Times(lhs, rhs)                => p"($lhs * $rhs)"
+      case Div(lhs, rhs)                  => p"($lhs / $rhs)"
+      case Modulo(lhs, rhs)               => p"($lhs % $rhs)"
+      case LessThan(lhs, rhs)             => p"($lhs < $rhs)"
+      case LessThanEquals(lhs, rhs)       => p"($lhs <= $rhs)"
+      case GreaterThan(lhs, rhs)          => p"($lhs > $rhs)"
+      case GreaterThanEquals(lhs, rhs)    => p"($lhs >= $rhs)"
+      case Equals(lhs, rhs)               => p"($lhs == $rhs)"
+      case NotEquals(lhs, rhs)            => p"($lhs != $rhs)"
+      case Is(expr, id)                   => p"($expr is $id)"
+      case As(expr, tpe)                  => p"($expr as $tpe)"
+      case Not(expr)                      => p"!($expr)"
+      case Negation(expr)                 => p"-($expr)"
+      case LogicNot(expr)                 => p"~($expr)"
+      case Hash(expr)                     => p"#($expr)"
+      case ArrayRead(arr, index)          => p"$arr[$index]"
+      case NormalAccess(obj, application) => p"$obj.$application"
+      case SafeAccess(obj, application)   => p"$obj?.$application"
+      case MethodCall(meth, args)         => p"$meth(${Separated(args, ", ")})"
+      case IntLit(value)                  => p"$value"
+      case LongLit(value)                 => p"${value}L"
+      case FloatLit(value)                => p"${value}F"
+      case DoubleLit(value)               => p"$value"
+      case CharLit(value)                 => p"'${escapeJava(p"$value")}'"
+      case StringLit(value)               => "\"" + p"${escapeJava(p"$value")}" + "\""
+      case ArrayLit(expressions)          => p"{ ${Separated(expressions, ", ")} }"
+      case True()                         => p"true"
+      case False()                        => p"false"
+      case id@ClassID(value, list)        => p"$value${templateList(id)}"
+      case Identifier(value)              => p"$value"
+      case This()                         => p"this"
+      case Super(specifier)               => p"super${optional(specifier)(spec => p"<$spec>")}"
+      case NewArray(tpe, sizes)           => p"new $tpe${arrayList(sizes)}"
+      case New(tpe, exprs)                => p"new $tpe(${Separated(exprs, ", ")})"
+      case PreIncrement(id)               => p"++$id"
+      case PostIncrement(id)              => p"$id++"
+      case PreDecrement(id)               => p"--$id"
+      case PostDecrement(id)              => p"$id--"
+      case Ternary(condition, thn, els)   => p"$condition ? $thn : $els"
+      case Break()                        => p"break"
+      case Continue()                     => p"continue"
+      case Empty()                        => "<EMPTY>"
     }
     s
   }

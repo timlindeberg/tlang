@@ -7,57 +7,57 @@ import tcompiler.utils.{Context, Pipeline}
 
 import scala.collection.mutable
 
-object Templates extends Pipeline[List[Program], List[Program]] {
+object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
 
   val StartEnd  = "-"
   val Seperator = "$"
 
-  def run(ctx: Context)(progs: List[Program]): List[Program] = {
+  def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
 
     val templateClassGenerator = new TemplateModifier(ctx)
-    templateClassGenerator.generateTemplatePrograms(progs)
+    templateClassGenerator.generateTemplatePrograms(cus)
   }
 }
 
 class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
-  private val templatePrograms    = mutable.Map[String, Program]()
+  private val templatePrograms    = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
 
-  def generateTemplatePrograms(progs: List[Program]): List[Program] = {
+  def generateTemplatePrograms(cus: List[CompilationUnit]): List[CompilationUnit] = {
     //  Add all original template classes
-    progs foreach { prog =>
-      prog.classes.filter(_.id.isTemplated) foreach { clazz =>
+    cus foreach { cu =>
+      cu.classes.filter(_.id.isTemplated) foreach { clazz =>
         checkDuplicateTemplateNames(clazz)
-        templatePrograms(clazz.id.name) = prog
+        templatePrograms(clazz.id.name) = cu
       }
     }
 
     // Generate all needed classes
-    progs foreach { prog =>
-      val templateClassGenerator = new TemplateClassGenerator(prog)
+    cus foreach { cu =>
+      val templateClassGenerator = new TemplateClassGenerator(cu)
       templateClassGenerator.generateNeededTemplates()
     }
 
     // all needed classes are generated,
     // construct final program list and filter old classes
-    val allPrograms = mutable.Set[Program]()
+    val allCus = mutable.Set[CompilationUnit]()
 
     // TODO: This is probably pretty expensive
-    allPrograms ++= progs
-    allPrograms ++= templatePrograms.values
+    allCus ++= cus
+    allCus ++= templatePrograms.values
 
     // Remove all template classes and replace types in rest of the classes
-    allPrograms foreach { prog =>
-      prog.classes = prog.classes.filter(!_.id.isTemplated)
-      replaceTypes(prog)
+    allCus foreach { cu =>
+      cu.classes = cu.classes.filter(!_.id.isTemplated)
+      replaceTypes(cu)
     }
 
 
-    allPrograms.toList
+    allCus.toList
   }
 
-  private def replaceTypes(prog: Program): Program = {
+  private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
 
     def replaceMaybeType(tpe: Option[TypeTree]) = tpe match {
       case Some(x) => Some(replaceType(x))
@@ -76,11 +76,11 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       if (tpe.isTemplated) {
         val newName = tpe.templatedClassName
         val shortName = tpe.name.split("::").last
-        if (prog.importMap.contains(shortName)) {
-          val fullName = prog.importMap(tpe.name)
+        if (cu.importMap.contains(shortName)) {
+          val fullName = cu.importMap(tpe.name)
           val prefix = fullName.split("\\.").dropRight(1).mkString(".")
           val importEntry = newName -> s"$prefix.$newName"
-          prog.importMap += importEntry
+          cu.importMap += importEntry
         }
 
         new ClassID(tpe.templatedClassName).setPos(tpe)
@@ -90,7 +90,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
 
 
-    prog foreach {
+    cu foreach {
       case t: ClassDecl    => t.parents = t.parents map replaceTypeId
       case t: MethodDecl   => t.retType = replaceMaybeType(t.retType)
       case t: OperatorDecl => t.retType = replaceMaybeType(t.retType)
@@ -100,7 +100,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       case t: New          => t.tpe = replaceType(t.tpe)
       case _               =>
     }
-    prog
+    cu
   }
 
   private def checkDuplicateTemplateNames(templateClass: ClassDecl) = {
@@ -116,14 +116,14 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     }
   }
 
-  class TemplateClassGenerator(prog: Program) {
+  class TemplateClassGenerator(cu: CompilationUnit) {
 
     /**
       * Has the side effect of filling the programs in the template program map with
       * generated template classes.
       */
     def generateNeededTemplates(): Unit = {
-      prog foreach {
+      cu foreach {
         case c: ClassDecl => c.parents foreach generateIfTemplated
         case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
         case f: Formal    => generateIfTemplated(f.tpe)
@@ -149,7 +149,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       generatedClassNames += shortName
 
       // Update import map to include the newly generated class
-      updateImportMap(prog, typeId)
+      updateImportMap(cu, typeId)
 
       findTemplateProgram(typeId) match {
         case Some(templateProgram) =>
@@ -162,26 +162,26 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       }
     }
 
-    private def updateImportMap(prog: Program, typeId: ClassID) =
-      if (prog.importMap.contains(typeId.name)) {
+    private def updateImportMap(cu: CompilationUnit, typeId: ClassID) =
+      if (cu.importMap.contains(typeId.name)) {
         val className = typeId.templatedClassName
-        val fullName = prog.importMap(typeId.name)
+        val fullName = cu.importMap(typeId.name)
         val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-        prog.importMap(className) = s"$prefix.$className"
+        cu.importMap(className) = s"$prefix.$className"
       }
 
-    private def findTemplateProgram(typeId: ClassID): Option[Program] = {
+    private def findTemplateProgram(typeId: ClassID): Option[CompilationUnit] = {
       val className = typeId.name.split("::").last
       if (templatePrograms.contains(className))
         return Some(templatePrograms(className))
 
       val templateImporter = new TemplateImporter(ctx)
-      val importName = prog.importName(typeId)
-      val importedPrograms = templateImporter.importPrograms(importName)
+      val importName = cu.importName(typeId)
+      val importedCus = templateImporter.importCus(importName)
 
-      importedPrograms foreach { prog =>
-        prog.classes foreach { clazz =>
-          templatePrograms(clazz.id.name) = prog
+      importedCus foreach { cu =>
+        cu.classes foreach { clazz =>
+          templatePrograms(clazz.id.name) = cu
         }
       }
 

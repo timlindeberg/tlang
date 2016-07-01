@@ -46,7 +46,7 @@ class TemplateImporter(
   }
 
 
-  def importPrograms(importName: String): List[Program] = {
+  def importCus(importName: String): List[CompilationUnit] = {
     if (imported(importName))
       return Nil
 
@@ -56,10 +56,10 @@ class TemplateImporter(
         parseGenericFile(ctx, file) match {
           case Some(importedProg) =>
             // Recursively import generics
-            val importedPrograms: ArrayBuffer[Program] = ArrayBuffer(importedProg)
+            val importedPrograms: ArrayBuffer[CompilationUnit] = ArrayBuffer(importedProg)
             importedProg.importNames foreach { recursiveImport =>
               val templateImporter = new TemplateImporter(ctx, imported)
-              importedPrograms ++= templateImporter.importPrograms(recursiveImport)
+              importedPrograms ++= templateImporter.importCus(recursiveImport)
             }
             importedPrograms.toList
           case None               => Nil
@@ -68,7 +68,7 @@ class TemplateImporter(
     }
   }
 
-  private def parseGenericFile(ctx: Context, file: File): Option[Program] =
+  private def parseGenericFile(ctx: Context, file: File): Option[CompilationUnit] =
     try {
       val parsedProgram = (Lexer andThen Parser).run(ctx)(List(file)).head
       Some(parsedProgram)

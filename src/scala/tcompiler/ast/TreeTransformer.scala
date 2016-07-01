@@ -34,9 +34,9 @@ class TreeTransformer {
       case This()        => treeCopy.This(t)
       case Empty()       => treeCopy.Empty(t)
 
-      case Program(progPackage, imports, classes, importMap) =>
-        treeCopy.Program(t, progPackage, tList(imports), tList(classes), importMap)
-      case Package(adress)                              =>
+      case CompilationUnit(pack, imports, classes, importMap) =>
+        treeCopy.CompilationUnit(t, pack, tList(imports), tList(classes), importMap)
+      case Package(adress)                                           =>
         treeCopy.Package(t, adress)
 
       case RegularImport(adress)                                     =>

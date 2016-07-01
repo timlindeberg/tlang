@@ -5,7 +5,7 @@ import java.io.File
 import org.scalatest.FlatSpec
 import tcompiler.analyzer.Types.{TUntyped, Typed}
 import tcompiler.ast.ForeachTraverser
-import tcompiler.ast.Trees.{Empty, Program}
+import tcompiler.ast.Trees.{Empty, CompilationUnit}
 import tcompiler.lexer.Token
 import tcompiler.utils.{Context, Reporter}
 
@@ -137,7 +137,7 @@ object TestUtils extends FlatSpec {
     }
   }
 
-  def hasTypes(prog: Program) = {
+  def hasTypes(cu: CompilationUnit) = {
     var hasTypes = true
     val traverser = new ForeachTraverser({
       case _: Empty    =>
@@ -147,7 +147,7 @@ object TestUtils extends FlatSpec {
         assert(node.getType != TUntyped)
       case _ =>
     })
-    traverser.traverse(prog)
+    traverser.traverse(cu)
     hasTypes
   }
 

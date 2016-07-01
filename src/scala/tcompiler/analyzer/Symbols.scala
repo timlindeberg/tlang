@@ -34,8 +34,8 @@ object Symbols {
 
     var classes = Map[String, ClassSymbol]()
 
-    def lookupClass(prog: Program, name: String): Option[ClassSymbol] = {
-      val fullName = prog.getFullName(name)
+    def lookupClass(cu: CompilationUnit, name: String): Option[ClassSymbol] = {
+      val fullName = cu.getFullName(name)
       classes.get(fullName) match {
         case Some(classSymbol) => Some(classSymbol)
         case None              =>

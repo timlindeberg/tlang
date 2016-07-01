@@ -16,12 +16,12 @@ import tcompiler.utils._
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[List[Program], Unit] {
+object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
 
   import CodeGenerator._
 
-  def run(ctx: Context)(progs: List[Program]): Unit = {
-    val classes = progs.flatMap(_.classes)
+  def run(ctx: Context)(cus: List[CompilationUnit]): Unit = {
+    val classes = cus.flatMap(_.classes)
 
     // output code in parallell
     classes.foreach(generateClassFile(_, ctx.outDir))

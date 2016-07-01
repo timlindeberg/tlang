@@ -12,9 +12,9 @@ import tcompiler.utils._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object Parser extends Pipeline[List[List[Token]], List[Program]] {
+object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
 
-  def run(ctx: Context)(tokenList: List[List[Token]]): List[Program] =
+  def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
       val astBuilder = new ASTBuilder(ctx, tokens.toArray)
       astBuilder.parseGoal()
@@ -80,12 +80,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
 
   /**
-    * <goal> ::= [ <mainObject> ] { <classDeclaration> } <EOF>
+    * <goal> ::= [ <packageDeclaration> ] { <importDeclarataion> } { (<classDeclaration> | <methodDeclaration> | <statement> } <EOF>
     */
   def parseGoal() = {
     val startPos = nextToken
-    val pack = packageDecl()
-    val imp = untilNot(importDecl, IMPORT)
+    val pack = packageDeclaration()
+    val imp = untilNot(importDeclaration, IMPORT)
 
     val code = until(() => {
       nextTokenKind match {
@@ -101,7 +101,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val classes = createMainClass(code)
 
     val importMap = createImportMap(imp)
-    Program(pack, imp, classes, importMap).setPos(startPos, nextToken)
+    CompilationUnit(pack, imp, classes, importMap).setPos(startPos, nextToken)
   }
 
 
@@ -168,9 +168,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <packageDecl> ::= package <identifier> { . <identifier> }
+    * <packageDeclaration> ::= package <identifier> { . <identifier> }
     */
-  def packageDecl() = {
+  def packageDeclaration() = {
     nextTokenKind match {
       case PACKAGE =>
         eat(PACKAGE)
@@ -183,9 +183,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <importDecl> ::= import <identifier> { . ( <identifier> | * ) }
+    * <importDeclaration> ::= import <identifier> { . ( <identifier> | * ) }
     */
-  def importDecl(): Import = {
+  def importDeclaration(): Import = {
     val startPos = nextToken
     eat(IMPORT)
     val ids = new ArrayBuffer[String]()

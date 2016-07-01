@@ -9,8 +9,8 @@ import scala.collection.mutable
   */
 
 class TreeCopier {
-  def Program(t: Tree, progPackage: Package, imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
-    new Program(progPackage, imports, classes, importMap).copyAttrs(t)
+  def CompilationUnit(t: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
+    new CompilationUnit(pack, imports, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 

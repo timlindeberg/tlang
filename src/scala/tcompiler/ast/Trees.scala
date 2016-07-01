@@ -106,7 +106,7 @@ object Trees {
 
   /*-------------------------------- Top level Trees --------------------------------*/
 
-  case class Program(
+  case class CompilationUnit(
     pack: Package,
     var imports: List[Import],
     var classes: List[ClassDecl],

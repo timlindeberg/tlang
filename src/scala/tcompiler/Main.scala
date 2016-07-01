@@ -43,33 +43,33 @@ object Main extends MainErrors {
         FatalInvalidTHomeDirectory(TDirectory, THome)
 
       val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
-      val progs = frontEnd.run(ctx)(ctx.files)
+      val cus = frontEnd.run(ctx)(ctx.files)
 
       if (flagActive(PrintGeneratedCode))
-        progs.foreach(p => println(Printer(p)))
+        cus.foreach(p => println(Printer(p)))
 
 
       if (ctx.reporter.hasWarnings)
         println(ctx.reporter.warningsString)
 
-      CodeGeneration.run(ctx)(progs)
+      CodeGeneration.run(ctx)(cus)
 
       if (flagActive(Exec))
-        progs.foreach(executeProgram)
+        cus.foreach(executeProgram)
     } catch {
       case e: CompilationException => println(e.getMessage)
     }
   }
 
-  private def executeProgram(prog: Program): Unit = {
-    if (!containsMainMethod(prog))
+  private def executeProgram(cu: CompilationUnit): Unit = {
+    if (!containsMainMethod(cu))
       return
 
     val cp = ctx.outDir match {
       case Some(dir) => "-cp " + dir.getPath
       case _         => ""
     }
-    println("java " + cp + " " + fileName(prog) !!)
+    println("java " + cp + " " + fileName(cu) !!)
   }
 
   private def processOptions(args: Array[String]): Context = {
@@ -208,8 +208,8 @@ object Main extends MainErrors {
     these ++ these.filter(_.isDirectory).flatMap(listFiles)
   }
 
-  private def fileName(prog: Program) = prog.file.getName.dropRight(FileEnding.length)
+  private def fileName(cu: CompilationUnit) = cu.file.getName.dropRight(FileEnding.length)
 
-  private def containsMainMethod(program: Program) = program.classes.exists(_.methods.exists(_.isMain))
+  private def containsMainMethod(cu: CompilationUnit) = cu.classes.exists(_.methods.exists(_.isMain))
 
 }

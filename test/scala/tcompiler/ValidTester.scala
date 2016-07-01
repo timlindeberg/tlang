@@ -22,12 +22,12 @@ trait ValidTester extends Tester {
     val ctx = getTestContext(file)
 
     try {
-      val program = Pipeline.run(ctx)(List(file))
+      val cus = Pipeline.run(ctx)(List(file))
 
       //hasTypes(program) should be(true)
       ctx.reporter.hasErrors should be(false)
 
-      CodeGeneration.run(ctx)(program)
+      CodeGeneration.run(ctx)(cus)
       val res = lines(executeTProgram(file))
       val sol = parseSolutions(file)
       assertCorrect(res, sol, "")

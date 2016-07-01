@@ -3,7 +3,7 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import tcompiler.ast.Trees.Program
+import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.Pipeline
 
@@ -18,7 +18,7 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
 
   def Name: String
   def Path: String
-  def Pipeline: Pipeline[List[File], List[Program]]
+  def Pipeline: Pipeline[List[File], List[CompilationUnit]]
 
   behavior of Name
   TestUtils.programFiles(Path).foreach(test)

@@ -9,7 +9,7 @@ import tcompiler.utils._
 
 import scala.collection.mutable.ArrayBuffer
 
-object TypeChecking extends Pipeline[List[Program], List[Program]] {
+object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
 
   val hasBeenTypechecked = scala.collection.mutable.Set[MethodSymbol]()
   var methodUsage        = Map[MethodSymbol, Boolean]()
@@ -19,18 +19,18 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
     * Typechecking does not produce a value, but has the side effect of
     * attaching types to trees and potentially outputting error messages.
     */
-  def run(ctx: Context)(progs: List[Program]): List[Program] = {
-    progs foreach { prog =>
+  def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
+    cus foreach { cu =>
       // Typecheck fields
-      prog.classes.foreach { classDecl =>
+      cu.classes.foreach { classDecl =>
         val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, None, Set()))
         classDecl.fields.foreach(typeChecker.tcStat(_))
       }
     }
 
-    progs foreach { prog =>
+    cus foreach { cu =>
       // Typecheck methods
-      prog.classes.foreach { classDecl =>
+      cu.classes.foreach { classDecl =>
         classDecl.methods.foreach { method =>
           val methodSymbol = method.getSymbol
           if (!methodUsage.contains(methodSymbol))
@@ -43,10 +43,10 @@ object TypeChecking extends Pipeline[List[Program], List[Program]] {
       val tc = new TypeChecker(ctx, new MethodSymbol("", c, None, Set()))
 
       tc.checkMethodUsage()
-      tc.checkCorrectOverrideReturnTypes(prog)
-      tc.checkTraitsAreImplemented(prog)
+      tc.checkCorrectOverrideReturnTypes(cu)
+      tc.checkTraitsAreImplemented(cu)
     }
-    progs
+    cus
   }
 }
 
@@ -617,8 +617,8 @@ class TypeChecker(
     methodUsage = Map[MethodSymbol, Boolean]()
   }
 
-  def checkCorrectOverrideReturnTypes(prog: Program) =
-    prog.classes.foreach { clazz =>
+  def checkCorrectOverrideReturnTypes(cu: CompilationUnit) =
+    cu.classes.foreach { clazz =>
       clazz.methods.foreach { meth =>
         val classSymbol = clazz.getSymbol
         val methSymbol = meth.getSymbol
@@ -641,8 +641,8 @@ class TypeChecker(
     }
 
 
-  def checkTraitsAreImplemented(prog: Program) =
-    prog.classes.filter(!_.isAbstract).foreach { classDecl =>
+  def checkTraitsAreImplemented(cu: CompilationUnit) =
+    cu.classes.filter(!_.isAbstract).foreach { classDecl =>
       classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 

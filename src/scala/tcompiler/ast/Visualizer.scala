@@ -99,7 +99,7 @@ object Visualizer {
 
     override def traverse(tree: Tree) = {
       tree match {
-        case Program(_, _, classes, _)                           =>
+        case CompilationUnit(_, _, classes, _)                   =>
           traverse(classes)
         case ClassDecl(id, parents, fields, methods, isAbstract) =>
           val nodeName = addNode(tree)
