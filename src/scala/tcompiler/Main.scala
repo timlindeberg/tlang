@@ -183,7 +183,6 @@ object Main extends MainErrors {
 
   private def isValidTHomeDirectory(path: String): Boolean = {
     val files = listFiles(new File(path))
-    println(path)
     val neededFiles = List(
       "kool",
       "kool/lang",
@@ -192,7 +191,8 @@ object Main extends MainErrors {
       "kool/std"
     )
     val fileMap = mutable.Map() ++ neededFiles.map((_, false))
-    for (f <- files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/")))
+    val filePaths = files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/"))
+    for (f <- filePaths)
       fileMap(f) = true
 
     if(fileMap.exists(!_._2))

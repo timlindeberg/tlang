@@ -12,6 +12,8 @@ import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 
+import scala.collection.mutable
+
 /**
   * Created by Tim Lindeberg on 4/2/2016.
   */
@@ -50,7 +52,7 @@ object CodeGenerator {
 
 }
 
-class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.collection.mutable.HashMap[VariableSymbol, Int]) {
+class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableSymbol, Int]) {
 
   import CodeGenerator._
 
@@ -67,11 +69,11 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         val id = ch.getFreshVar(tpe.size)
         val codes = tpe.codes
 
-        variableMap(sym) = id
+        localVariableMap(sym) = id
         init match {
           case Some(expr) =>
             compileAssignmentValue(expr, tpe)
-            codes.store(ch, variableMap(sym))
+            codes.store(ch, localVariableMap(sym))
           case None       =>
             codes.defaultConstant(ch)
             codes.store(ch, id)
@@ -124,10 +126,11 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         compileExpr(expr)
         val arg = expr.getType match {
           case o: TObject =>
-            if(o.classSymbol.name != JavaString){
+            if (o.classSymbol.name != JavaString) {
               // First convert to
-              val stringName = Types.String.byteCodeName
-              ch << InvokeVirtual(expr.getType.byteCodeName, "ToString", s"()$stringName")
+              val stringName = Types.String.classSymbol.name
+              val stringByteCodeName = Types.String.byteCodeName
+              ch << InvokeVirtual(o.classSymbol.name, "ToString", s"()$stringByteCodeName")
               ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
             }
             s"L$JavaString;" // Call System.out.println(String) for all other types
@@ -139,27 +142,27 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         }
 
         ch << InvokeVirtual(JavaPrintStream, funcName, s"($arg)V")
-        //ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
-      case Error(expr)                           =>
+      //ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
+      case Error(expr)        =>
         ch << GetStatic(JavaSystem, "out", s"L$JavaPrintStream;")
         ch << InvokeVirtual(JavaPrintStream, "flush", "()V")
         ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
-        // First TString to JavaString
-        val stringName = Types.String.byteCodeName
+        // Convert TString to JavaString
+        val stringName = Types.String.classSymbol.name
         ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
         ch << InvokeSpecial(JavaRuntimeException, "<init>", s"(L$JavaString;)V")
         ch << ATHROW
-      case Return(Some(expr))                    =>
+      case Return(Some(expr)) =>
         compileExpr(expr)
         expr.getType.codes.ret(ch)
-      case Return(None)                          =>
+      case Return(None)       =>
         ch << RETURN
-      case Break()                               =>
+      case Break()            =>
         ch << Goto(after.get)
-      case Continue()                            =>
+      case Continue()         =>
         ch << Goto(before.get)
-      case expr: ExprTree                        =>
+      case expr: ExprTree     =>
         // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)
     }
@@ -169,22 +172,22 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     if (expression.hasPosition)
       ch << LineNumber(expression.line)
     expression match {
-      case True()                                  => ch << Ldc(1)
-      case False()                                 => ch << Ldc(0)
-      case IntLit(value)                           => ch << Ldc(value)
-      case LongLit(value)                          => ch << Ldc(value)
-      case CharLit(value)                          => ch << Ldc(value)
-      case FloatLit(value)                         => ch << Ldc(value)
-      case DoubleLit(value)                        => ch << Ldc(value)
-      case StringLit(value)                        =>
+      case True()                                => ch << Ldc(1)
+      case False()                               => ch << Ldc(0)
+      case IntLit(value)                         => ch << Ldc(value)
+      case LongLit(value)                        => ch << Ldc(value)
+      case CharLit(value)                        => ch << Ldc(value)
+      case FloatLit(value)                       => ch << Ldc(value)
+      case DoubleLit(value)                      => ch << Ldc(value)
+      case StringLit(value)                      =>
         val objName = Types.String.classSymbol.name
         ch << cafebabe.AbstractByteCodes.New(objName)
         Types.String.codes.dup(ch)
         ch << Ldc(value)
         ch << InvokeSpecial(objName, ConstructorName, s"(L$JavaString;)V")
-      case id: Identifier                          => load(id)
-      case _: This                                 => ch << ArgLoad(0)
-      case _: Super                                => ch << ArgLoad(0)
+      case id: Identifier                        => load(id.getSymbol.asInstanceOf[VariableSymbol])
+      case _: This                               => ch << ArgLoad(0)
+      case _: Super                              => ch << ArgLoad(0)
       case _: And |
            _: Or |
            _: Equals |
@@ -193,7 +196,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
            _: LessThanEquals |
            _: GreaterThan |
            _: GreaterThanEquals |
-           _: Not                                  =>
+           _: Not                                =>
         val thn = ch.getFreshLabel(Then)
         val els = ch.getFreshLabel(Else)
         val after = ch.getFreshLabel(After)
@@ -204,15 +207,15 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         ch << Label(els)
         ch << Ldc(0)
         ch << Label(after)
-      case arrLit@ArrayLit(expressions)            =>
+      case arrLit@ArrayLit(expressions)          =>
         compileArrayLiteral(arrLit)
-      case newArray@Trees.NewArray(tpe, sizes)     =>
+      case newArray@Trees.NewArray(tpe, sizes)   =>
         sizes.foreach(compileExpr(_))
         if (newArray.dimension == 1)
           tpe.getType.codes.newArray(ch)
         else
           ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
-      case plusOp@Plus(lhs, rhs)                   =>
+      case plusOp@Plus(lhs, rhs)                 =>
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(Object)  =>
@@ -244,7 +247,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             rhs.getType.codes.toInt(ch)
             ch << IADD
         }
-      case arOp@ArithmeticOperatorTree(lhs, rhs)   =>
+      case arOp@ArithmeticOperatorTree(lhs, rhs) =>
         compileExpr(lhs)
 
         val args = (lhs.getType, rhs.getType)
@@ -277,7 +280,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: Div    => codes.div(ch)
           case _: Modulo => codes.mod(ch)
         }
-      case logicOp@LogicalOperatorTree(lhs, rhs)   =>
+      case logicOp@LogicalOperatorTree(lhs, rhs) =>
         val args = (lhs.getType, rhs.getType)
         args match {
           case _ if args.anyIs(Object) =>
@@ -302,7 +305,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: LogicOr  => codes.or(ch)
           case _: LogicXor => codes.xor(ch)
         }
-      case shiftOp@ShiftOperatorTree(lhs, rhs)     =>
+      case shiftOp@ShiftOperatorTree(lhs, rhs)   =>
         compileExpr(lhs)
 
         val args = (lhs.getType, rhs.getType)
@@ -328,38 +331,44 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: LeftShift  => codes.leftShift(ch)
           case _: RightShift => codes.rightShift(ch)
         }
-      case Assign(id, expr)                        =>
-        store(id, () => compileAssignmentValue(expr, id.getType), duplicate)
-      case arrAssign@ArrayAssign(arr, index, expr) =>
-        compileExpr(arr)
-        compileExpr(index)
-
-
-        arr.getType match {
-          case obj@TObject(classSymbol) =>
-            classSymbol.lookupOperator(arrAssign, List(index.getType, expr.getType)) match {
-              case Some(operatorSymbol) =>
-                compileAssignmentValue(expr, operatorSymbol.lookupArgument(1).getType) // second argument is value
+      case Assign(to, expr)                      =>
+        to match {
+          case id: Identifier               =>
+            val sym = id.getSymbol.asInstanceOf[VariableSymbol]
+            store(sym, () => compileAssignmentValue(expr, sym.getType), duplicate, () => ch << ArgLoad(0))
+          case acc@Access(obj, application) =>
+            // This is a field variable symbol
+            val sym = application.asInstanceOf[Identifier].getSymbol.asInstanceOf[VariableSymbol]
+            store(sym, () => compileAssignmentValue(expr, sym.getType), duplicate, () => compileExpr(obj))
+          case ArrayRead(arr, index)        =>
+            compileExpr(arr)
+            compileExpr(index)
+            arr.getType match {
+              case obj@TObject(classSymbol) =>
+                val arrAssign = ArrayAssign(Empty(), Empty(), Empty())
+                // This access is safe since typchecking has verified the operator exists
+                val opSymbol = classSymbol.lookupOperator(arrAssign, List(index.getType, expr.getType)).get
+                compileAssignmentValue(expr, opSymbol.lookupArgument(1).getType) // second argument is value
 
                 if (duplicate)
                   obj.codes.dup_x2(ch) // arrayref index value -> value arrayref index value
-              val className = classSymbol.name
-                ch << InvokeVirtual(className, operatorSymbol.methodName, operatorSymbol.byteCodeSignature)
-              case None                 => ??? // This shouldnt happen
+
+                val className = classSymbol.name
+                ch << InvokeVirtual(className, opSymbol.methodName, opSymbol.byteCodeSignature)
+              case TArray(arrayType)        =>
+                compileAssignmentValue(expr, arrayType)
+                val codes = arrayType.codes
+                convertType(ch, expr.getType, arrayType)
+                if (duplicate)
+                  codes.dup_x2(ch) // arrayref index value -> value arrayref index value
+                codes.arrayStore(ch)
+              case _                        => ???
             }
-          case TArray(arrayType)        =>
-            compileAssignmentValue(expr, arrayType)
-            val idCodes = arrayType.codes
-            convertType(ch, expr.getType, arrayType)
-            if (duplicate)
-              idCodes.dup_x2(ch) // arrayref index value -> value arrayref index value
-            idCodes.arrayStore(ch)
-          case _                        => ???
         }
-      case Instance(expr, id)                      =>
+      case Instance(expr, id)                    =>
         compileExpr(expr)
         ch << InstanceOf(id.value)
-      case As(expr, tpe)                           =>
+      case As(expr, tpe)                         =>
         if (expr.getType == tpe.getType) {
           compileExpr(expr)
         } else if (tpe.getType.isSubTypeOf(expr.getType)) {
@@ -368,7 +377,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         } else {
           compileAssignmentValue(expr, tpe.getType)
         }
-      case arrRead@ArrayRead(id, index)            =>
+      case arrRead@ArrayRead(id, index)          =>
         compileExpr(id)
         compileExpr(index)
         id.getType match {
@@ -383,66 +392,57 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
             arrayType.codes.arrayLoad(ch)
           case _                    => ???
         }
-      case arraySlice: ArraySlice                  =>
-        constructArraySlice(arraySlice)
-      case FieldAccess(obj, id)                    =>
-        val className = obj.getType.asInstanceOf[TObject].classSymbol.name
-
-        if (isStaticCall(obj) || isStatic(id)) {
-          ch << GetStatic(className, id.value, id.getType.byteCodeName)
-        } else {
+      case arraySlice: ArraySlice                =>
+        transformArraySlice(arraySlice)
+      case acc@Access(obj, application)          =>
+        if (!acc.isStatic)
           compileExpr(obj)
-          ch << GetField(className, id.value, id.getType.byteCodeName)
-        }
-      case FieldAssign(obj, id, expr)              =>
-        val fieldType = id.getType
-        val static = isStaticCall(obj) || isStatic(id)
 
-        val className = obj.getType.asInstanceOf[TObject].classSymbol.name
-        if (!static)
-          compileExpr(obj)
-        compileAssignmentValue(expr, fieldType)
-        convertType(ch, expr.getType, fieldType)
-        if (duplicate) {
-          if (static) id.getType.codes.dup(ch)
-          else id.getType.codes.dup_x1(ch) // ref value -> value ref value
-        }
-        if (static) ch << PutStatic(className, id.value, id.getType.byteCodeName)
-        else ch << PutField(className, id.value, id.getType.byteCodeName)
-      case mc@MethodCall(obj, meth, args)          =>
-        obj.getType match {
+        val classSymbol = obj.getType match {
           case TArray(tpe)          =>
-            assert(meth.value == "Size" && args.isEmpty)
-            compileExpr(obj)
+            // If the object is an array this is the method call Size()
+            // TODO: Find of way of not hardcoding this
+            val mc = application.asInstanceOf[MethodCall]
+            assert(mc.meth.value == "Size" && mc.args.isEmpty)
             ch << ARRAYLENGTH
-          case TObject(classSymbol) =>
-            val className = classSymbol.name
+            return
+          case TObject(classSymbol) => classSymbol
+          case _                    => ???
+        }
+
+        val className = classSymbol.name
+
+        application match {
+          case id@Identifier(fieldName)  =>
+            val bytecode = id.getType.byteCodeName
+            if (acc.isStatic)
+              ch << GetStatic(className, fieldName, bytecode)
+            else
+              ch << GetField(className, fieldName, bytecode)
+          case mc@MethodCall(meth, args) =>
             val methSymbol = meth.getSymbol.asInstanceOf[MethodSymbol]
+            val methName = meth.value
             val signature = methSymbol.byteCodeSignature
 
-            if (isStaticCall(obj) || isStatic(meth)) {
-              compileArguments(methSymbol, args)
-              ch << InvokeStatic(className, meth.value, signature)
-            } else {
-              compileExpr(obj)
-              compileArguments(methSymbol, args)
+            // Static calls are executed with InvokeStatic.
+            // Super calls and private calls are executed with invokespecial.
+            // Methods called on traits are always called with invokeinterface
+            // The rest are called with invokevirtual
 
-              if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
-              // Super calls and private calls are executed with invokespecial
-                ch << InvokeSpecial(className, meth.value, signature)
-              else if (classSymbol.isAbstract)
-                   // Methods called on traits are always called with invokeinterface
-                     ch << InvokeInterface(className, meth.value, signature)
-              else
-              // rest are called with invokevirtual
-                ch << InvokeVirtual(className, meth.value, signature)
-            }
+            compileArguments(methSymbol, args)
+            if (acc.isStatic)
+              ch << InvokeStatic(className, methName, signature)
+            else if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
+                   ch << InvokeSpecial(className, methName, signature)
+            else if (classSymbol.isAbstract)
+                   ch << InvokeInterface(className, methName, signature)
+            else
+              ch << InvokeVirtual(className, methName, signature)
 
             if (!duplicate && mc.getType != TUnit)
               ch << POP
-          case _                    => ???
         }
-      case Trees.New(tpe, args)                    =>
+      case Trees.New(tpe, args)                  =>
         tpe.getType match {
           case TObject(classSymbol) =>
             val argTypes = args.map(_.getType)
@@ -522,46 +522,49 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
 
     def compileIncrementDecrement(incDec: IncrementDecrementTree, isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
       expr match {
-        case id: Identifier           =>
+        case id: Identifier               =>
           val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
-          val isLocal = variableMap.contains(varSymbol)
+          val isLocal = localVariableMap.contains(varSymbol)
           val codes = id.getType.codes
+
           expr.getType match {
             case TInt if isLocal =>
               if (!isPre && duplicate) compileExpr(expr)
 
-              ch << IInc(variableMap(varSymbol), if (isIncrement) 1 else -1)
+              ch << IInc(localVariableMap(varSymbol), if (isIncrement) 1 else -1)
 
               if (isPre && duplicate) compileExpr(expr)
             case x: TObject      =>
-              // TODO: Fix post/pre increment for objects. Currently they work the same way.
-              store(id, () => {
-                load(id)
+              // Pre or post doesnt matter for objects
+              val putValue: () => Unit = () => {
+                load(varSymbol)
                 compileOperatorCall(ch, incDec, x)
-              }, duplicate)
+              }
+              store(varSymbol, putValue, duplicate)
             case _               =>
-              store(id, () => {
-                load(id)
+              val putValue: () => Unit = () => {
+                load(varSymbol)
                 if (!isPre && duplicate) {
                   if (isLocal) codes.dup(ch)
                   else codes.dup_x1(ch)
                 }
                 codes.one(ch)
                 if (isIncrement) codes.add(ch) else codes.sub(ch)
-              }, duplicate && isPre)
+              }
+              store(varSymbol, putValue, duplicate && isPre)
           }
-        case fr@FieldAccess(obj, id)  =>
+        case acc@Access(obj, id)  =>
           if (!isPre && duplicate)
-            compileExpr(fr) // TODO: Use dup instead of compiling the whole expression
+            compileExpr(acc) // TODO: Use dup instead of compiling the whole expression
 
-          val assign = assignExpr(fr, isIncrement)
-          compileExpr(FieldAssign(obj, id, assign), isPre && duplicate)
+          val assign = assignExpr(acc, isIncrement)
+          compileExpr(Assign(acc, assign), isPre && duplicate)
         case ar@ArrayRead(arr, index) =>
           if (!isPre && duplicate)
             compileExpr(ar) // TODO: Use dup instead of compiling the whole expression
 
           val assign = assignExpr(ar, isIncrement)
-          compileExpr(ArrayAssign(arr, index, assign), isPre && duplicate)
+          compileExpr(Assign(ar, assign), isPre && duplicate)
       }
 
       def assignExpr(expr: ExprTree, isIncrement: Boolean) = {
@@ -595,21 +598,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     }
     t.setType(tpe)
   }
-
-  private def operatorDefinedFor(op: OperatorTree, args: (Type, Type)): Boolean = {
-    val argList = List(args._1, args._2)
-    operatorDefinedFor(args._1, op, argList) || operatorDefinedFor(args._2, op, argList)
-  }
-
-  private def operatorDefinedFor(classType: Type, op: OperatorTree, args: List[Type]): Boolean =
-    classType match {
-      case TObject(classSymbol) =>
-        classSymbol.lookupOperator(op, args) match {
-          case Some(operatorSymbol) => true
-          case None                 => false
-        }
-      case _                    => false
-    }
 
   private def compileOperatorCall(ch: CodeHandler, op: OperatorTree, args: (Type, Type)): Boolean = {
     val argsList = List(args._1, args._2)
@@ -653,7 +641,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         val signature = "(" + expr.getType.byteCodeName + ")V"
         ch << InvokeSpecial(objName, ConstructorName, signature)
       case arr: TArray  =>
-        // TODO: Safe cast?
         compileArrayLiteral(expr.asInstanceOf[ArrayLit], Some(arr.tpe))
       case _            =>
         compileExpr(expr)
@@ -703,7 +690,7 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
       ch << next
       compileBranch(rhs, thn, els)
     case id@Identifier(value)                    =>
-      load(id)
+      compileExpr(id)
       ch << IfEq(els.id) << Goto(thn.id)
     case Instance(expr, id)                      =>
       compileExpr(expr)
@@ -716,26 +703,27 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
           case _: LessThanEquals    => codes.cmpLe(ch, thn.id)
           case _: GreaterThan       => codes.cmpGt(ch, thn.id)
           case _: GreaterThanEquals => codes.cmpGe(ch, thn.id)
+          case _                    => ???
         }
       }
       val argTypes = (lhs.getType, rhs.getType)
       compileExpr(lhs)
       argTypes match {
-        case (_: TObject, _) | (_, _: TObject) =>
+        case _ if argTypes.anyIs(Types.Object) =>
           compileExpr(rhs)
           compileOperatorCall(ch, compOp, argTypes)
           ch << IfNe(thn.id)
-        case (TDouble, _) | (_, TDouble)       =>
+        case _ if argTypes.anyIs(TDouble)      =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case (TFloat, _) | (_, TFloat)         =>
+        case _ if argTypes.anyIs(TFloat)       =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case (TLong, _) | (_, TLong)           =>
+        case _ if argTypes.anyIs(TLong)        =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
@@ -753,60 +741,122 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
         expression match {
           case _: Equals    => codes.cmpEq(ch, thn.id)
           case _: NotEquals => codes.cmpNe(ch, thn.id)
+          case _            => ???
         }
       }
 
       val argTypes = (lhs.getType, rhs.getType)
       compileExpr(lhs)
       argTypes match {
-        case (_, objectType: TObject)    =>
+        case _ if argTypes.anyIs(Types.Object) =>
           compileExpr(rhs)
           if (compileOperatorCall(ch, eqOp, argTypes))
             ch << IfNe(thn.id)
           else
-            comparison(objectType.codes) // If no operator is defined, compare by reference
-        case (objectType: TObject, _)    =>
+            comparison(Types.Object.codes) // If no operator is defined, compare by reference
+        case _ if argTypes.anyIs(Types.Array)  =>
           compileExpr(rhs)
-          if (compileOperatorCall(ch, eqOp, argTypes))
-            ch << IfEq(thn.id)
-          else
-            comparison(objectType.codes) // If no operator is defined, compare by reference
-        case (_, arrType: TArray)        =>
-          compileExpr(rhs)
-          comparison(arrType.codes)
-        case (arrType: TArray, _)        =>
-          compileExpr(rhs)
-          comparison(arrType.codes)
-        case (TDouble, _) | (_, TDouble) =>
+          comparison(Types.Array.codes)
+        case _ if argTypes.anyIs(TDouble)      =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case (TFloat, _) | (_, TFloat)   =>
+        case _ if argTypes.anyIs(TFloat)       =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case (TLong, _) | (_, TLong)     =>
+        case _ if argTypes.anyIs(TLong)        =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
           comparison(LongCodeMap)
-        case _                           =>
+        case _                                 =>
           lhs.getType.codes.toInt(ch)
           compileExpr(rhs)
           rhs.getType.codes.toInt(ch)
           comparison(IntCodeMap)
       }
       ch << Goto(els.id)
-    case mc: MethodCall                          =>
-      compileExpr(mc)
+    case acc: Access                             =>
+      compileExpr(acc)
       ch << IfEq(els.id) << Goto(thn.id)
-    case fr: FieldAccess                         =>
-      compileExpr(fr)
-      ch << IfEq(els.id) << Goto(thn.id)
+    case _                                       => ???
   }
 
+  private def getTypeTree(tpe: Type): TypeTree =
+    (tpe match {
+      case TUnit                => UnitType()
+      case TChar                => CharType()
+      case TBool                => BooleanType()
+      case TInt                 => IntType()
+      case TLong                => LongType()
+      case TFloat               => FloatType()
+      case TDouble              => DoubleType()
+      case TArray(t)            => ArrayType(getTypeTree(t))
+      case TObject(classSymbol) => ClassIdentifier(classSymbol.name).setSymbol(classSymbol)
+      case _                    => ???
+    }).setType(tpe)
+
+
+  private def store(
+    variable: VariableSymbol,
+    putValue: () => Unit,
+    duplicate: Boolean,
+    putObject: () => Unit = () => { ch << ArgLoad(0) }): CodeHandler = {
+    val name = variable.name
+    val tpe = variable.getType
+    val codes = tpe.codes
+
+    if (localVariableMap.contains(variable)) {
+      val id = localVariableMap(variable)
+      putValue()
+      if (duplicate)
+        codes.dup(ch)
+      return tpe.codes.store(ch, id)
+    }
+
+    // variable is a field
+    if (!variable.isStatic)
+      putObject()
+
+    val className = variable.classSymbol.get.name
+    putValue()
+
+    if (duplicate)
+      if (variable.isStatic)
+        codes.dup(ch)
+      else
+        codes.dup_x1(ch) // this value -> value this value
+
+    if (variable.isStatic)
+      ch << PutStatic(className, name, tpe.byteCodeName)
+    else
+      ch << PutField(className, name, tpe.byteCodeName)
+  }
+
+  private def load(variable: VariableSymbol): CodeHandler = {
+    val name = variable.name
+    val tpe = variable.getType
+
+    if (localVariableMap.contains(variable)) {
+      val id = localVariableMap(variable)
+      return tpe.codes.load(ch, id)
+    }
+
+    val className = variable.classSymbol.get.name
+
+    if (variable.isStatic) {
+      ch << GetStatic(className, name, tpe.byteCodeName)
+    } else {
+      ch << ArgLoad(0) // this reference
+      ch << GetField(className, name, tpe.byteCodeName)
+    }
+  }
+
+  // Desugaring
+  // Soon to be it's own stage
 
   private var iteratorNum = 0
   private def getUniqueIteratorName(name: String) = {
@@ -830,60 +880,6 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   }
 
   private def createMethodId(methodSymbol: MethodSymbol) = Identifier(methodSymbol.name).setSymbol(methodSymbol)
-
-  /**
-    * Generates the following code:
-    * var container$x = <arr>
-    * var start$x = < 0|slice.start >            // 0 if slice.start is undefined
-    * var end$x = < container.Size()|slice.end > // container.Size() if slice.end is undefined
-    * var slice$x = new <arrTpe>[start$x - end$x]
-    * for(var i$x = start$x; i < end$x; i++)
-    * slice$x[start$x - i$x] = container[i$x]
-    * slice$x
-    *
-    * A reference to the generated slice is left on the stack.
-    */
-  private def constructArraySlice(arraySlice: ArraySlice) = {
-    val arr = arraySlice.arr
-    val arrayType = arr.getType
-    val arrType = arrayType.asInstanceOf[TArray].tpe
-    val (containerDecl, containerId) = createVarDecl("container", arr, arrayType)
-
-    val start = arraySlice.start.getOrElse(IntLit(0).setType(TInt))
-    val end = arraySlice.end.getOrElse(MethodCall(containerId, Identifier("Size"), List()).setType(TInt))
-
-    val (startDecl, startId) = createVarDecl("start", start, TInt)
-    val (endDecl, endId) = createVarDecl("end", end, TInt)
-
-    val size = List(Minus(endId, startId).setType(TInt))
-    val typeTree = getTypeTree(arrayType.asInstanceOf[TArray].tpe)
-    val newArray = Trees.NewArray(typeTree, size)
-    val (sliceDecl, sliceId) = createVarDecl("slice", newArray, arrayType)
-    val (indexDecl, indexId) = createVarDecl("i", startId, TInt)
-    val comparison = LessThan(indexDecl.id, endId).setType(TBool)
-    val post = PostIncrement(indexDecl.id).setType(TInt)
-
-    val copyValue = ArrayAssign(sliceId, Minus(indexId, startId).setType(TInt), ArrayRead(containerId, indexId).setType(arrType)).setType(arrType)
-    val forLoop = For(List(indexDecl), comparison, List(post), copyValue)
-    val decls = Block(List(containerDecl, startDecl, endDecl, sliceDecl))
-    compileStat(decls)
-    compileStat(forLoop)
-    compileExpr(sliceId)
-  }
-
-  private def getTypeTree(tpe: Type): TypeTree =
-    (tpe match {
-      case TUnit                => UnitType()
-      case TChar                => CharType()
-      case TBool                => BooleanType()
-      case TInt                 => IntType()
-      case TLong                => LongType()
-      case TFloat               => FloatType()
-      case TDouble              => DoubleType()
-      case TArray(t)            => ArrayType(getTypeTree(t))
-      case TObject(classSymbol) => ClassIdentifier(classSymbol.name).setSymbol(classSymbol)
-      case _                    => ???
-    }).setType(tpe)
 
   private def transformForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val code = container.getType match {
@@ -914,13 +910,16 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
     val (indexDecl, indexId) = createVarDecl("i", IntLit(0), TInt)
     val (containerDecl, containerId) = createVarDecl("container", container, container.getType)
 
-    val comparison = LessThan(indexId, MethodCall(containerId, Identifier("Size"), List()).setType(TInt)).setType(TBool)
-    val post = PostIncrement(indexId).setType(TInt)
+    val sizeCall = NormalAccess(containerId, MethodCall(Identifier("Size"), List()).setType(TInt)).setType(TInt).setPos(varDecl)
 
-    val valInit = varDecl.copy(init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType)))
-    valInit.setSymbol(varDecl.getSymbol)
-    val stats = Block(List(valInit, stat))
-    val indexedForLoop = For(List(indexDecl), comparison, List(post), stats)
+    val comparison = LessThan(indexId, sizeCall).setType(TBool).setPos(varDecl)
+    val post = PostIncrement(indexId).setType(TInt).setPos(varDecl)
+
+    val init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType).setPos(varDecl))
+    val valInit = varDecl.copy(init = init)
+    valInit.setSymbol(varDecl.getSymbol).setPos(varDecl)
+    val stats = Block(List(valInit, stat)).setPos(stat)
+    val indexedForLoop = For(List(indexDecl), comparison, List(post), stats).setPos(stat)
     Block(List(containerDecl, indexedForLoop))
   }
 
@@ -942,71 +941,68 @@ class CodeGenerator(ch: CodeHandler, className: String, variableMap: scala.colle
   private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
     val iteratorMethodId = createMethodId(iteratorMethodSymbol)
-    val iteratorCall = MethodCall(container, iteratorMethodId, List())
+    val iteratorCall = NormalAccess(container, MethodCall(iteratorMethodId, List()))
     val (iteratorDecl, iteratorId) = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
     val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
 
     val hasNextMethodId = createMethodId(iteratorClass.lookupMethod("HasNext", List()).get)
     val nextMethodId = createMethodId(iteratorClass.lookupMethod("Next", List()).get)
+    val nextMethodTpe = nextMethodId.getType
+    val comparisonCall = NormalAccess(iteratorId, MethodCall(hasNextMethodId, List()).setType(TBool)).setType(TBool)
+    val nextMethodCall = NormalAccess(iteratorId, MethodCall(nextMethodId, List()).setType(nextMethodTpe)).setType(nextMethodTpe)
 
-    val comparison = MethodCall(iteratorId, hasNextMethodId, List()).setType(TBool)
-    val init = Some(MethodCall(iteratorId, nextMethodId, List()).setType(nextMethodId.getType))
-    val valInit = VarDecl(varDecl.tpe, varDecl.id, init, varDecl.modifiers)
+    val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(varDecl)
     valInit.setSymbol(varDecl.getSymbol)
-    val stats = Block(List(valInit, stat))
+    val stats = Block(List(valInit, stat)).setPos(stat)
 
-    val whileLoop = While(comparison, stats)
+    val whileLoop = While(comparisonCall, stats).setPos(stat)
     Block(List(iteratorDecl, whileLoop))
   }
 
-  private def store(id: Identifier, put: () => Unit, duplicate: Boolean = false): CodeHandler = {
-    val sym = id.getSymbol.asInstanceOf[VariableSymbol]
-    val name = id.value
-    val tp = id.getType
-    val codes = tp.codes
 
-    if (variableMap.contains(sym)) {
-      val id = variableMap(sym)
-      put()
-      if (duplicate)
-        codes.dup(ch)
-      tp.codes.store(ch, id)
-    } else {
-      if (isStatic(id)) {
-        put()
-        if (duplicate)
-          codes.dup_x1(ch) // this value -> value this value
-        ch << PutStatic(className, name, tp.byteCodeName)
-      } else {
-        ch << ArgLoad(0) // put this reference on stack
-        put()
-        if (duplicate)
-          codes.dup_x1(ch) // this value -> value this value
-        ch << PutField(className, name, tp.byteCodeName)
-      }
-    }
+  /**
+    * Generates the following code:
+    * var container$x = <arr>
+    * var start$x = < 0|slice.start >            // 0 if slice.start is undefined
+    * var end$x = < container.Size()|slice.end > // container.Size() if slice.end is undefined
+    * var slice$x = new <arrTpe>[start$x - end$x]
+    * for(var i$x = start$x; i < end$x; i++)
+    * slice$x[start$x - i$x] = container[i$x]
+    * slice$x
+    *
+    * A reference to the generated slice is left on the stack.
+    */
+  private def transformArraySlice(arraySlice: ArraySlice) = {
+    val arr = arraySlice.arr
+    val arrayType = arr.getType
+    val arrType = arrayType.asInstanceOf[TArray].tpe
+    val (containerDecl, containerId) = createVarDecl("container", arr, arrayType)
+
+    val sizeCall = NormalAccess(containerId, MethodCall(Identifier("Size"), List()).setType(TInt)).setType(TInt)
+
+    val start = arraySlice.start.getOrElse(IntLit(0).setType(TInt))
+    val end = arraySlice.end.getOrElse(sizeCall)
+
+    val (startDecl, startId) = createVarDecl("start", start, TInt)
+    val (endDecl, endId) = createVarDecl("end", end, TInt)
+
+    val size = List(Minus(endId, startId).setType(TInt))
+    val typeTree = getTypeTree(arrayType.asInstanceOf[TArray].tpe)
+    val newArray = Trees.NewArray(typeTree, size)
+    val (sliceDecl, sliceId) = createVarDecl("slice", newArray, arrayType)
+    val (indexDecl, indexId) = createVarDecl("i", startId, TInt)
+    val comparison = LessThan(indexDecl.id, endId).setType(TBool)
+    val post = PostIncrement(indexDecl.id).setType(TInt)
+
+    val copyValue = Assign(ArrayRead(sliceId, Minus(indexId, startId).setType(TInt)), ArrayRead(containerId, indexId).setType(arrType)).setType(arrType)
+    val forLoop = For(List(indexDecl), comparison, List(post), copyValue)
+    val decls = Block(List(containerDecl, startDecl, endDecl, sliceDecl))
+
+    decls.foreach(_.setPos(arraySlice))
+    forLoop.foreach(_.setPos(arraySlice))
+    sliceId.foreach(_.setPos(arraySlice))
+    compileStat(decls)
+    compileStat(forLoop)
+    compileExpr(sliceId)
   }
-
-  private def load(id: Identifier): CodeHandler = {
-    val sym = id.getSymbol.asInstanceOf[VariableSymbol]
-    val name = id.value
-    val tpe = id.getType
-    if (variableMap.contains(sym)) {
-      val id = variableMap(sym)
-      tpe.codes.load(ch, id)
-    } else {
-      if (isStatic(id)) {
-        ch << GetStatic(className, name, tpe.byteCodeName)
-      } else {
-        ch << ArgLoad(0) // this reference
-        ch << GetField(className, name, tpe.byteCodeName)
-      }
-    }
-  }
-
-  private def isStatic(id: Identifier) = id.getSymbol match {
-    case m: Modifiable if m.isStatic => true
-    case _                           => false
-  }
-
 }

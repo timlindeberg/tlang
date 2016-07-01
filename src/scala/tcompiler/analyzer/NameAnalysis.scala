@@ -3,8 +3,8 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.{ASTBuilder, TreeTraverser}
 import tcompiler.ast.Trees._
+import tcompiler.ast.{ASTBuilder, TreeTraverser}
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
@@ -112,7 +112,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       val fullName = prog.getPackageName(name)
 
       val newSymbol = new ClassSymbol(fullName, isAbstract)
-      if(name != fullName)
+      if (name != fullName)
         prog.importMap(name) = fullName
       newSymbol.writtenName = name
       newSymbol.setPos(id)
@@ -197,7 +197,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
     val fullName = prog.getFullName(name)
     globalScope.classes.get(fullName) match {
       case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
-      case None =>
+      case None      =>
     }
   }
 
@@ -253,9 +253,15 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       val argClassSymbols = argTypes.collect { case TObject(c) => c }
       val classSymbol = operatorDecl.getSymbol.classSymbol
 
-      // Ensure that operator pertains to the class defined in
-      if (isStaticOperator && !argClassSymbols.contains(classSymbol))
-        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
+      // Ensure that operator pertains to the class defined in and that
+      // types are not nullable
+      val nullableTpes = (retType ++ args.map(_.tpe)).filter(_.isInstanceOf[NullableType])
+
+      // We don't want to report OperatorWrongTypes if types are nullable
+      if (nullableTpes.nonEmpty)
+        nullableTpes.foreach(tpe => ErrorNullableInOperator(tpe))
+      else if (isStaticOperator && !argClassSymbols.contains(classSymbol))
+             ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
 
       stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(_))
   }
@@ -312,10 +318,10 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
           if (!isFinal)
             variableReassignment += newSymbol -> false
 
-          init ifDefined {expr => bind(expr, localVars, scopeLevel, canBreakContinue)}
+          init ifDefined { expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
 
           localVars.get(id.value) ifDefined { varId =>
-            if(varId.scopeLevel == scopeLevel)
+            if (varId.scopeLevel == scopeLevel)
               ErrorVariableAlreadyDefined(id.value, varId.symbol.line, varDecl)
           }
 
@@ -365,30 +371,32 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       val traverser = new TreeTraverser {
 
         override def traverse(t: Tree) = t match {
-          case mc@MethodCall(obj, methodName, args) =>
-            // Don't traverse methodName identifier now since we don't
-            // know the type of 'obj' before typechecking.
-            // Therefore we can't know what class methodName belongs to
+          case acc@Access(obj, application)    =>
             obj match {
               case _: Empty =>
-                // Replace empty with class name or this
+                // Parser fills access with Empty() when using implicit
+                // this or implicit static call. Replaces the empty with
+                // class name or this.
                 val classSymbol = scope match {
                   case m: MethodSymbol => m.classSymbol
                   case c: ClassSymbol  => c
                   case _               => ???
                 }
                 val obj = if (isStaticContext) Identifier(classSymbol.name) else This()
-                mc.obj = obj.setSymbol(classSymbol)
+                acc.obj = obj.setSymbol(classSymbol)
               case _        => traverse(obj)
             }
+            application match {
+              case _: Identifier =>
+                // This is a field. Since we don't know what class it belongs to we do nothing
+              case _             => traverse(application)
+            }
+          case mc@MethodCall(methodName, args) =>
+            // Don't traverse methodName identifier now since we don't
+            // know the type of 'obj' before typechecking.
+            // Therefore we can't know what class methodName belongs to
             args foreach traverse
-          case FieldAssign(obj, id, expr)           =>
-            // Same as with method call, we can't traverse 'id' until typechecking stage
-            traverse(obj, expr)
-          case FieldAccess(obj, id)             =>
-            // Same as with method call, we can't traverse 'id' until typechecking stage
-            traverse(obj)
-          case Instance(expr, id)                   =>
+          case Instance(expr, id)              =>
             traverse(expr)
             globalScope.lookupClass(prog, id.value) match {
               case Some(classSymbol) =>
@@ -396,23 +404,24 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
                 id.setType(TObject(classSymbol))
               case None              => ErrorUnknownType(id.value, id)
             }
-          case Assign(id, expr)                     =>
-            traverse(id, expr)
-            checkReassignment(id, pos = t)
-            setVariableUsed(id)
-            id.getSymbol match {
-              case v: VariableSymbol => variableReassignment += v -> true
-              case _                 => ??? // Assignment can only be to a variable
+          case Assign(to, expr)                =>
+            traverse(to, expr)
+            to match {
+              case id: Identifier =>
+                setVariableUsed(id)
+                id.getSymbol match {
+                  case v: VariableSymbol => variableReassignment += v -> true
+                  case _                 => ??? // Assignment can only be to a variable
+                }
+              case _ =>
             }
-          case IncrementDecrementTree(expr)         =>
+          case IncrementDecrementTree(expr)    =>
             traverse(expr)
             expr match {
-              case id: Identifier =>
-                checkReassignment(id, pos = t)
-                setVariableUsed(id)
+              case id: Identifier => setVariableUsed(id)
               case _              =>
             }
-          case thisTree: This                       =>
+          case thisTree: This                  =>
             scope match {
               case methodSymbol: MethodSymbol =>
                 if (isStaticContext)
@@ -421,7 +430,7 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
               case _: ClassSymbol             => ErrorThisInStaticContext(thisTree)
               case _                          => ???
             }
-          case superSymbol@Super(specifier)         =>
+          case superSymbol@Super(specifier)    =>
             scope match {
               case methodSymbol: MethodSymbol =>
                 if (isStaticContext)
@@ -429,23 +438,23 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
                 val parents = methodSymbol.classSymbol.parents
 
                 specifier match {
-                  case Some(spec)              =>
+                  case Some(spec) =>
                     parents.find(_.name == spec.value) match {
                       case Some(p) =>
                         superSymbol.setSymbol(p)
                       case None    =>
                         ErrorSuperSpecifierDoesNotExist(spec.value, methodSymbol.classSymbol.name, spec)
                     }
-                  case _                       =>
+                  case _          =>
                     superSymbol.setSymbol(methodSymbol.classSymbol)
                   // Set symbol to this and let the typechecker decide later.
                 }
               case _: ClassSymbol             => ErrorSuperInStaticContext(superSymbol)
               case _                          => ???
             }
-          case tpe: TypeTree                        => setType(tpe)
-          case id: Identifier                       => setIdentiferSymbol(id, localVars)
-          case _                                    => super.traverse(t)
+          case tpe: TypeTree                   => setType(tpe)
+          case id: Identifier                  => setIdentiferSymbol(id, localVars)
+          case _                               => super.traverse(t)
         }
       }
       traverser.traverse(startingTree)
@@ -456,12 +465,6 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
         case v: VariableSymbol => variableReassignment += v -> true
         case _                 => ??? // Should only be called for identifier with variable symbols
       }
-
-    private def checkReassignment(id: Identifier, pos: Positioned) = {
-      val varSymbol = id.getSymbol.asInstanceOf[VariableSymbol]
-      if (varSymbol.modifiers.contains(Final()))
-        ErrorReassignmentToVal(id.value, pos)
-    }
 
     private def setIdentiferSymbol(id: Identifier, symbol: Symbol) = {
       id.setSymbol(symbol)
@@ -494,11 +497,11 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       }
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
-            lookupLocalVar().orElse(
-              lookupArgument(methodSymbol).orElse(
-                lookupField(methodSymbol).orElse(
-                  lookupClass()
-                  )))
+          lookupLocalVar().orElse(
+            lookupArgument(methodSymbol).orElse(
+              lookupField(methodSymbol).orElse(
+                lookupClass()
+              )))
         case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupVar(name)
         case _                          => ???
@@ -554,6 +557,9 @@ class NameAnalyser(override var ctx: Context, prog: Program) extends NameAnalysi
       case ArrayType(arrayTpe)            =>
         setType(arrayTpe)
         tpe.setType(TArray(arrayTpe.getType))
+      case NullableType(nullableTpe)      =>
+        setType(nullableTpe)
+        tpe.setType(TNullable(nullableTpe.getType))
     }
     tpe.getType
   }

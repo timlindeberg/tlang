@@ -122,7 +122,8 @@ object TestUtils extends FlatSpec {
   // Parses codes from error messages
 
   def parseErrorCodes(errorMessages: String) = {
-    removeANSIFormatting(errorMessages).split("\n\n").map(_.split("\n")(1)).collect {
+    val errors = removeANSIFormatting(errorMessages)
+    errors.split("\n\n").map(_.split("\n")(1)).collect {
       case ErrorRegex(_, errorCode) => errorCode
     }.toList
   }
@@ -146,6 +147,7 @@ object TestUtils extends FlatSpec {
         assert(node.getType != TUntyped)
       case _ =>
     })
+    traverser.traverse(prog)
     hasTypes
   }
 

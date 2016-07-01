@@ -1,0 +1,8 @@
+val a = new A()
+
+a.Test() = 5 // res: T2035
+
+class A {
+
+    Def Test() = 5
+}

@@ -35,6 +35,9 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorOverrideOperator(pos: Positioned) =
     error(1, "Operators cannot be overriden.", pos)
 
+  protected def ErrorNullableInOperator(pos: Positioned) =
+    error(2, "Operators cannot have nullable types as arguments or return type.", pos)
+
   protected def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned) =
     error(3, s"Class '$name' is already defined at line '$line'.", pos)
 

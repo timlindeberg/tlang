@@ -89,6 +89,17 @@ Def Iterator() = {
     t.AssertTrue(it.HasNext())
     t.AssertEquals(it.Next(), 3)
     t.AssertFalse(it.HasNext())
+
+    var i = 0
+    for(val j in v){
+        if(i == 0)
+            t.AssertEquals(j, 1)
+        else if(i == 1)
+            t.AssertEquals(j, 2)
+        else
+            t.AssertEquals(j, 3)
+        i++
+    }
 }
 
 Def Add() = {

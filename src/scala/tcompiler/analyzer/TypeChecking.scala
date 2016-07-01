@@ -193,14 +193,15 @@ class TypeChecker(
 
   def tcExpr(expression: ExprTree, expected: List[Type]): Type = {
     val foundType = expression match {
-      case _: StringLit => String
-      case _: IntLit    => TInt
-      case _: LongLit   => TLong
-      case _: FloatLit  => TFloat
-      case _: DoubleLit => TDouble
-      case _: CharLit   => TChar
-      case _: True      => TBool
-      case _: False     => TBool
+      case _: StringLit                                  => String
+      case _: IntLit                                     => TInt
+      case _: LongLit                                    => TLong
+      case _: FloatLit                                   => TFloat
+      case _: DoubleLit                                  => TDouble
+      case _: CharLit                                    => TChar
+      case _: True                                       => TBool
+      case _: False                                      => TBool
+      case _: Null                                       => TNull
       case id: Identifier                                =>
         id.getSymbol match {
           case varSymbol: VariableSymbol => varSymbol.classSymbol match {
@@ -213,17 +214,8 @@ class TypeChecker(
       case id: ClassIdentifier                           => id.getType
       case th: This                                      => th.getSymbol.getType
       case su: Super                                     => su.getSymbol.getType
-      case mc: MethodCall                                => tcMethodCall(mc)
-      case fr@FieldAccess(obj, id)                       =>
-        val tpe = typeCheckField(obj, id, fr)
-        fr.setType(tpe)
-        tpe
-      case fa@FieldAssign(obj, id, expr)                 =>
-        val tpe = typeCheckField(obj, id, fa)
-        fa.setType(tpe)
-        tcExpr(expr, tpe)
-        checkReassignment(id, fa)
-        tpe
+      case acc: Access                                   => tcAccess(acc)
+      case assign: Assign                                => tcAssignment(assign)
       case newArray@NewArray(tpe, sizes)                 =>
         sizes.foreach(tcExpr(_, TInt))
         var arrayType = tpe.getType
@@ -243,107 +235,38 @@ class TypeChecker(
       case arithmeticOp@ArithmeticOperatorTree(lhs, rhs) =>
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(Object)        => tcBinaryOperator(arithmeticOp, args)
-          case _ if args.anyIs(TBool, tArray) => ErrorOperatorDoesNotExist(arithmeticOp, args, expression)
-          case _ if args.anyIs(TDouble)       => TDouble
-          case _ if args.anyIs(TFloat)        => TFloat
-          case _ if args.anyIs(TLong)         => TLong
-          case _                              => TInt
+          case _ if args.anyIs(Object)       => tcBinaryOperator(arithmeticOp, args)
+          case _ if args.anyIs(TBool, Array) => ErrorOperatorDoesNotExist(arithmeticOp, args, expression)
+          case _ if args.anyIs(TDouble)      => TDouble
+          case _ if args.anyIs(TFloat)       => TFloat
+          case _ if args.anyIs(TLong)        => TLong
+          case _                             => TInt
         }
       case logicalOp@LogicalOperatorTree(lhs, rhs)       =>
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(Object)                                 => tcBinaryOperator(logicalOp, args)
-          case _ if args.bothAre(TBool)                                => TBool
-          case _ if args.anyIs(TBool, TFloat, TDouble, String, tArray) => ErrorOperatorDoesNotExist(logicalOp, args, expression)
-          case _ if args.anyIs(TLong)                                  => TLong
-          case _ if args.anyIs(TInt)                                   => TInt
-          case _ if args.bothAre(TChar)                                => TInt
-          case _                                                       => ErrorOperatorDoesNotExist(logicalOp, args, expression)
+          case _ if args.anyIs(Object)                                => tcBinaryOperator(logicalOp, args)
+          case _ if args.bothAre(TBool)                               => TBool
+          case _ if args.anyIs(TBool, TFloat, TDouble, String, Array) => ErrorOperatorDoesNotExist(logicalOp, args, expression)
+          case _ if args.anyIs(TLong)                                 => TLong
+          case _ if args.anyIs(TInt)                                  => TInt
+          case _ if args.bothAre(TChar)                               => TInt
+          case _                                                      => ErrorOperatorDoesNotExist(logicalOp, args, expression)
         }
       case shiftOp@ShiftOperatorTree(lhs, rhs)           =>
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(Object)                                 => tcBinaryOperator(shiftOp, args)
-          case _ if args.anyIs(TBool, TFloat, TDouble, String, tArray) => ErrorOperatorDoesNotExist(shiftOp, args, expression)
-          case _ if args.anyIs(TLong)                                  => TLong
-          case _                                                       => TInt
-        }
-      case Assign(id, expr)                              =>
-        id.getType match {
-          case objType: TObject => tcExpr(expr, objType)
-          case arrType: TArray  => tcExpr(expr, arrType)
-          case TBool            => tcExpr(expr, TBool)
-          case TChar            =>
-            tcExpr(expr, TInt, TChar)
-            TChar
-          case TInt             =>
-            tcExpr(expr, TInt, TChar)
-            TInt
-          case TLong            =>
-            tcExpr(expr, TLong, TInt, TChar)
-            TLong
-          case TFloat           =>
-            tcExpr(expr, TFloat, TLong, TInt, TChar)
-            TFloat
-          case TDouble          =>
-            tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
-            TDouble
-          case _                => TError
-        }
-      case arrAssign@ArrayAssign(arr, index, expr)       =>
-        val arrTpe = tcExpr(arr)
-        arrTpe match {
-          case TObject(classSymbol) =>
-            val (indexType, exprType) = (tcExpr(index), tcExpr(expr))
-
-            val argList = List(indexType, exprType)
-
-            val operatorType = classSymbol.lookupOperator(arrAssign, argList) match {
-              case Some(operatorSymbol) =>
-                checkOperatorPrivacy(classSymbol, operatorSymbol, expression)
-                inferTypeOfMethod(operatorSymbol)
-                expression.setType(operatorSymbol.getType)
-                operatorSymbol.getType
-              case None                 =>
-                ErrorIndexingOperatorNotFound(arrAssign, argList, expression, arrTpe.toString)
-            }
-
-            if (operatorType != TError && operatorType != TUnit)
-              ErrorOperatorWrongReturnType(arrAssign.operatorString(argList, arrTpe.toString), "Unit", operatorType.toString, expr)
-            exprType
-          case TArray(arrayTpe)     =>
-            tcExpr(index, TInt)
-            arrayTpe match {
-              case objType: TObject => tcExpr(expr, objType)
-              case arrType: TArray  => tcExpr(expr, arrType)
-              case TBool            => tcExpr(expr, TBool)
-              case TChar            =>
-                tcExpr(expr, TInt, TChar)
-                TChar
-              case TInt             =>
-                tcExpr(expr, TInt, TChar)
-                TInt
-              case TLong            =>
-                tcExpr(expr, TLong, TInt, TChar)
-                TLong
-              case TFloat           =>
-                tcExpr(expr, TFloat, TLong, TInt, TChar)
-                TFloat
-              case TDouble          =>
-                tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
-                TDouble
-              case _                => ???
-            }
-          case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
+          case _ if args.anyIs(Object)                                => tcBinaryOperator(shiftOp, args)
+          case _ if args.anyIs(TBool, TFloat, TDouble, String, Array) => ErrorOperatorDoesNotExist(shiftOp, args, expression)
+          case _ if args.anyIs(TLong)                                 => TLong
+          case _                                                      => TInt
         }
       case compOp@ComparisonOperatorTree(lhs, rhs)       =>
-        // TODO: String should be allowed
         val args = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(Object)                => tcBinaryOperator(compOp, args, Some(TBool))
-          case _ if args.anyIs(TBool, String, tArray) => ErrorOperatorDoesNotExist(compOp, args, expression)
-          case _                                      => TBool
+          case _ if args.anyIs(Object)               => tcBinaryOperator(compOp, args, Some(TBool))
+          case _ if args.anyIs(TBool, String, Array) => ErrorOperatorDoesNotExist(compOp, args, expression)
+          case _                                     => TBool
         }
       case eqOp@EqualsOperatorTree(lhs, rhs)             =>
         val args@(lhsType, rhsType) = (tcExpr(lhs), tcExpr(rhs))
@@ -357,7 +280,7 @@ class TypeChecker(
               case _                              => correctOperatorType(eqOp, argList, Some(TBool), operatorType)
             }
           case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
-          case _ if args.anyIs(TBool, String, tArray)         => ErrorOperatorDoesNotExist(eqOp, args, expression)
+          case _ if args.anyIs(TBool, String, Array)          => ErrorOperatorDoesNotExist(eqOp, args, expression)
           case _                                              => // Valid
         }
         TBool
@@ -392,16 +315,7 @@ class TypeChecker(
           case TObject(classSymbol) =>
             val indexType = tcExpr(index)
             val argList = List(indexType)
-
-            classSymbol.lookupOperator(arrRead, argList) match {
-              case Some(operatorSymbol) =>
-                checkOperatorPrivacy(classSymbol, operatorSymbol, expression)
-                inferTypeOfMethod(operatorSymbol)
-                expression.setType(operatorSymbol.getType)
-                operatorSymbol.getType
-              case None                 =>
-                ErrorIndexingOperatorNotFound(arrRead, argList, expression, arrTpe.toString)
-            }
+            tcArrayOperator(classSymbol, arrRead, argList, arrTpe, expression)
           case TArray(arrTpe)       =>
             tcExpr(index, TInt)
             arrTpe
@@ -464,7 +378,7 @@ class TypeChecker(
       case incOp@IncrementDecrementTree(obj)             =>
         obj match {
           case id: Identifier                => checkReassignment(id, expression)
-          case _: ArrayRead | _: FieldAccess =>
+          case _: ArrayRead | _: Access =>
           case _                             => ErrorInvalidIncrementDecrementExpr(expression, obj)
         }
         // TODO: Allow increment decrement for Bool types?
@@ -496,59 +410,158 @@ class TypeChecker(
     res
   }
 
-  def tcMethodCall(mc: MethodCall): Type = {
-    val obj = mc.obj
-    val meth = mc.meth
-    val methodCallArgs = mc.args
+  def tcAccess(acc: Access): Type = {
+    val app = acc.application
 
-    val argTypes = methodCallArgs.map(tcExpr(_))
-
-    def methSignature = meth.value + methodCallArgs.map(_.getType).mkString("(", ", ", ")")
-
-
-    var objType = tcExpr(obj)
-    // Set type of super call based on the method called
-    // if it needs to be looked up dynamically
-    obj match {
-      case s@Super(None) if s.getSymbol.parents.nonEmpty =>
-        // supers symbol is set to this in name analyzer so we can look up the
-        // desired method
-        val thisSymbol = s.getSymbol
-        thisSymbol.lookupParentMethod(meth.value, argTypes) match {
-          case Some(methodSymbol) =>
-            val classSymbol = methodSymbol.classSymbol
-            objType = classSymbol.getType
-            s.setSymbol(classSymbol)
-            s.setType(objType)
-          case None               =>
-            return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, mc)
-        }
-      case _                                             =>
+    // If it's a method access we type check it now
+    val argTypes = app match {
+      case MethodCall(meth, args) => Some(args.map(tcExpr(_)))
+      case _                      => None
     }
 
-    val tpe = objType match {
-      case TObject(classSymbol) =>
-        classSymbol.lookupMethod(meth.value, argTypes) match {
-          case Some(methSymbol) =>
-            checkMethodPrivacy(classSymbol, methSymbol, mc)
-            checkStaticMethodConstraints(obj, classSymbol, methSymbol, mc)
-
-            TypeChecking.methodUsage += methSymbol -> true
-            inferTypeOfMethod(methSymbol)
-            meth.setSymbol(methSymbol)
-            meth.getType
-          case None             =>
-            ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, mc)
-        }
-      case TArray(arrTpe)       =>
-        if (methodCallArgs.nonEmpty || meth.value != "Size")
-          ErrorMethodOnWrongType(methSignature, objType.toString, mc)
-        TInt
-      case _                    =>
-        ErrorMethodOnWrongType(methSignature, objType.toString, mc)
+    def methSignature = {
+      val methodCall = app.asInstanceOf[MethodCall]
+      methodCall.meth.value + argTypes.get.mkString("(", ", ", ")")
     }
-    mc.setType(tpe)
+
+    val objType = tcAccessObject(acc, argTypes, methSignature)
+
+    // Most of the duplication here is to give a different error message for
+    // fields and methods
+    val tpe = app match {
+      case MethodCall(meth, args)        =>
+        objType match {
+          case TObject(classSymbol) =>
+            classSymbol.lookupMethod(meth.value, argTypes.get) match {
+              case Some(methSymbol) =>
+                checkMethodPrivacy(classSymbol, methSymbol, app)
+                checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
+
+                TypeChecking.methodUsage += methSymbol -> true
+                inferTypeOfMethod(methSymbol)
+                meth.setSymbol(methSymbol)
+                meth.getType
+              case None             =>
+                ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, app)
+            }
+          case TArray(arrTpe)       =>
+            if (args.nonEmpty || meth.value != "Size")
+              ErrorMethodOnWrongType(methSignature, objType.toString, app)
+            TInt
+          case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
+        }
+      case fieldId@Identifier(fieldName) =>
+        objType match {
+          case TObject(classSymbol) =>
+            classSymbol.lookupVar(fieldName) match {
+              case Some(varSymbol) =>
+                checkFieldPrivacy(classSymbol, varSymbol, app)
+                checkStaticFieldConstraints(acc, classSymbol, varSymbol, app)
+                fieldId.setSymbol(varSymbol)
+                fieldId.getType
+              case None            =>
+                ErrorClassDoesntHaveField(classSymbol.name, fieldName, app)
+            }
+          case _                    => ErrorFieldOnWrongType(objType.toString, app)
+        }
+    }
+
+    app.setType(tpe)
     tpe
+  }
+
+
+  private def tcAccessObject(acc: Access, argTypes: Option[List[Type]], methSignature: => String): Type = {
+    val obj = acc.obj
+    val app = acc.application
+
+    // Set type of super call based on operation used
+    // if it needs to be looked up dynamically
+    acc.obj match {
+      case sup@Super(None) if sup.getSymbol.parents.nonEmpty =>
+        // supers symbol is set to this in name analyzer so we can look up the
+        // desired method or field
+        val thisSymbol = sup.getSymbol
+        val classSymbol = app match {
+          case MethodCall(meth, args) =>
+            thisSymbol.lookupParentMethod(meth.value, argTypes.get) match {
+              case Some(methodSymbol) => methodSymbol.classSymbol
+              case None               => return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, app)
+            }
+          case Identifier(fieldName)  =>
+            thisSymbol.lookupParentVar(fieldName) match {
+              case Some(variableSymbol) => variableSymbol.classSymbol.get
+              case None                 => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, app)
+            }
+          case _                      => ???
+        }
+        sup.setSymbol(classSymbol)
+        sup.setType(classSymbol.getType)
+        classSymbol.getType
+      case _                                                 => tcExpr(obj)
+    }
+  }
+
+  def tcAssignment(assignment: Assign): Type = {
+    val to = assignment.to
+    val expr = assignment.expr
+
+    def tcAssignmentExpr(objTpe: Type) = objTpe match {
+      case obj: TObject => tcExpr(expr, obj)
+      case arr: TArray  => tcExpr(expr, arr)
+      case TBool        => tcExpr(expr, TBool)
+      case TChar        =>
+        tcExpr(expr, TInt, TChar)
+        TChar
+      case TInt         =>
+        tcExpr(expr, TInt, TChar)
+        TInt
+      case TLong        =>
+        tcExpr(expr, TLong, TInt, TChar)
+        TLong
+      case TFloat       =>
+        tcExpr(expr, TFloat, TLong, TInt, TChar)
+        TFloat
+      case TDouble      =>
+        tcExpr(expr, TDouble, TFloat, TLong, TInt, TChar)
+        TDouble
+      case _            => ???
+    }
+    to match {
+      case id: Identifier            =>
+        val toTpe = tcExpr(to)
+        checkReassignment(id, assignment)
+        tcAssignmentExpr(toTpe)
+      case Access(obj, application) =>
+        val toTpe = tcExpr(to)
+        application match {
+          case _: MethodCall => ErrorAssignValueToMethodCall(assignment)
+          case id: Identifier =>
+            checkReassignment(id, assignment)
+            tcAssignmentExpr(toTpe)
+          case _             => ???
+        }
+      case ArrayRead(arr, index)    =>
+        val arrTpe = tcExpr(arr)
+        arrTpe match {
+          case TObject(classSymbol) =>
+            val (indexType, exprType) = (tcExpr(index), tcExpr(expr))
+
+            val argList = List(indexType, exprType)
+            val arrayAssignOp = ArrayAssign(Empty(), Empty(), Empty())
+
+            val operatorType = tcArrayOperator(classSymbol, arrayAssignOp, argList, arrTpe, assignment)
+            if (operatorType != TError && operatorType != TUnit) {
+              val opString = arrayAssignOp.operatorString(argList, arrTpe.toString)
+              ErrorOperatorWrongReturnType(opString, "Unit", operatorType.toString, expr)
+            }
+            exprType
+          case TArray(arrayTpe)     =>
+            tcExpr(index, TInt)
+            tcAssignmentExpr(arrayTpe)
+          case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
+        }
+    }
   }
 
   def tcBinaryOperatorNoErrors(op: OperatorTree, args: (Type, Type)): Type = {
@@ -583,6 +596,17 @@ class TypeChecker(
       case None      => ErrorOverloadedOperatorNotFound(expr, argList, expr)
     }
     correctOperatorType(expr, argList, expectedType, operatorType)
+  }
+
+  def tcArrayOperator(classSymbol: ClassSymbol, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned) = {
+    classSymbol.lookupOperator(opType, argList) match {
+      case Some(operatorSymbol) =>
+        checkOperatorPrivacy(classSymbol, operatorSymbol, pos)
+        inferTypeOfMethod(operatorSymbol)
+        operatorSymbol.getType
+      case None                 =>
+        ErrorIndexingOperatorNotFound(opType, argList, arrTpe.toString, pos)
+    }
   }
 
   def checkMethodUsage() = {
@@ -632,6 +656,11 @@ class TypeChecker(
         ErrorReassignmentToVal(id.value, pos)
     }
   }
+
+  private def checkNullAssignment(to: Type, from: Type, pos: Positioned) =
+    if (from == TNull && !to.isInstanceOf[TNullable])
+      ErrorAssignNullToNonNullable(to, pos)
+
 
   private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
     val unimplementedMethods = implementedTrait.unimplementedMethods()
@@ -710,57 +739,19 @@ class TypeChecker(
     }
   }
 
-
-  private def typeCheckField(obj: ExprTree, fieldId: Identifier, pos: Positioned): Type = {
-    var objType = tcExpr(obj)
-    val fieldName = fieldId.value
-
-    // Set type of super call based on the field accessed
-    // if it needs to be looked up dynamically
-    obj match {
-      case s@Super(None) =>
-        // supers symbol is set to this in name analyzer so we can look up the
-        // desired method
-        val thisSymbol = s.getSymbol
-        thisSymbol.lookupParentVar(fieldName) match {
-          case Some(variableSymbol) =>
-            val classSymbol = variableSymbol.classSymbol.get
-            objType = classSymbol.getType
-            s.setSymbol(classSymbol)
-            s.setType(objType)
-          case None                 => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, pos)
-        }
-      case _             =>
-    }
-
-    objType match {
-      case TObject(classSymbol) =>
-        classSymbol.lookupVar(fieldId.value) match {
-          case Some(varSymbol) =>
-            checkFieldPrivacy(classSymbol, varSymbol, pos)
-            checkStaticFieldConstraints(obj, classSymbol, varSymbol, pos)
-            fieldId.setSymbol(varSymbol)
-            fieldId.getType
-          case None            =>
-            ErrorClassDoesntHaveField(classSymbol.name, fieldId.value, pos)
-        }
-      case _                    => ErrorFieldOnWrongType(objType.toString, pos)
-    }
-  }
-
-  private def checkStaticMethodConstraints(obj: ExprTree, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {
-    if (!methodSymbol.isStatic && isStaticCall(obj))
+  private def checkStaticMethodConstraints(acc: Access, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {
+    if (!methodSymbol.isStatic && acc.isStatic)
       ErrorNonStaticMethodAsStatic(methodSymbol.name, pos)
 
-    if (obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !methodSymbol.isStatic)
+    if (acc.obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !methodSymbol.isStatic)
       ErrorNonStaticMethodFromStatic(methodSymbol.name, pos)
   }
 
-  private def checkStaticFieldConstraints(obj: ExprTree, classSymbol: ClassSymbol, varSymbol: VariableSymbol, pos: Positioned) = {
-    if (!varSymbol.isStatic && isStaticCall(obj))
+  private def checkStaticFieldConstraints(acc: Access, classSymbol: ClassSymbol, varSymbol: VariableSymbol, pos: Positioned) = {
+    if (!varSymbol.isStatic && acc.isStatic)
       ErrorNonStaticFieldAsStatic(varSymbol.name, pos)
 
-    if (obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !varSymbol.isStatic)
+    if (acc.obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !varSymbol.isStatic)
       ErrorNonStaticFieldFromStatic(varSymbol.name, pos)
   }
 

@@ -1,5 +1,6 @@
-import <kool.std.LinkedList>
-import <kool.std.Tester>
+// Ignore
+import kool::std::LinkedList
+import kool::std::Tester
 
 Construction()
 Set()

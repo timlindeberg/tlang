@@ -1,0 +1,136 @@
+val a: A? = new A()
+
+a.Test()
+
+a = null
+
+a.Test() // res: F2???
+
+a = GetA()
+val b: A? = GetA()
+
+a.Test() // res: F2???
+// res: F2???
+println(a + b) // res: F2???
+
+if(a && b)
+    println(a + b)
+
+if(a)
+    println(a + b) // res: F2???
+
+if(b)
+    println(a + b) // res: F2???
+
+println(a) // Okay to print nullables
+println(b) // Okay to print nullables
+
+val arr: Int[]? = {1, 2, 3}
+
+println(a[0])
+
+val arr = GetArr()
+
+println(a[0]) // res: F2???
+
+for(val i in a) // res: F2???
+    println(i)
+
+Def Test(b: A?) = {
+    var a = b
+    a.Test() // res: F2???
+    if(a != null) {
+        a.Test()
+    } else {
+        a.Test() // res: F2???
+    }
+
+    if(a.b) // res: F2???
+        println()
+
+
+    if(a != null && a.b)
+        println()
+
+    if(a == null && a.b)
+        a.Test() // res: F2???
+    else
+        a.Test()
+
+    if(a == new A() && a != new A() && a.b) // res: F2???
+        a.Test()// res: F2???
+
+    if(a == new A() && a != null && a.b)
+        a.Test()
+
+    while(a != null && a.b){
+        a.Test()
+        a = GetA()
+        a.Test() // res: F2???
+    }
+
+    a = null
+    while(a == null){
+        a.Test() // res: F2???
+        a = new A()
+        a.Test()
+    }
+
+    for(var i = 0; a != null; i++){
+        a.Test()
+        a = GetA()
+        a.Test() // res: F2???
+    }
+
+    for(var i = 0; a == null; i++){
+        a.Test() // res: F2???
+        a = new A()
+        a.Test()
+    }
+
+    if(a) a.Test()
+    if(!a) a.Test() // res: F2???
+
+
+    val c = GetA()
+
+    if(a != null && c != null){
+        a.Test()
+        c.Test()
+    }
+
+    if(!(a == null || c == null)){
+        a.Test()
+        c.Test()
+    }
+
+}
+
+Def Test2(b: A?) = {
+    val a = b
+    a.Test() // res: F2???
+    if(a == null)
+        return
+
+    a.Test()
+
+    a = GetA()
+
+    if(a != null)
+        return
+
+    a.Test() // res: F2???
+}
+
+Def GetA(): A? = null
+Def GetArr(): Int[]? = null
+
+class A {
+
+    Val b = true
+
+    Def Test() = println("Test")
+
+    Def +(a: A, b: A) = 5
+
+}

@@ -114,13 +114,13 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
 
   private def generateMethod(mh: MethodHandler, methTree: FuncTree): Unit = {
     val methSym = methTree.getSymbol
-    val variableMap = mutable.HashMap[VariableSymbol, Int]()
+    val localVariableMap = mutable.HashMap[VariableSymbol, Int]()
 
     var offset = if (methTree.isStatic) 0 else 1
 
     methTree.args.zipWithIndex.foreach {
       case (arg, i) =>
-        variableMap(arg.getSymbol) = i + offset
+        localVariableMap(arg.getSymbol) = i + offset
         if (arg.getSymbol.getType.size == 2) {
           // Longs and doubles take up two slots
           offset += 1
@@ -128,7 +128,8 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
     }
     if (!methTree.isAbstract) {
       val ch = mh.codeHandler
-      val codeGenerator = new CodeGenerator(ch, methSym.classSymbol.name, variableMap)
+      println("Generating " +  methTree.signature)
+      val codeGenerator = new CodeGenerator(ch, localVariableMap)
       codeGenerator.compileStat(methTree.stat.get)
       addReturnStatement(ch, methTree)
       ch.freeze
@@ -163,7 +164,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
     val staticFields = classDecl.fields.filter(v => v.init.isDefined && v.isStatic)
     if (staticFields.nonEmpty) {
       lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
-      val codeGenerator = new CodeGenerator(staticCh, classDecl.getSymbol.name, mutable.HashMap())
+      val codeGenerator = new CodeGenerator(staticCh, mutable.HashMap())
       staticFields.foreach {
         case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
           varDecl.getSymbol.getType
@@ -177,7 +178,7 @@ object CodeGeneration extends Pipeline[List[Program], Unit] {
 
   private def initializeNonStaticFields(classDecl: ClassDecl, ch: CodeHandler) = {
     val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
-    val codeGenerator = new CodeGenerator(ch, classDecl.getSymbol.name, mutable.HashMap())
+    val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     nonStaticFields.foreach {
       case varDecl@VarDecl(_, id, Some(expr), _) =>
         ch << ArgLoad(0) // put this-reference on stack

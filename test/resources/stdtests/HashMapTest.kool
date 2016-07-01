@@ -1,6 +1,7 @@
-import <kool.std.HashMap>
-import <kool.std.Vector>
-import <kool.std.Tester>
+// Ignore
+import kool::std::HashMap
+import kool::std::Vector
+import kool::std::Tester
 
 IntMap()
 StringMap()

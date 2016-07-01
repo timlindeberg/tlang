@@ -6,8 +6,8 @@ import tcompiler.ast.Trees.{OperatorTree, _}
 import tcompiler.imports.{ClassSymbolLocator, TemplateImporter}
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
-import tcompiler.utils._
 import tcompiler.utils.Extensions._
+import tcompiler.utils._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -42,7 +42,7 @@ object ASTBuilder {
     OR -> Or,
     AND -> And,
     LESSTHAN -> LessThan,
-    LESSTHANE -> LessThanEquals,
+    LESSTHANEQ -> LessThanEquals,
     GREATERTHAN -> GreaterThan,
     GREATERTHANEQ -> GreaterThanEquals,
     EQUALS -> Equals,
@@ -119,7 +119,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       importMap += (s.last -> imp.replaceAll("::", "."))
     }
 
-    // TODO: Use classpath flags
     for (imp <- regImports) {
       val fullName = importName(imp)
       val shortName = imp.identifiers.last.value
@@ -161,6 +160,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       mainClass.methods :::= methods
 
       if (stats.nonEmpty) {
+        // TODO: Main args should be kool::lang::String
         val args = List(Formal(ArrayType(ClassIdentifier("java::lang::String", List())), Identifier("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
         val mainMethod = MethodDecl(Some(UnitType()), Identifier("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
@@ -265,7 +265,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(Private(), Final())
-      case _       => FatalWrongToken(currentToken, PRIVVAR, PRIVVAL)
+      case _       => FatalWrongToken(nextToken, PRIVVAR, PRIVVAL)
     }
     varDeclEnd(modifiers, startPos)
   }
@@ -410,7 +410,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case LEFTSHIFT     => binaryOperator(LeftShift)
       case RIGHTSHIFT    => binaryOperator(RightShift)
       case LESSTHAN      => binaryOperator(LessThan)
-      case LESSTHANE     => binaryOperator(LessThanEquals)
+      case LESSTHANEQ    => binaryOperator(LessThanEquals)
       case GREATERTHAN   => binaryOperator(GreaterThan)
       case GREATERTHANEQ => binaryOperator(GreaterThanEquals)
       case EQUALS        => binaryOperator(Equals)
@@ -445,11 +445,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
             eat(LPAREN)
             val f1 = formal()
             (operatorType, List(f1), modifiers)
-          case _      => FatalWrongToken(currentToken, EQSIGN, LPAREN)
+          case _      => FatalWrongToken(nextToken, EQSIGN, LPAREN)
         }
       case _             =>
-        FatalWrongToken(currentToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT, RIGHTSHIFT, LESSTHAN,
-          LESSTHANE, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT, LOGICNOT, BANG, LBRACKET)
+        FatalWrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
+          RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
+          LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
@@ -472,7 +473,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case PRIVDEF =>
         eat(PRIVDEF)
         Set(protectedOrPrivate().setPos(startPos, nextToken))
-      case _       => FatalWrongToken(currentToken, PUBDEF, PRIVDEF)
+      case _       => FatalWrongToken(nextToken, PUBDEF, PRIVDEF)
     }
 
     while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
@@ -516,7 +517,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(protectedOrPrivate().setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
-      case _       => FatalWrongToken(currentToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+      case _       => FatalWrongToken(nextToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     }
 
     val pos = nextToken
@@ -535,6 +536,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   def basicTpe(): TypeTree = {
     val startPos = nextToken
     val id = classIdentifier()
+
+    // These are kind of keywords but are parsed by the lexer.
+    // This enables names like java::lang::Long to be valid.
     val tpe = id.value match {
       case "Int"    => IntType()
       case "Long"   => LongType()
@@ -567,7 +571,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
-      NullableType(e)
+      NullableType(e).setPos(startPos, nextToken)
     } else {
       e
     }
@@ -732,7 +736,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
                  OREQ | XOREQ |
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
               assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
-            case _                          => FatalWrongToken(currentToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
+            case _                          => FatalWrongToken(nextToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
           }
       }
     }, SEMICOLON)
@@ -764,9 +768,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
             case DECREMENT                  =>
               eat(DECREMENT)
               PostDecrement(id)
-            case _                          => FatalWrongToken(currentToken, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
+            case _                          => FatalWrongToken(nextToken, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
           }
-        case _         => FatalWrongToken(currentToken, INCREMENT, DECREMENT, IDKIND)
+        case _         => FatalWrongToken(nextToken, INCREMENT, DECREMENT, IDKIND)
       }
       expr.setPos(startPos, nextToken)
     })
@@ -780,7 +784,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
     case EOF | RBRACE        =>
-    case _                   => FatalWrongToken(currentToken, SEMICOLON, NEWLINE)
+    case _                   => FatalWrongToken(nextToken, SEMICOLON, NEWLINE)
   }
 
   /**
@@ -808,11 +812,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       }
 
       e match {
-        case ArrayRead(arr, index) => ArrayAssign(arr, index, assignmentExpr(e))
-        case FieldAccess(obj, id)  => FieldAssign(obj, id, assignmentExpr(e))
-        case id: Identifier        => Assign(id, assignmentExpr(id))
-        case _                     =>
-          FatalExpectedIdAssignment(e)
+        case _: ArrayRead |
+             _: Access |
+             _: Identifier => Assign(e, assignmentExpr(e))
+        case _             => FatalExpectedIdAssignment(e)
       }
     }
 
@@ -831,6 +834,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _            => e
     }
   }
+
 
   /** <ternary> ::= <or> [ ? <or> : <or> ] */
   def ternary() = {
@@ -861,22 +865,22 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
   def logicAnd() = leftAssociative(eqNotEq, LOGICAND)
 
-  /** <eqNotEq> ::= <instOf> { ( == | != ) <instOf> } */
-  def eqNotEq() = leftAssociative(instOf, EQUALS, NOTEQUALS)
+  /** <eqNotEq> ::= <is> { ( == | != ) <is> } */
+  def eqNotEq() = leftAssociative(is, EQUALS, NOTEQUALS)
 
-  /** <instOf> ::= <comparison> { inst <identifier> } */
-  def instOf() = {
+  /** <is> ::= <comparison> { inst <identifier> } */
+  def is() = {
     val startPos = nextToken
     var e = comparison()
-    while (nextTokenKind == INSTANCEOF) {
-      eat(INSTANCEOF)
+    while (nextTokenKind == IS) {
+      eat(IS)
       e = Instance(e, identifier()).setPos(startPos, nextToken)
     }
     e
   }
 
   /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
-  def comparison() = leftAssociative(bitShift, LESSTHAN, LESSTHANE, GREATERTHAN, GREATERTHANEQ)
+  def comparison() = leftAssociative(bitShift, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ)
 
   /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
   def bitShift() = leftAssociative(plusMinus, LEFTSHIFT, RIGHTSHIFT)
@@ -964,12 +968,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         val ids = nonEmptyList(identifier, COLON, COLON)
         val id = Identifier(ids.map(_.value).mkString("::"))
 
+        val methStartPos = nextToken
         nextTokenKind match {
           case LPAREN =>
             eat(LPAREN)
             val exprs = commaList(expression)
             eat(RPAREN)
-            MethodCall(Empty(), id, exprs)
+            val meth = MethodCall(id, exprs).setPos(methStartPos, nextToken)
+            NormalAccess(Empty(), meth)
           case _      => id
         }
       case TRUE          =>
@@ -986,17 +992,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         Null()
       case SUPER         =>
         val sup = superCall()
-        eat(DOT)
-        val id = identifier()
-
-        if (nextTokenKind == LPAREN) {
-          eat(LPAREN)
-          val exprs = commaList(expression)
-          eat(RPAREN)
-          MethodCall(sup, id, exprs.toList)
-        } else {
-          FieldAccess(sup, id)
-        }
+        access(sup)
       case NEW           => newExpression()
       case _             => FatalUnexpectedToken(currentToken)
     }
@@ -1005,7 +1001,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
   /**
     * <termRest> ::= .<identifier>
-    * | .<identifier> "(" <expression> { "," <expression> } ")
+    * | <access>
     * | <arrayIndexing>
     * | as <tpe>
     * | ++
@@ -1021,16 +1017,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
       e = currentToken.kind match {
         case DOT       =>
-          eat(DOT)
-          val id = identifier()
-          if (nextTokenKind == LPAREN) {
-            eat(LPAREN)
-            val exprs = commaList(expression)
-            eat(RPAREN)
-            MethodCall(e, id, exprs.toList)
-          } else {
-            FieldAccess(e, id)
-          }
+          access(e)
         case LBRACKET  =>
           arrayIndexing(e)
         case AS        =>
@@ -1048,6 +1035,34 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
 
     e
+  }
+
+  /**
+    * <access> ::= (. | ?.) <methodCall> | <identifier>
+    */
+  def access(obj: ExprTree) = {
+    val startPos = nextToken
+    val access = nextTokenKind match {
+      case QUESTIONMARK =>
+        eat(QUESTIONMARK, DOT)
+        SafeAccess
+      case DOT          =>
+        eat(DOT)
+        NormalAccess
+      case _            => FatalWrongToken(nextToken, DOT, QUESTIONMARK)
+    }
+
+    val methStartPos = nextToken
+    val id = identifier()
+    val application = nextTokenKind match {
+      case LPAREN =>
+        eat(LPAREN)
+        val exprs = commaList(expression)
+        eat(RPAREN)
+        MethodCall(id, exprs.toList).setPos(methStartPos, nextToken)
+      case _      => id
+    }
+    access(obj, application).setPos(startPos, nextToken)
   }
 
   /**
@@ -1105,7 +1120,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         New(tpe, args)
       case LBRACKET =>
         NewArray(tpe, sizes())
-      case _        => FatalWrongToken(currentToken, LPAREN, LBRACKET)
+      case _        => FatalWrongToken(nextToken, LPAREN, LBRACKET)
     }
   }
 
@@ -1144,7 +1159,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
           case RBRACKET =>
             eat(RBRACKET)
             ArrayRead(e, expr)
-          case _        => FatalWrongToken(currentToken, COLON, RBRACKET)
+          case _        => FatalWrongToken(nextToken, COLON, RBRACKET)
         }
     }
   }
@@ -1167,7 +1182,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case Block(stmts) if stmts.nonEmpty =>
       val replaced = replaceExprWithReturnStat(stmts.last)
       Block(stmts.updated(stmts.size - 1, replaced))
-    case m: MethodCall                  => Return(Some(m))
+    case acc@Access(_, m: MethodCall)   => Return(Some(acc))
     case UselessStatement(e)            => Return(Some(e))
     case _                              => stat
   }
@@ -1180,7 +1195,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   private def leftAssociative(next: () => ExprTree, kinds: TokenKind*): ExprTree = {
     var expr = next()
     while (kinds.contains(currentToken.kind)) {
-      kinds.foreach { kind =>
+      kinds foreach { kind =>
         if (currentToken.kind == kind) {
           val startPos = currentToken
           eat(kind)
@@ -1195,17 +1210,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /** Store the current token, as read from the lexer. */
 
   private def readToken(): Unit = {
-
     currentIndex += 1
-    if (currentIndex < tokens.length) {
+    if (currentIndex < tokens.length)
       currentToken = tokens(currentIndex)
-      // skips bad tokens
-      while (currentToken.kind == BAD) {
-        currentIndex += 1
-        currentToken = tokens(currentIndex)
-      }
-
-    }
   }
 
   private def eatNewLines(): Unit =
@@ -1219,7 +1226,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       if (nextTokenKind == k) {
         readToken()
       } else {
-        FatalWrongToken(currentToken, k)
+        FatalWrongToken(nextToken, k)
       }
     }
   }
@@ -1232,9 +1239,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   private def eatRightShiftOrGreaterThan() =
     if (nextTokenKind == RIGHTSHIFT) {
-      if (usedOneGreaterThan) {
+      if (usedOneGreaterThan)
         eat(RIGHTSHIFT)
-      }
+
       usedOneGreaterThan = !usedOneGreaterThan
     } else {
       eat(GREATERTHAN)
@@ -1255,7 +1262,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case _        => List()
       }
       ClassIdentifier(id.value, tIds).setPos(id)
-    case _      => FatalWrongToken(currentToken, IDKIND)
+    case _      => FatalWrongToken(nextToken, IDKIND)
   }
 
   /**
@@ -1289,7 +1296,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case id: ID =>
       eat(IDKIND)
       Identifier(id.value).setPos(id, nextToken)
-    case _      => FatalWrongToken(currentToken, IDKIND)
+    case _      => FatalWrongToken(nextToken, IDKIND)
   }
 
   /**
@@ -1299,7 +1306,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case strlit: STRLIT =>
       eat(STRLITKIND)
       StringLit(strlit.value).setPos(strlit, nextToken)
-    case _              => FatalWrongToken(currentToken, STRLITKIND)
+    case _              => FatalWrongToken(nextToken, STRLITKIND)
   }
 
   /**
@@ -1310,7 +1317,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case intLit: INTLIT =>
         eat(INTLITKIND)
         IntLit(intLit.value).setPos(intLit, nextToken)
-      case _              => FatalWrongToken(currentToken, INTLITKIND)
+      case _              => FatalWrongToken(nextToken, INTLITKIND)
     }
 
   /**
@@ -1320,7 +1327,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case longLit: LONGLIT =>
       eat(LONGLITKIND)
       LongLit(longLit.value).setPos(longLit, nextToken)
-    case _                => FatalWrongToken(currentToken, LONGLITKIND)
+    case _                => FatalWrongToken(nextToken, LONGLITKIND)
   }
 
   /**
@@ -1330,7 +1337,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case floatLit: FLOATLIT =>
       eat(FLOATLITKIND)
       FloatLit(floatLit.value).setPos(floatLit, nextToken)
-    case _                  => FatalWrongToken(currentToken, FLOATLITKIND)
+    case _                  => FatalWrongToken(nextToken, FLOATLITKIND)
   }
 
 
@@ -1341,7 +1348,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case doubleLit: DOUBLELIT =>
       eat(DOUBLELITKIND)
       DoubleLit(doubleLit.value).setPos(doubleLit, nextToken)
-    case _                    => FatalWrongToken(currentToken, DOUBLELITKIND)
+    case _                    => FatalWrongToken(nextToken, DOUBLELITKIND)
   }
 
   /**
@@ -1351,12 +1358,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case charLit: CHARLIT =>
       eat(CHARLITKIND)
       CharLit(charLit.value).setPos(charLit, nextToken)
-    case _                => FatalWrongToken(currentToken, CHARLITKIND)
+    case _                => FatalWrongToken(nextToken, CHARLITKIND)
   }
 
   /**
     * Parses lists of the form
-    * <nonEmptyList> ::= <parse> { <delimiter> <parse> }
+    * <nonEmptyList> ::= <parse> { <delimiter_0> ... <delimiter_n> <parse> }
     */
 
   private def nonEmptyList[T](parse: () => T, delimiters: TokenKind*): List[T] = {
@@ -1375,26 +1382,25 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <commaList> ::= [ <parse> { "," <parse> } ]
     */
   private def commaList[T](parse: () => T, stopSign: TokenKind = RPAREN): List[T] = {
-    if (nextTokenKind == stopSign) {
-      List()
-    } else {
-      val arrBuff = new ArrayBuffer[T]()
+    if (nextTokenKind == stopSign)
+      return List()
+
+    val arrBuff = new ArrayBuffer[T]()
+    arrBuff += parse()
+    while (currentToken.kind == COMMA || currentToken.kind == NEWLINE) {
+      readToken()
       arrBuff += parse()
-      while (currentToken.kind == COMMA || currentToken.kind == NEWLINE) {
-        readToken()
-        arrBuff += parse()
-      }
-      arrBuff.toList
     }
+    arrBuff.toList
   }
 
   /**
     * Parses an optional of the form
     * <optional> ::= [ parse ] and returns Option
     */
-  private def optional[T](parse: () => T with Positioned, kind: TokenKind): Option[T] = {
-    if (nextTokenKind == kind) {
-      eat(kind)
+  private def optional[T](parse: () => T with Positioned, kinds: TokenKind*): Option[T] = {
+    if (kinds.contains(nextTokenKind)) {
+      eat(nextTokenKind)
       Some(parse())
     } else {
       None
@@ -1402,7 +1408,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * Continues parsing until on of the given token kinds are encountered.
+    * Continues parsing until one of the given token kinds are encountered.
     */
   private def until[T](parse: () => T, kinds: TokenKind*): List[T] = {
     val condition = () => !kinds.contains(nextTokenKind)
@@ -1410,7 +1416,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * Continues parsing until a token different from the given tokens are encountered.
+    * Continues parsing until a token different from the given tokens is encountered.
     */
   private def untilNot[T](parse: () => T, kinds: TokenKind*): List[T] = {
     val condition = () => kinds.contains(nextTokenKind)

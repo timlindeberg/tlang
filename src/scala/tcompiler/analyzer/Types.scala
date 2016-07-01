@@ -30,7 +30,7 @@ object Types {
   sealed abstract class Type {
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
     def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
-      if(this == tpe)
+      if (this == tpe)
         return true
 
       val implicitTypes = implicitlyConvertableFrom()
@@ -40,7 +40,7 @@ object Types {
 
       (this, tpe) match {
         case (TArray(a1), TArray(a2)) => a1.isImplicitlyConvertableFrom(a2)
-        case _ => false
+        case _                        => false
       }
     }
     def getSuperTypes: List[Type] = List()
@@ -126,7 +126,7 @@ object Types {
   case class TArray(tpe: Type) extends Type {
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-      case _ => false
+      case _              => false
     }
 
     override def implicitlyConvertableFrom() = List()
@@ -136,7 +136,7 @@ object Types {
     override val size: Int = 1
     def dimension: Int = tpe match {
       case t: TArray => 1 + t.dimension
-      case _ => 1
+      case _         => 1
     }
   }
 
@@ -146,7 +146,7 @@ object Types {
       case TObject(c) =>
         if (classSymbol.name == c.name || c == Object.classSymbol) true
         else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
-      case _ => false
+      case _          => false
     }
 
     override def implicitlyConvertableFrom() =
@@ -168,12 +168,31 @@ object Types {
     def ==(other: TObject): Boolean = classSymbol.name == other.classSymbol.name
 
     override val codes = new ObjectCodeMap(classSymbol.name)
-    override val size = 1
+    override val size  = 1
+  }
+
+  case object TNull extends Type {
+    override def byteCodeName: String = "Ljava/lang/Object;"
+    override val codes: CodeMap = EmptyCodeMap
+    override val size : Int     = 1
+  }
+
+  case class TNullable(tpe: Type) extends Type {
+    override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
+      case TNullable(arrTpe) => tpe.isSubTypeOf(arrTpe)
+      case _                 => false
+    }
+
+    override def implicitlyConvertableFrom() = tpe.implicitlyConvertableFrom()
+    override def toString = tpe.toString + "?"
+    override def byteCodeName = tpe.byteCodeName
+    override val codes     = tpe.codes
+    override val size: Int = tpe.size
   }
 
   // For checking of a type is an object
   var Object = TObject(new ClassSymbol("kool/lang/Object", false))
   var String = TObject(new ClassSymbol("kool/lang/String", false))
-  val tArray = TArray(Object)
+  val Array  = TArray(Object)
 }
 

@@ -47,8 +47,6 @@ object Symbols {
           }
       }
     }
-
-
   }
 
   class ClassSymbol(
@@ -283,7 +281,7 @@ object Symbols {
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]
-  ) extends MethodSymbol(operatorType.toString, classSymbol, stat, modifiers) {
+  ) extends MethodSymbol(operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
 
     def operatorString = operatorType.operatorString(argList.map(_.getType))
 

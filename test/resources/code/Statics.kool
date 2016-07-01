@@ -3,7 +3,7 @@ new H().run();
 class H {
 
   Def run(): Unit = {
-    var a: A = new A();
+    val a: A = new A();
     a.I = 1;
     println(a.I);       // res: 1
     A.I = 2;

@@ -16,7 +16,7 @@ println(s.IsEmpty()) // res: false
 println(s.NonEmpty()) // res: true
 
 // Iterator
-
+// TODO: Iterator doesnt work
 
 // To Numbers
 val sixtyFour = "64"
@@ -32,8 +32,6 @@ println(sixtyFourBinary.ToLong(2) == 64) // res: true
 
 println(sixtyFour.ToFloat() == 64.0f) // res: true
 println(sixtyFour.ToDouble() == 64.0) // res: true
-
-// TODO: ToLong, ToFloat, ToDouble
 
 // Equality
 println(s == s) // res: true

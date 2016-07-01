@@ -33,6 +33,11 @@ object Trees {
       traverser.result
     }
 
+    def copyTree(): this.type = {
+      val copier = new TreeTransformer()
+      copier.transform(this).asInstanceOf[this.type]
+    }
+
     def forAll(p: Tree => Boolean): Boolean = {
       val traverser = new TreeTraverser {
         var result = true
@@ -57,13 +62,6 @@ object Trees {
 
     def exists(p: Tree => Boolean): Boolean = find(p).isDefined
 
-    def copyTree(): this.type = {
-      val copier = new TreeTransformer {
-        override val treeCopy = new StrictTreeCopier()
-      }
-      copier.transform(this).asInstanceOf[this.type]
-    }
-
     def copyAttrs(t: Tree): this.type = {
       setPos(t)
       copySymbolTrees(this, t)
@@ -76,6 +74,9 @@ object Trees {
       }
       this
     }
+
+    // For easier debugging
+    override def toString = Printer(this, printInColor = false)
 
     private def copySymbolTrees[T <: Symbol, U <: Symbol](to: Tree, from: Tree): Unit = {
       if (to.getClass != from.getClass)
@@ -200,12 +201,12 @@ object Trees {
     val modifiers: Set[Modifier]
 
     def isMain = this match {
-      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassIdentifier(ASTBuilder.TLangString, List())), _) :: Nil, _, _) =>
+      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassIdentifier("java::lang::String", List())), _) :: Nil, _, _) =>
         modifiers.size == 2 &&
           modifiers.contains(Public()) &&
           modifiers.contains(Static()) &&
           args.head.id.value == "args"
-      case _                                                                                                 => false
+      case _                                                                                                                                    => false
     }
 
     def isAbstract = stat.isEmpty
@@ -510,44 +511,72 @@ object Trees {
     }
   }
 
+  /*-------------------------------- Access Trees --------------------------------*/
+
+  trait Access extends ExprTree {
+    var obj        : ExprTree
+    val application: ExprTree
+
+    def isStatic: Boolean = {
+      val applicationIsStatic = application match {
+        case id: Identifier if id.hasSymbol =>
+          id.getSymbol match {
+            case v: VariableSymbol => v.isStatic
+            case _                 => false
+          }
+        case MethodCall(meth, args) if meth.hasSymbol =>
+          meth.getSymbol.asInstanceOf[MethodSymbol].isStatic
+        case _              => false
+      }
+
+      val objIsStatic = obj match {
+        case id@Identifier(name) =>
+          id.getSymbol match {
+            case _: ClassSymbol => true
+            case _              => false
+          }
+        case _                   => false
+      }
+      applicationIsStatic || objIsStatic
+    }
+  }
+
+  object Access {
+    def unapply(e: Access): Option[(ExprTree, ExprTree)] = e match {
+      case e: Access => Some(e.obj, e.application)
+      case _         => None
+    }
+  }
+
+  case class NormalAccess(var obj: ExprTree, application: ExprTree) extends Access
+  case class SafeAccess(var obj: ExprTree, application: ExprTree) extends Access
+
   /*-------------------------------- Expression Trees --------------------------------*/
 
-  case class Assign(id: Identifier, expr: ExprTree) extends ExprTree
-  case class FieldAssign(obj: ExprTree, id: Identifier, expr: ExprTree) extends ExprTree
-  case class FieldAccess(var obj: ExprTree, id: Identifier) extends ExprTree
+  case class Assign(to: ExprTree, expr: ExprTree) extends ExprTree
+  case class MethodCall(meth: Identifier, args: List[ExprTree]) extends ExprTree
+
   case class This() extends ExprTree with Symbolic[ClassSymbol] with LeafTree
   case class Super(specifier: Option[Identifier]) extends ExprTree with Symbolic[ClassSymbol]
   case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
+  case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
   case class Instance(expr: ExprTree, id: Identifier) extends ExprTree
   case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
-  case class MethodCall(var obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
 
   case class Empty() extends ExprTree with LeafTree {override def toString = "<EMPTY>"}
-
-  def isStaticCall(obj: ExprTree) =
-    obj match {
-      case id@Identifier(name) =>
-        id.getSymbol match {
-          case _: ClassSymbol => true
-          case _              => false
-        }
-      case _                   => false
-    }
 
   /**
     * Statements that have no effect on their own.
     */
   object UselessStatement {
     def unapply(e: StatTree): Option[ExprTree] = e match {
-      case _: MethodCall             => None
-      case IncrementDecrementTree(_) => None
-      case _: Assign |
-           _: ArrayAssign |
-           _: FieldAssign            => None
-      case expr: ExprTree            => Some(expr)
-      case _                         => None
+      case Access(_, MethodCall(_, _)) => None
+      case IncrementDecrementTree(_)   => None
+      case _: Assign                   => None
+      case expr: ExprTree              => Some(expr)
+      case _                           => None
     }
   }
 

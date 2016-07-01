@@ -51,7 +51,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '>' :: '>' :: r                        => readTokens(r, createToken(RIGHTSHIFT, 2) :: tokens)
       case '+' :: '+' :: r                        => readTokens(r, createToken(INCREMENT, 2) :: tokens)
       case '-' :: '-' :: r                        => readTokens(r, createToken(DECREMENT, 2) :: tokens)
-      case '<' :: '=' :: r                        => readTokens(r, createToken(LESSTHANE, 2) :: tokens)
+      case '<' :: '=' :: r                        => readTokens(r, createToken(LESSTHANEQ, 2) :: tokens)
       case '>' :: '=' :: r                        => readTokens(r, createToken(GREATERTHANEQ, 2) :: tokens)
       case '=' :: '=' :: r                        => readTokens(r, createToken(EQUALS, 2) :: tokens)
       case '!' :: '=' :: r                        => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)

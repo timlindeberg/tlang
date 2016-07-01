@@ -79,7 +79,7 @@ trait TypeCheckingErrors extends Errors {
     error(12, s"Cannot call $accessability operator '$operatorName' defined in '$className' from class '$callingClass'.", pos)
   }
 
-  protected def ErrorIndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], pos: Positioned, className: String) = {
+  protected def ErrorIndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], className: String, pos: Positioned) = {
     val operatorName = expr.operatorString(args, className)
     error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
   }
@@ -101,7 +101,7 @@ trait TypeCheckingErrors extends Errors {
     error(16, s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
 
   protected def ErrorNewPrimitive(tpe: String, args: List[Type], pos: Positioned) =
-    error(17, s"Cannot construct primitive '$tpe' with arguments '(${args.mkString(", ")})'.", pos)
+    error(17, s"Cannot construct primitive '$tpe' with argument(s) '(${args.mkString(", ")})'.", pos)
 
   protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
@@ -150,6 +150,15 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorForeachNotIterable(tpe: Type, pos: Positioned) =
     error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
 
+  protected def ErrorAssignNullToNonNullable(tpe: Type, pos: Positioned) =
+    error(33, s"Cannot assign 'null' to non nullable type '$tpe'.", pos)
+
+  protected def ErrorSafeAccessOnNonNullable(tpe: Type, pos: Positioned) =
+    error(34, s"Cannot use safe access on non nullable type '$tpe'.", pos)
+
+  protected def ErrorAssignValueToMethodCall(pos: Positioned) =
+    error(35, s"Cannot assign a value  to the result of a method call.", pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Warnings
@@ -168,7 +177,12 @@ trait TypeCheckingErrors extends Errors {
     case n => expected.take(n - 1).map(t => s"'$t'").mkString(", ") + " or '" + expected.last + "'"
   }
 
-  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability.toString.toLowerCase.dropRight(2)
+  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability match {
+    case Public()    => "public"
+    case Protected() => "protected"
+    case Private()   => "private"
+    case _           => ???
+  }
 
   private def overloadedOperatorClassesString(args: List[Type]) =
     if (args.size != 2 || args(0) == args(1)) {

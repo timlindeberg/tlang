@@ -94,7 +94,6 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 //  it should "GreaterThan" in testOperator(GreaterThan)
 //  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
 //
-//  // TODO: Support String equality
 //  ignore should "Equals" in testOperator(Equals)
 //  ignore should "NotEquals" in testOperator(NotEquals)
 

@@ -9,7 +9,7 @@ import tcompiler.ast.Trees._
 
 class TreeTransformer {
 
-  val treeCopy: TreeCopier = new LazyTreeCopier
+  val treeCopy: TreeCopier = new TreeCopier()
 
   def transform(t: Tree): Tree = {
     t match {
@@ -78,15 +78,14 @@ class TreeTransformer {
         treeCopy.Error(t, trans(expr))
       case Return(expr)                  =>
         treeCopy.Return(t, tOption(expr))
+      case NormalAccess(obj, application) =>
+        treeCopy.NormalAccess(t, trans(obj), trans(application))
+      case SafeAccess(obj, application) =>
+        treeCopy.SafeAccess(t, trans(obj), trans(application))
       case Assign(id, expr)              =>
         treeCopy.Assign(t, trans(id), trans(expr))
       case ArrayAssign(arr, index, expr) =>
         treeCopy.ArrayAssign(t, trans(arr), trans(index), trans(expr))
-      case FieldAccess(obj, id)          =>
-        treeCopy.FieldRead(t, trans(obj), trans(id))
-      case FieldAssign(obj, id, expr)    =>
-        treeCopy.FieldAssign(t, trans(obj), trans(id), trans(expr))
-
       case And(lhs, rhs)        =>
         treeCopy.And(t, trans(lhs), trans(rhs))
       case Or(lhs, rhs)         =>
@@ -133,8 +132,8 @@ class TreeTransformer {
         treeCopy.ArrayRead(t, trans(arr), trans(index))
       case ArraySlice(arr, start, end)           =>
         treeCopy.ArraySlice(t, trans(arr), tOption(start), tOption(end))
-      case MethodCall(obj, meth, args)           =>
-        treeCopy.MethodCall(t, trans(obj), trans(meth), tList(args))
+      case MethodCall(meth, args)           =>
+        treeCopy.MethodCall(t, trans(meth), tList(args))
       case IntLit(value)                         =>
         treeCopy.IntLit(t, value)
       case LongLit(value)                        =>
@@ -177,6 +176,8 @@ class TreeTransformer {
         treeCopy.PostDecrement(t, trans(expr))
       case Ternary(condition, thn, els)          =>
         treeCopy.Ternary(t, trans(condition), trans(thn), trans(els))
+      case Elvis(nullableValue, ifNull)          =>
+        treeCopy.Elvis(t, trans(nullableValue), trans(ifNull))
     }
   }
 

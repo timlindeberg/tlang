@@ -9,6 +9,7 @@ println(a) // res: 0
 a.Test6(6)
 println(a) // res: 6
 println(a.Test7()) // res: test
+println(a.Test8()) // res: test
 
 
 class A {

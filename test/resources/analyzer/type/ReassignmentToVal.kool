@@ -1,10 +1,44 @@
 class A {
 
-    Def Test() = {
+    Val F = 1
+    val f = 1
+
+    Val static G = 1
+    val static g = 1
+
+    Def Test(b: B) = {
+        val x = new B()
+        val y: B = new B()
+        b = new B() // res: T2031
+        x = new B() // res: T2031
+        y = new B() // res: T2031
+        F = 2 // res: T2031
+        f = 2 // res: T2031
+        G = 2 // res: T2031
+        g = 2 // res: T2031
+        x++ // res: T2031
+        ++x // res: T2031
+        x-- // res: T2031
+        --x // res: T2031
+        F++ // res: T2031
+        ++F // res: T2031
+        F-- // res: T2031
+        --F // res: T2031
+
+        for(val i in {1, 2, 3}){
+            i = 5 // res: T2031
+        }
+
+        for(val i = 0; i < 5; i++){ // res: T2031
+        }
+
         B.F = 2 // res: T2031
     }
 }
 
 class B {
     Val static F = 1
+
+    Def ++(b: B) = new B()
+    Def --(b: B) = new B()
 }

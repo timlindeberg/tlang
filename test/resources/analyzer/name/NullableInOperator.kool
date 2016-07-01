@@ -1,0 +1,12 @@
+class A {
+
+    // res: N2002
+    // res: N2002
+    Def +(a: A?, b: A?): A? = new A() // res: N2002
+
+
+    Def +(a: A, b: A?): A = new A() // res: N2002
+    Def +(a: A?, b: A): A = new A() // res: N2002
+    Def +(a: A, b: A): A? = new A() // res: N2002
+
+}

@@ -98,8 +98,11 @@ class Reporter(
 
     sb ++= s"$prefix: $msgStr"
 
-    if (pos.hasPosition)
+    if (pos.hasPosition){
       sb ++= locationIndicator(errorLevel, pos)
+    } else {
+      sys.error(s"Warning: $pos has no position.")
+    }
 
     sb.toString()
   }
