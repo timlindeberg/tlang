@@ -197,7 +197,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
 
       def appendAbc(abc: AbstractByteCode, extraInfo: String) = {
         val h = heightArray(pc)
-        val height = if (h == UninitializedHeight) "?" else String.valueOf(h)
+        val height = if (h == UninitializedHeight) "" else String.valueOf(h)
         b.append("%4d %5d %6s %-15s %s\n".format(currentLineNumber, pc, height, abc, extraInfo))
       }
 

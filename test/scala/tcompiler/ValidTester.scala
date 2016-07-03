@@ -4,7 +4,7 @@ import java.io.{File, FileNotFoundException}
 
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Parser
-import tcompiler.code.CodeGeneration
+import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.CompilationException
@@ -27,7 +27,8 @@ trait ValidTester extends Tester {
       //hasTypes(program) should be(true)
       ctx.reporter.hasErrors should be(false)
 
-      CodeGeneration.run(ctx)(cus)
+      val compilation = Desugaring andThen CodeGeneration
+      compilation.run(ctx)(cus)
       val res = lines(executeTProgram(file))
       val sol = parseSolutions(file)
       assertCorrect(res, sol, "")

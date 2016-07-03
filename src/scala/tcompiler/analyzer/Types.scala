@@ -17,6 +17,11 @@ object Types {
       this
     }
 
+    def setType(tpe: Typed): self.type = {
+      _tpe = tpe.getType
+      this
+    }
+
     def getType: Type = _tpe
   }
 

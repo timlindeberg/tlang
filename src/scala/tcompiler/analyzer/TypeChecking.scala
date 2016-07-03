@@ -193,27 +193,19 @@ class TypeChecker(
 
   def tcExpr(expression: ExprTree, expected: List[Type]): Type = {
     val foundType = expression match {
-      case _: StringLit                  => String
-      case _: IntLit                     => TInt
-      case _: LongLit                    => TLong
-      case _: FloatLit                   => TFloat
-      case _: DoubleLit                  => TDouble
-      case _: CharLit                    => TChar
-      case _: True                       => TBool
-      case _: False                      => TBool
-      case _: Null                       => TNull
-      case id: VariableID                =>
+      case lit: Literal[_]                               => lit.getType
+      case id: VariableID                                =>
         id.getSymbol match {
           case sym: FieldSymbol => checkFieldPrivacy(sym.classSymbol, sym, id)
           case _                =>
         }
         id.getType
-      case id: ClassID                   => id.getType
-      case th: This                      => th.getSymbol.getType
-      case su: Super                     => su.getSymbol.getType
-      case acc: Access                   => tcAccess(acc)
-      case assign: Assign                => tcAssignment(assign)
-      case newArray@NewArray(tpe, sizes) =>
+      case id: ClassID                                   => id.getType
+      case th: This                                      => th.getSymbol.getType
+      case su: Super                                     => su.getSymbol.getType
+      case acc: Access                                   => tcAccess(acc)
+      case assign: Assign                                => tcAssignment(assign)
+      case newArray@NewArray(tpe, sizes)                 =>
         sizes.foreach(tcExpr(_, TInt))
         var arrayType = tpe.getType
         for (i <- 1 to newArray.dimension)
@@ -426,7 +418,7 @@ class TypeChecker(
     // Most of the duplication here is to give a different error message for
     // fields and methods
     val tpe = app match {
-      case MethodCall(meth, args)          =>
+      case MethodCall(meth, args)        =>
         objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupMethod(meth.name, argTypes.get) match {
@@ -447,7 +439,7 @@ class TypeChecker(
             TInt
           case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
         }
-      case fieldId @ VariableID(fieldName) =>
+      case fieldId@VariableID(fieldName) =>
         objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupField(fieldName) match {
@@ -527,19 +519,21 @@ class TypeChecker(
     to match {
       case id: VariableID           =>
         val toTpe = tcExpr(to)
+
         checkReassignment(id, assignment)
         tcAssignmentExpr(toTpe)
       case Access(obj, application) =>
-        val toTpe = tcExpr(to)
         application match {
           case _: MethodCall  => ErrorAssignValueToMethodCall(assignment)
           case id: VariableID =>
+            val toTpe = tcExpr(to)
             checkReassignment(id, assignment)
             tcAssignmentExpr(toTpe)
           case _              => ???
         }
       case ArrayRead(arr, index)    =>
         val arrTpe = tcExpr(arr)
+        to.setType(arr)
         arrTpe match {
           case TObject(classSymbol) =>
             val (indexType, exprType) = (tcExpr(index), tcExpr(expr))

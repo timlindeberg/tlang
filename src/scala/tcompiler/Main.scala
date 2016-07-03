@@ -6,7 +6,7 @@ import java.nio.file.{InvalidPathException, Paths}
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
-import tcompiler.code.CodeGeneration
+import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
@@ -43,6 +43,7 @@ object Main extends MainErrors {
         FatalInvalidTHomeDirectory(TDirectory, THome)
 
       val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
+      val compilation = Desugaring andThen CodeGeneration
       val cus = frontEnd.run(ctx)(ctx.files)
 
       if (flagActive(PrintGeneratedCode))
@@ -52,7 +53,7 @@ object Main extends MainErrors {
       if (ctx.reporter.hasWarnings)
         println(ctx.reporter.warningsString)
 
-      CodeGeneration.run(ctx)(cus)
+      compilation.run(ctx)(cus)
 
       if (flagActive(Exec))
         cus.foreach(executeProgram)

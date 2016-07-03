@@ -9,7 +9,7 @@ import tcompiler.ast.Trees._
 
 class TreeTransformer {
 
-  val treeCopy: TreeCopier = new TreeCopier()
+  val treeCopy: TreeCopier = new LazyTreeCopier()
 
   def transform(t: Tree): Tree = {
     t match {
@@ -28,9 +28,9 @@ class TreeTransformer {
       case UnitType()    => treeCopy.UnitType(t)
       case Break()       => treeCopy.Break(t)
       case Continue()    => treeCopy.Continue(t)
-      case True()        => treeCopy.True(t)
-      case False()       => treeCopy.False(t)
-      case Null()        => treeCopy.Null(t)
+      case TrueLit()     => treeCopy.TrueLit(t)
+      case FalseLit()    => treeCopy.FalseLit(t)
+      case NullLit()     => treeCopy.NullLit(t)
       case This()        => treeCopy.This(t)
       case Empty()       => treeCopy.Empty(t)
 
@@ -50,7 +50,7 @@ class TreeTransformer {
       case ConstructorDecl(retType, id, args, stat, modifiers)            =>
         treeCopy.ConstructorDecl(t, tOption(retType), trans(id), tList(args), tOption(stat), tSet(modifiers))
       case OperatorDecl(operatorType, retType, args, stat, modifiers) =>
-        treeCopy.OperatorDecl(t, trans(operatorType), tOption(retType), tList(args), tOption(stat), tSet(modifiers))
+        treeCopy.OperatorDecl(t, operatorType, tOption(retType), tList(args), tOption(stat), tSet(modifiers))
 
       case Formal(tpe, id)                   =>
         treeCopy.Formal(t, trans(tpe), trans(id))
@@ -121,7 +121,7 @@ class TreeTransformer {
         treeCopy.GreaterThanEquals(t, trans(lhs), trans(rhs))
 
       case Is(expr, id)          =>
-        treeCopy.Instance(t, trans(expr), trans(id))
+        treeCopy.Is(t, trans(expr), trans(id))
       case As(expr, tpe)         =>
         treeCopy.As(t, trans(expr), trans(tpe))
       case Equals(lhs, rhs)      =>
@@ -149,11 +149,11 @@ class TreeTransformer {
       case ArrayLit(expressions)         =>
         treeCopy.ArrayLit(t, tList(expressions))
       case ClassID(value, templateTypes) =>
-        treeCopy.ClassIdentifier(t, value, tList(templateTypes))
+        treeCopy.ClassID(t, value, tList(templateTypes))
       case VariableID(value)             =>
-        treeCopy.VarIdentifier(t, value)
+        treeCopy.VariableID(t, value)
       case MethodID(value)               =>
-        treeCopy.MethodIdentifier(t, value)
+        treeCopy.MethodID(t, value)
       case Super(specifier)              =>
         treeCopy.Super(t, tOption(specifier))
       case NewArray(tpe, sizes)          =>
@@ -180,6 +180,10 @@ class TreeTransformer {
         treeCopy.Ternary(t, trans(condition), trans(thn), trans(els))
       case Elvis(nullableValue, ifNull)          =>
         treeCopy.Elvis(t, trans(nullableValue), trans(ifNull))
+      case GeneratedExpr(block) =>
+        treeCopy.GeneratedExpr(t, block)
+      case IfDup(expr) =>
+        treeCopy.IfDup(t, expr)
     }
   }
 

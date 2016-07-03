@@ -128,7 +128,6 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     }
     if (!methTree.isAbstract) {
       val ch = mh.codeHandler
-      println("Generating " +  methTree.signature)
       val codeGenerator = new CodeGenerator(ch, localVariableMap)
       codeGenerator.compileStat(methTree.stat.get)
       addReturnStatement(ch, methTree)

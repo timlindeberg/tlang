@@ -2,6 +2,7 @@ package tcompiler
 package ast
 
 import tcompiler.analyzer.Symbols._
+import tcompiler.analyzer.Types
 import tcompiler.analyzer.Types._
 import tcompiler.utils._
 
@@ -34,7 +35,9 @@ object Trees {
     }
 
     def copyTree(): this.type = {
-      val copier = new TreeTransformer()
+      val copier = new TreeTransformer {
+        override val treeCopy = new TreeCopier()
+      }
       copier.transform(this).asInstanceOf[this.type]
     }
 
@@ -388,7 +391,10 @@ object Trees {
     }
   }
 
-  trait IncrementDecrementTree extends UnaryOperatorTree
+  trait IncrementDecrementTree extends UnaryOperatorTree {
+    val isPre      : Boolean
+    val isIncrement: Boolean
+  }
   object IncrementDecrementTree {
     def unapply(e: IncrementDecrementTree): Option[(ExprTree)] = e match {
       case e: IncrementDecrementTree => Some(e.expr)
@@ -401,14 +407,26 @@ object Trees {
   case class Negation(expr: ExprTree) extends UnaryOperatorTree {val op = "-"}
   case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val op = "~"}
 
-  case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {val op = "++"}
-  case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree {val op = "--"}
+  case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {
+    val op          = "++"
+    val isPre       = true
+    val isIncrement = true
+  }
+  case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree {
+    val op          = "--"
+    val isPre       = true
+    val isIncrement = false
+  }
   case class PostIncrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op = "++"
+    val op          = "++"
+    val isPre       = false
+    val isIncrement = true
     override def operatorString(args: List[Any]) = args.head + op
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op = "--"
+    val op          = "--"
+    val isPre       = false
+    val isIncrement = false
     override def operatorString(args: List[Any]) = args.head + op
   }
 
@@ -446,16 +464,37 @@ object Trees {
     }
   }
 
-  case class IntLit(value: Int) extends Literal[Int]
-  case class LongLit(value: Long) extends Literal[Long]
-  case class FloatLit(value: Float) extends Literal[Float]
-  case class DoubleLit(value: Double) extends Literal[Double]
-  case class CharLit(value: Char) extends Literal[Char]
-  case class StringLit(value: String) extends Literal[String]
+  case class IntLit(value: Int) extends Literal[Int] {
+    override def getType = TInt
+  }
+  case class LongLit(value: Long) extends Literal[Long] {
+    override def getType = TLong
+  }
+  case class FloatLit(value: Float) extends Literal[Float] {
+    override def getType = TFloat
+  }
+  case class DoubleLit(value: Double) extends Literal[Double] {
+    override def getType = TDouble
+  }
+  case class CharLit(value: Char) extends Literal[Char] {
+    override def getType = TChar
+  }
+  case class StringLit(value: String) extends Literal[String] {
+    override def getType = Types.String
+  }
   case class ArrayLit(value: List[ExprTree]) extends ExprTree
-  case class True() extends ExprTree with Leaf
-  case class False() extends ExprTree with Leaf
-  case class Null() extends ExprTree with Leaf
+  case class TrueLit() extends Literal[Boolean] with Leaf {
+    val value = true
+    override def getType = TBool
+  }
+  case class FalseLit() extends Literal[Boolean] with Leaf {
+    val value = false
+    override def getType = TBool
+  }
+  case class NullLit() extends Literal[Null] with Leaf {
+    val value = null
+    override def getType = TNull
+  }
 
   trait Identifier[T <: Symbol] extends ExprTree with Symbolic[T] {
     val name: String
@@ -477,7 +516,7 @@ object Trees {
   object Identifier {
     def unapply[T <: Symbol](e: Identifier[T]): Option[String] = e match {
       case e: Identifier[T] => Some(e.name)
-      case _             => None
+      case _                => None
     }
   }
 
@@ -560,6 +599,21 @@ object Trees {
   case class Is(expr: ExprTree, id: ClassID) extends ExprTree
   case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
 
+  /*-------------------------------- Misc expression Trees --------------------------------*/
+
+  // Used to generate code which doesn't fit the tree structure but
+  // which fits well on the stack. Can be used to transform an expression
+  // in to multiple statements etc.
+  // Generated when desugaring.
+  case class GeneratedExpr(stats: List[StatTree]) extends ExprTree
+
+  // Expression that will be compiled if a duplicate value is to be left
+  // on the stack.
+  case class IfDup(exprTree: ExprTree) extends ExprTree {
+    override def getType = exprTree.getType
+  }
+
+  // Usually used as a placeholder
   case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>"}
 
   /**
@@ -570,6 +624,8 @@ object Trees {
       case Access(_, MethodCall(_, _)) => None
       case IncrementDecrementTree(_)   => None
       case _: Assign                   => None
+      case _: GeneratedExpr            => None
+      case _: IfDup                    => None
       case expr: ExprTree              => Some(expr)
       case _                           => None
     }

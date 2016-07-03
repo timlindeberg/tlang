@@ -21,7 +21,7 @@ object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] 
 
 class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
-  private val templatePrograms    = mutable.Map[String, CompilationUnit]()
+  private val templateCus    = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
 
   def generateTemplatePrograms(cus: List[CompilationUnit]): List[CompilationUnit] = {
@@ -29,7 +29,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     cus foreach { cu =>
       cu.classes.filter(_.id.isTemplated) foreach { clazz =>
         checkDuplicateTemplateNames(clazz)
-        templatePrograms(clazz.id.name) = cu
+        templateCus(clazz.id.name) = cu
       }
     }
 
@@ -45,7 +45,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     // TODO: This is probably pretty expensive
     allCus ++= cus
-    allCus ++= templatePrograms.values
+    allCus ++= templateCus.values
 
     // Remove all template classes and replace types in rest of the classes
     allCus foreach { cu =>
@@ -151,7 +151,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       // Update import map to include the newly generated class
       updateImportMap(cu, typeId)
 
-      findTemplateProgram(typeId) match {
+      findTemplateCU(typeId) match {
         case Some(templateProgram) =>
           val shortName = typeId.name.split("::").last
           val templateClass = templateProgram.classes.find(_.id.name == shortName).get
@@ -170,10 +170,10 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         cu.importMap(className) = s"$prefix.$className"
       }
 
-    private def findTemplateProgram(typeId: ClassID): Option[CompilationUnit] = {
+    private def findTemplateCU(typeId: ClassID): Option[CompilationUnit] = {
       val className = typeId.name.split("::").last
-      if (templatePrograms.contains(className))
-        return Some(templatePrograms(className))
+      if (templateCus.contains(className))
+        return Some(templateCus(className))
 
       val templateImporter = new TemplateImporter(ctx)
       val importName = cu.importName(typeId)
@@ -181,12 +181,12 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
       importedCus foreach { cu =>
         cu.classes foreach { clazz =>
-          templatePrograms(clazz.id.name) = cu
+          templateCus(clazz.id.name) = cu
         }
       }
 
 
-      templatePrograms.get(className)
+      templateCus.get(className)
     }
 
     private def newTemplateClass(template: ClassDecl, typeId: ClassID): ClassDecl = {

@@ -699,7 +699,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val init = forInit()
     eat(SEMICOLON)
     val condition = nextTokenKind match {
-      case SEMICOLON => True() // if condition is left out, use 'true'
+      case SEMICOLON => TrueLit() // if condition is left out, use 'true'
       case _         => expression()
     }
     eat(SEMICOLON)
@@ -984,16 +984,16 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         }
       case TRUE          =>
         eat(TRUE)
-        True()
+        TrueLit()
       case FALSE         =>
         eat(FALSE)
-        False()
+        FalseLit()
       case THIS          =>
         eat(THIS)
         This()
       case NULL          =>
         eat(NULL)
-        Null()
+        NullLit()
       case SUPER         =>
         val sup = superCall()
         access(sup)

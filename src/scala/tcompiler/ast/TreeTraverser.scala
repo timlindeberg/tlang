@@ -43,6 +43,8 @@ class TreeTraverser {
     case As(expr, tpe)                                => traverse(expr, tpe)
     case MethodCall(meth, args)                       => traverse(meth, args)
     case ArrayLit(value)                              => traverse(value)
+    case GeneratedExpr(block)                         => traverse(block)
+    case IfDup(expr)                                  => traverse(expr)
   }
 
   def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse

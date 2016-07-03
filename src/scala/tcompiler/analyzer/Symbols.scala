@@ -23,6 +23,7 @@ object Symbols {
       case Some(s) => s
       case None    => sys.error("Accessing undefined symbol.")
     }
+
   }
 
   sealed abstract class Symbol extends Positioned with Typed

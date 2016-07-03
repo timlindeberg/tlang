@@ -56,13 +56,18 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
   import CodeGenerator._
 
-  def compileStat(statement: StatTree, before: Option[String] = None, after: Option[String] = None): Unit = {
+  def compileStat(
+    statement: StatTree,
+    before: Option[String] = None,
+    after: Option[String] = None,
+    compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
-      case UselessStatement(expr) =>
-      // Don't compile useless statements
+      case UselessStatement(expr)                =>
+        if (compileUseless)
+          compileExpr(expr)
       case Block(stats)                          =>
-        stats.foreach(compileStat(_, before, after))
+        stats.foreach(compileStat(_, before, after, compileUseless))
       case v@VarDecl(_, _, init, _)              =>
         val sym = v.getSymbol
         val tpe = sym.getType
@@ -85,10 +90,10 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
         compileBranch(expr, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
-        compileStat(thn, before, after)
+        compileStat(thn, before, after, compileUseless)
         ch << Goto(afterLabel)
         ch << Label(elsLabel)
-        if (els.isDefined) compileStat(els.get, before, after)
+        if (els.isDefined) compileStat(els.get, before, after, compileUseless)
         ch << Label(afterLabel)
       case While(expr, stat)                     =>
         val body = ch.getFreshLabel(Body)
@@ -101,7 +106,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         ch << continueLabel
         compileBranch(expr, bodyLabel, afterLabel)
         ch << bodyLabel
-        compileStat(stat, Some(continue), Some(after))
+        compileStat(stat, Some(continue), Some(after), compileUseless)
         compileBranch(expr, bodyLabel, afterLabel)
         ch << afterLabel
       case For(init, condition, postExprs, stat) =>
@@ -111,16 +116,14 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         val bodyLabel = Label(body)
         val afterLabel = Label(after)
         val continueLabel = Label(continue)
-        init.foreach(compileStat(_))
+        init.foreach(stat => compileStat(stat, compileUseless = compileUseless))
         compileBranch(condition, bodyLabel, afterLabel)
         ch << bodyLabel
-        compileStat(stat, Some(continue), Some(after))
+        compileStat(stat, Some(continue), Some(after), compileUseless)
         ch << continueLabel
-        postExprs.foreach(compileStat(_))
+        postExprs.foreach(expr => compileStat(expr, compileUseless = compileUseless))
         compileBranch(condition, bodyLabel, afterLabel)
         ch << afterLabel
-      case Foreach(varDecl, container, stat)     =>
-        transformForeachLoop(varDecl, container, stat)
       case PrintStatTree(expr)                   =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
@@ -163,7 +166,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case Continue()         =>
         ch << Goto(before.get)
       case expr: ExprTree     =>
-        // Assignment, method call or increment/decrement
         compileExpr(expr, duplicate = false)
     }
   }
@@ -172,22 +174,22 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     if (expression.hasPosition)
       ch << LineNumber(expression.line)
     expression match {
-      case True()                                => ch << Ldc(1)
-      case False()                               => ch << Ldc(0)
+      case TrueLit()                             => ch << Ldc(1)
+      case FalseLit()                            => ch << Ldc(0)
       case IntLit(value)                         => ch << Ldc(value)
-      case LongLit(value)   => ch << Ldc(value)
-      case CharLit(value)   => ch << Ldc(value)
-      case FloatLit(value)  => ch << Ldc(value)
-      case DoubleLit(value) => ch << Ldc(value)
-      case StringLit(value) =>
+      case LongLit(value)                        => ch << Ldc(value)
+      case CharLit(value)                        => ch << Ldc(value)
+      case FloatLit(value)                       => ch << Ldc(value)
+      case DoubleLit(value)                      => ch << Ldc(value)
+      case StringLit(value)                      =>
         val objName = Types.String.classSymbol.name
         ch << cafebabe.AbstractByteCodes.New(objName)
         Types.String.codes.dup(ch)
         ch << Ldc(value)
         ch << InvokeSpecial(objName, ConstructorName, s"(L$JavaString;)V")
-      case id: VariableID   => load(id.getSymbol)
-      case _: This          => ch << ArgLoad(0)
-      case _: Super         => ch << ArgLoad(0)
+      case id: VariableID                        => load(id.getSymbol)
+      case _: This                               => ch << ArgLoad(0)
+      case _: Super                              => ch << ArgLoad(0)
       case _: And |
            _: Or |
            _: Equals |
@@ -196,7 +198,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
            _: LessThanEquals |
            _: GreaterThan |
            _: GreaterThanEquals |
-           _: Not           =>
+           _: Not                                =>
         val thn = ch.getFreshLabel(Then)
         val els = ch.getFreshLabel(Else)
         val after = ch.getFreshLabel(After)
@@ -215,38 +217,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           tpe.getType.codes.newArray(ch)
         else
           ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
-      case plusOp@Plus(lhs, rhs)                 =>
-        val args = (lhs.getType, rhs.getType)
-        args match {
-          case _ if args.anyIs(Object)  =>
-            compileExpr(lhs)
-            compileExpr(rhs)
-            compileOperatorCall(ch, plusOp, args)
-          case _ if args.anyIs(TDouble) =>
-            compileExpr(lhs)
-            lhs.getType.codes.toDouble(ch)
-            compileExpr(rhs)
-            rhs.getType.codes.toDouble(ch)
-            ch << DADD
-          case _ if args.anyIs(TFloat)  =>
-            compileExpr(lhs)
-            lhs.getType.codes.toFloat(ch)
-            compileExpr(rhs)
-            rhs.getType.codes.toFloat(ch)
-            ch << FADD
-          case _ if args.anyIs(TLong)   =>
-            compileExpr(lhs)
-            lhs.getType.codes.toLong(ch)
-            compileExpr(rhs)
-            rhs.getType.codes.toLong(ch)
-            ch << LADD
-          case _                        =>
-            compileExpr(lhs)
-            lhs.getType.codes.toInt(ch)
-            compileExpr(rhs)
-            rhs.getType.codes.toInt(ch)
-            ch << IADD
-        }
       case arOp@ArithmeticOperatorTree(lhs, rhs) =>
         compileExpr(lhs)
 
@@ -275,6 +245,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         }
         val codes = expression.getType.codes
         expression match {
+          case _: Plus   => codes.add(ch)
           case _: Minus  => codes.sub(ch)
           case _: Times  => codes.mul(ch)
           case _: Div    => codes.div(ch)
@@ -393,8 +364,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           case _                    => ???
         }
       case arraySlice: ArraySlice                =>
-        transformArraySlice(arraySlice)
-      case acc@Access(obj, application)          =>
+      //transformArraySlice(arraySlice)
+      case acc@Access(obj, application) =>
         if (!acc.isStatic)
           compileExpr(obj)
 
@@ -442,7 +413,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             if (!duplicate && mc.getType != TUnit)
               ch << POP
         }
-      case Trees.New(tpe, args)                  =>
+      case Trees.New(tpe, args)         =>
         tpe.getType match {
           case TObject(classSymbol) =>
             val argTypes = args.map(_.getType)
@@ -466,13 +437,13 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             }
         }
 
-      case negOp@Negation(expr)         =>
+      case negOp@Negation(expr)           =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, negOp, x)
           case _          => expr.getType.codes.negation(ch)
         }
-      case notOp@LogicNot(expr)         =>
+      case notOp@LogicNot(expr)           =>
         compileExpr(expr)
         expr.getType match {
           case x: TObject => compileOperatorCall(ch, notOp, x)
@@ -480,7 +451,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             ch << Ldc(-1)
             expr.getType.codes.xor(ch)
         }
-      case hashOp@Hash(expr)            =>
+      case hashOp@Hash(expr)              =>
 
         def hashFunction(className: String) = {
           ch << cafebabe.AbstractByteCodes.New(className) << DUP
@@ -502,11 +473,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           case TBool      => hashFunction(JavaBool)
           case _          => ???
         }
-      case incDec@PreIncrement(expr)    => compileIncrementDecrement(incDec, isPre = true, isIncrement = true, expr)
-      case incDec@PreDecrement(expr)    => compileIncrementDecrement(incDec, isPre = true, isIncrement = false, expr)
-      case incDec@PostIncrement(expr)   => compileIncrementDecrement(incDec, isPre = false, isIncrement = true, expr)
-      case incDec@PostDecrement(expr)   => compileIncrementDecrement(incDec, isPre = false, isIncrement = false, expr)
-      case Ternary(condition, thn, els) =>
+      case incDec: IncrementDecrementTree => compileIncrementDecrement(incDec)
+      case Ternary(condition, thn, els)   =>
         val thnLabel = ch.getFreshLabel(Then)
         val elsLabel = ch.getFreshLabel(Else)
         val afterLabel = ch.getFreshLabel(After)
@@ -518,60 +486,51 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         ch << Label(elsLabel)
         compileExpr(els)
         ch << Label(afterLabel)
+      case GeneratedExpr(stats)           =>
+        // Generated expressions are always compiled, they cannot have useless expressions
+        stats.foreach {
+          case IfDup(expr) => if (duplicate)
+                                compileExpr(expr)
+          case stat        => compileStat(stat, compileUseless = true)
+        }
     }
 
-    def compileIncrementDecrement(incDec: IncrementDecrementTree, isPre: Boolean, isIncrement: Boolean, expr: ExprTree) = {
-      expr match {
-        case id: VariableID =>
-          val varSymbol = id.getSymbol
-          val isLocal = localVariableMap.contains(varSymbol)
-          val codes = id.getType.codes
+    def compileIncrementDecrement(incDec: IncrementDecrementTree) = {
+      val isPre = incDec.isPre
+      val isIncrement = incDec.isIncrement
+      val expr = incDec.expr
 
-          expr.getType match {
-            case TInt if isLocal =>
-              if (!isPre && duplicate) compileExpr(expr)
+      // Can only be a variableID after desugaring
+      val id = expr.asInstanceOf[VariableID]
+      val varSymbol = id.getSymbol
+      val isLocal = localVariableMap.contains(varSymbol)
+      val codes = id.getType.codes
 
-              ch << IInc(localVariableMap(varSymbol), if (isIncrement) 1 else -1)
+      expr.getType match {
+        case TInt if isLocal =>
+          if (!isPre && duplicate) compileExpr(expr)
 
-              if (isPre && duplicate) compileExpr(expr)
-            case x: TObject      =>
-              // Pre or post doesnt matter for objects
-              val putValue: () => Unit = () => {
-                load(varSymbol)
-                compileOperatorCall(ch, incDec, x)
-              }
-              store(varSymbol, putValue, duplicate)
-            case _               =>
-              val putValue: () => Unit = () => {
-                load(varSymbol)
-                if (!isPre && duplicate) {
-                  if (isLocal) codes.dup(ch)
-                  else codes.dup_x1(ch)
-                }
-                codes.one(ch)
-                if (isIncrement) codes.add(ch) else codes.sub(ch)
-              }
-              store(varSymbol, putValue, duplicate && isPre)
+          ch << IInc(localVariableMap(varSymbol), if (isIncrement) 1 else -1)
+
+          if (isPre && duplicate) compileExpr(expr)
+        case x: TObject      =>
+          // Pre or post doesnt matter for objects
+          val putValue: () => Unit = () => {
+            load(varSymbol)
+            compileOperatorCall(ch, incDec, x)
           }
-        case acc@Access(obj, id)      =>
-          if (!isPre && duplicate)
-            compileExpr(acc) // TODO: Use dup instead of compiling the whole expression
-
-          val assign = assignExpr(acc, isIncrement)
-          compileExpr(Assign(acc, assign), isPre && duplicate)
-        case ar@ArrayRead(arr, index) =>
-          if (!isPre && duplicate)
-            compileExpr(ar) // TODO: Use dup instead of compiling the whole expression
-
-          val assign = assignExpr(ar, isIncrement)
-          compileExpr(Assign(ar, assign), isPre && duplicate)
-      }
-
-      def assignExpr(expr: ExprTree, isIncrement: Boolean) = {
-        val tpe = expr.getType
-
-        val o = one(tpe)
-        (if (isIncrement) Plus(expr, o) else Minus(expr, o)).setType(tpe)
+          store(varSymbol, putValue, duplicate)
+        case _               =>
+          val putValue: () => Unit = () => {
+            load(varSymbol)
+            if (!isPre && duplicate) {
+              if (isLocal) codes.dup(ch)
+              else codes.dup_x1(ch)
+            }
+            codes.one(ch)
+            if (isIncrement) codes.add(ch) else codes.sub(ch)
+          }
+          store(varSymbol, putValue, duplicate && isPre)
       }
     }
   }
@@ -677,8 +636,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         case _          =>
           compileBranch(expr, els, thn)
       }
-    case True()                                  => ch << Goto(thn.id)
-    case False()                                 => ch << Goto(els.id)
+    case TrueLit()                               => ch << Goto(thn.id)
+    case FalseLit()                              => ch << Goto(els.id)
     case And(lhs, rhs)                           =>
       val next = Label(ch.getFreshLabel(Next))
       compileBranch(lhs, next, els)
@@ -785,21 +744,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     case _                                       => ???
   }
 
-  private def getTypeTree(tpe: Type): TypeTree =
-    (tpe match {
-      case TUnit                => UnitType()
-      case TChar                => CharType()
-      case TBool                => BooleanType()
-      case TInt                 => IntType()
-      case TLong                => LongType()
-      case TFloat               => FloatType()
-      case TDouble              => DoubleType()
-      case TArray(t)            => ArrayType(getTypeTree(t))
-      case TObject(classSymbol) => ClassID(classSymbol.name).setSymbol(classSymbol)
-      case _                    => ???
-    }).setType(tpe)
-
-
   private def store(
     variable: VariableSymbol,
     putValue: () => Unit,
@@ -856,156 +800,5 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       ch << ArgLoad(0) // this reference
       ch << GetField(className, name, tpe.byteCodeName)
     }
-  }
-
-  // Desugaring
-  // Soon to be it's own stage
-
-  private var iteratorNum = 0
-  private def getUniqueIteratorName(name: String) = {
-    iteratorNum += 1
-    s"$name$$$iteratorNum"
-  }
-
-  private def createVarDecl(idName: String, initExpression: ExprTree, tpe: Type): (VarDecl, VariableID) = {
-    val modifiers = scala.collection.immutable.Set[Modifier](Private())
-
-    initExpression.setType(tpe)
-    val name = getUniqueIteratorName(idName)
-    val id = VariableID(name)
-    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
-    val symbol = new VariableSymbol(idName)
-    symbol.setType(tpe)
-    varDecl.setSymbol(symbol)
-    id.setSymbol(symbol)
-    id.setType(tpe)
-    (varDecl, id)
-  }
-
-  private def createMethodId(methodSymbol: MethodSymbol) = MethodID(methodSymbol.name).setSymbol(methodSymbol)
-
-  private def transformForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val code = container.getType match {
-      case TArray(arrTpe)       => transformArrayForeachLoop(varDecl, container, stat)
-      case TObject(classSymbol) => transformIteratorForeachLoop(classSymbol, varDecl, container, stat)
-      case _                    => ???
-    }
-    compileStat(code)
-  }
-
-
-  /**
-    * Compile to an indexed for loop:
-    * for(<varDecl> in <container>)
-    * <code>
-    *
-    * becomes:
-    *
-    * {
-    * val container$x = <container>
-    * for(var i$x = 0; i$x < container$x.Size(); i++){
-    * <varDecl> = container$x[i$x]
-    * <code>
-    * }
-    * }
-    */
-  private def transformArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val (indexDecl, indexId) = createVarDecl("i", IntLit(0), TInt)
-    val (containerDecl, containerId) = createVarDecl("container", container, container.getType)
-
-    val sizeCall = NormalAccess(containerId, MethodCall(MethodID("Size"), List()).setType(TInt)).setType(TInt).setPos(varDecl)
-
-    val comparison = LessThan(indexId, sizeCall).setType(TBool).setPos(varDecl)
-    val post = PostIncrement(indexId).setType(TInt).setPos(varDecl)
-
-    val init = Some(ArrayRead(containerId, indexDecl.id).setType(container.getType).setPos(varDecl))
-    val valInit = varDecl.copy(init = init)
-    valInit.setSymbol(varDecl.getSymbol).setPos(varDecl)
-    val stats = Block(List(valInit, stat)).setPos(stat)
-    val indexedForLoop = For(List(indexDecl), comparison, List(post), stats).setPos(stat)
-    Block(List(containerDecl, indexedForLoop))
-  }
-
-  /**
-    * Compile a foreach loop to an iterator call:
-    * for(<varDecl> in <container>)
-    * <code>
-    *
-    * becomes:
-    *
-    * {
-    * val it$x = <container>.Iterator()
-    * while(it$x.HasNext()){
-    * <varDecl> = it$x.Iterator()
-    * <code>
-    * }
-    * }
-    */
-  private def transformIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val iteratorMethodSymbol = classSymbol.lookupMethod("Iterator", List()).get
-    val iteratorMethodId = createMethodId(iteratorMethodSymbol)
-    val iteratorCall = NormalAccess(container, MethodCall(iteratorMethodId, List()))
-    val (iteratorDecl, iteratorId) = createVarDecl("it", iteratorCall, iteratorMethodSymbol.getType)
-    val iteratorClass = iteratorMethodSymbol.getType.asInstanceOf[TObject].classSymbol
-
-    val hasNextMethodId = createMethodId(iteratorClass.lookupMethod("HasNext", List()).get)
-    val nextMethodId = createMethodId(iteratorClass.lookupMethod("Next", List()).get)
-    val nextMethodTpe = nextMethodId.getType
-    val comparisonCall = NormalAccess(iteratorId, MethodCall(hasNextMethodId, List()).setType(TBool)).setType(TBool)
-    val nextMethodCall = NormalAccess(iteratorId, MethodCall(nextMethodId, List()).setType(nextMethodTpe)).setType(nextMethodTpe)
-
-    val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(varDecl)
-    valInit.setSymbol(varDecl.getSymbol)
-    val stats = Block(List(valInit, stat)).setPos(stat)
-
-    val whileLoop = While(comparisonCall, stats).setPos(stat)
-    Block(List(iteratorDecl, whileLoop))
-  }
-
-
-  /**
-    * Generates the following code:
-    * var container$x = <arr>
-    * var start$x = < 0|slice.start >            // 0 if slice.start is undefined
-    * var end$x = < container.Size()|slice.end > // container.Size() if slice.end is undefined
-    * var slice$x = new <arrTpe>[start$x - end$x]
-    * for(var i$x = start$x; i < end$x; i++)
-    * slice$x[start$x - i$x] = container[i$x]
-    * slice$x
-    *
-    * A reference to the generated slice is left on the stack.
-    */
-  private def transformArraySlice(arraySlice: ArraySlice) = {
-    val arr = arraySlice.arr
-    val arrayType = arr.getType
-    val arrType = arrayType.asInstanceOf[TArray].tpe
-    val (containerDecl, containerId) = createVarDecl("container", arr, arrayType)
-
-    val sizeCall = NormalAccess(containerId, MethodCall(MethodID("Size"), List()).setType(TInt)).setType(TInt)
-
-    val start = arraySlice.start.getOrElse(IntLit(0).setType(TInt))
-    val end = arraySlice.end.getOrElse(sizeCall)
-
-    val (startDecl, startId) = createVarDecl("start", start, TInt)
-    val (endDecl, endId) = createVarDecl("end", end, TInt)
-
-    val size = List(Minus(endId, startId).setType(TInt))
-    val typeTree = getTypeTree(arrayType.asInstanceOf[TArray].tpe)
-    val newArray = Trees.NewArray(typeTree, size)
-    val (sliceDecl, sliceId) = createVarDecl("slice", newArray, arrayType)
-    val (indexDecl, indexId) = createVarDecl("i", startId, TInt)
-    val comparison = LessThan(indexDecl.id, endId).setType(TBool)
-    val post = PostIncrement(indexDecl.id).setType(TInt)
-
-    val copyValue = Assign(ArrayRead(sliceId, Minus(indexId, startId).setType(TInt)), ArrayRead(containerId, indexId).setType(arrType)).setType(arrType)
-    val forLoop = For(List(indexDecl), comparison, List(post), copyValue)
-    val decls = Block(List(containerDecl, startDecl, endDecl, sliceDecl))
-
-    decls.foreach(_.setPos(arraySlice))
-    forLoop.foreach(_.setPos(arraySlice))
-    sliceId.foreach(_.setPos(arraySlice))
-    compileStat(decls)
-    compileStat(forLoop)
-    compileExpr(sliceId)
   }
 }
