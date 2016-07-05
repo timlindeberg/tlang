@@ -9,6 +9,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
+import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.{Context, Reporter}
@@ -31,10 +32,11 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val Compiler     = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
   val Rand         = new Random()
   val TestCtx      = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = Some(testFolderFile))
+  val TestImportMap = new ImportMap(TestCtx)
   val TypeCheckCtx = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = None)
   val ClassSymbol  = new ClassSymbol("obj", false)
   val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TypeChecker  = new TypeChecker(TypeCheckCtx, MainMethod)
+  val TypeChecker  = new TypeChecker(TypeCheckCtx, TestImportMap,  MainMethod)
 
 
 

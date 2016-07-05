@@ -2,7 +2,7 @@ package tcompiler
 package modification
 
 import tcompiler.ast.Trees._
-import tcompiler.imports.TemplateImporter
+import tcompiler.imports.{ImportMap, TemplateImporter}
 import tcompiler.utils.{Context, Pipeline}
 
 import scala.collection.mutable
@@ -21,12 +21,14 @@ object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] 
 
 class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
+  override var importMap: ImportMap = new ImportMap(ctx)
   private val templateCus    = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
 
   def generateTemplatePrograms(cus: List[CompilationUnit]): List[CompilationUnit] = {
     //  Add all original template classes
     cus foreach { cu =>
+      importMap = cu.importMap
       cu.classes.filter(_.id.isTemplated) foreach { clazz =>
         checkDuplicateTemplateNames(clazz)
         templateCus(clazz.id.name) = cu
@@ -35,6 +37,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     // Generate all needed classes
     cus foreach { cu =>
+      importMap = cu.importMap
       val templateClassGenerator = new TemplateClassGenerator(cu)
       templateClassGenerator.generateNeededTemplates()
     }
@@ -77,10 +80,9 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         val newName = tpe.templatedClassName
         val shortName = tpe.name.split("::").last
         if (cu.importMap.contains(shortName)) {
-          val fullName = cu.importMap(tpe.name)
+          val fullName = cu.importMap.getFullName(tpe.name)
           val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-          val importEntry = newName -> s"$prefix.$newName"
-          cu.importMap += importEntry
+          cu.importMap.addImport(newName, s"$prefix.$newName")
         }
 
         new ClassID(tpe.templatedClassName).setPos(tpe)
@@ -149,7 +151,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       generatedClassNames += shortName
 
       // Update import map to include the newly generated class
-      updateImportMap(cu, typeId)
+      updateImportMap(cu.importMap, typeId)
 
       findTemplateCU(typeId) match {
         case Some(templateProgram) =>
@@ -162,12 +164,12 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       }
     }
 
-    private def updateImportMap(cu: CompilationUnit, typeId: ClassID) =
-      if (cu.importMap.contains(typeId.name)) {
+    private def updateImportMap(importMap: ImportMap, typeId: ClassID) =
+      if (importMap.contains(typeId.name)) {
         val className = typeId.templatedClassName
-        val fullName = cu.importMap(typeId.name)
+        val fullName = importMap.getFullName(typeId.name)
         val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-        cu.importMap(className) = s"$prefix.$className"
+        importMap.addImport(className, s"$prefix.$className")
       }
 
     private def findTemplateCU(typeId: ClassID): Option[CompilationUnit] = {
@@ -176,7 +178,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         return Some(templateCus(className))
 
       val templateImporter = new TemplateImporter(ctx)
-      val importName = cu.importName(typeId)
+      val importName = cu.importMap.importName(typeId)
       val importedCus = templateImporter.importCus(importName)
 
       importedCus foreach { cu =>

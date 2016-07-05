@@ -37,7 +37,7 @@ object Printer {
                  else
                    "PROGRAM (no file)"
 
-    val importMap = cu.asInstanceOf[CompilationUnit].importMap.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
+    val importMap = cu.asInstanceOf[CompilationUnit].importMap.entries.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
 
     s"""
        |//-------------------------------------------------------------

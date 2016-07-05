@@ -1,15 +1,14 @@
 package tcompiler.ast
 
 import tcompiler.ast.Trees._
-
-import scala.collection.mutable
+import tcompiler.imports.ImportMap
 
 /**
   * Created by Tim Lindeberg on 5/22/2016.
   */
 
 class TreeCopier {
-  def CompilationUnit(t: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) =
+  def CompilationUnit(t: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: ImportMap) =
     new CompilationUnit(pack, imports, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
@@ -244,7 +243,7 @@ class TreeCopier {
 }
 
 class LazyTreeCopier extends TreeCopier {
-  override def CompilationUnit(tree: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: mutable.Map[String, String]) = tree match {
+  override def CompilationUnit(tree: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: ImportMap) = tree match {
     case t@CompilationUnit(pack0, imports0, classes0, importMap0)
       if (pack eq pack0) && (imports eq imports0) && (classes eq classes0) && (importMap eq importMap0) => t
     case _ => super.CompilationUnit(tree, pack, imports, classes, importMap)

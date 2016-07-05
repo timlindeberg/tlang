@@ -14,7 +14,7 @@ trait TypeCheckingErrors extends Errors {
 
   def error(errorCode: Int, msg: String, pos: Positioned): Type = {
     if (!msg.contains(s"'$TError'"))
-      ctx.reporter.error(ErrorPrefix, errorCode, msg, pos)
+      ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
     TError
   }
 
@@ -136,7 +136,7 @@ trait TypeCheckingErrors extends Errors {
     error(27, s"Overriding method '$method' in class '$clazz' has return type '$retType' while the method in parent '$parent' has return type '$parentType'.", pos)
 
   protected def ErrorCantPrintUnitType(pos: Positioned) =
-    error(28, s"Cannot print an expression of type Unit.", pos)
+    error(28, s"Cannot print an expression of type 'Unit'.", pos)
 
   protected def ErrorNoSuperTypeHasMethod(clazz: String, method: String, pos: Positioned) =
     error(29, s"No super type of class '$clazz' implements a method '$method'.", pos)

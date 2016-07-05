@@ -6,6 +6,7 @@ import org.scalatest._
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
+import tcompiler.imports.ImportMap
 import tcompiler.utils.Context
 
 class OperatorTypeSpec extends FlatSpec with Matchers {
@@ -15,7 +16,8 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val VarSymbol   = new VariableSymbol("var")
   val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   val TestContext = Context(new tcompiler.utils.Reporter(), List(new File("")))
-  val TypeChecker = new TypeChecker(TestContext, MainMethod)
+  val TestImportMap = new ImportMap(TestContext)
+  val TypeChecker = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
 
   val int    = new TypeConstructor(TInt)

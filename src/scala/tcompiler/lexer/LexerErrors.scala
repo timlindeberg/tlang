@@ -2,6 +2,7 @@ package tcompiler.lexer
 
 import java.io.File
 
+import tcompiler.imports.ImportMap
 import tcompiler.lexer.Tokens.BAD
 import tcompiler.utils.{Errors, Position, Positioned}
 
@@ -15,17 +16,19 @@ trait LexerErrors extends Errors {
   var line: Int
   var column: Int
 
+  override var importMap = new ImportMap(ctx)
+
   def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
     val file = startPos.file
     val start = Position.encode(startPos.line, startPos.col)
     val end = Position.encode(startPos.line + 1, 1)
     val bad = new Token(BAD).setPos(file, start , end)
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad)
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad, importMap)
   }
 
   protected def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
     val bad = new Token(BAD).setPos(file, Position.encode(line, column), Position.encode(line, column + colOffset))
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad)
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad, importMap)
   }
 
 

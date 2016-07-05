@@ -3,7 +3,7 @@ package ast
 
 import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.Trees.{OperatorTree, _}
-import tcompiler.imports.{ClassSymbolLocator, TemplateImporter}
+import tcompiler.imports.{ClassSymbolLocator, ImportMap, TemplateImporter}
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
 import tcompiler.utils.Extensions._
@@ -57,12 +57,6 @@ object ASTBuilder {
     LOGICOR -> LogicOr,
     LOGICXOR -> LogicXor
   )
-
-  private val DefaultImports = List[String](
-    TLangObject,
-    TLangString
-  )
-
 }
 
 class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
@@ -99,42 +93,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val classes = createMainClass(code)
 
-    val importMap = createImportMap(imp)
+    val importMap = new ImportMap(imp, ctx)
     CompilationUnit(pack, imp, classes, importMap).setPos(startPos, nextToken)
   }
-
-
-  private def createImportMap(imports: List[Import]) = {
-
-    val regImports = imports.filterType(classOf[RegularImport])
-
-    // TODO: Support wild card imports. Need to be able to search the full classpath
-    //val wcImports = imports.filterType(classOf[WildCardImport])
-
-    var importMap = mutable.Map[String, String]()
-
-    for (imp <- DefaultImports) {
-      val s = imp.split("::")
-      importMap += (s.last -> imp.replaceAll("::", "."))
-    }
-
-    for (imp <- regImports) {
-      val fullName = imp.name
-      val shortName = imp.shortName
-      val templateImporter = new TemplateImporter(ctx)
-
-      if (importMap.contains(shortName))
-        ErrorConflictingImport(imp.writtenName, importMap(shortName), imp)
-      else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
-             ErrorCantResolveImport(imp.writtenName, imp)
-      else
-        importMap += (shortName -> fullName)
-    }
-
-
-    importMap
-  }
-
 
   private def createMainClass(code: List[Tree]) = {
     var classes = code collect { case x: ClassDecl => x }

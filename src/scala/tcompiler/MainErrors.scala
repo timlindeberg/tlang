@@ -1,13 +1,16 @@
 package tcompiler
 
 import tcompiler.Flags.MaxErrors
-import tcompiler.utils.Errors
+import tcompiler.imports.ImportMap
+import tcompiler.utils.{Context, Errors}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait MainErrors extends Errors {
 
+  override var ctx: Context = null
+  override var importMap = new ImportMap(null)
   override val ErrorPrefix = "M"
 
   private def fatal(message: String) = {

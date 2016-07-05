@@ -10,7 +10,7 @@ trait TemplateErrors extends Errors{
   override val ErrorPrefix = "G"
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos)
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

@@ -1,7 +1,8 @@
 package tcompiler.ast
 
+import tcompiler.imports.ImportMap
 import tcompiler.lexer.{Token, TokenKind}
-import tcompiler.utils.{Errors, NoPosition, Positioned}
+import tcompiler.utils.{Errors, Positioned}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -10,8 +11,11 @@ trait ParserErrors extends Errors {
 
   override val ErrorPrefix = "P"
 
-  private def error(errorCode: Int, msg: String, pos: Positioned = NoPosition) =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos)
+  override var importMap = new ImportMap(ctx)
+
+
+  private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
 
   //---------------------------------------------------------------------------------------
   //  Error messages
@@ -25,12 +29,6 @@ trait ParserErrors extends Errors {
 
   protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
     error(2, s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
-
-  protected def ErrorCantResolveImport(imp: String, pos: Positioned) =
-    error(3, s"Cannot resolve import '$imp'.", pos)
-
-  protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned) =
-    error(4, s"Imports '$imp1' and '$imp2' are conflicting.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Fatal messages

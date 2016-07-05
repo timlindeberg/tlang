@@ -20,7 +20,6 @@ object Main extends MainErrors {
 
   lazy val AllFlags = EnumerationMacros.sealedInstancesOf[Flag]
 
-  override var ctx: Context = null
 
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"

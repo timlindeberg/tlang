@@ -39,7 +39,7 @@ object TestUtils extends FlatSpec {
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    val reporter = new Reporter(useColor = false)
+    val reporter = new Reporter(useColor = true)
     new Context(reporter = reporter, files = List(file), outDir = Some(outDir))
   }
 
@@ -48,7 +48,6 @@ object TestUtils extends FlatSpec {
     val outDir = getOutDir(mainName)
     executeTProgram(List(outDir.getAbsolutePath, Main.TDirectory), mainName)
   }
-
 
   def executeTProgram(classPaths: List[String], mainName: String): String = {
     val c = classPaths.map(cp => "\"" + cp + "\"").mkString(";")

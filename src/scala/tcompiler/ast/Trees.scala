@@ -4,9 +4,8 @@ package ast
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types
 import tcompiler.analyzer.Types._
+import tcompiler.imports.ImportMap
 import tcompiler.utils._
-
-import scala.collection.mutable
 
 object Trees {
 
@@ -113,24 +112,16 @@ object Trees {
     pack: Package,
     var imports: List[Import],
     var classes: List[ClassDecl],
-    importMap: mutable.Map[String, String]) extends Tree {
+    importMap: ImportMap) extends Tree {
 
     def getPackageDirectory = pack.directory
 
     def getPackageName(name: String) = (pack.adress :+ name).mkString(".")
 
-    def importNames = imports map importName
-
-    def importName(imp: Import): String = getFullName(imp.name)
-
-    def importName(typeId: ClassID): String = {
-      val name = typeId.name.replaceAll("::", ".")
-      getFullName(name)
-    }
-
-    def getFullName(name: String) = importMap.getOrElse(name, name).replaceAll("::", ".")
+    def importNames = imports map { importMap.importName }
 
   }
+
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 

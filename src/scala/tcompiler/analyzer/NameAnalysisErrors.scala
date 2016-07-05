@@ -19,7 +19,7 @@ trait NameAnalysisErrors extends Errors {
       case _              =>
     }
 
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree)
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
     new ErrorSymbol()
   }
 

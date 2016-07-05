@@ -21,9 +21,8 @@ object TemplateImporter {
 
 }
 
-class TemplateImporter(
-  override var ctx: Context,
-  imported: mutable.Set[String] = mutable.Set()) extends ImportErrors {
+class TemplateImporter(ctx: Context,
+  imported: mutable.Set[String] = mutable.Set()) {
 
   import TemplateImporter._
 

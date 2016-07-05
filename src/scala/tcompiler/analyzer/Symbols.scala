@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
-import tcompiler.imports.ClassSymbolLocator
+import tcompiler.imports.{ClassSymbolLocator, ImportMap}
 import tcompiler.utils._
 
 
@@ -35,8 +35,8 @@ object Symbols {
 
     var classes = Map[String, ClassSymbol]()
 
-    def lookupClass(cu: CompilationUnit, name: String): Option[ClassSymbol] = {
-      val fullName = cu.getFullName(name)
+    def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
+      val fullName = importMap.getFullName(name)
       classes.get(fullName) match {
         case Some(classSymbol) => Some(classSymbol)
         case None              =>

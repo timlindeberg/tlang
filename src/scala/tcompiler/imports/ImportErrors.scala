@@ -10,7 +10,7 @@ trait ImportErrors extends Errors {
   override val ErrorPrefix = "I"
 
   def error(errorCode: Int, msg: String, tree: Positioned) =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree)
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
 
   //---------------------------------------------------------------------------------------
   //  Error messages
@@ -22,8 +22,6 @@ trait ImportErrors extends Errors {
   protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned) =
     error(1, s"Imports '$imp1' and '$imp2' are conflicting.", pos)
 
-  protected def ErrorResolvingGenericImport(imp: String, pos: Positioned) =
-    error(2, s"Could not resolve generic import '$imp'.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings

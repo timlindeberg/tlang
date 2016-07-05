@@ -4,6 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
+import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
@@ -23,7 +24,7 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
     cus foreach { cu =>
       // Typecheck fields
       cu.classes.foreach { classDecl =>
-        val typeChecker = new TypeChecker(ctx, new MethodSymbol("", classDecl.getSymbol, None, Set()))
+        val typeChecker = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", classDecl.getSymbol, None, Set()))
         classDecl.fields.foreach(typeChecker.tcStat(_))
       }
     }
@@ -35,12 +36,12 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
           val methodSymbol = method.getSymbol
           if (!methodUsage.contains(methodSymbol))
             methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
-          new TypeChecker(ctx, methodSymbol).tcMethod()
+          new TypeChecker(ctx, cu.importMap,  methodSymbol).tcMethod()
         }
       }
 
       val c = new ClassSymbol("", false)
-      val tc = new TypeChecker(ctx, new MethodSymbol("", c, None, Set()))
+      val tc = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", c, None, Set()))
 
       tc.checkMethodUsage()
       tc.checkCorrectOverrideReturnTypes(cu)
@@ -52,6 +53,7 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
 
 class TypeChecker(
   override var ctx: Context,
+  override var importMap: ImportMap,
   currentMethodSymbol: MethodSymbol,
   methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 
@@ -658,7 +660,7 @@ class TypeChecker(
 
   private def inferTypeOfMethod(methodSymbol: MethodSymbol) = {
     if (methodSymbol.getType == TUntyped)
-      new TypeChecker(ctx, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+      new TypeChecker(ctx, importMap, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
   }
 
   private def checkStaticMethodConstraints(acc: Access, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {

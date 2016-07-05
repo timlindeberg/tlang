@@ -4,6 +4,8 @@ package utils
 import java.io.File
 import java.util.regex.Matcher
 
+import tcompiler.imports.ImportMap
+
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
@@ -37,23 +39,23 @@ class Reporter(
   var warnings = ArrayBuffer[String]()
 
 
-  def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+  def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
     if (warningIsError) {
-      error(errorPrefix, errorCode, msg, pos)
+      error(errorPrefix, errorCode, msg, pos, importMap)
       return
     }
 
     if (suppressWarnings)
       return
 
-    val warning = errMessage(errorPrefix, 1, errorCode, msg, pos)
+    val warning = errMessage(errorPrefix, 1, errorCode, msg, pos, importMap)
     warnings += warning
   }
 
 
-  def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Unit = {
+  def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
     if(maxErrors == -1 || errors.size < maxErrors){
-      errors += errMessage(errorPrefix, 2, errorCode, msg, pos)
+      errors += errMessage(errorPrefix, 2, errorCode, msg, pos, importMap)
       return
     }
 
@@ -66,8 +68,8 @@ class Reporter(
 }
 
 
-  def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned = NoPosition): Nothing = {
-    val error = errMessage(errorPrefix, 3, errorCode, msg, pos)
+  def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Nothing = {
+    val error = errMessage(errorPrefix, 3, errorCode, msg, pos, importMap)
     errors += error
     throw new CompilationException(error)
   }
@@ -89,9 +91,9 @@ class Reporter(
       throw new CompilationException(errorsString)
 
 
-  private def errMessage(locationPrefix: String, errorLevel: Int, errorCode: Int, msg: Any, pos: Positioned) = {
+  private def errMessage(locationPrefix: String, errorLevel: Int, errorCode: Int, msg: Any, pos: Positioned, importMap: ImportMap) = {
     val prefix = constructErrorPrefix(locationPrefix, errorLevel, errorCode)
-    val msgStr = handleQuoteLiterals(msg.toString)
+    val msgStr = handleQuoteLiterals(msg.toString, importMap)
     var sb = new StringBuilder
     if (pos.hasPosition)
       sb ++= filePrefix(pos) + "\n"
@@ -135,13 +137,14 @@ class Reporter(
     s"$Bold[$EndColor$position$Bold]$EndColor"
   }
 
-  private def handleQuoteLiterals(msg: String) = {
+  private def handleQuoteLiterals(msg: String, importMap: ImportMap) = {
     val msgFormat = EndColor + MessageStyle
 
     val re = """'(.+?)'""".r
 
     val s = re.replaceAllIn(msg, m => {
-      val name = TemplateNameParser.parseTemplateName(m.group(1))
+      var name = importMap.getErrorName(m.group(1))
+      name = TemplateNameParser.parseTemplateName(name)
       Matcher.quoteReplacement("\'" + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
     })
     msgFormat + s + EndColor

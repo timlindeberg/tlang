@@ -44,8 +44,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   import NameAnalysis._
 
-  private var variableUsage        = Map[VariableSymbol, Boolean]()
-  private var variableReassignment = Map[VariableSymbol, Boolean]()
+  override var importMap            = cu.importMap
+  private  var variableUsage        = Map[VariableSymbol, Boolean]()
+  private  var variableReassignment = Map[VariableSymbol, Boolean]()
 
 
   def addSymbols(): Unit = cu.classes.foreach(addSymbols)
@@ -111,7 +112,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       val newSymbol = new ClassSymbol(fullName, isAbstract)
       if (name != fullName)
-        cu.importMap(name) = fullName
+        cu.importMap.addImport(name, fullName)
       newSymbol.writtenName = name
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
@@ -123,7 +124,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   }
 
   private def addSymbols(t: Tree, classSymbol: ClassSymbol): Unit = t match {
-    case varDecl@VarDecl(tpe, id, init, modifiers)                                   =>
+    case varDecl@VarDecl(tpe, id, init, modifiers)                               =>
       val newSymbol = new FieldSymbol(id.name, modifiers, classSymbol).setPos(varDecl)
       ensureIdentiferNotDefined(classSymbol.fields, id.name, varDecl)
       id.setSymbol(newSymbol)
@@ -140,7 +141,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       }
 
       classSymbol.addField(newSymbol)
-    case methodDecl@MethodDecl(retType, id, args, stat, modifiers)                   =>
+    case methodDecl@MethodDecl(retType, id, args, stat, modifiers)               =>
       val newSymbol = new MethodSymbol(id.name, classSymbol, stat, modifiers).setPos(methodDecl)
       id.setSymbol(newSymbol)
       methodDecl.setSymbol(newSymbol)
@@ -151,7 +152,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       if (classSymbol.isAbstract && retType.isEmpty && stat.isEmpty)
         ErrorUnimplementedMethodNoReturnType(newSymbol.signature, methodDecl)
-    case constructorDecl@ConstructorDecl(_, id, args, stat, modifiers)               =>
+    case constructorDecl@ConstructorDecl(_, id, args, stat, modifiers)           =>
       // TODO: Make sure constructors arent declared as abstract
       val newSymbol = new MethodSymbol(id.name, classSymbol, stat, modifiers).setPos(constructorDecl)
       newSymbol.setType(TUnit)
@@ -191,7 +192,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def ensureClassNotDefined(id: ClassID): Unit = {
     val name = id.name
-    val fullName = cu.getFullName(name)
+    val fullName = importMap.getFullName(name)
     globalScope.classes.get(fullName) match {
       case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
       case None      =>
@@ -210,14 +211,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case classDecl@ClassDecl(id, parents, vars, methods, _)                 =>
+    case classDecl@ClassDecl(id, parents, vars, methods, _)              =>
       setParentSymbol(id, parents, classDecl)
       val sym = classDecl.getSymbol
       sym.setType(TObject(sym))
 
       bindFields(classDecl)
       methods.foreach(bind)
-    case methDecl@MethodDecl(retType, _, args, stat, _)                     =>
+    case methDecl@MethodDecl(retType, _, args, stat, _)                  =>
       retType.ifDefined { tpe =>
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
@@ -227,7 +228,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       ensureMethodNotDefined(methDecl)
 
       stat.ifDefined(new StatementBinder(methDecl.getSymbol, methDecl.isStatic).bindStatement(_))
-    case constructorDecl@ConstructorDecl(_, _, args, stat, _)               =>
+    case constructorDecl@ConstructorDecl(_, _, args, stat, _)            =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
@@ -388,7 +389,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                   case Some(varSymbol) => setVarIdentiferSymbol(id, varSymbol)
                   case None            =>
                     // access object is not a variable, must be a class
-                    globalScope.lookupClass(cu, name) match {
+                    globalScope.lookupClass(importMap, name) match {
                       case Some(classSymbol) =>
                         val classId = ClassID(name).setPos(id).setSymbol(classSymbol)
                         acc.obj = classId
@@ -405,7 +406,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
             }
           case Is(expr, id)                 =>
             traverse(expr)
-            globalScope.lookupClass(cu, id.name) match {
+            globalScope.lookupClass(importMap, id.name) match {
               case Some(classSymbol) =>
                 id.setSymbol(classSymbol)
                 id.setType(TObject(classSymbol))
@@ -542,7 +543,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       case CharType()                => tpe.setType(TChar)
       case UnitType()                => tpe.setType(TUnit)
       case tpeId@ClassID(name, _)    =>
-        globalScope.lookupClass(cu, name) match {
+        globalScope.lookupClass(importMap, name) match {
           case Some(classSymbol) =>
             tpeId.setSymbol(classSymbol)
             tpeId.setType(TObject(classSymbol))
@@ -561,7 +562,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def setParentSymbol(id: ClassID, parents: List[ClassID], classDecl: ClassDecl): Unit = {
     parents.foreach { parentId =>
-      globalScope.lookupClass(cu, parentId.name) match {
+      globalScope.lookupClass(importMap, parentId.name) match {
         case Some(parentSymbol) =>
           parentId.setSymbol(parentSymbol)
           // This takes O(n), shouldnt be a big problem though
