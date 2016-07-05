@@ -352,7 +352,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
               ch << GetStatic(className, fieldName, bytecode)
             else
               ch << GetField(className, fieldName, bytecode)
-          case mc@MethodCall(meth, args) =>
+          case MethodCall(meth, args) =>
             val methSymbol = meth.getSymbol
             val methName = meth.name
             val signature = methSymbol.byteCodeSignature
@@ -372,7 +372,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             else
               ch << InvokeVirtual(className, methName, signature)
 
-            if (!duplicate && mc.getType != TUnit)
+            if (!duplicate && methSymbol.getType != TUnit)
               ch << POP
         }
       case Trees.New(tpe, args)                         =>
@@ -689,9 +689,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           if (value > 32767 || value < -32768)
             None
           else if (!localVariableMap.contains(s1) || !localVariableMap.contains(s2))
-            None
+                 None
           else if (localVariableMap(s1) != localVariableMap(s2))
-            None
+                 None
           else
             Some(v1.getSymbol, value)
         case _              => None
