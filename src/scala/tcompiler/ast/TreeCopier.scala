@@ -240,7 +240,7 @@ class TreeCopier {
   def GeneratedExpr(t: Tree, stats: List[StatTree]) =
     new GeneratedExpr(stats).copyAttrs(t)
   def IfDup(t: Tree, expr: ExprTree) =
-    new IfDup(expr).copyAttrs(t)
+    new PutValue(expr).copyAttrs(t)
 }
 
 class LazyTreeCopier extends TreeCopier {
@@ -685,7 +685,7 @@ class LazyTreeCopier extends TreeCopier {
     case _ => super.GeneratedExpr(tree, stats)
   }
   override def IfDup(tree: Tree, expr: ExprTree) = tree match {
-    case t@IfDup(expr0)
+    case t@PutValue(expr0)
       if (expr eq expr0) => t
     case _ => super.IfDup(tree, expr)
   }

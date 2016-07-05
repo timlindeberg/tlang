@@ -1,12 +1,10 @@
 package tcompiler.code
 
-import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
+import tcompiler.analyzer.Symbols.{ClassSymbol, OperatorSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.ast.{TreeTransformer, Trees}
-import tcompiler.utils.{Context, Pipeline, Positioned}
-
-import scala.collection.mutable.ListBuffer
+import tcompiler.utils.{Context, Pipeline}
 
 /**
   * Created by Tim Lindeberg on 7/1/2016.
@@ -25,23 +23,135 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 class Desugarer {
 
   def apply(cu: CompilationUnit) = {
+
+    // Replace operator decls first so all are replaced when we replace
+    // operator calls
     val desugarTransformer = new TreeTransformer {
+
       override def transform(t: Tree) = t match {
-        case foreach: Foreach               => desugarForeachLoop(foreach)
-        case slice: ArraySlice              => desugarArraySlice(slice)
-        case incDec: IncrementDecrementTree => desugarIncrementDecrement(incDec)
+        case slice: ArraySlice              => desugarArraySlice(super.transform(slice))
+        case opDecl: OperatorDecl           => replaceOperatorDecl(super.transform(opDecl))
+        case incDec: IncrementDecrementTree =>
+          if (incDec.expr.getType.isInstanceOf[TObject])
+            replaceOperatorCall(super.transform(incDec))
+          else
+            desugarIncrementDecrement(super.transform(incDec))
+        case assign: Assign                 =>
+          val to = assign.to
+          if (to.isInstanceOf[ArrayRead] && to.getType.isInstanceOf[TObject]) {
+            val expr = super.transform(assign.expr).asInstanceOf[ExprTree]
+            val newAssign = treeCopy.Assign(assign, to, expr)
+            replaceOperatorCall(newAssign)
+          } else {
+            super.transform(assign)
+          }
+        case op: OperatorTree               => replaceOperatorCall(super.transform(op))
+        case foreach: Foreach               => desugarForeachLoop(super.transform(foreach))
         case _                              => super.transform(t)
       }
 
     }
-    desugarTransformer.transform(cu).asInstanceOf[CompilationUnit]
+    val s = desugarTransformer.transform(cu)
+    s.asInstanceOf[CompilationUnit]
   }
 
+  /**
+    * Replaces overloaded operator calls with calls to static methods
+    *
+    * a + b => A.$Plus(a, b)
+    *
+    * or
+    *
+    * ++a => A.$PreIncrement(a)
+    *
+    * or
+    *
+    * a[5] = 5 => a.$ArrayAssign(5, 5)
+    */
+  def replaceOperatorCall(t: Tree): Tree = {
+    if (!t.isInstanceOf[OperatorTree])
+      return t
+
+    val op = t.asInstanceOf[OperatorTree]
+    val c = new TreeBuilder
+
+    t match {
+      case BinaryOperatorTree(lhs, rhs) =>
+        if (!(isObject(lhs) || isObject(rhs)))
+          return op
+
+        val opSymbol = op.lookupOperator((lhs.getType, rhs.getType)).get
+        val obj = getClassID(opSymbol)
+        c.createMethodCall(obj, opSymbol, lhs, rhs)
+      case UnaryOperatorTree(expr)      =>
+        if (!isObject(expr))
+          return op
+
+        val opSymbol = op.lookupOperator(expr.getType).get
+        val obj = getClassID(opSymbol)
+        c.createMethodCall(obj, opSymbol, expr)
+      case ArrayOperatorTree(arr)       =>
+        if (!isObject(arr))
+          return op
+
+        val arrClassSymbol = arr.getType.asInstanceOf[TObject].classSymbol
+        op match {
+          case ArrayRead(arr, index) =>
+            val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType)).get
+            c.createMethodCall(arr, opSymbol, index)
+          case Assign(to, expr)      =>
+            to match {
+              case ArrayRead(arr, index) =>
+                val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType, expr.getType)).get
+                c.createMethodCall(arr, opSymbol, index, expr).setType(expr.getType)
+              case _                     => op
+            }
+        }
+      case _                            => op
+    }
+  }
+
+  def isObject(e: ExprTree) = e.getType.isInstanceOf[TObject]
+  def getClassID(operatorSymbol: OperatorSymbol) = {
+    val classSymbol = operatorSymbol.classSymbol
+    new ClassID(classSymbol.name).setSymbol(classSymbol)
+  }
+
+  def replaceOperatorDecl(t: Tree): Tree = {
+    if (!t.isInstanceOf[OperatorDecl])
+      return t
+    val op = t.asInstanceOf[OperatorDecl]
+    val opSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
+    val methodID = new MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
+    val methDecl =
+      if (op.isAbstract)
+        new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+      else opSymbol.operatorType match {
+        case Assign(ArrayRead(_, _), _) =>
+          // Convert array assignment so the value is returned
+          val indexId = op.args(1).id
+          val retType = new TreeBuilder().getTypeTree(indexId.getType)
+          val ret = Return(Some(indexId))
+          val stats = op.stat.get match {
+            case Block(s) => s :+ ret
+            case stat     => List(stat, ret)
+          }
+          opSymbol.setType(indexId.getType)
+          new MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
+        case _                          =>
+          new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+      }
+    methDecl.setSymbol(opSymbol).setPos(op)
+  }
 
   /**
     * Desugars for each loops, either array based or an iterator based.
     */
-  private def desugarForeachLoop(foreach: Foreach): StatTree = {
+  private def desugarForeachLoop(t: Tree): Tree = {
+    if (!t.isInstanceOf[Foreach])
+      return t
+
+    val foreach = t.asInstanceOf[Foreach]
     val container = foreach.container
     val varDecl = foreach.varDecl
     val stat = foreach.stat
@@ -57,10 +167,30 @@ class Desugarer {
     * Transform increment and decrement expressions on accesses and array reads.
     *
     * Examples:
+    * --------------------------------------------------------------------------------
+    *
+    *   a++
+    *
+    * becomes:
+    *
+    *   var $v = a
+    *   a = a + 1
+    *   $v
+    *
+    * --------------------------------------------------------------------------------
+    *
+    *   --a
+    *
+    * becomes:
+    *
+    *   a = a - 1
+    *   a
+    *
+    * --------------------------------------------------------------------------------
     *
     *   GetObject().I++
     *
-    * in to:
+    * becomes:
     *
     *   var $obj = GetObject()
     *   var $v = $tmp.I
@@ -68,11 +198,11 @@ class Desugarer {
     *   $tmp.I = $newV
     *   $v
     *
-    * or
+    * --------------------------------------------------------------------------------
     *
     *   --GetArray()[GetIndex()*4]
     *
-    * in to:
+    * becomes:
     *
     *   var $arr
     *   var $idx = GetIndex()*4
@@ -81,51 +211,88 @@ class Desugarer {
     *   $arr[$idx] = $newV
     *   newV$x
     *
+    * --------------------------------------------------------------------------------
     */
     //@formatter:on
-  private def desugarIncrementDecrement(incDec: IncrementDecrementTree): ExprTree = {
-    // These get compiled to for instance IINC etc which is more effective
-    // and can also be an overloaded operator if called on an object
-    if (incDec.expr.isInstanceOf[VariableID])
-      return incDec
+  private def desugarIncrementDecrement(t: Tree): Tree = {
+    if (!t.isInstanceOf[IncrementDecrementTree])
+      return t
 
-    val c = new CodeBuilder
-    val obj = incDec.expr match {
-      case acc@Access(obj, application)  =>
-        if (obj.isInstanceOf[ClassID]) {
-          acc
-        } else {
-          val objId = c.putVarDecl("obj", obj)
-          NormalAccess(objId, application).setType(application)
-        }
-      case arrRead@ArrayRead(arr, index) =>
-        val arrId = c.putVarDecl("arr", arr)
-        val indexId = c.putVarDecl("idx", index)
-        ArrayRead(arrId, indexId).setType(arrRead)
+    val incDec = t.asInstanceOf[IncrementDecrementTree]
+    val c = new TreeBuilder
+
+    def getPlusOrMinus(value: ExprTree) = {
+      val o = c.createOne(value.getType)
+      val plusOrMinus = if (incDec.isIncrement) Plus(value, o) else Minus(value, o)
+      plusOrMinus.setType(value)
     }
 
-    val value = c.putVarDecl("v", obj)
+    def putResult(to: ExprTree, from: ExprTree, value: ExprTree) = {
+      c.put(Assign(to, from).setType(to))
+      c.put(PutValue(value))
+      c.setPos(incDec)
+      c.getCode
+    }
 
-    val o = c.createOne(value.getType)
-    val plusOrMinus = if (incDec.isIncrement) Plus(value, o) else Minus(value, o)
-    plusOrMinus.setType(value)
+    // Simple case first:
+    incDec.expr match {
+      case variable: VariableID =>
+        val plusOrMinus = getPlusOrMinus(variable)
+        val v = if (incDec.isPre) variable
+                else c.putVarDecl("v", variable)
 
-    val newValue = c.putVarDecl("newV", plusOrMinus)
+        return putResult(variable, plusOrMinus, v)
+      case _                    =>
+    }
 
-    c.put(Assign(obj, newValue).setType(obj))
-    c.put(IfDup(if (incDec.isPre) newValue else value))
-    c.setPos(incDec)
-    c.getCode
+    // Otherwise we have an access or array read
+    val (assignTo, value) = incDec.expr match {
+      case acc@Access(obj, application)  =>
+        obj match {
+          case _: Identifier[_] =>
+            val v = if (incDec.isPre) acc else c.putVarDecl("v", acc)
+            (acc, v)
+          case _             =>
+            val objId = c.putVarDecl("obj", obj)
+            val newAccess = NormalAccess(objId, application).setType(application)
+            val v = if (newAccess.isStatic && incDec.isPre) newAccess else c.putVarDecl("v", newAccess)
+            (newAccess, v)
+        }
+      case arrRead@ArrayRead(arr, index) =>
+        val arrId = arr match {
+          case _: VariableID => arr
+          case _             => c.putVarDecl("arr", arr)
+        }
+        val indexId = index match {
+          case _: VariableID | _: Literal[_] => index
+          case _                             => c.putVarDecl("idx", index)
+        }
+
+        val a = ArrayRead(arrId, indexId).setType(arrRead)
+        (a, c.putVarDecl("v", a))
+    }
+
+    val plusOrMinus = getPlusOrMinus(value)
+    if (incDec.isPre) {
+      val newValue = c.putVarDecl("newV", plusOrMinus)
+      putResult(assignTo, newValue, newValue)
+    } else {
+      putResult(assignTo, plusOrMinus, value)
+    }
   }
 
   //@formatter:off
   /**
     * Transforms foreach loop over an array
     *
+    * Examples:
+    *
+    * --------------------------------------------------------------------------------
+    *
     *   for(<varDecl> in <array>)
     *     <code>
     *
-    * in to:
+    * becomes:
     *
     *   val $container = <array>
     *   for(var $i = 0; $i < $container.Size(); i++){
@@ -133,10 +300,11 @@ class Desugarer {
     *     <code>
     *   }
     *
+    * --------------------------------------------------------------------------------
     */
  //@formatter:on
   private def desugarArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val c = new CodeBuilder
+    val c = new TreeBuilder
     val indexDecl = c.createVarDecl("i", IntLit(0).setType(TInt))
     val index = indexDecl.id
 
@@ -145,7 +313,8 @@ class Desugarer {
     val sizeCall = c.createMethodCall(container, "Size", TInt)
 
     val comparison = LessThan(index, sizeCall).setType(TBool).setPos(varDecl)
-    val post = PostIncrement(index).setType(TInt).setPos(varDecl)
+    val post = Assign(index, Plus(index, IntLit(1)).setType(TInt)).setType(TInt).setPos(varDecl)
+
 
     val init = Some(ArrayRead(containerId, index).setType(containerId).setPos(varDecl))
     val valInit = varDecl.copy(init = init).setPos(stat)
@@ -160,20 +329,26 @@ class Desugarer {
   /**
     * Transforms a foreach loop
     *
+    * Examples:
+    *
+    * --------------------------------------------------------------------------------
+    *
     *   for(<varDecl> in <container>)
     *     <code>
     *
-    * in to:
+    * becomes:
     *
     *   val $it = <container>.Iterator()
     *   while($it.HasNext()){
     *     <varDecl> = $it.Iterator()
     *     <code>
     *   }
+    *
+    * --------------------------------------------------------------------------------
     */
   //@formatter:on
   private def desugarIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val c = new CodeBuilder
+    val c = new TreeBuilder
 
     val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator")
     val iterator = c.putVarDecl("it", iteratorCall)
@@ -195,9 +370,13 @@ class Desugarer {
   /**
     * Transforms an array slice
     *
+    * Examples:
+    *
+    * --------------------------------------------------------------------------------
+    *
     *   val a = <arr>[<start>:<end>]
     *
-    * in to:
+    * becomes:
     *
     *   var $container = <arr>
     *   var $start = < 0|slice.start >            // 0 if slice.start is undefined
@@ -206,14 +385,21 @@ class Desugarer {
     *   for(var $i = $start; i < $end; i++)
     *     $slice[$start - $i] = $container[$i]
     *   $slice
+    *
+    * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarArraySlice(arraySlice: ArraySlice): ExprTree = {
+  private def desugarArraySlice(t: Tree): Tree = {
+    if (!t.isInstanceOf[ArraySlice])
+      return t
+
+    val arraySlice = t.asInstanceOf[ArraySlice]
+
     val sliceType = arraySlice.arr.getType
     if (sliceType.isInstanceOf[TObject])
       return arraySlice
 
-    val c = new CodeBuilder
+    val c = new TreeBuilder
 
     val arr = arraySlice.arr
     val arrayType = arr.getType
@@ -233,7 +419,8 @@ class Desugarer {
     val indexDecl = c.createVarDecl("i", start)
     val indexId = indexDecl.id
     val comparison = LessThan(indexId, end).setType(TBool)
-    val post = PostIncrement(indexId).setType(TInt)
+    val post = Assign(indexId, Plus(indexId, IntLit(1)).setType(TInt)).setType(TInt)
+
 
     val toSlice = ArrayRead(slice, Minus(indexId, start).setType(TInt)).setType(arraySlice)
     val fromArr = ArrayRead(container, indexId).setType(arrType)
@@ -244,95 +431,8 @@ class Desugarer {
 
     c.setPos(arraySlice)
 
-    c.getCode.setType(sliceType)
+    c.getCode
   }
 }
-
-class CodeBuilder {
-  val code = ListBuffer[StatTree]()
-
-  def put(stat: StatTree) = {
-    stat foreach {
-      case t: Typed if t.getType == TUntyped =>
-        sys.error(s"Tree $t does not have a type!")
-      case _                                 =>
-    }
-    code += stat
-  }
-
-  def putVarDecl(idName: String, initExpression: ExprTree): VariableID = {
-    val decl = createVarDecl(idName, initExpression)
-    code += decl
-    decl.id
-  }
-
-  def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, args: List[Type] = List()): NormalAccess = {
-    val methodSymbol = classSymbol.lookupMethod(methName, args).get
-    createMethodCall(obj, methodSymbol)
-  }
-
-  def createMethodCall(obj: ExprTree, name: String, tpe: Type): NormalAccess =
-    createMethodCall(obj, createMethodSymbol(name, tpe))
-
-  def createMethodCall(obj: ExprTree, methodSymbol: MethodSymbol): NormalAccess = {
-    val tpe = methodSymbol.getType
-    val sizeMethId = createMethodId(methodSymbol)
-    val mCall = MethodCall(sizeMethId, List()).setType(tpe)
-    NormalAccess(obj, mCall).setType(tpe)
-  }
-
-  private def createMethodSymbol(name: String, tpe: Type) =
-    new MethodSymbol(name, new ClassSymbol("", false), None, Set()).setType(tpe)
-
-  private def createMethodId(methodSymbol: MethodSymbol): MethodID = MethodID(methodSymbol.name).setSymbol(methodSymbol)
-
-  def createVarDecl(idName: String, initExpression: ExprTree): VarDecl = {
-    val modifiers = scala.collection.immutable.Set[Modifier](Private())
-    val tpe = initExpression.getType
-    if (tpe == TUntyped)
-      sys.error("Cannot create var decl from an untyped initial expression.")
-
-    initExpression.setType(tpe)
-    val name = '$' + idName
-    val id = VariableID(name)
-    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
-    val symbol = new VariableSymbol(idName)
-    symbol.setType(tpe)
-    varDecl.setSymbol(symbol)
-    id.setSymbol(symbol)
-    id.setType(tpe)
-    varDecl
-  }
-
-  def createOne(tpe: Type): ExprTree = tpe match {
-    case TInt    => IntLit(1)
-    case TChar   => IntLit(1)
-    case TLong   => LongLit(1l)
-    case TFloat  => FloatLit(1.0f)
-    case TDouble => DoubleLit(1.0)
-    case _       => ???
-  }
-
-
-  def getTypeTree(tpe: Type): TypeTree =
-    (tpe match {
-      case TUnit                => UnitType()
-      case TChar                => CharType()
-      case TBool                => BooleanType()
-      case TInt                 => IntType()
-      case TLong                => LongType()
-      case TFloat               => FloatType()
-      case TDouble              => DoubleType()
-      case TArray(t)            => ArrayType(getTypeTree(t))
-      case TObject(classSymbol) => ClassID(classSymbol.name).setSymbol(classSymbol)
-      case _                    => ???
-    }).setType(tpe)
-
-  def getCode = GeneratedExpr(code.toList).setPos(code.head)
-
-  def setPos(pos: Positioned) = code.foreach(_.setPos(pos))
-
-}
-
 
 

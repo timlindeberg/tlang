@@ -5,7 +5,7 @@ import java.nio.file.{InvalidPathException, Paths}
 
 import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
-import tcompiler.ast.{Parser, Printer}
+import tcompiler.ast.{ASTBuilder, Parser, Printer}
 import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
@@ -20,11 +20,13 @@ object Main extends MainErrors {
 
   lazy val AllFlags = EnumerationMacros.sealedInstancesOf[Flag]
 
-  override var ctx     : Context  = null
+  override var ctx: Context = null
 
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"
   val THome         = "T_HOME"
+  val TLangObject   = "kool/lang/Object"
+  val TLangString   = "kool/lang/String"
 
   var TDirectory         = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\src\\stdlib"
   var Reporter: Reporter = null
@@ -107,7 +109,7 @@ object Main extends MainErrors {
       case f :: args                                             =>
         files = new File(f) :: files
         processOption(args)
-      case Nil =>
+      case Nil                                                   =>
     }
 
 
@@ -196,7 +198,7 @@ object Main extends MainErrors {
     for (f <- filePaths)
       fileMap(f) = true
 
-    if(fileMap.exists(!_._2))
+    if (fileMap.exists(!_._2))
       return false
 
     true

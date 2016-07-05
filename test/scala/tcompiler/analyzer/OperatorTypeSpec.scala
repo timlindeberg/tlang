@@ -25,7 +25,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val double = new TypeConstructor(TDouble)
   val char   = new TypeConstructor(TChar)
   val array  = new TypeConstructor(TArray(TInt))
-  val obj    = new TypeConstructor(TObject(ClassSymbol))
+  val obj    = new TypeConstructor(Types.Object)
 
   val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
   val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)

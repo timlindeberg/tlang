@@ -24,10 +24,9 @@ object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
 
 object ASTBuilder {
 
-  val TLangObject = "kool::lang::Object"
-  val TLangString = "kool::lang::String"
-
   val MaximumArraySize = 255
+  val TLangObject = Main.TLangObject.replaceAll("/", "::")
+  val TLangString = Main.TLangString.replaceAll("/", "::")
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
     LOGICNOT -> LogicNot,
@@ -433,7 +432,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
               case None         =>
             }
 
-            val operatorType: OperatorTree = ArrayAssign(Empty(), Empty(), Empty())
+            val operatorType: OperatorTree = Assign(ArrayRead(Empty(), Empty()), Empty())
             eat(EQSIGN, LPAREN)
             val f1 = formal()
             eat(COMMA)

@@ -297,6 +297,25 @@ object Trees {
   trait OperatorTree extends ExprTree {
     val op: String
     def operatorString(args: List[Any]): String
+
+    def lookupOperator(arg: Type): Option[OperatorSymbol] = lookupOperator(List(arg))
+    def lookupOperator(args: (Type, Type)): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2))
+    def lookupOperator(args: List[Type]): Option[OperatorSymbol] = {
+      args.foreach { arg =>
+        lookupOperator(arg, args) match {
+          case Some(op) => return Some(op)
+          case None =>
+        }
+      }
+      None
+    }
+    def lookupOperator(classType: Type, args: List[Type]) = {
+      classType match {
+        case TObject(classSymbol) => classSymbol.lookupOperator(this, args)
+        case _                    => None
+      }
+    }
+
   }
 
   trait BinaryOperatorTree extends OperatorTree {
@@ -392,8 +411,7 @@ object Trees {
   }
 
   trait IncrementDecrementTree extends UnaryOperatorTree {
-    val isPre      : Boolean
-    val isIncrement: Boolean
+    val isPre, isIncrement      : Boolean
   }
   object IncrementDecrementTree {
     def unapply(e: IncrementDecrementTree): Option[(ExprTree)] = e match {
@@ -435,6 +453,12 @@ object Trees {
   trait ArrayOperatorTree extends OperatorTree {
     val arr: ExprTree
     def operatorString(args: List[Any], className: String): String = className + operatorString(args)
+  }
+  object ArrayOperatorTree {
+    def unapply(e: ArrayOperatorTree): Option[ExprTree] = e match {
+      case e: ArrayOperatorTree => Some(e.arr)
+      case _                    => None
+    }
   }
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
@@ -587,7 +611,11 @@ object Trees {
 
   /*-------------------------------- Expression Trees --------------------------------*/
 
-  case class Assign(to: ExprTree, expr: ExprTree) extends ExprTree
+  case class Assign(to: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
+    override val arr: ExprTree = to
+    override val op : String   = "[]="
+    override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
+  }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree
 
   case class This() extends ExprTree with Symbolic[ClassSymbol] with Leaf
@@ -607,9 +635,9 @@ object Trees {
   // Generated when desugaring.
   case class GeneratedExpr(stats: List[StatTree]) extends ExprTree
 
-  // Expression that will be compiled if a duplicate value is to be left
+  // Expression that will be compiled if a value is to be left
   // on the stack.
-  case class IfDup(exprTree: ExprTree) extends ExprTree {
+  case class PutValue(exprTree: ExprTree) extends ExprTree {
     override def getType = exprTree.getType
   }
 
@@ -625,7 +653,7 @@ object Trees {
       case IncrementDecrementTree(_)   => None
       case _: Assign                   => None
       case _: GeneratedExpr            => None
-      case _: IfDup                    => None
+      case _: PutValue                 => None
       case expr: ExprTree              => Some(expr)
       case _                           => None
     }

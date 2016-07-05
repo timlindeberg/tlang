@@ -213,6 +213,8 @@ object Symbols {
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
       operatorType1 match {
+        case Assign(ArrayRead(_,_),_) =>
+          operatorType2.isInstanceOf[Assign] && operatorType2.asInstanceOf[Assign].to.isInstanceOf[ArrayRead]
         case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
         case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
         case _                                  => operatorType1.getClass == operatorType2.getClass
@@ -227,25 +229,14 @@ object Symbols {
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
     var isAbstract                       = stat.isEmpty
-    var params                           = Map[String, VariableSymbol]()
-    var members                          = Map[String, VariableSymbol]()
+    var args                             = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
     var overridden: Option[MethodSymbol] = None
 
-    def lookupVar(name: String): Option[VariableSymbol] = lookupLocalVar(name) match {
-      case x@Some(_) => x
-      case None      => lookupField(name)
-    }
-
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
-    def lookupArgument(name: String): Option[VariableSymbol] = params.get(name)
+    def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)
 
     def lookupArgument(index: Int): VariableSymbol = argList(index)
-
-    def lookupLocalVar(name: String): Option[VariableSymbol] = members.get(name) match {
-      case x@Some(_) => x
-      case None      => params.get(name)
-    }
 
     def argTypes = argList.map(_.getType)
 
@@ -281,11 +272,9 @@ object Symbols {
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]
-  ) extends MethodSymbol(operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
+  ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
 
     def operatorString = operatorType.operatorString(argList.map(_.getType))
-
-    def methodName = "$" + operatorType.getClass.getSimpleName
 
     override def toString = operatorString
 

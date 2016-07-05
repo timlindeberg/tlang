@@ -11,8 +11,6 @@ class TreeTraverser {
   def traverse(t: Tree): Unit = t match {
     case _: Leaf                                      => // No need to recurse further
     case CompilationUnit(pack, imports, classes, _)   => traverse(pack, imports, classes)
-    case Package(identifiers)                         => traverse(identifiers)
-    case Import(identifiers)                          => traverse(identifiers)
     case ClassDecl(id, parents, fields, methods, _)   => traverse(id, parents, fields, methods)
     case FuncTree(id, retType, args, stat, modifiers) => traverse(retType, id, args, stat, modifiers)
     case Formal(tpe, id)                              => traverse(tpe, id)
@@ -37,14 +35,14 @@ class TreeTraverser {
     case Assign(id, expr)                             => traverse(id, expr)
     case Super(specifier)                             => traverse(specifier)
     case NewArray(tpe, sizes)                         => traverse(tpe, sizes)
-    case New(tpe, args)                               => traverse(tpe, args)
-    case Ternary(condition, thn, els)                 => traverse(condition, thn, els)
-    case Is(expr, id)                                 => traverse(expr, id)
-    case As(expr, tpe)                                => traverse(expr, tpe)
-    case MethodCall(meth, args)                       => traverse(meth, args)
-    case ArrayLit(value)                              => traverse(value)
-    case GeneratedExpr(block)                         => traverse(block)
-    case IfDup(expr)                                  => traverse(expr)
+    case New(tpe, args)               => traverse(tpe, args)
+    case Ternary(condition, thn, els) => traverse(condition, thn, els)
+    case Is(expr, id)                 => traverse(expr, id)
+    case As(expr, tpe)                => traverse(expr, tpe)
+    case MethodCall(meth, args)       => traverse(meth, args)
+    case ArrayLit(value)              => traverse(value)
+    case GeneratedExpr(block)         => traverse(block)
+    case PutValue(expr)               => traverse(expr)
   }
 
   def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse

@@ -201,7 +201,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
         b.append("%4d %5d %6s %-15s %s\n".format(currentLineNumber, pc, height, abc, extraInfo))
       }
 
-      b.append("%4s %5s %6s %-15s %s\n".format("Line", "PC", "Height", "ByteCode", "ExtraInfo"))
+      b.append("%4s %5s %6s %-15s %s\n".format("Line", "PC", "Height", "ByteCode", "Info"))
       var i = 0
       while (i < abcBuffer.size) {
         val abc = abcBuffer(i)

@@ -51,8 +51,8 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
           generateConstructor(Some(con), classFile, classDecl)
         case op: OperatorDecl     =>
           val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
-          val operatorSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
-          classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.methodName, argTypes)
+          val operatorSymbol = op.getSymbol
+          classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.name, argTypes)
       }
       var flags: U2 = getMethodFlags(methodDecl)
       if (methodDecl.isAbstract)

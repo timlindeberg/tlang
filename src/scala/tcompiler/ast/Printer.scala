@@ -113,38 +113,43 @@ object Printer {
       case ArraySlice(arr, start, end)    => p"$arr[$start:$end]"
       case NormalAccess(obj, application) => p"$obj.$application"
       case SafeAccess(obj, application)   => p"$obj?.$application"
-      case MethodCall(meth, args)  => p"$meth(${Separated(args, ", ")})"
-      case IntLit(value)           => p"$value"
-      case LongLit(value)          => p"${value}L"
-      case FloatLit(value)         => p"${value}F"
-      case DoubleLit(value)        => p"$value"
-      case CharLit(value)          => p"'${escapeJava(p"$value")}'"
-      case StringLit(value)        => "\"" + p"${escapeJava(p"$value")}" + "\""
-      case ArrayLit(expressions)   => p"{ ${Separated(expressions, ", ")} }"
-      case TrueLit()               => p"true"
-      case FalseLit()              => p"false"
-      case id@ClassID(value, list) => p"$value${templateList(id)}"
-      case Identifier(value)       => p"$value"
-      case This()                  => p"this"
-      case Super(specifier)        => p"super${optional(specifier)(spec => p"<$spec>")}"
-      case NewArray(tpe, sizes)    => p"new $tpe${arrayList(sizes)}"
-      case New(tpe, exprs)         => p"new $tpe(${Separated(exprs, ", ")})"
-      case PreIncrement(id)        => p"++$id"
-      case PostIncrement(id)              => p"$id++"
-      case PreDecrement(id)               => p"--$id"
-      case PostDecrement(id)              => p"$id--"
-      case Ternary(condition, thn, els)   => p"$condition ? $thn : $els"
-      case Break()                        => p"break"
-      case Continue()                     => p"continue"
-      case Empty()                        => p"<EMPTY>"
-      case GeneratedExpr(stats)           => p"<$L$stats$R>"
-      case IfDup(expr)                    => p"<IfDup($expr)>"
+      case MethodCall(meth, args)         => p"$meth(${Separated(args, ", ")})"
+      case IntLit(value)                  => p"$value"
+      case LongLit(value)                 => p"${value}L"
+      case FloatLit(value)                => p"${value}F"
+      case DoubleLit(value)               => p"$value"
+      case CharLit(value)                 => p"'${escapeJava(p"$value")}'"
+      case StringLit(value)               => "\"" + p"${escapeJava(p"$value")}" + "\""
+      case ArrayLit(expressions)          => p"{ ${Separated(expressions, ", ")} }"
+      case TrueLit()                      => p"true"
+      case FalseLit()                     => p"false"
+      case id@ClassID(value, list)        => p"$value${templateList(id)}"
+      case Identifier(value)              => p"$value"
+      case This()                         => p"this"
+      case Super(specifier)               => p"super${optional(specifier)(spec => p"<$spec>")}"
+      case NewArray(tpe, sizes)           => p"new $tpe${arrayList(sizes)}"
+      case New(tpe, exprs)                => p"new $tpe(${Separated(exprs, ", ")})"
+      case PreIncrement(id)             => p"++$id"
+      case PostIncrement(id)            => p"$id++"
+      case PreDecrement(id)             => p"--$id"
+      case PostDecrement(id)            => p"$id--"
+      case Ternary(condition, thn, els) => p"$condition ? $thn : $els"
+      case Break()                      => p"break"
+      case Continue()                   => p"continue"
+      case Empty()                      => p"<EMPTY>"
+      case GeneratedExpr(stats)         => p"${genExpr(stats)}"
+      case PutValue(expr)               => p"<PutValue($expr)>"
     }
     s
   }
 
+  private def genExpr(stats: List[StatTree]) = {
+    if (stats.size == 1) p"<${stats.head}>"
+    else p"<$L$stats$R>"
+  }
+
   private def packDecl(adress: List[String]) = {
-    if(adress.isEmpty)
+    if (adress.isEmpty)
       ""
     else
       p"package ${adress.mkString("::")}"
@@ -265,8 +270,8 @@ object Printer {
     }
 
     private def evaluate(obj: Any): String = obj match {
-      case f: Formatter  => f()
-      case t: Tree       =>
+      case f: Formatter => f()
+      case t: Tree      =>
         t match {
           case _: Identifier[_] |
                _: ClassID   => color(t, IdentifierColor)
@@ -307,7 +312,7 @@ object Printer {
         return output
       KeywordsRegex.replaceAllIn(output, m => {
         Matcher.quoteReplacement(s"$KeywordColor${m.group(1)}$ColorReset")
-      })
+      } )
     }
   }
 

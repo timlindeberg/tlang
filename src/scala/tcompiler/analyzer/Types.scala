@@ -3,6 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
+import tcompiler.imports.ClassSymbolLocator
 
 
 object Types {
@@ -196,8 +197,10 @@ object Types {
   }
 
   // For checking of a type is an object
-  var Object = TObject(new ClassSymbol("kool/lang/Object", false))
-  var String = TObject(new ClassSymbol("kool/lang/String", false))
+  var Object = TObject(ClassSymbolLocator.findSymbol(Main.TLangObject)
+    .getOrElse(new ClassSymbol(Main.TLangObject, false)))
+  var String = TObject(ClassSymbolLocator.findSymbol(Main.TLangString)
+    .getOrElse(new ClassSymbol(Main.TLangString, false)))
   val Array  = TArray(Object)
 }
 

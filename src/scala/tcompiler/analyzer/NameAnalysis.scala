@@ -3,8 +3,8 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
+import tcompiler.ast.TreeTraverser
 import tcompiler.ast.Trees._
-import tcompiler.ast.{ASTBuilder, TreeTraverser}
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
@@ -14,8 +14,6 @@ object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     globalScope = new GlobalScope
-
-
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
@@ -34,8 +32,8 @@ object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit
     }
 
     // Set up string and object types for typechecking
-    globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.String = TObject(sym))
-    globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.Object = TObject(sym))
+    //globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.String = TObject(sym))
+    //globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.Object = TObject(sym))
 
     cus
   }
@@ -176,11 +174,11 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     case formal@Formal(_, id) =>
       val modifiers: Set[Modifier] = Set(Private(), Final())
       val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
-      ensureIdentiferNotDefined(methSymbol.params, id.name, id)
+      ensureIdentiferNotDefined(methSymbol.args, id.name, id)
       id.setSymbol(newSymbol)
       formal.setSymbol(newSymbol)
 
-      methSymbol.params += (id.name -> newSymbol)
+      methSymbol.args += (id.name -> newSymbol)
       methSymbol.argList ++= List(newSymbol)
 
       // Don't put out warning when args is unused since it's implicitly defined
