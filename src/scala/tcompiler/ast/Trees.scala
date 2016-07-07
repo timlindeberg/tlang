@@ -110,15 +110,12 @@ object Trees {
 
   case class CompilationUnit(
     pack: Package,
-    var imports: List[Import],
     var classes: List[ClassDecl],
     importMap: ImportMap) extends Tree {
 
     def getPackageDirectory = pack.directory
 
     def getPackageName(name: String) = (pack.adress :+ name).mkString(".")
-
-    def importNames = imports map { importMap.importName }
 
   }
 
@@ -240,15 +237,42 @@ object Trees {
     val name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
-  case class NullableType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
-  case class IntType() extends TypeTree with Leaf {val name = "Int"}
-  case class LongType() extends TypeTree with Leaf {val name = "Long"}
-  case class FloatType() extends TypeTree with Leaf {val name = "Float"}
-  case class DoubleType() extends TypeTree with Leaf {val name = "Double"}
-  case class BooleanType() extends TypeTree with Leaf {val name = "Bool"}
-  case class CharType() extends TypeTree with Leaf {val name = "Char"}
-  case class UnitType() extends TypeTree with Leaf {val name = "Unit"}
+  case class ArrayType(var tpe: TypeTree) extends TypeTree {
+    val name = tpe.name + "[]"
+    override def getType = TArray(tpe.getType)
+  }
+  case class NullableType(var tpe: TypeTree) extends TypeTree {
+    val name = tpe.name + "?"
+    override def getType = TNullable(tpe.getType)
+  }
+  case class IntType() extends TypeTree with Leaf {
+    val name = "Int"
+    override def getType = TInt
+  }
+  case class LongType() extends TypeTree with Leaf {
+    val name = "Long"
+    override def getType = TLong
+  }
+  case class FloatType() extends TypeTree with Leaf {
+    val name = "Float"
+    override def getType = TFloat
+  }
+  case class DoubleType() extends TypeTree with Leaf {
+    val name = "Double"
+    override def getType = TDouble
+  }
+  case class BooleanType() extends TypeTree with Leaf {
+    val name = "Bool"
+    override def getType = TBool
+  }
+  case class CharType() extends TypeTree with Leaf {
+    val name = "Char"
+    override def getType = TChar
+  }
+  case class UnitType() extends TypeTree with Leaf {
+    val name = "Unit"
+    override def getType = TUnit
+  }
 
   /*-------------------------------- Statement Trees --------------------------------*/
 

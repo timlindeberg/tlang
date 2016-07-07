@@ -535,13 +535,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def setType(tpe: TypeTree): Type = {
     tpe match {
-      case BooleanType()             => tpe.setType(TBool)
-      case IntType()                 => tpe.setType(TInt)
-      case LongType()                => tpe.setType(TLong)
-      case FloatType()               => tpe.setType(TFloat)
-      case DoubleType()              => tpe.setType(TDouble)
-      case CharType()                => tpe.setType(TChar)
-      case UnitType()                => tpe.setType(TUnit)
       case tpeId@ClassID(name, _)    =>
         globalScope.lookupClass(importMap, name) match {
           case Some(classSymbol) =>
@@ -550,12 +543,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           case None              =>
             ErrorUnknownType(name, tpeId)
         }
-      case ArrayType(arrayTpe)       =>
-        setType(arrayTpe)
-        tpe.setType(TArray(arrayTpe.getType))
-      case NullableType(nullableTpe) =>
-        setType(nullableTpe)
-        tpe.setType(TNullable(nullableTpe.getType))
+      case ArrayType(arrayTpe)       => setType(arrayTpe)
+      case NullableType(nullableTpe) => setType(nullableTpe)
+      case _ =>
     }
     tpe.getType
   }

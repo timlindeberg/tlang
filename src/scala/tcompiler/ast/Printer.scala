@@ -53,7 +53,7 @@ object Printer {
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case CompilationUnit(pack, imports, classes, _)                 => p"${cuComment(t)}$pack$N$imports$N$classes"
+      case CompilationUnit(pack, classes, importMap)                  => p"${cuComment(t)}$pack$N${importMap.imports}$N$classes"
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
@@ -129,16 +129,16 @@ object Printer {
       case Super(specifier)               => p"super${optional(specifier)(spec => p"<$spec>")}"
       case NewArray(tpe, sizes)           => p"new $tpe${arrayList(sizes)}"
       case New(tpe, exprs)                => p"new $tpe(${Separated(exprs, ", ")})"
-      case PreIncrement(id)             => p"++$id"
-      case PostIncrement(id)            => p"$id++"
-      case PreDecrement(id)             => p"--$id"
-      case PostDecrement(id)            => p"$id--"
-      case Ternary(condition, thn, els) => p"$condition ? $thn : $els"
-      case Break()                      => p"break"
-      case Continue()                   => p"continue"
-      case Empty()                      => p"<EMPTY>"
-      case GeneratedExpr(stats)         => p"${genExpr(stats)}"
-      case PutValue(expr)               => p"<PutValue($expr)>"
+      case PreIncrement(id)               => p"++$id"
+      case PostIncrement(id)              => p"$id++"
+      case PreDecrement(id)               => p"--$id"
+      case PostDecrement(id)              => p"$id--"
+      case Ternary(condition, thn, els)   => p"$condition ? $thn : $els"
+      case Break()                        => p"break"
+      case Continue()                     => p"continue"
+      case Empty()                        => p"<EMPTY>"
+      case GeneratedExpr(stats)           => p"${genExpr(stats)}"
+      case PutValue(expr)                 => p"<PutValue($expr)>"
     }
     s
   }
@@ -270,8 +270,8 @@ object Printer {
     }
 
     private def evaluate(obj: Any): String = obj match {
-      case f: Formatter => f()
-      case t: Tree      =>
+      case f: Formatter  => f()
+      case t: Tree       =>
         t match {
           case _: Identifier[_] |
                _: ClassID   => color(t, IdentifierColor)
@@ -312,7 +312,7 @@ object Printer {
         return output
       KeywordsRegex.replaceAllIn(output, m => {
         Matcher.quoteReplacement(s"$KeywordColor${m.group(1)}$ColorReset")
-      } )
+      })
     }
   }
 

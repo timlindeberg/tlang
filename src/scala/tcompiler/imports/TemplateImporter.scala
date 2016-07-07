@@ -53,14 +53,14 @@ class TemplateImporter(ctx: Context,
     findClassFile(importName) match {
       case Some(file) =>
         parseGenericFile(ctx, file) match {
-          case Some(importedProg) =>
+          case Some(importedCU) =>
             // Recursively import generics
-            val importedPrograms: ArrayBuffer[CompilationUnit] = ArrayBuffer(importedProg)
-            importedProg.importNames foreach { recursiveImport =>
+            val importedCUs: ArrayBuffer[CompilationUnit] = ArrayBuffer(importedCU)
+            importedCU.importMap.importNames foreach { recursiveImport =>
               val templateImporter = new TemplateImporter(ctx, imported)
-              importedPrograms ++= templateImporter.importCus(recursiveImport)
+              importedCUs ++= templateImporter.importCus(recursiveImport)
             }
-            importedPrograms.toList
+            importedCUs.toList
           case None               => Nil
         }
       case None       => Nil

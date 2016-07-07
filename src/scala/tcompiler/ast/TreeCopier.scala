@@ -8,8 +8,8 @@ import tcompiler.imports.ImportMap
   */
 
 class TreeCopier {
-  def CompilationUnit(t: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: ImportMap) =
-    new CompilationUnit(pack, imports, classes, importMap).copyAttrs(t)
+  def CompilationUnit(t: Tree, pack: Package, classes: List[ClassDecl], importMap: ImportMap) =
+    new CompilationUnit(pack, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
@@ -243,10 +243,10 @@ class TreeCopier {
 }
 
 class LazyTreeCopier extends TreeCopier {
-  override def CompilationUnit(tree: Tree, pack: Package, imports: List[Import], classes: List[ClassDecl], importMap: ImportMap) = tree match {
-    case t@CompilationUnit(pack0, imports0, classes0, importMap0)
-      if (pack eq pack0) && (imports eq imports0) && (classes eq classes0) && (importMap eq importMap0) => t
-    case _ => super.CompilationUnit(tree, pack, imports, classes, importMap)
+  override def CompilationUnit(tree: Tree, pack: Package, classes: List[ClassDecl], importMap: ImportMap) = tree match {
+    case t@CompilationUnit(pack0, classes0, importMap0)
+      if (pack eq pack0) && (classes eq classes0) && (importMap eq importMap0) => t
+    case _ => super.CompilationUnit(tree, pack, classes, importMap)
   }
   override def Package(tree: Tree, adress: List[String]) = tree match {
     case t@Package(adress0)

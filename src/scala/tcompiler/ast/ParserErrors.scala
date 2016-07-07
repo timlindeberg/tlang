@@ -10,9 +10,7 @@ import tcompiler.utils.{Errors, Positioned}
 trait ParserErrors extends Errors {
 
   override val ErrorPrefix = "P"
-
   override var importMap = new ImportMap(ctx)
-
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
     ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)

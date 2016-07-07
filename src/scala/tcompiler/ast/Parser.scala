@@ -94,7 +94,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val classes = createMainClass(code)
 
     val importMap = new ImportMap(imp, ctx)
-    CompilationUnit(pack, imp, classes, importMap).setPos(startPos, nextToken)
+    CompilationUnit(pack, classes, importMap).setPos(startPos, nextToken)
   }
 
   private def createMainClass(code: List[Tree]) = {

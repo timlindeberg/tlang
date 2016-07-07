@@ -7,6 +7,7 @@ import tcompiler.analyzer.{NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{ASTBuilder, Parser, Printer}
 import tcompiler.code.{CodeGeneration, Desugaring}
+import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
@@ -19,7 +20,6 @@ object Main extends MainErrors {
   import Flags._
 
   lazy val AllFlags = EnumerationMacros.sealedInstancesOf[Flag]
-
 
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"

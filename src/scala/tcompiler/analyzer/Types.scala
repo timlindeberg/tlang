@@ -11,7 +11,7 @@ object Types {
   trait Typed {
     self =>
 
-    private var _tpe: Type = TUntyped
+    protected var _tpe: Type = TUntyped
 
     def setType(tpe: Type): self.type = {
       _tpe = tpe

@@ -12,11 +12,10 @@ import tcompiler.utils.{Errors, Position, Positioned}
 trait LexerErrors extends Errors {
 
   override val ErrorPrefix = "L"
+  override var importMap = new ImportMap(ctx)
   val file: File
   var line: Int
   var column: Int
-
-  override var importMap = new ImportMap(ctx)
 
   def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
     val file = startPos.file

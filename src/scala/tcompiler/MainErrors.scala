@@ -10,8 +10,8 @@ import tcompiler.utils.{Context, Errors}
 trait MainErrors extends Errors {
 
   override var ctx: Context = null
-  override var importMap = new ImportMap(null)
   override val ErrorPrefix = "M"
+  override var importMap = new ImportMap()
 
   private def fatal(message: String) = {
     println(message)

@@ -33,8 +33,8 @@ class TreeTransformer {
     case This()        => treeCopy.This(t)
     case Empty()       => treeCopy.Empty(t)
 
-    case CompilationUnit(pack, imports, classes, importMap) =>
-      treeCopy.CompilationUnit(t, pack, tr(imports), tr(classes), importMap)
+    case CompilationUnit(pack, classes, importMap) =>
+      treeCopy.CompilationUnit(t, pack, tr(classes), importMap)
     case Package(adress)                                    =>
       treeCopy.Package(t, adress)
 
