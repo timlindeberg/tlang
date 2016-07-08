@@ -386,6 +386,7 @@ object Trees {
   case class Hash(expr: ExprTree) extends UnaryOperatorTree {val op = "#"}
   case class Negation(expr: ExprTree) extends UnaryOperatorTree {val op = "-"}
   case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val op = "~"}
+  case class ExtractNullable(expr: ExprTree) extends UnaryOperatorTree {val op = "!!"}
 
   case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {
     val op          = "++"

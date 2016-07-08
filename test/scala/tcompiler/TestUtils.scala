@@ -39,7 +39,7 @@ object TestUtils extends FlatSpec {
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    val reporter = new Reporter(useColor = true)
+    val reporter = new Reporter(useColor = false)
     new Context(reporter = reporter, files = List(file), outDir = Some(outDir))
   }
 
@@ -171,7 +171,7 @@ object TestUtils extends FlatSpec {
       val sizedStr = s"%-${colLength}s"
       val format = s"%-4s$sizedStr$sizedStr"
       val line = String.format(format, lineNum, r, s)
-      if (i == failedTest.toString) Console.UNDERLINED + line + Console.RESET
+      if (i == failedTest.toString)  line + "<<<<<"
       else line
     }.mkString("\n", "\n", "\n")
     if(errors == "")

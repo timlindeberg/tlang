@@ -76,6 +76,7 @@ object Tokens {
   case object AND           extends TokenKind("&&")
   case object OR            extends TokenKind("||")
   case object QUESTIONMARK  extends TokenKind("?")
+  case object SAFEACCESS    extends TokenKind("?.")
   case object LOGICNOT      extends TokenKind("~")
   case object LOGICAND      extends TokenKind("&")
   case object LOGICOR       extends TokenKind("|")
@@ -91,7 +92,7 @@ object Tokens {
   case object MINUS         extends TokenKind("-")
   case object TIMES         extends TokenKind("*")
   case object DIV           extends TokenKind("/")
-  case object EXTRACTNULL   extends TokenKind("!!")
+  case object EXTRACTNULLABLE   extends TokenKind("!!")
   case object PACKAGE       extends TokenKind("package")
   case object IMPORT        extends TokenKind("import")
   case object IS            extends TokenKind("is")
@@ -127,10 +128,9 @@ object Tokens {
   case object NULL          extends TokenKind("null")
   // @formatter:on
 
-  case object NEWLINE       extends TokenKind("\n") {
+  case object NEWLINE extends TokenKind("\n") {
     override def toString = "<newline>"
   }
-
 
 
   // Identifiers

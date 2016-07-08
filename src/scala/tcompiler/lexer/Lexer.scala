@@ -57,6 +57,8 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '!' :: '=' :: r                        => readTokens(r, createToken(NOTEQUALS, 2) :: tokens)
       case '|' :: '|' :: r                        => readTokens(r, createToken(OR, 2) :: tokens)
       case '&' :: '&' :: r                        => readTokens(r, createToken(AND, 2) :: tokens)
+      case '?' :: '.' :: r                        => readTokens(r, createToken(SAFEACCESS, 2) :: tokens)
+      case '!' :: '!' :: r                        => readTokens(r, createToken(EXTRACTNULLABLE, 2) :: tokens)
       case '/' :: '*' :: r                        =>
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)

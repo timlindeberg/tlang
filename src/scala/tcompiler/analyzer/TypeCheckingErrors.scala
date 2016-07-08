@@ -106,8 +106,10 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
 
-  protected def ErrorMultipleReturnTypes(typeList: String, pos: Positioned) =
-    error(19, s"Method contains return statements of multiple types: $typeList.", pos)
+  protected def ErrorMultipleReturnTypes(returnStatements: List[(Return, Type)]) = {
+    val typeList = returnStatements.map { case (stat, tpe) => s"Line ${stat.line} -> '$tpe'" }.mkString(", ")
+    error(19, s"Method contains return statements of multiple types: $typeList.", returnStatements.head._1)
+  }
 
   protected def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
     error(20, s"Array literal contains multiple types: $typeList", pos)
@@ -156,8 +158,12 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorSafeAccessOnNonNullable(tpe: Type, pos: Positioned) =
     error(34, s"Cannot use safe access on non nullable type '$tpe'.", pos)
 
+  protected def ErrorExtractNullableOnNonNullable(tpe: Type, pos: Positioned) =
+    error(35, s"Cannot use the nullable extraction operator on non nullable type '$tpe'.", pos)
+
   protected def ErrorAssignValueToMethodCall(pos: Positioned) =
-    error(35, s"Cannot assign a value  to the result of a method call.", pos)
+    error(36, s"Cannot assign a value  to the result of a method call.", pos)
+
 
 
   //---------------------------------------------------------------------------------------

@@ -516,12 +516,17 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <tpe> ::= <basicTpe> { "[]" } [ "?" ]
+    * <tpe> ::= <basicTpe> [ "?" ] { "[]" } [ "?" ]
     */
   def tpe(): TypeTree = {
     val startPos = nextToken
     var e = basicTpe()
     var dimension = 0
+
+    if (nextTokenKind == QUESTIONMARK) {
+      eat(QUESTIONMARK)
+      e = NullableType(e).setPos(startPos, nextToken)
+    }
     while (nextTokenKind == LBRACKET) {
       e.setPos(startPos, nextToken)
       eat(LBRACKET, RBRACKET)
@@ -970,27 +975,31 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | as <tpe>
     * | ++
     * | --
+    * | !!
     */
   def termRest(lhs: ExprTree): ExprTree = {
     var e = lhs
-    val tokens = List(DOT, LBRACKET, AS, INCREMENT, DECREMENT)
+    val tokens = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
 
     // Uses current token since a newline should stop the iteration
     while (tokens.contains(currentToken.kind)) {
       val startPos = nextToken
 
       e = currentToken.kind match {
-        case DOT       =>
+        case DOT | SAFEACCESS =>
           access(e)
-        case LBRACKET  =>
+        case EXTRACTNULLABLE  =>
+          eat(EXTRACTNULLABLE)
+          ExtractNullable(e)
+        case LBRACKET         =>
           arrayIndexing(e)
-        case AS        =>
+        case AS               =>
           eat(AS)
           As(e, tpe())
-        case INCREMENT =>
+        case INCREMENT        =>
           eat(INCREMENT)
           PostIncrement(e)
-        case DECREMENT =>
+        case DECREMENT        =>
           eat(DECREMENT)
           PostDecrement(e)
         case _         => ???
@@ -1007,8 +1016,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   def access(obj: ExprTree) = {
     val startPos = nextToken
     val access = nextTokenKind match {
-      case QUESTIONMARK =>
-        eat(QUESTIONMARK, DOT)
+      case SAFEACCESS =>
+        eat(SAFEACCESS)
         SafeAccess
       case DOT          =>
         eat(DOT)

@@ -1,10 +1,30 @@
+// Ignore
+
 class A {
 
-    Def Test() = {
+    Def Test1() = {
+        if(true)
+            return 1
+        else
+            return null
+    }
+
+    Def Test2() = {
         if(true)
             return 1
         else
             return "hej" // res: T2019
+    }
+
+
+    Def Test3() = {
+        if(true)
+            return 1
+        else if(false)
+            return null
+        else
+            return "hej"  // res: T2019
+
     }
 
 }

@@ -42,11 +42,11 @@ object Types {
 
   private val objSymbol = ClassSymbolLocator.findSymbol(Main.TLangObject)
     .getOrElse(new ClassSymbol(Main.TLangObject, false))
-  private val strSymbol = ClassSymbolLocator.findSymbol(Main.TLangString)
+  private val stringSymbol = ClassSymbolLocator.findSymbol(Main.TLangString)
     .getOrElse(new ClassSymbol(Main.TLangString, false))
 
   var Object = TObject(objSymbol)
-  var String = TObject(strSymbol)
+  var String = TObject(stringSymbol)
 
   val Array = TArray(Object)
 
@@ -60,36 +60,42 @@ object Types {
 
   sealed abstract class Type {
     val isNullable: Boolean
+    val nullableString = if (isNullable) "?" else ""
 
     def getNullable: Type
-    def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
+    def getNonNullable: Type
+    def isSubTypeOf(tpe: Type): Boolean = {
+      if (invalidNullableAssignment(this, tpe))
+        return false
+
+      tpe.isInstanceOf[this.type]
+    }
     def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+      if (invalidNullableAssignment(tpe, this))
+        return false
+
       if (this == tpe)
         return true
 
-      val implicitTypes = implicitlyConvertableFrom()
-      if (implicitTypes.contains(tpe))
-        return true
-
-
-      (this, tpe) match {
-        case (TArray(a1), TArray(a2)) => a1.isImplicitlyConvertableFrom(a2)
-        case _                        => false
-      }
+     implicitlyConvertableFrom.contains(tpe)
     }
+
     def getSuperTypes: List[Type] = List()
     def isPrimitive = Primitives.contains(this)
 
-    def implicitlyConvertableFrom(): List[Type] = List()
-
+    def implicitlyConvertableFrom: List[Type] = List()
     def byteCodeName: String
     val codes: CodeMap
     val size : Int
+
+    protected def invalidNullableAssignment(from: Type, to: Type) =
+      from.isNullable && !to.isNullable
   }
 
   case object TError extends Type {
     override val isNullable = false
     override def getNullable = this
+    override def getNonNullable = this
     override def isSubTypeOf(tpe: Type): Boolean = true
     override def toString = "[error]"
     override def byteCodeName: String = "ERROR"
@@ -100,6 +106,7 @@ object Types {
   case object TUntyped extends Type {
     override val isNullable = false
     override def getNullable = this
+    override def getNonNullable = this
 
     override def isSubTypeOf(tpe: Type): Boolean = false
     override def toString = "[untyped]"
@@ -111,6 +118,7 @@ object Types {
   case object TUnit extends Type {
     override val isNullable = false
     override def getNullable = this
+    override def getNonNullable = this
 
     override def toString = "Unit"
     override def byteCodeName: String = "V"
@@ -120,8 +128,10 @@ object Types {
 
   case class TInt(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableInt
-    override def implicitlyConvertableFrom() = List(Char)
-    override def toString = "Int"
+    override def getNonNullable = Int
+
+    override def implicitlyConvertableFrom = List(Char)
+    override def toString = "Int" + nullableString
     override def byteCodeName: String = "I"
     override val codes     = IntCodeMap
     override val size: Int = 1
@@ -130,8 +140,10 @@ object Types {
 
   case class TLong(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableLong
-    override def implicitlyConvertableFrom() = List(Char, Int)
-    override def toString = "Long"
+    override def getNonNullable = Long
+
+    override def implicitlyConvertableFrom = List(Char, Int)
+    override def toString = "Long" + nullableString
     override def byteCodeName: String = "J"
     override val codes     = LongCodeMap
     override val size: Int = 2
@@ -141,8 +153,10 @@ object Types {
 
   case class TFloat(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableFloat
-    override def implicitlyConvertableFrom() = List(Long, Char, Int)
-    override def toString = "Float"
+    override def getNonNullable = Float
+
+    override def implicitlyConvertableFrom = List(Long, Char, Int)
+    override def toString = "Float" + nullableString
     override def byteCodeName: String = "F"
     override val codes     = FloatCodeMap
     override val size: Int = 1
@@ -152,18 +166,22 @@ object Types {
 
   case class TDouble(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableDouble
-    override def implicitlyConvertableFrom() = List(Float, Long, Char, Int)
-    override def toString = "Double"
+    override def getNonNullable = Double
+
+    override def implicitlyConvertableFrom = List(Float, Long, Char, Int)
+    override def toString = "Double" + nullableString
     override def byteCodeName: String = "D"
     override val codes     = DoubleCodeMap
     override val size: Int = 2
     override def equals(any: Any) = any.isInstanceOf[TDouble]
-
   }
 
   case class TChar(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableChar
-    override def toString = "Char"
+    override def getNonNullable = Char
+
+    override def implicitlyConvertableFrom = List(Int)
+    override def toString = "Char" + nullableString
     override def byteCodeName: String = "C"
     override val codes     = CharCodeMap
     override val size: Int = 1
@@ -173,7 +191,9 @@ object Types {
 
   case class TBool(isNullable: Boolean = false) extends Type {
     override def getNullable = NullableBool
-    override def toString = "Bool"
+    override def getNonNullable = Bool
+
+    override def toString = "Bool" + nullableString
     override def byteCodeName: String = "Z"
     override val codes     = BoolCodeMap
     override val size: Int = 1
@@ -186,14 +206,30 @@ object Types {
     def unapply(t: TArray) = Some(t.tpe)
   }
   class TArray(val tpe: Type, override val isNullable: Boolean = false) extends Type {
-    override def getNullable = new TArray(tpe, true)
-    override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
-      case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-      case _              => false
+    override def getNullable = if(isNullable) this else new TArray(tpe, true)
+    override def getNonNullable = if(isNullable) new TArray(tpe, false) else this
+
+    override def isSubTypeOf(otherTpe: Type): Boolean = {
+      if (invalidNullableAssignment(this, otherTpe))
+        return false
+
+      otherTpe match {
+        case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
+        case _              => false
+      }
     }
 
-    override def implicitlyConvertableFrom() = List()
-    override def toString = tpe.toString + "[]"
+    override def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+      if (invalidNullableAssignment(tpe, this))
+        return false
+
+      tpe match {
+        case TArray(otherArrTpe) => tpe.isImplicitlyConvertableFrom(otherArrTpe)
+        case _                   => false
+      }
+    }
+
+    override def toString = tpe.toString + "[]" + nullableString
     override def byteCodeName: String = "[" + tpe.byteCodeName
     override val codes     = new ArrayCodeMap(tpe.byteCodeName)
     override val size: Int = 1
@@ -215,15 +251,21 @@ object Types {
     def unapply(t: TObject) = Some(t.classSymbol)
   }
   class TObject(val classSymbol: ClassSymbol, override val isNullable: Boolean = false) extends Type {
-    override def getNullable = new TObject(classSymbol, true)
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TObject(c) =>
-        if (classSymbol.name == c.name || c == Object.classSymbol) true
-        else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
-      case _          => false
+    override def getNullable = if(isNullable) this else new TObject(classSymbol, true)
+    override def getNonNullable = if(isNullable) new TObject(classSymbol, false) else this
+    override def isSubTypeOf(tpe: Type): Boolean = {
+      if (invalidNullableAssignment(this, tpe))
+        return false
+
+      tpe match {
+        case TObject(c) =>
+          if (classSymbol.name == c.name || c == Object.classSymbol) true
+          else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
+        case _          => false
+      }
     }
 
-    override def implicitlyConvertableFrom() =
+    override def implicitlyConvertableFrom =
       classSymbol.methods.filter(m =>
         m.name == "new" &&
           m.modifiers.contains(Implicit()) &&
@@ -233,14 +275,14 @@ object Types {
     override def getSuperTypes: List[Type] =
       this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)
 
-    override def toString = classSymbol.name
+    override def toString = classSymbol.name + nullableString
     override def byteCodeName: String = {
       val name = classSymbol.name.replaceAll("\\.", "/")
       s"L$name;"
     }
 
     override def equals(any: Any) = any match {
-      case TObject(c) => classSymbol == c
+      case TObject(c) => classSymbol.name == c.name
       case _          => false
     }
     override def hashCode = classSymbol.hashCode
@@ -251,8 +293,11 @@ object Types {
 
   case object TNull extends Type {
     override val getNullable = this
-    override val isNullable  = true
+    override val getNonNullable = this
+    override val isNullable  = false
+    override def toString = "null"
     override def byteCodeName: String = "Ljava/lang/Object;"
+    override def isSubTypeOf(other: Type) = other.isNullable
     override val codes: CodeMap = EmptyCodeMap
     override val size : Int     = 1
   }

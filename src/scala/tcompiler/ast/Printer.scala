@@ -33,9 +33,9 @@ object Printer {
 
   private def cuComment(cu: Tree) = {
     val cuName = if (cu.hasPosition)
-                   cu.file.getName
-                 else
-                   "PROGRAM (no file)"
+      cu.file.getName
+    else
+      "PROGRAM (no file)"
 
     val importMap = cu.asInstanceOf[CompilationUnit].importMap.entries.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
 
@@ -63,15 +63,19 @@ object Printer {
       case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
       case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
       case Formal(tpe, id)                                            => p"$id: $tpe"
+      case Private()                                                  => p"private"
+      case Public()                                                   => p"public"
+      case Protected()                                                => p"protected"
       // Types
-      case ArrayType(tpe) => p"$tpe[]"
-      case IntType()      => p"Int"
-      case LongType()     => p"Long"
-      case FloatType()    => p"Float"
-      case DoubleType()   => p"Double"
-      case BooleanType()  => p"Bool"
-      case CharType()     => p"Char"
-      case UnitType()     => p"Unit"
+      case ArrayType(tpe)    => p"$tpe[]"
+      case IntType()         => p"Int"
+      case LongType()        => p"Long"
+      case FloatType()       => p"Float"
+      case DoubleType()      => p"Double"
+      case BooleanType()     => p"Bool"
+      case CharType()        => p"Char"
+      case UnitType()        => p"Unit"
+      case NullableType(tpe) => p"$tpe?"
       // Statements
       case Block(stats)                      => if (stats.isEmpty) "{}" else p"$L$stats$R"
       case If(expr, thn, els)                => p"if($expr) ${Stat(thn)}${optional(els)(stat => p"${N}else ${Stat(stat)}")}"
@@ -123,6 +127,7 @@ object Printer {
       case ArrayLit(expressions)          => p"{ ${Separated(expressions, ", ")} }"
       case TrueLit()                      => p"true"
       case FalseLit()                     => p"false"
+      case NullLit()                      => p"null"
       case id@ClassID(value, list)        => p"$value${templateList(id)}"
       case Identifier(value)              => p"$value"
       case This()                         => p"this"
