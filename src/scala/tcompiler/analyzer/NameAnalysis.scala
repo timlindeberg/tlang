@@ -247,7 +247,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       val isStaticOperator = operatorDecl.modifiers.contains(Static())
       val argTypes = args.map(_.getSymbol.getType)
-      val argClassSymbols = argTypes.collect { case TObject(c, _) => c }
+      val argClassSymbols = argTypes.collect { case TObject(c) => c }
       val classSymbol = operatorDecl.getSymbol.classSymbol
 
       // Ensure that operator pertains to the class defined in and that

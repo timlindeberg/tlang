@@ -73,27 +73,27 @@ class TreeBuilder {
   }
 
   def createOne(tpe: Type): ExprTree = tpe match {
-    case Int    => IntLit(1)
-    case Char   => IntLit(1)
-    case Long   => LongLit(1l)
-    case Float  => FloatLit(1.0f)
-    case Double => DoubleLit(1.0)
-    case _       => ???
+    case _: TInt    => IntLit(1)
+    case _: TChar   => IntLit(1)
+    case _: TLong   => LongLit(1l)
+    case _: TFloat  => FloatLit(1.0f)
+    case _: TDouble => DoubleLit(1.0)
+    case _          => ???
   }
 
 
-  def getTypeTree(tpe: Type): TypeTree = tpe match {
+  def getTypeTree(tpe: Type): TypeTree = (tpe match {
     case TUnit                => UnitType()
-    case Char                => CharType()
-    case Bool                => BooleanType()
-    case Int                 => IntType()
-    case Long                => LongType()
-    case Float               => FloatType()
-    case Double              => DoubleType()
-    case TArray(t, _)            => ArrayType(getTypeTree(t))
-    case TObject(classSymbol, _) => ClassID(classSymbol.name).setSymbol(classSymbol)
+    case _: TChar             => CharType()
+    case _: TBool             => BooleanType()
+    case _: TInt              => IntType()
+    case _: TLong             => LongType()
+    case _: TFloat            => FloatType()
+    case _: TDouble           => DoubleType()
+    case TArray(t)            => ArrayType(getTypeTree(t))
+    case TObject(classSymbol) => ClassID(classSymbol.name).setSymbol(classSymbol)
     case _                    => ???
-  }
+  }).setType(tpe)
 
   def getCode = {
     val g = GeneratedExpr(code.toList).setPos(code.head)

@@ -17,8 +17,8 @@ import tcompiler.utils.{Context, Reporter}
 import scala.util.Random
 
 /**
- * Created by Tim Lindeberg on 4/2/2016.
- */
+  * Created by Tim Lindeberg on 4/2/2016.
+  */
 class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Flag = "--eval"
@@ -29,15 +29,14 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   var testFolderFile = new File(TestFolder)
   var testFile       = new File(TestFilePath)
 
-  val Compiler     = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
-  val Rand         = new Random()
-  val TestCtx      = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = Some(testFolderFile))
+  val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  val Rand          = new Random()
+  val TestCtx       = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = Some(testFolderFile))
   val TestImportMap = new ImportMap(TestCtx)
-  val TypeCheckCtx = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = None)
-  val ClassSymbol  = new ClassSymbol("obj", false)
-  val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TypeChecker  = new TypeChecker(TypeCheckCtx, TestImportMap,  MainMethod)
-
+  val TypeCheckCtx  = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = None)
+  val ClassSymbol   = new ClassSymbol("obj", false)
+  val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
 
 
   val MainName      = "Main"
@@ -57,7 +56,6 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val combinations = for (x <- types; y <- types) yield (x, y)
 
 
-
   implicit def intWithTimes(n: Int) = new {
     def times(f: => Unit): Unit = 1 to n foreach { _ => f }
   }
@@ -73,31 +71,31 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     testFolderFile.delete()
   }
 
-//  behavior of s"RandomTesting ($NumberOfTests x)"
-//
-//  it should "Plus" in testOperator(Plus)
-//  it should "Minus" in testOperator(Minus)
-//  it should "Times" in testOperator(Times)
-//  it should "Div" in testOperator(Div)
-//  it should "Mod" in testOperator(Modulo)
-//
-//  it should "LogicAnd" in testOperator(LogicAnd)
-//  it should "LogicOr" in testOperator(LogicOr)
-//  it should "LogicXor" in testOperator(LogicXor)
-//
-//  it should "LeftShift" in testOperator(LeftShift)
-//  it should "RightShift" in testOperator(RightShift)
-//
-//  it should "Assign" in testAssignmentOperator(Assign)
-//  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
-//
-//  it should "LessThan" in testOperator(LessThan)
-//  it should "LessThanEquals" in testOperator(LessThanEquals)
-//  it should "GreaterThan" in testOperator(GreaterThan)
-//  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
-//
-//  ignore should "Equals" in testOperator(Equals)
-//  ignore should "NotEquals" in testOperator(NotEquals)
+  //  behavior of s"RandomTesting ($NumberOfTests x)"
+  //
+  //  it should "Plus" in testOperator(Plus)
+  //  it should "Minus" in testOperator(Minus)
+  //  it should "Times" in testOperator(Times)
+  //  it should "Div" in testOperator(Div)
+  //  it should "Mod" in testOperator(Modulo)
+  //
+  //  it should "LogicAnd" in testOperator(LogicAnd)
+  //  it should "LogicOr" in testOperator(LogicOr)
+  //  it should "LogicXor" in testOperator(LogicXor)
+  //
+  //  it should "LeftShift" in testOperator(LeftShift)
+  //  it should "RightShift" in testOperator(RightShift)
+  //
+  //  it should "Assign" in testAssignmentOperator(Assign)
+  //  it should "ArrayAssign" in testArrayAssignmentOperator(ArrayAssign)
+  //
+  //  it should "LessThan" in testOperator(LessThan)
+  //  it should "LessThanEquals" in testOperator(LessThanEquals)
+  //  it should "GreaterThan" in testOperator(GreaterThan)
+  //  it should "GreaterThanEquals" in testOperator(GreaterThanEquals)
+  //
+  //  ignore should "Equals" in testOperator(Equals)
+  //  ignore should "NotEquals" in testOperator(NotEquals)
 
 
   def testOperator(operator: (ExprTree, ExprTree) => ExprTree) = {
@@ -121,7 +119,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     }
 
-   def testArrayAssignmentOperator(operator: (VariableID, ExprTree, ExprTree) => ExprTree) =
+  def testArrayAssignmentOperator(operator: (VariableID, ExprTree, ExprTree) => ExprTree) =
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
       val id = VariableID(IdName).setSymbol(new VariableSymbol(IdName)).setType(TArray(tpe))
@@ -135,13 +133,13 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def scalaVariableDeclaration(tpe: Type) = {
     val scalaType = tpe match {
       case Bool => "Boolean"
-      case _     => tpe.toString
+      case _    => tpe.toString
     }
 
     val defaultValue = tpe match {
-      case Int | Long | Float | Double | Char => "0"
-      case Bool                                   => "false"
-      case _                                       => ???
+      case _: TInt | _: TLong | _: TFloat | _: TDouble | _: TChar => "0"
+      case _: TBool                                               => "false"
+      case _                                                      => ???
     }
     s"var $IdName: $scalaType = $defaultValue"
   }
@@ -149,7 +147,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def scalaArrayDeclaration(tpe: Type) = {
     val scalaType = tpe match {
       case Bool => "Boolean"
-      case _     => tpe.toString
+      case _    => tpe.toString
     }
 
     s"var $IdName: Array[$scalaType] = new Array[$scalaType](1)"
@@ -244,9 +242,9 @@ println($IdName[0])
   private def randChar = {
     val illegalChars = List[Char]('\'')
     var c: Char = 0
-    do{
+    do {
       c = Rand.nextPrintableChar()
-    }while(illegalChars.contains(c))
+    } while (illegalChars.contains(c))
     c
   }
 }
