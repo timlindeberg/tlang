@@ -83,7 +83,8 @@ object Types {
     override val size: Int = 0
   }
 
-  case object TInt extends Type {
+  val Int = classOf[TInt]
+  trait TInt extends Type {
     override def implicitlyConvertableFrom() = List(TChar)
     override def toString = "Int"
     override def byteCodeName: String = "I"
@@ -91,7 +92,11 @@ object Types {
     override val size: Int = 1
   }
 
-  case object TLong extends Type {
+  case object TInt extends TInt
+  case object TNullableInt extends TInt
+
+  val Long = classOf[TLong]
+  trait TLong extends Type {
     override def implicitlyConvertableFrom() = List(TChar, TInt)
     override def toString = "Long"
     override def byteCodeName: String = "J"
@@ -99,40 +104,56 @@ object Types {
     override val size: Int = 2
   }
 
-  case object TFloat extends Type {
+  case object TLong extends TLong
+  case object TNullableLong extends TLong
+
+  val Float = classOf[TFloat]
+  trait TFloat extends Type {
     override def implicitlyConvertableFrom() = List(TLong, TChar, TInt)
     override def toString = "Float"
     override def byteCodeName: String = "F"
     override val codes     = FloatCodeMap
     override val size: Int = 1
   }
+  case object TFloat extends TFloat
+  case object TNullableFloat extends TFloat
 
-  case object TDouble extends Type {
+  val Double = classOf[TDouble]
+  trait TDouble extends Type {
     override def implicitlyConvertableFrom() = List(TFloat, TLong, TChar, TInt)
     override def toString = "Double"
     override def byteCodeName: String = "D"
     override val codes     = DoubleCodeMap
     override val size: Int = 2
   }
+  case object TDouble extends TDouble
+  case object TNullableDouble extends TDouble
 
-  case object TChar extends Type {
+  val Char = classOf[TChar]
+  trait TChar extends Type {
     override def toString = "Char"
     override def byteCodeName: String = "C"
     override val codes     = CharCodeMap
     override val size: Int = 1
   }
+  case object TChar extends TChar
+  case object TNullableChar extends TChar
 
-  case object TBool extends Type {
+  val Bool = classOf[TBool]
+  trait TBool extends Type {
     override def toString = "Bool"
     override def byteCodeName: String = "Z"
     override val codes     = BoolCodeMap
     override val size: Int = 1
   }
+  case object TBool extends TBool
+  case object TNullableBool extends TBool
 
+  val Array = classOf[TBool]
   case class TArray(tpe: Type) extends Type {
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
-      case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
-      case _              => false
+      case arr: TArray => tpe.isSubTypeOf(arr.tpe)
+      case _           => false
     }
 
     override def implicitlyConvertableFrom() = List()
@@ -145,12 +166,14 @@ object Types {
       case _         => 1
     }
   }
+  case class TNullableArray(override val tpe: Type) extends TArray(tpe)
 
+  val Object = classOf[TObject]
   case class TObject(classSymbol: ClassSymbol) extends Type {
 
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c == Object.classSymbol) true
+        if (classSymbol.name == c.name) true
         else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
       case _          => false
     }
@@ -177,30 +200,18 @@ object Types {
     override val size  = 1
   }
 
+  case class TNullableObject(override val classSymbol: ClassSymbol) extends TObject(classSymbol)
+
   case object TNull extends Type {
     override def byteCodeName: String = "Ljava/lang/Object;"
     override val codes: CodeMap = EmptyCodeMap
     override val size : Int     = 1
   }
 
-  case class TNullable(tpe: Type) extends Type {
-    override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
-      case TNullable(arrTpe) => tpe.isSubTypeOf(arrTpe)
-      case _                 => false
-    }
-
-    override def implicitlyConvertableFrom() = tpe.implicitlyConvertableFrom()
-    override def toString = tpe.toString + "?"
-    override def byteCodeName = tpe.byteCodeName
-    override val codes     = tpe.codes
-    override val size: Int = tpe.size
-  }
-
   // For checking of a type is an object
-  var Object = TObject(ClassSymbolLocator.findSymbol(Main.TLangObject)
+  var TObjectClass = TObject(ClassSymbolLocator.findSymbol(Main.TLangObject)
     .getOrElse(new ClassSymbol(Main.TLangObject, false)))
-  var String = TObject(ClassSymbolLocator.findSymbol(Main.TLangString)
+  var TStringClass = TObject(ClassSymbolLocator.findSymbol(Main.TLangString)
     .getOrElse(new ClassSymbol(Main.TLangString, false)))
-  val Array  = TArray(Object)
 }
 

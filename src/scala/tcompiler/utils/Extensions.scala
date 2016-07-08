@@ -16,8 +16,8 @@ object Extensions {
     val c1 = t._1.getClass
     val c2 = t._2.getClass
 
-    def anyIs(types: Type*) = types.map(_.getClass).exists(c => c == c1 || c == c2)
-    def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
+    def anyIs[T <: Type](clazzes: Class[T]*) = clazzes.exists(c => c.isAssignableFrom(c1) || c.isAssignableFrom(c2))
+    def bothAre[T <: Type](clazzes: Class[T]*) = clazzes.exists(c => c.isAssignableFrom(c1) && c.isAssignableFrom(c2))
   }
 
   implicit class TraversableExtensions[T](l: Traversable[T]) {
