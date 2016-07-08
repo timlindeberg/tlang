@@ -113,7 +113,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       val newSymbol = new ClassSymbol(fullName, isAbstract)
       if (name != fullName)
         cu.importMap.addImport(name, fullName)
-      newSymbol.writtenName = name
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
       id.setSymbol(newSymbol)
@@ -248,7 +247,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       val isStaticOperator = operatorDecl.modifiers.contains(Static())
       val argTypes = args.map(_.getSymbol.getType)
-      val argClassSymbols = argTypes.collect { case TObject(c) => c }
+      val argClassSymbols = argTypes.collect { case TObject(c, _) => c }
       val classSymbol = operatorDecl.getSymbol.classSymbol
 
       // Ensure that operator pertains to the class defined in and that
@@ -535,6 +534,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def setType(tpe: TypeTree): Type = {
     tpe match {
+      case BooleanType()             => tpe.setType(Bool)
+      case IntType()                 => tpe.setType(Int)
+      case LongType()                => tpe.setType(Long)
+      case FloatType()               => tpe.setType(Float)
+      case DoubleType()              => tpe.setType(Double)
+      case CharType()                => tpe.setType(Char)
+      case UnitType()                => tpe.setType(TUnit)
       case tpeId@ClassID(name, _)    =>
         globalScope.lookupClass(importMap, name) match {
           case Some(classSymbol) =>
@@ -543,9 +549,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           case None              =>
             ErrorUnknownType(name, tpeId)
         }
-      case ArrayType(arrayTpe)       => setType(arrayTpe)
-      case NullableType(nullableTpe) => setType(nullableTpe)
-      case _ =>
+      case ArrayType(arrayTpe)       =>
+        setType(arrayTpe)
+        tpe.setType(TArray(arrayTpe.getType))
+      case NullableType(nullableTpe) =>
+        val t = setType(nullableTpe).getNullable
+        nullableTpe.setType(t)
+        tpe.setType(t)
     }
     tpe.getType
   }

@@ -45,12 +45,12 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val StringLength  = 5
   val NumberOfTests = 1
 
-  val int    = () => IntLit(Rand.nextInt).setType(TInt)
-  val bool   = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(TBool)
-  val long   = () => LongLit(Rand.nextLong % Int.MaxValue).setType(TLong)
-  val float  = () => FloatLit(Rand.nextFloat).setType(TFloat)
-  val double = () => DoubleLit(Rand.nextDouble % Float.MaxValue).setType(TDouble)
-  val char   = () => CharLit(randChar).setType(TChar)
+  val int    = () => IntLit(Rand.nextInt).setType(Int)
+  val bool   = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(Bool)
+  val long   = () => LongLit(Rand.nextLong % scala.Int.MaxValue).setType(Long)
+  val float  = () => FloatLit(Rand.nextFloat).setType(Float)
+  val double = () => DoubleLit(Rand.nextDouble % scala.Float.MaxValue).setType(Double)
+  val char   = () => CharLit(randChar).setType(Char)
   val string = () => StringLit(Rand.nextString(StringLength)).setType(String)
 
   val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
@@ -134,13 +134,13 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   private def scalaVariableDeclaration(tpe: Type) = {
     val scalaType = tpe match {
-      case TBool => "Boolean"
+      case Bool => "Boolean"
       case _     => tpe.toString
     }
 
     val defaultValue = tpe match {
-      case TInt | TLong | TFloat | TDouble | TChar => "0"
-      case TBool                                   => "false"
+      case Int | Long | Float | Double | Char => "0"
+      case Bool                                   => "false"
       case _                                       => ???
     }
     s"var $IdName: $scalaType = $defaultValue"
@@ -148,7 +148,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   private def scalaArrayDeclaration(tpe: Type) = {
     val scalaType = tpe match {
-      case TBool => "Boolean"
+      case Bool => "Boolean"
       case _     => tpe.toString
     }
 

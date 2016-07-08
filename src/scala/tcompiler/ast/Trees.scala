@@ -237,38 +237,14 @@ object Trees {
     val name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree {
-    val name = tpe.name + "[]"
-    override def getType = TArray(tpe.getType)
-  }
-  case class NullableType(var tpe: TypeTree) extends TypeTree {
-    val name = tpe.name + "?"
-    override def getType = TNullable(tpe.getType)
-  }
-  case class IntType() extends TypeTree with Leaf {
-    val name = "Int"
-    override def getType = TInt
-  }
-  case class LongType() extends TypeTree with Leaf {
-    val name = "Long"
-    override def getType = TLong
-  }
-  case class FloatType() extends TypeTree with Leaf {
-    val name = "Float"
-    override def getType = TFloat
-  }
-  case class DoubleType() extends TypeTree with Leaf {
-    val name = "Double"
-    override def getType = TDouble
-  }
-  case class BooleanType() extends TypeTree with Leaf {
-    val name = "Bool"
-    override def getType = TBool
-  }
-  case class CharType() extends TypeTree with Leaf {
-    val name = "Char"
-    override def getType = TChar
-  }
+  case class ArrayType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
+  case class NullableType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
+  case class IntType() extends TypeTree with Leaf {val name = "Int"}
+  case class LongType() extends TypeTree with Leaf {val name = "Long"}
+  case class FloatType() extends TypeTree with Leaf {val name = "Float"}
+  case class DoubleType() extends TypeTree with Leaf {val name = "Double"}
+  case class BooleanType() extends TypeTree with Leaf {val name = "Bool"}
+  case class CharType() extends TypeTree with Leaf {val name = "Char"}
   case class UnitType() extends TypeTree with Leaf {
     val name = "Unit"
     override def getType = TUnit
@@ -326,7 +302,7 @@ object Trees {
     }
     def lookupOperator(classType: Type, args: List[Type]) = {
       classType match {
-        case TObject(classSymbol) => classSymbol.lookupOperator(this, args)
+        case TObject(classSymbol, _) => classSymbol.lookupOperator(this, args)
         case _                    => None
       }
     }
@@ -504,36 +480,37 @@ object Trees {
   }
 
   case class IntLit(value: Int) extends Literal[Int] {
-    override def getType = TInt
+    override def getType = Types.Int
   }
   case class LongLit(value: Long) extends Literal[Long] {
-    override def getType = TLong
+    override def getType = Types.Long
   }
   case class FloatLit(value: Float) extends Literal[Float] {
-    override def getType = TFloat
+    override def getType = Types.Float
   }
   case class DoubleLit(value: Double) extends Literal[Double] {
-    override def getType = TDouble
+    override def getType = Types.Double
   }
   case class CharLit(value: Char) extends Literal[Char] {
-    override def getType = TChar
+    override def getType = Types.Char
   }
   case class StringLit(value: String) extends Literal[String] {
     override def getType = Types.String
   }
-  case class ArrayLit(value: List[ExprTree]) extends ExprTree
   case class TrueLit() extends Literal[Boolean] with Leaf {
     val value = true
-    override def getType = TBool
+    override def getType = Types.Bool
   }
   case class FalseLit() extends Literal[Boolean] with Leaf {
     val value = false
-    override def getType = TBool
+    override def getType = Types.Bool
   }
   case class NullLit() extends Literal[Null] with Leaf {
     val value = null
     override def getType = TNull
   }
+
+  case class ArrayLit(value: List[ExprTree]) extends ExprTree
 
   trait Identifier[T <: Symbol] extends ExprTree with Symbolic[T] {
     val name: String

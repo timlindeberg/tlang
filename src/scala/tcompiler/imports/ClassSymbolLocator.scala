@@ -55,7 +55,6 @@ object ClassSymbolLocator {
       (f.name, f)
     }.toMap
     classSymbol.setType(TObject(classSymbol))
-    classSymbol.writtenName = classSymbol.name
   }
 
 
@@ -128,14 +127,14 @@ object ClassSymbolLocator {
 
   private def convertType(tpe: Type): tcompiler.analyzer.Types.Type = tpe match {
     case x: BasicType                         => x match {
-      case Type.BOOLEAN => TBool
-      case Type.INT     => TInt
-      case Type.BYTE    => TInt // TODO: Add byte type
-      case Type.SHORT   => TInt // TODO: Add short type
-      case Type.CHAR    => TChar
-      case Type.LONG    => TLong
-      case Type.FLOAT   => TFloat
-      case Type.DOUBLE  => TDouble
+      case Type.BOOLEAN => Bool
+      case Type.INT     => Int
+      case Type.BYTE    => Int // TODO: Add byte type
+      case Type.SHORT   => Int // TODO: Add short type
+      case Type.CHAR    => Char
+      case Type.LONG    => Long
+      case Type.FLOAT   => Float
+      case Type.DOUBLE  => Double
       case Type.VOID    => TUnit
     }
     case x: ObjectType                        => TObject(incompleteClass(x))
@@ -143,30 +142,31 @@ object ClassSymbolLocator {
   }
 
   private def getOperatorType(name: String) = {
+    val e = Empty()
     name.drop(1) match {
-      case "Plus"              => Plus(Empty(), Empty())
-      case "Minus"             => Minus(Empty(), Empty())
-      case "Times"             => Times(Empty(), Empty())
-      case "Div"               => Div(Empty(), Empty())
-      case "Modulo"            => Modulo(Empty(), Empty())
-      case "LogicAnd"          => LogicAnd(Empty(), Empty())
-      case "LogicOr"           => LogicOr(Empty(), Empty())
-      case "LogicXor"          => LogicXor(Empty(), Empty())
-      case "LeftShift"         => LeftShift(Empty(), Empty())
-      case "RightShift"        => RightShift(Empty(), Empty())
-      case "LessThan"          => LessThan(Empty(), Empty())
-      case "LessThanEquals"    => LessThanEquals(Empty(), Empty())
-      case "GreaterThan"       => GreaterThan(Empty(), Empty())
-      case "GreaterThanEquals" => GreaterThanEquals(Empty(), Empty())
-      case "Equals"            => Equals(Empty(), Empty())
-      case "NotEquals"         => NotEquals(Empty(), Empty())
-      case "LogicNot"          => LogicNot(Empty())
-      case "Not"               => Not(Empty())
-      case "Hash"              => Hash(Empty())
-      case "PreIncrement"      => PreIncrement(Empty())
-      case "PreDecrement"      => PreDecrement(Empty())
-      case "ArrayRead"         => ArrayRead(Empty(), Empty())
-      case "ArrayAssign"       => ArrayAssign(Empty(), Empty(), Empty())
+      case "Plus"              => Plus(e, e)
+      case "Minus"             => Minus(e, e)
+      case "Times"             => Times(e, e)
+      case "Div"               => Div(e, e)
+      case "Modulo"            => Modulo(e, e)
+      case "LogicAnd"          => LogicAnd(e, e)
+      case "LogicOr"           => LogicOr(e, e)
+      case "LogicXor"          => LogicXor(e, e)
+      case "LeftShift"         => LeftShift(e, e)
+      case "RightShift"        => RightShift(e, e)
+      case "LessThan"          => LessThan(e, e)
+      case "LessThanEquals"    => LessThanEquals(e, e)
+      case "GreaterThan"       => GreaterThan(e, e)
+      case "GreaterThanEquals" => GreaterThanEquals(e, e)
+      case "Equals"            => Equals(e, e)
+      case "NotEquals"         => NotEquals(e, e)
+      case "LogicNot"          => LogicNot(e)
+      case "Not"               => Not(e)
+      case "Hash"              => Hash(e)
+      case "PreIncrement"      => PreIncrement(e)
+      case "PreDecrement"      => PreDecrement(e)
+      case "ArrayRead"         => ArrayRead(e, e)
+      case "Assign"            => Assign(ArrayRead(e, e), e)
       case x                   => ???
     }
   }

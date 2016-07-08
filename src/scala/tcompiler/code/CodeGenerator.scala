@@ -182,11 +182,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case FloatLit(value)                              => ch << Ldc(value)
       case DoubleLit(value)                             => ch << Ldc(value)
       case StringLit(value)                             =>
-        val objName = Types.String.classSymbol.name
-        ch << cafebabe.AbstractByteCodes.New(objName)
+        val stringName = Types.String.classSymbol.name
+        ch << cafebabe.AbstractByteCodes.New(stringName)
         Types.String.codes.dup(ch)
         ch << Ldc(value)
-        ch << InvokeSpecial(objName, ConstructorName, s"(L$JavaString;)V")
+        ch << InvokeSpecial(stringName, ConstructorName, s"(L$JavaString;)V")
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
@@ -222,15 +222,15 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(TDouble) =>
+          case _ if args.anyIs(Double) =>
             lhs.getType.codes.toDouble(ch)
             compileExpr(rhs)
             rhs.getType.codes.toDouble(ch)
-          case _ if args.anyIs(TFloat)  =>
+          case _ if args.anyIs(Float)  =>
             lhs.getType.codes.toFloat(ch)
             compileExpr(rhs)
             rhs.getType.codes.toFloat(ch)
-          case _ if args.anyIs(TLong)   =>
+          case _ if args.anyIs(Long)   =>
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toLong(ch)
@@ -250,7 +250,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case logicOp@LogicalOperatorTree(lhs, rhs)        =>
         val args = (lhs.getType, rhs.getType)
         args match {
-          case _ if args.anyIs(TLong) =>
+          case _ if args.anyIs(Long) =>
             compileExpr(lhs)
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
@@ -271,10 +271,10 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         compileExpr(lhs)
         val args = (lhs.getType, rhs.getType)
         args match {
-          case (TLong, _) =>
+          case (Long, _) =>
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case (_, TLong) =>
+          case (_, Long) =>
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
@@ -332,14 +332,14 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           compileExpr(obj)
 
         val classSymbol = obj.getType match {
-          case TArray(tpe)          =>
+          case TArray(tpe, _)          =>
             // If the object is an array this is the method call Size()
             // TODO: Find of way of not hardcoding this
             val mc = application.asInstanceOf[MethodCall]
             assert(mc.meth.name == "Size" && mc.args.isEmpty)
             ch << ARRAYLENGTH
             return
-          case TObject(classSymbol) => classSymbol
+          case TObject(classSymbol, _) => classSymbol
           case _                    => ???
         }
 
@@ -377,7 +377,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         }
       case Trees.New(tpe, args)                         =>
         tpe.getType match {
-          case TObject(classSymbol) =>
+          case TObject(classSymbol, _) =>
             val argTypes = args.map(_.getType)
             ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
             tpe.getType.codes.dup(ch)
@@ -418,12 +418,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           case x: TObject =>
             compileExpr(expr)
             ch << InvokeVirtual(JavaObject, "hashCode", "()I")
-          case TInt       => hashFunction(JavaInt)
-          case TChar      => hashFunction(JavaChar)
-          case TFloat     => hashFunction(JavaFloat)
-          case TDouble    => hashFunction(JavaDouble)
-          case TLong      => hashFunction(JavaLong)
-          case TBool      => hashFunction(JavaBool)
+          case Int       => hashFunction(JavaInt)
+          case Char      => hashFunction(JavaChar)
+          case Float     => hashFunction(JavaFloat)
+          case Double    => hashFunction(JavaDouble)
+          case Long      => hashFunction(JavaLong)
+          case Bool      => hashFunction(JavaBool)
           case _          => ???
         }
       case Ternary(condition, thn, els)                 =>
@@ -453,9 +453,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     val codes = toConvert.codes
     desiredType match {
       case _: TObject =>
-      case TDouble    => codes.toDouble(ch)
-      case TFloat     => codes.toFloat(ch)
-      case TLong      => codes.toLong(ch)
+      case Double    => codes.toDouble(ch)
+      case Float     => codes.toFloat(ch)
+      case Long      => codes.toLong(ch)
       case _          => codes.toInt(ch)
     }
   }
@@ -543,17 +543,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       val argTypes = (lhs.getType, rhs.getType)
       compileExpr(lhs)
       argTypes match {
-        case _ if argTypes.anyIs(TDouble) =>
+        case _ if argTypes.anyIs(Double) =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case _ if argTypes.anyIs(TFloat)  =>
+        case _ if argTypes.anyIs(Float)  =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case _ if argTypes.anyIs(TLong)   =>
+        case _ if argTypes.anyIs(Long)   =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
@@ -584,17 +584,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         case _ if argTypes.anyIs(Types.Array)  =>
           compileExpr(rhs)
           comparison(Types.Array.codes)
-        case _ if argTypes.anyIs(TDouble)      =>
+        case _ if argTypes.anyIs(Double)      =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case _ if argTypes.anyIs(TFloat)       =>
+        case _ if argTypes.anyIs(Float)       =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case _ if argTypes.anyIs(TLong)        =>
+        case _ if argTypes.anyIs(Long)        =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
@@ -689,9 +689,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
           if (value > 32767 || value < -32768)
             None
           else if (!localVariableMap.contains(s1) || !localVariableMap.contains(s2))
-                 None
+            None
           else if (localVariableMap(s1) != localVariableMap(s2))
-                 None
+            None
           else
             Some(v1.getSymbol, value)
         case _              => None

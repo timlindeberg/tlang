@@ -156,8 +156,8 @@ class Desugarer {
     val varDecl = foreach.varDecl
     val stat = foreach.stat
     container.getType match {
-      case TArray(arrTpe)       => desugarArrayForeachLoop(varDecl, container, stat)
-      case TObject(classSymbol) => desugarIteratorForeachLoop(classSymbol, varDecl, container, stat)
+      case TArray(arrTpe, _)       => desugarArrayForeachLoop(varDecl, container, stat)
+      case TObject(classSymbol, _) => desugarIteratorForeachLoop(classSymbol, varDecl, container, stat)
       case _                    => ???
     }
   }
@@ -305,15 +305,15 @@ class Desugarer {
  //@formatter:on
   private def desugarArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
-    val indexDecl = c.createVarDecl("i", IntLit(0).setType(TInt))
+    val indexDecl = c.createVarDecl("i", IntLit(0))
     val index = indexDecl.id
 
     val containerId = c.putVarDecl("container", container)
 
-    val sizeCall = c.createMethodCall(container, "Size", TInt)
+    val sizeCall = c.createMethodCall(container, "Size", Int)
 
-    val comparison = LessThan(index, sizeCall).setType(TBool).setPos(varDecl)
-    val post = Assign(index, Plus(index, IntLit(1)).setType(TInt)).setType(TInt).setPos(varDecl)
+    val comparison = LessThan(index, sizeCall).setType(Bool).setPos(varDecl)
+    val post = Assign(index, Plus(index, IntLit(1)).setType(Int)).setType(Int).setPos(varDecl)
 
 
     val init = Some(ArrayRead(containerId, index).setType(containerId).setPos(varDecl))
@@ -406,23 +406,23 @@ class Desugarer {
     val arrType = arrayType.asInstanceOf[TArray].tpe
     val container = c.putVarDecl("container", arr)
 
-    val sizeCall = c.createMethodCall(container, "Size", TInt)
+    val sizeCall = c.createMethodCall(container, "Size", Int)
 
     val start = c.putVarDecl("start", arraySlice.start.getOrElse(IntLit(0)))
-    val end = c.putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(TInt))
+    val end = c.putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(Int))
 
-    val size = List(Minus(end, start).setType(TInt))
+    val size = List(Minus(end, start).setType(Int))
     val typeTree = c.getTypeTree(arrayType.asInstanceOf[TArray].tpe)
     val newArray = Trees.NewArray(typeTree, size).setType(arr)
     val slice = c.putVarDecl("slice", newArray)
 
     val indexDecl = c.createVarDecl("i", start)
     val indexId = indexDecl.id
-    val comparison = LessThan(indexId, end).setType(TBool)
-    val post = Assign(indexId, Plus(indexId, IntLit(1)).setType(TInt)).setType(TInt)
+    val comparison = LessThan(indexId, end).setType(Bool)
+    val post = Assign(indexId, Plus(indexId, IntLit(1)).setType(Int)).setType(Int)
 
 
-    val toSlice = ArrayRead(slice, Minus(indexId, start).setType(TInt)).setType(arraySlice)
+    val toSlice = ArrayRead(slice, Minus(indexId, start).setType(Int)).setType(arraySlice)
     val fromArr = ArrayRead(container, indexId).setType(arrType)
     val copyValue = Assign(toSlice, fromArr).setType(arrType)
 

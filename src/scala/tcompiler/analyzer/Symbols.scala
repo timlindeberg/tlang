@@ -79,8 +79,6 @@ object Symbols {
       _fields
     }
 
-    var writtenName = ""
-
     def fields_=(m: Map[String, FieldSymbol]) = _fields = m
 
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators

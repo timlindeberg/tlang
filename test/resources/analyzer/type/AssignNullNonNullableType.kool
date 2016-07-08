@@ -1,5 +1,3 @@
-// ignore
-
 var a: A? = new A()
 
 a = null

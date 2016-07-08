@@ -73,25 +73,25 @@ class TreeBuilder {
   }
 
   def createOne(tpe: Type): ExprTree = tpe match {
-    case TInt    => IntLit(1)
-    case TChar   => IntLit(1)
-    case TLong   => LongLit(1l)
-    case TFloat  => FloatLit(1.0f)
-    case TDouble => DoubleLit(1.0)
+    case Int    => IntLit(1)
+    case Char   => IntLit(1)
+    case Long   => LongLit(1l)
+    case Float  => FloatLit(1.0f)
+    case Double => DoubleLit(1.0)
     case _       => ???
   }
 
 
   def getTypeTree(tpe: Type): TypeTree = tpe match {
     case TUnit                => UnitType()
-    case TChar                => CharType()
-    case TBool                => BooleanType()
-    case TInt                 => IntType()
-    case TLong                => LongType()
-    case TFloat               => FloatType()
-    case TDouble              => DoubleType()
-    case TArray(t)            => ArrayType(getTypeTree(t))
-    case TObject(classSymbol) => ClassID(classSymbol.name).setSymbol(classSymbol)
+    case Char                => CharType()
+    case Bool                => BooleanType()
+    case Int                 => IntType()
+    case Long                => LongType()
+    case Float               => FloatType()
+    case Double              => DoubleType()
+    case TArray(t, _)            => ArrayType(getTypeTree(t))
+    case TObject(classSymbol, _) => ClassID(classSymbol.name).setSymbol(classSymbol)
     case _                    => ???
   }
 

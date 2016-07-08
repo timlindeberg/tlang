@@ -20,14 +20,14 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val TypeChecker = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
 
-  val int    = new TypeConstructor(TInt)
-  val bool   = new TypeConstructor(TBool)
-  val long   = new TypeConstructor(TLong)
-  val float  = new TypeConstructor(TFloat)
-  val double = new TypeConstructor(TDouble)
-  val char   = new TypeConstructor(TChar)
-  val array  = new TypeConstructor(TArray(TInt))
-  val obj    = new TypeConstructor(Types.Object)
+  val int    = new TypeConstructor(Int)
+  val bool   = new TypeConstructor(Bool)
+  val long   = new TypeConstructor(Long)
+  val float  = new TypeConstructor(Float)
+  val double = new TypeConstructor(Double)
+  val char   = new TypeConstructor(Char)
+  val array  = new TypeConstructor(TArray(Int))
+  val obj    = new TypeConstructor(Object)
 
   val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
   val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
@@ -82,76 +82,76 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   private def arithmeticOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (char, char, TInt),
+      (char, char, Int),
 
-      (int, int, TInt),
-      (int, long, TLong),
-      (int, float, TFloat),
-      (int, double, TDouble),
-      (int, char, TInt),
+      (int, int, Int),
+      (int, long, Long),
+      (int, float, Float),
+      (int, double, Double),
+      (int, char, Int),
 
-      (long, long, TLong),
-      (long, float, TFloat),
-      (long, double, TDouble),
-      (long, char, TLong),
+      (long, long, Long),
+      (long, float, Float),
+      (long, double, Double),
+      (long, char, Long),
 
-      (float, float, TFloat),
-      (float, double, TDouble),
-      (float, char, TFloat),
+      (float, float, Float),
+      (float, double, Double),
+      (float, char, Float),
 
-      (double, double, TDouble),
-      (double, char, TDouble)
+      (double, double, Double),
+      (double, char, Double)
     )
 
   private def logicOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (int, int, TInt),
-      (int, long, TLong),
-      (int, char, TInt),
+      (int, int, Int),
+      (int, long, Long),
+      (int, char, Int),
 
-      (char, char, TInt),
+      (char, char, Int),
 
-      (long, long, TLong),
-      (long, char, TLong),
-      (bool, bool, TBool)
+      (long, long, Long),
+      (long, char, Long),
+      (bool, bool, Bool)
     )
 
   private def shiftOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (int, int, TInt),
-      (int, long, TLong),
-      (int, char, TInt),
+      (int, int, Int),
+      (int, long, Long),
+      (int, char, Int),
 
-      (char, char, TInt),
+      (char, char, Int),
 
-      (long, long, TLong),
-      (long, char, TLong)
+      (long, long, Long),
+      (long, char, Long)
     )
 
   private def assignOperator() =
     new AssignmentAsserter(Assign).valid(
-      (bool, bool, TBool),
+      (bool, bool, Bool),
 
-      (char, char, TChar),
-      (char, int, TChar),
+      (char, char, Char),
+      (char, int, Char),
 
-      (int, int, TInt),
-      (int, char, TInt),
+      (int, int, Int),
+      (int, char, Int),
 
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong),
+      (long, long, Long),
+      (long, int, Long),
+      (long, char, Long),
 
-      (float, float, TFloat),
-      (float, int, TFloat),
-      (float, char, TFloat),
-      (float, long, TFloat),
+      (float, float, Float),
+      (float, int, Float),
+      (float, char, Float),
+      (float, long, Float),
 
-      (double, double, TDouble),
-      (double, float, TDouble),
-      (double, int, TDouble),
-      (double, long, TDouble),
-      (double, char, TDouble),
+      (double, double, Double),
+      (double, float, Double),
+      (double, int, Double),
+      (double, long, Double),
+      (double, char, Double),
 
       (obj, obj, obj().getType),
 
@@ -160,28 +160,28 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   private def arrayAssignOperator() =
     new ArrayAssignmentAsserter().valid(
-      (char, char, TChar),
-      (char, int, TChar),
+      (char, char, Char),
+      (char, int, Char),
 
-      (int, int, TInt),
-      (int, char, TInt),
+      (int, int, Int),
+      (int, char, Int),
 
-      (long, long, TLong),
-      (long, int, TLong),
-      (long, char, TLong),
+      (long, long, Long),
+      (long, int, Long),
+      (long, char, Long),
 
-      (bool, bool, TBool),
+      (bool, bool, Bool),
 
-      (float, float, TFloat),
-      (float, int, TFloat),
-      (float, char, TFloat),
-      (float, long, TFloat),
+      (float, float, Float),
+      (float, int, Float),
+      (float, char, Float),
+      (float, long, Float),
 
-      (double, double, TDouble),
-      (double, float, TDouble),
-      (double, int, TDouble),
-      (double, long, TDouble),
-      (double, char, TDouble),
+      (double, double, Double),
+      (double, float, Double),
+      (double, int, Double),
+      (double, long, Double),
+      (double, char, Double),
 
       (array, array, array().getType),
 
@@ -190,89 +190,89 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   private def comparisonOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (char, char, TBool),
+      (char, char, Bool),
 
-      (int, int, TBool),
-      (int, long, TBool),
-      (int, float, TBool),
-      (int, double, TBool),
-      (int, char, TBool),
+      (int, int, Bool),
+      (int, long, Bool),
+      (int, float, Bool),
+      (int, double, Bool),
+      (int, char, Bool),
 
-      (long, long, TBool),
-      (long, float, TBool),
-      (long, double, TBool),
-      (long, char, TBool),
+      (long, long, Bool),
+      (long, float, Bool),
+      (long, double, Bool),
+      (long, char, Bool),
 
-      (float, float, TBool),
-      (float, double, TBool),
-      (float, char, TBool),
+      (float, float, Bool),
+      (float, double, Bool),
+      (float, char, Bool),
 
-      (double, double, TBool),
-      (double, char, TBool)
+      (double, double, Bool),
+      (double, char, Bool)
     )
 
   private def equalsOperator(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (char, char, TBool),
+      (char, char, Bool),
 
-      (int, int, TBool),
-      (int, long, TBool),
-      (int, float, TBool),
-      (int, double, TBool),
-      (int, char, TBool),
+      (int, int, Bool),
+      (int, long, Bool),
+      (int, float, Bool),
+      (int, double, Bool),
+      (int, char, Bool),
 
-      (long, long, TBool),
-      (long, float, TBool),
-      (long, double, TBool),
-      (long, char, TBool),
+      (long, long, Bool),
+      (long, float, Bool),
+      (long, double, Bool),
+      (long, char, Bool),
 
-      (float, float, TBool),
-      (float, double, TBool),
-      (float, char, TBool),
+      (float, float, Bool),
+      (float, double, Bool),
+      (float, char, Bool),
 
-      (double, double, TBool),
-      (double, char, TBool),
+      (double, double, Bool),
+      (double, char, Bool),
 
-      (obj, obj, TBool),
+      (obj, obj, Bool),
 
-      (array, array, TBool),
+      (array, array, Bool),
 
-      (bool, bool, TBool)
+      (bool, bool, Bool)
     )
 
   private def andOr(expressionType: (VariableID, VariableID) => ExprTree) =
     BinaryExpressionAsserter.valid(expressionType,
-      (bool, bool, TBool)
+      (bool, bool, Bool)
     )
 
   private def not(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
-      (bool, TBool)
+      (bool, Bool)
     )
 
   private def negation(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
-      (int, TInt),
-      (char, TInt),
-      (long, TLong),
-      (float, TFloat),
-      (double, TDouble)
+      (int, Int),
+      (char, Int),
+      (long, Long),
+      (float, Float),
+      (double, Double)
     )
 
   private def logicalNot(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
-      (int, TInt),
-      (char, TInt),
-      (long, TLong)
+      (int, Int),
+      (char, Int),
+      (long, Long)
     )
 
   private def incrementDecrement(expressionType: VariableID => ExprTree) =
     UnaryExpressionAsserter.valid(expressionType,
-      (int, TInt),
-      (char, TChar),
-      (long, TLong),
-      (float, TFloat),
-      (double, TDouble)
+      (int, Int),
+      (char, Char),
+      (long, Long),
+      (float, Float),
+      (double, Double)
     )
 
 
