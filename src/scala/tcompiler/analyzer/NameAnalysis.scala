@@ -247,7 +247,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       val isStaticOperator = operatorDecl.modifiers.contains(Static())
       val argTypes = args.map(_.getSymbol.getType)
-      val argClassSymbols = argTypes.collect { case TObject(c, _) => c }
+      val argClassSymbols = argTypes.collect { case TObject(c) => c }
       val classSymbol = operatorDecl.getSymbol.classSymbol
 
       // Ensure that operator pertains to the class defined in and that
@@ -258,7 +258,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       if (nullableTpes.nonEmpty)
         nullableTpes.foreach(tpe => ErrorNullableInOperator(tpe))
       else if (isStaticOperator && !argClassSymbols.contains(classSymbol))
-             ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
+        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
 
       stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(_))
   }

@@ -2,8 +2,8 @@ package tcompiler.code
 
 import tcompiler.analyzer.Symbols.{ClassSymbol, OperatorSymbol}
 import tcompiler.analyzer.Types._
+import tcompiler.ast.TreeTransformer
 import tcompiler.ast.Trees._
-import tcompiler.ast.{TreeTransformer, Trees}
 import tcompiler.utils.{Context, Pipeline}
 
 /**
@@ -13,13 +13,13 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map desugar
 
-
   def desugar(cu: CompilationUnit) = {
-    System.out.flush()
     val desugarer = new Desugarer()
     desugarer(cu)
   }
+
 }
+
 class Desugarer {
 
   def apply(cu: CompilationUnit) = {
@@ -156,8 +156,8 @@ class Desugarer {
     val varDecl = foreach.varDecl
     val stat = foreach.stat
     container.getType match {
-      case TArray(arrTpe, _)       => desugarArrayForeachLoop(varDecl, container, stat)
-      case TObject(classSymbol, _) => desugarIteratorForeachLoop(classSymbol, varDecl, container, stat)
+      case TArray(arrTpe)       => desugarArrayForeachLoop(varDecl, container, stat)
+      case TObject(classSymbol) => desugarIteratorForeachLoop(classSymbol, varDecl, container, stat)
       case _                    => ???
     }
   }
@@ -413,7 +413,7 @@ class Desugarer {
 
     val size = List(Minus(end, start).setType(Int))
     val typeTree = c.getTypeTree(arrayType.asInstanceOf[TArray].tpe)
-    val newArray = Trees.NewArray(typeTree, size).setType(arr)
+    val newArray = NewArray(typeTree, size).setType(arr)
     val slice = c.putVarDecl("slice", newArray)
 
     val indexDecl = c.createVarDecl("i", start)

@@ -128,10 +128,7 @@ object Trees {
   }
 
   object Import {
-    def unapply(i: Import): Option[List[String]] = i match {
-      case i: Import => Some(i.adress)
-      case _         => None
-    }
+    def unapply(i: Import) = Some(i.adress)
   }
 
   trait Import extends Tree with Leaf {
@@ -183,10 +180,7 @@ object Trees {
 
 
   object FuncTree {
-    def unapply(f: FuncTree): Option[(MethodID, Option[TypeTree], List[Formal], Option[StatTree], Set[Modifier])] = f match {
-      case f: FuncTree => Some(f.id, f.retType, f.args, f.stat, f.modifiers)
-      case _           => None
-    }
+    def unapply(f: FuncTree) = Some(f.id, f.retType, f.args, f.stat, f.modifiers)
   }
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
@@ -258,10 +252,7 @@ object Trees {
     val expr: ExprTree
   }
   object PrintStatTree {
-    def unapply(e: PrintStatTree): Option[ExprTree] = e match {
-      case e: PrintStatTree => Some(e.expr)
-      case _                => None
-    }
+    def unapply(e: PrintStatTree)= Some(e.expr)
   }
 
 
@@ -302,7 +293,7 @@ object Trees {
     }
     def lookupOperator(classType: Type, args: List[Type]) = {
       classType match {
-        case TObject(classSymbol, _) => classSymbol.lookupOperator(this, args)
+        case TObject(classSymbol) => classSymbol.lookupOperator(this, args)
         case _                    => None
       }
     }
@@ -317,50 +308,22 @@ object Trees {
   }
 
   object BinaryOperatorTree {
-    def unapply(e: BinaryOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: BinaryOperatorTree => Some(e.lhs, e.rhs)
-      case _                     => None
-    }
+    def unapply(e: BinaryOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   trait ArithmeticOperatorTree extends BinaryOperatorTree
   object ArithmeticOperatorTree {
-    def unapply(e: ArithmeticOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: ArithmeticOperatorTree => Some(e.lhs, e.rhs)
-      case _                         => None
-    }
+    def unapply(e: ArithmeticOperatorTree)= Some(e.lhs, e.rhs)
   }
 
   trait ShiftOperatorTree extends BinaryOperatorTree
   object ShiftOperatorTree {
-    def unapply(e: ShiftOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: ShiftOperatorTree => Some(e.lhs, e.rhs)
-      case _                    => None
-    }
+    def unapply(e: ShiftOperatorTree)= Some(e.lhs, e.rhs)
   }
 
   trait LogicalOperatorTree extends BinaryOperatorTree
   object LogicalOperatorTree {
-    def unapply(e: LogicalOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: LogicalOperatorTree => Some(e.lhs, e.rhs)
-      case _                      => None
-    }
-  }
-
-  trait ComparisonOperatorTree extends BinaryOperatorTree
-  object ComparisonOperatorTree {
-    def unapply(e: ComparisonOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: ComparisonOperatorTree => Some(e.lhs, e.rhs)
-      case _                         => None
-    }
-  }
-
-  trait EqualsOperatorTree extends BinaryOperatorTree
-  object EqualsOperatorTree {
-    def unapply(e: EqualsOperatorTree): Option[(ExprTree, ExprTree)] = e match {
-      case e: EqualsOperatorTree => Some(e.lhs, e.rhs)
-      case _                     => None
-    }
+    def unapply(e: LogicalOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "+"}
@@ -376,6 +339,20 @@ object Trees {
   case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = "<<"}
   case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = ">>"}
 
+  /*-------------------------------- Branching Operator Trees --------------------------------*/
+
+  trait BranchingOperatorTree extends OperatorTree
+
+  trait ComparisonOperatorTree extends BranchingOperatorTree with BinaryOperatorTree
+  object ComparisonOperatorTree {
+    def unapply(e: ComparisonOperatorTree)= Some(e.lhs, e.rhs)
+  }
+
+  trait EqualsOperatorTree extends BranchingOperatorTree with BinaryOperatorTree
+  object EqualsOperatorTree {
+    def unapply(e: EqualsOperatorTree)= Some(e.lhs, e.rhs)
+  }
+
   case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<"}
   case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<="}
   case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = ">"}
@@ -384,8 +361,8 @@ object Trees {
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "=="}
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "!="}
 
-  case class And(lhs: ExprTree, rhs: ExprTree) extends BinaryOperatorTree {val op = "&&"}
-  case class Or(lhs: ExprTree, rhs: ExprTree) extends BinaryOperatorTree {val op = "||"}
+  case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val op = "&&"}
+  case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val op = "||"}
 
   /*-------------------------------- Unary Operator Trees --------------------------------*/
 
@@ -395,23 +372,17 @@ object Trees {
   }
 
   object UnaryOperatorTree {
-    def unapply(e: UnaryOperatorTree): Option[(ExprTree)] = e match {
-      case e: UnaryOperatorTree => Some(e.expr)
-      case _                    => None
-    }
+    def unapply(e: UnaryOperatorTree) = Some(e.expr)
   }
 
   trait IncrementDecrementTree extends UnaryOperatorTree {
     val isPre, isIncrement      : Boolean
   }
   object IncrementDecrementTree {
-    def unapply(e: IncrementDecrementTree): Option[(ExprTree)] = e match {
-      case e: IncrementDecrementTree => Some(e.expr)
-      case _                         => None
-    }
+    def unapply(e: IncrementDecrementTree) = Some(e.expr)
   }
 
-  case class Not(expr: ExprTree) extends UnaryOperatorTree {val op = "!"}
+  case class Not(expr: ExprTree) extends BranchingOperatorTree with UnaryOperatorTree {val op = "!"}
   case class Hash(expr: ExprTree) extends UnaryOperatorTree {val op = "#"}
   case class Negation(expr: ExprTree) extends UnaryOperatorTree {val op = "-"}
   case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val op = "~"}
@@ -446,10 +417,7 @@ object Trees {
     def operatorString(args: List[Any], className: String): String = className + operatorString(args)
   }
   object ArrayOperatorTree {
-    def unapply(e: ArrayOperatorTree): Option[ExprTree] = e match {
-      case e: ArrayOperatorTree => Some(e.arr)
-      case _                    => None
-    }
+    def unapply(e: ArrayOperatorTree)=Some(e.arr)
   }
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
@@ -473,10 +441,7 @@ object Trees {
   }
 
   object Literal {
-    def unapply(e: Literal[_]): Option[Any] = e match {
-      case e: Literal[_] => Some(e.value)
-      case _             => None
-    }
+    def unapply(e: Literal[_]): Option[Any] =Some(e.value)
   }
 
   case class IntLit(value: Int) extends Literal[Int] {
@@ -530,10 +495,7 @@ object Trees {
     }
   }
   object Identifier {
-    def unapply[T <: Symbol](e: Identifier[T]): Option[String] = e match {
-      case e: Identifier[T] => Some(e.name)
-      case _                => None
-    }
+    def unapply[T <: Symbol](e: Identifier[T]) = Some(e.name)
   }
 
   case class ClassID(name: String, var templateTypes: List[TypeTree] = List()) extends Identifier[ClassSymbol] with TypeTree {
@@ -592,10 +554,7 @@ object Trees {
   }
 
   object Access {
-    def unapply(e: Access): Option[(ExprTree, ExprTree)] = e match {
-      case e: Access => Some(e.obj, e.application)
-      case _         => None
-    }
+    def unapply(e: Access) = Some(e.obj, e.application)
   }
 
   case class NormalAccess(var obj: ExprTree, application: ExprTree) extends Access
