@@ -4,6 +4,7 @@ import tcompiler.analyzer.Symbols.{ClassSymbol, OperatorSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeTransformer
 import tcompiler.ast.Trees._
+import tcompiler.ast.{Printer, TreeTransformer}
 import tcompiler.utils.{Context, Pipeline}
 
 /**
@@ -52,6 +53,7 @@ class Desugarer {
 
     }
     val s = desugarTransformer.transform(cu)
+    println(Printer(s))
     s.asInstanceOf[CompilationUnit]
   }
 
