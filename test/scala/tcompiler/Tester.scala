@@ -14,10 +14,12 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
 
   import TestUtils._
 
-  val PrintErrors = false
+  val PrintErrors = true
 
   def Name: String
+
   def Path: String
+
   def Pipeline: Pipeline[List[File], List[CompilationUnit]]
 
   behavior of Name
@@ -27,15 +29,13 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
     ClassSymbolLocator.clearCache()
   }
 
-  def test(file: File): Unit ={
-    if (file.isDirectory){
+  def test(file: File): Unit = {
+    if (file.isDirectory)
       programFiles(file.getPath).foreach(test)
-    } else{
-      if(shouldBeIgnored(file))
-        ignore should file.getName in testFile(file)
-      else
-        it should file.getName in testFile(file)
-    }
+    else if (shouldBeIgnored(file))
+      ignore should file.getName in testFile(file)
+    else
+      it should file.getName in testFile(file)
   }
 
 

@@ -4,7 +4,7 @@ import java::lang::System
 
 new A().AD() // res: 1
 new A().BC() // res: 0
-new A().TimeZone() // res: Europe/Berlin
+new A().TimeZone() // res:Central European Time
 
 val locale = new Locale("sv".ToJavaString(), "SE".ToJavaString())
 println(locale.getDisplayLanguage()) // res: Swedish
@@ -29,6 +29,6 @@ class A : java::util::GregorianCalendar {
     Def AD() = println(AD)
     Def BC() = println(BC)
 
-    Def TimeZone() = println(getTimeZone().getID())
+    Def TimeZone() = println(getTimeZone().getDisplayName())
 
 }

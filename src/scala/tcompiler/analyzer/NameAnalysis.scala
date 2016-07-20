@@ -31,9 +31,10 @@ object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit
       nameAnalyzer.checkValidParenting()
     }
 
+    val importMap = cus.head.importMap
     // Set up string and object types for typechecking
-    //globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.String = TObject(sym))
-    //globalScope.lookupClass(cus.head, ASTBuilder.TLangString).ifDefined(sym => Types.Object = TObject(sym))
+    globalScope.lookupClass(importMap, Main.TLangString).ifDefined(sym => Types.String = TObject(sym))
+    globalScope.lookupClass(importMap, Main.TLangString).ifDefined(sym => Types.Object = TObject(sym))
 
     cus
   }
@@ -192,9 +193,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   private def ensureClassNotDefined(id: ClassID): Unit = {
     val name = id.name
     val fullName = importMap.getFullName(name)
-    globalScope.classes.get(fullName) match {
-      case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
-      case None      =>
+    fullName match {
+      case "kool.lang.Object" =>
+      case "kool.lang.String" =>
+      case _ =>
+        globalScope.classes.get(fullName) match {
+          case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
+          case None      =>
+        }
     }
   }
 
@@ -422,7 +428,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           case IncrementDecrementTree(expr) =>
             traverse(expr)
             expr match {
-              case id: VariableID => setVariableUsed(id)
+              case id: VariableID =>
+                setVariableUsed(id)
+                setVariableReassigned(id)
               case _              =>
             }
           case thisTree: This               =>

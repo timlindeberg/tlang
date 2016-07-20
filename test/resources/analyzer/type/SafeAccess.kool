@@ -10,7 +10,7 @@ s = a?.Test() // res: T2034
 x = a.GetB()?.Y // res: T2034
 s = a.GetB()?.Test() // res: T2034
 
-Def GetNullable(): A? = true ? null : new A()
+Def GetNullable() = true ? null : new A()
 
 class A  {
     Val X: Int = 5

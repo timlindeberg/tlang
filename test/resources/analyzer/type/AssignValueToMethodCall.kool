@@ -1,6 +1,6 @@
 val a = new A()
 
-a.Test() = 5 // res: T2036
+a.Test() = 5 // res: T2037
 
 class A {
 

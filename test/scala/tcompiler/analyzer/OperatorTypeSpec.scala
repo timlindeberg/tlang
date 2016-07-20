@@ -318,6 +318,9 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         val noErrors = !TestContext.reporter.hasErrors
+        if(!noErrors){
+          println(TestContext.reporter.errorsString)
+        }
         assert(noErrors, "for (" + lhs + ", " + rhs + ")")
       }
 

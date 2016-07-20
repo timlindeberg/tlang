@@ -805,18 +805,32 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
 
-  /** <ternary> ::= <or> [ ? <or> : <or> ] */
+  /** <ternary> ::= <elvis> [ ? <elvis> : <elvis> ] */
   def ternary() = {
     val startPos = nextToken
-    var e = or()
+    val e = elvis()
     if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
-      val thn = or()
+      val thn = elvis()
       eat(COLON)
-      val els = or()
-      e = Ternary(e, thn, els).setPos(startPos, nextToken)
+      val els = elvis()
+      Ternary(e, thn, els).setPos(startPos, nextToken)
+    }else{
+      e
     }
-    e
+  }
+
+  /** <elvis> ::= <or> [ ?: <or> ] */
+  def elvis() = {
+    val startPos = nextToken
+    val e = or()
+    if (nextTokenKind == ELVIS) {
+      eat(ELVIS)
+      val ifNull = or()
+      Elvis(e, ifNull).setPos(startPos, nextToken)
+    }else{
+      e
+    }
   }
 
   /** <or> ::= <and> { || <and> } */

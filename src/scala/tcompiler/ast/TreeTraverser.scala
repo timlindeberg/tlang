@@ -37,6 +37,8 @@ class TreeTraverser {
     case NewArray(tpe, sizes)                         => traverse(tpe, sizes)
     case New(tpe, args)                               => traverse(tpe, args)
     case Ternary(condition, thn, els)                 => traverse(condition, thn, els)
+    case Elvis(nullableValue, ifNull)                 => traverse(nullableValue, ifNull)
+    case ExtractNullable(expr)                        => traverse(expr)
     case Is(expr, id)                                 => traverse(expr, id)
     case As(expr, tpe)                                => traverse(expr, tpe)
     case MethodCall(meth, args)                       => traverse(meth, args)

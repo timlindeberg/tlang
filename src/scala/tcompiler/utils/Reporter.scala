@@ -9,6 +9,7 @@ import tcompiler.imports.ImportMap
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
+import scala.collection.mutable
 
 class CompilationException(message: String) extends Exception(message)
 
@@ -31,7 +32,7 @@ class Reporter(
 
   // Only output color to consoles
   private def GetColor(color: String) = if (useColor) color else ""
-  private var filesToLines = Map[File, IndexedSeq[String]]()
+  private val filesToLines = mutable.Map[File, IndexedSeq[String]]()
 
   private var hitMaxErrors = false
 
@@ -204,21 +205,13 @@ class Reporter(
   }
 
 
-  private def getLines(f: File): IndexedSeq[String] = {
-    filesToLines.get(f) match {
-      case Some(lines) =>
-        lines
-
-      case None =>
-        val source = Source.fromFile(f).withPositioning(true)
-        val lines = source.getLines().toIndexedSeq
-        source.close()
-
-        filesToLines += f -> lines
-
-        lines
-    }
-  }
+  private def getLines(f: File): IndexedSeq[String] =
+    filesToLines.getOrElseUpdate(f, {
+      val source = Source.fromFile(f).withPositioning(true)
+      val lines = source.getLines().toIndexedSeq
+      source.close()
+      lines
+    })
 }
 
 object TemplateNameParser extends RegexParsers {

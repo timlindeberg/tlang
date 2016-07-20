@@ -15,12 +15,7 @@ case class Context(
 
   private val JavaClassPath = "java.class.path"
 
-  val defaultClassPaths = List(Main.TDirectory, ".")
-
-  def getClassPaths =
-    classPaths :::
-      defaultClassPaths :::
-      System.getProperty(JavaClassPath).split(";").toList
+  def getClassPaths = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
 
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)
@@ -28,7 +23,7 @@ case class Context(
   val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
   method.setAccessible(true)
 
-  for(p <- classPaths ::: defaultClassPaths) {
+  for(p <- getClassPaths) {
     val f = new File(p)
     method.invoke(ClassLoader.getSystemClassLoader, f.toURI.toURL)
   }

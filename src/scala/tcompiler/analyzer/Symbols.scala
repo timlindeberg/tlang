@@ -5,6 +5,8 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ClassSymbolLocator, ImportMap}
 import tcompiler.utils._
+import tcompiler.utils.Extensions.MutableMapExtensions
+import scala.collection.mutable
 
 
 object Symbols {
@@ -28,32 +30,20 @@ object Symbols {
 
   sealed abstract class Symbol extends Positioned with Typed
 
-  val ObjectClass: ClassSymbol = new ClassSymbol("Object", false)
-  ObjectClass.setType(Types.Object)
-
   class GlobalScope {
 
-    var classes = Map[String, ClassSymbol]()
+    val classes = mutable.Map(Main.TLangObject.replaceAll("/", ".") -> Types.ObjectSymbol,
+                               Main.TLangString.replaceAll("/", ".") -> Types.StringSymbol)
 
     def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
       val fullName = importMap.getFullName(name)
-      classes.get(fullName) match {
-        case Some(classSymbol) => Some(classSymbol)
-        case None              =>
-          ClassSymbolLocator.findSymbol(fullName) match {
-            case Some(classSymbol) =>
-              classes += fullName -> classSymbol
-              Some(classSymbol)
-            case None              => None
-          }
-      }
+      classes.getOrElseMaybeUpdate(fullName, ClassSymbolLocator.findSymbol(fullName))
     }
   }
 
-  class ClassSymbol(
-    var name: String,
-    var isAbstract: Boolean,
-    var isComplete: Boolean = true) extends Symbol {
+  class ClassSymbol(var name: String,
+                    var isAbstract: Boolean,
+                    var isComplete: Boolean = true) extends Symbol {
 
     name = name.replaceAll("\\.", "/")
 
@@ -180,11 +170,10 @@ object Symbols {
       findMethodPrioritiseExactMatch(meths, name, args, exactTypes)
     }
 
-    private def findMethodPrioritiseExactMatch[T <: MethodSymbol](
-      container: List[T],
-      name: String,
-      args: List[Type],
-      exactTypes: Boolean) = {
+    private def findMethodPrioritiseExactMatch[T <: MethodSymbol](container: List[T],
+                                                                  name: String,
+                                                                  args: List[Type],
+                                                                  exactTypes: Boolean) = {
       // Prioritise exact match
       container.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true)) match {
         case Some(x) => Some(x)
@@ -211,7 +200,7 @@ object Symbols {
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
       operatorType1 match {
-        case Assign(ArrayRead(_,_),_) =>
+        case Assign(ArrayRead(_, _), _)         =>
           operatorType2.isInstanceOf[Assign] && operatorType2.asInstanceOf[Assign].to.isInstanceOf[ArrayRead]
         case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
         case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
@@ -220,11 +209,10 @@ object Symbols {
     }
   }
 
-  class MethodSymbol(
-    val name: String,
-    val classSymbol: ClassSymbol,
-    val stat: Option[StatTree],
-    val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+  class MethodSymbol(val name: String,
+                     val classSymbol: ClassSymbol,
+                     val stat: Option[StatTree],
+                     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
     var isAbstract                       = stat.isEmpty
     var args                             = Map[String, VariableSymbol]()
@@ -265,12 +253,11 @@ object Symbols {
 
   }
 
-  class OperatorSymbol(
-    val operatorType: OperatorTree,
-    override val classSymbol: ClassSymbol,
-    override val stat: Option[StatTree],
-    override val modifiers: Set[Modifier]
-  ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
+  class OperatorSymbol(val operatorType: OperatorTree,
+                       override val classSymbol: ClassSymbol,
+                       override val stat: Option[StatTree],
+                       override val modifiers: Set[Modifier]
+                      ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
 
     def operatorString = operatorType.operatorString(argList.map(_.getType))
 
@@ -278,14 +265,12 @@ object Symbols {
 
   }
 
-  class VariableSymbol(
-    val name: String,
-    val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable
+  class VariableSymbol(val name: String,
+                       val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable
 
-  class FieldSymbol(
-    override val name: String,
-    override val modifiers: Set[Modifier] = Set(),
-    val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
+  class FieldSymbol(override val name: String,
+                    override val modifiers: Set[Modifier] = Set(),
+                    val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
   case class ErrorSymbol(name: String = "") extends Symbol
 

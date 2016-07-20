@@ -77,6 +77,7 @@ object Tokens {
   case object OR            extends TokenKind("||")
   case object QUESTIONMARK  extends TokenKind("?")
   case object SAFEACCESS    extends TokenKind("?.")
+  case object ELVIS         extends TokenKind("?:")
   case object LOGICNOT      extends TokenKind("~")
   case object LOGICAND      extends TokenKind("&")
   case object LOGICOR       extends TokenKind("|")

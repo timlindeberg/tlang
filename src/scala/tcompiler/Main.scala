@@ -27,7 +27,8 @@ object Main extends MainErrors {
   val TLangObject   = "kool/lang/Object"
   val TLangString   = "kool/lang/String"
 
-  var TDirectory         = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\src\\stdlib"
+  def TDirectory = sys.env(THome)
+
   var Reporter: Reporter = null
 
   val flagActive = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
@@ -35,13 +36,10 @@ object Main extends MainErrors {
   def main(args: Array[String]) {
     try {
       ctx = processOptions(args)
-      if (!sys.env.contains(THome))
-        FatalCantFindTHome(THome)
 
-      TDirectory = sys.env(THome)
-
-      if (!isValidTHomeDirectory(TDirectory))
-        FatalInvalidTHomeDirectory(TDirectory, THome)
+      val tDir = sys.env(THome)
+      if (!isValidTHomeDirectory(tDir))
+        FatalInvalidTHomeDirectory(tDir, THome)
 
       val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
       val compilation = Desugaring andThen CodeGeneration
@@ -142,7 +140,12 @@ object Main extends MainErrors {
         Some(new File(dir))
       case None      => None
     }
-    Context(Reporter, files, classPaths, dir)
+
+    if (!sys.env.contains(THome))
+      FatalCantFindTHome(THome)
+
+    val cp = TDirectory :: classPaths
+    Context(Reporter, files, cp, dir)
   }
 
   private def checkValidClassPaths(classPaths: List[String]) =
@@ -184,6 +187,9 @@ object Main extends MainErrors {
   )
 
   private def isValidTHomeDirectory(path: String): Boolean = {
+    // TODO: Make this properly check that the directory is valid
+    return true
+
     val files = listFiles(new File(path))
     val neededFiles = List(
       "kool",

@@ -57,10 +57,10 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   import CodeGenerator._
 
   def compileStat(
-    statement: StatTree,
-    before: Option[String] = None,
-    after: Option[String] = None,
-    compileUseless: Boolean = false): Unit = {
+                   statement: StatTree,
+                   before: Option[String] = None,
+                   after: Option[String] = None,
+                   compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                =>
@@ -190,7 +190,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
-      case _: BranchingOperatorTree =>
+      case _: BranchingOperatorTree                     =>
         val thn = ch.getFreshLabel(Then)
         val els = ch.getFreshLabel(Else)
         val after = ch.getFreshLabel(After)
@@ -270,7 +270,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             lhs.getType.codes.toLong(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
-          case _         =>
+          case _             =>
             lhs.getType.codes.toInt(ch)
             compileExpr(rhs)
             rhs.getType.codes.toInt(ch)
@@ -332,7 +332,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             ch << ARRAYLENGTH
             return
           case TObject(classSymbol) => classSymbol
-          case _                       => ???
+          case _                    => ???
         }
 
         val className = classSymbol.name
@@ -356,15 +356,15 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
             compileArguments(methSymbol, args)
             ch << (
-              if (acc.isStatic)
-                InvokeStatic(className, methName, signature)
-              else if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
-                InvokeSpecial(className, methName, signature)
-              else if (classSymbol.isAbstract)
-                InvokeInterface(className, methName, signature)
-              else
-                InvokeVirtual(className, methName, signature)
-              )
+                  if (acc.isStatic)
+                    InvokeStatic(className, methName, signature)
+                  else if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
+                    InvokeSpecial(className, methName, signature)
+                  else if (classSymbol.isAbstract)
+                    InvokeInterface(className, methName, signature)
+                  else
+                    InvokeVirtual(className, methName, signature)
+                  )
 
             if (!duplicate && methSymbol.getType != TUnit)
               ch << POP
@@ -384,7 +384,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             }
             // Constructors are always called with InvokeSpecial
             ch << InvokeSpecial(classSymbol.name, ConstructorName, signature)
-          case primitiveType           =>
+          case primitiveType        =>
             if (args.size == 1) {
               compileExpr(args.head)
               convertType(ch, args.head.getType, primitiveType)
@@ -447,9 +447,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     val codes = toConvert.codes
     desiredType match {
       case _: TObject =>
-      case _: TDouble     => codes.toDouble(ch)
-      case _: TFloat      => codes.toFloat(ch)
-      case _: TLong       => codes.toLong(ch)
+      case _: TDouble => codes.toDouble(ch)
+      case _: TFloat  => codes.toFloat(ch)
+      case _: TLong   => codes.toLong(ch)
       case _          => codes.toInt(ch)
     }
   }
@@ -578,22 +578,22 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         case _ if argTypes.anyIs(Array)  =>
           compileExpr(rhs)
           comparison(Array.codes)
-        case _ if argTypes.anyIs(Double)       =>
+        case _ if argTypes.anyIs(Double) =>
           lhs.getType.codes.toDouble(ch)
           compileExpr(rhs)
           rhs.getType.codes.toDouble(ch)
           comparison(DoubleCodeMap)
-        case _ if argTypes.anyIs(Float)        =>
+        case _ if argTypes.anyIs(Float)  =>
           lhs.getType.codes.toFloat(ch)
           compileExpr(rhs)
           rhs.getType.codes.toFloat(ch)
           comparison(FloatCodeMap)
-        case _ if argTypes.anyIs(Long)         =>
+        case _ if argTypes.anyIs(Long)   =>
           lhs.getType.codes.toLong(ch)
           compileExpr(rhs)
           rhs.getType.codes.toLong(ch)
           comparison(LongCodeMap)
-        case _                                 =>
+        case _                           =>
           lhs.getType.codes.toInt(ch)
           compileExpr(rhs)
           rhs.getType.codes.toInt(ch)
@@ -607,10 +607,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   }
 
   private def store(
-    variable: VariableSymbol,
-    putValue: () => Unit,
-    duplicate: Boolean,
-    putObject: () => Unit = () => {ch << ArgLoad(0)}): CodeHandler = {
+                     variable: VariableSymbol,
+                     putValue: () => Unit,
+                     duplicate: Boolean,
+                     putObject: () => Unit = () => {
+                       ch << ArgLoad(0)
+                     }): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
     val codes = tpe.codes

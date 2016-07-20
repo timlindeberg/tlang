@@ -25,7 +25,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(s"'$expected'", s"'$found'", pos)
   protected def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(s"'$expected'", found, pos)
   protected def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, s"'$found'", pos)
-  protected def ErrorWrongType(expected: List[Type], found: Type, pos: Positioned): Type = {
+  protected def ErrorWrongType(expected: Traversable[Type], found: Type, pos: Positioned): Type = {
     val s = makeExpectedString(expected)
     ErrorWrongType(s, found, pos)
   }
@@ -158,11 +158,14 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorSafeAccessOnNonNullable(tpe: Type, pos: Positioned) =
     error(34, s"Cannot use safe access on non nullable type '$tpe'.", pos)
 
-  protected def ErrorExtractNullableOnNonNullable(tpe: Type, pos: Positioned) =
+  protected def ErrorExtractNullableNonNullable(tpe: Type, pos: Positioned) =
     error(35, s"Cannot use the nullable extraction operator on non nullable type '$tpe'.", pos)
 
+  protected def ErrorElvisOperatorNonNullable(tpe: Type, pos: Positioned) =
+    error(36, s"Cannot use the elvis operator on non nullable type '$tpe'.", pos)
+
   protected def ErrorAssignValueToMethodCall(pos: Positioned) =
-    error(36, s"Cannot assign a value  to the result of a method call.", pos)
+    error(37, s"Cannot assign a value to the result of a method call.", pos)
 
 
 
@@ -177,7 +180,7 @@ trait TypeCheckingErrors extends Errors {
   //  Private methods
   //---------------------------------------------------------------------------------------
 
-  private def makeExpectedString(expected: List[Type]): String = expected.size match {
+  private def makeExpectedString(expected: Traversable[Type]): String = expected.size match {
     case 0 => ""
     case 1 => s"'${expected.head}'"
     case n => expected.take(n - 1).map(t => s"'$t'").mkString(", ") + " or '" + expected.last + "'"
