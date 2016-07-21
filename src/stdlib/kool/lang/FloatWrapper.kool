@@ -1,0 +1,12 @@
+package kool::lang
+
+class FloatWrapper {
+
+    var v: Float
+
+    Def static ValueOf(v: Float) = new FloatWrapper(v)
+    Def Value() = v
+
+    def new(v: Float) = (this.v = v)
+
+}

@@ -3,62 +3,96 @@ package tcompiler.analyzer
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.CodeHandler
+import tcompiler.analyzer.Types._
+import tcompiler.code.CodeGenerator._
 
 trait CodeMap {
 
   /* Types */
-  val T_BOOL = 4
-  val T_CHAR = 5
-  val T_FLOAT = 6
+  val T_BOOL   = 4
+  val T_CHAR   = 5
+  val T_FLOAT  = 6
   val T_DOUBLE = 7
-  val T_INT = 10
-  val T_LONG = 11
-
+  val T_INT    = 10
+  val T_LONG   = 11
 
 
   // Load, store create
   def load(ch: CodeHandler, index: Int): CodeHandler = ch
+
   def store(ch: CodeHandler, index: Int): CodeHandler = ch
+
   def arrayLoad(ch: CodeHandler): CodeHandler = ch
+
   def arrayStore(ch: CodeHandler): CodeHandler = ch
+
   def defaultConstant(ch: CodeHandler): CodeHandler = ch
+
   def one(ch: CodeHandler) = ch
 
   def newArray(ch: CodeHandler): CodeHandler = ch
 
   // Comparisons
   def cmpLt(ch: CodeHandler, id: String): CodeHandler = ch
+
   def cmpLe(ch: CodeHandler, id: String): CodeHandler = ch
+
   def cmpGt(ch: CodeHandler, id: String): CodeHandler = ch
+
   def cmpGe(ch: CodeHandler, id: String): CodeHandler = ch
+
   def cmpEq(ch: CodeHandler, id: String): CodeHandler = ch
+
   def cmpNe(ch: CodeHandler, id: String): CodeHandler = ch
 
   // Math
-  def add(ch: CodeHandler): CodeHandler  = ch
+  def add(ch: CodeHandler): CodeHandler = ch
+
   def sub(ch: CodeHandler): CodeHandler = ch
+
   def mul(ch: CodeHandler): CodeHandler = ch
+
   def div(ch: CodeHandler): CodeHandler = ch
+
   def mod(ch: CodeHandler): CodeHandler = ch
 
-  def and(ch: CodeHandler): CodeHandler  = ch
+  def and(ch: CodeHandler): CodeHandler = ch
+
   def or(ch: CodeHandler): CodeHandler = ch
-  def xor(ch: CodeHandler): CodeHandler  = ch
-  def leftShift(ch: CodeHandler): CodeHandler  = ch
+
+  def xor(ch: CodeHandler): CodeHandler = ch
+
+  def leftShift(ch: CodeHandler): CodeHandler = ch
+
   def rightShift(ch: CodeHandler): CodeHandler = ch
 
   // Misc
   def ret(ch: CodeHandler): CodeHandler = ch
+
   def negation(ch: CodeHandler): CodeHandler = ch
+
   def dup(ch: CodeHandler): CodeHandler = ch
+
   def dup_x1(ch: CodeHandler): CodeHandler = ch
+
   def dup_x2(ch: CodeHandler): CodeHandler = ch
 
   // Conversions
   def toDouble(ch: CodeHandler): CodeHandler = ch
+
   def toFloat(ch: CodeHandler): CodeHandler = ch
+
   def toLong(ch: CodeHandler): CodeHandler = ch
+
   def toInt(ch: CodeHandler): CodeHandler = ch
+
+  def box(ch: CodeHandler): CodeHandler = ch
+
+  protected def _box(ch: CodeHandler, tpe: PrimitiveType) = {
+    val className = tpe.koolWrapper
+    val typeName = tpe.byteCodeName
+    ch << InvokeStatic(className, "ValueOf", s"($typeName)L$className;")
+  }
 
 }
 
@@ -101,6 +135,9 @@ object IntCodeMap extends CodeMap {
   override def toDouble(ch: CodeHandler) = ch << I2D
   override def toFloat(ch: CodeHandler) = ch << I2F
   override def toLong(ch: CodeHandler) = ch << I2L
+
+  override def box(ch: CodeHandler) = _box(ch, Types.Int)
+
 }
 
 object LongCodeMap extends CodeMap {
@@ -140,6 +177,8 @@ object LongCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler) = ch << L2F
   override def toInt(ch: CodeHandler) = ch << L2I
 
+  override def box(ch: CodeHandler) = _box(ch, Types.Long)
+
 }
 
 object FloatCodeMap extends CodeMap {
@@ -173,6 +212,8 @@ object FloatCodeMap extends CodeMap {
   override def toDouble(ch: CodeHandler) = ch << F2D
   override def toLong(ch: CodeHandler) = ch << F2L
   override def toInt(ch: CodeHandler) = ch << F2I
+
+  override def box(ch: CodeHandler) = _box(ch, Types.Float)
 }
 
 object DoubleCodeMap extends CodeMap {
@@ -206,6 +247,8 @@ object DoubleCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler) = ch << D2F
   override def toLong(ch: CodeHandler) = ch << D2L
   override def toInt(ch: CodeHandler) = ch << D2I
+
+  override def box(ch: CodeHandler) = _box(ch, Types.Double)
 }
 
 object CharCodeMap extends CodeMap {
@@ -245,6 +288,9 @@ object CharCodeMap extends CodeMap {
   override def toDouble(ch: CodeHandler) = ch << I2D
   override def toFloat(ch: CodeHandler) = ch << I2F
   override def toLong(ch: CodeHandler) = ch << I2L
+
+  override def box(ch: CodeHandler) = _box(ch, Types.Char)
+
 }
 
 object BoolCodeMap extends CodeMap {
@@ -266,6 +312,8 @@ object BoolCodeMap extends CodeMap {
   override def dup(ch: CodeHandler) = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+
+  override def box(ch: CodeHandler) = _box(ch, Types.Bool)
 
 }
 

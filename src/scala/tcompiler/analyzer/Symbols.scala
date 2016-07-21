@@ -47,6 +47,9 @@ object Symbols {
 
     name = name.replaceAll("\\.", "/")
 
+    override def getType = TObject(this)
+    override def setType(tpe: Type) = sys.error("Set type on ClassSymbol")
+
     var parents: List[ClassSymbol] = Nil
 
     private var _methods: List[MethodSymbol] = Nil
@@ -132,8 +135,11 @@ object Symbols {
       fields.get(name) match {
         case x@Some(_)                             => x
         case None if recursive && parents.nonEmpty =>
-          val matchingVars = parents.map(_.lookupField(name))
-          matchingVars.head
+          val matchingVars = parents.map(_.lookupField(name)).filter(_.isDefined)
+          if(matchingVars.isEmpty)
+            None
+          else
+            matchingVars.head
         case _                                     => None
       }
     }
@@ -142,12 +148,14 @@ object Symbols {
       findOperator(operatorType, args, exactTypes) match {
         case x@Some(_)                => x
         case None if parents.nonEmpty =>
-          val matchingOperators = parents.map(_.lookupOperator(operatorType, args, exactTypes))
-          matchingOperators.head
+          val matchingOperators = parents.map(_.lookupOperator(operatorType, args, exactTypes)).filter(_.isDefined)
+          if(matchingOperators.isEmpty)
+            None
+          else
+            matchingOperators.head
         case _                        => None
       }
     }
-
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())

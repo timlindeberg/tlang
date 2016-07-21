@@ -124,12 +124,8 @@ object Main extends MainErrors {
       !flagActive(NoColor),
       maxErrors)
 
-    if (files.size != 1)
-      FatalWrongNumFilesGiven(files.length)
-
-    val file = files.head
-    if (!file.exists())
-      FatalCannotFindFile(file.getPath)
+    for(file <- files) if (!file.exists())
+        FatalCannotFindFile(file.getPath)
 
     checkValidClassPaths(classPaths)
 

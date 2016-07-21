@@ -259,7 +259,7 @@ object Trees {
   case class VarDecl(var tpe: Option[TypeTree], var id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
-  case class While(expr: ExprTree, stat: StatTree) extends StatTree
+  case class While(condition: ExprTree, stat: StatTree) extends StatTree
   case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
 
@@ -504,13 +504,10 @@ object Trees {
     import tcompiler.modification.Templates._
 
     // The type of the identifier depends on the type of the symbol
-    override def getType: Type = if (hasSymbol) TObject(getSymbol) else TUntyped
+    override def getType: Type = if (hasSymbol) getSymbol.getType else TUntyped
 
-    override def setType(tpe: Type) = {
-      if (hasSymbol)
-        getSymbol.setType(tpe)
-      this
-    }
+    override def setType(tpe: Type) = this
+
 
     def isTemplated = templateTypes.nonEmpty
 
@@ -576,7 +573,7 @@ object Trees {
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
-  case class Is(expr: ExprTree, id: ClassID) extends ExprTree
+  case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree
   case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
 
   /*-------------------------------- Misc expression Trees --------------------------------*/

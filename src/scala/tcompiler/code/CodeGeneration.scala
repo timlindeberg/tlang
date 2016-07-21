@@ -24,11 +24,12 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell
-    classes.foreach(generateClassFile(_, ctx.outDir))
+    val outputFiles = classes.map(generateClassFile(_, ctx.outDir))
+    outputFiles foreach generateStackMapFrames
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDecl, dir: Option[File]): Unit = {
+  private def generateClassFile(classDecl: ClassDecl, dir: Option[File]): String = {
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -68,7 +69,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val file = getFilePath(dir, className)
     classFile.writeToFile(file)
 
-    generateStackMapFrames(file)
+    file
   }
 
   private def generateStackMapFrames(file: String) = {

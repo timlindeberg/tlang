@@ -4,6 +4,7 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
 import tcompiler.imports.ClassSymbolLocator
+import tcompiler.code.CodeGenerator._
 
 
 object Types {
@@ -44,18 +45,17 @@ object Types {
                      .getOrElse(new ClassSymbol(Main.TLangObject, false, false))
   val StringSymbol = ClassSymbolLocator.findSymbol(Main.TLangString)
                      .getOrElse(new ClassSymbol(Main.TLangString, false, false))
-  var Object       = TObject(ObjectSymbol)
-  var String       = TObject(StringSymbol)
+  val Object       = TObject(ObjectSymbol)
+  val String       = TObject(StringSymbol)
 
   val Array = TArray(Object)
 
-
-  val Primitives = List[Type](
-                               Int,
+  val Primitives = List[Type](Int,
                                Long,
                                Float,
                                Double,
-                               Char)
+                               Char,
+                               Bool)
 
   sealed abstract class Type {
     val isNullable: Boolean
@@ -67,15 +67,9 @@ object Types {
       if (this == tpe)
         return true
 
-      if (implicitlyConvertableFrom.contains(tpe))
-        return true
-
-
-      (this, tpe) match {
-        case (TArray(a1), TArray(a2)) => a1.isImplicitlyConvertableFrom(a2)
-        case _                        => false
-      }
+      implicitlyConvertableFrom.contains(tpe)
     }
+
     def getSuperTypes: Set[Type] = Set()
 
     def implicitlyConvertableFrom: List[Type] = List()
@@ -117,7 +111,12 @@ object Types {
     override val size: Int = 0
   }
 
-  case class TInt(isNullable: Boolean = false) extends Type {
+  sealed abstract class PrimitiveType extends Type {
+    def javaWrapper: String
+    val koolWrapper = s"kool/lang/${this}Wrapper"
+  }
+
+  case class TInt(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableInt
     override def getNonNullable = if (isNullable) Int else this
     override def implicitlyConvertableFrom = List(Char)
@@ -126,9 +125,10 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TInt]
     override val codes     = IntCodeMap
     override val size: Int = 1
+    override val javaWrapper = JavaInt
   }
 
-  case class TLong(isNullable: Boolean = false) extends Type {
+  case class TLong(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableLong
     override def getNonNullable = if (isNullable) Long else this
     override def implicitlyConvertableFrom = List(Char, Int)
@@ -137,9 +137,10 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TLong]
     override val codes     = LongCodeMap
     override val size: Int = 2
+    override val javaWrapper = JavaLong
   }
 
-  case class TFloat(isNullable: Boolean = false) extends Type {
+  case class TFloat(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableFloat
     override def getNonNullable = if (isNullable) Float else this
     override def implicitlyConvertableFrom = List(Long, Char, Int)
@@ -148,9 +149,10 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TFloat]
     override val codes     = FloatCodeMap
     override val size: Int = 1
+    override val javaWrapper = JavaFloat
   }
 
-  case class TDouble(isNullable: Boolean = false) extends Type {
+  case class TDouble(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableDouble
     override def getNonNullable = if (isNullable) Double else this
     override def implicitlyConvertableFrom = List(Float, Long, Char, Int)
@@ -159,9 +161,10 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TDouble]
     override val codes     = DoubleCodeMap
     override val size: Int = 2
+    override val javaWrapper = JavaDouble
   }
 
-  case class TChar(isNullable: Boolean = false) extends Type {
+  case class TChar(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableChar
     override def getNonNullable = if (isNullable) Char else this
     override def implicitlyConvertableFrom = List(Int)
@@ -170,9 +173,10 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TChar]
     override val codes     = CharCodeMap
     override val size: Int = 1
+    override val javaWrapper = JavaChar
   }
 
-  case class TBool(isNullable: Boolean = false) extends Type {
+  case class TBool(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableBool
     override def getNonNullable = if (isNullable) Bool else this
     override def toString = "Bool"
@@ -180,6 +184,7 @@ object Types {
     override def equals(any: Any) = any.isInstanceOf[TBool]
     override val codes     = BoolCodeMap
     override val size: Int = 1
+    override val javaWrapper = JavaBool
   }
 
   object TArray {
@@ -194,6 +199,16 @@ object Types {
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
       case _              => false
+    }
+
+    override def isImplicitlyConvertableFrom(otherTpe: Type): Boolean = {
+      if (super.isImplicitlyConvertableFrom(otherTpe))
+        return true
+
+      otherTpe match {
+        case TArray(a) => tpe.isImplicitlyConvertableFrom(a)
+        case _         => false
+      }
     }
 
     override def toString = tpe.toString + "[]"
@@ -224,16 +239,26 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
         if (classSymbol.name == c.name || c == Object.classSymbol) true
-        else classSymbol.parents exists { parent => parent.getType.isSubTypeOf(tpe) }
+        else classSymbol.parents exists { _.getType.isSubTypeOf(tpe) }
       case _          => false
     }
 
-    override def implicitlyConvertableFrom =
-      classSymbol.methods.filter(m =>
+    override def implicitlyConvertableFrom: List[Type] = {
+      if (this != Object)
+        return implicitTypes
+
+      // Object is implicitly convertable from primitive types (boxing)
+      implicitTypes ::: Primitives
+    }
+
+    def implicitTypes = {
+      val implicitConstructors = classSymbol.methods.filter(m =>
         m.name == "new" &&
           m.modifiers.contains(Implicit()) &&
-          m.argList.size == 1).
-      map(_.argList.head.getType)
+          m.argList.size == 1)
+
+      implicitConstructors.map(_.argList.head.getType)
+    }
 
     override def getSuperTypes: Set[Type] =
       (this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)).toSet

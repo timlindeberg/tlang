@@ -1,0 +1,35 @@
+val i = 1
+Test(i) // res: 1
+Test("Hej") // res: Hej
+
+val arr = {1, 1L, 1.0, 1.0F, 'c', new A()}
+
+for(val x in arr)
+    if(x is Int)
+        println(x as Int) // res: 1
+    else if(x is Long)
+        println(x as Long) // res: 1
+    else if(x is Double)
+        println(x as Double) // res: 1.0
+    else if(x is Float)
+        println(x as Float) // res: 1.0
+    else if(x is Char)
+        println(x as Char) // res: c
+    else if(x is A)
+        println(x as A) // res: A
+
+Def Test(i: Object) = {
+    if(i is Int) {
+        val x = i as Int
+        println(x)
+    } else if (i is String) {
+        val x = i as String
+        println(x)
+    } else {
+        println("Does not happen")
+    }
+}
+
+class A {
+    Def ToString() = "A"
+}

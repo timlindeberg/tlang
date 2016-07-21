@@ -230,8 +230,8 @@ class TreeCopier {
     new Ternary(condition, thn, els).copyAttrs(t)
   def Elvis(t: Tree, nullableValue: ExprTree, ifNull:ExprTree) =
     new Elvis(nullableValue, ifNull).copyAttrs(t)
-  def Is(t: Tree, expr: ExprTree, id: ClassID) =
-    new Is(expr, id).copyAttrs(t)
+  def Is(t: Tree, expr: ExprTree, tpe: TypeTree) =
+    new Is(expr, tpe).copyAttrs(t)
   def As(t: Tree, expr: ExprTree, tpe: TypeTree) =
     new As(expr, tpe).copyAttrs(t)
   def Empty(t: Tree) =
@@ -664,10 +664,10 @@ class LazyTreeCopier extends TreeCopier {
       if (nullableValue eq nullableValue0) && (ifNull eq ifNull0) => t
     case _ => super.Elvis(tree, nullableValue, ifNull)
   }
-  override def Is(tree: Tree, expr: ExprTree, id: ClassID) = tree match {
-    case t@Is(expr0, id0)
-      if (expr eq expr0) && (id eq id0) => t
-    case _ => super.Is(tree, expr, id)
+  override def Is(tree: Tree, expr: ExprTree, tpe: TypeTree) = tree match {
+    case t@Is(expr0, tpe0)
+      if (expr eq expr0) && (tpe eq tpe0) => t
+    case _ => super.Is(tree, expr, tpe)
   }
   override def As(tree: Tree, expr: ExprTree, tpe: TypeTree) = tree match {
     case t@As(expr0, tpe0)

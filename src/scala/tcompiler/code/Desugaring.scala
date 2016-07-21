@@ -311,7 +311,7 @@ class Desugarer {
 
     val containerId = c.putVarDecl("container", container)
 
-    val sizeCall = c.createMethodCall(container, "Size", Int)
+    val sizeCall = c.createMethodCall(containerId, "Size", Int)
 
     val comparison = LessThan(index, sizeCall).setType(Bool).setPos(varDecl)
     val post = Assign(index, Plus(index, IntLit(1)).setType(Int)).setType(Int).setPos(varDecl)

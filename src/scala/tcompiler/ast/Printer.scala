@@ -143,7 +143,7 @@ object Printer {
       case Continue()                     => p"continue"
       case Empty()                        => p"<EMPTY>"
       case GeneratedExpr(stats)           => p"${genExpr(stats)}"
-      case PutValue(expr)                 => p"<PutValue($expr)>"
+      case PutValue(expr)                 => s"<PutValue(${p"$expr"})>"
     }
     s
   }

@@ -1,4 +1,3 @@
-print("")
 var impl: Implicit = 1
 println(impl) // res: 1
 impl = 5

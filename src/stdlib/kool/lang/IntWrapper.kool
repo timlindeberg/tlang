@@ -1,0 +1,12 @@
+package kool::lang
+
+class IntWrapper {
+
+    var v: Int
+
+    Def static ValueOf(v: Int) = new IntWrapper(v)
+    Def Value() = v
+
+    def new(v: Int) = (this.v = v)
+
+}

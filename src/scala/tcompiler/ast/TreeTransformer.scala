@@ -119,8 +119,8 @@ class TreeTransformer {
     case GreaterThanEquals(lhs, rhs) =>
       treeCopy.GreaterThanEquals(t, tr(lhs), tr(rhs))
 
-    case Is(expr, id)                  =>
-      treeCopy.Is(t, tr(expr), tr(id))
+    case Is(expr, tpe)                  =>
+      treeCopy.Is(t, tr(expr), tr(tpe))
     case As(expr, tpe)                 =>
       treeCopy.As(t, tr(expr), tr(tpe))
     case Equals(lhs, rhs)              =>

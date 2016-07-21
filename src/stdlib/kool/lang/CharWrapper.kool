@@ -1,0 +1,12 @@
+package kool::lang
+
+class CharWrapper {
+
+    var v: Char
+
+    Def static ValueOf(v: Char) = new CharWrapper(v)
+    Def Value() = v
+
+    def new(v: Char) = (this.v = v)
+
+}

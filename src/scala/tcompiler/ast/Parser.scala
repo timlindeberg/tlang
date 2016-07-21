@@ -200,11 +200,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case COLON =>
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
-    case _     =>
-      if (isTrait)
-        List()
-      else
-        List(ClassID(TLangObject))
+    case _     => List()
   }
 
   /**
@@ -857,7 +853,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     var e = comparison()
     while (nextTokenKind == IS) {
       eat(IS)
-      e = Is(e, classIdentifier()).setPos(startPos, nextToken)
+      e = Is(e, tpe()).setPos(startPos, nextToken)
     }
     e
   }

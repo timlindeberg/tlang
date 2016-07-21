@@ -54,7 +54,6 @@ object ClassSymbolLocator {
       val f = convertField(classSymbol, field)
       (f.name, f)
     }.toMap
-    classSymbol.setType(TObject(classSymbol))
   }
 
 

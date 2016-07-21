@@ -3,6 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
+import tcompiler.ast.Printer
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
@@ -273,16 +274,11 @@ class TypeChecker(override var ctx: Context,
           case _            =>
         }
         Bool
-      case Is(expr, id)                                  =>
-        val tpe = tcExpr(expr)
-        tpe match {
-          case t: TObject =>
-            tcExpr(id, tpe.getSuperTypes)
-            Bool
-          case _          => ErrorWrongType("Object", tpe, expr)
-        }
+      case Is(expr, tpe)                                  =>
+        tcExpr(expr, Object)
+        Bool
       case As(expr, tpe)                                 =>
-        tcExpr(expr, tpe.getType.getSuperTypes)
+        tcExpr(expr, Object)
         tpe.getType
       case arrRead@ArrayRead(arr, index)                 =>
         val arrTpe = tcExpr(arr)
@@ -326,7 +322,7 @@ class TypeChecker(override var ctx: Context,
         }
         tpe.getType
       case negOp@Negation(expr)                          =>
-        tcExpr(expr, Types.Object :: Types.Primitives) match {
+        tcExpr(expr, Object, Int, Char, Long, Double, Float) match {
           case x: TObject => tcUnaryOperator(negOp, x)
           case _: TChar   => Int // Negation of char is int
           case x          => x
@@ -345,12 +341,12 @@ class TypeChecker(override var ctx: Context,
           case _                        => ErrorInvalidIncrementDecrementExpr(incOp, obj)
         }
         // TODO: Allow increment decrement for Bool types?
-        tcExpr(obj, Types.Object :: Types.Primitives) match {
+        tcExpr(obj, Object, Int, Char, Long, Double, Float) match {
           case x: TObject => tcUnaryOperator(incOp, x, Some(x)) // Requires same return type as type
           case x          => x
         }
       case notOp@LogicNot(expr)                          =>
-        tcExpr(expr, Types.Object, Int, Long, Char) match {
+        tcExpr(expr, Object, Int, Long, Char) match {
           case x: TObject => tcUnaryOperator(notOp, x)
           case _: TLong   => Long
           case _          => Int

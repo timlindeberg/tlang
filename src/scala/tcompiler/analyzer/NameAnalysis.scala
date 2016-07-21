@@ -8,6 +8,8 @@ import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
+import scala.collection.mutable.ListBuffer
+
 object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
 
   var globalScope: GlobalScope = null
@@ -30,11 +32,6 @@ object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit
       nameAnalyzer.checkVariableReassignments()
       nameAnalyzer.checkValidParenting()
     }
-
-    val importMap = cus.head.importMap
-    // Set up string and object types for typechecking
-    globalScope.lookupClass(importMap, Main.TLangString).ifDefined(sym => Types.String = TObject(sym))
-    globalScope.lookupClass(importMap, Main.TLangString).ifDefined(sym => Types.Object = TObject(sym))
 
     cus
   }
@@ -216,10 +213,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case classDecl@ClassDecl(id, parents, vars, methods, _)              =>
+    case classDecl@ClassDecl(id, parents, vars, methods, isAbstract)              =>
       setParentSymbol(id, parents, classDecl)
       val sym = classDecl.getSymbol
-      sym.setType(TObject(sym))
 
       bindFields(classDecl)
       methods.foreach(bind)
@@ -409,14 +405,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
               // This is a field. Since we don't know what class it belongs to we do nothing
               case _ => traverse(application)
             }
-          case Is(expr, id)                 =>
-            traverse(expr)
-            globalScope.lookupClass(importMap, id.name) match {
-              case Some(classSymbol) =>
-                id.setSymbol(classSymbol)
-                id.setType(TObject(classSymbol))
-              case None              => ErrorUnknownType(id.name, id)
-            }
           case Assign(to, expr)             =>
             traverse(to, expr)
             to match {
@@ -551,11 +539,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       case UnitType()                => tpe.setType(TUnit)
       case tpeId@ClassID(name, _)    =>
         globalScope.lookupClass(importMap, name) match {
-          case Some(classSymbol) =>
-            tpeId.setSymbol(classSymbol)
-            tpeId.setType(TObject(classSymbol))
-          case None              =>
-            ErrorUnknownType(name, tpeId)
+          case Some(classSymbol) => tpeId.setSymbol(classSymbol)
+          case None              => ErrorUnknownType(name, tpeId)
         }
       case ArrayType(arrayTpe)       =>
         setType(arrayTpe)
@@ -571,13 +556,17 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   private def setParentSymbol(id: ClassID, parents: List[ClassID], classDecl: ClassDecl): Unit = {
     parents.foreach { parentId =>
       globalScope.lookupClass(importMap, parentId.name) match {
-        case Some(parentSymbol) =>
-          parentId.setSymbol(parentSymbol)
-          // This takes O(n), shouldnt be a big problem though
-          classDecl.getSymbol.parents = classDecl.getSymbol.parents :+ parentSymbol
-        case None               =>
-          ErrorParentNotDeclared(parentId.name, parentId)
+        case Some(parentSymbol) => parentId.setSymbol(parentSymbol)
+        case None               => ErrorParentNotDeclared(parentId.name, parentId)
       }
     }
+
+    val nonAbstractParents = parents.filter(!_.getSymbol.isAbstract)
+    if(!classDecl.isAbstract && nonAbstractParents.isEmpty){
+      val defaultParent = ClassID(Main.TLangObject).setSymbol(Types.ObjectSymbol)
+      val abstractParents = parents.filter(_.getSymbol.isAbstract)
+      classDecl.parents = defaultParent :: abstractParents
+    }
+    classDecl.getSymbol.parents = classDecl.parents.map(_.getSymbol)
   }
 }
