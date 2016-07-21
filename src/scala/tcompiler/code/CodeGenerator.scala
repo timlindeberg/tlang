@@ -42,14 +42,6 @@ object CodeGenerator {
   val JavaBool             = JavaLang + "Boolean"
   val JavaRuntimeException = JavaLang + "RuntimeException"
 
-  /* Labels */
-  val Then  = "then"
-  val Else  = "else"
-  val After = "after"
-  val Body  = "body"
-  val Post  = "post"
-  val Next  = "next"
-
 }
 
 class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableSymbol, Int]) {
@@ -57,17 +49,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   import CodeGenerator._
 
   def compileStat(statement: StatTree,
-                  before: Option[String] = None,
-                  after: Option[String] = None,
+                  continue: Option[String] = None,
+                  break: Option[String] = None,
                   compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
-      case UselessStatement(expr)                =>
+      case UselessStatement(expr)                    =>
         if (compileUseless)
           compileExpr(expr)
-      case Block(stats)                          =>
-        stats.foreach(compileStat(_, before, after, compileUseless))
-      case v@VarDecl(_, _, init, _)              =>
+      case Block(stats)                              =>
+        stats.foreach(compileStat(_, continue, break, compileUseless))
+      case v@VarDecl(_, _, init, _)                  =>
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
@@ -82,48 +74,47 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             codes.defaultConstant(ch)
             codes.store(ch, id)
         }
-      case If(expr, thn, els)                    =>
-        val thnLabel = ch.getFreshLabel(Then)
-        val elsLabel = ch.getFreshLabel(Else)
-        val afterLabel = ch.getFreshLabel(After)
+      case If(conditionExpr, thnStat, elsStat)       =>
+        val thn = ch.getFreshLabel("then")
+        val els = ch.getFreshLabel("else")
+        val after = ch.getFreshLabel("after")
 
-        compileBranch(expr, Label(thnLabel), Label(elsLabel))
-        ch << Label(thnLabel)
-        compileStat(thn, before, after, compileUseless)
-        ch << Goto(afterLabel)
-        ch << Label(elsLabel)
-        if (els.isDefined) compileStat(els.get, before, after, compileUseless)
-        ch << Label(afterLabel)
-      case While(expr, stat)                     =>
-        val body = ch.getFreshLabel(Body)
-        val continue = ch.getFreshLabel(Post)
-        val after = ch.getFreshLabel(After)
-        val bodyLabel = Label(body)
-        val afterLabel = Label(after)
-        val continueLabel = Label(continue)
+        compileBranch(conditionExpr, Label(thn), Label(els))
+        ch << Label(thn)
+        compileStat(thnStat, continue, break, compileUseless)
+        if (elsStat.isDefined)
+          ch << Goto(after)
+        ch << Label(els)
+        if (elsStat.isDefined)
+          compileStat(elsStat.get, continue, break, compileUseless)
+        ch << Label(after)
+      case While(conditionExpr, stat)                =>
+        val body = ch.getFreshLabel("body")
+        val condition = ch.getFreshLabel("condition")
+        val after = ch.getFreshLabel("after")
 
-        ch << continueLabel
-        compileBranch(expr, bodyLabel, afterLabel)
-        ch << bodyLabel
-        compileStat(stat, Some(continue), Some(after), compileUseless)
-        compileBranch(expr, bodyLabel, afterLabel)
-        ch << afterLabel
-      case For(init, condition, postExprs, stat) =>
-        val body = ch.getFreshLabel(Body)
-        val continue = ch.getFreshLabel(Post)
-        val after = ch.getFreshLabel(After)
-        val bodyLabel = Label(body)
-        val afterLabel = Label(after)
-        val continueLabel = Label(continue)
+        ch << Goto(condition)
+        ch << Label(body)
+        compileStat(stat, Some(condition), Some(after), compileUseless)
+        ch << Label(condition)
+        compileBranch(conditionExpr, Label(body), Label(after))
+        ch << Label(after)
+      case For(init, conditionExpr, postExprs, stat) =>
+        val body = ch.getFreshLabel("body")
+        val condition = ch.getFreshLabel("condition")
+        val after = ch.getFreshLabel("after")
+        val post = ch.getFreshLabel("post")
+
         init.foreach(stat => compileStat(stat, compileUseless = compileUseless))
-        compileBranch(condition, bodyLabel, afterLabel)
-        ch << bodyLabel
-        compileStat(stat, Some(continue), Some(after), compileUseless)
-        ch << continueLabel
+        ch << Goto(condition)
+        ch << Label(body)
+        compileStat(stat, Some(post), Some(after), compileUseless)
+        ch << Label(post)
         postExprs.foreach(expr => compileStat(expr, compileUseless = compileUseless))
-        compileBranch(condition, bodyLabel, afterLabel)
-        ch << afterLabel
-      case PrintStatTree(expr)                   =>
+        ch << Label(condition)
+        compileBranch(conditionExpr, Label(body), Label(after))
+        ch << Label(after)
+      case PrintStatTree(expr)                       =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
@@ -161,9 +152,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case Return(None)       =>
         ch << RETURN
       case Break()            =>
-        ch << Goto(after.get)
+        ch << Goto(break.get)
       case Continue()         =>
-        ch << Goto(before.get)
+        ch << Goto(continue.get)
       case expr: ExprTree     =>
         compileExpr(expr, duplicate = false)
     }
@@ -190,9 +181,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
       case _: BranchingOperatorTree                     =>
-        val thn = ch.getFreshLabel(Then)
-        val els = ch.getFreshLabel(Else)
-        val after = ch.getFreshLabel(After)
+        val thn = ch.getFreshLabel("then")
+        val els = ch.getFreshLabel("else")
+        val after = ch.getFreshLabel("after")
         compileBranch(expression, Label(thn), Label(els))
         ch << Label(thn)
         ch << Ldc(1)
@@ -415,10 +406,10 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             ch << InvokeSpecial(className, ConstructorName, "(" + expr.getType.byteCodeName + ")V") <<
               InvokeVirtual(className, "hashCode", "()I")
         }
-      case Ternary(condition, thn, els)              =>
-        val thnLabel = ch.getFreshLabel(Then)
-        val elsLabel = ch.getFreshLabel(Else)
-        val afterLabel = ch.getFreshLabel(After)
+      case Ternary(condition, thn, els)                 =>
+        val thnLabel = ch.getFreshLabel("then")
+        val elsLabel = ch.getFreshLabel("else")
+        val afterLabel = ch.getFreshLabel("after")
         val ternaryType = expression.getType
         compileBranch(condition, Label(thnLabel), Label(elsLabel))
         ch << Label(thnLabel)
@@ -452,12 +443,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case _          =>
         val codes = toConvert.codes
         desiredType match {
-        case _: TObject => codes.box(ch)
-        case _: TDouble => codes.toDouble(ch)
-        case _: TFloat  => codes.toFloat(ch)
-        case _: TLong   => codes.toLong(ch)
-        case _          => codes.toInt(ch)
-      }
+          case _: TObject => codes.box(ch)
+          case _: TDouble => codes.toDouble(ch)
+          case _: TFloat  => codes.toFloat(ch)
+          case _: TLong   => codes.toLong(ch)
+          case _          => codes.toInt(ch)
+        }
     }
   }
 
@@ -482,9 +473,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         compileExpr(expr)
         val signature = s"(${foundType.byteCodeName})V"
         ch << InvokeSpecial(name, ConstructorName, signature)
-      case arr: TArray                                     =>
+      case arr: TArray                                           =>
         compileArrayLiteral(expr.asInstanceOf[ArrayLit], Some(arr.tpe))
-      case _                                               =>
+      case _                                                     =>
         compileExpr(expr)
         convertType(ch, foundType, desiredType)
     }
