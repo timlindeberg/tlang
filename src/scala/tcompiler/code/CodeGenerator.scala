@@ -558,7 +558,13 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       ch << Goto(els.id)
     case expr: ExprTree                          =>
       compileExpr(expr)
-      ch << IfEq(els.id) << Goto(thn.id) // If false go to else
+      expr match {
+        case id: VariableID if id.getType.isNullable =>
+          ch << IfNull(els.id)
+        case _ =>
+          ch << IfEq(els.id)
+      }
+      ch << Goto(thn.id) // If false go to else
     case _                                       => ???
   }
 

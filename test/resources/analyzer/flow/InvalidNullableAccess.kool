@@ -4,23 +4,23 @@ a.Test()
 
 a = null
 
-a.Test() // res: F2???
+a.Test() // res: F2000
 
 a = GetA()
 val b: A? = GetA()
 
-a.Test() // res: F2???
-// res: F2???
-println(a + b) // res: F2???
+a.Test() // res: F2000
+// res: F2000
+println(a + b) // res: F2000
 
 if(a && b)
     println(a + b)
 
 if(a)
-    println(a + b) // res: F2???
+    println(a + b) // res: F2000
 
 if(b)
-    println(a + b) // res: F2???
+    println(a + b) // res: F2000
 
 println(a) // Okay to print nullables
 println(b) // Okay to print nullables
@@ -31,21 +31,21 @@ println(a[0])
 
 val arr = GetArr()
 
-println(a[0]) // res: F2???
+println(a[0]) // res: F2000
 
-for(val i in a) // res: F2???
+for(val i in a) // res: F2000
     println(i)
 
 Def Test(b: A?) = {
     var a = b
-    a.Test() // res: F2???
+    a.Test() // res: F2000
     if(a != null) {
         a.Test()
     } else {
-        a.Test() // res: F2???
+        a.Test() // res: F2000
     }
 
-    if(a.b) // res: F2???
+    if(a.b) // res: F2000
         println()
 
 
@@ -53,12 +53,12 @@ Def Test(b: A?) = {
         println()
 
     if(a == null && a.b)
-        a.Test() // res: F2???
+        a.Test() // res: F2000
     else
         a.Test()
 
-    if(a == new A() && a != new A() && a.b) // res: F2???
-        a.Test()// res: F2???
+    if(a == new A() && a != new A() && a.b) // res: F2000
+        a.Test()// res: F2000
 
     if(a == new A() && a != null && a.b)
         a.Test()
@@ -66,12 +66,12 @@ Def Test(b: A?) = {
     while(a != null && a.b){
         a.Test()
         a = GetA()
-        a.Test() // res: F2???
+        a.Test() // res: F2000
     }
 
     a = null
     while(a == null){
-        a.Test() // res: F2???
+        a.Test() // res: F2000
         a = new A()
         a.Test()
     }
@@ -79,17 +79,17 @@ Def Test(b: A?) = {
     for(var i = 0; a != null; i++){
         a.Test()
         a = GetA()
-        a.Test() // res: F2???
+        a.Test() // res: F2000
     }
 
     for(var i = 0; a == null; i++){
-        a.Test() // res: F2???
+        a.Test() // res: F2000
         a = new A()
         a.Test()
     }
 
     if(a) a.Test()
-    if(!a) a.Test() // res: F2???
+    if(!a) a.Test() // res: F2000
 
 
     val c = GetA()
@@ -108,7 +108,7 @@ Def Test(b: A?) = {
 
 Def Test2(b: A?) = {
     val a = b
-    a.Test() // res: F2???
+    a.Test() // res: F2000
     if(a == null)
         return
 
@@ -119,7 +119,7 @@ Def Test2(b: A?) = {
     if(a != null)
         return
 
-    a.Test() // res: F2???
+    a.Test() // res: F2000
 }
 
 Def GetA(): A? = null

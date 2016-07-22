@@ -189,6 +189,13 @@ object Types {
     override def getNonNullable = if (isNullable) Bool else this
     override def name = "Bool"
     override def equals(any: Any) = any.isInstanceOf[TBool]
+    override def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+      if(super.isImplicitlyConvertableFrom(tpe))
+        return true
+
+      // All nullable types can implicitly be converted to bool
+      tpe.isNullable
+    }
     override val primitiveByteCodeName = "Z"
     override val primitiveCodeMap      = BoolCodeMap
     override val size: Int             = 1
