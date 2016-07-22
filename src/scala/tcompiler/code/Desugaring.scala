@@ -7,6 +7,8 @@ import tcompiler.ast.Trees._
 import tcompiler.ast.{Printer, TreeTransformer}
 import tcompiler.utils.{Context, Pipeline}
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * Created by Tim Lindeberg on 7/1/2016.
   */
@@ -23,36 +25,38 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
 class Desugarer {
 
-  def apply(cu: CompilationUnit) = {
+  class DesugarTransformer extends TreeTransformer {
 
-    // Replace operator decls first so all are replaced when we replace
-    // operator calls
-    val desugarTransformer = new TreeTransformer {
-
-      override def transform(t: Tree) = t match {
-        case slice: ArraySlice              => desugarArraySlice(super.transform(slice))
-        case opDecl: OperatorDecl           => replaceOperatorDecl(super.transform(opDecl))
-        case incDec: IncrementDecrementTree =>
-          if (incDec.expr.getType.isInstanceOf[TObject])
-            replaceOperatorCall(super.transform(incDec))
-          else
-            desugarIncrementDecrement(super.transform(incDec))
-        case assign: Assign                 =>
-          val to = assign.to
-          if (to.isInstanceOf[ArrayRead] && to.getType.isInstanceOf[TObject]) {
-            val expr = super.transform(assign.expr).asInstanceOf[ExprTree]
-            val newAssign = treeCopy.Assign(assign, to, expr)
-            replaceOperatorCall(newAssign)
-          } else {
-            super.transform(assign)
-          }
-        case op: OperatorTree               => replaceOperatorCall(super.transform(op))
-        case foreach: Foreach               => desugarForeachLoop(super.transform(foreach))
-        case _                              => super.transform(t)
-      }
-
+    override def transform(t: Tree) = t match {
+      case slice: ArraySlice              => desugarArraySlice(super.transform(slice))
+      case opDecl: OperatorDecl           => replaceOperatorDecl(super.transform(opDecl))
+      case incDec: IncrementDecrementTree =>
+        if (incDec.expr.getType.isInstanceOf[TObject])
+          replaceOperatorCall(super.transform(incDec))
+        else
+          desugarIncrementDecrement(super.transform(incDec))
+      case assign: Assign                 =>
+        val to = assign.to
+        if (to.isInstanceOf[ArrayRead] && to.getType.isInstanceOf[TObject]) {
+          val expr = super.transform(assign.expr).asInstanceOf[ExprTree]
+          val newAssign = treeCopy.Assign(assign, to, expr)
+          replaceOperatorCall(newAssign)
+        } else {
+          super.transform(assign)
+        }
+      case op: OperatorTree               => replaceOperatorCall(super.transform(op))
+      case foreach: Foreach               => desugarForeachLoop(super.transform(foreach))
+      case elvis: Elvis                   => desugarElvisOp(super.transform(elvis))
+      case safeAccess: SafeAccess         => desugarSafeAccess(safeAccess)
+      case _                              => super.transform(t)
     }
+
+  }
+
+  def apply(cu: CompilationUnit) = {
+    val desugarTransformer = new DesugarTransformer
     val s = desugarTransformer.transform(cu)
+    println(Printer(s, false))
     s.asInstanceOf[CompilationUnit]
   }
 
@@ -132,7 +136,7 @@ class Desugarer {
           // Convert array assignment so the value is returned
           val indexId = op.args(1).id
           val retType = new TreeBuilder().getTypeTree(indexId.getType)
-          val ret = Return(Some(indexId))
+          val ret = Return(Some(indexId)).setType(indexId.getType)
           val stats = op.stat.get match {
             case Block(s) => s :+ ret
             case stat     => List(stat, ret)
@@ -170,51 +174,51 @@ class Desugarer {
     * Examples:
     * --------------------------------------------------------------------------------
     *
-    *   a++
+    * a++
     *
     * becomes:
     *
-    *   var $v = a
-    *   a = a + 1
-    *   $v
+    * var $v = a
+    * a = a + 1
+    * $v
     *
     * --------------------------------------------------------------------------------
     *
-    *   --a
+    * --a
     *
     * becomes:
     *
-    *   a = a - 1
-    *   a
+    * a = a - 1
+    * a
     *
     * --------------------------------------------------------------------------------
     *
-    *   GetObject().I++
+    * GetObject().I++
     *
     * becomes:
     *
-    *   var $obj = GetObject()
-    *   var $v = $tmp.I
-    *   var $newV = $v + 1
-    *   $tmp.I = $newV
-    *   $v
+    * var $obj = GetObject()
+    * var $v = $tmp.I
+    * var $newV = $v + 1
+    * $tmp.I = $newV
+    * $v
     *
     * --------------------------------------------------------------------------------
     *
-    *   --GetArray()[GetIndex()*4]
+    * --GetArray()[GetIndex()*4]
     *
     * becomes:
     *
-    *   var $arr
-    *   var $idx = GetIndex()*4
-    *   var $v = a[$idx]
-    *   var $newV = $v - 1
-    *   $arr[$idx] = $newV
-    *   newV$x
+    * var $arr
+    * var $idx = GetIndex()*4
+    * var $v = a[$idx]
+    * var $newV = $v - 1
+    * $arr[$idx] = $newV
+    * newV$x
     *
     * --------------------------------------------------------------------------------
     */
-    //@formatter:on
+  //@formatter:on
   private def desugarIncrementDecrement(t: Tree): Tree = {
     if (!t.isInstanceOf[IncrementDecrementTree])
       return t
@@ -240,7 +244,7 @@ class Desugarer {
       case variable: VariableID =>
         val plusOrMinus = getPlusOrMinus(variable)
         val v = if (incDec.isPre) variable
-                else c.putVarDecl("v", variable)
+        else c.putVarDecl("v", variable)
 
         return putResult(variable, plusOrMinus, v)
       case _                    =>
@@ -253,7 +257,7 @@ class Desugarer {
           case _: Identifier[_] =>
             val v = if (incDec.isPre) acc else c.putVarDecl("v", acc)
             (acc, v)
-          case _             =>
+          case _                =>
             val objId = c.putVarDecl("obj", obj)
             val newAccess = NormalAccess(objId, application).setType(application)
             val v = if (newAccess.isStatic && incDec.isPre) newAccess else c.putVarDecl("v", newAccess)
@@ -290,20 +294,20 @@ class Desugarer {
     *
     * --------------------------------------------------------------------------------
     *
-    *   for(<varDecl> in <array>)
-    *     <code>
+    * for(<varDecl> in <array>)
+    *   <code>
     *
     * becomes:
     *
-    *   val $container = <array>
-    *   for(var $i = 0; $i < $container.Size(); i++){
-    *     <varDecl> = $container[$i]
-    *     <code>
-    *   }
+    * val $container = <array>
+    * for(var $i = 0; $i < $container.Size(); i++){
+    *   <varDecl> = $container[$i]
+    *   <code>
+    * }
     *
     * --------------------------------------------------------------------------------
     */
- //@formatter:on
+  //@formatter:on
   private def desugarArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
     val indexDecl = c.createVarDecl("i", IntLit(0))
@@ -334,16 +338,16 @@ class Desugarer {
     *
     * --------------------------------------------------------------------------------
     *
-    *   for(<varDecl> in <container>)
-    *     <code>
+    * for(<varDecl> in <container>)
+    *   <code>
     *
     * becomes:
     *
-    *   val $it = <container>.Iterator()
-    *   while($it.HasNext()){
-    *     <varDecl> = $it.Iterator()
-    *     <code>
-    *   }
+    * val $it = <container>.Iterator()
+    * while($it.HasNext()) {
+    *   <varDecl> = $it.Iterator()
+    *   <code>
+    * }
     *
     * --------------------------------------------------------------------------------
     */
@@ -375,17 +379,17 @@ class Desugarer {
     *
     * --------------------------------------------------------------------------------
     *
-    *   val a = <arr>[<start>:<end>]
+    * val a = <arr>[<start>:<end>]
     *
     * becomes:
     *
-    *   var $container = <arr>
-    *   var $start = < 0|slice.start >            // 0 if slice.start is undefined
-    *   var $end = < container.Size()|slice.end > // container.Size() if slice.end is undefined
-    *   var $slice = new <arrTpe>[$start - $end]
-    *   for(var $i = $start; i < $end; i++)
-    *     $slice[$start - $i] = $container[$i]
-    *   $slice
+    * var $container = <arr>
+    * var $start = < 0|slice.start >            // 0 if slice.start is undefined
+    * var $end = < container.Size()|slice.end > // container.Size() if slice.end is undefined
+    * var $slice = new <arrTpe>[$start - $end]
+    * for(var $i = $start; i < $end; i++)
+    *   $slice[$start - $i] = $container[$i]
+    * $slice
     *
     * --------------------------------------------------------------------------------
     */
@@ -432,6 +436,115 @@ class Desugarer {
 
     c.setPos(arraySlice)
 
+    c.getCode
+  }
+
+  //@formatter:off
+  /**
+    * Transforms safe access calls
+    *
+    * Examples:
+    *
+    * --------------------------------------------------------------------------------
+    *
+    * A?.GetB()
+    *
+    * becomes:
+    *
+    * A != null ? A.GetB() : null
+    *
+    * --------------------------------------------------------------------------------
+    *
+    * A?.GetB()?.GetC()?.GetD()?.E
+    *
+    * becomes:
+    *
+    * if(A != null){
+    *   val tmp$1 = A.GetB()
+    *   if(tmp$1 != null){
+    *     val tmp$2 = tmp$1.GetC()
+    *     if(tmp$2 != null){
+    *       val tmp$3 = tmp$2.GetD()
+    *       tmp$3 != null ? tmp$3.E : null
+    *     } else {
+    *       null
+    *   } else {
+    *     null
+    * } else {
+    *   null
+    * }
+    *
+    * --------------------------------------------------------------------------------
+    */
+  //@formatter:on
+  private def desugarSafeAccess(t: Tree): Tree = {
+    if (!t.isInstanceOf[SafeAccess])
+      return t
+
+    val c = new TreeBuilder
+    var safeAccess = t.asInstanceOf[ExprTree]
+    val apps = new ListBuffer[ExprTree]()
+
+    while(safeAccess.isInstanceOf[SafeAccess]){
+      val s = safeAccess.asInstanceOf[SafeAccess]
+      apps += s.application
+      safeAccess = s.obj
+    }
+
+    val appsInOrder = apps.reverse.toList
+    val obj = safeAccess
+
+    def _desugar(i: Int, obj: ExprTree, apps: List[ExprTree]): StatTree = {
+      val condition = NotEquals(obj, NullLit()).setType(Bool)
+      val app = apps.head
+      val access = NormalAccess(obj, app).setType(app.getType.getNonNullable)
+
+      if(apps.size == 1){
+        val ternary = Ternary(condition, access, NullLit()).setType(app.getType.getNullable)
+        return PutValue(ternary)
+      }
+      val ifNull = PutValue(NullLit())
+      val varDecl = c.createVarDecl(s"tmp$i", access)
+      val thn = List(varDecl, _desugar(i + 1, varDecl.id, apps.tail))
+      If(condition, Block(thn), Some(Block(List(ifNull))))
+    }
+    c.put(_desugar(1, obj, appsInOrder))
+    c.setPos(t)
+    c.getCode.setType(t.asInstanceOf[SafeAccess])
+  }
+
+  //@formatter:off
+  /**
+    * Transforms the elvis operator
+    *
+    * Examples:
+    *
+    * --------------------------------------------------------------------------------
+    *
+    * val a = b ?: -1
+    *
+    * becomes:
+    *
+    * val a = b == null ? -1 : b
+    *
+    * --------------------------------------------------------------------------------
+    */
+  //@formatter:on
+  private def desugarElvisOp(t: Tree): Tree = {
+    if (!t.isInstanceOf[Elvis])
+      return t
+
+    val elvis = t.asInstanceOf[Elvis]
+    val nullableValue = elvis.nullableValue
+    val ifNull = elvis.ifNull
+
+    val c = new TreeBuilder
+
+    val nullableID = c.putVarDecl("tmp", nullableValue)
+
+    val condition = Equals(nullableID, NullLit()).setType(Bool)
+    c.put(Ternary(condition, ifNull, nullableID).setType(elvis))
+    c.setPos(elvis)
     c.getCode
   }
 }

@@ -139,6 +139,8 @@ object Printer {
       case PreDecrement(id)               => p"--$id"
       case PostDecrement(id)              => p"$id--"
       case Ternary(condition, thn, els)   => p"$condition ? $thn : $els"
+      case Elvis(nullableValue, ifNull)   => p"$nullableValue ?: $ifNull"
+      case ExtractNullable(expr)          => p"$expr!!"
       case Break()                        => p"break"
       case Continue()                     => p"continue"
       case Empty()                        => p"<EMPTY>"

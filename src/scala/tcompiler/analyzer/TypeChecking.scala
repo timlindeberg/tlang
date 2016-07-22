@@ -74,13 +74,14 @@ class TypeChecker(override var ctx: Context,
     currentMethodSymbol.stat.ifDefined(tcStat)
     hasBeenTypechecked += currentMethodSymbol
 
-    if (currentMethodSymbol.getType != TUntyped) {
-      currentMethodSymbol.setType(tcOperator(currentMethodSymbol.getType))
+    val methType = currentMethodSymbol.getType
+    if (methType != TUntyped) {
+      returnStatements.map(_._1).foreach {
+        _.setType(methType)
+      }
+      checkOperatorType(methType)
       return
     }
-
-    if (currentMethodSymbol.getType != TUntyped)
-      return
 
     if (returnStatements.isEmpty) {
       currentMethodSymbol.setType(TUnit)
@@ -89,33 +90,28 @@ class TypeChecker(override var ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
+    returnStatements.map(_._1).foreach {
+      _.setType(inferredType)
+    }
 
-
-    currentMethodSymbol.setType(tcOperator(inferredType))
+    checkOperatorType(inferredType)
+    currentMethodSymbol.setType(inferredType)
   }
 
-  def tcOperator(tpe: Type) = currentMethodSymbol match {
+  def checkOperatorType(tpe: Type): Unit = currentMethodSymbol match {
     case op: OperatorSymbol =>
       // Special rules for some operators
-      val correctOperatorType = getCorrectOperatorType(op)
-      correctOperatorType match {
-        case Some(correctType) if tpe != correctType =>
-          ErrorOperatorWrongReturnType(op.operatorString, correctType.toString, tpe.toString, op)
-        case _                                       => tpe
+      val correctOperatorType = op.operatorType match {
+        case Assign(ArrayRead(_, _), _) => TUnit
+        case Hash(_)                    => Int
+        case ComparisonOperatorTree(_, _) |
+             EqualsOperatorTree(_, _)   => Bool
+        case _                          => return
       }
-    case _                  => tpe
+      if (tpe != correctOperatorType)
+        ErrorOperatorWrongReturnType(op.operatorString, correctOperatorType.toString, tpe.toString, op)
+    case _                  =>
   }
-
-  private def getCorrectOperatorType(op: OperatorSymbol) = {
-    op.operatorType match {
-      case Assign(ArrayRead(_, _), _) => Some(TUnit)
-      case _: Hash                    => Some(Int)
-      case ComparisonOperatorTree(_, _) |
-           EqualsOperatorTree(_, _)   => Some(Bool)
-      case _                          => None
-    }
-  }
-
 
   def tcStat(statement: StatTree): Unit = statement match {
     case Block(stats)                              =>
@@ -274,7 +270,7 @@ class TypeChecker(override var ctx: Context,
           case _            =>
         }
         Bool
-      case Is(expr, tpe)                                  =>
+      case Is(expr, tpe)                                 =>
         tcExpr(expr, Object)
         Bool
       case As(expr, tpe)                                 =>
@@ -452,24 +448,33 @@ class TypeChecker(override var ctx: Context,
   }
 
 
-  private def getReturnType(tpes: Traversable[Type]): Type = {
-    val uniqueTpes = tpes.toSet
+  def getReturnType(tpes: Traversable[Type]): Type = {
+    var uniqueTpes = tpes.toSet
     if (uniqueTpes.isEmpty)
       return TUnit
 
     if (uniqueTpes.size == 1)
       return uniqueTpes.head
 
-    if (uniqueTpes.size == 2 && uniqueTpes.contains(TNull))
-      return uniqueTpes.find(_ != TNull).get.getNullable
+    val containsNull = uniqueTpes.contains(TNull)
+    uniqueTpes = uniqueTpes.filter(_ != TNull)
+    println(containsNull)
+    val tpe =
+      if (uniqueTpes.size == 1) {
+        uniqueTpes.head
+      } else if (uniqueTpes.exists(_.isInstanceOf[PrimitiveType])) {
+        // More than one type and at least one is a primitive
+        Object
+      } else {
+        val s = uniqueTpes.head.getSuperTypes
+        val commonTypes = uniqueTpes.drop(1).foldLeft(s)((common, tpe) => common.intersect(tpe.getSuperTypes))
+        commonTypes.head
+      }
 
-    // More than one type and at least one is a primitive
-    if (uniqueTpes.exists(!_.isInstanceOf[TObject]))
-      return Object
-
-    val s = uniqueTpes.head.getSuperTypes
-    val commonTypes = uniqueTpes.drop(1).foldLeft(s)((common, tpe) => common.intersect(tpe.getSuperTypes))
-    commonTypes.head
+    if (containsNull)
+      tpe.getNullable
+    else
+      tpe
   }
 
   private def tcAccessObject(acc: Access, argTypes: Option[List[Type]], methSignature: => String): Type = {

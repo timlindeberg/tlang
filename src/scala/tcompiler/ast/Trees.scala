@@ -196,7 +196,8 @@ object Trees {
           modifiers.contains(Public()) &&
           modifiers.contains(Static()) &&
           args.head.id.name == "args"
-      case _                                                                                                                          => false
+      case _                                                                                                                          =>
+        false
     }
 
     def isAbstract = stat.isEmpty
@@ -264,7 +265,7 @@ object Trees {
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
 
   case class Error(expr: ExprTree) extends StatTree
-  case class Return(expr: Option[ExprTree]) extends StatTree
+  case class Return(expr: Option[ExprTree]) extends StatTree with Typed
   case class Break() extends StatTree with Leaf
   case class Continue() extends StatTree with Leaf
 
@@ -442,7 +443,7 @@ object Trees {
   }
 
   object Literal {
-    def unapply(e: Literal[_]): Option[Any] =Some(e.value)
+    def unapply(e: Literal[_]): Option[Any] = Some(e.value)
   }
 
   case class IntLit(value: Int) extends Literal[Int] {

@@ -179,6 +179,8 @@ class TreeTransformer {
       treeCopy.Ternary(t, tr(condition), tr(thn), tr(els))
     case Elvis(nullableValue, ifNull) =>
       treeCopy.Elvis(t, tr(nullableValue), tr(ifNull))
+    case ExtractNullable(expr) =>
+      treeCopy.ExtractNullable(t, tr(expr))
     case GeneratedExpr(block)         =>
       treeCopy.GeneratedExpr(t, block)
     case PutValue(expr)               =>

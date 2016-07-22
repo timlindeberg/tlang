@@ -70,13 +70,16 @@ object Types {
       implicitlyConvertableFrom.contains(tpe)
     }
 
+    override def toString = name + (if (isNullable) "?" else "")
+
     def getSuperTypes: Set[Type] = Set()
 
     def implicitlyConvertableFrom: List[Type] = List()
 
     def byteCodeName: String
-    val codes: CodeMap
-    val size : Int
+    def codes: CodeMap
+    val size: Int
+    def name: String
   }
 
   case object TError extends Type {
@@ -84,7 +87,7 @@ object Types {
     override def getNullable = this
     override def getNonNullable = this
     override def isSubTypeOf(tpe: Type): Boolean = true
-    override def toString = "[error]"
+    override def name = "[error]"
     override def byteCodeName: String = "ERROR"
     override val codes     = EmptyCodeMap
     override val size: Int = 0
@@ -95,7 +98,7 @@ object Types {
     override def getNullable = this
     override def getNonNullable = this
     override def isSubTypeOf(tpe: Type): Boolean = false
-    override def toString = "[untyped]"
+    override def name = "[untyped]"
     override def byteCodeName: String = "UNTYPED"
     override val codes     = EmptyCodeMap
     override val size: Int = 0
@@ -105,7 +108,7 @@ object Types {
     override val isNullable = false
     override def getNullable = this
     override def getNonNullable = this
-    override def toString = "Unit"
+    override def name = "Unit"
     override def byteCodeName: String = "V"
     override val codes     = EmptyCodeMap
     override val size: Int = 0
@@ -113,78 +116,83 @@ object Types {
 
   sealed abstract class PrimitiveType extends Type {
     def javaWrapper: String
-    val koolWrapper = s"kool/lang/${this}Wrapper"
+    val koolWrapper = s"kool/lang/${name}Wrapper"
+    val primitiveCodeMap     : CodeMap
+    val primitiveByteCodeName: String
+
+    override def byteCodeName = if (isNullable) s"L$koolWrapper;" else primitiveByteCodeName
+    override def codes = if (isNullable) new ObjectCodeMap(koolWrapper) else primitiveCodeMap
   }
 
   case class TInt(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableInt
     override def getNonNullable = if (isNullable) Int else this
     override def implicitlyConvertableFrom = List(Char)
-    override def toString = "Int"
-    override def byteCodeName: String = "I"
+    override def name = "Int"
     override def equals(any: Any) = any.isInstanceOf[TInt]
-    override val codes     = IntCodeMap
-    override val size: Int = 1
-    override val javaWrapper = JavaInt
+    override val primitiveByteCodeName = "I"
+    override val primitiveCodeMap      = IntCodeMap
+    override val size: Int             = 1
+    override val javaWrapper           = JavaInt
   }
 
   case class TLong(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableLong
     override def getNonNullable = if (isNullable) Long else this
     override def implicitlyConvertableFrom = List(Char, Int)
-    override def toString = "Long"
-    override def byteCodeName: String = "J"
+    override def name = "Long"
     override def equals(any: Any) = any.isInstanceOf[TLong]
-    override val codes     = LongCodeMap
-    override val size: Int = 2
-    override val javaWrapper = JavaLong
+    override val primitiveByteCodeName = "J"
+    override val primitiveCodeMap      = LongCodeMap
+    override val size: Int             = 2
+    override val javaWrapper           = JavaLong
   }
 
   case class TFloat(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableFloat
     override def getNonNullable = if (isNullable) Float else this
     override def implicitlyConvertableFrom = List(Long, Char, Int)
-    override def toString = "Float"
-    override def byteCodeName: String = "F"
+    override def name = "Float"
     override def equals(any: Any) = any.isInstanceOf[TFloat]
-    override val codes     = FloatCodeMap
-    override val size: Int = 1
-    override val javaWrapper = JavaFloat
+    override val primitiveByteCodeName = "F"
+    override val primitiveCodeMap      = FloatCodeMap
+    override val size: Int             = 1
+    override val javaWrapper           = JavaFloat
   }
 
   case class TDouble(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableDouble
     override def getNonNullable = if (isNullable) Double else this
     override def implicitlyConvertableFrom = List(Float, Long, Char, Int)
-    override def toString = "Double"
-    override def byteCodeName: String = "D"
+    override def name = "Double"
     override def equals(any: Any) = any.isInstanceOf[TDouble]
-    override val codes     = DoubleCodeMap
-    override val size: Int = 2
-    override val javaWrapper = JavaDouble
+    override val primitiveByteCodeName = "D"
+    override val primitiveCodeMap      = DoubleCodeMap
+    override val size: Int             = 2
+    override val javaWrapper           = JavaDouble
   }
 
   case class TChar(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableChar
     override def getNonNullable = if (isNullable) Char else this
     override def implicitlyConvertableFrom = List(Int)
-    override def toString = "Char"
-    override def byteCodeName: String = "C"
+    override def name = "Char"
     override def equals(any: Any) = any.isInstanceOf[TChar]
-    override val codes     = CharCodeMap
-    override val size: Int = 1
-    override val javaWrapper = JavaChar
+    override val primitiveByteCodeName = "C"
+    override val primitiveCodeMap      = CharCodeMap
+    override val size: Int             = 1
+    override val javaWrapper           = JavaChar
   }
 
   case class TBool(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableBool
     override def getNonNullable = if (isNullable) Bool else this
-    override def toString = "Bool"
-    override def byteCodeName: String = "Z"
+    override def name = "Bool"
     override def equals(any: Any) = any.isInstanceOf[TBool]
-    override val codes     = BoolCodeMap
-    override val size: Int = 1
-    override val javaWrapper = JavaBool
+    override val primitiveByteCodeName = "Z"
+    override val primitiveCodeMap      = BoolCodeMap
+    override val size: Int             = 1
+    override val javaWrapper           = JavaBool
   }
 
   object TArray {
@@ -211,7 +219,7 @@ object Types {
       }
     }
 
-    override def toString = tpe.toString + "[]"
+    override def name = s"$tpe[]"
     override def byteCodeName: String = "[" + tpe.byteCodeName
     override val codes     = new ArrayCodeMap(tpe.byteCodeName)
     override val size: Int = 1
@@ -239,7 +247,9 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
         if (classSymbol.name == c.name || c == Object.classSymbol) true
-        else classSymbol.parents exists { _.getType.isSubTypeOf(tpe) }
+        else classSymbol.parents exists {
+          _.getType.isSubTypeOf(tpe)
+        }
       case _          => false
     }
 
@@ -263,7 +273,7 @@ object Types {
     override def getSuperTypes: Set[Type] =
       (this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)).toSet
 
-    override def toString = classSymbol.name
+    override def name = classSymbol.name
     override def byteCodeName: String = {
       val name = classSymbol.name.replaceAll("\\.", "/")
       s"L$name;"
@@ -282,12 +292,12 @@ object Types {
   case object TNull extends Type {
     override val getNullable    = this
     override val getNonNullable = this
-    override val isNullable     = true
-    override def toString = "null"
+    override val isNullable     = false
+    override def name = "null"
     override def isSubTypeOf(tpe: Type): Boolean = tpe.isNullable
-    override def byteCodeName: String = "Ljava/lang/Object;"
-    override val codes: CodeMap = EmptyCodeMap
-    override val size : Int     = 1
+    override def byteCodeName: String = s"L$JavaObject;"
+    override val codes     = new ObjectCodeMap(JavaObject)
+    override val size: Int = 1
   }
 
 }

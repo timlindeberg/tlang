@@ -1,4 +1,3 @@
-// Ignore
 var i: Int? = GetNullableInt1(0)
 
 if(i != null)
@@ -15,20 +14,29 @@ var j = GetNullableInt3(4)
 
 println(j ?: 0) // res: 0
 
-var j = GetNullableInt3(5)
+j = GetNullableInt3(5)
 
 println(j ?: 0) // res: 5
 
-val A = new A()
+val A: A? = new A()
 
 i = A?.GetInt()
-
 println(i!!) // res: 5
 
 i = A?.GetB()?.GetInt()
-
 println(i!!) // res: 6
 
+i = A?.GetC()?.GetInt()
+println(i) // res: null
+
+i = A?.GetB()?.GetC()?.GetInt()
+println(i) // res: 5
+
+i = A?.GetC()?.GetInt() ?: -1
+println(i) // res: -1
+
+i = A?.GetB()?.GetC()?.GetInt() ?: -1
+println(i) // res: 5
 
 // This should be inferred as Int?
 Def GetNullableInt1(i: Int) = {
@@ -49,10 +57,18 @@ class A {
 
     Def GetInt() = 5
     Def GetB(): B? = new B()
+    Def GetC(): B? = null
 
 }
 
 class B {
 
     Def GetInt() = 6
+    Def GetC(): C? = new C()
+}
+
+class C {
+
+    Def GetInt() = 5
+
 }

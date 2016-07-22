@@ -7,6 +7,7 @@ class BoolWrapper {
     Def static ValueOf(v: Bool) = new BoolWrapper(v)
     Def Value() = v
 
+    Def toString() = java::lang::String.valueOf(v)
     def new(v: Bool) = (this.v = v)
 
 }

@@ -7,6 +7,7 @@ class FloatWrapper {
     Def static ValueOf(v: Float) = new FloatWrapper(v)
     Def Value() = v
 
+    Def toString() = java::lang::String.valueOf(v)
     def new(v: Float) = (this.v = v)
 
 }

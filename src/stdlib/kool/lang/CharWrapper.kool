@@ -7,6 +7,7 @@ class CharWrapper {
     Def static ValueOf(v: Char) = new CharWrapper(v)
     Def Value() = v
 
+    Def toString() = java::lang::String.valueOf(v)
     def new(v: Char) = (this.v = v)
 
 }
