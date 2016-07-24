@@ -1,6 +1,7 @@
 package tcompiler
 package ast
 
+import java.io.File
 import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
@@ -13,14 +14,16 @@ object Printer {
 
   var PrintInColor = true
 
-  val Indentation = 4
-  def KeywordColor = Console.RED
-  def IdentifierColor = Console.CYAN
-  def StringColor = Console.YELLOW
+  val Indentation = 3
+  def KeywordColor = Console.BLUE
+  def VarIDColor = Console.CYAN
+  def ClassIDColor = Console.GREEN
+  def MethIDColor = Console.YELLOW
+  def StringColor = Console.MAGENTA
   def NumColor = Console.MAGENTA
   def ColorReset = Console.RESET
 
-  val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length)
+  val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length) ::: List("Int", "Char", "Float", "Double", "Bool", "Unit")
   val KeywordsRegex = s"(${Keywords.mkString("|")})".r
 
   private var indent: Int = 0
@@ -32,28 +35,20 @@ object Printer {
   }
 
   private def cuComment(cu: Tree) = {
-    val cuName = if (cu.hasPosition)
+    val fileName = if (cu.hasPosition)
       cu.file.getName
     else
-      "PROGRAM (no file)"
+      "No file"
 
-    val importMap = cu.asInstanceOf[CompilationUnit].importMap.entries.map(kv => s"// ${kv._1} => ${kv._2}").mkString("\n")
-
-    s"""
-       |//-------------------------------------------------------------
-       |//--- $cuName
-       |//-------------------------------------------------------------
-       |
-       |// ImportMap:
-       |$importMap
-       |
-    """.stripMargin
+    s"""|//-------------------------------------------------------------
+        |//--- $fileName
+        |//-------------------------------------------------------------
+        |""".stripMargin
   }
-
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case CompilationUnit(pack, classes, importMap)                  => p"${cuComment(t)}$pack$N${importMap.imports}$N$classes"
+      case CompilationUnit(pack, classes, importMap)                  => p"${cuComment(t)}$pack$N${importMap.imports}$classes"
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
@@ -280,15 +275,16 @@ object Printer {
       case f: Formatter  => f()
       case t: Tree       =>
         t match {
-          case _: Identifier[_] |
-               _: ClassID   => color(t, IdentifierColor)
+          case _: VariableID => color(t, VarIDColor)
+          case _: MethodID   => color(t, MethIDColor)
+          case _: ClassID    => color(t, ClassIDColor)
           case _: StringLit |
-               _: CharLit   => color(t, StringColor)
+               _: CharLit    => color(t, StringColor)
           case _: IntLit |
                _: LongLit |
                _: FloatLit |
-               _: DoubleLit => color(t, NumColor)
-          case _            => prettyPrint(t)
+               _: DoubleLit  => color(t, NumColor)
+          case _             => prettyPrint(t)
         }
       case Some(t: Tree) => evaluate(t)
       case None          => ""

@@ -16,22 +16,18 @@ class CompilationException(message: String) extends Exception(message)
 class Reporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
-  useColor: Boolean = true,
-  maxErrors: Int = 100) {
+  override val useColor: Boolean = true,
+  maxErrors: Int = 100)
+  extends Colorizer {
+
+  def QuoteColor = Magenta
+  def NumColor = Blue
+  def MessageStyle = Bold
+  def WarningColor = Yellow
+  def ErrorColor = Red + Bold
+  def FatalColor = Red
 
   private val ErrorSeperator = "\n"
-  private def QuoteColor = GetColor(Console.MAGENTA)
-  private def NumColor = GetColor(Console.BLUE)
-  private def MessageStyle = GetColor(Console.BOLD)
-  private def WarningColor = GetColor(Console.YELLOW)
-  private def ErrorColor = GetColor(Console.RED + Console.BOLD)
-  private def FatalColor = GetColor(Console.RED)
-  private def Underline = GetColor(Console.UNDERLINED)
-  private def Bold = GetColor(Console.BOLD)
-  private def EndColor = GetColor(Console.RESET)
-
-  // Only output color to consoles
-  private def GetColor(color: String) = if (useColor) color else ""
   private val filesToLines = mutable.Map[File, IndexedSeq[String]]()
 
   private var hitMaxErrors = false
@@ -63,7 +59,7 @@ class Reporter(
     if(hitMaxErrors)
       return
 
-    val num = s"$ErrorColor$maxErrors$EndColor"
+    val num = s"$ErrorColor$maxErrors$Reset"
     errors.insert(0, s"There were more than $num errors, only showing the first $num:")
     hitMaxErrors = true
 }
@@ -112,9 +108,9 @@ class Reporter(
     val code = leftPad(errorCode)
 
     errorLevel match {
-      case 1 => s"${WarningColor}Warning$EndColor ($WarningColor${errorPrefix}1$code$EndColor)"
-      case 2 => s"${ErrorColor}Error$EndColor ($ErrorColor${errorPrefix}2$code$EndColor)"
-      case 3 => s"${FatalColor}Fatal$EndColor ($FatalColor${errorPrefix}3$code$EndColor)"
+      case 1 => s"${WarningColor}Warning$Reset ($WarningColor${errorPrefix}1$code$Reset)"
+      case 2 => s"${ErrorColor}Error$Reset ($ErrorColor${errorPrefix}2$code$Reset)"
+      case 3 => s"${FatalColor}Fatal$Reset ($FatalColor${errorPrefix}3$code$Reset)"
       case _ => ???
     }
   }
@@ -131,15 +127,15 @@ class Reporter(
     var position = pos.position
     if (useColor) {
       val fileName = pos.file.getName.replaceAll(Main.FileEnding, "")
-      position = position.replaceAll("(\\d)", s"$Style$$1$EndColor")
-      position = position.replaceAll(fileName, s"$Style$fileName$EndColor")
+      position = position.replaceAll("(\\d)", s"$Style$$1$Reset")
+      position = position.replaceAll(fileName, s"$Style$fileName$Reset")
     }
 
-    s"$Bold[$EndColor$position$Bold]$EndColor"
+    s"$Bold[$Reset$position$Bold]$Reset"
   }
 
   private def handleQuoteLiterals(msg: String, importMap: ImportMap) = {
-    val msgFormat = EndColor + MessageStyle
+    val msgFormat = Reset + MessageStyle
 
     val re = """'(.+?)'""".r
 
@@ -148,13 +144,13 @@ class Reporter(
       name = TemplateNameParser.parseTemplateName(name)
       Matcher.quoteReplacement("\'" + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
     })
-    msgFormat + s + EndColor
+    msgFormat + s + Reset
   }
 
   private def locationIndicator(errorLevel: Int, pos: Positioned): String = {
     val lines = getLines(pos.file)
     val numColor = Bold + NumColor
-    val prefix = s"$numColor${pos.line}$EndColor:   "
+    val prefix = s"$numColor${pos.line}$Reset:   "
 
     var sb = new StringBuilder
     sb ++= "\n" ++ prefix
@@ -196,7 +192,7 @@ class Reporter(
       val pre = leftTrimmedLine.substring(0, start)
       val highlighted = leftTrimmedLine.substring(start, end)
       val post = leftTrimmedLine.substring(end, leftTrimmedLine.length)
-      sb ++= pre ++ Underline ++ errorStyle ++ highlighted ++ EndColor ++ post
+      sb ++= pre ++ Underline ++ errorStyle ++ highlighted ++ Reset ++ post
     } else {
       sb ++= leftTrimmedLine ++ "\n" ++ " " * (start + prefix.length) ++ "~" * (end - start)
     }

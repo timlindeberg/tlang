@@ -56,7 +56,6 @@ class Desugarer {
   def apply(cu: CompilationUnit) = {
     val desugarTransformer = new DesugarTransformer
     val s = desugarTransformer.transform(cu)
-    println(Printer(s, false))
     s.asInstanceOf[CompilationUnit]
   }
 

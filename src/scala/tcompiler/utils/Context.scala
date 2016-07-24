@@ -6,14 +6,19 @@ import java.net.{URL, URLClassLoader}
 
 import tcompiler.imports.ClassSymbolLocator
 
-case class Context(
-  reporter: Reporter,
-  files: List[File],
-  classPaths: List[String] = Nil,
-  outDir: Option[File] = None
-) {
+import scala.collection.mutable
+
+case class Context(reporter: Reporter,
+                   files: List[File],
+                   classPaths: List[String] = Nil,
+                   outDir: Option[File] = None,
+                   printCodeStage: Option[String] = None,
+                   useColor: Boolean = false,
+                   printInfo: Boolean = false
+                  ) {
 
   private val JavaClassPath = "java.class.path"
+  val executionTimes = mutable.Map[Pipeline[_,_], Double]()
 
   def getClassPaths = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
 
@@ -23,7 +28,7 @@ case class Context(
   val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
   method.setAccessible(true)
 
-  for(p <- getClassPaths) {
+  for (p <- getClassPaths) {
     val f = new File(p)
     method.invoke(ClassLoader.getSystemClassLoader, f.toURI.toURL)
   }

@@ -28,6 +28,9 @@ trait MainErrors extends Errors {
   protected def FatalCannotFindFile(fileName: String) =
     fatal(s"Cannot find file '$fileName'.")
 
+  protected def FatalNoFilesGiven() =
+    fatal(s"No files given.")
+
   protected def FatalInvalidOutputDirectory(outDir: String) =
     fatal(s"Invalid output directory: '$outDir'.")
 

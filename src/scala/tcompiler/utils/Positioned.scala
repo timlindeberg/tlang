@@ -51,13 +51,12 @@ trait Positioned {
   def endLine = _lineEnd
   def endCol = _colEnd
 
-  def position: String = {
-    if (hasPosition) {
-      file.getPath + ":" + line + ":" + col
-    } else {
+  def position: String =
+    if (hasPosition)
+      s"${file.getPath}:$line:$col"
+    else
       "?:?"
-    }
-  }
+
 }
 
 case object NoPosition extends Positioned

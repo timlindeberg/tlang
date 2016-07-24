@@ -458,7 +458,6 @@ class TypeChecker(override var ctx: Context,
 
     val containsNull = uniqueTpes.contains(TNull)
     uniqueTpes = uniqueTpes.filter(_ != TNull)
-    println(containsNull)
     val tpe =
       if (uniqueTpes.size == 1) {
         uniqueTpes.head
