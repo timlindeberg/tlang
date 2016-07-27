@@ -23,11 +23,21 @@ c.nullable.Test() // res: F2000
 if(c.nullable != null && c.nullable.bNullable != null)
     c.nullable.bNullable.Test()
 
+if(c.nullable)
+    c.nullable.Test()
 
+if(c.nullable && c.nullable.bNullable)
+    c.nullable.bNullable.Test()
+
+// This should in theory not give an error
+// but seems like a very strange case. It would only apply when
+// we know the result of the ternary check is true or false
+if(a == null ? true : false)
+    a.Test() // res: F2000
 
 // TODO: This should probably work
 // if(c?.nullable?.bNullable != null)
-//    c.nullable.bNullable.Test()
+//     c.nullable.bNullable.Test()
 
 c.nullable.bNullable.Test() // res: F2000, F2000
 
@@ -119,8 +129,8 @@ Def Test(b: A?) = {
         a.Test()
     }
 
-    if(a != null) a.Test()
-    if(a == null) a.Test() // res: F2001
+    if(a) a.Test()
+    if(!a) a.Test() // res: F2001
 
 
     val c = GetA()
@@ -130,22 +140,39 @@ Def Test(b: A?) = {
         c.Test()
     }
 
-    // TODO Demorgans law:
-    // if(!(a == null || c == null)){
-    //     a.Test()
-    //     c.Test()
-    // }
-    //
-    // val i = 4
-    // val e = GetA()
-    // val f = GetA()
-    // if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)){
-    //    // equivalant to: if(a != null && c == null && !(i == 5 && i != 4) e  != null && f != null)
-    //     a.Test()
-    //     c.Test() // r//es: F2001
-    //     e.Test()
-    //     f.Test()
-    // }
+    a = GetA()
+    if(a != null && (a = GetA()) != null)
+        a.Test()
+
+    // Horrible edge case where the variable is reassigned
+    // in the condition. Currently does not work.
+    if(a != null && (a = GetA()) == new A())
+        a.Test() // r//es: F2000
+
+     // TODO Demorgans law:
+     if(!(a == null || c == null)){
+         a.Test()
+         c.Test()
+     }
+    
+     val i = 4
+     val e = GetA()
+     val f = GetA()
+     if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)){
+         // De morgans: a != null && c == null && !(i == 5 && i != 4) && e != null && f != null
+         a.Test()
+         c.Test()  // res: F2001
+         e.Test()
+         f.Test()
+     }
+
+     if(!((a || b || c ) && e)){
+        // De morgans: (!a && !b && !c) || !e
+        a.Test() // res: F2000
+        b.Test() // res: F2000
+        c.Test() // res: F2000
+        e.Test() // res: F2000
+     }
 
 }
 
@@ -162,7 +189,31 @@ Def Test2(b: A?) = {
     if(a != null)
         return
 
-    a.Test() // res: F2000
+    a.Test() // res: F2001
+
+/*
+    if(a == null || b == null){
+        a.Test() // res: F2001
+        b.Test() // res: F2001
+    } else {
+        a.Test()
+        b.Test()
+    }
+
+    if(a == null || b == null)
+        return
+
+    a.Test()
+    b.Test()
+
+    if(a == null || a == b){
+        a.Test() // res: F2001
+        b.Test() // res: F2001
+    } else {
+        a.Test()
+        b.Test() // res: F2001
+    }
+*/
 }
 
 
@@ -178,6 +229,8 @@ class A {
 
 
     Def Test() = println("Test")
+
+    Def GetBool() = true
 
     Def +(a: A, b: A) = 5
 
