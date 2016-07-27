@@ -34,7 +34,7 @@ object Printer {
     prettyPrint(t)
   }
 
-  private def cuComment(cu: Tree) = {
+  private def comment(cu: Tree) = {
     val fileName = if (cu.hasPosition)
       cu.file.getName
     else
@@ -48,7 +48,7 @@ object Printer {
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case CompilationUnit(pack, classes, importMap)                  => p"${cuComment(t)}$pack$N${importMap.imports}$classes"
+      case CompilationUnit(pack, classes, importMap)                  => p"${comment(t)}$pack${imports(importMap.imports)}$classes"
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
@@ -73,8 +73,8 @@ object Printer {
       case NullableType(tpe) => p"$tpe?"
       // Statements
       case Block(stats)                      => if (stats.isEmpty) "{}" else p"$L$stats$R"
-      case If(expr, thn, els)                => p"if($expr) ${Stat(thn)}${optional(els)(stat => p"${N}else ${Stat(stat)}")}"
-      case While(expr, stat)                 => p"while($expr) ${Stat(stat)}"
+      case If(condition, thn, els)           => p"if($condition) ${Stat(thn)}${optional(els)(stat => p"${N}else ${Stat(stat)}")}"
+      case While(condition, stat)            => p"while($condition) ${Stat(stat)}"
       case For(init, condition, post, stat)  => p"for(${Separated(init, ", ")} ; $condition ; ${Separated(post, ", ")}) ${Stat(stat)}"
       case Foreach(varDecl, container, stat) => p"for($varDecl in $container) ${Stat(stat)}"
       case Print(expr)                       => p"print($expr)"
@@ -145,6 +145,12 @@ object Printer {
     s
   }
 
+  private def imports(imps: List[Import]) = {
+    if(imps.isEmpty) ""
+    else
+      p"${Separated(imps, "\n")}$N"
+  }
+
   private def genExpr(stats: List[StatTree]) = {
     if (stats.size == 1) p"<${stats.head}>"
     else p"<$L$stats$R>"
@@ -154,16 +160,15 @@ object Printer {
     if (adress.isEmpty)
       ""
     else
-      p"package ${adress.mkString("::")}"
+      p"package ${adress.mkString("::")}$N"
   }
 
   private def classOrTrait(isTrait: Boolean) = if (isTrait) p"trait" else p"class"
 
   private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""
-    else {
+    else
       p": ${Separated(parents, ", ")}"
-    }
   }
 
   private def varsAndMethods(vars: List[VarDecl], methods: List[FuncTree]): String = {

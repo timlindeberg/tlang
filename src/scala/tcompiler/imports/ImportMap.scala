@@ -29,7 +29,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   def this(imports: List[Import], ctx: Context) {
     this(ctx)
     this.imports = imports
-    val regImports = imports.filterType(classOf[RegularImport])
+    val regImports = imports.filterType[RegularImport]
 
     // TODO: Support wild card imports. Need to be able to search the full classpath
     //val wcImports = imports.filterType(classOf[WildCardImport])

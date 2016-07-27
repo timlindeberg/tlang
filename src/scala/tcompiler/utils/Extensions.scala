@@ -1,8 +1,12 @@
 package tcompiler.utils
 
 import tcompiler.analyzer.Types.Type
-import scala.collection.mutable
 
+import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.reflect.runtime._
+import scala.reflect.runtime.universe._
+import scala.reflect._
 /**
   * Created by Tim Lindeberg on 4/16/2016.
   */
@@ -11,6 +15,12 @@ object Extensions {
   implicit class OptionExtensions[T](o: Option[T]) {
 
     def ifDefined(f: T => Unit): Unit = if (o.isDefined) f(o.get)
+
+  }
+
+  implicit class AnyExtensions(a: Any) {
+
+    def ifInstanceOf[T: ClassTag](f: T => Unit) = if(classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
 
   }
 
@@ -23,9 +33,11 @@ object Extensions {
     def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
   }
 
-  implicit class TraversableExtensions[T](l: Traversable[T]) {
+  implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](l: Collection[T]) {
 
-    def filterType[A](clazz: Class[A]) = l.filter(_.getClass == clazz).asInstanceOf[List[A]]
+    def filterType[A <: T: ClassTag]: Collection[A] = l.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
+    def filterNotType[A <: T: ClassTag]: Collection[T] = l.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
+    def findInstance[A <: T: ClassTag]: A = l.find(classTag[A].runtimeClass.isInstance(_)).get.asInstanceOf[A]
 
   }
 

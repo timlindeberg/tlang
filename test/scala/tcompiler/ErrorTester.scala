@@ -31,7 +31,7 @@ abstract class ErrorTester extends Tester {
       }
 
       val warningCodes = TestUtils.parseErrorCodes(warnings)
-      assertCorrect(warningCodes, expectedErrors, warnings)
+      assertCorrect(warningCodes, expectedErrors, warnings, checkLineNumbers = true)
     } catch {
       case t: CompilationException =>
         if(PrintErrors){
@@ -39,7 +39,7 @@ abstract class ErrorTester extends Tester {
           println(t.getMessage)
         }
         val errorCodes = TestUtils.parseErrorCodes(t.getMessage)
-        assertCorrect(errorCodes, expectedErrors, t.getMessage)
+        assertCorrect(errorCodes, expectedErrors, t.getMessage, checkLineNumbers = true)
       case e: Exception =>
         e.printStackTrace()
         fail(e.getMessage)

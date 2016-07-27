@@ -1,40 +1,71 @@
-val a: A? = new A()
+var a: A? = new A()
 
 a.Test()
 
 a = null
 
-a.Test() // res: F2000
+a.Test() // res: F2001
 
 a = GetA()
 val b: A? = GetA()
 
-a.Test() // res: F2000
-// res: F2000
-println(a + b) // res: F2000
+GetA().Test() // res: F2002
 
-if(a && b)
+if(A.staticA != null)
+    A.staticA.Test()
+A.staticA.Test() // res: F2000
+
+var c: A? = new A()
+if(c.nullable != null)
+    c.nullable.Test()
+c.nullable.Test() // res: F2000
+
+if(c.nullable != null && c.nullable.bNullable != null)
+    c.nullable.bNullable.Test()
+
+
+
+// TODO: This should probably work
+// if(c?.nullable?.bNullable != null)
+//    c.nullable.bNullable.Test()
+
+c.nullable.bNullable.Test() // res: F2000, F2000
+
+a.Test() // res: F2000
+println(a + b) // res: F2000, F2000
+
+if(a != null && b != null)
     println(a + b)
 
-if(a)
+if(a != null || b != null)
+    println(a + b) // res: F2000, F2000
+
+if(a != null)
     println(a + b) // res: F2000
 
-if(b)
+if(b != null)
     println(a + b) // res: F2000
 
 println(a) // Okay to print nullables
 println(b) // Okay to print nullables
 
-val arr: Int[]? = {1, 2, 3}
+var arr: Int[]? = {1, 2, 3}
 
-println(a[0])
+println(arr[0])
 
-val arr = GetArr()
+arr = GetArr()
 
-println(a[0]) // res: F2000
+if(arr != null)
+    println(arr[0])
+println(arr[0]) // res: F2000
 
-for(val i in a) // res: F2000
+if(arr != null){
+    for(val i in arr)
+        println(i)
+}
+for(val i in arr) // res: F2000
     println(i)
+
 
 Def Test(b: A?) = {
     var a = b
@@ -42,7 +73,7 @@ Def Test(b: A?) = {
     if(a != null) {
         a.Test()
     } else {
-        a.Test() // res: F2000
+        a.Test() // res: F2001
     }
 
     if(a.b) // res: F2000
@@ -52,13 +83,13 @@ Def Test(b: A?) = {
     if(a != null && a.b)
         println()
 
-    if(a == null && a.b)
-        a.Test() // res: F2000
+    if(a == null)
+        a.Test() // res: F2001
     else
         a.Test()
 
     if(a == new A() && a != new A() && a.b) // res: F2000
-        a.Test()// res: F2000
+        a.Test() // res: F2000
 
     if(a == new A() && a != null && a.b)
         a.Test()
@@ -71,25 +102,25 @@ Def Test(b: A?) = {
 
     a = null
     while(a == null){
-        a.Test() // res: F2000
+        a.Test() // res: F2001
         a = new A()
         a.Test()
     }
 
-    for(var i = 0; a != null; i++){
+    for(var i = 0; a != null; i++) {
         a.Test()
         a = GetA()
         a.Test() // res: F2000
     }
 
     for(var i = 0; a == null; i++){
-        a.Test() // res: F2000
+        a.Test() // res: F2001
         a = new A()
         a.Test()
     }
 
-    if(a) a.Test()
-    if(!a) a.Test() // res: F2000
+    if(a != null) a.Test()
+    if(a == null) a.Test() // res: F2001
 
 
     val c = GetA()
@@ -99,15 +130,27 @@ Def Test(b: A?) = {
         c.Test()
     }
 
-    if(!(a == null || c == null)){
-        a.Test()
-        c.Test()
-    }
+    // TODO Demorgans law:
+    // if(!(a == null || c == null)){
+    //     a.Test()
+    //     c.Test()
+    // }
+    //
+    // val i = 4
+    // val e = GetA()
+    // val f = GetA()
+    // if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)){
+    //    // equivalant to: if(a != null && c == null && !(i == 5 && i != 4) e  != null && f != null)
+    //     a.Test()
+    //     c.Test() // r//es: F2001
+    //     e.Test()
+    //     f.Test()
+    // }
 
 }
 
 Def Test2(b: A?) = {
-    val a = b
+    var a = b
     a.Test() // res: F2000
     if(a == null)
         return
@@ -122,15 +165,33 @@ Def Test2(b: A?) = {
     a.Test() // res: F2000
 }
 
+
 Def GetA(): A? = null
 Def GetArr(): Int[]? = null
 
 class A {
 
+    Val static staticA: A? = null
+
     Val b = true
+    Val nullable: B? = null
+
 
     Def Test() = println("Test")
 
     Def +(a: A, b: A) = 5
+
+}
+
+class B {
+
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
 
 }

@@ -36,6 +36,6 @@ trait Colorizer {
   def White(s: Any): String = White + s + Reset
 
 
-  private def GetColor(color: String) = if (useColor || System.console() == null) color else ""
+  private def GetColor(color: String) = if (useColor && System.console() != null) color else ""
 
 }

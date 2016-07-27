@@ -80,10 +80,10 @@ class TreeCopier {
     new VarDecl(tpe, id, init, modifiers).copyAttrs(t)
   def Block(t: Tree, stats: List[StatTree]) =
     new Block(stats).copyAttrs(t)
-  def If(t: Tree, expr: ExprTree, thn: StatTree, els: Option[StatTree]) =
-    new If(expr, thn, els).copyAttrs(t)
-  def While(t: Tree, expr: ExprTree, stat: StatTree) =
-    new While(expr, stat).copyAttrs(t)
+  def If(t: Tree, condition: ExprTree, thn: StatTree, els: Option[StatTree]) =
+    new If(condition, thn, els).copyAttrs(t)
+  def While(t: Tree, condition: ExprTree, stat: StatTree) =
+    new While(condition, stat).copyAttrs(t)
   def For(t: Tree, init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) =
     new For(init, condition, post, stat).copyAttrs(t)
   def Foreach(t: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree) =

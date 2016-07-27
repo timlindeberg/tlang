@@ -61,10 +61,10 @@ class TreeTransformer {
       treeCopy.VarDecl(t, tr(tpe), tr(id), tr(init), tr(modifiers))
     case Block(stats)                      =>
       treeCopy.Block(t, tr(stats))
-    case If(expr, thn, els)                =>
-      treeCopy.If(t, tr(expr), tr(thn), tr(els))
-    case While(expr, stat)                 =>
-      treeCopy.While(t, tr(expr), tr(stat))
+    case If(condition, thn, els)                =>
+      treeCopy.If(t, tr(condition), tr(thn), tr(els))
+    case While(condition, stat)                 =>
+      treeCopy.While(t, tr(condition), tr(stat))
     case For(init, condition, post, stat)  =>
       treeCopy.For(t, tr(init), tr(condition), tr(post), tr(stat))
     case Foreach(varDecl, container, stat) =>

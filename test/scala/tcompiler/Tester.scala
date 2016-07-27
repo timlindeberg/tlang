@@ -14,7 +14,7 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
 
   import TestUtils._
 
-  val PrintErrors = true
+  val PrintErrors = false
 
   def Name: String
 

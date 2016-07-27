@@ -10,7 +10,7 @@ import tcompiler.utils.{Errors, Positioned}
   */
 trait FlowAnalysisErrors extends Errors {
 
-  override val ErrorPrefix = "N"
+  override val ErrorPrefix = "F"
 
   def error(errorCode: Int, msg: String, tree: Positioned) =
     ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
@@ -19,10 +19,26 @@ trait FlowAnalysisErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorInvalidNullableAccess(v: VariableID, pos: Positioned) =
+  protected def ErrorAccessMightBeNull(v: VariableSymbol, pos: Positioned) =
     error(0, s"Cannot use nullable variable '$v' without first checking if it is 'null'.", pos)
 
+  protected def ErrorAccessIsNull(v: VariableSymbol, pos: Positioned) =
+    error(1, s"Cannot use nullable variable '$v' since it is known to be 'null'.", pos)
 
+  protected def ErrorAccessNullableMethod(meth: String, pos: Positioned) =
+    error(2, s"Cannot directly use result of method call '$meth' since it could be 'null'.", pos)
+
+  protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
+    error(3, s"Cannot reassign value '$value'.", pos)
+
+  //---------------------------------------------------------------------------------------
+  //  Warnings
+  //---------------------------------------------------------------------------------------
+
+  protected def WarningDeadCode(startLine: Int, endLine: Int, pos: Positioned) = {
+    val line = if(startLine == endLine) s"line '$startLine'" else s"lines '$startLine'-'$endLine'"
+    warning(0, s"Code on $line is unreachable.", pos)
+  }
 
   //---------------------------------------------------------------------------------------
   //  Private methods

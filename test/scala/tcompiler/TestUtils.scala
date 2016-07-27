@@ -95,20 +95,14 @@ object TestUtils extends FlatSpec {
   }
 
   private val SolutionRegex = """.*// *[R|r]es:(.*)""".r
-  private val SolutionOrderedRegex = """.*// *[R|r]es(\d+):(.*)""".r
 
   def parseSolutions(file: File): List[(Int, String)] = {
-
     val fileName = file.getPath
-    var i = -1
-    val answers = Source.fromFile(fileName).getLines().zipWithIndex.map {
-      case (SolutionOrderedRegex(num, result), line) => (num.toInt, (line + 1, result))
-      case (SolutionRegex(result), line)             =>
-        i += 1
-        (i, (line + 1, result))
-      case _                                         => (-1, (0, ""))
+    Source.fromFile(fileName).getLines().zipWithIndex.flatMap {
+      case (SolutionRegex(line), lineNumber)             =>
+        line.split(",").map(res => (lineNumber + 1, res.trim))
+      case _ => Nil
     }.toList
-    answers.filter(_._1 >= 0).sortWith(_._1 < _._1).map(_._2)
   }
 
   private val IgnoreRegex = """.*// *[I|i]gnore.*"""
@@ -117,22 +111,34 @@ object TestUtils extends FlatSpec {
     firstLine.matches(IgnoreRegex)
   }
 
-  private val ErrorRegex = """(Fatal|Warning|Error) \((.+?)\).*""".r
+  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(Fatal|Warning|Error) \((.+?)\).*""".r
   // Parses codes from error messages
 
-  def parseErrorCodes(errorMessages: String) = {
-    val errors = removeANSIFormatting(errorMessages)
-    errors.split("\n\n").map(_.split("\n")(1)).collect {
-      case ErrorRegex(_, errorCode) => errorCode
+  def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
+    // First two rows of error messages
+    val errors = removeANSIFormatting(errorMessages).split("\n\n").map(msg => {
+      msg.split("\n").take(2).mkString("\n")
+    })
+    errors.collect {
+      case ErrorRegex(lineNumber, _, errorCode) => (lineNumber.toInt, errorCode)
     }.toList
   }
 
-  def assertCorrect(res: List[String], sol: List[(Int, String)], errors: String) = {
-    assert(res.length == sol.length, resultsVersusSolution(-1, res, sol.map(_._2), errors))
+  def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String, checkLineNumbers: Boolean) = {
+    def asString(l: List[(Int, String)]) = l.map { case (lineNumber, msg) =>
+      val num = s"$lineNumber:"
+      f"$num%-4s $msg"
+    }
+    val resStrings = asString(res)
+    val solStrings = asString(sol)
+    assert(res.length == sol.length, resultsVersusSolution(-1, resStrings, solStrings, errors))
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
-      case (r, (line, s), i) =>
-        assert(r.trim == s.trim, s": error on line $line ${resultsVersusSolution(i + 1, res, sol.map(_._2), errors)}")
+      case ((lineRes, r), (lineSol, s), i) =>
+        val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
+        assert(r.trim == s.trim, s": error on line $lineRes $extraInfo")
+        if(checkLineNumbers)
+          assert(lineRes == lineSol, s": Same error message ($r) but the error happened on line $lineRes instead of $lineSol $extraInfo")
     }
   }
 
@@ -177,7 +183,7 @@ object TestUtils extends FlatSpec {
     if(errors == "")
       results
     else
-      results + "\n" + Console.RESET + errors
+      results + "\n" + errors
   }
 
   private val AnsiRegex = """\x1b[^m]*m""".r

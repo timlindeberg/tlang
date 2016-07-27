@@ -193,7 +193,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     fullName match {
       case "kool.lang.Object" =>
       case "kool.lang.String" =>
-      case _ =>
+      case _                  =>
         globalScope.classes.get(fullName) match {
           case Some(old) => ErrorClassAlreadyDefined(name, old.line, id)
           case None      =>
@@ -213,7 +213,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case classDecl@ClassDecl(id, parents, vars, methods, isAbstract)              =>
+    case classDecl@ClassDecl(id, parents, vars, methods, isAbstract)     =>
       setParentSymbol(id, parents, classDecl)
       val sym = classDecl.getSymbol
 
@@ -292,9 +292,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     def bindStatement(tree: Tree): Unit = bind(tree, Map(), 0)
 
     private def bind(statement: Tree,
-      localVars: Map[String, VariableData],
-      scopeLevel: Int,
-      canBreakContinue: Boolean = false): Map[String, VariableData] =
+                     localVars: Map[String, VariableData],
+                     scopeLevel: Int,
+                     canBreakContinue: Boolean = false): Map[String, VariableData] =
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1).foreach {
@@ -337,13 +337,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           bind(container, localVars, scopeLevel)
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case If(expr, thn, els)                             =>
-          bind(expr, localVars, scopeLevel)
+        case If(condition, thn, els)                        =>
+          bind(condition, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel, canBreakContinue)
-          els collect { case e => bind(e, localVars, scopeLevel, canBreakContinue) }
+          els ifDefined { els => bind(els, localVars, scopeLevel, canBreakContinue) }
           localVars
-        case While(expr, stat)                              =>
-          bind(expr, localVars, scopeLevel)
+        case While(condition, stat)                         =>
+          bind(condition, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
         case PrintStatTree(expr)                            =>
@@ -353,7 +353,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           bind(expr, localVars, scopeLevel)
           localVars
         case Return(expr)                                   =>
-          expr collect { case e => bind(e, localVars, scopeLevel) }
+          expr ifDefined { expr => bind(expr, localVars, scopeLevel) }
           localVars
         case _: Break | _: Continue                         =>
           if (!canBreakContinue)
@@ -491,8 +491,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
           lookupLocalVar().orElse(
-            lookupArgument(methodSymbol).orElse(
-              lookupField(methodSymbol)))
+                                   lookupArgument(methodSymbol).orElse(
+                                                                        lookupField(methodSymbol)))
         case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupField(name)
         case _                          => ???
@@ -562,7 +562,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     }
 
     val nonAbstractParents = parents.filter(!_.getSymbol.isAbstract)
-    if(!classDecl.isAbstract && nonAbstractParents.isEmpty){
+    if (!classDecl.isAbstract && nonAbstractParents.isEmpty) {
       val defaultParent = ClassID(Main.TLangObject).setSymbol(Types.ObjectSymbol)
       val abstractParents = parents.filter(_.getSymbol.isAbstract)
       classDecl.parents = defaultParent :: abstractParents

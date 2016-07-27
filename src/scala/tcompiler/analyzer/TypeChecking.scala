@@ -129,13 +129,13 @@ class TypeChecker(override var ctx: Context,
           case _          => ErrorNoTypeNoInitalizer(varDecl.id.name, varDecl)
         }
       }
-    case If(expr, thn, els)                        =>
-      tcExpr(expr, Bool)
+    case If(condition, thn, els)                        =>
+      tcExpr(condition, Bool)
       tcStat(thn)
       if (els.isDefined)
         tcStat(els.get)
-    case While(expr, stat)                         =>
-      tcExpr(expr, Bool)
+    case While(condition, stat)                         =>
+      tcExpr(condition, Bool)
       tcStat(stat)
     case For(init, condition, post, stat)          =>
       init.foreach(tcStat(_))
@@ -246,8 +246,12 @@ class TypeChecker(override var ctx: Context,
           case _                            => Bool
         }
       case eqOp@EqualsOperatorTree(lhs, rhs)             =>
-        val args = (tcExpr(lhs), tcExpr(rhs))
+        val args@(lhsTpe, rhsTpe) = (tcExpr(lhs), tcExpr(rhs))
         args match {
+          case _ if args.anyIs(TNull) =>
+            val nullableTpe = if(lhsTpe == TNull) rhsTpe else lhsTpe
+            if(!nullableTpe.isNullable)
+              ErrorNonNullableEqualsNull(rhs.getType, eqOp)
           case _ if args.anyIs(Object)                        =>
             // TODO: Compare java object by reference
             tcBinaryOperator(eqOp, args)
@@ -266,7 +270,9 @@ class TypeChecker(override var ctx: Context,
         Bool
       case notOp@Not(expr)                               =>
         tcExpr(expr, Bool, Types.Object) match {
-          case obj: TObject => tcUnaryOperator(notOp, obj, Some(Bool))
+          case obj: TObject =>
+            if(!obj.isNullable)
+              tcUnaryOperator(notOp, obj, Some(Bool))
           case _            =>
         }
         Bool

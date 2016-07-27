@@ -167,6 +167,9 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorAssignValueToMethodCall(pos: Positioned) =
     error(37, s"Cannot assign a value to the result of a method call.", pos)
 
+  protected def ErrorNonNullableEqualsNull(tpe: Type, pos: Positioned) =
+    error(37, s"Cannot check if non nullable type '$tpe' is 'null'.", pos)
+
 
 
   //---------------------------------------------------------------------------------------

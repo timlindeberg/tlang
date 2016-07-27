@@ -274,7 +274,9 @@ object Symbols {
   }
 
   class VariableSymbol(val name: String,
-                       val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable
+                       val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
+    override def toString = name
+  }
 
   class FieldSymbol(override val name: String,
                     override val modifiers: Set[Modifier] = Set(),

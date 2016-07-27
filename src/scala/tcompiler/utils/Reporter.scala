@@ -16,7 +16,7 @@ class CompilationException(message: String) extends Exception(message)
 class Reporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
-  override val useColor: Boolean = true,
+  override val useColor: Boolean = false,
   maxErrors: Int = 100)
   extends Colorizer {
 

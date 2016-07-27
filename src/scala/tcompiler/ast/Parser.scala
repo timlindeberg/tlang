@@ -575,16 +575,16 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         Block(stmts)
       case IF                      =>
         eat(IF, LPAREN)
-        val expr = expression()
+        val condition = expression()
         eat(RPAREN)
         val stmt = statement()
         val els = optional(statement, ELSE)
-        If(expr, stmt, els)
+        If(condition, stmt, els)
       case WHILE                   =>
         eat(WHILE, LPAREN)
-        val expr = expression()
+        val condition = expression()
         eat(RPAREN)
-        While(expr, statement())
+        While(condition, statement())
       case FOR                     =>
         forLoop()
       case PRINT | PRINTLN | ERROR =>

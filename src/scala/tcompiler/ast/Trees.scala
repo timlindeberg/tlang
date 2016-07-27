@@ -259,7 +259,7 @@ object Trees {
 
   case class VarDecl(var tpe: Option[TypeTree], var id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
-  case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
+  case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(condition: ExprTree, stat: StatTree) extends StatTree
   case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
@@ -419,7 +419,7 @@ object Trees {
     def operatorString(args: List[Any], className: String): String = className + operatorString(args)
   }
   object ArrayOperatorTree {
-    def unapply(e: ArrayOperatorTree)=Some(e.arr)
+    def unapply(e: ArrayOperatorTree) = Some(e.arr)
   }
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {

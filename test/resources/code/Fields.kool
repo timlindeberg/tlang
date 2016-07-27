@@ -1,10 +1,10 @@
 var a1: A = new A()
 var a2: A = new A()
 var b: B = new B()
-a1.Test(a2)
-b.Test2(a2)
-println(a1.J = 1)      // res5: 1
-println(a1.J += a1.J)  // res6: 2
+a1.Test(a2) // res: 1, 2
+b.Test2(a2) // res: 1, 2
+println(a1.J = 1)      // res: 1
+println(a1.J += a1.J)  // res: 2
 
 class A {
 
@@ -13,8 +13,8 @@ class A {
   var protected k: Int
 
   Def Test(a: A): Unit = {
-    println(a.i = 1)       // res1: 1
-    println(a.i += a.i)    // res2: 2
+    println(a.i = 1)
+    println(a.i += a.i)
   }
 
 }
@@ -22,8 +22,8 @@ class A {
 class B : A {
 
   Def Test2(a: A): Unit = {
-    println(a.k = 1)       // res3: 1
-    println(a.k += a.k)    // res4: 2
+    println(a.k = 1)
+    println(a.k += a.k)
   }
 
 }
