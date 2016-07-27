@@ -39,7 +39,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   case class Knowledge(varKnowledge: Map[VarIdentifier, Set[VarKnowledge]] = Map(),
-                       events: Map[Int, Set[Event]] = Map(),
+                       events: Map[Int, Set[(VarIdentifier, VarKnowledge)]] = Map(),
                        flowEnded: Option[StatTree] = None) {
 
     def addLocalVar(v: VariableSymbol, knowledge: Set[VarKnowledge], fields: List[VariableSymbol] = Nil) = {
@@ -47,35 +47,31 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       copy(varKnowledge = varKnowledge + (vId -> knowledge))
     }
 
-    def isNull(v: VariableSymbol, fields: List[VariableSymbol] = Nil): Option[Boolean] = isNull(VarIdentifier(v, fields))
     def isNull(v: VarIdentifier): Option[Boolean] =
       varKnowledge.getOrElse(v, Set()).find(_.isInstanceOf[IsNull]) match {
         case Some(IsNull(value)) => Some(value)
         case _                   => None
       }
 
-
     def nullCheck(t: Tree, varId: VarIdentifier, isNull: Boolean) = {
-      val k = addEvent(t, NullCheck(varId))
-      val info = varKnowledge.getOrElse(varId, Set()).filter(!_.isInstanceOf[IsNull]) + IsNull(isNull)
-      k.copy(varKnowledge = varKnowledge + (varId -> info))
+      val nullKnowledge = IsNull(isNull)
+      val event = getEvent(t, varId, nullKnowledge)
+      val oldKnowledge = varKnowledge.getOrElse(varId, Set()).filterNotType[IsNull]
+      val newKnowledge = oldKnowledge + nullKnowledge
+      copy(varKnowledge = varKnowledge + (varId -> newKnowledge), events = events + event)
     }
 
     def endFlow(at: StatTree) = copy(flowEnded = Some(at))
 
-    def eventsFrom(t: Tree): Set[Event] = events.getOrElse(System.identityHashCode(t), Set())
+    def eventsFrom(t: Tree): Set[(VarIdentifier, VarKnowledge)] = events.getOrElse(System.identityHashCode(t), Set())
 
-
-    def invertKnowledgeFrom(t: Tree): Knowledge = {
-      eventsFrom(t).filterType[NullCheck].foldLeft(this)((knowledge, event) => event match {
-        case NullCheck(v) =>
-          val isNull = varKnowledge(v).findInstance[IsNull]
-          val invertedKnowledge = varKnowledge(v).filter(!_.isInstanceOf[IsNull]) + IsNull(!isNull.value)
-          val tup = (v, invertedKnowledge)
-          knowledge.copy(varKnowledge = varKnowledge + tup)
-        case _               => this
+    def invertKnowledgeFrom(t: Tree): Knowledge =
+      eventsFrom(t).foldLeft(this)((knowledge, event) => event match {
+        case (varId, vKnowledge) =>
+          // replace the knowledge with the inverted knowledge
+          val invertedKnowledge = varKnowledge(varId) - vKnowledge + vKnowledge.invert
+          knowledge.copy(varKnowledge = varKnowledge + (varId -> invertedKnowledge))
       })
-    }
 
     def and(and: Tree, lhs: Tree, rhs: Tree): Knowledge = {
       val hash = System.identityHashCode(and)
@@ -83,45 +79,53 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       copy(events = events + (hash -> topSet))
     }
 
-    def or(or: Tree, lhs: Tree, rhs: Tree): Knowledge = {
+    def or(or: Tree, topSet: Set[(VarIdentifier, VarKnowledge)]): Knowledge = {
       val hash = System.identityHashCode(or)
-      val topSet = eventsFrom(lhs) ++ eventsFrom(rhs)
-      val newEvents = events + (hash -> topSet)
+      // Wrap knowledge in OrCheck thingys
+      val newKnowledge = topSet.map { case (varId, k) =>
+        val v = varKnowledge(varId)
+        val set = if(v.contains(k)) v else v + OrCheck(k)
+        varId -> set
+      }.toMap
+      val newEventSets: Set[(VarIdentifier, VarKnowledge)] = topSet.map { case (varId, k) => (varId, OrCheck(k)) }
 
-      copy(events = newEvents)
+      val newEvents = events + (hash -> newEventSets)
+      copy(varKnowledge = varKnowledge ++ newKnowledge, events = newEvents)
     }
 
-    private def addEvent(t: Tree, event: Event) = {
+    private def getEvent(t: Tree, varId: VarIdentifier, newKnowledge: VarKnowledge) = {
       val hash = System.identityHashCode(t)
       val e = events.getOrElse(hash, Set())
-      copy(events = events + (hash -> (e + event)))
+      hash -> (e + (varId -> newKnowledge))
     }
 
     override def toString = {
-      varKnowledge.map { case (VarIdentifier(v, fields), knowledge) =>
+      val vars = varKnowledge.map { case (VarIdentifier(v, fields), knowledge) =>
         val f = if (fields.isEmpty) "" else fields.mkString(".", ".", "")
         s"$v$f -> { ${knowledge.mkString(", ")} }"
-      }.mkString("\n") +
-        (flowEnded match {
-          case Some(ended) => s"\nFlow ended at ${ended.line}: $ended"
-          case None        => ""
-        })
+      }.mkString("\n")
+
+      val flow = flowEnded match {
+        case Some(ended) => s"\nFlow ended at ${ended.line}: $ended"
+        case None        => ""
+      }
+      vars + flow
     }
   }
 
-  trait Event {
-    val v: VarIdentifier
+  trait VarKnowledge {
+    def invert: VarKnowledge = this
   }
-  case class NullCheck(v: VarIdentifier) extends Event
-  case class TypeCheck(v: VarIdentifier, tpe: Type) extends Event
-
-  trait VarKnowledge
 
   case object Initialized extends VarKnowledge
   case object Used extends VarKnowledge
   case object Reassigned extends VarKnowledge
-  case class IsNull(value: Boolean) extends VarKnowledge
-  case class OrCheck(v1: VarKnowledge, v2: VarKnowledge) extends VarKnowledge
+  case class IsNull(value: Boolean) extends VarKnowledge {
+    override def invert = IsNull(!value)
+  }
+  case class OrCheck(v1: VarKnowledge) extends VarKnowledge {
+    override def invert = v1.invert
+  }
 
   def apply(clazz: ClassDecl): Unit = {
     def getVarKnowledgeMap(list: List[VariableSymbol]): Map[VarIdentifier, Set[VarKnowledge]] =
@@ -136,9 +140,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    //println(s"${tree.line}: $tree")
-    //println(knowledge)
-    //println("------------------------------------------------")
+    println(s"${tree.line}: $tree")
+    println(knowledge)
+    println("------------------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
@@ -172,7 +176,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         val thnKnowledge = analyze(thn, afterCondition)
         els ifDefined {analyze(_, afterCondition.invertKnowledgeFrom(condition))}
         if (thnKnowledge.flowEnded.isDefined)
-          thnKnowledge.invertKnowledgeFrom(condition)
+          afterCondition.invertKnowledgeFrom(condition)
         else
           knowledge
       case While(condition, stat)            =>
@@ -202,7 +206,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     case Or(lhs, rhs)                    =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
-      knowledge
+      val orKnowledge = lhsKnowledge.eventsFrom(lhs) ++ rhsKnowledge.eventsFrom(rhs)
+      knowledge.or(tree, orKnowledge)
     case Not(expr)                       =>
       // Apply De Morgans law:
       expr match {

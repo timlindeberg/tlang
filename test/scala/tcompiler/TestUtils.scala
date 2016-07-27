@@ -131,7 +131,6 @@ object TestUtils extends FlatSpec {
     }
     val resStrings = asString(res)
     val solStrings = asString(sol)
-    assert(res.length == sol.length, resultsVersusSolution(-1, resStrings, solStrings, errors))
 
     flattenTuple(res.zip(sol).zipWithIndex).foreach {
       case ((lineRes, r), (lineSol, s), i) =>
@@ -140,6 +139,7 @@ object TestUtils extends FlatSpec {
         if(checkLineNumbers)
           assert(lineRes == lineSol, s": Same error message ($r) but the error happened on line $lineRes instead of $lineSol $extraInfo")
     }
+    assert(res.length == sol.length, resultsVersusSolution(-1, resStrings, solStrings, errors))
   }
 
   def hasTypes(cu: CompilationUnit) = {

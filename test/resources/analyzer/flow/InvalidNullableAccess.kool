@@ -166,13 +166,7 @@ Def Test(b: A?) = {
          f.Test()
      }
 
-     if(!((a || b || c ) && e)){
-        // De morgans: (!a && !b && !c) || !e
-        a.Test() // res: F2000
-        b.Test() // res: F2000
-        c.Test() // res: F2000
-        e.Test() // res: F2000
-     }
+
 
 }
 
@@ -191,29 +185,77 @@ Def Test2(b: A?) = {
 
     a.Test() // res: F2001
 
-/*
-    if(a == null || b == null){
+    if(a == null || b == null) {
         a.Test() // res: F2001
-        b.Test() // res: F2001
+        b.Test() // res: F2000
     } else {
-        a.Test()
+        a.Test() // res: F2001
         b.Test()
     }
 
     if(a == null || b == null)
         return
 
-    a.Test()
+
+    a.Test() // res: F2001
     b.Test()
 
-    if(a == null || a == b){
-        a.Test() // res: F2001
-        b.Test() // res: F2001
+    a = GetA()
+
+    if(a == null || a == b ){
+        a.Test() // res: F2000
+        b.Test()
     } else {
         a.Test()
-        b.Test() // res: F2001
+        b.Test()
     }
-*/
+}
+
+Def Test3() = {
+    val a = GetA()
+    val b = GetA()
+    val c = GetA()
+    val d = GetA()
+    val e = GetA()
+
+    if(a) {
+        a.Test()
+        if(b){
+            a.Test()
+            b.Test()
+            if(c){
+                a.Test()
+                b.Test()
+                c.Test()
+                if(e){
+                    a.Test()
+                    b.Test()
+                    c.Test()
+                    e.Test()
+                }else{
+                    a.Test()
+                    b.Test()
+                    c.Test()
+                    e.Test() // res: F2001
+                }
+            }else{
+                a.Test()
+                b.Test()
+                c.Test() // res: F2001
+                e.Test() // res: F2000
+            }
+        } else {
+            a.Test()
+            b.Test() // res: F2001
+            c.Test() // res: F2000
+            e.Test() // res: F2000
+        }
+    } else {
+        a.Test() // res: F2001
+        b.Test() // res: F2000
+        c.Test() // res: F2000
+        e.Test() // res: F2000
+    }
 }
 
 
