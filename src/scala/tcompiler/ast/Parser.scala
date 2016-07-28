@@ -664,7 +664,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _         => expression()
     }
     eat(SEMICOLON)
-    val post = forIncrement()
+    val post = commaList(expression)
     eat(RPAREN)
     val vars = firstVarDecl match {
       case Some(v) => v :: init
@@ -705,40 +705,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
           }
       }
     }, SEMICOLON)
-
-
-  /**
-    * <forIncrement> ::= [ <expression> { "," <expression> } ]
-    */
-  def forIncrement(): List[StatTree] =
-    commaList(() => {
-      val startPos = nextToken
-      val expr = nextTokenKind match {
-        case INCREMENT =>
-          eat(INCREMENT)
-          PreIncrement(varIdentifier())
-        case DECREMENT =>
-          eat(DECREMENT)
-          PreDecrement(varIdentifier())
-        case IDKIND    =>
-          val id = varIdentifier()
-          nextTokenKind match {
-            case PLUSEQ | MINUSEQ | DIVEQ |
-                 MODEQ | ANDEQ | OREQ | XOREQ |
-                 LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-              assignment(Some(id)).asInstanceOf[Assign]
-            case INCREMENT                  =>
-              eat(INCREMENT)
-              PostIncrement(id)
-            case DECREMENT                  =>
-              eat(DECREMENT)
-              PostDecrement(id)
-            case _                          => FatalWrongToken(nextToken, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ, INCREMENT, DECREMENT)
-          }
-        case _         => FatalWrongToken(nextToken, INCREMENT, DECREMENT, IDKIND)
-      }
-      expr.setPos(startPos, nextToken)
-    })
 
   /**
     * <endStatement> ::= ( ; | \n ) { ; | \n }
@@ -1102,6 +1068,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         val args = commaList(expression)
         eat(RPAREN)
         New(tpe, args)
+      case QUESTIONMARK =>
+        eat(QUESTIONMARK)
+        NewArray(NullableType(tpe), sizes())
       case LBRACKET =>
         NewArray(tpe, sizes())
       case _        => FatalWrongToken(nextToken, LPAREN, LBRACKET)

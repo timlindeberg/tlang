@@ -314,12 +314,12 @@ object Trees {
 
   trait ArithmeticOperatorTree extends BinaryOperatorTree
   object ArithmeticOperatorTree {
-    def unapply(e: ArithmeticOperatorTree)= Some(e.lhs, e.rhs)
+    def unapply(e: ArithmeticOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   trait ShiftOperatorTree extends BinaryOperatorTree
   object ShiftOperatorTree {
-    def unapply(e: ShiftOperatorTree)= Some(e.lhs, e.rhs)
+    def unapply(e: ShiftOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   trait LogicalOperatorTree extends BinaryOperatorTree
@@ -346,12 +346,12 @@ object Trees {
 
   trait ComparisonOperatorTree extends BranchingOperatorTree with BinaryOperatorTree
   object ComparisonOperatorTree {
-    def unapply(e: ComparisonOperatorTree)= Some(e.lhs, e.rhs)
+    def unapply(e: ComparisonOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   trait EqualsOperatorTree extends BranchingOperatorTree with BinaryOperatorTree
   object EqualsOperatorTree {
-    def unapply(e: EqualsOperatorTree)= Some(e.lhs, e.rhs)
+    def unapply(e: EqualsOperatorTree) = Some(e.lhs, e.rhs)
   }
 
   case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<"}

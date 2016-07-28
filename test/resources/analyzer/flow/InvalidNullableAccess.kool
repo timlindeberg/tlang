@@ -11,9 +11,9 @@ val b: A? = GetA()
 
 GetA().Test() // res: F2002
 
-if(A.staticA != null)
-    A.staticA.Test()
-A.staticA.Test() // res: F2000
+if(A.staticVar != null)
+    A.staticVar.Test()
+A.staticVar.Test() // res: F2000
 
 var c: A? = new A()
 if(c.nullable != null)
@@ -29,14 +29,12 @@ if(c.nullable)
 if(c.nullable && c.nullable.bNullable)
     c.nullable.bNullable.Test()
 
-// This should in theory not give an error
-// but seems like a very strange case. It would only apply when
-// we know the result of the ternary check is true or false
-if(a == null ? true : false)
-    a.Test() // res: F2000
 
 // TODO: This should probably work
 // if(c?.nullable?.bNullable != null)
+//     c.nullable.bNullable.Test()
+//
+// if(c?.nullable?.bNullable)
 //     c.nullable.bNullable.Test()
 
 c.nullable.bNullable.Test() // res: F2000, F2000
@@ -44,20 +42,31 @@ c.nullable.bNullable.Test() // res: F2000, F2000
 a.Test() // res: F2000
 println(a + b) // res: F2000, F2000
 
-if(a != null && b != null)
+if(a != null && b != null){
     println(a + b)
+    println(a < b)
+    println(++a)
+    println(a++)
+    println(#a)
+    println(a[1])
+    println(a[1] = 5)
+}
 
-if(a != null || b != null)
+if(a != null || b != null){
     println(a + b) // res: F2000, F2000
+    println(a < b) // res: F2000, F2000
+    println(++a) // res: F2000
+    println(a++) // res: F2000
+    println(#a) // res: F2000
+    println(a[1]) // res: F2000
+    println(a[1] = 5) // res: F2000
+}
 
 if(a != null)
     println(a + b) // res: F2000
 
 if(b != null)
     println(a + b) // res: F2000
-
-println(a) // Okay to print nullables
-println(b) // Okay to print nullables
 
 var arr: Int[]? = {1, 2, 3}
 
@@ -73,18 +82,19 @@ if(arr != null){
     for(val i in arr)
         println(i)
 }
+
 for(val i in arr) // res: F2000
     println(i)
 
 
-Def Test(b: A?) = {
+Def MoreTests(b: A?) = {
     var a = b
     a.Test() // res: F2000
-    if(a != null) {
+    if(a != null)
         a.Test()
-    } else {
+    else
         a.Test() // res: F2001
-    }
+
 
     if(a.b) // res: F2000
         println()
@@ -104,14 +114,14 @@ Def Test(b: A?) = {
     if(a == new A() && a != null && a.b)
         a.Test()
 
-    while(a != null && a.b){
+    while(a != null && a.b) {
         a.Test()
         a = GetA()
         a.Test() // res: F2000
     }
 
     a = null
-    while(a == null){
+    while(a == null) {
         a.Test() // res: F2001
         a = new A()
         a.Test()
@@ -123,10 +133,29 @@ Def Test(b: A?) = {
         a.Test() // res: F2000
     }
 
-    for(var i = 0; a == null; i++){
+    for(var i = 0; a == null; i++) {
         a.Test() // res: F2001
         a = new A()
         a.Test()
+    }
+
+    for(a = GetA(); a == b; a.Update(), a.Update()){
+        a.Test() // res: F2000
+        a = new A()
+    }
+
+    if(a && a.nullable){
+        a.nullable.Test()
+        a.nullable = GetB()
+        a.nullable.Test() // res: F2000
+    }
+
+    if(A.staticVar){
+        A.staticVar.Test()
+        B.staticVar.Test() // res: F2000
+        A.staticVar = GetA()
+        A.staticVar.Test() // res: F2000
+        B.staticVar.Test() // res: F2000
     }
 
     if(a) a.Test()
@@ -135,7 +164,7 @@ Def Test(b: A?) = {
 
     val c = GetA()
 
-    if(a != null && c != null){
+    if(a != null && c != null) {
         a.Test()
         c.Test()
     }
@@ -145,32 +174,28 @@ Def Test(b: A?) = {
         a.Test()
 
     // Horrible edge case where the variable is reassigned
-    // in the condition. Currently does not work.
+    // in the condition.
     if(a != null && (a = GetA()) == new A())
-        a.Test() // r//es: F2000
+        a.Test() // res: F2000
 
-     // TODO Demorgans law:
-     if(!(a == null || c == null)){
+     if(!(a == null || c == null)) {
          a.Test()
          c.Test()
      }
-    
+
      val i = 4
      val e = GetA()
      val f = GetA()
-     if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)){
+     if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)) {
          // De morgans: a != null && c == null && !(i == 5 && i != 4) && e != null && f != null
          a.Test()
          c.Test()  // res: F2001
          e.Test()
          f.Test()
      }
-
-
-
 }
 
-Def Test2(b: A?) = {
+Def EndControlFlow(b: A?) = {
     var a = b
     a.Test() // res: F2000
     if(a == null)
@@ -196,22 +221,52 @@ Def Test2(b: A?) = {
     if(a == null || b == null)
         return
 
-
     a.Test() // res: F2001
     b.Test()
 
     a = GetA()
 
-    if(a == null || a == b ){
+    if(a == null || a == b ) {
         a.Test() // res: F2000
         b.Test()
     } else {
         a.Test()
         b.Test()
     }
+
+    if(a == null)
+        error("")
+
+    a.Test()
+
+    a = GetA()
+
+    for(var i = 0; i < 5; i++) {
+       if(a == null)
+           continue
+
+       a.Test()
+       a = GetA()
+       if(a != null)
+          continue
+
+       a.Test() // res: F2001
+    }
+
+    for(var i = 0; i < 5; i++) {
+       if(a == null)
+           break
+
+       a.Test()
+       a = GetA()
+       if(a != null)
+          break
+
+       a.Test() // res: F2001
+    }
 }
 
-Def Test3() = {
+Def Scoping() = {
     val a = GetA()
     val b = GetA()
     val c = GetA()
@@ -220,25 +275,25 @@ Def Test3() = {
 
     if(a) {
         a.Test()
-        if(b){
+        if(b) {
             a.Test()
             b.Test()
-            if(c){
+            if(c) {
                 a.Test()
                 b.Test()
                 c.Test()
-                if(e){
+                if(e) {
                     a.Test()
                     b.Test()
                     c.Test()
                     e.Test()
-                }else{
+                } else {
                     a.Test()
                     b.Test()
                     c.Test()
                     e.Test() // res: F2001
                 }
-            }else{
+            } else {
                 a.Test()
                 b.Test()
                 c.Test() // res: F2001
@@ -258,28 +313,76 @@ Def Test3() = {
     }
 }
 
+Def Shadowing() = {
+    val a = GetA()
+    if(a){
+        a.Test()
+        val a = GetA()
+        a.Test() // res: F2000
+        if(a){
+            a.Test()
+        } else {
+            a.Test() // res: F2001
+            val a = GetA()
+            a.Test() // res: F2000
+            if(a)
+                a.Test()
+        }
+    }
+}
+
+Def Ternarys() = {
+    val a = GetA()
+    // This should in theory not give an error
+    // but seems like a very strange case. It would only apply when
+    // we know the result of the ternary check is true or false
+    if(a == null ? true : false)
+        a.Test() // res: F2000
+
+    val b1 = a == null ? 1 : a.GetInt()
+    val b2 = a != null ? a.GetInt() : 1
+    val b3 = a == null ? a.GetInt() : 1 // res: F2001
+    val b4 = a != null ? 1 : a.GetInt() // res: F2001
+
+    val b5 = !a ? 1 : a.GetInt()
+    val b6 = a  ? a.GetInt() : 1
+    val b7 = !a ? a.GetInt() : 1 // res: F2001
+    val b8 = a  ? 1 : a.GetInt() // res: F2001
+}
 
 Def GetA(): A? = null
+Def GetB(): B? = null
 Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
 
 class A {
 
-    Val static staticA: A? = null
+    Var static staticVar: A? = null
 
     Val b = true
-    Val nullable: B? = null
+    Var nullable: B? = null
+    var i: Int = 0
 
-
+    Def GetInt() = 5
     Def Test() = println("Test")
 
     Def GetBool() = true
 
     Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
 
 }
 
 class B {
 
+    Var static staticVar: A? = null
     Val bNullable: C? = null
     Def Test() = println("Test")
 

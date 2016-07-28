@@ -1,7 +1,7 @@
 package tcompiler.analyzer
 
 import tcompiler.analyzer.Symbols.{FieldSymbol, VariableSymbol}
-import tcompiler.analyzer.Types.{PrimitiveType, TNull, TObject, Type}
+import tcompiler.analyzer.Types._
 import tcompiler.ast.{ForeachTraverser, Printer, TreeTraverser}
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
@@ -42,9 +42,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
                        events: Map[Int, Set[(VarIdentifier, VarKnowledge)]] = Map(),
                        flowEnded: Option[StatTree] = None) {
 
-    def addLocalVar(v: VariableSymbol, knowledge: Set[VarKnowledge], fields: List[VariableSymbol] = Nil) = {
-      val vId = VarIdentifier(v, fields)
-      copy(varKnowledge = varKnowledge + (vId -> knowledge))
+    def addVar(varId: VarIdentifier, knowledge: Set[VarKnowledge]) = {
+      copy(varKnowledge = varKnowledge + (varId -> knowledge))
     }
 
     def isNull(v: VarIdentifier): Option[Boolean] =
@@ -68,36 +67,55 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     def invertKnowledgeFrom(t: Tree): Knowledge =
       eventsFrom(t).foldLeft(this)((knowledge, event) => event match {
         case (varId, vKnowledge) =>
-          // replace the knowledge with the inverted knowledge
-          val invertedKnowledge = varKnowledge(varId) - vKnowledge + vKnowledge.invert
-          knowledge.copy(varKnowledge = varKnowledge + (varId -> invertedKnowledge))
+          knowledge.copy(varKnowledge = varKnowledge + (varId -> invertKnowledge(varId, vKnowledge)))
       })
 
-    def and(and: Tree, lhs: Tree, rhs: Tree): Knowledge = {
-      val hash = System.identityHashCode(and)
-      val topSet = eventsFrom(lhs) ++ eventsFrom(rhs)
-      copy(events = events + (hash -> topSet))
+    def invertKnowledge(varId: VarIdentifier, vKnowledge: VarKnowledge): Set[VarKnowledge] = {
+      varKnowledge(varId) - vKnowledge + vKnowledge.invert
     }
 
+    /**
+      * Maps the events of lhs and rhs to and.
+      */
+    def and(and: Tree, lhs: Tree, rhs: Tree): Knowledge = {
+      val topSet = eventsFrom(lhs) ++ eventsFrom(rhs)
+      copy(events = events + (hash(and) -> topSet))
+    }
+
+    /**
+      * Maps the inverted events of expr to not.
+      */
+    def not(not: Tree, expr: Tree): Knowledge = {
+      val h = hash(not)
+      val topSet = eventsFrom(expr)
+      val newKnowledge = topSet.map { case (varId, k) => varId -> invertKnowledge(varId, k) }.toMap
+      val newEventSets: Set[(VarIdentifier, VarKnowledge)] = topSet.map { case (varId, k) => varId -> k.invert }
+      val newEvents = events + (h -> newEventSets)
+      copy(varKnowledge = varKnowledge ++ newKnowledge, events = newEvents)
+    }
+
+    /**
+      * Maps the events in topSet wrap in OrChecks to or.
+      */
     def or(or: Tree, topSet: Set[(VarIdentifier, VarKnowledge)]): Knowledge = {
-      val hash = System.identityHashCode(or)
-      // Wrap knowledge in OrCheck thingys
+      // Wrap knowledge in OrChecks
       val newKnowledge = topSet.map { case (varId, k) =>
         val v = varKnowledge(varId)
-        val set = if(v.contains(k)) v else v + OrCheck(k)
+        val set = if (v.contains(k)) v else v + OrCheck(k)
         varId -> set
       }.toMap
       val newEventSets: Set[(VarIdentifier, VarKnowledge)] = topSet.map { case (varId, k) => (varId, OrCheck(k)) }
-
-      val newEvents = events + (hash -> newEventSets)
+      val newEvents = events + (hash(or) -> newEventSets)
       copy(varKnowledge = varKnowledge ++ newKnowledge, events = newEvents)
     }
 
     private def getEvent(t: Tree, varId: VarIdentifier, newKnowledge: VarKnowledge) = {
-      val hash = System.identityHashCode(t)
-      val e = events.getOrElse(hash, Set())
-      hash -> (e + (varId -> newKnowledge))
+      val h = hash(t)
+      val e = events.getOrElse(h, Set())
+      h -> (e + (varId -> newKnowledge))
     }
+
+    private def hash(t: Tree) = System.identityHashCode(t)
 
     override def toString = {
       val vars = varKnowledge.map { case (VarIdentifier(v, fields), knowledge) =>
@@ -126,6 +144,15 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   case class OrCheck(v1: VarKnowledge) extends VarKnowledge {
     override def invert = v1.invert
   }
+  case class ArrayKnowledge(size: Option[Int], varKnowledge: Map[Int, Set[VarKnowledge]]) extends VarKnowledge {
+    override def toString = {
+      val s = size.map(_.toString).getOrElse("Unknown")
+      val vKnowledge = if(varKnowledge.isEmpty) "Unknown" else "{\n" + varKnowledge.map{ case (index, v) =>
+        s"    ($index -> $v)"
+      }.mkString("\n") + "\n}"
+      s"ArrayKnowledge(Size: $s, Vars: $vKnowledge)"
+    }
+  }
 
   def apply(clazz: ClassDecl): Unit = {
     def getVarKnowledgeMap(list: List[VariableSymbol]): Map[VarIdentifier, Set[VarKnowledge]] =
@@ -142,7 +169,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
     println(s"${tree.line}: $tree")
     println(knowledge)
-    println("------------------------------------------------")
+    println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
@@ -150,20 +177,25 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           case Some(stat) if stat != stats.last => WarningDeadCode(stat.line, stats.last.line, stat)
           case _                                =>
         }
-        knowledge
+        endKnowledge
       case varDecl@VarDecl(tpe, id, init, _) =>
         val varSymbol = id.getSymbol
-        var varKnowledge: Set[VarKnowledge] = init.map(varIsNull).getOrElse(Set())
-
-        if (init.isDefined || varSymbol.getType.isInstanceOf[PrimitiveType])
-          varKnowledge += Initialized
-        knowledge.addLocalVar(varSymbol, varKnowledge)
+        val varId = VarIdentifier(varSymbol, Nil)
+        val varTpe = varSymbol.getType
+        init match {
+          case Some(init) =>
+            val afterInit = analyzeExpr(init, knowledge)
+            afterInit.addVar(varId, varKnowledge(varTpe, init))
+          case None       =>
+            val varKnowledge: Set[VarKnowledge] = if (varTpe.isInstanceOf[PrimitiveType]) Set(Initialized) else Set()
+            knowledge.addVar(varId, varKnowledge)
+        }
       case For(init, condition, post, stat)  =>
         val afterInit = init.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
         val afterCondition = analyzeCondition(condition, afterInit)
-        analyze(stat, afterCondition)
+        val afterStat = analyze(stat, afterCondition)
 
-        post.foreach(analyze(_, afterCondition))
+        post.foreach(analyze(_, afterStat))
         knowledge
       case Foreach(varDecl, container, stat) =>
         analyzeExpr(container, knowledge)
@@ -199,16 +231,16 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   def analyzeCondition(tree: ExprTree, knowledge: Knowledge): Knowledge = tree match {
-    case And(lhs, rhs)                   =>
+    case And(lhs, rhs)                =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
       rhsKnowledge.and(tree, lhs, rhs)
-    case Or(lhs, rhs)                    =>
+    case Or(lhs, rhs)                 =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
       val orKnowledge = lhsKnowledge.eventsFrom(lhs) ++ rhsKnowledge.eventsFrom(rhs)
       knowledge.or(tree, orKnowledge)
-    case Not(expr)                       =>
+    case Not(expr)                    =>
       // Apply De Morgans law:
       expr match {
         case And(lhs, rhs) =>
@@ -217,15 +249,15 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           analyzeCondition(And(Not(lhs), Not(rhs)), knowledge)
         case _             =>
           val exprKnowledge = analyzeCondition(expr, knowledge)
-          exprKnowledge.invertKnowledgeFrom(expr)
+          exprKnowledge.not(tree, expr)
       }
-    case acc@Access(obj, app)            =>
+    case acc@Access(obj, app)         =>
       analyzeExpr(acc, knowledge)
       nullCheck(tree, knowledge, acc, isNull = false)
-    case v: VariableID                   =>
+    case v: VariableID                =>
       nullCheck(tree, knowledge, v, isNull = false)
-    case eq@EqualsOperatorTree(lhs, rhs) =>
-      val isNull = eq.isInstanceOf[Equals]
+    case EqualsOperatorTree(lhs, rhs) =>
+      val isNull = tree.isInstanceOf[Equals]
       val lhsKnowledge = analyzeExpr(lhs, knowledge)
       val rhsKnowledge = analyzeExpr(rhs, lhsKnowledge)
       if (lhs == NullLit())
@@ -233,8 +265,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       else if (rhs == NullLit())
         nullCheck(tree, rhsKnowledge, lhs, isNull)
       else
-        knowledge
-    case _                               =>
+        rhsKnowledge
+    case _                            =>
       analyzeExpr(tree, knowledge)
   }
 
@@ -242,32 +274,37 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     var knowledge = topKnowledge
     val traverser = new TreeTraverser {
       override def traverse(t: Tree) = t match {
-        case Ternary(condition, thn, els)         =>
-          val afterCondition = analyzeExpr(condition, knowledge)
+        case Ternary(condition, thn, els)    =>
+          val afterCondition = analyzeCondition(condition, knowledge)
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, afterCondition.invertKnowledgeFrom(condition))
-        case acc@Access(obj, app)                 =>
+        case acc@Access(obj, app)            =>
           traverse(obj, app)
           checkNull(obj, knowledge)
-        case Assign(v@VariableID(name), exprTree) =>
+        case Assign(obj: ArrayRead, from)    =>
+          // Array assign
+          traverse(obj, from)
+        case Assign(obj, from)               =>
+          traverse(from)
           // Reset knowledge
-          traverse(exprTree)
-          val varKnowledge = varIsNull(exprTree) + Initialized + Reassigned
-          knowledge = knowledge.addLocalVar(v.getSymbol, varKnowledge)
-        case eq@EqualsOperatorTree(lhs, rhs)      =>
+          getVarIdentifier(obj) ifDefined { varId =>
+            val v = varKnowledge(obj.getType, from) +  Reassigned
+            knowledge = knowledge.addVar(varId, v)
+          }
+        case eq@EqualsOperatorTree(lhs, rhs) =>
           traverse(lhs, rhs)
-        case BinaryOperatorTree(lhs, rhs)         =>
+        case BinaryOperatorTree(lhs, rhs)    =>
           // Rest of the binary operators need to be null checked before use
           traverse(lhs, rhs)
           checkNull(lhs, knowledge)
           checkNull(rhs, knowledge)
-        case UnaryOperatorTree(expr)              =>
+        case UnaryOperatorTree(expr)         =>
           traverse(expr)
           checkNull(expr, knowledge)
-        case ArrayOperatorTree(arr)               =>
+        case ArrayOperatorTree(arr)          =>
           traverse(arr)
           checkNull(arr, knowledge)
-        case _                                    =>
+        case _                               =>
           super.traverse(t)
       }
     }
@@ -280,20 +317,20 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       return
 
     obj match {
-      case NormalAccess(_, MethodCall(meth, _)) => ErrorAccessNullableMethod(meth.getSymbol.signature, obj)
+      case NormalAccess(_, MethodCall(meth, _)) if meth.getType.isNullable =>
+        ErrorAccessNullableMethod(meth.getSymbol.signature, obj)
       case _                                    =>
-        getVarIdentifier(obj) ifDefined {
-          varId =>
-            knowledge.isNull(varId) match {
-              case Some(isNull) if isNull => ErrorAccessIsNull(varId.value, obj)
-              case None                   => ErrorAccessMightBeNull(varId.value, obj)
-              case _                      =>
-            }
+        getVarIdentifier(obj) ifDefined { varId =>
+          knowledge.isNull(varId) match {
+            case Some(isNull) if isNull => ErrorAccessIsNull(varId.value, obj)
+            case None                   => ErrorAccessMightBeNull(varId.value, obj)
+            case _                      =>
+          }
         }
     }
   }
 
-  private def getVarIdentifier(obj: ExprTree): Option[VarIdentifier] = {
+  private def getVarIdentifier(obj: ExprTree): Option[VarIdentifier] =
     obj match {
       case v: VariableID    => Some(VarIdentifier(v.getSymbol, Nil))
       case Assign(to, from) => getVarIdentifier(to)
@@ -323,24 +360,40 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       case _                => None
     }
 
-  }
-
-  private def nullCheck(t: Tree, knowledge: Knowledge, obj: ExprTree, isNull: Boolean) = {
+  private def nullCheck(t: Tree, knowledge: Knowledge, obj: ExprTree, isNull: Boolean) =
     getVarIdentifier(obj) match {
       case Some(v) => knowledge.nullCheck(t, v, isNull)
       case _       => knowledge
     }
+
+  private def varKnowledge(varType: Type, init: ExprTree): Set[VarKnowledge] = {
+    nullKnowledge(init) ++ arrayKnowledge(varType, init) + Initialized
   }
 
-  private def varIsNull(assignment: ExprTree) = {
-    var varKnowledge: Set[VarKnowledge] = Set()
+  private def nullKnowledge(assignment: ExprTree): Set[VarKnowledge] = {
     assignment.getType match {
-      case TNull              => varKnowledge += IsNull(true)
-      case t if !t.isNullable => varKnowledge += IsNull(false)
-      case _                  =>
+      case TNull              => Set(IsNull(true))
+      case t if !t.isNullable => Set(IsNull(false))
+      case _                  => Set()
+    }
+  }
+
+  private def arrayKnowledge(varType: Type, assignment: ExprTree): Set[VarKnowledge] = {
+    if(!varType.isInstanceOf[TArray])
+      return Set()
+
+    assignment match {
+      case ArrayLit(value)                     =>
+        val varKnowledge = value.zipWithIndex.map { case (init, index) =>
+          index -> (nullKnowledge(init) + Initialized)
+        }.toMap
+        Set(ArrayKnowledge(Some(value.size), varKnowledge))
+      case NewArray(tpe, IntLit(size) :: rest) =>
+        Set(ArrayKnowledge(Some(size), Map()))
+      case _                                   =>
+        Set(ArrayKnowledge(None, Map()))
     }
 
-    varKnowledge
   }
 
 }
