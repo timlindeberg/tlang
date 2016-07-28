@@ -1,0 +1,57 @@
+var arr: A?[] = { new A(), null, GetA() }
+
+arr[0].Test()
+arr[1].Test() // res: F2001
+arr[2].Test() // res: F2002
+
+if(arr[1] && arr[2] != null){
+    arr[0].Test()
+    arr[1].Test()
+    arr[2].Test()
+}
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}

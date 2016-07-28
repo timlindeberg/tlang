@@ -1,0 +1,153 @@
+Def MoreTests(b: A?) = {
+    var a = b
+    a.Test() // res: F2000
+    if(a != null)
+        a.Test()
+    else
+        a.Test() // res: F2001
+
+
+    if(a.b) // res: F2000
+        println()
+
+
+    if(a != null && a.b)
+        println()
+
+    if(a == null)
+        a.Test() // res: F2001
+    else
+        a.Test()
+
+    if(a == new A() && a != new A() && a.b) // res: F2000
+        a.Test() // res: F2000
+
+    if(a == new A() && a != null && a.b)
+        a.Test()
+
+    while(a != null && a.b) {
+        a.Test()
+        a = GetA()
+        a.Test() // res: F2000
+    }
+
+    a = null
+    while(a == null) {
+        a.Test() // res: F2001
+        a = new A()
+        a.Test()
+    }
+
+    for(var i = 0; a != null; i++) {
+        a.Test()
+        a = GetA()
+        a.Test() // res: F2000
+    }
+
+    for(var i = 0; a == null; i++) {
+        a.Test() // res: F2001
+        a = new A()
+        a.Test()
+    }
+
+    for(a = GetA(); a == b; a.Update(), a.Update()){
+        a.Test() // res: F2000
+        a = new A()
+    }
+
+    if(a && a.nullable){
+        a.nullable.Test()
+        a.nullable = GetB()
+        a.nullable.Test() // res: F2000
+    }
+
+    if(A.staticVar){
+        A.staticVar.Test()
+        B.staticVar.Test() // res: F2000
+        A.staticVar = GetA()
+        A.staticVar.Test() // res: F2000
+        B.staticVar.Test() // res: F2000
+    }
+
+    if(a) a.Test()
+    if(!a) a.Test() // res: F2001
+
+
+    val c = GetA()
+
+    if(a != null && c != null) {
+        a.Test()
+        c.Test()
+    }
+
+    a = GetA()
+    if(a != null && (a = GetA()) != null)
+        a.Test()
+
+    // Horrible edge case where the variable is reassigned
+    // in the condition.
+    if(a != null && (a = GetA()) == new A())
+        a.Test() // res: F2000
+
+     if(!(a == null || c == null)) {
+         a.Test()
+         c.Test()
+     }
+
+     val i = 4
+     val e = GetA()
+     val f = GetA()
+     if(!(a == null || c != null || (i == 5 && i != 4) || e == null || f == null)) {
+         // De morgans: a != null && c == null && !(i == 5 && i != 4) && e != null && f != null
+         a.Test()
+         c.Test()  // res: F2001
+         e.Test()
+         f.Test()
+     }
+}
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}

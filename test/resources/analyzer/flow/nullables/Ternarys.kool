@@ -1,0 +1,62 @@
+val a = GetA()
+// This should in theory not give an error
+// but seems like a very strange case. It would only apply when
+// we know the result of the ternary check is true or false
+if(a == null ? true : false)
+    a.Test() // res: F2000
+
+val b1 = a == null ? 1 : a.GetInt()
+val b2 = a != null ? a.GetInt() : 1
+val b3 = a == null ? a.GetInt() : 1 // res: F2001
+val b4 = a != null ? 1 : a.GetInt() // res: F2001
+
+val b5 = !a ? 1 : a.GetInt()
+val b6 = a  ? a.GetInt() : 1
+val b7 = !a ? a.GetInt() : 1 // res: F2001
+val b8 = a  ? 1 : a.GetInt() // res: F2001
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}

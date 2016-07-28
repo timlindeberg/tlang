@@ -1,0 +1,133 @@
+var a: A? = new A()
+
+a.Test()
+
+a = null
+
+a.Test() // res: F2001
+
+a = GetA()
+val b: A? = GetA()
+
+GetA().Test() // res: F2002
+
+if(A.staticVar != null)
+    A.staticVar.Test()
+A.staticVar.Test() // res: F2000
+
+var c: A? = new A()
+if(c.nullable != null)
+    c.nullable.Test()
+c.nullable.Test() // res: F2000
+
+if(c.nullable != null && c.nullable.bNullable != null)
+    c.nullable.bNullable.Test()
+
+if(c.nullable)
+    c.nullable.Test()
+
+if(c.nullable && c.nullable.bNullable)
+    c.nullable.bNullable.Test()
+
+
+// TODO: This should probably work
+// if(c?.nullable?.bNullable != null)
+//     c.nullable.bNullable.Test()
+//
+// if(c?.nullable?.bNullable)
+//     c.nullable.bNullable.Test()
+
+c.nullable.bNullable.Test() // res: F2000, F2000
+
+a.Test() // res: F2000
+println(a + b) // res: F2000, F2000
+
+if(a != null && b != null){
+    println(a + b)
+    println(a < b)
+    println(++a)
+    println(a++)
+    println(#a)
+    println(a[1])
+    println(a[1] = 5)
+}
+
+if(a != null || b != null){
+    println(a + b) // res: F2000, F2000
+    println(a < b) // res: F2000, F2000
+    println(++a) // res: F2000
+    println(a++) // res: F2000
+    println(#a) // res: F2000
+    println(a[1]) // res: F2000
+    println(a[1] = 5) // res: F2000
+}
+
+if(a != null)
+    println(a + b) // res: F2000
+
+if(b != null)
+    println(a + b) // res: F2000
+
+var arr: Int[]? = {1, 2, 3}
+
+println(arr[0])
+
+arr = GetArr()
+
+if(arr != null)
+    println(arr[0])
+println(arr[0]) // res: F2000
+
+if(arr != null){
+    for(val i in arr)
+        println(i)
+}
+
+for(val i in arr) // res: F2000
+    println(i)
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}

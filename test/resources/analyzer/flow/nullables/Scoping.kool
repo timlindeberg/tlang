@@ -1,0 +1,90 @@
+val a = GetA()
+val b = GetA()
+val c = GetA()
+val d = GetA()
+val e = GetA()
+
+if(a) {
+    a.Test()
+    if(b) {
+        a.Test()
+        b.Test()
+        if(c) {
+            a.Test()
+            b.Test()
+            c.Test()
+            if(e) {
+                a.Test()
+                b.Test()
+                c.Test()
+                e.Test()
+            } else {
+                a.Test()
+                b.Test()
+                c.Test()
+                e.Test() // res: F2001
+            }
+        } else {
+            a.Test()
+            b.Test()
+            c.Test() // res: F2001
+            e.Test() // res: F2000
+        }
+    } else {
+        a.Test()
+        b.Test() // res: F2001
+        c.Test() // res: F2000
+        e.Test() // res: F2000
+    }
+} else {
+    a.Test() // res: F2001
+    b.Test() // res: F2000
+    c.Test() // res: F2000
+    e.Test() // res: F2000
+}
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Val bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}
