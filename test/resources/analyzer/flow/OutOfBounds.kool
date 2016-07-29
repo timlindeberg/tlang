@@ -1,0 +1,25 @@
+var a = new Int[5]
+println(a[-1]) // res: F2005
+
+println(a[5]) // res: F2005
+
+a = {1, 2, 3, 4, 5}
+
+val i = 5
+val j = 5
+println(a[i]) // res: F2005
+println(a[i - 1])
+println(a[i - j])
+println(a[i - j - 1]) // res: F2005
+
+a = GetArr()
+
+println(a[-1])  // res: F2005
+println(a[0])
+println(a[5])
+
+a = new Int[i + j]
+
+println(a[10]) // res: F2005
+
+Def GetArr() = return {1, 2, 3, 4, 5}

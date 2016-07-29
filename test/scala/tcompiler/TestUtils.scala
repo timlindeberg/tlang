@@ -37,7 +37,7 @@ object TestUtils extends FlatSpec {
   def getTestContext(file: File) = {
     val mainName = file.getName.replaceAll(Main.FileEnding, "")
     val outDir = getOutDir(mainName)
-    val reporter = new Reporter(useColor = false)
+    val reporter = new Reporter(useColor = true)
     val cp = Main.TDirectory
     new Context(reporter = reporter, files = List(file), outDir = Some(outDir), classPaths = List(cp))
   }

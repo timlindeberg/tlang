@@ -146,6 +146,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     def isNull(v: Identifier): Option[Boolean] =
       varKnowledge.getOrElse(v, Set()).findInstance[IsNull] map { isNull => isNull.value }
 
+    def arraySize(v: Identifier): Option[Int] =
+      varKnowledge.getOrElse(v, Set()).findInstance[ArraySize] map { num => num.size }
+
     def numericValue(v: Identifier): Option[Int] =
       varKnowledge.getOrElse(v, Set()).findInstance[NumericValue] map { num => num.value }
 
@@ -231,6 +234,28 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         case _                  => None
       }
 
+
+    def getNumericValue(expr: ExprTree): Option[Int] = {
+      expr match {
+        case IntLit(value)                   => Some(value)
+        case assignable: Assignable          => getIdentifier(assignable) flatMap { id => numericValue(id) }
+        case op@BinaryOperatorTree(lhs, rhs) =>
+          getNumericValue(lhs) flatMap { lhsValue =>
+            getNumericValue(rhs) flatMap { rhsValue =>
+              val operator = getBinaryOperator(op)
+              Some(operator(lhsValue, rhsValue))
+            }
+          }
+        case op@UnaryOperatorTree(expr)      =>
+          getNumericValue(expr) flatMap { exprValue =>
+            val operator = getUnaryOperator(op)
+            Some(operator(exprValue))
+          }
+        case _                               => None
+      }
+
+    }
+
     private def getAccessIdentifier(access: Access): Option[Identifier] = {
       access match {
         case Access(obj, _: MethodCall)  => None
@@ -253,28 +278,6 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           Some(new ArrayItemIdentifier(id, value))
         }
       }
-    }
-
-
-    private def getNumericValue(expr: ExprTree): Option[Int] = {
-      expr match {
-        case IntLit(value)                   => Some(value)
-        case assignable: Assignable          => getIdentifier(assignable) flatMap { id => numericValue(id) }
-        case op@BinaryOperatorTree(lhs, rhs) =>
-          getNumericValue(lhs) flatMap { lhsValue =>
-            getNumericValue(rhs) flatMap { rhsValue =>
-              val operator = getBinaryOperator(op)
-              Some(operator(lhsValue, rhsValue))
-            }
-          }
-        case op@UnaryOperatorTree(expr)      =>
-          getNumericValue(expr) flatMap { exprValue =>
-            val operator = getUnaryOperator(op)
-            Some(operator(exprValue))
-          }
-        case _                               => None
-      }
-
     }
 
     private def getInitialKnowledge(varId: Identifier, varTpe: Type, maybeInit: Option[ExprTree]): List[(Identifier, Set[VarKnowledge])] = {
@@ -375,9 +378,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    println(s"${tree.line}: $tree")
-    println(knowledge)
-    println("----------------------------------------")
+    //println(s"${tree.line}: $tree")
+    //println(knowledge)
+    //println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
@@ -452,7 +455,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         case Or(lhs, rhs)  =>
           analyzeCondition(And(Not(lhs), Not(rhs)), knowledge)
         case _             =>
-          getBoolCondition(expr, knowledge) match {
+          getBoolVarCondition(expr, knowledge) match {
             case Some(condition) => analyzeCondition(Not(condition), knowledge)
             case None            =>
               val exprKnowledge = analyzeCondition(expr, knowledge)
@@ -461,7 +464,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       }
     case assignable: Assignable       =>
       analyzeExpr(assignable, knowledge)
-      getBoolCondition(assignable, knowledge) match {
+      getBoolVarCondition(assignable, knowledge) match {
         case Some(condition) =>
           val afterBoolCheck = analyzeCondition(condition, knowledge)
           afterBoolCheck.bindEventTo(assignable, condition)
@@ -473,6 +476,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       val lhsKnowledge = analyzeExpr(lhs, knowledge)
       val rhsKnowledge = analyzeExpr(rhs, lhsKnowledge)
 
+      // Returns the value which
       def getOther(exprTree: ExprTree): Option[ExprTree] = {
         val l = List(lhs, rhs)
         if (!l.contains(exprTree))
@@ -480,16 +484,16 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         l.find(_ != exprTree)
       }
 
-      getOther(NullLit()) ifDefined  { x => return nullCheck(tree, x, rhsKnowledge, isNull) }
+      getOther(NullLit()) ifDefined { x => return nullCheck(tree, x, rhsKnowledge, isNull) }
 
       getOther(TrueLit()) ifDefined { x =>
-        getBoolCondition(x, rhsKnowledge) ifDefined  { condition =>
+        getBoolVarCondition(x, rhsKnowledge) ifDefined { condition =>
           return analyzeCondition(condition, rhsKnowledge)
         }
       }
 
       getOther(FalseLit()) ifDefined { x =>
-        getBoolCondition(x, rhsKnowledge) ifDefined  { condition =>
+        getBoolVarCondition(x, rhsKnowledge) ifDefined { condition =>
           return analyzeCondition(Not(condition), rhsKnowledge)
         }
       }
@@ -515,15 +519,15 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             // Reset knowledge
             knowledge = knowledge.assignment(varId, Some(from), Reassigned)
           }
-        case EqualsOperatorTree(lhs, rhs)       => traverse(lhs, rhs)
-        case And(lhs, rhs)                      => traverse(lhs, rhs)
-        case Or(lhs, rhs)                       => traverse(lhs, rhs)
         case binOp@BinaryOperatorTree(lhs, rhs) =>
-          // Rest of the binary operators need to be null checked before use
           traverse(lhs, rhs)
+          binOp ifInstanceOf[Div] { div =>
+              knowledge.getNumericValue(rhs) ifDefined { v => if(v == 0) ErrorDivideByZero(rhs, binOp) }
+          }
           binOp match {
             case _: EqualsOperatorTree | _: And | _: Or =>
             case _                                      =>
+              // Rest of the binary operators need to be null checked before use
               checkIfIsNull(lhs, knowledge)
               checkIfIsNull(rhs, knowledge)
           }
@@ -538,6 +542,20 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           })
         case ArrayOperatorTree(arr)             =>
           traverse(arr)
+
+          t match {
+            case arrRead@ArrayRead(_, index) =>
+              knowledge.getNumericValue(index) ifDefined { value =>
+                if(value < 0)
+                  ErrorOutOfBounds(index, value, 0, arrRead)
+                else
+                  getArraySize(arr, knowledge) ifDefined { size =>
+                    if(value >= size)
+                      ErrorOutOfBounds(index, value, size, arrRead)
+                  }
+              }
+            case _ =>
+          }
           checkIfIsNull(arr, knowledge)
         case _                                  =>
           super.traverse(t)
@@ -547,20 +565,18 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     knowledge
   }
 
-  private def getBoolCondition(obj: ExprTree, knowledge: Knowledge) = {
-    knowledge.getIdentifier(obj) flatMap { id =>
-      knowledge.boolValue(id) map { condition =>
-        condition
-      }
-    }
-  }
+  private def getBoolVarCondition(obj: ExprTree, knowledge: Knowledge) =
+    knowledge.getIdentifier(obj) flatMap { id => knowledge.boolValue(id) }
 
-  private def nullCheck(t: Tree, obj: ExprTree, knowledge: Knowledge, isNull: Boolean) = {
+  private def getArraySize(obj: ExprTree, knowledge: Knowledge) =
+    knowledge.getIdentifier(obj) flatMap { id => knowledge.arraySize(id) }
+
+
+  private def nullCheck(t: Tree, obj: ExprTree, knowledge: Knowledge, isNull: Boolean) =
     knowledge.getIdentifier(obj) match {
       case Some(varId) => knowledge.nullCheck(t, varId, isNull)
       case None        => knowledge
     }
-  }
 
   def getOther(from: List[ExprTree], exprTree: ExprTree): Option[ExprTree] = {
     if (!from.contains(exprTree))

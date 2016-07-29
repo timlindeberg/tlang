@@ -31,6 +31,14 @@ trait FlowAnalysisErrors extends Errors {
   protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
     error(3, s"Cannot reassign value '$value'.", pos)
 
+  protected def ErrorDivideByZero(zeroExpr: ExprTree, pos: Positioned) =
+    error(4, s"Division by expression '$zeroExpr' is illegal since it is known to be '0'.", pos)
+
+  protected def ErrorOutOfBounds(index: ExprTree, value: Int, size: Int, pos: Positioned) = {
+    val bounds = if(value < 0) s"'$value' < '0'" else s"'$value' >= '$size'"
+    error(5, s"Indexing expression '$index' is out of bounds: $bounds.", pos)
+  }
+
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
@@ -39,6 +47,7 @@ trait FlowAnalysisErrors extends Errors {
     val line = if(startLine == endLine) s"line '$startLine'" else s"lines '$startLine'-'$endLine'"
     warning(0, s"Code on $line is unreachable.", pos)
   }
+
 
   //---------------------------------------------------------------------------------------
   //  Private methods
