@@ -231,7 +231,7 @@ class Desugarer {
       plusOrMinus.setType(value)
     }
 
-    def putResult(to: ExprTree, from: ExprTree, value: ExprTree) = {
+    def putResult(to: Assignable, from: ExprTree, value: ExprTree) = {
       c.put(Assign(to, from).setType(to))
       c.put(PutValue(value))
       c.setPos(incDec)

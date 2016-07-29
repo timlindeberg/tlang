@@ -213,7 +213,7 @@ class TreeCopier {
 
   /*-------------------------------- Expression Trees --------------------------------*/
 
-  def Assign(t: Tree, to: ExprTree, expr: ExprTree) =
+  def Assign(t: Tree, to: Assignable, expr: ExprTree) =
     new Assign(to, expr).copyAttrs(t)
   def MethodCall(t: Tree, meth: MethodID, args: List[ExprTree]) =
     new MethodCall(meth, args).copyAttrs(t)
@@ -627,7 +627,7 @@ class LazyTreeCopier extends TreeCopier {
       if (obj eq obj0) && (application eq application0) => t
     case _ => super.SafeAccess(tree, obj, application)
   }
-  override def Assign(tree: Tree, to: ExprTree, expr: ExprTree) = tree match {
+  override def Assign(tree: Tree, to: Assignable, expr: ExprTree) = tree match {
     case t@Assign(to0, expr0)
       if (to eq to0) && (expr eq expr0) => t
     case _ => super.Assign(tree, to, expr)

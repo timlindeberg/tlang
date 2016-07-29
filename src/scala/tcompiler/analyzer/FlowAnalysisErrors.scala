@@ -19,10 +19,10 @@ trait FlowAnalysisErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorAccessMightBeNull(v: VariableSymbol, pos: Positioned) =
+  protected def ErrorAccessMightBeNull(v: ExprTree, pos: Positioned) =
     error(0, s"Cannot use nullable variable '$v' without first checking if it is 'null'.", pos)
 
-  protected def ErrorAccessIsNull(v: VariableSymbol, pos: Positioned) =
+  protected def ErrorAccessIsNull(v: ExprTree, pos: Positioned) =
     error(1, s"Cannot use nullable variable '$v' since it is known to be 'null'.", pos)
 
   protected def ErrorAccessNullableMethod(meth: String, pos: Positioned) =

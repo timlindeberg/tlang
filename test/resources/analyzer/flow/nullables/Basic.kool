@@ -11,34 +11,6 @@ val b: A? = GetA()
 
 GetA().Test() // res: F2002
 
-if(A.staticVar != null)
-    A.staticVar.Test()
-A.staticVar.Test() // res: F2000
-
-var c: A? = new A()
-if(c.nullable != null)
-    c.nullable.Test()
-c.nullable.Test() // res: F2000
-
-if(c.nullable != null && c.nullable.bNullable != null)
-    c.nullable.bNullable.Test()
-
-if(c.nullable)
-    c.nullable.Test()
-
-if(c.nullable && c.nullable.bNullable)
-    c.nullable.bNullable.Test()
-
-
-// TODO: This should probably work
-// if(c?.nullable?.bNullable != null)
-//     c.nullable.bNullable.Test()
-//
-// if(c?.nullable?.bNullable)
-//     c.nullable.bNullable.Test()
-
-c.nullable.bNullable.Test() // res: F2000, F2000
-
 a.Test() // res: F2000
 println(a + b) // res: F2000, F2000
 

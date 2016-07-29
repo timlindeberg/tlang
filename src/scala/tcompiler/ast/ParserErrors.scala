@@ -33,7 +33,7 @@ trait ParserErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def FatalExpectedIdAssignment(pos: Positioned) =
-    fatal(1, "Expected identifier on left side of assignment.", pos)
+    fatal(1, "Expected identifier or array access on left side of assignment.", pos)
 
   protected def FatalWrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*): Nothing =
     FatalWrongToken((kind :: more.toList).map(k => s"'$k'").mkString(" or "), currentToken.toString, currentToken)

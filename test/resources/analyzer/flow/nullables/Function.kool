@@ -55,19 +55,6 @@ Def MoreTests(b: A?) = {
         a = new A()
     }
 
-    if(a && a.nullable){
-        a.nullable.Test()
-        a.nullable = GetB()
-        a.nullable.Test() // res: F2000
-    }
-
-    if(A.staticVar){
-        A.staticVar.Test()
-        B.staticVar.Test() // res: F2000
-        A.staticVar = GetA()
-        A.staticVar.Test() // res: F2000
-        B.staticVar.Test() // res: F2000
-    }
 
     if(a) a.Test()
     if(!a) a.Test() // res: F2001

@@ -37,7 +37,7 @@ object Extensions {
 
     def filterType[A <: T: ClassTag]: Collection[A] = l.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
     def filterNotType[A <: T: ClassTag]: Collection[T] = l.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
-    def findInstance[A <: T: ClassTag]: A = l.find(classTag[A].runtimeClass.isInstance(_)).get.asInstanceOf[A]
+    def findInstance[A <: T: ClassTag]: Option[A] = l.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
 
   }
 

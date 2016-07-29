@@ -1,0 +1,105 @@
+var c: A? = new A()
+if(c.nullable != null)
+    c.nullable.Test()
+c.nullable.Test() // res: F2000
+
+if(c.nullable != null && c.nullable.bNullable != null)
+    c.nullable.bNullable.Test()
+
+if(c.nullable)
+    c.nullable.Test()
+
+if(c.nullable && c.nullable.bNullable)
+    c.nullable.bNullable.Test()
+
+// TODO: This should probably work
+// if(c?.nullable?.bNullable != null)
+//     c.nullable.bNullable.Test()
+//
+// if(c?.nullable?.bNullable)
+//     c.nullable.bNullable.Test()
+
+c.nullable.bNullable.Test() // res: F2000, F2000
+
+if(c.nullable && c.nullable.bNullable) {
+    c = GetA()
+    c.Test() // res: F2000
+    c.nullable.Test() // res: F2000, F2000
+    c.nullable.bNullable.Test() // res: F2000, F2000, F2000
+}
+
+if(c.nullable && c.nullable.bNullable) {
+    c.nullable = GetB()
+    c.Test()
+    c.nullable.Test() // res: F2000
+    c.nullable.bNullable.Test() // res: F2000, F2000
+}
+
+
+var a = GetA()
+
+if(a && a.nullable){
+    a.nullable.Test()
+    a.nullable = GetB()
+    a.nullable.Test() // res: F2000
+}
+
+if(A.staticVar){
+    A.staticVar.Test()
+    B.staticVar.Test() // res: F2000
+    A.staticVar = GetA()
+    A.staticVar.Test() // res: F2000
+    B.staticVar.Test() // res: F2000
+}
+
+if(A.staticVar != null)
+    A.staticVar.Test()
+A.staticVar.Test() // res: F2000
+
+
+/*------------------------------------------------------------------------*/
+
+Def GetA(): A? = null
+Def GetB(): B? = null
+Def GetC(): C? = null
+Def GetArr(): Int[]? = null
+Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+
+class A {
+
+    Var static staticVar: A? = null
+
+    Val b = true
+    Var nullable: B? = null
+    var i: Int = 0
+
+    Def GetInt() = 5
+    Def Test() = println("Test")
+
+    Def GetBool() = true
+
+    Def +(a: A, b: A) = 5
+    Def <(a: A, b: A) = a.GetInt() < b.GetInt()
+    Def ==(a: A, b: A) = a.b == b.b
+    Def ++(a: A) = new A()
+    Def #(a: A) = a.GetInt()
+    Def [](index: Int) = GetInt() + index
+    Def []=(index: Int, value: Int) = i = (index + value)
+
+    Def Update() = println(5)
+
+}
+
+class B {
+
+    Var static staticVar: A? = null
+    Var bNullable: C? = null
+    Def Test() = println("Test")
+
+}
+
+class C {
+
+    Def Test() = println("Test")
+
+}

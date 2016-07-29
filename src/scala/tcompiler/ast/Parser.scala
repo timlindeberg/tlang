@@ -743,9 +743,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       }
 
       e match {
-        case _: ArrayRead |
-             _: Access |
-             _: VariableID => Assign(e, assignmentExpr(e))
+        case a: Assignable => Assign(a, assignmentExpr(e))
         case _             => FatalExpectedIdAssignment(e)
       }
     }

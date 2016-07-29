@@ -109,9 +109,9 @@ object Trees {
   /*-------------------------------- Top level Trees --------------------------------*/
 
   case class CompilationUnit(
-    pack: Package,
-    var classes: List[ClassDecl],
-    importMap: ImportMap) extends Tree {
+                              pack: Package,
+                              var classes: List[ClassDecl],
+                              importMap: ImportMap) extends Tree {
 
     def getPackageDirectory = pack.directory
 
@@ -135,7 +135,9 @@ object Trees {
     val adress: List[String]
 
     def name = adress.mkString(".")
+
     def shortName = adress.last
+
     def writtenName = adress.mkString("::")
   }
 
@@ -146,11 +148,11 @@ object Trees {
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
   case class ClassDecl(
-    var id: ClassID,
-    var parents: List[ClassID],
-    var fields: List[VarDecl],
-    var methods: List[FuncTree],
-    var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
+                        var id: ClassID,
+                        var parents: List[ClassID],
+                        var fields: List[VarDecl],
+                        var methods: List[FuncTree],
+                        var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
     def implementedTraits = parents.filter(_.getSymbol.isAbstract)
   }
 
@@ -207,20 +209,20 @@ object Trees {
   }
 
   case class MethodDecl(var retType: Option[TypeTree],
-    var id: MethodID,
-    var args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends FuncTree
+                        var id: MethodID,
+                        var args: List[Formal],
+                        stat: Option[StatTree],
+                        modifiers: Set[Modifier]) extends FuncTree
   case class ConstructorDecl(var retType: Option[TypeTree],
-    var id: MethodID,
-    var args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends FuncTree
+                             var id: MethodID,
+                             var args: List[Formal],
+                             stat: Option[StatTree],
+                             modifiers: Set[Modifier]) extends FuncTree
   case class OperatorDecl(var operatorType: OperatorTree,
-    var retType: Option[TypeTree],
-    var args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends FuncTree {
+                          var retType: Option[TypeTree],
+                          var args: List[Formal],
+                          stat: Option[StatTree],
+                          modifiers: Set[Modifier]) extends FuncTree {
     var id: MethodID = new MethodID("")
   }
 
@@ -253,7 +255,7 @@ object Trees {
     val expr: ExprTree
   }
   object PrintStatTree {
-    def unapply(e: PrintStatTree)= Some(e.expr)
+    def unapply(e: PrintStatTree) = Some(e.expr)
   }
 
 
@@ -279,19 +281,23 @@ object Trees {
 
   trait OperatorTree extends ExprTree {
     val op: String
+
     def operatorString(args: List[Any]): String
 
     def lookupOperator(arg: Type): Option[OperatorSymbol] = lookupOperator(List(arg))
+
     def lookupOperator(args: (Type, Type)): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2))
+
     def lookupOperator(args: List[Type]): Option[OperatorSymbol] = {
       args.foreach { arg =>
         lookupOperator(arg, args) match {
           case Some(op) => return Some(op)
-          case None =>
+          case None     =>
         }
       }
       None
     }
+
     def lookupOperator(classType: Type, args: List[Type]) = {
       classType match {
         case TObject(classSymbol) => classSymbol.lookupOperator(this, args)
@@ -369,6 +375,7 @@ object Trees {
 
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
+
     def operatorString(args: List[Any]) = op + args.head
   }
 
@@ -377,7 +384,7 @@ object Trees {
   }
 
   trait IncrementDecrementTree extends UnaryOperatorTree {
-    val isPre, isIncrement      : Boolean
+    val isPre, isIncrement: Boolean
   }
   object IncrementDecrementTree {
     def unapply(e: IncrementDecrementTree) = Some(e.expr)
@@ -416,6 +423,7 @@ object Trees {
 
   trait ArrayOperatorTree extends OperatorTree {
     val arr: ExprTree
+
     def operatorString(args: List[Any], className: String): String = className + operatorString(args)
   }
   object ArrayOperatorTree {
@@ -426,7 +434,7 @@ object Trees {
     override val op: String = "[]="
     override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
-  case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree {
+  case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
     override val op: String = "[]"
     override def operatorString(args: List[Any]): String = s"[${args(0)}]"
   }
@@ -522,19 +530,19 @@ object Trees {
 
       val s = name.split("::")
       val prefix = if (s.size == 1)
-                     ""
-                   else
-                     s.dropRight(1).mkString("::") + "::"
+        ""
+      else
+        s.dropRight(1).mkString("::") + "::"
       prefix + StartEnd + s.last + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEnd
     }
   }
 
-  case class VariableID(name: String) extends Identifier[VariableSymbol] with Leaf
+  case class VariableID(name: String) extends Identifier[VariableSymbol] with Leaf with Assignable
   case class MethodID(name: String) extends Identifier[MethodSymbol] with Leaf
 
   /*-------------------------------- Access Trees --------------------------------*/
 
-  trait Access extends ExprTree {
+  trait Access extends Assignable {
     var obj        : ExprTree
     val application: ExprTree
 
@@ -561,7 +569,9 @@ object Trees {
 
   /*-------------------------------- Expression Trees --------------------------------*/
 
-  case class Assign(to: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
+  trait Assignable extends ExprTree
+
+  case class Assign(to: Assignable, expr: ExprTree) extends ArrayOperatorTree {
     override val arr: ExprTree = to
     override val op : String   = "[]="
     override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
