@@ -58,6 +58,11 @@ if(arr[i + j]){
     }
 }
 
+val nullableNullableArr = { GetNullableArr(), null, GetNullableArr() }
+
+if(nullableNullableArr[0] && nullableNullableArr[0][1]){
+    nullableNullableArr[0][1].Test()
+}
 
 // if(arr[1] == null || arr[2] == null)
 //      return

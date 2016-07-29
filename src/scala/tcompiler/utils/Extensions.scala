@@ -4,8 +4,6 @@ import tcompiler.analyzer.Types.Type
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
-import scala.reflect.runtime._
-import scala.reflect.runtime.universe._
 import scala.reflect._
 /**
   * Created by Tim Lindeberg on 4/16/2016.
