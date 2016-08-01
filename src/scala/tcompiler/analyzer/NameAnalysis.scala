@@ -215,12 +215,10 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   private def bind(tree: Tree): Unit = tree match {
     case classDecl@ClassDecl(id, parents, vars, methods, isAbstract)     =>
       setParentSymbol(id, parents, classDecl)
-      val sym = classDecl.getSymbol
-
       bindFields(classDecl)
-      methods.foreach(bind)
+      methods foreach bind
     case methDecl@MethodDecl(retType, _, args, stat, _)                  =>
-      retType.ifDefined { tpe =>
+      retType ifDefined { tpe =>
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
       }
@@ -236,7 +234,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       stat.ifDefined(new StatementBinder(constructorDecl.getSymbol, false).bindStatement(_))
     case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _) =>
-      retType.ifDefined { tpe =>
+      retType ifDefined { tpe =>
         val t = setType(tpe)
         operatorDecl.getSymbol.setType(t)
         operatorType.setType(t)
@@ -314,8 +312,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           }
 
           variableUsage += newSymbol -> false
-          val isFinal = modifiers.contains(Final())
-          if (!isFinal)
+          if(!modifiers.contains(Final()))
             variableReassignment += newSymbol -> false
 
           init ifDefined { expr => bind(expr, localVars, scopeLevel, canBreakContinue) }

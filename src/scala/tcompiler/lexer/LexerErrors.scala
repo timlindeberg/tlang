@@ -69,15 +69,17 @@ trait LexerErrors extends Errors {
     error(10, "Number is too large to fit in a Long.", length)
 
   protected def ErrorInvalidNumber(length: Int, rest: List[Char]) =
-    error(11, "Invalid number.", length + rest.indexWhere(_.isWhitespace) + 1)
+    error(11, "Invalid number.", getLength(length, rest))
 
   protected def ErrorInvalidFloat(length: Int, rest: List[Char]) =
-    error(12, "Invalid floating point number.", length + rest.indexWhere(_.isWhitespace) + 1)
+    error(12, "Invalid floating point number.", getLength(length, rest))
 
   protected def ErrorInvalidBinaryLiteral(length: Int, rest: List[Char]) =
-    error(13, "Invalid binary literal.", length + rest.indexWhere(_.isWhitespace) + 1)
+    error(13, "Invalid binary literal.", getLength(length, rest))
 
   protected def ErrorInvalidHexadecimalLiteral(length: Int, rest: List[Char]) =
-    error(14, "Invalid hexadecimal literal.", length + rest.indexWhere(_.isWhitespace) + 1)
+    error(14, "Invalid hexadecimal literal.", getLength(length, rest))
+
+  private def getLength(length: Int, rest: List[Char]) = length + rest.indexWhere(_.isWhitespace) + 1
 
 }

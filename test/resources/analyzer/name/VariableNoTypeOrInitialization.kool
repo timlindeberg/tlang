@@ -1,0 +1,10 @@
+var x // res: N2008
+
+class A {
+    var x // res: N2008
+
+    Def Test() = {
+        var x // res: N2008
+        return 1
+    }
+}

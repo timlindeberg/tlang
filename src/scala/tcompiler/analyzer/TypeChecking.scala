@@ -90,9 +90,7 @@ class TypeChecker(override var ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
-    returnStatements.map(_._1).foreach {
-      _.setType(inferredType)
-    }
+    returnStatements.map(_._1) foreach { _.setType(inferredType) }
 
     checkOperatorType(inferredType)
     currentMethodSymbol.setType(inferredType)
@@ -117,24 +115,24 @@ class TypeChecker(override var ctx: Context,
     case Block(stats)                              =>
       stats.foreach(tcStat)
     case varDecl@VarDecl(tpe, id, init, modifiers) =>
+      if(modifiers.contains(Final()) && init.isEmpty)
+        ErrorValuesMustBeInitialized(id.getSymbol.name, varDecl)
+
       tpe match {
-        case Some(t) => init match {
-          case Some(expr) => tcExpr(expr, t.getType)
-          case _          =>
-        }
+        case Some(t) =>
+          init ifDefined { tcExpr(_, t.getType) }
         case None    => init match {
           case Some(expr) =>
             val inferedType = tcExpr(expr)
             id.setType(inferedType)
-          case _          => ErrorNoTypeNoInitalizer(varDecl.id.name, varDecl)
+          case _          => ErrorNoTypeNoInitalizer(varDecl.getSymbol.name, varDecl)
         }
       }
-    case If(condition, thn, els)                        =>
+    case If(condition, thn, els)                   =>
       tcExpr(condition, Bool)
       tcStat(thn)
-      if (els.isDefined)
-        tcStat(els.get)
-    case While(condition, stat)                         =>
+      els ifDefined tcStat
+    case While(condition, stat)                    =>
       tcExpr(condition, Bool)
       tcStat(stat)
     case For(init, condition, post, stat)          =>
@@ -248,9 +246,9 @@ class TypeChecker(override var ctx: Context,
       case eqOp@EqualsOperatorTree(lhs, rhs)             =>
         val args@(lhsTpe, rhsTpe) = (tcExpr(lhs), tcExpr(rhs))
         args match {
-          case _ if args.anyIs(TNull) =>
-            val nullableTpe = if(lhsTpe == TNull) rhsTpe else lhsTpe
-            if(!nullableTpe.isNullable)
+          case _ if args.anyIs(TNull)                         =>
+            val nullableTpe = if (lhsTpe == TNull) rhsTpe else lhsTpe
+            if (!nullableTpe.isNullable)
               ErrorNonNullableEqualsNull(rhs.getType, eqOp)
           case _ if args.anyIs(Object)                        =>
             // TODO: Compare java object by reference
@@ -271,7 +269,7 @@ class TypeChecker(override var ctx: Context,
       case notOp@Not(expr)                               =>
         tcExpr(expr, Bool, Types.Object) match {
           case obj: TObject =>
-            if(!obj.isNullable)
+            if (!obj.isNullable)
               tcUnaryOperator(notOp, obj, Some(Bool))
           case _            =>
         }
@@ -337,11 +335,9 @@ class TypeChecker(override var ctx: Context,
         }
         Int
       case incOp@IncrementDecrementTree(obj)             =>
-        obj match {
-          case id: VariableID           => checkReassignment(id, expression)
-          case _: Access | _: ArrayRead =>
-          case _                        => ErrorInvalidIncrementDecrementExpr(incOp, obj)
-        }
+        if(!obj.isInstanceOf[Assignable])
+          ErrorInvalidIncrementDecrementExpr(incOp, obj)
+
         // TODO: Allow increment decrement for Bool types?
         tcExpr(obj, Object, Int, Char, Long, Double, Float) match {
           case x: TObject => tcUnaryOperator(incOp, x, Some(x)) // Requires same return type as type
@@ -521,7 +517,6 @@ class TypeChecker(override var ctx: Context,
       case id: VariableID           =>
         val toTpe = tcExpr(to)
 
-        checkReassignment(id, assignment)
         tcExpr(expr, toTpe)
         toTpe
       case Access(obj, application) =>
@@ -529,7 +524,6 @@ class TypeChecker(override var ctx: Context,
           case _: MethodCall  => ErrorAssignValueToMethodCall(assignment)
           case id: VariableID =>
             val toTpe = tcExpr(to)
-            checkReassignment(id, assignment)
             tcExpr(expr, toTpe)
             toTpe
           case _              => ???
@@ -624,10 +618,6 @@ class TypeChecker(override var ctx: Context,
     cu.classes.filter(!_.isAbstract).foreach { classDecl =>
       classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
-
-  private def checkReassignment(id: VariableID, pos: Positioned) =
-    if (id.hasSymbol && id.getSymbol.isFinal)
-      ErrorReassignmentToVal(id.name, pos)
 
   private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
     val unimplementedMethods = implementedTrait.unimplementedMethods()

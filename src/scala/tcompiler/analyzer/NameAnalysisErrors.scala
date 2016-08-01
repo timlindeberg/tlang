@@ -53,6 +53,8 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned) =
     error(7, s"Method '$methodSignature' is already defined at line '$line'.", pos)
 
+  // Missing 8
+
   protected def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned) =
     error(9, s"Operator '$operator' is already defined at line '$line'.", pos)
 
@@ -102,10 +104,6 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorNonStaticFinalFieldInTrait(pos: Positioned) =
     error(22, s"Fields in traits need to be val static.", pos)
 
-  protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
-    error(23, s"Cannot reassign value '$value'.", pos)
-
-
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
@@ -117,6 +115,8 @@ trait NameAnalysisErrors extends Errors {
 
   protected def WarningUnusedVar(name: String, pos: Positioned): Unit =
     warning(0, s"Variable '$name' is never used.", pos)
+
+  // Missing 1
 
   protected def WarningUnusedPrivateField(name: String, pos: Positioned) =
     warning(2, s"Private field '$name' is never used.", pos)
@@ -137,8 +137,7 @@ trait NameAnalysisErrors extends Errors {
                   set.map(c => s"'${c.name}'").mkString(" <: ")
                 else
                   c.name
-    first + " <: '" + c.name + "'"
+    s"$first <: '${c.name}'"
   }
-
 
 }

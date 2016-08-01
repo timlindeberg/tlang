@@ -23,10 +23,12 @@ trait ParserErrors extends Errors {
     error(0, "Only constructors can be declared implicit.", pos)
 
   protected def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
-    error(1, s"Indexing operator '$name' cannot be declared static!", pos)
+    error(1, s"Indexing operator '$name' cannot be declared static.", pos)
 
-  protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned) =
-    error(2, s"Invalid array dimension: '$size', ${ASTBuilder.MaximumArraySize} is the maximum dimension of an array.", pos)
+  protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned) ={
+    val maxArraySize = ASTBuilder.MaximumArraySize
+    error(2, s"Invalid array dimension: '$size', '$maxArraySize' is the maximum dimension of an array.", pos)
+  }
 
   //---------------------------------------------------------------------------------------
   //  Fatal messages

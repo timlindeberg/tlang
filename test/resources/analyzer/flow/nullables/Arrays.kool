@@ -51,7 +51,8 @@ if(arr[i + j]){
     if(arr[i])
         arr[0].Test()
 
-    if(arr[++i])
+    ++i
+    if(arr[i])
         arr[1].Test()
 }
 

@@ -28,26 +28,28 @@ trait FlowAnalysisErrors extends Errors {
   protected def ErrorAccessNullableMethod(meth: String, pos: Positioned) =
     error(2, s"Cannot directly use result of method call '$meth' since it could be 'null'.", pos)
 
-  protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
-    error(3, s"Cannot reassign value '$value'.", pos)
-
   protected def ErrorDivideByZero(zeroExpr: ExprTree, pos: Positioned) =
-    error(4, s"Division by expression '$zeroExpr' is illegal since it is known to be '0'.", pos)
+    error(3, s"Division by expression '$zeroExpr' is illegal since it is known to have the value '0'.", pos)
 
   protected def ErrorOutOfBounds(index: ExprTree, value: Int, size: Int, pos: Positioned) = {
     val bounds = if(value < 0) s"'$value' < '0'" else s"'$value' >= '$size'"
-    error(5, s"Indexing expression '$index' is out of bounds: $bounds.", pos)
+    error(4, s"Indexing expression '$index' is out of bounds: $bounds.", pos)
   }
+
+  protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
+    error(5, s"Cannot reassign value '$value'.", pos)
+
+  protected def ErrorVariableNotInitialized(v: ExprTree, pos: Positioned) =
+    error(6, s"Cannot use variable '$v' since it may not have been initialized.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
 
   protected def WarningDeadCode(startLine: Int, endLine: Int, pos: Positioned) = {
-    val line = if(startLine == endLine) s"line '$startLine'" else s"lines '$startLine'-'$endLine'"
+    val line = if(startLine == endLine) s"line '$startLine'" else s"lines '$startLine' - '$endLine'"
     warning(0, s"Code on $line is unreachable.", pos)
   }
-
 
   //---------------------------------------------------------------------------------------
   //  Private methods

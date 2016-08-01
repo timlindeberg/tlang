@@ -68,6 +68,18 @@ for(var i = 0; i < 5; i++) {
    a.Test() // res: F2001
 }
 
+var i = 0
+a = GetA()
+if(a != null){
+    println()
+    i = 1
+} else {
+    i = 1
+    return
+}
+
+a.Test()
+
 /*------------------------------------------------------------------------*/
 
 Def GetA(): A? = null

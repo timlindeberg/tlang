@@ -23,12 +23,16 @@ trait TypeCheckingErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(s"'$expected'", s"'$found'", pos)
+
   protected def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(s"'$expected'", found, pos)
+
   protected def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, s"'$found'", pos)
+
   protected def ErrorWrongType(expected: Traversable[Type], found: Type, pos: Positioned): Type = {
     val s = makeExpectedString(expected)
     ErrorWrongType(s, found, pos)
   }
+
   protected def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
     error(0, s"Expected type: $expected, found: $found.", pos)
 
@@ -90,9 +94,8 @@ trait TypeCheckingErrors extends Errors {
     error(13, s"$classesString contain an operator '$operatorName'.", pos)
   }
 
-  protected def ErrorOperatorWrongReturnType(op: String, expected: String, found: String, pos: Positioned) = {
+  protected def ErrorOperatorWrongReturnType(op: String, expected: String, found: String, pos: Positioned) =
     error(14, s"Operator '$op' has wrong return type: expected '$expected', found '$found'.", pos)
-  }
 
   protected def ErrorWrongReturnType(tpe: String, pos: Positioned) =
     error(15, s"Expected a return value of type '$tpe'.", pos)
@@ -106,10 +109,8 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
 
-  protected def ErrorMultipleReturnTypes(returnStatements: List[(Return, Type)]) = {
-    val typeList = returnStatements.map { case (stat, tpe) => s"Line ${stat.line} -> '$tpe'" }.mkString(", ")
-    error(19, s"Method contains return statements of multiple types: $typeList.", returnStatements.head._1)
-  }
+  protected def ErrorValuesMustBeInitialized(name: String, pos: Positioned) =
+    error(19, s"Value '$name' must be initialized.", pos)
 
   protected def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =
     error(20, s"Array literal contains multiple types: $typeList", pos)
@@ -117,16 +118,18 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorCantInferTypeRecursiveMethod(pos: Positioned) =
     error(21, s"Cannot infer type of recursive method.", pos)
 
-  protected def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) =
-    error(22, s"Invalid ${incrementOrDecrement(expr)} expression.", pos)
+  protected def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned) = {
+    val incOrDec = incrementOrDecrement(expr)
+    error(22, s"Invalid $incOrDec expression.", pos)
+  }
 
   protected def ErrorOperatorDoesNotExist(expr: OperatorTree, args: (Type, Type), pos: Positioned): Type = {
     val operator = expr.operatorString(List(args._1, args._2))
     error(23, s"Operator '$operator' does not exist.", pos)
   }
 
-  protected def ErrorInstantiateTrait(tr: String, pos: Positioned) =
-    error(24, s"Cannot instantiate trait '$tr'.", pos)
+  protected def ErrorInstantiateTrait(treit: String, pos: Positioned) =
+    error(24, s"Cannot instantiate trait '$treit'.", pos)
 
   protected def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, tr: String, pos: Positioned) =
     error(25, s"Class '$clazz' does not implement method '$method' from trait '$tr'.", pos)
@@ -146,8 +149,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorNoSuperTypeHasField(clazz: String, field: String, pos: Positioned) =
     error(30, s"No super type of class '$clazz' has a field '$field'.", pos)
 
-  protected def ErrorReassignmentToVal(value: String, pos: Positioned) =
-    error(31, s"Cannot reassign value '$value'.", pos)
+  // Missing 31
 
   protected def ErrorForeachNotIterable(tpe: Type, pos: Positioned) =
     error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
@@ -168,8 +170,7 @@ trait TypeCheckingErrors extends Errors {
     error(37, s"Cannot assign a value to the result of a method call.", pos)
 
   protected def ErrorNonNullableEqualsNull(tpe: Type, pos: Positioned) =
-    error(37, s"Cannot check if non nullable type '$tpe' is 'null'.", pos)
-
+    error(38, s"Cannot check if non nullable type '$tpe' is 'null'.", pos)
 
 
   //---------------------------------------------------------------------------------------
@@ -196,18 +197,20 @@ trait TypeCheckingErrors extends Errors {
     case _           => ???
   }
 
-  private def overloadedOperatorClassesString(args: List[Type]) =
-    if (args.size != 2 || args(0) == args(1)) {
-      "The class \'" + args.head + "\' does not"
-    } else {
-      if (!args(0).isInstanceOf[TObject]) {
-        "The class \'" + args(1) + "\' does not"
-      } else if (!args(1).isInstanceOf[TObject]) {
-        "The class \'" + args(0) + "\' does not"
-      } else {
-        "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
-      }
-    }
+  private def overloadedOperatorClassesString(args: List[Type]) = {
+    val arg1 = args.head
+    val arg2 = args(1)
+    if (args.size != 2 || arg1 == arg2)
+      s"The class '$arg1' does not"
+    else if (!arg1.isInstanceOf[TObject])
+      s"The class '$arg2' does not"
+    else if (!arg1.isInstanceOf[TObject])
+      s"The class '$arg1' does not"
+    else
+      s"None of the classes ${args.map(a => s"'$a'").mkString(" or ")}"
+
+  }
+
 
   private def incrementOrDecrement(expr: ExprTree) =
     expr match {
