@@ -1,6 +1,5 @@
 package tcompiler.analyzer
 
-import com.sun.org.apache.xpath.internal.operations.Mod
 import tcompiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeTraverser

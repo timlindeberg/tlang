@@ -33,10 +33,10 @@ if(a == 5){
 
 Def BothPaths1() = {
     val a = 5
-    if(a == 5){
+    if(a == 5) {
         return
         println(a) // res: F1000
-    }else{
+    } else {
         return
         println(a) // res: F1000
     }
@@ -48,19 +48,19 @@ Def BothPaths1() = {
 
 Def BothPaths2() = {
     val a = 5
-    if(a == 5){
-        if(a == 4){
+    if(a == 5) {
+        if(a == 4) {
             return
             println(a)  // res: F1000
-        }else{
+        } else {
             return
             println(a)  // res: F1000
         }
-    }else{
-         if(a == 4){
+    } else {
+         if(a == 4) {
             return
             println(a)  // res: F1000
-         }else{
+         } else {
             return
             println(a)  // res: F1000
          }

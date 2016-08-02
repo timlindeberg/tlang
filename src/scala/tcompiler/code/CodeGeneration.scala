@@ -114,7 +114,6 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
   }
 
   private def generateMethod(mh: MethodHandler, methTree: FuncTree): Unit = {
-    val methSym = methTree.getSymbol
     val localVariableMap = mutable.HashMap[VariableSymbol, Int]()
 
     var offset = if (methTree.isStatic) 0 else 1
@@ -160,31 +159,37 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     mh
   }
 
-  private def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile) = {
+  private def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile): Unit = {
     val staticFields = classDecl.fields.filter(v => v.init.isDefined && v.isStatic)
-    if (staticFields.nonEmpty) {
-      lazy val staticCh: CodeHandler = classFile.addClassInitializer.codeHandler
-      val codeGenerator = new CodeGenerator(staticCh, mutable.HashMap())
-      staticFields.foreach {
-        case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
-          varDecl.getSymbol.getType
-          codeGenerator.compileExpr(expr)
-          staticCh << PutStatic(classDecl.getSymbol.name, id.name, varDecl.getSymbol.getType.byteCodeName)
-      }
-      staticCh << RETURN
-      staticCh.freeze
+    if (staticFields.isEmpty)
+      return
+
+    // TODO: why lazy?
+    lazy val ch: CodeHandler = classFile.addClassInitializer.codeHandler
+    val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
+    staticFields.foreach { case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
+      compileField(expr, id, classDecl, ch, codeGenerator)
     }
+    ch << RETURN
+    ch.freeze
   }
 
   private def initializeNonStaticFields(classDecl: ClassDecl, ch: CodeHandler) = {
     val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    nonStaticFields.foreach {
-      case varDecl@VarDecl(_, id, Some(expr), _) =>
-        ch << ArgLoad(0) // put this-reference on stack
-        codeGenerator.compileExpr(expr)
-        ch << PutField(classDecl.getSymbol.name, id.name, varDecl.getSymbol.getType.byteCodeName)
+    nonStaticFields foreach { case varDecl@VarDecl(_, id, Some(expr), _) =>
+      ch << ArgLoad(0) // put this-reference on stack
+      compileField(expr, id, classDecl, ch, codeGenerator)
     }
+  }
+
+  private def compileField(expr: ExprTree, id: VariableID, classDecl: ClassDecl, ch: CodeHandler, codeGenerator: CodeGenerator) = {
+    codeGenerator.compileExpr(expr)
+    val sym = id.getSymbol
+    val className = classDecl.getSymbol.name
+    val fieldName = id.getSymbol.name
+    val typeName = sym.getType.byteCodeName
+    ch << PutField(className, fieldName, typeName)
   }
 
   private def getMethodFlags(method: FuncTree) = {
@@ -251,7 +256,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
 
   private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
     val superClassName = ct.getSymbol.parents match {
-      case (c: ClassSymbol) :: _ => if(c.isAbstract) JavaObject else c.name
+      case (c: ClassSymbol) :: _ => if (c.isAbstract) JavaObject else c.name
       case Nil                   => JavaObject
     }
 

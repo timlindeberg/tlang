@@ -63,16 +63,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
-        val codes = tpe.codes
 
         localVariableMap(sym) = id
-        init match {
-          case Some(expr) =>
+        init ifDefined  { expr =>
             compileAndConvert(expr, tpe)
-            codes.store(ch, localVariableMap(sym))
-          case None       =>
-            codes.defaultConstant(ch)
-            codes.store(ch, id)
+            tpe.codes.store(ch, id)
         }
       case If(conditionExpr, thnStat, elsStat)       =>
         val thn = ch.getFreshLabel("then")

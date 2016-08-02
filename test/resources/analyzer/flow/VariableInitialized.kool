@@ -75,4 +75,5 @@ g.Test() // res: F2006
 class A {
 
     Def Test() = println()
+
 }
