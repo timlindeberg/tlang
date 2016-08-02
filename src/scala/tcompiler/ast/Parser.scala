@@ -10,7 +10,7 @@ import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
 
@@ -25,38 +25,38 @@ object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
 object ASTBuilder {
 
   val MaximumArraySize = 255
-  val TLangObject = Main.TLangObject.replaceAll("/", "::")
-  val TLangString = Main.TLangString.replaceAll("/", "::")
+  val TLangObject      = Main.TLangObject.replaceAll("/", "::")
+  val TLangString      = Main.TLangString.replaceAll("/", "::")
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
-    LOGICNOT -> LogicNot,
-    BANG -> Not,
-    HASH -> Hash,
-    INCREMENT -> PreIncrement,
-    DECREMENT -> PreDecrement
-  )
+                                                                                   LOGICNOT -> LogicNot,
+                                                                                   BANG -> Not,
+                                                                                   HASH -> Hash,
+                                                                                   INCREMENT -> PreIncrement,
+                                                                                   DECREMENT -> PreDecrement
+                                                                                 )
 
 
   private val tokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-    OR -> Or,
-    AND -> And,
-    LESSTHAN -> LessThan,
-    LESSTHANEQ -> LessThanEquals,
-    GREATERTHAN -> GreaterThan,
-    GREATERTHANEQ -> GreaterThanEquals,
-    EQUALS -> Equals,
-    NOTEQUALS -> NotEquals,
-    PLUS -> Plus,
-    MINUS -> Minus,
-    TIMES -> Times,
-    DIV -> Div,
-    MODULO -> Modulo,
-    LEFTSHIFT -> LeftShift,
-    RIGHTSHIFT -> RightShift,
-    LOGICAND -> LogicAnd,
-    LOGICOR -> LogicOr,
-    LOGICXOR -> LogicXor
-  )
+                                                                                                OR -> Or,
+                                                                                                AND -> And,
+                                                                                                LESSTHAN -> LessThan,
+                                                                                                LESSTHANEQ -> LessThanEquals,
+                                                                                                GREATERTHAN -> GreaterThan,
+                                                                                                GREATERTHANEQ -> GreaterThanEquals,
+                                                                                                EQUALS -> Equals,
+                                                                                                NOTEQUALS -> NotEquals,
+                                                                                                PLUS -> Plus,
+                                                                                                MINUS -> Minus,
+                                                                                                TIMES -> Times,
+                                                                                                DIV -> Div,
+                                                                                                MODULO -> Modulo,
+                                                                                                LEFTSHIFT -> LeftShift,
+                                                                                                RIGHTSHIFT -> RightShift,
+                                                                                                LOGICAND -> LogicAnd,
+                                                                                                LOGICOR -> LogicOr,
+                                                                                                LOGICXOR -> LogicXor
+                                                                                              )
 }
 
 class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
@@ -409,8 +409,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         }
       case _             =>
         FatalWrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
-          RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
-          LOGICNOT, BANG, LBRACKET)
+                         RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
+                         LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
@@ -512,34 +512,29 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <tpe> ::= <basicTpe> [ "?" ] { "[]" } [ "?" ]
+    * <tpe> ::= <basicTpe> { "[]" | "?" }
     */
   def tpe(): TypeTree = {
     val startPos = nextToken
     var e = basicTpe()
     var dimension = 0
 
-    if (nextTokenKind == QUESTIONMARK) {
-      eat(QUESTIONMARK)
-      e = NullableType(e).setPos(startPos, nextToken)
+    while (nextTokenKind == QUESTIONMARK || nextTokenKind == LBRACKET) {
+      e = nextTokenKind match {
+        case QUESTIONMARK =>
+          eat(QUESTIONMARK)
+          NullableType(e).setPos(startPos, nextToken)
+        case LBRACKET     =>
+          eat(LBRACKET, RBRACKET)
+          dimension += 1
+          ArrayType(e).setPos(startPos, nextToken)
+        case _            => ???
+      }
     }
-    while (nextTokenKind == LBRACKET) {
-      e.setPos(startPos, nextToken)
-      eat(LBRACKET, RBRACKET)
-      e = ArrayType(e)
-      dimension += 1
-    }
-    e.setPos(startPos, nextToken)
-
     if (dimension > MaximumArraySize)
       ErrorInvalidArrayDimension(dimension, e)
 
-    if (nextTokenKind == QUESTIONMARK) {
-      eat(QUESTIONMARK)
-      NullableType(e).setPos(startPos, nextToken)
-    } else {
-      e
-    }
+    e.setPos(startPos, nextToken)
   }
 
   /**
@@ -775,7 +770,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       eat(COLON)
       val els = elvis()
       Ternary(e, thn, els).setPos(startPos, nextToken)
-    }else{
+    } else {
       e
     }
   }
@@ -788,7 +783,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       eat(ELVIS)
       val ifNull = or()
       Elvis(e, ifNull).setPos(startPos, nextToken)
-    }else{
+    } else {
       e
     }
   }
@@ -976,7 +971,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case DECREMENT        =>
           eat(DECREMENT)
           PostDecrement(e)
-        case _         => ???
+        case _                => ???
       }
       e.setPos(startPos, nextToken)
     }
@@ -993,10 +988,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case SAFEACCESS =>
         eat(SAFEACCESS)
         SafeAccess
-      case DOT          =>
+      case DOT        =>
         eat(DOT)
         NormalAccess
-      case _            => FatalWrongToken(nextToken, DOT, QUESTIONMARK)
+      case _          => FatalWrongToken(nextToken, DOT, QUESTIONMARK)
     }
 
     val methStartPos = nextToken
@@ -1040,38 +1035,48 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <newExpression> ::= new <basicTpe> "(" [ <expression> { "," <expression> } ] ")"
-    * | new <basicTpe>  "[" <expression> "]" { "[" <expression> "]" }
+    * <newExpression> ::= new <basicTpe> [ "?[" <expression> "]" ] { "[" <expression> "]" [ "?" ] }
     */
   def newExpression(): ExprTree = {
     val startPos = nextToken
     eat(NEW)
 
-    def sizes(): List[ExprTree] = {
-      val sizes = untilNot(() => {
-        eat(LBRACKET)
-        val size = expression()
-        eat(RBRACKET)
-        size
-      }, LBRACKET)
-      if (sizes.size > MaximumArraySize)
-        ErrorInvalidArrayDimension(sizes.size, startPos)
-      sizes
-    }
     val tpe = basicTpe()
 
+    val sizes = ListBuffer[ExprTree]()
     nextTokenKind match {
-      case LPAREN   =>
+      case LPAREN                  =>
         eat(LPAREN)
         val args = commaList(expression)
         eat(RPAREN)
         New(tpe, args)
-      case QUESTIONMARK =>
-        eat(QUESTIONMARK)
-        NewArray(NullableType(tpe), sizes())
-      case LBRACKET =>
-        NewArray(tpe, sizes())
-      case _        => FatalWrongToken(nextToken, LPAREN, LBRACKET)
+      case QUESTIONMARK | LBRACKET =>
+        var e = tpe
+
+        if (nextTokenKind == QUESTIONMARK) {
+          eat(QUESTIONMARK, LBRACKET)
+          val size = expression()
+          eat(RBRACKET)
+          sizes += size
+          e = ArrayType(e).setPos(startPos, nextToken)
+        }
+
+        while (nextTokenKind == QUESTIONMARK || nextTokenKind == LBRACKET) {
+          e = nextTokenKind match {
+            case QUESTIONMARK =>
+              eat(QUESTIONMARK)
+              NullableType(e).setPos(startPos, nextToken)
+            case LBRACKET     =>
+              eat(LBRACKET)
+              val size = expression()
+              eat(RBRACKET)
+              sizes += size
+              ArrayType(e).setPos(startPos, nextToken)
+          }
+        }
+
+        NewArray(e, sizes.toList)
+      case _                       => FatalWrongToken(nextToken, LPAREN, LBRACKET)
     }
   }
 

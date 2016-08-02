@@ -57,11 +57,18 @@ if(arr[i + j]){
         arr[1].Test()
 }
 
-val nullableNullableArr = { GetNullableArr(), null, GetNullableArr() }
+var nullableNullableArr: A?[]?[] = { GetNullableArr(), null, GetNullableArr() }
 
 if(nullableNullableArr[0] && nullableNullableArr[0][1]){
     nullableNullableArr[0][1].Test()
 }
+
+nullableNullableArr = new A?[4]?[4]
+
+if(nullableNullableArr[0] && nullableNullableArr[0][1]){
+    nullableNullableArr[0][1].Test()
+}
+
 
 arr = GetNullableArr()
 

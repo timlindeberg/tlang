@@ -1,5 +1,6 @@
 package tcompiler.ast
 
+import tcompiler.ast.Trees.TypeTree
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.{Token, TokenKind}
 import tcompiler.utils.{Errors, Positioned}

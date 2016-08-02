@@ -198,10 +198,7 @@ class TypeChecker(override var ctx: Context,
       case assign: Assign                                => tcAssignment(assign)
       case newArray@NewArray(tpe, sizes)                 =>
         sizes.foreach(tcExpr(_, Int))
-        var arrayType = tpe.getType
-        for (i <- 1 to newArray.dimension)
-          arrayType = TArray(arrayType)
-        arrayType
+        tpe.getType
       case ArrayLit(expressions)                         =>
         val tpes = expressions.map(tcExpr(_))
         val arrTpe = getReturnType(tpes)

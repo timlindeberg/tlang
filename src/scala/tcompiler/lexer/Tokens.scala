@@ -136,7 +136,7 @@ object Tokens {
 
   // Identifiers
   class ID(val value: String) extends Token(IDKIND) {
-    override def toString = "ID(" + value + ")"
+    override def toString = "IDENTIFIER(" + value + ")"
   }
 
   // Integer literals
