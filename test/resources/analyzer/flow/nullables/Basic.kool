@@ -61,7 +61,6 @@ for(val i in arr) // res: F2000
 /*------------------------------------------------------------------------*/
 
 Def GetA(): A? = null
-Def GetB(): B? = null
 Def GetArr(): Int[]? = null
 
 class A {

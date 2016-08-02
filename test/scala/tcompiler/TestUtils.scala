@@ -10,6 +10,7 @@ import tcompiler.lexer.Token
 import tcompiler.utils.{Context, Reporter}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
 import scala.io.Source
@@ -134,34 +135,40 @@ object TestUtils extends FlatSpec {
     val solStrings = asString(sol)
 
 
-    if (checkLineNumbers){
-      val resMap = res.toMap
-      val beenChecked = mutable.Set[Int]()
+    if (checkLineNumbers) {1
+      val resMap = mutable.HashMap[Int, ArrayBuffer[String]]()
+      res foreach { case (line, r) =>
+        val l = resMap.getOrElse(line, ArrayBuffer[String]())
+        l += r.trim
+        resMap += line -> l
+      }
 
       sol.zipWithIndex foreach { case ((line, s), i) =>
         val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
         resMap.get(line) match {
           case Some(r) =>
-            if(r.trim != s.trim)
-              fail(s"Expected $s on line $line but found $r $extraInfo")
-            beenChecked += line
-          case None    => fail(s"Line $line did not throw error $s $extraInfo.")
+            val strim = s.trim
+            if(r.contains(strim))
+              r -= strim
+            else
+              fail(s"Expected $s on line $line but found ${r.mkString(", ")} $extraInfo")
+
+          case None    => fail(s"Line $line did not produce $s $extraInfo.")
         }
       }
-      res foreach { case (line, r) =>
-        if(!beenChecked(line)){
-          val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
-          fail(s"Unexpected '$r' was found on line $line $extraInfo")
-        }
+      val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
+      resMap foreach {case (line, res) =>
+        if(res.nonEmpty)
+          fail(s"Unexpected '${res.mkString(", ")}' was found on line $line $extraInfo")
       }
-    }else{
+    } else {
       flattenTuple(res.zip(sol).zipWithIndex).foreach {
         case ((_, r), (line, s), i) =>
           val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
-          if(r.trim != s.trim)
+          if (r.trim != s.trim)
             fail(s"Expected $s on line $line but found $r $extraInfo")
       }
-      if(res.length != sol.length){
+      if (res.length != sol.length) {
         val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
         fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
       }

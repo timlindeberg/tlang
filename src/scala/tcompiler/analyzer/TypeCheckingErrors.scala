@@ -197,19 +197,15 @@ trait TypeCheckingErrors extends Errors {
     case _           => ???
   }
 
-  private def overloadedOperatorClassesString(args: List[Type]) = {
-    val arg1 = args.head
-    val arg2 = args(1)
-    if (args.size != 2 || arg1 == arg2)
-      s"The class '$arg1' does not"
-    else if (!arg1.isInstanceOf[TObject])
-      s"The class '$arg2' does not"
-    else if (!arg1.isInstanceOf[TObject])
-      s"The class '$arg1' does not"
+  private def overloadedOperatorClassesString(args: List[Type]) =
+    if (args.size != 2 || args(0) == args(1))
+      "The class \'" + args.head + "\' does not"
+    else if (!args(0).isInstanceOf[TObject])
+      "The class \'" + args(1) + "\' does not"
+    else if (!args(1).isInstanceOf[TObject])
+      "The class \'" + args(0) + "\' does not"
     else
-      s"None of the classes ${args.map(a => s"'$a'").mkString(" or ")}"
-
-  }
+      "None of the classes " + args.map("'" + _.toString + "'").mkString(" or ")
 
 
   private def incrementOrDecrement(expr: ExprTree) =

@@ -43,20 +43,13 @@ prefix "dsad \uabcd ads" postfix
 prefix "dsad \u1234 ads" postfix
 
 // Three invalid escape sequence errors
-prefix "dd aa \a dasd \a asd \a" postfix// res: L2004
-// res: L2004
-// res: L2004
+prefix "dd aa \a dasd \a asd \a" postfix// res: L2004, L2004, L2004
 
 // Three invalid unicode errors
-prefix "dd aa \u123 dasd \u12 asd \u12g45 a" postfix// res: L2006
-// res: L2006
-// res: L2006
+prefix "dd aa \u123 dasd \u12 asd \u12g45 a" postfix// res: L2006, L2006, L2006
 
 prefix  "\xdasd" postfix // res: L2004
 prefix "dasd\y" postfix // res: L2004
 
 // Three errors and unclosed string
-prefix "dd aa \u123 dasd \u12 asd \u12g45 a // res: L2006
-// res: L2006
-// res: L2006
-// res: L2008
+prefix "dd aa \u123 dasd \u12 asd \u12g45 a // res: L2006, L2006, L2006, L2008
