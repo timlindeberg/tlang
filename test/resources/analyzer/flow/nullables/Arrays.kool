@@ -62,11 +62,13 @@ if(nullableNullableArr[0] && nullableNullableArr[0][1]){
     nullableNullableArr[0][1].Test()
 }
 
-// if(arr[1] == null || arr[2] == null)
-//     return
+arr = GetNullableArr()
 
-// arr[1].Test()
-// arr[2].Test()
+if(arr[1] == null || arr[2] == null)
+    return
+
+arr[1].Test()
+arr[2].Test()
 
 /*------------------------------------------------------------------------*/
 

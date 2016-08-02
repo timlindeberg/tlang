@@ -70,7 +70,7 @@ for(var i = 0; i < 5; i++) {
 
 var i = 0
 a = GetA()
-if(a != null){
+if(a != null) {
     println()
     i = 1
 } else {
@@ -80,6 +80,17 @@ if(a != null){
 
 a.Test()
 
+i = 0
+a = GetA()
+if(a == null) {
+    i = 1
+    return
+} else {
+    println()
+    i = 1
+}
+
+a.Test()
 /*------------------------------------------------------------------------*/
 
 Def GetA(): A? = null

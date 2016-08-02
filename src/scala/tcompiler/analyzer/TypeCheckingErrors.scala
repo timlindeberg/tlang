@@ -109,7 +109,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned) =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
 
-  protected def ErrorValuesMustBeInitialized(name: String, pos: Positioned) =
+  protected def ErrorValueMustBeInitialized(name: String, pos: Positioned) =
     error(19, s"Value '$name' must be initialized.", pos)
 
   protected def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned) =

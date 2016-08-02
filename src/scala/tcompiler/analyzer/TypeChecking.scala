@@ -115,17 +115,17 @@ class TypeChecker(override var ctx: Context,
     case Block(stats)                              =>
       stats.foreach(tcStat)
     case varDecl@VarDecl(tpe, id, init, modifiers) =>
+      val varSym = id.getSymbol
       if(modifiers.contains(Final()) && init.isEmpty)
-        ErrorValuesMustBeInitialized(id.getSymbol.name, varDecl)
+        ErrorValueMustBeInitialized(varSym.name, varDecl)
 
       tpe match {
-        case Some(t) =>
-          init ifDefined { tcExpr(_, t.getType) }
+        case Some(t) => init ifDefined { tcExpr(_, t.getType) }
         case None    => init match {
           case Some(expr) =>
             val inferedType = tcExpr(expr)
             id.setType(inferedType)
-          case _          => ErrorNoTypeNoInitalizer(varDecl.getSymbol.name, varDecl)
+          case _          => ErrorNoTypeNoInitalizer(varSym.name, varDecl)
         }
       }
     case If(condition, thn, els)                   =>
@@ -136,9 +136,9 @@ class TypeChecker(override var ctx: Context,
       tcExpr(condition, Bool)
       tcStat(stat)
     case For(init, condition, post, stat)          =>
-      init.foreach(tcStat(_))
+      init foreach tcStat
       tcExpr(condition, Bool)
-      post.foreach(tcStat)
+      post foreach tcStat
       tcStat(stat)
     case Foreach(varDecl, container, stat)         =>
       val containerType = tcExpr(container)

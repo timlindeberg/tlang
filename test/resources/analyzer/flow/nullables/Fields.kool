@@ -3,57 +3,42 @@ if(c.nullable != null)
     c.nullable.Test()
 c.nullable.Test() // res: F2000
 
-if(c.nullable != null && c.nullable.bNullable != null)
-    c.nullable.bNullable.Test()
+if(c.nullable != null && c.nullable.nullable != null)
+    c.nullable.nullable.Test()
 
 if(c.nullable)
     c.nullable.Test()
 
-if(c.nullable && c.nullable.bNullable)
-    c.nullable.bNullable.Test()
+if(c.nullable && c.nullable.nullable)
+    c.nullable.nullable.Test()
 
 // TODO: This should probably work
-// if(c?.nullable?.bNullable != null)
-//     c.nullable.bNullable.Test()
+// if(c?.nullable?.nullable != null)
+//     c.nullable.nullable.Test()
 //
-// if(c?.nullable?.bNullable)
-//     c.nullable.bNullable.Test()
+// if(c?.nullable?.nullable)
+//     c.nullable.nullable.Test()
 
-c.nullable.bNullable.Test() // res: F2000, F2000
+c.nullable.nullable.Test() // res: F2000, F2000
 
-if(c.nullable && c.nullable.bNullable) {
+if(c.nullable && c.nullable.nullable) {
     c = GetA()
     c.Test() // res: F2000
     c.nullable.Test() // res: F2000, F2000
-    c.nullable.bNullable.Test() // res: F2000, F2000, F2000
+    c.nullable.nullable.Test() // res: F2000, F2000, F2000
 }
-
-if(c.nullable && c.nullable.bNullable) {
-    c.nullable = GetB()
-    c.Test()
-    c.nullable.Test() // res: F2000
-    c.nullable.bNullable.Test() // res: F2000, F2000
-}
-
 
 var a = GetA()
 
-if(a && a.nullable){
-    a.nullable.Test()
-    a.nullable = GetB()
-    a.nullable.Test() // res: F2000
-}
 
 if(A.staticVar){
     A.staticVar.Test()
-    B.staticVar.Test() // res: F2000
-    A.staticVar = GetA()
-    A.staticVar.Test() // res: F2000
     B.staticVar.Test() // res: F2000
 }
 
 if(A.staticVar != null)
     A.staticVar.Test()
+    
 A.staticVar.Test() // res: F2000
 
 
@@ -64,8 +49,8 @@ Def GetB(): B? = null
 
 class A {
 
-    Var static staticVar: A? = null
-    Var nullable: B? = null
+    Val static staticVar: A? = true ? new A() : null
+    Val nullable: B? = true ? new B() : null
 
     Def Test() = println("Test")
 
@@ -73,8 +58,8 @@ class A {
 
 class B {
 
-    Var static staticVar: A? = null
-    Var bNullable: C? = null
+    Val static staticVar: A? = true ? new A() : null
+    Val nullable: C? = true ? new C() : null
 
     Def Test() = println("Test")
 
