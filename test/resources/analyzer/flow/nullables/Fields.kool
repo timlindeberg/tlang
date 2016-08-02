@@ -38,7 +38,7 @@ if(A.staticVar){
 
 if(A.staticVar != null)
     A.staticVar.Test()
-    
+
 A.staticVar.Test() // res: F2000
 
 

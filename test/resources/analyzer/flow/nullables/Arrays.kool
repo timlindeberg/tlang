@@ -42,6 +42,7 @@ if(arr[i]){
     arr[j].Test()
 }
 
+arr = GetNullableArr()
 i = 1
 j = 1
 if(arr[i + j]){

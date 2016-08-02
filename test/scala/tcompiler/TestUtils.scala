@@ -5,10 +5,11 @@ import java.io.File
 import org.scalatest.FlatSpec
 import tcompiler.analyzer.Types.{TUntyped, Typed}
 import tcompiler.ast.ForeachTraverser
-import tcompiler.ast.Trees.{Empty, CompilationUnit}
+import tcompiler.ast.Trees.{CompilationUnit, Empty}
 import tcompiler.lexer.Token
 import tcompiler.utils.{Context, Reporter}
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
 import scala.io.Source
@@ -16,7 +17,7 @@ import scala.sys.process.{ProcessLogger, _}
 
 object TestUtils extends FlatSpec {
 
-  val TestDirectory = "gen"
+  val TestDirectory  = "gen"
   val Resources      = "test/resources/"
   val SolutionPrefix = ".kool-solution"
   val Interpreter    = new Interpreter
@@ -58,7 +59,7 @@ object TestUtils extends FlatSpec {
     }
   }
 
-  private val classPathSeperator = if(System.getProperty("os.name").startsWith("Windows")) ";" else ":"
+  private val classPathSeperator = if (System.getProperty("os.name").startsWith("Windows")) ";" else ":"
 
   def lines(str: String) = str.split("\\r?\\n").toList
 
@@ -99,9 +100,9 @@ object TestUtils extends FlatSpec {
   def parseSolutions(file: File): List[(Int, String)] = {
     val fileName = file.getPath
     Source.fromFile(fileName).getLines().zipWithIndex.flatMap {
-      case (SolutionRegex(line), lineNumber)             =>
+      case (SolutionRegex(line), lineNumber) =>
         line.split(",").map(res => (lineNumber + 1, res.trim))
-      case _ => Nil
+      case _                                 => Nil
     }.toList
   }
 
@@ -132,14 +133,39 @@ object TestUtils extends FlatSpec {
     val resStrings = asString(res)
     val solStrings = asString(sol)
 
-    flattenTuple(res.zip(sol).zipWithIndex).foreach {
-      case ((lineRes, r), (lineSol, s), i) =>
+
+    if (checkLineNumbers){
+      val resMap = res.toMap
+      val beenChecked = mutable.Set[Int]()
+
+      sol.zipWithIndex foreach { case ((line, s), i) =>
         val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
-        assert(r.trim == s.trim, s": error on line $lineRes $extraInfo")
-        if(checkLineNumbers)
-          assert(lineRes == lineSol, s": Same error message ($r) but the error happened on line $lineRes instead of $lineSol $extraInfo")
+        resMap.get(line) match {
+          case Some(r) =>
+            if(r.trim != s.trim)
+              fail(s"Expected $s on line $line but found $r $extraInfo")
+            beenChecked += line
+          case None    => fail(s"Line $line did not throw error $s $extraInfo.")
+        }
+      }
+      res foreach { case (line, r) =>
+        if(!beenChecked(line)){
+          val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
+          fail(s"Unexpected '$r' was found on line $line $extraInfo")
+        }
+      }
+    }else{
+      flattenTuple(res.zip(sol).zipWithIndex).foreach {
+        case ((_, r), (line, s), i) =>
+          val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
+          if(r.trim != s.trim)
+            fail(s"Expected $s on line $line but found $r $extraInfo")
+      }
+      if(res.length != sol.length){
+        val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
+        fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
+      }
     }
-    assert(res.length == sol.length, resultsVersusSolution(-1, resStrings, solStrings, errors))
   }
 
   def hasTypes(cu: CompilationUnit) = {
@@ -150,7 +176,7 @@ object TestUtils extends FlatSpec {
         if (node.getType == TUntyped)
           hasTypes = false
         assert(node.getType != TUntyped)
-      case _ =>
+      case _           =>
     })
     traverser.traverse(cu)
     hasTypes
@@ -177,10 +203,10 @@ object TestUtils extends FlatSpec {
       val sizedStr = s"%-${colLength}s"
       val format = s"%-4s$sizedStr$sizedStr"
       val line = String.format(format, lineNum, r, s)
-      if (i == failedTest.toString)  line + "<<<<<"
+      if (i == failedTest.toString) line + "<<<<<"
       else line
     }.mkString("\n", "\n", "\n")
-    if(errors == "")
+    if (errors == "")
       results
     else
       results + "\n" + errors

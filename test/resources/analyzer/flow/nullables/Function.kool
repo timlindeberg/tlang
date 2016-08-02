@@ -38,6 +38,8 @@ Def MoreTests(b: A?) = {
         a.Test()
     }
 
+    a = GetA()
+
     for(var i = 0; a != null; i++) {
         a.Test()
         a = GetA()

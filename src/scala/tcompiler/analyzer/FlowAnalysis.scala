@@ -99,6 +99,20 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   case class NumericValue(value: Int) extends VarKnowledge
   case class BoolValue(condition: ExprTree) extends VarKnowledge
 
+  // TODO: Ranges?
+  case class Greater(value: Int) extends VarKnowledge {
+    override def invert = LessEq(value)
+  }
+  case class GreaterEq(value: Int) extends VarKnowledge {
+    override def invert = Less(value)
+  }
+  case class Less(value: Int) extends VarKnowledge {
+    override def invert = GreaterEq(value)
+  }
+  case class LessEq(value: Int) extends VarKnowledge {
+    override def invert = Greater(value)
+  }
+
   case class Knowledge(varKnowledge: Map[Identifier, Set[VarKnowledge]] = Map(),
                        flowEnded: Option[StatTree] = None) {
 
@@ -335,8 +349,6 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
   def apply(clazz: ClassDecl): Unit = {
 
-
-
     val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { (knowledge, field) =>
       val sym = field.getSymbol
       val varId = new VarIdentifier(sym)
@@ -407,6 +419,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           case Some(elsKnowledge) =>
             val intersection = thnKnowledge.intersection(elsKnowledge, tree)
             val elsEnded = elsKnowledge.flowEnded.isDefined
+            if(thnEnded)
+              WarningUnnecessaryElse(els.get)
 
             if (elsEnded && !thnEnded)
               intersection + conditionKnowledge
@@ -495,6 +509,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           return analyzeCondition(Not(condition), rhsKnowledge)
         }
       }
+
       rhsKnowledge
     case _                            =>
       analyzeExpr(tree, knowledge)
@@ -582,7 +597,14 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
   private def nullCheck(t: Tree, obj: ExprTree, knowledge: Knowledge, isNull: Boolean) =
     knowledge.getIdentifier(obj) match {
-      case Some(varId) => knowledge.add(varId, IsNull(isNull))
+      case Some(varId) =>
+        knowledge.get[IsNull](varId) match {
+          case Some(IsNull(knownNull)) =>
+            val known = if(knownNull) "to be 'null'" else "not to be 'null'"
+            WarningUnnecessaryCheck(obj, known, t)
+            knowledge
+          case None => knowledge.add(varId, IsNull(isNull))
+        }
       case None        => knowledge
     }
 

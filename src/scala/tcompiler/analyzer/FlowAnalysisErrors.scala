@@ -51,6 +51,14 @@ trait FlowAnalysisErrors extends Errors {
     warning(0, s"Code on $line is unreachable.", pos)
   }
 
+  protected def WarningUnnecessaryCheck(value: ExprTree, known: String, pos: Positioned) = {
+    warning(1, s"Check is unnecessary, '$value' is known $known.", pos)
+  }
+
+  protected def WarningUnnecessaryElse(pos: Positioned) = {
+    warning(2, s"Else is unnecessary since code flow ends in then branch.", pos)
+  }
+
   //---------------------------------------------------------------------------------------
   //  Private methods
   //---------------------------------------------------------------------------------------
