@@ -5,6 +5,7 @@ import java.io.File
 import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
+import tcompiler.analyzer.Types.Type
 import tcompiler.lexer.Tokens
 
 
@@ -53,7 +54,7 @@ object Printer {
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
       case ClassDecl(id, parents, vars, methods, isTrait)             => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
-      case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p" : $t")}${optional(expr)(t => p" = $t")}"
+      case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
       case MethodDecl(retType, id, args, stat, modifiers)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
       case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
       case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
@@ -127,7 +128,7 @@ object Printer {
       case Identifier(value)              => p"$value"
       case This()                         => p"this"
       case Super(specifier)               => p"super${optional(specifier)(spec => p"<$spec>")}"
-      case NewArray(tpe, sizes)           => p"new $tpe${arrayList(sizes)}"
+      case NewArray(tpe, sizes)           => p"new ${newArray(tpe, sizes)}"
       case New(tpe, exprs)                => p"new $tpe(${Separated(exprs, ", ")})"
       case PreIncrement(id)               => p"++$id"
       case PostIncrement(id)              => p"$id++"
@@ -146,7 +147,7 @@ object Printer {
   }
 
   private def imports(imps: List[Import]) = {
-    if(imps.isEmpty) ""
+    if (imps.isEmpty) ""
     else
       p"${Separated(imps, "\n")}$N"
   }
@@ -157,8 +158,7 @@ object Printer {
   }
 
   private def packDecl(adress: List[String]) = {
-    if (adress.isEmpty)
-      ""
+    if (adress.isEmpty) ""
     else
       p"package ${adress.mkString("::")}$N"
   }
@@ -184,7 +184,16 @@ object Printer {
     p"$L$N$vars$N$N$methods$R"
   }
 
-  private def arrayList(sizes: List[ExprTree]) = sizes.map(s => p"[$s]").mkString("")
+  private def newArray(tpe: TypeTree, sizes: List[ExprTree]) = {
+    def str(tpe: TypeTree, sizes: List[ExprTree]): String =
+      tpe match {
+        case NullableType(t) => p"${str(t, sizes)}?"
+        case ArrayType(t)    => p"${str(t, sizes.tail)}[${sizes.head}]"
+        case t               => p"$t"
+      }
+
+    str(tpe, sizes.reverse)
+  }
 
   private def templateList(id: ClassID) = if (id.isTemplated) p"<${Separated(id.templateTypes, ", ")}>" else ""
 

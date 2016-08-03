@@ -1,12 +1,12 @@
-var int: Int[] = new Int[5]
+var int: Int[]    = new Int[5]
 var str: String[] = new String[5]
-var bool: Bool[] = new Bool[5]
-var a: A[] = new A[5]
+var bool: Bool[]  = new Bool[5]
+var a: A[]        = new A[5]
 
-println(int.Size()) // res: 5
-println(str.Size()) // res: 5
+println(int.Size())  // res: 5
+println(str.Size())  // res: 5
 println(bool.Size()) // res: 5
-println(a.Size()) // res: 5
+println(a.Size())    // res: 5
 
 for(var i = 0; i < 5; i++){
     int[i]  = i
@@ -36,6 +36,6 @@ class A {
 
   Def new(i: Int) = int = i
 
-  Def ToString(): String = return "" + int
+  Def ToString(): String = "" + int
 
 }

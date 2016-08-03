@@ -1,5 +1,15 @@
 var arr: A?[] = { new A(), null, GetA() }
 
+var a1: A?[] = new A?[10]
+var a2: A?[]? = new A?[10]?
+var a3: A?[]?[] = new A?[10]?[20]
+var a4: A?[]?[]? = new A?[10]?[20]?
+var a5: A?[]?[]?[] = new A?[10]?[20]?[30]
+var a6: A?[]?[]?[]? = new A?[10]?[20]?[30]?
+var a7: A[] = new A[10]
+var a8: A[][] = new A[10][20]
+var a9: A[][][] = new A[10][20][30]
+
 arr[0].Test()
 arr[1].Test() // res: F2001
 arr[2].Test() // res: F2000

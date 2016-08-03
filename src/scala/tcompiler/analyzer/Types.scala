@@ -50,12 +50,7 @@ object Types {
 
   val Array = TArray(Object)
 
-  val Primitives = List[Type](Int,
-                               Long,
-                               Float,
-                               Double,
-                               Char,
-                               Bool)
+  val Primitives = List(Int, Long, Float, Double, Char, Bool)
 
   sealed abstract class Type {
     val isNullable: Boolean
@@ -208,8 +203,8 @@ object Types {
     def unapply(t: TArray) = Some(t.tpe)
   }
   class TArray(val tpe: Type, override val isNullable: Boolean = false) extends Type {
-    override def getNullable = if (isNullable) this else TArray(tpe, true)
-    override def getNonNullable = if (isNullable) TArray(tpe, false) else this
+    override def getNullable = if (isNullable) this else TArray(tpe, isNullable = true)
+    override def getNonNullable = if (isNullable) TArray(tpe, isNullable = false) else this
 
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
@@ -249,8 +244,8 @@ object Types {
   }
   class TObject(val classSymbol: ClassSymbol, override val isNullable: Boolean = false) extends Type {
 
-    override def getNullable = if (isNullable) this else TObject(classSymbol, true)
-    override def getNonNullable = if (isNullable) TObject(classSymbol, false) else this
+    override def getNullable = if (isNullable) this else TObject(classSymbol, isNullable = true)
+    override def getNonNullable = if (isNullable) TObject(classSymbol, isNullable = false) else this
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
         if (classSymbol.name == c.name || c == Object.classSymbol) true
@@ -277,8 +272,7 @@ object Types {
       implicitConstructors.map(_.argList.head.getType)
     }
 
-    override def getSuperTypes: Set[Type] =
-      (this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)).toSet
+    override def getSuperTypes: Set[Type] = (this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)).toSet
 
     override def name = classSymbol.name
     override def byteCodeName: String = {

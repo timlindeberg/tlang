@@ -1035,15 +1035,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <newExpression> ::= new <basicTpe> [ "?[" <expression> "]" ] { "[" <expression> "]" [ "?" ] }
+    * <newExpression> ::= new <basicTpe> [ "?" <nullableBracket> ] { <nullableBracket }
     */
   def newExpression(): ExprTree = {
     val startPos = nextToken
     eat(NEW)
-
     val tpe = basicTpe()
 
-    val sizes = ListBuffer[ExprTree]()
     nextTokenKind match {
       case LPAREN                  =>
         eat(LPAREN)
@@ -1052,32 +1050,44 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         New(tpe, args)
       case QUESTIONMARK | LBRACKET =>
         var e = tpe
+        val sizes = ListBuffer[ExprTree]()
 
-        if (nextTokenKind == QUESTIONMARK) {
-          eat(QUESTIONMARK, LBRACKET)
-          val size = expression()
-          eat(RBRACKET)
+        def _nullableBracket() = {
+          val (t, size) = nullableBracket(startPos, e)
+          e = t
           sizes += size
-          e = ArrayType(e).setPos(startPos, nextToken)
         }
 
-        while (nextTokenKind == QUESTIONMARK || nextTokenKind == LBRACKET) {
-          e = nextTokenKind match {
-            case QUESTIONMARK =>
-              eat(QUESTIONMARK)
-              NullableType(e).setPos(startPos, nextToken)
-            case LBRACKET     =>
-              eat(LBRACKET)
-              val size = expression()
-              eat(RBRACKET)
-              sizes += size
-              ArrayType(e).setPos(startPos, nextToken)
-          }
+        // If it starts with question mark a bracket must follow
+        if (nextTokenKind == QUESTIONMARK) {
+          eat(QUESTIONMARK)
+          e = NullableType(e).setPos(startPos, nextToken)
+          _nullableBracket()
         }
+
+        while(nextTokenKind == LBRACKET)
+          _nullableBracket()
 
         NewArray(e, sizes.toList)
       case _                       => FatalWrongToken(nextToken, LPAREN, LBRACKET)
     }
+  }
+
+
+  /**
+    * <nullableBracket> ::=  "[" <expression> "]" [ "?" ]
+    */
+  def nullableBracket(startPos: Positioned, tpe: TypeTree) = {
+    var e = tpe
+    eat(LBRACKET)
+    val size = expression()
+    eat(RBRACKET)
+    e = ArrayType(e).setPos(startPos, nextToken)
+    if(nextTokenKind == QUESTIONMARK){
+      eat(QUESTIONMARK)
+      e = NullableType(e).setPos(startPos, nextToken)
+    }
+    (e, size)
   }
 
   /**

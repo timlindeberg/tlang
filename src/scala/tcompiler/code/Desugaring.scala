@@ -56,6 +56,7 @@ class Desugarer {
   def apply(cu: CompilationUnit) = {
     val desugarTransformer = new DesugarTransformer
     val s = desugarTransformer.transform(cu)
+    println(Printer(s, false))
     s.asInstanceOf[CompilationUnit]
   }
 
@@ -416,7 +417,7 @@ class Desugarer {
     val end = c.putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(Int))
 
     val size = List(Minus(end, start).setType(Int))
-    val typeTree = c.getTypeTree(arrayType.asInstanceOf[TArray].tpe)
+    val typeTree = c.getTypeTree(arrayType)
     val newArray = NewArray(typeTree, size).setType(arr)
     val slice = c.putVarDecl("slice", newArray)
 

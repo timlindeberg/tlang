@@ -191,11 +191,13 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case arrLit@ArrayLit(expressions)                 =>
         compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
-        sizes.foreach(compileExpr(_))
-        if (newArray.dimension == 1)
-          tpe.getType.codes.newArray(ch)
+        sizes foreach(compileExpr(_))
+        val dimension = newArray.dimension
+        val arrType = tpe.getType.asInstanceOf[TArray].tpe
+        if (dimension == 1)
+          arrType.codes.newArray(ch)
         else
-          ch << NewMultidimensionalArray(newArray.getType.byteCodeName, newArray.dimension)
+          ch << NewMultidimensionalArray(tpe.getType.byteCodeName, dimension)
       case arOp@ArithmeticOperatorTree(lhs, rhs)        =>
         val args = (lhs.getType, rhs.getType)
         val desiredType = args match {
@@ -457,8 +459,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   private def unbox(to: PrimitiveType) = {
     val bcName = to.byteCodeName
     val className = to.koolWrapper
-    ch << CheckCast(className)
-    ch << InvokeVirtual(className, s"Value", s"()$bcName")
+    ch << CheckCast(className) << InvokeVirtual(className, s"Value", s"()$bcName")
   }
 
   private def compileArrayLiteral(arrLit: ArrayLit, desiredType: Option[Type] = None) = {

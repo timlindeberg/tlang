@@ -28,7 +28,9 @@ object Symbols {
 
   }
 
-  sealed abstract class Symbol extends Positioned with Typed
+  sealed abstract class Symbol extends Positioned with Typed {
+    def name: String
+  }
 
   class GlobalScope {
 
@@ -71,7 +73,6 @@ object Symbols {
       completeClassSymbol()
       _fields
     }
-
     def fields_=(m: Map[String, FieldSymbol]) = _fields = m
 
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators = operatorSymbol :: operators
@@ -282,6 +283,6 @@ object Symbols {
                     override val modifiers: Set[Modifier] = Set(),
                     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case class ErrorSymbol(name: String = "") extends Symbol
+  case class ErrorSymbol() extends Symbol { val name = "ERROR" }
 
 }
