@@ -77,12 +77,24 @@ class Desugarer {
     if (!t.isInstanceOf[OperatorTree])
       return t
 
+
+
     val op = t.asInstanceOf[OperatorTree]
+    op match {
+        // Dont replace these operators
+      case _: And | _: Or | _: Not | _: ExtractNullable => return op
+      case _ =>
+    }
+
     val c = new TreeBuilder
 
     t match {
       case BinaryOperatorTree(lhs, rhs) =>
-        if (!(isObject(lhs) || isObject(rhs)))
+        // Dont replace null checks
+        if (lhs.isInstanceOf[NullLit] || rhs.isInstanceOf[NullLit])
+          return op
+
+        if(!(isObject(lhs) || isObject(rhs)))
           return op
 
         val opSymbol = op.lookupOperator((lhs.getType, rhs.getType)).get

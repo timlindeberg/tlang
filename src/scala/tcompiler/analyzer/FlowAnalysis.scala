@@ -156,11 +156,11 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     }
 
     def add[T <: VarKnowledge : ClassTag](varId: Identifier, newKnowledge: T): Knowledge = {
-      varId.symbol ifDefined  { sym =>
-          if(sym.isInstanceOf[FieldSymbol] && !sym.modifiers.contains(Final())){
-            // cannot gain knowledge about var fields since they can change at any time
-            return this
-          }
+      varId.symbol ifDefined { sym =>
+        if (sym.isInstanceOf[FieldSymbol] && !sym.modifiers.contains(Final())) {
+          // cannot gain knowledge about var fields since they can change at any time
+          return this
+        }
       }
       val knowledge = varKnowledge.getOrElse(varId, Set()).filterNotType[T] + newKnowledge
       copy(varKnowledge = varKnowledge + (varId -> knowledge))
@@ -280,6 +280,16 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       val init = maybeInit.get
       val knowledge = ListBuffer[(Identifier, Set[VarKnowledge])]()
       var varIdKnowledge = Set[VarKnowledge](Initialized)
+
+      // Old knowledge gets transferred to new var
+      getIdentifier(init) ifDefined { initId =>
+        if (varKnowledge.contains(initId)) {
+          varKnowledge.getOrElse(initId, Set()) foreach { k => varIdKnowledge += k }
+          knowledge += varId -> varIdKnowledge
+          return knowledge.toList
+        }
+      }
+
       if (varTpe.isNullable) {
         init.getType match {
           case TNull              => varIdKnowledge += IsNull(true)
@@ -352,7 +362,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { (knowledge, field) =>
       val sym = field.getSymbol
       val varId = new VarIdentifier(sym)
-      if(sym.modifiers.contains(Final()))
+      if (sym.modifiers.contains(Final()))
         knowledge.assignment(varId, field.init, Initialized)
       else
         knowledge.add(varId, Initialized)
@@ -361,7 +371,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     clazz.methods.filter(_.stat.isDefined) foreach { meth =>
       val args = meth.getSymbol.argList
       val argMap: Map[Identifier, Set[VarKnowledge]] =
-        args.map { v => new VarIdentifier(v) -> Set[VarKnowledge](Initialized)}.toMap
+        args.map { v => new VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
       val argKnowledge = new Knowledge(argMap)
       val knowledge: Knowledge = fieldKnowledge + argKnowledge
       analyze(meth.stat.get, knowledge)
@@ -370,9 +380,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    //println(s"${tree.line}: $tree")
-    //println(knowledge)
-    //println("----------------------------------------")
+    println(s"${tree.line}: $tree")
+    println(knowledge)
+    println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
@@ -412,14 +422,17 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         val invertedCondition = knowledge + conditionKnowledge.invert
 
         val thnKnowledge = analyze(thn, afterCondition)
-        val elsKnowledge = els map {analyze(_, invertedCondition)}
+        val elsKnowledge = els map (e => e match {
+          case _: If => analyze(e, knowledge) // else if does not invert knowledge
+          case _     => analyze(e, invertedCondition)
+        })
         val thnEnded = thnKnowledge.flowEnded.isDefined
 
         elsKnowledge match {
           case Some(elsKnowledge) =>
             val intersection = thnKnowledge.intersection(elsKnowledge, tree)
             val elsEnded = elsKnowledge.flowEnded.isDefined
-            if(thnEnded)
+            if (thnEnded)
               WarningUnnecessaryElse(els.get)
 
             if (elsEnded && !thnEnded)
@@ -548,7 +561,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
               checkValidUse(lhs, knowledge)
               checkValidUse(rhs, knowledge)
           }
-        case ExtractNullable(expr) =>
+        case ExtractNullable(expr)              =>
           traverse(expr)
         case op@UnaryOperatorTree(expr)         =>
           traverse(expr)
@@ -602,10 +615,10 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       case Some(varId) =>
         knowledge.get[IsNull](varId) match {
           case Some(IsNull(knownNull)) =>
-            val known = if(knownNull) "to be 'null'" else "not to be 'null'"
+            val known = if (knownNull) "to be 'null'" else "not to be 'null'"
             WarningUnnecessaryCheck(obj, known, t)
             knowledge
-          case None => knowledge.add(varId, IsNull(isNull))
+          case None                    => knowledge.add(varId, IsNull(isNull))
         }
       case None        => knowledge
     }

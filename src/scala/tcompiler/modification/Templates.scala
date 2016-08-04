@@ -72,6 +72,9 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       case x@ArrayType(arrTpe) =>
         x.tpe = replaceType(arrTpe)
         x
+      case x@NullableType(nullableTpe) =>
+        x.tpe = replaceType(nullableTpe)
+        x
       case x                   => x
     }
 
@@ -205,6 +208,8 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
             generateClass(t)
           case a@ArrayType(tpe)                             =>
             a.tpe = updateType(tpe)
+          case n@NullableType(tpe)                             =>
+            n.tpe = updateType(tpe)
           case _                                            =>
         }
         templateMap.getOrElse(t, t)

@@ -1,13 +1,13 @@
 package kool::std
 
-import kool::std::Option
 import kool::std::List
 import kool::std::Collection
+import kool::std::Iterator
 
 class LinkedList<T> : List<T> {
 
-	var first = new Option<LinkedListNode<T>>()
-	var last  = new Option<LinkedListNode<T>>()
+	var first: LinkedListNode<T>? = null
+	var last: LinkedListNode<T>?  = null
 
 	var size = 0
 
@@ -38,8 +38,8 @@ class LinkedList<T> : List<T> {
 	Def Size() = size
 
 	Def Clear() = {
-		first = new Option<LinkedListNode<T>>()
-        last = new Option<LinkedListNode<T>>()
+		first = null
+        last = null
         size = 0
 	}
 
@@ -50,31 +50,30 @@ class LinkedList<T> : List<T> {
 			checkBounds(index)
 
         val elem = new LinkedListNode<T>(value)
-        val elemOp = new Option<LinkedListNode<T>>(elem)
         if(size == 0){
             // Empty list
-            first = elemOp
+            first = elem
             last = first
         } else if(index == size) {
             // Insert at end of the list
             elem.Prev = last
-            last.Get().Next = elemOp
-            last = elemOp
+            last!!.Next = elem // last can't be null since size != 0
+            last = elem
         } else if(index == 0) {
             // Insert at beginning of the list
             elem.Next = first
-            first.Get().Prev = elemOp
-            first = elemOp
+            first!!.Prev = elem // first can't be null since size != 0
+            first = elem
         } else {
             // Insert in the middle of the list
             val node = find(index)
-            val prev = node.Prev.Get()
+            val prev = node.Prev
 
-            elem.Prev = new Option<LinkedListNode<T>>(prev)
-            elem.Next = new Option<LinkedListNode<T>>(node)
+            elem.Prev = prev
+            elem.Next = node
 
-            prev.Next = elemOp
-            node.Prev = elemOp
+            prev!!.Next = elem  // prev can't be null since we're inserting in to the middle of the list
+            node.Prev = elem
         }
         size++
 	}
@@ -89,11 +88,11 @@ class LinkedList<T> : List<T> {
         val post = node.Next
 		for(val e in elements){
 		    val n = new LinkedListNode<T>(e)
-		    n.Prev = new Option<LinkedListNode<T>>(node)
-		    node.Next = new Option<LinkedListNode<T>>(n)
+		    n.Prev = node
+		    node.Next = n
 		    node = n
 		}
-		if(post.IsDefined())
+		if(post)
 		    node.Next = post
 	}
 
@@ -103,17 +102,17 @@ class LinkedList<T> : List<T> {
 		val node = find(index)
         val prev = node.Prev
         val next = node.Next
-        if(prev.IsDefined() && next.IsDefined()) {
+        if(prev && next) {
             // LinkedListNode is in the middle of the list
-            prev.Get().Next = next
-            next.Get().Prev = prev
-        } else if(prev.IsDefined() && !next.IsDefined()) {
+            prev.Next = next
+            next.Prev = prev
+        } else if(prev && !next) {
             // LinkedListNode is last element
-            prev.Get().Next = new Option<LinkedListNode<T>>()
+            prev.Next = null
             last = prev
-        } else if(!prev.IsDefined() && next.IsDefined()) {
+        } else if(!prev && next) {
             // LinkedListNode is first element
-            next.Get().Prev = new Option<LinkedListNode<T>>()
+            next.Prev = null
             first = next
         } else {
             // LinkedListNode is the only element
@@ -127,18 +126,19 @@ class LinkedList<T> : List<T> {
 	Def LastNode() = last
 
 	def find(index: Int) = {
-        var tmp: Option<LinkedListNode<T>>
-		if(index < (size / 2) + 1){
+        var tmp: LinkedListNode<T>?
+		if(index < (size / 2) + 1) {
 			tmp = first
 			for(var i = 0; i < index; i++)
-				tmp = tmp.Get().Next
+				tmp = tmp!!.Next
 		} else {
 			tmp = last
 			for(var i = size - 1; i > index; i--)
-				tmp = tmp.Get().Prev
+				tmp = tmp!!.Prev
 		}
 
-		tmp.Get()
+        // this is safe since bounds should be checked before calling find
+		tmp!!
 	}
 
 	def checkBounds(index: Int) =
@@ -151,8 +151,8 @@ class LinkedList<T> : List<T> {
 class LinkedListNode<T> {
 
 	Var Value: T
-	Var Next: Option<LinkedListNode<T>> = new Option<LinkedListNode<T>>()
-	Var Prev: Option<LinkedListNode<T>> = new Option<LinkedListNode<T>>()
+	Var Next: LinkedListNode<T>? = null
+	Var Prev: LinkedListNode<T>? = null
 
 	Def new(v: T) = Value = v
 }
@@ -161,20 +161,20 @@ class LinkedListIterator<T> : Iterator<T> {
 	var current: LinkedListNode<T>
 	var hasNext: Bool
 
-	Def new(first: Option<LinkedListNode<T>>) = {
-		hasNext = first.IsDefined()
+	Def new(first: LinkedListNode<T>?) = {
+		hasNext = first != null
 		if(hasNext)
-			current = first.Get()
+			current = first
 	}
 
 	Def HasNext() = hasNext
 
 	Def Next() = {
-		val res =  current.Value
+		val res = current.Value
 
-		hasNext = current.Next.IsDefined()
+		hasNext = current.Next != null
 		if(hasNext)
-			current = current.Next.Get()
+			current = current.Next
 		res
 	}
 }

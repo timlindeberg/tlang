@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTraverser
+import tcompiler.ast.{Printer, TreeTraverser}
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -61,10 +61,11 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       if (set.contains(classSymbol)) {
         classesFoundInCycle ++= set
         ErrorInheritanceCycle(set, classSymbol, classSymbol)
-      } else {
-        val newSet = set + classSymbol
-        classSymbol.parents.foreach(checkInheritanceCycles(_, newSet))
+        return
       }
+
+      val newSet = set + classSymbol
+      classSymbol.parents.foreach(checkInheritanceCycles(_, newSet))
     }
 
     globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
