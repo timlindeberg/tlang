@@ -1,8 +1,10 @@
 var a1: A = new A()
 var a2: A = new A()
 var b: B = new B()
-a1.Test(a2) // res: 1, 2
-b.Test2(a2) // res: 1, 2
+// res: 1
+a1.Test(a2) // res: 2
+// res: 1
+b.Test2(a2) // res: 2
 println(a1.J = 1)      // res: 1
 println(a1.J += a1.J)  // res: 2
 

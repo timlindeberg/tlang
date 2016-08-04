@@ -3,6 +3,7 @@ package tcompiler.analyzer
 import java.io.File
 
 import org.scalatest._
+import tcompiler.TestUtils
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
@@ -15,7 +16,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val ClassSymbol = new ClassSymbol("obj", false)
   val VarSymbol   = new VariableSymbol("var")
   val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TestContext = Context(new tcompiler.utils.Reporter(), List(new File("")))
+  val TestContext = TestUtils.testContext
   val TestImportMap = new ImportMap(TestContext)
   val TypeChecker = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
@@ -153,10 +154,17 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, long, Double),
       (double, char, Double),
 
-      (obj, obj, obj().getType),
+      (obj, obj, Object),
+      (obj, double, Object),
+      (obj, float, Object),
+      (obj, int, Object),
+      (obj, long, Object),
+      (obj, char, Object),
+      (obj, bool, Object),
 
       (array, array, array().getType)
     )
+
 
   private def arrayAssignOperator() =
     new ArrayAssignmentAsserter().valid(
@@ -183,9 +191,17 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, long, Double),
       (double, char, Double),
 
-      (array, array, array().getType),
+      (obj, obj, Object),
+      (obj, double, Object),
+      (obj, float, Object),
+      (obj, int, Object),
+      (obj, long, Object),
+      (obj, char, Object),
+      (obj, bool, Object),
 
-      (obj, obj, obj().getType)
+      (array, array, array().getType)
+
+
     )
 
   private def comparisonOperator(expressionType: (VariableID, VariableID) => ExprTree) =
@@ -234,6 +250,12 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       (double, char, Bool),
 
       (obj, obj, Bool),
+      (obj, double, Bool),
+      (obj, float, Bool),
+      (obj, int, Bool),
+      (obj, long, Bool),
+      (obj, char, Bool),
+      (obj, bool, Bool),
 
       (array, array, Bool),
 
@@ -350,17 +372,17 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
         TestContext.reporter.clear()
         val resType = TypeChecker.tcExpr(expressionType(id(), expr()))
-        assert(resType == tpe, "for (" + id + ", " + expr + ")")
+        assert(resType == tpe, s"for $id = $expr")
 
         val noErrors = !TestContext.reporter.hasErrors
-        assert(noErrors, "for (" + id + ", " + expr + ")")
+        assert(noErrors, s"for $id = $expr")
       }
 
       getInvalidCombinations(validCombinations.toList) foreach { case (id, expr) =>
         TypeChecker.tcExpr(expressionType(id(), expr()))
         val invalid = TestContext.reporter.hasErrors
 
-        assert(invalid, "for (" + id + ", " + expr + ")")
+        assert(invalid, s"for $id = $expr")
         TestContext.reporter.clear()
       }
     }

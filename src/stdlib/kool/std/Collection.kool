@@ -145,9 +145,13 @@ trait Collection<T>: Iterable<T> {
 
 		val lhsIt = lhs.Iterator()
 		val rhsIt = rhs.Iterator()
-		while(lhsIt.HasNext())
-			if(lhsIt.Next() != rhsIt.Next())
-				return false
+		while(lhsIt.HasNext()){
+		    val a = lhsIt.Next()
+		    val b = rhsIt.Next()
+
+			if(a != b)
+                return false
+		}
 
 		true
 	}

@@ -20,12 +20,11 @@ object TestUtils extends FlatSpec {
 
   val TestDirectory  = "gen"
   val Resources      = "test/resources/"
-  val SolutionPrefix = ".kool-solution"
   val Interpreter    = new Interpreter
   val Timeout        = duration.Duration(2, "sec")
+  val SolutionRegex = """.*// *[R|r]es:(.*)""".r
 
-  // regexes
-
+  private val classPathSeperator = if (System.getProperty("os.name").startsWith("Windows")) ";" else ":"
 
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory)
@@ -36,12 +35,20 @@ object TestUtils extends FlatSpec {
       it should file.getName.toString in testFunction(file)
   }
 
-  def getTestContext(file: File) = {
-    val mainName = file.getName.replaceAll(Main.FileEnding, "")
-    val outDir = getOutDir(mainName)
-    val reporter = new Reporter(useColor = true)
+  def testContext = getTestContext(None)
+
+  def getTestContext(file: File): Context = getTestContext(Some(file))
+  def getTestContext(file: Option[File]): Context  = {
+    val (files, outDir) = file match {
+      case Some(f) =>
+        val mainName = f.getName.replaceAll(Main.FileEnding, "")
+        (List(f), Some(getOutDir(mainName)))
+      case None => (Nil, None)
+    }
+
+    val reporter = new Reporter(useColor = false)
     val cp = Main.TDirectory
-    new Context(reporter = reporter, files = List(file), outDir = Some(outDir), classPaths = List(cp))
+    new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp))
   }
 
   def executeTProgram(testFile: File): String = {
@@ -60,9 +67,7 @@ object TestUtils extends FlatSpec {
     }
   }
 
-  private val classPathSeperator = if (System.getProperty("os.name").startsWith("Windows")) ";" else ":"
-
-  def lines(str: String) = str.split("\\r?\\n").toList
+  def lines(str: String) = str.split("\\r?\\n").map(_.trim).toList
 
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
@@ -70,41 +75,43 @@ object TestUtils extends FlatSpec {
       return Array[File](f)
 
     if (f.exists()) {
-      f.listFiles.filter(x => !x.getName.contains(SolutionPrefix) && x.getName != ".DS_Store")
+      f.listFiles.filter(_.getName != ".DS_Store")
     } else {
       f.mkdir
       Array[File]()
     }
   }
 
-  def format(token: Token): String = token + "(" + token.line + ":" + token.col + ")"
+  def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = "") = {
+    var res = result
+    var sol = solution
+    if (res.size < sol.size)
+      res = res ::: List.fill(sol.size - res.size)("")
+    else if (sol.size < res.size)
+      sol = sol ::: List.fill(res.size - sol.size)("")
 
-  def readOptions(file: File): Map[String, Any] = {
-    val progString = Source.fromFile(file).getLines.toList
-    var expectedErrors = 1
-    var quietReporter = false
-    val map = Map
-    try {
-      val options = progString.head.split(" ").tail.toList
-      if (options.nonEmpty) {
-        expectedErrors = options(0).toInt
-        quietReporter = options.lift(1).getOrElse("false").toBoolean
-      }
-    } catch {
-      case _: Throwable => expectedErrors = 1
-    }
-    map("expectedErrors" -> expectedErrors, "quietReporter" -> quietReporter)
-  }
+    var colLength = (result ::: solution).map(_.length).max + 2
+    colLength = Math.max(colLength, "Solution:".length)
+    val numbers = (1 to res.size).map(_.toString)
+    val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
+    val list = ("", "Result:", "Solution:") :: numbered
 
-  private val SolutionRegex = """.*// *[R|r]es:(.*)""".r
+    val failedLine = failedTest.toString
+    val results = list.map { case (i, r, s) =>
+      val lineNum = s"$i"
+      val sizedStr = s"%-${colLength}s"
+      val format = s"%-4s$sizedStr$sizedStr"
+      val line = String.format(format, lineNum, r, s)
+      if (i == failedLine)
+        s"$line <<<<<"
+      else
+        line
+    }.mkString("\n", "\n", "\n")
 
-  def parseSolutions(file: File): List[(Int, String)] = {
-    val fileName = file.getPath
-    Source.fromFile(fileName).getLines().zipWithIndex.flatMap {
-      case (SolutionRegex(line), lineNumber) =>
-        line.split(",").map(res => (lineNumber + 1, res.trim))
-      case _                                 => Nil
-    }.toList
+    if (errors == "")
+      results
+    else
+      results + "\n" + errors
   }
 
   private val IgnoreRegex = """.*// *[I|i]gnore.*"""
@@ -113,119 +120,9 @@ object TestUtils extends FlatSpec {
     firstLine.matches(IgnoreRegex)
   }
 
-  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(Fatal|Warning|Error) \((.+?)\).*""".r
-  // Parses codes from error messages
-
-  def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
-    // First two rows of error messages
-    val errors = removeANSIFormatting(errorMessages).split("\n\n").map(msg => {
-      msg.split("\n").take(2).mkString("\n")
-    })
-    errors.collect {
-      case ErrorRegex(lineNumber, _, errorCode) => (lineNumber.toInt, errorCode)
-    }.toList
-  }
-
-  def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String, checkLineNumbers: Boolean) = {
-    def asString(l: List[(Int, String)]) = l.map { case (lineNumber, msg) =>
-      val num = s"$lineNumber:"
-      f"$num%-4s $msg"
-    }
-    val resStrings = asString(res)
-    val solStrings = asString(sol)
-
-
-    if (checkLineNumbers) {1
-      val resMap = mutable.HashMap[Int, ArrayBuffer[String]]()
-      res foreach { case (line, r) =>
-        val l = resMap.getOrElse(line, ArrayBuffer[String]())
-        l += r.trim
-        resMap += line -> l
-      }
-
-      sol.zipWithIndex foreach { case ((line, s), i) =>
-        val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
-        resMap.get(line) match {
-          case Some(r) =>
-            val strim = s.trim
-            if(r.contains(strim))
-              r -= strim
-            else
-              fail(s"Expected $s on line $line but found ${r.mkString(", ")} $extraInfo")
-
-          case None    => fail(s"Line $line did not produce $s $extraInfo.")
-        }
-      }
-      val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
-      resMap foreach {case (line, res) =>
-        if(res.nonEmpty)
-          fail(s"Unexpected '${res.mkString(", ")}' was found on line $line $extraInfo")
-      }
-    } else {
-      flattenTuple(res.zip(sol).zipWithIndex).foreach {
-        case ((_, r), (line, s), i) =>
-          val extraInfo = resultsVersusSolution(i + 1, resStrings, solStrings, errors)
-          if (r.trim != s.trim)
-            fail(s"Expected $s on line $line but found $r $extraInfo")
-      }
-      if (res.length != sol.length) {
-        val extraInfo = resultsVersusSolution(-1, resStrings, solStrings, errors)
-        fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
-      }
-    }
-  }
-
-  def hasTypes(cu: CompilationUnit) = {
-    var hasTypes = true
-    val traverser = new ForeachTraverser({
-      case _: Empty    =>
-      case node: Typed =>
-        if (node.getType == TUntyped)
-          hasTypes = false
-        assert(node.getType != TUntyped)
-      case _           =>
-    })
-    traverser.traverse(cu)
-    hasTypes
-  }
-
   private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")
 
   private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
-  private def resultsVersusSolution(failedTest: Int, result: List[String], solution: List[String], errors: String) = {
-    var res = result
-    var sol = solution
-    if (res.size < sol.size)
-      res = res ::: List.fill(sol.size - res.size)("")
-    else if (sol.size < res.size)
-      sol = sol ::: List.fill(res.size - sol.size)("")
-
-    val colLength = (result ::: solution).map(_.length).max + 2
-    val numbers = (1 to res.size).map(_.toString)
-    val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
-    val list = ("", "Result:", "Solution:") :: numbered
-    val results = list.map { case (i, r, s) =>
-      val lineNum = "" + i
-      val sizedStr = s"%-${colLength}s"
-      val format = s"%-4s$sizedStr$sizedStr"
-      val line = String.format(format, lineNum, r, s)
-      if (i == failedTest.toString) line + "<<<<<"
-      else line
-    }.mkString("\n", "\n", "\n")
-    if (errors == "")
-      results
-    else
-      results + "\n" + errors
-  }
-
-  private val AnsiRegex = """\x1b[^m]*m""".r
-  private def removeANSIFormatting(s: String) = AnsiRegex.replaceAllIn(s, "")
-
-  object IgnoreErrorOutput extends ProcessLogger {
-    def buffer[T](f: ⇒ T): T = f
-    def err(s: ⇒ String): Unit = {}
-    def out(s: ⇒ String): Unit = {}
-  }
 }
 

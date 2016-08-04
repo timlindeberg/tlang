@@ -354,6 +354,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     }
 
     setHeight(0, 0)
+    //println(stackTrace)
     heightArray.max.asInstanceOf[U2]
   }
 

@@ -56,7 +56,7 @@ class Desugarer {
   def apply(cu: CompilationUnit) = {
     val desugarTransformer = new DesugarTransformer
     val s = desugarTransformer.transform(cu)
-    println(Printer(s, false))
+    //println(Printer(s))
     s.asInstanceOf[CompilationUnit]
   }
 
@@ -117,6 +117,7 @@ class Desugarer {
   }
 
   def isObject(e: ExprTree) = e.getType.isInstanceOf[TObject]
+
   def getClassID(operatorSymbol: OperatorSymbol) = {
     val classSymbol = operatorSymbol.classSymbol
     new ClassID(classSymbol.name).setSymbol(classSymbol)
@@ -133,13 +134,21 @@ class Desugarer {
         new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
-          // Convert array assignment so the value is returned
+          // Convert array assignment so the value is returned in order to be consistent with other
+          // assignments
           val indexId = op.args(1).id
           val retType = new TreeBuilder().getTypeTree(indexId.getType)
           val ret = Return(Some(indexId)).setType(indexId.getType)
-          val stats = op.stat.get match {
-            case Block(s) => s :+ ret
-            case stat     => List(stat, ret)
+          val stats: List[StatTree] = op.stat.get match {
+            case Block(s)        =>
+              val last = s.last match {
+                case Return(Some(s)) => s
+                case s: StatTree     => s
+              }
+
+              s.drop(1) :+ last :+ ret
+            case Return(Some(s)) => List(s, ret)
+            case stat: StatTree  => List(stat, ret)
           }
           opSymbol.setType(indexId.getType)
           new MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
@@ -485,7 +494,7 @@ class Desugarer {
     var safeAccess = t.asInstanceOf[ExprTree]
     val apps = new ListBuffer[ExprTree]()
 
-    while(safeAccess.isInstanceOf[SafeAccess]){
+    while (safeAccess.isInstanceOf[SafeAccess]) {
       val s = safeAccess.asInstanceOf[SafeAccess]
       apps += s.application
       safeAccess = s.obj
@@ -499,7 +508,7 @@ class Desugarer {
       val app = apps.head
       val access = NormalAccess(obj, app).setType(app.getType.getNonNullable)
 
-      if(apps.size == 1){
+      if (apps.size == 1) {
         val ternary = Ternary(condition, access, NullLit()).setType(app.getType.getNullable)
         return PutValue(ternary)
       }

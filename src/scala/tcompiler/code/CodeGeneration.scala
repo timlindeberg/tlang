@@ -189,7 +189,11 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val className = classDecl.getSymbol.name
     val fieldName = id.getSymbol.name
     val typeName = sym.getType.byteCodeName
-    ch << PutField(className, fieldName, typeName)
+    if(sym.isStatic)
+      ch << PutStatic(className, fieldName, typeName)
+    else
+      ch << PutField(className, fieldName, typeName)
+
   }
 
   private def getMethodFlags(method: FuncTree) = {

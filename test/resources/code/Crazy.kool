@@ -39,7 +39,7 @@ class Test {
   Def init() : Int = {
     var expr1 : Bool;
     var expr2 : Bool;
-    var a : Int;
+    var a : Int = 5;
     expr1 = true;
     expr2 = true;
     if(expr1) { if(expr2) { a=1; } else { a=2; } }

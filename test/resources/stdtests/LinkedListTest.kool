@@ -1,4 +1,4 @@
-// Ignore
+
 import kool::std::LinkedList
 import kool::std::Tester
 

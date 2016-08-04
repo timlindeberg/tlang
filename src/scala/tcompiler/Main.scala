@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 import java.util.regex.Matcher
 
-import tcompiler.analyzer.{NameAnalysis, TypeChecking}
+import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{ASTBuilder, Parser, Printer}
 import tcompiler.code.{CodeGeneration, Desugaring}
@@ -39,6 +39,7 @@ object Main extends MainErrors with Colorizer {
                              Templates,
                              NameAnalysis,
                              TypeChecking,
+                             FlowAnalysis,
                              Desugaring,
                              CodeGeneration
                            )
@@ -55,7 +56,7 @@ object Main extends MainErrors with Colorizer {
       if (flagActive(PrintInfo))
         printFilesToCompile(ctx)
 
-      val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking
+      val frontEnd = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
       val compilation = Desugaring andThen CodeGeneration
       val cus = frontEnd.run(ctx)(ctx.files)
 

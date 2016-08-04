@@ -90,7 +90,7 @@ class TypeChecker(override var ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
-    returnStatements.map(_._1) foreach { _.setType(inferredType) }
+    returnStatements.map(_._1) foreach {_.setType(inferredType)}
 
     checkOperatorType(inferredType)
     currentMethodSymbol.setType(inferredType)
@@ -116,11 +116,11 @@ class TypeChecker(override var ctx: Context,
       stats.foreach(tcStat)
     case varDecl@VarDecl(tpe, id, init, modifiers) =>
       val varSym = id.getSymbol
-      if(modifiers.contains(Final()) && init.isEmpty)
+      if (modifiers.contains(Final()) && init.isEmpty)
         ErrorValueMustBeInitialized(varSym.name, varDecl)
 
       tpe match {
-        case Some(t) => init ifDefined { tcExpr(_, t.getType) }
+        case Some(t) => init ifDefined {tcExpr(_, t.getType)}
         case None    => init match {
           case Some(expr) =>
             val inferedType = tcExpr(expr)
@@ -265,10 +265,13 @@ class TypeChecker(override var ctx: Context,
         Bool
       case notOp@Not(expr)                               =>
         tcExpr(expr, Bool, Types.Object) match {
-          case obj: TObject =>
+          case obj: TObject                      =>
             if (!obj.isNullable)
               tcUnaryOperator(notOp, obj, Some(Bool))
-          case _            =>
+          case _: TBool                          =>
+          case p: PrimitiveType if !p.isNullable =>
+            ErrorWrongType("Object, Bool or nullable type", p, notOp)
+          case _                                 =>
         }
         Bool
       case Is(expr, tpe)                                 =>
@@ -319,8 +322,10 @@ class TypeChecker(override var ctx: Context,
         }
         tpe.getType
       case negOp@Negation(expr)                          =>
-        tcExpr(expr, Object, Int, Char, Long, Double, Float) match {
+        val validTypes = List(Object, Int, Char, Long, Double, Float)
+        tcExpr(expr, validTypes ) match {
           case x: TObject => tcUnaryOperator(negOp, x)
+          case _: TBool   => ErrorWrongType(validTypes, Bool, negOp)
           case _: TChar   => Int // Negation of char is int
           case x          => x
         }
@@ -332,17 +337,23 @@ class TypeChecker(override var ctx: Context,
         }
         Int
       case incOp@IncrementDecrementTree(obj)             =>
-        if(!obj.isInstanceOf[Assignable])
+        if (!obj.isInstanceOf[Assignable])
           ErrorInvalidIncrementDecrementExpr(incOp, obj)
 
         // TODO: Allow increment decrement for Bool types?
-        tcExpr(obj, Object, Int, Char, Long, Double, Float) match {
+        val validTypes = List(Object, Int, Char, Long, Double, Float)
+        tcExpr(obj, validTypes) match {
           case x: TObject => tcUnaryOperator(incOp, x, Some(x)) // Requires same return type as type
+          case _: TBool   => ErrorWrongType(validTypes, Bool, incOp)
           case x          => x
         }
       case notOp@LogicNot(expr)                          =>
-        tcExpr(expr, Object, Int, Long, Char) match {
+        val validTypes = List(Object, Int, Char, Long)
+        tcExpr(expr, validTypes) match {
           case x: TObject => tcUnaryOperator(notOp, x)
+          case _: TBool   => ErrorWrongType(validTypes, Bool, notOp)
+          case _: TFloat  => ErrorWrongType(validTypes, Float, notOp)
+          case _: TDouble => ErrorWrongType(validTypes, Double, notOp)
           case _: TLong   => Long
           case _          => Int
         }

@@ -8,7 +8,7 @@ class Looper {
     var times = t
     var value: Int;
     value = 0;
-    while((true || (1/0 == 1)) && value < times) {
+    while((true || (1/1 == 1)) && value < times) {
       value = value + 1;
       times = times - 1;
     }
