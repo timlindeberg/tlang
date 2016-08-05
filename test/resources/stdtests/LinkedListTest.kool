@@ -12,6 +12,7 @@ RemoveIndex()
 IndexOf()
 Contains()
 ToArray()
+// TODO:
 // Equals()
 // MakeString()
 Hash()

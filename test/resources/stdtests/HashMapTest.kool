@@ -1,4 +1,3 @@
-// Ignore
 import kool::std::HashMap
 import kool::std::Vector
 import kool::std::Tester
@@ -78,13 +77,13 @@ Def ToString() = {
 }
 
 Def Get() = {
-    val to = new Tester<Option<Int>>()
+    val to = new Tester<Int>()
     val map = new HashMap<Int, Int>()
     map[1] = 5
     map[2] = 4
-    to.AssertEquals(map.Get(1), new Option<Int>(5))
-    to.AssertEquals(map.Get(2), new Option<Int>(4))
-    to.AssertEquals(map.Get(3), new Option<Int>())
+    to.AssertEquals(map.Get(1), 5)
+    to.AssertEquals(map.Get(2), 4)
+    to.AssertEquals(map.Get(3), null)
 }
 
 Def Contains() = {

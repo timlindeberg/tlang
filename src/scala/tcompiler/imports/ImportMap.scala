@@ -85,4 +85,8 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
   def entries = shortToFull.iterator
 
+  override def toString = {
+    shortToFull.map { case (short, full) => s"$short -> $full"}.mkString("\n")
+  }
+
 }

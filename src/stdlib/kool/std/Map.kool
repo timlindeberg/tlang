@@ -1,65 +1,34 @@
 package kool::std
 
-import kool::std::Iterable
 import kool::std::MapEntry
 
-trait Map<K, V>: Iterable<MapEntry<K, V>> {
+trait Map<K, V>: Collection<MapEntry<K, V>> {
 
     Def Add(key: K, value: V): Unit
-    Def Get(key: K): Option<V>
+    Def Get(key: K): V?
     Def Remove(key: K): Bool
 
-    Def Size(): Int
-    Def Capacity(): Int
-    Def Clear(): Unit
-
-    Def Iterator(): Iterator<MapEntry<K, V>>
-    Def KeyIterator(): Iterator<K>
-    Def ValueIterator(): Iterator<V>
+    Def Keys(): Iterator<K>
+    Def Values(): Iterator<V>
 
     //------------------------------------------------------------
     // Default methods
     //------------------------------------------------------------
 
-    Def IsEmpty() = Size() == 0
-    Def NonEmpty() = !IsEmpty()
+    Def Add(entry: MapEntry<K, V>): Unit = Add(entry.Key(), entry.Value())
+    Def Remove(entry: MapEntry<K, V>): Bool = Remove(entry.Key())
+    Def Contains(entry: MapEntry<K, V>): Bool = {
+        val v = Get(entry.Key())
+        v && v == entry.Value()
+    }
 
-    Def Contains(key: K) = Get(key).IsDefined()
-    Def ContainsValue(value: V) = {
+    Def Contains(key: K): Bool = Get(key) != null
+    Def Contains(value: V): Bool = {
         for(var e in this)
             if(e.Value() == value)
                 return true
         false
     }
-
-    Def AddAll(map: Map<K, V>) =
-        for(var e in map)
-            this[e.Key()] = e.Value()
-
-    Def RemoveAll(map: Map<K, V>) =
-        for(var e in map)
-            Remove(e.Key())
-
-    Def ContainsAll(map: Map<K, V>) = {
-        for(var e in map)
-            if(this[e.Key()] != e.Value())
-                return false
-        true
-    }
-
-	Def MakeString(delimiter: String) = {
-		var s = ""
-		val it = Iterator()
-		while(it.HasNext()){
-		    s += it.Next()
-            if(it.HasNext())
-                s += delimiter
-		}
-		s
-	}
-
-	Def toString() = "[ " + MakeString(", ") + " ]"
-
 
     //------------------------------------------------------------
     // Operators
@@ -68,30 +37,11 @@ trait Map<K, V>: Iterable<MapEntry<K, V>> {
     Def []=(key: K, value: V): Unit = Add(key, value)
     Def [](key: K): V = {
         val res = Get(key)
-        if(!res.IsDefined())
+
+        if(!res)
             error("No such key: " + key)
 
-        res.Get()
-    }
-
-    Def ==(lhs: Map<K, V>, rhs: Map<K, V>) = {
-        if(lhs.Size() != rhs.Size())
-            return false
-
-        val lhsIt = lhs.Iterator()
-        for(var e in lhs)
-            if(!rhs.Contains(e.Key()) || rhs[e.Key()] != e.Value())
-                return false
-        true
-    }
-
-    Def !=(lhs: Map<K, V>, rhs: Map<K, V>) = !(lhs == rhs)
-
-    Def #(map: Map<K, V>) = {
-        var res = 0
-        for(val e in map)
-            res += #e.Key() ^ #e.Value()
-        res
+        res!!
     }
 
 }

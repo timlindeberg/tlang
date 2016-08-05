@@ -1,28 +1,20 @@
 package tcompiler
 package ast
 
-import java.io.File
 import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
-import tcompiler.analyzer.Types.Type
 import tcompiler.lexer.Tokens
+import tcompiler.utils.Colorizer
 
 
-object Printer {
+object Printer extends Colorizer {
 
   import Trees._
 
-  var PrintInColor = true
+  var useColor = false
 
   val Indentation = 3
-  def KeywordColor = Console.BLUE
-  def VarIDColor = Console.CYAN
-  def ClassIDColor = Console.GREEN
-  def MethIDColor = Console.YELLOW
-  def StringColor = Console.MAGENTA
-  def NumColor = Console.MAGENTA
-  def ColorReset = Console.RESET
 
   val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length) ::: List("Int", "Char", "Float", "Double", "Bool", "Unit")
   val KeywordsRegex = s"(${Keywords.mkString("|")})".r
@@ -30,26 +22,37 @@ object Printer {
   private var indent: Int = 0
 
   def apply(t: Tree, printInColor: Boolean = true): String = {
-    PrintInColor = printInColor
+    useColor = printInColor
     indent = 0
     prettyPrint(t)
   }
 
-  private def comment(cu: Tree) = {
+  private def comment(cu: CompilationUnit) = {
     val fileName = if (cu.hasPosition)
       cu.file.getName
     else
       "No file"
 
+    val importMap = cu.importMap
+    val shortToFull = importMap.entries.toList
+    val len = shortToFull.map(_._1.length).max
+
+    val impString = shortToFull.map { case (short, full) =>
+      String.format(s"// %-${len}s -> $full", short)
+    }.mkString("\n")
+
     s"""|//-------------------------------------------------------------
         |//--- $fileName
         |//-------------------------------------------------------------
+        |//
+        |// ImportMap:
+        |$impString
         |""".stripMargin
   }
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
-      case CompilationUnit(pack, classes, importMap)                  => p"${comment(t)}$pack${imports(importMap.imports)}$classes"
+      case cu@CompilationUnit(pack, classes, importMap)               => p"${comment(cu)}$pack${imports(importMap.imports)}$classes"
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
@@ -289,15 +292,15 @@ object Printer {
       case f: Formatter  => f()
       case t: Tree       =>
         t match {
-          case _: VariableID => color(t, VarIDColor)
-          case _: MethodID   => color(t, MethIDColor)
-          case _: ClassID    => color(t, ClassIDColor)
+          case _: VariableID => VarColor(prettyPrint(t))
+          case _: MethodID   => MethodColor(prettyPrint(t))
+          case _: ClassID    => ClassColor(prettyPrint(t))
           case _: StringLit |
-               _: CharLit    => color(t, StringColor)
+               _: CharLit    => StringColor(prettyPrint(t))
           case _: IntLit |
                _: LongLit |
                _: FloatLit |
-               _: DoubleLit  => color(t, NumColor)
+               _: DoubleLit  => NumColor(prettyPrint(t))
           case _             => prettyPrint(t)
         }
       case Some(t: Tree) => evaluate(t)
@@ -318,17 +321,11 @@ object Printer {
       s
     }
 
-    private def color(tree: Tree, color: String) =
-      if (PrintInColor)
-        p"$color${prettyPrint(tree)}$ColorReset"
-      else
-        prettyPrint(tree)
-
     private def colorKeywords(output: String): String = {
-      if (!PrintInColor)
+      if (!useColor)
         return output
       KeywordsRegex.replaceAllIn(output, m => {
-        Matcher.quoteReplacement(s"$KeywordColor${m.group(1)}$ColorReset")
+        Matcher.quoteReplacement(KeywordColor(m.group(1)))
       })
     }
   }

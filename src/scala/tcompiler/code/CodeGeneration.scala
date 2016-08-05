@@ -13,23 +13,32 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils._
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
+object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colorizer {
 
   import CodeGenerator._
+  var useColor = false
 
   def run(ctx: Context)(cus: List[CompilationUnit]): Unit = {
     val classes = cus.flatMap(_.classes)
 
-    // output code in parallell
-    val outputFiles = classes.map(generateClassFile(_, ctx.outDir))
+    // output code in parallell?
+    useColor = ctx.useColor
+    ctx.printCodeStage ifDefined { stage =>
+      if(stage == CodeGeneration.stageName){
+        val stageName = Blue(stage.capitalize)
+        println(s"${Bold}Output after $Reset$stageName:\n")
+      }
+    }
+    val outputFiles = classes.map(generateClassFile(_, ctx))
     outputFiles foreach generateStackMapFrames
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDecl, dir: Option[File]): String = {
+  private def generateClassFile(classDecl: ClassDecl, ctx: Context): String = {
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -46,27 +55,33 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
       val methodHandle = methodDecl match {
         case mt: MethodDecl       =>
           val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
-          classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes)
+          val signature = classDecl.getSymbol.name + "." + mt.signature
+          classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, signature)
         case con: ConstructorDecl =>
           hasConstructor = true
           generateConstructor(Some(con), classFile, classDecl)
-        case op: OperatorDecl     =>
-          val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
-          val operatorSymbol = op.getSymbol
-          classFile.addMethod(methSymbol.getType.byteCodeName, operatorSymbol.name, argTypes)
       }
       var flags: U2 = getMethodFlags(methodDecl)
       if (methodDecl.isAbstract)
         flags |= METHOD_ACC_ABSTRACT
       methodHandle.setFlags(flags)
-      generateMethod(methodHandle, methodDecl)
+
+      if(!methodDecl.isAbstract){
+        val ch = generateMethod(methodHandle, methodDecl)
+        ctx.printCodeStage ifDefined { stage =>
+          if(stage == CodeGeneration.stageName)
+            println(ch.stackTrace(ctx.useColor))
+
+        }
+      }
+
     }
 
     if (!hasConstructor)
       generateDefaultConstructor(classFile, classDecl)
 
     val className = classDecl.getSymbol.name
-    val file = getFilePath(dir, className)
+    val file = getFilePath(ctx.outDir, className)
     classFile.writeToFile(file)
 
     file
@@ -113,7 +128,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     classFile
   }
 
-  private def generateMethod(mh: MethodHandler, methTree: FuncTree): Unit = {
+  private def generateMethod(mh: MethodHandler, methTree: FuncTree): CodeHandler = {
     val localVariableMap = mutable.HashMap[VariableSymbol, Int]()
 
     var offset = if (methTree.isStatic) 0 else 1
@@ -126,13 +141,13 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
           offset += 1
         }
     }
-    if (!methTree.isAbstract) {
-      val ch = mh.codeHandler
-      val codeGenerator = new CodeGenerator(ch, localVariableMap)
-      codeGenerator.compileStat(methTree.stat.get)
-      addReturnStatement(ch, methTree)
-      ch.freeze
-    }
+
+    val ch = mh.codeHandler
+    val codeGenerator = new CodeGenerator(ch, localVariableMap)
+    codeGenerator.compileStat(methTree.stat.get)
+    addReturnStatement(ch, methTree)
+    ch.freeze
+    ch
   }
 
   private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl): Unit = {
@@ -149,9 +164,10 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val mh = con match {
       case Some(conDecl) =>
         val argTypes = conDecl.getSymbol.argList.map(_.getType.byteCodeName).mkString
-        classFile.addConstructor(argTypes)
+        val signature = classDecl.getSymbol.name + "." + conDecl.signature
+        classFile.addConstructor(argTypes, signature)
       case _             =>
-        classFile.addConstructor(Nil)
+        classFile.addConstructor("", "new()")
     }
 
     initializeNonStaticFields(classDecl, mh.codeHandler)

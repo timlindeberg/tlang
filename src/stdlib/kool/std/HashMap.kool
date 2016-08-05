@@ -1,15 +1,14 @@
 package kool::std
-import <Option>
-import <Map>
-import <MapEntry>
-import <Iterator>
+import kool::std::Map
+import kool::std::MapEntry
+import kool::std::Iterator
 
 class HashMap<K, V>: Map<K, V> {
 
-	var static DefualtInitialCapacity = 16
-	var static DefaultLoadFactor = 0.75
+	val static DefualtInitialCapacity = 16
+	val static DefaultLoadFactor = 0.75
 
-	var entries: Option<Entry<K, V>>[]
+	var entries: Entry<K, V>?[]
 	var size: Int
 	var loadFactor: Double
 	var capacity: Int
@@ -17,9 +16,45 @@ class HashMap<K, V>: Map<K, V> {
 	Def new()                                         = init(DefualtInitialCapacity, DefaultLoadFactor)
 	Def new(initialCapacity: Int)                     = init(initialCapacity, DefaultLoadFactor)
 	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
+	Def implicit new(entries: MapEntry<K, V>[]) = {
+	    init(DefaultLoadFactor, DefualtInitialCapacity)
+	    for(val e in entries)
+	        Add(e)
+
+	}
+
+	Def implicit new(entries: Object[][]) = {
+	    init(DefaultLoadFactor, DefualtInitialCapacity)
+	    for(val e in entries){
+	        if(e.Size() != 2)
+	            error("Invalid size of map entry: " + e.Size())
+
+	        if(!(e[0] is K))
+	            error("Entry has wrong key type!")
+
+	        if(!(e[1] is V))
+                error("Entry has wrong value type!")
+
+            Add(e[0] as K, e[1] as V)
+	    }
+	}
+
+    Def new(map: HashMap<K, V>) = {
+		init(map.capacity, map.loadFactor)
+		AddAll(map)
+	}
+
 	Def new(map: Map<K, V>) = {
 		init(DefualtInitialCapacity, DefaultLoadFactor)
 		AddAll(map)
+	}
+
+
+    Def Size() = size
+	Def Capacity() = capacity
+	Def Clear() = {
+		entries = new Entry<K, V>?[capacity]
+		size = 0
 	}
 
     Def Add(key: K, value: V) = {
@@ -28,112 +63,98 @@ class HashMap<K, V>: Map<K, V> {
 
         val hash = #key
         val newEntry = new Entry<K, V>(key, value, hash)
-
-        if(addTo(entries, index(hash, capacity), newEntry))
+        val index = index(hash, capacity)
+        if(addTo(entries, index, newEntry))
             size++
     }
 
 	Def Get(key: K) = {
-		val maybeEntry = entries[index(#key, capacity)]
-		if(!maybeEntry.IsDefined())
-			return new Option<V>()
+		val entry = entries[index(key, capacity)]
+		if(!entry)
+			return null
 
-		val it = maybeEntry.Get().Iterator()
-		while(it.HasNext()){
-			val e = it.Next()
-			if(e.Key() == key)
-				return new Option<V>(e.Value())
-		}
-		new Option<V>()
+		for(val e in entry)
+		    if(e.Key() == key)
+                return e.Value()
+
+		null
 	}
 
 	Def Remove(key: K): Bool = {
-		val index = index(#key, capacity)
-		val maybeEntry = entries[index]
+        val index = index(key, capacity)
+        val entry = entries[index]
 
-		if(!maybeEntry.IsDefined())
-			return false
+        if(!entry)
+            return false
 
-		val it = maybeEntry.Get().Iterator()
-		var entry: Entry<K, V>
-		var previous = new Option<Entry<K, V>>()
-		while(it.HasNext()){
-			entry = it.Next()
-			if(entry.Key() != key){
-                previous = new Option<Entry<K, V>>(entry)
-                continue
-			}
+        val it = entry.Iterator()
+        var previous: Entry<K, V>? = null
+        while(it.HasNext()) {
+            val e = it.Next()
+            if(e.Key() == key)
+                break
 
-            if(!previous.IsDefined())
-                entries[index] = new Option<Entry<K, V>>()
-            else if(it.HasNext())
-                previous.Get().Next = new Option<Entry<K, V>>(it.Next())
-            else
-                previous.Get().Next = new Option<Entry<K, V>>()
+            previous = e
+        }
 
-            size--
-            return true
-		}
-	}
+        if(!previous)
+            entries[index] = null
+        else if(it.HasNext())
+            previous.Next = it.Next()
+        else
+            previous.Next = null
 
-    Def Size() = size
-	Def Capacity() = capacity
-	Def Clear() = {
-		entries = getNewDataContainer(capacity)
-		size = 0
-	}
+        size--
+        true
+    }
 
 	Def Iterator(): Iterator<MapEntry<K, V>> = new EntryIterator<K, V>(entries, this)
-	Def KeyIterator(): Iterator<K>           = new KeyIterator<K, V>(entries, this)
-	Def ValueIterator(): Iterator<V>         = new ValueIterator<K, V>(entries, this)
+	Def Keys():     Iterator<K>              = new KeyIterator<K, V>(entries, this)
+	Def Values():   Iterator<V>              = new ValueIterator<K, V>(entries, this)
 
 	def init(initialCapacity: Int, loadFactor: Double) = {
-		capacity = (initialCapacity % 2 == 0) ? initialCapacity : closestPowerOfTwo(initialCapacity)
+	    if(initialCapacity % 2 == 0)
+	        capacity = initialCapacity
+	    else
+	        capacity = closestPowerOfTwo(initialCapacity)
 		this.loadFactor = loadFactor
 		Clear()
 	}
 
-	def getNewDataContainer(capacity: Int) = {
-		val data = new Option<Entry<K, V>>[capacity]
-		for(var i = 0; i < capacity; i++)
-			data[i] = new Option<Entry<K, V>>()
-		data
-	}
+	def addTo(data: Entry<K, V>?[], index: Int, newEntry: Entry<K, V>) = {
+		val startingEntry = data[index]
 
-	def addTo(data: Option<Entry<K, V>>[], index: Int, newEntry: Entry<K, V>) = {
-		val maybeEntry = data[index]
-
-		if(!maybeEntry.IsDefined()){
-		    data[index] = new Option<Entry<K, V>>(newEntry)
+		if(!startingEntry){
+		    data[index] = newEntry
 			return true
 		}
 
-		val it = maybeEntry.Get().Iterator()
-		var entry: Entry<K, V>
-		while(it.HasNext()){
-			entry = it.Next()
-			if(entry.Key() == newEntry.Key()){
-				entry.SetValue(newEntry.Value())
+		// This should be a do while loop
+		var entry: Entry<K, V>? = null
+		for(val v in startingEntry){
+			if(v.Key() == newEntry.Key()){
+				v.SetValue(newEntry.Value())
 				return false
 			}
+			entry = v
 		}
-		entry.Next = new Option<Entry<K, V>>(newEntry)
+		// Will always iterate once since startingEntry was defined, hence entry will be defined
+		entry!!.Next = newEntry
 		true
 	}
 
 	def resize() = {
 		val newCapacity = capacity << 1
-		val newData = getNewDataContainer(newCapacity)
+		val newData = new Entry<K, V>?[newCapacity]
 
-		for(var i = 0; i < capacity; i++){
-		    if(!entries[i].IsDefined())
+		for(val entry in entries){
+		    if(!entry)
 		        continue
 
-            val it = entries[i].Get().Iterator()
-            while(it.HasNext()){
-                val entry = it.Next()
-                entry.Next = new Option<Entry<K, V>>()
-                addTo(newData, index(entry.Hash, newCapacity), entry)
+            for(val e in entry) {
+                val index = index(entry.Hash, newCapacity)
+                e.Next = null
+                addTo(newData, index, e)
             }
 		}
 		entries = newData
@@ -145,6 +166,7 @@ class HashMap<K, V>: Map<K, V> {
 			if(i >= value)
 			   return i
 
+	def index(key: K, capacity: Int) = index(#key, capacity)
 	def index(hashCode: Int, capacity: Int) = improvedHash(hashCode) & capacity - 1
 
 	def improvedHash(hash: Int) = {
@@ -159,7 +181,7 @@ class Entry<K, V>: MapEntry<K, V>, Iterable<Entry<K, V>> {
 	var key: K
 	var value: V
 	Var Hash: Int
-	Var Next: Option<Entry<K, V>>
+	Var Next: Entry<K, V>?
 
 	Def new(key: K, value: V) 			 = init(key, value, 0)
 	Def new(key: K, value: V, hash: Int) = init(key, value, hash)
@@ -180,7 +202,6 @@ class Entry<K, V>: MapEntry<K, V>, Iterable<Entry<K, V>> {
 		this.key = key
 		this.value = value
 		Hash = hash
-		Next = new Option<Entry<K, V>>()
 	}
 
 }
@@ -199,9 +220,9 @@ class EntryListIterator<K, V>: Iterator<Entry<K, V>> {
 
 	Def Next() = {
 		val res = current
-		hasNext = current.Next.IsDefined()
+		hasNext = current.Next != null
 		if(hasNext)
-			current = current.Next.Get()
+			current = current.Next!!
 		res
 	}
 }
@@ -210,7 +231,7 @@ class KeyIterator<K, V>: Iterator<K> {
 
 	var it: EntryIterator<K, V>
 
-	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) =
+	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) =
 		it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
@@ -223,7 +244,7 @@ class ValueIterator<K, V>: Iterator<V> {
 
 	var it: EntryIterator<K, V>
 
-	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) =
+	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) =
 		it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
@@ -235,12 +256,12 @@ class ValueIterator<K, V>: Iterator<V> {
 class EntryIterator<K, V>: Iterator<MapEntry<K, V>> {
 
 	var hasNext: Bool
-	var currentEntry: Option<Entry<K, V>>
+	var currentEntry: Entry<K, V>?
 	var currentIndex: Int
-	var entries: Option<Entry<K, V>>[]
+	var entries: Entry<K, V>?[]
 	var map: HashMap<K, V>
 
-	Def new(entries: Option<Entry<K, V>>[], map: HashMap<K, V>) = {
+	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) = {
 		this.map = map
 		this.entries = entries
 		hasNext = map.NonEmpty()
@@ -250,30 +271,28 @@ class EntryIterator<K, V>: Iterator<MapEntry<K, V>> {
 	Def HasNext() = hasNext
 
 	Def Next() = {
-		val res = currentEntry.Get()
+		val res = currentEntry!!
 		currentEntry = nextEntry()
-		hasNext = currentEntry.IsDefined()
+		hasNext = currentEntry != null
 		return res
 	}
 
 	def nextEntry() = {
-		if(currentEntry.IsDefined() && currentEntry.Get().Next.IsDefined())
-			return currentEntry.Get().Next
+		if(currentEntry && currentEntry.Next)
+			return currentEntry.Next
 
 		nextDefinedEntry()
 	}
 
 	def nextDefinedEntry() = {
 		for(; currentIndex < map.Capacity(); currentIndex++){
-		    if(!entries[currentIndex].IsDefined())
+		    if(!entries[currentIndex])
 		        continue
 
-            val res = entries[currentIndex]
-            currentIndex++
-            return res
+            return entries[currentIndex++]
 		}
 
-		new Option<Entry<K, V>>()
+		null
 	}
 
 

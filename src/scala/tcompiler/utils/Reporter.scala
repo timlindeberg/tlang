@@ -21,7 +21,7 @@ class Reporter(
   extends Colorizer {
 
   def QuoteColor = Magenta
-  def NumColor = Blue
+  override def NumColor = Blue
   def MessageStyle = Bold
   def WarningColor = Yellow
   def ErrorColor = Red + Bold
@@ -32,8 +32,8 @@ class Reporter(
 
   private var hitMaxErrors = false
 
-  var errors   = ArrayBuffer[String]()
-  var warnings = ArrayBuffer[String]()
+  var errors   = mutable.Set[String]()
+  var warnings = mutable.Set[String]()
 
 
   def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
@@ -55,12 +55,6 @@ class Reporter(
       errors += errMessage(errorPrefix, 2, errorCode, msg, pos, importMap)
       return
     }
-
-    if(hitMaxErrors)
-      return
-
-    val num = s"$ErrorColor$maxErrors$Reset"
-    errors.insert(0, s"There were more than $num errors, only showing the first $num:")
     hitMaxErrors = true
 }
 
@@ -80,7 +74,14 @@ class Reporter(
   def hasErrors = errors.nonEmpty
   def hasWarnings = warnings.nonEmpty
 
-  def errorsString = errors.mkString(ErrorSeperator)
+  def errorsString: String = {
+    val err = errors.mkString(ErrorSeperator)
+    if(!hitMaxErrors)
+      return err
+
+    val num = s"$ErrorColor$maxErrors$Reset"
+    s"There were more than $num errors, only showing the first $num:\n\n$err"
+  }
   def warningsString = warnings.mkString(ErrorSeperator)
 
   def terminateIfErrors() =

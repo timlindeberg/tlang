@@ -9,4 +9,39 @@ trait Iterable<T> {
     */
     Def Iterator(): Iterator<T>
 
+
+    /**
+    * Constructs a string representation of this iterable instance using the given
+    * delimiter to seperate the elements.
+    *
+    * Example:
+    * val c: Collection<Int> = {1, 2, 3}
+    * c.MakeString("<->") // res: "1 <-> 2 <-> 3"
+    *
+    * @param delimiter a string to use to delimite the elements
+    * @return          a string representation of this list using the given delimiter
+    *                  to seperate the elements
+    */
+	Def MakeString(delimiter: String): String = {
+		var s = ""
+		val it = Iterator()
+		while(it.HasNext()){
+		    s += it.Next()
+            if(it.HasNext())
+                s += delimiter
+		}
+		s
+	}
+
+    /**
+    * Returns a string representation of this iterable instance.
+    *
+    * Example:
+    * val c: Collection<Int> = {1, 2, 3}
+    * c.toString() // res: [ 1, 2, 3 ]
+    *
+    * @return          a string representation of this list
+    */
+	Def ToString(): String = "[ " + MakeString(", ") + " ]"
+
 }

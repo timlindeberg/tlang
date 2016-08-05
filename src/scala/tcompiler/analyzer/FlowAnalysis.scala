@@ -380,9 +380,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    println(s"${tree.line}: $tree")
-    println(knowledge)
-    println("----------------------------------------")
+    //println(s"${tree.line}: $tree")
+    //println(knowledge)
+    //println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))

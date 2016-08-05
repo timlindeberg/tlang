@@ -1,4 +1,6 @@
 package kool::std
+import kool::std::Vector
+import kool::std::List
 
 trait Iterator<T> {
 
@@ -15,5 +17,12 @@ trait Iterator<T> {
     * @return true if the iterator contains another element; false otherwise.
     */
     Def HasNext(): Bool
+
+    Def ToList(): List<T> = {
+        val list = new Vector<T>()
+        while(HasNext())
+            list.Add(Next())
+        return list
+    }
 
 }

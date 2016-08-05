@@ -55,7 +55,7 @@ abstract class Pipeline[-F, +T] {
           list.head match {
             case _: CompilationUnit =>
               val stageName = Blue(s.capitalize)
-              println(s"Output after $stageName:\n")
+              println(s"${Bold}Output after $Reset$stageName:\n")
               list.map(_.asInstanceOf[CompilationUnit]) foreach {
                 cu => println(Printer(cu, ctx.useColor) + "\n")
               }

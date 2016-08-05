@@ -1,11 +1,15 @@
 package cafebabe
 
-class ConstantPool extends Streamable {
+import tcompiler.ast.Printer
+import tcompiler.utils.Colorizer
+
+class ConstantPool extends Streamable with Colorizer {
 
   import ClassFileTypes._
 
   import scala.collection.mutable.HashMap
 
+  var useColor = false
   /** The following maps keep track of the constants already added to the pool to avoid duplicates. */
   private val intMap         = new HashMap[Int, U2]
   private val floatMap       = new HashMap[Float, U2]
@@ -39,27 +43,29 @@ class ConstantPool extends Streamable {
   def size: U2 = entries.length
 
   // Ugly way of printing nicer debug info
-  def getByteInfo(idx: U2): String = {
-    if (inverseIntMap.contains(idx))
-      return "" + inverseIntMap(idx)
-
-    if (inverseFloatMap.contains(idx))
-      return "" + inverseFloatMap(idx)
-
-    if (inverseLongMap.contains(idx))
-      return "" + inverseLongMap(idx)
-
-    if (inverseDoubleMap.contains(idx))
-      return "" + inverseDoubleMap(idx)
+  def getByteInfo(idx: U2, useColor: Boolean): String = {
+    this.useColor = useColor
 
     if (inverseClassMap.contains(idx))
-      return inverseStringMap(inverseClassMap(idx))
+      return ClassColor(inverseStringMap(inverseClassMap(idx)))
+
+    if (inverseIntMap.contains(idx))
+      return NumColor(inverseIntMap(idx))
+
+    if (inverseFloatMap.contains(idx))
+      return NumColor(inverseFloatMap(idx))
+
+    if (inverseLongMap.contains(idx))
+      return NumColor(inverseLongMap(idx))
+
+    if (inverseDoubleMap.contains(idx))
+      return NumColor(inverseDoubleMap(idx))
 
     if (inverseStringMap.contains(idx))
-      return "\"" + inverseStringMap(idx) + "\""
+      return StringColor("\"" + inverseStringMap(idx) + "\"")
 
     if (inverseStringConstMap.contains(idx))
-      return "\"" + inverseStringMap(inverseStringConstMap(idx)) + "\""
+      return StringColor("\"" + inverseStringMap(inverseStringConstMap(idx)) + "\"")
 
 
     inverseFieldRefMap.get(idx).orElse(inverseMethodRefMap.get(idx)) match {
@@ -69,10 +75,9 @@ class ConstantPool extends Streamable {
         val className = inverseStringMap(classId)
         val methName = inverseStringMap(natId._1)
         val methSig = inverseStringMap(natId._2)
-        className + " " + methName + " " + methSig
+        s"$ClassColor$className $MethodColor$methName $VarColor$methSig$Reset"
       case None      =>
-        "Cannot find idx " + idx
-
+        s"Cannot find idx $idx"
     }
   }
 

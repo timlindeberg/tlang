@@ -54,7 +54,7 @@ trait Collection<T>: Iterable<T> {
    * Adds all the elements in the given collection to this collection.
    * @param list the collection of elements to add
    */
-   Def AddAll(elements: Collection<T>) =
+   Def AddAll(elements: Collection<T>): Unit =
        for(val e in elements)
            Add(e)
 
@@ -62,7 +62,7 @@ trait Collection<T>: Iterable<T> {
    * Adds all the elements in the given collection to this collection.
    * @param list the collection of elements to add
    */
-   Def RemoveAll(elements: Collection<T>) =
+   Def RemoveAll(elements: Collection<T>): Unit =
        for(val e in elements)
            Remove(e)
 
@@ -72,7 +72,7 @@ trait Collection<T>: Iterable<T> {
    * @return         true if the collection contains all of the given element;
                      false otherwise
    */
-   Def ContainsAll(elements: Collection<T>) = {
+   Def ContainsAll(elements: Collection<T>): Bool = {
        for(val e in elements)
            if(!Contains(e))
                return false
@@ -93,67 +93,22 @@ trait Collection<T>: Iterable<T> {
         data
     }
 
-    /**
-    * Constructs a string representation of this collection using the given
-    * delimiter to seperate the elements.
-    *
-    * Example:
-    * val c: Collection<Int> = {1, 2, 3}
-    * c.MakeString("<->") // res: "1 <-> 2 <-> 3"
-    *
-    * @param delimiter a string to use to delimite the elements
-    * @return          a string representation of this list using the given delimiter
-    *                  to seperate the elements
-    */
-	Def MakeString(delimiter: String) = {
-		var s = ""
-		val it = Iterator()
-		while(it.HasNext()){
-		    s += it.Next()
-            if(it.HasNext())
-                s += delimiter
-		}
-		s
-	}
-
-    /**
-    * Returns a string representation of this collection.
-    *
-    * Example:
-    * val c: Collection<Int> = {1, 2, 3}
-    * c.toString() // res: [ 1, 2, 3 ]
-    *
-    * @return          a string representation of this list
-    */
-	Def ToString() = "[ " + MakeString(", ") + " ]"
-
     //------------------------------------------------------------
     // Operators
     //------------------------------------------------------------
 
     /**
     * Returns true if the collections contain the same amount of elements
-    * and each element of the compared collections compare equal in the order
-    * defined by the collections iterators.
+    * and each element of 'lhs' is contained within 'rhs'.
     * @param lhs the lefthand side of the comparison
     * @param rhs the righthand side of the comparison
     * @return    true if the collections are equal; false otherwise
     */
-	Def ==(lhs: Collection<T>, rhs: Collection<T>) = {
+	Def ==(lhs: Collection<T>, rhs: Collection<T>): Bool = {
 		if(lhs.Size() != rhs.Size())
 			return false
 
-		val lhsIt = lhs.Iterator()
-		val rhsIt = rhs.Iterator()
-		while(lhsIt.HasNext()){
-		    val a = lhsIt.Next()
-		    val b = rhsIt.Next()
-
-			if(a != b)
-                return false
-		}
-
-		true
+        lhs.ContainsAll(rhs)
 	}
 
     /**
@@ -163,14 +118,14 @@ trait Collection<T>: Iterable<T> {
     * @param rhs the righthand side of the comparison
     * @return    true if the collections are not equal; false otherwise
     */
-	Def !=(lhs: Collection<T>, rhs: Collection<T>) = !(lhs == rhs)
+	Def !=(lhs: Collection<T>, rhs: Collection<T>): Bool = !(lhs == rhs)
 
     /**
     * Returns a hashcode for the given collection.
     * @param elements the collections to calculate a hashcode for
     * @return         a hashcode for the given collection
     */
-    Def #(elements: Collection<T>) = {
+    Def #(elements: Collection<T>): Int = {
         var res = 0
         for(val e in elements)
             res = 31 * res ^ #e

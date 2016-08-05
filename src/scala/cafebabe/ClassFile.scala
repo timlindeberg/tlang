@@ -64,52 +64,38 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     new FieldHandler(inf, constantPool)
   }
 
-  /** Adds a method with arbitrarily many arguments, using the default flags and no attributes. */
-  def addMethod(retTpe: String, name: String, args: String*): MethodHandler = addMethod(retTpe,name,args.toList)
 
-  def addMethod(retTpe: String, name: String, args: List[String]): MethodHandler = {
-    val concatArgs = args.mkString("")
-
+  def addMethod(retTpe: String, name: String, args: String, signature: String): MethodHandler = {
     val accessFlags: U2 = defaultMethodAccessFlags
     val nameIndex: U2 = constantPool.addString(name)
-    val descriptorIndex: U2 = constantPool.addString(
-      "(" + concatArgs + ")" + retTpe
-    )
+    val descriptorIndex: U2 = constantPool.addString(s"($args)$retTpe")
     val code = CodeAttributeInfo(codeNameIndex)
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
     methods = methods ::: (inf :: Nil)
 
 
-    new MethodHandler(inf, code, constantPool, concatArgs)
+    new MethodHandler(inf, code, constantPool, args, signature)
   }
 
   /** Adds the main method */
   def addMainMethod: MethodHandler = {
-    val handler = addMethod("V", "main", "[Ljava/lang/String;")
+    val handler = addMethod("V", "main", "[Ljava/lang/String;", "main(args: java::lang::String[]): Unit")
     handler.setFlags(Flags.METHOD_ACC_PUBLIC | Flags.METHOD_ACC_STATIC)
     handler
   }
 
-  /** Adds a constructor to the class. Constructor code should always start by invoking a constructor from the super class. */
-  def addConstructor(args : String*) : MethodHandler = addConstructor(args.toList)
-
-  def addConstructor(args : List[String]) : MethodHandler = {
-    val concatArgs = args.mkString("")
-
+  def addConstructor(args: String, signature: String) : MethodHandler = {
     val accessFlags : U2 = Flags.METHOD_ACC_PUBLIC
     val nameIndex : U2 = constantPool.addString(constructorName)
-    val descriptorIndex : U2 = constantPool.addString(
-      "(" + concatArgs + ")V"
-    )
+    val descriptorIndex : U2 = constantPool.addString(s"($args)V")
     val code = CodeAttributeInfo(codeNameIndex)
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
     methods = methods ::: (inf :: Nil)
-    val mh = new MethodHandler(inf, code, constantPool, concatArgs)
-    mh
+    new MethodHandler(inf, code, constantPool, args, signature)
   }
 
   def addClassInitializer: MethodHandler = {
-    val mh = addMethod("V", classInitializerName, Nil)
+    val mh = addMethod("V", classInitializerName, "", s"$classInitializerName(): Unit")
     mh.setFlags(Flags.METHOD_ACC_STATIC)
     mh
   }
@@ -119,7 +105,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     import ByteCodes._
     import AbstractByteCodes._
 
-    val mh = addConstructor(Nil)
+    val mh = addConstructor("", "new()")
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, constructorName, "()V")
     mh.codeHandler << RETURN

@@ -163,7 +163,7 @@ object Main extends MainErrors with Colorizer {
       s"   <$full>"
     }.mkString("\n")
     val msg =
-      s"""|Compiling $Magenta$numFiles$Reset file(s):
+      s"""|${Bold("Compiling")} ${Magenta(numFiles)} ${Bold("file(s)")}:
           |$files
           |""".stripMargin
     println(msg)
@@ -213,7 +213,7 @@ object Main extends MainErrors with Colorizer {
       f"   $name%-25s $t seconds"
     }.mkString("\n")
     val msg =
-      f"""|Compilation executed ${Green("successfully")} in $Green$totalTime%.2f$Reset seconds.
+      f"""|${Bold("Compilation executed")} ${Green("successfully")} ${Bold("in")} $Green$totalTime%.2f$Reset ${Bold("seconds.")}
           |Execution time for individual stages:
           |$individualTimes
           |""".stripMargin

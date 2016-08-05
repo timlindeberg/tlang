@@ -1,5 +1,8 @@
 package cafebabe
 
+import tcompiler.utils.Colorizer
+
+import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
 /** A code handler contains methods to help the generation of method bodies.
@@ -8,7 +11,7 @@ import scala.collection.mutable.{ListBuffer, Map => MutableMap}
   * Information is added to the constant pool during the ABS generation already.
   * <code>CodeHandler</code>s should not be created manually, but rather obtained
   * from the corresponding <code>MethodHandler</code>. */
-class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic: Boolean) {
+class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic: Boolean, signature: String) extends Colorizer {
 
   import AbstractByteCodes._
   import ByteCodes._
@@ -20,6 +23,9 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
   private             val abcBuffer   : ListBuffer[AbstractByteCode] = ListBuffer.empty
   private             var frozen      : Boolean                      = false
   protected[cafebabe] def isFrozen: Boolean = frozen
+  private var heightArray        : Array[Int] = Array()
+  private val UninitializedHeight: Int        = Int.MinValue
+  var useColor = false
 
   def peek: Option[AbstractByteCode] = abcBuffer.headOption
 
@@ -79,11 +85,8 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     ret
   }
 
-  @deprecated("freeVar no longer has any effect", "1.3")
-  def freeVar(id: Int): Unit = {}
-
   // Helper to get fresh label names.
-  private var labelCounts = new scala.collection.mutable.HashMap[String, Int]
+  private val labelCounts = new scala.collection.mutable.HashMap[String, Int]
   def getFreshLabel(prefix: String): String = {
     val postfix: Int = labelCounts.getOrElse(prefix, {
       labelCounts(prefix) = 0
@@ -96,10 +99,10 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
 
   /** "Freezes" the code: maxLocals is computed, abstract byte codes are turned
     * into concrete ones. This includes computation of the label offsets. */
-  def freeze: Unit = if (frozen) {
-    throw CodeFreezingException(
-      "Cannot invoke `freeze` twice on the same CodeHandler.")
-  } else {
+  def freeze: Unit = {
+    if (frozen)
+      throw CodeFreezingException("Cannot invoke `freeze` twice on the same CodeHandler.")
+
     frozen = true
 
     val abcList = abcBuffer.toList
@@ -113,15 +116,14 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     locally {
       var pc: Int = 0
       var lastLineNumber: Int = Int.MaxValue
-      for (abc <- abcList) {
+      for (abc <- abcBuffer) {
         abc match {
-          case LineNumber(ln) if ln == lastLineNumber => ;
-          case LineNumber(ln)                         => {
+          case LineNumber(ln) if ln == lastLineNumber =>
+          case LineNumber(ln)                         =>
             lastLineNumber = ln
             lineInfo(pc) = ln
-          }
           case Label(name)                            => labels(name) = pc
-          case _                                      => ;
+          case _                                      =>
         }
         pc = pc + abc.size
       }
@@ -130,12 +132,10 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     // In the second pass, we set the jump offsets.
     locally {
       var pc: Int = 0
-      for (abc <- abcList) {
+      for (abc <- abcBuffer) {
         abc match {
-          case co: ControlOperator => {
-            co.offset = labels.getOrElse(co.target, 0) - pc
-          }
-          case _                   => ;
+          case co: ControlOperator => co.offset = labels.getOrElse(co.target, 0) - pc
+          case _                   =>
         }
         pc = pc + abc.size
       }
@@ -173,90 +173,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       }
     }
 
-    val UninitializedHeight: Int = Int.MinValue
-    val heightArray = Array.fill[Int](actualSize)(UninitializedHeight)
-
-    def stackTrace: String = {
-      if (abcBuffer.isEmpty)
-        return ""
-
-      val types = Map(
-        4 -> "T_BOOLEAN",
-        5 -> "T_CHAR",
-        6 -> "T_FLOAT",
-        7 -> "T_DOUBLE",
-        8 -> "T_BYTE",
-        9 -> "T_SHORT",
-        10 -> "T_INT",
-        11 -> "T_LONG"
-      )
-
-      val b = new StringBuilder()
-      var pc = 0
-      var currentLineNumber = 0
-
-      def appendAbc(abc: AbstractByteCode, extraInfo: String) = {
-        val h = heightArray(pc)
-        val height = if (h == UninitializedHeight) "" else String.valueOf(h)
-        b.append("%4d %5d %6s %-15s %s\n".format(currentLineNumber, pc, height, abc, extraInfo))
-      }
-
-      b.append("%4s %5s %6s %-15s %s\n".format("Line", "PC", "Height", "ByteCode", "Info"))
-      var i = 0
-      while (i < abcBuffer.size) {
-        val abc = abcBuffer(i)
-        abc match {
-          case Label(name)              =>
-            b.append("%17s:\n".format(name))
-          case LineNumber(line)         =>
-            currentLineNumber = line
-          case _: RawByte | _: RawBytes =>
-          case NEWARRAY                 =>
-            abcBuffer(i + 1) match {
-              case RawByte(tpe) => appendAbc(abc, types(tpe))
-              case _            => ???
-            }
-          case IINC =>
-            abcBuffer(i + 1) match {
-              case RawByte(index) => abcBuffer(i + 2) match {
-                case RawByte(amount) => appendAbc(abc, s"$index $amount")
-                case _ => ???
-              }
-              case _            => ???
-            }
-          case BIPUSH =>
-            abcBuffer(i + 1) match {
-              case RawByte(amount) => appendAbc(abc, s"$amount")
-              case _            => ???
-            }
-          case SIPUSH =>
-            abcBuffer(i + 1) match {
-              case RawBytes(amount) => appendAbc(abc, s"$amount")
-              case _            => ???
-            }
-          case ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
-               ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
-            abcBuffer(i + 1) match {
-              case RawByte(index) => appendAbc(abc, s"$index")
-              case _            => ???
-            }
-          case _                        =>
-            var extraInfo = ""
-            if(i + 1 < abcBuffer.size){
-              abcBuffer(i + 1) match {
-                case RawByte(idx)  => extraInfo += cp.getByteInfo(idx)
-                case RawBytes(idx) => extraInfo += cp.getByteInfo(idx)
-                case _             =>
-              }
-            }
-            appendAbc(abc, extraInfo)
-        }
-        pc += abc.size
-        i += 1
-      }
-      b.append("\n")
-      b.toString
-    }
+    heightArray = Array.fill[Int](actualSize)(UninitializedHeight)
 
     // An invocation of this function reads as "when the pc reaches `from`, the stack height should be `there`".
     def setHeight(from: Int, there: Int): Unit = {
@@ -354,8 +271,108 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     }
 
     setHeight(0, 0)
-    //println(stackTrace)
     heightArray.max.asInstanceOf[U2]
+  }
+
+  def stackTrace: String = stackTrace(false)
+  def stackTrace(useColor: Boolean): String = {
+    if (abcBuffer.isEmpty)
+      return ""
+
+    this.useColor = useColor
+
+    val types = Map(
+                     4 -> "T_BOOLEAN",
+                     5 -> "T_CHAR",
+                     6 -> "T_FLOAT",
+                     7 -> "T_DOUBLE",
+                     8 -> "T_BYTE",
+                     9 -> "T_SHORT",
+                     10 -> "T_INT",
+                     11 -> "T_LONG"
+                   )
+
+    val b = new StringBuilder()
+    val sig = signature.split("\\.")
+
+    b.append(s"${Bold("[>")} ${ClassColor(sig(0))}.${MethodColor(sig(1))} ${Bold("<]")}\n")
+
+    var pc = 0
+    var currentLineNumber = 0
+
+    var colorIndex = -1
+    val colorMap = mutable.HashMap[String, String]()
+    def labelColor(label: String) = {
+      colorMap.getOrElseUpdate(label, {
+        colorIndex = (colorIndex + 1) % Colors.length
+        Colors(colorIndex)
+      }) + label + Reset
+    }
+
+
+    def appendAbc(abc: AbstractByteCode, extraInfo: String) = {
+      val h = if (pc > heightArray.length) UninitializedHeight else heightArray(pc)
+      val height = if (h == UninitializedHeight) "" else String.valueOf(h)
+      // Colorize labels
+      b.append(s"$VarColor%-6d $KeywordColor%-6d $VarColor%-6s $KeywordColor%-15s %s$Reset\n".format(currentLineNumber, pc, height, abc, extraInfo))
+    }
+
+    b.append(s"$Bold%-6s %-6s %-6s %-15s %s$Reset\n".format("Line", "PC", "Height", "ByteCode", "Info"))
+    var i = 0
+    while (i < abcBuffer.size) {
+      val abc = abcBuffer(i)
+      abc match {
+        case Label(name)                                =>
+          b.append(s"%16s%s:\n".format("", labelColor(name)))
+        case LineNumber(line)                           =>
+          currentLineNumber = line
+        case _: RawByte | _: RawBytes                   =>
+        case NEWARRAY                                   =>
+          abcBuffer(i + 1) match {
+            case RawByte(tpe) => appendAbc(abc, s"$NumColor${types(tpe)}")
+            case _            => ???
+          }
+        case IINC                                       =>
+          abcBuffer(i + 1) match {
+            case RawByte(index) => abcBuffer(i + 2) match {
+              case RawByte(amount) => appendAbc(abc, s"$NumColor$index $amount")
+              case _               => ???
+            }
+            case _              => ???
+          }
+        case BIPUSH                                     =>
+          abcBuffer(i + 1) match {
+            case RawByte(amount) => appendAbc(abc, s"$NumColor$amount")
+            case _               => ???
+          }
+        case SIPUSH                                     =>
+          abcBuffer(i + 1) match {
+            case RawBytes(amount) => appendAbc(abc, s"$NumColor$amount")
+            case _                => ???
+          }
+        case ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
+             ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
+          abcBuffer(i + 1) match {
+            case RawByte(index) => appendAbc(abc, s"$NumColor$index")
+            case _              => ???
+          }
+        case co: ControlOperator                        =>
+          appendAbc(co.opCode, labelColor(co.target))
+        case _                                          =>
+          val extraInfo = if (i + 1 < abcBuffer.size) {
+            abcBuffer(i + 1) match {
+              case RawByte(idx)  => cp.getByteInfo(idx, useColor)
+              case RawBytes(idx) => cp.getByteInfo(idx, useColor)
+              case _             => ""
+            }
+          } else ""
+          appendAbc(abc, extraInfo)
+      }
+      pc += abc.size
+      i += 1
+    }
+    b.append("\n")
+    b.toString
   }
 
   def print: Unit = if (!frozen) {

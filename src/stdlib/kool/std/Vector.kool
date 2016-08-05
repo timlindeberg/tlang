@@ -2,7 +2,6 @@ package kool::std
 
 import kool::std::List
 import kool::std::Collection
-import kool::std::Option
 import kool::std::Iterator
 
 class Vector<T>: List<T> {
