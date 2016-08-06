@@ -48,7 +48,7 @@ object TestUtils extends FlatSpec {
 
     val reporter = new Reporter(useColor = true)
     val cp = Main.TDirectory
-    new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp))//, printCodeStage = Some("codegeneration"), useColor = true)
+    new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp), printCodeStage = Some("nameanalysis"), useColor = true)
   }
 
   def executeTProgram(testFile: File): String = {

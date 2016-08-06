@@ -147,12 +147,11 @@ object Trees {
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
-  case class ClassDecl(
-                        var id: ClassID,
-                        var parents: List[ClassID],
-                        var fields: List[VarDecl],
-                        var methods: List[FuncTree],
-                        var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
+  case class ClassDecl(var id: ClassID,
+                       var parents: List[ClassID],
+                       var fields: List[VarDecl],
+                       var methods: List[FuncTree],
+                       var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
     def implementedTraits = parents.filter(_.getSymbol.isAbstract)
   }
 
@@ -584,7 +583,7 @@ object Trees {
   case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
-  case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree
+  case class Is(expr: ExprTree, var tpe: TypeTree) extends ExprTree
   case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
 
   /*-------------------------------- Misc expression Trees --------------------------------*/

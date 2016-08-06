@@ -109,11 +109,11 @@ Def ContainsValue() = {
 Def Iterators() = {
     val t = new Tester<Int>()
     val map = new HashMap<Int, Int>()
-    val entries = new Entry<Int, Int>[4]
-    entries[0] = new Entry<Int, Int>(1, 1, 1)
-    entries[1] = new Entry<Int, Int>(2, 6, 1)
-    entries[2] = new Entry<Int, Int>(90, -5, 1)
-    entries[3] = new Entry<Int, Int>(-2, 35, 1)
+    val entries = new HashMapEntry<Int, Int>[4]
+    entries[0] = new HashMapEntry<Int, Int>(1, 1, 1)
+    entries[1] = new HashMapEntry<Int, Int>(2, 6, 1)
+    entries[2] = new HashMapEntry<Int, Int>(90, -5, 1)
+    entries[3] = new HashMapEntry<Int, Int>(-2, 35, 1)
 
     for(var i = 0; i < entries.Size(); i++)
         map[entries[i].Key()] = entries[i].Value()

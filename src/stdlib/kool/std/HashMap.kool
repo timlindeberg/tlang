@@ -8,7 +8,7 @@ class HashMap<K, V>: Map<K, V> {
 	val static DefualtInitialCapacity = 16
 	val static DefaultLoadFactor = 0.75
 
-	var entries: Entry<K, V>?[]
+	var entries: HashMapEntry<K, V>?[]
 	var size: Int
 	var loadFactor: Double
 	var capacity: Int
@@ -20,7 +20,6 @@ class HashMap<K, V>: Map<K, V> {
 	    init(DefaultLoadFactor, DefualtInitialCapacity)
 	    for(val e in entries)
 	        Add(e)
-
 	}
 
 	Def implicit new(entries: Object[][]) = {
@@ -53,7 +52,7 @@ class HashMap<K, V>: Map<K, V> {
     Def Size() = size
 	Def Capacity() = capacity
 	Def Clear() = {
-		entries = new Entry<K, V>?[capacity]
+		entries = new HashMapEntry<K, V>?[capacity]
 		size = 0
 	}
 
@@ -62,7 +61,7 @@ class HashMap<K, V>: Map<K, V> {
             resize()
 
         val hash = #key
-        val newEntry = new Entry<K, V>(key, value, hash)
+        val newEntry = new HashMapEntry<K, V>(key, value, hash)
         val index = index(hash, capacity)
         if(addTo(entries, index, newEntry))
             size++
@@ -81,14 +80,14 @@ class HashMap<K, V>: Map<K, V> {
 	}
 
 	Def Remove(key: K): Bool = {
-        val index = index(key, capacity)
+        val index = index(#key, capacity)
         val entry = entries[index]
 
         if(!entry)
             return false
 
         val it = entry.Iterator()
-        var previous: Entry<K, V>? = null
+        var previous: HashMapEntry<K, V>? = null
         while(it.HasNext()) {
             val e = it.Next()
             if(e.Key() == key)
@@ -121,7 +120,7 @@ class HashMap<K, V>: Map<K, V> {
 		Clear()
 	}
 
-	def addTo(data: Entry<K, V>?[], index: Int, newEntry: Entry<K, V>) = {
+	def addTo(data: HashMapEntry<K, V>?[], index: Int, newEntry: HashMapEntry<K, V>) = {
 		val startingEntry = data[index]
 
 		if(!startingEntry){
@@ -130,7 +129,7 @@ class HashMap<K, V>: Map<K, V> {
 		}
 
 		// This should be a do while loop
-		var entry: Entry<K, V>? = null
+		var entry: HashMapEntry<K, V>? = null
 		for(val v in startingEntry){
 			if(v.Key() == newEntry.Key()){
 				v.SetValue(newEntry.Value())
@@ -145,7 +144,7 @@ class HashMap<K, V>: Map<K, V> {
 
 	def resize() = {
 		val newCapacity = capacity << 1
-		val newData = new Entry<K, V>?[newCapacity]
+		val newData = new HashMapEntry<K, V>?[newCapacity]
 
 		for(val entry in entries){
 		    if(!entry)
@@ -166,7 +165,6 @@ class HashMap<K, V>: Map<K, V> {
 			if(i >= value)
 			   return i
 
-	def index(key: K, capacity: Int) = index(#key, capacity)
 	def index(hashCode: Int, capacity: Int) = improvedHash(hashCode) & capacity - 1
 
 	def improvedHash(hash: Int) = {
@@ -176,12 +174,12 @@ class HashMap<K, V>: Map<K, V> {
 	}
 }
 
-class Entry<K, V>: MapEntry<K, V>, Iterable<Entry<K, V>> {
+class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> {
 
 	var key: K
 	var value: V
 	Var Hash: Int
-	Var Next: Entry<K, V>?
+	Var Next: HashMapEntry<K, V>?
 
 	Def new(key: K, value: V) 			 = init(key, value, 0)
 	Def new(key: K, value: V, hash: Int) = init(key, value, hash)
@@ -192,9 +190,9 @@ class Entry<K, V>: MapEntry<K, V>, Iterable<Entry<K, V>> {
     Def SetKey(key: K) = (this.key = key)
     Def SetValue(value: V) = (this.value = value)
 
-	Def Iterator(): Iterator<Entry<K, V>> = new EntryListIterator<K, V>(this)
+	Def Iterator(): Iterator<HashMapEntry<K, V>> = new EntryListIterator<K, V>(this)
 
-    Def ==(lhs: Entry<K, V>, rhs: Entry<K, V>) =
+    Def ==(lhs: HashMapEntry<K, V>, rhs: HashMapEntry<K, V>) =
 		lhs.key == rhs.key &&
 	    lhs.value == rhs.value
 
@@ -206,12 +204,12 @@ class Entry<K, V>: MapEntry<K, V>, Iterable<Entry<K, V>> {
 
 }
 
-class EntryListIterator<K, V>: Iterator<Entry<K, V>> {
+class EntryListIterator<K, V>: Iterator<HashMapEntry<K, V>> {
 
 	var hasNext: Bool
-	var current: Entry<K, V>
+	var current: HashMapEntry<K, V>
 
-	Def new(startEntry: Entry<K, V>) = {
+	Def new(startEntry: HashMapEntry<K, V>) = {
 		hasNext = true
 		current = startEntry
 	}
@@ -231,7 +229,7 @@ class KeyIterator<K, V>: Iterator<K> {
 
 	var it: EntryIterator<K, V>
 
-	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) =
+	Def new(entries: HashMapEntry<K, V>?[], map: HashMap<K, V>) =
 		it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
@@ -244,7 +242,7 @@ class ValueIterator<K, V>: Iterator<V> {
 
 	var it: EntryIterator<K, V>
 
-	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) =
+	Def new(entries: HashMapEntry<K, V>?[], map: HashMap<K, V>) =
 		it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
@@ -256,12 +254,12 @@ class ValueIterator<K, V>: Iterator<V> {
 class EntryIterator<K, V>: Iterator<MapEntry<K, V>> {
 
 	var hasNext: Bool
-	var currentEntry: Entry<K, V>?
+	var currentEntry: HashMapEntry<K, V>?
 	var currentIndex: Int
-	var entries: Entry<K, V>?[]
+	var entries: HashMapEntry<K, V>?[]
 	var map: HashMap<K, V>
 
-	Def new(entries: Entry<K, V>?[], map: HashMap<K, V>) = {
+	Def new(entries: HashMapEntry<K, V>?[], map: HashMap<K, V>) = {
 		this.map = map
 		this.entries = entries
 		hasNext = map.NonEmpty()

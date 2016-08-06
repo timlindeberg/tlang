@@ -330,42 +330,30 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
         case NEWARRAY                                   =>
           abcBuffer(i + 1) match {
             case RawByte(tpe) => appendAbc(abc, s"$NumColor${types(tpe)}")
-            case _            => ???
           }
         case IINC                                       =>
           abcBuffer(i + 1) match {
             case RawByte(index) => abcBuffer(i + 2) match {
               case RawByte(amount) => appendAbc(abc, s"$NumColor$index $amount")
-              case _               => ???
             }
-            case _              => ???
           }
-        case BIPUSH                                     =>
-          abcBuffer(i + 1) match {
-            case RawByte(amount) => appendAbc(abc, s"$NumColor$amount")
-            case _               => ???
-          }
-        case SIPUSH                                     =>
-          abcBuffer(i + 1) match {
-            case RawBytes(amount) => appendAbc(abc, s"$NumColor$amount")
-            case _                => ???
-          }
-        case ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
+        case BIPUSH | SIPUSH | ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
              ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
           abcBuffer(i + 1) match {
-            case RawByte(index) => appendAbc(abc, s"$NumColor$index")
-            case _              => ???
+            case RawByte(value)  => appendAbc(abc, s"$NumColor$value")
+            case RawBytes(value) => appendAbc(abc, s"$NumColor$value")
           }
         case co: ControlOperator                        =>
           appendAbc(co.opCode, labelColor(co.target))
         case _                                          =>
-          val extraInfo = if (i + 1 < abcBuffer.size) {
+          var extraInfo = ""
+          if (i + 1 < abcBuffer.size) {
             abcBuffer(i + 1) match {
-              case RawByte(idx)  => cp.getByteInfo(idx, useColor)
-              case RawBytes(idx) => cp.getByteInfo(idx, useColor)
-              case _             => ""
+              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, useColor)
+              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, useColor)
+              case _             =>
             }
-          } else ""
+          }
           appendAbc(abc, extraInfo)
       }
       pc += abc.size

@@ -190,8 +190,5 @@ class TreeTransformer {
   protected def tr[T <: Tree](tree: T) = transform(tree).asInstanceOf[T]
   protected def tr[T <: Tree](list: List[T]) = list.map(transform).asInstanceOf[List[T]]
   protected def tr[T <: Tree](set: Set[T]) = set.map(transform).asInstanceOf[Set[T]]
-  protected def tr[T <: Tree](op: Option[T]) = op match {
-    case Some(p) => Some(transform(p).asInstanceOf[T])
-    case None    => None
-  }
+  protected def tr[T <: Tree](op: Option[T]) = op.map(transform).asInstanceOf[Option[T]]
 }

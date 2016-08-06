@@ -1,6 +1,7 @@
 package tcompiler
 package modification
 
+import tcompiler.ast.{TreeCopier, TreeTransformer}
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ImportMap, TemplateImporter}
 import tcompiler.utils.{Context, Pipeline}
@@ -22,8 +23,8 @@ object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] 
 class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
   override var importMap: ImportMap = new ImportMap(ctx)
-  private val templateCus    = mutable.Map[String, CompilationUnit]()
-  private var generatedClassNames = mutable.Set[String]()
+  private  val templateCus          = mutable.Map[String, CompilationUnit]()
+  private  var generatedClassNames  = mutable.Set[String]()
 
   def generateTemplatePrograms(cus: List[CompilationUnit]): List[CompilationUnit] = {
     //  Add all original template classes
@@ -51,61 +52,35 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     allCus ++= templateCus.values
 
     // Remove all template classes and replace types in rest of the classes
-    allCus foreach { cu =>
+    val replaced = allCus map { cu =>
       cu.classes = cu.classes.filter(!_.id.isTemplated)
       replaceTypes(cu)
     }
 
-
-    allCus.toList
+    replaced.toList
   }
 
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
+    // Replace types with their templated class names, eg.
+    // replace Map<Int, String> with -Map$Int$String-.
+    val replacer = new TreeTransformer {
+      override def transform(t: Tree): Tree = t match {
+        case tpe: ClassID if tpe.isTemplated =>
+          val newName = tpe.templatedClassName
+          val shortName = tpe.name.split("::").last
+          if (cu.importMap.contains(shortName)) {
+            val fullName = cu.importMap.getFullName(tpe.name)
+            val prefix = fullName.split("\\.").dropRight(1).mkString(".")
+            cu.importMap.addImport(newName, s"$prefix.$newName")
+          }
 
-    def replaceMaybeType(tpe: Option[TypeTree]) = tpe match {
-      case Some(x) => Some(replaceType(x))
-      case None    => None
-    }
-
-    def replaceType(tpe: TypeTree): TypeTree = tpe match {
-      case x: ClassID          => replaceTypeId(x)
-      case x@ArrayType(arrTpe) =>
-        x.tpe = replaceType(arrTpe)
-        x
-      case x@NullableType(nullableTpe) =>
-        x.tpe = replaceType(nullableTpe)
-        x
-      case x                   => x
-    }
-
-    def replaceTypeId(tpe: ClassID) =
-      if (tpe.isTemplated) {
-        val newName = tpe.templatedClassName
-        val shortName = tpe.name.split("::").last
-        if (cu.importMap.contains(shortName)) {
-          val fullName = cu.importMap.getFullName(tpe.name)
-          val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-          cu.importMap.addImport(newName, s"$prefix.$newName")
-        }
-
-        new ClassID(tpe.templatedClassName).setPos(tpe)
-      } else {
-        tpe
+          treeCopy.ClassID(tpe, newName)
+        case _                               => super.transform(t)
       }
 
-
-
-    cu foreach {
-      case t: ClassDecl    => t.parents = t.parents map replaceTypeId
-      case t: MethodDecl   => t.retType = replaceMaybeType(t.retType)
-      case t: OperatorDecl => t.retType = replaceMaybeType(t.retType)
-      case t: VarDecl      => t.tpe = replaceMaybeType(t.tpe)
-      case t: Formal       => t.tpe = replaceType(t.tpe)
-      case t: NewArray     => t.tpe = replaceType(t.tpe)
-      case t: New          => t.tpe = replaceType(t.tpe)
-      case _               =>
     }
-    cu
+
+    replacer.transform(cu).asInstanceOf[CompilationUnit]
   }
 
   private def checkDuplicateTemplateNames(templateClass: ClassDecl) = {
@@ -129,21 +104,10 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       */
     def generateNeededTemplates(): Unit = {
       cu foreach {
-        case c: ClassDecl => c.parents foreach generateIfTemplated
-        case v: VarDecl   => v.tpe collect { case t => generateIfTemplated(t) }
-        case f: Formal    => generateIfTemplated(f.tpe)
-        case n: New       => generateIfTemplated(n.tpe)
-        case _            =>
-      }
-    }
-
-    private def generateIfTemplated(tpe: TypeTree): Unit =
-      tpe match {
-        case x: ClassID if x.isTemplated =>
-          x.templateTypes foreach generateIfTemplated
-          generateClass(x)
+        case c: ClassID if c.isTemplated => generateClass(c)
         case _                           =>
       }
+    }
 
     private def generateClass(typeId: ClassID): Unit = {
       val shortName = typeId.templatedClassName.split("::").last
@@ -157,11 +121,11 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       updateImportMap(cu.importMap, typeId)
 
       findTemplateCU(typeId) match {
-        case Some(templateProgram) =>
+        case Some(templateCU) =>
           val shortName = typeId.name.split("::").last
-          val templateClass = templateProgram.classes.find(_.id.name == shortName).get
+          val templateClass = templateCU.classes.find(_.id.name == shortName).get
           val generatedClass = newTemplateClass(templateClass, typeId)
-          templateProgram.classes ::= generatedClass
+          templateCU.classes ::= generatedClass
 
         case None => ErrorDoesNotExist(typeId.name, typeId)
       }
@@ -200,39 +164,27 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       val templateTypes = typeId.templateTypes
       val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
-      /* Helper functions to perform transformation */
-      def updateType(t: TypeTree): TypeTree = {
-        t match {
-          case t@ClassID(_, templateTypes) if t.isTemplated =>
-            t.templateTypes = templateTypes.map(updateType)
-            generateClass(t)
-          case a@ArrayType(tpe)                             =>
-            a.tpe = updateType(tpe)
-          case n@NullableType(tpe)                             =>
-            n.tpe = updateType(tpe)
-          case _                                            =>
+      val templateTransformer = new TreeTransformer {
+        // uses a strict copier so we recieve an actual copy of the tree
+        // TODO: this might not actually be needed if immutability is enforced
+        override val treeCopy = new TreeCopier
+
+        override def transform(t: Tree) = t match {
+          case c@ClassDecl(id, parents, fields, methods, isAbstract) =>
+            // Update the name of the templated class
+            val templateName = template.id.templatedClassName(templateTypes)
+            val newId = treeCopy.ClassID(id, templateName, Nil)
+            treeCopy.ClassDecl(c, newId, tr(parents), tr(fields), tr(methods), isAbstract)
+          case c@ClassID(name, tTypes)                               =>
+            val newId = treeCopy.ClassID(c, name, tr(tTypes))
+            if (c.isTemplated)
+              generateClass(newId)
+            templateMap.getOrElse(newId, newId)
+          case _                                                     => super.transform(t)
         }
-        templateMap.getOrElse(t, t)
       }
-
-      val newClass = template.copyTree()
-      newClass foreach {
-        case t: ClassDecl    =>
-          val templateName = template.id.templatedClassName(templateTypes)
-          t.id = t.id.copy(name = templateName, templateTypes = List())
-          t.parents = t.parents.map(p => updateType(p).asInstanceOf[ClassID])
-        case v: VarDecl      => v.tpe collect { case t => v.tpe = Some(updateType(t)) }
-        case f: Formal       => f.tpe = updateType(f.tpe)
-        case m: MethodDecl   => m.retType collect { case t => m.retType = Some(updateType(t)) }
-        case o: OperatorDecl => o.retType collect { case t => o.retType = Some(updateType(t)) }
-        case n: New          => n.tpe = updateType(n.tpe)
-        case n: NewArray     => n.tpe = updateType(n.tpe)
-        case a: As           => a.tpe = updateType(a.tpe)
-        case _               =>
-      }
-      newClass
+      templateTransformer.transform(template).asInstanceOf[ClassDecl]
     }
-
 
 
     private def constructTemplateMapping(typedId: ClassID, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {

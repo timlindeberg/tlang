@@ -1,6 +1,7 @@
 package kool::std
 
 import kool::std::MapEntry
+import kool::std::Iterator
 
 trait Map<K, V>: Collection<MapEntry<K, V>> {
 
