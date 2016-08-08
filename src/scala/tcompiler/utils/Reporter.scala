@@ -4,6 +4,8 @@ package utils
 import java.io.File
 import java.util.regex.Matcher
 
+import tcompiler.analyzer.Symbols.{ErrorSymbol, Symbolic}
+import tcompiler.analyzer.Types.{TError, Typed}
 import tcompiler.imports.ImportMap
 
 import scala.collection.mutable.ArrayBuffer
@@ -13,11 +15,10 @@ import scala.collection.mutable
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(
-  suppressWarnings: Boolean = false,
-  warningIsError: Boolean = false,
-  override val useColor: Boolean = false,
-  maxErrors: Int = 100)
+class Reporter(suppressWarnings: Boolean = false,
+               warningIsError: Boolean = false,
+               override val useColor: Boolean = false,
+               maxErrors: Int = 100)
   extends Colorizer {
 
   def QuoteColor = Magenta
@@ -28,12 +29,12 @@ class Reporter(
   def FatalColor = Red
 
   private val ErrorSeperator = "\n"
-  private val filesToLines = mutable.Map[File, IndexedSeq[String]]()
+  private val filesToLines   = mutable.Map[File, IndexedSeq[String]]()
 
   private var hitMaxErrors = false
 
-  var errors   = mutable.Set[String]()
-  var warnings = mutable.Set[String]()
+  var errors   = mutable.LinkedHashSet[String]()
+  var warnings = mutable.LinkedHashSet[String]()
 
 
   def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
@@ -46,17 +47,28 @@ class Reporter(
       return
 
     val warning = errMessage(errorPrefix, 1, errorCode, msg, pos, importMap)
+    if(warnings.contains(warning))
+      return
+
     warnings += warning
   }
 
 
   def error(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
-    if(maxErrors == -1 || errors.size < maxErrors){
-      errors += errMessage(errorPrefix, 2, errorCode, msg, pos, importMap)
+    if (!isValidError(msg, pos))
+      return
+
+    if(maxErrors != -1 && errors.size >= maxErrors){
+      hitMaxErrors = true
       return
     }
-    hitMaxErrors = true
-}
+
+    val err = errMessage(errorPrefix, 2, errorCode, msg, pos, importMap)
+    if(errors.contains(err))
+      return
+
+    errors += err
+  }
 
 
   def fatal(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Nothing = {
@@ -76,11 +88,11 @@ class Reporter(
 
   def errorsString: String = {
     val err = errors.mkString(ErrorSeperator)
-    if(!hitMaxErrors)
-      return err
-
-    val num = s"$ErrorColor$maxErrors$Reset"
-    s"There were more than $num errors, only showing the first $num:\n\n$err"
+    val num = s"$ErrorColor${errors.size}$Reset"
+    if (hitMaxErrors)
+      s"There were more than $num errors, only showing the first $num:\n\n$err"
+    else
+      s"There were $num errors:\n\n$err"
   }
   def warningsString = warnings.mkString(ErrorSeperator)
 
@@ -88,6 +100,17 @@ class Reporter(
     if (hasErrors)
       throw new CompilationException(errorsString)
 
+
+  private def isValidError(msg: String, pos: Positioned): Boolean = {
+    if (msg.contains(Errors.ErrorName))
+      return false
+
+    pos match {
+      case t: Typed if t.getType.name == Errors.ErrorName                        => false
+      case s: Symbolic[_] if s.hasSymbol && s.getSymbol.name == Errors.ErrorName => false
+      case _                                                                     => true
+    }
+  }
 
   private def errMessage(locationPrefix: String, errorLevel: Int, errorCode: Int, msg: Any, pos: Positioned, importMap: ImportMap) = {
     val prefix = constructErrorPrefix(locationPrefix, errorLevel, errorCode)
@@ -98,7 +121,7 @@ class Reporter(
 
     sb ++= s"$prefix: $msgStr"
 
-    if (pos.hasPosition){
+    if (pos.hasPosition) {
       sb ++= locationIndicator(errorLevel, pos)
     }
 

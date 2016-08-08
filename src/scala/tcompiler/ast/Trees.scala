@@ -37,7 +37,7 @@ object Trees {
       val copier = new TreeTransformer {
         override val treeCopy = new TreeCopier()
       }
-      copier.transform(this).asInstanceOf[this.type]
+      copier.transformTree(this)
     }
 
     def forAll(p: Tree => Boolean): Boolean = {
@@ -108,10 +108,9 @@ object Trees {
 
   /*-------------------------------- Top level Trees --------------------------------*/
 
-  case class CompilationUnit(
-                              pack: Package,
-                              var classes: List[ClassDecl],
-                              importMap: ImportMap) extends Tree {
+  case class CompilationUnit(pack: Package,
+                             var classes: List[ClassDecl],
+                             importMap: ImportMap) extends Tree {
 
     def getPackageDirectory = pack.directory
 
@@ -147,11 +146,11 @@ object Trees {
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
-  case class ClassDecl(var id: ClassID,
+  case class ClassDecl(id: ClassID,
                        var parents: List[ClassID],
-                       var fields: List[VarDecl],
+                       fields: List[VarDecl],
                        var methods: List[FuncTree],
-                       var isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
+                       isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
     def implementedTraits = parents.filter(_.getSymbol.isAbstract)
   }
 
@@ -185,17 +184,17 @@ object Trees {
   }
 
   trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
-    var id       : MethodID
-    var retType  : Option[TypeTree]
-    var args     : List[Formal]
+    val id       : MethodID
+    val retType  : Option[TypeTree]
+    val args     : List[Formal]
     val stat     : Option[StatTree]
     val modifiers: Set[Modifier]
 
     def isMain = this match {
       case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassID("java::lang::String", List())), _) :: Nil, _, _) =>
         modifiers.size == 2 &&
-          modifiers.contains(Public()) &&
-          modifiers.contains(Static()) &&
+          accessability == Public() &&
+          isStatic &&
           args.head.id.name == "args"
       case _                                                                                                                          =>
         false
@@ -207,25 +206,25 @@ object Trees {
 
   }
 
-  case class MethodDecl(var retType: Option[TypeTree],
-                        var id: MethodID,
-                        var args: List[Formal],
+  case class MethodDecl(retType: Option[TypeTree],
+                        id: MethodID,
+                        args: List[Formal],
                         stat: Option[StatTree],
                         modifiers: Set[Modifier]) extends FuncTree
-  case class ConstructorDecl(var retType: Option[TypeTree],
-                             var id: MethodID,
-                             var args: List[Formal],
+  case class ConstructorDecl(retType: Option[TypeTree],
+                             id: MethodID,
+                             args: List[Formal],
                              stat: Option[StatTree],
                              modifiers: Set[Modifier]) extends FuncTree
-  case class OperatorDecl(var operatorType: OperatorTree,
-                          var retType: Option[TypeTree],
-                          var args: List[Formal],
+  case class OperatorDecl(operatorType: OperatorTree,
+                          retType: Option[TypeTree],
+                          args: List[Formal],
                           stat: Option[StatTree],
                           modifiers: Set[Modifier]) extends FuncTree {
-    var id: MethodID = new MethodID("")
+    val id: MethodID = new MethodID("")
   }
 
-  case class Formal(var tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
+  case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
 
   /*-------------------------------- Type Trees --------------------------------*/
 
@@ -233,8 +232,8 @@ object Trees {
     val name: String
   }
 
-  case class ArrayType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
-  case class NullableType(var tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
+  case class ArrayType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
+  case class NullableType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
   case class IntType() extends TypeTree with Leaf {val name = "Int"}
   case class LongType() extends TypeTree with Leaf {val name = "Long"}
   case class FloatType() extends TypeTree with Leaf {val name = "Float"}
@@ -258,7 +257,7 @@ object Trees {
   }
 
 
-  case class VarDecl(var tpe: Option[TypeTree], var id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
+  case class VarDecl(tpe: Option[TypeTree], id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(condition: ExprTree, stat: StatTree) extends StatTree
@@ -507,7 +506,7 @@ object Trees {
     def unapply[T <: Symbol](e: Identifier[T]) = Some(e.name)
   }
 
-  case class ClassID(name: String, var templateTypes: List[TypeTree] = List()) extends Identifier[ClassSymbol] with TypeTree {
+  case class ClassID(name: String, templateTypes: List[TypeTree] = List()) extends Identifier[ClassSymbol] with TypeTree {
 
     import tcompiler.modification.Templates._
 
@@ -570,7 +569,7 @@ object Trees {
 
   trait Assignable extends ExprTree
 
-  case class Assign(to: Assignable, expr: ExprTree) extends ArrayOperatorTree {
+  case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
     override val arr: ExprTree = to
     override val op : String   = "[]="
     override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
@@ -579,12 +578,12 @@ object Trees {
 
   case class This() extends ExprTree with Symbolic[ClassSymbol] with Leaf
   case class Super(specifier: Option[ClassID]) extends ExprTree with Symbolic[ClassSymbol]
-  case class NewArray(var tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
-  case class New(var tpe: TypeTree, args: List[ExprTree]) extends ExprTree
+  case class NewArray(tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
+  case class New(tpe: TypeTree, args: List[ExprTree]) extends ExprTree
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
-  case class Is(expr: ExprTree, var tpe: TypeTree) extends ExprTree
-  case class As(expr: ExprTree, var tpe: TypeTree) extends ExprTree
+  case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree
+  case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
 
   /*-------------------------------- Misc expression Trees --------------------------------*/
 

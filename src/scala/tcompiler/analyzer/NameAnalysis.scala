@@ -110,8 +110,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       val fullName = cu.getPackageName(name)
 
       val newSymbol = new ClassSymbol(fullName, isAbstract)
-      if (name != fullName)
-        cu.importMap.addImport(name, fullName)
       newSymbol.setPos(id)
       ensureClassNotDefined(id)
       id.setSymbol(newSymbol)
@@ -128,7 +126,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       id.setSymbol(newSymbol)
       varDecl.setSymbol(newSymbol)
 
-      val isStaticFinal = modifiers.contains(Static()) && modifiers.contains(Final())
+      val isStaticFinal = newSymbol.isStatic && newSymbol.isFinal
       if (classSymbol.isAbstract && !isStaticFinal)
         ErrorNonStaticFinalFieldInTrait(varDecl)
 
@@ -246,7 +244,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       ensureOperatorNotDefined(operatorDecl)
 
-      val isStaticOperator = operatorDecl.modifiers.contains(Static())
+      val isStaticOperator = operatorDecl.isStatic
       val argTypes = args.map(_.getSymbol.getType)
       val argClassSymbols = argTypes.collect { case TObject(c) => c }
       val classSymbol = operatorDecl.getSymbol.classSymbol
@@ -261,7 +259,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       else if (isStaticOperator && !argClassSymbols.contains(classSymbol))
         ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
 
-      stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, operatorDecl.isStatic).bindStatement(_))
+      stat.ifDefined(new StatementBinder(operatorDecl.getSymbol, isStaticOperator).bindStatement(_))
   }
 
 
@@ -313,7 +311,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           }
 
           variableUsage += newSymbol -> false
-          if(!modifiers.contains(Final()))
+          if(!varDecl.isFinal)
             variableReassignment += newSymbol -> false
 
           init ifDefined { expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
@@ -488,9 +486,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       }
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
-          lookupLocalVar().orElse(
-                                   lookupArgument(methodSymbol).orElse(
-                                                                        lookupField(methodSymbol)))
+          lookupLocalVar().orElse(lookupArgument(methodSymbol).orElse(lookupField(methodSymbol)))
         case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
           classSymbol.lookupField(name)
         case _                          => ???

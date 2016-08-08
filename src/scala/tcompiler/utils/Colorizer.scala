@@ -61,7 +61,6 @@ trait Colorizer {
   def NumColor: String = Magenta
   def NumColor(s: Any): String = NumColor + s + Reset
 
-
-  private def GetColor(color: String) = if (useColor && System.console() != null) color else ""
+  private def GetColor(color: String) = if (useColor) color else ""
 
 }

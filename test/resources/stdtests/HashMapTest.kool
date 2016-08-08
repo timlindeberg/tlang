@@ -1,12 +1,12 @@
 import kool::std::HashMap
-import kool::std::Vector
 import kool::std::Tester
+import kool::std::MapEntry
 
 IntMap()
 StringMap()
 LargeMap()
 InitialCapacity()
-ToString()
+ToStringTest()
 Get()
 Contains()
 ContainsValue()
@@ -67,7 +67,7 @@ Def InitialCapacity() = {
     testCapacity(513, 1024)
 }
 
-Def ToString() = {
+Def ToStringTest() = {
     val map = new HashMap<Int, Int>()
     map[1] = 5
     map[2] = 2
@@ -109,14 +109,14 @@ Def ContainsValue() = {
 Def Iterators() = {
     val t = new Tester<Int>()
     val map = new HashMap<Int, Int>()
-    val entries = new HashMapEntry<Int, Int>[4]
-    entries[0] = new HashMapEntry<Int, Int>(1, 1, 1)
-    entries[1] = new HashMapEntry<Int, Int>(2, 6, 1)
-    entries[2] = new HashMapEntry<Int, Int>(90, -5, 1)
-    entries[3] = new HashMapEntry<Int, Int>(-2, 35, 1)
+    val entries = new Int[4][2]
+    entries[0] = { 1, 1 }
+    entries[1] = { 2, 6 }
+    entries[2] = { 90, -5 }
+    entries[3] = {-2, 35}
 
     for(var i = 0; i < entries.Size(); i++)
-        map[entries[i].Key()] = entries[i].Value()
+        map[entries[i][0]] = entries[i][1]
 
     {
         val it = map.Iterator()
@@ -125,13 +125,13 @@ Def Iterators() = {
     }
 
     {
-        val it = map.KeyIterator()
+        val it = map.Keys()
         while(it.HasNext())
             t.Assert(containsKey(it.Next(), entries))
     }
 
     {
-        val it = map.ValueIterator()
+        val it = map.Values()
         while(it.HasNext())
             t.Assert(containsValue(it.Next(), entries))
     }
@@ -291,23 +291,24 @@ def testCapacity(given: Int, expected: Int) = {
     t.AssertEquals(map.Capacity(), expected)
 }
 
-def containsEntry(entry: MapEntry<Int, Int>, entries: MapEntry<Int, Int>[]) = {
+def containsEntry(entry: MapEntry<Int, Int>, entries: Int[][]) = {
     for(var i = 0; i < entries.Size(); i++)
-        if(entries[i] == entry)
+        if(entries[i][0] == entry.Key() && entries[i][1] == entry.Value())
             return true
     return false
 }
 
-def containsKey(key: Int, entries: MapEntry<Int, Int>[]) = {
+def containsKey(key: Int, entries: Int[][]) = {
     for(var i = 0; i < entries.Size(); i++)
-        if(entries[i].Key() == key)
+        if(entries[i][0] == key)
             return true
     return false
 }
 
-def containsValue(value: Int, entries: MapEntry<Int, Int>[]) = {
+def containsValue(value: Int, entries: Int[][]) = {
     for(var i = 0; i < entries.Size(); i++)
-        if(entries[i].Value() == value)
+        if(entries[i][1] == value)
             return true
     return false
 }
+

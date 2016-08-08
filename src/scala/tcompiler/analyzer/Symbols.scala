@@ -251,7 +251,7 @@ object Symbols {
       if (argList.size != 1 || argList.head.name != "args")
         return false
 
-      if (modifiers.size != 2 || !modifiers.contains(Static()) || !modifiers.contains(Public()))
+      if (modifiers.size != 2 || !isStatic || accessability != Public())
         return false
 
       true
@@ -283,6 +283,6 @@ object Symbols {
                     override val modifiers: Set[Modifier] = Set(),
                     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case class ErrorSymbol() extends Symbol { val name = "ERROR" }
+  case object ErrorSymbol extends Symbol { val name = Errors.ErrorName }
 
 }

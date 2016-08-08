@@ -71,6 +71,8 @@ class TypeChecker(override var ctx: Context,
       return
     }
 
+    if(currentMethodSymbol.name == "MakeString")
+      println
     currentMethodSymbol.stat.ifDefined(tcStat)
     hasBeenTypechecked += currentMethodSymbol
 
@@ -116,7 +118,7 @@ class TypeChecker(override var ctx: Context,
       stats.foreach(tcStat)
     case varDecl@VarDecl(tpe, id, init, modifiers) =>
       val varSym = id.getSymbol
-      if (modifiers.contains(Final()) && init.isEmpty)
+      if (varSym.isFinal && init.isEmpty)
         ErrorValueMustBeInitialized(varSym.name, varDecl)
 
       tpe match {
@@ -519,7 +521,7 @@ class TypeChecker(override var ctx: Context,
 
   def tcAssignment(assignment: Assign): Type = {
     val to = assignment.to
-    val expr = assignment.expr
+    val expr = assignment.from
 
     to match {
       case id: VariableID           =>

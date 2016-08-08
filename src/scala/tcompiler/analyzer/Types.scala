@@ -5,6 +5,7 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.code.CodeGenerator._
+import tcompiler.utils.Errors
 
 
 object Types {
@@ -82,8 +83,8 @@ object Types {
     override def getNullable = this
     override def getNonNullable = this
     override def isSubTypeOf(tpe: Type): Boolean = true
-    override def name = "[error]"
-    override def byteCodeName: String = "ERROR"
+    override def name = Errors.ErrorName
+    override def byteCodeName: String = Errors.ErrorName
     override val codes     = EmptyCodeMap
     override val size: Int = 0
   }
@@ -248,7 +249,7 @@ object Types {
     override def getNonNullable = if (isNullable) TObject(classSymbol, isNullable = false) else this
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c == Object.classSymbol) true
+        if (classSymbol.name == c.name || c.name == Object.name) true
         else classSymbol.parents exists {
           _.getType.isSubTypeOf(tpe)
         }

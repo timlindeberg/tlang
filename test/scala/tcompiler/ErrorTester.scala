@@ -45,8 +45,6 @@ abstract class ErrorTester extends Tester {
         }
         val errorCodes = parseErrorCodes(errors)
         assertCorrect(errorCodes, expectedErrors, errors)
-      case e: Exception            =>
-        fail(e.getMessage)
     }
   }
 
@@ -98,17 +96,24 @@ abstract class ErrorTester extends Tester {
           if (r.contains(strim))
             r -= strim
           else
-            fail(s"Expected $s on line $line but found ${r.mkString(", ")} $extraInfo")
-
-        case None => fail(s"Line $line did not produce $s $extraInfo.")
+            failTest(s"Expected $s on line $line but found ${r.mkString(", ")}", extraInfo)
+        case None =>
+          val errMsg = "Line $line did not produce $s"
+          System.err.println(s"$errMsg $extraInfo")
+          fail(errMsg)
       }
     }
     val extraInfo = formatTestFailedMessage(-1, resStrings, solStrings, errors)
     resMap foreach { case (line, res) =>
       if (res.nonEmpty)
-        fail(s"Unexpected '${res.mkString(", ")}' was found on line $line $extraInfo")
+        failTest(s"Unexpected '${res.mkString(", ")}' was found on line $line", extraInfo)
     }
 
+  }
+
+  def failTest(msg: String, extraInfo: String) = {
+    System.err.println(s"$msg $extraInfo")
+    fail(msg)
   }
 
 }

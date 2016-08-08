@@ -428,7 +428,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case (found: TArray, desired: TArray)                                                            =>
         // Found an array and wanted an array, expr must be an arraylit
         // Convert each argument to the desired type
-        compileArrayLiteral(expr.asInstanceOf[ArrayLit], Some(desired.tpe))
+        expr match {
+          case arrLit: ArrayLit => compileArrayLiteral(arrLit, Some(desired.tpe))
+          case _ =>
+            ???
+        }
       case _                                                                           =>
         compileExpr(expr)
         (found, desired) match {

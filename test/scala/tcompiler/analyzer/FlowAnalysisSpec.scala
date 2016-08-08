@@ -10,6 +10,6 @@ import tcompiler.modification.Templates
   */
 class FlowAnalysisSpec extends ErrorTester {
   override def Name: String = "Flow Analysis"
-  override def Path: String = TestUtils.Resources + "analyzer/flow/nullables/Arrays.kool"
+  override def Path: String = TestUtils.Resources + "analyzer/flow"
   override def Pipeline = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
 }

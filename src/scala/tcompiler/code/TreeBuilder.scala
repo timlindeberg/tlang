@@ -96,7 +96,7 @@ class TreeBuilder {
   }).setType(tpe)
 
   def getCode = {
-    val g = GeneratedExpr(code.toList).setPos(code.head)
+    val g = GeneratedExpr(code.toList).setPos(code.head).setType(TUnit)
     code.last match {
       case t: Typed => g.setType(t)
       case _        => g

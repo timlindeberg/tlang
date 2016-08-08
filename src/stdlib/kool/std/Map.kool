@@ -2,6 +2,7 @@ package kool::std
 
 import kool::std::MapEntry
 import kool::std::Iterator
+import kool::std::Collection
 
 trait Map<K, V>: Collection<MapEntry<K, V>> {
 
@@ -24,7 +25,7 @@ trait Map<K, V>: Collection<MapEntry<K, V>> {
     }
 
     Def Contains(key: K): Bool = Get(key) != null
-    Def Contains(value: V): Bool = {
+    Def ContainsValue(value: V): Bool = {
         for(var e in this)
             if(e.Value() == value)
                 return true

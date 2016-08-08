@@ -27,7 +27,7 @@ class Desugarer {
 
   class DesugarTransformer extends TreeTransformer {
 
-    override def transform(t: Tree) = t match {
+    override protected def transform(t: Tree) = t match {
       case slice: ArraySlice              => desugarArraySlice(super.transform(slice))
       case opDecl: OperatorDecl           => replaceOperatorDecl(super.transform(opDecl))
       case incDec: IncrementDecrementTree =>
@@ -38,7 +38,7 @@ class Desugarer {
       case assign: Assign                 =>
         val to = assign.to
         if (to.isInstanceOf[ArrayRead] && to.getType.isInstanceOf[TObject]) {
-          val expr = super.transform(assign.expr).asInstanceOf[ExprTree]
+          val expr = super.transform(assign.from).asInstanceOf[ExprTree]
           val newAssign = treeCopy.Assign(assign, to, expr)
           replaceOperatorCall(newAssign)
         } else {
@@ -55,9 +55,9 @@ class Desugarer {
 
   def apply(cu: CompilationUnit) = {
     val desugarTransformer = new DesugarTransformer
-    val s = desugarTransformer.transform(cu)
+    val s = desugarTransformer.transformTree(cu)
     //println(Printer(s))
-    s.asInstanceOf[CompilationUnit]
+    s
   }
 
   /**
@@ -81,9 +81,9 @@ class Desugarer {
 
     val op = t.asInstanceOf[OperatorTree]
     op match {
-        // Dont replace these operators
+      // Dont replace these operators
       case _: And | _: Or | _: Not | _: ExtractNullable => return op
-      case _ =>
+      case _                                            =>
     }
 
     val c = new TreeBuilder
@@ -94,7 +94,7 @@ class Desugarer {
         if (lhs.isInstanceOf[NullLit] || rhs.isInstanceOf[NullLit])
           return op
 
-        if(!(isObject(lhs) || isObject(rhs)))
+        if (!(isObject(lhs) || isObject(rhs)))
           return op
 
         val opSymbol = op.lookupOperator((lhs.getType, rhs.getType)).get
@@ -341,11 +341,14 @@ class Desugarer {
     val comparison = LessThan(index, sizeCall).setType(Bool).setPos(varDecl)
     val post = Assign(index, Plus(index, IntLit(1)).setType(Int)).setType(Int).setPos(varDecl)
 
-
-    val init = Some(ArrayRead(containerId, index).setType(containerId).setPos(varDecl))
+    val arrReadType = containerId.getType.asInstanceOf[TArray].tpe
+    val init = Some(ArrayRead(containerId, index).setType(arrReadType).setPos(varDecl))
     val valInit = varDecl.copy(init = init).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol).setPos(varDecl)
-    val stats = Block(List(valInit, stat))
+    val stats = stat match {
+      case Block(s) => Block(valInit :: s)
+      case _        => Block(List(valInit, stat))
+    }
 
     c.put(For(List(indexDecl), comparison, List(post), stats).setPos(stat))
     c.getCode
@@ -386,7 +389,10 @@ class Desugarer {
 
     val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)
-    val stats = Block(List(valInit, stat))
+    val stats = stat match {
+      case Block(s) => Block(valInit :: s)
+      case _        => Block(List(valInit, stat))
+    }
 
     c.put(While(comparisonCall, stats))
     c.getCode

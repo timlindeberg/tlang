@@ -1,7 +1,7 @@
 package tcompiler
 package modification
 
-import tcompiler.ast.{TreeCopier, TreeTransformer}
+import tcompiler.ast.{TreeCopier, TreeTransformer, TreeTraverser}
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ImportMap, TemplateImporter}
 import tcompiler.utils.{Context, Pipeline}
@@ -66,21 +66,18 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     val replacer = new TreeTransformer {
       override def transform(t: Tree): Tree = t match {
         case tpe: ClassID if tpe.isTemplated =>
-          val newName = tpe.templatedClassName
           val shortName = tpe.name.split("::").last
           if (cu.importMap.contains(shortName)) {
-            val fullName = cu.importMap.getFullName(tpe.name)
-            val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-            cu.importMap.addImport(newName, s"$prefix.$newName")
+            val entry = getImportEntry(cu.importMap, tpe)
+            cu.importMap.addImport(entry)
           }
-
-          treeCopy.ClassID(tpe, newName)
+          treeCopy.ClassID(tpe, tpe.templatedClassName)
         case _                               => super.transform(t)
       }
 
     }
 
-    replacer.transform(cu).asInstanceOf[CompilationUnit]
+    replacer.transformTree(cu)
   }
 
   private def checkDuplicateTemplateNames(templateClass: ClassDecl) = {
@@ -96,6 +93,14 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     }
   }
 
+
+  private def getImportEntry(importMap: ImportMap, classId: ClassID) = {
+    val templateName = classId.templatedClassName
+    val fullName = importMap.getFullName(classId.name)
+    val prefix = fullName.split("\\.").dropRight(1).mkString(".")
+    templateName -> s"$prefix.$templateName"
+  }
+
   class TemplateClassGenerator(cu: CompilationUnit) {
 
     /**
@@ -103,13 +108,20 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       * generated template classes.
       */
     def generateNeededTemplates(): Unit = {
-      cu foreach {
-        case c: ClassID if c.isTemplated => generateClass(c)
-        case _                           =>
+      val traverser = new TreeTraverser {
+        override def traverse(t: Tree) = t match {
+          case ClassDecl(id, parents, fields, methods, isAbstract) =>
+            // Ignore the id of classdecls since these can declare templated types
+            // which should not be generated
+            traverse(parents, fields, methods)
+          case c: ClassID if c.isTemplated                         => generateClass(c)
+          case _                                                   => super.traverse(t)
+        }
       }
+      traverser.traverse(cu)
     }
 
-    private def generateClass(typeId: ClassID): Unit = {
+    def generateClass(typeId: ClassID): Unit = {
       val shortName = typeId.templatedClassName.split("::").last
 
       if (generatedClassNames(shortName))
@@ -118,26 +130,39 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       generatedClassNames += shortName
 
       // Update import map to include the newly generated class
-      updateImportMap(cu.importMap, typeId)
+      if (cu.importMap.contains(typeId.name)) {
+        val entry = getImportEntry(cu.importMap, typeId)
+        cu.importMap.addImport(entry)
+      }
 
       findTemplateCU(typeId) match {
         case Some(templateCU) =>
-          val shortName = typeId.name.split("::").last
-          val templateClass = templateCU.classes.find(_.id.name == shortName).get
-          val generatedClass = newTemplateClass(templateClass, typeId)
+          typeId.templateTypes.foreach {
+            case classId: ClassID =>
+              // Update the import map with the instantiated types:
+              // e.g. Iterator<Vector<Int>> updates the
+              // Iterator's import map with Vector<Int> -> kool.std.Vector<Int>
+              updateImportMap(templateCU.importMap, classId)
+            case _                =>
+          }
+          val generatedClass = newTemplateClass(templateCU, typeId)
           templateCU.classes ::= generatedClass
-
-        case None => ErrorDoesNotExist(typeId.name, typeId)
+        case None             => ErrorDoesNotExist(typeId.name, typeId)
       }
     }
 
-    private def updateImportMap(importMap: ImportMap, typeId: ClassID) =
-      if (importMap.contains(typeId.name)) {
-        val className = typeId.templatedClassName
-        val fullName = importMap.getFullName(typeId.name)
-        val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-        importMap.addImport(className, s"$prefix.$className")
+    private def updateImportMap(importMap: ImportMap, classId: ClassID) = {
+      // Add the classId to the import map
+      val templateName = classId.templatedClassName
+      if (cu.importMap.contains(templateName)) {
+        val fullName = cu.importMap.getFullName(templateName)
+        importMap.addImport(templateName, fullName)
+      } else if (cu.importMap.contains(classId.name)) {
+        val entry = getImportEntry(cu.importMap, classId)
+        importMap.addImport(entry)
       }
+    }
+
 
     private def findTemplateCU(typeId: ClassID): Option[CompilationUnit] = {
       val className = typeId.name.split("::").last
@@ -158,7 +183,10 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       templateCus.get(className)
     }
 
-    private def newTemplateClass(template: ClassDecl, typeId: ClassID): ClassDecl = {
+    private def newTemplateClass(templateCU: CompilationUnit, typeId: ClassID): ClassDecl = {
+      val shortName = typeId.name.split("::").last
+      val template = templateCU.classes.find(_.id.name == shortName).get
+
       checkDuplicateTemplateNames(template)
 
       val templateTypes = typeId.templateTypes
@@ -175,15 +203,19 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
             val templateName = template.id.templatedClassName(templateTypes)
             val newId = treeCopy.ClassID(id, templateName, Nil)
             treeCopy.ClassDecl(c, newId, tr(parents), tr(fields), tr(methods), isAbstract)
-          case c@ClassID(name, tTypes)                               =>
-            val newId = treeCopy.ClassID(c, name, tr(tTypes))
-            if (c.isTemplated)
-              generateClass(newId)
-            templateMap.getOrElse(newId, newId)
+          case classId@ClassID(name, tTypes)                         =>
+            val newId = treeCopy.ClassID(classId, name, tr(tTypes))
+            if (classId.isTemplated)
+              new TemplateClassGenerator(templateCU).generateClass(newId)
+
+            templateMap.get(newId) match {
+              case Some(replacement) => replacement.copyAttrs(classId)
+              case None              => newId
+            }
           case _                                                     => super.transform(t)
         }
       }
-      templateTransformer.transform(template).asInstanceOf[ClassDecl]
+      templateTransformer.transformTree(template)
     }
 
 

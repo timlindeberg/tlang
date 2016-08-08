@@ -13,14 +13,15 @@ trait NameAnalysisErrors extends Errors {
   override val ErrorPrefix = "N"
 
   def error(errorCode: Int, msg: String, tree: Positioned): Symbol = {
+    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
+
     tree match {
-      case id: ClassID    => id.setSymbol(new ClassSymbol("ERROR", false))
-      case id: VariableID => id.setSymbol(new VariableSymbol("ERROR"))
+      case id: ClassID    => id.setSymbol(new ClassSymbol(Errors.ErrorName, false))
+      case id: VariableID => id.setSymbol(new VariableSymbol(Errors.ErrorName))
       case _              =>
     }
 
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
-    new ErrorSymbol()
+    ErrorSymbol
   }
 
   //---------------------------------------------------------------------------------------

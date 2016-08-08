@@ -11,7 +11,9 @@ class TreeTransformer {
 
   val treeCopy: TreeCopier = new LazyTreeCopier()
 
-  def transform(t: Tree): Tree = t match {
+  def transformTree[T <: Tree](t: T) = transform(t).asInstanceOf[T]
+
+  protected def transform(t: Tree): Tree = t match {
     case Public()      => treeCopy.Public(t)
     case Private()     => treeCopy.Private(t)
     case Protected()   => treeCopy.Protected(t)

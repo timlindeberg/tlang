@@ -1,7 +1,9 @@
 package kool::std
+
 import kool::std::Map
 import kool::std::MapEntry
 import kool::std::Iterator
+import kool::std::Iterable
 
 class HashMap<K, V>: Map<K, V> {
 
@@ -17,13 +19,13 @@ class HashMap<K, V>: Map<K, V> {
 	Def new(initialCapacity: Int)                     = init(initialCapacity, DefaultLoadFactor)
 	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
 	Def implicit new(entries: MapEntry<K, V>[]) = {
-	    init(DefaultLoadFactor, DefualtInitialCapacity)
+	    init(DefualtInitialCapacity, DefaultLoadFactor)
 	    for(val e in entries)
 	        Add(e)
 	}
 
 	Def implicit new(entries: Object[][]) = {
-	    init(DefaultLoadFactor, DefualtInitialCapacity)
+	    init(DefualtInitialCapacity, DefaultLoadFactor)
 	    for(val e in entries){
 	        if(e.Size() != 2)
 	            error("Invalid size of map entry: " + e.Size())
@@ -68,7 +70,7 @@ class HashMap<K, V>: Map<K, V> {
     }
 
 	Def Get(key: K) = {
-		val entry = entries[index(key, capacity)]
+		val entry = entries[index(#key, capacity)]
 		if(!entry)
 			return null
 
@@ -276,8 +278,9 @@ class EntryIterator<K, V>: Iterator<MapEntry<K, V>> {
 	}
 
 	def nextEntry() = {
-		if(currentEntry && currentEntry.Next)
-			return currentEntry.Next
+	    val c = currentEntry
+		if(c && c.Next)
+			return c.Next
 
 		nextDefinedEntry()
 	}

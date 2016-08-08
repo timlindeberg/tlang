@@ -5,15 +5,23 @@
  */
 
 object TestMain {
-  //def main(args: Array[String]): Unit = {
-  //}
+  def main(args: Array[String]): Unit = {
+    val t: JavaTest = null
+    println(t.equals(null))
+  }
 
 
 
 
 }
 
-case class Lol(lol2: Lol2, i: Int)
+trait T1 {
+
+  override def toString = "T1"
+}
+
+class Lol extends T1
+
 
 case class Lol2(s: String)
 

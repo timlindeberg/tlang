@@ -8,6 +8,6 @@ trait MapEntry<K, V> {
     Def ToString(): String = "(" + Key() + " -> " + Value() + ")"
 
     Def ==(lhs: MapEntry<K, V>, rhs: MapEntry<K, V>): Bool = (lhs.Key() == rhs.Key() && lhs.Value() == rhs.Value())
-    Def #(entry: MapEntry<K, V>): Bool = entry.Key() ^ entry.Value()
+    Def #(entry: MapEntry<K, V>): Int = #entry.Key() ^ #entry.Value()
 
 }

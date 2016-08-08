@@ -10,7 +10,7 @@ import tcompiler.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.reflect._
 
 /**
   * Created by timlindeberg on 22/07/16.
@@ -85,16 +85,22 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     def invert: VarKnowledge = this
   }
 
+  trait VarKnowledgeWrapper extends VarKnowledge {
+    def inner: VarKnowledge
+  }
+
+  // Used to wrap knowledge to show it came from an and or an or expression
+  case class OrKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = AndKnowledge(inner.invert)}
+  case class AndKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = OrKnowledge(inner.invert)}
+
   // These should be objects but then it doesnt work as type parameters
   class Initialized extends VarKnowledge {override def toString = "Initialized"}
   class Used extends VarKnowledge {override def toString = "Used"}
-  class Reassigned extends VarKnowledge {override def toString = "Reassigned"}
   val Initialized = new Initialized
   val Used        = new Used
-  val Reassigned  = new Reassigned
 
+  case class Reassigned(at: StatTree) extends VarKnowledge {override def toString = s"Reassigned(${at.line}:${at.col})"}
   case class IsNull(value: Boolean) extends VarKnowledge {override def invert = IsNull(!value)}
-  case class OrCheck(v: VarKnowledge) extends VarKnowledge {override def invert = v.invert}
   case class ArraySize(size: Int) extends VarKnowledge
   case class NumericValue(value: Int) extends VarKnowledge
   case class BoolValue(condition: ExprTree) extends VarKnowledge
@@ -132,7 +138,10 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       val knowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
       varKnowledge.foreach { case (id, knowledge1) =>
         other.varKnowledge.get(id) match {
-          case Some(knowledge2) => knowledge += id -> knowledge1.diff(knowledge2)
+          case Some(knowledge2) =>
+            val diff = knowledge1.diff(knowledge2)
+            if (diff.nonEmpty)
+              knowledge += id -> diff
           case None             => knowledge += id -> knowledge1
         }
       }
@@ -143,7 +152,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       new Knowledge(knowledge.toMap, flow)
     }
 
-    def intersection(other: Knowledge, newFlowEnded: StatTree) = {
+    def intersection(other: Knowledge, newFlowEnded: Option[StatTree]) = {
       val knowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
       varKnowledge.foreach { case (id, knowledge1) =>
         other.varKnowledge.get(id) ifDefined { knowledge2 =>
@@ -151,13 +160,16 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         }
       }
 
-      val flow = if (flowEnded.isDefined && other.flowEnded.isDefined) Some(newFlowEnded) else None
+      val flow = newFlowEnded match {
+        case Some(f) => if (flowEnded.isDefined && other.flowEnded.isDefined) Some(f) else None
+        case None    => None
+      }
       new Knowledge(knowledge.toMap, flow)
     }
 
     def add[T <: VarKnowledge : ClassTag](varId: Identifier, newKnowledge: T): Knowledge = {
       varId.symbol ifDefined { sym =>
-        if (sym.isInstanceOf[FieldSymbol] && !sym.modifiers.contains(Final())) {
+        if (sym.isInstanceOf[FieldSymbol] && !sym.isFinal) {
           // cannot gain knowledge about var fields since they can change at any time
           return this
         }
@@ -166,8 +178,21 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       copy(varKnowledge = varKnowledge + (varId -> knowledge))
     }
 
-    def get[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] =
-      varKnowledge.getOrElse(varId, Set()).findInstance[T]
+
+    def get[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] = {
+      val v = varKnowledge.getOrElse(varId, Set())
+      v.findInstance[T] match {
+        case Some(x) => Some(x)
+        case None    => v.findInstance[AndKnowledge] flatMap {
+          case AndKnowledge(x) =>
+            if (classTag[T].runtimeClass.isInstance(x))
+              Some(x.asInstanceOf[T])
+            else
+              None
+          case _                  => None
+        }
+      }
+    }
 
     def invert = copy(varKnowledge = {
       val knowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
@@ -179,11 +204,11 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
     def assignment(varId: Identifier, init: Option[ExprTree], extraInfo: VarKnowledge*) = {
       val varTpe = varId.getType
-      val knowledge = getInitialKnowledge(varId, varTpe, init)
+      val initial = getInitialKnowledge(varId, varTpe, init)
       // Remove old knowledge of the given variable symbol
-      val filteredKnowledge = filterOldKnowledge(varId)
-      val extra = varId -> extraInfo.toSet
-      copy(varKnowledge = filteredKnowledge ++ (extra :: knowledge))
+      val newKnowledge = filterOldKnowledge(varId) ++ initial
+      val varIdKnowledge = newKnowledge(varId) ++ extraInfo.toSet
+      copy(varKnowledge = newKnowledge + (varId -> varIdKnowledge))
     }
 
     def addToNumericValue(varId: Identifier, increment: Int) = {
@@ -203,15 +228,27 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
     def endFlow(at: StatTree) = copy(flowEnded = Some(at))
 
-    def addOrKnowledge(fromOr: Knowledge) = {
-      // Wrap knowledge in OrChecks
-      val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
-      fromOr.varKnowledge.foreach { case (varId, vKnowledge) =>
-        val v = varKnowledge.getOrElse(varId, Set())
-        val ored = vKnowledge map { k => if (v.contains(k)) k else OrCheck(k) }
-        newKnowledge += varId -> (v ++ ored)
+    def addOrKnowledge(from: Knowledge) = _addWrapped(from, OrKnowledge)
+    def addAndKnowledge(from: Knowledge) = _addWrapped(from, AndKnowledge)
+
+    def filterReassignedVariables(branch: StatTree, afterBranch: Knowledge) = {
+      val gainedKnowledge = afterBranch - this
+      val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]() ++ varKnowledge
+      gainedKnowledge.varKnowledge foreach { case entry@(varId, knowledge) =>
+        knowledge.findInstance[Reassigned] match {
+          case Some(Reassigned(_)) =>
+            // Variable could have gotten reassigned in the branch so we have to
+            // remove previous knowledge
+            // The knowledge that can be saved from the branch is the intersection
+            // of the knowledge after the branch and the original knowledge
+            val inter = intersection(afterBranch, None)
+            val varIdKnowledge = inter.varKnowledge.getOrElse(varId, Set())
+            inter.varKnowledge foreach { case (vId, k) => newKnowledge += vId -> k }
+            newKnowledge += varId -> (varIdKnowledge + Reassigned(branch))
+          case None                =>
+        }
       }
-      copy(varKnowledge = varKnowledge ++ newKnowledge)
+      copy(varKnowledge = newKnowledge.toMap)
     }
 
     def getIdentifier(obj: ExprTree): Option[Identifier] =
@@ -246,6 +283,20 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         case _                               => None
       }
 
+    }
+
+    private def _addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {
+      val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
+      from.varKnowledge.foreach { case (varId, vKnowledge) =>
+        val v = varKnowledge.getOrElse(varId, Set())
+        val wrapped = vKnowledge map {
+          case k: VarKnowledgeWrapper => k
+          case k if v.contains(k)     => k
+          case k                      => cons(k)
+        }
+        newKnowledge += varId -> (v ++ wrapped)
+      }
+      copy(varKnowledge = varKnowledge ++ newKnowledge)
     }
 
     private def getAccessIdentifier(access: Access): Option[Identifier] = {
@@ -408,46 +459,50 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         val afterCondition = analyzeCondition(condition, afterInit)
         val afterStat = analyze(stat, afterCondition)
 
-        post.foreach(analyze(_, afterStat))
-        knowledge
+        val afterPost = post.foldLeft(afterStat)((knowledge, p) => analyze(p, knowledge))
+        knowledge.filterReassignedVariables(tree, afterPost)
       case Foreach(varDecl, container, stat) =>
         analyzeExpr(container, knowledge)
         checkValidUse(container, knowledge)
-        val newKnowledge = analyze(varDecl, knowledge)
-        analyze(stat, newKnowledge)
-        knowledge
+        val varId = new VarIdentifier(varDecl.id.getSymbol)
+        val varDeclKnowledge = knowledge.assignment(varId, None, Initialized)
+        val afterStat = analyze(stat, varDeclKnowledge)
+        knowledge.filterReassignedVariables(tree, afterStat)
       case If(condition, thn, els)           =>
         val afterCondition = analyzeCondition(condition, knowledge)
         val conditionKnowledge = afterCondition - knowledge
         val invertedCondition = knowledge + conditionKnowledge.invert
 
         val thnKnowledge = analyze(thn, afterCondition)
-        val elsKnowledge = els map (e => e match {
-          case _: If => analyze(e, knowledge) // else if does not invert knowledge
-          case _     => analyze(e, invertedCondition)
-        })
+        val elsKnowledge = els map { e => analyze(e, invertedCondition) }
         val thnEnded = thnKnowledge.flowEnded.isDefined
 
         elsKnowledge match {
           case Some(elsKnowledge) =>
-            val intersection = thnKnowledge.intersection(elsKnowledge, tree)
             val elsEnded = elsKnowledge.flowEnded.isDefined
             if (thnEnded)
               WarningUnnecessaryElse(els.get)
 
             if (elsEnded && !thnEnded)
-              intersection + conditionKnowledge
+              thnKnowledge // we know the then branch has executed
             else if (!elsEnded && thnEnded)
-              intersection + conditionKnowledge.invert
-            else
-              intersection
+              elsKnowledge // we know the else branch has executed
+            else if (elsEnded && thnEnded)
+              knowledge.endFlow(tree) // execution is dead after if branch
+            else {
+              val intersect = thnKnowledge.intersection(elsKnowledge, Some(tree))
+              intersect.filterReassignedVariables(thn, thnKnowledge).filterReassignedVariables(els.get, elsKnowledge)
+            }
           case None               =>
-            if (thnEnded) invertedCondition else knowledge
+            if (thnEnded)
+              invertedCondition
+            else
+              knowledge.filterReassignedVariables(tree, thnKnowledge)
         }
       case While(condition, stat)            =>
         val afterCondition = analyzeCondition(condition, knowledge)
-        analyze(stat, afterCondition)
-        knowledge
+        val afterWhile = analyze(stat, afterCondition)
+        knowledge.filterReassignedVariables(tree, afterWhile)
       case PrintStatTree(expr)               =>
         analyzeExpr(expr, knowledge)
       case Error(expr)                       =>
@@ -466,7 +521,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   def analyzeCondition(tree: ExprTree, knowledge: Knowledge): Knowledge = tree match {
     case And(lhs, rhs)                =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
-      analyzeCondition(rhs, lhsKnowledge)
+      val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
+      val conditionKnowledge = rhsKnowledge - knowledge
+      knowledge.addAndKnowledge(conditionKnowledge)
     case Or(lhs, rhs)                 =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
@@ -541,13 +598,13 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
         case acc@Access(obj, app)               =>
           traverse(obj, app)
           checkValidUse(obj, knowledge)
-        case Assign(obj, from)                  =>
+        case assign@Assign(obj, from)           =>
           super.traverse(t)
 
           knowledge.getIdentifier(obj) ifDefined { varId =>
             // Reset knowledge
             checkReassignment(varId, t)
-            knowledge = knowledge.assignment(varId, Some(from), Reassigned)
+            knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
           }
         case binOp@BinaryOperatorTree(lhs, rhs) =>
           traverse(lhs, rhs)

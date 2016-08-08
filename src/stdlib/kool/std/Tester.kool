@@ -17,30 +17,26 @@ class Tester<T> {
     Def static AssertFalse(condition: Bool, message: String) = Assert(!condition, message)
 
     Def static AssertEquals(actual: T?, expected: T?) = {
-        val was = "did not equal"
         if(actual && expected && actual != expected)
-            assertionFailed(actual.ToString(), expected.ToString(), was)
+            error("Assertion failed: '" + actual + "' did not equal '" + expected + "'.")
 
         if(!actual && expected)
-            assertionFailed("null", expected.ToString(), was)
+            error("Assertion failed: 'null' did not equal '" + expected + "'.")
 
         if(actual && !expected)
-            assertionFailed(actual.ToString(), "null", was)
+            error("Assertion failed: '" + actual + "' did not equal 'null'.")
     }
 
 
     Def static AssertNotEquals(actual: T?, expected: T?) = {
-        val was = "was equal to"
         if(actual && expected && actual == expected)
-            assertionFailed(actual.ToString(), expected.ToString(), was)
+            error("Assertion failed: '" + actual + "' was equal to '" + expected + "'.")
 
         if(!actual && !expected)
-            assertionFailed("null", "null", was)
+            error("Assertion failed: 'null' was equal to 'null'.")
     }
 
     Def static Fail() = error("Test failed!")
     Def static Fail(message: String) = error("Test failed: " + message)
 
-    def static assertionFailed(actual: String, expected: String, was: String) =
-        error("Assertion failed: '" + actual + "' " + was + " '" + expected + "'.")
 }

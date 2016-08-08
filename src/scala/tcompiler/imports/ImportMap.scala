@@ -1,7 +1,7 @@
 package tcompiler.imports
 
 import tcompiler.Main
-import tcompiler.ast.Trees.{ClassID, Import, RegularImport}
+import tcompiler.ast.Trees._
 import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
 
@@ -26,7 +26,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   )
 
   def this() = this(null)
-  def this(imports: List[Import], ctx: Context) {
+  def this(imports: List[Import], pack: Package, classes: List[ClassDecl], ctx: Context) {
     this(ctx)
     this.imports = imports
     val regImports = imports.filterType[RegularImport]
@@ -51,10 +51,20 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
       else
         addImport(shortName, fullName)
     }
+
+    if(pack.name != ""){
+      classes foreach { c =>
+        val className = c.id.name
+        addImport(className, s"${pack.name}.$className")
+      }
+    }
+
+
+
   }
 
-
-  def addImport(short: String, full: String) = {
+  def addImport(tup: (String, String)): Unit  = addImport(tup._1, tup._2)
+  def addImport(short: String, full: String): Unit = {
     val f = full.replaceAll("::", ".").replaceAll("/", ".")
     shortToFull += short -> f
     fullToShort += f -> short

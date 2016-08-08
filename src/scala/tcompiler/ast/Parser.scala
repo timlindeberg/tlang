@@ -93,7 +93,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val classes = createMainClass(code)
 
-    val importMap = new ImportMap(imp, ctx)
+    val importMap = new ImportMap(imp, pack, classes, ctx)
     CompilationUnit(pack, classes, importMap).setPos(startPos, nextToken)
   }
 
@@ -727,13 +727,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | <ternary> [ "[" <expression> "] = " <expression> ]
     **/
   def assignment(expr: Option[ExprTree] = None) = {
+    val startPos = nextToken
     val e = expr.getOrElse(ternary)
 
     def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
       eat(nextTokenKind)
 
       def assignmentExpr(expr: ExprTree) = constructor match {
-        case Some(cons) => cons(expr, expression())
+        case Some(cons) => cons(expr, expression()).setPos(startPos, nextToken)
         case None       => expression()
       }
 
