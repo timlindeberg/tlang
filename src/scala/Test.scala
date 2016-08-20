@@ -5,10 +5,7 @@
  */
 
 object TestMain {
-  def main(args: Array[String]): Unit = {
-    val t: JavaTest = null
-    println(t.equals(null))
-  }
+  //def main(args: Array[String]): Unit = {}
 
 
 

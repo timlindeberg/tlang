@@ -101,7 +101,7 @@ object Visualizer {
       tree match {
         case CompilationUnit(_, classes, _)                   =>
           traverse(classes)
-        case ClassDecl(id, parents, fields, methods, isAbstract) =>
+        case ClassDecl(id, parents, fields, methods) =>
           val nodeName = addNode(tree)
           methods.foreach { m =>
             val methodName = getId(m)
@@ -111,11 +111,11 @@ object Visualizer {
           traverse(methods)
         case MethodDecl(retType, id, args, stat, modifiers)      =>
           val nodeName = addNode(tree)
-          stat.ifDefined(s => {
+          stat.ifDefined { s =>
             val statName = getId(s)
             graph.addEdge(nodeName + statName, nodeName, statName)
             traverse(s)
-          })
+          }
         case _: Modifier                                         =>
         case t                                                   =>
           val nodeName = addNode(tree)

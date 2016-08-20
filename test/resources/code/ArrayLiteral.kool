@@ -1,3 +1,38 @@
+package std::lang
+
+import std::lang::extension java::lang::Object
+import std::lol::extension Object
+import std::lang::*
+std/lang/Ex$java/lang/Object
+
+
+
+extension java::lang::Object {
+
+    Def ToString() = toString()
+
+    Def ==(lhs: java::lang::Object, rhs: java::lang::Object) = lhs.equals(rhs)
+    Def ==(lhs: java::lang::Object, rhs: java::lang::Object) = !(lhs == rhs)
+    Def #(obj: java::lang::Object) = obj.hashCode()
+
+}
+
+class Ex$java/lang/Object {
+
+    Def ToString($this: java::lang::Object) = $this.toString()
+
+    Def ==(lhs: java::lang::Object, rhs: java::lang::Object) = lhs.equals(rhs)
+    Def ==(lhs: java::lang::Object, rhs: java::lang::Object) = !(lhs == rhs)
+    Def #(obj: java::lang::Object) = obj.hashCode()
+
+}
+
+val o = new java::lang::Object()
+
+o.Add(5)
+
+Ex$java/lang/Object.Add(o, 5)
+
 var intArray = {1 + 1, 2, 3}
 println(intArray.Size()) // res: 3
 println(intArray[0]) // res: 2

@@ -82,7 +82,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val code = until(() => {
       nextTokenKind match {
-        case CLASS | TRAIT    => classDeclaration()
+        case CLASS | TRAIT | EXTENSION => classDeclaration ()
         case PUBDEF | PRIVDEF =>
           val pos = nextToken
           val modifiers = methodModifiers()
@@ -98,7 +98,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   private def createMainClass(code: List[Tree]) = {
-    var classes = code collect { case x: ClassDecl => x }
+    var classes = code collect { case x: ClassDeclTree => x }
     val methods = code collect { case x: MethodDecl => x }
     val stats = code collect { case x: StatTree => x }
 
@@ -108,7 +108,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = ClassDecl(ClassID(mainName), List(), List(), List(), isAbstract = false)
+          val m = ClassDecl(ClassID(mainName), List(), List(), List())
           m.setPos(pos, nextToken)
           classes ::= m
           m
@@ -166,22 +166,29 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   }
 
   /**
-    * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parents>
-    * "{" { <varDeclaration> } { <methodDeclaration> } "}"
+    * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> "{" { <varDeclaration> } { <methodDeclaration> } "}"
+    * | extension <classTypeIdentifier> "{" { <methodDeclaration> } "}"
     */
-  def classDeclaration(): ClassDecl = {
+  def classDeclaration(): ClassDeclTree = {
     val startPos = nextToken
     val isTrait = nextTokenKind match {
-      case CLASS =>
+      case CLASS     =>
         eat(CLASS)
         false
-      case TRAIT =>
+      case TRAIT     =>
         eat(TRAIT)
         true
-      case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
+      case EXTENSION =>
+        eat(EXTENSION)
+        val id = classTypeIdentifier()
+        eat(LBRACE)
+        val methods = untilNot(() => methodDeclaration(id.name), PRIVDEF, PUBDEF)
+        eat(RBRACE)
+        return ExtensionDecl(id, methods).setPos(startPos, nextToken)
+      case _         => FatalWrongToken(currentToken, CLASS, TRAIT)
     }
     val id = classTypeIdentifier()
-    val parents = parentsDeclaration(isTrait)
+    val parents = parentsDeclaration()
     eat(LBRACE)
     val vars = untilNot(() => {
       val v = fieldDeclaration()
@@ -190,13 +197,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     val methods = untilNot(() => methodDeclaration(id.name), PRIVDEF, PUBDEF)
     eat(RBRACE)
-    ClassDecl(id, parents, vars, methods, isTrait).setPos(startPos, nextToken)
+    val cons = if (isTrait) TraitDecl else ClassDecl
+    cons(id, parents, vars, methods).setPos(startPos, nextToken)
   }
 
   /**
     * <parentsDeclaration> ::= [ : <classIdentifier> { "," <classIdentifier> } ]
     */
-  def parentsDeclaration(isTrait: Boolean): List[ClassID] = nextTokenKind match {
+  def parentsDeclaration(): List[ClassID] = nextTokenKind match {
     case COLON =>
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
@@ -1066,7 +1074,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
           _nullableBracket()
         }
 
-        while(nextTokenKind == LBRACKET)
+        while (nextTokenKind == LBRACKET)
           _nullableBracket()
 
         NewArray(e, sizes.toList)
@@ -1084,7 +1092,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val size = expression()
     eat(RBRACKET)
     e = ArrayType(e).setPos(startPos, nextToken)
-    if(nextTokenKind == QUESTIONMARK){
+    if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       e = NullableType(e).setPos(startPos, nextToken)
     }

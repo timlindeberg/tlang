@@ -31,12 +31,18 @@ object Extensions {
     def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
   }
 
-  implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](l: Collection[T]) {
+  implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](collection: Collection[T]) {
 
-    def filterType[A <: T: ClassTag]: Collection[A] = l.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
-    def filterNotType[A <: T: ClassTag]: Collection[T] = l.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
-    def findInstance[A <: T: ClassTag]: Option[A] = l.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
-
+    def filterType[A <: T: ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
+    def filterNotType[A <: T: ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
+    def findInstance[A <: T: ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
+    def findDefined[A](f: T => Option[A]): Option[A] = {
+      for(v <- collection){
+        val o = f(v)
+        if(o.isDefined) return o
+      }
+      None
+    }
   }
 
   implicit class MutableMapExtensions[K, V](m: mutable.Map[K, V]) {

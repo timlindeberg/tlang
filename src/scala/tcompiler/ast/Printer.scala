@@ -56,7 +56,9 @@ object Printer extends Colorizer {
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
-      case ClassDecl(id, parents, vars, methods, isTrait)             => p"$N$N${classOrTrait(isTrait)} $id${parentList(parents)} ${varsAndMethods(vars, methods)}"
+      case ClassDecl(id, parents, fields, methods)                    => p"$N${N}class ${restOfClassDecl(id, parents, fields, methods)}"
+      case TraitDecl(id, parents, fields, methods)                    => p"$N${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
+      case ExtensionDecl(id, methods)                                 => p"$N${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
       case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
       case MethodDecl(retType, id, args, stat, modifiers)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
       case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
@@ -150,6 +152,20 @@ object Printer extends Colorizer {
     s
   }
 
+  private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]): String = {
+    val start = p"$id${parentList(parents)}"
+    if (fields.isEmpty && methods.isEmpty)
+      return s"$start { }"
+
+    if (fields.isEmpty)
+      return p"$start $L$N$methods$R"
+
+    if (methods.isEmpty)
+      return p"$start $L$N$fields$R$R"
+
+    p"$start $L$N$fields$N$N$methods$R"
+  }
+
   private def imports(imps: List[Import]) = {
     if (imps.isEmpty) ""
     else
@@ -166,8 +182,6 @@ object Printer extends Colorizer {
     else
       p"package ${adress.mkString("::")}$N"
   }
-
-  private def classOrTrait(isTrait: Boolean) = if (isTrait) p"trait" else p"class"
 
   private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""

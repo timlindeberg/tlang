@@ -26,7 +26,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   )
 
   def this() = this(null)
-  def this(imports: List[Import], pack: Package, classes: List[ClassDecl], ctx: Context) {
+  def this(imports: List[Import], pack: Package, classes: List[ClassDeclTree], ctx: Context) {
     this(ctx)
     this.imports = imports
     val regImports = imports.filterType[RegularImport]

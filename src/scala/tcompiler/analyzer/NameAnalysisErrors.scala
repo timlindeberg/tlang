@@ -72,7 +72,7 @@ trait NameAnalysisErrors extends Errors {
     error(13, "'this' can not be used in a static context.", pos)
 
   protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], clazz: String, pos: Positioned) = {
-    val op = operatorType.operatorString(argTypes)
+    val op = operatorType.signature(argTypes)
     error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
   }
 

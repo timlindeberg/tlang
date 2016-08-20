@@ -109,7 +109,7 @@ class TypeChecker(override var ctx: Context,
         case _                          => return
       }
       if (tpe != correctOperatorType)
-        ErrorOperatorWrongReturnType(op.operatorString, correctOperatorType.toString, tpe.toString, op)
+        ErrorOperatorWrongReturnType(op.signature, correctOperatorType.toString, tpe.toString, op)
     case _                  =>
   }
 
@@ -629,7 +629,7 @@ class TypeChecker(override var ctx: Context,
       classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 
-  private def traitIsImplemented(classDecl: ClassDecl, implementedTrait: ClassSymbol) = {
+  private def traitIsImplemented(classDecl: ClassDeclTree, implementedTrait: ClassSymbol) = {
     val unimplementedMethods = implementedTrait.unimplementedMethods()
     unimplementedMethods.foreach { case (method, owningTrait) =>
       if (!classDecl.getSymbol.implementsMethod(method))

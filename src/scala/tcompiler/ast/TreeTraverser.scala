@@ -11,7 +11,7 @@ class TreeTraverser {
   def traverse(t: Tree): Unit = t match {
     case _: Leaf                                      => // No need to recurse further
     case CompilationUnit(pack, classes, _)            => traverse(pack, classes)
-    case ClassDecl(id, parents, fields, methods, _)   => traverse(id, parents, fields, methods)
+    case ClassDeclTree(id, parents, fields, methods)  => traverse(id, parents, fields, methods)
     case FuncTree(id, retType, args, stat, modifiers) => traverse(retType, id, args, stat, modifiers)
     case Formal(tpe, id)                              => traverse(tpe, id)
     case ArrayType(tpe)                               => traverse(tpe)

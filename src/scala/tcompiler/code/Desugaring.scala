@@ -1,10 +1,10 @@
 package tcompiler.code
 
-import tcompiler.analyzer.Symbols.{ClassSymbol, OperatorSymbol}
+import cafebabe.AbstractByteCodes.NewMultidimensionalArray
+import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTransformer
+import tcompiler.ast.{Printer, TreeTransformer, TreeTraverser}
 import tcompiler.ast.Trees._
-import tcompiler.ast.{Printer, TreeTransformer}
 import tcompiler.utils.{Context, Pipeline}
 
 import scala.collection.mutable.ListBuffer
@@ -28,6 +28,7 @@ class Desugarer {
   class DesugarTransformer extends TreeTransformer {
 
     override protected def transform(t: Tree) = t match {
+      case extensionDecl: ExtensionDecl   => desugarExtensionDecl(super.transform(extensionDecl))
       case slice: ArraySlice              => desugarArraySlice(super.transform(slice))
       case opDecl: OperatorDecl           => replaceOperatorDecl(super.transform(opDecl))
       case incDec: IncrementDecrementTree =>
@@ -58,6 +59,48 @@ class Desugarer {
     val s = desugarTransformer.transformTree(cu)
     //println(Printer(s))
     s
+  }
+
+  /**
+    *
+    * @param t
+    * @return
+    */
+  def desugarExtensionDecl(t: Tree): Tree = {
+    if (!t.isInstanceOf[ExtensionDecl])
+      return t
+
+    val extensionDecl = t.asInstanceOf[ExtensionDecl]
+    val exName = extensionDecl.id.name + "$ex"
+    val classSymbol = new ClassSymbol(exName, false)
+    val extensionClassSymbol = extensionDecl.getSymbol.asInstanceOf[ExtensionClassSymbol]
+    val originalClass = extensionClassSymbol.originalClassSymbol
+
+    def replaceThis(stat: StatTree, thisId: VariableID) = {
+      new TreeTransformer {
+        override protected def transform(t: Tree) = t match {
+          case This() => thisId
+          case _      => super.transform(t)
+        }
+      }.transformTree(stat)
+    }
+
+    val newMethods = extensionDecl.methods.map { meth =>
+      val modifiers = Set[Modifier](Static())
+      val thisName = "$this"
+      val thisSym = new VariableSymbol(thisName).setType(TObject(originalClass))
+      val thisId = VariableID(thisName).setSymbol(thisSym)
+      val newMethSym = new MethodSymbol(meth.getSymbol.name, classSymbol, None, modifiers)
+      newMethSym.argList = thisSym :: meth.getSymbol.argList
+      newMethSym.args += thisName -> thisSym
+      val thisArg = Formal(extensionDecl.id, thisId)
+
+      // Replace references to this with the this variable
+      val newStat = meth.stat map { s => replaceThis(s, thisId) }
+      MethodDecl(meth.retType, meth.id, thisArg :: meth.args, newStat, modifiers).setSymbol(newMethSym)
+    }
+
+    ClassDecl(ClassID(exName), Nil, Nil, newMethods)
   }
 
   /**

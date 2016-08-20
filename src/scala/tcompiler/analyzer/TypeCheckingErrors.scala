@@ -79,7 +79,7 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorOperatorPrivacy(opSymbol: OperatorSymbol, className: String, callingClass: String, pos: Positioned) = {
     val accessability = accessabilityString(opSymbol)
-    val operatorName = opSymbol.operatorString
+    val operatorName = opSymbol.signature
     error(12, s"Cannot call $accessability operator '$operatorName' defined in '$className' from class '$callingClass'.", pos)
   }
 
@@ -90,7 +90,7 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorOverloadedOperatorNotFound(op: OperatorTree, args: List[Type], pos: Positioned): Type = {
     val classesString = overloadedOperatorClassesString(args)
-    val operatorName = op.operatorString(args)
+    val operatorName = op.signature(args)
     error(13, s"$classesString contain an operator '$operatorName'.", pos)
   }
 
@@ -124,7 +124,7 @@ trait TypeCheckingErrors extends Errors {
   }
 
   protected def ErrorOperatorDoesNotExist(expr: OperatorTree, args: (Type, Type), pos: Positioned): Type = {
-    val operator = expr.operatorString(List(args._1, args._2))
+    val operator = expr.signature(List(args._1, args._2))
     error(23, s"Operator '$operator' does not exist.", pos)
   }
 

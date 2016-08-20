@@ -80,7 +80,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     replacer.transformTree(cu)
   }
 
-  private def checkDuplicateTemplateNames(templateClass: ClassDecl) = {
+  private def checkDuplicateTemplateNames(templateClass: ClassDeclTree) = {
     var seen = Set[TypeTree]()
     var reportedFor = Set[TypeTree]()
     val templateTypes = templateClass.id.templateTypes
@@ -110,12 +110,12 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     def generateNeededTemplates(): Unit = {
       val traverser = new TreeTraverser {
         override def traverse(t: Tree) = t match {
-          case ClassDecl(id, parents, fields, methods, isAbstract) =>
+          case ClassDeclTree(id, parents, fields, methods) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
             traverse(parents, fields, methods)
-          case c: ClassID if c.isTemplated                         => generateClass(c)
-          case _                                                   => super.traverse(t)
+          case c: ClassID if c.isTemplated                 => generateClass(c)
+          case _                                           => super.traverse(t)
         }
       }
       traverser.traverse(cu)
@@ -183,7 +183,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       templateCus.get(className)
     }
 
-    private def newTemplateClass(templateCU: CompilationUnit, typeId: ClassID): ClassDecl = {
+    private def newTemplateClass(templateCU: CompilationUnit, typeId: ClassID): ClassDeclTree = {
       val shortName = typeId.name.split("::").last
       val template = templateCU.classes.find(_.id.name == shortName).get
 
@@ -198,12 +198,17 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         override val treeCopy = new TreeCopier
 
         override def transform(t: Tree) = t match {
-          case c@ClassDecl(id, parents, fields, methods, isAbstract) =>
+          case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
             val newId = treeCopy.ClassID(id, templateName, Nil)
-            treeCopy.ClassDecl(c, newId, tr(parents), tr(fields), tr(methods), isAbstract)
-          case classId@ClassID(name, tTypes)                         =>
+            val cons: (List[ClassID], List[VarDecl], List[FuncTree]) => ClassDeclTree = c match {
+              case _: ClassDecl => treeCopy.ClassDecl(c, newId, _, _, _)
+              case _: TraitDecl => treeCopy.TraitDecl(c, newId, _, _, _)
+              case _            => ???
+            }
+            cons(tr(parents), tr(fields), tr(methods))
+          case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, tr(tTypes))
             if (classId.isTemplated)
               new TemplateClassGenerator(templateCU).generateClass(newId)
@@ -212,7 +217,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
               case Some(replacement) => replacement.copyAttrs(classId)
               case None              => newId
             }
-          case _                                                     => super.transform(t)
+          case _                                             => super.transform(t)
         }
       }
       templateTransformer.transformTree(template)

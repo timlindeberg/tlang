@@ -408,7 +408,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   }
 
 
-  def apply(clazz: ClassDecl): Unit = {
+  def apply(clazz: ClassDeclTree): Unit = {
 
     val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { (knowledge, field) =>
       val sym = field.getSymbol

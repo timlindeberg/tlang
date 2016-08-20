@@ -5,7 +5,7 @@ import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ClassSymbolLocator, ImportMap}
 import tcompiler.utils._
-import tcompiler.utils.Extensions.MutableMapExtensions
+import tcompiler.utils.Extensions._
 import scala.collection.mutable
 
 
@@ -37,20 +37,26 @@ object Symbols {
     val classes = mutable.Map(Main.TLangObject.replaceAll("/", ".") -> Types.ObjectSymbol,
                                Main.TLangString.replaceAll("/", ".") -> Types.StringSymbol)
 
+    val extensions = mutable.Map[String, ClassSymbol]()
+
     def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
       val fullName = importMap.getFullName(name)
       classes.getOrElseMaybeUpdate(fullName, ClassSymbolLocator.findSymbol(fullName))
     }
+
   }
 
-  class ClassSymbol(var name: String,
+  class ClassSymbol(val name: String,
                     var isAbstract: Boolean,
                     var isComplete: Boolean = true) extends Symbol {
 
-    name = name.replaceAll("\\.", "/")
+    //name = name.replaceAll("\\.", "/")
 
     override def getType = TObject(this)
     override def setType(tpe: Type) = sys.error("Set type on ClassSymbol")
+
+    var filledExtensionClasses                       = false
+    var extensionClasses: List[ExtensionClassSymbol] = Nil
 
     var parents: List[ClassSymbol] = Nil
 
@@ -81,13 +87,6 @@ object Symbols {
 
     def addField(varSymbol: FieldSymbol): Unit = fields += (varSymbol.name -> varSymbol)
 
-    def isImplementedInSuperClass(name: String, args: List[Type]) = {
-      findMethod(name, args, exactTypes = false) match {
-        case Some(m) => false
-        case None    => true
-      }
-    }
-
     def implementsMethod(method: MethodSymbol): Boolean = {
       findMethod(method.name, method.argTypes, exactTypes = false) match {
         case Some(meth) if !meth.isAbstract => true
@@ -96,66 +95,35 @@ object Symbols {
       }
     }
 
-    def lookupParentMethod(name: String, args: List[Type]): Option[MethodSymbol] = {
-      val matchingMethods = parents.map(_.lookupMethod(name, args)).filter(_.isDefined)
-      if (matchingMethods.isEmpty)
-        None
-      else
-        matchingMethods.head // TODO: Conflicting error
+    def lookupParentMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
+      parents.findDefined(_.lookupMethod(name, args, exactTypes))
     }
 
     def lookupParent(name: String): Option[ClassSymbol] = {
-      parents.find(_.name == name) match {
-        case v@Some(p) => v
-        case None      =>
-          parents.foreach(p => p.lookupParent(name) match {
-            case v@Some(p) => return v
-            case None      =>
-          })
-          None
-      }
+      parents.find(_.name == name).orElse(parents.findDefined(_.lookupParent(name)))
     }
 
-    def lookupMethod(name: String, args: List[Type], recursive: Boolean = true, exactTypes: Boolean = false): Option[MethodSymbol] = {
-      findMethod(name, args, exactTypes) match {
-        case Some(meth)                            => Some(meth)
-        case None if recursive && parents.nonEmpty => lookupParentMethod(name, args)
-        case _                                     => None
-      }
+    def findExtensionMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
+      fillExtensionClasses()
+      extensionClasses.findDefined(_.findMethod(name, args, exactTypes))
+    }
+
+    def lookupMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
+      findMethod(name, args, exactTypes).
+      orElse(lookupParentMethod(name, args, exactTypes)).
+      orElse(findExtensionMethod(name, args, exactTypes))
     }
 
     def lookupParentField(name: String): Option[FieldSymbol] = {
-      val matchingVars = parents.map(_.lookupField(name)).filter(_.isDefined)
-      if (matchingVars.isEmpty)
-        None
-      else
-        matchingVars.head
+      parents.findDefined(_.lookupField(name))
     }
 
-    def lookupField(name: String, recursive: Boolean = true): Option[FieldSymbol] = {
-      fields.get(name) match {
-        case x@Some(_)                             => x
-        case None if recursive && parents.nonEmpty =>
-          val matchingVars = parents.map(_.lookupField(name)).filter(_.isDefined)
-          if(matchingVars.isEmpty)
-            None
-          else
-            matchingVars.head
-        case _                                     => None
-      }
+    def lookupField(name: String): Option[FieldSymbol] = {
+      fields.get(name).orElse(lookupParentField(name))
     }
 
     def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false): Option[OperatorSymbol] = {
-      findOperator(operatorType, args, exactTypes) match {
-        case x@Some(_)                => x
-        case None if parents.nonEmpty =>
-          val matchingOperators = parents.map(_.lookupOperator(operatorType, args, exactTypes)).filter(_.isDefined)
-          if(matchingOperators.isEmpty)
-            None
-          else
-            matchingOperators.head
-        case _                        => None
-      }
+      findOperator(operatorType, args, exactTypes).orElse(parents.findDefined(_.lookupOperator(operatorType, args, exactTypes)))
     }
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
@@ -163,18 +131,25 @@ object Symbols {
 
     override def toString = name
 
-    private[Symbols] def completeClassSymbol() =
+    private def completeClassSymbol() =
       if (!isComplete) {
         ClassSymbolLocator.fillClassSymbol(this)
         isComplete = true
       }
+
+    private def fillExtensionClasses() = {
+      if (!filledExtensionClasses) {
+        ClassSymbolLocator.fillClassSymbol(this)
+        filledExtensionClasses = true
+      }
+    }
 
     private def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
       val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
       findMethodPrioritiseExactMatch(ops, name, args, exactTypes)
     }
 
-    private def findMethod(name: String, args: List[Type], exactTypes: Boolean) = {
+    def findMethod(name: String, args: List[Type], exactTypes: Boolean) = {
       val meths = methods.filter(_.name == name)
       findMethodPrioritiseExactMatch(meths, name, args, exactTypes)
     }
@@ -208,14 +183,18 @@ object Symbols {
     }
 
     private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
-      operatorType1 match {
-        case Assign(ArrayRead(_, _), _)         =>
-          operatorType2.isInstanceOf[Assign] && operatorType2.asInstanceOf[Assign].to.isInstanceOf[ArrayRead]
-        case _: PreIncrement | _: PostIncrement => operatorType2.isInstanceOf[PreIncrement] || operatorType2.isInstanceOf[PostIncrement]
-        case _: PreDecrement | _: PostDecrement => operatorType2.isInstanceOf[PreDecrement] || operatorType2.isInstanceOf[PostDecrement]
-        case _                                  => operatorType1.getClass == operatorType2.getClass
+      (operatorType1, operatorType2) match {
+        case (Assign(ArrayRead(_, _), _), Assign(ArrayRead(_, _), _))                 => true
+        case (_: PreIncrement | _: PostIncrement, _: PreIncrement | _: PostIncrement) => true
+        case (_: PreDecrement | _: PostDecrement, _: PreDecrement | _: PostDecrement) => true
+        case _                                                                        => operatorType1.getClass == operatorType2.getClass
       }
     }
+
+  }
+
+  class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name, false, true) {
+    var originalClassSymbol: ClassSymbol = null
   }
 
   class MethodSymbol(val name: String,
@@ -268,9 +247,9 @@ object Symbols {
                        override val modifiers: Set[Modifier]
                       ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
 
-    def operatorString = operatorType.operatorString(argList.map(_.getType))
+    override def signature = operatorType.signature(argList.map(_.getType))
 
-    override def toString = operatorString
+    override def toString = signature
 
   }
 
@@ -283,6 +262,6 @@ object Symbols {
                     override val modifiers: Set[Modifier] = Set(),
                     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol { val name = Errors.ErrorName }
+  case object ErrorSymbol extends Symbol {val name = Errors.ErrorName}
 
 }

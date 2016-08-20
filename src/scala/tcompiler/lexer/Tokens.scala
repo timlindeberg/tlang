@@ -100,6 +100,7 @@ object Tokens {
   case object AS            extends TokenKind("as")
   case object OBJECT        extends TokenKind("object")
   case object CLASS         extends TokenKind("class")
+  case object EXTENSION     extends TokenKind("extension")
   case object TRAIT         extends TokenKind("trait")
   case object PUBDEF        extends TokenKind("Def")
   case object PRIVDEF       extends TokenKind("def")

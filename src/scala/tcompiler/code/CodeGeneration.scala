@@ -38,7 +38,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDecl, ctx: Context): String = {
+  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): String = {
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -103,7 +103,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     fileStream.close()
   }
 
-  private def makeClassFile(classDecl: ClassDecl) = {
+  private def makeClassFile(classDecl: ClassDeclTree) = {
     val classSymbol = classDecl.getSymbol
     val parents = classSymbol.parents
     val className = classSymbol.name
@@ -150,7 +150,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     ch
   }
 
-  private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDecl): Unit = {
+  private def generateDefaultConstructor(classFile: ClassFile, classDecl: ClassDeclTree): Unit = {
     if (classDecl.getSymbol.isAbstract)
       return
 
@@ -160,7 +160,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     ch.freeze
   }
 
-  private def generateConstructor(con: Option[ConstructorDecl], classFile: ClassFile, classDecl: ClassDecl): MethodHandler = {
+  private def generateConstructor(con: Option[ConstructorDecl], classFile: ClassFile, classDecl: ClassDeclTree): MethodHandler = {
     val mh = con match {
       case Some(conDecl) =>
         val argTypes = conDecl.getSymbol.argList.map(_.getType.byteCodeName).mkString
@@ -175,7 +175,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     mh
   }
 
-  private def initializeStaticFields(classDecl: ClassDecl, classFile: ClassFile): Unit = {
+  private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {
     val staticFields = classDecl.fields.filter(v => v.init.isDefined && v.isStatic)
     if (staticFields.isEmpty)
       return
@@ -190,7 +190,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     ch.freeze
   }
 
-  private def initializeNonStaticFields(classDecl: ClassDecl, ch: CodeHandler) = {
+  private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler) = {
     val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     nonStaticFields foreach { case varDecl@VarDecl(_, id, Some(expr), _) =>
@@ -199,7 +199,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     }
   }
 
-  private def compileField(expr: ExprTree, id: VariableID, classDecl: ClassDecl, ch: CodeHandler, codeGenerator: CodeGenerator) = {
+  private def compileField(expr: ExprTree, id: VariableID, classDecl: ClassDeclTree, ch: CodeHandler, codeGenerator: CodeGenerator) = {
     codeGenerator.compileExpr(expr)
     val sym = id.getSymbol
     val className = classDecl.getSymbol.name
@@ -274,8 +274,8 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     case None           => ch << RETURN
   }
 
-  private def addSuperCall(mh: MethodHandler, ct: ClassDecl) = {
-    val superClassName = ct.getSymbol.parents match {
+  private def addSuperCall(mh: MethodHandler, classDecl: ClassDeclTree) = {
+    val superClassName = classDecl.getSymbol.parents match {
       case (c: ClassSymbol) :: _ => if (c.isAbstract) JavaObject else c.name
       case Nil                   => JavaObject
     }

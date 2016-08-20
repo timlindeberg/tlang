@@ -89,15 +89,17 @@ object Trees {
 
       // This is not very elegant but is one way to get around type erasure
       from match {
-        case x: ClassDecl  => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
-        case x: ClassID    => to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
-        case x: VariableID => to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
-        case x: MethodID   => to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
-        case x: FuncTree   => to.asInstanceOf[FuncTree].setSymbol(x.getSymbol)
-        case x: Formal     => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
-        case x: VarDecl    => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
-        case x: This       => to.asInstanceOf[This].setSymbol(x.getSymbol)
-        case x: Super      => to.asInstanceOf[Super].setSymbol(x.getSymbol)
+        case x: ClassDecl     => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
+        case x: TraitDecl     => to.asInstanceOf[TraitDecl].setSymbol(x.getSymbol)
+        case x: ExtensionDecl => to.asInstanceOf[ExtensionDecl].setSymbol(x.getSymbol)
+        case x: ClassID       => to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
+        case x: VariableID    => to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
+        case x: MethodID      => to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
+        case x: FuncTree      => to.asInstanceOf[FuncTree].setSymbol(x.getSymbol)
+        case x: Formal        => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
+        case x: VarDecl       => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
+        case x: This          => to.asInstanceOf[This].setSymbol(x.getSymbol)
+        case x: Super         => to.asInstanceOf[Super].setSymbol(x.getSymbol)
       }
     }
   }
@@ -109,7 +111,7 @@ object Trees {
   /*-------------------------------- Top level Trees --------------------------------*/
 
   case class CompilationUnit(pack: Package,
-                             var classes: List[ClassDecl],
+                             var classes: List[ClassDeclTree],
                              importMap: ImportMap) extends Tree {
 
     def getPackageDirectory = pack.directory
@@ -142,16 +144,46 @@ object Trees {
 
   case class RegularImport(adress: List[String]) extends Import
   case class WildCardImport(adress: List[String]) extends Import
-
+  case class ExtensionImport(adress: List[String], className: List[String]) extends Import
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
+
+
+  object ClassDeclTree {
+    def unapply(c: ClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods)
+  }
+
+  trait ClassDeclTree extends Tree with Symbolic[ClassSymbol] {
+    val id     : ClassID
+    var parents: List[ClassID]
+    val fields : List[VarDecl]
+    var methods: List[FuncTree]
+
+    def isAbstract: Boolean
+
+    def implementedTraits = parents.filter(_.getSymbol.isAbstract)
+  }
 
   case class ClassDecl(id: ClassID,
                        var parents: List[ClassID],
                        fields: List[VarDecl],
-                       var methods: List[FuncTree],
-                       isAbstract: Boolean) extends Tree with Symbolic[ClassSymbol] {
-    def implementedTraits = parents.filter(_.getSymbol.isAbstract)
+                       var methods: List[FuncTree]) extends ClassDeclTree {
+    val isAbstract = false
+  }
+
+  case class TraitDecl(id: ClassID,
+                       var parents: List[ClassID],
+                       fields: List[VarDecl],
+                       var methods: List[FuncTree]) extends ClassDeclTree {
+    val isAbstract = true
+  }
+
+  case class ExtensionDecl(id: ClassID, var methods: List[FuncTree]) extends ClassDeclTree {
+    // Extensions cannot declare parents or fields
+    // Fields might be supportd in the future
+    var parents    = List[ClassID]()
+    val fields     = List[VarDecl]()
+    val isAbstract = false
   }
 
 
@@ -280,7 +312,7 @@ object Trees {
   trait OperatorTree extends ExprTree {
     val op: String
 
-    def operatorString(args: List[Any]): String
+    def signature(args: List[Any]): String
 
     def lookupOperator(arg: Type): Option[OperatorSymbol] = lookupOperator(List(arg))
 
@@ -309,7 +341,7 @@ object Trees {
     val lhs: ExprTree
     val rhs: ExprTree
 
-    def operatorString(args: List[Any]): String = s"${args(0)} $op ${args(1)}"
+    def signature(args: List[Any]): String = s"${args(0)} $op ${args(1)}"
   }
 
   object BinaryOperatorTree {
@@ -374,7 +406,7 @@ object Trees {
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
 
-    def operatorString(args: List[Any]) = op + args.head
+    def signature(args: List[Any]) = op + args.head
   }
 
   object UnaryOperatorTree {
@@ -408,13 +440,13 @@ object Trees {
     val op          = "++"
     val isPre       = false
     val isIncrement = true
-    override def operatorString(args: List[Any]) = args.head + op
+    override def signature(args: List[Any]) = args.head + op
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
     val op          = "--"
     val isPre       = false
     val isIncrement = false
-    override def operatorString(args: List[Any]) = args.head + op
+    override def signature(args: List[Any]) = args.head + op
   }
 
   /*-------------------------------- Array Operator Trees --------------------------------*/
@@ -422,7 +454,7 @@ object Trees {
   trait ArrayOperatorTree extends OperatorTree {
     val arr: ExprTree
 
-    def operatorString(args: List[Any], className: String): String = className + operatorString(args)
+    def operatorString(args: List[Any], className: String): String = className + signature(args)
   }
   object ArrayOperatorTree {
     def unapply(e: ArrayOperatorTree) = Some(e.arr)
@@ -430,15 +462,15 @@ object Trees {
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
     override val op: String = "[]="
-    override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
+    override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
     override val op: String = "[]"
-    override def operatorString(args: List[Any]): String = s"[${args(0)}]"
+    override def signature(args: List[Any]): String = s"[${args(0)}]"
   }
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree]) extends ArrayOperatorTree {
     override val op: String = "[:]"
-    override def operatorString(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
+    override def signature(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
   }
 
   /*-------------------------------- Literal and Identifer Trees --------------------------------*/
@@ -572,7 +604,7 @@ object Trees {
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
     override val arr: ExprTree = to
     override val op : String   = "[]="
-    override def operatorString(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
+    override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree
 

@@ -8,7 +8,7 @@ import tcompiler.imports.ImportMap
   */
 
 class TreeCopier {
-  def CompilationUnit(t: Tree, pack: Package, classes: List[ClassDecl], importMap: ImportMap) =
+  def CompilationUnit(t: Tree, pack: Package, classes: List[ClassDeclTree], importMap: ImportMap) =
     new CompilationUnit(pack, classes, importMap).copyAttrs(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
@@ -22,8 +22,14 @@ class TreeCopier {
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
-  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean) =
-    new ClassDecl(id, parents, fields, methods, isTrait).copyAttrs(t)
+  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) =
+    new ClassDecl(id, parents, fields, methods).copyAttrs(t)
+
+  def TraitDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) =
+    new TraitDecl(id, parents, fields, methods).copyAttrs(t)
+
+  def ExtensionDecl(t: Tree, id: ClassID, methods: List[FuncTree]) =
+    new ExtensionDecl(id, methods).copyAttrs(t)
 
   /*-------------------------------- Modifier Trees --------------------------------*/
 
@@ -245,7 +251,7 @@ class TreeCopier {
 }
 
 class LazyTreeCopier extends TreeCopier {
-  override def CompilationUnit(tree: Tree, pack: Package, classes: List[ClassDecl], importMap: ImportMap) = tree match {
+  override def CompilationUnit(tree: Tree, pack: Package, classes: List[ClassDeclTree], importMap: ImportMap) = tree match {
     case t@CompilationUnit(pack0, classes0, importMap0)
       if (pack eq pack0) && (classes eq classes0) && (importMap eq importMap0) => t
     case _ => super.CompilationUnit(tree, pack, classes, importMap)
@@ -265,10 +271,20 @@ class LazyTreeCopier extends TreeCopier {
       if (adress eq adress0) => t
     case _ => super.WildCardImport(tree, adress)
   }
-  override def ClassDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree], isTrait: Boolean) = tree match {
-    case t@ClassDecl(id0, parents0, fields0, methods0, isTrait0)
-      if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) && (isTrait == isTrait0) => t
-    case _ => super.ClassDecl(tree, id, parents, fields, methods, isTrait)
+  override def ClassDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) = tree match {
+    case t@ClassDecl(id0, parents0, fields0, methods0)
+      if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) => t
+    case _ => super.ClassDecl(tree, id, parents, fields, methods)
+  }
+  override def TraitDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) = tree match {
+    case t@TraitDecl(id0, parents0, fields0, methods0)
+      if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) => t
+    case _ => super.TraitDecl(tree, id, parents, fields, methods)
+  }
+  override def ExtensionDecl(tree: Tree, id: ClassID, methods: List[FuncTree]) = tree match {
+    case t@ExtensionDecl(id0, methods0)
+      if (id eq id0) && (methods eq methods0) => t
+    case _ => super.ExtensionDecl(tree, id, methods)
   }
   override def Public(tree: Tree) = tree match {
     case t@Public() => t
