@@ -11,7 +11,7 @@ class TreeTransformer {
 
   val treeCopy: TreeCopier = new LazyTreeCopier()
 
-  def transformTree[T <: Tree](t: T) = transform(t).asInstanceOf[T]
+  def apply[T <: Tree](t: T) = transform(t).asInstanceOf[T]
 
   protected def transform(t: Tree): Tree = t match {
     case Public()      => treeCopy.Public(t)
@@ -37,13 +37,13 @@ class TreeTransformer {
 
     case CompilationUnit(pack, classes, importMap) =>
       treeCopy.CompilationUnit(t, pack, tr(classes), importMap)
-    case Package(adress)                                    =>
-      treeCopy.Package(t, adress)
+    case Package(address)                                    =>
+      treeCopy.Package(t, address)
 
-    case RegularImport(adress)                                      =>
-      treeCopy.RegularImport(t, adress)
-    case WildCardImport(adress)                                     =>
-      treeCopy.WildCardImport(t, adress)
+    case RegularImport(address)                                      =>
+      treeCopy.RegularImport(t, address)
+    case WildCardImport(address)                                     =>
+      treeCopy.WildCardImport(t, address)
     case ClassDecl(id, parents, fields, methods)           =>
       treeCopy.ClassDecl(t, tr(id), tr(parents), tr(fields), tr(methods))
     case TraitDecl(id, parents, fields, methods)           =>

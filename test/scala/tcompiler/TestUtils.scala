@@ -3,18 +3,12 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.FlatSpec
-import tcompiler.analyzer.Types.{TUntyped, Typed}
-import tcompiler.ast.ForeachTraverser
-import tcompiler.ast.Trees.{CompilationUnit, Empty}
-import tcompiler.lexer.Token
 import tcompiler.utils.{Context, Reporter}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
 import scala.io.Source
-import scala.sys.process.{ProcessLogger, _}
+import scala.sys.process._
 
 object TestUtils extends FlatSpec {
 
@@ -59,8 +53,10 @@ object TestUtils extends FlatSpec {
   }
 
   def executeTProgram(classPaths: List[String], mainName: String): String = {
-    val cp = classPaths.mkString(classPathSeperator)
-    val f = Future(blocking(s"java -cp $cp $mainName " !!))
+    val cp = "\"" + classPaths.mkString(classPathSeperator) + "\""
+    val exec = s"java -cp $cp $mainName"
+    println(exec)
+    val f = Future(blocking(exec!!))
     try {
       Await.result(f, Timeout)
     } catch {

@@ -5,7 +5,7 @@ a.Test() // res: A
 a.Test(5) // res: A5
 A.StaticTest() // res: Static A
 println(a + b) // res: 5
-println(#a) // res: 0
+println(#a) // res: 10
 a[5] = 5
 println(a[5]) // res: 15
 
@@ -13,15 +13,22 @@ extension A {
 
     Def Test(i: Int) = println("A" + i)
     Def Test() = println("A")
+    Def Test2() = GetInt() + this.i
+
     Def static StaticTest() = println("Static A")
 
     Def +(lhs: A, rhs: A) = 5
-    Def #(a: A) = 0
+    Def #(a: A) = -a.GetInt() + 5
     Def [](index: Int) = i + index
     Def []=(index: Int, value: Int) = (i = index + value)
 
 }
 
 class A {
-    Var i = 0
+
+    Var i = 1
+
+    Def GetInt() = 5
+
+    Def -(a: A) = new A()
 }

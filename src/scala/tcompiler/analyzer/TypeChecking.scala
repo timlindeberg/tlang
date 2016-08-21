@@ -3,13 +3,11 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.Printer
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
-import scala.collection.TraversableLike
 import scala.collection.mutable.ArrayBuffer
 
 object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
@@ -71,8 +69,6 @@ class TypeChecker(override var ctx: Context,
       return
     }
 
-    if(currentMethodSymbol.name == "MakeString")
-      println
     currentMethodSymbol.stat.ifDefined(tcStat)
     hasBeenTypechecked += currentMethodSymbol
 
@@ -125,8 +121,8 @@ class TypeChecker(override var ctx: Context,
         case Some(t) => init ifDefined {tcExpr(_, t.getType)}
         case None    => init match {
           case Some(expr) =>
-            val inferedType = tcExpr(expr)
-            id.setType(inferedType)
+            val inferredType = tcExpr(expr)
+            id.setType(inferredType)
           case _          => ErrorNoTypeNoInitalizer(varSym.name, varDecl)
         }
       }

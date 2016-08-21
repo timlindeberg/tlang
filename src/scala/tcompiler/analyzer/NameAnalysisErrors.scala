@@ -43,7 +43,7 @@ trait NameAnalysisErrors extends Errors {
     error(3, s"Class '$name' is already defined at line '$line'.", pos)
 
   protected def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned) =
-    error(4, s"Variable '$name' is already defined at line '$line'.", pos)
+    error(4, s"Variable named '$name' is already defined at line '$line'.", pos)
 
   protected def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned) =
     error(5, s"Field '$name' is already defined in super class.", pos)
@@ -71,9 +71,14 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorThisInStaticContext(pos: Positioned) =
     error(13, "'this' can not be used in a static context.", pos)
 
-  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], clazz: String, pos: Positioned) = {
+  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, pos: Positioned) = {
     val op = operatorType.signature(argTypes)
-    error(14, s"Operator '$op' defined in class '$clazz' needs to have '$clazz' as an argument.", pos)
+    val name = classSymbol.name
+    val classString = classSymbol match {
+      case e: ExtensionClassSymbol => s"extension class of '$name'"
+      case e                       => s"class '$name'"
+    }
+    error(14, s"Operator '$op' defined in $classString needs to have '$name' as an argument.", pos)
   }
 
   protected def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {
@@ -135,9 +140,9 @@ trait NameAnalysisErrors extends Errors {
 
   private def inheritenceList(set: Set[ClassSymbol], c: ClassSymbol) = {
     val first = if (set.size >= 2)
-                  set.map(c => s"'${c.name}'").mkString(" <: ")
-                else
-                  c.name
+      set.map(c => s"'${c.name}'").mkString(" <: ")
+    else
+      c.name
     s"$first <: '${c.name}'"
   }
 

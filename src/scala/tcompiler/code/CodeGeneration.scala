@@ -123,7 +123,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
     classFile.setFlags(flags)
-    // Defualt is public
+    // Default is public
 
     classFile
   }
@@ -133,10 +133,10 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
 
     var offset = if (methTree.isStatic) 0 else 1
 
-    methTree.args.zipWithIndex.foreach {
+    methTree.getSymbol.argList.zipWithIndex.foreach {
       case (arg, i) =>
-        localVariableMap(arg.getSymbol) = i + offset
-        if (arg.getSymbol.getType.size == 2) {
+        localVariableMap(arg) = i + offset
+        if (arg.getType.size == 2) {
           // Longs and doubles take up two slots
           offset += 1
         }

@@ -3,12 +3,10 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.{Printer, TreeTraverser}
+import tcompiler.ast.TreeTraverser
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
-
-import scala.collection.mutable.ListBuffer
 
 object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
 
@@ -125,10 +123,10 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     classDecl.methods foreach { m => addSymbols(m, sym) }
   }
 
-  private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit  = {
+  private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
     val id = varDecl.id
     val newSymbol = new FieldSymbol(id.name, varDecl.modifiers, classSymbol).setPos(varDecl)
-    ensureIdentiferNotDefined(classSymbol.fields, id.name, varDecl)
+    ensureIdentifierNotDefined(classSymbol.fields, id.name, varDecl)
     id.setSymbol(newSymbol)
     varDecl.setSymbol(newSymbol)
 
@@ -145,7 +143,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     classSymbol.addField(newSymbol)
   }
 
-  private def addSymbols(funcTree: FuncTree, classSymbol: ClassSymbol): Unit  = {
+  private def addSymbols(funcTree: FuncTree, classSymbol: ClassSymbol): Unit = {
     val id = funcTree.id
     val name = id.name
     val sym = funcTree match {
@@ -161,7 +159,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       case conDecl@ConstructorDecl(_, _, _, stat, modifiers)        =>
         val sym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
 
-        // TODO: Make sure constructors arent declared as abstract
+        // TODO: Make sure constructors aren't declared as abstract
         if (stat.isEmpty)
           ErrorAbstractOperator(conDecl)
         sym
@@ -183,7 +181,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val id = formal.id
     val modifiers: Set[Modifier] = Set(Private(), Final())
     val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
-    ensureIdentiferNotDefined(methSymbol.args, id.name, id)
+    ensureIdentifierNotDefined(methSymbol.args, id.name, id)
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
@@ -205,13 +203,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       case "kool.lang.Object" =>
       case "kool.lang.String" =>
       case _                  =>
-        globalScope.classes.get(fullName) ifDefined  { old =>
+        globalScope.classes.get(fullName) ifDefined { old =>
           ErrorClassAlreadyDefined(name, old.line, id)
         }
     }
   }
 
-  private def ensureIdentiferNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
+  private def ensureIdentifierNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit = {
     if (map.contains(id)) {
       val oldSymbol = map(id)
       ErrorVariableAlreadyDefined(id, oldSymbol.line, pos)
@@ -224,10 +222,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def bind(tree: Tree): Unit = tree match {
     case classDecl@ClassDeclTree(id, parents, vars, methods)             =>
-      setParentSymbol(classDecl)
-      bindFields(classDecl)
-      methods foreach bind
-
       classDecl.ifInstanceOf[ExtensionDecl] { extension =>
         val name = id.name
         val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
@@ -238,6 +232,10 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           case None    => ErrorCantResolveSymbol(name, id)
         }
       }
+
+      setParentSymbol(classDecl)
+      bindFields(classDecl)
+      methods foreach bind
     case methDecl@MethodDecl(retType, _, args, stat, _)                  =>
       retType ifDefined { tpe =>
         setType(tpe)
@@ -262,7 +260,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         operatorType.setType(t)
       }
 
-      //operatorType.setType(retType.getType)
       bindArguments(args)
 
       ensureOperatorNotDefined(operatorDecl)
@@ -275,13 +272,20 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       // Ensure that operator pertains to the class defined in and that
       // types are not nullable
-      val nullableTpes = (retType ++ args.map(_.tpe)).filterType[NullableType]
+      val nullableTypes = (retType ++ args.map(_.tpe)).filterType[NullableType]
 
       // We don't want to report OperatorWrongTypes if types are nullable
-      if (nullableTpes.nonEmpty)
-        nullableTpes.foreach(tpe => ErrorNullableInOperator(tpe))
-      else if (isStaticOperator && !argClassSymbols.contains(classSymbol))
-        ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol.name, operatorDecl)
+      if (nullableTypes.nonEmpty)
+        nullableTypes.foreach(tpe => ErrorNullableInOperator(tpe))
+      else if (isStaticOperator) {
+        val sym = classSymbol match {
+          case e: ExtensionClassSymbol => e.originalClassSymbol
+          case _                       => classSymbol
+        }
+
+        if (!argClassSymbols.contains(sym))
+          ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol, operatorDecl)
+      }
 
       stat ifDefined {new StatementBinder(sym, isStaticOperator).bindStatement(_)}
   }
@@ -312,9 +316,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     def bindStatement(tree: Tree): Unit = bind(tree, Map(), 0)
 
     private def bind(statement: Tree,
-                     localVars: Map[String, VariableData],
-                     scopeLevel: Int,
-                     canBreakContinue: Boolean = false): Map[String, VariableData] =
+      localVars: Map[String, VariableData],
+      scopeLevel: Int,
+      canBreakContinue: Boolean = false): Map[String, VariableData] =
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1).foreach {
@@ -406,7 +410,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                 acc.obj = obj
               case id@VariableID(name) =>
                 lookupVariableSymbol(id, localVars) match {
-                  case Some(varSymbol) => setVarIdentiferSymbol(id, varSymbol)
+                  case Some(varSymbol) => setVarIdentifierSymbol(id, varSymbol)
                   case None            =>
                     // access object is not a variable, must be a class
                     globalScope.lookupClass(importMap, name) match {
@@ -468,7 +472,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
               case _                          => ???
             }
           case tpe: TypeTree                => setType(tpe)
-          case id: VariableID               => setVarIdentiferSymbol(id, localVars)
+          case id: VariableID               => setVarIdentifierSymbol(id, localVars)
           case _                            => super.traverse(t)
         }
       }
@@ -478,14 +482,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     private def setVariableUsed(id: VariableID) = variableUsage += id.getSymbol -> true
     private def setVariableReassigned(id: VariableID) = variableReassignment += id.getSymbol -> true
 
-    private def setVarIdentiferSymbol(id: VariableID, localVars: Map[String, VariableData]): Unit = {
+    private def setVarIdentifierSymbol(id: VariableID, localVars: Map[String, VariableData]): Unit = {
       lookupVariableSymbol(id, localVars) match {
-        case Some(symbol) => setVarIdentiferSymbol(id, symbol)
+        case Some(symbol) => setVarIdentifierSymbol(id, symbol)
         case None         => ErrorCantResolveSymbol(id.name, id)
       }
     }
 
-    private def setVarIdentiferSymbol(id: VariableID, symbol: VariableSymbol) = {
+    private def setVarIdentifierSymbol(id: VariableID, symbol: VariableSymbol) = {
       id.setSymbol(symbol)
       variableUsage += symbol -> true
     }

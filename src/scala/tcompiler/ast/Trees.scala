@@ -6,6 +6,7 @@ import tcompiler.analyzer.Types
 import tcompiler.analyzer.Types._
 import tcompiler.imports.ImportMap
 import tcompiler.utils._
+import tcompiler.utils.Extensions._
 
 object Trees {
 
@@ -34,10 +35,10 @@ object Trees {
     }
 
     def copyTree(): this.type = {
-      val copier = new TreeTransformer {
-        override val treeCopy = new TreeCopier()
+      val copy = new TreeTransformer {
+        override val treeCopy = new TreeCopier
       }
-      copier.transformTree(this)
+      copy(this)
     }
 
     def forAll(p: Tree => Boolean): Boolean = {
@@ -205,7 +206,7 @@ object Trees {
     val modifiers: Set[Modifier]
     val isStatic      = modifiers.contains(Static())
     val isFinal       = modifiers.contains(Final())
-    val accessability = modifiers.find(_.isInstanceOf[Accessability]).getOrElse(Private()).asInstanceOf[Accessability]
+    val accessability = modifiers.findInstance[Accessability].getOrElse(Private())
   }
 
   /*-------------------------------- Function Declaration Trees --------------------------------*/
@@ -264,18 +265,17 @@ object Trees {
     val name: String
   }
 
+  trait PrimitiveTypeTree extends TypeTree with Leaf
+
   case class ArrayType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
   case class NullableType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
-  case class IntType() extends TypeTree with Leaf {val name = "Int"}
-  case class LongType() extends TypeTree with Leaf {val name = "Long"}
-  case class FloatType() extends TypeTree with Leaf {val name = "Float"}
-  case class DoubleType() extends TypeTree with Leaf {val name = "Double"}
-  case class BooleanType() extends TypeTree with Leaf {val name = "Bool"}
-  case class CharType() extends TypeTree with Leaf {val name = "Char"}
-  case class UnitType() extends TypeTree with Leaf {
-    val name = "Unit"
-    override def getType = TUnit
-  }
+  case class IntType() extends PrimitiveTypeTree {val name = "Int"}
+  case class LongType() extends PrimitiveTypeTree {val name = "Long"}
+  case class FloatType() extends PrimitiveTypeTree {val name = "Float"}
+  case class DoubleType() extends PrimitiveTypeTree {val name = "Double"}
+  case class BooleanType() extends PrimitiveTypeTree {val name = "Bool"}
+  case class CharType() extends PrimitiveTypeTree {val name = "Char"}
+  case class UnitType() extends PrimitiveTypeTree {val name = "Unit"}
 
   /*-------------------------------- Statement Trees --------------------------------*/
 
@@ -473,7 +473,7 @@ object Trees {
     override def signature(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
   }
 
-  /*-------------------------------- Literal and Identifer Trees --------------------------------*/
+  /*-------------------------------- Literal and Identifier Trees --------------------------------*/
 
 
   trait Literal[T] extends ExprTree with Leaf {
@@ -484,24 +484,12 @@ object Trees {
     def unapply(e: Literal[_]): Option[Any] = Some(e.value)
   }
 
-  case class IntLit(value: Int) extends Literal[Int] {
-    override def getType = Types.Int
-  }
-  case class LongLit(value: Long) extends Literal[Long] {
-    override def getType = Types.Long
-  }
-  case class FloatLit(value: Float) extends Literal[Float] {
-    override def getType = Types.Float
-  }
-  case class DoubleLit(value: Double) extends Literal[Double] {
-    override def getType = Types.Double
-  }
-  case class CharLit(value: Char) extends Literal[Char] {
-    override def getType = Types.Char
-  }
-  case class StringLit(value: String) extends Literal[String] {
-    override def getType = Types.String
-  }
+  case class IntLit(value: Int) extends Literal[Int] {override def getType = Types.Int}
+  case class LongLit(value: Long) extends Literal[Long] {override def getType = Types.Long}
+  case class FloatLit(value: Float) extends Literal[Float] {override def getType = Types.Float}
+  case class DoubleLit(value: Double) extends Literal[Double] {override def getType = Types.Double}
+  case class CharLit(value: Char) extends Literal[Char] {override def getType = Types.Char}
+  case class StringLit(value: String) extends Literal[String] {override def getType = Types.String}
   case class TrueLit() extends Literal[Boolean] with Leaf {
     val value = true
     override def getType = Types.Bool

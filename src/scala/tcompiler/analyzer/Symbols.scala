@@ -103,11 +103,6 @@ object Symbols {
       parents.find(_.name == name).orElse(parents.findDefined(_.lookupParent(name)))
     }
 
-    def findExtensionMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
-      fillExtensionClasses()
-      extensionClasses.findDefined(_.findMethod(name, args, exactTypes))
-    }
-
     def lookupMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
       findMethod(name, args, exactTypes).
       orElse(lookupParentMethod(name, args, exactTypes)).
@@ -123,28 +118,15 @@ object Symbols {
     }
 
     def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false): Option[OperatorSymbol] = {
-      findOperator(operatorType, args, exactTypes).orElse(parents.findDefined(_.lookupOperator(operatorType, args, exactTypes)))
+      findOperator(operatorType, args, exactTypes).
+        orElse(parents.findDefined(_.lookupOperator(operatorType, args, exactTypes))).
+        orElse(findExtensionOperator(operatorType, args, exactTypes))
     }
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.unimplementedMethods())
 
-    override def toString = name
-
-    private def completeClassSymbol() =
-      if (!isComplete) {
-        ClassSymbolLocator.fillClassSymbol(this)
-        isComplete = true
-      }
-
-    private def fillExtensionClasses() = {
-      if (!filledExtensionClasses) {
-        ClassSymbolLocator.fillClassSymbol(this)
-        filledExtensionClasses = true
-      }
-    }
-
-    private def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
+    def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
       val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
       findMethodPrioritiseExactMatch(ops, name, args, exactTypes)
     }
@@ -154,7 +136,22 @@ object Symbols {
       findMethodPrioritiseExactMatch(meths, name, args, exactTypes)
     }
 
-    private def findMethodPrioritiseExactMatch[T <: MethodSymbol](container: List[T],
+    override def toString = name
+
+    protected def completeClassSymbol() =
+      if (!isComplete) {
+        ClassSymbolLocator.fillClassSymbol(this)
+        isComplete = true
+      }
+
+    protected def fillExtensionClasses() =
+      if (!filledExtensionClasses) {
+        // TODO
+        filledExtensionClasses = true
+      }
+
+
+    protected def findMethodPrioritiseExactMatch[T <: MethodSymbol](container: List[T],
                                                                   name: String,
                                                                   args: List[Type],
                                                                   exactTypes: Boolean) = {
@@ -169,7 +166,18 @@ object Symbols {
       }
     }
 
-    private def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
+
+    protected def findExtensionMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
+      fillExtensionClasses()
+      extensionClasses.findDefined(ext => ext.findMethod(name, args, exactTypes))
+    }
+
+    protected def findExtensionOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false): Option[OperatorSymbol] = {
+      fillExtensionClasses()
+      extensionClasses.findDefined(ext => ext.findOperator(operatorType, args, exactTypes))
+    }
+
+    protected def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
       if (args.size != symbol.argList.size)
         return false
 
@@ -182,7 +190,7 @@ object Symbols {
       }
     }
 
-    private def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
+    protected def sameOperatorType(operatorType1: ExprTree, operatorType2: ExprTree) = {
       (operatorType1, operatorType2) match {
         case (Assign(ArrayRead(_, _), _), Assign(ArrayRead(_, _), _))                 => true
         case (_: PreIncrement | _: PostIncrement, _: PreIncrement | _: PostIncrement) => true
@@ -195,6 +203,16 @@ object Symbols {
 
   class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name, false, true) {
     var originalClassSymbol: ClassSymbol = null
+
+    override def lookupField(name: String) = originalClassSymbol.lookupField(name)
+
+    override def lookupMethod(name: String, args: List[Type], exactTypes: Boolean = false) =
+      super.lookupMethod(name, args, exactTypes).orElse(originalClassSymbol.lookupMethod(name, args, exactTypes))
+
+    override def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false) =
+      super.lookupOperator(operatorType, args, exactTypes).
+        orElse(originalClassSymbol.lookupOperator(operatorType, args, exactTypes))
+
   }
 
   class MethodSymbol(val name: String,

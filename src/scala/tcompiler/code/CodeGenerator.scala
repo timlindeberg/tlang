@@ -49,9 +49,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   import CodeGenerator._
 
   def compileStat(statement: StatTree,
-                  continue: Option[String] = None,
-                  break: Option[String] = None,
-                  compileUseless: Boolean = false): Unit = {
+    continue: Option[String] = None,
+    break: Option[String] = None,
+    compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                    =>
@@ -65,9 +65,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         val id = ch.getFreshVar(tpe.size)
 
         localVariableMap(sym) = id
-        init ifDefined  { expr =>
-            compileAndConvert(expr, tpe)
-            tpe.codes.store(ch, id)
+        init ifDefined { expr =>
+          compileAndConvert(expr, tpe)
+          tpe.codes.store(ch, id)
         }
       case If(conditionExpr, thnStat, elsStat)       =>
         val thn = ch.getFreshLabel("then")
@@ -163,6 +163,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case TrueLit()                                    => ch << Ldc(1)
       case FalseLit()                                   => ch << Ldc(0)
       case NullLit()                                    => ch << ACONST_NULL
+      //case Literal(value)                               => ch << Ldc(value)
       case IntLit(value)                                => ch << Ldc(value)
       case LongLit(value)                               => ch << Ldc(value)
       case CharLit(value)                               => ch << Ldc(value)
@@ -191,7 +192,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case arrLit@ArrayLit(expressions)                 =>
         compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
-        sizes foreach(compileExpr(_))
+        sizes foreach (compileExpr(_))
         val dimension = newArray.dimension
         val arrType = tpe.getType.asInstanceOf[TArray].tpe
         if (dimension == 1)
@@ -324,15 +325,15 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
             compileArguments(methSymbol, args)
             ch << (
-                  if (acc.isStatic)
-                    InvokeStatic(className, methName, signature)
-                  else if (obj.isInstanceOf[Super] || methSymbol.modifiers.contains(Private()))
-                    InvokeSpecial(className, methName, signature)
-                  else if (classSymbol.isAbstract)
-                    InvokeInterface(className, methName, signature)
-                  else
-                    InvokeVirtual(className, methName, signature)
-                  )
+              if (acc.isStatic)
+                InvokeStatic(className, methName, signature)
+              else if (obj.isInstanceOf[Super] || methSymbol.accessability == Private())
+                InvokeSpecial(className, methName, signature)
+              else if (classSymbol.isAbstract)
+                InvokeInterface(className, methName, signature)
+              else
+                InvokeVirtual(className, methName, signature)
+              )
 
             if (!duplicate && methSymbol.getType != TUnit)
               ch << POP
@@ -401,6 +402,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             compileExpr(expr)
           case stat           => compileStat(stat, compileUseless = true)
         }
+      case _                                            => ???
     }
   }
 
@@ -425,15 +427,15 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         compileExpr(expr)
         val signature = s"(${found.byteCodeName})V"
         ch << InvokeSpecial(name, ConstructorName, signature)
-      case (found: TArray, desired: TArray)                                                            =>
+      case (found: TArray, desired: TArray)                               =>
         // Found an array and wanted an array, expr must be an arraylit
         // Convert each argument to the desired type
         expr match {
           case arrLit: ArrayLit => compileArrayLiteral(arrLit, Some(desired.tpe))
-          case _ =>
+          case _                =>
             ???
         }
-      case _                                                                           =>
+      case _                                                              =>
         compileExpr(expr)
         (found, desired) match {
           case (found: TObject, desired: PrimitiveType) if !desired.isNullable                           =>
@@ -561,7 +563,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       expr match {
         case id: VariableID if id.getType.isNullable =>
           ch << IfNull(els.id)
-        case _ =>
+        case _                                       =>
           ch << IfEq(els.id)
       }
       ch << Goto(thn.id) // If false go to else
@@ -569,11 +571,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   }
 
   private def store(variable: VariableSymbol,
-                    putValue: () => Unit,
-                    duplicate: Boolean,
-                    putObject: () => Unit = () => {
-                      ch << ArgLoad(0)
-                    }): CodeHandler = {
+    putValue: () => Unit,
+    duplicate: Boolean,
+    putObject: () => Unit = () => {
+      ch << ArgLoad(0)
+    }): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
     val codes = tpe.codes

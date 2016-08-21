@@ -63,7 +63,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
     // Replace types with their templated class names, eg.
     // replace Map<Int, String> with -Map$Int$String-.
-    val replacer = new TreeTransformer {
+    val replace = new TreeTransformer {
       override def transform(t: Tree): Tree = t match {
         case tpe: ClassID if tpe.isTemplated =>
           val shortName = tpe.name.split("::").last
@@ -77,7 +77,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     }
 
-    replacer.transformTree(cu)
+    replace(cu)
   }
 
   private def checkDuplicateTemplateNames(templateClass: ClassDeclTree) = {
@@ -192,7 +192,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       val templateTypes = typeId.templateTypes
       val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
-      val templateTransformer = new TreeTransformer {
+      val transformTemplate = new TreeTransformer {
         // uses a strict copier so we recieve an actual copy of the tree
         // TODO: this might not actually be needed if immutability is enforced
         override val treeCopy = new TreeCopier
@@ -220,7 +220,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
           case _                                             => super.transform(t)
         }
       }
-      templateTransformer.transformTree(template)
+      transformTemplate(template)
     }
 
 

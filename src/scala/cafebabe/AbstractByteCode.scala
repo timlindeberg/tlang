@@ -86,6 +86,16 @@ object AbstractByteCodes {
 
   /** Generates code to load constants, using the appropriate method depending on the values. */
   object Ldc {
+
+    def apply(a: Any): AbstractByteCodeGenerator = a match {
+      case i: Int    => apply(i)
+      case f: Float  => apply(f)
+      case d: Double => apply(d)
+      case l: Long   => apply(l)
+      case s: String => apply(s)
+      case _         => ???
+    }
+
     def apply(i: Int): AbstractByteCodeGenerator = (ch: CodeHandler) => {
       i match {
         case -1                             => ch << ICONST_M1
@@ -162,8 +172,8 @@ object AbstractByteCodes {
 
   // Loading and storing locals
   private def storeLoad(index: Int, name: String, bc: ByteCode,
-                        bc0: ByteCode, bc1: ByteCode,
-                        bc2: ByteCode, bc3: ByteCode): AbstractByteCodeGenerator = {
+    bc0: ByteCode, bc1: ByteCode,
+    bc2: ByteCode, bc3: ByteCode): AbstractByteCodeGenerator = {
     (ch: CodeHandler) => index match {
       case 0                                 => ch << bc0
       case 1                                 => ch << bc1
