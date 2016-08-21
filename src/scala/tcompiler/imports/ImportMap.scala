@@ -19,6 +19,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   private val fullToShort = mutable.Map[String, String]()
 
   var imports: List[Import] = null
+  lazy val extensionImports: List[ExtensionImport] = imports.filterType[ExtensionImport]
 
   private val DefaultImports = List[String](
     Main.TLangObject,
@@ -29,16 +30,16 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   def this(imports: List[Import], pack: Package, classes: List[ClassDeclTree], ctx: Context) {
     this(ctx)
     this.imports = imports
-    val regImports = imports.filterType[RegularImport]
 
     // TODO: Support wild card imports. Need to be able to search the full classpath
-    //val wcImports = imports.filterType(classOf[WildCardImport])
+    // val wcImports = imports.filterType(classOf[WildCardImport])
 
     for (imp <- DefaultImports) {
       val s = imp.split("/")
       addImport(s.last, imp)
     }
 
+    val regImports = imports.filterType[RegularImport]
     for (imp <- regImports) {
       val fullName = imp.name
       val shortName = imp.shortName
@@ -53,7 +54,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     }
 
     if(pack.name != ""){
-      classes foreach { c =>
+      classes.filterNotType[ExtensionDecl] foreach { c =>
         val className = c.id.name
         addImport(className, s"${pack.name}.$className")
       }

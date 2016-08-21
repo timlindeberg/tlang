@@ -4,9 +4,11 @@ import org.apache.bcel.Repository
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
 import org.apache.bcel.util.{ClassPath, SyntheticRepository}
+import tcompiler.Main
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
+import tcompiler.utils.Extensions._
 
 /**
   * Created by Tim Lindeberg on 5/14/2016.
@@ -47,8 +49,8 @@ object ClassSymbolLocator {
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
-    classSymbol.methods = methods.filter(!_.isInstanceOf[OperatorSymbol])
-    classSymbol.operators = methods.filter(_.isInstanceOf[OperatorSymbol]).asInstanceOf[List[OperatorSymbol]]
+    classSymbol.methods = methods.filterNotType[OperatorSymbol]
+    classSymbol.operators = methods.filterType[OperatorSymbol]
     classSymbol.parents = convertParents(clazz)
     classSymbol.fields = clazz.getFields.map { field =>
       val f = convertField(classSymbol, field)
@@ -82,7 +84,13 @@ object ClassSymbolLocator {
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
-    val modifiers = convertModifiers(meth)
+    val isExtensionMethod = meth.getAnnotationEntries.exists(a => a.getAnnotationType == Main.TExtensionAnnotation)
+
+    var modifiers = convertModifiers(meth)
+
+    if(isExtensionMethod)
+      modifiers -= Static() // Remove the added static modifier
+
     val name = meth.getName match {
       case "<init>" => "new"
       case name     => name
@@ -97,10 +105,14 @@ object ClassSymbolLocator {
 
     symbol.setType(convertType(meth.getReturnType))
 
-    symbol.argList = meth.getArgumentTypes.zipWithIndex.map {
+    var args = meth.getArgumentTypes.zipWithIndex.map {
       case (tpe, i) => convertArgument(tpe, s"arg$i")
     }.toList
 
+    if(isExtensionMethod)
+      args = args.drop(1) // Remove the added this argument
+
+    symbol.argList = args
     symbol.isAbstract = meth.isAbstract
 
     symbol

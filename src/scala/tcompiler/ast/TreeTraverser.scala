@@ -9,16 +9,16 @@ import tcompiler.utils.Extensions._
 class TreeTraverser {
 
   def traverse(t: Tree): Unit = t match {
-    case _: Leaf                                      => // No need to recurse further
-    case CompilationUnit(pack, classes, _)            => traverse(pack, classes)
-    case ClassDeclTree(id, parents, fields, methods)  => traverse(id, parents, fields, methods)
-    case FuncTree(id, retType, args, stat, modifiers) => traverse(retType, id, args, stat, modifiers)
-    case Formal(tpe, id)                              => traverse(tpe, id)
-    case ArrayType(tpe)                               => traverse(tpe)
-    case NullableType(tpe)                            => traverse(tpe)
-    case PrintStatTree(expr)                          => traverse(expr)
-    case VarDecl(tpe, id, init, modifiers)            => traverse(tpe, id, init, modifiers)
-    case Block(stats)                                 => traverse(stats)
+    case _: Leaf                                            => // No need to recurse further
+    case CompilationUnit(pack, classes, _)                  => traverse(pack, classes)
+    case ClassDeclTree(id, parents, fields, methods)        => traverse(id, parents, fields, methods)
+    case MethodDeclTree(id, retType, args, stat, modifiers) => traverse(retType, id, args, stat, modifiers)
+    case Formal(tpe, id)                                    => traverse(tpe, id)
+    case ArrayType(tpe)                                     => traverse(tpe)
+    case NullableType(tpe)                                  => traverse(tpe)
+    case PrintStatTree(expr)                                => traverse(expr)
+    case VarDecl(tpe, id, init, modifiers)                  => traverse(tpe, id, init, modifiers)
+    case Block(stats)                                       => traverse(stats)
     case If(condition, thn, els)                      => traverse(condition, thn, els)
     case While(condition, stat)                       => traverse(condition, stat)
     case For(init, condition, post, stat)             => traverse(init, condition, post, stat)

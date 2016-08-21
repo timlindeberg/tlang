@@ -59,18 +59,18 @@ object Types {
     def getNullable: Type
     def getNonNullable: Type
     def isSubTypeOf(tpe: Type): Boolean = tpe.isInstanceOf[this.type]
-    def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
+    def isImplicitlyConvertibleFrom(tpe: Type): Boolean = {
       if (this == tpe)
         return true
 
-      implicitlyConvertableFrom.contains(tpe)
+      implicitlyConvertibleFrom.contains(tpe)
     }
 
     override def toString = name + (if (isNullable) "?" else "")
 
     def getSuperTypes: Set[Type] = Set()
 
-    def implicitlyConvertableFrom: List[Type] = List()
+    def implicitlyConvertibleFrom: List[Type] = List()
 
     def byteCodeName: String
     def codes: CodeMap
@@ -123,7 +123,7 @@ object Types {
   case class TInt(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableInt
     override def getNonNullable = if (isNullable) Int else this
-    override def implicitlyConvertableFrom = List(Char)
+    override def implicitlyConvertibleFrom = List(Char)
     override def name = "Int"
     override def equals(any: Any) = any.isInstanceOf[TInt]
     override val primitiveByteCodeName = "I"
@@ -135,7 +135,7 @@ object Types {
   case class TLong(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableLong
     override def getNonNullable = if (isNullable) Long else this
-    override def implicitlyConvertableFrom = List(Char, Int)
+    override def implicitlyConvertibleFrom = List(Char, Int)
     override def name = "Long"
     override def equals(any: Any) = any.isInstanceOf[TLong]
     override val primitiveByteCodeName = "J"
@@ -147,7 +147,7 @@ object Types {
   case class TFloat(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableFloat
     override def getNonNullable = if (isNullable) Float else this
-    override def implicitlyConvertableFrom = List(Long, Char, Int)
+    override def implicitlyConvertibleFrom = List(Long, Char, Int)
     override def name = "Float"
     override def equals(any: Any) = any.isInstanceOf[TFloat]
     override val primitiveByteCodeName = "F"
@@ -159,7 +159,7 @@ object Types {
   case class TDouble(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableDouble
     override def getNonNullable = if (isNullable) Double else this
-    override def implicitlyConvertableFrom = List(Float, Long, Char, Int)
+    override def implicitlyConvertibleFrom = List(Float, Long, Char, Int)
     override def name = "Double"
     override def equals(any: Any) = any.isInstanceOf[TDouble]
     override val primitiveByteCodeName = "D"
@@ -171,7 +171,7 @@ object Types {
   case class TChar(isNullable: Boolean = false) extends PrimitiveType {
     override def getNullable = if (isNullable) this else NullableChar
     override def getNonNullable = if (isNullable) Char else this
-    override def implicitlyConvertableFrom = List(Int)
+    override def implicitlyConvertibleFrom = List(Int)
     override def name = "Char"
     override def equals(any: Any) = any.isInstanceOf[TChar]
     override val primitiveByteCodeName = "C"
@@ -185,8 +185,8 @@ object Types {
     override def getNonNullable = if (isNullable) Bool else this
     override def name = "Bool"
     override def equals(any: Any) = any.isInstanceOf[TBool]
-    override def isImplicitlyConvertableFrom(tpe: Type): Boolean = {
-      if(super.isImplicitlyConvertableFrom(tpe))
+    override def isImplicitlyConvertibleFrom(tpe: Type): Boolean = {
+      if(super.isImplicitlyConvertibleFrom(tpe))
         return true
 
       // All nullable types can implicitly be converted to bool
@@ -212,12 +212,12 @@ object Types {
       case _              => false
     }
 
-    override def isImplicitlyConvertableFrom(otherTpe: Type): Boolean = {
-      if (super.isImplicitlyConvertableFrom(otherTpe))
+    override def isImplicitlyConvertibleFrom(otherTpe: Type): Boolean = {
+      if (super.isImplicitlyConvertibleFrom(otherTpe))
         return true
 
       otherTpe match {
-        case TArray(a) => tpe.isImplicitlyConvertableFrom(a)
+        case TArray(a) => tpe.isImplicitlyConvertibleFrom(a)
         case _         => false
       }
     }
@@ -256,7 +256,7 @@ object Types {
       case _          => false
     }
 
-    override def implicitlyConvertableFrom: List[Type] = {
+    override def implicitlyConvertibleFrom: List[Type] = {
       if (this != Object)
         return implicitTypes
 

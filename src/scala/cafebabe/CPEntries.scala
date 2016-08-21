@@ -88,7 +88,9 @@ case class CPUtf8Info(val bytes: Seq[U1]) extends CPEntry(CPTags.Utf8) {
 
   override def toStream(stream: ByteStream): ByteStream = {
     stream << tag << bytes.length.asInstanceOf[U2]
-    bytes.foreach(b => { stream << b })
+    bytes.foreach(b => stream << b )
     stream
   }
+
+  override def toString = "CPUtf8Info(\"" + new String(bytes.toArray) + "\")"
 }

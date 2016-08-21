@@ -5,7 +5,7 @@ import scala.collection.mutable
 /**
   * Created by timlindeberg on 23/07/16.
   */
-trait Colorizer {
+trait Colored {
 
   def useColor: Boolean
 

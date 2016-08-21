@@ -38,7 +38,7 @@ abstract class Pipeline[-F, +T] {
     (res, (t1 - t0) / 1000000000.0)
   }
 
-  class InfoPrinter(stage: Pipeline[F, T], ctx: Context) extends Colorizer {
+  class InfoPrinter(stage: Pipeline[F, T], ctx: Context) extends Colored {
 
     override val useColor = ctx.useColor
 

@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colored
 
 import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
@@ -11,7 +11,7 @@ import scala.collection.mutable.{ListBuffer, Map => MutableMap}
   * Information is added to the constant pool during the ABS generation already.
   * <code>CodeHandler</code>s should not be created manually, but rather obtained
   * from the corresponding <code>MethodHandler</code>. */
-class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic: Boolean, signature: String) extends Colorizer {
+class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic: Boolean, signature: String) extends Colored {
 
   import AbstractByteCodes._
   import ByteCodes._
@@ -293,9 +293,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
                    )
 
     val b = new StringBuilder()
-    val sig = signature.split("\\.")
-
-    b.append(s"${Bold("[>")} ${ClassColor(sig(0))}.${MethodColor(sig(1))} ${Bold("<]")}\n")
+    b.append(header(signature))
 
     var pc = 0
     var currentLineNumber = 0
@@ -361,6 +359,15 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     }
     b.append("\n")
     b.toString
+  }
+
+  def header(signature: String) = {
+    val split1 = signature.split("\\.")
+    val className = split1(0)
+    val split2 = split1(1).split(":")
+    val methName = split2(0)
+    val sig = split2(1)
+    s"${Bold("[>")} ${ClassColor(className)}.${MethodColor(methName)}: ${ClassColor(sig)} ${Bold("<]")}\n"
   }
 
   def print: Unit = if (!frozen) {

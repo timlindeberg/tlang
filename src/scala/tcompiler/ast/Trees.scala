@@ -90,17 +90,17 @@ object Trees {
 
       // This is not very elegant but is one way to get around type erasure
       from match {
-        case x: ClassDecl     => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
-        case x: TraitDecl     => to.asInstanceOf[TraitDecl].setSymbol(x.getSymbol)
-        case x: ExtensionDecl => to.asInstanceOf[ExtensionDecl].setSymbol(x.getSymbol)
-        case x: ClassID       => to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
-        case x: VariableID    => to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
-        case x: MethodID      => to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
-        case x: FuncTree      => to.asInstanceOf[FuncTree].setSymbol(x.getSymbol)
-        case x: Formal        => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
-        case x: VarDecl       => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
-        case x: This          => to.asInstanceOf[This].setSymbol(x.getSymbol)
-        case x: Super         => to.asInstanceOf[Super].setSymbol(x.getSymbol)
+        case x: ClassDecl      => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
+        case x: TraitDecl      => to.asInstanceOf[TraitDecl].setSymbol(x.getSymbol)
+        case x: ExtensionDecl  => to.asInstanceOf[ExtensionDecl].setSymbol(x.getSymbol)
+        case x: ClassID        => to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
+        case x: VariableID     => to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
+        case x: MethodID       => to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
+        case x: MethodDeclTree => to.asInstanceOf[MethodDeclTree].setSymbol(x.getSymbol)
+        case x: Formal         => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
+        case x: VarDecl        => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
+        case x: This           => to.asInstanceOf[This].setSymbol(x.getSymbol)
+        case x: Super          => to.asInstanceOf[Super].setSymbol(x.getSymbol)
       }
     }
   }
@@ -117,35 +117,37 @@ object Trees {
 
     def getPackageDirectory = pack.directory
 
-    def getPackageName(name: String) = (pack.adress :+ name).mkString(".")
+    def packageName = pack.address.mkString(".")
 
   }
 
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
-  case class Package(adress: List[String]) extends Tree with Leaf {
-    val directory = adress.mkString("/")
-    val name      = adress.mkString(".")
+  case class Package(address: List[String]) extends Tree with Leaf {
+    val directory = address.mkString("/")
+    val name      = address.mkString(".")
   }
 
   object Import {
-    def unapply(i: Import) = Some(i.adress)
+    def unapply(i: Import) = Some(i.address)
   }
 
   trait Import extends Tree with Leaf {
-    val adress: List[String]
+    val address: List[String]
 
-    def name = adress.mkString(".")
+    def name = address.mkString(".")
 
-    def shortName = adress.last
+    def shortName = address.last
 
-    def writtenName = adress.mkString("::")
+    def writtenName = address.mkString("::")
   }
 
-  case class RegularImport(adress: List[String]) extends Import
-  case class WildCardImport(adress: List[String]) extends Import
-  case class ExtensionImport(adress: List[String], className: List[String]) extends Import
+  case class RegularImport(address: List[String]) extends Import
+  case class WildCardImport(address: List[String]) extends Import
+  case class ExtensionImport(address: List[String], className: List[String]) extends Import {
+    def fullName = address.mkString(".") + ExtensionDecl.seperator + className.mkString(".")
+  }
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
@@ -158,7 +160,7 @@ object Trees {
     val id     : ClassID
     var parents: List[ClassID]
     val fields : List[VarDecl]
-    var methods: List[FuncTree]
+    var methods: List[MethodDeclTree]
 
     def isAbstract: Boolean
 
@@ -168,20 +170,24 @@ object Trees {
   case class ClassDecl(id: ClassID,
                        var parents: List[ClassID],
                        fields: List[VarDecl],
-                       var methods: List[FuncTree]) extends ClassDeclTree {
+                       var methods: List[MethodDeclTree]) extends ClassDeclTree {
     val isAbstract = false
   }
 
   case class TraitDecl(id: ClassID,
                        var parents: List[ClassID],
                        fields: List[VarDecl],
-                       var methods: List[FuncTree]) extends ClassDeclTree {
+                       var methods: List[MethodDeclTree]) extends ClassDeclTree {
     val isAbstract = true
   }
 
-  case class ExtensionDecl(id: ClassID, var methods: List[FuncTree]) extends ClassDeclTree {
+  object ExtensionDecl {
+    val seperator = "$EX/"
+  }
+
+  case class ExtensionDecl(id: ClassID, var methods: List[MethodDeclTree]) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
-    // Fields might be supportd in the future
+    // Fields might be supported in the future
     var parents    = List[ClassID]()
     val fields     = List[VarDecl]()
     val isAbstract = false
@@ -212,11 +218,11 @@ object Trees {
   /*-------------------------------- Function Declaration Trees --------------------------------*/
 
 
-  object FuncTree {
-    def unapply(f: FuncTree) = Some(f.id, f.retType, f.args, f.stat, f.modifiers)
+  object MethodDeclTree {
+    def unapply(f: MethodDeclTree) = Some(f.id, f.retType, f.args, f.stat, f.modifiers)
   }
 
-  trait FuncTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
+  trait MethodDeclTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     val id       : MethodID
     val retType  : Option[TypeTree]
     val args     : List[Formal]
@@ -243,17 +249,17 @@ object Trees {
                         id: MethodID,
                         args: List[Formal],
                         stat: Option[StatTree],
-                        modifiers: Set[Modifier]) extends FuncTree
+                        modifiers: Set[Modifier]) extends MethodDeclTree
   case class ConstructorDecl(retType: Option[TypeTree],
                              id: MethodID,
                              args: List[Formal],
                              stat: Option[StatTree],
-                             modifiers: Set[Modifier]) extends FuncTree
+                             modifiers: Set[Modifier]) extends MethodDeclTree
   case class OperatorDecl(operatorType: OperatorTree,
                           retType: Option[TypeTree],
                           args: List[Formal],
                           stat: Option[StatTree],
-                          modifiers: Set[Modifier]) extends FuncTree {
+                          modifiers: Set[Modifier]) extends MethodDeclTree {
     val id: MethodID = new MethodID("")
   }
 
@@ -569,10 +575,8 @@ object Trees {
         return true
 
       application match {
-        case id: VariableID if id.hasSymbol           =>
-          id.getSymbol.isStatic
-        case MethodCall(meth, args) if meth.hasSymbol =>
-          meth.getSymbol.isStatic
+        case id: VariableID if id.hasSymbol           => id.getSymbol.isStatic
+        case MethodCall(meth, args) if meth.hasSymbol => meth.getSymbol.isStatic
         case _                                        => false
       }
     }
@@ -619,7 +623,7 @@ object Trees {
     override def getType = exprTree.getType
   }
 
-  // Usually used as a placeholder
+  // Used as a placeholder
   case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>"}
 
   /**

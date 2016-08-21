@@ -202,7 +202,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
             val newId = treeCopy.ClassID(id, templateName, Nil)
-            val cons: (List[ClassID], List[VarDecl], List[FuncTree]) => ClassDeclTree = c match {
+            val cons: (List[ClassID], List[VarDecl], List[MethodDeclTree]) => ClassDeclTree = c match {
               case _: ClassDecl => treeCopy.ClassDecl(c, newId, _, _, _)
               case _: TraitDecl => treeCopy.TraitDecl(c, newId, _, _, _)
               case _            => ???

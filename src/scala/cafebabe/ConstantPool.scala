@@ -1,9 +1,8 @@
 package cafebabe
 
-import tcompiler.ast.Printer
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colored
 
-class ConstantPool extends Streamable with Colorizer {
+class ConstantPool extends Streamable with Colored {
 
   import ClassFileTypes._
 

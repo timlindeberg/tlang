@@ -1,6 +1,6 @@
 package cafebabe
 
-import ClassFileTypes._
+import cafebabe.ClassFileTypes._
 
 /** A method handler is used to attach attributes to a method. In particular,
  * it can return an associated <code>CodeHandler</code> which can be used to
@@ -8,15 +8,21 @@ import ClassFileTypes._
  * manually but rather obtained directly when adding a method to a
  * <code>ClassFile</code>. */
 class MethodHandler private[cafebabe](m: MethodInfo, c: CodeAttributeInfo, cp: ConstantPool, paramTypes: String, signature: String) {
-  private val method: MethodInfo = m
   private var ch : Option[CodeHandler] = None
 
+  private lazy val annotationNameIndex = cp.addString("RuntimeInvisibleAnnotations")
+
   def codeHandler : CodeHandler = {
-    if(ch.isEmpty) {
+    if(ch.isEmpty)
       ch = Some(new CodeHandler(c, cp, paramTypes, m.isStatic, signature))
-    }
+
     ch.get
   }
+
+  def addAnnotation(name: String) = {
+    m.getAnnotationAttribute(annotationNameIndex).annotations ::= new AnnotationInfo(cp.addString(name))
+  }
+
 
   def setFlags(flags: U2): Unit = {
     if(ch.isDefined) {

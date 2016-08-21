@@ -17,7 +17,7 @@ import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colorizer {
+object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored {
 
   import CodeGenerator._
   var useColor = false
@@ -53,10 +53,12 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
       val methSymbol = methodDecl.getSymbol
 
       val methodHandle = methodDecl match {
-        case mt: MethodDecl       =>
+        case methDecl: MethodDecl       =>
           val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
-          val signature = classDecl.getSymbol.name + "." + mt.signature
-          classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, signature)
+          val methSym = methDecl.getSymbol
+          val methDescriptor = methodDescriptor(classDecl, methDecl)
+          classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, methDescriptor)
+
         case con: ConstructorDecl =>
           hasConstructor = true
           generateConstructor(Some(con), classFile, classDecl)
@@ -65,7 +67,9 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
       if (methodDecl.isAbstract)
         flags |= METHOD_ACC_ABSTRACT
       methodHandle.setFlags(flags)
-
+      methSymbol.annotations foreach { case annotationName =>
+        methodHandle.addAnnotation(annotationName)
+      }
       if(!methodDecl.isAbstract){
         val ch = generateMethod(methodHandle, methodDecl)
         ctx.printCodeStage ifDefined { stage =>
@@ -128,7 +132,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     classFile
   }
 
-  private def generateMethod(mh: MethodHandler, methTree: FuncTree): CodeHandler = {
+  private def generateMethod(mh: MethodHandler, methTree: MethodDeclTree): CodeHandler = {
     val localVariableMap = mutable.HashMap[VariableSymbol, Int]()
 
     var offset = if (methTree.isStatic) 0 else 1
@@ -164,8 +168,8 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     val mh = con match {
       case Some(conDecl) =>
         val argTypes = conDecl.getSymbol.argList.map(_.getType.byteCodeName).mkString
-        val signature = classDecl.getSymbol.name + "." + conDecl.signature
-        classFile.addConstructor(argTypes, signature)
+        val methDescriptor = methodDescriptor(classDecl, conDecl)
+        classFile.addConstructor(argTypes, methDescriptor)
       case _             =>
         classFile.addConstructor("", "new()")
     }
@@ -173,6 +177,11 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
     initializeNonStaticFields(classDecl, mh.codeHandler)
     addSuperCall(mh, classDecl)
     mh
+  }
+
+  private def methodDescriptor(classDecl: ClassDeclTree, methDecl: MethodDeclTree) = {
+    val methSym = methDecl.getSymbol
+    classDecl.getSymbol.name + "." + methSym.signature + ":" + methSym.byteCodeSignature
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {
@@ -212,7 +221,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
 
   }
 
-  private def getMethodFlags(method: FuncTree) = {
+  private def getMethodFlags(method: MethodDeclTree) = {
     var flags: U2 = 0
 
     method.modifiers.foreach {
@@ -260,7 +269,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Coloriz
       tpe.codes.ret(ch)
   }
 
-  private def addReturnStatement(ch: CodeHandler, mt: FuncTree) = ch.lastRealInstruction match {
+  private def addReturnStatement(ch: CodeHandler, mt: MethodDeclTree) = ch.lastRealInstruction match {
     case Some(byteCode) =>
       byteCode match {
         case ARETURN | IRETURN | RETURN | DRETURN | FRETURN | LRETURN =>

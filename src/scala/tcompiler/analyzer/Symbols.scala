@@ -35,7 +35,7 @@ object Symbols {
   class GlobalScope {
 
     val classes = mutable.Map(Main.TLangObject.replaceAll("/", ".") -> Types.ObjectSymbol,
-                               Main.TLangString.replaceAll("/", ".") -> Types.StringSymbol)
+      Main.TLangString.replaceAll("/", ".") -> Types.StringSymbol)
 
     val extensions = mutable.Map[String, ClassSymbol]()
 
@@ -46,11 +46,11 @@ object Symbols {
 
   }
 
-  class ClassSymbol(val name: String,
-                    var isAbstract: Boolean,
-                    var isComplete: Boolean = true) extends Symbol {
+  class ClassSymbol(className: String,
+    var isAbstract: Boolean,
+    var isComplete: Boolean = true) extends Symbol {
 
-    //name = name.replaceAll("\\.", "/")
+    val name = className.replaceAll("\\.", "/")
 
     override def getType = TObject(this)
     override def setType(tpe: Type) = sys.error("Set type on ClassSymbol")
@@ -105,8 +105,8 @@ object Symbols {
 
     def lookupMethod(name: String, args: List[Type], exactTypes: Boolean = false): Option[MethodSymbol] = {
       findMethod(name, args, exactTypes).
-      orElse(lookupParentMethod(name, args, exactTypes)).
-      orElse(findExtensionMethod(name, args, exactTypes))
+        orElse(findExtensionMethod(name, args, exactTypes)).
+        orElse(lookupParentMethod(name, args, exactTypes))
     }
 
     def lookupParentField(name: String): Option[FieldSymbol] = {
@@ -119,8 +119,8 @@ object Symbols {
 
     def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false): Option[OperatorSymbol] = {
       findOperator(operatorType, args, exactTypes).
-        orElse(parents.findDefined(_.lookupOperator(operatorType, args, exactTypes))).
-        orElse(findExtensionOperator(operatorType, args, exactTypes))
+        orElse(findExtensionOperator(operatorType, args, exactTypes)).
+        orElse(parents.findDefined(_.lookupOperator(operatorType, args, exactTypes)))
     }
 
     def unimplementedMethods(): List[(MethodSymbol, ClassSymbol)] =
@@ -152,9 +152,9 @@ object Symbols {
 
 
     protected def findMethodPrioritiseExactMatch[T <: MethodSymbol](container: List[T],
-                                                                  name: String,
-                                                                  args: List[Type],
-                                                                  exactTypes: Boolean) = {
+      name: String,
+      args: List[Type],
+      exactTypes: Boolean) = {
       // Prioritise exact match
       container.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true)) match {
         case Some(x) => Some(x)
@@ -186,7 +186,7 @@ object Symbols {
           if (exactTypes)
             expectedArg == methodArg
           else
-            expectedArg.isSubTypeOf(methodArg) || methodArg.isImplicitlyConvertableFrom(expectedArg)
+            expectedArg.isSubTypeOf(methodArg) || methodArg.isImplicitlyConvertibleFrom(expectedArg)
       }
     }
 
@@ -201,29 +201,29 @@ object Symbols {
 
   }
 
-  class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name, false, true) {
-    var originalClassSymbol: ClassSymbol = null
+  class ExtensionClassSymbol(name: String) extends ClassSymbol(name, false, true) {
+    var originalClassSymbol: Option[ClassSymbol] = None
 
-    override def lookupField(name: String) = originalClassSymbol.lookupField(name)
+    override def lookupField(name: String) = originalClassSymbol.flatMap(_.lookupField(name))
 
     override def lookupMethod(name: String, args: List[Type], exactTypes: Boolean = false) =
-      super.lookupMethod(name, args, exactTypes).orElse(originalClassSymbol.lookupMethod(name, args, exactTypes))
+      super.lookupMethod(name, args, exactTypes).orElse(originalClassSymbol.flatMap(_.lookupMethod(name, args, exactTypes)))
 
     override def lookupOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean = false) =
       super.lookupOperator(operatorType, args, exactTypes).
-        orElse(originalClassSymbol.lookupOperator(operatorType, args, exactTypes))
+        orElse(originalClassSymbol.flatMap(_.lookupOperator(operatorType, args, exactTypes)))
 
   }
 
   class MethodSymbol(val name: String,
-                     val classSymbol: ClassSymbol,
-                     val stat: Option[StatTree],
-                     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
+    val classSymbol: ClassSymbol,
+    val stat: Option[StatTree],
+    val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
     var isAbstract                       = stat.isEmpty
     var args                             = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
-    var overridden: Option[MethodSymbol] = None
+    var annotations: List[String] = Nil
 
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)
@@ -260,10 +260,10 @@ object Symbols {
   }
 
   class OperatorSymbol(val operatorType: OperatorTree,
-                       override val classSymbol: ClassSymbol,
-                       override val stat: Option[StatTree],
-                       override val modifiers: Set[Modifier]
-                      ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
+    override val classSymbol: ClassSymbol,
+    override val stat: Option[StatTree],
+    override val modifiers: Set[Modifier]
+  ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
 
     override def signature = operatorType.signature(argList.map(_.getType))
 
@@ -272,13 +272,13 @@ object Symbols {
   }
 
   class VariableSymbol(val name: String,
-                       val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
+    val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
     override def toString = name
   }
 
   class FieldSymbol(override val name: String,
-                    override val modifiers: Set[Modifier] = Set(),
-                    val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
+    override val modifiers: Set[Modifier] = Set(),
+    val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
   case object ErrorSymbol extends Symbol {val name = Errors.ErrorName}
 

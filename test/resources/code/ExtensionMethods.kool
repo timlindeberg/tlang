@@ -18,7 +18,7 @@ extension A {
     Def static StaticTest() = println("Static A")
 
     Def +(lhs: A, rhs: A) = 5
-    Def #(a: A) = -a.GetInt() + 5
+    Def #(a: A) = (-a).GetInt() + 5
     Def [](index: Int) = i + index
     Def []=(index: Int, value: Int) = (i = index + value)
 

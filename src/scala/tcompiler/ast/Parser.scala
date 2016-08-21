@@ -117,7 +117,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       mainClass.methods :::= methods
 
       if (stats.nonEmpty) {
-        // TODO: Main args should be kool::lang::String
         val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
         val mainMethod = MethodDecl(Some(UnitType()), MethodID("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
@@ -135,34 +134,50 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case PACKAGE =>
         eat(PACKAGE)
         val startPos = nextToken
-        val adress = nonEmptyList(() => identifierName(), COLON, COLON)
+        val address = nonEmptyList(() => identifierName(), COLON, COLON)
         endStatement()
-        Package(adress).setPos(startPos, nextToken)
+        Package(address).setPos(startPos, nextToken)
       case _       => Package(Nil)
     }
   }
 
   /**
-    * <importDeclaration> ::= import <identifier> { . ( <identifier> | * ) }
+    * <importDeclaration> ::= import <identifier> { :: ( <identifier> | * | extension  ) }
     */
   def importDeclaration(): Import = {
     val startPos = nextToken
     eat(IMPORT)
-    val ids = new ArrayBuffer[String]()
+    val address = new ListBuffer[String]()
 
-    ids += identifierName()
+    address += identifierName()
     while (nextTokenKind == COLON) {
       eat(COLON, COLON)
       nextTokenKind match {
         case TIMES =>
           eat(TIMES)
           endStatement()
-          return WildCardImport(ids.toList).setPos(startPos, nextToken)
-        case _     => ids += identifierName()
+          return WildCardImport(address.toList).setPos(startPos, nextToken)
+        case EXTENSION =>
+          return extensionImport(address.toList).setPos(startPos, nextToken)
+        case _     => address += identifierName()
       }
     }
     endStatement()
-    RegularImport(ids.toList).setPos(startPos, nextToken)
+    RegularImport(address.toList).setPos(startPos, nextToken)
+  }
+
+  /**
+    * <extensionImport> ::= extension <identifier> { :: <identifier> }
+    */
+  def extensionImport(address: List[String]) = {
+    eat(EXTENSION)
+    val className = new ListBuffer[String]()
+    className += identifierName()
+    while (nextTokenKind == COLON)
+      className += identifierName()
+
+    endStatement()
+    ExtensionImport(address, className.toList)
   }
 
   /**
@@ -180,7 +195,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         true
       case EXTENSION =>
         eat(EXTENSION)
-        val id = classTypeIdentifier()
+        val id = classIdentifier()
         eat(LBRACE)
         val methods = untilNot(() => methodDeclaration(id.name), PRIVDEF, PUBDEF)
         eat(RBRACE)
@@ -261,7 +276,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <methodDeclaration> ::= <methodModifiers> ( <constructor> | <operator> | <method> )
     */
-  def methodDeclaration(className: String): FuncTree = {
+  def methodDeclaration(className: String): MethodDeclTree = {
     val startPos = nextToken
     val mods = methodModifiers()
     nextTokenKind match {

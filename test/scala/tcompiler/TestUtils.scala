@@ -42,7 +42,7 @@ object TestUtils extends FlatSpec {
 
     val reporter = new Reporter()
     val cp = Main.TDirectory
-    val printCodeStage = Some("codegeneration")
+    val printCodeStage = Some("desugaring")
     new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp), printCodeStage = printCodeStage, useColor = true)
   }
 
@@ -54,13 +54,11 @@ object TestUtils extends FlatSpec {
 
   def executeTProgram(classPaths: List[String], mainName: String): String = {
     val cp = "\"" + classPaths.mkString(classPathSeperator) + "\""
-    val exec = s"java -cp $cp $mainName"
-    println(exec)
-    val f = Future(blocking(exec!!))
+    val f = Future(blocking(s"java -cp $cp $mainName"!!))
     try {
       Await.result(f, Timeout)
     } catch {
-      case _: TimeoutException => fail("Test timed out!")
+      case _: TimeoutException => fail(s"Test timed out after $Timeout s.")
     }
   }
 

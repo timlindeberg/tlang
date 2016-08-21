@@ -16,7 +16,7 @@ import tcompiler.utils._
 import scala.collection.mutable
 import scala.sys.process._
 
-object Main extends MainErrors with Colorizer {
+object Main extends MainErrors with Colored {
 
   import Flags._
 
@@ -27,6 +27,7 @@ object Main extends MainErrors with Colorizer {
   val THome         = "T_HOME"
   val TLangObject   = "kool/lang/Object"
   val TLangString   = "kool/lang/String"
+  val TExtensionAnnotation   = "kool/lang/$ExtensionMethod"
 
   override def useColor = !flagActive(NoColor)
   def TDirectory = sys.env(THome)

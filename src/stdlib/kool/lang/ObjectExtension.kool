@@ -1,0 +1,7 @@
+package kool::lang
+
+extension java::lang::Object {
+
+    Def ToString() = "OBJECT"
+
+}

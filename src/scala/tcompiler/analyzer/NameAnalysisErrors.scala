@@ -71,14 +71,13 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorThisInStaticContext(pos: Positioned) =
     error(13, "'this' can not be used in a static context.", pos)
 
-  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, pos: Positioned) = {
+  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, className: String, pos: Positioned) = {
     val op = operatorType.signature(argTypes)
-    val name = classSymbol.name
     val classString = classSymbol match {
-      case e: ExtensionClassSymbol => s"extension class of '$name'"
-      case e                       => s"class '$name'"
+      case e: ExtensionClassSymbol => s"extension class of '$className'"
+      case e                       => s"class '$className'"
     }
-    error(14, s"Operator '$op' defined in $classString needs to have '$name' as an argument.", pos)
+    error(14, s"Operator '$op' defined in $classString needs to have '$className' as an argument.", pos)
   }
 
   protected def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned) = {

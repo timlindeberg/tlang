@@ -314,7 +314,7 @@ class TypeChecker(override var ctx: Context,
               ErrorNewPrimitive(tpe.name, argTypes, newDecl)
             } else if (exprs.size == 1) {
               val arg = exprs.head.getType
-              if (!primitiveType.isImplicitlyConvertableFrom(arg))
+              if (!primitiveType.isImplicitlyConvertibleFrom(arg))
                 ErrorNewPrimitive(tpe.name, argTypes, newDecl)
             }
         }
@@ -374,7 +374,7 @@ class TypeChecker(override var ctx: Context,
     }
 
     def correctType(expectedTpe: Type) =
-      foundType.isSubTypeOf(expectedTpe) || expectedTpe.isImplicitlyConvertableFrom(foundType)
+      foundType.isSubTypeOf(expectedTpe) || expectedTpe.isImplicitlyConvertibleFrom(foundType)
 
     val res =
       if (expected.nonEmpty && !expected.exists(correctType))

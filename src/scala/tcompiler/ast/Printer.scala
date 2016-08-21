@@ -5,10 +5,10 @@ import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
 import tcompiler.lexer.Tokens
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colored
 
 
-object Printer extends Colorizer {
+object Printer extends Colored {
 
   import Trees._
 
@@ -152,7 +152,7 @@ object Printer extends Colorizer {
     s
   }
 
-  private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]): String = {
+  private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
     val start = p"$id${parentList(parents)}"
     if (fields.isEmpty && methods.isEmpty)
       return s"$start { }"
@@ -189,7 +189,7 @@ object Printer extends Colorizer {
       p": ${Separated(parents, ", ")}"
   }
 
-  private def varsAndMethods(vars: List[VarDecl], methods: List[FuncTree]): String = {
+  private def varsAndMethods(vars: List[VarDecl], methods: List[MethodDeclTree]): String = {
     if (vars.isEmpty && methods.isEmpty)
       return "{ }"
 

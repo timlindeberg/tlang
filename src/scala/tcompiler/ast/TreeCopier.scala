@@ -22,13 +22,13 @@ class TreeCopier {
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
-  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) =
+  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) =
     new ClassDecl(id, parents, fields, methods).copyAttrs(t)
 
-  def TraitDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) =
+  def TraitDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) =
     new TraitDecl(id, parents, fields, methods).copyAttrs(t)
 
-  def ExtensionDecl(t: Tree, id: ClassID, methods: List[FuncTree]) =
+  def ExtensionDecl(t: Tree, id: ClassID, methods: List[MethodDeclTree]) =
     new ExtensionDecl(id, methods).copyAttrs(t)
 
   /*-------------------------------- Modifier Trees --------------------------------*/
@@ -271,17 +271,17 @@ class LazyTreeCopier extends TreeCopier {
       if (adress eq adress0) => t
     case _ => super.WildCardImport(tree, adress)
   }
-  override def ClassDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) = tree match {
+  override def ClassDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) = tree match {
     case t@ClassDecl(id0, parents0, fields0, methods0)
       if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) => t
     case _ => super.ClassDecl(tree, id, parents, fields, methods)
   }
-  override def TraitDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[FuncTree]) = tree match {
+  override def TraitDecl(tree: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) = tree match {
     case t@TraitDecl(id0, parents0, fields0, methods0)
       if (id eq id0) && (parents eq parents0) && (fields eq fields0) && (methods eq methods0) => t
     case _ => super.TraitDecl(tree, id, parents, fields, methods)
   }
-  override def ExtensionDecl(tree: Tree, id: ClassID, methods: List[FuncTree]) = tree match {
+  override def ExtensionDecl(tree: Tree, id: ClassID, methods: List[MethodDeclTree]) = tree match {
     case t@ExtensionDecl(id0, methods0)
       if (id eq id0) && (methods eq methods0) => t
     case _ => super.ExtensionDecl(tree, id, methods)

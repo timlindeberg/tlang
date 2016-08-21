@@ -4,14 +4,13 @@ package utils
 import java.io.File
 import java.util.regex.Matcher
 
-import tcompiler.analyzer.Symbols.{ErrorSymbol, Symbolic}
-import tcompiler.analyzer.Types.{TError, Typed}
+import tcompiler.analyzer.Symbols.Symbolic
+import tcompiler.analyzer.Types.Typed
 import tcompiler.imports.ImportMap
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
-import scala.collection.mutable
 
 class CompilationException(message: String) extends Exception(message)
 
@@ -19,16 +18,16 @@ class Reporter(suppressWarnings: Boolean = false,
                warningIsError: Boolean = false,
                override val useColor: Boolean = false,
                maxErrors: Int = 100)
-  extends Colorizer {
+  extends Colored {
 
-  def QuoteColor = Magenta
   override def NumColor = Blue
+  def QuoteColor = Magenta
   def MessageStyle = Bold
   def WarningColor = Yellow
   def ErrorColor = Red + Bold
   def FatalColor = Red
 
-  private val ErrorSeperator = "\n"
+  private val ErrorSeparator = "\n"
   private val filesToLines   = mutable.Map[File, IndexedSeq[String]]()
 
   private var hitMaxErrors = false
@@ -87,14 +86,21 @@ class Reporter(suppressWarnings: Boolean = false,
   def hasWarnings = warnings.nonEmpty
 
   def errorsString: String = {
-    val err = errors.mkString(ErrorSeperator)
-    val num = s"$ErrorColor${errors.size}$Reset"
-    if (hitMaxErrors)
-      s"There were more than $num errors, only showing the first $num:\n\n$err"
+    val err = errors.mkString(ErrorSeparator)
+    val numErrors = errors.size
+    val num = s"$ErrorColor$numErrors$Reset"
+
+    val prefix = if (hitMaxErrors)
+      s"There were more than $num errors, only showing the first $num"
+    else if(numErrors == 1)
+      s"There was $num error"
     else
-      s"There were $num errors:\n\n$err"
+      s"There were $num errors"
+
+    prefix + s":\n\n$err"
   }
-  def warningsString = warnings.mkString(ErrorSeperator)
+
+  def warningsString = warnings.mkString(ErrorSeparator)
 
   def terminateIfErrors() =
     if (hasErrors)
