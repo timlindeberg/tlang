@@ -146,7 +146,10 @@ object Trees {
   case class RegularImport(address: List[String]) extends Import
   case class WildCardImport(address: List[String]) extends Import
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
-    def fullName = address.mkString(".") + ExtensionDecl.seperator + className.mkString(".")
+
+    def fullName = {
+      ((address :+ ExtensionDecl.seperator) ::: className).mkString(".")
+    }
   }
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
@@ -182,7 +185,7 @@ object Trees {
   }
 
   object ExtensionDecl {
-    val seperator = "$EX/"
+    val seperator = "$EX"
   }
 
   case class ExtensionDecl(id: ClassID, var methods: List[MethodDeclTree]) extends ClassDeclTree {

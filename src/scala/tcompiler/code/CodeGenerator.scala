@@ -580,52 +580,51 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     val tpe = variable.getType
     val codes = tpe.codes
 
-    if (localVariableMap.contains(variable)) {
-      val id = localVariableMap(variable)
-      putValue()
-      if (duplicate)
-        codes.dup(ch)
-      return tpe.codes.store(ch, id)
+    localVariableMap.get(variable) match {
+      case Some(id) =>
+        putValue()
+        if (duplicate)
+          codes.dup(ch)
+        tpe.codes.store(ch, id)
+      case None =>
+        // variable is a field
+        if (!variable.isStatic)
+          putObject()
+
+        // Must be a field since it's not a local variable
+        val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
+
+        putValue()
+
+        if (duplicate)
+          if (variable.isStatic)
+            codes.dup(ch)
+          else
+            codes.dup_x1(ch) // this value -> value this value
+
+        if (variable.isStatic)
+          ch << PutStatic(className, name, tpe.byteCodeName)
+        else
+          ch << PutField(className, name, tpe.byteCodeName)
     }
-
-    // variable is a field
-    if (!variable.isStatic)
-      putObject()
-
-    // Must be a field since it's not a local variable
-    val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
-
-    putValue()
-
-    if (duplicate)
-      if (variable.isStatic)
-        codes.dup(ch)
-      else
-        codes.dup_x1(ch) // this value -> value this value
-
-    if (variable.isStatic)
-      ch << PutStatic(className, name, tpe.byteCodeName)
-    else
-      ch << PutField(className, name, tpe.byteCodeName)
   }
 
   private def load(variable: VariableSymbol): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
 
-    if (localVariableMap.contains(variable)) {
-      val id = localVariableMap(variable)
-      return tpe.codes.load(ch, id)
-    }
+    localVariableMap.get(variable) match {
+      case Some(id) => tpe.codes.load(ch, id)
+      case None =>
+        // Must be a field since it's not a local variable
+        val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
 
-    // Must be a field since it's not a local variable
-    val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
-
-    if (variable.isStatic) {
-      ch << GetStatic(className, name, tpe.byteCodeName)
-    } else {
-      ch << ArgLoad(0) // this reference
-      ch << GetField(className, name, tpe.byteCodeName)
+        if (variable.isStatic) {
+          ch << GetStatic(className, name, tpe.byteCodeName)
+        } else {
+          ch << ArgLoad(0) // this reference
+          ch << GetField(className, name, tpe.byteCodeName)
+        }
     }
   }
 

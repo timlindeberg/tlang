@@ -50,8 +50,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   def addSymbols(): Unit = cu.classes.foreach(addSymbols)
   def importExtensionClasses() = {
     cu.importMap.extensionImports foreach { extImport =>
-      ClassSymbolLocator.findSymbol(extImport.fullName) match {
-        case Some(e) => globalScope.extensions += (e.name -> e)
+      ClassSymbolLocator.findExtensionSymbol(extImport.fullName) match {
+        case Some(e) =>
+          globalScope.extensions += (e.name -> e)
         case None    => // NOO
       }
     }
@@ -116,8 +117,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     ensureClassNotDefined(id)
     val sym = classDecl match {
       case _: ExtensionDecl =>
-        val name = ExtensionDecl.seperator + id.name.replaceAll("::", ".")
-        val fullName = (cu.pack.address :+ name).mkString(".")
+        val name = id.name.replaceAll("::", ".")
+        val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ name).mkString(".")
         val newSymbol = new ExtensionClassSymbol(fullName)
         globalScope.extensions += (fullName -> newSymbol)
         newSymbol
@@ -457,7 +458,10 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
               case methodSymbol: MethodSymbol =>
                 if (isStaticContext)
                   ErrorThisInStaticContext(thisTree)
-                thisTree.setSymbol(methodSymbol.classSymbol)
+                methodSymbol.classSymbol match {
+                  case e: ExtensionClassSymbol => thisTree.setSymbol(e.originalClassSymbol.get)
+                  case classSymbol             => thisTree.setSymbol(classSymbol)
+                }
               case _: ClassSymbol             => ErrorThisInStaticContext(thisTree)
               case _                          => ???
             }

@@ -28,41 +28,42 @@ class Desugarer extends TreeTransformer {
   private val ThisName = "$this"
 
   override protected def transform(t: Tree) = t match {
-    case extensionDecl: ExtensionDecl                  => desugarExtensionDecl(super.transform(extensionDecl))
-    case slice: ArraySlice                             => desugarArraySlice(super.transform(slice))
-    case opDecl: OperatorDecl                          => replaceOperatorDecl(super.transform(opDecl))
-    case safeAccess: SafeAccess                        =>
+    case extensionDecl: ExtensionDecl                    => desugarExtensionDecl(super.transform(extensionDecl))
+    case slice: ArraySlice                               => desugarArraySlice(super.transform(slice))
+    case opDecl: OperatorDecl                            => replaceOperatorDecl(super.transform(opDecl))
+    case safeAccess: SafeAccess                          =>
       // Recurse again to replace all calls in the desugared version
       super.transform(desugarSafeAccess(safeAccess))
-    case acc@NormalAccess(obj, MethodCall(meth, args)) =>
+    case acc@NormalAccess(obj, m@MethodCall(meth, args)) =>
+      val newAcc = super.transform(acc)
       val classSymbol = meth.getSymbol.classSymbol
       classSymbol match {
-        case e: ExtensionClassSymbol => replaceExtensionCall(acc)
-        case _                       => acc
+        case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
+        case _                       => newAcc
       }
-    case incDec: IncrementDecrementTree                =>
-      if (incDec.expr.getType.isInstanceOf[TObject])
+    case incDec: IncrementDecrementTree                  =>
+      if (isObject(incDec.expr))
         replaceOperatorCall(super.transform(incDec))
       else
         desugarIncrementDecrement(super.transform(incDec))
-    case assign: Assign                                =>
+    case assign: Assign                                  =>
       val to = assign.to
-      if (to.isInstanceOf[ArrayRead] && to.getType.isInstanceOf[TObject]) {
-        val expr = super.transform(assign.from).asInstanceOf[ExprTree]
+      if (to.isInstanceOf[ArrayRead] && isObject(to)) {
+        val expr = super.apply(assign.from)
         val newAssign = treeCopy.Assign(assign, to, expr)
         // Transform again to replace external method calls etc.
         transform(replaceOperatorCall(newAssign))
       } else {
         super.transform(assign)
       }
-    case op: OperatorTree                              =>
+    case op: OperatorTree                                =>
       replaceOperatorCall(super.transform(op)) match {
         case op: OperatorTree => op // Finished transform
         case tree             => transform(tree) // Transform again to replace external method calls etc.
       }
-    case foreach: Foreach                              => desugarForeachLoop(super.transform(foreach))
-    case elvis: Elvis                                  => desugarElvisOp(super.transform(elvis))
-    case _                                             => super.transform(t)
+    case foreach: Foreach                                => desugarForeachLoop(super.transform(foreach))
+    case elvis: Elvis                                    => desugarElvisOp(super.transform(elvis))
+    case _                                               => super.transform(t)
   }
 
   //@formatter:off
@@ -113,8 +114,12 @@ class Desugarer extends TreeTransformer {
           case This()                                                      =>
             thisId
           case Access(obj, app)                                            =>
-            // Don't replace in app since that would replace e.g A.i with A.$this.i
-            treeCopy.NormalAccess(t, tr(obj), app)
+            // Don't replace VariableIDs in app since that would replace e.g A.i with A.$this.i
+            val a = app match {
+              case _: VariableID => app
+              case _             => apply(app)
+            }
+            treeCopy.NormalAccess(t, tr(obj), a)
           case v@VariableID(name) if v.getSymbol.isInstanceOf[FieldSymbol] =>
             NormalAccess(thisId, v).setType(v)
           case _                                                           =>
@@ -134,9 +139,9 @@ class Desugarer extends TreeTransformer {
         val thisSym = new VariableSymbol(ThisName).setType(TObject(originalClass))
         val thisId = VariableID(ThisName).setSymbol(thisSym)
         val newMethSym = new MethodSymbol(methSym.name, classSymbol, None, modifiers).setType(methSym)
-        newMethSym.argList ::= thisSym
-        newMethSym.args += ThisName -> thisSym
-        newMethSym.annotations ::= Main.TExtensionAnnotation
+        newMethSym.argList = thisSym :: methSym.argList
+        newMethSym.args = methSym.args + (ThisName -> thisSym)
+        newMethSym.annotations ::= methSym.annotations + Main.TExtensionAnnotation
         val thisArg = Formal(extensionDecl.id, thisId)
 
         // Replace references to this with the this variable

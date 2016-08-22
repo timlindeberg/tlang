@@ -224,6 +224,7 @@ object Symbols {
     var args                             = Map[String, VariableSymbol]()
     var argList   : List[VariableSymbol] = Nil
     var annotations: List[String] = Nil
+    val isExtensionMethod = classSymbol.isInstanceOf[ExtensionClassSymbol]
 
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)

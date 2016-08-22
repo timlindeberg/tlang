@@ -1,0 +1,85 @@
+package kool::lang
+
+import java::lang::Integer
+import kool::std::Iterable
+import kool::std::Iterator
+import java::lang::StringBuilder
+
+extension java::lang::String {
+
+    Def Iterator(): Iterator<Char> = new StringIterator(this)
+    Def Size() = length()
+    Def IsEmpty() = Size() == 0
+    Def NonEmpty() = !IsEmpty()
+
+    //----------------------------------------------------
+    // Conversion methods
+    //----------------------------------------------------
+
+    Def ToInt()            = java::lang::Integer.parseInt(this)
+    Def ToInt(radix: Int)  = java::lang::Integer.parseInt(this, radix)
+
+    Def ToLong()           = java::lang::Long.parseLong(this)
+    Def ToLong(radix: Int) = java::lang::Long.parseLong(this, radix)
+
+    Def ToFloat()          = java::lang::Float.parseFloat(this)
+    Def ToDouble()         = java::lang::Double.parseDouble(this)
+
+    //----------------------------------------------------
+    // Operators
+    //----------------------------------------------------
+
+    Def <(lhs: java::lang::String, rhs: java::lang::String)  = lhs.compareTo(rhs) < 0
+    Def <=(lhs: java::lang::String, rhs: java::lang::String) = lhs.compareTo(rhs) <= 0
+    Def >(lhs: java::lang::String, rhs: java::lang::String)  = lhs.compareTo(rhs) > 0
+    Def >=(lhs: java::lang::String, rhs: java::lang::String) = lhs.compareTo(rhs) >= 0
+
+    Def +(lhs: java::lang::String, rhs: java::lang::String) = lhs.concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Object) = lhs.concat(rhs.toString())
+    Def +(lhs: Object, rhs: java::lang::String) = lhs.toString().concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Char) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Char, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Int) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Int, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Long) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Long, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Float) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Float, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Double) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Double, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def +(lhs: java::lang::String, rhs: Bool) = lhs.concat(java::lang::String.valueOf(rhs))
+    Def +(lhs: Bool, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+
+    Def *(times: Int, str: java::lang::String) = str * (times as Long)
+    Def *(str: java::lang::String, times: Int) = str * (times as Long)
+    Def *(times: Long, str: java::lang::String) = str * times
+    Def *(str: java::lang::String, times: Long) = {
+        val b = new StringBuilder()
+        for(var i = 0; i < times; i++)
+            b.append(str)
+        b.toString()
+    }
+
+    Def [](index: Int) = charAt(index)
+
+}
+
+class StringIterator: Iterator<Char> {
+
+    var s: java::lang::String
+    var index = 0
+
+    Def new(str: java::lang::String) = (this.s = str)
+
+    Def HasNext() = index < s.length()
+    Def Next() = s.charAt(index++)
+
+
+}

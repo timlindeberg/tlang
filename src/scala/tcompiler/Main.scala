@@ -2,13 +2,11 @@ package tcompiler
 
 import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
-import java.util.regex.Matcher
 
 import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
+import tcompiler.ast.Parser
 import tcompiler.ast.Trees._
-import tcompiler.ast.{ASTBuilder, Parser, Printer}
 import tcompiler.code.{CodeGeneration, Desugaring}
-import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
@@ -79,7 +77,7 @@ object Main extends MainErrors with Colored {
   private def processOptions(args: Array[String]): Context = {
     var outDir: Option[String] = None
     var files: List[File] = Nil
-    var classPaths: List[String] = List()
+    var classPaths: List[String] = Nil
     var maxErrors = MaxErrors.DefaultMax
     var printStage: Option[String] = None
 
@@ -197,7 +195,7 @@ object Main extends MainErrors with Colored {
 
     if (!f.exists()) {
       val canCreate = f.mkdirs()
-      // TODO: delete doesnt delete parent directories
+      // TODO: delete doesn't delete parent directories
       f.delete()
       if (canCreate)
         return false

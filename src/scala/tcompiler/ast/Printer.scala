@@ -55,6 +55,7 @@ object Printer extends Colored {
       case cu@CompilationUnit(pack, classes, importMap)               => p"${comment(cu)}$pack${imports(importMap.imports)}$classes"
       case Package(adress)                                            => p"${packDecl(adress)}"
       case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
+      case ExtensionImport(adress, className)                         => p"import ${adress.mkString("::")}::extension ${className.mkString("::")}"
       case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
       case ClassDecl(id, parents, fields, methods)                    => p"$N${N}class ${restOfClassDecl(id, parents, fields, methods)}"
       case TraitDecl(id, parents, fields, methods)                    => p"$N${N}trait ${restOfClassDecl(id, parents, fields, methods)}"

@@ -20,9 +20,18 @@ object ClassSymbolLocator {
     Repository.setRepository(rep)
   }
 
-  def findSymbol(className: String): Option[ClassSymbol] = {
+  def findSymbol(className: String): Option[ClassSymbol] =
+      _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
+
+  def findExtensionSymbol(className: String) =
+    _findSymbol(className, clazz => new ExtensionClassSymbol(clazz.getClassName))
+
+  private def _findSymbol[T <: ClassSymbol](className: String, cons: JavaClass => T): Option[T] = {
     findClass(className) match {
-      case Some(javaClass) => Some(convertClass(javaClass))
+      case Some(javaClass) =>
+        val classSymbol = cons(javaClass)
+        fillClassSymbol(classSymbol)
+        Some(classSymbol)
       case None            => None
     }
   }
@@ -56,15 +65,6 @@ object ClassSymbolLocator {
       val f = convertField(classSymbol, field)
       (f.name, f)
     }.toMap
-  }
-
-
-  private def convertClass(clazz: JavaClass): ClassSymbol = {
-    val name = clazz.getClassName
-
-    val symbol = new ClassSymbol(name, clazz.isInterface)
-    fillClassSymbol(symbol)
-    symbol
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {

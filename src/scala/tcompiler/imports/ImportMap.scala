@@ -1,11 +1,13 @@
 package tcompiler.imports
 
 import tcompiler.Main
+import tcompiler.analyzer.Symbols.ExtensionClassSymbol
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 /**
   * Created by Tim Lindeberg on 7/5/2016.
@@ -62,6 +64,16 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
 
 
+  }
+
+  def getImportedExtensionClasses = {
+    val importedClasses = ListBuffer[ExtensionClassSymbol]()
+    extensionImports foreach { extImport =>
+      ClassSymbolLocator.findExtensionSymbol(extImport.fullName) match {
+        case Some(e) => importedClasses += e
+        case None    => // NOO
+      }
+    }
   }
 
   def addImport(tup: (String, String)): Unit  = addImport(tup._1, tup._2)

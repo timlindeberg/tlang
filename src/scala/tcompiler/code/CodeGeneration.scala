@@ -70,12 +70,12 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
       methSymbol.annotations foreach { case annotationName =>
         methodHandle.addAnnotation(annotationName)
       }
+
       if(!methodDecl.isAbstract){
         val ch = generateMethod(methodHandle, methodDecl)
         ctx.printCodeStage ifDefined { stage =>
           if(stage == CodeGeneration.stageName)
             println(ch.stackTrace(ctx.useColor))
-
         }
       }
 

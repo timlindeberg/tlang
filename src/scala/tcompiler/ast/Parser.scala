@@ -173,8 +173,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     eat(EXTENSION)
     val className = new ListBuffer[String]()
     className += identifierName()
-    while (nextTokenKind == COLON)
+    while (nextTokenKind == COLON){
+      eat(COLON, COLON)
       className += identifierName()
+    }
 
     endStatement()
     ExtensionImport(address, className.toList)
