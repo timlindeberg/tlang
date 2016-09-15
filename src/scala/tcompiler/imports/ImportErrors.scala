@@ -1,5 +1,6 @@
 package tcompiler.imports
 
+import tcompiler.ast.Trees.ExtensionImport
 import tcompiler.utils.{Errors, Positioned}
 
 /**
@@ -21,6 +22,10 @@ trait ImportErrors extends Errors {
 
   protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned) =
     error(1, s"Imports '$imp1' and '$imp2' are conflicting.", pos)
+
+  protected def ErrorCantResolveExtensionsImport(imp: ExtensionImport, pos: Positioned) = {
+    error(2, s"Cannot resolve extension import '$imp'.", pos)
+  }
 
 
   //---------------------------------------------------------------------------------------

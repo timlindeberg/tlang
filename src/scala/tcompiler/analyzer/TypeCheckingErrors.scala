@@ -177,7 +177,7 @@ trait TypeCheckingErrors extends Errors {
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  protected def WarningUnusedPrivateField(name: String, pos: Positioned) =
+  protected def WarningUnusedPrivateMethod(name: String, pos: Positioned) =
     warning(0, s"protected method '$name' is never used.", pos)
 
   //---------------------------------------------------------------------------------------

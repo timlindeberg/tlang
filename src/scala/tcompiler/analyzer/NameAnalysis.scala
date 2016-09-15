@@ -5,7 +5,6 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeTraverser
 import tcompiler.ast.Trees._
-import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
@@ -21,7 +20,6 @@ object NameAnalysis extends Pipeline[List[CompilationUnit], List[CompilationUnit
     val analyzers = cus map { cu =>
       val nameAnalyzer = new NameAnalyser(ctx, cu)
       nameAnalyzer.addSymbols()
-      nameAnalyzer.importExtensionClasses()
       nameAnalyzer
     }
 
@@ -47,16 +45,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   private  var variableReassignment = Map[VariableSymbol, Boolean]()
 
 
-  def addSymbols(): Unit = cu.classes.foreach(addSymbols)
-  def importExtensionClasses() = {
-    cu.importMap.extensionImports foreach { extImport =>
-      ClassSymbolLocator.findExtensionSymbol(extImport.fullName) match {
-        case Some(e) =>
-          globalScope.extensions += (e.name -> e)
-        case None    => // NOO
-      }
-    }
-  }
+  def addSymbols(): Unit = cu.classes foreach addSymbols
 
   def bindIdentifiers(): Unit = cu.classes.foreach(bind)
 
@@ -120,7 +109,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         val name = id.name.replaceAll("::", ".")
         val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ name).mkString(".")
         val newSymbol = new ExtensionClassSymbol(fullName)
-        globalScope.extensions += (fullName -> newSymbol)
+        importMap.addExtensionClass(newSymbol)
         newSymbol
       case _                =>
         val fullName = (cu.pack.address :+ id.name).mkString(".")
@@ -212,13 +201,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   private def ensureClassNotDefined(id: ClassID): Unit = {
     val name = id.name
     val fullName = importMap.getFullName(name)
-    fullName match {
-      case "kool.lang.Object" =>
-      case "kool.lang.String" =>
-      case _                  =>
-        globalScope.classes.get(fullName) ifDefined { old =>
-          ErrorClassAlreadyDefined(name, old.line, id)
-        }
+    globalScope.classes.get(fullName) ifDefined { old =>
+      ErrorClassAlreadyDefined(name, old.line, id)
     }
   }
 
@@ -239,10 +223,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         val name = id.name
         val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
         globalScope.lookupClass(importMap, name) match {
-          case Some(c) =>
-            extensionSym.originalClassSymbol = Some(c)
-            c.extensionClasses ::= extensionSym
-          case None    => ErrorCantResolveSymbol(name, id)
+          case Some(originalClass) => extensionSym.originalClassSymbol = Some(originalClass)
+          case None                => ErrorCantResolveSymbol(name, id)
         }
       }
 
@@ -534,7 +516,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   }
 
   private def ensureMethodNotDefined(meth: MethodDeclTree): Unit = {
-    // This is done in the binding stage since we are then gauranteed that
+    // This is done in the binding stage since we are then guaranteed that
     // all types have been added to the global scope
     val name = meth.id.name
     val argTypes = meth.args.map(_.tpe.getType)
@@ -553,11 +535,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
     val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
     val classSymbol = operator.getSymbol.classSymbol
-    classSymbol.lookupOperator(operatorType, argTypes, exactTypes = true) match {
-      case Some(oldOperator) =>
-        ErrorOperatorAlreadyDefined(op.signature, oldOperator.line, operator)
-      case None              =>
-        operator.getSymbol.classSymbol.addOperator(op)
+    classSymbol.lookupOperator(operatorType, argTypes, importMap, exactTypes = true) match {
+      case Some(oldOperator) => ErrorOperatorAlreadyDefined(op.signature, oldOperator.line, operator)
+      case None              => operator.getSymbol.classSymbol.addOperator(op)
     }
   }
 
@@ -587,7 +567,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   }
 
   private def setParentSymbol(classDecl: ClassDeclTree): Unit = {
-    val id = classDecl.id
     val parents = classDecl.parents
     parents.foreach { parentId =>
       globalScope.lookupClass(importMap, parentId.name) match {
@@ -598,7 +577,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
     val nonAbstractParents = parents.filter(!_.getSymbol.isAbstract)
     if (!classDecl.isAbstract && nonAbstractParents.isEmpty) {
-      val defaultParent = ClassID(Main.TLangObject).setSymbol(Types.ObjectSymbol)
+      val defaultParent = ClassID(Main.JavaObject).setSymbol(Types.ObjectSymbol)
       val abstractParents = parents.filter(_.getSymbol.isAbstract)
       classDecl.parents = defaultParent :: abstractParents
     }

@@ -16,6 +16,12 @@ object Extensions {
 
   }
 
+  implicit class IntExtensions(i: Int) {
+
+    def times(f: => Unit): Unit = 1 to i foreach { _ => f }
+
+  }
+
   implicit class AnyExtensions(a: Any) {
 
     def ifInstanceOf[T: ClassTag](f: T => Unit) = if(classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])

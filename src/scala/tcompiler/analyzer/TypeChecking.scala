@@ -52,9 +52,9 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
 }
 
 class TypeChecker(override var ctx: Context,
-                  override var importMap: ImportMap,
-                  currentMethodSymbol: MethodSymbol,
-                  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+  override var importMap: ImportMap,
+  currentMethodSymbol: MethodSymbol,
+  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 
   import TypeChecking._
 
@@ -245,9 +245,7 @@ class TypeChecker(override var ctx: Context,
             val nullableTpe = if (lhsTpe == TNull) rhsTpe else lhsTpe
             if (!nullableTpe.isNullable)
               ErrorNonNullableEqualsNull(rhs.getType, eqOp)
-          case _ if args.anyIs(Object)                        =>
-            // TODO: Compare java object by reference
-            tcBinaryOperator(eqOp, args)
+          case _ if args.anyIs(Object)                        => tcBinaryOperator(eqOp, args)
           case (x, y) if x.isSubTypeOf(y) || y.isSubTypeOf(x) => // Valid
           case _ if args.anyIs(Bool, Array)                   => ErrorOperatorDoesNotExist(eqOp, args, expression)
           case _                                              =>
@@ -301,12 +299,16 @@ class TypeChecker(override var ctx: Context,
             if (classSymbol.isAbstract) {
               ErrorInstantiateTrait(classSymbol.name, newDecl)
             } else {
-              classSymbol.lookupMethod("new", argTypes) match {
-                case Some(constructorSymbol) => checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
+              classSymbol.lookupMethod("new", argTypes, importMap) match {
+                case Some(constructorSymbol) =>
+                  checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
+                  newDecl.setSymbol(constructorSymbol)
                 case None if exprs.nonEmpty  =>
                   val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
                   ErrorDoesntHaveConstructor(tpe.name, methodSignature, newDecl)
                 case _                       =>
+                  val defaultConstructor  = new MethodSymbol("new", classSymbol, None, Set(Public()))
+                  newDecl.setSymbol(defaultConstructor)
               }
             }
           case primitiveType        =>
@@ -321,7 +323,7 @@ class TypeChecker(override var ctx: Context,
         tpe.getType
       case negOp@Negation(expr)                          =>
         val validTypes = List(Object, Int, Char, Long, Double, Float)
-        tcExpr(expr, validTypes ) match {
+        tcExpr(expr, validTypes) match {
           case x: TObject => tcUnaryOperator(negOp, x)
           case _: TBool   => ErrorWrongType(validTypes, Bool, negOp)
           case _: TChar   => Int // Negation of char is int
@@ -408,7 +410,7 @@ class TypeChecker(override var ctx: Context,
       case MethodCall(meth, args)        =>
         objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupMethod(meth.name, argTypes.get) match {
+            classSymbol.lookupMethod(meth.name, argTypes.get, importMap) match {
               case Some(methSymbol) =>
                 checkMethodPrivacy(classSymbol, methSymbol, app)
                 checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
@@ -445,9 +447,9 @@ class TypeChecker(override var ctx: Context,
 
 
     val t = acc match {
-      case sa: SafeAccess  =>
+      case _: SafeAccess   =>
         if (!objType.isNullable)
-          ErrorSafeAccessOnNonNullable(objType, sa)
+          ErrorSafeAccessOnNonNullable(objType, acc)
         tpe.getNullable
       case _: NormalAccess => tpe
     }
@@ -497,7 +499,7 @@ class TypeChecker(override var ctx: Context,
         val thisSymbol = sup.getSymbol
         val classSymbol = app match {
           case MethodCall(meth, args) =>
-            thisSymbol.lookupParentMethod(meth.name, argTypes.get) match {
+            thisSymbol.lookupParentMethod(meth.name, argTypes.get, importMap) match {
               case Some(methodSymbol) => methodSymbol.classSymbol
               case None               => return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, app)
             }
@@ -557,23 +559,23 @@ class TypeChecker(override var ctx: Context,
   def tcBinaryOperator(operator: OperatorTree, args: (Type, Type), expectedType: Option[Type] = None): Type = {
     val argList = List(args._1, args._2)
     typeCheckOperator(args._1, operator, argList)
-    .orElse(typeCheckOperator(args._2, operator, argList))
-    .getOrElse(ErrorOverloadedOperatorNotFound(operator, argList, operator))
+      .orElse(typeCheckOperator(args._2, operator, argList))
+      .getOrElse(ErrorOverloadedOperatorNotFound(operator, argList, operator))
   }
 
   def tcUnaryOperator(expr: OperatorTree, arg: Type, expectedType: Option[Type] = None): Type = {
     val argList = List(arg)
     typeCheckOperator(arg, expr, argList)
-    .getOrElse(ErrorOverloadedOperatorNotFound(expr, argList, expr))
+      .getOrElse(ErrorOverloadedOperatorNotFound(expr, argList, expr))
   }
 
   def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned) = {
     typeCheckOperator(classTpe, opType, argList)
-    .getOrElse(ErrorIndexingOperatorNotFound(opType, argList, arrTpe.toString, pos))
+      .getOrElse(ErrorIndexingOperatorNotFound(opType, argList, arrTpe.toString, pos))
   }
 
   private def typeCheckOperator(classType: Type, operator: OperatorTree, args: List[Type]): Option[Type] = {
-    operator.lookupOperator(classType, args) match {
+    operator.lookupOperator(classType, args, importMap) match {
       case Some(operatorSymbol) =>
         val classSymbol = classType.asInstanceOf[TObject].classSymbol
         checkOperatorPrivacy(classSymbol, operatorSymbol, operator)
@@ -589,9 +591,8 @@ class TypeChecker(override var ctx: Context,
     // Check method usage
     // TODO: Refactoring of typechecker global variables etc.
     methodUsage foreach {
-      case (method, used) =>
-        if (!used)
-          WarningUnusedPrivateField(method.signature, method)
+      case (method, used) if !used => WarningUnusedPrivateMethod(method.signature, method)
+      case _                       =>
     }
     methodUsage = Map[MethodSymbol, Boolean]()
   }
@@ -602,17 +603,18 @@ class TypeChecker(override var ctx: Context,
         val classSymbol = clazz.getSymbol
         val methSymbol = meth.getSymbol
 
-        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes) match {
+        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, importMap) match {
           case Some(parentMeth) if parentMeth.getType != meth.getSymbol.getType =>
             val parentType = parentMeth.getType
             val tpe = meth.getSymbol.getType
             if (!tpe.isSubTypeOf(parentType)) {
-              ErrorOverridingMethodDifferentReturnType(meth.getSymbol.signature,
-                                                        classSymbol.name,
-                                                        meth.getSymbol.getType.toString,
-                                                        parentMeth.classSymbol.name,
-                                                        parentMeth.getType.toString,
-                                                        meth)
+              ErrorOverridingMethodDifferentReturnType(
+                meth.getSymbol.signature,
+                classSymbol.name,
+                meth.getSymbol.getType.toString,
+                parentMeth.classSymbol.name,
+                parentMeth.getType.toString,
+                meth)
             }
           case _                                                                =>
         }
@@ -630,8 +632,8 @@ class TypeChecker(override var ctx: Context,
     unimplementedMethods.foreach { case (method, owningTrait) =>
       if (!classDecl.getSymbol.implementsMethod(method))
         ErrorUnimplementedMethodFromTrait(classDecl.id.name,
-                                           method.signature,
-                                           owningTrait.name, classDecl.id)
+          method.signature,
+          owningTrait.name, classDecl.id)
     }
   }
 
@@ -643,19 +645,19 @@ class TypeChecker(override var ctx: Context,
     * applicable for ForEach loops.
     */
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] = {
-    classSymbol.lookupMethod("Iterator", List()) match {
+    classSymbol.lookupMethod("Iterator", Nil, importMap) match {
       case Some(methSymbol) =>
         inferTypeOfMethod(methSymbol)
         methSymbol.getType match {
           case TObject(methodClassSymbol) =>
-            methodClassSymbol.lookupMethod("HasNext", List()) match {
+            methodClassSymbol.lookupMethod("HasNext", Nil, importMap) match {
               case Some(hasNextMethod) =>
                 inferTypeOfMethod(hasNextMethod)
                 if (hasNextMethod.getType != Bool)
                   return None
               case None                => return None
             }
-            methodClassSymbol.lookupMethod("Next", List()) match {
+            methodClassSymbol.lookupMethod("Next", Nil, importMap) match {
               case Some(nextMethod) =>
                 inferTypeOfMethod(nextMethod)
                 return Some(nextMethod.getType)

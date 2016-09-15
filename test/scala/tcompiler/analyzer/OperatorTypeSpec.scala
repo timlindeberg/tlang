@@ -1,14 +1,11 @@
 package tcompiler.analyzer
 
-import java.io.File
-
 import org.scalatest._
 import tcompiler.TestUtils
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
-import tcompiler.utils.Context
 
 class OperatorTypeSpec extends FlatSpec with Matchers {
 

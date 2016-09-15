@@ -3,6 +3,7 @@ package tcompiler.code
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
+import tcompiler.imports.ImportMap
 import tcompiler.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
@@ -29,8 +30,8 @@ class TreeBuilder {
     decl.id
   }
 
-  def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, args: List[Type] = List()): NormalAccess = {
-    val methodSymbol = classSymbol.lookupMethod(methName, args).get
+  def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, importMap: ImportMap, args: List[Type] = List()): NormalAccess = {
+    val methodSymbol = classSymbol.lookupMethod(methName, args, importMap).get
     createMethodCall(obj, methodSymbol)
   }
 

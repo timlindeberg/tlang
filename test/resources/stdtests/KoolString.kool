@@ -16,7 +16,9 @@ println(s.IsEmpty()) // res: false
 println(s.NonEmpty()) // res: true
 
 // Iterator
-// TODO: Iterator doesnt work
+for(val c in s)
+    print(c + " ") // res: S t r i n g
+println()
 
 // To Numbers
 val sixtyFour = "64"

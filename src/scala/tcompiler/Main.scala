@@ -23,8 +23,8 @@ object Main extends MainErrors with Colored {
   val FileEnding    = ".kool"
   val VersionNumber = "0.0.1"
   val THome         = "T_HOME"
-  val TLangObject   = "kool/lang/Object"
-  val TLangString   = "kool/lang/String"
+  val JavaObject   = "java/lang/Object"
+  val JavaString   = "java/lang/String"
   val TExtensionAnnotation   = "kool/lang/$ExtensionMethod"
 
   override def useColor = !flagActive(NoColor)

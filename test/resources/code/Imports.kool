@@ -2,12 +2,13 @@ import java::util::Locale
 import java::util::Random
 import java::lang::System
 import kool::lang::extension java::lang::Object
+import kool::lang::extension java::lang::String
 
 new A().AD() // res: 1
 new A().BC() // res: 0
 new A().TimeZone() // res:Central European Time
 
-val locale = new Locale("sv".ToJavaString(), "SE".ToJavaString())
+val locale = new Locale("sv", "SE")
 println(locale.getDisplayLanguage()) // res: Swedish
 
 val ran = new Random(0)
@@ -23,7 +24,7 @@ println(1 + java::lang::Math.PI + 1) // res: 5.141592653589793
 
 System.exit(0)
 
-println("This never not happen")
+println("This never happens")
 
 class A : java::util::GregorianCalendar {
 

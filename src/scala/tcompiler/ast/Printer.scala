@@ -33,30 +33,19 @@ object Printer extends Colored {
     else
       "No file"
 
-    val importMap = cu.importMap
-    val shortToFull = importMap.entries.toList
-    val len = shortToFull.map(_._1.length).max
-
-    val impString = shortToFull.map { case (short, full) =>
-      String.format(s"// %-${len}s -> $full", short)
-    }.mkString("\n")
-
     s"""|//-------------------------------------------------------------
         |//--- $fileName
         |//-------------------------------------------------------------
-        |//
-        |// ImportMap:
-        |$impString
         |""".stripMargin
   }
 
   private def prettyPrint(t: Tree): String = {
     val s = t match {
       case cu@CompilationUnit(pack, classes, importMap)               => p"${comment(cu)}$pack${imports(importMap.imports)}$classes"
-      case Package(adress)                                            => p"${packDecl(adress)}"
-      case RegularImport(adress)                                      => p"import ${adress.mkString("::")}"
-      case ExtensionImport(adress, className)                         => p"import ${adress.mkString("::")}::extension ${className.mkString("::")}"
-      case WildCardImport(adress)                                     => p"import ${adress.mkString("::")}.*"
+      case Package(address)                                           => p"${packDecl(address)}"
+      case RegularImport(address)                                     => p"import ${address.mkString("::")}"
+      case ExtensionImport(address, className)                        => p"import ${address.mkString("::")}::extension ${className.mkString("::")}"
+      case WildCardImport(address)                                    => p"import ${address.mkString("::")}.*"
       case ClassDecl(id, parents, fields, methods)                    => p"$N${N}class ${restOfClassDecl(id, parents, fields, methods)}"
       case TraitDecl(id, parents, fields, methods)                    => p"$N${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
       case ExtensionDecl(id, methods)                                 => p"$N${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
@@ -134,15 +123,15 @@ object Printer extends Colored {
       case id@ClassID(value, list)        => p"$value${templateList(id)}"
       case Identifier(value)              => p"$value"
       case This()                         => p"this"
-      case Super(specifier)               => p"super${optional(specifier)(spec => p"<$spec>")}"
+      case Super(spec)                    => p"super${optional(spec)(s => p"<$s>")}"
       case NewArray(tpe, sizes)           => p"new ${newArray(tpe, sizes)}"
       case New(tpe, exprs)                => p"new $tpe(${Separated(exprs, ", ")})"
       case PreIncrement(id)               => p"++$id"
       case PostIncrement(id)              => p"$id++"
       case PreDecrement(id)               => p"--$id"
       case PostDecrement(id)              => p"$id--"
-      case Ternary(condition, thn, els)   => p"$condition ? $thn : $els"
-      case Elvis(nullableValue, ifNull)   => p"$nullableValue ?: $ifNull"
+      case Ternary(condition, thn, els)   => p"($condition ? $thn : $els)"
+      case Elvis(nullableValue, ifNull)   => p"($nullableValue ?: $ifNull)"
       case ExtractNullable(expr)          => p"$expr!!"
       case Break()                        => p"break"
       case Continue()                     => p"continue"
@@ -178,29 +167,16 @@ object Printer extends Colored {
     else p"<$L$stats$R>"
   }
 
-  private def packDecl(adress: List[String]) = {
-    if (adress.isEmpty) ""
+  private def packDecl(address: List[String]) = {
+    if (address.isEmpty) ""
     else
-      p"package ${adress.mkString("::")}$N"
+      p"package ${address.mkString("::")}$N"
   }
 
   private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""
     else
       p": ${Separated(parents, ", ")}"
-  }
-
-  private def varsAndMethods(vars: List[VarDecl], methods: List[MethodDeclTree]): String = {
-    if (vars.isEmpty && methods.isEmpty)
-      return "{ }"
-
-    if (vars.isEmpty)
-      return p"$L$N$methods$R"
-
-    if (methods.isEmpty)
-      return p"$L$N$vars$R$R"
-
-    p"$L$N$vars$N$N$methods$R"
   }
 
   private def newArray(tpe: TypeTree, sizes: List[ExprTree]) = {

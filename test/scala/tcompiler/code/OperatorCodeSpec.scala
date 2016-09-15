@@ -13,6 +13,7 @@ import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.{Context, Reporter}
+import tcompiler.utils.Extensions._
 
 import scala.util.Random
 
@@ -55,10 +56,6 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
   val combinations = for (x <- types; y <- types) yield (x, y)
 
-
-  implicit def intWithTimes(n: Int) = new {
-    def times(f: => Unit): Unit = 1 to n foreach { _ => f }
-  }
 
 
   before {

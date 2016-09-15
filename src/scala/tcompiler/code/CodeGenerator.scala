@@ -170,11 +170,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       case FloatLit(value)                              => ch << Ldc(value)
       case DoubleLit(value)                             => ch << Ldc(value)
       case StringLit(value)                             =>
-        val stringName = String.classSymbol.name
-        ch << cafebabe.AbstractByteCodes.New(stringName)
-        String.codes.dup(ch)
         ch << Ldc(value)
-        ch << InvokeSpecial(stringName, ConstructorName, s"(L$JavaString;)V")
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
@@ -338,21 +334,15 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             if (!duplicate && methSymbol.getType != TUnit)
               ch << POP
         }
-      case Trees.New(tpe, args)                         =>
+      case newTree@Trees.New(tpe, args)                         =>
         tpe.getType match {
           case TObject(classSymbol) =>
-            val argTypes = args.map(_.getType)
             ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
             tpe.getType.codes.dup(ch)
-
-            val signature = classSymbol.lookupMethod("new", argTypes) match {
-              case Some(methodSymbol) =>
-                compileArguments(methodSymbol, args)
-                methodSymbol.byteCodeSignature
-              case _                  => "()V"
-            }
+            val methodSymbol = newTree.getSymbol
+            compileArguments(methodSymbol, args)
             // Constructors are always called with InvokeSpecial
-            ch << InvokeSpecial(classSymbol.name, ConstructorName, signature)
+            ch << InvokeSpecial(classSymbol.name, ConstructorName, methodSymbol.byteCodeSignature)
           case primitiveType        =>
             // args size can only be 0 or 1
             if (args.size == 1)

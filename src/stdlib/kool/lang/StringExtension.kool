@@ -1,11 +1,16 @@
 package kool::lang
 
 import java::lang::Integer
+import java::lang::Long
+import java::lang::Float
+import java::lang::Double
+import java::lang::StringBuilder
+import java::util::Locale
+
 import kool::std::Iterable
 import kool::std::Iterator
-import java::lang::StringBuilder
 
-extension java::lang::String {
+extension String {
 
     Def Iterator(): Iterator<Char> = new StringIterator(this)
     Def Size() = length()
@@ -16,51 +21,52 @@ extension java::lang::String {
     // Conversion methods
     //----------------------------------------------------
 
-    Def ToInt()            = java::lang::Integer.parseInt(this)
-    Def ToInt(radix: Int)  = java::lang::Integer.parseInt(this, radix)
+    Def ToInt()            = Integer.parseInt(this)
+    Def ToInt(radix: Int)  = Integer.parseInt(this, radix)
 
-    Def ToLong()           = java::lang::Long.parseLong(this)
-    Def ToLong(radix: Int) = java::lang::Long.parseLong(this, radix)
+    Def ToLong()           = Long.parseLong(this)
+    Def ToLong(radix: Int) = Long.parseLong(this, radix)
 
-    Def ToFloat()          = java::lang::Float.parseFloat(this)
-    Def ToDouble()         = java::lang::Double.parseDouble(this)
+    Def ToFloat()          = Float.parseFloat(this)
+    Def ToDouble()         = Double.parseDouble(this)
 
     //----------------------------------------------------
     // Operators
     //----------------------------------------------------
 
-    Def <(lhs: java::lang::String, rhs: java::lang::String)  = lhs.compareTo(rhs) < 0
-    Def <=(lhs: java::lang::String, rhs: java::lang::String) = lhs.compareTo(rhs) <= 0
-    Def >(lhs: java::lang::String, rhs: java::lang::String)  = lhs.compareTo(rhs) > 0
-    Def >=(lhs: java::lang::String, rhs: java::lang::String) = lhs.compareTo(rhs) >= 0
+    Def <(lhs: String, rhs: String)  = lhs.compareTo(rhs) < 0
+    Def <=(lhs: String, rhs: String) = lhs.compareTo(rhs) <= 0
+    Def >(lhs: String, rhs: String)  = lhs.compareTo(rhs) > 0
+    Def >=(lhs: String, rhs: String) = lhs.compareTo(rhs) >= 0
 
-    Def +(lhs: java::lang::String, rhs: java::lang::String) = lhs.concat(rhs)
+    Def +(lhs: String, rhs: String) = lhs.concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Object) = lhs.concat(rhs.toString())
-    Def +(lhs: Object, rhs: java::lang::String) = lhs.toString().concat(rhs)
+    Def +(lhs: String, rhs: Object) = lhs.concat(rhs.toString())
+    Def +(lhs: Object, rhs: String) = lhs.toString().concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Char) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Char, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Char) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Char, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Int) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Int, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Int) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Int, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Long) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Long, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Long) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Long, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Float) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Float, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Float) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Float, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Double) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Double, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Double) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Double, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def +(lhs: java::lang::String, rhs: Bool) = lhs.concat(java::lang::String.valueOf(rhs))
-    Def +(lhs: Bool, rhs: java::lang::String) = java::lang::String.valueOf(lhs).concat(rhs)
+    Def +(lhs: String, rhs: Bool) = lhs.concat(String.valueOf(rhs))
+    Def +(lhs: Bool, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def *(times: Int, str: java::lang::String) = str * (times as Long)
-    Def *(str: java::lang::String, times: Int) = str * (times as Long)
-    Def *(times: Long, str: java::lang::String) = str * times
-    Def *(str: java::lang::String, times: Long) = {
+    Def *(times: Int, str: String) = str * (times as Long)
+    Def *(str: String, times: Int) = str * (times as Long)
+
+    Def *(times: Long, str: String) = str * times
+    Def *(str: String, times: Long) = {
         val b = new StringBuilder()
         for(var i = 0; i < times; i++)
             b.append(str)
@@ -69,14 +75,83 @@ extension java::lang::String {
 
     Def [](index: Int) = charAt(index)
 
+    //----------------------------------------------------
+    // Wrappers for java.lang.String methods to enable capital letters
+    //----------------------------------------------------
+
+    Def CharAt(index: Int) = charAt(index)
+    Def CodePointAt(index: Int) = codePointAt(index)
+    Def CodePointBefore(index: Int) = codePointBefore(index)
+    Def CodePointCount(beginIndex: Int, endIndex: Int) = codePointCount(beginIndex, endIndex)
+    Def Concat(str: String) = concat(str)
+    Def Contains(str: String) = contains(str)
+    Def EndsWith(str: String) = endsWith(str)
+
+    // TODO: Define format methods when var args is implemented
+    //Def Format(l: Locale, format: String, args: Object*)
+    //Def Format(format: String, args: Object*)
+
+    // TODO: Define getByte methods when bytes are implemented
+    //Def GetBytes() = getBytes()
+    //Def GetBytes(charset: Charset) = getBytes(charset)
+    //Def GetBytes(charsetName: String) = getBytes(charsetName)
+    Def GetChars(srcBegin: Int, srcEnd: Int, dst: Char[], dstBegin: Int) = getChars(srcBegin, srcEnd, dst, dstBegin)
+
+    Def IndexOf(c: Char)                                 = indexOf(c as Int)
+    Def IndexOf(c: Char, fromIndex: Int)                 = indexOf(c as Int, fromIndex)
+    Def IndexOf(str: String)                 = indexOf(str)
+    Def IndexOf(str: String, fromIndex: Int) = indexOf(str, fromIndex)
+
+    Def LastIndexOf(c: Char)                 = lastIndexOf(c as Int)
+    Def LastIndexOf(c: Char, fromIndex: Int) = lastIndexOf(c as Int, fromIndex)
+    Def LastIndexOf(str: String) = lastIndexOf(str)
+    Def LastIndexOf(str: String, fromIndex: Int) = lastIndexOf(str, fromIndex)
+
+    Def Matches(regex: String) = matches(regex)
+
+    Def OffsetByCodePoints(index: Int, codePointOffset: Int) = offsetByCodePoints(index, codePointOffset)
+    Def RegionMatches(ignoreCase: Bool, toffset: Int, other: String, ooffset: Int, len: Int) = regionMatches(ignoreCase, toffset, other, ooffset, len)
+    Def RegionMatches(toffset: Int, other: String, ooffset: Int, len: Int) = regionMatches(toffset, other, ooffset, len)
+    Def Replace(oldChar: Char, newChar: Char) = replace(oldChar, newChar)
+    Def Replace(target: String, replacement: String)     = replace(target, replacement)
+    Def ReplaceAll(regex: String, replacement: String)   = replaceAll(regex, replacement)
+    Def ReplaceFirst(regex: String, replacement: String) = replaceFirst(regex, replacement)
+
+    Def Split(regex: String)             = split(regex)
+    Def Split(regex: String, limit: Int) = split(regex, limit)
+
+    Def StartsWith(prefix: String)               = startsWith(prefix)
+    Def StartsWith(prefix: String, toffset: Int) = startsWith(prefix, toffset)
+
+    Def ToArray()                   = toCharArray()
+    Def ToLowerCase()               = toLowerCase()
+    Def ToLowerCase(locale: Locale) = toLowerCase(locale)
+
+    Def ToUpperCase()               = toUpperCase()
+    Def ToUpperCase(locale: Locale) = toUpperCase(locale)
+
+    //Def ToString() = this
+
+    Def Trim() = trim()
+
+    Def static ValueOf(data: Char[], offset: Int, count: Int) = String.valueOf(data, offset, count)
+    Def static ValueOf(data: Char[]) = String.valueOf(data)
+    Def static ValueOf(c: Char)      = String.valueOf(c)
+    Def static ValueOf(b: Bool)      = String.valueOf(b)
+    Def static ValueOf(d: Double)    = String.valueOf(d)
+    Def static ValueOf(f: Float)     = String.valueOf(f)
+    Def static ValueOf(i: Int)       = String.valueOf(i)
+    Def static ValueOf(l: Long)      = String.valueOf(l)
+    Def static ValueOf(o: Object)    = String.valueOf(o)
+
 }
 
 class StringIterator: Iterator<Char> {
 
-    var s: java::lang::String
+    var s: String
     var index = 0
 
-    Def new(str: java::lang::String) = (this.s = str)
+    Def new(str: String) = (this.s = str)
 
     Def HasNext() = index < s.length()
     Def Next() = s.charAt(index++)

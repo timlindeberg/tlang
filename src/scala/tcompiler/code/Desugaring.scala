@@ -5,6 +5,7 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.TreeTransformer
 import tcompiler.ast.Trees._
+import tcompiler.imports.ImportMap
 import tcompiler.utils.{Context, Pipeline}
 
 import scala.collection.mutable.ListBuffer
@@ -17,13 +18,13 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map desugar
 
   def desugar(cu: CompilationUnit) = {
-    val desugarer = new Desugarer()
+    val desugarer = new Desugarer(cu.importMap)
     desugarer(cu)
   }
 
 }
 
-class Desugarer extends TreeTransformer {
+class Desugarer(importMap: ImportMap) extends TreeTransformer {
 
   private val ThisName = "$this"
 
@@ -218,14 +219,14 @@ class Desugarer extends TreeTransformer {
         if (!(isObject(lhs) || isObject(rhs)))
           return op
 
-        val opSymbol = op.lookupOperator((lhs.getType, rhs.getType)).get
+        val opSymbol = op.lookupOperator((lhs.getType, rhs.getType), importMap).get
         val obj = getClassID(opSymbol)
         c.createMethodCall(obj, opSymbol, lhs, rhs)
       case UnaryOperatorTree(expr)      =>
         if (!isObject(expr))
           return op
 
-        val opSymbol = op.lookupOperator(expr.getType).get
+        val opSymbol = op.lookupOperator(expr.getType, importMap).get
         val obj = getClassID(opSymbol)
         c.createMethodCall(obj, opSymbol, expr)
       case ArrayOperatorTree(arr)       =>
@@ -235,12 +236,12 @@ class Desugarer extends TreeTransformer {
         val arrClassSymbol = arr.getType.asInstanceOf[TObject].classSymbol
         op match {
           case ArrayRead(arr, index) =>
-            val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType)).get
+            val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType), importMap).get
             c.createMethodCall(arr, opSymbol, index)
           case Assign(to, expr)      =>
             to match {
               case ArrayRead(arr, index) =>
-                val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType, expr.getType)).get
+                val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType, expr.getType), importMap).get
                 opSymbol.setType(index.getType)
                 c.createMethodCall(arr, opSymbol, index, expr).setType(expr.getType)
               case _                     => op
@@ -494,13 +495,13 @@ class Desugarer extends TreeTransformer {
   private def desugarIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
 
-    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator")
+    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap)
     val iterator = c.putVarDecl("it", iteratorCall)
 
     val iteratorClass = iteratorCall.getType.asInstanceOf[TObject].classSymbol
 
-    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext")
-    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next")
+    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", importMap)
+    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", importMap)
 
     val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)

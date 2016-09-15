@@ -1,13 +1,11 @@
 package tcompiler.imports
 
-import tcompiler.Main
 import tcompiler.analyzer.Symbols.ExtensionClassSymbol
 import tcompiler.ast.Trees._
 import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by Tim Lindeberg on 7/5/2016.
@@ -16,16 +14,21 @@ import scala.collection.mutable.ListBuffer
 class ImportMap(override var ctx: Context) extends ImportErrors {
 
 
-  override var importMap = this
-  private val shortToFull = mutable.Map[String, String]()
-  private val fullToShort = mutable.Map[String, String]()
+  override var importMap   = this
+  private  val shortToFull = mutable.Map[String, String]()
+  private  val fullToShort = mutable.Map[String, String]()
 
-  var imports: List[Import] = null
-  lazy val extensionImports: List[ExtensionImport] = imports.filterType[ExtensionImport]
+  var imports         : List[Import]               = Nil
+  var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
-  private val DefaultImports = List[String](
-    Main.TLangObject,
-    Main.TLangString
+  private val javaObject = List("java", "lang", "Object")
+  private val javaString = List("java", "lang", "String")
+  private val koolLang = List("kool", "lang")
+  private val DefaultImports = List[Import](
+    RegularImport(javaObject),
+    RegularImport(javaString),
+    ExtensionImport(koolLang, javaObject)
+    //ExtensionImport(koolLang, javaString)
   )
 
   def this() = this(null)
@@ -33,50 +36,47 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     this(ctx)
     this.imports = imports
 
-    // TODO: Support wild card imports. Need to be able to search the full classpath
-    // val wcImports = imports.filterType(classOf[WildCardImport])
+    DefaultImports foreach addImport
+    imports foreach addImport
 
-    for (imp <- DefaultImports) {
-      val s = imp.split("/")
-      addImport(s.last, imp)
+    val packName = pack.name
+    if (packName != ""){
+      classes.filterNotType[ExtensionDecl] foreach { c =>
+        val className = c.id.name
+        addImport(className, s"$packName.$className")
+      }
     }
+  }
 
-    val regImports = imports.filterType[RegularImport]
-    for (imp <- regImports) {
-      val fullName = imp.name
-      val shortName = imp.shortName
+  private def addImport(imp: Import): Unit = imp match {
+    case regImp: RegularImport            =>
+      val fullName = regImp.name
+      val shortName = regImp.shortName
       val templateImporter = new TemplateImporter(ctx)
 
       if (contains(shortName))
-        ErrorConflictingImport(imp.writtenName, getFullName(shortName), imp)
+        ErrorConflictingImport(regImp.writtenName, getFullName(shortName), regImp)
       else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
-        ErrorCantResolveImport(imp.writtenName, imp)
+        ErrorCantResolveImport(regImp.writtenName, regImp)
       else
         addImport(shortName, fullName)
-    }
-
-    if(pack.name != ""){
-      classes.filterNotType[ExtensionDecl] foreach { c =>
-        val className = c.id.name
-        addImport(className, s"${pack.name}.$className")
+    case extensionImport: ExtensionImport =>
+      ClassSymbolLocator.findExtensionSymbol(extensionImport.fullName) match {
+        case Some(e) => extensionSymbols ::= e
+        case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
       }
-    }
-
-
-
+    case wildCardImport: WildCardImport => ??? // TODO: Support wild card imports.
   }
 
-  def getImportedExtensionClasses = {
-    val importedClasses = ListBuffer[ExtensionClassSymbol]()
-    extensionImports foreach { extImport =>
-      ClassSymbolLocator.findExtensionSymbol(extImport.fullName) match {
-        case Some(e) => importedClasses += e
-        case None    => // NOO
-      }
+  def getExtensionClasses(className: String) =
+    extensionSymbols.filter { extSym =>
+      val name = extSym.name.replaceAll(""".*\$EX\/""", "")
+      name == className
     }
-  }
 
-  def addImport(tup: (String, String)): Unit  = addImport(tup._1, tup._2)
+  def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol) = extensionSymbols ::= extensionClassSymbol
+
+  def addImport(tup: (String, String)): Unit = addImport(tup._1, tup._2)
   def addImport(short: String, full: String): Unit = {
     val f = full.replaceAll("::", ".").replaceAll("/", ".")
     shortToFull += short -> f
@@ -99,7 +99,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
   def getErrorName(name: String) = {
     var s = name
-    for(e <- fullToShort)
+    for (e <- fullToShort)
       s = s.replaceAll(e._1, e._2)
     s.replaceAll("/", "::")
   }
@@ -109,7 +109,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   def entries = shortToFull.iterator
 
   override def toString = {
-    shortToFull.map { case (short, full) => s"$short -> $full"}.mkString("\n")
+    shortToFull.map { case (short, full) => s"$short -> $full" }.mkString("\n")
   }
 
 }

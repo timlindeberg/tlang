@@ -3,8 +3,8 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
-import tcompiler.imports.ClassSymbolLocator
 import tcompiler.code.CodeGenerator._
+import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.Errors
 
 
@@ -42,10 +42,8 @@ object Types {
   val Bool           = TBool()
   val NullableBool   = TBool(true)
 
-  val ObjectSymbol = ClassSymbolLocator.findSymbol(Main.TLangObject)
-                     .getOrElse(new ClassSymbol(Main.TLangObject, false, false))
-  val StringSymbol = ClassSymbolLocator.findSymbol(Main.TLangString)
-                     .getOrElse(new ClassSymbol(Main.TLangString, false, false))
+  val ObjectSymbol = ClassSymbolLocator.findSymbol(Main.JavaObject).get
+  val StringSymbol = ClassSymbolLocator.findSymbol(Main.JavaString).get
   val Object       = TObject(ObjectSymbol)
   val String       = TObject(StringSymbol)
 
@@ -260,7 +258,7 @@ object Types {
       if (this != Object)
         return implicitTypes
 
-      // Object is implicitly convertable from primitive types (boxing)
+      // Object is implicitly convertible from primitive types (boxing)
       implicitTypes ::: Primitives
     }
 

@@ -25,8 +25,6 @@ object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
 object ASTBuilder {
 
   val MaximumArraySize = 255
-  val TLangObject      = Main.TLangObject.replaceAll("/", "::")
-  val TLangString      = Main.TLangString.replaceAll("/", "::")
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
                                                                                    LOGICNOT -> LogicNot,
@@ -73,7 +71,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
 
   /**
-    * <goal> ::= [ <packageDeclaration> ] { <importDeclarataion> } { (<classDeclaration> | <methodDeclaration> | <statement> } <EOF>
+    * <goal> ::= [ <packageDeclaration> ] { <importDeclaration> } { (<classDeclaration> | <methodDeclaration> | <statement> } <EOF>
     */
   def parseGoal() = {
     val startPos = nextToken

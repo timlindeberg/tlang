@@ -323,13 +323,13 @@ object Trees {
 
     def signature(args: List[Any]): String
 
-    def lookupOperator(arg: Type): Option[OperatorSymbol] = lookupOperator(List(arg))
+    def lookupOperator(arg: Type, importMap: ImportMap): Option[OperatorSymbol] = lookupOperator(List(arg), importMap)
 
-    def lookupOperator(args: (Type, Type)): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2))
+    def lookupOperator(args: (Type, Type), importMap: ImportMap): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2), importMap)
 
-    def lookupOperator(args: List[Type]): Option[OperatorSymbol] = {
+    def lookupOperator(args: List[Type], importMap: ImportMap): Option[OperatorSymbol] = {
       args.foreach { arg =>
-        lookupOperator(arg, args) match {
+        lookupOperator(arg, args, importMap) match {
           case Some(op) => return Some(op)
           case None     =>
         }
@@ -337,9 +337,9 @@ object Trees {
       None
     }
 
-    def lookupOperator(classType: Type, args: List[Type]) = {
+    def lookupOperator(classType: Type, args: List[Type], importMap: ImportMap) = {
       classType match {
-        case TObject(classSymbol) => classSymbol.lookupOperator(this, args)
+        case TObject(classSymbol) => classSymbol.lookupOperator(this, args, importMap)
         case _                    => None
       }
     }
@@ -606,7 +606,7 @@ object Trees {
   case class This() extends ExprTree with Symbolic[ClassSymbol] with Leaf
   case class Super(specifier: Option[ClassID]) extends ExprTree with Symbolic[ClassSymbol]
   case class NewArray(tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
-  case class New(tpe: TypeTree, args: List[ExprTree]) extends ExprTree
+  case class New(tpe: TypeTree, args: List[ExprTree]) extends ExprTree with Symbolic[MethodSymbol]
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
   case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree
