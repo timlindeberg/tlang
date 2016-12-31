@@ -31,7 +31,3 @@ Def Test2(arr: Int[]) = {
         print(arr[i] + " ")
     println("")
 }
-
-Def Lol(f: Float) = {
-    println(f)
-}

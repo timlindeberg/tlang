@@ -14,35 +14,26 @@ object EnumerationMacros {
   def sealedInstancesOf_impl[A: c.WeakTypeTag](c: Context) = {
     import c.universe._
 
+    def getSymbol(sym: c.universe.Symbol) =
+      sym.asInstanceOf[scala.reflect.internal.Symbols#Symbol].sourceModule.asInstanceOf[Symbol]
+
     val symbol = weakTypeOf[A].typeSymbol
 
-    if (!symbol.isClass) c.abort(
-      c.enclosingPosition,
-      "Can only enumerate values of a sealed trait or class."
-    ) else if (!symbol.asClass.isSealed) c.abort(
-      c.enclosingPosition,
-      "Can only enumerate values of a sealed trait or class."
-    ) else {
-      val children = symbol.asClass.knownDirectSubclasses.toList
+    if (!(symbol.isClass && symbol.asClass.isSealed))
+      c.abort(c.enclosingPosition, "Can only enumerate values of a sealed trait or class.")
 
-      if (!children.forall(_.isModuleClass)) c.abort(
-        c.enclosingPosition,
-        "All children must be objects."
-      ) else c.Expr[Set[A]] {
-        def sourceModuleRef(sym: Symbol) = Ident(
-          sym.asInstanceOf[
-            scala.reflect.internal.Symbols#Symbol
-            ].sourceModule.asInstanceOf[Symbol]
-        )
+    val children = symbol.asClass.knownDirectSubclasses.toList
 
-        Apply(
-          Select(
-            reify(Set).tree,
-            newTermName("apply")
-          ),
-          children.map(sourceModuleRef(_))
-        )
-      }
+    if (!children.forall(_.isModuleClass))
+      c.abort(c.enclosingPosition, "All children must be objects.")
+
+    c.Expr[Set[A]] {
+      Apply(
+        Select(reify(Set).tree, TermName("apply")),
+        children.map(sym => Ident(getSymbol(sym)))
+      )
     }
   }
+
+
 }

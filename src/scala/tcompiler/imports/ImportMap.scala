@@ -24,11 +24,12 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
   private val koolLang = List("kool", "lang")
+
   private val DefaultImports = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
-    ExtensionImport(koolLang, javaObject)
-    //ExtensionImport(koolLang, javaString)
+    ExtensionImport(koolLang, javaObject),
+    ExtensionImport(koolLang, javaString)
   )
 
   def this() = this(null)
@@ -36,11 +37,10 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     this(ctx)
     this.imports = imports
 
-    DefaultImports foreach addImport
-    imports foreach addImport
+    DefaultImports ++ imports foreach addImport
 
     val packName = pack.name
-    if (packName != ""){
+    if (packName.nonEmpty){
       classes.filterNotType[ExtensionDecl] foreach { c =>
         val className = c.id.name
         addImport(className, s"$packName.$className")
@@ -70,8 +70,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
   def getExtensionClasses(className: String) =
     extensionSymbols.filter { extSym =>
-      val name = extSym.name.replaceAll(""".*\$EX\/""", "")
-      name == className
+        extSym.name.replaceAll(""".*\$EX\/""", "") == className
     }
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol) = extensionSymbols ::= extensionClassSymbol

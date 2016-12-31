@@ -101,6 +101,8 @@ object Trees {
         case x: VarDecl        => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
         case x: This           => to.asInstanceOf[This].setSymbol(x.getSymbol)
         case x: Super          => to.asInstanceOf[Super].setSymbol(x.getSymbol)
+        case x: New            => to.asInstanceOf[New].setSymbol(x.getSymbol)
+        case _ => ???
       }
     }
   }

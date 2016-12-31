@@ -10,9 +10,10 @@ import java::util::Locale
 import kool::std::Iterable
 import kool::std::Iterator
 
-extension String {
+extension java::lang::String {
 
     Def Iterator(): Iterator<Char> = new StringIterator(this)
+
     Def Size() = length()
     Def IsEmpty() = Size() == 0
     Def NonEmpty() = !IsEmpty()
@@ -62,22 +63,22 @@ extension String {
     Def +(lhs: String, rhs: Bool) = lhs.concat(String.valueOf(rhs))
     Def +(lhs: Bool, rhs: String) = String.valueOf(lhs).concat(rhs)
 
-    Def *(times: Int, str: String) = str * (times as Long)
-    Def *(str: String, times: Int) = str * (times as Long)
-
     Def *(times: Long, str: String) = str * times
     Def *(str: String, times: Long) = {
-        val b = new StringBuilder()
+        val sb = new StringBuilder()
         for(var i = 0; i < times; i++)
-            b.append(str)
-        b.toString()
+            sb.append(str)
+        sb.toString()
     }
+
+    Def *(times: Int, str: String) = str * times as Long
+    Def *(str: String, times: Int) = str * times as Long
 
     Def [](index: Int) = charAt(index)
 
-    //----------------------------------------------------
+    //----------------------------------------------------------------
     // Wrappers for java.lang.String methods to enable capital letters
-    //----------------------------------------------------
+    //----------------------------------------------------------------
 
     Def CharAt(index: Int) = charAt(index)
     Def CodePointAt(index: Int) = codePointAt(index)

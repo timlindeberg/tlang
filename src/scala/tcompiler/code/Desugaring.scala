@@ -86,9 +86,9 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     *
     * becomes:
     *
-    * class A$ex {
+    * class $EX.A {
     *
-    *   Def Method($this: A, arg1: A, arg2: Int) = {
+    *   Def static Method($this: A, arg1: A, arg2: Int) = {
     *     $this.OtherMethod() + arg1.i + $this.i + arg2.M()
     *   }
     *
@@ -98,7 +98,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     *
     * --------------------------------------------------------------------------------
     */
-   //@formatter:on
+  //@formatter:on
   private def desugarExtensionDecl(t: Tree): Tree = {
     if (!t.isInstanceOf[ExtensionDecl])
       return t
@@ -118,7 +118,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
             // Don't replace VariableIDs in app since that would replace e.g A.i with A.$this.i
             val a = app match {
               case _: VariableID => app
-              case _             => apply(app)
+              case _             => tr(app)
             }
             treeCopy.NormalAccess(t, tr(obj), a)
           case v@VariableID(name) if v.getSymbol.isInstanceOf[FieldSymbol] =>
@@ -142,7 +142,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
         val newMethSym = new MethodSymbol(methSym.name, classSymbol, None, modifiers).setType(methSym)
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
-        newMethSym.annotations ::= methSym.annotations + Main.TExtensionAnnotation
+        newMethSym.annotations = Main.TExtensionAnnotation :: methSym.annotations
         val thisArg = Formal(extensionDecl.id, thisId)
 
         // Replace references to this with the this variable
@@ -155,28 +155,44 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     ClassDecl(classId, Nil, Nil, newMethods).setSymbol(classSymbol).setPos(extensionDecl)
   }
 
-  private def replaceExtensionCall(t: Tree): Tree = {
-    t match {
-      case Access(obj, m@MethodCall(meth, args)) =>
-        val methSym = meth.getSymbol
-        val extSymbol = meth.getSymbol.classSymbol.asInstanceOf[ExtensionClassSymbol]
-        val className = extSymbol.name
-        val classSym = new ClassSymbol(className, false)
-        val classId = ClassID(className).setSymbol(classSym)
 
-        if (methSym.isStatic) {
-          treeCopy.NormalAccess(t, classId, m)
-        } else {
-          val modifiers = methSym.modifiers + Static()
-          val newMethSymbol = new MethodSymbol(methSym.name, classSym, None, modifiers).setType(methSym)
-          val newArg = new VariableSymbol(ThisName).setType(obj)
-          newMethSymbol.argList = newArg :: methSym.argList
-          val methId = MethodID(meth.name).setSymbol(newMethSymbol)
-          val newMethCall = treeCopy.MethodCall(m, methId, obj :: args)
-          treeCopy.NormalAccess(t, classId, newMethCall)
-        }
-      case _                                     => t
-    }
+  //@formatter:off
+  /**
+    * Replaces a call to an extension method with a static call.
+    *
+    * Examples:
+    * --------------------------------------------------------------------------------
+    *
+    * a.ExtensionMethod(1, 2, 3)
+    *
+    * Becomes:
+    *
+    * $EX::A.ExtensionMethod(a, 1, 2, 3)
+    *
+    * --------------------------------------------------------------------------------
+    */
+  //@formatter:on
+  private def replaceExtensionCall(t: Tree): Tree = t match {
+    case Access(obj, method@MethodCall(meth, args)) =>
+      val methSym = meth.getSymbol
+      val extSymbol = meth.getSymbol.classSymbol.asInstanceOf[ExtensionClassSymbol]
+      val className = extSymbol.name
+      val classSym = new ClassSymbol(className, false)
+      val classId = ClassID(className).setSymbol(classSym)
+
+      if (methSym.isStatic) {
+        treeCopy.NormalAccess(t, classId, method)
+      } else {
+        val modifiers = methSym.modifiers + Static()
+        val newMethSymbol = new MethodSymbol(methSym.name, classSym, None, modifiers).setType(methSym)
+        val originalClass = extSymbol.originalClassSymbol.get
+        val newArg = new VariableSymbol(ThisName).setType(originalClass)
+        newMethSymbol.argList = newArg :: methSym.argList
+        val methId = MethodID(meth.name).setSymbol(newMethSymbol)
+        val newMethCall = treeCopy.MethodCall(method, methId, obj :: args)
+        treeCopy.NormalAccess(t, classId, newMethCall)
+      }
+    case _                                          => t
   }
 
 
@@ -194,11 +210,10 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     *
     * a[5] = 5 => a.$ArrayAssign(5, 5)
     */
-   //@formatter:on
+  //@formatter:on
   private def replaceOperatorCall(t: Tree): Tree = {
     if (!t.isInstanceOf[OperatorTree])
       return t
-
 
 
     val op = t.asInstanceOf[OperatorTree]
@@ -602,11 +617,11 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     *
     * becomes:
     *
-    * if(A != null){
+    * if(A != null) {
     *   val tmp$1 = A.GetB()
-    *   if(tmp$1 != null){
+    *   if(tmp$1 != null) {
     *     val tmp$2 = tmp$1.GetC()
-    *     if(tmp$2 != null){
+    *     if(tmp$2 != null) {
     *       val tmp$3 = tmp$2.GetD()
     *       tmp$3 != null ? tmp$3.E : null
     *     } else {
@@ -651,6 +666,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
       val thn = List(varDecl, _desugar(i + 1, varDecl.id, apps.tail))
       If(condition, Block(thn), Some(Block(List(ifNull))))
     }
+
     c.put(_desugar(1, obj, appsInOrder))
     c.setPos(t)
     c.getCode.setType(t.asInstanceOf[SafeAccess])

@@ -42,7 +42,7 @@ object TestUtils extends FlatSpec {
 
     val reporter = new Reporter()
     val cp = Main.TDirectory
-    val printCodeStage = Some("desugaring")
+    val printCodeStage = None //Some("codegeneration")
     new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp), printCodeStage = printCodeStage, useColor = true)
   }
 
@@ -54,9 +54,9 @@ object TestUtils extends FlatSpec {
 
   def executeTProgram(classPaths: List[String], mainName: String): String = {
     val cp = "\"" + classPaths.mkString(classPathSeperator) + "\""
-    val f = Future(blocking(s"java -cp $cp $mainName"!!))
+    val future = Future(blocking(s"java -cp $cp $mainName"!!))
     try {
-      Await.result(f, Timeout)
+      Await.result(future, Timeout)
     } catch {
       case _: TimeoutException => fail(s"Test timed out after $Timeout s.")
     }
@@ -88,7 +88,7 @@ object TestUtils extends FlatSpec {
     var colLength = (result ::: solution).map(_.length).max + 2
     colLength = Math.max(colLength, "Solution:".length)
     val numbers = (1 to res.size).map(_.toString)
-    val numbered = flattenTuple(numbers.zip(res).zip(sol).toList)
+    val numbered = flattenTuples(numbers.zip(res).zip(sol).toList)
     val list = ("", "Result:", "Solution:") :: numbered
 
     val failedLine = failedTest.toString
@@ -117,7 +117,7 @@ object TestUtils extends FlatSpec {
 
   private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")
 
-  private def flattenTuple[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
+  private def flattenTuples[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
 
 }
 

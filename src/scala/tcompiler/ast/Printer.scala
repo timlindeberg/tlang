@@ -39,8 +39,7 @@ object Printer extends Colored {
         |""".stripMargin
   }
 
-  private def prettyPrint(t: Tree): String = {
-    val s = t match {
+  private def prettyPrint(t: Tree): String = t match {
       case cu@CompilationUnit(pack, classes, importMap)               => p"${comment(cu)}$pack${imports(importMap.imports)}$classes"
       case Package(address)                                           => p"${packDecl(address)}"
       case RegularImport(address)                                     => p"import ${address.mkString("::")}"
@@ -138,8 +137,6 @@ object Printer extends Colored {
       case Empty()                        => p"<EMPTY>"
       case GeneratedExpr(stats)           => p"${genExpr(stats)}"
       case PutValue(expr)                 => s"<PutValue(${p"$expr"})>"
-    }
-    s
   }
 
   private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {

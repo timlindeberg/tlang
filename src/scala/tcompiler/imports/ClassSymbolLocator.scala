@@ -21,7 +21,7 @@ object ClassSymbolLocator {
   }
 
   def findSymbol(className: String): Option[ClassSymbol] =
-      _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
+    _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
 
   def findExtensionSymbol(className: String) =
     _findSymbol(className, clazz => new ExtensionClassSymbol(clazz.getClassName))
@@ -88,7 +88,7 @@ object ClassSymbolLocator {
 
     var modifiers = convertModifiers(meth)
 
-    if(isExtensionMethod)
+    if (isExtensionMethod)
       modifiers -= Static() // Remove the added static modifier
 
     val name = meth.getName match {
@@ -109,7 +109,7 @@ object ClassSymbolLocator {
       case (tpe, i) => convertArgument(tpe, s"arg$i")
     }.toList
 
-    if(isExtensionMethod)
+    if (isExtensionMethod)
       args = args.drop(1) // Remove the added this argument
 
     symbol.argList = args
@@ -184,6 +184,7 @@ object ClassSymbolLocator {
 
   private def incompleteClass(tpe: ObjectType): ClassSymbol =
     incompleteClass(tpe.getClassName, tpe.getClass.isInterface)
+
   private def incompleteClass(name: String, isAbstract: Boolean): ClassSymbol =
     new ClassSymbol(name, isAbstract, isComplete = false)
 
