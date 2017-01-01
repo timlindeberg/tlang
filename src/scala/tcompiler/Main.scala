@@ -18,31 +18,35 @@ object Main extends MainErrors with Colored {
 
   import Flags._
 
-  lazy val AllFlags = EnumerationMacros.sealedInstancesOf[Flag]
+  val FileEnding           = ".kool"
+  val VersionNumber        = "0.0.1"
+  val THome                = "T_HOME"
+  val JavaObject           = "java/lang/Object"
+  val JavaString           = "java/lang/String"
+  val TExtensionAnnotation = "kool/lang/$ExtensionMethod"
 
-  val FileEnding    = ".kool"
-  val VersionNumber = "0.0.1"
-  val THome         = "T_HOME"
-  val JavaObject   = "java/lang/Object"
-  val JavaString   = "java/lang/String"
-  val TExtensionAnnotation   = "kool/lang/$ExtensionMethod"
+  def TDirectory: String = {
+    if (!sys.env.contains(THome))
+      FatalCantFindTHome(THome)
+    sys.env(THome)
+  }
 
-  override def useColor = !flagActive(NoColor)
-  def TDirectory = sys.env(THome)
-
-  val flagActive = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
+  override def useColor: Boolean = !flagActive(NoColor)
 
   val CompilerStages = List(
-                             Lexer,
-                             Parser,
-                             Templates,
-                             NameAnalysis,
-                             TypeChecking,
-                             FlowAnalysis,
-                             Desugaring,
-                             CodeGeneration
-                           )
+    Lexer,
+    Parser,
+    Templates,
+    NameAnalysis,
+    TypeChecking,
+    FlowAnalysis,
+    Desugaring,
+    CodeGeneration
+  )
 
+  // This has to be lazy because of some weird macro behaviour
+  private lazy val AllFlags: Set[Flag] = EnumerationMacros.sealedInstancesOf[Flag]
+  private      val flagActive          = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
 
   def main(args: Array[String]) {
     try {
@@ -64,7 +68,7 @@ object Main extends MainErrors with Colored {
 
       compilation.run(ctx)(cus)
 
-      if(flagActive(PrintInfo))
+      if (flagActive(PrintInfo))
         printExecutionTimes()
 
       if (flagActive(Exec))
@@ -108,8 +112,8 @@ object Main extends MainErrors with Colored {
       case flag :: args if flagActive.contains(flag.toLowerCase) =>
         flagActive(flag.toLowerCase) = true
         processOption(args)
-      case f :: args                                             =>
-        files = new File(f) :: files
+      case filePath :: args                                      =>
+        files :::= getFiles(filePath)
         processOption(args)
       case Nil                                                   =>
     }
@@ -141,12 +145,27 @@ object Main extends MainErrors with Colored {
       FatalCantFindTHome(THome)
 
     val reporter = new Reporter(flagActive(SuppressWarnings),
-                                 flagActive(WarningIsError),
-                                 !flagActive(NoColor),
-                                 maxErrors)
+      flagActive(WarningIsError),
+      !flagActive(NoColor),
+      maxErrors)
 
     val cp = TDirectory :: classPaths
     Context(reporter, files, cp, dir, printStage, !flagActive(NoColor), flagActive(PrintInfo))
+  }
+
+  private def getFiles(path: String): List[File] = {
+    val file = new File(path)
+    if (file.isDirectory) {
+      val tFiles = file.listFiles().filter(_.getName.endsWith(FileEnding))
+      if (tFiles.isEmpty)
+        FatalGivenDirectoryContainsNoTFiles(path)
+
+      return tFiles.toList
+    }
+
+    if (!file.getName.endsWith(FileEnding))
+      FatalGivenFileIsNotTFile(path)
+    List(file)
   }
 
   private def lowerCaseArgs(args: Array[String]) =
@@ -158,11 +177,11 @@ object Main extends MainErrors with Colored {
     val numFiles = ctx.files.size
     val files = ctx.files.map { f =>
       val name = f.getName.dropRight(Main.FileEnding.length)
-      val full = s"${Magenta(name)}${Main.FileEnding}"
+      val full = s"${Magenta(name) }${Main.FileEnding }"
       s"   <$full>"
     }.mkString("\n")
     val msg =
-      s"""|${Bold("Compiling")} ${Magenta(numFiles)} ${Bold("file(s)")}:
+      s"""|${Bold("Compiling") } ${Magenta(numFiles) } ${Bold("file(s)") }:
           |$files
           |""".stripMargin
     println(msg)
@@ -212,7 +231,7 @@ object Main extends MainErrors with Colored {
       f"   $name%-25s $t seconds"
     }.mkString("\n")
     val msg =
-      f"""|${Bold("Compilation executed")} ${Green("successfully")} ${Bold("in")} $Green$totalTime%.2f$Reset ${Bold("seconds.")}
+      f"""|${Bold("Compilation executed") } ${Green("successfully") } ${Bold("in") } $Green$totalTime%.2f$Reset ${Bold("seconds.") }
           |Execution time for individual stages:
           |$individualTimes
           |""".stripMargin
@@ -224,11 +243,11 @@ object Main extends MainErrors with Colored {
   private def printHelp(arg: List[String] = Nil) = {
     val helpMessage = arg match {
       case "stages" :: _ =>
-        val stages = CompilerStages.map(stage => s"   <${stage.stageName.capitalize}>").mkString("\n")
+        val stages = CompilerStages.map(stage => s"   <${stage.stageName.capitalize }>").mkString("\n")
         s"""|The compiler stages are executed in the following order:
             |$stages
             |""".stripMargin
-      case _           =>
+      case _             =>
         val flags = AllFlags.map(_.format).mkString
         s"""|Usage: tcomp <options> <source files>
             |Options:
@@ -236,8 +255,8 @@ object Main extends MainErrors with Colored {
             |$flags
             |""".stripMargin
     }
-    var s = """\<(.+?)\>""".r.replaceAllIn(helpMessage, m => s"<${Blue(m.group(1))}>")
-    s = "-(.+?) ".r.replaceAllIn(s, m => s"-${Magenta(m.group(1))} ")
+    var s = """\<(.+?)\>""".r.replaceAllIn(helpMessage, m => s"<${Blue(m.group(1)) }>")
+    s = "-(.+?) ".r.replaceAllIn(s, m => s"-${Magenta(m.group(1)) } ")
     print(s)
   }
 
@@ -247,12 +266,12 @@ object Main extends MainErrors with Colored {
 
     val files = listFiles(new File(path))
     val neededFiles = List(
-                            "kool",
-                            "kool/lang",
-                            "kool/lang/Object.kool",
-                            "kool/lang/String.kool",
-                            "kool/std"
-                          )
+      "kool",
+      "kool/lang",
+      "kool/lang/Object.kool",
+      "kool/lang/String.kool",
+      "kool/std"
+    )
     val fileMap = mutable.Map() ++ neededFiles.map((_, false))
     val filePaths = files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/"))
     for (f <- filePaths)
@@ -269,16 +288,19 @@ object Main extends MainErrors with Colored {
       return
 
     val cp = ctx.outDir match {
-      case Some(dir) => s"-cp ${dir.getPath}"
+      case Some(dir) => s"-cp ${dir.getPath }"
       case _         => ""
     }
-    val name = fileName(cu)
+    val mainName = cu.file.getName.dropRight(FileEnding.length)
+    val execCommand = s"java $cp $mainName"
     val seperator = Blue("----------------------------------------")
-    println(s"Executing main program ${Magenta(name)}: ")
-    println(seperator)
-    println(s"java $cp $name" !!)
-    println(seperator)
 
+    print(
+      s"""Executing main program ${Magenta(mainName) }:
+         |$seperator
+         |${execCommand!! }
+         |$seperator
+       """.stripMargin)
   }
 
   private def listFiles(f: File): Array[File] = {
@@ -287,8 +309,6 @@ object Main extends MainErrors with Colored {
       return Array[File]()
     these ++ these.filter(_.isDirectory).flatMap(listFiles)
   }
-
-  private def fileName(cu: CompilationUnit) = cu.file.getName.dropRight(FileEnding.length)
 
   private def containsMainMethod(cu: CompilationUnit) = cu.classes.exists(_.methods.exists(_.isMain))
 

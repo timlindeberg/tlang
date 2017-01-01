@@ -126,7 +126,7 @@ trait Collection<T>: Iterable<T> {
     *
     * @return          a string representation of this list
     */
-	Def ToString(): String = "[ " + MakeString(", ") + " ]"
+	Def toString(): String = "[ " + MakeString(", ") + " ]"
 
     //------------------------------------------------------------
     // Operators

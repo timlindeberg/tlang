@@ -213,5 +213,5 @@ println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(new A())) // res: ObjectA
 
 class A {
-    Def ToString() = "ObjectA"
+    Def toString() = "ObjectA"
 }

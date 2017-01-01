@@ -4,9 +4,11 @@ import java::lang::System
 import kool::lang::extension java::lang::Object
 import kool::lang::extension java::lang::String
 
+// TODO: This test only works in sweden on a computer with english Locale :)
+
 new A().AD() // res: 1
 new A().BC() // res: 0
-new A().TimeZone() // res:Central European Time
+new A().TimeZone() // res: Central European Time
 
 val locale = new Locale("sv", "SE")
 println(locale.getDisplayLanguage()) // res: Swedish

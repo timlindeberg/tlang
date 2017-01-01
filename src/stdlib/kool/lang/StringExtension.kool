@@ -131,8 +131,6 @@ extension java::lang::String {
     Def ToUpperCase()               = toUpperCase()
     Def ToUpperCase(locale: Locale) = toUpperCase(locale)
 
-    //Def ToString() = this
-
     Def Trim() = trim()
 
     Def static ValueOf(data: Char[], offset: Int, count: Int) = String.valueOf(data, offset, count)

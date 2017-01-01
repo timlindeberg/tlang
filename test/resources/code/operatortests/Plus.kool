@@ -43,5 +43,5 @@ println(d + d);  // res: 2.0
 println(d + c);  // res: 98.0
 
 class A {
-   Def ToString(): String = return "A";
+   Def toString(): String = return "A";
 }

@@ -7,7 +7,7 @@ class Foo {
 }
 
 class A { 
-	Def ToString(): String = {
+	Def toString(): String = {
 		return "Print A!"
 	}
 }

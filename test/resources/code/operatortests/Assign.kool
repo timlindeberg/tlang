@@ -42,5 +42,5 @@ println(s = "str");    // res: str
 println(a = new A());  // res: A
 
 class A {
-   Def ToString(): String = return "A";
+   Def toString(): String = return "A";
 }

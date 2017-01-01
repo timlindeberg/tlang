@@ -10,7 +10,7 @@ for(val x in arr)
     else if(x is Double) println("Double " + (x as Double)) // res: Double 1.0
     else if(x is Float)  println("Float " + (x as Float))   // res: Float 1.0
     else if(x is Char)   println("Char " + (x as Char))     // res: Char c
-    else if(x is A)      println(x as A)                    // res: A
+    else if(x is A)      println("Object " + (x as A))      // res: Object A
 
 Def Test(i: Object) = {
     if(i is Int) {
@@ -25,5 +25,5 @@ Def Test(i: Object) = {
 }
 
 class A {
-    Def ToString() = "A"
+    Def toString() = "A"
 }

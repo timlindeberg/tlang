@@ -253,7 +253,7 @@ Def MakeString() = {
     val t = new Tester<String>()
     val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
     t.AssertEquals(v.MakeString(", "), "1, 2, 2, 4, 5, 1")
-    t.AssertEquals(v.ToString(), "[ 1, 2, 2, 4, 5, 1 ]")
+    t.AssertEquals(v.toString(), "[ 1, 2, 2, 4, 5, 1 ]")
 }
 
 Def Equals() = {

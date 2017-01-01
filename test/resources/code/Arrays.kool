@@ -36,6 +36,6 @@ class A {
 
   Def new(i: Int) = int = i
 
-  Def ToString(): String = "" + int
+  Def toString(): String = "" + int
 
 }

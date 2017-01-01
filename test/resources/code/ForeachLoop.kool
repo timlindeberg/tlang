@@ -21,7 +21,7 @@ println()
 
 class A {
 
-    Def ToString() = "A"
+    Def toString() = "A"
 
 }
 

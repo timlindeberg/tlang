@@ -40,7 +40,7 @@ object TestUtils extends FlatSpec {
 
     val reporter = new Reporter()
     val cp = Main.TDirectory
-    val printCodeStage = Some("codegeneration")
+    val printCodeStage = None //Some("codegeneration")
     new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp), printCodeStage = printCodeStage, useColor = true)
   }
 

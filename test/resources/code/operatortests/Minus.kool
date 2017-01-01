@@ -30,5 +30,5 @@ println(d - d);  // res: 0.0
 println(d - c);  // res: -96.0
 
 class A {
-   Def ToString(): String = return "A";
+   Def toString(): String = return "A";
 }

@@ -49,9 +49,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   import CodeGenerator._
 
   def compileStat(statement: StatTree,
-    continue: Option[String] = None,
-    break: Option[String] = None,
-    compileUseless: Boolean = false): Unit = {
+                  continue: Option[String] = None,
+                  break: Option[String] = None,
+                  compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                    =>
@@ -113,18 +113,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {
-          case o: TObject               =>
-            if (o.classSymbol.name != JavaString) {
-              // First convert to Kool String
-              val stringName = Types.String.classSymbol.name
-              val stringByteCodeName = Types.String.byteCodeName
-              ch << InvokeVirtual(o.classSymbol.name, "ToString", s"()$stringByteCodeName")
-              ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
-            }
-            s"L$JavaString;" // Call System.out.println(String) for all other types
-          case primitive: PrimitiveType =>
-            if (primitive.isNullable) s"L$JavaObject;"
-            else primitive.byteCodeName
+          case _: TObject       => s"L$JavaObject;"
+          case p: PrimitiveType => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
         }
         val funcName = statement match {
           case _: Print   => "print"
@@ -160,9 +150,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
     if (expression.hasPosition)
       ch << LineNumber(expression.line)
     expression match {
-      case TrueLit()                                    => ch << Ldc(1)
-      case FalseLit()                                   => ch << Ldc(0)
-      case NullLit()                                    => ch << ACONST_NULL
+      case TrueLit()  => ch << Ldc(1)
+      case FalseLit() => ch << Ldc(0)
+      case NullLit()  => ch << ACONST_NULL
       //case Literal(value)                               => ch << Ldc(value)
       case IntLit(value)                                => ch << Ldc(value)
       case LongLit(value)                               => ch << Ldc(value)
@@ -334,7 +324,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
             if (!duplicate && methSymbol.getType != TUnit)
               ch << POP
         }
-      case newTree@Trees.New(tpe, args)                         =>
+      case newTree@Trees.New(tpe, args)                 =>
         tpe.getType match {
           case TObject(classSymbol) =>
             ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
@@ -415,7 +405,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
         compileExpr(expr)
-        val signature = s"(${found.byteCodeName})V"
+        val signature = s"(${found.byteCodeName })V"
         ch << InvokeSpecial(name, ConstructorName, signature)
       case (found: TArray, desired: TArray)                               =>
         // Found an array and wanted an array, expr must be an arraylit
@@ -561,11 +551,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
   }
 
   private def store(variable: VariableSymbol,
-    putValue: () => Unit,
-    duplicate: Boolean,
-    putObject: () => Unit = () => {
-      ch << ArgLoad(0)
-    }): CodeHandler = {
+                    putValue: () => Unit,
+                    duplicate: Boolean,
+                    putObject: () => Unit = () => {
+                      ch << ArgLoad(0)
+                    }): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
     val codes = tpe.codes
@@ -576,7 +566,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
         if (duplicate)
           codes.dup(ch)
         tpe.codes.store(ch, id)
-      case None =>
+      case None     =>
         // variable is a field
         if (!variable.isStatic)
           putObject()
@@ -605,7 +595,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
 
     localVariableMap.get(variable) match {
       case Some(id) => tpe.codes.load(ch, id)
-      case None =>
+      case None     =>
         // Must be a field since it's not a local variable
         val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
 

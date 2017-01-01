@@ -45,7 +45,7 @@ class Implicit {
 
     Def implicit new(i: Int) = x = i
     Def GetValue()           = return x
-    Def ToString()           = return "" + x
+    Def toString()           = return "" + x
 }
 
 class ImplicitArr {
@@ -53,7 +53,7 @@ class ImplicitArr {
     var impl: Int[]
 
     Def implicit new(arr: Int[]) = this.impl = arr
-    Def ToString() = {
+    Def toString() = {
         var str = ""
         for(var i = 0; i < impl.Size(); i++)
             str += impl[i] + " "

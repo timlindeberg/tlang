@@ -49,4 +49,10 @@ trait MainErrors extends Errors {
   protected def FatalInvalidMaxErrors(num: String) =
     fatal(s"'$num' is not a valid argument to the flag '${MaxErrors.flag}'. Needs a number as argument.")
 
+  protected def FatalGivenDirectoryContainsNoTFiles(path: String) =
+    fatal(s"The given directory '$path' does not contain any T-files.")
+
+  protected def FatalGivenFileIsNotTFile(path: String) =
+    fatal(s"The given file '$path' is not a T-file.")
+
 }
