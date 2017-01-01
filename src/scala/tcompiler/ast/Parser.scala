@@ -3,13 +3,11 @@ package ast
 
 import tcompiler.analyzer.Types.TUnit
 import tcompiler.ast.Trees.{OperatorTree, _}
-import tcompiler.imports.{ClassSymbolLocator, ImportMap, TemplateImporter}
+import tcompiler.imports.ImportMap
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
-import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
-import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Parser extends Pipeline[List[List[Token]], List[CompilationUnit]] {
@@ -27,34 +25,34 @@ object ASTBuilder {
   val MaximumArraySize = 255
 
   private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
-                                                                                   LOGICNOT -> LogicNot,
-                                                                                   BANG -> Not,
-                                                                                   HASH -> Hash,
-                                                                                   INCREMENT -> PreIncrement,
-                                                                                   DECREMENT -> PreDecrement
-                                                                                 )
+    LOGICNOT -> LogicNot,
+    BANG -> Not,
+    HASH -> Hash,
+    INCREMENT -> PreIncrement,
+    DECREMENT -> PreDecrement
+  )
 
 
   private val tokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
-                                                                                                OR -> Or,
-                                                                                                AND -> And,
-                                                                                                LESSTHAN -> LessThan,
-                                                                                                LESSTHANEQ -> LessThanEquals,
-                                                                                                GREATERTHAN -> GreaterThan,
-                                                                                                GREATERTHANEQ -> GreaterThanEquals,
-                                                                                                EQUALS -> Equals,
-                                                                                                NOTEQUALS -> NotEquals,
-                                                                                                PLUS -> Plus,
-                                                                                                MINUS -> Minus,
-                                                                                                TIMES -> Times,
-                                                                                                DIV -> Div,
-                                                                                                MODULO -> Modulo,
-                                                                                                LEFTSHIFT -> LeftShift,
-                                                                                                RIGHTSHIFT -> RightShift,
-                                                                                                LOGICAND -> LogicAnd,
-                                                                                                LOGICOR -> LogicOr,
-                                                                                                LOGICXOR -> LogicXor
-                                                                                              )
+    OR -> Or,
+    AND -> And,
+    LESSTHAN -> LessThan,
+    LESSTHANEQ -> LessThanEquals,
+    GREATERTHAN -> GreaterThan,
+    GREATERTHANEQ -> GreaterThanEquals,
+    EQUALS -> Equals,
+    NOTEQUALS -> NotEquals,
+    PLUS -> Plus,
+    MINUS -> Minus,
+    TIMES -> Times,
+    DIV -> Div,
+    MODULO -> Modulo,
+    LEFTSHIFT -> LeftShift,
+    RIGHTSHIFT -> RightShift,
+    LOGICAND -> LogicAnd,
+    LOGICOR -> LogicOr,
+    LOGICXOR -> LogicXor
+  )
 }
 
 class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
@@ -80,12 +78,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val code = until(() => {
       nextTokenKind match {
-        case CLASS | TRAIT | EXTENSION => classDeclaration ()
-        case PUBDEF | PRIVDEF =>
+        case CLASS | TRAIT | EXTENSION => classDeclaration()
+        case PUBDEF | PRIVDEF          =>
           val pos = nextToken
           val modifiers = methodModifiers()
           method(modifiers + Static(), pos)
-        case _                => statement()
+        case _                         => statement()
       }
     }, EOF)
 
@@ -151,13 +149,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     while (nextTokenKind == COLON) {
       eat(COLON, COLON)
       nextTokenKind match {
-        case TIMES =>
+        case TIMES     =>
           eat(TIMES)
           endStatement()
           return WildCardImport(address.toList).setPos(startPos, nextToken)
         case EXTENSION =>
           return extensionImport(address.toList).setPos(startPos, nextToken)
-        case _     => address += identifierName()
+        case _         => address += identifierName()
       }
     }
     endStatement()
@@ -171,7 +169,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     eat(EXTENSION)
     val className = new ListBuffer[String]()
     className += identifierName()
-    while (nextTokenKind == COLON){
+    while (nextTokenKind == COLON) {
       eat(COLON, COLON)
       className += identifierName()
     }
@@ -432,8 +430,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         }
       case _             =>
         FatalWrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
-                         RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
-                         LOGICNOT, BANG, LBRACKET)
+          RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
+          LOGICNOT, BANG, LBRACKET)
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)

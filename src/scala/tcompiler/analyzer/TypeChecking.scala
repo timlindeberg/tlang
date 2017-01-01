@@ -21,40 +21,42 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus foreach { cu =>
-      // Typecheck fields
-      cu.classes.foreach { classDecl =>
-        val typeChecker = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", classDecl.getSymbol, None, Set()))
-        classDecl.fields.foreach(typeChecker.tcStat(_))
-      }
-    }
-
-    cus foreach { cu =>
-      // Typecheck methods
-      cu.classes.foreach { classDecl =>
-        classDecl.methods.foreach { method =>
-          val methodSymbol = method.getSymbol
-          if (!methodUsage.contains(methodSymbol))
-            methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
-          new TypeChecker(ctx, cu.importMap, methodSymbol).tcMethod()
-        }
-      }
-
-      val c = new ClassSymbol("", false)
-      val tc = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", c, None, Set()))
-
-      tc.checkMethodUsage()
-      tc.checkCorrectOverrideReturnTypes(cu)
-      tc.checkTraitsAreImplemented(cu)
-    }
+    cus foreach { cu => typecheckFields(ctx, cu) }
+    cus foreach { cu => typecheckMethods(ctx, cu) }
     cus
   }
+
+  private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
+    cu.classes.foreach { classDecl =>
+      val typeChecker = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", classDecl.getSymbol, None, Set()))
+      classDecl.fields.foreach(typeChecker.tcStat(_))
+    }
+
+  private def typecheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
+    cu.classes.foreach { classDecl =>
+      classDecl.methods.foreach { method =>
+        val methodSymbol = method.getSymbol
+        if (!methodUsage.contains(methodSymbol))
+          methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
+        new TypeChecker(ctx, cu.importMap, methodSymbol).tcMethod()
+      }
+    }
+
+    val emptyClassSym = new ClassSymbol("", false)
+    val emptyMethSym = new MethodSymbol("", emptyClassSym, None, Set())
+    val typeChecker = new TypeChecker(ctx, cu.importMap, emptyMethSym)
+
+    typeChecker.checkMethodUsage()
+    typeChecker.checkCorrectOverrideReturnTypes(cu)
+    typeChecker.checkTraitsAreImplemented(cu)
+  }
+
 }
 
 class TypeChecker(override var ctx: Context,
-  override var importMap: ImportMap,
-  currentMethodSymbol: MethodSymbol,
-  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+                  override var importMap: ImportMap,
+                  currentMethodSymbol: MethodSymbol,
+                  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 
   import TypeChecking._
 
@@ -88,7 +90,7 @@ class TypeChecker(override var ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
-    returnStatements.map(_._1) foreach {_.setType(inferredType)}
+    returnStatements.map(_._1) foreach { _.setType(inferredType) }
 
     checkOperatorType(inferredType)
     currentMethodSymbol.setType(inferredType)
@@ -118,7 +120,9 @@ class TypeChecker(override var ctx: Context,
         ErrorValueMustBeInitialized(varSym.name, varDecl)
 
       tpe match {
-        case Some(t) => init ifDefined {tcExpr(_, t.getType)}
+        case Some(t) => init ifDefined {
+          tcExpr(_, t.getType)
+        }
         case None    => init match {
           case Some(expr) =>
             val inferredType = tcExpr(expr)
@@ -307,7 +311,7 @@ class TypeChecker(override var ctx: Context,
                   val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
                   ErrorDoesntHaveConstructor(tpe.name, methodSignature, newDecl)
                 case _                       =>
-                  val defaultConstructor  = new MethodSymbol("new", classSymbol, None, Set(Public()))
+                  val defaultConstructor = new MethodSymbol("new", classSymbol, None, Set(Public()))
                   newDecl.setSymbol(defaultConstructor)
               }
             }
@@ -643,6 +647,9 @@ class TypeChecker(override var ctx: Context,
     * but which does provide an Iterator method which returns an Iterator
     * with the methods HasNext and Next of correct types to still be
     * applicable for ForEach loops.
+    *
+    * This is useful since it allows for iterable behaviour to be added
+    * through extension methods.
     */
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] = {
     classSymbol.lookupMethod("Iterator", Nil, importMap) match {

@@ -18,15 +18,13 @@ object TestUtils extends FlatSpec {
   val Timeout        = duration.Duration(2, "sec")
   val SolutionRegex = """.*// *[R|r]es:(.*)""".r
 
-  private val classPathSeperator = if (System.getProperty("os.name").startsWith("Windows")) ";" else ":"
-
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory)
       programFiles(file.getPath).foreach(test(_, testFunction))
     else if (shouldBeIgnored(file))
-      ignore should file.getName.toString in testFunction(file)
+      ignore should file.getName in testFunction(file)
     else
-      it should file.getName.toString in testFunction(file)
+      it should file.getName in testFunction(file)
   }
 
   def testContext = getTestContext(None)
@@ -42,7 +40,7 @@ object TestUtils extends FlatSpec {
 
     val reporter = new Reporter()
     val cp = Main.TDirectory
-    val printCodeStage = None //Some("codegeneration")
+    val printCodeStage = Some("codegeneration")
     new Context(reporter = reporter, files = files, outDir = outDir, classPaths = List(cp), printCodeStage = printCodeStage, useColor = true)
   }
 
@@ -53,14 +51,22 @@ object TestUtils extends FlatSpec {
   }
 
   def executeTProgram(classPaths: List[String], mainName: String): String = {
-    val cp = "\"" + classPaths.mkString(classPathSeperator) + "\""
-    val future = Future(blocking(s"java -cp $cp $mainName"!!))
+    val cp = formatClassPath(classPaths)
+    val command = s"java -cp $cp $mainName"
+    val future = Future(blocking(command!!))
     try {
       Await.result(future, Timeout)
     } catch {
       case _: TimeoutException => fail(s"Test timed out after $Timeout s.")
     }
   }
+
+  def formatClassPath(classPaths: List[String]): String =
+    if (System.getProperty("os.name").startsWith("Windows"))
+      "\"" + classPaths.mkString(";") + "\""
+    else
+      classPaths.mkString(":")
+
 
   def lines(str: String) = str.split("\\r?\\n").map(_.trim).toList
 
