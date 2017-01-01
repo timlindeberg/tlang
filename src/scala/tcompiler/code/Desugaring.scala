@@ -3,10 +3,11 @@ package tcompiler.code
 import tcompiler.Main
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTransformer
+import tcompiler.ast.{Printer, TreeTransformer}
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.{Context, Pipeline}
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 
@@ -19,7 +20,7 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
   def desugar(cu: CompilationUnit) = {
     val desugarer = new Desugarer(cu.importMap)
-    desugarer(cu)
+    desugarer(cu).use(s => println(Printer(s)))
   }
 
 }
@@ -35,7 +36,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     case safeAccess: SafeAccess                          =>
       // Recurse again to replace all calls in the desugared version
       super.transform(desugarSafeAccess(safeAccess))
-    case acc@NormalAccess(obj, m@MethodCall(meth, args)) =>
+    case acc@NormalAccess(_, MethodCall(meth, _)) =>
       val newAcc = super.transform(acc)
       val classSymbol = meth.getSymbol.classSymbol
       classSymbol match {
@@ -62,8 +63,8 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
         case op: OperatorTree => op // Finished transform
         case tree             => transform(tree) // Transform again to replace external method calls etc.
       }
-    case foreach: Foreach                                => desugarForeachLoop(super.transform(foreach))
-    case elvis: Elvis                                    => desugarElvisOp(super.transform(elvis))
+    case foreach: Foreach                                => transform(desugarForeachLoop(foreach))
+    case elvis: Elvis                                    => transform(desugarElvisOp(elvis))
     case _                                               => super.transform(t)
   }
 

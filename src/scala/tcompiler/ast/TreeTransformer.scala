@@ -188,7 +188,7 @@ class TreeTransformer {
     case ExtractNullable(expr) =>
       treeCopy.ExtractNullable(t, tr(expr))
     case GeneratedExpr(block)         =>
-      treeCopy.GeneratedExpr(t, block)
+      treeCopy.GeneratedExpr(t, tr(block))
     case PutValue(expr)               =>
       treeCopy.IfDup(t, expr)
   }

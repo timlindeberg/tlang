@@ -152,7 +152,7 @@ trait TypeCheckingErrors extends Errors {
   // Missing 31
 
   protected def ErrorForeachNotIterable(tpe: Type, pos: Positioned) =
-    error(32, s"Type '$tpe' does not implement the 'Iterable' trait.", pos)
+    error(32, s"Type '$tpe' is not iterable.", pos)
 
   protected def ErrorAssignNullToNonNullable(tpe: Type, pos: Positioned) =
     error(33, s"Cannot assign 'null' to non nullable type '$tpe'.", pos)

@@ -41,7 +41,7 @@ trait MainErrors extends Errors {
     fatal(s"Invalid output class path: '$classPath'.")
 
   protected def FatalCantFindTHome(tHome: String) =
-    fatal(s"$tHome environment variable is not set.")
+    fatal(s"$tHome environment variable is not set. It needs to point to the directory of the T standard library.")
 
   protected def FatalInvalidTHomeDirectory(path: String, tHome: String) =
     fatal(s"'$path' is not a valid $tHome directory.")

@@ -28,6 +28,10 @@ object Extensions {
 
   }
 
+  implicit class GenericExtensions[T](t: T) {
+    def use(f: T => Unit): T = { f(t); t }
+  }
+
   implicit class TypeTuple(t: (Type, Type)) {
 
     val c1 = t._1.getClass

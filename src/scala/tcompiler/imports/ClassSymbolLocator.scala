@@ -24,7 +24,13 @@ object ClassSymbolLocator {
     _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
 
   def findExtensionSymbol(className: String) =
-    _findSymbol(className, clazz => new ExtensionClassSymbol(clazz.getClassName))
+    _findSymbol(className, clazz => {
+      val extensionName = clazz.getClassName
+      val originalClassName = extensionName.replaceAll(".*\\$EX\\.", "")
+      val originalSymbol = findSymbol(originalClassName)
+
+      new ExtensionClassSymbol(extensionName).use(_.originalClassSymbol = originalSymbol)
+    })
 
   private def _findSymbol[T <: ClassSymbol](className: String, cons: JavaClass => T): Option[T] = {
     findClass(className) match {
@@ -61,6 +67,7 @@ object ClassSymbolLocator {
     classSymbol.methods = methods.filterNotType[OperatorSymbol]
     classSymbol.operators = methods.filterType[OperatorSymbol]
     classSymbol.parents = convertParents(clazz)
+    classSymbol.isAbstract = clazz.isAbstract
     classSymbol.fields = clazz.getFields.map { field =>
       val f = convertField(classSymbol, field)
       (f.name, f)
