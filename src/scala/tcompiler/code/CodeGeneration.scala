@@ -77,6 +77,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
           if(stage == CodeGeneration.stageName)
             println(ch.stackTrace(ctx.useColor))
         }
+        println(ch.stackTrace(ctx.useColor))
       }
 
     }

@@ -20,7 +20,7 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
   def desugar(cu: CompilationUnit) = {
     val desugarer = new Desugarer(cu.importMap)
-    desugarer(cu).use(s => println(Printer(s)))
+    desugarer(cu)
   }
 
 }
@@ -63,7 +63,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
         case op: OperatorTree => op // Finished transform
         case tree             => transform(tree) // Transform again to replace external method calls etc.
       }
-    case foreach: Foreach                                => transform(desugarForeachLoop(foreach))
+    case foreach: Foreach                                => transform(desugarForeach(foreach))
     case elvis: Elvis                                    => transform(desugarElvisOp(elvis))
     case _                                               => super.transform(t)
   }
@@ -302,24 +302,6 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     methDecl.setSymbol(opSymbol).setPos(op)
   }
 
-  /**
-    * Desugars for each loops, either array based or an iterator based.
-    */
-  private def desugarForeachLoop(t: Tree): Tree = {
-    if (!t.isInstanceOf[Foreach])
-      return t
-
-    val foreach = t.asInstanceOf[Foreach]
-    val container = foreach.container
-    val varDecl = foreach.varDecl
-    val stat = foreach.stat
-    container.getType match {
-      case TArray(arrTpe)       => desugarArrayForeachLoop(varDecl, container, stat)
-      case TObject(classSymbol) => desugarIteratorForeachLoop(classSymbol, varDecl, container, stat)
-      case _                    => ???
-    }
-  }
-
   //@formatter:off
   /**
     * Transform increment and decrement expressions on accesses and array reads.
@@ -439,6 +421,26 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     }
   }
 
+
+  /**
+    * Desugars for each loops, either array based or an iterator based.
+    */
+  private def desugarForeach(t: Tree): Tree = {
+    if (!t.isInstanceOf[Foreach])
+      return t
+
+    val foreach = t.asInstanceOf[Foreach]
+    val container = foreach.container
+    val varDecl = foreach.varDecl
+    val stat = foreach.stat
+    container.getType match {
+      case TArray(arrTpe)       => desugarArrayForeach(varDecl, container, stat)
+      case TObject(classSymbol) => desugarIteratorForeach(classSymbol, varDecl, container, stat)
+      case _                    => ???
+    }
+  }
+
+
   //@formatter:off
   /**
     * Transforms foreach loop over an array
@@ -461,7 +463,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarArrayForeachLoop(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
+  private def desugarArrayForeach(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
     val indexDecl = c.createVarDecl("i", IntLit(0))
     val index = indexDecl.id
@@ -508,7 +510,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarIteratorForeachLoop(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
+  private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
 
     val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap)

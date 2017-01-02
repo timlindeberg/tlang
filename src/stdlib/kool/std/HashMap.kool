@@ -7,28 +7,28 @@ import kool::std::Iterable
 
 class HashMap<K, V>: Map<K, V> {
 
-	val static DefualtInitialCapacity = 16
-	val static DefaultLoadFactor = 0.75
+	val static DEFAULT_INITIAL_CAPACITY = 16
+	val static DEFAULT_LOAD_FACTOR = 0.75
 
 	var entries: HashMapEntry<K, V>?[]
 	var size: Int
 	var loadFactor: Double
 	var capacity: Int
 
-	Def new()                                         = init(DefualtInitialCapacity, DefaultLoadFactor)
-	Def new(initialCapacity: Int)                     = init(initialCapacity, DefaultLoadFactor)
+	Def new()                                         = init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
+	Def new(initialCapacity: Int)                     = init(initialCapacity, DEFAULT_LOAD_FACTOR)
 	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
 	Def implicit new(entries: MapEntry<K, V>[]) = {
-	    init(DefualtInitialCapacity, DefaultLoadFactor)
+	    init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
 	    for(val e in entries)
 	        Add(e)
 	}
 
 	Def implicit new(entries: Object[][]) = {
-	    init(DefualtInitialCapacity, DefaultLoadFactor)
+	    init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
 	    for(val e in entries){
 	        if(e.Size() != 2)
-	            error("Invalid size of map entry: " + e.Size())
+	            error("Invalid size of map entry: " + e.Size() + ", expected 2.")
 
 	        if(!(e[0] is K))
 	            error("Entry has wrong key type!")
@@ -46,7 +46,7 @@ class HashMap<K, V>: Map<K, V> {
 	}
 
 	Def new(map: Map<K, V>) = {
-		init(DefualtInitialCapacity, DefaultLoadFactor)
+		init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
 		AddAll(map)
 	}
 

@@ -2,11 +2,12 @@ import kool::std::HashMap
 import kool::std::Tester
 import kool::std::MapEntry
 
+ImplicitArrayConstructor()
 IntMap()
 StringMap()
 LargeMap()
 InitialCapacity()
-toStringTest()
+ToStringTest()
 Get()
 Contains()
 ContainsValue()
@@ -16,6 +17,22 @@ Remove()
 AddAll()
 
 println("All tests succeded.") // res: All tests succeded.
+
+Def ImplicitArrayConstructor() = {
+    val ti = new Tester<Int>()
+    val ts = new Tester<String>()
+
+    val map: HashMap<Int, String> = {
+        {1, "1"},
+        {2, "2"},
+        {3, "3"},
+        {4, "4"} }
+    ti.AssertEquals(map.Size(), 4)
+    ts.AssertEquals(map[1], "1")
+    ts.AssertEquals(map[2], "2")
+    ts.AssertEquals(map[3], "3")
+    ts.AssertEquals(map[4], "4")
+}
 
 Def IntMap() = {
     val t = new Tester<Int>()
