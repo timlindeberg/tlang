@@ -3,11 +3,10 @@ package tcompiler.code
 import tcompiler.Main
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.{Printer, TreeTransformer}
+import tcompiler.ast.TreeTransformer
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.{Context, Pipeline}
-import tcompiler.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 
@@ -226,7 +225,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
 
     val c = new TreeBuilder
 
-    t match {
+    op match {
       case BinaryOperatorTree(lhs, rhs) =>
         // Don't replace null checks
         if (lhs.isInstanceOf[NullLit] || rhs.isInstanceOf[NullLit])
@@ -250,19 +249,15 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
           return op
 
         val arrClassSymbol = arr.getType.asInstanceOf[TObject].classSymbol
-        op match {
-          case ArrayRead(arr, index) =>
-            val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType), importMap).get
-            c.createMethodCall(arr, opSymbol, index)
-          case Assign(to, expr)      =>
-            to match {
-              case ArrayRead(arr, index) =>
-                val opSymbol = arrClassSymbol.lookupOperator(op, List(index.getType, expr.getType), importMap).get
-                opSymbol.setType(index.getType)
-                c.createMethodCall(arr, opSymbol, index, expr).setType(expr.getType)
-              case _                     => op
-            }
+
+        val (obj, args) = op match {
+          case ArrayRead(obj, index) => (obj, List(index))
+          case Assign(ArrayRead(obj, index), expr) => (obj, List(index, expr))
+          case _ => ???
         }
+        val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), importMap).get
+        c.createMethodCall(obj, opSymbol, args)
+
       case _                            => op
     }
   }
@@ -272,6 +267,7 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
       return t
     val op = t.asInstanceOf[OperatorDecl]
     val opSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
+
     val methodID = new MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
     val methDecl =
       if (op.isAbstract)
@@ -279,22 +275,22 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
           // Convert array assignment so the value is returned in order to be consistent with other
-          // assignments
-          val indexId = op.args(1).id
-          val retType = new TreeBuilder().getTypeTree(indexId.getType)
-          val ret = Return(Some(indexId)).setType(indexId.getType)
+          // types of assignments
+          val valueId = op.args(1).id
+          val retType = new TreeBuilder().getTypeTree(valueId.getType)
+          val ret = Return(Some(valueId)).setType(valueId.getType)
           val stats: List[StatTree] = op.stat.get match {
-            case Block(s)        =>
-              val last = s.last match {
+            case Block(stats)        =>
+              val last = stats.last match {
                 case Return(Some(s)) => s
                 case s: StatTree     => s
               }
 
-              s.drop(1) :+ last :+ ret
+              stats.drop(1) :+ last :+ ret
             case Return(Some(s)) => List(s, ret)
             case stat: StatTree  => List(stat, ret)
           }
-          opSymbol.setType(indexId.getType)
+          opSymbol.setType(valueId.getType)
           new MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
         case _                          =>
           new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)

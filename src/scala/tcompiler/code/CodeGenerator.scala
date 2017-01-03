@@ -43,7 +43,7 @@ object CodeGenerator {
 
 }
 
-class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableSymbol, Int]) {
+class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbol, Int]) {
 
   import CodeGenerator._
 
@@ -538,12 +538,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.HashMap[VariableS
       ch << Goto(els.id)
     case expr: ExprTree                   =>
       compileExpr(expr)
-      expr match {
-        case id: VariableID if id.getType.isNullable =>
-          ch << IfNull(els.id)
-        case _                                       =>
-          ch << IfEq(els.id)
-      }
+      if(expr.getType.isNullable)
+        ch << IfNull(els.id)
+      else
+        ch << IfEq(els.id)
+
       ch << Goto(thn.id) // If false go to else
     case _                                => ???
   }

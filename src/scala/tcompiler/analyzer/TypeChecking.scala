@@ -628,12 +628,12 @@ class TypeChecker(override var ctx: Context,
 
   def checkTraitsAreImplemented(cu: CompilationUnit) =
     cu.classes.filter(!_.isAbstract).foreach { classDecl =>
-      classDecl.implementedTraits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
+      classDecl.traits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
 
   private def traitIsImplemented(classDecl: ClassDeclTree, implementedTrait: ClassSymbol) = {
-    val unimplementedMethods = implementedTrait.unimplementedMethods()
-    unimplementedMethods.foreach { case (method, owningTrait) =>
+    val abstractMethods = implementedTrait.abstractMethods()
+    abstractMethods.foreach { case (method, owningTrait) =>
       if (!classDecl.getSymbol.implementsMethod(method))
         ErrorUnimplementedMethodFromTrait(classDecl.id.name,
           method.signature,

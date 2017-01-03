@@ -124,9 +124,9 @@ trait Collection<T>: Iterable<T> {
     * A collection, containing the the elements 1, 2 and 3 yields:
     * [ 1, 2, 3 ]
     *
-    * @return          a string representation of this list
+    * @return          a string representation of this collection
     */
-	Def toString(): String = "[ " + MakeString(", ") + " ]"
+	Def toString(): String = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
     //------------------------------------------------------------
     // Operators

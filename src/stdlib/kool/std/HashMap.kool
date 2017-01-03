@@ -109,9 +109,11 @@ class HashMap<K, V>: Map<K, V> {
         true
     }
 
-	Def Iterator(): Iterator<MapEntry<K, V>> = new EntryIterator<K, V>(entries, this)
-	Def Keys():     Iterator<K>              = new KeyIterator<K, V>(entries, this)
-	Def Values():   Iterator<V>              = new ValueIterator<K, V>(entries, this)
+	Def Iterator() = new EntryIterator<K, V>(entries, this)
+	Def Keys()     = new KeyIterator<K, V>(entries, this)
+	Def Values()   = new ValueIterator<K, V>(entries, this)
+
+    Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
 	def init(initialCapacity: Int, loadFactor: Double) = {
 	    if(initialCapacity % 2 == 0)
@@ -197,6 +199,8 @@ class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> {
     Def ==(lhs: HashMapEntry<K, V>, rhs: HashMapEntry<K, V>) =
 		lhs.key == rhs.key &&
 	    lhs.value == rhs.value
+
+	Def toString() = "(" + key + " -> " + value + ")"
 
 	def init(key: K, value: V, hash: Int) = {
 		this.key = key

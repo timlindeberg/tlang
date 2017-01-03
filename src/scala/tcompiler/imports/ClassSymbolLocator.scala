@@ -91,17 +91,17 @@ object ClassSymbolLocator {
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
-    val isExtensionMethod = meth.getAnnotationEntries.exists(a => a.getAnnotationType == Main.TExtensionAnnotation)
 
     var modifiers = convertModifiers(meth)
-
-    if (isExtensionMethod)
-      modifiers -= Static() // Remove the added static modifier
 
     val name = meth.getName match {
       case "<init>" => "new"
       case name     => name
     }
+
+    val isExtensionMethod = meth.getAnnotationEntries.exists(_.getAnnotationType == Main.TExtensionAnnotation)
+    if (isExtensionMethod)
+      modifiers -= Static() // Remove the added static modifier
 
     val symbol = name.head match {
       case '$' =>
@@ -112,8 +112,8 @@ object ClassSymbolLocator {
 
     symbol.setType(convertType(meth.getReturnType))
 
-    var args = meth.getArgumentTypes.zipWithIndex.map {
-      case (tpe, i) => convertArgument(tpe, s"arg$i")
+    var args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) =>
+      convertArgument(tpe, s"arg$i")
     }.toList
 
     if (isExtensionMethod)

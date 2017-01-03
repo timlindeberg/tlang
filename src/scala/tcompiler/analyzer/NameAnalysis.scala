@@ -575,12 +575,6 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       }
     }
 
-    val nonAbstractParents = parents.filter(!_.getSymbol.isAbstract)
-    if (!classDecl.isAbstract && nonAbstractParents.isEmpty) {
-      val defaultParent = ClassID(Main.JavaObject).setSymbol(Types.ObjectSymbol)
-      val abstractParents = parents.filter(_.getSymbol.isAbstract)
-      classDecl.parents = defaultParent :: abstractParents
-    }
     classDecl.getSymbol.parents = classDecl.parents.map(_.getSymbol)
   }
 }

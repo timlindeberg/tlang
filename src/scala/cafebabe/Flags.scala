@@ -26,4 +26,6 @@ object Flags {
   val METHOD_ACC_NATIVE : U2       = 0x0100
   val METHOD_ACC_ABSTRACT : U2     = 0x0400
   val METHOD_ACC_STRICT : U2       = 0x0800
+  val METHOD_ACC_BRIDGE : U2       = 0x0040
+  val METHOD_ACC_SYNTHETIC : U2    = 0x1000
 }

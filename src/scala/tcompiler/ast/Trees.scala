@@ -169,7 +169,7 @@ object Trees {
 
     def isAbstract: Boolean
 
-    def implementedTraits = parents.filter(_.getSymbol.isAbstract)
+    def traits = parents.filter(_.getSymbol.isAbstract)
   }
 
   case class ClassDecl(id: ClassID,
