@@ -2,7 +2,7 @@
 crossPaths := false
 
 lazy val commonSettings = Seq(
-	scalaVersion := "2.11.8",
+	scalaVersion := "2.12.1",
 	organization := "com.tcompiler",
 	version := "1.0"
 )
@@ -19,16 +19,14 @@ lazy val core = (project in file(".")).
 	settings(
 		name := "T Compiler",
 		libraryDependencies ++= Seq(
-			"com.novocode" % "junit-interface" % "0.8" % "test->default",
-			"org.scalatest" %% "scalatest" % "2.2.6" % "test",
-			"junit" % "junit" % "4.11" % "test",
+			"org.scalatest" %% "scalatest" % "3.0.1" % "test",
 			"com.google.code.findbugs" % "bcel-findbugs" % "6.0",
 			"org.apache.commons" % "commons-lang3" % "3.4",
-			"org.scala-lang" % "scala-compiler" % "2.11.8",
-			"org.backuity" %% "ansi-interpolator" % "1.1" % "provided",
+			"org.scala-lang" % "scala-compiler" % scalaVersion.value,
 			"org.ow2.asm" % "asm-all" % "5.1",
-			"org.graphstream" % "gs-core" % "1.1.1"
-		),
+			"org.graphstream" % "gs-core" % "1.1.1",
+			"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
+),
 
 		scalaSource in Compile := baseDirectory.value / "src/scala",
 		scalaSource in Test := baseDirectory.value / "test/scala",
