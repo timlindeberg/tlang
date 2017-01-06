@@ -34,8 +34,8 @@ object TestUtils extends FlatSpec {
     val (files, outDir) = file match {
       case Some(f) =>
         val mainName = f.getName.replaceAll(Main.FileEnding, "")
-        (List(f), Some(getOutDir(mainName)))
-      case None => (Nil, None)
+        (List(f), getOutDir(mainName))
+      case None => (Nil, new File("."))
     }
 
     val reporter = new Reporter()

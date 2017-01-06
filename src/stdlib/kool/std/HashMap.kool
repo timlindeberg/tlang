@@ -194,7 +194,7 @@ class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> {
     Def SetKey(key: K) = (this.key = key)
     Def SetValue(value: V) = (this.value = value)
 
-	Def Iterator(): Iterator<HashMapEntry<K, V>> = new EntryListIterator<K, V>(this)
+	Def Iterator() = new EntryListIterator<K, V>(this)
 
     Def ==(lhs: HashMapEntry<K, V>, rhs: HashMapEntry<K, V>) =
 		lhs.key == rhs.key &&
@@ -236,10 +236,9 @@ class KeyIterator<K, V>: Iterator<K> {
 	var it: EntryIterator<K, V>
 
 	Def new(entries: HashMapEntry<K, V>?[], map: HashMap<K, V>) =
-		it = new EntryIterator<K, V>(entries, map)
+	    it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
-
 	Def Next() = it.Next().Key()
 
 }
@@ -252,7 +251,6 @@ class ValueIterator<K, V>: Iterator<V> {
 		it = new EntryIterator<K, V>(entries, map)
 
 	Def HasNext() = it.HasNext()
-
 	Def Next() = it.Next().Value()
 
 }
@@ -278,7 +276,7 @@ class EntryIterator<K, V>: Iterator<MapEntry<K, V>> {
 		val res = currentEntry!!
 		currentEntry = nextEntry()
 		hasNext = currentEntry != null
-		return res
+		res
 	}
 
 	def nextEntry() = {

@@ -5,7 +5,7 @@
  */
 
 object TestMain {
-  def main(args: Array[String]): Unit = {println(new Lol())}
+  //def main(args: Array[String]): Unit = {println(new Lol())}
 
 
 

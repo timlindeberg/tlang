@@ -12,10 +12,8 @@ RemoveIndex()
 IndexOf()
 Contains()
 ToArray()
-// TODO:
-// Equals()
-// MakeString()
-Hash()
+Equals()
+MakeString()
 Foreach()
 Nodes()
 
@@ -275,13 +273,6 @@ Def Equals() = {
 
     t.AssertTrue(v1 != v4)
     t.AssertTrue(v4 != v1)
-}
-
-Def Hash() = {
-    val t = new Tester<Int>()
-
-    val v: LinkedList<Int> = { 1, 2, 2, 4, 5, 1 }
-    t.AssertEquals(#v, 21685669)
 }
 
 Def Foreach() = {

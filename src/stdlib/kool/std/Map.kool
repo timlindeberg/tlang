@@ -28,7 +28,7 @@ trait Map<K, V>: Collection<MapEntry<K, V>> {
 
     Def Contains(key: K): Bool = Get(key) != null
     Def ContainsValue(value: V): Bool = {
-        for(var e in this)
+        for(val e in this)
             if(e.Value() == value)
                 return true
         false

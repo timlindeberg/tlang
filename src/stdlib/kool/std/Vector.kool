@@ -85,6 +85,8 @@ class Vector<T>: List<T> {
 		size--
 	}
 
+    Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
+
     /**
     * Increases the size of the underlying storage.
     */

@@ -23,8 +23,12 @@ trait ImportErrors extends Errors {
   protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned) =
     error(1, s"Imports '$imp1' and '$imp2' are conflicting.", pos)
 
-  protected def ErrorCantResolveExtensionsImport(imp: ExtensionImport, pos: Positioned) = {
+  protected def ErrorCantResolveExtensionImport(imp: ExtensionImport, pos: Positioned) = {
     error(2, s"Cannot resolve extension import '$imp'.", pos)
+  }
+
+  protected def ErrorDefaultImportDoesntExist(ignoredImport: String, pos: Positioned) = {
+    error(3, s"There is no default import called '$ignoredImport'.", pos)
   }
 
 
@@ -34,6 +38,5 @@ trait ImportErrors extends Errors {
 
   protected def WarningNoGenerics(fileName: String, pos: Positioned) =
     warning(0, s"Generic import '$fileName' did not contain any generic classes.", pos)
-
 
 }

@@ -2,9 +2,9 @@ import kool::std::HashMap
 import kool::std::Tester
 import kool::std::MapEntry
 
-ImplicitArrayConstructor()
 IntMap()
 StringMap()
+ImplicitArrayConstructor()
 LargeMap()
 InitialCapacity()
 ToStringTest()
@@ -15,8 +15,37 @@ Iterators()
 Equals()
 Remove()
 AddAll()
+Foreach()
 
-println("All tests succeded.") // res: All tests succeded.
+println("All tests succeeded.") // res: All tests succeeded.
+
+Def IntMap() = {
+    val t = new Tester<Int>()
+    val map = new HashMap<Int, Int>()
+    map[1] = 2
+    t.AssertEquals(map[1], 2)
+    t.AssertEquals(map.Size(), 1)
+    map[1] = 3
+    t.AssertEquals(map[1], 3)
+    t.AssertEquals(map.Size(), 1)
+    map[5] = 5
+    t.AssertEquals(map[5], 5)
+    t.AssertEquals(map.Size(), 2)
+}
+
+Def StringMap() = {
+    val t = new Tester<Int>()
+    val map = new HashMap<String, Int>()
+    map["1"] = 2
+    t.AssertEquals(map["1"], 2)
+    t.AssertEquals(map.Size(), 1)
+    map["1"] = 3
+    t.AssertEquals(map["1"], 3)
+    t.AssertEquals(map.Size(), 1)
+    map["5"] = 5
+    t.AssertEquals(map["5"], 5)
+    t.AssertEquals(map.Size(), 2)
+}
 
 Def ImplicitArrayConstructor() = {
     val ti = new Tester<Int>()
@@ -46,34 +75,6 @@ Def ImplicitArrayConstructor() = {
     ts.AssertEquals(map2[3], 3)
     ts.AssertEquals(map2[4], 4)
 */
-}
-
-Def IntMap() = {
-    val t = new Tester<Int>()
-    val map = new HashMap<Int, Int>()
-    map[1] = 2
-    t.AssertEquals(map[1], 2)
-    t.AssertEquals(map.Size(), 1)
-    map[1] = 3
-    t.AssertEquals(map[1], 3)
-    t.AssertEquals(map.Size(), 1)
-    map[5] = 5
-    t.AssertEquals(map[5], 5)
-    t.AssertEquals(map.Size(), 2)
-}
-
-Def StringMap() = {
-    val t = new Tester<Int>()
-    val map = new HashMap<String, Int>()
-    map["1"] = 2
-    t.AssertEquals(map["1"], 2)
-    t.AssertEquals(map.Size(), 1)
-    map["1"] = 3
-    t.AssertEquals(map["1"], 3)
-    t.AssertEquals(map.Size(), 1)
-    map["5"] = 5
-    t.AssertEquals(map["5"], 5)
-    t.AssertEquals(map.Size(), 2)
 }
 
 Def LargeMap() = {
@@ -314,6 +315,23 @@ Def AddAll() = {
     map2.AddAll(map1)
 
     t.Assert(map1 == map2)
+}
+
+Def Foreach() = {
+    val t = new Tester<Int>()
+    val map: HashMap<Int, Int> = new HashMap<Int, Int>()
+
+    map[1] = 2
+    map[2] = 3
+    map[3] = 4
+    map[4] = 5
+
+    var i = 1
+    for(val kv in map) {
+        t.AssertEquals(kv.Key(), i)
+        t.AssertEquals(kv.Value(), i + 1)
+        i++
+    }
 }
 
 def testCapacity(given: Int, expected: Int) = {

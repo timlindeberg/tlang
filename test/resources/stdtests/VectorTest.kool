@@ -12,13 +12,11 @@ RemoveIndex()
 IndexOf()
 Contains()
 ToArray()
-// TODO:
-// Equals()
-// MakeString()
-Hash()
+Equals()
+MakeString()
 Foreach()
 
-println("All tests succeded.") // res: All tests succeded.
+println("All tests succeeded.") // res: All tests succeeded.
 
 Def Construction() = {
     val t = new Tester<Int>()
@@ -252,7 +250,7 @@ Def ToArray() = {
 Def MakeString() = {
     val t = new Tester<String>()
     val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
-    t.AssertEquals(v.MakeString(", "), "1, 2, 2, 4, 5, 1")
+    t.AssertEquals(v.MakeString(" + "), "1 + 2 + 2 + 4 + 5 + 1")
     t.AssertEquals(v.toString(), "[ 1, 2, 2, 4, 5, 1 ]")
 }
 
@@ -283,13 +281,6 @@ Def Equals() = {
 
     t.AssertTrue(v1 != v4)
     t.AssertTrue(v4 != v1)
-}
-
-Def Hash() = {
-    val t = new Tester<Int>()
-
-    val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
-    t.AssertEquals(#v, 21685669)
 }
 
 Def Foreach() = {

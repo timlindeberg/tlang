@@ -298,9 +298,14 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
     flags
   }
 
-  private def getFilePath(outDir: Option[File], className: String): String = {
-    val prefix = outDir.map(_.getAbsolutePath.replaceAll("\\\\", "/") + "/").getOrElse("")
+  private def getFilePath(outDir: File, className: String): String = {
+    var prefix = outDir.getAbsolutePath.replaceAll("\\\\", "/")
 
+    // Weird Windows behaviour
+    if(prefix.endsWith("."))
+      prefix = prefix.dropRight(1)
+
+    prefix += "/"
     val split = className.split("/")
     val packageDir = split.dropRight(1).mkString("/")
     val filePath = prefix + packageDir

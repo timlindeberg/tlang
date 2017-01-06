@@ -145,4 +145,19 @@ trait List<T>: Collection<T> {
     */
 	Def []=(index: Int, value: T) = Set(index, value)
 
+    Def ==(lhs: List<T>, rhs: List<T>): Bool = {
+        if(lhs.Size() != rhs.Size())
+            return false
+
+        val lhsIt = lhs.Iterator()
+        val rhsIt = rhs.Iterator()
+        while(lhsIt.HasNext())
+            if(lhsIt.Next() != rhsIt.Next())
+                return false
+
+        return true
+    }
+
+    Def !=(lhs: List<T>, rhs: List<T>): Bool = !(lhs == rhs)
+
 }

@@ -8,17 +8,21 @@ import tcompiler.imports.ClassSymbolLocator
 
 import scala.collection.mutable
 
-case class Context(reporter: Reporter,
-                   files: List[File],
-                   classPaths: List[String] = Nil,
-                   outDir: Option[File] = None,
-                   printCodeStage: Option[String] = None,
-                   useColor: Boolean = false,
-                   printInfo: Boolean = false
-                  ) {
+case class Context(
+
+  reporter: Reporter,
+  files: List[File],
+  classPaths: List[String] = Nil,
+  outDir: File = new File("."),
+  printCodeStage: Option[String] = None,
+  useColor: Boolean = false,
+  printInfo: Boolean = false,
+  ignoredImports: List[String] = List()
+
+) {
 
   private val JavaClassPath = "java.class.path"
-  val executionTimes = mutable.Map[Pipeline[_,_], Double]()
+  val executionTimes = mutable.Map[Pipeline[_, _], Double]()
 
   def getClassPaths = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
 

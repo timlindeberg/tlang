@@ -80,6 +80,21 @@ extension java::lang::String {
     // Wrappers for java.lang.String methods to enable capital letters
     //----------------------------------------------------------------
 
+   /* Def Capitalize() = {
+        if(length() == 0 || this[0].IsUpper())
+            return this
+        this[0].ToUpper() + substring(1)
+    }
+    */
+
+
+    Def Capitalize() = {
+        if(length() == 0 || java::lang::Character.isUpperCase(charAt(0)))
+            return this
+
+        java::lang::Character.toUpperCase(charAt(0)) + substring(1)
+    }
+
     Def CharAt(index: Int) = charAt(index)
     Def CodePointAt(index: Int) = codePointAt(index)
     Def CodePointBefore(index: Int) = codePointBefore(index)
@@ -98,14 +113,14 @@ extension java::lang::String {
     //Def GetBytes(charsetName: String) = getBytes(charsetName)
     Def GetChars(srcBegin: Int, srcEnd: Int, dst: Char[], dstBegin: Int) = getChars(srcBegin, srcEnd, dst, dstBegin)
 
-    Def IndexOf(c: Char)                                 = indexOf(c as Int)
-    Def IndexOf(c: Char, fromIndex: Int)                 = indexOf(c as Int, fromIndex)
-    Def IndexOf(str: String)                 = indexOf(str)
-    Def IndexOf(str: String, fromIndex: Int) = indexOf(str, fromIndex)
+    Def IndexOf(c: Char)                         = indexOf(c as Int)
+    Def IndexOf(c: Char, fromIndex: Int)         = indexOf(c as Int, fromIndex)
+    Def IndexOf(str: String)                     = indexOf(str)
+    Def IndexOf(str: String, fromIndex: Int)     = indexOf(str, fromIndex)
 
-    Def LastIndexOf(c: Char)                 = lastIndexOf(c as Int)
-    Def LastIndexOf(c: Char, fromIndex: Int) = lastIndexOf(c as Int, fromIndex)
-    Def LastIndexOf(str: String) = lastIndexOf(str)
+    Def LastIndexOf(c: Char)                     = lastIndexOf(c as Int)
+    Def LastIndexOf(c: Char, fromIndex: Int)     = lastIndexOf(c as Int, fromIndex)
+    Def LastIndexOf(str: String)                 = lastIndexOf(str)
     Def LastIndexOf(str: String, fromIndex: Int) = lastIndexOf(str, fromIndex)
 
     Def Matches(regex: String) = matches(regex)

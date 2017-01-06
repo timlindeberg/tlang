@@ -125,6 +125,8 @@ class LinkedList<T> : List<T> {
 	Def FirstNode() = first
 	Def LastNode() = last
 
+    Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
+
 	def find(index: Int) = {
         var tmp: LinkedListNode<T>?
 		if(index < (size / 2) + 1) {

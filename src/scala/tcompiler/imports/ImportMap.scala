@@ -2,8 +2,8 @@ package tcompiler.imports
 
 import tcompiler.analyzer.Symbols.ExtensionClassSymbol
 import tcompiler.ast.Trees._
-import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
+import tcompiler.utils.{Context, NoPosition}
 
 import scala.collection.mutable
 
@@ -23,7 +23,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
-  private val koolLang = List("kool", "lang")
+  private val koolLang   = List("kool", "lang")
 
   private val DefaultImports = List[Import](
     RegularImport(javaObject),
@@ -37,10 +37,18 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     this(ctx)
     this.imports = imports
 
-    DefaultImports ++ imports foreach addImport
+    val ignoredImports = ctx.ignoredImports
+
+    val defaultImportNames = DefaultImports.map(_.writtenName)
+    ignoredImports
+      .filter(!defaultImportNames.contains(_))
+      .foreach(ErrorDefaultImportDoesntExist(_, NoPosition))
+
+    val defaultImports = DefaultImports.filter(imp => !ctx.ignoredImports.contains(imp.writtenName))
+    defaultImports ++ imports foreach addImport
 
     val packName = pack.name
-    if (packName.nonEmpty){
+    if (packName.nonEmpty) {
       classes.filterNotType[ExtensionDecl] foreach { c =>
         val className = c.id.name
         addImport(className, s"$packName.$className")
@@ -61,16 +69,14 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
       else
         addImport(shortName, fullName)
     case extensionImport: ExtensionImport =>
-      ClassSymbolLocator.findExtensionSymbol(extensionImport.fullName) match {
-        case Some(e) => extensionSymbols ::= e
-        case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
-      }
-    case wildCardImport: WildCardImport => ??? // TODO: Support wild card imports.
+      val sym = ClassSymbolLocator.findExtensionSymbol(extensionImport.name)
+      extensionSymbols ::= sym.getOrElse(ErrorCantResolveExtensionImport(extensionImport, extensionImport))
+    case wildCardImport: WildCardImport   => ??? // TODO: Support wild card imports.
   }
 
   def getExtensionClasses(className: String) =
     extensionSymbols.filter { extSym =>
-        extSym.name.replaceAll(""".*\$EX\/""", "") == className
+      extSym.name.replaceAll(""".*\$EX\/""", "") == className
     }
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol) = extensionSymbols ::= extensionClassSymbol

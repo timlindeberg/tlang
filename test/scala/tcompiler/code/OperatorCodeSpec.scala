@@ -32,9 +32,9 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
   val Rand          = new Random()
-  val TestCtx       = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = Some(testFolderFile))
+  val TestCtx       = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = testFolderFile)
   val TestImportMap = new ImportMap(TestCtx)
-  val TypeCheckCtx  = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDir = None)
+  val TypeCheckCtx  = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile))
   val ClassSymbol   = new ClassSymbol("obj", false)
   val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)

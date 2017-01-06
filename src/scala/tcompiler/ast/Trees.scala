@@ -149,9 +149,14 @@ object Trees {
   case class WildCardImport(address: List[String]) extends Import
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 
-    def fullName = {
+    override def name = {
       ((address :+ ExtensionDecl.seperator) ::: className).mkString(".")
     }
+
+    override def writtenName = {
+      ((address :+ "extension") ::: className).mkString("::")
+    }
+
   }
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/

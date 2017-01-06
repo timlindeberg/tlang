@@ -44,9 +44,7 @@ object Main extends MainErrors with Colored {
     CodeGeneration
   )
 
-  // This has to be lazy because of some weird macro behaviour
-  private lazy val AllFlags: Set[Flag] = EnumerationMacros.sealedInstancesOf[Flag]
-  private      val flagActive          = mutable.Map() ++ AllFlags.map(f => (f.flag, false))
+  private val flagActive = mutable.Map() ++ Flag.AllFlags.map((_, false))
 
   def main(args: Array[String]) {
     try {
@@ -84,38 +82,42 @@ object Main extends MainErrors with Colored {
     var classPaths: List[String] = Nil
     var maxErrors = MaxErrors.DefaultMax
     var printStage: Option[String] = None
+    var ignoredImports: List[String] = List()
 
     def processOption(args: List[String]): Unit = args match {
-      case Directory.flag :: out :: args                         =>
+      case Directory() :: out :: rest =>
         outDir = Some(out)
-        processOption(args)
-      case ClassPath.flag :: dir :: args                         =>
+        processOption(rest)
+      case ClassPath() :: dir :: rest =>
         classPaths ::= dir
-        processOption(args)
-      case MaxErrors.flag :: num :: args                         =>
+        processOption(rest)
+      case MaxErrors() :: num :: rest =>
         maxErrors = parseNumber(num, FatalInvalidMaxErrors)
-        processOption(args)
-      case Version.flag :: _                                     =>
+        processOption(rest)
+      case Version() :: _             =>
         printVersion()
         sys.exit
-      case Help.flag :: arg                                      =>
+      case Help() :: arg              =>
         printHelp(arg)
         sys.exit
-      case PrintCode.flag :: arg :: args                         =>
+      case PrintCode() :: arg :: rest =>
         val s = arg.toLowerCase
-        val (stage, rest) = if (isValidStage(s))
-          (s, args)
+        val (stage, newRest) = if (isValidStage(s))
+          (s, rest)
         else
-          (Desugaring.stageName, arg :: args)
+          (Desugaring.stageName, arg :: rest)
         printStage = Some(stage)
+        processOption(newRest)
+      case IgnoreDefaultImports():: arg:: rest =>
+        ignoredImports ::= arg
         processOption(rest)
-      case flag :: args if flagActive.contains(flag.toLowerCase) =>
-        flagActive(flag.toLowerCase) = true
-        processOption(args)
-      case filePath :: args                                      =>
+      case Flag(flag) :: rest         =>
+        flagActive(flag) = true
+        processOption(rest)
+      case filePath :: rest           =>
         files :::= getFiles(filePath)
-        processOption(args)
-      case Nil                                                   =>
+        processOption(rest)
+      case Nil                        =>
     }
 
     if (args.isEmpty) {
@@ -123,7 +125,7 @@ object Main extends MainErrors with Colored {
       sys.exit
     }
 
-    processOption(lowerCaseArgs(args))
+    processOption(args.toList)
 
     if (files.isEmpty)
       FatalNoFilesGiven()
@@ -133,13 +135,10 @@ object Main extends MainErrors with Colored {
 
     checkValidClassPaths(classPaths)
 
-    val dir = outDir match {
-      case Some(dir) =>
-        if (!isValidPath(dir))
-          FatalInvalidOutputDirectory(dir)
-        Some(new File(dir))
-      case None      => None
-    }
+    val dir = outDir.orElse(Some("."))
+      .filter(isValidPath)
+      .map(new File(_))
+      .getOrElse(FatalInvalidOutputDirectory(outDir.get))
 
     if (!sys.env.contains(THome))
       FatalCantFindTHome(THome)
@@ -149,8 +148,14 @@ object Main extends MainErrors with Colored {
       !flagActive(NoColor),
       maxErrors)
 
-    val cp = TDirectory :: classPaths
-    Context(reporter, files, cp, dir, printStage, !flagActive(NoColor), flagActive(PrintInfo))
+    Context(reporter = reporter,
+      files = files,
+      classPaths = TDirectory :: classPaths,
+      outDir = dir,
+      printCodeStage = printStage,
+      useColor = !flagActive(NoColor),
+      printInfo = flagActive(PrintInfo),
+      ignoredImports = ignoredImports)
   }
 
   private def getFiles(path: String): List[File] = {
@@ -177,11 +182,11 @@ object Main extends MainErrors with Colored {
     val numFiles = ctx.files.size
     val files = ctx.files.map { f =>
       val name = f.getName.dropRight(Main.FileEnding.length)
-      val full = s"${Magenta(name) }${Main.FileEnding }"
+      val full = s"${Magenta(name)}${Main.FileEnding}"
       s"   <$full>"
     }.mkString("\n")
     val msg =
-      s"""|${Bold("Compiling") } ${Magenta(numFiles) } ${Bold("file(s)") }:
+      s"""|${Bold("Compiling")} ${Magenta(numFiles)} ${Bold("file(s)")}:
           |$files
           |""".stripMargin
     println(msg)
@@ -208,18 +213,7 @@ object Main extends MainErrors with Colored {
       case e: InvalidPathException =>
         return false
     }
-    val f = new File(path)
-    if (f.isFile)
-      return false
-
-    if (!f.exists()) {
-      val canCreate = f.mkdirs()
-      // TODO: delete doesn't delete parent directories
-      f.delete()
-      if (canCreate)
-        return false
-    }
-    true
+    !new File(path).isFile
   }
 
   private def printExecutionTimes() = {
@@ -231,7 +225,7 @@ object Main extends MainErrors with Colored {
       f"   $name%-25s $t seconds"
     }.mkString("\n")
     val msg =
-      f"""|${Bold("Compilation executed") } ${Green("successfully") } ${Bold("in") } $Green$totalTime%.2f$Reset ${Bold("seconds.") }
+      f"""|${Bold("Compilation executed")} ${Green("successfully")} ${Bold("in")} $Green$totalTime%.2f$Reset ${Bold("seconds.")}
           |Execution time for individual stages:
           |$individualTimes
           |""".stripMargin
@@ -243,21 +237,19 @@ object Main extends MainErrors with Colored {
   private def printHelp(arg: List[String] = Nil) = {
     val helpMessage = arg match {
       case "stages" :: _ =>
-        val stages = CompilerStages.map(stage => s"   <${stage.stageName.capitalize }>").mkString("\n")
+        val stages = CompilerStages.map(stage => s"   <${stage.stageName.capitalize}>").mkString("\n")
         s"""|The compiler stages are executed in the following order:
             |$stages
             |""".stripMargin
       case _             =>
-        val flags = AllFlags.map(_.format).mkString
+        val flags = Flag.AllFlags.map(_.format(useColor)).mkString
         s"""|Usage: tcomp <options> <source files>
             |Options:
             |
             |$flags
             |""".stripMargin
     }
-    var s = """\<(.+?)\>""".r.replaceAllIn(helpMessage, m => s"<${Blue(m.group(1)) }>")
-    s = "-(.+?) ".r.replaceAllIn(s, m => s"-${Magenta(m.group(1)) } ")
-    print(s)
+    print(helpMessage)
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {
@@ -287,19 +279,16 @@ object Main extends MainErrors with Colored {
     if (!containsMainMethod(cu))
       return
 
-    val cp = ctx.outDir match {
-      case Some(dir) => s"-cp ${dir.getPath }"
-      case _         => ""
-    }
+    val cp = s"-cp ${ctx.outDir.getPath}"
     val mainName = cu.file.getName.dropRight(FileEnding.length)
     val execCommand = s"java $cp $mainName"
     val seperator = Blue("----------------------------------------")
 
     print(
-      s"""Executing main program ${Magenta(mainName) }:
-         |$seperator
-         |${execCommand!! }
-         |$seperator
+      s"""Executing main program ${Magenta(mainName)}:
+          |$seperator
+          |${execCommand !!}
+          |$seperator
        """.stripMargin)
   }
 

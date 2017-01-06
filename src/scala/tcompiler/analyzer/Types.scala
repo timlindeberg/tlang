@@ -267,7 +267,7 @@ object Types {
         m.name == "new" &&
           m.modifiers.contains(Implicit()) &&
           m.argList.size == 1)
-
+"".capitalize
       implicitConstructors.map(_.argList.head.getType)
     }
 

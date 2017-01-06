@@ -82,6 +82,13 @@ println(s[5]) // res: g
 println(#empty) // res: 0
 println(#s) // res: -1808118735
 
+// Capitalize
+println("test".Capitalize()) // res: Test
+println("tEST".Capitalize()) // res: TEST
+println("TEST".Capitalize()) // res: TEST
+println("TEST".Capitalize()) // res: TEST
+println("Test".Capitalize()) // res: Test
+
 // CharAt
 println(s.CharAt(0)) // res: S
 println(s.CharAt(1)) // res: t
@@ -211,6 +218,7 @@ println(String.ValueOf(5)) // res: 5
 println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(new A())) // res: ObjectA
+
 
 class A {
     Def toString() = "ObjectA"

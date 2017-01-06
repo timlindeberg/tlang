@@ -134,7 +134,9 @@ trait Collection<T>: Iterable<T> {
 
     /**
     * Returns true if the collections contain the same amount of elements
-    * and each element of 'lhs' is contained within 'rhs'.
+    * and each element of 'lhs' is contained within 'rhs' and each element
+    * of 'rhs' contained in 'lhs'.
+    *
     * @param lhs the lefthand side of the comparison
     * @param rhs the righthand side of the comparison
     * @return    true if the collections are equal; false otherwise
@@ -143,7 +145,7 @@ trait Collection<T>: Iterable<T> {
 		if(lhs.Size() != rhs.Size())
 			return false
 
-        lhs.ContainsAll(rhs)
+        lhs.ContainsAll(rhs) && rhs.ContainsAll(lhs)
 	}
 
     /**

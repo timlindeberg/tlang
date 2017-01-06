@@ -131,8 +131,8 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorInstantiateTrait(treit: String, pos: Positioned) =
     error(24, s"Cannot instantiate trait '$treit'.", pos)
 
-  protected def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, tr: String, pos: Positioned) =
-    error(25, s"Class '$clazz' does not implement method '$method' from trait '$tr'.", pos)
+  protected def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, treit: String, pos: Positioned) =
+    error(25, s"Class '$clazz' does not implement method '$method' from trait '$treit'.", pos)
 
   protected def ErrorUnimplementedOperatorFromTrait(clazz: String, operator: String, tr: String, pos: Positioned) =
     error(26, s"Class '$clazz' does not implement operator '$operator' from trait '$tr'.", pos)
