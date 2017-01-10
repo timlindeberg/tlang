@@ -1,0 +1,7 @@
+package kool::lang
+
+import java::lang::Integer
+
+extension Int {
+
+}
