@@ -13,6 +13,7 @@ import tcompiler.utils._
 
 import scala.collection.mutable
 import scala.sys.process._
+import scala.meta._
 
 object Main extends MainErrors with Colored {
 
@@ -49,7 +50,16 @@ object Main extends MainErrors with Colored {
   def main(args: Array[String]) {
     try {
       ctx = processOptions(args)
-
+      val methName = Term.Name("Lol")
+      val a0 = scala.collection.immutable.Seq(Term.Name("a0"), Term.Name("a1"), Term.Name("a2"), Term.Name("a3"))
+      val b = a0.map(name => p"$name")
+      var t = q"""
+       override def $methName(tree: Tree) = tree match {
+         case t @ $methName(..$a0) if true => t
+         case _ => super.$methName(tree)
+       }
+      """
+      println(t.syntax)
       val tDir = sys.env(THome)
       println(tDir)
       if (!isValidTHomeDirectory(tDir))

@@ -214,7 +214,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
               new TemplateClassGenerator(templateCU).generateClass(newId)
 
             templateMap.get(newId) match {
-              case Some(replacement) => replacement.copyAttrs(classId)
+              case Some(replacement) => replacement.copyAttributes(classId)
               case None              => newId
             }
           case _                                             => super.transform(t)

@@ -12,7 +12,7 @@ object EnumerationMacros {
 
   def sealedInstancesOf[A]: Set[A] = macro sealedInstancesOf_impl[A]
 
-  private def sealedInstancesOf_impl[A: c.WeakTypeTag](c: Context): c.Expr[Set[A]] = {
+  def sealedInstancesOf_impl[A: c.WeakTypeTag](c: Context): c.Expr[Set[A]] = {
     import c.universe._
 
     def getSymbol(sym: c.universe.Symbol) =

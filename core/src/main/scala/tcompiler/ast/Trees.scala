@@ -8,6 +8,7 @@ import tcompiler.imports.ImportMap
 import tcompiler.utils._
 import tcompiler.utils.Extensions._
 
+@GenTreeCopier
 object Trees {
 
   trait Tree extends Positioned with Product {
@@ -34,12 +35,6 @@ object Trees {
       traverser.result
     }
 
-    def copyTree(): this.type = {
-      val copy = new TreeTransformer {
-        override val treeCopy = new TreeCopier
-      }
-      copy(this)
-    }
 
     def forAll(p: Tree => Boolean): Boolean = {
       val traverser = new TreeTraverser {
@@ -65,7 +60,7 @@ object Trees {
 
     def exists(p: Tree => Boolean): Boolean = find(p).isDefined
 
-    def copyAttrs(t: Tree): this.type = {
+    def copyAttributes(t: Tree): this.type = {
       setPos(t)
       copySymbolTrees(this, t)
 

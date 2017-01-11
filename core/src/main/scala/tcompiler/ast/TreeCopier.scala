@@ -9,245 +9,245 @@ import tcompiler.imports.ImportMap
 
 class TreeCopier {
   def CompilationUnit(t: Tree, pack: Package, classes: List[ClassDeclTree], importMap: ImportMap) =
-    new CompilationUnit(pack, classes, importMap).copyAttrs(t)
+    new CompilationUnit(pack, classes, importMap).copyAttributes(t)
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
   def Package(t: Tree, adress: List[String]) =
-    new Package(adress).copyAttrs(t)
+    new Package(adress).copyAttributes(t)
   def RegularImport(t: Tree, adress: List[String]) =
-    new RegularImport(adress).copyAttrs(t)
+    new RegularImport(adress).copyAttributes(t)
   def WildCardImport(t: Tree, adress: List[String]) =
-    new WildCardImport(adress).copyAttrs(t)
+    new WildCardImport(adress).copyAttributes(t)
 
   /*-------------------------------- Class Declaration Trees --------------------------------*/
 
   def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) =
-    new ClassDecl(id, parents, fields, methods).copyAttrs(t)
+    new ClassDecl(id, parents, fields, methods).copyAttributes(t)
 
   def TraitDecl(t: Tree, id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]) =
-    new TraitDecl(id, parents, fields, methods).copyAttrs(t)
+    new TraitDecl(id, parents, fields, methods).copyAttributes(t)
 
   def ExtensionDecl(t: Tree, id: ClassID, methods: List[MethodDeclTree]) =
-    new ExtensionDecl(id, methods).copyAttrs(t)
+    new ExtensionDecl(id, methods).copyAttributes(t)
 
   /*-------------------------------- Modifier Trees --------------------------------*/
 
   def Public(t: Tree) =
-    new Public().copyAttrs(t)
+    new Public().copyAttributes(t)
   def Private(t: Tree) =
-    new Private().copyAttrs(t)
+    new Private().copyAttributes(t)
   def Protected(t: Tree) =
-    new Protected().copyAttrs(t)
+    new Protected().copyAttributes(t)
   def Static(t: Tree) =
-    new Static().copyAttrs(t)
+    new Static().copyAttributes(t)
   def Implicit(t: Tree) =
-    new Implicit().copyAttrs(t)
+    new Implicit().copyAttributes(t)
   def Final(t: Tree) =
-    new Final().copyAttrs(t)
+    new Final().copyAttributes(t)
 
   /*-------------------------------- Function Declaration Trees --------------------------------*/
 
   def MethodDecl(t: Tree, retType: Option[TypeTree], id: MethodID, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
-    new MethodDecl(retType, id, args, stat, modifiers).copyAttrs(t)
+    new MethodDecl(retType, id, args, stat, modifiers).copyAttributes(t)
   def ConstructorDecl(t: Tree, retType: Option[TypeTree], id: MethodID, args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
-    new ConstructorDecl(retType, id, args, stat, modifiers).copyAttrs(t)
+    new ConstructorDecl(retType, id, args, stat, modifiers).copyAttributes(t)
   def OperatorDecl(t: Tree, operatorType: OperatorTree, retType: Option[TypeTree], args: List[Formal], stat: Option[StatTree], modifiers: Set[Modifier]) =
-    new OperatorDecl(operatorType, retType, args, stat, modifiers).copyAttrs(t)
+    new OperatorDecl(operatorType, retType, args, stat, modifiers).copyAttributes(t)
   def Formal(t: Tree, tpe: TypeTree, id: VariableID) =
-    new Formal(tpe, id).copyAttrs(t)
+    new Formal(tpe, id).copyAttributes(t)
 
 
   /*-------------------------------- Type Trees --------------------------------*/
 
   def ArrayType(t: Tree, tpe: TypeTree) =
-    new ArrayType(tpe).copyAttrs(t)
+    new ArrayType(tpe).copyAttributes(t)
   def NullableType(t: Tree, tpe: TypeTree) =
-    new NullableType(tpe).copyAttrs(t)
+    new NullableType(tpe).copyAttributes(t)
   def IntType(t: Tree) =
-    new IntType().copyAttrs(t)
+    new IntType().copyAttributes(t)
   def LongType(t: Tree) =
-    new LongType().copyAttrs(t)
+    new LongType().copyAttributes(t)
   def FloatType(t: Tree) =
-    new FloatType().copyAttrs(t)
+    new FloatType().copyAttributes(t)
   def DoubleType(t: Tree) =
-    new DoubleType().copyAttrs(t)
+    new DoubleType().copyAttributes(t)
   def BooleanType(t: Tree) =
-    new BooleanType().copyAttrs(t)
+    new BooleanType().copyAttributes(t)
   def CharType(t: Tree) =
-    new CharType().copyAttrs(t)
+    new CharType().copyAttributes(t)
   def UnitType(t: Tree) =
-    new UnitType().copyAttrs(t)
+    new UnitType().copyAttributes(t)
 
 
   /*-------------------------------- Statement Trees --------------------------------*/
 
   def VarDecl(t: Tree, tpe: Option[TypeTree], id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) =
-    new VarDecl(tpe, id, init, modifiers).copyAttrs(t)
+    new VarDecl(tpe, id, init, modifiers).copyAttributes(t)
   def Block(t: Tree, stats: List[StatTree]) =
-    new Block(stats).copyAttrs(t)
+    new Block(stats).copyAttributes(t)
   def If(t: Tree, condition: ExprTree, thn: StatTree, els: Option[StatTree]) =
-    new If(condition, thn, els).copyAttrs(t)
+    new If(condition, thn, els).copyAttributes(t)
   def While(t: Tree, condition: ExprTree, stat: StatTree) =
-    new While(condition, stat).copyAttrs(t)
+    new While(condition, stat).copyAttributes(t)
   def For(t: Tree, init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) =
-    new For(init, condition, post, stat).copyAttrs(t)
+    new For(init, condition, post, stat).copyAttributes(t)
   def Foreach(t: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree) =
-    new Foreach(varDecl, container, stat).copyAttrs(t)
+    new Foreach(varDecl, container, stat).copyAttributes(t)
   def Error(t: Tree, expr: ExprTree) =
-    new Error(expr).copyAttrs(t)
+    new Error(expr).copyAttributes(t)
   def Return(t: Tree, expr: Option[ExprTree]) =
-    new Return(expr).copyAttrs(t)
+    new Return(expr).copyAttributes(t)
   def Break(t: Tree) =
-    new Break().copyAttrs(t)
+    new Break().copyAttributes(t)
   def Continue(t: Tree) =
-    new Continue().copyAttrs(t)
+    new Continue().copyAttributes(t)
   def Print(t: Tree, expr: ExprTree) =
-    new Print(expr).copyAttrs(t)
+    new Print(expr).copyAttributes(t)
   def Println(t: Tree, expr: ExprTree) =
-    new Println(expr).copyAttrs(t)
+    new Println(expr).copyAttributes(t)
 
   /*-------------------------------- Binary Operator Trees --------------------------------*/
 
 
   def Plus(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Plus(lhs, rhs).copyAttrs(t)
+    new Plus(lhs, rhs).copyAttributes(t)
   def Minus(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Minus(lhs, rhs).copyAttrs(t)
+    new Minus(lhs, rhs).copyAttributes(t)
   def Times(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Times(lhs, rhs).copyAttrs(t)
+    new Times(lhs, rhs).copyAttributes(t)
   def Div(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Div(lhs, rhs).copyAttrs(t)
+    new Div(lhs, rhs).copyAttributes(t)
   def Modulo(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Modulo(lhs, rhs).copyAttrs(t)
+    new Modulo(lhs, rhs).copyAttributes(t)
 
   def And(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new And(lhs, rhs).copyAttrs(t)
+    new And(lhs, rhs).copyAttributes(t)
   def Or(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Or(lhs, rhs).copyAttrs(t)
+    new Or(lhs, rhs).copyAttributes(t)
   def LogicAnd(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LogicAnd(lhs, rhs).copyAttrs(t)
+    new LogicAnd(lhs, rhs).copyAttributes(t)
   def LogicOr(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LogicOr(lhs, rhs).copyAttrs(t)
+    new LogicOr(lhs, rhs).copyAttributes(t)
   def LogicXor(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LogicXor(lhs, rhs).copyAttrs(t)
+    new LogicXor(lhs, rhs).copyAttributes(t)
 
   def LeftShift(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LeftShift(lhs, rhs).copyAttrs(t)
+    new LeftShift(lhs, rhs).copyAttributes(t)
   def RightShift(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new RightShift(lhs, rhs).copyAttrs(t)
+    new RightShift(lhs, rhs).copyAttributes(t)
 
   def LessThan(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LessThan(lhs, rhs).copyAttrs(t)
+    new LessThan(lhs, rhs).copyAttributes(t)
   def LessThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new LessThanEquals(lhs, rhs).copyAttrs(t)
+    new LessThanEquals(lhs, rhs).copyAttributes(t)
   def GreaterThan(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new GreaterThan(lhs, rhs).copyAttrs(t)
+    new GreaterThan(lhs, rhs).copyAttributes(t)
   def GreaterThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new GreaterThanEquals(lhs, rhs).copyAttrs(t)
+    new GreaterThanEquals(lhs, rhs).copyAttributes(t)
 
   def Equals(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new Equals(lhs, rhs).copyAttrs(t)
+    new Equals(lhs, rhs).copyAttributes(t)
   def NotEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) =
-    new NotEquals(lhs, rhs).copyAttrs(t)
+    new NotEquals(lhs, rhs).copyAttributes(t)
 
   /*-------------------------------- Unary Operator Trees --------------------------------*/
 
   def Not(t: Tree, expr: ExprTree) =
-    new Not(expr).copyAttrs(t)
+    new Not(expr).copyAttributes(t)
   def Hash(t: Tree, expr: ExprTree) =
-    new Hash(expr).copyAttrs(t)
+    new Hash(expr).copyAttributes(t)
   def Negation(t: Tree, expr: ExprTree) =
-    new Negation(expr).copyAttrs(t)
+    new Negation(expr).copyAttributes(t)
   def LogicNot(t: Tree, expr: ExprTree) =
-    new LogicNot(expr).copyAttrs(t)
+    new LogicNot(expr).copyAttributes(t)
 
   def PreIncrement(t: Tree, expr: ExprTree) =
-    new PreIncrement(expr).copyAttrs(t)
+    new PreIncrement(expr).copyAttributes(t)
   def PreDecrement(t: Tree, expr: ExprTree) =
-    new PreDecrement(expr).copyAttrs(t)
+    new PreDecrement(expr).copyAttributes(t)
   def PostIncrement(t: Tree, expr: ExprTree) =
-    new PostIncrement(expr).copyAttrs(t)
+    new PostIncrement(expr).copyAttributes(t)
   def PostDecrement(t: Tree, expr: ExprTree) =
-    new PostDecrement(expr).copyAttrs(t)
+    new PostDecrement(expr).copyAttributes(t)
 
   /*-------------------------------- Array Operator Trees --------------------------------*/
 
 
   def ArrayAssign(t: Tree, arr: ExprTree, index: ExprTree, expr: ExprTree) =
-    new ArrayAssign(arr, index, expr).copyAttrs(t)
+    new ArrayAssign(arr, index, expr).copyAttributes(t)
   def ArrayRead(t: Tree, arr: ExprTree, index: ExprTree) =
-    new ArrayRead(arr, index).copyAttrs(t)
+    new ArrayRead(arr, index).copyAttributes(t)
   def ArraySlice(t: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) =
-    new ArraySlice(arr, start, end, step).copyAttrs(t)
+    new ArraySlice(arr, start, end, step).copyAttributes(t)
 
   /*-------------------------------- Literal and Identifer Trees --------------------------------*/
 
   def IntLit(t: Tree, value: Int) =
-    new IntLit(value).copyAttrs(t)
+    new IntLit(value).copyAttributes(t)
   def LongLit(t: Tree, value: Long) =
-    new LongLit(value).copyAttrs(t)
+    new LongLit(value).copyAttributes(t)
   def FloatLit(t: Tree, value: Float) =
-    new FloatLit(value).copyAttrs(t)
+    new FloatLit(value).copyAttributes(t)
   def DoubleLit(t: Tree, value: Double) =
-    new DoubleLit(value).copyAttrs(t)
+    new DoubleLit(value).copyAttributes(t)
   def CharLit(t: Tree, value: Char) =
-    new CharLit(value).copyAttrs(t)
+    new CharLit(value).copyAttributes(t)
   def StringLit(t: Tree, value: String) =
-    new StringLit(value).copyAttrs(t)
+    new StringLit(value).copyAttributes(t)
   def ArrayLit(t: Tree, value: List[ExprTree]) =
-    new ArrayLit(value).copyAttrs(t)
+    new ArrayLit(value).copyAttributes(t)
   def TrueLit(t: Tree) =
-    new TrueLit().copyAttrs(t)
+    new TrueLit().copyAttributes(t)
   def FalseLit(t: Tree) =
-    new FalseLit().copyAttrs(t)
+    new FalseLit().copyAttributes(t)
   def NullLit(t: Tree) =
-    new NullLit().copyAttrs(t)
+    new NullLit().copyAttributes(t)
   def ClassID(t: Tree, name: String, templateTypes: List[TypeTree] = List()) =
-    new ClassID(name, templateTypes).copyAttrs(t)
+    new ClassID(name, templateTypes).copyAttributes(t)
   def VariableID(t: Tree, name: String) =
-    new VariableID(name).copyAttrs(t)
+    new VariableID(name).copyAttributes(t)
   def MethodID(t: Tree, name: String) =
-    new MethodID(name).copyAttrs(t)
+    new MethodID(name).copyAttributes(t)
 
   /*-------------------------------- Access Trees --------------------------------*/
 
   def NormalAccess(t: Tree, obj:ExprTree, application:ExprTree) =
-    new NormalAccess(obj, application).copyAttrs(t)
+    new NormalAccess(obj, application).copyAttributes(t)
   def SafeAccess(t: Tree, obj:ExprTree, application:ExprTree) =
-    new SafeAccess(obj, application).copyAttrs(t)
+    new SafeAccess(obj, application).copyAttributes(t)
 
   /*-------------------------------- Expression Trees --------------------------------*/
 
   def Assign(t: Tree, to: Assignable, expr: ExprTree) =
-    new Assign(to, expr).copyAttrs(t)
+    new Assign(to, expr).copyAttributes(t)
   def MethodCall(t: Tree, meth: MethodID, args: List[ExprTree]) =
-    new MethodCall(meth, args).copyAttrs(t)
+    new MethodCall(meth, args).copyAttributes(t)
 
   def This(t: Tree) =
-    new This().copyAttrs(t)
+    new This().copyAttributes(t)
   def Super(t: Tree, specifier: Option[ClassID]) =
-    new Super(specifier).copyAttrs(t)
+    new Super(specifier).copyAttributes(t)
   def NewArray(t: Tree, tpe: TypeTree, sizes: List[ExprTree]) =
-    new NewArray(tpe, sizes).copyAttrs(t)
+    new NewArray(tpe, sizes).copyAttributes(t)
   def New(t: Tree, tpe: TypeTree, args: List[ExprTree]) =
-    new New(tpe, args).copyAttrs(t)
+    new New(tpe, args).copyAttributes(t)
   def Ternary(t: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree) =
-    new Ternary(condition, thn, els).copyAttrs(t)
+    new Ternary(condition, thn, els).copyAttributes(t)
   def Elvis(t: Tree, nullableValue: ExprTree, ifNull:ExprTree) =
-    new Elvis(nullableValue, ifNull).copyAttrs(t)
+    new Elvis(nullableValue, ifNull).copyAttributes(t)
   def ExtractNullable(t: Tree, expr: ExprTree) =
     new ExtractNullable(expr)
   def Is(t: Tree, expr: ExprTree, tpe: TypeTree) =
-    new Is(expr, tpe).copyAttrs(t)
+    new Is(expr, tpe).copyAttributes(t)
   def As(t: Tree, expr: ExprTree, tpe: TypeTree) =
-    new As(expr, tpe).copyAttrs(t)
+    new As(expr, tpe).copyAttributes(t)
   def Empty(t: Tree) =
-    new Empty().copyAttrs(t)
+    new Empty().copyAttributes(t)
   def GeneratedExpr(t: Tree, stats: List[StatTree]) =
-    new GeneratedExpr(stats).copyAttrs(t)
+    new GeneratedExpr(stats).copyAttributes(t)
   def IfDup(t: Tree, expr: ExprTree) =
-    new PutValue(expr).copyAttrs(t)
+    new PutValue(expr).copyAttributes(t)
 }
 
 class LazyTreeCopier extends TreeCopier {
