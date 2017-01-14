@@ -1,6 +1,6 @@
 package tcompiler
 
-import tcompiler.utils.{Colored, EnumerationMacros}
+import tcompiler.utils.{Colored, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -177,7 +177,7 @@ object Flags {
 
   object Flag {
 
-    val AllFlags: List[Flag] = EnumerationMacros.sealedInstancesOf[Flag].toList.sortBy(_.flag)
+    val AllFlags: List[Flag] = Enumeration.instancesOf[Flag].toList.sortBy(_.flag)
     def unapply(str: String): Option[Flag] = AllFlags.find(_.unapply(str))
 
   }

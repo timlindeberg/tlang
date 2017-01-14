@@ -3,7 +3,7 @@ package analyzer
 
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTraverser
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
@@ -386,9 +386,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
-      val traverser = new TreeTraverser {
+      val traverser = new Trees.Traverser {
 
-        override def traverse(t: Tree) = t match {
+        override def _traverse(t: Tree) = t match {
           case acc@Access(obj, application) =>
             obj match {
               case _: Empty            =>
@@ -416,21 +416,22 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                     }
                 }
               case _                   =>
-                traverse(obj)
+                _traverse(obj)
             }
             application match {
               case _: VariableID =>
               // This is a field. Since we don't know what class it belongs to we do nothing
-              case _ => traverse(application)
+              case _ => _traverse(application)
             }
           case Assign(to, expr)             =>
-            traverse(to, expr)
+            _traverse(to)
+            _traverse(expr)
             to ifInstanceOf[VariableID] { id =>
               setVariableUsed(id)
               setVariableReassigned(id)
             }
           case IncrementDecrementTree(expr) =>
-            traverse(expr)
+            _traverse(expr)
             expr ifInstanceOf[VariableID] { id =>
               setVariableUsed(id)
               setVariableReassigned(id)
@@ -471,7 +472,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
             }
           case tpe: TypeTree                => setType(tpe)
           case id: VariableID               => setVarIdentifierSymbol(id, localVars)
-          case _                            => super.traverse(t)
+          case _                            => super._traverse(t)
         }
       }
       traverser.traverse(startingTree)

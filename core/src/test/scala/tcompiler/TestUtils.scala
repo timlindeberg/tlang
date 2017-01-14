@@ -13,7 +13,7 @@ import scala.sys.process._
 object TestUtils extends FlatSpec {
 
   val TestDirectory  = "gen"
-  val Resources      = "test/resources/"
+  val Resources      = "core/src/test/resources/"
   val Interpreter    = new Interpreter
   val Timeout        = duration.Duration(2, "sec")
   val SolutionRegex = """.*// *[R|r]es:(.*)""".r

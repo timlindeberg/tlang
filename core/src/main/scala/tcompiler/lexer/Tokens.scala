@@ -1,7 +1,7 @@
 package tcompiler
 package lexer
 
-import tcompiler.utils.{EnumerationMacros, Positioned}
+import tcompiler.utils.{Enumeration, Positioned}
 
 sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString = kind.toString
@@ -171,7 +171,7 @@ object Tokens {
   }
 
   // These need to be lazy otherwise the program crashes
-  lazy val Tokens          : Set[TokenKind]         = EnumerationMacros.sealedInstancesOf[TokenKind]
+  lazy val Tokens          : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
   lazy val SingleCharTokens: Map[Char, TokenKind]   = Tokens.filter(_.str.length == 1).map(t => t.str(0) -> t).toMap
   lazy val Keywords        : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 1 && t.str.matches("[A-Za-z]*")).map(t => t.str -> t).toMap
 

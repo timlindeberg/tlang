@@ -1,7 +1,7 @@
 package tcompiler
 package modification
 
-import tcompiler.ast.{TreeCopier, TreeTransformer, TreeTraverser}
+import tcompiler.ast.{TreeCopier, Trees}
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ImportMap, TemplateImporter}
 import tcompiler.utils.{Context, Pipeline}
@@ -63,8 +63,8 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
     // Replace types with their templated class names, eg.
     // replace Map<Int, String> with -Map$Int$String-.
-    val replace = new TreeTransformer {
-      override def transform(t: Tree): Tree = t match {
+    val replace = new Trees.Transformer {
+      override def _transform(t: Tree): Tree = t match {
         case tpe: ClassID if tpe.isTemplated =>
           val shortName = tpe.name.split("::").last
           if (cu.importMap.contains(shortName)) {
@@ -72,7 +72,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
             cu.importMap.addImport(entry)
           }
           treeCopy.ClassID(tpe, tpe.templatedClassName)
-        case _                               => super.transform(t)
+        case _                               => super._transform(t)
       }
 
     }
@@ -108,14 +108,16 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       * generated template classes.
       */
     def generateNeededTemplates(): Unit = {
-      val traverser = new TreeTraverser {
-        override def traverse(t: Tree) = t match {
+      val traverser = new Trees.Traverser {
+        override def _traverse(t: Tree) = t match {
           case ClassDeclTree(id, parents, fields, methods) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
-            traverse(parents, fields, methods)
+            _traverse(parents)
+            _traverse(fields)
+            _traverse(methods)
           case c: ClassID if c.isTemplated                 => generateClass(c)
-          case _                                           => super.traverse(t)
+          case _                                           => super._traverse(t)
         }
       }
       traverser.traverse(cu)
@@ -192,12 +194,12 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       val templateTypes = typeId.templateTypes
       val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
-      val transformTemplate = new TreeTransformer {
+      val transformTemplate = new Trees.Transformer {
         // uses a strict copier so we recieve an actual copy of the tree
         // TODO: this might not actually be needed if immutability is enforced
-        override val treeCopy = new TreeCopier
+        override val treeCopy = new Trees.Copier
 
-        override def transform(t: Tree) = t match {
+        override def _transform(t: Tree) = t match {
           case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
@@ -207,9 +209,9 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
               case _: TraitDecl => treeCopy.TraitDecl(c, newId, _, _, _)
               case _            => ???
             }
-            cons(tr(parents), tr(fields), tr(methods))
+            cons(transform(parents), transform(fields), transform(methods))
           case classId@ClassID(name, tTypes)                 =>
-            val newId = treeCopy.ClassID(classId, name, tr(tTypes))
+            val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated)
               new TemplateClassGenerator(templateCU).generateClass(newId)
 
@@ -217,7 +219,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
               case Some(replacement) => replacement.copyAttributes(classId)
               case None              => newId
             }
-          case _                                             => super.transform(t)
+          case _                                             => super._transform(t)
         }
       }
       transformTemplate(template)

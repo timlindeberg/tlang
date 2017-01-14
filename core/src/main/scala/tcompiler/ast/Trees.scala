@@ -8,28 +8,30 @@ import tcompiler.imports.ImportMap
 import tcompiler.utils._
 import tcompiler.utils.Extensions._
 
-@GenTreeCopier
+@GenerateTreeHelpers
 object Trees {
 
   trait Tree extends Positioned with Product {
 
-    def foreach(f: Tree => Unit) = {
-      val traverser = new TreeTraverser {
-        override def traverse(t: Tree) = {
+    def foreach(f: Tree => Unit): Unit = {
+      val traverser = new Trees.Traverser {
+        override def _traverse(t: Tree): Unit = {
           f(t)
-          super.traverse(t)
+          super._traverse(t)
         }
       }
       traverser.traverse(this)
+
+
     }
 
     def find(p: Tree => Boolean): Option[Tree] = {
-      val traverser = new TreeTraverser {
+      val traverser = new Trees.Traverser {
         var result: Option[Tree] = None
 
-        override def traverse(t: Tree) =
+        override def _traverse(t: Tree): Unit =
           if (p(t)) result = Some(t)
-          else super.traverse(t)
+          else super._traverse(t)
       }
       traverser.traverse(this)
       traverser.result
@@ -37,12 +39,12 @@ object Trees {
 
 
     def forAll(p: Tree => Boolean): Boolean = {
-      val traverser = new TreeTraverser {
+      val traverser = new Trees.Traverser {
         var result = true
 
-        override def traverse(t: Tree) =
+        override def _traverse(t: Tree): Unit =
           if (!p(t)) result = false
-          else super.traverse(t)
+          else super._traverse(t)
       }
       traverser.traverse(this)
       traverser.result
@@ -101,7 +103,6 @@ object Trees {
       }
     }
   }
-
 
   // Signals that the node is a leaf and no further recursion is necessary
   trait Leaf
@@ -321,7 +322,7 @@ object Trees {
 
 
   trait OperatorTree extends ExprTree {
-    val op: String
+    val opSign: String
 
     def signature(args: List[Any]): String
 
@@ -352,7 +353,7 @@ object Trees {
     val lhs: ExprTree
     val rhs: ExprTree
 
-    def signature(args: List[Any]): String = s"${args(0)} $op ${args(1)}"
+    def signature(args: List[Any]): String = s"${args(0)} $opSign ${args(1)}"
   }
 
   object BinaryOperatorTree {
@@ -374,18 +375,18 @@ object Trees {
     def unapply(e: LogicalOperatorTree) = Some(e.lhs, e.rhs)
   }
 
-  case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "+"}
-  case class Minus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "-"}
-  case class Times(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "*"}
-  case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "/"}
-  case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val op = "%"}
+  case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val opSign = "+"}
+  case class Minus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val opSign = "-"}
+  case class Times(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val opSign = "*"}
+  case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val opSign = "/"}
+  case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {val opSign = "%"}
 
-  case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "&"}
-  case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "|"}
-  case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val op = "^"}
+  case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val opSign = "&"}
+  case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val opSign = "|"}
+  case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {val opSign = "^"}
 
-  case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = "<<"}
-  case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val op = ">>"}
+  case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val opSign = "<<"}
+  case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val opSign = ">>"}
 
   /*-------------------------------- Branching Operator Trees --------------------------------*/
 
@@ -401,23 +402,23 @@ object Trees {
     def unapply(e: EqualsOperatorTree) = Some(e.lhs, e.rhs)
   }
 
-  case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<"}
-  case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = "<="}
-  case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = ">"}
-  case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val op = ">="}
+  case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val opSign = "<"}
+  case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val opSign = "<="}
+  case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val opSign = ">"}
+  case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {val opSign = ">="}
 
-  case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "=="}
-  case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val op = "!="}
+  case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val opSign = "=="}
+  case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {val opSign = "!="}
 
-  case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val op = "&&"}
-  case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val op = "||"}
+  case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val opSign = "&&"}
+  case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val opSign = "||"}
 
   /*-------------------------------- Unary Operator Trees --------------------------------*/
 
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
 
-    def signature(args: List[Any]) = op + args.head
+    def signature(args: List[Any]) = opSign + args.head
   }
 
   object UnaryOperatorTree {
@@ -431,33 +432,33 @@ object Trees {
     def unapply(e: IncrementDecrementTree) = Some(e.expr)
   }
 
-  case class Not(expr: ExprTree) extends BranchingOperatorTree with UnaryOperatorTree {val op = "!"}
-  case class Hash(expr: ExprTree) extends UnaryOperatorTree {val op = "#"}
-  case class Negation(expr: ExprTree) extends UnaryOperatorTree {val op = "-"}
-  case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val op = "~"}
-  case class ExtractNullable(expr: ExprTree) extends UnaryOperatorTree {val op = "!!"}
+  case class Not(expr: ExprTree) extends BranchingOperatorTree with UnaryOperatorTree {val opSign = "!"}
+  case class Hash(expr: ExprTree) extends UnaryOperatorTree {val opSign = "#"}
+  case class Negation(expr: ExprTree) extends UnaryOperatorTree {val opSign = "-"}
+  case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {val opSign = "~"}
+  case class ExtractNullable(expr: ExprTree) extends UnaryOperatorTree {val opSign = "!!"}
 
   case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op          = "++"
+    val opSign      = "++"
     val isPre       = true
     val isIncrement = true
   }
   case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op          = "--"
+    val opSign      = "--"
     val isPre       = true
     val isIncrement = false
   }
   case class PostIncrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op          = "++"
+    val opSign      = "++"
     val isPre       = false
     val isIncrement = true
-    override def signature(args: List[Any]) = args.head + op
+    override def signature(args: List[Any]) = args.head + opSign
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
-    val op          = "--"
+    val opSign      = "--"
     val isPre       = false
     val isIncrement = false
-    override def signature(args: List[Any]) = args.head + op
+    override def signature(args: List[Any]) = args.head + opSign
   }
 
   /*-------------------------------- Array Operator Trees --------------------------------*/
@@ -472,15 +473,15 @@ object Trees {
   }
 
   case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
-    override val op: String = "[]="
+    override val opSign: String = "[]="
     override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
-    override val op: String = "[]"
+    override val opSign: String = "[]"
     override def signature(args: List[Any]): String = s"[${args(0)}]"
   }
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) extends ArrayOperatorTree {
-    override val op: String = "[:]"
+    override val opSign: String = "[:]"
     override def signature(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
   }
 
@@ -600,7 +601,7 @@ object Trees {
 
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
     override val arr: ExprTree = to
-    override val op : String   = "[]="
+    override val opSign: String = "[]="
     override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree

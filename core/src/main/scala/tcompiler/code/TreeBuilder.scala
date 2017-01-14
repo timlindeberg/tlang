@@ -17,8 +17,7 @@ class TreeBuilder {
 
   def put(stat: StatTree) = {
     stat foreach {
-      case t: Typed if t.getType == TUntyped =>
-        sys.error(s"Tree $t does not have a type!")
+      case t: Typed if t.getType == TUntyped => sys.error(s"Tree $t does not have a type!")
       case _                                 =>
     }
     code += stat

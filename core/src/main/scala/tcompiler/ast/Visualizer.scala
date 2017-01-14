@@ -92,15 +92,15 @@ object Visualizer {
   }
 
 
-  class TreeToGraphTraverser(graph: SingleGraph) extends TreeTraverser {
+  class TreeToGraphTraverser(graph: SingleGraph) extends Trees.Traverser {
 
     private var id = 0
     private val idMap = new java.util.IdentityHashMap[Tree, String]()
 
-    override def traverse(tree: Tree) = {
+    override def _traverse(tree: Tree) = {
       tree match {
         case CompilationUnit(_, classes, _)                   =>
-          traverse(classes)
+          _traverse(classes)
         case ClassDecl(id, parents, fields, methods) =>
           val nodeName = addNode(tree)
           methods.foreach { m =>
@@ -108,13 +108,13 @@ object Visualizer {
             graph.addEdge(nodeName + methodName, nodeName, methodName)
             Unit
           }
-          traverse(methods)
+          _traverse(methods)
         case MethodDecl(retType, id, args, stat, modifiers)      =>
           val nodeName = addNode(tree)
           stat.ifDefined { s =>
             val statName = getId(s)
             graph.addEdge(nodeName + statName, nodeName, statName)
-            traverse(s)
+            _traverse(s)
           }
         case _: Modifier                                         =>
         case t                                                   =>
@@ -138,7 +138,7 @@ object Visualizer {
               case _          =>
             }
           }
-          super.traverse(t)
+          super._traverse(t)
       }
     }
 
@@ -155,7 +155,7 @@ object Visualizer {
     private def getLabel(t: Tree) = t match {
       case c: ClassDecl     => c.id.name
       case m: MethodDecl    => m.modifiers.map(_.getClass.getSimpleName).mkString(" ") + " " + m.signature
-      case op: OperatorTree => op.op
+      case op: OperatorTree => op.opSign
       case Identifier(v)    => s"$v"
       case Literal(v)       => s"$v"
       case _                => t.getClass.getSimpleName

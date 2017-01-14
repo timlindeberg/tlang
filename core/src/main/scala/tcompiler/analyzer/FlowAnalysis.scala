@@ -2,7 +2,7 @@ package tcompiler.analyzer
 
 import tcompiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTraverser
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.{Context, Pipeline, Positioned}
@@ -587,8 +587,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
   def analyzeExpr(tree: ExprTree, topKnowledge: Knowledge): Knowledge = {
     var knowledge = topKnowledge
-    val traverser = new TreeTraverser {
-      override def traverse(t: Tree) = t match {
+    val traverser = new Trees.Traverser {
+      override def _traverse(t: Tree): Unit = t match {
         case Ternary(condition, thn, els)       =>
           val afterCondition = analyzeCondition(condition, knowledge)
           val conditionKnowledge = afterCondition - knowledge
@@ -596,10 +596,10 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
         case acc@Access(obj, app)               =>
-          traverse(obj, app)
+          super._traverse(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
-          super.traverse(t)
+          super._traverse(t)
 
           knowledge.getIdentifier(obj) ifDefined { varId =>
             // Reset knowledge
@@ -607,7 +607,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
           }
         case binOp@BinaryOperatorTree(lhs, rhs) =>
-          traverse(lhs, rhs)
+          _traverse(lhs)
+          _traverse(rhs)
           binOp ifInstanceOf[Div] { div =>
             knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) ErrorDivideByZero(rhs, binOp) }
           }
@@ -619,9 +620,9 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
               checkValidUse(rhs, knowledge)
           }
         case ExtractNullable(expr)              =>
-          traverse(expr)
+          _traverse(expr)
         case op@UnaryOperatorTree(expr)         =>
-          traverse(expr)
+          _traverse(expr)
           checkValidUse(expr, knowledge)
           op.ifInstanceOf[IncrementDecrementTree]({ incDec =>
             knowledge.getIdentifier(expr) ifDefined { varId =>
@@ -631,7 +632,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             }
           })
         case ArrayOperatorTree(arr)             =>
-          traverse(arr)
+          _traverse(arr)
 
           t match {
             case arrRead@ArrayRead(_, index) =>
@@ -648,7 +649,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           }
           checkValidUse(arr, knowledge)
         case _                                  =>
-          super.traverse(t)
+          super._traverse(t)
       }
     }
     traverser.traverse(tree)

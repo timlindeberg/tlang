@@ -1,6 +1,3 @@
-
-crossPaths := false
-
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
   scalaVersion := "2.11.8",
   organization := "com.tcompiler",
@@ -56,8 +53,6 @@ lazy val core = project
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
     ),
 
-    scalaSource in Compile := baseDirectory.value / "src/scala",
-    scalaSource in Test := baseDirectory.value / "test/scala",
     parallelExecution in Test := false
   )
   .dependsOn(macros)

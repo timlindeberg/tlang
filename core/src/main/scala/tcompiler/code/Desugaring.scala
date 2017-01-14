@@ -3,7 +3,7 @@ package tcompiler.code
 import tcompiler.Main
 import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
-import tcompiler.ast.TreeTransformer
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.utils.{Context, Pipeline}
@@ -24,19 +24,19 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
 }
 
-class Desugarer(importMap: ImportMap) extends TreeTransformer {
+class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
   private val ThisName = "$this"
 
-  override protected def transform(t: Tree) = t match {
-    case extensionDecl: ExtensionDecl                    => desugarExtensionDecl(super.transform(extensionDecl))
-    case slice: ArraySlice                               => desugarArraySlice(super.transform(slice))
-    case opDecl: OperatorDecl                            => replaceOperatorDecl(super.transform(opDecl))
+  override protected def _transform(t: Tree) = t match {
+    case extensionDecl: ExtensionDecl                    => desugarExtensionDecl(super._transform(extensionDecl))
+    case slice: ArraySlice                               => desugarArraySlice(super._transform(slice))
+    case opDecl: OperatorDecl                            => replaceOperatorDecl(super._transform(opDecl))
     case safeAccess: SafeAccess                          =>
       // Recurse again to replace all calls in the desugared version
-      super.transform(desugarSafeAccess(safeAccess))
+      super._transform(desugarSafeAccess(safeAccess))
     case acc@NormalAccess(_, MethodCall(meth, _)) =>
-      val newAcc = super.transform(acc)
+      val newAcc = super._transform(acc)
       val classSymbol = meth.getSymbol.classSymbol
       classSymbol match {
         case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
@@ -44,27 +44,27 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
       }
     case incDec: IncrementDecrementTree                  =>
       if (isObject(incDec.expr))
-        replaceOperatorCall(super.transform(incDec))
+        replaceOperatorCall(super._transform(incDec))
       else
-        desugarIncrementDecrement(super.transform(incDec))
+        desugarIncrementDecrement(super._transform(incDec))
     case assign: Assign                                  =>
       val to = assign.to
       if (to.isInstanceOf[ArrayRead] && isObject(to)) {
         val expr = super.apply(assign.from)
         val newAssign = treeCopy.Assign(assign, to, expr)
         // Transform again to replace external method calls etc.
-        transform(replaceOperatorCall(newAssign))
+        _transform(replaceOperatorCall(newAssign))
       } else {
-        super.transform(assign)
+        super._transform(assign)
       }
     case op: OperatorTree                                =>
-      replaceOperatorCall(super.transform(op)) match {
+      replaceOperatorCall(super._transform(op)) match {
         case op: OperatorTree => op // Finished transform
-        case tree             => transform(tree) // Transform again to replace external method calls etc.
+        case tree             => _transform(tree) // Transform again to replace external method calls etc.
       }
-    case foreach: Foreach                                => transform(desugarForeach(foreach))
-    case elvis: Elvis                                    => transform(desugarElvisOp(elvis))
-    case _                                               => super.transform(t)
+    case foreach: Foreach                                => _transform(desugarForeach(foreach))
+    case elvis: Elvis                                    => _transform(desugarElvisOp(elvis))
+    case _                                               => super._transform(t)
   }
 
   //@formatter:off
@@ -110,21 +110,21 @@ class Desugarer(importMap: ImportMap) extends TreeTransformer {
     val originalClass = extensionClassSymbol.originalClassSymbol.get
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
-      val transformThis = new TreeTransformer {
-        override protected def transform(t: Tree) = t match {
+      val transformThis = new Trees.Transformer {
+        override protected def _transform(t: Tree) = t match {
           case This()                                                      =>
             thisId
           case Access(obj, app)                                            =>
             // Don't replace VariableIDs in app since that would replace e.g A.i with A.$this.i
             val a = app match {
               case _: VariableID => app
-              case _             => tr(app)
+              case _             => apply(app)
             }
-            treeCopy.NormalAccess(t, tr(obj), a)
+            treeCopy.NormalAccess(t, apply(obj), a)
           case v@VariableID(name) if v.getSymbol.isInstanceOf[FieldSymbol] =>
             NormalAccess(thisId, v).setType(v)
           case _                                                           =>
-            super.transform(t)
+            super._transform(t)
         }
       }
       transformThis(stat)

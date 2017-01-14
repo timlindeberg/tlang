@@ -51,7 +51,7 @@ object Printer extends Colored {
     case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
     case MethodDecl(retType, id, args, stat, modifiers)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
     case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
-    case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.op}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
+    case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.opSign}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
     case Formal(tpe, id)                                            => p"$id: $tpe"
     case Private()                                                  => p"private"
     case Public()                                                   => p"public"
