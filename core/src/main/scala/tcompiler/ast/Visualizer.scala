@@ -96,7 +96,7 @@ object Visualizer {
     private var id    = 0
     private val idMap = new java.util.IdentityHashMap[Tree, String]()
 
-    override def _traverse(tree: Tree): Any = {
+    override def _traverse(tree: Tree): Unit = {
       tree match {
         case CompilationUnit(_, classes, _) =>
           _traverse(classes)

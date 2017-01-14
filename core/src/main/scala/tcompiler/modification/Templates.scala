@@ -1,7 +1,7 @@
 package tcompiler
 package modification
 
-import tcompiler.ast.{TreeCopier, Trees}
+import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ImportMap, TemplateImporter}
 import tcompiler.utils.{Context, Pipeline}
@@ -108,7 +108,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       */
     def generateNeededTemplates(): Unit = {
       val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree): Tree = t match {
+        override def _traverse(t: Tree): Unit = t match {
           case ClassDeclTree(_, parents, fields, methods) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
@@ -198,7 +198,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         // TODO: this might not actually be needed if immutability is enforced
         override val treeCopy = new Trees.Copier
 
-        override def _transform(t: Tree): Any = t match {
+        override def _transform(t: Tree): Tree = t match {
           case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)

@@ -13,6 +13,7 @@ case class AST(name: Term.Name, params: Seq[Term.Param]) {
 
 class GenerateTreeHelpers extends StaticAnnotation {
 
+
   inline def apply(defn: Any): Any = meta {
     import GenerateTreeHelpers._
 
@@ -116,16 +117,16 @@ object GenerateTreeHelpers {
 
     q"""
       class Traverser {
-         final def traverse(t: Tree): Unit                      = _traverse(t)
-         final def traverse(trees: TraversableOnce[Tree]): Unit = _traverse(trees)
+         final def traverse(t: Tree): Unit                  = _traverse(t)
+         final def traverse(trees: Traversable[Tree]): Unit = _traverse(trees)
 
          protected def _traverse(t: Tree): Unit = t match {
             case _: Leaf =>
             ..case $cases
          }
 
-         final protected def _traverse(op: Option[Tree]): Unit             = op foreach _traverse
-         final protected def _traverse(trees: TraversableOnce[Tree]): Unit = trees foreach _traverse
+         final protected def _traverse(op: Option[Tree]): Unit         = op foreach _traverse
+         final protected def _traverse(trees: Traversable[Tree]): Unit = trees foreach _traverse
       }
      """
   }

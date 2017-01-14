@@ -28,7 +28,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
   private val ThisName = "$this"
 
-  override protected def _transform(t: Tree): Any = t match {
+  override protected def _transform(t: Tree): Tree = t match {
     case extensionDecl: ExtensionDecl             => desugarExtensionDecl(super._transform(extensionDecl))
     case slice: ArraySlice                        => desugarArraySlice(super._transform(slice))
     case opDecl: OperatorDecl                     => replaceOperatorDecl(super._transform(opDecl))
@@ -111,7 +111,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
-        override protected def _transform(t: Tree): Any = t match {
+        override protected def _transform(t: Tree): Tree = t match {
           case This()                                                      =>
             thisId
           case Access(obj, app)                                            =>

@@ -389,7 +389,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
       val traverser = new Trees.Traverser {
 
-        override def _traverse(t: Tree): Any = t match {
+        override def _traverse(t: Tree): Unit = t match {
           case acc@Access(obj, application) =>
             obj match {
               case _: Empty            =>

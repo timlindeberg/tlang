@@ -214,7 +214,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
 
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
-        case Access(obj, _)                     =>
+        case acc@Access(obj, _)                 =>
           super._traverse(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
