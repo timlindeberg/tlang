@@ -23,10 +23,10 @@ object Visualizer {
   val DefaultTextColor = "#000000"
   val EdgeStart        = "#00FF00"
   val EdgeEnd          = "#0000FF"
-  val startColor       = Integer.parseInt(EdgeStart.replace("#", ""), 16)
-  val endColor         = Integer.parseInt(EdgeEnd.replace("#", ""), 16)
+  val startColor: Int  = Integer.parseInt(EdgeStart.replace("#", ""), 16)
+  val endColor  : Int  = Integer.parseInt(EdgeEnd.replace("#", ""), 16)
 
-  val styleSheet =
+  val styleSheet: String =
     s"""
        |node {
        |	size: 10px;
@@ -74,7 +74,7 @@ object Visualizer {
     """.stripMargin
 
 
-  def apply(topTree: Tree) = {
+  def apply(topTree: Tree): Unit = {
     val graph = new SingleGraph(topTree.getClass.getName)
     graph.addAttribute("ui.antialias")
     graph.addAttribute("ui.quality")
@@ -85,23 +85,22 @@ object Visualizer {
 
     val traverser = new TreeToGraphTraverser(graph)
     traverser.traverse(topTree)
-    val view = graph.display()
+    graph.display()
     while (true) {
 
     }
   }
 
-
   class TreeToGraphTraverser(graph: SingleGraph) extends Trees.Traverser {
 
-    private var id = 0
+    private var id    = 0
     private val idMap = new java.util.IdentityHashMap[Tree, String]()
 
-    override def _traverse(tree: Tree) = {
+    override def _traverse(tree: Tree): Any = {
       tree match {
-        case CompilationUnit(_, classes, _)                   =>
+        case CompilationUnit(_, classes, _) =>
           _traverse(classes)
-        case ClassDecl(id, parents, fields, methods) =>
+        case ClassDecl(_, _, _, methods)    =>
           val nodeName = addNode(tree)
           methods.foreach { m =>
             val methodName = getId(m)
@@ -109,15 +108,15 @@ object Visualizer {
             Unit
           }
           _traverse(methods)
-        case MethodDecl(retType, id, args, stat, modifiers)      =>
+        case MethodDecl(_, _, _, stat, _)   =>
           val nodeName = addNode(tree)
           stat.ifDefined { s =>
             val statName = getId(s)
             graph.addEdge(nodeName + statName, nodeName, statName)
             _traverse(s)
           }
-        case _: Modifier                                         =>
-        case t                                                   =>
+        case _: Modifier                    =>
+        case t                              =>
           val nodeName = addNode(tree)
           val r = currentMirror.reflect(t)
           val fields = r.symbol.typeSignature.members.toStream.collect {
@@ -162,10 +161,10 @@ object Visualizer {
     }
 
     private def getUIClass(t: Tree) = t match {
-      case c: ClassDecl  => "Class"
-      case m: MethodDecl => "Method"
-      case Identifier(v) => "Identifier"
-      case Literal(v)    => "Literal"
+      case _: ClassDecl  => "Class"
+      case _: MethodDecl => "Method"
+      case Identifier(_) => "Identifier"
+      case Literal(_)    => "Literal"
       case _             => ""
     }
     private def addNode(t: Tree) = {

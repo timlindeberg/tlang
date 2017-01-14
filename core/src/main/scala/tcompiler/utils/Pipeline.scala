@@ -10,7 +10,7 @@ abstract class Pipeline[-F, +T] {
 
   def run(ctx: Context)(v: F): T
 
-  def stageName = getClass.getSimpleName.dropRight(1).toLowerCase
+  def stageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
 
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: F): G = {
@@ -24,8 +24,8 @@ abstract class Pipeline[-F, +T] {
 
   private def execute(ctx: Context)(v: F): T = {
     val infoPrinter = new InfoPrinter(this, ctx)
-    val (output, time) = HelpMethods.timed { run(ctx)(v) }
-    if(Main.CompilerStages.contains(this))
+    val (output, time) = HelpMethods.timed {run(ctx)(v)}
+    if (Main.CompilerStages.contains(this))
       ctx.executionTimes += this -> time
     infoPrinter.printCode(output)
     output
@@ -33,11 +33,11 @@ abstract class Pipeline[-F, +T] {
 
   class InfoPrinter(stage: Pipeline[F, T], ctx: Context) extends Colored {
 
-    override val useColor = ctx.useColor
+    override val useColor: Boolean = ctx.useColor
 
     def printCode[S >: T](output: S): Unit = {
       val s = stage.stageName
-      if(!ctx.printCodeStages.contains(s))
+      if (!ctx.printCodeStages.contains(s))
         return
 
       output match {
@@ -49,9 +49,9 @@ abstract class Pipeline[-F, +T] {
               list.map(_.asInstanceOf[CompilationUnit]) foreach {
                 cu => println(Printer(cu, ctx.useColor) + "\n")
               }
-            case _ =>
+            case _                  =>
           }
-        case _ =>
+        case _                              =>
       }
     }
 

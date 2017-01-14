@@ -24,15 +24,6 @@ object ASTBuilder {
 
   val MaximumArraySize = 255
 
-  private val tokenToUnaryOperatorAST: Map[TokenKind, ExprTree => ExprTree] = Map(
-    LOGICNOT -> LogicNot,
-    BANG -> Not,
-    HASH -> Hash,
-    INCREMENT -> PreIncrement,
-    DECREMENT -> PreDecrement
-  )
-
-
   private val tokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
     OR -> Or,
     AND -> And,
@@ -125,7 +116,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <packageDeclaration> ::= package <identifier> { . <identifier> }
     */
-  def packageDeclaration = {
+  def packageDeclaration: Package = {
     nextTokenKind match {
       case PACKAGE =>
         eat(PACKAGE)
@@ -672,7 +663,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <regularForLoop> ::= <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
-  def regularForLoop(firstVarDecl: Option[VarDecl], startPos: Positioned) = {
+  def regularForLoop(firstVarDecl: Option[VarDecl], startPos: Positioned): For = {
     val init = forInit
     eat(SEMICOLON)
     val condition = nextTokenKind match {
@@ -692,7 +683,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <forEachLoop> ::= in <expression> ")" <statement>
     */
-  def forEachLoop(varDecl: VarDecl, startPos: Positioned) = {
+  def forEachLoop(varDecl: VarDecl, startPos: Positioned): Foreach = {
     eat(IN)
     val container = expression
     eat(RPAREN)
@@ -747,7 +738,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
     * | <ternary> [ "[" <expression> "] = " <expression> ]
     **/
-  def assignment(expr: Option[ExprTree] = None) = {
+  def assignment(expr: Option[ExprTree] = None): ExprTree = {
     val startPos = nextToken
     val e = expr.getOrElse(ternary)
 
@@ -998,7 +989,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <access> ::= (. | ?.) <methodCall> | <identifier>
     */
-  def access(obj: ExprTree) = {
+  def access(obj: ExprTree): Access = {
     val startPos = nextToken
     val access = nextTokenKind match {
       case SAFEACCESS =>
@@ -1018,7 +1009,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         val exprs = commaList(expression)
         eat(RPAREN)
         val methId = MethodID(id.name)
-        MethodCall(methId, exprs.toList).setPos(methStartPos, nextToken)
+        MethodCall(methId, exprs).setPos(methStartPos, nextToken)
       case _      => id
     }
     access(obj, application).setPos(startPos, nextToken)
@@ -1093,7 +1084,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <nullableBracket> ::=  "[" <expression> "]" [ "?" ]
     */
-  def nullableBracket(startPos: Positioned, tpe: TypeTree) = {
+  def nullableBracket(startPos: Positioned, tpe: TypeTree): (TypeTree, ExprTree) = {
     var e = tpe
     eat(LBRACKET)
     val size = expression
@@ -1113,8 +1104,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     */
   def arrayIndexing(e: ExprTree): ExprTree = {
     eat(LBRACKET)
-    val exprs = untilNot(expression, COLON)
-
     nextTokenKind match {
       case COLON =>
         eat(COLON)
@@ -1167,7 +1156,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     case Block(stmts) if stmts.nonEmpty =>
       val replaced = replaceExprWithReturnStat(stmts.last)
       Block(stmts.updated(stmts.size - 1, replaced))
-    case acc@Access(_, m: MethodCall)   => Return(Some(acc))
+    case acc@Access(_, _: MethodCall)   => Return(Some(acc))
     case UselessStatement(e)            => Return(Some(e))
     case _                              => stat
   }

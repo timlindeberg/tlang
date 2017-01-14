@@ -2,6 +2,7 @@ package tcompiler
 package utils
 
 import java.io.File
+import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
 import tcompiler.imports.ClassSymbolLocator
@@ -9,7 +10,6 @@ import tcompiler.imports.ClassSymbolLocator
 import scala.collection.mutable
 
 case class Context(
-
   reporter: Reporter,
   files: List[File],
   classPaths: List[String] = Nil,
@@ -18,18 +18,17 @@ case class Context(
   useColor: Boolean = false,
   printInfo: Boolean = false,
   ignoredImports: List[String] = List()
-
 ) {
 
   private val JavaClassPath = "java.class.path"
-  val executionTimes = mutable.Map[Pipeline[_, _], Double]()
+  val executionTimes: mutable.Map[Pipeline[_, _], Double] = mutable.Map()
 
-  def getClassPaths = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
+  def getClassPaths: List[String] = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
 
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)
 
-  val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
+  val method: Method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
   method.setAccessible(true)
 
   for (p <- getClassPaths) {

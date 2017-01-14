@@ -5,8 +5,8 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types
 import tcompiler.analyzer.Types._
 import tcompiler.imports.ImportMap
-import tcompiler.utils._
 import tcompiler.utils.Extensions._
+import tcompiler.utils._
 
 @GenerateTreeHelpers
 object Trees {
@@ -21,8 +21,6 @@ object Trees {
         }
       }
       traverser.traverse(this)
-
-
     }
 
     def find(p: Tree => Boolean): Option[Tree] = {
@@ -99,7 +97,7 @@ object Trees {
         case x: This           => to.asInstanceOf[This].setSymbol(x.getSymbol)
         case x: Super          => to.asInstanceOf[Super].setSymbol(x.getSymbol)
         case x: New            => to.asInstanceOf[New].setSymbol(x.getSymbol)
-        case _ => ???
+        case _                 => ???
       }
     }
   }
@@ -110,12 +108,12 @@ object Trees {
   /*-------------------------------- Top level Trees --------------------------------*/
 
   case class CompilationUnit(pack: Package,
-                             var classes: List[ClassDeclTree],
-                             importMap: ImportMap) extends Tree {
+    var classes: List[ClassDeclTree],
+    importMap: ImportMap) extends Tree {
 
-    def getPackageDirectory = pack.directory
+    def getPackageDirectory: String = pack.directory
 
-    def packageName = pack.address.mkString(".")
+    def packageName: String = pack.address.mkString(".")
 
   }
 
@@ -123,8 +121,8 @@ object Trees {
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
   case class Package(address: List[String]) extends Tree with Leaf {
-    val directory = address.mkString("/")
-    val name      = address.mkString(".")
+    val directory: String = address.mkString("/")
+    val name     : String = address.mkString(".")
   }
 
   object Import {
@@ -134,22 +132,22 @@ object Trees {
   trait Import extends Tree with Leaf {
     val address: List[String]
 
-    def name = address.mkString(".")
+    def name: String = address.mkString(".")
 
-    def shortName = address.last
+    def shortName: String = address.last
 
-    def writtenName = address.mkString("::")
+    def writtenName: String = address.mkString("::")
   }
 
   case class RegularImport(address: List[String]) extends Import
   case class WildCardImport(address: List[String]) extends Import
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 
-    override def name = {
+    override def name: String = {
       ((address :+ ExtensionDecl.seperator) ::: className).mkString(".")
     }
 
-    override def writtenName = {
+    override def writtenName: String = {
       ((address :+ "extension") ::: className).mkString("::")
     }
 
@@ -170,20 +168,20 @@ object Trees {
 
     def isAbstract: Boolean
 
-    def traits = parents.filter(_.getSymbol.isAbstract)
+    def traits: List[ClassID] = parents.filter(_.getSymbol.isAbstract)
   }
 
   case class ClassDecl(id: ClassID,
-                       var parents: List[ClassID],
-                       fields: List[VarDecl],
-                       var methods: List[MethodDeclTree]) extends ClassDeclTree {
+    var parents: List[ClassID],
+    fields: List[VarDecl],
+    var methods: List[MethodDeclTree]) extends ClassDeclTree {
     val isAbstract = false
   }
 
   case class TraitDecl(id: ClassID,
-                       var parents: List[ClassID],
-                       fields: List[VarDecl],
-                       var methods: List[MethodDeclTree]) extends ClassDeclTree {
+    var parents: List[ClassID],
+    fields: List[VarDecl],
+    var methods: List[MethodDeclTree]) extends ClassDeclTree {
     val isAbstract = true
   }
 
@@ -194,9 +192,9 @@ object Trees {
   case class ExtensionDecl(id: ClassID, var methods: List[MethodDeclTree]) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
-    var parents    = List[ClassID]()
-    val fields     = List[VarDecl]()
-    val isAbstract = false
+    var parents: List[ClassID] = List[ClassID]()
+    val fields : List[VarDecl] = List[VarDecl]()
+    val isAbstract             = false
   }
 
 
@@ -216,9 +214,9 @@ object Trees {
 
   trait Modifiable {
     val modifiers: Set[Modifier]
-    val isStatic      = modifiers.contains(Static())
-    val isFinal       = modifiers.contains(Final())
-    val accessability = modifiers.findInstance[Accessability].getOrElse(Private())
+    val isStatic     : Boolean       = modifiers.contains(Static())
+    val isFinal      : Boolean       = modifiers.contains(Final())
+    val accessability: Accessability = modifiers.findInstance[Accessability].getOrElse(Private())
   }
 
   /*-------------------------------- Function Declaration Trees --------------------------------*/
@@ -235,7 +233,7 @@ object Trees {
     val stat     : Option[StatTree]
     val modifiers: Set[Modifier]
 
-    def isMain = this match {
+    def isMain: Boolean = this match {
       case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassID("java::lang::String", List())), _) :: Nil, _, _) =>
         modifiers.size == 2 &&
           accessability == Public() &&
@@ -245,28 +243,28 @@ object Trees {
         false
     }
 
-    def isAbstract = stat.isEmpty
+    def isAbstract: Boolean = stat.isEmpty
 
-    def signature = id.name + args.map(_.tpe.name).mkString("(", ", ", ")")
+    def signature: String = id.name + args.map(_.tpe.name).mkString("(", ", ", ")")
 
   }
 
   case class MethodDecl(retType: Option[TypeTree],
-                        id: MethodID,
-                        args: List[Formal],
-                        stat: Option[StatTree],
-                        modifiers: Set[Modifier]) extends MethodDeclTree
+    id: MethodID,
+    args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier]) extends MethodDeclTree
   case class ConstructorDecl(retType: Option[TypeTree],
-                             id: MethodID,
-                             args: List[Formal],
-                             stat: Option[StatTree],
-                             modifiers: Set[Modifier]) extends MethodDeclTree
+    id: MethodID,
+    args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier]) extends MethodDeclTree
   case class OperatorDecl(operatorType: OperatorTree,
-                          retType: Option[TypeTree],
-                          args: List[Formal],
-                          stat: Option[StatTree],
-                          modifiers: Set[Modifier]) extends MethodDeclTree {
-    val id: MethodID = new MethodID("")
+    retType: Option[TypeTree],
+    args: List[Formal],
+    stat: Option[StatTree],
+    modifiers: Set[Modifier]) extends MethodDeclTree {
+    val id: MethodID = MethodID("")
   }
 
   case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
@@ -279,8 +277,8 @@ object Trees {
 
   trait PrimitiveTypeTree extends TypeTree with Leaf
 
-  case class ArrayType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "[]"}
-  case class NullableType(tpe: TypeTree) extends TypeTree {val name = tpe.name + "?"}
+  case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]"}
+  case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?"}
   case class IntType() extends PrimitiveTypeTree {val name = "Int"}
   case class LongType() extends PrimitiveTypeTree {val name = "Long"}
   case class FloatType() extends PrimitiveTypeTree {val name = "Float"}
@@ -340,7 +338,7 @@ object Trees {
       None
     }
 
-    def lookupOperator(classType: Type, args: List[Type], importMap: ImportMap) = {
+    def lookupOperator(classType: Type, args: List[Type], importMap: ImportMap): Option[OperatorSymbol] = {
       classType match {
         case TObject(classSymbol) => classSymbol.lookupOperator(this, args, importMap)
         case _                    => None
@@ -418,7 +416,7 @@ object Trees {
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
 
-    def signature(args: List[Any]) = opSign + args.head
+    def signature(args: List[Any]): String = opSign + args.head
   }
 
   object UnaryOperatorTree {
@@ -452,13 +450,13 @@ object Trees {
     val opSign      = "++"
     val isPre       = false
     val isIncrement = true
-    override def signature(args: List[Any]) = args.head + opSign
+    override def signature(args: List[Any]): String = args.head + opSign
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
     val opSign      = "--"
     val isPre       = false
     val isIncrement = false
-    override def signature(args: List[Any]) = args.head + opSign
+    override def signature(args: List[Any]): String = args.head + opSign
   }
 
   /*-------------------------------- Array Operator Trees --------------------------------*/
@@ -528,7 +526,7 @@ object Trees {
     }
 
     // The type of the identifier depends on the type of the symbol
-    override def setType(tpe: Type) = {
+    override def setType(tpe: Type): Identifier.this.type = {
       if (hasSymbol)
         getSymbol.setType(tpe)
       this
@@ -545,10 +543,10 @@ object Trees {
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = if (hasSymbol) getSymbol.getType else TUntyped
 
-    override def setType(tpe: Type) = this
+    override def setType(tpe: Type): ClassID.this.type = this
 
 
-    def isTemplated = templateTypes.nonEmpty
+    def isTemplated: Boolean = templateTypes.nonEmpty
 
     def templatedClassName: String = templatedClassName(templateTypes)
 
@@ -581,9 +579,9 @@ object Trees {
         return true
 
       application match {
-        case id: VariableID if id.hasSymbol           => id.getSymbol.isStatic
-        case MethodCall(meth, args) if meth.hasSymbol => meth.getSymbol.isStatic
-        case _                                        => false
+        case id: VariableID if id.hasSymbol        => id.getSymbol.isStatic
+        case MethodCall(meth, _) if meth.hasSymbol => meth.getSymbol.isStatic
+        case _                                     => false
       }
     }
   }
@@ -600,15 +598,17 @@ object Trees {
   trait Assignable extends ExprTree
 
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
-    override val arr: ExprTree = to
-    override val opSign: String = "[]="
+    override val arr   : ExprTree = to
+    override val opSign: String   = "[]="
     override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree
 
   case class This() extends ExprTree with Symbolic[ClassSymbol] with Leaf
   case class Super(specifier: Option[ClassID]) extends ExprTree with Symbolic[ClassSymbol]
-  case class NewArray(tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {def dimension = sizes.size}
+  case class NewArray(tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree {
+    def dimension: Int = sizes.size
+  }
   case class New(tpe: TypeTree, args: List[ExprTree]) extends ExprTree with Symbolic[MethodSymbol]
   case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree
   case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree
@@ -626,7 +626,7 @@ object Trees {
   // Expression that will be compiled if a value is to be left
   // on the stack.
   case class PutValue(exprTree: ExprTree) extends ExprTree {
-    override def getType = exprTree.getType
+    override def getType: Type = exprTree.getType
   }
 
   // Used as a placeholder

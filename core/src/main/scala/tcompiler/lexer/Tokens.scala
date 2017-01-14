@@ -4,12 +4,12 @@ package lexer
 import tcompiler.utils.{Enumeration, Positioned}
 
 sealed class Token(val kind: TokenKind) extends Positioned {
-  override def toString = kind.toString
+  override def toString: String = kind.toString
 }
 
 sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
-  def compare(that: TokenKind) = str.length - that.str.length
-  override def toString = str
+  def compare(that: TokenKind): Int = str.length - that.str.length
+  override def toString: String = str
 }
 
 object Tokens {
@@ -137,37 +137,37 @@ object Tokens {
 
   // Identifiers
   class ID(val value: String) extends Token(IDKIND) {
-    override def toString = "IDENTIFIER(" + value + ")"
+    override def toString: String = "IDENTIFIER(" + value + ")"
   }
 
   // Integer literals
   class INTLIT(val value: Int) extends Token(INTLITKIND) {
-    override def toString = "INT(" + value + ")"
+    override def toString: String = "INT(" + value + ")"
   }
 
   // Long literals
   class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
-    override def toString = "LONG(" + value + ")"
+    override def toString: String = "LONG(" + value + ")"
   }
 
   // Float literals
   class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
-    override def toString = "FLOAT(" + value + ")"
+    override def toString: String = "FLOAT(" + value + ")"
   }
 
   // Double literals
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
-    override def toString = "DOUBLE(" + value + ")"
+    override def toString: String = "DOUBLE(" + value + ")"
   }
 
   // Char literals
   class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
-    override def toString = "CHAR(" + value + ")"
+    override def toString: String = "CHAR(" + value + ")"
   }
 
   // String literals
   class STRLIT(val value: String) extends Token(STRLITKIND) {
-    override def toString = "STR(" + value + ")"
+    override def toString: String = "STR(" + value + ")"
   }
 
   // These need to be lazy otherwise the program crashes

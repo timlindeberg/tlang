@@ -14,7 +14,6 @@ object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] 
   val Seperator = "$"
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-
     val templateClassGenerator = new TemplateModifier(ctx)
     templateClassGenerator.generateTemplatePrograms(cus)
   }
@@ -109,15 +108,15 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       */
     def generateNeededTemplates(): Unit = {
       val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree) = t match {
-          case ClassDeclTree(id, parents, fields, methods) =>
+        override def _traverse(t: Tree): Tree = t match {
+          case ClassDeclTree(_, parents, fields, methods) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
             _traverse(parents)
             _traverse(fields)
             _traverse(methods)
-          case c: ClassID if c.isTemplated                 => generateClass(c)
-          case _                                           => super._traverse(t)
+          case c: ClassID if c.isTemplated                => generateClass(c)
+          case _                                          => super._traverse(t)
         }
       }
       traverser.traverse(cu)
@@ -199,7 +198,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         // TODO: this might not actually be needed if immutability is enforced
         override val treeCopy = new Trees.Copier
 
-        override def _transform(t: Tree) = t match {
+        override def _transform(t: Tree): Any = t match {
           case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)

@@ -17,7 +17,7 @@ object Desugaring extends Pipeline[List[CompilationUnit], List[CompilationUnit]]
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map desugar
 
-  def desugar(cu: CompilationUnit) = {
+  def desugar(cu: CompilationUnit): CompilationUnit = {
     val desugarer = new Desugarer(cu.importMap)
     desugarer(cu)
   }
@@ -28,11 +28,11 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
   private val ThisName = "$this"
 
-  override protected def _transform(t: Tree) = t match {
-    case extensionDecl: ExtensionDecl                    => desugarExtensionDecl(super._transform(extensionDecl))
-    case slice: ArraySlice                               => desugarArraySlice(super._transform(slice))
-    case opDecl: OperatorDecl                            => replaceOperatorDecl(super._transform(opDecl))
-    case safeAccess: SafeAccess                          =>
+  override protected def _transform(t: Tree): Any = t match {
+    case extensionDecl: ExtensionDecl             => desugarExtensionDecl(super._transform(extensionDecl))
+    case slice: ArraySlice                        => desugarArraySlice(super._transform(slice))
+    case opDecl: OperatorDecl                     => replaceOperatorDecl(super._transform(opDecl))
+    case safeAccess: SafeAccess                   =>
       // Recurse again to replace all calls in the desugared version
       super._transform(desugarSafeAccess(safeAccess))
     case acc@NormalAccess(_, MethodCall(meth, _)) =>
@@ -42,12 +42,12 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
         case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
         case _                       => newAcc
       }
-    case incDec: IncrementDecrementTree                  =>
+    case incDec: IncrementDecrementTree           =>
       if (isObject(incDec.expr))
         replaceOperatorCall(super._transform(incDec))
       else
         desugarIncrementDecrement(super._transform(incDec))
-    case assign: Assign                                  =>
+    case assign: Assign                           =>
       val to = assign.to
       if (to.isInstanceOf[ArrayRead] && isObject(to)) {
         val expr = super.apply(assign.from)
@@ -57,14 +57,14 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
       } else {
         super._transform(assign)
       }
-    case op: OperatorTree                                =>
+    case op: OperatorTree                         =>
       replaceOperatorCall(super._transform(op)) match {
         case op: OperatorTree => op // Finished transform
         case tree             => _transform(tree) // Transform again to replace external method calls etc.
       }
-    case foreach: Foreach                                => _transform(desugarForeach(foreach))
-    case elvis: Elvis                                    => _transform(desugarElvisOp(elvis))
-    case _                                               => super._transform(t)
+    case foreach: Foreach                         => _transform(desugarForeach(foreach))
+    case elvis: Elvis                             => _transform(desugarElvisOp(elvis))
+    case _                                        => super._transform(t)
   }
 
   //@formatter:off
@@ -111,7 +111,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
-        override protected def _transform(t: Tree) = t match {
+        override protected def _transform(t: Tree): Any = t match {
           case This()                                                      =>
             thisId
           case Access(obj, app)                                            =>
@@ -251,14 +251,14 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
         val arrClassSymbol = arr.getType.asInstanceOf[TObject].classSymbol
 
         val (obj, args) = op match {
-          case ArrayRead(obj, index) => (obj, List(index))
+          case ArrayRead(obj, index)               => (obj, List(index))
           case Assign(ArrayRead(obj, index), expr) => (obj, List(index, expr))
-          case _ => ???
+          case _                                   => ???
         }
         val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), importMap).get
         c.createMethodCall(obj, opSymbol, args)
 
-      case _                            => op
+      case _ => op
     }
   }
 
@@ -268,10 +268,10 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
     val op = t.asInstanceOf[OperatorDecl]
     val opSymbol = op.getSymbol.asInstanceOf[OperatorSymbol]
 
-    val methodID = new MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
+    val methodID = MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
     val methDecl =
       if (op.isAbstract)
-        new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+        MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
           // Convert array assignment so the value is returned in order to be consistent with other
@@ -280,7 +280,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
           val retType = new TreeBuilder().getTypeTree(valueId.getType)
           val ret = Return(Some(valueId)).setType(valueId.getType)
           val stats: List[StatTree] = op.stat.get match {
-            case Block(stats)        =>
+            case Block(stats)    =>
               val last = stats.last match {
                 case Return(Some(s)) => s
                 case s: StatTree     => s
@@ -291,9 +291,9 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
             case stat: StatTree  => List(stat, ret)
           }
           opSymbol.setType(valueId.getType)
-          new MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
+          MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
         case _                          =>
-          new MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+          MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
       }
     methDecl.setSymbol(opSymbol).setPos(op)
   }
@@ -430,7 +430,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
     val varDecl = foreach.varDecl
     val stat = foreach.stat
     container.getType match {
-      case TArray(arrTpe)       => desugarArrayForeach(varDecl, container, stat)
+      case _: TArray            => desugarArrayForeach(varDecl, container, stat)
       case TObject(classSymbol) => desugarIteratorForeach(classSymbol, varDecl, container, stat)
       case _                    => ???
     }
@@ -710,7 +710,7 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
   private def getClassID(operatorSymbol: OperatorSymbol) = {
     val classSymbol = operatorSymbol.classSymbol
-    new ClassID(classSymbol.name).setSymbol(classSymbol)
+    ClassID(classSymbol.name).setSymbol(classSymbol)
   }
 }
 

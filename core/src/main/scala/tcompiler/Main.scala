@@ -288,9 +288,9 @@ object Main extends MainErrors with Colored {
 
     print(
       s"""Executing main program ${Magenta(mainName)}:
-          |$separator
-          |${execCommand !!}
-          |$separator
+         |$separator
+         |${execCommand !!}
+         |$separator
        """.stripMargin)
   }
 

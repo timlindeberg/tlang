@@ -15,7 +15,7 @@ abstract class ErrorTester extends Tester {
 
   import TestUtils._
 
-  def Seperator = "---------------------------------------------------------------------\n"
+  private def Seperator = "---------------------------------------------------------------------\n"
 
   def testFile(file: File): Unit = {
     val ctx = getTestContext(file)
@@ -48,7 +48,7 @@ abstract class ErrorTester extends Tester {
     }
   }
 
-  def parseSolutions(file: File): List[(Int, String)] = {
+  private def parseSolutions(file: File): List[(Int, String)] = {
     val fileName = file.getPath
     Source.fromFile(fileName).getLines().zipWithIndex.flatMap {
       case (SolutionRegex(line), lineNumber) =>
@@ -62,7 +62,7 @@ abstract class ErrorTester extends Tester {
   private val ErrorRegex = """.*\.kool:(\d+):.+?\n(Fatal|Warning|Error) \((.+?)\).*""".r
   // Parses codes from error messages
 
-  def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
+  private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
     // First two rows of error messages
     val errors = removeANSIFormatting(errorMessages).split("\n\n") map {
       _.split("\n").take(2).mkString("\n")
@@ -72,7 +72,7 @@ abstract class ErrorTester extends Tester {
     }.toList
   }
 
-  def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String) = {
+  private def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
       val num = s"$lineNumber:"
       f"$num%-4s $msg"
@@ -97,7 +97,7 @@ abstract class ErrorTester extends Tester {
             r -= strim
           else
             failTest(s"Expected $s on line $line but found ${r.mkString(", ")}", extraInfo)
-        case None =>
+        case None    =>
           val errMsg = "Line $line did not produce $s"
           System.err.println(s"$errMsg $extraInfo")
           fail(errMsg)
@@ -111,7 +111,7 @@ abstract class ErrorTester extends Tester {
 
   }
 
-  def failTest(msg: String, extraInfo: String) = {
+  private def failTest(msg: String, extraInfo: String): Nothing = {
     System.err.println(s"$msg $extraInfo")
     fail(msg)
   }

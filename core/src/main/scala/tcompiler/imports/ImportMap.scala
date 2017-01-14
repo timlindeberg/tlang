@@ -14,9 +14,9 @@ import scala.collection.mutable
 class ImportMap(override var ctx: Context) extends ImportErrors {
 
 
-  override var importMap   = this
-  private  val shortToFull = mutable.Map[String, String]()
-  private  val fullToShort = mutable.Map[String, String]()
+  override var importMap: ImportMap = this
+  private  val shortToFull          = mutable.Map[String, String]()
+  private  val fullToShort          = mutable.Map[String, String]()
 
   var imports         : List[Import]               = Nil
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
@@ -73,15 +73,15 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
         case Some(e) => extensionSymbols ::= e
         case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
       }
-    case wildCardImport: WildCardImport   => ??? // TODO: Support wild card imports.
+    case _: WildCardImport   => ??? // TODO: Support wild card imports.
   }
 
-  def getExtensionClasses(className: String) =
+  def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
     extensionSymbols.filter { extSym =>
       extSym.name.replaceAll(""".*\$EX\/""", "") == className
     }
 
-  def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol) = extensionSymbols ::= extensionClassSymbol
+  def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol): Unit = extensionSymbols ::= extensionClassSymbol
 
   def addImport(tup: (String, String)): Unit = addImport(tup._1, tup._2)
   def addImport(short: String, full: String): Unit = {
@@ -90,7 +90,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     fullToShort += f -> short
   }
 
-  def importNames = imports map importName
+  def importNames: List[String] = imports map importName
 
   def importName(imp: Import): String = getFullName(imp.name)
 
@@ -99,23 +99,23 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     getFullName(name)
   }
 
-  def importEntries = shortToFull.values.toList
+  def importEntries: List[String] = shortToFull.values.toList
 
-  def getFullName(shortName: String) = shortToFull.getOrElse(shortName, shortName).replaceAll("::", ".")
-  def getShortName(fullName: String) = fullToShort.getOrElse(fullName.replaceAll("::", "."), fullName)
+  def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName).replaceAll("::", ".")
+  def getShortName(fullName: String): String = fullToShort.getOrElse(fullName.replaceAll("::", "."), fullName)
 
-  def getErrorName(name: String) = {
+  def getErrorName(name: String): String = {
     var s = name
     for (e <- fullToShort)
       s = s.replaceAll(e._1, e._2)
     s.replaceAll("/", "::")
   }
 
-  def contains(shortName: String) = shortToFull.contains(shortName)
+  def contains(shortName: String): Boolean = shortToFull.contains(shortName)
 
-  def entries = shortToFull.iterator
+  def entries: Iterator[(String, String)] = shortToFull.iterator
 
-  override def toString = {
+  override def toString: String = {
     shortToFull.map { case (short, full) => s"$short -> $full" }.mkString("\n")
   }
 

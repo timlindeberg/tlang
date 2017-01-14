@@ -12,7 +12,7 @@ import tcompiler.ast.{Parser, Printer}
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.{Context, Reporter}
+import tcompiler.utils.{Context, Pipeline, Reporter}
 import tcompiler.utils.Extensions._
 
 import scala.util.Random
@@ -24,20 +24,20 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   val Flag = "--eval"
 
-  val TestFolder   = "./tmpTest"
-  val TestFilePath = TestFolder + "/tmpTestFile.kool"
+  val TestFolder           = "./tmpTest"
+  val TestFilePath: String = TestFolder + "/tmpTestFile.kool"
 
   var testFolderFile = new File(TestFolder)
   var testFile       = new File(TestFilePath)
 
-  val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
-  val Rand          = new Random()
-  val TestCtx       = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDirs = List(testFolderFile))
-  val TestImportMap = new ImportMap(TestCtx)
-  val TypeCheckCtx  = new Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile))
-  val ClassSymbol   = new ClassSymbol("obj", false)
-  val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
+  val Compiler  : Pipeline[List[File], Unit] = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  val Rand                                   = new Random()
+  val TestCtx                                = Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDirs = List(testFolderFile))
+  val TestImportMap                          = new ImportMap(TestCtx)
+  val TypeCheckCtx                           = Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile))
+  val ClassSymbol                            = new ClassSymbol("obj", false)
+  val MainMethod: MethodSymbol               = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  val TypeChecker                            = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
 
 
   val MainName      = "Main"
@@ -45,17 +45,16 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val StringLength  = 5
   val NumberOfTests = 1
 
-  val int    = () => IntLit(Rand.nextInt).setType(Int)
-  val bool   = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(Bool)
-  val long   = () => LongLit(Rand.nextLong % scala.Int.MaxValue).setType(Long)
-  val float  = () => FloatLit(Rand.nextFloat).setType(Float)
-  val double = () => DoubleLit(Rand.nextDouble % scala.Float.MaxValue).setType(Double)
-  val char   = () => CharLit(randChar).setType(Char)
-  val string = () => StringLit(Rand.nextString(StringLength)).setType(String)
+  val int   : () => IntLit                             = () => IntLit(Rand.nextInt).setType(Int)
+  val bool  : () => Literal[Boolean] with Serializable = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(Bool)
+  val long  : () => LongLit                            = () => LongLit(Rand.nextLong % scala.Int.MaxValue).setType(Long)
+  val float : () => FloatLit                           = () => FloatLit(Rand.nextFloat).setType(Float)
+  val double: () => DoubleLit                          = () => DoubleLit(Rand.nextDouble % scala.Float.MaxValue).setType(Double)
+  val char  : () => CharLit                            = () => CharLit(randChar).setType(Char)
+  val string: () => StringLit                          = () => StringLit(Rand.nextString(StringLength)).setType(String)
 
-  val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
-  val combinations = for (x <- types; y <- types) yield (x, y)
-
+  val types       : List[() => ExprTree]                   = List[() => ExprTree](int, bool, long, float, double, char, string)
+  val combinations: List[(() => ExprTree, () => ExprTree)] = for (x <- types; y <- types) yield (x, y)
 
 
   before {
@@ -95,7 +94,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   //  ignore should "NotEquals" in testOperator(NotEquals)
 
 
-  def testOperator(operator: (ExprTree, ExprTree) => ExprTree) = {
+  def testOperator(operator: (ExprTree, ExprTree) => ExprTree): Unit = {
     combinations.foreach { case (lhs, rhs) =>
       val expr = operator(lhs(), rhs())
 
@@ -105,7 +104,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  def testAssignmentOperator(operator: (VariableID, ExprTree) => ExprTree) =
+  def testAssignmentOperator(operator: (VariableID, ExprTree) => ExprTree): Unit =
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
       val id = VariableID(IdName).setSymbol(new VariableSymbol(IdName)).setType(tpe)
@@ -116,7 +115,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
       }
     }
 
-  def testArrayAssignmentOperator(operator: (VariableID, ExprTree, ExprTree) => ExprTree) =
+  def testArrayAssignmentOperator(operator: (VariableID, ExprTree, ExprTree) => ExprTree): Unit =
     combinations.foreach { case (lhs, rhs) =>
       val tpe = lhs().getType
       val id = VariableID(IdName).setSymbol(new VariableSymbol(IdName)).setType(TArray(tpe))

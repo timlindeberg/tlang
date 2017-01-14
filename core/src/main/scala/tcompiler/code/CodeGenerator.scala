@@ -28,18 +28,18 @@ object CodeGenerator {
   val JavaIO   = "java/io/"
 
   /* Java classes used by compiler */
-  val JavaStringBuilder    = JavaLang + "StringBuilder"
-  val JavaString           = JavaLang + "String"
-  val JavaSystem           = JavaLang + "System"
-  val JavaPrintStream      = JavaIO + "PrintStream"
-  val JavaObject           = JavaLang + "Object"
-  val JavaInt              = JavaLang + "Integer"
-  val JavaChar             = JavaLang + "Character"
-  val JavaFloat            = JavaLang + "Float"
-  val JavaDouble           = JavaLang + "Double"
-  val JavaLong             = JavaLang + "Long"
-  val JavaBool             = JavaLang + "Boolean"
-  val JavaRuntimeException = JavaLang + "RuntimeException"
+  val JavaStringBuilder   : String = JavaLang + "StringBuilder"
+  val JavaString          : String = JavaLang + "String"
+  val JavaSystem          : String = JavaLang + "System"
+  val JavaPrintStream     : String = JavaIO + "PrintStream"
+  val JavaObject          : String = JavaLang + "Object"
+  val JavaInt             : String = JavaLang + "Integer"
+  val JavaChar            : String = JavaLang + "Character"
+  val JavaFloat           : String = JavaLang + "Float"
+  val JavaDouble          : String = JavaLang + "Double"
+  val JavaLong            : String = JavaLang + "Long"
+  val JavaBool            : String = JavaLang + "Boolean"
+  val JavaRuntimeException: String = JavaLang + "RuntimeException"
 
 }
 
@@ -48,9 +48,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   import CodeGenerator._
 
   def compileStat(statement: StatTree,
-                  continue: Option[String] = None,
-                  break: Option[String] = None,
-                  compileUseless: Boolean = false): Unit = {
+    continue: Option[String] = None,
+    break: Option[String] = None,
+    compileUseless: Boolean = false): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                    =>
@@ -404,7 +404,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
         compileExpr(expr)
-        val signature = s"(${found.byteCodeName })V"
+        val signature = s"(${found.byteCodeName})V"
         ch << InvokeSpecial(name, ConstructorName, signature)
       case (_: TArray, desired: TArray)                                   =>
         // Found an array and wanted an array, expr must be an arraylit
@@ -538,7 +538,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       ch << Goto(els.id)
     case expr: ExprTree                   =>
       compileExpr(expr)
-      if(expr.getType.isNullable)
+      if (expr.getType.isNullable)
         ch << IfNull(els.id)
       else
         ch << IfEq(els.id)
@@ -548,11 +548,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   private def store(variable: VariableSymbol,
-                    putValue: () => Unit,
-                    duplicate: Boolean,
-                    putObject: () => Unit = () => {
-                      ch << ArgLoad(0)
-                    }): CodeHandler = {
+    putValue: () => Unit,
+    duplicate: Boolean,
+    putObject: () => Unit = () => {
+      ch << ArgLoad(0)
+    }): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
     val codes = tpe.codes

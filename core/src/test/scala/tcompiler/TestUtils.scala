@@ -9,14 +9,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
 import scala.io.Source
 import scala.sys.process._
+import scala.util.matching.Regex
 
 object TestUtils extends FlatSpec {
 
-  val TestDirectory  = "gen"
-  val Resources      = "core/src/test/resources/"
-  val Interpreter    = new Interpreter
-  val Timeout        = duration.Duration(2, "sec")
-  val SolutionRegex = """.*// *[R|r]es:(.*)""".r
+  val TestDirectory        = "gen"
+  val Resources            = "core/src/test/resources/"
+  val Interpreter          = new Interpreter
+  val Timeout              = duration.Duration(2, "sec")
+  val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
 
   def test(file: File, testFunction: File => Unit): Unit = {
     if (file.isDirectory)
@@ -27,21 +28,21 @@ object TestUtils extends FlatSpec {
       it should file.getName in testFunction(file)
   }
 
-  def testContext = getTestContext(None)
+  def testContext: Context = getTestContext(None)
 
   def getTestContext(file: File): Context = getTestContext(Some(file))
-  def getTestContext(file: Option[File]): Context  = {
+  def getTestContext(file: Option[File]): Context = {
     val (files, outDir) = file match {
       case Some(f) =>
         val mainName = f.getName.replaceAll(Main.FileEnding, "")
         (List(f), List(getOutDir(mainName)))
-      case None => (Nil, List(new File(".")))
+      case None    => (Nil, List(new File(".")))
     }
 
     val reporter = new Reporter()
     val cp = Main.TDirectory
     val printCodeStage = Nil //List("codegeneration")
-    new Context(reporter = reporter, files = files, outDirs = outDir, classPaths = List(cp), printCodeStages = printCodeStage, useColor = true)
+    Context(reporter = reporter, files = files, outDirs = outDir, classPaths = List(cp), printCodeStages = printCodeStage, useColor = true)
   }
 
   def executeTProgram(testFile: File): String = {
@@ -53,7 +54,7 @@ object TestUtils extends FlatSpec {
   def executeTProgram(classPaths: List[String], mainName: String): String = {
     val cp = formatClassPath(classPaths)
     val command = s"java -cp $cp $mainName"
-    val future = Future(blocking(command!!))
+    val future = Future(blocking(command !!))
     try {
       Await.result(future, Timeout)
     } catch {
@@ -68,7 +69,7 @@ object TestUtils extends FlatSpec {
       classPaths.mkString(":")
 
 
-  def lines(str: String) = str.split("\\r?\\n").map(_.trim).toList
+  def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList
 
   def programFiles(dir: String): Array[File] = {
     val f = new File(dir)
@@ -83,7 +84,7 @@ object TestUtils extends FlatSpec {
     }
   }
 
-  def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = "") = {
+  def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = ""): String = {
     var res = result
     var sol = solution
     if (res.size < sol.size)
@@ -109,10 +110,7 @@ object TestUtils extends FlatSpec {
         line
     }.mkString("\n", "\n", "\n")
 
-    if (errors == "")
-      results
-    else
-      results + "\n" + errors
+    if (errors == "") results else results + "\n" + errors
   }
 
   private val IgnoreRegex = """.*// *[I|i]gnore.*"""

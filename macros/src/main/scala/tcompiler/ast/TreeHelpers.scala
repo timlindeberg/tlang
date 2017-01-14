@@ -4,7 +4,7 @@ import java.io.PrintWriter
 
 import scala.annotation.StaticAnnotation
 import scala.collection.immutable.Seq
-import scala.meta.{Term, _}
+import scala.meta._
 
 case class AST(name: Term.Name, params: Seq[Term.Param]) {
   def args: Seq[Term.Name] = params.map(p => Term.Name(p.name.value))
@@ -33,7 +33,7 @@ class GenerateTreeHelpers extends StaticAnnotation {
 
 object GenerateTreeHelpers {
 
-  private val Primitives = List("Int", "Long", "Float", "Double", "Char")
+  private val Primitives   = List("Int", "Long", "Float", "Double", "Char")
   private val IgnoredTypes = Primitives ::: List("String", "List[String]", "ImportMap")
 
   def getASTs(stats: Seq[Stat]): Seq[AST] = stats.collect {
@@ -70,9 +70,9 @@ object GenerateTreeHelpers {
   def createTransformer(asts: Seq[AST]): Defn.Class = {
     val cases = asts map { case ast@AST(name, params) =>
       val transforms = params.map { param =>
-        val tpe = param.decltpe.get.syntax
+        val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
         val name = Term.Name(param.name.value)
-        if(IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${Type.Name(tpe)}]"
+        if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${Type.Name(tpe)}]"
       }
 
       p"case $name(..${ast.patTerms}) => treeCopy.$name(t, ..$transforms)"
@@ -102,14 +102,17 @@ object GenerateTreeHelpers {
 
   def createTraverser(asts: Seq[AST]): Defn.Class = {
     val cases = asts
-      .map { case ast@AST(name, params) =>
+      .map { case ast@AST(_, params) =>
         val traverses = params
-          .filter { p => !IgnoredTypes.contains(p.decltpe.get.syntax) }
-          .map { p => q"_traverse(${Term.Name(p.name.value)})"}
+          .filter { p =>
+            val tpe = p.decltpe.map(_.syntax).getOrElse("")
+            !IgnoredTypes.contains(tpe)
+          }
+          .map { p => q"_traverse(${Term.Name(p.name.value)})" }
         (ast, traverses)
       }
       .filter { case (_, traverses) => traverses.nonEmpty }
-      .map { case (ast@AST(name, _), traverses) => p"case $name(..${ast.patTerms}) => { ..$traverses }"}
+      .map { case (ast@AST(name, _), traverses) => p"case $name(..${ast.patTerms}) => { ..$traverses }" }
 
     q"""
       class Traverser {
@@ -127,9 +130,10 @@ object GenerateTreeHelpers {
      """
   }
 
+  // Used to log trees to file during compilation
   def logTree(t: Tree): Unit = {
     val path = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\log.txt"
-    new PrintWriter(path) {write(t.syntax); close}
+    new PrintWriter(path) {write(t.syntax); close()}
   }
 
   private def equality(params: List[Term.Param]): Term = {
@@ -138,7 +142,8 @@ object GenerateTreeHelpers {
       val name = param.name.value
       val a = Term.Name(name)
       val a0 = Term.Name(name + "0")
-      if (Primitives.contains(param.decltpe.get.syntax)) q"($a == $a0)" else q"($a eq $a0)"
+      val tpe = param.decltpe.map(_.syntax).getOrElse("")
+      if (Primitives.contains(tpe)) q"($a == $a0)" else q"($a eq $a0)"
     }
 
     params match {

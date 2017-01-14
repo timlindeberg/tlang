@@ -5,6 +5,7 @@ import tcompiler.analyzer.Types.Type
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.reflect._
+
 /**
   * Created by Tim Lindeberg on 4/16/2016.
   */
@@ -24,32 +25,32 @@ object Extensions {
 
   implicit class AnyExtensions(a: Any) {
 
-    def ifInstanceOf[T: ClassTag](f: T => Unit) = if(classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
+    def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
 
   }
 
   implicit class GenericExtensions[T](t: T) {
-    def use(f: T => Unit): T = { f(t); t }
+    def use(f: T => Unit): T = {f(t); t}
   }
 
   implicit class TypeTuple(t: (Type, Type)) {
 
-    val c1 = t._1.getClass
-    val c2 = t._2.getClass
+    val c1: Class[_ <: Type] = t._1.getClass
+    val c2: Class[_ <: Type] = t._2.getClass
 
-    def anyIs(types: Type*) = types.map(_.getClass).exists(c => c == c1 || c == c2)
-    def bothAre(types: Type*) = types.map(_.getClass).exists(c => c == c1 && c == c2)
+    def anyIs(types: Type*): Boolean = types.map(_.getClass).exists(c => c == c1 || c == c2)
+    def bothAre(types: Type*): Boolean = types.map(_.getClass).exists(c => c == c1 && c == c2)
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](collection: Collection[T]) {
 
-    def filterType[A <: T: ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
-    def filterNotType[A <: T: ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
-    def findInstance[A <: T: ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
+    def filterType[A <: T : ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
+    def filterNotType[A <: T : ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
+    def findInstance[A <: T : ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
     def findDefined[A](f: T => Option[A]): Option[A] = {
-      for(v <- collection){
+      for (v <- collection) {
         val o = f(v)
-        if(o.isDefined) return o
+        if (o.isDefined) return o
       }
       None
     }

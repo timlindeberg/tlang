@@ -8,12 +8,13 @@ import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit]] {
 
-  val hasBeenTypechecked = scala.collection.mutable.Set[MethodSymbol]()
-  var methodUsage        = Map[MethodSymbol, Boolean]()
+  val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
+  var methodUsage       : Map[MethodSymbol, Boolean] = Map()
 
 
   /**
@@ -54,13 +55,13 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
 }
 
 class TypeChecker(override var ctx: Context,
-                  override var importMap: ImportMap,
-                  currentMethodSymbol: MethodSymbol,
-                  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+  override var importMap: ImportMap,
+  currentMethodSymbol: MethodSymbol,
+  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 
   import TypeChecking._
 
-  val returnStatements = ArrayBuffer[(Return, Type)]()
+  val returnStatements: ArrayBuffer[(Return, Type)] = ArrayBuffer()
 
   def tcMethod(): Unit = {
     if (TypeChecking.hasBeenTypechecked(currentMethodSymbol))
@@ -90,7 +91,7 @@ class TypeChecker(override var ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
-    returnStatements.map(_._1) foreach { _.setType(inferredType) }
+    returnStatements.map(_._1) foreach {_.setType(inferredType)}
 
     checkOperatorType(inferredType)
     currentMethodSymbol.setType(inferredType)
@@ -112,9 +113,9 @@ class TypeChecker(override var ctx: Context,
   }
 
   def tcStat(statement: StatTree): Unit = statement match {
-    case Block(stats)                              =>
+    case Block(stats)                      =>
       stats.foreach(tcStat)
-    case varDecl@VarDecl(tpe, id, init, modifiers) =>
+    case varDecl@VarDecl(tpe, id, init, _) =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
         ErrorValueMustBeInitialized(varSym.name, varDecl)
@@ -130,19 +131,19 @@ class TypeChecker(override var ctx: Context,
           case _          => ErrorNoTypeNoInitalizer(varSym.name, varDecl)
         }
       }
-    case If(condition, thn, els)                   =>
+    case If(condition, thn, els)           =>
       tcExpr(condition, Bool)
       tcStat(thn)
       els ifDefined tcStat
-    case While(condition, stat)                    =>
+    case While(condition, stat)            =>
       tcExpr(condition, Bool)
       tcStat(stat)
-    case For(init, condition, post, stat)          =>
+    case For(init, condition, post, stat)  =>
       init foreach tcStat
       tcExpr(condition, Bool)
       post foreach tcStat
       tcStat(stat)
-    case Foreach(varDecl, container, stat)         =>
+    case Foreach(varDecl, container, stat) =>
       val containerType = tcExpr(container)
       val expectedVarType = containerType match {
         case TArray(arrTpe)       =>
@@ -161,24 +162,24 @@ class TypeChecker(override var ctx: Context,
             ErrorWrongType(expectedVarType, tpe, varDecl.id)
       }
       tcStat(stat)
-    case PrintStatTree(expr)                       =>
+    case PrintStatTree(expr)               =>
       tcExpr(expr)
       if (expr.getType == TUnit)
         ErrorCantPrintUnitType(expr)
-    case Error(expr)                               =>
+    case Error(expr)                       =>
       tcExpr(expr, String)
-    case ret@Return(Some(expr))                    =>
+    case ret@Return(Some(expr))            =>
       val t = currentMethodSymbol.getType match {
         case TUntyped => tcExpr(expr)
         case retType  => tcExpr(expr, retType)
       }
       returnStatements += ((ret, t))
-    case ret@Return(None)                          =>
+    case ret@Return(None)                  =>
       if (currentMethodSymbol.getType != TUntyped && currentMethodSymbol.getType != TUnit)
         ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
       returnStatements += ((ret, TUnit))
-    case _: Break | _: Continue                    =>
-    case expr: ExprTree                            =>
+    case _: Break | _: Continue            =>
+    case expr: ExprTree                    =>
       tcExpr(expr)
   }
 
@@ -198,7 +199,7 @@ class TypeChecker(override var ctx: Context,
       case su: Super                                     => su.getSymbol.getType
       case acc: Access                                   => tcAccess(acc)
       case assign: Assign                                => tcAssignment(assign)
-      case newArray@NewArray(tpe, sizes)                 =>
+      case NewArray(tpe, sizes)                          =>
         sizes.foreach(tcExpr(_, Int))
         tpe.getType
       case ArrayLit(expressions)                         =>
@@ -274,7 +275,7 @@ class TypeChecker(override var ctx: Context,
           case _                                 =>
         }
         Bool
-      case Is(expr, tpe)                                 =>
+      case Is(expr, _)                                   =>
         tcExpr(expr, Object)
         Bool
       case As(expr, tpe)                                 =>
@@ -283,16 +284,16 @@ class TypeChecker(override var ctx: Context,
       case arrRead@ArrayRead(arr, index)                 =>
         val arrTpe = tcExpr(arr)
         arrTpe match {
-          case TObject(classSymbol) =>
+          case _: TObject     =>
             val indexType = tcExpr(index)
             val argList = List(indexType)
             tcArrayOperator(arrTpe, arrRead, argList, arrTpe, expression)
-          case TArray(arrTpe)       =>
+          case TArray(arrTpe) =>
             tcExpr(index, Int)
             arrTpe
-          case tpe                  => ErrorWrongType("array", tpe, arr)
+          case tpe            => ErrorWrongType("array", tpe, arr)
         }
-      case ArraySlice(arr, start, end, step)                   =>
+      case ArraySlice(arr, start, end, step)             =>
         List(start, end, step).filter(_.isDefined).map(e => tcExpr(e.get, Int))
         tcExpr(arr)
       case newDecl@New(tpe, exprs)                       =>
@@ -396,8 +397,8 @@ class TypeChecker(override var ctx: Context,
 
     // If it's a method access we type check it now
     val argTypes = app match {
-      case MethodCall(meth, args) => Some(args.map(tcExpr(_)))
-      case _                      => None
+      case MethodCall(_, args) => Some(args.map(tcExpr(_)))
+      case _                   => None
     }
 
     def methSignature = {
@@ -425,7 +426,7 @@ class TypeChecker(override var ctx: Context,
               case None             =>
                 ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, app)
             }
-          case TArray(arrTpe)       =>
+          case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
               ErrorMethodOnWrongType(methSignature, objType.toString, app)
             meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
@@ -501,17 +502,17 @@ class TypeChecker(override var ctx: Context,
         // desired method or field
         val thisSymbol = sup.getSymbol
         val classSymbol = app match {
-          case MethodCall(meth, args) =>
+          case MethodCall(meth, _)   =>
             thisSymbol.lookupParentMethod(meth.name, argTypes.get, importMap) match {
               case Some(methodSymbol) => methodSymbol.classSymbol
               case None               => return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, app)
             }
-          case Identifier(fieldName)  =>
+          case Identifier(fieldName) =>
             thisSymbol.lookupParentField(fieldName) match {
               case Some(fieldSymbol) => fieldSymbol.classSymbol
               case None              => return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, app)
             }
-          case _                      => ???
+          case _                     => ???
         }
         sup.setSymbol(classSymbol)
         sup.setType(classSymbol.getType)
@@ -525,36 +526,36 @@ class TypeChecker(override var ctx: Context,
     val expr = assignment.from
 
     to match {
-      case id: VariableID           =>
+      case _: VariableID          =>
         val toTpe = tcExpr(to)
 
         tcExpr(expr, toTpe)
         toTpe
-      case Access(obj, application) =>
+      case Access(_, application) =>
         application match {
-          case _: MethodCall  => ErrorAssignValueToMethodCall(assignment)
-          case id: VariableID =>
+          case _: MethodCall => ErrorAssignValueToMethodCall(assignment)
+          case _: VariableID =>
             val toTpe = tcExpr(to)
             tcExpr(expr, toTpe)
             toTpe
-          case _              => ???
+          case _             => ???
         }
-      case ArrayRead(arr, index)    =>
+      case ArrayRead(arr, index)  =>
         val arrTpe = tcExpr(arr)
         to.setType(arr)
         arrTpe match {
-          case TObject(classSymbol) =>
+          case _: TObject       =>
             val indexType = tcExpr(index)
             val exprType = tcExpr(expr)
 
             val argList = List(indexType, exprType)
             tcArrayOperator(arrTpe, assignment, argList, arrTpe, assignment)
             exprType
-          case TArray(arrayTpe)     =>
+          case TArray(arrayTpe) =>
             tcExpr(index, Int)
             tcExpr(expr, arrayTpe)
             arrTpe.asInstanceOf[TArray].tpe
-          case tpe                  => ErrorWrongType(arr.getType + "[]", tpe, arr)
+          case tpe              => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
     }
   }
@@ -572,7 +573,7 @@ class TypeChecker(override var ctx: Context,
       .getOrElse(ErrorOverloadedOperatorNotFound(expr, argList, expr))
   }
 
-  def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned) = {
+  def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
     typeCheckOperator(classTpe, opType, argList)
       .getOrElse(ErrorIndexingOperatorNotFound(opType, argList, arrTpe.toString, pos))
   }
@@ -590,7 +591,7 @@ class TypeChecker(override var ctx: Context,
   }
 
 
-  def checkMethodUsage() = {
+  def checkMethodUsage(): Unit = {
     // Check method usage
     // TODO: Refactoring of typechecker global variables etc.
     methodUsage foreach {
@@ -600,7 +601,7 @@ class TypeChecker(override var ctx: Context,
     methodUsage = Map[MethodSymbol, Boolean]()
   }
 
-  def checkCorrectOverrideReturnTypes(cu: CompilationUnit) =
+  def checkCorrectOverrideReturnTypes(cu: CompilationUnit): Unit =
     cu.classes.foreach { clazz =>
       clazz.methods.foreach { meth =>
         val classSymbol = clazz.getSymbol
@@ -625,7 +626,7 @@ class TypeChecker(override var ctx: Context,
     }
 
 
-  def checkTraitsAreImplemented(cu: CompilationUnit) =
+  def checkTraitsAreImplemented(cu: CompilationUnit): Unit =
     cu.classes.filter(!_.isAbstract).foreach { classDecl =>
       classDecl.traits.foreach(t => traitIsImplemented(classDecl, t.getSymbol))
     }
@@ -642,7 +643,7 @@ class TypeChecker(override var ctx: Context,
 
   /**
     * This is hardcoded and does not depend on the trait Iterable.
-    * This allows for classes which do not implement the Itreable trait
+    * This allows for classes which do not implement the Iterable trait
     * but which does provide an Iterator method which returns an Iterator
     * with the methods HasNext and Next of correct types to still be
     * applicable for ForEach loops.

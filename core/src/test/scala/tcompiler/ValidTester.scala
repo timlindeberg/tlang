@@ -4,10 +4,11 @@ import java.io.{File, FileNotFoundException}
 
 import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Parser
+import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.CompilationException
+import tcompiler.utils.{CompilationException, Pipeline}
 
 import scala.io.Source
 
@@ -18,7 +19,8 @@ trait ValidTester extends Tester {
 
   import TestUtils._
 
-  override def Pipeline = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
+  override def Pipeline: Pipeline[List[File], List[CompilationUnit]] =
+    Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
 
   def testFile(file: File): Unit = {
     val ctx = getTestContext(file)
@@ -37,30 +39,27 @@ trait ValidTester extends Tester {
       case t: CompilationException  =>
         println(t.getMessage)
         fail("Compilation failed")
-      case t: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
+      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
     }
   }
 
-  def parseSolutions(file: File): List[String] = {
+  private def parseSolutions(file: File): List[String] = {
     val fileName = file.getPath
-    Source.fromFile(fileName).getLines().flatMap {
-      case SolutionRegex(line) => Some(line.trim)
-      case _                   => None
-    }.toList
+    Source.fromFile(fileName).getLines().collect { case SolutionRegex(line) => line.trim }.toList
   }
 
-  def assertCorrect(res: List[String], sol: List[String]) = {
-      res.zip(sol).zipWithIndex.foreach {
-        case ((r, s), i) =>
-          val extraInfo = formatTestFailedMessage(i + 1, res, sol)
-          if (r != s)
-            fail(s"Expected '$s' but found '$r' $extraInfo")
-      }
-      if (res.length != sol.length) {
-        val extraInfo = formatTestFailedMessage(-1, res, sol, "")
-        fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
-      }
+  private def assertCorrect(res: List[String], sol: List[String]): Unit = {
+    res.zip(sol).zipWithIndex.foreach {
+      case ((r, s), i) =>
+        val extraInfo = formatTestFailedMessage(i + 1, res, sol)
+        if (r != s)
+          fail(s"Expected '$s' but found '$r' $extraInfo")
     }
+    if (res.length != sol.length) {
+      val extraInfo = formatTestFailedMessage(-1, res, sol)
+      fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
+    }
+  }
 
 
 }

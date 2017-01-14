@@ -53,7 +53,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
       val methSymbol = methodDecl.getSymbol
 
       val methodHandle = methodDecl match {
-        case methDecl: MethodDecl =>
+        case _: MethodDecl =>
           val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
           val methDescriptor = methodDescriptor(methSymbol)
           classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, methDescriptor)
@@ -140,7 +140,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
   }
 
   private def generateStackMapFrames(file: String) = {
-    // Use ASM libary to generate the stack map frames
+    // Use ASM library to generate the stack map frames
     // since Cafebabe does not support this.
     val classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     val inputStream = new BufferedInputStream(new FileInputStream(file))
@@ -194,11 +194,11 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
     var offset = if (meth.isStatic) 0 else 1
 
     mutable.Map() ++ meth.argList.zipWithIndex.map { case (arg, i) =>
-        val pair = arg -> (i + offset)
-        // Longs and doubles take up two slots
-        if (arg.getType.size == 2)
-          offset += 1
-        pair
+      val pair = arg -> (i + offset)
+      // Longs and doubles take up two slots
+      if (arg.getType.size == 2)
+        offset += 1
+      pair
     }.toMap
   }
 
@@ -239,7 +239,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
     // TODO: why lazy?
     lazy val ch: CodeHandler = classFile.addClassInitializer.codeHandler
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    staticFields.foreach { case varDecl@VarDecl(varTpe, id, Some(expr), _) =>
+    staticFields.foreach { case VarDecl(_, id, Some(expr), _) =>
       compileField(expr, id, classDecl, ch, codeGenerator)
     }
     ch << RETURN
@@ -249,7 +249,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
   private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler) = {
     val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    nonStaticFields foreach { case varDecl@VarDecl(_, id, Some(expr), _) =>
+    nonStaticFields foreach { case VarDecl(_, id, Some(expr), _) =>
       ch << ArgLoad(0) // put this-reference on stack
       compileField(expr, id, classDecl, ch, codeGenerator)
     }
@@ -302,7 +302,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
     var prefix = outDir.getAbsolutePath.replaceAll("\\\\", "/")
 
     // Weird Windows behaviour
-    if(prefix.endsWith("."))
+    if (prefix.endsWith("."))
       prefix = prefix.dropRight(1)
 
     prefix += "/"

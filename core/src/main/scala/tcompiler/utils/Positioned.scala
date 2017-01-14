@@ -4,11 +4,11 @@ package utils
 import java.io.File
 
 trait Positioned {
-  private[Positioned] var _file: Option[File] = None
-  private[Positioned] var _lineStart: Int = 0
-  private[Positioned] var _colStart: Int = 0
-  private[Positioned] var _lineEnd: Int = 0
-  private[Positioned] var _colEnd: Int = 0
+  private[Positioned] var _file     : Option[File] = None
+  private[Positioned] var _lineStart: Int          = 0
+  private[Positioned] var _colStart : Int          = 0
+  private[Positioned] var _lineEnd  : Int          = 0
+  private[Positioned] var _colEnd   : Int          = 0
 
   def setPos(file: File, start: Int, end: Int): this.type = {
     _lineStart = Position.line(start)
@@ -21,7 +21,7 @@ trait Positioned {
     this
   }
 
-  def hasPosition = _file.isDefined
+  def hasPosition: Boolean = _file.isDefined
 
   def setPos(other: Positioned): this.type = {
     _lineStart = other._lineStart
@@ -45,11 +45,11 @@ trait Positioned {
     this
   }
 
-  def file = _file.get
-  def line = _lineStart
-  def col = _colStart
-  def endLine = _lineEnd
-  def endCol = _colEnd
+  def file: File = _file.get
+  def line: Int = _lineStart
+  def col: Int = _colStart
+  def endLine: Int = _lineEnd
+  def endCol: Int = _colEnd
 
   def position: String =
     if (hasPosition)

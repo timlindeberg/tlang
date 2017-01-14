@@ -1,7 +1,5 @@
 package tcompiler.utils
 
-import scala.collection.mutable
-
 /**
   * Created by timlindeberg on 23/07/16.
   */
@@ -24,7 +22,7 @@ trait Colored {
   def Cyan: String = GetColor(Console.CYAN)
   def White: String = GetColor(Console.WHITE)
 
-  def Colors = Array[String](Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+  def Colors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 
 
   def Underline(s: Any): String = Underline + s + Reset
@@ -38,7 +36,6 @@ trait Colored {
   def Magenta(s: Any): String = Magenta + s + Reset
   def Cyan(s: Any): String = Cyan + s + Reset
   def White(s: Any): String = White + s + Reset
-
 
 
   // Color scheme

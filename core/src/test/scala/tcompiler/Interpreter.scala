@@ -27,12 +27,12 @@ import scala.tools.nsc.GenericRunnerSettings
 import scala.tools.nsc.interpreter.IMain
 
 class Interpreter {
-  val baos   = new ByteArrayOutputStream()
-  val stream = new PrintStream(baos)
+  val baos          = new ByteArrayOutputStream()
+  val stream        = new PrintStream(baos)
   val defaultStream = new PrintStream(new FileOutputStream(FileDescriptor.out))
   protected val flusher = new PrintWriter(stream)
 
-  protected val interpreter = {
+  protected val interpreter: IMain = {
     val settings = new GenericRunnerSettings(System.out.println)
     settings.usejavacp.value = true
     settings.nc.value = true

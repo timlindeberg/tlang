@@ -12,10 +12,10 @@ trait Errors {
   var importMap  : ImportMap
 
 
-  def warning(errorCode: Int, msg: String, pos: Positioned) =
+  def warning(errorCode: Int, msg: String, pos: Positioned): Unit =
     ctx.reporter.warning(ErrorPrefix, errorCode, msg, pos, importMap)
 
-  def fatal(errorCode: Int, msg: String, pos: Positioned) =
+  def fatal(errorCode: Int, msg: String, pos: Positioned): Nothing =
     ctx.reporter.fatal(ErrorPrefix, errorCode, msg, pos, importMap)
 
 }

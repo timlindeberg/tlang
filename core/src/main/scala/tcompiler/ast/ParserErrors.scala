@@ -1,6 +1,5 @@
 package tcompiler.ast
 
-import tcompiler.ast.Trees.TypeTree
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.{Token, TokenKind}
 import tcompiler.utils.{Errors, Positioned}
@@ -11,7 +10,7 @@ import tcompiler.utils.{Errors, Positioned}
 trait ParserErrors extends Errors {
 
   override val ErrorPrefix = "P"
-  override var importMap = new ImportMap(ctx)
+  override var importMap   = new ImportMap(ctx)
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
     ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
@@ -20,13 +19,13 @@ trait ParserErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorImplicitMethodOrOperator(pos: Positioned) =
+  protected def ErrorImplicitMethodOrOperator(pos: Positioned): Unit =
     error(0, "Only constructors can be declared implicit.", pos)
 
-  protected def ErrorStaticIndexingOperator(name: String, pos: Positioned) =
+  protected def ErrorStaticIndexingOperator(name: String, pos: Positioned): Unit =
     error(1, s"Indexing operator '$name' cannot be declared static.", pos)
 
-  protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned) ={
+  protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned): Unit = {
     val maxArraySize = ASTBuilder.MaximumArraySize
     error(2, s"Invalid array dimension: '$size', '$maxArraySize' is the maximum dimension of an array.", pos)
   }
@@ -35,7 +34,7 @@ trait ParserErrors extends Errors {
   //  Fatal messages
   //---------------------------------------------------------------------------------------
 
-  protected def FatalExpectedIdAssignment(pos: Positioned) =
+  protected def FatalExpectedIdAssignment(pos: Positioned): Nothing =
     fatal(1, "Expected identifier or array access on left side of assignment.", pos)
 
   protected def FatalWrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*): Nothing =
@@ -44,7 +43,7 @@ trait ParserErrors extends Errors {
   protected def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
     fatal(2, s"Expected $expected, found: '$found'.", pos)
 
-  protected def FatalUnexpectedToken(currentToken: Token) =
+  protected def FatalUnexpectedToken(currentToken: Token): Nothing =
     fatal(3, s"Unexpected token: '$currentToken'", currentToken)
 
 }

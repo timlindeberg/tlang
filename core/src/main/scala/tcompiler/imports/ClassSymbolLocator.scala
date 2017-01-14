@@ -15,7 +15,7 @@ import tcompiler.utils.Extensions._
   */
 object ClassSymbolLocator {
 
-  def setClassPath(classPaths: List[String]) = {
+  def setClassPath(classPaths: List[String]): Unit = {
     val rep = SyntheticRepository.getInstance(new ClassPath(classPaths.mkString(";")))
     Repository.setRepository(rep)
   }
@@ -23,7 +23,7 @@ object ClassSymbolLocator {
   def findSymbol(className: String): Option[ClassSymbol] =
     _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
 
-  def findExtensionSymbol(className: String) =
+  def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] =
     _findSymbol(className, clazz => {
       val extensionName = clazz.getClassName
       val originalClassName = extensionName.replaceAll(".*\\$EX\\.", "")
@@ -58,9 +58,9 @@ object ClassSymbolLocator {
       case _: ClassFormatException     => None
     }
 
-  def classExists(name: String) = findClass(name).isDefined
+  def classExists(name: String): Boolean = findClass(name).isDefined
 
-  def clearCache() = Repository.clearCache()
+  def clearCache(): Unit = Repository.clearCache()
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
@@ -79,7 +79,7 @@ object ClassSymbolLocator {
       case null   => List()
       case parent => List(incompleteClass(parent.getClassName, parent.isAbstract))
     }
-    val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, true)).toList
+    val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, isAbstract = true)).toList
     parent ::: traits
   }
 

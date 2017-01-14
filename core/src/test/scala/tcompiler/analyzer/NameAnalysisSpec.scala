@@ -1,12 +1,16 @@
 package tcompiler.analyzer
 
+import java.io.File
+
 import tcompiler.ast.Parser
+import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
+import tcompiler.utils.Pipeline
 import tcompiler.{ErrorTester, TestUtils}
 
 class NameAnalysisSpec extends ErrorTester {
   override def Name: String = "Name Analysis"
   override def Path: String = TestUtils.Resources + "analyzer/name"
-  override def Pipeline = Lexer andThen Parser andThen Templates andThen NameAnalysis
+  override def Pipeline: Pipeline[List[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates andThen NameAnalysis
 }

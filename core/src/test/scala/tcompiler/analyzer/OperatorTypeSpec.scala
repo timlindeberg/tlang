@@ -6,14 +6,15 @@ import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
+import tcompiler.utils.Context
 
 class OperatorTypeSpec extends FlatSpec with Matchers {
 
   val Flag = "--ast --symid"
   val ClassSymbol = new ClassSymbol("obj", false)
   val VarSymbol   = new VariableSymbol("var")
-  val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TestContext = TestUtils.testContext
+  val MainMethod : MethodSymbol = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  val TestContext: Context = TestUtils.testContext
   val TestImportMap = new ImportMap(TestContext)
   val TypeChecker = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
@@ -27,16 +28,16 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   val array  = new TypeConstructor(TArray(Int))
   val obj    = new TypeConstructor(Object)
 
-  val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
-  val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
+  val allTypes       : List[() => VariableID]                     = List[() => VariableID](int, bool, long, float, double, char, array, obj)
+  val allCombinations: List[(() => VariableID, () => VariableID)] = for (x <- allTypes; y <- allTypes) yield (x, y)
 
   private def createIdentifier(tpe: Type) = VariableID("").setSymbol(new VariableSymbol("")).setType(tpe)
 
   class TypeConstructor(val tpe: Type)
     extends (() => VariableID) {
     def apply(): VariableID = createIdentifier(tpe)
-    override def toString() = tpe.toString
-    def ==(rhs: TypeConstructor) = tpe.toString == rhs.tpe.toString
+    override def toString(): String = tpe.toString
+    def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
   }
 
   behavior of "Operators"
@@ -298,7 +299,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   object UnaryExpressionAsserter {
 
-    def getInvalidCombinations(validTpes: List[(() => VariableID, Type)]) =
+    def getInvalidCombinations(validTpes: List[(() => VariableID, Type)]): List[() => VariableID] =
       allTypes.filter(tpe => {
         !validTpes.exists(listElem => tpe == listElem._1)
       })
@@ -384,7 +385,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
       }
     }
 
-    protected def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]) =
+    protected def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]): List[(() => VariableID, () => VariableID)] =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -395,7 +396,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
   class ArrayAssignmentAsserter() extends AssignmentAsserter(Assign) {
 
-    override def valid(validCombinations: (() => VariableID, () => VariableID, Type)*) = {
+    override def valid(validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
         TestContext.reporter.clear()
         val id = createIdentifier(TArray(identifier().getType))

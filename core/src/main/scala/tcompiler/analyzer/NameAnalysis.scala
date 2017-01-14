@@ -5,6 +5,7 @@ import tcompiler.analyzer.Symbols._
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
+import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
@@ -40,7 +41,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   import NameAnalysis._
 
-  override var importMap            = cu.importMap
+  override var importMap: ImportMap = cu.importMap
   private  var variableUsage        = Map[VariableSymbol, Boolean]()
   private  var variableReassignment = Map[VariableSymbol, Boolean]()
 
@@ -70,14 +71,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   }
 
 
-  def checkVariableUsage() =
+  def checkVariableUsage(): Unit =
     variableUsage.foreach {
       case (variable, used) =>
         if (!used)
           WarningUnusedVar(variable)
     }
 
-  def checkVariableReassignments() =
+  def checkVariableReassignments(): Unit =
     variableReassignment.foreach {
       case (variable, reassigned) =>
         if (!reassigned)
@@ -218,7 +219,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case classDecl@ClassDeclTree(id, parents, vars, methods)             =>
+    case classDecl@ClassDeclTree(id, _, _, methods)                      =>
       classDecl.ifInstanceOf[ExtensionDecl] { extension =>
         val name = id.name
         val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
@@ -388,7 +389,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
       val traverser = new Trees.Traverser {
 
-        override def _traverse(t: Tree) = t match {
+        override def _traverse(t: Tree): Any = t match {
           case acc@Access(obj, application) =>
             obj match {
               case _: Empty            =>

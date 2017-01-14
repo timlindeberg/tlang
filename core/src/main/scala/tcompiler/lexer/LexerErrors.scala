@@ -35,49 +35,49 @@ trait LexerErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorInvalidCharacter(c: Char) =
+  protected def ErrorInvalidCharacter(c: Char): Unit =
     error(0, s"Invalid character: '$c'.", 1)
 
-  protected def ErrorInvalidIdentifier(c: Char, length: Int) =
+  protected def ErrorInvalidIdentifier(c: Char, length: Int): Unit =
     error(1, s"Invalid character in identifier: '$c'.", length)
 
-  protected def ErrorUnclosedMultilineString(startPos: Positioned) =
+  protected def ErrorUnclosedMultilineString(startPos: Positioned): Unit =
     error(2, "Unclosed multiline string literal.", startPos)
 
-  protected def ErrorEmptyCharLiteral() =
+  protected def ErrorEmptyCharLiteral(): Unit =
     error(3, "Empty character literal.", 2)
 
-  protected def ErrorInvalidEscapeSequence(length: Int) =
+  protected def ErrorInvalidEscapeSequence(length: Int): Unit =
     error(4, "Invalid escape sequence.", length)
 
-  protected def ErrorInvalidCharLiteral(length: Int) =
+  protected def ErrorInvalidCharLiteral(length: Int): Unit =
     error(5, "Invalid character literal.", length)
 
-  protected def ErrorInvalidUnicode(length: Int) =
+  protected def ErrorInvalidUnicode(length: Int): Unit =
     error(6, "Invalid unicode escape sequence.", length)
 
-  protected def ErrorUnclosedCharLiteral(length: Int) =
+  protected def ErrorUnclosedCharLiteral(length: Int): Unit =
     error(7, "Unclosed character literal.", length)
 
-  protected def ErrorUnclosedStringLiteral(startPos: Positioned) =
+  protected def ErrorUnclosedStringLiteral(startPos: Positioned): Unit =
     error(8, "Unclosed string literal.", startPos)
 
-  protected def ErrorNumberTooLargeForInt(length: Int) =
+  protected def ErrorNumberTooLargeForInt(length: Int): Unit =
     error(9, "Number is too large to fit in an Int.", length)
 
-  protected def ErrorNumberTooLargeForLong(length: Int) =
+  protected def ErrorNumberTooLargeForLong(length: Int): Unit =
     error(10, "Number is too large to fit in a Long.", length)
 
-  protected def ErrorInvalidNumber(length: Int, rest: List[Char]) =
+  protected def ErrorInvalidNumber(length: Int, rest: List[Char]): Unit =
     error(11, "Invalid number.", getLength(length, rest))
 
-  protected def ErrorInvalidFloat(length: Int, rest: List[Char]) =
+  protected def ErrorInvalidFloat(length: Int, rest: List[Char]): Unit =
     error(12, "Invalid floating point number.", getLength(length, rest))
 
-  protected def ErrorInvalidBinaryLiteral(length: Int, rest: List[Char]) =
+  protected def ErrorInvalidBinaryLiteral(length: Int, rest: List[Char]): Unit =
     error(13, "Invalid binary literal.", getLength(length, rest))
 
-  protected def ErrorInvalidHexadecimalLiteral(length: Int, rest: List[Char]) =
+  protected def ErrorInvalidHexadecimalLiteral(length: Int, rest: List[Char]): Unit =
     error(14, "Invalid hexadecimal literal.", getLength(length, rest))
 
   private def getLength(length: Int, rest: List[Char]) = length + rest.indexWhere(_.isWhitespace) + 1

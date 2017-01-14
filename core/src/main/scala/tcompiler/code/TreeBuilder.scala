@@ -13,9 +13,9 @@ import scala.collection.mutable.ListBuffer
   */
 
 class TreeBuilder {
-  val code = ListBuffer[StatTree]()
+  val code: ListBuffer[StatTree] = ListBuffer()
 
-  def put(stat: StatTree) = {
+  def put(stat: StatTree): code.type = {
     stat foreach {
       case t: Typed if t.getType == TUntyped => sys.error(s"Tree $t does not have a type!")
       case _                                 =>
@@ -95,7 +95,7 @@ class TreeBuilder {
     case _                    => ???
   }).setType(tpe)
 
-  def getCode = {
+  def getCode: GeneratedExpr = {
     val g = GeneratedExpr(code.toList).setPos(code.head).setType(TUnit)
     code.last match {
       case t: Typed => g.setType(t)
@@ -103,7 +103,7 @@ class TreeBuilder {
     }
   }
 
-  def setPos(pos: Positioned) = code.foreach(_.setPos(pos))
+  def setPos(pos: Positioned): Unit = code.foreach(_.setPos(pos))
 
 }
 

@@ -15,25 +15,25 @@ import scala.util.parsing.combinator.RegexParsers
 class CompilationException(message: String) extends Exception(message)
 
 class Reporter(suppressWarnings: Boolean = false,
-               warningIsError: Boolean = false,
-               override val useColor: Boolean = false,
-               maxErrors: Int = 100)
+  warningIsError: Boolean = false,
+  override val useColor: Boolean = false,
+  maxErrors: Int = 100)
   extends Colored {
 
-  override def NumColor = Blue
-  def QuoteColor = Magenta
-  def MessageStyle = Bold
-  def WarningColor = Yellow
-  def ErrorColor = Red + Bold
-  def FatalColor = Red
+  override def NumColor: String = Blue
+  def QuoteColor: String = Magenta
+  def MessageStyle: String = Bold
+  def WarningColor: String = Yellow
+  def ErrorColor: String = Red + Bold
+  def FatalColor: String = Red
 
   private val ErrorSeparator = "\n"
   private val filesToLines   = mutable.Map[File, IndexedSeq[String]]()
 
   private var hitMaxErrors = false
 
-  var errors   = mutable.LinkedHashSet[String]()
-  var warnings = mutable.LinkedHashSet[String]()
+  var errors  : mutable.LinkedHashSet[String] = mutable.LinkedHashSet[String]()
+  var warnings: mutable.LinkedHashSet[String] = mutable.LinkedHashSet[String]()
 
 
   def warning(errorPrefix: String, errorCode: Int, msg: String, pos: Positioned, importMap: ImportMap): Unit = {
@@ -46,7 +46,7 @@ class Reporter(suppressWarnings: Boolean = false,
       return
 
     val warning = errMessage(errorPrefix, 1, errorCode, msg, pos, importMap)
-    if(warnings.contains(warning))
+    if (warnings.contains(warning))
       return
 
     warnings += warning
@@ -57,13 +57,13 @@ class Reporter(suppressWarnings: Boolean = false,
     if (!isValidError(msg, pos))
       return
 
-    if(maxErrors != -1 && errors.size >= maxErrors){
+    if (maxErrors != -1 && errors.size >= maxErrors) {
       hitMaxErrors = true
       return
     }
 
     val err = errMessage(errorPrefix, 2, errorCode, msg, pos, importMap)
-    if(errors.contains(err))
+    if (errors.contains(err))
       return
 
     errors += err
@@ -76,14 +76,14 @@ class Reporter(suppressWarnings: Boolean = false,
     throw new CompilationException(error)
   }
 
-  def clear() = {
+  def clear(): Unit = {
     errors.clear()
     warnings.clear()
     hitMaxErrors = false
   }
 
-  def hasErrors = errors.nonEmpty
-  def hasWarnings = warnings.nonEmpty
+  def hasErrors: Boolean = errors.nonEmpty
+  def hasWarnings: Boolean = warnings.nonEmpty
 
   def errorsString: String = {
     val err = errors.mkString(ErrorSeparator)
@@ -92,7 +92,7 @@ class Reporter(suppressWarnings: Boolean = false,
 
     val prefix = if (hitMaxErrors)
       s"There were more than $num errors, only showing the first $num"
-    else if(numErrors == 1)
+    else if (numErrors == 1)
       s"There was $num error"
     else
       s"There were $num errors"
@@ -100,9 +100,9 @@ class Reporter(suppressWarnings: Boolean = false,
     prefix + s":\n\n$err"
   }
 
-  def warningsString = warnings.mkString(ErrorSeparator)
+  def warningsString: String = warnings.mkString(ErrorSeparator)
 
-  def terminateIfErrors() =
+  def terminateIfErrors(): Unit =
     if (hasErrors)
       throw new CompilationException(errorsString)
 
@@ -271,9 +271,7 @@ object TemplateNameParser extends RegexParsers {
       _.toString
     }
 
-  private def typeList: Parser[String] = ((Seperator ~ (word | template)) +) ^^ {
-    case list => list.map(_._2).mkString(", ")
-  }
+  private def typeList: Parser[String] = ((Seperator ~ (word | template)) +) ^^ (list => list.map(_._2).mkString(", "))
 
   private def template: Parser[String] = StartEnd ~ word ~ typeList ~ StartEnd ^^ {
     case _ ~ word ~ args ~ _ => s"$word<$args>"

@@ -9,9 +9,9 @@ import tcompiler.utils.{Context, Errors}
   */
 trait MainErrors extends Errors {
 
-  override var ctx: Context = null
-  override val ErrorPrefix = "M"
-  override var importMap = new ImportMap()
+  override var ctx: Context = _
+  override val ErrorPrefix  = "M"
+  override var importMap    = new ImportMap()
 
   private def fatal(message: String) = {
     println(message)
@@ -22,37 +22,37 @@ trait MainErrors extends Errors {
   // Errors
   //---------------------------------------------------------------------------------------
 
-  protected def FatalWrongNumFilesGiven(numFiles: Int) =
+  protected def FatalWrongNumFilesGiven(numFiles: Int): Nothing =
     fatal(s"Exactly one file expected, '$numFiles' file(s) given.")
 
-  protected def FatalCannotFindFile(fileName: String) =
+  protected def FatalCannotFindFile(fileName: String): Nothing =
     fatal(s"Cannot find file '$fileName'.")
 
-  protected def FatalNoFilesGiven() =
+  protected def FatalNoFilesGiven(): Nothing =
     fatal(s"No files given.")
 
-  protected def FatalInvalidOutputDirectory(outDir: String) =
+  protected def FatalInvalidOutputDirectory(outDir: String): Nothing =
     fatal(s"Invalid output directory: '$outDir'.")
 
-  protected def FatalOutputDirectoryCouldNotBeCreated(outDir: String) =
+  protected def FatalOutputDirectoryCouldNotBeCreated(outDir: String): Nothing =
     fatal(s"Output directory '$outDir' does not exist and could not be created.")
 
-  protected def FatalInvalidClassPath(classPath: String) =
+  protected def FatalInvalidClassPath(classPath: String): Nothing =
     fatal(s"Invalid output class path: '$classPath'.")
 
-  protected def FatalCantFindTHome(tHome: String) =
+  protected def FatalCantFindTHome(tHome: String): Nothing =
     fatal(s"$tHome environment variable is not set. It needs to point to the directory of the T standard library.")
 
-  protected def FatalInvalidTHomeDirectory(path: String, tHome: String) =
+  protected def FatalInvalidTHomeDirectory(path: String, tHome: String): Nothing =
     fatal(s"'$path' is not a valid $tHome directory.")
 
-  protected def FatalInvalidMaxErrors(num: String) =
+  protected def FatalInvalidMaxErrors(num: String): Nothing =
     fatal(s"'$num' is not a valid argument to the flag '${MaxErrors.flag}'. Needs a number as argument.")
 
-  protected def FatalGivenDirectoryContainsNoTFiles(path: String) =
+  protected def FatalGivenDirectoryContainsNoTFiles(path: String): Nothing =
     fatal(s"The given directory '$path' does not contain any T-files.")
 
-  protected def FatalGivenFileIsNotTFile(path: String) =
+  protected def FatalGivenFileIsNotTFile(path: String): Nothing =
     fatal(s"The given file '$path' is not a T-file.")
 
 }

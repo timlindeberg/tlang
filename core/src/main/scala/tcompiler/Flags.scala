@@ -41,7 +41,7 @@ object Flags {
       Colorization.foldLeft(fullDescription)((s, addColor) => addColor(s))
     }
 
-    def compare(that: Flag) = flag.length - that.flag.length
+    def compare(that: Flag): Int = flag.length - that.flag.length
     def unapply(str: String): Boolean = {
       val lower = str.toLowerCase
       lower == s"--$flag" || shortFlag.contains(s"-$lower")

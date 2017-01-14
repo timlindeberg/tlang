@@ -64,7 +64,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
         val (token, tail) = skipBlock(r)
         readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
       case c :: r if SingleCharTokens.contains(c) => readTokens(r, createToken(SingleCharTokens(c), 1) :: tokens)
-      case c :: r if c.isLetter || c == '_'       =>
+      case c :: _ if c.isLetter || c == '_'       =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
       case '\'' :: r                              =>
@@ -82,7 +82,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '0' :: 'b' :: r                        =>
         val (token, tail) = getBinaryLiteral(r)
         readTokens(tail, token :: tokens)
-      case c :: r if c.isDigit                    =>
+      case c :: _ if c.isDigit                    =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
       case Nil                                    =>
@@ -105,14 +105,14 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
-        case c :: r if validChar(c)               => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
-        case c :: r if isEndingChar(c)            => (createIdentifierOrKeyWord(s), chars)
-        case c :: r                               =>
+        case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
+        case c :: _ if isEndingChar(c) => (createIdentifierOrKeyWord(s), chars)
+        case c :: r                    =>
           // Advance column here so only the invalid char gets highlighted
           column += charsParsed
           ErrorInvalidIdentifier(c, 1)
           getIdentifierOrKeyword(r, s + c, 1)
-        case Nil                                  => (createIdentifierOrKeyWord(s), chars)
+        case Nil                       => (createIdentifierOrKeyWord(s), chars)
       }
     }
     getIdentifierOrKeyword(chars.tail, chars.head.toString, 1)
@@ -142,7 +142,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
         case '\'' :: r =>
           ErrorInvalidCharLiteral(length + 1)
           (createToken(BAD, length + 1), r)
-        case c :: r    =>
+        case _ :: r    =>
           toEnd(r, length + 1)
         case Nil       =>
           ErrorUnclosedCharLiteral(length)
@@ -159,16 +159,16 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
         case c1 :: c2 :: c3 :: c4 :: '\'' :: r if areHexDigits(c1, c2, c3, c4) =>
           val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
           (createToken(unicodeNumber.toChar, 8), r)
-        case c1 :: c2 :: c3 :: c4 :: '\'' :: r                                 =>
+        case _ :: _ :: _ :: _ :: '\'' :: r                                     =>
           ErrorInvalidUnicode(8)
           (createToken(BAD, 8), r)
-        case c1 :: c2 :: c3 :: '\'' :: r                                       =>
+        case _ :: _ :: _ :: '\'' :: r                                          =>
           ErrorInvalidUnicode(7)
           (createToken(BAD, 7), r)
-        case c1 :: c2 :: '\'' :: r                                             =>
+        case _ :: _ :: '\'' :: r                                               =>
           ErrorInvalidUnicode(6)
           (createToken(BAD, 6), r)
-        case c1 :: '\'' :: r                                                   =>
+        case _ :: '\'' :: r                                                    =>
           ErrorInvalidUnicode(5)
           (createToken(BAD, 5), r)
         case '\'' :: r                                                         =>
@@ -208,7 +208,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
 
     def getStringLiteral(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = chars match {
       case '"' :: r  => (createToken(s, s.length + 2), r)
-      case '\n' :: r =>
+      case '\n' :: _ =>
         ErrorUnclosedStringLiteral(startPos)
         (createToken(BAD, s.length), chars)
       case '\\' :: r => r match {
@@ -258,7 +258,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '_' :: r                  => getHexadecimalLiteral(r, s)
       case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c)
       case ('l' | 'L') :: r          => (parseLongToken(s), r)
-      case c :: r if isEndingChar(c) => (parseIntToken(s), chars)
+      case c :: _ if isEndingChar(c) => (parseIntToken(s), chars)
       case _                         => invalid(s.length)
     }
 
@@ -280,7 +280,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '0' :: r                  => getBinaryLiteral(r, s + '0')
       case '1' :: r                  => getBinaryLiteral(r, s + '1')
       case ('l' | 'L') :: r          => (parseLongToken(s), r)
-      case c :: r if isEndingChar(c) => (parseIntToken(s), chars)
+      case c :: _ if isEndingChar(c) => (parseIntToken(s), chars)
       case _                         => invalid(s.length)
     }
 
@@ -340,7 +340,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
 
   private def skipLine(chars: List[Char]): List[Char] = {
     def skip(chars: List[Char]): List[Char] = chars match {
-      case '\n' :: r => chars
+      case '\n' :: _ => chars
       case _ :: r    =>
         column += 1
         skip(r)

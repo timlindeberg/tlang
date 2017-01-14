@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TemplateImporter {
 
-  val importedFiles = mutable.Map[String, File]()
+  val importedFiles: mutable.Map[String, File] = mutable.Map()
 
 }
 
@@ -26,7 +26,7 @@ class TemplateImporter(ctx: Context,
 
   import TemplateImporter._
 
-  def classExists(importName: String) = findClassFile(importName).isDefined
+  def classExists(importName: String): Boolean = findClassFile(importName).isDefined
 
   def findClassFile(importName: String): Option[File] = {
     val fileName = importName.replaceAll("\\.", "/") + Main.FileEnding

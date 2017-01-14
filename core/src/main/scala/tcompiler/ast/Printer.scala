@@ -16,8 +16,8 @@ object Printer extends Colored {
 
   val Indentation = 3
 
-  val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length) ::: List("Int", "Char", "Float", "Double", "Bool", "Unit")
-  val KeywordsRegex = s"(${Keywords.mkString("|")})".r
+  private val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length) ::: List("Int", "Char", "Float", "Double", "Bool", "Unit")
+  private val KeywordsRegex = s"(${Keywords.mkString("|")})".r
 
   private var indent: Int = 0
 
@@ -50,7 +50,7 @@ object Printer extends Colored {
     case ExtensionDecl(id, methods)                                 => p"$N${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
     case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
     case MethodDecl(retType, id, args, stat, modifiers)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
-    case ConstructorDecl(_, id, args, stat, modifiers)              => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
+    case ConstructorDecl(_, _, args, stat, modifiers)               => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
     case OperatorDecl(operatorType, retType, args, stat, modifiers) => p"${definition(modifiers)} ${operatorType.opSign}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
     case Formal(tpe, id)                                            => p"$id: $tpe"
     case Private()                                                  => p"private"
@@ -119,7 +119,7 @@ object Printer extends Colored {
     case TrueLit()                         => p"true"
     case FalseLit()                        => p"false"
     case NullLit()                         => p"null"
-    case id@ClassID(value, list)           => p"$value${templateList(id)}"
+    case id@ClassID(value, _)              => p"$value${templateList(id)}"
     case Identifier(value)                 => p"$value"
     case This()                            => p"this"
     case Super(spec)                       => p"super${optional(spec)(s => p"<$s>")}"
@@ -228,26 +228,26 @@ object Printer extends Colored {
   }
 
   object L extends Formatter {
-    def apply() = {
+    def apply(): String = {
       indent += 1
       "{" + N()
     }
   }
 
   object R extends Formatter {
-    def apply() = {
+    def apply(): String = {
       indent -= 1
       N() + "}"
     }
   }
 
   object N extends Formatter {
-    def apply() = "\n" + " " * (Indentation * indent)
+    def apply(): String = "\n" + " " * (Indentation * indent)
   }
 
   case class Stat(stat: StatTree) extends Formatter {
 
-    def apply() = {
+    def apply(): String = {
       stat match {
         case Block(_) => p"$stat"
         case _        =>
@@ -261,7 +261,7 @@ object Printer extends Colored {
   }
 
   case class Separated(list: List[Tree], seperator: String) extends Formatter {
-    def apply() = list.map(t => p"$t").mkString(seperator)
+    def apply(): String = list.map(t => p"$t").mkString(seperator)
   }
 
   implicit class PrinterContext(val sc: StringContext) extends AnyVal {
