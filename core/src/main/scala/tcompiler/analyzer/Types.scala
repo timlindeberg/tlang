@@ -4,8 +4,8 @@ package analyzer
 import tcompiler.analyzer.Symbols._
 import tcompiler.ast.Trees.Implicit
 import tcompiler.code.CodeGenerator._
+import tcompiler.error.Errors
 import tcompiler.imports.ClassSymbolLocator
-import tcompiler.utils.Errors
 
 
 object Types {

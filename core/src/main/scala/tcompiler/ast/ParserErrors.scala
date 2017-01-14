@@ -1,19 +1,20 @@
 package tcompiler.ast
 
+import tcompiler.error.{ErrorLevel, Errors}
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.{Token, TokenKind}
-import tcompiler.utils.{Errors, Positioned}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait ParserErrors extends Errors {
 
-  override val ErrorPrefix = "P"
-  override var importMap   = new ImportMap(ctx)
+  override val ErrorLetters = "P"
+  override var importMap    = new ImportMap(ctx)
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
+    report(errorCode, msg, ErrorLevel.Error, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

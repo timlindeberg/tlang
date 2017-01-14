@@ -1,16 +1,17 @@
 package tcompiler.modification
 
-import tcompiler.utils.{Errors, Positioned}
+import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 6/22/2016.
   */
 trait TemplateErrors extends Errors {
 
-  override val ErrorPrefix = "G"
+  override val ErrorLetters = "G"
 
   private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
+    report(errorCode, msg, ErrorLevel.Error, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

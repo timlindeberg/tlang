@@ -152,14 +152,14 @@ object Flags {
   }
 
   case object MaxErrors extends Flag {
-    val DefaultMax = "100"
+    val Default = 100
 
     override val flag = "maxerrors"
     override val arg  = Some("num")
 
     override val description =
       s"""
-         |Specify the maximum number of errors to report.The default is $DefaultMax.
+         |Specify the maximum number of errors to report.The default is $Default.
          |Enter -1 to show all errors.
        """
   }
@@ -172,6 +172,18 @@ object Flags {
       """
         |Specify a default import to ignore.
         |E.g. ignoreimport java::lang::object
+      """
+  }
+
+  case object ErrorContext extends Flag {
+    val Default = 1
+
+    override val flag = "errorcontext"
+    override val arg  = Some("num")
+
+    override val description =
+      s"""
+         |Specify how many lines to display around an error position. Default is $Default.
       """
   }
 

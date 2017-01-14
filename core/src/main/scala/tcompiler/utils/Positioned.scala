@@ -4,18 +4,18 @@ package utils
 import java.io.File
 
 trait Positioned {
-  private[Positioned] var _file     : Option[File] = None
-  private[Positioned] var _lineStart: Int          = 0
-  private[Positioned] var _colStart : Int          = 0
-  private[Positioned] var _lineEnd  : Int          = 0
-  private[Positioned] var _colEnd   : Int          = 0
+  private var _file     : Option[File] = None
+  private var _lineStart: Int          = 0
+  private var _colStart : Int          = 0
+  private var _lineEnd  : Int          = 0
+  private var _colEnd   : Int          = 0
 
-  def setPos(file: File, start: Int, end: Int): this.type = {
-    _lineStart = Position.line(start)
-    _colStart = Position.column(start)
+  def setPos(file: File, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
+    _lineStart = lineStart
+    _colStart = colStart
 
-    _lineEnd = Position.line(end)
-    _colEnd = Position.column(end)
+    _lineEnd = lineEnd
+    _colEnd = colEnd
     _file = Some(file)
 
     this
@@ -26,10 +26,12 @@ trait Positioned {
   def setPos(other: Positioned): this.type = {
     _lineStart = other._lineStart
     _colStart = other._colStart
+
+    _lineEnd = other._lineEnd
+    _colEnd = other._colEnd
+
     _file = other._file
 
-    _lineEnd = other.endLine
-    _colEnd = other.endCol
 
     this
   }
@@ -37,10 +39,11 @@ trait Positioned {
   def setPos(start: Positioned, end: Positioned): this.type = {
     _lineStart = start._lineStart
     _colStart = start._colStart
-    _file = start._file
 
     _lineEnd = end._lineStart
     _colEnd = end._colStart
+
+    _file = start._file
 
     this
   }
@@ -56,6 +59,13 @@ trait Positioned {
       s"${file.getPath}:$line:$col"
     else
       "?:?"
+
+  def equalPos(other: Positioned): Boolean =
+    _file == other._file &&
+      _lineStart == other._lineStart &&
+      _colStart == other._colStart &&
+      _lineEnd == other._lineEnd &&
+      _colEnd == other._colEnd
 
 }
 

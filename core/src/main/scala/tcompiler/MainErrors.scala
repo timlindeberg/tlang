@@ -1,8 +1,9 @@
 package tcompiler
 
-import tcompiler.Flags.MaxErrors
+import tcompiler.Flags.{ErrorContext, Flag, MaxErrors}
+import tcompiler.error.Errors
 import tcompiler.imports.ImportMap
-import tcompiler.utils.{Context, Errors}
+import tcompiler.utils.Context
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -10,7 +11,7 @@ import tcompiler.utils.{Context, Errors}
 trait MainErrors extends Errors {
 
   override var ctx: Context = _
-  override val ErrorPrefix  = "M"
+  override val ErrorLetters = "M"
   override var importMap    = new ImportMap()
 
   private def fatal(message: String) = {
@@ -47,12 +48,20 @@ trait MainErrors extends Errors {
     fatal(s"'$path' is not a valid $tHome directory.")
 
   protected def FatalInvalidMaxErrors(num: String): Nothing =
-    fatal(s"'$num' is not a valid argument to the flag '${MaxErrors.flag}'. Needs a number as argument.")
+    fatalInvalidNumber(MaxErrors, num)
+
+  protected def FatalInvalidErrorContext(num: String): Nothing =
+    fatalInvalidNumber(ErrorContext, num)
 
   protected def FatalGivenDirectoryContainsNoTFiles(path: String): Nothing =
     fatal(s"The given directory '$path' does not contain any T-files.")
 
   protected def FatalGivenFileIsNotTFile(path: String): Nothing =
     fatal(s"The given file '$path' is not a T-file.")
+
+
+  private def fatalInvalidNumber(flag: Flag, num: String) = {
+    fatal(s"'$num' is not a valid argument to --'${flag.flag}'. Needs a number as argument.")
+  }
 
 }

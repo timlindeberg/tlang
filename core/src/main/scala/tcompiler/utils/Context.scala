@@ -5,6 +5,7 @@ import java.io.File
 import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
+import tcompiler.error.Reporter
 import tcompiler.imports.ClassSymbolLocator
 
 import scala.collection.mutable

@@ -3,18 +3,19 @@ package tcompiler.analyzer
 import tcompiler.analyzer.Symbols.{MethodSymbol, OperatorSymbol, VariableSymbol}
 import tcompiler.analyzer.Types.{TError, TObject, Type}
 import tcompiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
-import tcompiler.utils.{Errors, Positioned}
+import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait TypeCheckingErrors extends Errors {
 
-  override val ErrorPrefix = "T"
+  override val ErrorLetters = "T"
 
   def error(errorCode: Int, msg: String, pos: Positioned): Type = {
     if (!msg.contains(s"'$TError'"))
-      ctx.reporter.error(ErrorPrefix, errorCode, msg, pos, importMap)
+      report(errorCode, msg, ErrorLevel.Error, pos)
     TError
   }
 

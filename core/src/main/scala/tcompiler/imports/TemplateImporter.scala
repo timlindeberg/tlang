@@ -5,8 +5,9 @@ import java.io.File
 import tcompiler.Main
 import tcompiler.ast.Parser
 import tcompiler.ast.Trees._
+import tcompiler.error.CompilationException
 import tcompiler.lexer.Lexer
-import tcompiler.utils.{CompilationException, Context}
+import tcompiler.utils.Context
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -61,7 +62,7 @@ class TemplateImporter(ctx: Context,
               importedCUs ++= templateImporter.importCus(recursiveImport)
             }
             importedCUs.toList
-          case None               => Nil
+          case None             => Nil
         }
       case None       => Nil
     }

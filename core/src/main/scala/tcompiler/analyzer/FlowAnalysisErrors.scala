@@ -1,17 +1,18 @@
 package tcompiler.analyzer
 
 import tcompiler.ast.Trees._
-import tcompiler.utils.{Errors, Positioned}
+import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait FlowAnalysisErrors extends Errors {
 
-  override val ErrorPrefix = "F"
+  override val ErrorLetters = "F"
 
-  def error(errorCode: Int, msg: String, tree: Positioned): Unit =
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
+  def error(errorCode: Int, msg: String, pos: Positioned): Unit =
+    report(errorCode, msg, ErrorLevel.Error, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

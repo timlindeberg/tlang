@@ -2,34 +2,36 @@ package tcompiler.lexer
 
 import java.io.File
 
+import tcompiler.error.{ErrorLevel, Errors}
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Tokens.BAD
-import tcompiler.utils.{Errors, Position, Positioned}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait LexerErrors extends Errors {
 
-  override val ErrorPrefix = "L"
-  override var importMap = new ImportMap(ctx)
-  val file: File
-  var line: Int
+  override val ErrorLetters = "L"
+  override var importMap    = new ImportMap(ctx)
+  val file  : File
+  var line  : Int
   var column: Int
 
   def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
     val file = startPos.file
-    val start = Position.encode(startPos.line, startPos.col)
-    val end = Position.encode(startPos.line + 1, 1)
-    val bad = new Token(BAD).setPos(file, start , end)
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad, importMap)
+    val pos = new Token(BAD).setPos(file, startPos.line, startPos.col, startPos.line + 1, 1)
+    _error(errorCode, msg, pos)
   }
 
   protected def error(errorCode: Int, msg: String, colOffset: Int): Unit = {
-    val bad = new Token(BAD).setPos(file, Position.encode(line, column), Position.encode(line, column + colOffset))
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, bad, importMap)
+    val pos = new Token(BAD).setPos(file, line, column, line, column + colOffset)
+    _error(errorCode, msg, pos)
   }
 
+  private def _error(errorCode: Int, msg: String, pos: Positioned) = {
+    report(errorCode, msg, ErrorLevel.Error, pos)
+  }
 
   //---------------------------------------------------------------------------------------
   //  Error messages

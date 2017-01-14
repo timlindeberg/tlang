@@ -14,7 +14,7 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
 
   import TestUtils._
 
-  val PrintErrors = false
+  val PrintErrors: Boolean = sys.env.getOrElse("printerrors", "") == "true"
 
   def Name: String
 

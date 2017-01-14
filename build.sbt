@@ -22,7 +22,7 @@ lazy val metaMacroSettings: Seq[Def.Setting[_]] = Seq(
   addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-beta4" cross CrossVersion.full),
   scalacOptions += "-Xplugin-require:macroparadise",
   scalacOptions += "-language:experimental.macros",
-    // temporary workaround for https://github.com/scalameta/paradise/issues/10
+  // temporary workaround for https://github.com/scalameta/paradise/issues/10
   scalacOptions in(Compile, console) := Seq(), // macroparadise plugin doesn't work in repl yet.
   // temporary workaround for https://github.com/scalameta/paradise/issues/55
   sources in(Compile, doc) := Nil // macroparadise doesn't work with scaladoc yet.
@@ -34,6 +34,7 @@ lazy val macros = project
     metaMacroSettings,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "scalameta" % "1.4.0",
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )

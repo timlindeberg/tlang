@@ -6,9 +6,10 @@ import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Parser
 import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.code.{CodeGeneration, Desugaring}
+import tcompiler.error.CompilationException
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.{CompilationException, Pipeline}
+import tcompiler.utils.Pipeline
 
 import scala.io.Source
 

@@ -437,7 +437,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
   private def createToken(char: Char, tokenLength: Int): Token = createToken(new CHARLIT(char), tokenLength)
   private def createToken(string: String, tokenLength: Int): Token = createToken(new STRLIT(string), tokenLength)
   private def createToken[T](token: Token, tokenLength: Int): Token = {
-    token.setPos(file, Position.encode(line, column), Position.encode(line, column + tokenLength))
+    token.setPos(file, line, column, line, column + tokenLength)
     column += tokenLength
     token
   }

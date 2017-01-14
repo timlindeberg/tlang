@@ -3,9 +3,11 @@ package analyzer
 
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
+import tcompiler.error.Errors
 import tcompiler.imports.{ClassSymbolLocator, ImportMap}
-import tcompiler.utils._
 import tcompiler.utils.Extensions._
+import tcompiler.utils._
+
 import scala.collection.mutable
 
 

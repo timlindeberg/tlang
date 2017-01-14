@@ -2,7 +2,7 @@ package tcompiler
 
 import java.io.File
 
-import tcompiler.utils.CompilationException
+import tcompiler.error.CompilationException
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -23,26 +23,21 @@ abstract class ErrorTester extends Tester {
 
     try {
       Pipeline.run(ctx)(List(file))
-
       // Check for warnings:
       if (ctx.reporter.warnings.isEmpty)
         fail("Test failed: No errors or warnings!")
 
       val warnings = ctx.reporter.warningsString
-      if (PrintErrors) {
-        println(Seperator)
+      if (PrintErrors)
         println(warnings)
-      }
 
       val warningCodes = parseErrorCodes(warnings)
       assertCorrect(warningCodes, expectedErrors, warnings)
     } catch {
       case t: CompilationException =>
         val errors = t.getMessage
-        if (PrintErrors) {
-          println(Seperator)
+        if (PrintErrors)
           println(errors)
-        }
         val errorCodes = parseErrorCodes(errors)
         assertCorrect(errorCodes, expectedErrors, errors)
     }
@@ -59,7 +54,7 @@ abstract class ErrorTester extends Tester {
 
   private val AnsiRegex = """\x1b[^m]*m""".r
   private def removeANSIFormatting(s: String) = AnsiRegex.replaceAllIn(s, "")
-  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(Fatal|Warning|Error) \((.+?)\).*""".r
+  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(?:Fatal|Warning|Error) \((.+?)\).*""".r
   // Parses codes from error messages
 
   private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
@@ -68,7 +63,7 @@ abstract class ErrorTester extends Tester {
       _.split("\n").take(2).mkString("\n")
     }
     errors.collect {
-      case ErrorRegex(lineNumber, _, errorCode) => (lineNumber.toInt, errorCode)
+      case ErrorRegex(lineNumber, errorCode) => (lineNumber.toInt, errorCode)
     }.toList
   }
 
@@ -98,7 +93,7 @@ abstract class ErrorTester extends Tester {
           else
             failTest(s"Expected $s on line $line but found ${r.mkString(", ")}", extraInfo)
         case None    =>
-          val errMsg = "Line $line did not produce $s"
+          val errMsg = s"Line $line did not produce $s"
           System.err.println(s"$errMsg $extraInfo")
           fail(errMsg)
       }

@@ -7,6 +7,7 @@ import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Parser
 import tcompiler.ast.Trees._
 import tcompiler.code.{CodeGeneration, Desugaring}
+import tcompiler.error.{CompilationException, Reporter}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
@@ -77,7 +78,8 @@ object Main extends MainErrors with Colored {
   }
 
   private def processOptions(args: Array[String]): Context = {
-    var maxErrors: String = MaxErrors.DefaultMax
+    var maxErrors: String = MaxErrors.Default.toString
+    var errorContext: String = ErrorContext.Default.toString
     var outDirs: List[String] = Nil
     var filePaths: List[String] = Nil
     var classPaths: List[String] = Nil
@@ -111,6 +113,9 @@ object Main extends MainErrors with Colored {
       case IgnoreDefaultImports() :: ignored :: rest =>
         ignoredImports ::= ignored
         processOption(rest)
+      case MaxErrors() :: num :: rest                =>
+        errorContext = num
+        processOption(rest)
       case Flag(flag) :: rest                        =>
         flagActive.add(flag)
         processOption(rest)
@@ -132,7 +137,8 @@ object Main extends MainErrors with Colored {
         suppressWarnings = flagActive(SuppressWarnings),
         warningIsError = flagActive(WarningIsError),
         useColor = !flagActive(NoColor),
-        maxErrors = getMaxErrors(maxErrors)
+        maxErrors = getNum(maxErrors, FatalInvalidMaxErrors),
+        errorContext = getNum(errorContext, FatalInvalidErrorContext)
       ),
       files = getFilesToCompile(filePaths),
       classPaths = getClassPaths(classPaths),
@@ -229,11 +235,11 @@ object Main extends MainErrors with Colored {
     true
   }
 
-  private def getMaxErrors(num: String) = {
+  private def getNum(num: String, error: String => Nothing) = {
     try {
       num.toInt
     } catch {
-      case e: NumberFormatException => FatalInvalidMaxErrors(num)
+      case _: NumberFormatException => error(num)
     }
   }
 

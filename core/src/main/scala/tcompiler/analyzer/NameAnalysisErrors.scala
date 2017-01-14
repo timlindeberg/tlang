@@ -3,19 +3,20 @@ package tcompiler.analyzer
 import tcompiler.analyzer.Symbols.{ClassSymbol, _}
 import tcompiler.analyzer.Types.Type
 import tcompiler.ast.Trees.{Break, Tree, _}
-import tcompiler.utils.{Errors, Positioned}
+import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
 trait NameAnalysisErrors extends Errors {
 
-  override val ErrorPrefix = "N"
+  override val ErrorLetters = "N"
 
-  def error(errorCode: Int, msg: String, tree: Positioned): Symbol = {
-    ctx.reporter.error(ErrorPrefix, errorCode, msg, tree, importMap)
+  def error(errorCode: Int, msg: String, pos: Positioned): Symbol = {
+    report(errorCode, msg, ErrorLevel.Error, pos)
 
-    tree match {
+    pos match {
       case id: ClassID    => id.setSymbol(new ClassSymbol(Errors.ErrorName, false))
       case id: VariableID => id.setSymbol(new VariableSymbol(Errors.ErrorName))
       case _              =>
@@ -30,7 +31,7 @@ trait NameAnalysisErrors extends Errors {
 
   protected def ErrorInheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, pos: Positioned): Symbol = {
     val list = inheritenceList(set, c)
-    error(0, s"A cycle was found in the inheritence graph: $list", pos)
+    error(0, s"A cycle was found in the inheritance graph: $list", pos)
   }
 
   protected def ErrorOverrideOperator(pos: Positioned): Symbol =

@@ -9,10 +9,11 @@ import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, Printer}
+import tcompiler.error.Reporter
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.{Context, Pipeline, Reporter}
+import tcompiler.utils.{Context, Pipeline}
 import tcompiler.utils.Extensions._
 
 import scala.util.Random

@@ -3,7 +3,8 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.FlatSpec
-import tcompiler.utils.{Context, Reporter}
+import tcompiler.error.Reporter
+import tcompiler.utils.Context
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
@@ -39,7 +40,7 @@ object TestUtils extends FlatSpec {
       case None    => (Nil, List(new File(".")))
     }
 
-    val reporter = new Reporter()
+    val reporter = new Reporter(useColor = true)
     val cp = Main.TDirectory
     val printCodeStage = Nil //List("codegeneration")
     Context(reporter = reporter, files = files, outDirs = outDir, classPaths = List(cp), printCodeStages = printCodeStage, useColor = true)
