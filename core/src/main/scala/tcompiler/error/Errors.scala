@@ -30,8 +30,16 @@ trait Errors {
       name -> importMap.getErrorName(name)
     }.toMap
 
-    val err = Error(ErrorLetters, errorCode, msg, errorLevel, pos, names)
+
+    val code = ErrorLetters + errorLevel.num + leftPadCode(errorCode)
+    val err = Error(code, msg, errorLevel, pos, names)
     ctx.reporter.report(err)
+  }
+
+  private def leftPadCode(num: Int): String = num match {
+    case x if x >= 0 && x < 10     => "00" + x
+    case x if x >= 10 && x < 100   => "0" + x
+    case x if x >= 100 && x < 1000 => "" + x
   }
 
 }
@@ -40,18 +48,21 @@ object Errors {
   val ErrorName = "$ERROR$"
 }
 
-case class Error(letters: String, code: Int, msg: Any, errorLevel: ErrorLevel, pos: Positioned, names: Map[String, String]) {
+case class Error(code: String, msg: Any, errorLevel: ErrorLevel, pos: Positioned, names: Map[String, String]) {
   override def equals(obj: scala.Any): Boolean = obj match {
-    case Error(letters0, code0, msg0, errorLevel0, pos0, names0) =>
-      letters == letters0 && code == code0 && msg0 == msg0 && errorLevel == errorLevel0 && pos.equalPos(pos0)
-    case _                                                       => false
+    case Error(code0, msg0, errorLevel0, pos0, names0) =>
+      code == code0 && msg0 == msg0 && errorLevel == errorLevel0 && pos.equalPos(pos0)
+    case _                                             => false
   }
 }
 
-trait ErrorLevel
+trait ErrorLevel {
+  def num: Int
+}
+
 object ErrorLevel {
-  case object Warning extends ErrorLevel
-  case object Error extends ErrorLevel
-  case object Fatal extends ErrorLevel
+  case object Warning extends ErrorLevel {val num = 1}
+  case object Error extends ErrorLevel {val num = 2}
+  case object Fatal extends ErrorLevel {val num = 3}
 }
 

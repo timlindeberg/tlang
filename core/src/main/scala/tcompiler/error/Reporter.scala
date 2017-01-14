@@ -25,9 +25,6 @@ class Reporter(suppressWarnings: Boolean = false,
 
 
   def report(error: Error): Unit = {
-    val errorFormatter = ErrorFormatter(error, useColor, errorContext)
-    val err = errorFormatter.format()
-
     error.errorLevel match {
       case ErrorLevel.Warning =>
         if (warningIsError) {

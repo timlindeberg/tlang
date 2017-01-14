@@ -30,7 +30,6 @@ case class ErrorFormatter(
 
   private val sb                        = new StringBuilder()
   private val pos                       = error.pos
-  private val errorLetters              = error.letters
   private val lines: IndexedSeq[String] = getLines(pos.file)
 
   def format(): String = {
@@ -48,7 +47,7 @@ case class ErrorFormatter(
 
     if (validPosition) {
       sb ++= CodeSeperator
-      sb ++= locationInFile
+      addLocationInFile()
       sb ++= CodeSeperator
     }
 
@@ -56,19 +55,12 @@ case class ErrorFormatter(
   }
 
   private def errorPrefix: String = {
-    val code = leftPad(error.code)
-
-    error.errorLevel match {
-      case ErrorLevel.Warning => s"${WarningColor}Warning$Reset ($WarningColor${errorLetters}1$code$Reset)"
-      case ErrorLevel.Error   => s"${ErrorColor}Error$Reset ($ErrorColor${errorLetters}2$code$Reset)"
-      case ErrorLevel.Fatal   => s"${FatalColor}Fatal$Reset ($FatalColor${errorLetters}3$code$Reset)"
+    val pre = error.errorLevel match {
+      case ErrorLevel.Warning => s"${WarningColor}Warning "
+      case ErrorLevel.Error   => s"${ErrorColor}Error "
+      case ErrorLevel.Fatal   => s"${FatalColor}Fatal "
     }
-  }
-
-  private def leftPad(num: Int): String = num match {
-    case x if x >= 0 && x < 10     => "00" + x
-    case x if x >= 10 && x < 100   => "0" + x
-    case x if x >= 100 && x < 1000 => "" + x
+    pre + error.code + Reset
   }
 
   private def filePrefix: String = {
@@ -97,7 +89,7 @@ case class ErrorFormatter(
     msgFormat + s + Reset
   }
 
-  private def locationInFile: String = {
+  private def addLocationInFile(): Unit = {
     takeLines(errorContext, before = true)
     sb ++= lineNumPrefix(pos.line)
 
@@ -112,8 +104,6 @@ case class ErrorFormatter(
 
     sb ++= "\n"
     takeLines(errorContext, before = false)
-
-    sb.toString
   }
 
   private def addNonColoredLine(line: String, start: Int, end: Int) = {
@@ -136,7 +126,17 @@ case class ErrorFormatter(
   }
 
   private def lineNumPrefix(line: Int) =
-    s"$Bold$NumColor$line$Reset:" + " " * (MaxLineNumberDigits - (line / 10))
+    s"$Bold$NumColor$line$Reset:" + " " * (MaxLineNumberDigits - numDigits(line))
+
+  private def numDigits(num: Int): Int = {
+    var n: Int = 1
+    var i: Int = num
+    if (i >= 100000000) {n += 8; i /= 100000000}
+    if (i >= 10000) {n += 4; i /= 10000}
+    if (i >= 100) {n += 2; i /= 100}
+    if (i >= 10) {n += 1;}
+    n
+  }
 
   private def takeLines(numLines: Int, before: Boolean) = {
     val start = if (before) pos.line - numLines else pos.line + 1

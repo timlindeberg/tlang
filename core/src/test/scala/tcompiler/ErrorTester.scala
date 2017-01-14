@@ -15,8 +15,6 @@ abstract class ErrorTester extends Tester {
 
   import TestUtils._
 
-  private def Seperator = "---------------------------------------------------------------------\n"
-
   def testFile(file: File): Unit = {
     val ctx = getTestContext(file)
     val expectedErrors = parseSolutions(file)
@@ -54,7 +52,7 @@ abstract class ErrorTester extends Tester {
 
   private val AnsiRegex = """\x1b[^m]*m""".r
   private def removeANSIFormatting(s: String) = AnsiRegex.replaceAllIn(s, "")
-  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(?:Fatal|Warning|Error) \((.+?)\).*""".r
+  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(?:Fatal|Warning|Error) (.+?):.*""".r
   // Parses codes from error messages
 
   private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {

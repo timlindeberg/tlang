@@ -96,6 +96,9 @@ object Main extends MainErrors with Colored {
       case MaxErrors() :: num :: rest                =>
         maxErrors = num
         processOption(rest)
+      case ErrorContext() :: num :: rest             =>
+        errorContext = num
+        processOption(rest)
       case Version() :: _                            =>
         printVersion()
         sys.exit
@@ -112,9 +115,6 @@ object Main extends MainErrors with Colored {
         processOption(newRest)
       case IgnoreDefaultImports() :: ignored :: rest =>
         ignoredImports ::= ignored
-        processOption(rest)
-      case MaxErrors() :: num :: rest                =>
-        errorContext = num
         processOption(rest)
       case Flag(flag) :: rest                        =>
         flagActive.add(flag)
