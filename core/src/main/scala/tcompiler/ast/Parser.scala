@@ -910,9 +910,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case CHARLITKIND   => charLit
       case STRLITKIND    => stringLit
       case IDKIND        =>
+        val methStartPos = nextToken
         val ids = nonEmptyList(identifierName, COLON, COLON)
         val name = ids.mkString("::")
-        val methStartPos = nextToken
         nextTokenKind match {
           case LPAREN =>
             eat(LPAREN)

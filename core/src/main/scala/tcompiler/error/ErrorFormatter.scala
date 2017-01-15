@@ -3,8 +3,10 @@ package tcompiler.error
 import java.io.File
 import java.util.regex.Matcher
 
+import org.apache.commons.lang3.text.WordUtils
 import tcompiler.Main
 import tcompiler.utils.Colored
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 import scala.io.Source
@@ -20,21 +22,31 @@ case class ErrorFormatter(
 
   import ErrorFormatter._
 
-  override def NumColor: String = Blue
-  def QuoteColor: String = Magenta
-  def MessageStyle: String = Bold
-  def WarningColor: String = Yellow
-  def ErrorColor: String = Red + Bold
-  def FatalColor: String = Red
 
+  override val NumColor     = Blue
+  private  val QuoteColor   = Magenta
+  private  val MessageStyle = Bold
+  private  val WarningColor = Yellow
+  private  val ErrorColor   = Red + Bold
+  private  val FatalColor   = Red
+  private  val ErrorStyle   = {
+    val color = error.errorLevel match {
+      case ErrorLevel.Warning => WarningColor
+      case ErrorLevel.Error   => ErrorColor
+      case ErrorLevel.Fatal   => FatalColor
+    }
+    Underline + color
+  }
 
-  private val sb                        = new StringBuilder()
-  private val pos                       = error.pos
-  private val lines: IndexedSeq[String] = getLines(pos.file)
+  private val QuoteRegex       = """'(.+?)'""".r
+  private val sb               = new StringBuilder()
+  private val pos              = error.pos
+  private val lines            = getLines(pos.file)
+  private val maxLineNumDigits = numDigits(clamp(pos.line + errorContext, 1, lines.size)) + 1
 
   def format(): String = {
     val prefix = errorPrefix
-    val msgStr = formatMessage
+    val msgStr = formatMessage(prefix.charCount)
 
 
     val validPosition = pos.hasPosition && (1 to lines.size contains pos.line)
@@ -42,14 +54,11 @@ case class ErrorFormatter(
     if (validPosition)
       sb ++= filePrefix + "\n"
 
-    sb ++= s"$prefix: $msgStr\n"
+    sb ++= s"$prefix$msgStr\n"
 
 
-    if (validPosition) {
-      sb ++= CodeSeperator
+    if (validPosition)
       addLocationInFile()
-      sb ++= CodeSeperator
-    }
 
     sb.toString()
   }
@@ -60,7 +69,7 @@ case class ErrorFormatter(
       case ErrorLevel.Error   => s"${ErrorColor}Error "
       case ErrorLevel.Fatal   => s"${FatalColor}Fatal "
     }
-    pre + error.code + Reset
+    pre + error.code + Reset + ": "
   }
 
   private def filePrefix: String = {
@@ -75,12 +84,13 @@ case class ErrorFormatter(
     s"$Bold[$Reset$position$Bold]$Reset"
   }
 
-  private val QuoteRegex = """'(.+?)'""".r
-  private def formatMessage: String = {
+  private def formatMessage(prefixLength: Int): String = {
     val msgFormat = Reset + MessageStyle
 
+    val newLine = "\n" + " " * prefixLength
+    val wrapped = WordUtils.wrap(error.msg.toString, LineWidth - prefixLength, newLine, true)
 
-    val s = QuoteRegex.replaceAllIn(error.msg.toString, m => {
+    val s = QuoteRegex.replaceAllIn(wrapped, m => {
       var name = m.group(1)
       name = error.names.getOrElse(name, name)
       name = TemplateNameParser.parseTemplateName(name)
@@ -90,47 +100,69 @@ case class ErrorFormatter(
   }
 
   private def addLocationInFile(): Unit = {
-    takeLines(errorContext, before = true)
-    sb ++= lineNumPrefix(pos.line)
+    sb ++= CodeSeperator
 
-    val line = lines(pos.line - 1)
+    val ctxLines = contextLines
+
+    val indent = ctxLines.map { case (_, str) =>
+      val i = str.indexWhere(!_.isWhitespace)
+      if (i == -1) 0 else i
+    }.min
+
+    ctxLines.foreach { case (i, line) =>
+      val str = if (i == pos.line) indicator(line, indent) else line
+
+      sb ++= lineNumPrefix(i)
+      sb ++= str.substring(indent) + "\n"
+    }
+
+    sb ++= CodeSeperator
+  }
+
+  private def contextLines = {
+    val start = clamp(pos.line - errorContext, 1, lines.size)
+    val end = clamp(pos.line + errorContext, 1, lines.size)
+    (start to end)
+      .map(i => (i, lines(i - 1)))
+      .toList
+  }
+
+  private def indicator(line: String, indent: Int) = {
     val start = pos.col - 1
-    val end = getEndCol(line)
-
-    if (useColor)
-      addColoredLine(line, start, end)
-    else
-      addNonColoredLine(line, start, end)
-
-    sb ++= "\n"
-    takeLines(errorContext, before = false)
-  }
-
-  private def addNonColoredLine(line: String, start: Int, end: Int) = {
-    val prefixLength = MaxLineNumberDigits + 1
-    sb ++= line
-    sb ++= "\n"
-    sb ++= " " * (prefixLength + start)
-    sb ++= "~" * (end - start)
-  }
-
-  private def addColoredLine(line: String, start: Int, end: Int) = {
-    val pre = line.substring(0, start)
-    val highlighted = line.substring(start, end)
-    val post = line.substring(end, line.length)
-    sb ++= pre
-    sb ++= errorStyle
-    sb ++= highlighted
-    sb ++= Reset
-    sb ++= post
+    val end = getEndPos(line, start, indent)
+    if (useColor) {
+      val pre = line.substring(0, start)
+      val highlighted = line.substring(start, end)
+      val post = line.substring(end, line.length)
+      s"$pre$ErrorStyle$highlighted$Reset$post"
+    } else {
+      val prefixLength = maxLineNumDigits + 1 - indent
+      val whitespace = " " * (prefixLength + start)
+      val indicator = NonColoredIndicationChar * (end - start)
+      s"$line\n$whitespace$indicator"
+    }
   }
 
   private def lineNumPrefix(line: Int) =
-    s"$Bold$NumColor$line$Reset:" + " " * (MaxLineNumberDigits - numDigits(line))
+    s"$Bold$NumColor$line$Reset:" + " " * (maxLineNumDigits - numDigits(line))
+
+  private def getEndPos(line: String, start: Int, indent: Int): Int = {
+    var end = if (pos.endLine == pos.line) {
+      pos.endCol - 1
+    } else {
+      val commentIndexes = line.allIndexesOf("//") ::: line.allIndexesOf("/*")
+      commentIndexes.filter(_ > start).sorted.headOption.getOrElse(pos.endCol)
+    }
+
+    // Back cursor so we never underline whitespaces
+    while (end > 1 && line(end - 1).isWhitespace)
+      end -= 1
+    end
+  }
 
   private def numDigits(num: Int): Int = {
-    var n: Int = 1
-    var i: Int = num
+    var n = 1
+    var i = num
     if (i >= 100000000) {n += 8; i /= 100000000}
     if (i >= 10000) {n += 4; i /= 10000}
     if (i >= 100) {n += 2; i /= 100}
@@ -138,44 +170,7 @@ case class ErrorFormatter(
     n
   }
 
-  private def takeLines(numLines: Int, before: Boolean) = {
-    val start = if (before) pos.line - numLines else pos.line + 1
-    val end = start + numLines
-    for (i <- start until end if i >= 1 && i <= lines.size) {
-      sb ++= lineNumPrefix(i)
-      sb ++= lines(i - 1)
-      sb ++= "\n"
-    }
-  }
-
-  private def errorStyle = {
-    val color = error.errorLevel match {
-      case ErrorLevel.Warning => WarningColor
-      case ErrorLevel.Error   => ErrorColor
-      case ErrorLevel.Fatal   => FatalColor
-    }
-    Underline + color
-  }
-
-
-  private def getEndCol(line: String): Int = {
-    var end = if (pos.endLine == pos.line) {
-      pos.endCol - 1
-    } else {
-      val firstSlash = line.indexOf("//")
-      if (firstSlash != -1)
-        firstSlash - 1
-      else
-        line.length
-    }
-
-
-    // Back cursor so we never underline whitespaces
-    while (line(end - 1).isWhitespace)
-      end -= 1
-    end
-  }
-
+  private def clamp(x: Int, min: Int, max: Int) = Math.min(Math.max(x, min), max)
 
   private object TemplateNameParser extends RegexParsers {
 
@@ -220,8 +215,9 @@ case class ErrorFormatter(
 
 object ErrorFormatter {
 
-  val MaxLineNumberDigits                                  = 6
-  val CodeSeperator: String                                = "-" * 80 + "\n"
+  val LineWidth                                            = 80
+  val CodeSeperator: String                                = "-" * LineWidth + "\n"
+  val NonColoredIndicationChar                             = "~"
   val LineCache    : mutable.Map[File, IndexedSeq[String]] = mutable.Map()
 
   def getLines(f: File): IndexedSeq[String] =

@@ -3,13 +3,16 @@ package tcompiler.utils
 import tcompiler.analyzer.Types.Type
 
 import scala.collection.mutable
-import scala.reflect.ClassTag
-import scala.reflect._
+import scala.collection.mutable.ListBuffer
+import scala.reflect.{ClassTag, _}
+import scala.util.matching.Regex
 
 /**
   * Created by Tim Lindeberg on 4/16/2016.
   */
 object Extensions {
+
+  val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
   implicit class OptionExtensions[T](o: Option[T]) {
 
@@ -21,6 +24,28 @@ object Extensions {
 
     def times(f: => Unit): Unit = 1 to i foreach { _ => f }
 
+  }
+
+  implicit class StringExtensions(str: String) {
+    def clearAnsi: String = AnsiRegex.replaceAllIn(str, "")
+    def charCount: Int = {
+      val str = clearAnsi
+      str.codePointCount(0, str.length)
+    }
+
+    def allIndexesOf(pattern: String): List[Int] = {
+      val buf = ListBuffer[Int]()
+
+      var index = str.indexOf(pattern)
+      if (index != -1)
+        buf += index
+      while (index >= 0) {
+        index = str.indexOf(pattern, index + 1)
+        if (index != -1)
+          buf += index
+      }
+      buf.toList
+    }
   }
 
   implicit class AnyExtensions(a: Any) {

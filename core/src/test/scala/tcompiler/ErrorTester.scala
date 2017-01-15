@@ -3,6 +3,7 @@ package tcompiler
 import java.io.File
 
 import tcompiler.error.CompilationException
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -50,16 +51,15 @@ abstract class ErrorTester extends Tester {
     }.toList
   }
 
-  private val AnsiRegex = """\x1b[^m]*m""".r
-  private def removeANSIFormatting(s: String) = AnsiRegex.replaceAllIn(s, "")
   private val ErrorRegex = """.*\.kool:(\d+):.+?\n(?:Fatal|Warning|Error) (.+?):.*""".r
   // Parses codes from error messages
 
   private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
     // First two rows of error messages
-    val errors = removeANSIFormatting(errorMessages).split("\n\n") map {
+    val errors = errorMessages.clearAnsi.split("\n\n") map {
       _.split("\n").take(2).mkString("\n")
     }
+    println(errors.mkString("\n\n"))
     errors.collect {
       case ErrorRegex(lineNumber, errorCode) => (lineNumber.toInt, errorCode)
     }.toList

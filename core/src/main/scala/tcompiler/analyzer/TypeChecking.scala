@@ -428,7 +428,7 @@ class TypeChecker(override var ctx: Context,
             }
           case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
-              ErrorMethodOnWrongType(meth.getSymbol.signature, objType.toString, app)
+              ErrorMethodOnWrongType(methSignature, objType.toString, app)
             meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
             Int
           case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
