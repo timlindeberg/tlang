@@ -1,0 +1,13 @@
+val x = new A()
+x.Blest()
+x.Blest(5) // Not the same types, this should not give a suggestion
+x.Blest("5")
+println(x.bield)
+
+class A {
+
+    val field = 0
+
+    Def Test() = println("Test")
+    Def Test(s: String) = println(s)
+}

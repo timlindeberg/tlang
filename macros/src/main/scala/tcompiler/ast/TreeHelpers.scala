@@ -13,7 +13,6 @@ case class AST(name: Term.Name, params: Seq[Term.Param]) {
 
 class GenerateTreeHelpers extends StaticAnnotation {
 
-
   inline def apply(defn: Any): Any = meta {
     import GenerateTreeHelpers._
 
@@ -58,9 +57,15 @@ object GenerateTreeHelpers {
       val patTerms = args.map(a => Pat.Var.Term(a.copy(a.value + "0")))
       val equals = equality(params.toList)
 
+      val pat = p"t @ $name(..$patTerms)"
+      val eqCase = equals match {
+        case Some(eq) => p"case $pat if $eq => t"
+        case None     => p"case $pat => t"
+      }
+
       q"""
        override def $name(tree: Tree, ..$params) = tree match {
-         case t @ $name(..$patTerms) if $equals => t
+         case $eqCase
          case _ => super.$name(tree, ..$args)
        }
       """
@@ -137,7 +142,14 @@ object GenerateTreeHelpers {
     new PrintWriter(path) {write(t.syntax); close()}
   }
 
-  private def equality(params: List[Term.Param]): Term = {
+  private def equality(params: List[Term.Param]): Option[Term] = {
+
+    def _equality(params: List[Term.Param]): Term = {
+      params match {
+        case param :: Nil  => compare(param)
+        case param :: rest => q"${compare(param)} && (${_equality(rest)})"
+      }
+    }
 
     def compare(param: Term.Param) = {
       val name = param.name.value
@@ -146,11 +158,6 @@ object GenerateTreeHelpers {
       val tpe = param.decltpe.map(_.syntax).getOrElse("")
       if (Primitives.contains(tpe)) q"($a == $a0)" else q"($a eq $a0)"
     }
-
-    params match {
-      case Nil           => q"true"
-      case param :: Nil  => compare(param)
-      case param :: rest => q"${compare(param)} && (${equality(rest)})"
-    }
+    if (params.isEmpty) None else Some(_equality(params))
   }
 }

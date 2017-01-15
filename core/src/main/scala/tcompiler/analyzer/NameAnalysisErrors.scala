@@ -3,7 +3,7 @@ package tcompiler.analyzer
 import tcompiler.analyzer.Symbols.{ClassSymbol, _}
 import tcompiler.analyzer.Types.Type
 import tcompiler.ast.Trees.{Break, Tree, _}
-import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.error.{ErrorLevel, Errors, NameSuggestor}
 import tcompiler.utils.Positioned
 
 /**
@@ -12,6 +12,7 @@ import tcompiler.utils.Positioned
 trait NameAnalysisErrors extends Errors {
 
   override val ErrorLetters = "N"
+  val nameSuggestor = new NameSuggestor
 
   def error(errorCode: Int, msg: String, pos: Positioned): Symbol = {
     report(errorCode, msg, ErrorLevel.Error, pos)
@@ -30,12 +31,11 @@ trait NameAnalysisErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def ErrorInheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, pos: Positioned): Symbol = {
-    val list = inheritenceList(set, c)
+    val list = inheritanceList(set, c)
     error(0, s"A cycle was found in the inheritance graph: $list", pos)
   }
 
-  protected def ErrorOverrideOperator(pos: Positioned): Symbol =
-    error(1, "Operators cannot be overriden.", pos)
+  // 1 missing
 
   protected def ErrorNullableInOperator(pos: Positioned): Symbol =
     error(2, "Operators cannot have nullable types as arguments or return type.", pos)
@@ -49,8 +49,9 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned): Symbol =
     error(5, s"Field '$name' is already defined in super class.", pos)
 
-  protected def ErrorUnknownType(name: String, pos: Positioned): Symbol =
-    error(6, s"Unknown type: '$name'.", pos)
+  protected def ErrorUnknownType(name: String, alternatives: List[String], pos: Positioned): Symbol =
+    error(6, s"Unknown type: '$name'.${nameSuggestor(name, alternatives)}", pos)
+
 
   protected def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned): Symbol =
     error(7, s"Method '$methodSignature' is already defined at line '$line'.", pos)
@@ -60,14 +61,14 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned): Symbol =
     error(9, s"Operator '$operator' is already defined at line '$line'.", pos)
 
-  protected def ErrorCantResolveSymbol(name: String, pos: Positioned): Symbol =
-    error(10, s"Could not resolve symbol '$name'.", pos)
+  protected def ErrorCantResolveSymbol(name: String, alternatives: List[String], pos: Positioned): Symbol =
+    error(10, s"Could not resolve symbol '$name'.${nameSuggestor(name, alternatives)}", pos)
 
   protected def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned): Symbol =
     error(11, s"Non-static field '$name' cannot be accessed from a static function.", pos)
 
-  protected def ErrorParentNotDeclared(name: String, pos: Positioned): Symbol =
-    error(12, s"Parent class '$name' was not declared. ", pos)
+  protected def ErrorParentNotDeclared(name: String, alternatives: List[String], pos: Positioned): Symbol =
+    error(12, s"Could not resolve parent symbol '$name'.${nameSuggestor(name, alternatives)}", pos)
 
   protected def ErrorThisInStaticContext(pos: Positioned): Symbol =
     error(13, "'this' can not be used in a static context.", pos)
@@ -138,7 +139,7 @@ trait NameAnalysisErrors extends Errors {
   //  Private methods
   //---------------------------------------------------------------------------------------
 
-  private def inheritenceList(set: Set[ClassSymbol], c: ClassSymbol) = {
+  private def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol) = {
     val first = if (set.size >= 2)
       set.map(c => s"'${c.name}'").mkString(" <: ")
     else

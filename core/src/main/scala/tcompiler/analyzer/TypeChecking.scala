@@ -418,17 +418,17 @@ class TypeChecker(override var ctx: Context,
               case Some(methSymbol) =>
                 checkMethodPrivacy(classSymbol, methSymbol, app)
                 checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
-
                 TypeChecking.methodUsage += methSymbol -> true
                 inferTypeOfMethod(methSymbol)
                 meth.setSymbol(methSymbol)
                 meth.getType
               case None             =>
-                ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, app)
+                val alternatives = classSymbol.methods.filter(_.argTypes == argTypes.get).map(_.name)
+                ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, meth.name, alternatives, app)
             }
           case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
-              ErrorMethodOnWrongType(methSignature, objType.toString, app)
+              ErrorMethodOnWrongType(meth.getSymbol.signature, objType.toString, app)
             meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
             Int
           case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
@@ -443,7 +443,8 @@ class TypeChecker(override var ctx: Context,
                 fieldId.setSymbol(varSymbol)
                 fieldId.getType
               case None            =>
-                ErrorClassDoesntHaveField(classSymbol.name, fieldName, app)
+                val alternatives = classSymbol.fields.keys.toList
+                ErrorClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app)
             }
           case _                    => ErrorFieldOnWrongType(objType.toString, app)
         }

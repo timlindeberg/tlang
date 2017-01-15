@@ -225,7 +225,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
         globalScope.lookupClass(importMap, name) match {
           case Some(originalClass) => extensionSym.originalClassSymbol = Some(originalClass)
-          case None                => ErrorCantResolveSymbol(name, id)
+          case None                => ErrorCantResolveSymbol(name, globalScope.classNames, id)
         }
       }
 
@@ -409,11 +409,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                   case Some(varSymbol) => setVarIdentifierSymbol(id, varSymbol)
                   case None            =>
                     // access object is not a variable, must be a class
+                    // eg. StaticClass.method()
                     globalScope.lookupClass(importMap, name) match {
                       case Some(classSymbol) =>
                         val classId = ClassID(name).setPos(id).setSymbol(classSymbol)
                         acc.obj = classId
-                      case None              => ErrorCantResolveSymbol(name, id)
+                      case None              =>
+                        val alternatives = variableAlternatives(localVars) ::: globalScope.classNames
+                        ErrorCantResolveSymbol(name, alternatives, id)
                     }
                 }
               case _                   =>
@@ -485,13 +488,30 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     private def setVarIdentifierSymbol(id: VariableID, localVars: Map[String, VariableData]): Unit = {
       lookupVariableSymbol(id, localVars) match {
         case Some(symbol) => setVarIdentifierSymbol(id, symbol)
-        case None         => ErrorCantResolveSymbol(id.name, id)
+        case None         => ErrorCantResolveSymbol(id.name, variableAlternatives(localVars), id)
       }
     }
 
     private def setVarIdentifierSymbol(id: VariableID, symbol: VariableSymbol) = {
       id.setSymbol(symbol)
       variableUsage += symbol -> true
+    }
+
+    private def variableAlternatives(localVars: Map[String, VariableData]): List[String] = {
+
+      def getLocalVars = localVars.keys.toList
+      def getArguments(methodSymbol: MethodSymbol) = methodSymbol.argList.map(_.name)
+      def getFields(classSymbol: ClassSymbol) = classSymbol.fields.filter { case (name, sym) =>
+        !isStaticContext || sym.isStatic
+      }.keys.toList
+
+      scope match {
+        case methodSymbol: MethodSymbol => // Binding symbols inside a method
+          getLocalVars ::: getArguments(methodSymbol) ::: getFields(methodSymbol.classSymbol)
+        case classSymbol: ClassSymbol   => // Binding symbols inside a class (fields)
+          getFields(classSymbol)
+        case _                          => ???
+      }
     }
 
     private def lookupVariableSymbol(id: VariableID, localVars: Map[String, VariableData]): Option[VariableSymbol] = {
@@ -501,8 +521,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       def lookupArgument(methodSymbol: MethodSymbol) = methodSymbol.lookupArgument(name)
       def lookupField(methodSymbol: MethodSymbol) = {
         val m = methodSymbol.lookupField(name)
-        m collect {
-          case sym if isStaticContext && !sym.isStatic =>
+        m map { sym =>
+          if (isStaticContext && !sym.isStatic)
             ErrorAccessNonStaticFromStatic(id.name, id)
         }
         m
@@ -555,7 +575,9 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       case tpeId@ClassID(name, _)    =>
         globalScope.lookupClass(importMap, name) match {
           case Some(classSymbol) => tpeId.setSymbol(classSymbol)
-          case None              => ErrorUnknownType(name, tpeId)
+          case None              =>
+            val alternatives = globalScope.classNames ::: Types.Primitives.map(_.name)
+            ErrorUnknownType(name, alternatives, tpeId)
         }
       case ArrayType(arrayTpe)       =>
         setType(arrayTpe)
@@ -573,7 +595,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     parents.foreach { parentId =>
       globalScope.lookupClass(importMap, parentId.name) match {
         case Some(parentSymbol) => parentId.setSymbol(parentSymbol)
-        case None               => ErrorParentNotDeclared(parentId.name, parentId)
+        case None               => ErrorParentNotDeclared(parentId.name, globalScope.classNames, parentId)
       }
     }
 

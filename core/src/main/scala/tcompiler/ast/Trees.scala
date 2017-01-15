@@ -13,6 +13,7 @@ object Trees {
 
   trait Tree extends Positioned with Product {
 
+
     def foreach(f: Tree => Unit): Unit = {
       val traverser = new Trees.Traverser {
         override def _traverse(t: Tree): Unit = {

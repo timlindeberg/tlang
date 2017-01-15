@@ -3,7 +3,7 @@ package tcompiler.analyzer
 import tcompiler.analyzer.Symbols.{MethodSymbol, OperatorSymbol, VariableSymbol}
 import tcompiler.analyzer.Types.{TError, TObject, Type}
 import tcompiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
-import tcompiler.error.{ErrorLevel, Errors}
+import tcompiler.error.{ErrorLevel, Errors, NameSuggestor}
 import tcompiler.utils.Positioned
 
 /**
@@ -12,6 +12,7 @@ import tcompiler.utils.Positioned
 trait TypeCheckingErrors extends Errors {
 
   override val ErrorLetters = "T"
+  val nameSuggestor = new NameSuggestor
 
   def error(errorCode: Int, msg: String, pos: Positioned): Type = {
     if (!msg.contains(s"'$TError'"))
@@ -37,14 +38,15 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
     error(0, s"Expected type: $expected, found: $found.", pos)
 
-  protected def ErrorClassDoesntHaveMethod(className: String, methodSignature: String, pos: Positioned): Type =
-    error(1, s"Class '$className' does not contain a method '$methodSignature'.", pos)
+  protected def ErrorClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], pos: Positioned): Type =
+    error(1, s"Class '$className' does not contain a method '$methSignature'.${nameSuggestor(methName, alternatives)}", pos)
+
 
   protected def ErrorMethodOnWrongType(method: String, tpe: String, pos: Positioned): Type =
     error(2, s"Cannot call method '$method' on type '$tpe'.", pos)
 
-  protected def ErrorClassDoesntHaveField(className: String, fieldName: String, pos: Positioned): Type =
-    error(3, s"Class '$className' does not contain a field '$fieldName'.", pos)
+  protected def ErrorClassDoesntHaveField(className: String, fieldName: String, alternatives: List[String], pos: Positioned): Type =
+    error(3, s"Class '$className' does not contain a field '$fieldName'.${nameSuggestor(fieldName, alternatives)}", pos)
 
   protected def ErrorFieldOnWrongType(tpe: String, pos: Positioned): Type =
     error(4, s"Cannot access field on type '$tpe'.", pos)
@@ -113,8 +115,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorValueMustBeInitialized(name: String, pos: Positioned): Type =
     error(19, s"Value '$name' must be initialized.", pos)
 
-  protected def ErrorMultipleArrayLitTypes(typeList: String, pos: Positioned): Type =
-    error(20, s"Array literal contains multiple types: $typeList", pos)
+  // Missing 20
 
   protected def ErrorCantInferTypeRecursiveMethod(pos: Positioned): Type =
     error(21, s"Cannot infer type of recursive method.", pos)

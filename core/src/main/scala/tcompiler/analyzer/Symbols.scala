@@ -43,6 +43,8 @@ object Symbols {
       classes.getOrElseMaybeUpdate(fullName, ClassSymbolLocator.findSymbol(fullName))
     }
 
+    def classNames: List[String] = classes.keys.toList
+
   }
 
   class ClassSymbol(className: String,
