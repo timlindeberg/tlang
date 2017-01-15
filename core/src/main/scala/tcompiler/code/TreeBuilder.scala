@@ -3,7 +3,7 @@ package tcompiler.code
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
-import tcompiler.imports.ImportMap
+import tcompiler.imports.{ClassSymbolLocator, ImportMap}
 import tcompiler.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
@@ -29,15 +29,20 @@ class TreeBuilder {
     decl.id
   }
 
-  def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, importMap: ImportMap, args: List[Type] = List()): NormalAccess = {
-    val methodSymbol = classSymbol.lookupMethod(methName, args, importMap).get
-    createMethodCall(obj, methodSymbol)
+  def createMethodCall(className: String, methName: String, importMap: ImportMap, args: List[ExprTree]): NormalAccess = {
+    val classSym = ClassSymbolLocator.findSymbol("java.lang.Math").get
+    val classId = ClassID("java.lang.Math").setSymbol(classSym)
+    val methodSymbol = classSym.lookupMethod(methName, args.map(_.getType), importMap).get
+    createMethodCall(classId, methodSymbol, args)
+  }
+
+  def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, importMap: ImportMap, args: List[ExprTree]): NormalAccess = {
+    val methodSymbol = classSymbol.lookupMethod(methName, args.map(_.getType), importMap).get
+    createMethodCall(obj, methodSymbol, args)
   }
 
   def createMethodCall(obj: ExprTree, name: String, tpe: Type): NormalAccess =
     createMethodCall(obj, createMethodSymbol(name, tpe))
-
-  def createMethodCall(obj: ExprTree, methodSymbol: MethodSymbol): NormalAccess = createMethodCall(obj, methodSymbol, List())
 
   def createMethodCall(obj: ExprTree, methodSymbol: MethodSymbol, args: ExprTree*): NormalAccess =
     createMethodCall(obj, methodSymbol, args.toList)

@@ -509,13 +509,13 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
   private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
 
-    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap)
+    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap, List())
     val iterator = c.putVarDecl("it", iteratorCall)
 
     val iteratorClass = iteratorCall.getType.asInstanceOf[TObject].classSymbol
 
-    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", importMap)
-    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", importMap)
+    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", importMap, List())
+    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", importMap, List())
 
     val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)
@@ -536,15 +536,16 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
     *
     * --------------------------------------------------------------------------------
     *
-    * val a = <arr>[<start>:<end>]
+    * val a = <arr>[<start>:<end>:<step>]
     *
     * becomes:
     *
     * var $container = <arr>
-    * var $start = < 0|slice.start >            // 0 if slice.start is undefined
-    * var $end = < container.Size()|slice.end > // container.Size() if slice.end is undefined
-    * var $slice = new <arrTpe>[$start - $end]
-    * for(var $i = $start; i < $end; i++)
+    * var $start     = <start> | 0
+    * var $end       = <end>   | container.Size())
+    * var $step      = <step>  | 1
+    * var $slice = new <arrTpe>[(($start - $end) + $step - 1) / $step)]
+    * for(var $i = $start; i < $end; i += $step)
     *   $slice[$start - $i] = $container[$i]
     * $slice
     *
@@ -572,19 +573,23 @@ class Desugarer(importMap: ImportMap) extends Trees.Transformer {
 
     val start = c.putVarDecl("start", arraySlice.start.getOrElse(IntLit(0)))
     val end = c.putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(Int))
+    val step = c.putVarDecl("step", arraySlice.step.getOrElse(IntLit(1)))
 
-    val size = List(Minus(end, start).setType(Int))
+    var size: ExprTree = Minus(end, start).setType(Int)
+    if (arraySlice.step.isDefined)
+      size = Div(Plus(size, Minus(step, IntLit(1)).setType(Int)).setType(Int), step).setType(Int)
+
     val typeTree = c.getTypeTree(arrayType)
-    val newArray = NewArray(typeTree, size).setType(arr)
+    val newArray = NewArray(typeTree, List(size)).setType(arr)
     val slice = c.putVarDecl("slice", newArray)
 
     val indexDecl = c.createVarDecl("i", start)
     val indexId = indexDecl.id
     val comparison = LessThan(indexId, end).setType(Bool)
-    val post = Assign(indexId, Plus(indexId, IntLit(1)).setType(Int)).setType(Int)
+    val post = Assign(indexId, Plus(indexId, step).setType(Int)).setType(Int)
 
-
-    val toSlice = ArrayRead(slice, Minus(indexId, start).setType(Int)).setType(arraySlice)
+    val index = Div(Minus(indexId, start).setType(Int), step).setType(Int)
+    val toSlice = ArrayRead(slice, index).setType(arraySlice)
     val fromArr = ArrayRead(container, indexId).setType(arrType)
     val copyValue = Assign(toSlice, fromArr).setType(arrType)
 

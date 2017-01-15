@@ -142,8 +142,6 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     }
 
 
-
-
     // we build the line number table.
     if (lineInfo.nonEmpty) {
       val lnta = new LineNumberTableAttributeInfo(constantPool.addString("LineNumberTable"))
@@ -198,16 +196,21 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
       heightArray(pc) = there
 
       codeArray(pc) match {
-        case WIDE                                            => sys.error("Wide is unsupported for now.")
-        case RETURN                                          => if (there != 0) throw CodeFreezingException("Non-empty stack after return in void method\n" + stackTrace)
-        case ATHROW                                          => {
-          // Nothing really matters.
-        }
-        case ARETURN | DRETURN | FRETURN | IRETURN | LRETURN => {
+        case WIDE   =>
+          codeArray(pc + 1) match {
+            case IINC                              => setHeight(from + 6, there)
+            case ILOAD | FLOAD | ALOAD | DLOAD |
+                 ISTORE | FSTORE | ASTORE | DSTORE => setHeight(from + 4, there - 2)
+            case _                                 =>
+              throw CodeFreezingException("Expected IINC or LOAD/STORE instruction after WIDE.")
+          }
+        case RETURN => if (there != 0) throw CodeFreezingException("Non-empty stack after return in void method\n" + stackTrace)
+        case ATHROW =>
+        // Nothing really matters.
+        case ARETURN | DRETURN | FRETURN | IRETURN | LRETURN =>
           if (there + codeArray(pc).asInstanceOf[ByteCode].stackEffect.get != 0)
             throw CodeFreezingException("Stack not empty after return.\n" + stackTrace)
-        }
-        case bc: ByteCode if !bc.stackEffect.isEmpty         => setHeight(from + bc.length.get, there + bc.stackEffect.get)
+        case bc: ByteCode if bc.stackEffect.isDefined        => setHeight(from + bc.length.get, there + bc.stackEffect.get)
         case GETFIELD                                        => codeArray(pc + 1) match {
           case RawBytes(idx) => setHeight(from + 3, (there + constantPool.getFieldSize(idx)) - 1)
           case _             => throw CodeFreezingException("Expected RawBytes after GETFIELD.")
@@ -226,47 +229,43 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
           case _             => throw CodeFreezingException("Expected RawBytes after PUTSTATIC.")
         }
         case INVOKEVIRTUAL | INVOKESPECIAL                   => codeArray(pc + 1) match {
-          case RawBytes(idx) => {
+          case RawBytes(idx) =>
             val se = constantPool.getMethodEffect(idx) - 1
             setHeight(from + 3, there + se)
-          }
           case _             => throw CodeFreezingException("Expected RawBytes after INVOKEVIRTUAL/INVOKESPECIAL.")
         }
         case INVOKEINTERFACE                                 => codeArray(pc + 1) match {
           case RawBytes(idx) => codeArray(pc + 3) match {
-            case RawByte(n) => {
+            case RawByte(n) =>
               val se = constantPool.getMethodEffect(idx)
               codeArray(pc + 4) match {
                 case RawByte(0) => setHeight(from + 5, there + se - 1)
                 case _          => throw CodeFreezingException("Expected RawByte(0) as the last param for INVOKEINTERFACE")
               }
-            }
             case b          => throw CodeFreezingException("Expected RawByte after the RawBytes in INVOKEINTERFACE @ " + pc + " ; found: " + b)
 
           }
           case _             => throw CodeFreezingException("Expected RawBytes after INVOKEINTERFACE.")
         }
         case INVOKESTATIC                                    => codeArray(pc + 1) match {
-          case RawBytes(idx) => {
+          case RawBytes(idx) =>
             val se = constantPool.getMethodEffect(idx)
             setHeight(from + 3, there + se)
-          }
           case _             => throw CodeFreezingException("Expected RawBytes after INVOKESTATIC.")
         }
         case MULTIANEWARRAY                                  => codeArray(pc + 1) match {
-          case RawBytes(idx) => codeArray(pc + 3) match {
+          case RawBytes(_) => codeArray(pc + 3) match {
             case RawByte(dimension) => setHeight(from + 4, there - dimension + 1)
             case _                  => throw CodeFreezingException("Expected RawByte after the RawBytes in MULTINEWARRAY.")
           }
-          case _             => throw CodeFreezingException("Expected RawBytes after MULTINEWARRAY.")
+          case _           => throw CodeFreezingException("Expected RawBytes after MULTINEWARRAY.")
 
         }
         case g@Goto(_)                                       => setHeight(from + g.offset, there)
-        case co: ControlOperator                             => {
+        case co: ControlOperator                             =>
           setHeight(from + co.offset, there + co.opCode.stackEffect.get)
           setHeight(from + co.opCode.length.get, there + co.opCode.stackEffect.get)
-        }
-        case other@_                                         => sys.error("Computation of stack height unsupported for " + other)
+        case other                                           => sys.error("Computation of stack height unsupported for " + other)
       }
     }
 
@@ -282,15 +281,15 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     this.useColor = useColor
 
     val types = Map(
-                     4 -> "T_BOOLEAN",
-                     5 -> "T_CHAR",
-                     6 -> "T_FLOAT",
-                     7 -> "T_DOUBLE",
-                     8 -> "T_BYTE",
-                     9 -> "T_SHORT",
-                     10 -> "T_INT",
-                     11 -> "T_LONG"
-                   )
+      4 -> "T_BOOLEAN",
+      5 -> "T_CHAR",
+      6 -> "T_FLOAT",
+      7 -> "T_DOUBLE",
+      8 -> "T_BYTE",
+      9 -> "T_SHORT",
+      10 -> "T_INT",
+      11 -> "T_LONG"
+    )
 
     val b = new StringBuilder()
     b.append(header(signature))

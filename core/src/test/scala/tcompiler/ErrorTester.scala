@@ -59,7 +59,6 @@ abstract class ErrorTester extends Tester {
     val errors = errorMessages.clearAnsi.split("\n\n") map {
       _.split("\n").take(2).mkString("\n")
     }
-    println(errors.mkString("\n\n"))
     errors.collect {
       case ErrorRegex(lineNumber, errorCode) => (lineNumber.toInt, errorCode)
     }.toList

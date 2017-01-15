@@ -1102,40 +1102,36 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | "[" [ <expression> ] : [ <expression> ] "]"
     * | "[" [ <expression> ] : [ <expression> ] : [ <expression> ] "]"
     */
-  def arrayIndexing(e: ExprTree): ExprTree = {
+  def arrayIndexing(arr: ExprTree): ExprTree = {
     eat(LBRACKET)
-    nextTokenKind match {
-      case COLON =>
-        eat(COLON)
-        nextTokenKind match {
-          case RBRACKET =>
-            eat(RBRACKET)
-            ArraySlice(e, None, None, None)
-          case _        =>
-            val expr = expression
-            eat(RBRACKET)
-            ArraySlice(e, None, Some(expr), None)
-        }
-      case _     =>
-        val expr = expression
-        nextTokenKind match {
-          case COLON    =>
-            eat(COLON)
-            nextTokenKind match {
-              case RBRACKET =>
-                eat(RBRACKET)
-                ArraySlice(e, Some(expr), None, None)
-              case _        =>
-                val end = expression
-                eat(RBRACKET)
-                ArraySlice(e, Some(expr), Some(end), None)
-            }
-          case RBRACKET =>
-            eat(RBRACKET)
-            ArrayRead(e, expr)
-          case _        => FatalWrongToken(nextToken, COLON, RBRACKET)
-        }
+    val exprs = until({
+      nextTokenKind match {
+        case COLON =>
+          eat(COLON)
+          None
+        case _     =>
+          Some(expression)
+      }
+    }, RBRACKET)
+    eat(RBRACKET)
+
+    val expr = exprs match {
+      case Some(e) :: Nil                                          => ArrayRead(arr, e) //                             [e]
+      case None :: Nil                                             => ArraySlice(arr, None, None, None) //             [:]
+      case Some(e) :: None :: Nil                                  => ArraySlice(arr, Some(e), None, None) //          [e:]
+      case None :: Some(e) :: Nil                                  => ArraySlice(arr, None, Some(e), None) //          [:e]
+      case Some(e1) :: None :: Some(e2) :: Nil                     => ArraySlice(arr, Some(e1), Some(e2), None) //     [e:e]
+      case None :: None :: Nil                                     => ArraySlice(arr, None, None, None) //             [::]
+      case Some(e) :: None :: None :: Nil                          => ArraySlice(arr, Some(e), None, None) //          [e::]
+      case None :: Some(e) :: None :: Nil                          => ArraySlice(arr, None, Some(e), None) //          [:e:]
+      case None :: None :: Some(e) :: Nil                          => ArraySlice(arr, None, None, Some(e)) //          [::e]
+      case Some(e1) :: None :: Some(e2) :: None :: Nil             => ArraySlice(arr, Some(e1), Some(e2), None) //     [e:e:]
+      case Some(e1) :: None :: None :: Some(e2) :: Nil             => ArraySlice(arr, Some(e1), None, Some(e2)) //     [e::e]
+      case None :: Some(e1) :: None :: Some(e2) :: Nil             => ArraySlice(arr, None, Some(e1), Some(e2)) //     [:e:e]
+      case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
+      case _                                                       => FatalUnexpectedToken(nextToken)
     }
+    expr
   }
 
   /**

@@ -160,10 +160,10 @@ object AbstractByteCodes {
   // IINC business
   object IInc {
     def apply(index: Int, inc: Int): AbstractByteCodeGenerator = (ch: CodeHandler) => {
-      if (index <= 127 && inc >= -128 && inc <= 127) {
+      if (index <= 128 && inc >= -128 && inc <= 127) {
         ch << IINC << RawByte(index.asInstanceOf[U1]) << RawByte(inc.asInstanceOf[U1])
-      } else if (index <= 32767 && inc >= -32768 && inc <= 32767) {
-        ch << WIDE << IINC << RawBytes(index.asInstanceOf[U2]) << RawBytes(index.asInstanceOf[U2])
+      } else if (index <= 65536 && inc >= -32768 && inc <= 32767) {
+        ch << WIDE << IINC << RawBytes(index.asInstanceOf[U2]) << RawBytes(inc.asInstanceOf[U2])
       } else {
         sys.error("Index or increment too large in IInc " + index + " " + inc)
       }
@@ -174,15 +174,17 @@ object AbstractByteCodes {
   private def storeLoad(index: Int, name: String, bc: ByteCode,
     bc0: ByteCode, bc1: ByteCode,
     bc2: ByteCode, bc3: ByteCode): AbstractByteCodeGenerator = {
-    (ch: CodeHandler) => index match {
-      case 0                                 => ch << bc0
-      case 1                                 => ch << bc1
-      case 2                                 => ch << bc2
-      case 3                                 => ch << bc3
-      case _ if index >= 0 && index <= 127   => ch << bc << RawByte(index.asInstanceOf[U1])
-      case _ if index >= 0 && index <= 32767 => ch << WIDE << bc << RawBytes(index.asInstanceOf[U2])
-      case _                                 => sys.error("Invalid index in " + name + " " + index)
-    }
+    (ch: CodeHandler) =>
+      index match {
+        case 0                                 => ch << bc0
+        case 1                                 => ch << bc1
+        case 2                                 => ch << bc2
+        case 3                                 => ch << bc3
+        case _ if index >= 0 && index <= 255   => ch << bc << RawByte(index.asInstanceOf[U1])
+        case _ if index >= 0 && index <= 65536 =>
+          ch << WIDE << bc << RawBytes(index.asInstanceOf[U2])
+        case _                                 => sys.error("Invalid index in " + name + " " + index)
+      }
   }
 
   object ALoad {

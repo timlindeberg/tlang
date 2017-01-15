@@ -22,8 +22,11 @@ trait Tester extends FlatSpec with Matchers with BeforeAndAfter {
 
   def Pipeline: Pipeline[List[File], List[CompilationUnit]]
 
+  private def testPath = sys.env.get("testfile").map(file => Path + "/" + file).getOrElse(Path)
+
+
   behavior of Name
-  TestUtils.programFiles(Path).foreach(test)
+  TestUtils.programFiles(testPath).foreach(test)
 
   before {
     ClassSymbolLocator.clearCache()

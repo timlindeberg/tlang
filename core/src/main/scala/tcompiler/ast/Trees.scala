@@ -480,7 +480,7 @@ object Trees {
     override def signature(args: List[Any]): String = s"[${args(0)}]"
   }
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) extends ArrayOperatorTree {
-    override val opSign: String = "[:]"
+    override val opSign: String = "[::]"
     override def signature(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
   }
 

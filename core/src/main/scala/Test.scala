@@ -1,13 +1,29 @@
 
 
 /**
- * Created by Tim Lindeberg on 4/2/2016.
- */
+  * Created by Tim Lindeberg on 4/2/2016.
+  */
 
 object TestMain {
-  //def main(args: Array[String]): Unit = {println(new Lol())}
+  def main(args: Array[String]): Unit = {
+    val arr = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+    println(splice(arr, 0, 9, 2).mkString(", "))
+    println(splice(arr, 0, 10, 2).mkString(", "))
+    println(splice(arr, 1, 10, 2).mkString(", "))
+    println(splice(arr, 2, 10, 2).mkString(", "))
+  }
 
-
+  def splice(arr: Array[Int], start: Int, end: Int, step: Int) = {
+    var i = start
+    val x = end - start
+    val count: Int = (x + step - 1) / step
+    val newArr = Array.fill(count)(0)
+    while (i < end) {
+      newArr((i - start) / step) = arr(i)
+      i += step
+    }
+    newArr
+  }
 
 
 }
@@ -18,7 +34,7 @@ trait T1 {
 }
 
 
-trait T2 extends T1{
+trait T2 extends T1 {
 
   override def toString = "T1"
 }
