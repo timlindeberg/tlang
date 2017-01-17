@@ -131,43 +131,42 @@ object Tokens {
   // @formatter:on
 
   case object NEWLINE extends TokenKind("\n") {
-    override def toString = "<newline>"
+    override def toString = "\\n"
   }
-
 
   // Identifiers
   class ID(val value: String) extends Token(IDKIND) {
-    override def toString: String = "IDENTIFIER(" + value + ")"
+    override def toString: String = value
   }
 
   // Integer literals
   class INTLIT(val value: Int) extends Token(INTLITKIND) {
-    override def toString: String = "INT(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // Long literals
   class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
-    override def toString: String = "LONG(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // Float literals
   class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
-    override def toString: String = "FLOAT(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // Double literals
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
-    override def toString: String = "DOUBLE(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // Char literals
   class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
-    override def toString: String = "CHAR(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // String literals
   class STRLIT(val value: String) extends Token(STRLITKIND) {
-    override def toString: String = "STR(" + value + ")"
+    override def toString: String = value.toString
   }
 
   // These need to be lazy otherwise the program crashes

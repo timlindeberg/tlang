@@ -3,6 +3,7 @@ package utils
 
 import tcompiler.ast.Printer
 import tcompiler.ast.Trees.CompilationUnit
+import tcompiler.lexer.Token
 
 abstract class Pipeline[-F, +T] {
   self =>
@@ -35,24 +36,38 @@ abstract class Pipeline[-F, +T] {
 
     override val useColor: Boolean = ctx.useColor
 
+    private val stageName = stage.stageName.capitalize
+
+    def printHeader() = println(s"${Bold}Output after $Reset$Blue$stageName$Reset:\n")
+
     def printCode[S >: T](output: S): Unit = {
-      val s = stage.stageName
-      if (!ctx.printCodeStages.contains(s))
+      if (!ctx.printCodeStages.contains(stage.stageName))
         return
 
       output match {
-        case list: List[_] if list.nonEmpty =>
-          list.head match {
-            case _: CompilationUnit =>
-              val stageName = Blue(s.capitalize)
-              println(s"${Bold}Output after $Reset$stageName:\n")
-              list.map(_.asInstanceOf[CompilationUnit]) foreach {
-                cu => println(Printer(cu, ctx.useColor) + "\n")
-              }
-            case _                  =>
-          }
-        case _                              =>
+        case (_: CompilationUnit) :: _ => printCompilationUnits(output.asInstanceOf[List[CompilationUnit]])
+        case ((_: Token) :: _) :: _    => printTokens(output.asInstanceOf[List[List[Token]]])
+        case _                         =>
       }
+    }
+
+    private def printCompilationUnits(cus: List[CompilationUnit]) = {
+      printHeader()
+      val res = cus map { cu => Printer(cu, ctx.useColor) + "\n" }
+      println(res)
+    }
+
+    private def printTokens(tokens: List[List[Token]]) = {
+      printHeader()
+      val res = tokens.map {_.map(formatToken).mkString("\n")}.mkString("\n\n")
+      println(res)
+    }
+
+    private def formatToken(t: Token) = {
+      val name = t.kind.getClass.getSimpleName.dropRight(1)
+      val sign = t.toString
+      val desc = s"$name"
+      s"$Blue%-10s$Reset => $Bold%-10s$Reset $Bold[$Reset$Blue Pos$Reset: ($Red%s$Reset:$Red%s$Reset) - ($Red%s$Reset:$Red%s$Reset) $Bold]$Reset".format(sign, desc, t.line, t.col, t.endLine, t.endCol)
     }
 
   }
