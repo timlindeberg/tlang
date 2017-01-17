@@ -115,7 +115,8 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorValueMustBeInitialized(name: String, pos: Positioned): Type =
     error(19, s"Value '$name' must be initialized.", pos)
 
-  // Missing 20
+  protected def ErrorNotOnNonNullable(pos: Positioned): Type =
+    error(20, s"'!' operator can only be applied to 'Bool':s and nullable types.", pos)
 
   protected def ErrorCantInferTypeRecursiveMethod(pos: Positioned): Type =
     error(21, s"Cannot infer type of recursive method.", pos)

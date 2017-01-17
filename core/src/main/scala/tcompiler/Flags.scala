@@ -176,7 +176,7 @@ object Flags {
   }
 
   case object ErrorContext extends Flag {
-    val Default = 1
+    val Default = 2
 
     override val flag = "errorcontext"
     override val arg  = Some("num")

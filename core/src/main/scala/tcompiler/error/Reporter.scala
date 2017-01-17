@@ -1,5 +1,6 @@
 package tcompiler.error
 
+import tcompiler.Flags
 import tcompiler.analyzer.Symbols.Symbolic
 import tcompiler.analyzer.Types.Typed
 import tcompiler.utils.Colored
@@ -11,8 +12,8 @@ class CompilationException(message: String) extends Exception(message)
 class Reporter(suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
   override val useColor: Boolean = false,
-  maxErrors: Int = 100,
-  errorContext: Int = 1)
+  maxErrors: Int = Flags.MaxErrors.Default,
+  errorContext: Int = Flags.ErrorContext.Default)
   extends Colored {
 
 

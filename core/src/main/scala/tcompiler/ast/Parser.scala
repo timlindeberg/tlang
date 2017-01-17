@@ -6,6 +6,7 @@ import tcompiler.ast.Trees.{OperatorTree, _}
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
+import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -331,9 +332,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
     **/
   def operator(modifiers: Set[Modifier], startPos: Positioned): OperatorDecl = {
-    modifiers.find(_.isInstanceOf[Implicit]) match {
-      case Some(impl) => ErrorImplicitMethodOrOperator(impl)
-      case None       =>
+    modifiers.findInstance[Implicit].ifDefined { impl =>
+      ErrorImplicitMethodOrOperator(impl)
     }
 
     // TODO: Find better way of parsing operators than hard coding how many
@@ -388,41 +388,41 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case EQUALS        => binaryOperator(Equals)
       case NOTEQUALS     => binaryOperator(NotEquals)
       case LOGICNOT      => unaryOperator(LogicNot)
-      case BANG          => unaryOperator(Not)
       case HASH          => unaryOperator(Hash)
       case INCREMENT     => unaryOperator(PreIncrement)
       case DECREMENT     => unaryOperator(PreDecrement)
       case LBRACKET      =>
-        eat(LBRACKET, RBRACKET)
-        nextTokenKind match {
-          case EQSIGN =>
-            modifiers.find(_.isInstanceOf[Static]) match {
-              case Some(static) => ErrorStaticIndexingOperator("[]=", static)
-              case None         =>
+        eat(LBRACKET)
+        val (numArgs, operatorType) = nextTokenKind match {
+          case RBRACKET =>
+            eat(RBRACKET)
+            nextTokenKind match {
+              case LPAREN =>
+                eat(LPAREN)
+                (1, ArrayRead(Empty(), Empty()))
+              case EQSIGN =>
+                eat(EQSIGN, LPAREN)
+                (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
+              case _      => FatalWrongToken(nextToken, EQSIGN, LPAREN)
             }
-
-            val operatorType: OperatorTree = Assign(ArrayRead(Empty(), Empty()), Empty())
-            eat(EQSIGN, LPAREN)
-            val f1 = formal
-            eat(COMMA)
-            val f2 = formal
-            (operatorType, List(f1, f2), modifiers)
-          case LPAREN =>
-            modifiers.find(_.isInstanceOf[Static]) match {
-              case Some(static) => ErrorStaticIndexingOperator("[]", static)
-              case None         =>
-            }
-
-            val operatorType: OperatorTree = ArrayRead(Empty(), Empty())
-            eat(LPAREN)
-            val f1 = formal
-            (operatorType, List(f1), modifiers)
-          case _      => FatalWrongToken(nextToken, EQSIGN, LPAREN)
+          case COLON    =>
+            eat(COLON, COLON, RBRACKET, LPAREN)
+            (3, ArraySlice(Empty(), None, None, None))
+          case _        => FatalWrongToken(nextToken, RBRACKET, COLON)
         }
+        modifiers.findInstance[Static].ifDefined { static =>
+          ErrorStaticIndexingOperator(static)
+        }
+
+        val args = commaList(formal)
+        if (args.size != numArgs)
+          FatalUnexpectedToken(currentToken)
+
+        (operatorType, args, modifiers)
       case _             =>
         FatalWrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
           RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
-          LOGICNOT, BANG, LBRACKET)
+          LOGICNOT, LBRACKET)
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)

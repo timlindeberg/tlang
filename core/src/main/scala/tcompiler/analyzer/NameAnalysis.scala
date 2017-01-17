@@ -271,8 +271,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       val nullableTypes = (retType ++ args.map(_.tpe)).filterType[NullableType]
 
       // We don't want to report OperatorWrongTypes if types are nullable
-      if (nullableTypes.nonEmpty)
-        nullableTypes.foreach(tpe => ErrorNullableInOperator(tpe))
+      if (!operatorType.isInstanceOf[ArraySlice] && nullableTypes.nonEmpty)
+        nullableTypes.foreach(tpe => ErrorNullableInOperator(operatorType.opSign, tpe))
       else if (isStaticOperator) {
         val sym = classSymbol match {
           case e: ExtensionClassSymbol => e.originalClassSymbol.get

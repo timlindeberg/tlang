@@ -23,8 +23,8 @@ trait ParserErrors extends Errors {
   protected def ErrorImplicitMethodOrOperator(pos: Positioned): Unit =
     error(0, "Only constructors can be declared implicit.", pos)
 
-  protected def ErrorStaticIndexingOperator(name: String, pos: Positioned): Unit =
-    error(1, s"Indexing operator '$name' cannot be declared static.", pos)
+  protected def ErrorStaticIndexingOperator(pos: Positioned): Unit =
+    error(1, s"Indexing operators cannot be declared static.", pos)
 
   protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned): Unit = {
     val maxArraySize = ASTBuilder.MaximumArraySize
@@ -38,8 +38,15 @@ trait ParserErrors extends Errors {
   protected def FatalExpectedIdAssignment(pos: Positioned): Nothing =
     fatal(1, "Expected identifier or array access on left side of assignment.", pos)
 
-  protected def FatalWrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*): Nothing =
-    FatalWrongToken((kind :: more.toList).map(k => s"'$k'").mkString(" or "), currentToken.toString, currentToken)
+  protected def FatalWrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*): Nothing = {
+    val l = (kind :: more.toList).map(k => s"'$k'")
+    val expected = l.size match {
+      case 1 => l.head
+      case 2 => l.head + " or " + l.tail
+      case _ => l.dropRight(1).mkString(", ") + " or " + l.last
+    }
+    FatalWrongToken(expected, currentToken.toString, currentToken)
+  }
 
   protected def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
     fatal(2, s"Expected $expected, found: '$found'.", pos)

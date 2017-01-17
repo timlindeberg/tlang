@@ -57,6 +57,7 @@ object Printer extends Colored {
     case Public()                                                   => p"public"
     case Protected()                                                => p"protected"
     case Final()                                                    => p"final"
+    case Static()                                                   => p"static"
     // Types
     case ArrayType(tpe)    => p"$tpe[]"
     case IntType()         => p"Int"

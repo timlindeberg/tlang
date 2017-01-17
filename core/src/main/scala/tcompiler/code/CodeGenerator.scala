@@ -114,6 +114,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         val arg = expr.getType match {
           case _: TObject       => s"L$JavaObject;"
           case p: PrimitiveType => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
+          case _                => ???
         }
         val funcName = statement match {
           case _: Print   => "print"

@@ -37,8 +37,8 @@ trait NameAnalysisErrors extends Errors {
 
   // 1 missing
 
-  protected def ErrorNullableInOperator(pos: Positioned): Symbol =
-    error(2, "Operators cannot have nullable types as arguments or return type.", pos)
+  protected def ErrorNullableInOperator(operator: String, pos: Positioned): Symbol =
+    error(2, s"Operator '$operator' cannot have nullable types as arguments or return type.", pos)
 
   protected def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned): Symbol =
     error(3, s"Class '$name' is already defined at line '$line'.", pos)

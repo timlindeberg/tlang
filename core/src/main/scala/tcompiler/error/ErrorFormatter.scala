@@ -144,7 +144,7 @@ case class ErrorFormatter(
   }
 
   private def lineNumPrefix(line: Int) =
-    s"$Bold$NumColor$line$Reset:" + " " * (maxLineNumDigits - numDigits(line))
+    s"$Bold$NumColor$line$Reset|" + " " * (maxLineNumDigits - numDigits(line))
 
   private def getEndPos(line: String, start: Int, indent: Int): Int = {
     var end = if (pos.endLine == pos.line) {

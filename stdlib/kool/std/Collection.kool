@@ -48,7 +48,7 @@ trait Collection<T>: Iterable<T> {
    * Returns true if the list is not empty.
    * @return true if the list is not empty; false otherwise
    */
-   Def NonEmpty(): Bool = !IsEmpty()
+   Def NonEmpty(): Bool = Size() > 0
 
    /**
    * Adds all the elements in the given collection to this collection.

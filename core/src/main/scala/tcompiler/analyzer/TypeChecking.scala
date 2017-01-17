@@ -266,9 +266,7 @@ class TypeChecker(override var ctx: Context,
         Bool
       case notOp@Not(expr)                               =>
         tcExpr(expr, Bool, Types.Object) match {
-          case obj: TObject                      =>
-            if (!obj.isNullable)
-              tcUnaryOperator(notOp, obj, Some(Bool))
+          case obj: TObject if !obj.isNullable   => ErrorNotOnNonNullable(notOp)
           case _: TBool                          =>
           case p: PrimitiveType if !p.isNullable =>
             ErrorWrongType("Object, Bool or nullable type", p, notOp)
