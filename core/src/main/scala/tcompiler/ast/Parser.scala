@@ -1103,6 +1103,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | "[" [ <expression> ] : [ <expression> ] : [ <expression> ] "]"
     */
   def arrayIndexing(arr: ExprTree): ExprTree = {
+    val startPos = currentToken
     eat(LBRACKET)
     val exprs = until({
       nextTokenKind match {
@@ -1131,7 +1132,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
       case _                                                       => FatalUnexpectedToken(nextToken)
     }
-    expr
+    expr.setPos(startPos, nextToken)
   }
 
   /**

@@ -145,6 +145,17 @@ trait List<T>: Collection<T> {
     */
     Def []=(index: Int, value: T) = Set(index, value)
 
+    Def [::](s: Int?, e: Int?, st: Int?): List<T> = {
+        var start = s  ?: 0
+        var end   = e  ?: Size()
+        var step  = st ?: 1
+        val newList = new Vector<T>((end - start + step - 1) / step)
+        for(var i = s; i < e; i += st)
+            newList.add(Get(i))
+
+        newArr
+    }
+
     Def ==(lhs: List<T>, rhs: List<T>): Bool = {
         if(lhs.Size() != rhs.Size())
             return false

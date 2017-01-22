@@ -8,6 +8,9 @@ import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
 @GenerateTreeHelpers
 object Trees {
 
@@ -24,29 +27,30 @@ object Trees {
       traverser.traverse(this)
     }
 
+
     def find(p: Tree => Boolean): Option[Tree] = {
+      var result: Option[Tree] = None
       val traverser = new Trees.Traverser {
-        var result: Option[Tree] = None
 
         override def _traverse(t: Tree): Unit =
           if (p(t)) result = Some(t)
           else super._traverse(t)
       }
       traverser.traverse(this)
-      traverser.result
+      result
     }
 
 
     def forAll(p: Tree => Boolean): Boolean = {
+      var result = true
       val traverser = new Trees.Traverser {
-        var result = true
 
         override def _traverse(t: Tree): Unit =
           if (!p(t)) result = false
           else super._traverse(t)
       }
       traverser.traverse(this)
-      traverser.result
+      result
     }
 
     def children: List[Tree] = {
@@ -59,7 +63,38 @@ object Trees {
       productIterator.toList flatMap subtrees
     }
 
+
+    def filter(p: Tree => Boolean): List[Tree] = {
+      val trees = ListBuffer[Tree]()
+      val traverser = new Trees.Traverser {
+        override def _traverse(t: Tree): Unit = {
+          if (p(t)) trees += t
+          super._traverse(t)
+        }
+      }
+      traverser.traverse(this)
+      trees.toList
+    }
+
     def exists(p: Tree => Boolean): Boolean = find(p).isDefined
+
+    def groupBy[K](f: Tree => K): Map[K, List[Tree]] = {
+      val trees = mutable.Map[K, ListBuffer[Tree]]()
+
+      val traverser = new Trees.Traverser {
+        override def _traverse(t: Tree): Unit = {
+          val key = f(t)
+          val list = trees.getOrElseUpdate(key, ListBuffer())
+          list += t
+          super._traverse(t)
+        }
+      }
+      traverser._traverse(this)
+      val b = Map.newBuilder[K, List[Tree]]
+      for ((k, v) <- trees)
+        b += k -> v.toList
+      b.result
+    }
 
     def copyAttributes(t: Tree): this.type = {
       setPos(t)
@@ -73,6 +108,7 @@ object Trees {
       }
       this
     }
+
 
     // For easier debugging
     override def toString = Printer(this, printInColor = false)

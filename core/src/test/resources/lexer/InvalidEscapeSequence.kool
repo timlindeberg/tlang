@@ -5,7 +5,6 @@ prefix '\n' postfix
 prefix '\r' postfix
 prefix '\f' postfix
 prefix '\'' postfix
-prefix '\"' postfix
 prefix '\\' postfix
 
 prefix '\u123a' postfix

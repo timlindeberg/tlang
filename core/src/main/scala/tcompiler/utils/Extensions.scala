@@ -56,6 +56,7 @@ object Extensions {
 
   implicit class GenericExtensions[T](t: T) {
     def use(f: T => Unit): T = {f(t); t}
+    def in(seq: Traversable[T]): Boolean = seq.exists(_ == t)
   }
 
   implicit class TypeTuple(t: (Type, Type)) {

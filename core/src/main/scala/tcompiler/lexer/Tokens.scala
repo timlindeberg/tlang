@@ -130,48 +130,40 @@ object Tokens {
   case object NULL            extends TokenKind("null")
   // @formatter:on
 
-  case object NEWLINE extends TokenKind("\n") {
-    override def toString = "\\n"
-  }
+  case object NEWLINE extends TokenKind("\\n")
 
-  // Identifiers
+
   class ID(val value: String) extends Token(IDKIND) {
     override def toString: String = value
   }
 
-  // Integer literals
   class INTLIT(val value: Int) extends Token(INTLITKIND) {
     override def toString: String = value.toString
   }
 
-  // Long literals
   class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
     override def toString: String = value.toString
   }
 
-  // Float literals
   class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
     override def toString: String = value.toString
   }
 
-  // Double literals
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
     override def toString: String = value.toString
   }
 
-  // Char literals
   class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
     override def toString: String = value.toString
   }
 
-  // String literals
   class STRLIT(val value: String) extends Token(STRLITKIND) {
     override def toString: String = value.toString
   }
 
   // These need to be lazy otherwise the program crashes
-  lazy val Tokens          : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
-  lazy val SingleCharTokens: Map[Char, TokenKind]   = Tokens.filter(_.str.length == 1).map(t => t.str(0) -> t).toMap
-  lazy val Keywords        : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 1 && t.str.matches("[A-Za-z]*")).map(t => t.str -> t).toMap
+  lazy val Tokens     : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
+  lazy val Keywords   : Map[String, TokenKind] = Tokens.filter(t => t.str.matches("[A-Za-z]+")).map(t => t.str -> t).toMap
+  lazy val NonKeywords: Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !Keywords.contains(t.str)).map(t => t.str -> t).toMap
 
 }
