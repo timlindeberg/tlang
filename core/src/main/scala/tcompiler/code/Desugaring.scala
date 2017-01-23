@@ -175,7 +175,7 @@ class Desugarer(importMap: ImportMap) {
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }
-        MethodDecl(meth.retType, meth.id, thisArg :: meth.args, newStat, modifiers).setSymbol(newMethSym)
+        MethodDecl(modifiers, meth.id, thisArg :: meth.args, meth.retType, newStat).setSymbol(newMethSym)
       }
     }
 
@@ -307,7 +307,7 @@ class Desugarer(importMap: ImportMap) {
     val methodID = MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
     val methDecl =
       if (op.isAbstract)
-        MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+        MethodDecl(op.modifiers, methodID, op.args, op.retType, op.stat)
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
           // Convert array assignment so the value is returned in order to be consistent with other
@@ -327,9 +327,9 @@ class Desugarer(importMap: ImportMap) {
             case stat: StatTree  => List(stat, ret)
           }
           opSymbol.setType(valueId.getType)
-          MethodDecl(Some(retType), methodID, op.args, Some(Block(stats)), op.modifiers)
+          MethodDecl(op.modifiers, methodID, op.args, Some(retType), Some(Block(stats)))
         case _                          =>
-          MethodDecl(op.retType, methodID, op.args, op.stat, op.modifiers)
+          MethodDecl(op.modifiers, methodID, op.args, op.retType, op.stat)
       }
     methDecl.setSymbol(opSymbol).setPos(op)
   }
@@ -512,7 +512,7 @@ class Desugarer(importMap: ImportMap) {
 
     val arrReadType = containerId.getType.asInstanceOf[TArray].tpe
     val init = Some(ArrayRead(containerId, index).setType(arrReadType).setPos(varDecl))
-    val valInit = varDecl.copy(init = init).setPos(stat)
+    val valInit = varDecl.copy(initation = init).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol).setPos(varDecl)
     val stats = stat match {
       case Block(s) => Block(valInit :: s)

@@ -12,12 +12,12 @@ import scala.io.Source
 /**
   * Created by Tim Lindeberg on 4/2/2016.
   */
-abstract class ErrorTester extends Tester {
+trait ErrorTester extends Tester {
 
-  import TestUtils._
+  import Tester._
 
   def testFile(file: File): Unit = {
-    val ctx = getTestContext(file)
+    val ctx = Tester.getTestContext(file)
     val expectedErrors = parseSolutions(file)
 
     try {

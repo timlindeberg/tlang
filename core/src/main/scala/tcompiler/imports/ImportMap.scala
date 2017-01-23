@@ -73,7 +73,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
         case Some(e) => extensionSymbols ::= e
         case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
       }
-    case _: WildCardImport   => ??? // TODO: Support wild card imports.
+    case _: WildCardImport                => // TODO: Support wild card imports.
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =

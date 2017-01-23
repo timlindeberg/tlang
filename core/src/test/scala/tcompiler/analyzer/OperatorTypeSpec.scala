@@ -1,7 +1,7 @@
 package tcompiler.analyzer
 
 import org.scalatest._
-import tcompiler.TestUtils
+import tcompiler.Tester
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
@@ -10,13 +10,11 @@ import tcompiler.utils.Context
 
 class OperatorTypeSpec extends FlatSpec with Matchers {
 
-  val Flag = "--ast --symid"
-  val ClassSymbol = new ClassSymbol("obj", false)
-  val VarSymbol   = new VariableSymbol("var")
+  val ClassSymbol               = new ClassSymbol("obj", false)
   val MainMethod : MethodSymbol = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TestContext: Context = TestUtils.testContext
-  val TestImportMap = new ImportMap(TestContext)
-  val TypeChecker = new TypeChecker(TestContext, TestImportMap, MainMethod)
+  val TestContext: Context      = Tester.testContext
+  val TestImportMap             = new ImportMap(TestContext)
+  val TypeChecker               = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
 
   val int    = new TypeConstructor(Int)
@@ -296,7 +294,6 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
     )
 
 
-
   object UnaryExpressionAsserter {
 
     def getInvalidCombinations(validTpes: List[(() => VariableID, Type)]): List[() => VariableID] =
@@ -326,7 +323,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
   object BinaryExpressionAsserter {
 
     def valid(expressionType: (VariableID, VariableID) => ExprTree,
-              validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
+      validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
 
       validCombinations.foreach { case (lhs, rhs, tpe) =>
         TestContext.reporter.clear()
@@ -338,7 +335,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         val noErrors = !TestContext.reporter.hasErrors
-        if(!noErrors){
+        if (!noErrors) {
           println(TestContext.reporter.errorsString)
         }
         assert(noErrors, "for (" + lhs + ", " + rhs + ")")

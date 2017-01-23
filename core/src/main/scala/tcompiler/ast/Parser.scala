@@ -2,7 +2,7 @@ package tcompiler
 package ast
 
 import tcompiler.analyzer.Types.TUnit
-import tcompiler.ast.Trees.{OperatorTree, _}
+import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer._
@@ -54,6 +54,15 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
 
+  private def previousToken: Token = {
+    if (currentIndex == 0)
+      return currentToken
+
+    val offset = if (tokens(currentIndex - 1).kind == NEWLINE) 2 else 1
+    val index = Math.max(0, currentIndex - offset)
+    tokens(index)
+  }
+
   private def nextToken =
     if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
 
@@ -63,8 +72,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <goal> ::= [ <packageDeclaration> ] { <importDeclaration> } { (<classDeclaration> | <methodDeclaration> | <statement> } <EOF>
     */
-  def compilationUnit: CompilationUnit = {
-    val startPos = nextToken
+  def compilationUnit: CompilationUnit = positioned {
     val pack = packageDeclaration
     val imp = untilNot(importDeclaration, IMPORT)
 
@@ -72,9 +80,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       nextTokenKind match {
         case CLASS | TRAIT | EXTENSION => classDeclaration
         case PUBDEF | PRIVDEF          =>
-          val pos = nextToken
-          val modifiers = methodModifiers
-          method(modifiers + Static(), pos)
+          positioned {
+            val modifiers = methodModifiers
+            method(modifiers + Static())
+          }
         case _                         => statement
       }
     }, EOF)
@@ -82,7 +91,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val classes = createMainClass(code)
 
     val importMap = new ImportMap(imp, pack, classes, ctx)
-    CompilationUnit(pack, classes, importMap).setPos(startPos, nextToken)
+    CompilationUnit(pack, classes, importMap)
   }
 
   private def createMainClass(code: List[Tree]) = {
@@ -96,10 +105,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val m = ClassDecl(ClassID(mainName), List(), List(), List())
-          m.setPos(pos, nextToken)
-          classes ::= m
-          m
+          val mainClass = ClassDecl(ClassID(mainName), List(), List(), List()).setPos(pos, previousToken)
+          classes ::= mainClass
+          mainClass
       }
 
       mainClass.methods :::= methods
@@ -107,7 +115,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       if (stats.nonEmpty) {
         val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
-        val mainMethod = MethodDecl(Some(UnitType()), MethodID("main"), args, Some(Block(stats)), modifiers).setPos(stats.head, nextToken)
+        val mainMethod = MethodDecl(modifiers, MethodID("main").setNoPos(), args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, previousToken)
         mainClass.methods ::= mainMethod
       }
     }
@@ -117,14 +125,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <packageDeclaration> ::= package <identifier> { . <identifier> }
     */
-  def packageDeclaration: Package = {
+  def packageDeclaration: Package = positioned {
     nextTokenKind match {
       case PACKAGE =>
         eat(PACKAGE)
-        val startPos = nextToken
         val address = nonEmptyList(identifierName, COLON, COLON)
         endStatement()
-        Package(address).setPos(startPos, nextToken)
+        Package(address)
       case _       => Package(Nil)
     }
   }
@@ -132,26 +139,25 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <importDeclaration> ::= import <identifier> { :: ( <identifier> | * | extension  ) }
     */
-  def importDeclaration: Import = {
-    val startPos = nextToken
+  def importDeclaration: Import = positioned {
     eat(IMPORT)
     val address = new ListBuffer[String]()
 
     address += identifierName
+    var imp: Option[Import] = None
     while (nextTokenKind == COLON) {
       eat(COLON, COLON)
       nextTokenKind match {
         case TIMES     =>
           eat(TIMES)
-          endStatement()
-          return WildCardImport(address.toList).setPos(startPos, nextToken)
+          imp = Some(WildCardImport(address.toList))
         case EXTENSION =>
-          return extensionImport(address.toList).setPos(startPos, nextToken)
+          imp = Some(extensionImport(address.toList))
         case _         => address += identifierName
       }
     }
     endStatement()
-    RegularImport(address.toList).setPos(startPos, nextToken)
+    imp.getOrElse(RegularImport(address.toList))
   }
 
   /**
@@ -166,7 +172,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       className += identifierName
     }
 
-    endStatement()
     ExtensionImport(address, className.toList)
   }
 
@@ -174,36 +179,39 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> "{" { <varDeclaration> } { <methodDeclaration> } "}"
     * | extension <classTypeIdentifier> "{" { <methodDeclaration> } "}"
     */
-  def classDeclaration: ClassDeclTree = {
-    val startPos = nextToken
-    val isTrait = nextTokenKind match {
-      case CLASS     =>
-        eat(CLASS)
-        false
-      case TRAIT     =>
-        eat(TRAIT)
-        true
-      case EXTENSION =>
-        eat(EXTENSION)
-        val id = classIdentifier
-        eat(LBRACE)
-        val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
-        eat(RBRACE)
-        return ExtensionDecl(id, methods).setPos(startPos, nextToken)
-      case _         => FatalWrongToken(currentToken, CLASS, TRAIT)
+  def classDeclaration: ClassDeclTree = positioned {
+    if (nextTokenKind == EXTENSION) {
+      eat(EXTENSION)
+      val id = classIdentifier
+      eat(LBRACE)
+      val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
+      eat(RBRACE)
+      ExtensionDecl(id, methods)
+    } else {
+      val isTrait = nextTokenKind match {
+        case CLASS =>
+          eat(CLASS)
+          false
+        case TRAIT =>
+          eat(TRAIT)
+          true
+        case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
+      }
+      val id = classTypeIdentifier
+      val parents = parentsDeclaration
+      eat(LBRACE)
+      val vars = untilNot({
+        val v = fieldDeclaration
+        endStatement()
+        v
+      }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+      val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
+      eat(RBRACE)
+      if (isTrait)
+        TraitDecl(id, parents, vars, methods)
+      else
+        ClassDecl(id, parents, vars, methods)
     }
-    val id = classTypeIdentifier
-    val parents = parentsDeclaration
-    eat(LBRACE)
-    val vars = untilNot({
-      val v = fieldDeclaration
-      endStatement()
-      v
-    }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
-    val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
-    eat(RBRACE)
-    val cons = if (isTrait) TraitDecl else ClassDecl
-    cons(id, parents, vars, methods).setPos(startPos, nextToken)
   }
 
   /**
@@ -219,16 +227,14 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <fieldDeclaration> ::= <fieldModifiers> <variableEnd>
     */
-  def fieldDeclaration: VarDecl = {
-    val startPos = nextToken
-    varDeclEnd(fieldModifiers, startPos)
+  def fieldDeclaration: VarDecl = positioned {
+    varDeclEnd(fieldModifiers)
   }
 
   /**
     * <localVarDeclaration> ::= (var | val) <variableEnd>
     */
-  def localVarDeclaration: VarDecl = {
-    val startPos = nextToken
+  def localVarDeclaration: VarDecl = positioned {
     val modifiers: Set[Modifier] = nextTokenKind match {
       case PRIVVAR =>
         eat(PRIVVAR)
@@ -238,100 +244,110 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         Set(Private(), Final())
       case _       => FatalWrongToken(nextToken, PRIVVAR, PRIVVAL)
     }
-    varDeclEnd(modifiers, startPos)
+    varDeclEnd(modifiers)
   }
 
   /**
     * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ "=" <expression> ]
     */
-  def varDeclEnd(modifiers: Set[Modifier], startPos: Positioned): VarDecl = {
+  def varDeclEnd(modifiers: Set[Modifier]): VarDecl = {
     val id = varIdentifier
     val typ = optional(tpe, COLON)
-    val endPos = nextToken
     val init = optional(expression, EQSIGN)
-    VarDecl(typ, id, init, modifiers).setPos(startPos, endPos)
+    VarDecl(typ, id, init, modifiers)
   }
 
   /**
     * <formal> ::= <identifier> ":" <tpe>
     */
-  def formal: Formal = {
-    val startPos = nextToken
+  def formal: Formal = positioned {
     val id = varIdentifier
     eat(COLON)
     val typ = tpe
-    Formal(typ, id).setPos(startPos, nextToken)
+    Formal(typ, id)
   }
 
   /**
     * <methodDeclaration> ::= <methodModifiers> ( <constructor> | <operator> | <method> )
     */
-  def methodDeclaration(className: String): MethodDeclTree = {
-    val startPos = nextToken
+  def methodDeclaration(className: String): MethodDeclTree = positioned {
     val mods = methodModifiers
     nextTokenKind match {
-      case IDKIND => method(mods, startPos)
-      case NEW    => constructor(mods, className, startPos)
-      case _      => operator(mods, startPos)
+      case IDKIND => method(mods)
+      case NEW    => constructor(mods, className)
+      case _      => operator(mods)
     }
+  }
+
+
+  /**
+    * <methodModifiers> ::= ( Def | def [ protected ])) [ static ] [ implicit ]
+    */
+  def methodModifiers: Set[Modifier] = {
+    val startPos = nextToken
+
+    var modifiers: Set[Modifier] = nextTokenKind match {
+      case PUBDEF  =>
+        eat(PUBDEF)
+        Set(Public().setPos(startPos, previousToken))
+      case PRIVDEF =>
+        eat(PRIVDEF)
+        Set(protectedOrPrivate.setPos(startPos, previousToken))
+      case _       => FatalWrongToken(nextToken, PUBDEF, PRIVDEF)
+    }
+
+    while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
+      val pos = nextToken
+      val modifier = nextTokenKind match {
+        case STATIC   =>
+          eat(STATIC)
+          Static().setPos(pos, previousToken)
+        case IMPLICIT =>
+          eat(IMPLICIT)
+          Implicit().setPos(pos, previousToken)
+        case _        => ???
+      }
+      modifiers += modifier
+    }
+    modifiers
   }
 
   /**
     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) <methodBody>
     */
-  def method(modifiers: Set[Modifier], startPos: Positioned): MethodDecl = {
-    modifiers.find(_.isInstanceOf[Implicit]) match {
-      case Some(impl) => ErrorImplicitMethodOrOperator(impl)
-      case None       =>
-    }
+  def method(modifiers: Set[Modifier]): MethodDecl = {
+    modifiers.filterType[Implicit].foreach(ErrorImplicitMethodOrOperator)
 
     val id = methodIdentifier
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
     val retType = optional(returnType, COLON)
-    val endPos = nextToken
 
     val methBody = methodBody
-    MethodDecl(retType, id, args, methBody, modifiers).setPos(startPos, endPos)
+    MethodDecl(modifiers, id, args, retType, methBody)
   }
-
-  /**
-    * [ "=" <statement> ]
-    */
-  def methodBody: Option[StatTree] = optional(replaceExprWithReturnStat(statement), EQSIGN)
-
 
   /**
     * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  "=" <statement>
     */
-  def constructor(modifiers: Set[Modifier], className: String, startPos: Positioned): ConstructorDecl = {
+  def constructor(modifiers: Set[Modifier], className: String): ConstructorDecl = {
     val pos = nextToken
     eat(NEW)
-    val methId = MethodID("new").setPos(pos, nextToken)
+    val methId = MethodID("new").setPos(pos, previousToken)
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
-    val retType = Some(UnitType().setType(TUnit))
+    val retType = Some(UnitType().setType(TUnit).setNoPos())
     val methBody = methodBody
-    ConstructorDecl(retType, methId, args, methBody, modifiers).setPos(startPos, nextToken)
+    ConstructorDecl(modifiers, methId, args, retType, methBody)
   }
 
-  /**
-    * <returnType> ::= Unit | <tpe>
-    */
-  def returnType: TypeTree = {
-    val t = tpe
-    t match {
-      case ClassID("Unit", _) => UnitType().setPos(t)
-      case _                  => t
-    }
-  }
 
   /**
     * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
     **/
-  def operator(modifiers: Set[Modifier], startPos: Positioned): OperatorDecl = {
+  def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
       ErrorImplicitMethodOrOperator(impl)
     }
@@ -426,49 +442,25 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
-    val endPos = nextToken
     val methBody = methodBody
 
-    OperatorDecl(operatorType, retType, args, methBody, newModifiers).setPos(startPos, endPos)
+
+    OperatorDecl(newModifiers, operatorType.setNoPos(), args, retType, methBody)
   }
+
 
   /**
-    * <methodModifiers> ::= ( Def | def [ protected ])) [ static ] [ implicit ]
+    * [ "=" <statement> ]
     */
-  def methodModifiers: Set[Modifier] = {
-    val startPos = nextToken
+  def methodBody: Option[StatTree] = optional(replaceExprWithReturnStat(statement), EQSIGN)
 
-    var modifiers: Set[Modifier] = nextTokenKind match {
-      case PUBDEF  =>
-        eat(PUBDEF)
-        Set(Public().setPos(startPos, nextToken))
-      case PRIVDEF =>
-        eat(PRIVDEF)
-        Set(protectedOrPrivate.setPos(startPos, nextToken))
-      case _       => FatalWrongToken(nextToken, PUBDEF, PRIVDEF)
+  private def protectedOrPrivate: Accessability = positioned {
+    nextTokenKind match {
+      case PROTECTED =>
+        eat(PROTECTED)
+        Protected()
+      case _         => Private()
     }
-
-    while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
-      val pos = nextToken
-      val modifier = nextTokenKind match {
-        case STATIC   =>
-          eat(STATIC)
-          Static().setPos(pos, nextToken)
-        case IMPLICIT =>
-          eat(IMPLICIT)
-          Implicit().setPos(pos, nextToken)
-        case _        => ???
-      }
-      modifiers += modifier
-    }
-    modifiers
-  }
-
-  private def protectedOrPrivate: Accessability = nextTokenKind match {
-    case PROTECTED =>
-      eat(PROTECTED)
-      Protected()
-    case _         => Private()
   }
 
   /**
@@ -479,16 +471,16 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     var modifiers: Set[Modifier] = nextTokenKind match {
       case PUBVAR  =>
         eat(PUBVAR)
-        Set(Public().setPos(startPos, nextToken))
+        Set(Public().setPos(startPos, previousToken))
       case PRIVVAR =>
         eat(PRIVVAR)
-        Set(protectedOrPrivate.setPos(startPos, nextToken))
+        Set(protectedOrPrivate.setPos(startPos, previousToken))
       case PUBVAL  =>
         eat(PUBVAL)
-        Set(Public().setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
+        Set(Public().setPos(startPos, previousToken), Final().setPos(startPos, previousToken))
       case PRIVVAL =>
         eat(PRIVVAL)
-        Set(protectedOrPrivate.setPos(startPos, nextToken), Final().setPos(startPos, nextToken))
+        Set(protectedOrPrivate.setPos(startPos, previousToken), Final().setPos(startPos, previousToken))
       case _       => FatalWrongToken(nextToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
     }
 
@@ -496,7 +488,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     nextTokenKind match {
       case STATIC =>
         eat(STATIC)
-        modifiers += Static().setPos(pos, nextToken)
+        modifiers += Static().setPos(pos, previousToken)
       case _      =>
     }
     modifiers
@@ -505,13 +497,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <basicTpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> )
     */
-  def basicTpe: TypeTree = {
-    val startPos = nextToken
+  def basicTpe: TypeTree = positioned {
     val id = classIdentifier
 
     // These are kind of keywords but are parsed by the lexer.
     // This enables names like java::lang::Long to be valid.
-    val tpe = id.name match {
+    id.name match {
       case "Int"    => IntType()
       case "Long"   => LongType()
       case "Float"  => FloatType()
@@ -520,7 +511,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case "Char"   => CharType()
       case _        => id
     }
-    tpe.setPos(startPos, nextToken)
   }
 
   /**
@@ -535,18 +525,29 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       e = nextTokenKind match {
         case QUESTIONMARK =>
           eat(QUESTIONMARK)
-          NullableType(e).setPos(startPos, nextToken)
+          NullableType(e)
         case LBRACKET     =>
           eat(LBRACKET, RBRACKET)
           dimension += 1
-          ArrayType(e).setPos(startPos, nextToken)
-        case _            => ???
+          ArrayType(e)
       }
+      e.setPos(startPos, previousToken)
     }
     if (dimension > MaximumArraySize)
       ErrorInvalidArrayDimension(dimension, e)
 
-    e.setPos(startPos, nextToken)
+    e
+  }
+
+  /**
+    * <returnType> ::= Unit | <tpe>
+    */
+  def returnType: TypeTree = positioned {
+    val t = tpe
+    t match {
+      case ClassID("Unit", _) => UnitType()
+      case _                  => t
+    }
   }
 
   /**
@@ -561,9 +562,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | return [ <expression> ] <endStatement>
     * | <expression> <endStatement>
     **/
-  def statement: StatTree = {
-    val startPos = nextToken
-
+  def statement: StatTree = positioned {
     // Variable needs custom end position in order to
     // only highlight expression up to equals sign
     nextTokenKind match {
@@ -574,7 +573,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _                 =>
     }
 
-    val tree = nextTokenKind match {
+    nextTokenKind match {
       case LBRACE                  =>
         eat(LBRACE)
         val stmts = until(statement, RBRACE)
@@ -628,42 +627,40 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         endStatement()
         expr
     }
-    tree.setPos(startPos, nextToken)
   }
 
   /**
     * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
-  def forLoop: StatTree = {
-    val startPos = nextToken
+  def forLoop: StatTree = positioned {
     eat(FOR, LPAREN)
 
     nextTokenKind match {
       case PRIVVAR | PRIVVAL =>
         val varDecl = localVarDeclaration
-        if (varDecl.init.isDefined) {
+        if (varDecl.initation.isDefined) {
           if (nextTokenKind == COMMA)
             eat(COMMA)
-          regularForLoop(Some(varDecl), startPos)
+          regularForLoop(Some(varDecl))
         } else {
           nextTokenKind match {
             case IN =>
-              forEachLoop(varDecl, startPos)
+              forEachLoop(varDecl)
             case _  =>
               if (nextTokenKind == COMMA)
                 eat(COMMA)
-              regularForLoop(Some(varDecl), startPos)
+              regularForLoop(Some(varDecl))
           }
         }
       case _                 =>
-        regularForLoop(None, startPos)
+        regularForLoop(None)
     }
   }
 
   /**
     * <regularForLoop> ::= <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
-  def regularForLoop(firstVarDecl: Option[VarDecl], startPos: Positioned): For = {
+  def regularForLoop(firstVarDecl: Option[VarDecl]): For = {
     val init = forInit
     eat(SEMICOLON)
     val condition = nextTokenKind match {
@@ -677,17 +674,17 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case Some(v) => v :: init
       case None    => init
     }
-    For(vars, condition, post, statement).setPos(startPos, nextToken)
+    For(vars, condition, post, statement)
   }
 
   /**
     * <forEachLoop> ::= in <expression> ")" <statement>
     */
-  def forEachLoop(varDecl: VarDecl, startPos: Positioned): Foreach = {
+  def forEachLoop(varDecl: VarDecl): Foreach = {
     eat(IN)
     val container = expression
     eat(RPAREN)
-    Foreach(varDecl, container, statement).setPos(startPos, nextToken)
+    Foreach(varDecl, container, statement)
   }
 
   /**
@@ -707,7 +704,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
                  MODEQ | ANDEQ |
                  OREQ | XOREQ |
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, nextToken)
+              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, previousToken)
             case _                          => FatalWrongToken(nextToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
           }
       }
@@ -728,30 +725,25 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <expression> ::= <assignment>
     */
-  def expression: ExprTree = {
-    val startPos = nextToken
-    assignment().setPos(startPos, nextToken)
-  }
-
+  def expression: ExprTree = assignment()
 
   /**
     * <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ]
     * | <ternary> [ "[" <expression> "] = " <expression> ]
     **/
-  def assignment(expr: Option[ExprTree] = None): ExprTree = {
+  def assignment(expr: Option[ExprTree] = None): ExprTree = positioned {
     val startPos = nextToken
     val e = expr.getOrElse(ternary)
 
     def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
       eat(nextTokenKind)
 
-      def assignmentExpr(expr: ExprTree) = constructor match {
-        case Some(cons) => cons(expr, expression).setPos(startPos, nextToken)
-        case None       => expression
-      }
+      val assignmentExpr = constructor
+        .map(cons => cons(e, expression).setPos(startPos, previousToken))
+        .getOrElse(expression)
 
       e match {
-        case a: Assignable => Assign(a, assignmentExpr(e))
+        case a: Assignable => Assign(a, assignmentExpr)
         case _             => FatalExpectedIdAssignment(e)
       }
     }
@@ -774,28 +766,26 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
 
   /** <ternary> ::= <elvis> [ ? <elvis> : <elvis> ] */
-  def ternary: ExprTree = {
-    val startPos = nextToken
+  def ternary: ExprTree = positioned {
     val e = elvis
     if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       val thn = elvis
       eat(COLON)
       val els = elvis
-      Ternary(e, thn, els).setPos(startPos, nextToken)
+      Ternary(e, thn, els)
     } else {
       e
     }
   }
 
   /** <elvis> ::= <or> [ ?: <or> ] */
-  def elvis: ExprTree = {
-    val startPos = nextToken
+  def elvis: ExprTree = positioned {
     val e = or
     if (nextTokenKind == ELVIS) {
       eat(ELVIS)
       val ifNull = or
-      Elvis(e, ifNull).setPos(startPos, nextToken)
+      Elvis(e, ifNull)
     } else {
       e
     }
@@ -820,12 +810,11 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   def eqNotEq: ExprTree = leftAssociative(is, EQUALS, NOTEQUALS)
 
   /** <is> ::= <comparison> { inst <classIdentifier> } */
-  def is: ExprTree = {
-    val startPos = nextToken
+  def is: ExprTree = positioned {
     var e = comparison
     while (nextTokenKind == IS) {
       eat(IS)
-      e = Is(e, tpe).setPos(startPos, nextToken)
+      e = Is(e, tpe)
     }
     e
   }
@@ -874,9 +863,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | <superCall>.<identifier> "(" <expression> { "," <expression> } ")
     * | <newExpression>
     */
-  def termFirst: ExprTree = {
-    val startPos = nextToken
-    val tree = nextTokenKind match {
+  def termFirst: ExprTree = positioned {
+    nextTokenKind match {
       case LPAREN        =>
         eat(LPAREN)
         val expr = expression
@@ -915,11 +903,11 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         val name = ids.mkString("::")
         nextTokenKind match {
           case LPAREN =>
+            val id = MethodID(name).setPos(methStartPos, previousToken)
             eat(LPAREN)
             val exprs = commaList(expression)
             eat(RPAREN)
-            val id = MethodID(name)
-            val meth = MethodCall(id, exprs).setPos(methStartPos, nextToken)
+            val meth = MethodCall(id, exprs).setPos(methStartPos, previousToken)
             NormalAccess(Empty(), meth)
           case _      => VariableID(name)
         }
@@ -941,7 +929,6 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case NEW           => newExpression
       case _             => FatalUnexpectedToken(currentToken)
     }
-    tree.setPos(startPos, nextToken)
   }
 
   /**
@@ -953,13 +940,12 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | --
     * | !!
     */
-  def termRest(lhs: ExprTree): ExprTree = {
-    var e = lhs
+  def termRest(termFirst: ExprTree): ExprTree = {
+    var e = termFirst
     val tokens = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
 
     // Uses current token since a newline should stop the iteration
     while (tokens.contains(currentToken.kind)) {
-      val startPos = nextToken
 
       e = currentToken.kind match {
         case DOT | SAFEACCESS =>
@@ -980,7 +966,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
           PostDecrement(e)
         case _                => ???
       }
-      e.setPos(startPos, nextToken)
+      e.setPos(termFirst, previousToken)
     }
 
     e
@@ -989,8 +975,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <access> ::= (. | ?.) <methodCall> | <identifier>
     */
-  def access(obj: ExprTree): Access = {
-    val startPos = nextToken
+  def access(obj: ExprTree): Access = positioned {
     val access = nextTokenKind match {
       case SAFEACCESS =>
         eat(SAFEACCESS)
@@ -1001,24 +986,26 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case _          => FatalWrongToken(nextToken, DOT, QUESTIONMARK)
     }
 
-    val methStartPos = nextToken
-    val id = varIdentifier
-    val application = nextTokenKind match {
-      case LPAREN =>
-        eat(LPAREN)
-        val exprs = commaList(expression)
-        eat(RPAREN)
-        val methId = MethodID(id.name)
-        MethodCall(methId, exprs).setPos(methStartPos, nextToken)
-      case _      => id
+    val application = positioned {
+      val id = varIdentifier
+      nextTokenKind match {
+        case LPAREN =>
+          eat(LPAREN)
+          val exprs = commaList(expression)
+          eat(RPAREN)
+          val methId = MethodID(id.name).setPos(id)
+          MethodCall(methId, exprs)
+        case _      => id
+      }
     }
-    access(obj, application).setPos(startPos, nextToken)
+
+    access(obj, application)
   }
 
   /**
     * <negation> ::= - <term>
     */
-  def negation: ExprTree = {
+  def negation: ExprTree = positioned {
     eat(MINUS)
     currentToken match {
       case x: INTLIT    =>
@@ -1068,7 +1055,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         // If it starts with question mark a bracket must follow
         if (nextTokenKind == QUESTIONMARK) {
           eat(QUESTIONMARK)
-          e = NullableType(e).setPos(startPos, nextToken)
+          e = NullableType(e).setPos(startPos, previousToken)
           _nullableBracket()
         }
 
@@ -1089,10 +1076,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     eat(LBRACKET)
     val size = expression
     eat(RBRACKET)
-    e = ArrayType(e).setPos(startPos, nextToken)
+    e = ArrayType(e).setPos(startPos, previousToken)
     if (nextTokenKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
-      e = NullableType(e).setPos(startPos, nextToken)
+      e = NullableType(e).setPos(startPos, previousToken)
     }
     (e, size)
   }
@@ -1102,8 +1089,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * | "[" [ <expression> ] : [ <expression> ] "]"
     * | "[" [ <expression> ] : [ <expression> ] : [ <expression> ] "]"
     */
-  def arrayIndexing(arr: ExprTree): ExprTree = {
-    val startPos = currentToken
+  def arrayIndexing(arr: ExprTree): ExprTree = positioned {
     eat(LBRACKET)
     val exprs = until({
       nextTokenKind match {
@@ -1116,7 +1102,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }, RBRACKET)
     eat(RBRACKET)
 
-    val expr = exprs match {
+    exprs match {
       case Some(e) :: Nil                                          => ArrayRead(arr, e) //                             [e]
       case None :: Nil                                             => ArraySlice(arr, None, None, None) //             [:]
       case Some(e) :: None :: Nil                                  => ArraySlice(arr, Some(e), None, None) //          [e:]
@@ -1132,30 +1118,31 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
       case _                                                       => FatalUnexpectedToken(nextToken)
     }
-    expr.setPos(startPos, nextToken)
   }
 
   /**
     * <superCall> ::= super [ "<" <classIdentifier> "> ]
     */
-  def superCall: ExprTree = {
-    val startPos = nextToken
+  def superCall: ExprTree = positioned {
     eat(SUPER)
     val specifier = optional({
       val id = classIdentifier
       eat(GREATERTHAN)
       id
     }, LESSTHAN)
-    Super(specifier).setPos(startPos, nextToken)
+    Super(specifier)
   }
 
-  private def replaceExprWithReturnStat(stat: StatTree): StatTree = stat match {
-    case Block(stmts) if stmts.nonEmpty =>
-      val replaced = replaceExprWithReturnStat(stmts.last)
-      Block(stmts.updated(stmts.size - 1, replaced))
-    case acc@Access(_, _: MethodCall)   => Return(Some(acc))
-    case UselessStatement(e)            => Return(Some(e))
-    case _                              => stat
+  private def replaceExprWithReturnStat(stat: StatTree): StatTree = {
+    val s = stat match {
+      case Block(stmts) if stmts.nonEmpty =>
+        val replaced = replaceExprWithReturnStat(stmts.last)
+        Block(stmts.updated(stmts.size - 1, replaced))
+      case acc@Access(_, _: MethodCall)   => Return(Some(acc))
+      case UselessStatement(e)            => Return(Some(e))
+      case _                              => stat
+    }
+    s.setPos(stat)
   }
 
   /**
@@ -1164,13 +1151,13 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     * Used to parse left associative expressions. *
     */
   private def leftAssociative(next: => ExprTree, kinds: TokenKind*): ExprTree = {
+    val startPos = nextToken
     var expr = next
     while (kinds.contains(currentToken.kind)) {
       kinds foreach { kind =>
         if (currentToken.kind == kind) {
-          val startPos = currentToken
           eat(kind)
-          expr = tokenToBinaryOperatorAST(kind)(expr, next).setPos(startPos, nextToken)
+          expr = tokenToBinaryOperatorAST(kind)(expr, next).setPos(startPos, previousToken)
         }
       }
     }
@@ -1219,31 +1206,32 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
 
   /**
-    * <classTypeIdentifier> ::= <identifier> [ "[" <identifier> { "," <identifier> } "]" ]
+    * <classTypeIdentifier> ::= <identifier> [ "<" <identifier> { "," <identifier> } ">" ]
     */
-  private def classTypeIdentifier: ClassID = nextToken match {
-    case id: ID =>
-      eat(IDKIND)
-      val tIds = nextTokenKind match {
-        case LESSTHAN =>
-          eat(LESSTHAN)
-          val tmp = commaList(varIdentifier)
-          eatRightShiftOrGreaterThan()
-          tmp.map(x => ClassID(x.name, List()).setPos(x))
-        case _        => List()
-      }
-      ClassID(id.value, tIds).setPos(id)
-    case _      => FatalWrongToken(nextToken, IDKIND)
+  private def classTypeIdentifier: ClassID = positioned {
+    nextToken match {
+      case id: ID =>
+        eat(IDKIND)
+        val tIds = nextTokenKind match {
+          case LESSTHAN =>
+            eat(LESSTHAN)
+            val tmp = commaList(varIdentifier)
+            eatRightShiftOrGreaterThan()
+            tmp.map(x => ClassID(x.name, List()).setPos(x))
+          case _        => List()
+        }
+        ClassID(id.value, tIds)
+      case _      => FatalWrongToken(nextToken, IDKIND)
+    }
   }
 
   /**
     * <classIdentifier> ::= <identifier> { :: <identifier> } <templateList>
     */
-  private def classIdentifier: ClassID = {
-    val startPos = nextToken
+  private def classIdentifier: ClassID = positioned {
     val ids = nonEmptyList(identifierName, COLON, COLON)
     val id = ids.mkString("::")
-    ClassID(id, templateList).setPos(startPos, nextToken)
+    ClassID(id, templateList)
   }
 
   /**
@@ -1273,83 +1261,99 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   /**
     * <varIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
     */
-  private def varIdentifier: VariableID = nextToken match {
-    case id: ID =>
-      eat(IDKIND)
-      VariableID(id.value).setPos(id, nextToken)
-    case _      => FatalWrongToken(nextToken, IDKIND)
+  private def varIdentifier: VariableID = positioned {
+    nextToken match {
+      case id: ID =>
+        eat(IDKIND)
+        VariableID(id.value)
+      case _      => FatalWrongToken(nextToken, IDKIND)
+    }
   }
 
   /**
     * <methodIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
     */
-  private def methodIdentifier: MethodID = nextToken match {
-    case id: ID =>
-      eat(IDKIND)
-      MethodID(id.value).setPos(id, nextToken)
-    case _      => FatalWrongToken(nextToken, IDKIND)
+  private def methodIdentifier: MethodID = positioned {
+    nextToken match {
+      case id: ID =>
+        eat(IDKIND)
+        MethodID(id.value)
+      case _      => FatalWrongToken(nextToken, IDKIND)
+    }
   }
 
   /**
     * <stringLit> ::= sequence of arbitrary characters, except new lines and "
     */
-  private def stringLit: StringLit = nextToken match {
-    case strlit: STRLIT =>
-      eat(STRLITKIND)
-      StringLit(strlit.value).setPos(strlit, nextToken)
-    case _              => FatalWrongToken(nextToken, STRLITKIND)
+  private def stringLit: StringLit = positioned {
+    nextToken match {
+      case strlit: STRLIT =>
+        eat(STRLITKIND)
+        StringLit(strlit.value)
+      case _              => FatalWrongToken(nextToken, STRLITKIND)
+    }
   }
 
   /**
     * <intLit> ::= sequence of digits, with no leading zeros
     */
-  private def intLit: IntLit =
+  private def intLit: IntLit = positioned {
     nextToken match {
       case intLit: INTLIT =>
         eat(INTLITKIND)
-        IntLit(intLit.value).setPos(intLit, nextToken)
+        IntLit(intLit.value)
       case _              => FatalWrongToken(nextToken, INTLITKIND)
     }
+  }
+
 
   /**
     * <longLit> ::= sequence of digits, with no leading zeros ending with an 'l'
     */
-  private def longLit: LongLit = nextToken match {
-    case longLit: LONGLIT =>
-      eat(LONGLITKIND)
-      LongLit(longLit.value).setPos(longLit, nextToken)
-    case _                => FatalWrongToken(nextToken, LONGLITKIND)
+  private def longLit: LongLit = positioned {
+    nextToken match {
+      case longLit: LONGLIT =>
+        eat(LONGLITKIND)
+        LongLit(longLit.value)
+      case _                => FatalWrongToken(nextToken, LONGLITKIND)
+    }
   }
 
   /**
     * <floatLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
     */
-  private def floatLit: FloatLit = nextToken match {
-    case floatLit: FLOATLIT =>
-      eat(FLOATLITKIND)
-      FloatLit(floatLit.value).setPos(floatLit, nextToken)
-    case _                  => FatalWrongToken(nextToken, FLOATLITKIND)
+  private def floatLit: FloatLit = positioned {
+    nextToken match {
+      case floatLit: FLOATLIT =>
+        eat(FLOATLITKIND)
+        FloatLit(floatLit.value)
+      case _                  => FatalWrongToken(nextToken, FLOATLITKIND)
+    }
   }
 
 
   /**
     * <doubleLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
     */
-  private def doubleLit: DoubleLit = nextToken match {
-    case doubleLit: DOUBLELIT =>
-      eat(DOUBLELITKIND)
-      DoubleLit(doubleLit.value).setPos(doubleLit, nextToken)
-    case _                    => FatalWrongToken(nextToken, DOUBLELITKIND)
+  private def doubleLit: DoubleLit = positioned {
+    nextToken match {
+      case doubleLit: DOUBLELIT =>
+        eat(DOUBLELITKIND)
+        DoubleLit(doubleLit.value)
+      case _                    => FatalWrongToken(nextToken, DOUBLELITKIND)
+    }
   }
 
   /**
     * <charLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
     */
-  private def charLit: CharLit = nextToken match {
-    case charLit: CHARLIT =>
-      eat(CHARLITKIND)
-      CharLit(charLit.value).setPos(charLit, nextToken)
-    case _                => FatalWrongToken(nextToken, CHARLITKIND)
+  private def charLit: CharLit = positioned {
+    nextToken match {
+      case charLit: CHARLIT =>
+        eat(CHARLITKIND)
+        CharLit(charLit.value)
+      case _                => FatalWrongToken(nextToken, CHARLITKIND)
+    }
   }
 
   /**
@@ -1360,8 +1364,9 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
   private def nonEmptyList[T](parse: => T, delimiters: TokenKind*): List[T] = {
     val arrBuff = new ArrayBuffer[T]()
     arrBuff += parse
-    val first = delimiters.head
-    while (nextTokenKind == first) {
+    def matches = (0 until delimiters.size).forall(i => tokens(currentIndex + i).kind == delimiters(i))
+
+    while (matches) {
       delimiters.foreach(eat(_))
       arrBuff += parse
     }
@@ -1378,7 +1383,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
 
     val arrBuff = new ArrayBuffer[T]()
     arrBuff += parse
-    while (currentToken.kind == COMMA || currentToken.kind == NEWLINE) {
+    while (nextToken.kind == COMMA) {
+      eatNewLines()
       readToken()
       arrBuff += parse
     }
@@ -1419,4 +1425,10 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     }
     arrBuff.toList
   }
+
+  private def positioned[T <: Positioned](f: => T): T = {
+    val startPos = nextToken
+    f.setPos(startPos, previousToken)
+  }
+
 }

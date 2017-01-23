@@ -232,7 +232,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {
-    val staticFields = classDecl.fields.filter(v => v.init.isDefined && v.isStatic)
+    val staticFields = classDecl.fields.filter(v => v.initation.isDefined && v.isStatic)
     if (staticFields.isEmpty)
       return
 
@@ -247,7 +247,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
   }
 
   private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler) = {
-    val nonStaticFields = classDecl.fields.filter(v => v.init.isDefined && !v.isStatic)
+    val nonStaticFields = classDecl.fields.filter(v => v.initation.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     nonStaticFields foreach { case VarDecl(_, id, Some(expr), _) =>
       ch << ArgLoad(0) // put this-reference on stack

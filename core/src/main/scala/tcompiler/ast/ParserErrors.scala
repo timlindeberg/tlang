@@ -42,7 +42,7 @@ trait ParserErrors extends Errors {
     val l = (kind :: more.toList).map(k => s"'$k'")
     val expected = l.size match {
       case 1 => l.head
-      case 2 => l.head + " or " + l.tail
+      case 2 => l.head + " or " + l.tail.mkString(", ")
       case _ => l.dropRight(1).mkString(", ") + " or " + l.last
     }
     FatalWrongToken(expected, currentToken.toString, currentToken)

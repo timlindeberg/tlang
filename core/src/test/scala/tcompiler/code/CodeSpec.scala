@@ -1,9 +1,9 @@
 package tcompiler.code
 
-import tcompiler.{TestUtils, ValidTester}
+import tcompiler.{Tester, ValidTester}
 
 
 class CodeSpec extends ValidTester {
   override def Name: String = "Code"
-  override def Path: String = TestUtils.Resources + "code"
+  override def Path: String = Tester.Resources + "code"
 }

@@ -8,16 +8,17 @@ import tcompiler.imports.ImportMap
 import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.{TraversableLike, mutable}
 
 @GenerateTreeHelpers
 object Trees {
 
-  trait Tree extends Positioned with Product {
+  trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
+    override protected[this] def newBuilder: mutable.Builder[Tree, List[Tree]] = new mutable.ListBuffer
+    override def seq: TraversableOnce[Tree] = this
 
-    def foreach(f: Tree => Unit): Unit = {
+    override def foreach[U](f: Tree => U): Unit = {
       val traverser = new Trees.Traverser {
         override def _traverse(t: Tree): Unit = {
           f(t)
@@ -25,75 +26,6 @@ object Trees {
         }
       }
       traverser.traverse(this)
-    }
-
-
-    def find(p: Tree => Boolean): Option[Tree] = {
-      var result: Option[Tree] = None
-      val traverser = new Trees.Traverser {
-
-        override def _traverse(t: Tree): Unit =
-          if (p(t)) result = Some(t)
-          else super._traverse(t)
-      }
-      traverser.traverse(this)
-      result
-    }
-
-
-    def forAll(p: Tree => Boolean): Boolean = {
-      var result = true
-      val traverser = new Trees.Traverser {
-
-        override def _traverse(t: Tree): Unit =
-          if (!p(t)) result = false
-          else super._traverse(t)
-      }
-      traverser.traverse(this)
-      result
-    }
-
-    def children: List[Tree] = {
-      def subtrees(x: Any): List[Tree] = x match {
-        case Empty()     => Nil
-        case t: Tree     => List(t)
-        case xs: List[_] => xs flatMap subtrees
-        case _           => Nil
-      }
-      productIterator.toList flatMap subtrees
-    }
-
-
-    def filter(p: Tree => Boolean): List[Tree] = {
-      val trees = ListBuffer[Tree]()
-      val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree): Unit = {
-          if (p(t)) trees += t
-          super._traverse(t)
-        }
-      }
-      traverser.traverse(this)
-      trees.toList
-    }
-
-    def exists(p: Tree => Boolean): Boolean = find(p).isDefined
-
-    def groupBy[K](f: Tree => K): Map[K, List[Tree]] = {
-      val trees = mutable.Map[K, ListBuffer[Tree]]()
-
-      val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree): Unit = {
-          val key = f(t)
-          val list = trees.getOrElseUpdate(key, ListBuffer())
-          list += t
-          super._traverse(t)
-        }
-      }
-      traverser._traverse(this)
-      val b = Map.newBuilder[K, List[Tree]]
-      for ((k, v) <- trees)
-        b += k -> v.toList
-      b.result
     }
 
     def copyAttributes(t: Tree): this.type = {
@@ -108,7 +40,6 @@ object Trees {
       }
       this
     }
-
 
     // For easier debugging
     override def toString = Printer(this, printInColor = false)
@@ -151,7 +82,6 @@ object Trees {
     def getPackageDirectory: String = pack.directory
 
     def packageName: String = pack.address.mkString(".")
-
   }
 
 
@@ -260,18 +190,18 @@ object Trees {
 
 
   object MethodDeclTree {
-    def unapply(f: MethodDeclTree) = Some(f.id, f.retType, f.args, f.stat, f.modifiers)
+    def unapply(f: MethodDeclTree) = Some(f.modifiers, f.id, f.args, f.retType, f.stat)
   }
 
   trait MethodDeclTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
     val id       : MethodID
-    val retType  : Option[TypeTree]
     val args     : List[Formal]
+    val retType  : Option[TypeTree]
     val stat     : Option[StatTree]
     val modifiers: Set[Modifier]
 
     def isMain: Boolean = this match {
-      case MethodDecl(Some(UnitType()), Identifier("main"), Formal(ArrayType(ClassID("java::lang::String", List())), _) :: Nil, _, _) =>
+      case MethodDecl(_, Identifier("main"), Formal(ArrayType(ClassID("java::lang::String", List())), _) :: Nil, Some(UnitType()), _) =>
         modifiers.size == 2 &&
           accessability == Public() &&
           isStatic &&
@@ -286,21 +216,19 @@ object Trees {
 
   }
 
-  case class MethodDecl(retType: Option[TypeTree],
+  case class MethodDecl(
+    modifiers: Set[Modifier],
     id: MethodID,
     args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends MethodDeclTree
-  case class ConstructorDecl(retType: Option[TypeTree],
-    id: MethodID,
-    args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends MethodDeclTree
-  case class OperatorDecl(operatorType: OperatorTree,
     retType: Option[TypeTree],
+    stat: Option[StatTree]) extends MethodDeclTree
+  case class ConstructorDecl(
+    modifiers: Set[Modifier],
+    id: MethodID,
     args: List[Formal],
-    stat: Option[StatTree],
-    modifiers: Set[Modifier]) extends MethodDeclTree {
+    retType: Option[TypeTree],
+    stat: Option[StatTree]) extends MethodDeclTree
+  case class OperatorDecl(modifiers: Set[Modifier], operatorType: OperatorTree, args: List[Formal], retType: Option[TypeTree], stat: Option[StatTree]) extends MethodDeclTree {
     val id: MethodID = MethodID("")
   }
 
@@ -336,11 +264,11 @@ object Trees {
   }
 
 
-  case class VarDecl(tpe: Option[TypeTree], id: VariableID, init: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
+  case class VarDecl(tpe: Option[TypeTree], id: VariableID, initation: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(condition: ExprTree, stat: StatTree) extends StatTree
-  case class For(init: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
+  case class For(initiation: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
 
   case class Error(expr: ExprTree) extends StatTree
@@ -507,10 +435,6 @@ object Trees {
     def unapply(e: ArrayOperatorTree) = Some(e.arr)
   }
 
-  case class ArrayAssign(arr: ExprTree, index: ExprTree, expr: ExprTree) extends ArrayOperatorTree {
-    override val opSign: String = "[]="
-    override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
-  }
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
     override val opSign: String = "[]"
     override def signature(args: List[Any]): String = s"[${args(0)}]"
@@ -655,7 +579,7 @@ object Trees {
   /*-------------------------------- Misc expression Trees --------------------------------*/
 
   // Used to generate code which doesn't fit the tree structure but
-  // which fits well on the stack. Can be used to transform an expression
+  // which fits when generating bytecode. Can be used to transform an expression
   // in to multiple statements etc.
   // Generated when desugaring.
   case class GeneratedExpr(stats: List[StatTree]) extends ExprTree
@@ -669,9 +593,8 @@ object Trees {
   // Used as a placeholder
   case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>"}
 
-  /**
-    * Statements that have no effect on their own.
-    */
+
+  //Statements that have no effect on their own.
   object UselessStatement {
     def unapply(e: StatTree): Option[ExprTree] = e match {
       case Access(_, MethodCall(_, _)) => None

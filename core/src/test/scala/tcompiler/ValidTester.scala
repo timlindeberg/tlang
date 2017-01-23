@@ -9,16 +9,17 @@ import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.error.CompilationException
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.Pipeline
+import tcompiler.utils.{Context, Pipeline}
 
 import scala.io.Source
+
 
 /**
   * Created by Tim Lindeberg on 4/11/2016.
   */
 trait ValidTester extends Tester {
 
-  import TestUtils._
+  import Tester._
 
   override def Pipeline: Pipeline[List[File], List[CompilationUnit]] =
     Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
@@ -33,9 +34,10 @@ trait ValidTester extends Tester {
 
       val compilation = Desugaring andThen CodeGeneration
       compilation.run(ctx)(cus)
-      val res = lines(executeTProgram(file))
+      val res = executeTProgram(ctx, file).getOrElse(fail(s"Test timed out!"))
+      val resLines = lines(res)
       val sol = parseSolutions(file)
-      assertCorrect(res, sol)
+      assertCorrect(resLines, sol)
     } catch {
       case t: CompilationException  =>
         println(t.getMessage)
@@ -43,6 +45,14 @@ trait ValidTester extends Tester {
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
     }
   }
+
+  private def executeTProgram(ctx: Context, testFile: File): Option[String] = {
+    val mainName = testFile.getName.replaceAll(Main.FileEnding, "")
+    val path = ctx.outDirs.head.getAbsolutePath
+    Tester.executeTProgram(List(path, Main.TDirectory), mainName)
+  }
+
+  private def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList
 
   private def parseSolutions(file: File): List[String] = {
     val fileName = file.getPath

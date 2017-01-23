@@ -33,7 +33,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       val sym = field.getSymbol
       val varId = VarIdentifier(sym)
       if (sym.modifiers.contains(Final()))
-        knowledge.assignment(varId, field.init, Initialized)
+        knowledge.assignment(varId, field.initation, Initialized)
       else
         knowledge.add(varId, Initialized)
     }

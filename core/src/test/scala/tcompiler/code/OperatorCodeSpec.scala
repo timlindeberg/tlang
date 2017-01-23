@@ -3,7 +3,6 @@ package tcompiler.code
 import java.io.{File, FileWriter, IOException}
 
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import tcompiler.{Main, TestUtils}
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
@@ -13,8 +12,9 @@ import tcompiler.error.Reporter
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.{Context, Pipeline}
 import tcompiler.utils.Extensions._
+import tcompiler.utils.{Context, Pipeline}
+import tcompiler.{Interpreter, Main, Tester}
 
 import scala.util.Random
 
@@ -39,6 +39,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   val ClassSymbol                            = new ClassSymbol("obj", false)
   val MainMethod: MethodSymbol               = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   val TypeChecker                            = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
+  val Interpreter                            = new Interpreter
 
 
   val MainName      = "Main"
@@ -168,7 +169,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   private def testAssignment(tpe: Type, expr: ExprTree) = {
-    TestUtils.Interpreter.interpret(scalaVariableDeclaration(tpe))
+    Interpreter.interpret(scalaVariableDeclaration(tpe))
     val operation = Printer(expr)
     println(s"Testing $operation ($IdName : $tpe)")
     val scalaRes = getScalaResult(operation).trim + System.lineSeparator() + getScalaResult(IdName).trim
@@ -180,7 +181,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   private def testArrayAssignment(tpe: Type, expr: ExprTree) = {
-    TestUtils.Interpreter.interpret(scalaArrayDeclaration(tpe))
+    Interpreter.interpret(scalaArrayDeclaration(tpe))
     val operation = Printer(expr)
     println(s"Testing $operation ($IdName : $tpe[])")
     val scalaRes = getScalaResult(IdName + "(0)")
@@ -197,28 +198,27 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   private def assignmentProgram(operation: String, tpe: Type) =
     s"""
-var $IdName: $tpe
-println($operation)
-println($IdName)
-     """
+       |var $IdName: $tpe
+       |println($operation)
+       |println($IdName)
+     """.stripMargin
 
   private def arrayAssignmentProgram(operation: String, tpe: Type) =
     s"""
-var $IdName: $tpe[] = new $tpe[1]
-println($operation)
-println($IdName[0])
-     """
-
+       |var $IdName: $tpe[] = new $tpe[1]
+       |println($operation)
+       |println($IdName[0])
+     """.stripMargin
 
   private def getResult(program: String) = {
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.files)
     val mainName = TestCtx.files.head.getName.dropRight(Main.FileEnding.length)
-    TestUtils.executeTProgram(List(TestFolder, Main.TDirectory), mainName).trim
+    Tester.executeTProgram(List(TestFolder, Main.TDirectory), mainName).get.trim
   }
 
   private def getScalaResult(operation: String) = {
-    val r = TestUtils.Interpreter.interpret(operation)
+    val r = Interpreter.interpret(operation)
     if (r.contains("error")) "error"
     else r.split("=").last.trim
   }

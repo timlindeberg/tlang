@@ -108,7 +108,7 @@ object Visualizer {
             Unit
           }
           _traverse(methods)
-        case MethodDecl(_, _, _, stat, _)   =>
+        case MethodDecl(_, _, _, _, stat)   =>
           val nodeName = addNode(tree)
           stat.ifDefined { s =>
             val statName = getId(s)

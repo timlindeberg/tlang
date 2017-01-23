@@ -6,7 +6,7 @@ import tcompiler.ast.Parser
 import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.lexer.Lexer
 import tcompiler.utils.Pipeline
-import tcompiler.{ErrorTester, TestUtils}
+import tcompiler.{ErrorTester, Tester}
 
 
 /**
@@ -14,6 +14,6 @@ import tcompiler.{ErrorTester, TestUtils}
   */
 class TemplateSpec extends ErrorTester {
   override def Name: String = "Templates"
-  override def Path: String = TestUtils.Resources + "modification/templates"
+  override def Path: String = Tester.Resources + "modification/templates"
   override def Pipeline: Pipeline[List[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates
 }

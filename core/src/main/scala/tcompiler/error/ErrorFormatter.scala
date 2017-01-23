@@ -38,11 +38,10 @@ case class ErrorFormatter(
     Underline + color
   }
 
-  private val QuoteRegex       = """'(.+?)'""".r
-  private val sb               = new StringBuilder()
-  private val pos              = error.pos
-  private val lines            = getLines(pos.file)
-  private val maxLineNumDigits = numDigits(clamp(pos.line + errorContext, 1, lines.size)) + 1
+  private val QuoteRegex = """'(.+?)'""".r
+  private val sb         = new StringBuilder()
+  private val pos        = error.pos
+  private val lines      = getLines(pos.file)
 
   def format(): String = {
     val prefix = errorPrefix
@@ -109,10 +108,11 @@ case class ErrorFormatter(
       if (i == -1) 0 else i
     }.min
 
+    val digits = ctxLines.map { case (i, _) => numDigits(i.toInt) }.max
     ctxLines.foreach { case (i, line) =>
-      val str = if (i == pos.line) indicator(line, indent) else line
+      val str = if (i == pos.line) indicator(line, indent, digits) else line
 
-      sb ++= lineNumPrefix(i)
+      sb ++= lineNumPrefix(i, digits)
       sb ++= str.substring(indent) + "\n"
     }
 
@@ -127,38 +127,23 @@ case class ErrorFormatter(
       .toList
   }
 
-  private def indicator(line: String, indent: Int) = {
+  private def indicator(line: String, indent: Int, digits: Int) = {
     val start = pos.col - 1
-    val end = getEndPos(line, start, indent)
+    val end = pos.endCol - 1
     if (useColor) {
       val pre = line.substring(0, start)
       val highlighted = line.substring(start, end)
       val post = line.substring(end, line.length)
       s"$pre$ErrorStyle$highlighted$Reset$post"
     } else {
-      val prefixLength = maxLineNumDigits + 1 - indent
-      val whitespace = " " * (prefixLength + start)
+      val whitespace = " " * digits + "|" + " " * (start - indent)
       val indicator = NonColoredIndicationChar * (end - start)
       s"$line\n$whitespace$indicator"
     }
   }
 
-  private def lineNumPrefix(line: Int) =
-    s"$Bold$NumColor$line$Reset|" + " " * (maxLineNumDigits - numDigits(line))
-
-  private def getEndPos(line: String, start: Int, indent: Int): Int = {
-    var end = if (pos.endLine == pos.line) {
-      pos.endCol - 1
-    } else {
-      val commentIndexes = line.allIndexesOf("//") ::: line.allIndexesOf("/*")
-      commentIndexes.filter(_ > start).sorted.headOption.getOrElse(pos.endCol)
-    }
-
-    // Back cursor so we never underline whitespaces
-    while (end > 1 && line(end - 1).isWhitespace)
-      end -= 1
-    end
-  }
+  private def lineNumPrefix(line: Int, digits: Int) =
+    s"$Bold$NumColor$line$Reset" + " " * (digits - numDigits(line)) + "| "
 
   private def numDigits(num: Int): Int = {
     var n = 1

@@ -1,40 +1,24 @@
-package tcompiler.positions
+package tcompiler.lexer
 
 import java.io.File
 
-import org.scalatest.{FlatSpec, Matchers}
-import tcompiler.TestUtils
-import tcompiler.ast.Parser
-import tcompiler.ast.Trees.{ClassDecl, CompilationUnit, ExtensionDecl, ExtensionImport, RegularImport, TraitDecl, Tree, WildCardImport}
+import org.scalatest.{FunSuite, Matchers}
 import tcompiler.lexer.Tokens._
-import tcompiler.lexer.{Lexer, Token}
+import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Context, Positioned}
-
-import scala.reflect.{ClassTag, classTag}
+import tcompiler.{Pos, Tester}
 
 /**
   * Created by Tim Lindeberg on 1/19/2017.
   */
-class PositionSpec extends FlatSpec with Matchers {
+class LexerPositionSpec extends FunSuite with Matchers {
 
-  case class Pos(line: Int, col: Int, endLine: Int, endCol: Int) {
-    def this(pos: Positioned) = this(pos.line, pos.col, pos.endLine, pos.endCol)
-  }
-
-  val LexerTestFile : String = TestUtils.Resources + "positions/LexerPositions.kool"
-  val ParserTestFile: String = TestUtils.Resources + "positions/LexerPositions.kool"
-
-  val TestContext: Context = TestUtils.getTestContext(None)
+  val TestFile   : String  = Tester.Resources + "positions/LexerPositions.kool"
+  val TestContext: Context = Tester.getTestContext(None)
 
   val Tokens: List[Token] = {
-    val file = new File(LexerTestFile)
+    val file = new File(TestFile)
     Lexer.run(TestContext)(List(file)).head
-  }
-
-  val Trees: Map[Class[_], List[Tree]] = {
-    val file = new File(ParserTestFile)
-    (Lexer andThen Parser).run(TestContext)(List(file)).head.groupBy(_.getClass)
   }
 
   def testPositions(predicate: Token => Boolean, positions: (String, Pos)*): Unit = {
@@ -47,28 +31,12 @@ class PositionSpec extends FlatSpec with Matchers {
     val tests = t.zip(positions)
 
     tests foreach { case (token, (name, expectedPos)) =>
-      it should name in {
+      test(name) {
         val pos = new Pos(token)
         pos shouldBe expectedPos
       }
     }
   }
-
-  def testPositions[T: ClassTag](positions: Pos*): Unit = {
-    val clazz = classTag[T].runtimeClass
-    val trees = Trees(clazz)
-
-    assert(trees.length == positions.length)
-
-    trees.zip(positions) foreach { case (tree, expectedPos) =>
-      it should clazz.getSimpleName in {
-        val pos = new Pos(tree)
-        pos shouldBe expectedPos
-      }
-    }
-  }
-
-  behavior of "Lexer Positions"
 
   // @formatter:off
 
@@ -202,31 +170,4 @@ class PositionSpec extends FlatSpec with Matchers {
   )
 
   // @formatter:on
-
-  behavior of "Parser Positions"
-
-  testPositions[CompilationUnit](
-    Pos(1, 1, 69, 20)
-  )
-  testPositions[Package](
-    Pos(1, 1, 1, 16)
-  )
-  testPositions[RegularImport](
-    Pos(3, 1, 3, 29)
-  )
-  testPositions[WildCardImport](
-    Pos(4, 1, 4, 21)
-  )
-  testPositions[ExtensionImport](
-    Pos(5, 1, 5, 48)
-  )
-  testPositions[ClassDecl](
-    Pos(7, 1, 62, 2)
-  )
-  testPositions[TraitDecl](
-    Pos(64, 1, 67, 2)
-  )
-  testPositions[ExtensionDecl](
-    Pos(69, 1, 69, 20)
-  )
 }

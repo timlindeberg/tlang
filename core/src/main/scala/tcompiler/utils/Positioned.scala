@@ -36,12 +36,21 @@ trait Positioned {
     this
   }
 
+  def setNoPos(): this.type = {
+    _lineStart = -1
+    _colStart = -1
+
+    _lineEnd = -1
+    _colEnd = -1
+    this
+  }
+
   def setPos(start: Positioned, end: Positioned): this.type = {
     _lineStart = start._lineStart
     _colStart = start._colStart
 
-    _lineEnd = end._lineStart
-    _colEnd = end._colStart
+    _lineEnd = end._lineEnd
+    _colEnd = end._colEnd
 
     _file = start._file
 

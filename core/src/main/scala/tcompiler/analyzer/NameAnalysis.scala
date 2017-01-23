@@ -150,7 +150,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val id = funcTree.id
     val name = id.name
     val sym = funcTree match {
-      case methDecl@MethodDecl(retType, _, _, stat, modifiers)      =>
+      case methDecl@MethodDecl(modifiers, _, _, retType, stat)      =>
         val sym = new MethodSymbol(name, classSymbol, stat, modifiers)
 
         if (!classSymbol.isAbstract && stat.isEmpty)
@@ -159,14 +159,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         if (classSymbol.isAbstract && retType.isEmpty && stat.isEmpty)
           ErrorUnimplementedMethodNoReturnType(sym.signature, methDecl)
         sym
-      case conDecl@ConstructorDecl(_, _, _, stat, modifiers)        =>
+      case conDecl@ConstructorDecl(modifiers, _, _, _, stat)        =>
         val sym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
 
         // TODO: Make sure constructors aren't declared as abstract
         if (stat.isEmpty)
           ErrorAbstractOperator(conDecl)
         sym
-      case opDecl@OperatorDecl(operatorType, _, _, stat, modifiers) =>
+      case opDecl@OperatorDecl(modifiers, operatorType, _, _, stat) =>
         val newSymbol = new OperatorSymbol(operatorType, classSymbol, stat, modifiers)
 
         if (stat.isEmpty)
@@ -232,7 +232,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       setParentSymbol(classDecl)
       bindFields(classDecl)
       methods foreach bind
-    case methDecl@MethodDecl(retType, _, args, stat, _)                  =>
+    case methDecl@MethodDecl(_, _, args, retType, stat)                  =>
       retType ifDefined { tpe =>
         setType(tpe)
         methDecl.getSymbol.setType(tpe.getType)
@@ -242,14 +242,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       ensureMethodNotDefined(methDecl)
       val sym = methDecl.getSymbol
       stat ifDefined {new StatementBinder(sym, methDecl.isStatic).bindStatement(_)}
-    case constructorDecl@ConstructorDecl(_, _, args, stat, _)            =>
+    case constructorDecl@ConstructorDecl(_, _, args, _, stat)            =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
       val sym = constructorDecl.getSymbol
       stat ifDefined {new StatementBinder(sym, false).bindStatement(_)}
-    case operatorDecl@OperatorDecl(operatorType, retType, args, stat, _) =>
+    case operatorDecl@OperatorDecl(_, operatorType, args, retType, stat) =>
       retType ifDefined { tpe =>
         val t = setType(tpe)
         operatorDecl.getSymbol.setType(t)
@@ -381,6 +381,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         case expr: ExprTree                                 =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
+        case _                                              => ???
       }
 
     def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)

@@ -38,7 +38,6 @@ abstract class Pipeline[-F, +T] {
 
     private val stageName = stage.stageName.capitalize
 
-    def printHeader() = println(s"${Bold}Output after $Reset$Blue$stageName$Reset:\n")
 
     def printCode[S >: T](output: S): Unit = {
       if (!ctx.printCodeStages.contains(stage.stageName))
@@ -50,6 +49,8 @@ abstract class Pipeline[-F, +T] {
         case _                         =>
       }
     }
+
+    private def printHeader() = println(s"${Bold}Output after $Reset$Blue$stageName$Reset:\n")
 
     private def printCompilationUnits(cus: List[CompilationUnit]) = {
       printHeader()
