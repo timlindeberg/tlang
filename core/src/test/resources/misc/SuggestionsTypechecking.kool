@@ -1,7 +1,7 @@
 val x = new A()
 val xasd = new A()
 x.Blest()
-xasd.Blest(5) // Not the same types, this should not give a suggestion dsa dasd askkwkej jdas kdjksa d should not give a suggestion dsa dasd askkwkej jdas kdjksa d should not give a suggestion dsa dasd askkwkej jdas kdjksa d
+xasd.Blest(5) // Not the same types, this should not give a suggestion
 x.Blest("5").Rest()
 println(x.bield)
 test() /* LOL */
@@ -19,6 +19,7 @@ class A {
 class B {
 
     Def Test() = {
-        test()
+        test("hej" + "hej" +
+             "Hej" + "hej")
     }
 }

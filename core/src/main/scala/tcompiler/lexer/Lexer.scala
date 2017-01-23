@@ -107,6 +107,8 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
 
 
   private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = {
+    val startPos = createToken(BAD, 0)
+
     def toEnd(charList: List[Char], length: Int): (Token, List[Char]) =
       charList match {
         case '\'' :: r =>
@@ -115,8 +117,8 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
         case _ :: r    =>
           toEnd(r, length + 1)
         case Nil       =>
-          ErrorUnclosedCharLiteral(length)
-          (createToken(BAD, length), Nil)
+          ErrorUnclosedCharLiteral(startPos)
+          (startPos, chars)
       }
 
     chars match {
@@ -179,7 +181,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case '"' :: r  => (createToken(s, charsParsed + 1), r)
       case '\n' :: _ =>
         ErrorUnclosedStringLiteral(startPos)
-        (createToken(BAD, s.length), chars)
+        (startPos, chars)
       case '\\' :: r => r match {
         case 't' :: r  => getStringLiteral(r, s + '\t', charsParsed + 2)
         case 'b' :: r  => getStringLiteral(r, s + '\b', charsParsed + 2)
@@ -210,7 +212,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case c :: r    => getStringLiteral(r, s + c, charsParsed + 1)
       case Nil       =>
         ErrorUnclosedStringLiteral(startPos)
-        (createToken(BAD, s.length), chars)
+        (startPos, chars)
     }
     getStringLiteral(chars, "", 1)
   }
@@ -233,7 +235,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
         getStringIdentifier(r, s + c)
       case Nil       =>
         ErrorUnclosedMultilineString(startPos)
-        (createToken(BAD, s.length), Nil)
+        (startPos, chars)
     }
     getStringIdentifier(chars, "")
   }

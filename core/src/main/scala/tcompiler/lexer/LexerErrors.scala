@@ -20,7 +20,7 @@ trait LexerErrors extends Errors {
 
   def error(errorCode: Int, msg: String, startPos: Positioned): Unit = {
     val file = startPos.file
-    val pos = new Token(BAD).setPos(file, startPos.line, startPos.col, startPos.line + 1, 1)
+    val pos = new Token(BAD).setPos(file, startPos.line, startPos.col, line, column)
     _error(errorCode, msg, pos)
   }
 
@@ -58,8 +58,8 @@ trait LexerErrors extends Errors {
   protected def ErrorInvalidUnicode(length: Int): Unit =
     error(6, "Invalid unicode escape sequence.", length)
 
-  protected def ErrorUnclosedCharLiteral(length: Int): Unit =
-    error(7, "Unclosed character literal.", length)
+  protected def ErrorUnclosedCharLiteral(startPos: Positioned): Unit =
+    error(7, "Unclosed character literal.", startPos)
 
   protected def ErrorUnclosedStringLiteral(startPos: Positioned): Unit =
     error(8, "Unclosed string literal.", startPos)

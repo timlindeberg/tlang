@@ -31,7 +31,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   protected val PrintErrors: Boolean = sys.env.get("printerrors").contains("true")
 
   private val testPath = sys.env.get("testfile")
-    .map(file => s"$Path/$file.${Main.FileEnding}")
+    .map(file => s"$Path/$file${Main.FileEnding}")
     .getOrElse(Path)
 
 

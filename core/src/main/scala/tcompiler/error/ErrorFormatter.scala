@@ -108,9 +108,10 @@ case class ErrorFormatter(
       if (i == -1) 0 else i
     }.min
 
-    val digits = ctxLines.map { case (i, _) => numDigits(i.toInt) }.max
+    val digits = ctxLines.map { case (i, _) => numDigits(i) }.max
+
     ctxLines.foreach { case (i, line) =>
-      val str = if (i == pos.line) indicator(line, indent, digits) else line
+      val str = if (useColor) colorLine(i, line) else noColorLine(i, line, indent, digits)
 
       sb ++= lineNumPrefix(i, digits)
       sb ++= str.substring(indent) + "\n"
@@ -127,23 +128,33 @@ case class ErrorFormatter(
       .toList
   }
 
-  private def indicator(line: String, indent: Int, digits: Int) = {
-    val start = pos.col - 1
-    val end = pos.endCol - 1
-    if (useColor) {
-      val pre = line.substring(0, start)
-      val highlighted = line.substring(start, end)
-      val post = line.substring(end, line.length)
-      s"$pre$ErrorStyle$highlighted$Reset$post"
-    } else {
-      val whitespace = " " * digits + "|" + " " * (start - indent)
-      val indicator = NonColoredIndicationChar * (end - start)
-      s"$line\n$whitespace$indicator"
-    }
+  private def colorLine(lineNum: Int, line: String): String = {
+    if (lineNum < pos.line || lineNum > pos.endLine)
+      return line
+
+    val start = if (lineNum == pos.line) pos.col - 1 else line.indexWhere(!_.isWhitespace)
+    val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
+    val pre = line.substring(0, start)
+    val highlighted = line.substring(start, end)
+    val post = line.substring(end, line.length)
+    s"$pre$ErrorStyle$highlighted$Reset$post"
   }
 
-  private def lineNumPrefix(line: Int, digits: Int) =
-    s"$Bold$NumColor$line$Reset" + " " * (digits - numDigits(line)) + "| "
+  private def noColorLine(lineNum: Int, line: String, indent: Int, digits: Int): String = {
+    if (lineNum != pos.line)
+      return line
+
+    val start = pos.col - 1
+    val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
+    val whitespace = " " * digits + "| " + " " * (start - indent)
+    val indicator = NonColoredIndicationChar * (end - start)
+    s"$line\n$whitespace$indicator"
+  }
+
+  private def lineNumPrefix(lineNumber: Int, digits: Int) = {
+    val whiteSpaces = " " * (digits - numDigits(lineNumber))
+    s"$Bold$NumColor$lineNumber$Reset$whiteSpaces| "
+  }
 
   private def numDigits(num: Int): Int = {
     var n = 1
