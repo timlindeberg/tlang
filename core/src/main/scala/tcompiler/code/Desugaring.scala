@@ -37,11 +37,16 @@ class Desugarer(importMap: ImportMap) {
   private def firstPass(cu: CompilationUnit): CompilationUnit = {
     val transformer = new Trees.Transformer {
 
-      override protected def _transform(t: Tree): Tree = t match {
-        case extensionDecl: ExtensionDecl => desugarExtensionDecl(extensionDecl)
-        case opDecl: OperatorDecl         => replaceOperatorDecl(opDecl)
-        case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
-        case _                            => super._transform(t)
+      override protected def _transform(t: Tree): Tree = {
+        t match {
+          case extensionDecl: ExtensionDecl =>
+            val desugared = desugarExtensionDecl(extensionDecl)
+            _transform(desugared) // transform operators inside the extension class
+          case opDecl: OperatorDecl         =>
+            replaceOperatorDecl(opDecl)
+          case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
+          case _                            => super._transform(t)
+        }
       }
 
     }
@@ -52,31 +57,25 @@ class Desugarer(importMap: ImportMap) {
     val transformer = new Trees.Transformer {
 
       override protected def _transform(t: Tree): Tree = t match {
-        case slice: ArraySlice                        =>
-          if (isObject(slice))
-            replaceOperatorCall(super._transform(slice))
-          else
-            desugarArraySlice(super._transform(slice))
+        case slice: ArraySlice if !isObject(slice)    =>
+          desugarArraySlice(super._transform(slice))
+        case incDec: IncrementDecrementTree           =>
+          desugarIncrementDecrement(super._transform(incDec))
         case safeAccess: SafeAccess                   =>
           // Recurse again to replace all calls in the desugared version
-          desugarSafeAccess(super._transform(safeAccess))
+          super._transform(desugarSafeAccess(safeAccess))
         case acc@NormalAccess(_, MethodCall(meth, _)) =>
           val newAcc = super._transform(acc)
           val classSymbol = meth.getSymbol.classSymbol
           classSymbol match {
-            case _: ExtensionClassSymbol => replaceExtensionCall(newAcc)
+            case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
             case _                       => newAcc
           }
-        case incDec: IncrementDecrementTree           =>
-          if (isObject(incDec.expr))
-            replaceOperatorCall(super._transform(incDec))
-          else
-            desugarIncrementDecrement(super._transform(incDec))
         case assign: Assign                           =>
-
           val to = assign.to
           if (to.isInstanceOf[ArrayRead] && isObject(to)) {
-            val newAssign = treeCopy.Assign(assign, to, transform(assign.from))
+            val expr = super.apply(assign.from)
+            val newAssign = treeCopy.Assign(assign, to, expr)
             // Transform again to replace external method calls etc.
             _transform(replaceOperatorCall(newAssign))
           } else {
@@ -239,11 +238,9 @@ class Desugarer(importMap: ImportMap) {
     * a[5] = 5 => a.$ArrayAssign(5, 5)
     */
   //@formatter:on
-  private def replaceOperatorCall(t: Tree): Tree
-  = {
+  private def replaceOperatorCall(t: Tree): Tree = {
     if (!t.isInstanceOf[OperatorTree])
       return t
-
 
     val op = t.asInstanceOf[OperatorTree]
     op match {

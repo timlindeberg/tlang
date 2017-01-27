@@ -16,20 +16,19 @@ import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.collection.mutable
+import scala.collection.script.Reset
+import scala.tools.nsc.doc.base.comment.Bold
 
-object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored {
+object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
 
   import CodeGenerator._
-
-  var useColor = false
 
   def run(ctx: Context)(cus: List[CompilationUnit]): Unit = {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
-    useColor = ctx.useColor
     if (shouldPrintCode(ctx)) {
-      val stageName = Blue(CodeGeneration.stageName)
+      val stageName = ctx.colorizer.Blue(CodeGeneration.stageName)
       println(s"${Bold}Output after $Reset$stageName:\n")
     }
     val outputFiles = classes.flatMap(generateClassFile(_, ctx))
@@ -60,6 +59,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
 
         case con: ConstructorDecl =>
           generateConstructor(Some(con), classFile, classDecl)
+        case _                    => ???
       }
       val flags = getMethodFlags(methodDecl)
       methodHandle.setFlags(flags)
@@ -80,7 +80,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] with Colored
           }
 
         if (shouldPrintCode(ctx))
-          println(ch.stackTrace(ctx.useColor))
+          println(ch.stackTrace(ctx.colorizer))
       }
 
     }

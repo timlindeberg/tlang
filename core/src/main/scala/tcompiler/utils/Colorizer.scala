@@ -1,11 +1,9 @@
 package tcompiler.utils
 
 /**
-  * Created by timlindeberg on 23/07/16.
+  * Created by Tim Lindeberg on 1/27/2017.
   */
-trait Colored {
-
-  def useColor: Boolean
+class Colorizer(var useColor: Boolean) {
 
   def Reset: String = GetColor(Console.RESET)
 

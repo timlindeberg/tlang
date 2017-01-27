@@ -5,6 +5,7 @@ import java.io.File
 import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
+import tcompiler.ast.PrettyPrinter
 import tcompiler.error.Reporter
 import tcompiler.imports.ClassSymbolLocator
 
@@ -16,7 +17,8 @@ case class Context(
   classPaths: List[String] = Nil,
   outDirs: List[File] = List(new File(".")),
   printCodeStages: List[String] = Nil,
-  useColor: Boolean = false,
+  colorizer: Colorizer = new Colorizer(false),
+  printer: PrettyPrinter = new PrettyPrinter(new Colorizer(false)),
   printInfo: Boolean = false,
   ignoredImports: List[String] = List()
 ) {

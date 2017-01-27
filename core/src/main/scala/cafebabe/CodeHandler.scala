@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colored
+import tcompiler.utils.Colorizer
 
 import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
@@ -11,7 +11,12 @@ import scala.collection.mutable.{ListBuffer, Map => MutableMap}
   * Information is added to the constant pool during the ABS generation already.
   * <code>CodeHandler</code>s should not be created manually, but rather obtained
   * from the corresponding <code>MethodHandler</code>. */
-class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val paramTypes: String, val isStatic: Boolean, signature: String) extends Colored {
+class CodeHandler private[cafebabe](
+  c: CodeAttributeInfo,
+  cp: ConstantPool,
+  val paramTypes: String,
+  val isStatic: Boolean,
+  signature: String) {
 
   import AbstractByteCodes._
   import ByteCodes._
@@ -25,7 +30,6 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
   protected[cafebabe] def isFrozen: Boolean = frozen
   private var heightArray        : Array[Int] = Array()
   private val UninitializedHeight: Int        = Int.MinValue
-  var useColor = false
 
   def peek: Option[AbstractByteCode] = abcBuffer.headOption
 
@@ -236,7 +240,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
         }
         case INVOKEINTERFACE                                 => codeArray(pc + 1) match {
           case RawBytes(idx) => codeArray(pc + 3) match {
-            case RawByte(n) =>
+            case RawByte(_) =>
               val se = constantPool.getMethodEffect(idx)
               codeArray(pc + 4) match {
                 case RawByte(0) => setHeight(from + 5, there + se - 1)
@@ -273,12 +277,11 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     heightArray.max.asInstanceOf[U2]
   }
 
-  def stackTrace: String = stackTrace(false)
-  def stackTrace(useColor: Boolean): String = {
+  def stackTrace: String = stackTrace(new Colorizer(false))
+  def stackTrace(colorizer: Colorizer): String = {
+    import colorizer._
     if (abcBuffer.isEmpty)
       return ""
-
-    this.useColor = useColor
 
     val types = Map(
       4 -> "T_BOOLEAN",
@@ -292,7 +295,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     )
 
     val b = new StringBuilder()
-    b.append(header(signature))
+    b.append(header(colorizer, signature))
 
     var pc = 0
     var currentLineNumber = 0
@@ -346,8 +349,8 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
           var extraInfo = ""
           if (i + 1 < abcBuffer.size) {
             abcBuffer(i + 1) match {
-              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, useColor)
-              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, useColor)
+              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, colorizer)
+              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, colorizer)
               case _             =>
             }
           }
@@ -360,7 +363,8 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     b.toString
   }
 
-  def header(signature: String) = {
+  private def header(colorizer: Colorizer, signature: String) = {
+    import colorizer._
     val split1 = signature.split("\\.")
     val className = split1(0)
     val split2 = split1(1).split(":")
@@ -369,7 +373,7 @@ class CodeHandler private[cafebabe](c: CodeAttributeInfo, cp: ConstantPool, val 
     s"${Bold("[>")} ${ClassColor(className)}.${MethodColor(methName)}: ${ClassColor(sig)} ${Bold("<]")}\n"
   }
 
-  def print: Unit = if (!frozen) {
+  def print(): Unit = if (!frozen) {
     var pc = 0
     for (abc <- abcBuffer) {
       abc match {

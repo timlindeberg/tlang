@@ -1,6 +1,6 @@
 package tcompiler
 
-import tcompiler.utils.{Colored, Enumeration}
+import tcompiler.utils.{Colorizer, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -8,7 +8,7 @@ import tcompiler.utils.{Colored, Enumeration}
 object Flags {
 
 
-  sealed abstract class Flag extends Ordered[Flag] with Product with Serializable with Colored {
+  sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
 
     val flag: String
     val shortFlag: Option[String] = None
@@ -17,15 +17,9 @@ object Flags {
 
     var useColor = false
 
-    val Colorization: List[String => String] = List(
-      """\<([a-z]*)\>""".r.replaceAllIn(_, m => s"<${Blue(m.group(1))}>"),
-      """--([a-z]*)""".r.replaceAllIn(_, m => s"--${Magenta(m.group(1))}"),
-      """\(-([a-z]*)\)""".r.replaceAllIn(_, m => s"(-${Magenta(m.group(1))})")
-    )
 
-    def format(useColor: Boolean): String = {
-      this.useColor = useColor
-
+    def format(colorizer: Colorizer): String = {
+      import colorizer._
       val shortFlagDescription = shortFlag.map(f => s" (-$f)").getOrElse("")
       val argDescription = arg.map(a => s" <$a>").getOrElse("")
       val flagDescription = s"--$flag$shortFlagDescription$argDescription "
@@ -35,16 +29,23 @@ object Flags {
 
       val space = " " * 27
       val fullDescription = lines.tail.foldLeft(firstRow)((description, s) => description + s"$space$s\n")
-      if (!useColor)
+      if (!colorizer.useColor)
         return fullDescription
 
-      Colorization.foldLeft(fullDescription)((s, addColor) => addColor(s))
+      val colorization: List[String => String] = List(
+        """\<([a-z]*)\>""".r.replaceAllIn(_, m => s"<${Blue(m.group(1))}>"),
+        """--([a-z]*)""".r.replaceAllIn(_, m => s"--${Magenta(m.group(1))}"),
+        """\(-([a-z]*)\)""".r.replaceAllIn(_, m => s"(-${Magenta(m.group(1))})")
+      )
+
+
+      colorization.foldLeft(fullDescription)((s, addColor) => addColor(s))
     }
 
     def compare(that: Flag): Int = flag.length - that.flag.length
     def unapply(str: String): Boolean = {
       val lower = str.toLowerCase
-      lower == s"--$flag" || shortFlag.contains(s"-$lower")
+      lower == s"--$flag" || shortFlag.exists(flag => s"-$flag" == lower)
     }
 
   }

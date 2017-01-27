@@ -89,6 +89,12 @@ println("TEST".Capitalize()) // res: TEST
 println("TEST".Capitalize()) // res: TEST
 println("Test".Capitalize()) // res: Test
 
+// Slices
+println("test"[:]) // res: test
+println("test"[1:]) // res: est
+println("test"[1:3]) // res: es
+println("test"[::2]) // res: ts
+
 // CharAt
 println(s.CharAt(0)) // res: S
 println(s.CharAt(1)) // res: t

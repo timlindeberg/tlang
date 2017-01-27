@@ -1,14 +1,14 @@
 package cafebabe
 
-import tcompiler.utils.Colored
+import tcompiler.utils.Colorizer
 
-class ConstantPool extends Streamable with Colored {
+
+class ConstantPool extends Streamable {
 
   import ClassFileTypes._
 
   import scala.collection.mutable.HashMap
 
-  var useColor = false
   /** The following maps keep track of the constants already added to the pool to avoid duplicates. */
   private val intMap         = new HashMap[Int, U2]
   private val floatMap       = new HashMap[Float, U2]
@@ -42,8 +42,8 @@ class ConstantPool extends Streamable with Colored {
   def size: U2 = entries.length
 
   // Ugly way of printing nicer debug info
-  def getByteInfo(idx: U2, useColor: Boolean): String = {
-    this.useColor = useColor
+  def getByteInfo(idx: U2, colorizer: Colorizer): String = {
+    import colorizer._
 
     if (inverseClassMap.contains(idx))
       return ClassColor(inverseStringMap(inverseClassMap(idx)))
@@ -160,25 +160,25 @@ class ConstantPool extends Streamable with Colored {
   def addFieldRef(classID: U2, natID: U2): U2 = fieldRefMap.getOrElse((classID, natID), {
     val idx = addEntry(CPFieldRefInfo(classID, natID))
     fieldRefMap += ((classID, natID) -> idx)
-    inverseFieldRefMap += (idx ->(classID, natID))
+    inverseFieldRefMap += (idx -> (classID, natID))
     idx
   })
   def addMethodRef(classID: U2, natID: U2): U2 = methodRefMap.getOrElse((classID, natID), {
     val idx = addEntry(CPMethodRefInfo(classID, natID))
     methodRefMap += ((classID, natID) -> idx)
-    inverseMethodRefMap += (idx ->(classID, natID))
+    inverseMethodRefMap += (idx -> (classID, natID))
     idx
   })
   def addInterfaceMethodRef(classID: U2, natID: U2): U2 = methodRefMap.getOrElse((classID, natID), {
     val idx = addEntry(CPInterfaceMethodRefInfo(classID, natID))
     methodRefMap += ((classID, natID) -> idx)
-    inverseMethodRefMap += (idx ->(classID, natID))
+    inverseMethodRefMap += (idx -> (classID, natID))
     idx
   })
   def addNameAndType(nameID: U2, typeID: U2): U2 = nameAndTypeMap.getOrElse((nameID, typeID), {
     val idx = addEntry(CPNameAndTypeInfo(nameID, typeID))
     nameAndTypeMap += ((nameID, typeID) -> idx)
-    inverseNameAndTypeMap += (idx ->(nameID, typeID))
+    inverseNameAndTypeMap += (idx -> (nameID, typeID))
     idx
   })
 

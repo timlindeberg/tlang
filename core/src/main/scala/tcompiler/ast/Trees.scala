@@ -13,6 +13,8 @@ import scala.collection.{TraversableLike, mutable}
 @GenerateTreeHelpers
 object Trees {
 
+  private val printer = new PrettyPrinter(new Colorizer(false))
+
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
     override protected[this] def newBuilder: mutable.Builder[Tree, List[Tree]] = new mutable.ListBuffer
@@ -39,10 +41,11 @@ object Trees {
         case _                                     =>
       }
       this
+
     }
 
     // For easier debugging
-    override def toString = Printer(this, printInColor = false)
+    override def toString: String = printer(this)
 
     private def copySymbolTrees[T <: Symbol, U <: Symbol](to: Tree, from: Tree): Unit = {
       if (to.getClass != from.getClass)

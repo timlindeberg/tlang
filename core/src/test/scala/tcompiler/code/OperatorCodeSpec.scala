@@ -7,13 +7,13 @@ import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tcompiler.ast.Trees._
-import tcompiler.ast.{Parser, Printer}
+import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.error.Reporter
 import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Context, Pipeline}
+import tcompiler.utils.{Colorizer, Context, Pipeline}
 import tcompiler.{Interpreter, Main, Tester}
 
 import scala.util.Random
@@ -31,6 +31,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   var testFolderFile = new File(TestFolder)
   var testFile       = new File(TestFilePath)
 
+  val Printer                                = new PrettyPrinter(new Colorizer(false))
   val Compiler  : Pipeline[List[File], Unit] = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
   val Rand                                   = new Random()
   val TestCtx                                = Context(reporter = new Reporter(suppressWarnings = true), files = List(testFile), outDirs = List(testFolderFile))

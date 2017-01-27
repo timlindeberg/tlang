@@ -4,8 +4,8 @@ import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
 import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
-import tcompiler.ast.Parser
 import tcompiler.ast.Trees._
+import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.error.{CompilationException, Reporter}
 import tcompiler.lexer.Lexer
@@ -15,7 +15,7 @@ import tcompiler.utils._
 import scala.collection.mutable
 import scala.sys.process._
 
-object Main extends MainErrors with Colored {
+object Main extends MainErrors {
 
   import Flags._
 
@@ -25,14 +25,15 @@ object Main extends MainErrors with Colored {
   val JavaObject           = "java/lang/Object"
   val JavaString           = "java/lang/String"
   val TExtensionAnnotation = "kool/lang/$ExtensionMethod"
+  val colorizer            = new Colorizer(false)
+
+  import colorizer._
 
   def TDirectory: String = {
     if (!sys.env.contains(THome))
       FatalCantFindTHome(THome)
     sys.env(THome)
   }
-
-  override def useColor: Boolean = !flagActive(NoColor)
 
   val CompilerStages = List(
     Lexer,
@@ -68,7 +69,7 @@ object Main extends MainErrors with Colored {
       compilation.run(ctx)(cus)
 
       if (flagActive(PrintInfo))
-        printExecutionTimes()
+        printExecutionTimes(ctx)
 
       if (flagActive(Exec))
         cus.foreach(executeProgram)
@@ -125,18 +126,21 @@ object Main extends MainErrors with Colored {
       case Nil                                       =>
     }
 
+
     if (args.isEmpty) {
       printHelp()
-      sys.exit
+      sys.exit(1)
     }
 
     processOption(args.toList)
+
+    colorizer.useColor = !flagActive(NoColor)
 
     Context(
       reporter = new Reporter(
         suppressWarnings = flagActive(SuppressWarnings),
         warningIsError = flagActive(WarningIsError),
-        useColor = !flagActive(NoColor),
+        colorizer = colorizer,
         maxErrors = getNum(maxErrors, FatalInvalidMaxErrors),
         errorContext = getNum(errorContext, FatalInvalidErrorContext)
       ),
@@ -144,13 +148,16 @@ object Main extends MainErrors with Colored {
       classPaths = getClassPaths(classPaths),
       outDirs = getOutFiles(outDirs),
       printCodeStages = printStages,
-      useColor = !flagActive(NoColor),
+      colorizer = colorizer,
+      printer = new PrettyPrinter(colorizer),
       printInfo = flagActive(PrintInfo),
       ignoredImports = ignoredImports
     )
   }
 
   private def printFilesToCompile(ctx: Context) = {
+    import ctx.colorizer._
+
     val numFiles = ctx.files.size
     val files = ctx.files.map { f =>
       val name = f.getName.dropRight(Main.FileEnding.length)
@@ -176,7 +183,7 @@ object Main extends MainErrors with Colored {
     !new File(path).isFile
   }
 
-  private def printExecutionTimes() = {
+  private def printExecutionTimes(ctx: Context) = {
     val totalTime = ctx.executionTimes.values.sum
     val individualTimes = CompilerStages.map { stage =>
       val name = Blue(stage.stageName.capitalize)
@@ -202,7 +209,7 @@ object Main extends MainErrors with Colored {
             |$stages
             |""".stripMargin
       case _             =>
-        val flags = Flag.AllFlags.map(_.format(useColor)).mkString
+        val flags = Flag.AllFlags.map(_.format(colorizer)).mkString
         s"""|Usage: tcomp <options> <source files>
             |Options:
             |

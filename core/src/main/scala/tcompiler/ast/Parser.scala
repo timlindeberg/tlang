@@ -594,8 +594,8 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
       case FOR                     =>
         forLoop
       case PRINT | PRINTLN | ERROR =>
-        val t = nextTokenKind
-        eat(t)
+        val methType = nextTokenKind
+        eat(methType)
         eat(LPAREN)
         val expr = nextTokenKind match {
           case RPAREN => StringLit("")
@@ -603,7 +603,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
         }
         eat(RPAREN)
         endStatement()
-        t match {
+        methType match {
           case PRINT   => Print(expr)
           case PRINTLN => Println(expr)
           case ERROR   => Error(expr)

@@ -5,14 +5,13 @@ import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
 import tcompiler.lexer.Tokens
-import tcompiler.utils.Colored
+import tcompiler.utils.Colorizer
 
 
-object Printer extends Colored {
+class PrettyPrinter(colorizer: Colorizer) {
 
   import Trees._
-
-  var useColor = false
+  import colorizer._
 
   val Indentation = 3
 
@@ -21,8 +20,7 @@ object Printer extends Colored {
 
   private var indent: Int = 0
 
-  def apply(t: Tree, printInColor: Boolean = true): String = {
-    useColor = printInColor
+  def apply(t: Tree): String = {
     indent = 0
     prettyPrint(t)
   }
@@ -264,7 +262,7 @@ object Printer extends Colored {
     def apply(): String = list.map(t => p"$t").mkString(seperator)
   }
 
-  implicit class PrinterContext(val sc: StringContext) extends AnyVal {
+  implicit class PrinterContext(val sc: StringContext) {
 
     def p(args: Any*): String = {
       val strings = sc.parts.iterator
@@ -318,5 +316,6 @@ object Printer extends Colored {
       })
     }
   }
+
 
 }

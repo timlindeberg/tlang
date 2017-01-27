@@ -4,9 +4,7 @@ x.Blest()
 xasd.Blest(5) // Not the same types, this should not give a suggestion
 x.Blest("5").Rest()
 println(x.bield)
-test() /* LOL */
-test() // lol /* LOL */
-test() /* LOL */ // lol
+test()
 
 class A {
 

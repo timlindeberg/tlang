@@ -3,7 +3,7 @@ package tcompiler.error
 import tcompiler.Flags
 import tcompiler.analyzer.Symbols.Symbolic
 import tcompiler.analyzer.Types.Typed
-import tcompiler.utils.Colored
+import tcompiler.utils.Colorizer
 
 import scala.collection.mutable
 
@@ -11,11 +11,11 @@ class CompilationException(message: String) extends Exception(message)
 
 class Reporter(suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
-  override val useColor: Boolean = false,
+  colorizer: Colorizer = new Colorizer(false),
   maxErrors: Int = Flags.MaxErrors.Default,
-  errorContext: Int = Flags.ErrorContext.Default)
-  extends Colored {
+  errorContext: Int = Flags.ErrorContext.Default) {
 
+  import colorizer._
 
   private val ErrorSeparator = "\n"
 
@@ -51,7 +51,7 @@ class Reporter(suppressWarnings: Boolean = false,
         errors += error
       case ErrorLevel.Fatal   =>
         errors += error
-        val errorFormatter = ErrorFormatter(error, useColor, errorContext)
+        val errorFormatter = ErrorFormatter(error, colorizer, errorContext)
         throw new CompilationException(errorFormatter.format())
     }
   }
@@ -90,7 +90,7 @@ class Reporter(suppressWarnings: Boolean = false,
 
   private def errorString(errors: mutable.LinkedHashSet[Error]) =
     errors
-      .map { err => ErrorFormatter(err, useColor, errorContext).format() }
+      .map { err => ErrorFormatter(err, colorizer, errorContext).format() }
       .mkString(ErrorSeparator)
 
   private def isValidError(error: Error): Boolean = {

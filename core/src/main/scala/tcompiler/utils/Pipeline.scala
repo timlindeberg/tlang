@@ -1,7 +1,6 @@
 package tcompiler
 package utils
 
-import tcompiler.ast.Printer
 import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.lexer.Token
 
@@ -32,9 +31,9 @@ abstract class Pipeline[-F, +T] {
     output
   }
 
-  class InfoPrinter(stage: Pipeline[F, T], ctx: Context) extends Colored {
+  class InfoPrinter(stage: Pipeline[F, T], ctx: Context) {
 
-    override val useColor: Boolean = ctx.useColor
+    import ctx.colorizer._
 
     private val stageName = stage.stageName.capitalize
 
@@ -54,7 +53,7 @@ abstract class Pipeline[-F, +T] {
 
     private def printCompilationUnits(cus: List[CompilationUnit]) = {
       printHeader()
-      val res = cus map { cu => Printer(cu, ctx.useColor) + "\n" }
+      val res = cus map { cu => ctx.printer(cu) + "\n" }
       println(res)
     }
 

@@ -5,31 +5,49 @@ import java.util.regex.Matcher
 
 import org.apache.commons.lang3.text.WordUtils
 import tcompiler.Main
-import tcompiler.utils.Colored
+import tcompiler.utils.Colorizer
 import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
+
+object ErrorFormatter {
+
+  val LineWidth                                            = 80
+  val CodeSeperator: String                                = "-" * LineWidth + "\n"
+  val NonColoredIndicationChar                             = "~"
+  val LineCache    : mutable.Map[File, IndexedSeq[String]] = mutable.Map()
+
+  def getLines(f: File): IndexedSeq[String] =
+    LineCache.getOrElseUpdate(f, {
+      val source = Source.fromFile(f).withPositioning(true)
+      val lines = source.getLines().toIndexedSeq
+      source.close()
+      lines
+    })
+
+}
+
 /**
   * Created by Tim Lindeberg on 1/14/2017.
   */
 case class ErrorFormatter(
   error: Error,
-  override val useColor: Boolean,
-  errorContext: Int) extends Colored {
+  colorizer: Colorizer,
+  errorContextSize: Int) {
 
   import ErrorFormatter._
+  import colorizer._
 
-
-  override val NumColor     = Blue
-  private  val QuoteColor   = Magenta
-  private  val MessageStyle = Bold
-  private  val WarningColor = Yellow
-  private  val ErrorColor   = Red + Bold
-  private  val FatalColor   = Red
-  private  val ErrorStyle   = {
+  private val NumColor     = Blue
+  private val QuoteColor   = Magenta
+  private val MessageStyle = Bold
+  private val WarningColor = Yellow
+  private val ErrorColor   = Red + Bold
+  private val FatalColor   = Red
+  private val ErrorStyle   = {
     val color = error.errorLevel match {
       case ErrorLevel.Warning => WarningColor
       case ErrorLevel.Error   => ErrorColor
@@ -41,7 +59,7 @@ case class ErrorFormatter(
   private val QuoteRegex = """'(.+?)'""".r
   private val sb         = new StringBuilder()
   private val pos        = error.pos
-  private val lines      = getLines(pos.file)
+  private val lines      = if (pos.hasPosition) getLines(pos.file) else Nil
 
   def format(): String = {
     val prefix = errorPrefix
@@ -121,8 +139,8 @@ case class ErrorFormatter(
   }
 
   private def contextLines = {
-    val start = clamp(pos.line - errorContext, 1, lines.size)
-    val end = clamp(pos.line + errorContext, 1, lines.size)
+    val start = clamp(pos.line - errorContextSize, 1, lines.size)
+    val end = clamp(pos.line + errorContextSize, 1, lines.size)
     (start to end)
       .map(i => (i, lines(i - 1)))
       .toList
@@ -206,22 +224,5 @@ case class ErrorFormatter(
     }
   }
 
-
-}
-
-object ErrorFormatter {
-
-  val LineWidth                                            = 80
-  val CodeSeperator: String                                = "-" * LineWidth + "\n"
-  val NonColoredIndicationChar                             = "~"
-  val LineCache    : mutable.Map[File, IndexedSeq[String]] = mutable.Map()
-
-  def getLines(f: File): IndexedSeq[String] =
-    LineCache.getOrElseUpdate(f, {
-      val source = Source.fromFile(f).withPositioning(true)
-      val lines = source.getLines().toIndexedSeq
-      source.close()
-      lines
-    })
 
 }

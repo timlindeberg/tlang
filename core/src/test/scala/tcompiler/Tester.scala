@@ -3,10 +3,11 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import tcompiler.ast.PrettyPrinter
 import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.error.Reporter
 import tcompiler.imports.ClassSymbolLocator
-import tcompiler.utils.{Context, Pipeline}
+import tcompiler.utils.{Colorizer, Context, Pipeline}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, _}
@@ -101,13 +102,13 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
 object Tester {
 
-  val TestDirectory                = "gen"
-  val Resources                    = "core/src/test/resources/"
-  val Timeout                      = duration.Duration(2, "sec")
-  val IgnoreRegex   : Regex        = """.*// *[I|i]gnore.*""".r
-  val SolutionRegex : Regex        = """.*// *[R|r]es:(.*)""".r
-  val UseColor      : Boolean      = sys.env.get("usecolor").contains("true")
-  val PrintCodeStage: List[String] = sys.env.get("printcode").map(_.split(",").toList).getOrElse(Nil)
+  val TestDirectory                 = "gen"
+  val Resources                     = "core/src/test/resources/"
+  val Timeout                       = duration.Duration(2, "sec")
+  val IgnoreRegex    : Regex        = """.*// *[I|i]gnore.*""".r
+  val SolutionRegex  : Regex        = """.*// *[R|r]es:(.*)""".r
+  val UseColor       : Boolean      = sys.env.get("usecolor").contains("true")
+  val PrintCodeStages: List[String] = sys.env.get("printcode").map(_.split(",").toList).getOrElse(Nil)
 
   def testContext: Context = getTestContext(None)
 
@@ -120,15 +121,17 @@ object Tester {
       case None    => (Nil, List(new File(".")))
     }
 
-    val reporter = new Reporter(useColor = UseColor)
+    val colorizer = new Colorizer(UseColor)
+    val reporter = new Reporter(colorizer = colorizer)
     val cp = Main.TDirectory
     Context(
       reporter = reporter,
       files = files,
       outDirs = outDir,
       classPaths = List(cp),
-      printCodeStages = PrintCodeStage,
-      useColor = UseColor)
+      printCodeStages = PrintCodeStages,
+      colorizer = colorizer,
+      printer = new PrettyPrinter(colorizer))
   }
 
 

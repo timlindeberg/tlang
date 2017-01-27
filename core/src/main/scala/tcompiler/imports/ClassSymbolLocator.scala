@@ -155,7 +155,17 @@ object ClassSymbolLocator {
       case Type.DOUBLE  => Double
       case Type.VOID    => TUnit
     }
-    case x: ObjectType                        => TObject(incompleteClass(x))
+    case x: ObjectType                        =>
+      val name = x.getClassName
+      name.replaceAll("\\.", "/") match {
+        case x if x == Int.koolWrapper    => NullableInt
+        case x if x == Bool.koolWrapper   => NullableBool
+        case x if x == Char.koolWrapper   => NullableChar
+        case x if x == Double.koolWrapper => NullableDouble
+        case x if x == Float.koolWrapper  => NullableFloat
+        case x if x == Long.koolWrapper   => NullableLong
+        case _                            => TObject(incompleteClass(x))
+      }
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
 
@@ -185,6 +195,7 @@ object ClassSymbolLocator {
       case "PreDecrement"      => PreDecrement(e)
       case "ArrayRead"         => ArrayRead(e, e)
       case "Assign"            => Assign(ArrayRead(e, e), e)
+      case "ArraySlice"        => ArraySlice(e, None, None, None)
       case x                   => ???
     }
   }
