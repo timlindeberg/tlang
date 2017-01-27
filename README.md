@@ -1,88 +1,223 @@
 # T-compiler
-A Compiler project for the awesome new T-language. T is an object-oriented language compiled to the JVM and supports C++-like generics. The T compiler is written in Scala.
+A compiler project for the awesome new T-language. T is an object-oriented language compiled to the JVM which supports C++-like generics. The T-compiler is written in Scala.
 
 ## Features
 * Classes and inheritence.
-* All basic data types supported by the JVM except for bytes and shorts.
-* All the operators supported by Java as well as a hash operator (#). 
 * Type inference for variables and methods.
-* C++-style generics with templates. This enables for example lists of int where the integers does not have to be boxed.
+* Optional semicolons.
+* C++-style generics with templates. This enables for example lists of int where the integers does not have to be boxed which can increase performance.
 * Operator overloading.
-* Semicolons at the end of lines are not needed.
-* Custom import system to handle templates.
+* Extension methods (currently only for classes).
+* Can interface with Java code.
+* Elimination of null pointer exceptions through nullable types and mandatory null checks. Accessing a nullable type without a null check is a compilation error.
+* Great error messages.
+* Pretty printing with syntax highlighting.
 
 ## Planned features.
-* New base class, currently all objects inherit from java.lang.object.
+* Extension methods for types (e.g extension methods for Int[]? (nullable Int array)).
+* Templated extension methods.
+* Templated methods.
+* Simplification of typechecker and code generation by using extension methods for primitive types.
+* Annotations.
+* Optimization through inlining.
 * First-class functions.
-* Scala style traits with multiple inheritence.
+* Support bytes and shorts.
+* Do-while loops.
+* Make everything expressions instead of statement (if, while, return etc.)
+* Switch statements.
+* Extensive standard library.
+* Wildcard imports and import lists.
+* Internal classes and methods.
 
 ## Code examples
 
-### Test code for scoping rules
-```
-var i: Int = 1
-println(i)
-{
-	var i: Int = 2
-	println(i)
-	i += 5
-	println(i)
-	if(i == 7) {
-		var i: Int = 10
-		println(i + 1)
+Note that these examples uses Scala for syntax highlighting which doesn't quite match T-Language.
+
+### Hash Map
+```scala
+package kool::std
+
+import kool::std::Map
+import kool::std::MapEntry
+import kool::std::Iterator
+import kool::std::Iterable
+
+class HashMap<K, V>: Map<K, V> {
+
+	val static DEFAULT_INITIAL_CAPACITY = 16
+	val static DEFAULT_LOAD_FACTOR = 0.75
+
+	var entries: HashMapEntry<K, V>?[]
+	var size: Int
+	var loadFactor: Double
+	var capacity: Int
+
+	Def new()                                         = init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
+	Def new(initialCapacity: Int)                     = init(initialCapacity, DEFAULT_LOAD_FACTOR)
+	Def new(initialCapacity: Int, loadFactor: Double) = init(initialCapacity, loadFactor)
+	Def implicit new(entries: MapEntry<K, V>[]) = {
+	    init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
+	    for(val e in entries)
+	        Add(e)
 	}
-	println(i)
-}
-println(i)
-for(var i: Int = 0; i < 5; i ++) print(i + " ")
-println("")
 
-println(i)
+	Def implicit new(entries: Object[][]) = {
+	    init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
+	    for(val e in entries){
+	        if(e.Size() != 2)
+	            error("Invalid size of map entry: " + e.Size() + ", expected 2.")
 
-var j: Int = 1
-for(var i: Int = 0, var j: Int = 0; i + j < 10; i++, j++) print((i + j) + " ")
-println("")
+	        if(!(e[0] is K))
+	            error("Entry has wrong key type!")
 
-println(i)
-println(j)
+	        if(!(e[1] is V))
+                error("Entry has wrong value type!")
 
-Test(5)
-
-Def Test(i: Int): Unit = {
-	println(i)
-	{
-		var i: Int = 1
-		println(i)
+            Add(e[0] as K, e[1] as V)
+	    }
 	}
-	println(i)
-	var i: Int = 1
-	println(i)
+
+    Def new(map: HashMap<K, V>) = {
+		init(map.capacity, map.loadFactor)
+		AddAll(map)
+	}
+
+	Def new(map: Map<K, V>) = {
+		init(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR)
+		AddAll(map)
+	}
+
+
+    Def Size() = size
+	Def Capacity() = capacity
+	Def Clear() = {
+		entries = new HashMapEntry<K, V>?[capacity]
+		size = 0
+	}
+
+    Def Add(key: K, value: V) = {
+        if(size >= loadFactor * capacity)
+            resize()
+
+        val hash = #key
+        val newEntry = new HashMapEntry<K, V>(key, value, hash)
+        val index = index(hash, capacity)
+        if(addTo(entries, index, newEntry))
+            size++
+    }
+
+	Def Get(key: K) = {
+		val entry = entries[index(#key, capacity)]
+		if(!entry)
+			return null
+
+		for(val e in entry)
+		    if(e.Key() == key)
+                return e.Value()
+
+		null
+	}
+
+	Def Remove(key: K): Bool = {
+        val index = index(#key, capacity)
+        val entry = entries[index]
+
+        if(!entry)
+            return false
+
+        val it = entry.Iterator()
+        var previous: HashMapEntry<K, V>? = null
+        while(it.HasNext()) {
+            val e = it.Next()
+            if(e.Key() == key)
+                break
+
+            previous = e
+        }
+
+        if(!previous)
+            entries[index] = null
+        else if(it.HasNext())
+            previous.Next = it.Next()
+        else
+            previous.Next = null
+
+        size--
+        true
+    }
+
+	Def Iterator() = new EntryIterator<K, V>(entries, this)
+	Def Keys()     = new KeyIterator<K, V>(entries, this)
+	Def Values()   = new ValueIterator<K, V>(entries, this)
+
+    Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
+
+	def init(initialCapacity: Int, loadFactor: Double) = {
+	    if(initialCapacity % 2 == 0)
+	        capacity = initialCapacity
+	    else
+	        capacity = closestPowerOfTwo(initialCapacity)
+		this.loadFactor = loadFactor
+		Clear()
+	}
+
+	def addTo(data: HashMapEntry<K, V>?[], index: Int, newEntry: HashMapEntry<K, V>) = {
+		val startingEntry = data[index]
+
+		if(!startingEntry){
+		    data[index] = newEntry
+			return true
+		}
+
+		// This should be a do while loop
+		var entry: HashMapEntry<K, V>? = null
+		for(val v in startingEntry){
+			if(v.Key() == newEntry.Key()){
+				v.SetValue(newEntry.Value())
+				return false
+			}
+			entry = v
+		}
+		// Will always iterate once since startingEntry was defined, hence entry will be defined
+		entry!!.Next = newEntry
+		true
+	}
+
+	def resize() = {
+		val newCapacity = capacity << 1
+		val newData = new HashMapEntry<K, V>?[newCapacity]
+
+		for(val entry in entries){
+		    if(!entry)
+		        continue
+
+            for(val e in entry) {
+                val index = index(entry.Hash, newCapacity)
+                e.Next = null
+                addTo(newData, index, e)
+            }
+		}
+		entries = newData
+		capacity = newCapacity
+	}
+
+	def closestPowerOfTwo(value: Int) =
+		for(var i = 2; ; i <<= 1)
+			if(i >= value)
+			   return i
+
+	def index(hashCode: Int, capacity: Int) = improvedHash(hashCode) & capacity - 1
+
+	def improvedHash(hash: Int) = {
+	    var h = hash
+		h ^= (h >> 20) ^ (h >> 12)
+        h ^ (h >> 7) ^ (h >> 4)
+	}
 }
 ```
-Prints the results:
-```
-1
-2
-7
-11
-7
-1
-0 1 2 3 4
-1
-0 2 4 8
-1
-1
-5
-1
-1
-5
-1
 
-```
-
-
-### Matrix implementation in T
-```
+### Matrix 
+```scala
 class Matrix<T> {
 
     var rows: Int
@@ -210,4 +345,4 @@ class MatrixRow<T> {
 }
 ```
 
-More code examples can be found in the folder 'src/kool/std'.
+More code examples can be found in the folder 'stdlib'.
