@@ -167,7 +167,7 @@ trait TypeCheckingErrors extends Errors {
     error(35, s"Cannot use the nullable extraction operator on non nullable type '$tpe'.", pos)
 
   protected def ErrorElvisOperatorNonNullable(tpe: Type, pos: Positioned): Type =
-    error(36, s"Cannot use the elvis operator on non nullable type '$tpe'.", pos)
+    error(36, s"Cannot use the elvis operator on non-nullable type '$tpe'.", pos)
 
   protected def ErrorAssignValueToMethodCall(pos: Positioned): Type =
     error(37, s"Cannot assign a value to the result of a method call.", pos)
@@ -181,7 +181,7 @@ trait TypeCheckingErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def WarningUnusedPrivateMethod(name: String, pos: Positioned): Unit =
-    warning(0, s"protected method '$name' is never used.", pos)
+    warning(0, s"Private method '$name' is never used.", pos)
 
   //---------------------------------------------------------------------------------------
   //  Private methods

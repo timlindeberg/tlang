@@ -14,19 +14,20 @@ object Extensions {
 
   val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
-  implicit class OptionExtensions[T](o: Option[T]) {
+
+  implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
 
     def ifDefined(f: T => Unit): Unit = if (o.isDefined) f(o.get)
 
   }
 
-  implicit class IntExtensions(i: Int) {
+  implicit class IntExtensions(val i: Int) extends AnyVal {
 
     def times(f: => Unit): Unit = 1 to i foreach { _ => f }
 
   }
 
-  implicit class StringExtensions(str: String) {
+  implicit class StringExtensions(val str: String) extends AnyVal {
     def clearAnsi: String = AnsiRegex.replaceAllIn(str, "")
     def charCount: Int = {
       val str = clearAnsi
@@ -48,27 +49,24 @@ object Extensions {
     }
   }
 
-  implicit class AnyExtensions(a: Any) {
+  implicit class AnyExtensions(val a: Any) extends AnyVal {
 
     def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
 
   }
 
-  implicit class GenericExtensions[T](t: T) {
+  implicit class GenericExtensions[T](val t: T) extends AnyVal {
     def use(f: T => Unit): T = {f(t); t}
     def in(seq: Traversable[T]): Boolean = seq.exists(_ == t)
   }
 
-  implicit class TypeTuple(t: (Type, Type)) {
+  implicit class TypeTuple(val t: (Type, Type)) extends AnyVal {
 
-    val c1: Class[_ <: Type] = t._1.getClass
-    val c2: Class[_ <: Type] = t._2.getClass
-
-    def anyIs(types: Type*): Boolean = types.map(_.getClass).exists(c => c == c1 || c == c2)
-    def bothAre(types: Type*): Boolean = types.map(_.getClass).exists(c => c == c1 && c == c2)
+    def anyIs(types: Type*): Boolean = types.map(_.getClass).exists(c => c == t._1.getClass || c == t._2.getClass)
+    def bothAre(types: Type*): Boolean = types.map(_.getClass).exists(c => c == t._1.getClass && c == t._2.getClass)
   }
 
-  implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](collection: Collection[T]) {
+  implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {
 
     def filterType[A <: T : ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
     def filterNotType[A <: T : ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
@@ -82,7 +80,7 @@ object Extensions {
     }
   }
 
-  implicit class MutableMapExtensions[K, V](m: mutable.Map[K, V]) {
+  implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {
 
     def getOrElseMaybeUpdate(key: K, op: => Option[V]): Option[V] =
       m.get(key) match {

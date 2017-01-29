@@ -47,9 +47,11 @@ object ASTBuilder {
   )
 }
 
-class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends ParserErrors {
+class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends ParserErrors {
 
   import ASTBuilder._
+
+  tokens = tokens.filter(_.kind != COMMENT)
 
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
@@ -100,7 +102,7 @@ class ASTBuilder(override var ctx: Context, tokens: Array[Token]) extends Parser
     val stats = code collect { case x: StatTree => x }
 
     if (stats.nonEmpty || methods.nonEmpty) {
-      val mainName = currentToken.file.getName.dropRight(Main.FileEnding.length)
+      val mainName = currentToken.file.get.getName.dropRight(Main.FileEnding.length)
       val mainClass = classes.find(_.id.name == mainName) match {
         case Some(c) => c
         case None    =>

@@ -10,18 +10,18 @@ trait Positioned {
   private var _lineEnd  : Int          = 0
   private var _colEnd   : Int          = 0
 
-  def setPos(file: File, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
+  def setPos(file: Option[File], lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     _lineStart = lineStart
     _colStart = colStart
 
     _lineEnd = lineEnd
     _colEnd = colEnd
-    _file = Some(file)
+    _file = file
 
     this
   }
 
-  def hasPosition: Boolean = _file.isDefined
+  def hasFile: Boolean = _file.isDefined
 
   def setPos(other: Positioned): this.type = {
     _lineStart = other._lineStart
@@ -57,15 +57,15 @@ trait Positioned {
     this
   }
 
-  def file: File = _file.get
+  def file: Option[File] = _file
   def line: Int = _lineStart
   def col: Int = _colStart
   def endLine: Int = _lineEnd
   def endCol: Int = _colEnd
 
   def position: String =
-    if (hasPosition)
-      s"${file.getPath}:$line:$col"
+    if (hasFile)
+      s"${file.get.getPath}:$line:$col"
     else
       "?:?"
 

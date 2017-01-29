@@ -50,11 +50,14 @@ class Colorizer(var useColor: Boolean) {
   def MethodColor: String = Yellow
   def MethodColor(s: Any): String = MethodColor + s + Reset
 
-  def StringColor: String = Magenta
+  def StringColor: String = Yellow
   def StringColor(s: Any): String = StringColor + s + Reset
 
   def NumColor: String = Magenta
   def NumColor(s: Any): String = NumColor + s + Reset
+
+  def CommentColor: String = White
+  def CommentColor(s: Any): String = CommentColor + s + Reset
 
   private def GetColor(color: String) = if (useColor) color else ""
 

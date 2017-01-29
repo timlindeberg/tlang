@@ -15,9 +15,6 @@ class PrettyPrinter(colorizer: Colorizer) {
 
   val Indentation = 3
 
-  private val Keywords      = Tokens.Keywords.keys.toList.sortBy(-_.length) ::: List("Int", "Char", "Float", "Double", "Bool", "Unit")
-  private val KeywordsRegex = s"(${Keywords.mkString("|")})".r
-
   private var indent: Int = 0
 
   def apply(t: Tree): String = {
@@ -26,8 +23,8 @@ class PrettyPrinter(colorizer: Colorizer) {
   }
 
   private def comment(cu: CompilationUnit) = {
-    val fileName = if (cu.hasPosition)
-      cu.file.getName
+    val fileName = if (cu.hasFile)
+      cu.file.get.getName
     else
       "No file"
 
@@ -279,16 +276,13 @@ class PrettyPrinter(colorizer: Colorizer) {
       case f: Formatter  => f()
       case t: Tree       =>
         t match {
-          case _: VariableID => VarColor(prettyPrint(t))
-          case _: MethodID   => MethodColor(prettyPrint(t))
-          case _: ClassID    => ClassColor(prettyPrint(t))
+          case _: VariableID       => VarColor(prettyPrint(t))
+          case _: MethodID         => MethodColor(prettyPrint(t))
+          case _: ClassID          => ClassColor(prettyPrint(t))
           case _: StringLit |
-               _: CharLit    => StringColor(prettyPrint(t))
-          case _: IntLit |
-               _: LongLit |
-               _: FloatLit |
-               _: DoubleLit  => NumColor(prettyPrint(t))
-          case _             => prettyPrint(t)
+               _: CharLit          => StringColor(prettyPrint(t))
+          case _: NumberLiteral[_] => NumColor(prettyPrint(t))
+          case _                   => prettyPrint(t)
         }
       case Some(t: Tree) => evaluate(t)
       case None          => ""
@@ -311,7 +305,8 @@ class PrettyPrinter(colorizer: Colorizer) {
     private def colorKeywords(output: String): String = {
       if (!useColor)
         return output
-      KeywordsRegex.replaceAllIn(output, m => {
+
+      Tokens.KeywordsRegex.replaceAllIn(output, m => {
         Matcher.quoteReplacement(KeywordColor(m.group(1)))
       })
     }

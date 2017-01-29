@@ -7,27 +7,28 @@ import java.math.BigInteger
 import tcompiler.lexer.Tokens._
 import tcompiler.utils.{Pipeline, _}
 
+import scala.annotation.tailrec
 import scala.io.Source
 
 object Lexer extends Pipeline[List[File], List[List[Token]]] {
 
   def run(ctx: Context)(files: List[File]): List[List[Token]] = {
     files.map { f =>
-      new Tokenizer(ctx, f).tokenize(Source.fromFile(f).buffered.toList)
+      val tokenizer = new Tokenizer(ctx, Some(f))
+      tokenizer(Source.fromFile(f).buffered.toList)
     }
   }
 }
 
-class Tokenizer(override var ctx: Context, override val file: File) extends LexerErrors {
+// Can only be used once, after tokenize is called the tokenizer is invalid
+class Tokenizer(override var ctx: Context, override val file: Option[File]) extends LexerErrors {
 
   override var line   = 1
   override var column = 1
 
-  def tokenize(chars: List[Char]): List[Token] = {
+  def apply(chars: List[Char]): List[Token] = {
 
-    def tokenExists(str: String): Boolean = NonKeywords.get(str).isDefined
-
-    def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
+    @tailrec def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
       case '\n' :: r                  =>
         val token = createToken(NEWLINE, 1)
         column = 1
@@ -38,11 +39,12 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       case (c :: r) if c.isWhitespace =>
         column += 1
         readTokens(r, tokens)
-      case '/' :: '/' :: r            => readTokens(skipLine(r), tokens)
+      case '/' :: '/' :: r            =>
+        val (token, tail) = lineComment(r)
+        readTokens(tail, token :: tokens)
       case '/' :: '*' :: r            =>
-        val (token, tail) = skipBlock(r)
-        readTokens(tail, if (token.isDefined) token.get :: tokens else tokens)
-
+        val (token, tail) = blockComment(r)
+        readTokens(tail, token :: tokens)
       // Prioritise longer tokens
       case c1 :: c2 :: c3 :: r if tokenExists(s"$c1$c2$c3") => readTokens(r, createToken(NonKeywords(s"$c1$c2$c3"), 3) :: tokens)
       case c1 :: c2 :: r if tokenExists(s"$c1$c2")          => readTokens(r, createToken(NonKeywords(s"$c1$c2"), 2) :: tokens)
@@ -80,16 +82,16 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     readTokens(chars, List[Token]()).reverse
   }
 
+  private def tokenExists(str: String): Boolean = NonKeywords.get(str).isDefined
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
 
-    def createIdentifierOrKeyWord(s: String): Token = Keywords.get(s) match {
-      case Some(keyword) =>
-        createToken(keyword, s.length)
+    def createIdentifierOrKeyWord(s: String): Token = KeywordMap.get(s) match {
+      case Some(keyword) => createToken(keyword, s.length)
       case None          => createIdToken(s, s.length)
     }
 
-    def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
+    @tailrec def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
         case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
@@ -109,7 +111,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
   private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = {
     val startPos = createToken(BAD, 0)
 
-    def toEnd(charList: List[Char], length: Int): (Token, List[Char]) =
+    @tailrec def toEnd(charList: List[Char], length: Int): (Token, List[Char]) =
       charList match {
         case '\'' :: r =>
           ErrorInvalidCharLiteral(length + 1)
@@ -177,7 +179,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
 
     val startPos = createToken(BAD, 0)
 
-    def getStringLiteral(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = chars match {
+    @tailrec def getStringLiteral(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = chars match {
       case '"' :: r  => (createToken(s, charsParsed + 1), r)
       case '\n' :: _ =>
         ErrorUnclosedStringLiteral(startPos)
@@ -220,7 +222,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
   private def getMultiLineStringLiteral(chars: List[Char]): (Token, List[Char]) = {
     val startPos = createToken(BAD, 0)
 
-    def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+    @tailrec def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
       case '`' :: r  =>
         column += 1
         val token = new STRLIT(s)
@@ -247,7 +249,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       (createToken(BAD, len), chars)
     }
 
-    def getHexadecimalLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
+    @tailrec def getHexadecimalLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
       case '_' :: r                  => getHexadecimalLiteral(r, s, len + 1)
       case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c, len + 1)
       case ('l' | 'L') :: r          => (parseLongToken(s, len + 1), r)
@@ -268,7 +270,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
       (createToken(BAD, len), chars)
     }
 
-    def getBinaryLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
+    @tailrec def getBinaryLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
       case '_' :: r                  => getBinaryLiteral(r, s, len + 1)
       case '0' :: r                  => getBinaryLiteral(r, s + '0', len + 1)
       case '1' :: r                  => getBinaryLiteral(r, s + '1', len + 1)
@@ -287,7 +289,7 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
   private def getNumberLiteral(chars: List[Char]): (Token, List[Char]) = {
     var foundDecimal = false
     var foundE = false
-    def getNumberLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) =
+    @tailrec def getNumberLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) =
       chars match {
         case '_' :: r            => getNumberLiteral(r, s, len + 1)
         case c :: r if c.isDigit => getNumberLiteral(r, s + c, len + 1)
@@ -331,34 +333,41 @@ class Tokenizer(override var ctx: Context, override val file: File) extends Lexe
     getNumberLiteral(chars, "", 0)
   }
 
-  private def skipLine(chars: List[Char]): List[Char] = {
-    def skip(chars: List[Char]): List[Char] = chars match {
-      case '\n' :: _ => chars
-      case _ :: r    =>
-        column += 1
-        skip(r)
-      case Nil       => Nil
+  private def lineComment(chars: List[Char]): (Token, List[Char]) = {
+    @tailrec def lineComment(chars: List[Char], parsed: Int): (Token, List[Char]) = chars match {
+      case '\n' :: r =>
+        val res = (createToken(COMMENT, parsed), '\n' :: r)
+        res
+      case _ :: r    => lineComment(r, parsed + 1)
+      case Nil       => (createToken(COMMENT, parsed), chars)
     }
-    column += 2
-    skip(chars)
+    lineComment(chars, 2)
+
   }
 
-  private def skipBlock(chars: List[Char]): (Option[Token], List[Char]) = {
-    def skip(chars: List[Char]): (Option[Token], List[Char]) = chars match {
+  private def blockComment(chars: List[Char]): (Token, List[Char]) = {
+    val startPos = createToken(BAD, 0)
+
+    @tailrec def blockComment(chars: List[Char]): (Token, List[Char]) = chars match {
       case '*' :: '/' :: r =>
         column += 2
-        (None, r)
+        val token = new Token(COMMENT)
+        token.setPos(file, startPos.line, startPos.col, line, column)
+        (token, r)
       case '\n' :: r       =>
         line += 1
         column = 1
-        skip(r)
+        blockComment(r)
       case _ :: r          =>
         column += 1
-        skip(r)
-      case Nil             => (Some(createToken(BAD, 1)), Nil)
+        blockComment(r)
+      case Nil             =>
+        val token = new Token(COMMENT)
+        token.setPos(file, startPos.line, startPos.col, line, column)
+        (token, Nil)
     }
     column += 2
-    skip(chars)
+    blockComment(chars)
   }
 
   private def parseIntToken(numStr: String, len: Int): Token = {

@@ -1,3 +1,0 @@
-Cant have static template symbols (eg. Test<Int>.Assert())
-No error if method does not return value
-Linked List does not work

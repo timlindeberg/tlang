@@ -3,6 +3,8 @@ package lexer
 
 import tcompiler.utils.{Enumeration, Positioned}
 
+import scala.util.matching.Regex
+
 sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString: String = kind.toString
 }
@@ -45,6 +47,7 @@ object Tokens {
 
   // @formatter:off
   case object EOF             extends TokenKind("")
+  case object COMMENT         extends TokenKind("")
   case object BAD             extends TokenKind("")
   case object SEMICOLON       extends TokenKind(";")
   case object DOT             extends TokenKind(".")
@@ -162,8 +165,11 @@ object Tokens {
   }
 
   // These need to be lazy otherwise the program crashes
-  lazy val Tokens     : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
-  lazy val Keywords   : Map[String, TokenKind] = Tokens.filter(t => t.str.matches("[A-Za-z]+")).map(t => t.str -> t).toMap
-  lazy val NonKeywords: Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !Keywords.contains(t.str)).map(t => t.str -> t).toMap
+  lazy val Tokens       : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
+  lazy val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+"))
+  lazy val KeywordMap   : Map[String, TokenKind] = Keywords.map(t => t.str -> t).toMap
+  lazy val NonKeywords  : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !KeywordMap.contains(t.str)).map(t => t.str -> t).toMap
+  lazy val KeywordsRegex: Regex                  = s"(${Keywords.toList.sortBy(-_.str.length).mkString("|")})".r
+
 
 }

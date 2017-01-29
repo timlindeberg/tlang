@@ -9,20 +9,46 @@ import scala.collection.mutable
 
 class CompilationException(message: String) extends Exception(message)
 
-class Reporter(suppressWarnings: Boolean = false,
+trait Reporter {
+
+  def report(error: Error): Unit
+  def clear(): Unit
+  def terminateIfErrors(): Unit
+
+  def hasErrors: Boolean
+  def hasWarnings: Boolean
+
+  def errorsString: String
+  def warningsString: String
+
+}
+
+class VoidReporter extends Reporter {
+  override def report(error: Error): Unit = {}
+  override def clear(): Unit = {}
+  override def terminateIfErrors(): Unit = {}
+
+  override def hasErrors: Boolean = false
+  override def hasWarnings: Boolean = false
+  override def errorsString: String = ""
+  override def warningsString: String = ""
+}
+
+
+class DefaultReporter(
+  suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
   colorizer: Colorizer = new Colorizer(false),
   maxErrors: Int = Flags.MaxErrors.Default,
-  errorContext: Int = Flags.ErrorContext.Default) {
+  errorContext: Int = Flags.ErrorContext.Default
+) extends Reporter {
 
   import colorizer._
 
-  private val ErrorSeparator = "\n"
-
   private var hitMaxErrors = false
 
-  var errors  : mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
-  var warnings: mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
+  val errors  : mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
+  val warnings: mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
 
 
   def report(error: Error): Unit = {
@@ -62,6 +88,10 @@ class Reporter(suppressWarnings: Boolean = false,
     hitMaxErrors = false
   }
 
+  def terminateIfErrors(): Unit =
+    if (hasErrors)
+      throw new CompilationException(errorsString)
+
   def hasErrors: Boolean = errors.nonEmpty
   def hasWarnings: Boolean = warnings.nonEmpty
 
@@ -84,14 +114,11 @@ class Reporter(suppressWarnings: Boolean = false,
 
   def warningsString: String = errorString(warnings)
 
-  def terminateIfErrors(): Unit =
-    if (hasErrors)
-      throw new CompilationException(errorsString)
 
   private def errorString(errors: mutable.LinkedHashSet[Error]) =
     errors
       .map { err => ErrorFormatter(err, colorizer, errorContext).format() }
-      .mkString(ErrorSeparator)
+      .mkString("\n")
 
   private def isValidError(error: Error): Boolean = {
     if (error.msg.toString.contains(Errors.ErrorName))

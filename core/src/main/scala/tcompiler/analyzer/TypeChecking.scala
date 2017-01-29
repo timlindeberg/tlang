@@ -107,8 +107,9 @@ class TypeChecker(override var ctx: Context,
              EqualsOperatorTree(_, _)   => Bool
         case _                          => return
       }
-      if (tpe != correctOperatorType)
+      if (tpe != correctOperatorType) {
         ErrorOperatorWrongReturnType(op.signature, correctOperatorType.toString, tpe.toString, op)
+      }
     case _                  =>
   }
 
@@ -340,7 +341,7 @@ class TypeChecker(override var ctx: Context,
         Int
       case incOp@IncrementDecrementTree(obj)             =>
         if (!obj.isInstanceOf[Assignable])
-          ErrorInvalidIncrementDecrementExpr(incOp, obj)
+          ErrorInvalidIncrementDecrementExpr(incOp, incOp)
 
         // TODO: Allow increment decrement for Bool types?
         val validTypes = List(Object, Int, Char, Long, Double, Float)

@@ -15,19 +15,18 @@ abstract class Pipeline[-F, +T] {
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: F): G = {
       val first = self.execute(ctx)(v)
-      ctx.reporter.terminateIfErrors()
       val second = thenn.execute(ctx)(first)
-      ctx.reporter.terminateIfErrors()
       second
     }
   }
 
   private def execute(ctx: Context)(v: F): T = {
     val infoPrinter = new InfoPrinter(this, ctx)
-    val (output, time) = HelpMethods.timed {run(ctx)(v)}
+    val (output, time) = Helpers.timed {run(ctx)(v)}
     if (Main.CompilerStages.contains(this))
       ctx.executionTimes += this -> time
     infoPrinter.printCode(output)
+    ctx.reporter.terminateIfErrors()
     output
   }
 

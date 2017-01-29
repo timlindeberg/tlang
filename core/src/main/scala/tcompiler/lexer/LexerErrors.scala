@@ -14,7 +14,7 @@ trait LexerErrors extends Errors {
 
   override val ErrorLetters = "L"
   override var importMap    = new ImportMap(ctx)
-  val file  : File
+  val file  : Option[File]
   var line  : Int
   var column: Int
 

@@ -23,7 +23,7 @@ trait ErrorTester extends Tester {
     try {
       Pipeline.run(ctx)(List(file))
       // Check for warnings:
-      if (ctx.reporter.warnings.isEmpty)
+      if (!ctx.reporter.hasWarnings)
         fail("Test failed: No errors or warnings!")
 
       val warnings = ctx.reporter.warningsString
@@ -51,17 +51,14 @@ trait ErrorTester extends Tester {
     }.toList
   }
 
-  private val ErrorRegex = """.*\.kool:(\d+):.+?\n(?:Fatal|Warning|Error) (.+?):.*""".r
-  // Parses codes from error messages
+  private val ErrorCode   = """(?:Fatal|Warning|Error) ([A-Z]\d\d\d\d)""".r
+  private val LineNumbers = """(\d+)""".r // First number in error message is the line number
 
   private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
-    // First two rows of error messages
-    val errors = errorMessages.clearAnsi.split("\n\n") map {
-      _.split("\n").take(2).mkString("\n")
-    }
-    errors.collect {
-      case ErrorRegex(lineNumber, errorCode) => (lineNumber.toInt, errorCode)
-    }.toList
+    val errors = errorMessages.clearAnsi.split("\n\n").toList.drop(1)
+    val lineNumbers = errors.map(LineNumbers.findFirstMatchIn(_).get.group(1).toInt)
+    val errorCodes = errors.map(ErrorCode.findFirstMatchIn(_).get.group(1))
+    lineNumbers.zip(errorCodes)
   }
 
   private def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String): Unit = {

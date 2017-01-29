@@ -7,7 +7,7 @@ import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.code.{CodeGeneration, Desugaring}
-import tcompiler.error.{CompilationException, Reporter}
+import tcompiler.error.{CompilationException, DefaultReporter}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
@@ -137,7 +137,7 @@ object Main extends MainErrors {
     colorizer.useColor = !flagActive(NoColor)
 
     Context(
-      reporter = new Reporter(
+      reporter = new DefaultReporter(
         suppressWarnings = flagActive(SuppressWarnings),
         warningIsError = flagActive(WarningIsError),
         colorizer = colorizer,
@@ -177,7 +177,7 @@ object Main extends MainErrors {
     try {
       Paths.get(path)
     } catch {
-      case e: InvalidPathException =>
+      case _: InvalidPathException =>
         return false
     }
     !new File(path).isFile
@@ -295,7 +295,7 @@ object Main extends MainErrors {
       return
 
     val cp = s"-cp ${ctx.outDirs.head}"
-    val mainName = cu.file.getName.dropRight(FileEnding.length)
+    val mainName = cu.file.get.getName.dropRight(FileEnding.length)
     val execCommand = s"java $cp $mainName"
     val separator = Blue("----------------------------------------")
 

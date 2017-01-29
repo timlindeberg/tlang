@@ -453,15 +453,17 @@ object Trees {
   trait Literal[T] extends ExprTree with Leaf {
     val value: T
   }
+  trait NumberLiteral[T] extends Literal[T]
 
   object Literal {
     def unapply(e: Literal[_]): Option[Any] = Some(e.value)
   }
 
-  case class IntLit(value: Int) extends Literal[Int] {override def getType = Types.Int}
-  case class LongLit(value: Long) extends Literal[Long] {override def getType = Types.Long}
-  case class FloatLit(value: Float) extends Literal[Float] {override def getType = Types.Float}
-  case class DoubleLit(value: Double) extends Literal[Double] {override def getType = Types.Double}
+
+  case class IntLit(value: Int) extends NumberLiteral[Int] {override def getType = Types.Int}
+  case class LongLit(value: Long) extends NumberLiteral[Long] {override def getType = Types.Long}
+  case class FloatLit(value: Float) extends NumberLiteral[Float] {override def getType = Types.Float}
+  case class DoubleLit(value: Double) extends NumberLiteral[Double] {override def getType = Types.Double}
   case class CharLit(value: Char) extends Literal[Char] {override def getType = Types.Char}
   case class StringLit(value: String) extends Literal[String] {override def getType = Types.String}
   case class TrueLit() extends Literal[Boolean] with Leaf {

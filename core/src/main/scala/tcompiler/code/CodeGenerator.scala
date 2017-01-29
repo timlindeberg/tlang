@@ -147,7 +147,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   def compileExpr(expression: ExprTree, duplicate: Boolean = true): Unit = {
-    if (expression.hasPosition)
+    if (expression.hasFile)
       ch << LineNumber(expression.line)
     expression match {
       case TrueLit()  => ch << Ldc(1)

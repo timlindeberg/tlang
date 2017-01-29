@@ -171,7 +171,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
 
     val classFile = new ClassFile(className, parent)
     traits.foreach(t => classFile.addInterface(t.name))
-    classFile.setSourceFile(classDecl.file.getName)
+    classFile.setSourceFile(classDecl.file.get.getName)
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
     classFile.setFlags(flags)
