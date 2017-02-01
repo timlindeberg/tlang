@@ -64,8 +64,8 @@ object ClassSymbolLocator {
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
-    classSymbol.methods = methods.filterNotType[OperatorSymbol]
-    classSymbol.operators = methods.filterType[OperatorSymbol]
+    classSymbol.methods = methods.filterNotInstance[OperatorSymbol]
+    classSymbol.operators = methods.filterInstance[OperatorSymbol]
     classSymbol.parents = convertParents(clazz)
     classSymbol.isAbstract = clazz.isAbstract
     classSymbol.fields = clazz.getFields.map { field =>

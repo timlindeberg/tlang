@@ -28,7 +28,12 @@ class AnsiWordWrapper(colorizer: Colorizer) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
             wordWrap(rest, "", word, wrappedLines ::: lines)
           } else {
-            val line = if (currentLine == "") currentWord else currentLine + " " + currentWord
+            val line = if (currentLine == "" && currentWord == "")
+              " "
+            else if (currentLine == "")
+              currentWord
+            else
+              currentLine + " " + currentWord
             wordWrap(rest, "", line, lines)
           }
         case c :: rest                                =>
@@ -47,7 +52,7 @@ class AnsiWordWrapper(colorizer: Colorizer) {
     }
 
     val wrapped = wordWrap(text.toList, "", "", Nil)
-    wrapAnsi(wrapped)
+    if (colorizer.useColor) wrapAnsi(wrapped) else wrapped
   }
 
   private def findBreakpoint(word: String, width: Int): Int = {

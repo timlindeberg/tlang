@@ -49,7 +49,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
 
     val packName = pack.name
     if (packName.nonEmpty) {
-      classes.filterNotType[ExtensionDecl] foreach { c =>
+      classes.filterNotInstance[ExtensionDecl] foreach { c =>
         val className = c.id.name
         addImport(className, s"$packName.$className")
       }

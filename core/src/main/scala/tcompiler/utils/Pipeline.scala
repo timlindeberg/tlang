@@ -1,9 +1,6 @@
 package tcompiler
 package utils
 
-import tcompiler.ast.Trees.CompilationUnit
-import tcompiler.lexer.Token
-
 abstract class Pipeline[-F, +T] {
   self =>
 
@@ -29,46 +26,4 @@ abstract class Pipeline[-F, +T] {
     ctx.reporter.terminateIfErrors()
     output
   }
-
-  class InfoPrinter(stage: Pipeline[F, T], ctx: Context) {
-
-    import ctx.colorizer._
-
-    private val stageName = stage.stageName.capitalize
-
-
-    def printCode[S >: T](output: S): Unit = {
-      if (!ctx.printCodeStages.contains(stage.stageName))
-        return
-
-      output match {
-        case (_: CompilationUnit) :: _ => printCompilationUnits(output.asInstanceOf[List[CompilationUnit]])
-        case ((_: Token) :: _) :: _    => printTokens(output.asInstanceOf[List[List[Token]]])
-        case _                         =>
-      }
-    }
-
-    private def printHeader() = println(s"${Bold}Output after $Reset$Blue$stageName$Reset:\n")
-
-    private def printCompilationUnits(cus: List[CompilationUnit]) = {
-      printHeader()
-      val res = cus map { cu => ctx.printer(cu) + "\n" }
-      println(res)
-    }
-
-    private def printTokens(tokens: List[List[Token]]) = {
-      printHeader()
-      val res = tokens.map {_.map(formatToken).mkString("\n")}.mkString("\n\n")
-      println(res)
-    }
-
-    private def formatToken(t: Token) = {
-      val name = t.kind.getClass.getSimpleName.dropRight(1)
-      val sign = t.toString
-      val desc = s"$name"
-      s"$Blue%-10s$Reset => $Bold%-10s$Reset $Bold[$Reset$Blue Pos$Reset: ($Red%s$Reset:$Red%s$Reset) - ($Red%s$Reset:$Red%s$Reset) $Bold]$Reset".format(sign, desc, t.line, t.col, t.endLine, t.endCol)
-    }
-
-  }
-
 }

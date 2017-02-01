@@ -91,20 +91,20 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
       case None          => createIdToken(s, s.length)
     }
 
-    @tailrec def getIdentifierOrKeyword(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = {
+    @tailrec def getIdentifierOrKeyword(chars: List[Char], s: StringBuilder, charsParsed: Int): (Token, List[Char]) = {
       def validChar(c: Char) = c.isLetter || c.isDigit || c == '_'
       chars match {
         case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, charsParsed + 1)
-        case c :: _ if isEndingChar(c) => (createIdentifierOrKeyWord(s), chars)
+        case c :: _ if isEndingChar(c) => (createIdentifierOrKeyWord(s.toString), chars)
         case c :: r                    =>
           // Advance column here so only the invalid char gets highlighted
           column += charsParsed
           ErrorInvalidIdentifier(c, 1)
           getIdentifierOrKeyword(r, s + c, 1)
-        case Nil                       => (createIdentifierOrKeyWord(s), chars)
+        case Nil                       => (createIdentifierOrKeyWord(s.toString), chars)
       }
     }
-    getIdentifierOrKeyword(chars.tail, chars.head.toString, 1)
+    getIdentifierOrKeyword(chars, new StringBuilder, 1)
   }
 
 
@@ -179,8 +179,8 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
 
     val startPos = createToken(BAD, 0)
 
-    @tailrec def getStringLiteral(chars: List[Char], s: String, charsParsed: Int): (Token, List[Char]) = chars match {
-      case '"' :: r  => (createToken(s, charsParsed + 1), r)
+    @tailrec def getStringLiteral(chars: List[Char], s: StringBuilder, charsParsed: Int): (Token, List[Char]) = chars match {
+      case '"' :: r  => (createToken(s.toString, charsParsed + 1), r)
       case '\n' :: _ =>
         ErrorUnclosedStringLiteral(startPos)
         (startPos, chars)
@@ -216,16 +216,16 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
         ErrorUnclosedStringLiteral(startPos)
         (startPos, chars)
     }
-    getStringLiteral(chars, "", 1)
+    getStringLiteral(chars, new StringBuilder, 1)
   }
 
   private def getMultiLineStringLiteral(chars: List[Char]): (Token, List[Char]) = {
     val startPos = createToken(BAD, 0)
 
-    @tailrec def getStringIdentifier(chars: List[Char], s: String): (Token, List[Char]) = chars match {
+    @tailrec def getStringIdentifier(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
       case '`' :: r  =>
         column += 1
-        val token = new STRLIT(s)
+        val token = new STRLIT(s.toString)
         token.setPos(file, startPos.line, startPos.col, line, column)
         (token, r)
       case '\n' :: r =>
@@ -239,7 +239,7 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
         ErrorUnclosedMultilineString(startPos)
         (startPos, chars)
     }
-    getStringIdentifier(chars, "")
+    getStringIdentifier(chars, new StringBuilder)
   }
 
   private def getHexadecimalLiteral(chars: List[Char]) = {
@@ -249,18 +249,18 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
       (createToken(BAD, len), chars)
     }
 
-    @tailrec def getHexadecimalLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
+    @tailrec def getHexadecimalLiteral(chars: List[Char], s: StringBuilder, len: Int): (Token, List[Char]) = chars match {
       case '_' :: r                  => getHexadecimalLiteral(r, s, len + 1)
       case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c, len + 1)
-      case ('l' | 'L') :: r          => (parseLongToken(s, len + 1), r)
-      case c :: _ if isEndingChar(c) => (parseIntToken(s, len), chars)
+      case ('l' | 'L') :: r          => (parseLongToken(s.toString, len + 1), r)
+      case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, len), chars)
       case _                         => invalid(s.length)
     }
 
     if (isEndingChar(chars.head))
       invalid(2)
     else
-      getHexadecimalLiteral(chars, "0x", 2)
+      getHexadecimalLiteral(chars, new StringBuilder("0x"), 2)
   }
 
   private def getBinaryLiteral(chars: List[Char]) = {
@@ -270,19 +270,19 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
       (createToken(BAD, len), chars)
     }
 
-    @tailrec def getBinaryLiteral(chars: List[Char], s: String, len: Int): (Token, List[Char]) = chars match {
+    @tailrec def getBinaryLiteral(chars: List[Char], s: StringBuilder, len: Int): (Token, List[Char]) = chars match {
       case '_' :: r                  => getBinaryLiteral(r, s, len + 1)
       case '0' :: r                  => getBinaryLiteral(r, s + '0', len + 1)
       case '1' :: r                  => getBinaryLiteral(r, s + '1', len + 1)
-      case ('l' | 'L') :: r          => (parseLongToken(s, len + 1), r)
-      case c :: _ if isEndingChar(c) => (parseIntToken(s, len), chars)
+      case ('l' | 'L') :: r          => (parseLongToken(s.toString, len + 1), r)
+      case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, len), chars)
       case _                         => invalid(s.length)
     }
 
     if (isEndingChar(chars.head))
       invalid(2)
     else
-      getBinaryLiteral(chars, "0b", 2)
+      getBinaryLiteral(chars, new StringBuilder("0b"), 2)
   }
 
 
@@ -334,40 +334,43 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
   }
 
   private def lineComment(chars: List[Char]): (Token, List[Char]) = {
-    @tailrec def lineComment(chars: List[Char], parsed: Int): (Token, List[Char]) = chars match {
-      case '\n' :: r =>
-        val res = (createToken(COMMENT, parsed), '\n' :: r)
-        res
-      case _ :: r    => lineComment(r, parsed + 1)
-      case Nil       => (createToken(COMMENT, parsed), chars)
+    @tailrec def lineComment(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
+      case '\r' :: '\n' :: r => (createCommentToken(s.toString, s.length), '\r' :: '\n' :: r)
+      case '\n' :: r         => (createCommentToken(s.toString, s.length), '\n' :: r)
+      case c :: r            => lineComment(r, s + c)
+      case Nil               => (createCommentToken(s.toString, s.length), chars)
     }
-    lineComment(chars, 2)
+    lineComment(chars, new StringBuilder("//"))
 
   }
 
   private def blockComment(chars: List[Char]): (Token, List[Char]) = {
     val startPos = createToken(BAD, 0)
 
-    @tailrec def blockComment(chars: List[Char]): (Token, List[Char]) = chars match {
-      case '*' :: '/' :: r =>
+    @tailrec def blockComment(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
+      case '*' :: '/' :: r   =>
         column += 2
-        val token = new Token(COMMENT)
+        val token = new COMMENTLIT(s.toString + "*/")
         token.setPos(file, startPos.line, startPos.col, line, column)
         (token, r)
-      case '\n' :: r       =>
+      case '\r' :: '\n' :: r =>
         line += 1
         column = 1
-        blockComment(r)
-      case _ :: r          =>
+        blockComment(r, s + '\\' + 'n')
+      case '\n' :: r         =>
+        line += 1
+        column = 1
+        blockComment(r, s + '\\' + 'n')
+      case c :: r            =>
         column += 1
-        blockComment(r)
-      case Nil             =>
-        val token = new Token(COMMENT)
+        blockComment(r, s + c)
+      case Nil               =>
+        val token = new COMMENTLIT(s.toString)
         token.setPos(file, startPos.line, startPos.col, line, column)
         (token, Nil)
     }
     column += 2
-    blockComment(chars)
+    blockComment(chars, new StringBuilder("/*"))
   }
 
   private def parseIntToken(numStr: String, len: Int): Token = {
@@ -434,6 +437,7 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
   private def createToken(double: Double, tokenLength: Int): Token = createToken(new DOUBLELIT(double), tokenLength)
   private def createToken(kind: TokenKind, tokenLength: Int): Token = createToken(new Token(kind), tokenLength)
   private def createIdToken(string: String, tokenLength: Int): Token = createToken(new ID(string), tokenLength)
+  private def createCommentToken(str: String, tokenLength: Int): Token = createToken(new COMMENTLIT(str), tokenLength)
   private def createToken(char: Char, tokenLength: Int): Token = createToken(new CHARLIT(char), tokenLength)
   private def createToken(string: String, tokenLength: Int): Token = createToken(new STRLIT(string), tokenLength)
   private def createToken(token: Token, tokenLength: Int): Token = {

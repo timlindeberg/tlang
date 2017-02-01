@@ -45,9 +45,13 @@ object Tokens {
     override def toString = "String literal"
   }
 
+  object COMMENTLITKIND extends TokenKind("") {
+    override def toString = "Comment literal"
+  }
+
+
   // @formatter:off
   case object EOF             extends TokenKind("")
-  case object COMMENT         extends TokenKind("")
   case object BAD             extends TokenKind("")
   case object SEMICOLON       extends TokenKind(";")
   case object DOT             extends TokenKind(".")
@@ -141,27 +145,31 @@ object Tokens {
   }
 
   class INTLIT(val value: Int) extends Token(INTLITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = s"$value"
   }
 
   class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = s"$value"
   }
 
   class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = s"$value"
   }
 
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = s"$value"
   }
 
   class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = s"'$value'"
   }
 
   class STRLIT(val value: String) extends Token(STRLITKIND) {
-    override def toString: String = value.toString
+    override def toString: String = '"' + value + '"'
+  }
+
+  class COMMENTLIT(val value: String) extends Token(COMMENTLITKIND) {
+    override def toString: String = value
   }
 
   // These need to be lazy otherwise the program crashes

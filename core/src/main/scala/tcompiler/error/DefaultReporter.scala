@@ -3,7 +3,6 @@ package tcompiler.error
 import tcompiler.Flags
 import tcompiler.analyzer.Symbols.Symbolic
 import tcompiler.analyzer.Types.Typed
-import tcompiler.utils.Colorizer
 
 import scala.collection.mutable
 
@@ -38,12 +37,10 @@ class VoidReporter extends Reporter {
 class DefaultReporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
-  colorizer: Colorizer = new Colorizer(false),
+  formatting: Formatting = SimpleFormatting,
   maxErrors: Int = Flags.MaxErrors.Default,
   errorContext: Int = Flags.ErrorContext.Default
 ) extends Reporter {
-
-  import colorizer._
 
   private var hitMaxErrors = false
 
@@ -77,7 +74,7 @@ class DefaultReporter(
         errors += error
       case ErrorLevel.Fatal   =>
         errors += error
-        val errorFormatter = ErrorFormatter(error, colorizer, errorContext)
+        val errorFormatter = ErrorFormatter(error, formatting, errorContext)
         throw new CompilationException(errorFormatter.format())
     }
   }
@@ -96,10 +93,12 @@ class DefaultReporter(
   def hasWarnings: Boolean = warnings.nonEmpty
 
   def errorsString: String = {
+    import formatting.colorizer._
+
     val err = errorString(errors)
 
     val numErrors = errors.size
-    val num = s"$Red$Bold$numErrors$Reset"
+    val num = Red + Bold + numErrors + Reset
 
     val prefix = if (hitMaxErrors)
       s"There were more than $num errors, only showing the first $num"
@@ -117,7 +116,7 @@ class DefaultReporter(
 
   private def errorString(errors: mutable.LinkedHashSet[Error]) =
     errors
-      .map { err => ErrorFormatter(err, colorizer, errorContext).format() }
+      .map { err => ErrorFormatter(err, formatting, errorContext).format() }
       .mkString("\n")
 
   private def isValidError(error: Error): Boolean = {

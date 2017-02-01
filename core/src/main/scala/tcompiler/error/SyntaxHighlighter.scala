@@ -43,7 +43,7 @@ class SyntaxHighlighter(colorizer: Colorizer) {
     case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
     case CHARLITKIND | STRLITKIND                                => StringColor
     case IDKIND                                                  => VarColor
-    case COMMENT                                                 => CommentColor
+    case COMMENTLITKIND                                          => CommentColor
     case x if x in Tokens.Keywords                               => KeywordColor
     case _                                                       => identity
   }

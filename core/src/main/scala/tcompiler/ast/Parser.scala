@@ -51,7 +51,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
   import ASTBuilder._
 
-  tokens = tokens.filter(_.kind != COMMENT)
+  tokens = tokens.filter(!_.isInstanceOf[COMMENTLIT])
 
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
@@ -318,7 +318,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) <methodBody>
     */
   def method(modifiers: Set[Modifier]): MethodDecl = {
-    modifiers.filterType[Implicit].foreach(ErrorImplicitMethodOrOperator)
+    modifiers.filterInstance[Implicit].foreach(ErrorImplicitMethodOrOperator)
 
     val id = methodIdentifier
     eat(LPAREN)

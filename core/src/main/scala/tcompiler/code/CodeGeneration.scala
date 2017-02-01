@@ -16,8 +16,6 @@ import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.collection.mutable
-import scala.collection.script.Reset
-import scala.tools.nsc.doc.base.comment.Bold
 
 object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
 
@@ -27,10 +25,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
-    if (shouldPrintCode(ctx)) {
-      val stageName = ctx.colorizer.Blue(CodeGeneration.stageName)
-      println(s"${Bold}Output after $Reset$stageName:\n")
-    }
+    new InfoPrinter(this, ctx).printHeader()
     val outputFiles = classes.flatMap(generateClassFile(_, ctx))
     // TODO: this should be done for one file and then be copied
     outputFiles foreach generateStackMapFrames
@@ -79,8 +74,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
             generateBridgeMethod(classFile, overriden, methSymbol, flags, thisTree)
           }
 
-        if (shouldPrintCode(ctx))
-          println(ch.stackTrace(ctx.colorizer))
+        new InfoPrinter(this, ctx).printStacktrace(ch)
       }
 
     }
@@ -343,8 +337,6 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, CodeGenerator.ConstructorName, "()V")
   }
-
-  private def shouldPrintCode(ctx: Context) = ctx.printCodeStages.contains(CodeGeneration.stageName)
 
 }
 

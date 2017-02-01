@@ -12,7 +12,7 @@ trait B {
 
 class C : A {
 
-    Def Test() = "Hej" // res: T2027
+    Def Test()     =    " Hej" // res: T2027
 
 }
 

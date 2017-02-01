@@ -16,11 +16,11 @@ case class Context(
   files: List[File],
   classPaths: List[String] = Nil,
   outDirs: List[File] = List(new File(".")),
-  printCodeStages: List[String] = Nil,
+  printCodeStages: Set[String] = Set(),
   colorizer: Colorizer = new Colorizer(false),
   printer: PrettyPrinter = new PrettyPrinter(new Colorizer(false)),
   printInfo: Boolean = false,
-  ignoredImports: List[String] = List()
+  ignoredImports: Set[String] = Set()
 ) {
 
   private val JavaClassPath = "java.class.path"

@@ -5,11 +5,10 @@ import java.util.regex.Matcher
 
 import tcompiler.Main
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colorizer, Helpers}
+import tcompiler.utils.Helpers
 
 import scala.collection.mutable
 import scala.io.Source
-
 
 object ErrorFormatter {
 
@@ -33,11 +32,12 @@ object ErrorFormatter {
   */
 case class ErrorFormatter(
   error: Error,
-  colorizer: Colorizer,
+  formatting: Formatting,
   errorContextSize: Int) {
 
   import ErrorFormatter._
-  import colorizer._
+  import formatting.boxType._
+  import formatting.colorizer._
 
   private val QuoteColor   = Magenta
   private val MessageStyle = Bold
@@ -56,12 +56,10 @@ case class ErrorFormatter(
   private val QuoteRegex        = """'(.+?)'""".r
   private val pos               = error.pos
   private val lines             = if (pos.hasFile) getLines(pos.file.get) else Nil
-  private val syntaxHighlighter = new SyntaxHighlighter(colorizer)
-  private val boxFormatting     = LightBoxFormatting
-  private val wordWrapper       = new AnsiWordWrapper(colorizer)
+  private val syntaxHighlighter = new SyntaxHighlighter(formatting.colorizer)
+  private val wordWrapper       = new AnsiWordWrapper(formatting.colorizer)
 
   def format(): String = {
-    import boxFormatting._
     val sb = new StringBuilder
 
     sb ++= ┌ + ─ * (LineWidth - 2) + ┐ + "\n"
@@ -82,11 +80,11 @@ case class ErrorFormatter(
 
   private def errorPrefix: String = {
     val pre = error.errorLevel match {
-      case ErrorLevel.Warning => s"${WarningColor}Warning "
-      case ErrorLevel.Error   => s"${ErrorColor}Error "
-      case ErrorLevel.Fatal   => s"${FatalColor}Fatal "
+      case ErrorLevel.Warning => WarningColor + "Warning"
+      case ErrorLevel.Error   => ErrorColor + "Error"
+      case ErrorLevel.Fatal   => FatalColor + " Fatal"
     }
-    pre + error.code + Reset + ": "
+    pre + " " + error.code + Reset + ": "
   }
 
   private def filePrefix: String = {
@@ -115,15 +113,11 @@ case class ErrorFormatter(
   }
 
   private def makeLine(s: String, width: Int = LineWidth - 4): String = {
-    import boxFormatting._
-
     val whitespaces = " " * (width - s.charCount)
     │ + " " + s + whitespaces + " " + │ + "\n"
   }
 
   private def locationInFile: String = {
-    import boxFormatting._
-
     val ctxLines = contextLines
     val digits = ctxLines.map { case (i, _) => numDigits(i) }.max
 
@@ -187,7 +181,6 @@ case class ErrorFormatter(
   }
 
   private def lineNumPrefix(lineNumber: Int, digits: Int) = {
-    import boxFormatting._
     val digitsInLineNum = if (lineNumber == -1) 0 else numDigits(lineNumber)
     val whiteSpaces = " " * (digits - digitsInLineNum)
     val sb = new StringBuilder
@@ -209,8 +202,6 @@ case class ErrorFormatter(
   }
 
   private def seperator(left: String, bridge: String, right: String, digits: Int) = {
-    import boxFormatting._
-
     val rest = ─ * (LineWidth - digits - 5)
     val overNumbers = ─ * (digits + 2)
     left + overNumbers + bridge + rest + right + "\n"

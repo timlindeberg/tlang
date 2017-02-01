@@ -157,7 +157,7 @@ object Knowledge {
           return this
         }
       }
-      val knowledge = varKnowledge.getOrElse(varId, Set()).filterNotType[T] + newKnowledge
+      val knowledge = varKnowledge.getOrElse(varId, Set()).filterNotInstance[T] + newKnowledge
       copy(varKnowledge = varKnowledge + (varId -> knowledge))
     }
 
@@ -203,7 +203,7 @@ object Knowledge {
 
     def setNumericValue(varId: Identifier, value: Int): Knowledge = {
       val numericKnowledge = NumericValue(value)
-      val oldKnowledge = varKnowledge.getOrElse(varId, Set()).filterNotType[NumericValue]
+      val oldKnowledge = varKnowledge.getOrElse(varId, Set()).filterNotInstance[NumericValue]
       val newKnowledge = oldKnowledge + numericKnowledge
       copy(varKnowledge = varKnowledge + (varId -> newKnowledge))
     }

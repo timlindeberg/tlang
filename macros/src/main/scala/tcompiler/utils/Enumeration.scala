@@ -23,10 +23,7 @@ object Enumeration {
     if (!symbol.isClass || !symbol.asClass.isSealed)
       c.abort(c.enclosingPosition, "Can only enumerate values of a sealed trait or class.")
 
-    val children = symbol.asClass.knownDirectSubclasses.toList
-
-    if (!children.forall(_.isModuleClass))
-      c.abort(c.enclosingPosition, "All children must be objects.")
+    val children = symbol.asClass.knownDirectSubclasses.filter(_.isModuleClass).toList
 
     c.Expr[Set[A]] {
       Apply(

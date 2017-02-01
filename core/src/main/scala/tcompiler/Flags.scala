@@ -1,5 +1,7 @@
 package tcompiler
 
+import tcompiler.code.Desugaring
+import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colorizer, Enumeration}
 
 /**
@@ -7,22 +9,14 @@ import tcompiler.utils.{Colorizer, Enumeration}
   */
 object Flags {
 
-
   sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
 
     val flag: String
     val shortFlag: Option[String] = None
-    val arg      : Option[String] = None
     val description: String
-
-    var useColor = false
-
 
     def format(colorizer: Colorizer): String = {
       import colorizer._
-      val shortFlagDescription = shortFlag.map(f => s" (-$f)").getOrElse("")
-      val argDescription = arg.map(a => s" <$a>").getOrElse("")
-      val flagDescription = s"--$flag$shortFlagDescription$argDescription "
 
       val lines = description.stripMargin.trim.split("\n")
       val firstRow = f"  $flagDescription%-25s${lines.head}\n"
@@ -42,15 +36,46 @@ object Flags {
       colorization.foldLeft(fullDescription)((s, addColor) => addColor(s))
     }
 
-    def compare(that: Flag): Int = flag.length - that.flag.length
-    def unapply(str: String): Boolean = {
+    def flagDescription: String = {
+      val shortFlagDescription = shortFlag.map(f => s" (-$f)").getOrElse("")
+      s"--$flag$shortFlagDescription "
+    }
+
+    def matchesString(str: String): Boolean = {
       val lower = str.toLowerCase
-      lower == s"--$flag" || shortFlag.exists(flag => s"-$flag" == lower)
+      val res = lower == s"--$flag" || shortFlag.exists(flag => s"-$flag" == lower)
+      res
+    }
+
+    def compare(that: Flag): Int = flag.length - that.flag.length
+    def unapply(str: String): Boolean = matchesString(str)
+
+  }
+
+
+  sealed abstract class BooleanFlag extends Flag
+
+  sealed abstract class ArgumentFlag extends Flag {
+
+    val arg: String
+
+    override def flagDescription: String = {
+      // Dropping space
+      super.flagDescription.dropRight(1) + s" <$arg> "
     }
 
   }
 
-  case object Exec extends Flag {
+  sealed abstract class OptionalArgumentFlag extends ArgumentFlag {
+    def isValidArg(arg: String): Boolean
+    val defaultArg: String
+  }
+
+  //--------------------------------------------------------------------------------
+  //-- Flags
+  //--------------------------------------------------------------------------------
+
+  case object Exec extends BooleanFlag {
     override val flag = "exec"
 
     override val description =
@@ -59,7 +84,7 @@ object Flags {
       """
   }
 
-  case object SuppressWarnings extends Flag {
+  case object SuppressWarnings extends BooleanFlag {
     override val flag = "nowarn"
 
     override val description =
@@ -68,44 +93,58 @@ object Flags {
       """
   }
 
-  case object PrintCode extends Flag {
-    override val flag = "printcode"
-    override val arg  = Some("stage")
+  case object PrintOutput extends OptionalArgumentFlag {
+    override val flag       = "printoutput"
+    override val arg        = "stage"
+    override val defaultArg = Desugaring.stageName
+
+    override def isValidArg(arg: String): Boolean = arg.toLowerCase in validArgs
+
+
+    private val validArgs = Main.CompilerStages.map(_.stageName)
 
     override val description =
       """
-        |Pretty prints the AST as it after the given compiler stage.
+        |Prints the output after a given compiler stage. This can be the tokens
+        |produced by the Lexer, a pretty printed AST or the byte code generated
+        |by the CodeGeneration stage.
         |If no argument is given the code is printed as it looks before the
-        |final code is generated. Type -help stages to list compiler stages.
+        |final code is generated. Type --help stages to list compiler stages.
       """
   }
 
-  case object PrintInfo extends Flag {
+  case object PrintInfo extends BooleanFlag {
     override val flag = "printinfo"
 
     override val description =
       """
-        |Prints additional information during compilation such as elapsed
-        |time for each compilation stage.
+        |Prints additional information during compilation such as elapse time
+        |for each compilation stage.
       """
   }
 
-  case object Help extends Flag {
-    override val flag      = "help"
-    override val shortFlag = Some("h")
-    override val arg       = Some("about")
+  case object Help extends OptionalArgumentFlag {
+    override val flag       = "help"
+    override val shortFlag  = Some("h")
+    override val arg        = "about"
+    override val defaultArg = ""
+
+    override def isValidArg(arg: String): Boolean = arg.toLowerCase in validArgs
+
+    private val validArgs = List("stages")
+
 
     override val description =
       """
-        |Prints help information and exits. Giving stages as an argument
+        |Prints help information and exits. Giving 'stages' as an argument
         |lists the different compiler stages.
       """
   }
 
-  case object Directory extends Flag {
+  case object Directory extends ArgumentFlag {
     override val flag      = "directory"
     override val shortFlag = Some("d")
-    override val arg       = Some("dir")
+    override val arg       = "dir"
 
     override val description =
       """
@@ -113,7 +152,7 @@ object Flags {
       """
   }
 
-  case object Version extends Flag {
+  case object Version extends BooleanFlag {
     override val flag      = "version"
     override val shortFlag = Some("v")
 
@@ -123,7 +162,7 @@ object Flags {
       """
   }
 
-  case object WarningIsError extends Flag {
+  case object WarningIsError extends BooleanFlag {
     override val flag = "werror"
 
     override val description =
@@ -132,7 +171,7 @@ object Flags {
       """
   }
 
-  case object NoColor extends Flag {
+  case object NoColor extends BooleanFlag {
     override val flag = "nocolor"
 
     override val description =
@@ -141,10 +180,10 @@ object Flags {
       """
   }
 
-  case object ClassPath extends Flag {
+  case object ClassPath extends ArgumentFlag {
     override val flag      = "classpath"
     override val shortFlag = Some("cp")
-    override val arg       = Some("dir")
+    override val arg       = "dir"
 
     override val description =
       """
@@ -152,22 +191,22 @@ object Flags {
       """
   }
 
-  case object MaxErrors extends Flag {
+  case object MaxErrors extends ArgumentFlag {
     val Default = 100
 
     override val flag = "maxerrors"
-    override val arg  = Some("num")
+    override val arg  = "num"
 
     override val description =
       s"""
-         |Specify the maximum number of errors to report.The default is $Default.
+         |Specify the maximum number of errors to report. The default is $Default.
          |Enter -1 to show all errors.
        """
   }
 
-  case object IgnoreDefaultImports extends Flag {
+  case object IgnoreDefaultImports extends ArgumentFlag {
     override val flag = "ignoreimport"
-    override val arg  = Some("import")
+    override val arg  = "import"
 
     override val description =
       """
@@ -176,23 +215,43 @@ object Flags {
       """
   }
 
-  case object ErrorContext extends Flag {
+  case object ErrorContext extends ArgumentFlag {
     val Default = 2
 
     override val flag = "errorcontext"
-    override val arg  = Some("num")
+    override val arg  = "num"
 
     override val description =
       s"""
-         |Specify how many lines to display around an error position. Default is $Default.
+         |Specify how many lines to display around an error position.
+         |The default is $Default.
       """
   }
 
+  // These have to be defined below the Flags, otherwise the macro won't work
+
+  object BooleanFlag {
+
+    lazy val All: List[BooleanFlag] = Enumeration.instancesOf[BooleanFlag].toList
+    def unapply(str: String): Option[BooleanFlag] = All.find(_.matchesString(str))
+
+  }
+
+  object ArgumentFlag {
+
+    lazy val All: List[ArgumentFlag] = Enumeration.instancesOf[ArgumentFlag].toList
+    def unapply(str: String): Option[ArgumentFlag] = All.find(_.matchesString(str))
+
+  }
+
+  object OptionalArgumentFlag {
+
+    lazy val All: List[OptionalArgumentFlag] = Enumeration.instancesOf[OptionalArgumentFlag].toList
+    def unapply(str: String): Option[OptionalArgumentFlag] = All.find(_.matchesString(str))
+  }
+
   object Flag {
-
-    val AllFlags: List[Flag] = Enumeration.instancesOf[Flag].toList.sortBy(_.flag)
-    def unapply(str: String): Option[Flag] = AllFlags.find(_.unapply(str))
-
+    lazy val All: List[Flag] = (OptionalArgumentFlag.All ++ BooleanFlag.All ++ ArgumentFlag.All).sortBy(_.flag)
   }
 
 }
