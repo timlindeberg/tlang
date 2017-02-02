@@ -11,7 +11,6 @@ import scala.io.Source
 
 object ErrorFormatter {
 
-  val LineWidth                                        = 80
   val NonColoredIndicationChar                         = "~"
   val LineCache: mutable.Map[File, IndexedSeq[String]] = mutable.Map()
 
@@ -34,6 +33,7 @@ case class ErrorFormatter(
   errorContextSize: Int) {
 
   import ErrorFormatter._
+  import formatting._
   import formatting.box._
   import formatting.colorizer._
 
@@ -61,7 +61,7 @@ case class ErrorFormatter(
   def format(): String = {
     val sb = new StringBuilder
 
-    sb ++= top(LineWidth)
+    sb ++= top
 
     val validPosition = pos.hasFile && (1 to lines.size contains pos.line)
 
@@ -74,7 +74,7 @@ case class ErrorFormatter(
     if (validPosition)
       sb ++= locationInFile
     else
-      sb ++= bottom(LineWidth)
+      sb ++= bottom
 
     sb.toString()
   }
@@ -96,7 +96,7 @@ case class ErrorFormatter(
       position = position.replaceAll("(\\d)", s"$Style$$1$Reset")
       position = position.replaceAll(fileName, s"$Style$fileName$Reset")
     }
-    makeLines(wordWrapper(position, LineWidth - 4), LineWidth - 4)
+    makeLines(position)
   }
 
   private def formattedMessage: String = {
@@ -108,8 +108,7 @@ case class ErrorFormatter(
       name = TemplateNameParser.parseTemplateName(name)
       Matcher.quoteReplacement("\'" + Reset + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
     })
-    val res = errorPrefix + msgFormat + s + Reset
-    makeLines(wordWrapper(res, LineWidth - 4), LineWidth - 4)
+    makeLines(errorPrefix + msgFormat + s + Reset)
   }
 
   private def locationInFile: String = {
@@ -117,10 +116,10 @@ case class ErrorFormatter(
     val digits = ctxLines.map { case (i, _) => numDigits(i) }.max
 
     val sb = new StringBuilder
-    sb ++= seperator(├, ┬, ┤, digits, LineWidth)
+    sb ++= seperator(├, ┬, ┤, digits)
 
     val indent = getIndent(ctxLines)
-    val lineLength = LineWidth - digits - 7
+    val lineLength = formatting.width - digits - 3
 
     val trimmed = ctxLines.map { case (num, line) =>
       val t = if (line.isEmpty) "" else line.substring(indent)
@@ -142,7 +141,7 @@ case class ErrorFormatter(
       .mkString
 
 
-    sb ++= seperator(└, ┴, ┘, digits, LineWidth)
+    sb ++= seperator(└, ┴, ┘, digits)
     sb.toString()
   }
 

@@ -336,7 +336,7 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
 
         val noErrors = !TestContext.reporter.hasErrors
         if (!noErrors) {
-          println(TestContext.reporter.errorsString)
+          println(TestContext.reporter.errorMessage)
         }
         assert(noErrors, "for (" + lhs + ", " + rhs + ")")
       }

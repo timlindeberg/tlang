@@ -4,6 +4,9 @@ import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
 import tcompiler.Flags.{Flag, _}
+import tcompiler.error.Boxes
+import tcompiler.error.Boxes.Box
+import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -16,13 +19,15 @@ class FlagArgs extends mutable.HashMap[Flag, mutable.Set[String]] with mutable.M
 /**
   * Created by Tim Lindeberg on 2/1/2017.
   */
-class Options(arguments: Array[String]) extends MainErrors {
+case class Options(arguments: Array[String]) extends MainErrors {
 
   val flagArgs : FlagArgs           = new FlagArgs()
   val filePaths: ListBuffer[String] = new ListBuffer()
 
   def apply(flag: BooleanFlag): Boolean = flagArgs(flag).nonEmpty
-  def apply(flag: ArgumentFlag): Set[String] = flagArgs(flag).toSet // immutable
+  def apply(flag: ArgumentFlag): Set[String] = flagArgs(flag).toSet
+  // immutable
+  def apply(flag: NumberFlag): Int = getNum(flag)
 
   private def processOptions(args: List[String]): Unit = {
     if (args eq Nil)
@@ -42,7 +47,7 @@ class Options(arguments: Array[String]) extends MainErrors {
           maybeArg :: rest
         }
       case ArgumentFlag(flag) :: arg :: rest              =>
-        splitArgs(arg) foreach { arg => flagArgs.addBinding(flag, arg) }
+        addArgs(flag, arg)
         rest
       case BooleanFlag(flag) :: rest                      =>
         flagArgs.addBinding(flag, "Active")
@@ -54,25 +59,38 @@ class Options(arguments: Array[String]) extends MainErrors {
     processOptions(rest)
   }
 
+  private def addArgs(flag: Flag, arg: String) =
+    splitArgs(arg) foreach { arg => flagArgs.addBinding(flag, arg) }
+
   processOptions(arguments.toList)
 
-  val maxErrors     : Int          = getNum(MaxErrors, MaxErrors.Default)
-  val errorContext  : Int          = getNum(ErrorContext, ErrorContext.Default)
   val classPaths    : List[String] = getClassPaths(flagArgs(ClassPath))
   val files         : List[File]   = getFilesToCompile(filePaths)
   val outDirectories: List[File]   = getOutDirectories(flagArgs(Directory))
+  val boxType       : Box          = getBoxType(flagArgs(Formatting))
+
+  verifyOutputStages(flagArgs(PrintOutput))
+
+  private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
+    val validStages = Main.CompilerStages.map(_.stageName)
+    stages.foreach { stage =>
+      if (!(stage in validStages))
+        FatalInvalidArgToFlag(PrintOutput, stage, validStages)
+    }
+  }
+
 
   private def splitArgs(arg: String): List[String] = arg.split(",").map(_.trim).filter(_.nonEmpty).toList
 
-  private def getNum(flag: Flag, defaultValue: Int): Int = {
+  private def getNum(flag: NumberFlag): Int = {
     val validNums = flagArgs(flag).map { num =>
       try {
         num.toInt
       } catch {
-        case _: NumberFormatException => FatalInvalidNumber(flag, num)
+        case _: NumberFormatException => FatalInvalidArgToFlag(flag, num, Nil)
       }
     }
-    if (validNums.isEmpty) defaultValue else validNums.max
+    if (validNums.isEmpty) flag.defaultValue else validNums.max
   }
 
   private def getClassPaths(paths: mutable.Set[String]): List[String] = {
@@ -125,4 +143,17 @@ class Options(arguments: Array[String]) extends MainErrors {
     files.filter(!_.exists()).foreach(f => FatalCannotFindFile(f.getPath))
     files.toList
   }
+
+
+  private def getBoxType(formattings: mutable.Set[String]): Box = {
+    val boxNames = Boxes.All.map(_.name)
+    formattings.foreach { formatting =>
+      if (!(formatting in boxNames))
+        FatalInvalidArgToFlag(Formatting, formatting, boxNames.toList)
+    }
+    formattings.headOption
+      .flatMap(formatting => Boxes.All.find(_.name == formatting))
+      .getOrElse(Boxes.DefaultBox)
+  }
+
 }

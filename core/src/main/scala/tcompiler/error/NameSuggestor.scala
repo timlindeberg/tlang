@@ -28,6 +28,7 @@ class NameSuggestor {
 
   private case class Distance(name: String, alternative: String) {
 
+    // Levensthein distance
     val distance: Int = {
       val dist = Array.tabulate(alternative.length + 1, name.length + 1) { (j, i) =>
         if (j == 0) i

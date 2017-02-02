@@ -11,7 +11,13 @@ class AnsiWordWrapper {
 
   private val EarlyBreakChars: String = """\/.:;-_()"""
 
+  def apply(texts: List[String], maxWidth: Int): List[String] = texts.flatMap(apply(_, maxWidth))
+
   def apply(text: String, maxWidth: Int): List[String] = {
+    text.split("\n").toList.flatMap(wrap(_, maxWidth))
+  }
+
+  private def wrap(text: String, maxWidth: Int): List[String] = {
 
     @tailrec def wordWrap(chars: List[Char], currentWord: String, currentLine: String, lines: List[String]): List[String] = {
       chars match {

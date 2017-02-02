@@ -17,8 +17,8 @@ trait Reporter {
   def hasErrors: Boolean
   def hasWarnings: Boolean
 
-  def errorsString: String
-  def warningsString: String
+  def errorMessage: String
+  def warningMessage: String
 
 }
 
@@ -29,8 +29,8 @@ class VoidReporter extends Reporter {
 
   override def hasErrors: Boolean = false
   override def hasWarnings: Boolean = false
-  override def errorsString: String = ""
-  override def warningsString: String = ""
+  override def errorMessage: String = ""
+  override def warningMessage: String = ""
 }
 
 
@@ -38,8 +38,8 @@ class DefaultReporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
   formatting: Formatting = SimpleFormatting,
-  maxErrors: Int = Flags.MaxErrors.Default,
-  errorContext: Int = Flags.ErrorContext.Default
+  maxErrors: Int = Flags.MaxErrors.defaultValue,
+  errorContext: Int = Flags.ErrorContext.defaultValue
 ) extends Reporter {
 
   private var hitMaxErrors = false
@@ -87,32 +87,40 @@ class DefaultReporter(
 
   def terminateIfErrors(): Unit =
     if (hasErrors)
-      throw new CompilationException(errorsString)
+      throw new CompilationException(errorMessage)
 
   def hasErrors: Boolean = errors.nonEmpty
   def hasWarnings: Boolean = warnings.nonEmpty
 
-  def errorsString: String = {
+  def errorMessage: String = {
     import formatting.colorizer._
 
     val err = errorString(errors)
-
     val numErrors = errors.size
     val num = Red + Bold + numErrors + Reset
 
     val prefix = if (hitMaxErrors)
       s"There were more than $num errors, only showing the first $num"
-    else if (numErrors == 1)
-      s"There was $num error"
     else
-      s"There were $num errors"
+      getPrefix(errors, "error", num)
 
     prefix + s":\n\n$err"
   }
 
 
-  def warningsString: String = errorString(warnings)
+  def warningMessage: String = {
+    import formatting.colorizer._
+    val numWarnings = warnings.size
+    val num = Yellow + Bold + numWarnings + Reset
+    getPrefix(warnings, "warning", num) + ":\n\n" + errorString(warnings)
+  }
 
+  private def getPrefix(errors: mutable.LinkedHashSet[Error], tpe: String, num: String) = {
+    if (errors.size == 1)
+      s"There was $num $tpe"
+    else
+      s"There were $num ${tpe}s"
+  }
 
   private def errorString(errors: mutable.LinkedHashSet[Error]) =
     errors

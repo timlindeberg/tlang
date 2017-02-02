@@ -8,7 +8,7 @@ import tcompiler.lexer.Tokens
 import tcompiler.utils.Colorizer
 
 
-class PrettyPrinter(colorizer: Colorizer) {
+case class PrettyPrinter(colorizer: Colorizer) {
 
   import Trees._
   import colorizer._
@@ -28,10 +28,10 @@ class PrettyPrinter(colorizer: Colorizer) {
     else
       "No file"
 
-    s"""|//-------------------------------------------------------------
-        |//--- $fileName
+    s"""|
         |//-------------------------------------------------------------
-        |""".stripMargin
+        |//--- $fileName
+        |//-------------------------------------------------------------""".stripMargin
   }
 
   private def prettyPrint(t: Tree): String = t match {

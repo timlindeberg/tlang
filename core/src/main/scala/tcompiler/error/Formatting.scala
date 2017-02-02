@@ -1,6 +1,6 @@
 package tcompiler.error
 
-import tcompiler.error.Formats.{Box, Simple}
+import tcompiler.error.Boxes.{Box, Simple}
 import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colorizer, Enumeration}
 
@@ -8,12 +8,62 @@ import tcompiler.utils.{Colorizer, Enumeration}
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Formatting(box: Box, colorizer: Colorizer)
+case class Formatting(box: Box, width: Int, colorizer: Colorizer) {
 
-object SimpleFormatting extends Formatting(Simple, new Colorizer(useColor = false))
+  import box._
 
+  private val wordWrapper = new AnsiWordWrapper
 
-object Formats {
+  def top: String = ┌ + ─ * (width - 2) + ┐ + "\n"
+  def bottom: String = └ + ─ * (width - 2) + ┘ + "\n"
+  def divider: String = ├ + ─ * (width - 2) + ┤ + "\n"
+
+  def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
+    val rest = ─ * (width - bridgeAt - 5)
+    val overNumbers = ─ * (bridgeAt + 2)
+    left + overNumbers + bridge + rest + right + "\n"
+  }
+
+  def makeHeader(text: String): String = {
+    val x = width - text.charCount - 2
+    val space = " " * (x / 2)
+    val left = space
+    val right = if (x % 2 == 0) space else space + " "
+
+    top + │ + left + text + right + │ + "\n"
+  }
+
+  def makeLines(line: String, width: Int = width): String = {
+    wordWrapper(line, width - 4).map(makeLine(_, width)).mkString
+  }
+
+  def makeLine(line: String, width: Int = width): String = {
+    val whitespaces = " " * (width - line.charCount - 4)
+    │ + " " + line + whitespaces + " " + │ + "\n"
+  }
+
+  def makeBlock(block: String): String = {
+    val sb = new StringBuilder
+    sb ++= divider
+    sb ++= makeLines(block)
+    sb.toString()
+  }
+
+  def makeBox(header: String, blocks: List[String]): String = {
+    val sb = new StringBuilder
+    sb ++= makeHeader(header)
+    blocks foreach {sb ++= makeBlock(_)}
+    sb ++= bottom
+    sb.toString
+  }
+}
+
+object SimpleFormatting extends Formatting(Simple, 80, new Colorizer(useColor = false))
+
+object Boxes {
+
+  val DefaultBox: Box = Light
+
   sealed abstract class Box(val chars: String) extends Product with Serializable {
     val ─ : String = chars(0).toString
     val │ : String = chars(1).toString
@@ -27,23 +77,8 @@ object Formats {
     val ┤ : String = chars(9).toString
     val ┼ : String = chars(10).toString
 
+    // Drop right to remove $ at end of object class name
     val name: String = getClass.getSimpleName.dropRight(1).toLowerCase
-
-    def top(width: Int): String = ┌ + ─ * (width - 2) + ┐ + "\n"
-    def bottom(width: Int): String = └ + ─ * (width - 2) + ┘ + "\n"
-    def seperator(left: String, bridge: String, right: String, bridgeAt: Int, width: Int): String = {
-      val rest = ─ * (width - bridgeAt - 5)
-      val overNumbers = ─ * (bridgeAt + 2)
-      left + overNumbers + bridge + rest + right + "\n"
-    }
-
-    def makeLine(line: String, width: Int): String = {
-      val whitespaces = " " * (width - line.charCount)
-      │ + " " + line + whitespaces + " " + │ + "\n"
-    }
-
-    def makeLines(lines: List[String], width: Int): String = lines.map(makeLine(_, width)).mkString
-
   }
 
 
@@ -61,5 +96,5 @@ object Formats {
   case object QuadrupleDashHeavy extends Box("┉┋┏┓┛┗┳┻┣┫╋")
   // @formatter:on
 
-  lazy val Types: Set[Box] = Enumeration.instancesOf[Box]
+  lazy val All: Set[Box] = Enumeration.instancesOf[Box]
 }

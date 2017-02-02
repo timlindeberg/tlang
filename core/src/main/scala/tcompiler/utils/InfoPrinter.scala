@@ -8,12 +8,14 @@ import tcompiler.lexer.Token
   * Created by Tim Lindeberg on 2/1/2017.
   */
 
-class InfoPrinter[-F, +T](stage: Pipeline[F, T], ctx: Context) {
+case class InfoPrinter[-F, +T](stage: Pipeline[F, T], ctx: Context) {
 
-  import ctx.colorizer._
+  import ctx.formatting._
+  import ctx.formatting.colorizer._
 
   private val stageName            = stage.stageName.capitalize
   private val shouldPrint: Boolean = ctx.printCodeStages.contains(stageName.toLowerCase)
+  val header: String = Bold("Output after stage ") + Blue(stageName)
 
 
   def printCode[S >: T](output: S): Unit = {
@@ -27,31 +29,35 @@ class InfoPrinter[-F, +T](stage: Pipeline[F, T], ctx: Context) {
     }
   }
 
+
   def printHeader(): Unit =
     if (shouldPrint)
-      println(Bold("Output after ") + Blue(stageName) + Bold(":\n"))
+      print(makeHeader(header))
+
+  def printEnd(): Unit =
+    if (shouldPrint)
+      print(bottom)
 
   def printStacktrace(codeHandler: CodeHandler): Unit =
-    if (shouldPrint)
-      println(codeHandler.stackTrace(ctx.colorizer))
-
+    if (shouldPrint) {
+      val code = codeHandler.stackTrace(ctx.formatting.colorizer)
+      print(makeBlock(code))
+    }
 
   private def printCompilationUnits(cus: List[CompilationUnit]) = {
-    printHeader()
-    val res = cus.map { cu => ctx.printer(cu) + "\n" }.mkString
-    println(res)
+    val blocks = cus.map { cu => ctx.printer(cu) }
+    print(makeBox(header, blocks))
   }
 
   private def printTokens(tokens: List[List[Token]]) = {
-    printHeader()
-    val res = tokens.map {_.map(formatToken).mkString("\n")}.mkString("\n\n") + "\n"
-    println(res)
+    val blocks = tokens.map {_.map(formatToken).mkString("\n")}
+    print(makeBox(header, blocks))
   }
 
   private def formatToken(t: Token) = {
     val tokenName = t.kind.getClass.getSimpleName.dropRight(1)
     val token = t.toString
-    s"$Blue%-35s$Reset => $Bold%-15s$Reset $Bold[$Reset$Blue Pos$Reset: ($Red%s$Reset:$Red%s$Reset) - ($Red%s$Reset:$Red%s$Reset) $Bold]$Reset"
+    s"$Blue%-20s$Reset => $Bold%-15s$Reset $Bold[$Reset$Blue Pos$Reset: ($Red%s$Reset:$Red%s$Reset) - ($Red%s$Reset:$Red%s$Reset) $Bold]$Reset"
       .format(token, tokenName, t.line, t.col, t.endLine, t.endCol)
   }
 

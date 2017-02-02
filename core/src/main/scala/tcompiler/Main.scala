@@ -4,11 +4,10 @@ import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.code.{CodeGeneration, Desugaring}
-import tcompiler.error.Formats.{Light, Simple}
-import tcompiler.error.{CompilationException, DefaultReporter, Formats, Formatting}
+import tcompiler.error.Boxes.Simple
+import tcompiler.error.{CompilationException, DefaultReporter, Formatting}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.sys.process._
@@ -23,9 +22,7 @@ object Main extends MainErrors {
   val JavaObject           = "java/lang/Object"
   val JavaString           = "java/lang/String"
   val TExtensionAnnotation = "kool/lang/$ExtensionMethod"
-  val colorizer            = new Colorizer(false)
 
-  import colorizer._
 
   lazy val TDirectory: String = {
     if (!sys.env.contains(THome))
@@ -45,28 +42,25 @@ object Main extends MainErrors {
   )
 
   def main(args: Array[String]) {
+    val options = Options(args)
+    val useColor = options.boxType != Simple
+    val colorizer = Colorizer(useColor)
     if (args.isEmpty) {
-      printHelp()
+      printHelp(colorizer)
       sys.exit(1)
     }
 
     if (!isValidTHomeDirectory(TDirectory))
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
-    val options = new Options(args)
-    val formatType = Formats.Types
-      .find(_.name in options(Flags.Formatting))
-      .getOrElse(Light)
 
-
-    colorizer.useColor = formatType != Simple
-    val formatting = error.Formatting(formatType, colorizer)
+    val formatting = error.Formatting(options.boxType, options(LineWidth), colorizer)
     if (options(Version)) {
       printVersion()
       sys.exit()
     }
     if (options(Help).nonEmpty) {
-      printHelp(options(Help))
+      printHelp(colorizer, options(Help))
       sys.exit()
     }
     if (options.files.isEmpty)
@@ -83,13 +77,13 @@ object Main extends MainErrors {
     compilation.run(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
-      println(ctx.reporter.warningsString)
+      println(ctx.reporter.warningMessage)
 
     if (options(PrintInfo))
       printExecutionTimes(ctx)
 
     if (options(Exec))
-      cus.foreach(executeProgram)
+      cus.foreach(executeProgram(_, colorizer))
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -112,8 +106,8 @@ object Main extends MainErrors {
       reporter = new DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        maxErrors = options.maxErrors,
-        errorContext = options.errorContext,
+        maxErrors = options(MaxErrors),
+        errorContext = options(ErrorContext),
         formatting = formatting
       ),
       files = options.files,
@@ -122,13 +116,12 @@ object Main extends MainErrors {
       printCodeStages = options(PrintOutput),
       printInfo = options(PrintInfo),
       ignoredImports = options(IgnoreDefaultImports),
-      colorizer = colorizer,
-      printer = new PrettyPrinter(colorizer)
+      formatting = formatting,
+      printer = PrettyPrinter(formatting.colorizer)
     )
 
   private def printFilesToCompile(ctx: Context) = {
-    import ctx.colorizer._
-
+    import ctx.formatting.colorizer._
     val numFiles = ctx.files.size
     val files = ctx.files.map { f =>
       val name = f.getName.dropRight(Main.FileEnding.length)
@@ -143,6 +136,7 @@ object Main extends MainErrors {
   }
 
   private def printExecutionTimes(ctx: Context) = {
+    import ctx.formatting.colorizer._
     val totalTime = ctx.executionTimes.values.sum
     val individualTimes = CompilerStages.map { stage =>
       val name = Blue(stage.stageName.capitalize)
@@ -151,7 +145,7 @@ object Main extends MainErrors {
       f"   $name%-25s $t seconds"
     }.mkString("\n")
     val msg =
-      f"""|${Bold("Compilation executed")} ${Green("successfully")} ${Bold("in")} $Green$totalTime%.2f$Reset ${Bold("seconds.")}
+      f"""|${Bold}Compilation executed ${Green("successfully")}$Bold in $Green$totalTime%.2f$Reset ${Bold("seconds.")}
           |Execution time for individual stages:
           |$individualTimes
           |""".stripMargin
@@ -160,7 +154,8 @@ object Main extends MainErrors {
 
   private def printVersion() = println(s"T-Compiler $VersionNumber")
 
-  private def printHelp(args: Set[String] = Set("")) = args foreach { arg =>
+  private def printHelp(colorizer: Colorizer, args: Set[String] = Set("")) = args foreach { arg =>
+    import colorizer._
     val message = arg match {
       case "stages" =>
         val stages = CompilerStages.map(stage => s"   <$Blue${stage.stageName.capitalize}$Reset>").mkString("\n")
@@ -182,8 +177,6 @@ object Main extends MainErrors {
 
   private def isValidTHomeDirectory(path: String): Boolean = {
     // TODO: Make this properly check that the directory is valid
-    return true
-
     /*
     def listFiles(f: File): Array[File] = {
       val these = f.listFiles
@@ -207,12 +200,12 @@ object Main extends MainErrors {
 
     if (fileMap.exists(!_._2))
       return false
-
-    true
     */
+    true
+
   }
 
-  private def executeProgram(cu: CompilationUnit): Unit = {
+  private def executeProgram(cu: CompilationUnit, colorizer: Colorizer): Unit = {
     if (!cu.classes.exists(_.methods.exists(_.isMain)))
       return
 
@@ -228,7 +221,7 @@ object Main extends MainErrors {
          |$separator
          |${execCommand !!}
          |$separator
-       """.stripMargin)
+   """.stripMargin)
   }
 
 }

@@ -26,7 +26,7 @@ trait ErrorTester extends Tester {
       if (!ctx.reporter.hasWarnings)
         fail("Test failed: No errors or warnings!")
 
-      val warnings = ctx.reporter.warningsString
+      val warnings = ctx.reporter.warningMessage
       if (PrintErrors)
         println(warnings)
 

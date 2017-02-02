@@ -3,9 +3,10 @@ package tcompiler
 import java.io.File
 
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import tcompiler.Flags.LineWidth
 import tcompiler.ast.PrettyPrinter
 import tcompiler.ast.Trees.CompilationUnit
-import tcompiler.error.Formats.Simple
+import tcompiler.error.Boxes.Simple
 import tcompiler.error.{DefaultReporter, Formatting}
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.{Colorizer, Context, Pipeline}
@@ -123,7 +124,8 @@ object Tester {
     }
 
     val colorizer = new Colorizer(UseColor)
-    val reporter = new DefaultReporter(formatting = Formatting(Simple, colorizer))
+    val formatting = Formatting(Simple, LineWidth.defaultValue, colorizer)
+    val reporter = new DefaultReporter(formatting = formatting)
     val cp = Main.TDirectory
     Context(
       reporter = reporter,
@@ -131,7 +133,7 @@ object Tester {
       outDirs = outDir,
       classPaths = List(cp),
       printCodeStages = PrintCodeStages,
-      colorizer = colorizer,
+      formatting = formatting,
       printer = new PrettyPrinter(colorizer))
   }
 

@@ -6,7 +6,7 @@ import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
 import tcompiler.ast.PrettyPrinter
-import tcompiler.error.Reporter
+import tcompiler.error.{Formatting, Reporter, SimpleFormatting}
 import tcompiler.imports.ClassSymbolLocator
 
 import scala.collection.mutable
@@ -17,8 +17,8 @@ case class Context(
   classPaths: List[String] = Nil,
   outDirs: List[File] = List(new File(".")),
   printCodeStages: Set[String] = Set(),
-  colorizer: Colorizer = new Colorizer(false),
-  printer: PrettyPrinter = new PrettyPrinter(new Colorizer(false)),
+  formatting: Formatting = SimpleFormatting,
+  printer: PrettyPrinter = new PrettyPrinter(Colorizer(false)),
   printInfo: Boolean = false,
   ignoredImports: Set[String] = Set()
 ) {

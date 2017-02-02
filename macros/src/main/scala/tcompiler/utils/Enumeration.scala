@@ -18,7 +18,7 @@ object Enumeration {
     def getSymbol(sym: c.universe.Symbol) =
       sym.asInstanceOf[scala.reflect.internal.Symbols#Symbol].sourceModule.asInstanceOf[Symbol]
 
-    val symbol = weakTypeOf[A].typeSymbol
+    val symbol: c.universe.Symbol = weakTypeOf[A].typeSymbol
 
     if (!symbol.isClass || !symbol.asClass.isSealed)
       c.abort(c.enclosingPosition, "Can only enumerate values of a sealed trait or class.")
@@ -32,6 +32,5 @@ object Enumeration {
       )
     }
   }
-
 
 }

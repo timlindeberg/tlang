@@ -1,7 +1,7 @@
 package tcompiler
 
 import tcompiler.Flags.Flag
-import tcompiler.error.Errors
+import tcompiler.error.{Errors, NameSuggestor}
 import tcompiler.imports.ImportMap
 import tcompiler.utils.Context
 
@@ -13,6 +13,9 @@ trait MainErrors extends Errors {
   override var ctx: Context = _
   override val ErrorLetters = "M"
   override var importMap    = new ImportMap()
+
+  private val nameSuggestor = new NameSuggestor
+
 
   private def fatal(message: String) = {
     println(message)
@@ -56,8 +59,7 @@ trait MainErrors extends Errors {
   protected def FatalGivenFileIsNotTFile(path: String): Nothing =
     fatal(s"The given file '$path' is not a T-file.")
 
-  protected def FatalInvalidNumber(flag: Flag, num: String) = {
-    fatal(s"'$num' is not a valid argument to --'${flag.flag}'. Needs a number as argument.")
-  }
+  protected def FatalInvalidArgToFlag(flag: Flag, arg: String, alternatives: List[String]): Nothing =
+    fatal(s"'$arg' is not a valid argument to flag '--${flag.flag}'.${nameSuggestor(arg, alternatives)}")
 
 }

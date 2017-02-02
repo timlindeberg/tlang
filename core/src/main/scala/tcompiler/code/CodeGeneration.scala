@@ -25,10 +25,12 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
-    new InfoPrinter(this, ctx).printHeader()
+    InfoPrinter(this, ctx).printHeader()
     val outputFiles = classes.flatMap(generateClassFile(_, ctx))
     // TODO: this should be done for one file and then be copied
     outputFiles foreach generateStackMapFrames
+    InfoPrinter(this, ctx).printEnd()
+
   }
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
@@ -74,7 +76,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
             generateBridgeMethod(classFile, overriden, methSymbol, flags, thisTree)
           }
 
-        new InfoPrinter(this, ctx).printStacktrace(ch)
+        InfoPrinter(this, ctx).printStacktrace(ch)
       }
 
     }

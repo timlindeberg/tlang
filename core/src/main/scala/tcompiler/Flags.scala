@@ -1,7 +1,7 @@
 package tcompiler
 
 import tcompiler.code.Desugaring
-import tcompiler.error.Formats
+import tcompiler.error.Boxes
 import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colorizer, Enumeration}
 
@@ -20,9 +20,9 @@ object Flags {
       import colorizer._
 
       val lines = description.stripMargin.trim.split("\n")
-      val firstRow = f"  $flagDescription%-25s${lines.head}\n"
+      val firstRow = f"  $flagDescription%-26s${lines.head}\n"
 
-      val space = " " * 27
+      val space = " " * 28
       val fullDescription = lines.tail.foldLeft(firstRow)((description, s) => description + s"$space$s\n")
       if (!colorizer.useColor)
         return fullDescription
@@ -65,6 +65,14 @@ object Flags {
       // Dropping space
       super.flagDescription.dropRight(1) + s" <$arg> "
     }
+
+  }
+
+
+  sealed abstract class NumberFlag extends ArgumentFlag {
+
+    val arg: String = "num"
+    val defaultValue: Int
 
   }
 
@@ -183,7 +191,7 @@ object Flags {
       s"""
          |Chooses the formatting style of messages produced by the compiler.
          |'Simple' will only produce ASCII-characters and use no colors.
-         |Valid styles are: ${Formats.Types.map(_.getClass.getSimpleName).mkString(", ")}
+         |Valid styles are: ${Boxes.All.map(_.name).mkString(", ")}
       """
   }
 
@@ -198,15 +206,13 @@ object Flags {
       """
   }
 
-  case object MaxErrors extends ArgumentFlag {
-    val Default = 100
-
-    override val flag = "maxerrors"
-    override val arg  = "num"
+  case object MaxErrors extends NumberFlag {
+    override val defaultValue = 100
+    override val flag         = "maxerrors"
 
     override val description =
       s"""
-         |Specify the maximum number of errors to report. The default is $Default.
+         |Specify the maximum number of errors to report. The default is $defaultValue.
          |Enter -1 to show all errors.
        """
   }
@@ -222,40 +228,56 @@ object Flags {
       """
   }
 
-  case object ErrorContext extends ArgumentFlag {
-    val Default = 2
+  case object ErrorContext extends NumberFlag {
+    override val defaultValue = 2
 
-    override val flag = "errorcontext"
+    override val flag      = "errorcontext"
+    override val shortFlag = Some("c")
+    override val arg       = "num"
+
+
+    override val description =
+      s"""
+         |Specify how many lines to display around an error position in error messages.
+         |The default is $defaultValue.
+      """
+  }
+
+  case object LineWidth extends NumberFlag {
+    override val defaultValue = 80
+
+    override val flag = "linewidth"
     override val arg  = "num"
 
 
     override val description =
       s"""
-         |Specify how many lines to display around an error position.
-         |The default is $Default.
+         |Specify the width of a line in error message and output.
+         |Default is $defaultValue chars.
       """
   }
 
   // These have to be defined below the Flags, otherwise the macro won't work
 
   object BooleanFlag {
-
     lazy val All: List[BooleanFlag] = Enumeration.instancesOf[BooleanFlag].toList
     def unapply(str: String): Option[BooleanFlag] = All.find(_.matchesString(str))
-
   }
 
   object ArgumentFlag {
-
-    lazy val All: List[ArgumentFlag] = Enumeration.instancesOf[ArgumentFlag].toList
+    lazy val All: List[ArgumentFlag] =
+      Enumeration.instancesOf[ArgumentFlag].toList ++ Enumeration.instancesOf[NumberFlag].toList
     def unapply(str: String): Option[ArgumentFlag] = All.find(_.matchesString(str))
-
   }
 
   object OptionalArgumentFlag {
-
     lazy val All: List[OptionalArgumentFlag] = Enumeration.instancesOf[OptionalArgumentFlag].toList
     def unapply(str: String): Option[OptionalArgumentFlag] = All.find(_.matchesString(str))
+  }
+
+  object NumberFlag {
+    lazy val All: List[NumberFlag] = Enumeration.instancesOf[NumberFlag].toList
+    def unapply(str: String): Option[NumberFlag] = All.find(_.matchesString(str))
   }
 
   object Flag {
