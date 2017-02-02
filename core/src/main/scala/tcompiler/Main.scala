@@ -4,9 +4,11 @@ import tcompiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.code.{CodeGeneration, Desugaring}
-import tcompiler.error.{CompilationException, DefaultReporter, Formatting, LightBox}
+import tcompiler.error.Formats.{Light, Simple}
+import tcompiler.error.{CompilationException, DefaultReporter, Formats, Formatting}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
+import tcompiler.utils.Extensions._
 import tcompiler.utils._
 
 import scala.sys.process._
@@ -52,7 +54,13 @@ object Main extends MainErrors {
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
     val options = new Options(args)
-    colorizer.useColor = !options(NoColor)
+    val formatType = Formats.Types
+      .find(_.name in options(Flags.Formatting))
+      .getOrElse(Light)
+
+
+    colorizer.useColor = formatType != Simple
+    val formatting = error.Formatting(formatType, colorizer)
     if (options(Version)) {
       printVersion()
       sys.exit()
@@ -64,7 +72,7 @@ object Main extends MainErrors {
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
-    ctx = createContext(options)
+    ctx = createContext(options, formatting)
 
     if (options(PrintInfo))
       printFilesToCompile(ctx)
@@ -99,14 +107,14 @@ object Main extends MainErrors {
     cus
   }
 
-  private def createContext(options: Options): Context =
+  private def createContext(options: Options, formatting: Formatting): Context =
     Context(
       reporter = new DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
         maxErrors = options.maxErrors,
         errorContext = options.errorContext,
-        formatting = Formatting(LightBox, colorizer)
+        formatting = formatting
       ),
       files = options.files,
       classPaths = options.classPaths,

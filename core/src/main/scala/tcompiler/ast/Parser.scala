@@ -254,8 +254,8 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     */
   def varDeclEnd(modifiers: Set[Modifier]): VarDecl = {
     val id = varIdentifier
-    val typ = optional(tpe, COLON)
-    val init = optional(expression, EQSIGN)
+    val typ = optional(setPos = false, tpe, COLON)
+    val init = optional(setPos = false, expression, EQSIGN)
     VarDecl(typ, id, init, modifiers)
   }
 
@@ -324,7 +324,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     eat(LPAREN)
     val args = commaList(formal)
     eat(RPAREN)
-    val retType = optional(returnType, COLON)
+    val retType = optional(setPos = false, returnType, COLON)
 
     val methBody = methodBody
     MethodDecl(modifiers, id, args, retType, methBody)
@@ -443,7 +443,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
           LOGICNOT, LBRACKET)
     }
     eat(RPAREN)
-    val retType = optional(returnType, COLON)
+    val retType = optional(setPos = false, returnType, COLON)
     val methBody = methodBody
 
 
@@ -454,7 +454,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
   /**
     * [ "=" <statement> ]
     */
-  def methodBody: Option[StatTree] = optional(replaceExprWithReturnStat(statement), EQSIGN)
+  def methodBody: Option[StatTree] = optional(setPos = false, replaceExprWithReturnStat(statement), EQSIGN)
 
   private def protectedOrPrivate: Accessability = positioned {
     nextTokenKind match {
@@ -586,7 +586,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
         val condition = expression
         eat(RPAREN)
         val stmt = statement
-        val els = optional(statement, ELSE)
+        val els = optional(setPos = true, statement, ELSE)
         If(condition, stmt, els)
       case WHILE                   =>
         eat(WHILE, LPAREN)
@@ -1127,7 +1127,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     */
   def superCall: ExprTree = positioned {
     eat(SUPER)
-    val specifier = optional({
+    val specifier = optional(setPos = false, {
       val id = classIdentifier
       eat(GREATERTHAN)
       id
@@ -1397,10 +1397,14 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     * Parses an optional of the form
     * <optional> ::= [ parse ] and returns Option
     */
-  private def optional[T](parse: => T with Positioned, kinds: TokenKind*): Option[T] = {
+  private def optional[T <: Positioned](setPos: Boolean, parse: => T, kinds: TokenKind*): Option[T] = {
+    val startPos = nextToken
     if (kinds.contains(nextTokenKind)) {
       eat(nextTokenKind)
-      Some(parse)
+      val res = parse
+      if (setPos)
+        res.setPos(startPos, previousToken)
+      Some(res)
     } else {
       None
     }
@@ -1410,17 +1414,17 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     * Continues parsing until one of the given token kinds are encountered.
     */
   private def until[T](parse: => T, kinds: TokenKind*): List[T] = {
-    _until(!kinds.contains(nextTokenKind), parse)
+    until(!kinds.contains(nextTokenKind), parse)
   }
 
   /**
     * Continues parsing until a token different from the given tokens is encountered.
     */
   private def untilNot[T](parse: => T, kinds: TokenKind*): List[T] = {
-    _until(kinds.contains(nextTokenKind), parse)
+    until(kinds.contains(nextTokenKind), parse)
   }
 
-  private def _until[T](condition: => Boolean, parse: => T): List[T] = {
+  private def until[T](condition: => Boolean, parse: => T): List[T] = {
     var arrBuff = new ArrayBuffer[T]()
     while (condition) {
       arrBuff += parse

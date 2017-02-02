@@ -31,7 +31,7 @@ trait FlowAnalysisErrors extends Errors {
     error(3, s"Division by expression '$zeroExpr' is illegal since it is known to have the value '0'.", pos)
 
   protected def ErrorOutOfBounds(index: ExprTree, value: Int, size: Int, pos: Positioned): Unit = {
-    val bounds = if (value < 0) s"'$value' < '0'" else s"'$value' >= '$size'"
+    val bounds = if (value < 0) s"'$value' < '0'" else s"'$value' > '$size'"
     error(4, s"Indexing expression '$index' is out of bounds: $bounds.", pos)
   }
 

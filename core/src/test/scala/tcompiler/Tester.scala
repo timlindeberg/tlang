@@ -5,7 +5,8 @@ import java.io.File
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tcompiler.ast.PrettyPrinter
 import tcompiler.ast.Trees.CompilationUnit
-import tcompiler.error.{DefaultReporter, Formatting, SimpleBox}
+import tcompiler.error.Formats.Simple
+import tcompiler.error.{DefaultReporter, Formatting}
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.{Colorizer, Context, Pipeline}
 
@@ -122,7 +123,7 @@ object Tester {
     }
 
     val colorizer = new Colorizer(UseColor)
-    val reporter = new DefaultReporter(formatting = Formatting(SimpleBox, colorizer))
+    val reporter = new DefaultReporter(formatting = Formatting(Simple, colorizer))
     val cp = Main.TDirectory
     Context(
       reporter = reporter,

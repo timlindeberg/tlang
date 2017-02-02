@@ -11,7 +11,7 @@ for(var i = 0; i < 5; i++){
     println(a)
     if(true) {
         break
-        println(a) // res: F1000
+        println( /**/ a) // res: F1000
         println(a)
     }
 

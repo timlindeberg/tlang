@@ -61,7 +61,8 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             val index = stats.indexOf(stat)
             val startStat = stats(index + 1)
             val endStat = stats.last
-            WarningDeadCode(startStat.line, endStat.line, startStat)
+            val pos = Block(Nil).setPos(startStat, endStat)
+            WarningDeadCode(startStat.line, endStat.line, pos)
           case _                                =>
         }
         endKnowledge
@@ -261,7 +262,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
                 else
                   getArraySize(arr, knowledge) ifDefined { size =>
                     if (value >= size)
-                      ErrorOutOfBounds(index, value, size, arrRead)
+                      ErrorOutOfBounds(index, value, size - 1, arrRead)
                   }
               }
             case _                           =>

@@ -24,6 +24,6 @@ trait TemplateErrors extends Errors {
     error(1, s"Can not find template class named '$name'.", pos)
 
   protected def ErrorSameName(name: String, pos: Positioned): Unit =
-    error(2, s"Generic parameter duplicate: '$name'.", pos)
+    error(2, s"Generic parameter '$name' appears multiple times.", pos)
 
 }

@@ -1,6 +1,7 @@
 package tcompiler
 
 import tcompiler.code.Desugaring
+import tcompiler.error.Formats
 import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colorizer, Enumeration}
 
@@ -59,6 +60,7 @@ object Flags {
 
     val arg: String
 
+
     override def flagDescription: String = {
       // Dropping space
       super.flagDescription.dropRight(1) + s" <$arg> "
@@ -67,8 +69,8 @@ object Flags {
   }
 
   sealed abstract class OptionalArgumentFlag extends ArgumentFlag {
-    def isValidArg(arg: String): Boolean
     val defaultArg: String
+    def isValidArg(arg: String): Boolean
   }
 
   //--------------------------------------------------------------------------------
@@ -171,12 +173,17 @@ object Flags {
       """
   }
 
-  case object NoColor extends BooleanFlag {
-    override val flag = "nocolor"
+  case object Formatting extends ArgumentFlag {
+    val Default = "Simple"
+
+    override val flag = "formatting"
+    override val arg  = "style"
 
     override val description =
-      """
-        |Prints error messages and generated code without ANSI-coloring.
+      s"""
+         |Chooses the formatting style of messages produced by the compiler.
+         |'Simple' will only produce ASCII-characters and use no colors.
+         |Valid styles are: ${Formats.Types.map(_.getClass.getSimpleName).mkString(", ")}
       """
   }
 
@@ -220,6 +227,7 @@ object Flags {
 
     override val flag = "errorcontext"
     override val arg  = "num"
+
 
     override val description =
       s"""

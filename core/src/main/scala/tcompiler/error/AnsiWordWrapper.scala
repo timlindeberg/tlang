@@ -1,6 +1,5 @@
 package tcompiler.error
 
-import tcompiler.utils.Colorizer
 import tcompiler.utils.Extensions._
 
 import scala.annotation.tailrec
@@ -8,16 +7,16 @@ import scala.annotation.tailrec
 /**
   * Created by Tim Lindeberg on 1/29/2017.
   */
-class AnsiWordWrapper(colorizer: Colorizer) {
+class AnsiWordWrapper {
 
-  import colorizer._
+  private val EarlyBreakChars: String = """\/.:;-_()"""
 
   def apply(text: String, maxWidth: Int): List[String] = {
 
     @tailrec def wordWrap(chars: List[Char], currentWord: String, currentLine: String, lines: List[String]): List[String] = {
       chars match {
         case '\u001b' :: '[' :: '0' :: 'm' :: rest    =>
-          wordWrap(rest, currentWord + Reset, currentLine, lines)
+          wordWrap(rest, currentWord + Console.RESET, currentLine, lines)
         case '\u001b' :: '[' :: a :: b :: 'm' :: rest =>
           wordWrap(rest, currentWord + s"\u001b[$a${b}m", currentLine, lines)
         case '\u001b' :: '[' :: a :: 'm' :: rest      =>
@@ -27,14 +26,12 @@ class AnsiWordWrapper(colorizer: Colorizer) {
           if (currentLength > maxWidth) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
             wordWrap(rest, "", word, wrappedLines ::: lines)
+          } else if (currentWord.forall(_.isWhitespace)) {
+            wordWrap(rest, currentWord + " ", currentLine, lines)
+          } else if (currentWord.startsWith(" ") || currentLine.isEmpty) {
+            wordWrap(rest, "", currentLine + currentWord, lines)
           } else {
-            val line = if (currentLine == "" && currentWord == "")
-              " "
-            else if (currentLine == "")
-              currentWord
-            else
-              currentLine + " " + currentWord
-            wordWrap(rest, "", line, lines)
+            wordWrap(rest, "", currentLine + " " + currentWord, lines)
           }
         case c :: rest                                =>
           wordWrap(rest, currentWord + c, currentLine, lines)
@@ -52,7 +49,7 @@ class AnsiWordWrapper(colorizer: Colorizer) {
     }
 
     val wrapped = wordWrap(text.toList, "", "", Nil)
-    if (colorizer.useColor) wrapAnsi(wrapped) else wrapped
+    wrapAnsi(wrapped)
   }
 
   private def findBreakpoint(word: String, width: Int): Int = {
@@ -68,7 +65,7 @@ class AnsiWordWrapper(colorizer: Colorizer) {
     chars match {
       case '\u001b' :: '[' :: _ :: _ :: 'm' :: rest => findEarlyBreakPoints(rest, index + 5, width, breakPoints)
       case '\u001b' :: '[' :: _ :: 'm' :: rest      => findEarlyBreakPoints(rest, index + 4, width, breakPoints)
-      case c :: rest if c in "\\/.:;-_()"           => findEarlyBreakPoints(rest, index + 1, width - 1, index + 1 :: breakPoints)
+      case c :: rest if c in EarlyBreakChars        => findEarlyBreakPoints(rest, index + 1, width - 1, index + 1 :: breakPoints)
       case _ :: rest                                => findEarlyBreakPoints(rest, index + 1, width - 1, breakPoints)
     }
   }
@@ -128,16 +125,17 @@ class AnsiWordWrapper(colorizer: Colorizer) {
 
     val seq = lines.toIndexedSeq
     var ansi: List[String] = Nil
-    seq.indices.map { i =>
-      var sb = new StringBuilder
-      if (ansi.nonEmpty)
-        sb ++= ansi.mkString
+    seq.indices.map {
+      i =>
+        var sb = new StringBuilder
+        if (ansi.nonEmpty)
+          sb ++= ansi.mkString
 
-      sb ++= seq(i)
-      ansi = getAnsi(seq(i).toList, ansi)
-      if (ansi.nonEmpty)
-        sb ++= Reset
-      sb.toString
+        sb ++= seq(i)
+        ansi = getAnsi(seq(i).toList, ansi)
+        if (ansi.nonEmpty)
+          sb ++= Console.RESET
+        sb.toString
     }.toList
   }
 

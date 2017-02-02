@@ -22,7 +22,6 @@ class Colorizer(var useColor: Boolean) {
 
   def Colors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 
-
   def Underline(s: Any): String = Underline + s + Reset
   def Bold(s: Any): String = Bold + s + Reset
 

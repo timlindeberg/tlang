@@ -250,6 +250,7 @@ object Symbols {
 
   }
 
+
   class OperatorSymbol(val operatorType: OperatorTree,
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],

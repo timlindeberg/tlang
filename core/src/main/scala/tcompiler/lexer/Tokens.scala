@@ -156,6 +156,7 @@ object Tokens {
     override def toString: String = s"$value"
   }
 
+
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
     override def toString: String = s"$value"
   }
