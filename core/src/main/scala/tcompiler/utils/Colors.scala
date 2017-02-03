@@ -3,7 +3,7 @@ package tcompiler.utils
 /**
   * Created by Tim Lindeberg on 1/27/2017.
   */
-case class Colorizer(useColor: Boolean) {
+case class Colors(active: Boolean) {
 
   val Reset: String = GetColor(Console.RESET)
 
@@ -19,7 +19,7 @@ case class Colorizer(useColor: Boolean) {
   val Cyan   : String = GetColor(Console.CYAN)
   val White  : String = GetColor(Console.WHITE)
 
-  val Colors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+  val AllColors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 
   def Underline(s: Any): String = Underline + s + Reset
   def Bold(s: Any): String = Bold + s + Reset
@@ -56,6 +56,6 @@ case class Colorizer(useColor: Boolean) {
   val CommentColor: String = White
   def CommentColor(s: Any): String = CommentColor + s + Reset
 
-  private def GetColor(color: String) = if (useColor) color else ""
+  private def GetColor(color: String) = if (active) color else ""
 
 }

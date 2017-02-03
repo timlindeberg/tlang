@@ -10,14 +10,14 @@ import tcompiler.utils.{Pipeline, _}
 import scala.annotation.tailrec
 import scala.io.Source
 
-object Lexer extends Pipeline[List[File], List[List[Token]]] {
+object Lexer extends Pipeline[Set[File], List[List[Token]]] {
 
-  def run(ctx: Context)(files: List[File]): List[List[Token]] = {
+  def run(ctx: Context)(files: Set[File]): List[List[Token]] = {
     files.map { f =>
       val tokenizer = new Tokenizer(ctx, Some(f))
       tokenizer(Source.fromFile(f).buffered.toList)
     }
-  }
+  }.toList
 }
 
 // Can only be used once, after tokenize is called the tokenizer is invalid

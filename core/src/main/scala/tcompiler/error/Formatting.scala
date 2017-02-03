@@ -2,44 +2,51 @@ package tcompiler.error
 
 import tcompiler.error.Boxes.{Box, Simple}
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colorizer, Enumeration}
+import tcompiler.utils.{Colors, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Formatting(box: Box, width: Int, colorizer: Colorizer) {
+case class Formatting(box: Box, width: Int, colors: Colors) {
 
   import box._
 
   private val wordWrapper = new AnsiWordWrapper
 
-  def top: String = ┌ + ─ * (width - 2) + ┐ + "\n"
-  def bottom: String = └ + ─ * (width - 2) + ┘ + "\n"
-  def divider: String = ├ + ─ * (width - 2) + ┤ + "\n"
+  def top: String = (┌ + ─ * (width - 2) + ┐).rtrim + "\n"
+  def bottom: String = (└ + ─ * (width - 2) + ┘).rtrim + "\n"
+  def divider: String = (├ + ─ * (width - 2) + ┤).rtrim + "\n"
 
   def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
     val rest = ─ * (width - bridgeAt - 5)
     val overNumbers = ─ * (bridgeAt + 2)
-    left + overNumbers + bridge + rest + right + "\n"
+    val line = left + overNumbers + bridge + rest + right
+    line.rtrim + "\n"
   }
 
-  def makeHeader(text: String): String = {
-    val x = width - text.charCount - 2
+  def center(text: String): String = {
+    val x = width - text.charCount - 4
     val space = " " * (x / 2)
     val left = space
     val right = if (x % 2 == 0) space else space + " "
-
-    top + │ + left + text + right + │ + "\n"
+    left + text + right
   }
 
-  def makeLines(line: String, width: Int = width): String = {
+  def makeHeader(text: String): String = {
+    val line = │ + " " + center(text) + " " + │
+    top + line.rtrim + "\n"
+  }
+
+
+  def makeLines(line: String, width: Int = width): String =
     wordWrapper(line, width - 4).map(makeLine(_, width)).mkString
-  }
+
 
   def makeLine(line: String, width: Int = width): String = {
     val whitespaces = " " * (width - line.charCount - 4)
-    │ + " " + line + whitespaces + " " + │ + "\n"
+    val l = │ + " " + line + whitespaces + " " + │
+    l.rtrim + "\n"
   }
 
   def makeBlock(block: String): String = {
@@ -58,7 +65,7 @@ case class Formatting(box: Box, width: Int, colorizer: Colorizer) {
   }
 }
 
-object SimpleFormatting extends Formatting(Simple, 80, new Colorizer(useColor = false))
+object SimpleFormatting extends Formatting(Simple, 80, Colors(active = false))
 
 object Boxes {
 
@@ -83,7 +90,7 @@ object Boxes {
 
 
   // @formatter:off
-  case object Simple             extends Box("-|||||--||-")
+  case object Simple             extends Box("-|    --||-")
   case object NoLines            extends Box("           ")
   case object Double             extends Box("═║╔╗╝╚╦╩╠╣╬")
   case object Light              extends Box("─│┌┐┘└┬┴├┤┼")

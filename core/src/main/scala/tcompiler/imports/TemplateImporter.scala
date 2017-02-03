@@ -70,7 +70,7 @@ class TemplateImporter(ctx: Context,
 
   private def parseGenericFile(ctx: Context, file: File): Option[CompilationUnit] =
     try {
-      val parsedProgram = (Lexer andThen Parser).run(ctx)(List(file)).head
+      val parsedProgram = (Lexer andThen Parser).run(ctx)(Set(file)).head
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>

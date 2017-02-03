@@ -5,13 +5,13 @@ import java.util.regex.Matcher
 
 import org.apache.commons.lang3.StringEscapeUtils._
 import tcompiler.lexer.Tokens
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colors
 
 
-case class PrettyPrinter(colorizer: Colorizer) {
+case class PrettyPrinter(colors: Colors) {
 
   import Trees._
-  import colorizer._
+  import colors._
 
   val Indentation = 3
 
@@ -303,7 +303,7 @@ case class PrettyPrinter(colorizer: Colorizer) {
     }
 
     private def colorKeywords(output: String): String = {
-      if (!useColor)
+      if (!active)
         return output
 
       Tokens.KeywordsRegex.replaceAllIn(output, m => {

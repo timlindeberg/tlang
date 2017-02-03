@@ -3,7 +3,7 @@ package tcompiler
 import tcompiler.code.Desugaring
 import tcompiler.error.Boxes
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colorizer, Enumeration}
+import tcompiler.utils.{Colors, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -16,15 +16,15 @@ object Flags {
     val shortFlag: Option[String] = None
     val description: String
 
-    def format(colorizer: Colorizer): String = {
-      import colorizer._
+    def format(colors: Colors): String = {
+      import colors._
 
       val lines = description.stripMargin.trim.split("\n")
       val firstRow = f"  $flagDescription%-26s${lines.head}\n"
 
       val space = " " * 28
       val fullDescription = lines.tail.foldLeft(firstRow)((description, s) => description + s"$space$s\n")
-      if (!colorizer.useColor)
+      if (!colors.active)
         return fullDescription
 
       val colorization: List[String => String] = List(
@@ -123,12 +123,13 @@ object Flags {
       """
   }
 
-  case object PrintInfo extends BooleanFlag {
-    override val flag = "printinfo"
+  case object Verbose extends BooleanFlag {
+    override val flag      = "verbose"
+    override val shortFlag = Some("v")
 
     override val description =
       """
-        |Prints additional information during compilation such as elapse time
+        |Prints additional information during compilation such as elapsed time
         |for each compilation stage.
       """
   }
@@ -163,8 +164,7 @@ object Flags {
   }
 
   case object Version extends BooleanFlag {
-    override val flag      = "version"
-    override val shortFlag = Some("v")
+    override val flag = "version"
 
     override val description =
       """

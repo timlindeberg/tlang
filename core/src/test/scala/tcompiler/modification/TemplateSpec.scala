@@ -15,5 +15,5 @@ import tcompiler.{ErrorTester, Tester}
 class TemplateSpec extends ErrorTester {
   override def Name: String = "Templates"
   override def Path: String = Tester.Resources + "modification/templates"
-  override def Pipeline: Pipeline[List[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates
+  override def Pipeline: Pipeline[Set[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates
 }

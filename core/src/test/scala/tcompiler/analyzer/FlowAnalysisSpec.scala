@@ -15,5 +15,5 @@ import tcompiler.{ErrorTester, Tester}
 class FlowAnalysisSpec extends ErrorTester {
   override def Name: String = "Flow Analysis"
   override def Path: String = Tester.Resources + "analyzer/flow"
-  override def Pipeline: Pipeline[List[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
+  override def Pipeline: Pipeline[Set[File], List[CompilationUnit]] = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
 }

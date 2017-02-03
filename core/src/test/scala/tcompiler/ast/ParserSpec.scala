@@ -10,5 +10,5 @@ import tcompiler.{ErrorTester, Tester}
 class ParserSpec extends ErrorTester {
   override def Name: String = "Parser"
   override def Path: String = Tester.Resources + "ast"
-  override def Pipeline: Pipeline[List[File], List[CompilationUnit]] = Lexer andThen Parser
+  override def Pipeline: Pipeline[Set[File], List[CompilationUnit]] = Lexer andThen Parser
 }

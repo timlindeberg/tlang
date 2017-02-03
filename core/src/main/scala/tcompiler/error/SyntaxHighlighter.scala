@@ -3,7 +3,7 @@ package tcompiler.error
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer.{Token, Tokenizer, Tokens}
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colorizer, Context, Positioned}
+import tcompiler.utils.{Colors, Context, Positioned}
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.
@@ -11,20 +11,25 @@ import tcompiler.utils.{Colorizer, Context, Positioned}
 
 case class Marking(lineOffset: Int, pos: Positioned, style: String)
 
-class SyntaxHighlighter(colorizer: Colorizer) {
+case class SyntaxHighlighter(colors: Colors) {
 
-  import colorizer._
+  import colors._
 
-  val context = Context(new VoidReporter(), Nil)
+  val context = Context(new VoidReporter(), Set())
 
   def apply(code: String, markings: Marking*): String = {
-    if (!colorizer.useColor)
+    if (!colors.active)
       return code
 
+    code.split("\n").map(highlight(_, markings)).mkString("\n")
+  }
+
+  private def highlight(line: String, markings: Seq[Marking]): String = {
+
     val tokenizer = new Tokenizer(context, None)
-    val tokens = tokenizer.apply(code.toList)
+    val tokens = tokenizer.apply(line.toList)
     val sb = new StringBuilder()
-    sb ++= code.substring(0, tokens.head.col - 1)
+    sb ++= line.substring(0, tokens.head.col - 1)
     var prevColor = ""
 
     for (token :: next :: Nil <- tokens.sliding(2)) {
@@ -38,23 +43,22 @@ class SyntaxHighlighter(colorizer: Colorizer) {
         sb ++= color
       }
       prevColor = color
-      sb ++= code.substring(start, end)
+      sb ++= line.substring(start, end)
       if (next.kind != EOF) {
         val nextColor = getColor(next, markings)
         if (nextColor != color)
           sb ++= Reset
 
-        sb ++= code.substring(end, next.col - 1)
+        sb ++= line.substring(end, next.col - 1)
       }
     }
 
     if (tokens.length >= 2) {
       val last = tokens(tokens.length - 2)
-      sb ++= code.substring(last.endCol - 1, code.length)
+      sb ++= line.substring(last.endCol - 1, line.length)
     }
     sb.toString()
   }
-
 
   def getColor(token: Token, markings: Seq[Marking]): String = {
     if (token.kind == COMMENTLITKIND)

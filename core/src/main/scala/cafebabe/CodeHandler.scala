@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colors
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -179,11 +179,11 @@ class CodeHandler private[cafebabe](
     // An invocation of this function reads as "when the pc reaches `from`, the stack height should be `there`".
     def setHeight(from: Int, there: Int): Unit = {
       if (from < 0 || from >= actualSize)
-        throw CodeFreezingException("No bytecode at pc=" + from + ". Missing instructions?\n" + stackTrace)
+        throw CodeFreezingException(s"No bytecode at pc=$from. Missing instructions?\n${stackTrace()}")
 
       if (there < 0) {
         heightArray(from) = there
-        throw CodeFreezingException("Negative stack height (" + there + ") at pc=" + from + " (which is " + codeArray(from) + ").\n" + stackTrace)
+        throw CodeFreezingException(s"Negative stack height ($there) at pc=$from (which is ${codeArray(from)}).\n${stackTrace()}")
       }
 
       if (heightArray(from) != UninitializedHeight) {
@@ -191,7 +191,7 @@ class CodeHandler private[cafebabe](
         if (heightArray(from) == there) {
           return
         } else {
-          throw CodeFreezingException("Inconsistent stack height at pc=" + from + "(" + heightArray(from) + " and " + there + ")\n" + stackTrace)
+          throw CodeFreezingException(s"Inconsistent stack height at pc=$from(${heightArray(from)} and $there)\n${stackTrace()}")
         }
       }
 
@@ -207,12 +207,12 @@ class CodeHandler private[cafebabe](
             case _                                 =>
               throw CodeFreezingException("Expected IINC or LOAD/STORE instruction after WIDE.")
           }
-        case RETURN => if (there != 0) throw CodeFreezingException("Non-empty stack after return in void method\n" + stackTrace)
+        case RETURN => if (there != 0) throw CodeFreezingException(s"Non-empty stack after return in void method\n${stackTrace()}")
         case ATHROW =>
         // Nothing really matters.
         case ARETURN | DRETURN | FRETURN | IRETURN | LRETURN =>
           if (there + codeArray(pc).asInstanceOf[ByteCode].stackEffect.get != 0)
-            throw CodeFreezingException("Stack not empty after return.\n" + stackTrace)
+            throw CodeFreezingException(s"Stack not empty after return.\n ${stackTrace()}")
         case bc: ByteCode if bc.stackEffect.isDefined        => setHeight(from + bc.length.get, there + bc.stackEffect.get)
         case GETFIELD                                        => codeArray(pc + 1) match {
           case RawBytes(idx) => setHeight(from + 3, (there + constantPool.getFieldSize(idx)) - 1)
@@ -276,9 +276,7 @@ class CodeHandler private[cafebabe](
     heightArray.max.asInstanceOf[U2]
   }
 
-
-  def stackTrace: String = stackTrace(new Colorizer(false))
-  def stackTrace(colorizer: Colorizer): String = StackTrace(abcBuffer, heightArray, cp, signature)(colorizer)
+  def stackTrace(colors: Colors = Colors(false)): StackTrace = StackTrace(abcBuffer, heightArray, cp, signature, colors)
 
   def print(): Unit = if (!frozen) {
     var pc = 0

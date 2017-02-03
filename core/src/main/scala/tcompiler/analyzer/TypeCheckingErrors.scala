@@ -26,8 +26,6 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(s"'$expected'", s"'$found'", pos)
 
-  protected def ErrorWrongType(expected: Type, found: String, pos: Positioned): Type = ErrorWrongType(s"'$expected'", found, pos)
-
   protected def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, s"'$found'", pos)
 
   protected def ErrorWrongType(expected: Traversable[Type], found: Type, pos: Positioned): Type = {

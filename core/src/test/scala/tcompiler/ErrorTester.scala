@@ -3,6 +3,7 @@ package tcompiler
 import java.io.File
 
 import tcompiler.error.CompilationException
+import tcompiler.utils.Context
 import tcompiler.utils.Extensions._
 
 import scala.collection.mutable
@@ -18,26 +19,28 @@ trait ErrorTester extends Tester {
 
   def testFile(file: File): Unit = {
     val ctx = Tester.getTestContext(file)
-    val expectedErrors = parseSolutions(file)
 
     try {
-      Pipeline.run(ctx)(List(file))
+      Pipeline.run(ctx)(Set(file))
       // Check for warnings:
       if (!ctx.reporter.hasWarnings)
         fail("Test failed: No errors or warnings!")
+
 
       val warnings = ctx.reporter.warningMessage
       if (PrintErrors)
         println(warnings)
 
-      val warningCodes = parseErrorCodes(warnings)
-      assertCorrect(warningCodes, expectedErrors, warnings)
+      val expectedWarnings = parseSolutions(file)
+      val warningCodes = parseErrorCodes(warnings, ctx)
+      assertCorrect(warningCodes, expectedWarnings, warnings)
     } catch {
       case t: CompilationException =>
         val errors = t.getMessage
         if (PrintErrors)
           println(errors)
-        val errorCodes = parseErrorCodes(errors)
+        val errorCodes = parseErrorCodes(errors, ctx)
+        val expectedErrors = parseSolutions(file)
         assertCorrect(errorCodes, expectedErrors, errors)
     }
   }
@@ -54,8 +57,9 @@ trait ErrorTester extends Tester {
   private val ErrorCode   = """(?:Fatal|Warning|Error) ([A-Z]\d\d\d\d)""".r
   private val LineNumbers = """(\d+)""".r // First number in error message is the line number
 
-  private def parseErrorCodes(errorMessages: String): List[(Int, String)] = {
-    val errors = errorMessages.clearAnsi.split("\n\n").toList.drop(1)
+  private def parseErrorCodes(errorMessages: String, ctx: Context): List[(Int, String)] = {
+    import ctx.formatting._
+    val errors = errorMessages.clearAnsi.split(top).toList.drop(2)
     val lineNumbers = errors.map(LineNumbers.findFirstMatchIn(_).get.group(1).toInt)
     val errorCodes = errors.map(ErrorCode.findFirstMatchIn(_).get.group(1))
     lineNumbers.zip(errorCodes)

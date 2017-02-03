@@ -13,8 +13,8 @@ import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colorizer, Context, Pipeline}
-import tcompiler.{Interpreter, Main, Tester}
+import tcompiler.utils.{Colors, Context}
+import tcompiler.{Interpreter, Main, ProgramExecutor}
 
 import scala.util.Random
 
@@ -23,41 +23,40 @@ import scala.util.Random
   */
 class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
-  val Flag = "--eval"
+  private val TestFolder           = "./tmpTest"
+  private val TestFilePath: String = TestFolder + "/tmpTestFile.kool"
 
-  val TestFolder           = "./tmpTest"
-  val TestFilePath: String = TestFolder + "/tmpTestFile.kool"
+  private val testFolderFile = new File(TestFolder)
+  private val testFile       = new File(TestFilePath)
 
-  var testFolderFile = new File(TestFolder)
-  var testFile       = new File(TestFilePath)
+  private val Printer       = PrettyPrinter(Colors(false))
+  private val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  private val Rand          = new Random()
+  private val TestCtx       = Context(reporter = new DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
+  private val TestImportMap = new ImportMap(TestCtx)
+  private val TypeCheckCtx  = Context(reporter = new DefaultReporter(suppressWarnings = true), files = Set(testFile))
+  private val ClassSymbol   = new ClassSymbol("obj", false)
+  private val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  private val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
+  private val Interpreter   = new Interpreter
 
-  val Printer                                = new PrettyPrinter(new Colorizer(false))
-  val Compiler  : Pipeline[List[File], Unit] = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
-  val Rand                                   = new Random()
-  val TestCtx                                = Context(reporter = new DefaultReporter(suppressWarnings = true), files = List(testFile), outDirs = List(testFolderFile))
-  val TestImportMap                          = new ImportMap(TestCtx)
-  val TypeCheckCtx                           = Context(reporter = new DefaultReporter(suppressWarnings = true), files = List(testFile))
-  val ClassSymbol                            = new ClassSymbol("obj", false)
-  val MainMethod: MethodSymbol               = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TypeChecker                            = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
-  val Interpreter                            = new Interpreter
+  private val programExecutor = ProgramExecutor()
 
 
-  val MainName      = "Main"
-  val IdName        = "x"
-  val StringLength  = 5
-  val NumberOfTests = 1
+  private val IdName        = "x"
+  private val StringLength  = 5
+  private val NumberOfTests = 1
 
-  val int   : () => IntLit                             = () => IntLit(Rand.nextInt).setType(Int)
-  val bool  : () => Literal[Boolean] with Serializable = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(Bool)
-  val long  : () => LongLit                            = () => LongLit(Rand.nextLong % scala.Int.MaxValue).setType(Long)
-  val float : () => FloatLit                           = () => FloatLit(Rand.nextFloat).setType(Float)
-  val double: () => DoubleLit                          = () => DoubleLit(Rand.nextDouble % scala.Float.MaxValue).setType(Double)
-  val char  : () => CharLit                            = () => CharLit(randChar).setType(Char)
-  val string: () => StringLit                          = () => StringLit(Rand.nextString(StringLength)).setType(String)
+  private val int    = () => IntLit(Rand.nextInt).setType(Int)
+  private val bool   = () => (if (Rand.nextBoolean) TrueLit() else FalseLit()).setType(Bool)
+  private val long   = () => LongLit(Rand.nextLong % scala.Int.MaxValue).setType(Long)
+  private val float  = () => FloatLit(Rand.nextFloat).setType(Float)
+  private val double = () => DoubleLit(Rand.nextDouble % scala.Float.MaxValue).setType(Double)
+  private val char   = () => CharLit(randChar).setType(Char)
+  private val string = () => StringLit(Rand.nextString(StringLength)).setType(String)
 
-  val types       : List[() => ExprTree]                   = List[() => ExprTree](int, bool, long, float, double, char, string)
-  val combinations: List[(() => ExprTree, () => ExprTree)] = for (x <- types; y <- types) yield (x, y)
+  private val types        = List[() => ExprTree](int, bool, long, float, double, char, string)
+  private val combinations = for (x <- types; y <- types) yield (x, y)
 
 
   before {
@@ -175,7 +174,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     println(s"Testing $operation ($IdName : $tpe)")
     val scalaRes = getScalaResult(operation).trim + System.lineSeparator() + getScalaResult(IdName).trim
     if (!scalaRes.contains("error")) {
-      val res = getResult(assignmentProgram(operation, tpe)).trim
+      val res = getResult(assignmentProgram(operation, tpe))
       assertResult(operation + " (x: " + tpe + ")", res, scalaRes)
     }
 
@@ -215,7 +214,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.files)
     val mainName = TestCtx.files.head.getName.dropRight(Main.FileEnding.length)
-    Tester.executeTProgram(List(TestFolder, Main.TDirectory), mainName).get.trim
+    programExecutor(List(TestFolder, Main.TDirectory), mainName).get.trim
   }
 
   private def getScalaResult(operation: String) = {

@@ -5,12 +5,12 @@ import tcompiler.ast.Trees._
 import tcompiler.ast.{Parser, PrettyPrinter}
 import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.error.Boxes.Simple
-import tcompiler.error.{CompilationException, DefaultReporter, Formatting}
+import tcompiler.error.{CompilationException, DefaultReporter, Formatting, SyntaxHighlighter}
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils._
 
-import scala.sys.process._
+import scala.concurrent.duration
 
 object Main extends MainErrors {
 
@@ -44,9 +44,10 @@ object Main extends MainErrors {
   def main(args: Array[String]) {
     val options = Options(args)
     val useColor = options.boxType != Simple
-    val colorizer = Colorizer(useColor)
+    val colors = Colors(useColor)
+
     if (args.isEmpty) {
-      printHelp(colorizer)
+      printHelp(colors)
       sys.exit(1)
     }
 
@@ -54,13 +55,13 @@ object Main extends MainErrors {
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
 
-    val formatting = error.Formatting(options.boxType, options(LineWidth), colorizer)
+    val formatting = error.Formatting(options.boxType, options(LineWidth), colors)
     if (options(Version)) {
       printVersion()
       sys.exit()
     }
     if (options(Help).nonEmpty) {
-      printHelp(colorizer, options(Help))
+      printHelp(colors, options(Help))
       sys.exit()
     }
     if (options.files.isEmpty)
@@ -68,7 +69,7 @@ object Main extends MainErrors {
 
     ctx = createContext(options, formatting)
 
-    if (options(PrintInfo))
+    if (options(Verbose))
       printFilesToCompile(ctx)
 
     val cus = runFrontend(ctx)
@@ -79,11 +80,11 @@ object Main extends MainErrors {
     if (ctx.reporter.hasWarnings)
       println(ctx.reporter.warningMessage)
 
-    if (options(PrintInfo))
+    if (options(Verbose))
       printExecutionTimes(ctx)
 
     if (options(Exec))
-      cus.foreach(executeProgram(_, colorizer))
+      executeProgram(ctx, cus)
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -114,48 +115,47 @@ object Main extends MainErrors {
       classPaths = options.classPaths,
       outDirs = options.outDirectories,
       printCodeStages = options(PrintOutput),
-      printInfo = options(PrintInfo),
+      printInfo = options(Verbose),
       ignoredImports = options(IgnoreDefaultImports),
       formatting = formatting,
-      printer = PrettyPrinter(formatting.colorizer)
+      printer = PrettyPrinter(formatting.colors)
     )
 
   private def printFilesToCompile(ctx: Context) = {
-    import ctx.formatting.colorizer._
+    import ctx.formatting._
+    import ctx.formatting.colors._
     val numFiles = ctx.files.size
     val files = ctx.files.map { f =>
       val name = f.getName.dropRight(Main.FileEnding.length)
       val full = s"${Magenta(name)}${Main.FileEnding}"
-      s"   <$full>"
+      s"$full"
     }.mkString("\n")
-    val msg =
-      s"""|${Bold("Compiling")} ${Magenta(numFiles)} ${Bold("file(s)")}:
-          |$files
-          |""".stripMargin
-    println(msg)
+    val end = if (numFiles > 1) "files" else "file"
+    val header = Bold("Compiling") + " " + Magenta(numFiles) + " " + Bold(end)
+
+    print(makeBox(header, List(files)))
   }
 
   private def printExecutionTimes(ctx: Context) = {
-    import ctx.formatting.colorizer._
+    import ctx.formatting._
+    import ctx.formatting.colors._
     val totalTime = ctx.executionTimes.values.sum
     val individualTimes = CompilerStages.map { stage =>
       val name = Blue(stage.stageName.capitalize)
       val time = ctx.executionTimes(stage)
       val t = Green(f"$time%.2f$Reset")
-      f"   $name%-25s $t seconds"
+      f"$name%-25s $t s"
     }.mkString("\n")
-    val msg =
-      f"""|${Bold}Compilation executed ${Green("successfully")}$Bold in $Green$totalTime%.2f$Reset ${Bold("seconds.")}
-          |Execution time for individual stages:
-          |$individualTimes
-          |""".stripMargin
-    println(msg)
+
+    val header =
+      f"${Bold}Compilation executed ${Green("successfully")}$Bold in $Green$totalTime%.2f$Reset ${Bold}seconds.$Reset"
+    print(makeBox(header, List(individualTimes)))
   }
 
   private def printVersion() = println(s"T-Compiler $VersionNumber")
 
-  private def printHelp(colorizer: Colorizer, args: Set[String] = Set("")) = args foreach { arg =>
-    import colorizer._
+  private def printHelp(colors: Colors, args: Set[String] = Set("")) = args foreach { arg =>
+    import colors._
     val message = arg match {
       case "stages" =>
         val stages = CompilerStages.map(stage => s"   <$Blue${stage.stageName.capitalize}$Reset>").mkString("\n")
@@ -164,7 +164,7 @@ object Main extends MainErrors {
             |$stages
             |"""
       case ""       =>
-        val flags = Flag.All.map(_.format(colorizer)).mkString
+        val flags = Flag.All.map(_.format(colors)).mkString
         s"""|Usage: tcomp <options> <source files>
             |Options:
             |
@@ -205,23 +205,31 @@ object Main extends MainErrors {
 
   }
 
-  private def executeProgram(cu: CompilationUnit, colorizer: Colorizer): Unit = {
-    if (!cu.classes.exists(_.methods.exists(_.isMain)))
+  private def executeProgram(ctx: Context, cus: List[CompilationUnit]): Unit = {
+    import ctx.formatting._
+    import ctx.formatting.colors._
+
+    val mainMethods = cus.flatMap(_.classes.flatMap(_.methods.filter(_.isMain)))
+    if (mainMethods.isEmpty) {
+      println("--exec failed, none of the given files contains a main method.")
       return
+    }
 
-    import colorizer._
+    val header = if (mainMethods.size > 1) "Executing programs" else "Executing program"
 
-    val cp = s"-cp ${ctx.outDirs.head}"
-    val mainName = cu.file.get.getName.dropRight(FileEnding.length)
-    val execCommand = s"java $cp $mainName"
-    val separator = Blue("----------------------------------------")
 
-    print(
-      s"""Executing main program ${Magenta(mainName)}:
-         |$separator
-         |${execCommand !!}
-         |$separator
-   """.stripMargin)
+    val programExecutor = ProgramExecutor(duration.Duration(1, "min"))
+    val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
+    val outputBlocks = cus.flatMap { cu =>
+      val file = cu.file.get
+      val output = syntaxHighlighter(programExecutor(ctx, file).get)
+      val name = file.getName.dropRight(Main.FileEnding.length)
+      val mainName = s"$Bold${Magenta(name)}${Bold(Main.FileEnding)}"
+
+      List(center(mainName), output)
+    }
+
+    print(makeBox(Bold(header), outputBlocks))
   }
 
 }

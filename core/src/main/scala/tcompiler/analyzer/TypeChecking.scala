@@ -381,11 +381,10 @@ class TypeChecker(override var ctx: Context,
     def correctType(expectedTpe: Type) =
       foundType.isSubTypeOf(expectedTpe) || expectedTpe.isImplicitlyConvertibleFrom(foundType)
 
-    val res =
-      if (expected.nonEmpty && !expected.exists(correctType))
-        ErrorWrongType(expected, foundType, expression)
-      else
-        foundType
+    val res = if (expected.nonEmpty && !expected.exists(correctType))
+      ErrorWrongType(expected, foundType, expression)
+    else
+      foundType
 
     expression.setType(res)
     res

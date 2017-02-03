@@ -15,7 +15,7 @@ import tcompiler.utils.Extensions._
   */
 object ClassSymbolLocator {
 
-  def setClassPath(classPaths: List[String]): Unit = {
+  def setClassPath(classPaths: Set[String]): Unit = {
     val rep = SyntheticRepository.getInstance(new ClassPath(classPaths.mkString(";")))
     Repository.setRepository(rep)
   }

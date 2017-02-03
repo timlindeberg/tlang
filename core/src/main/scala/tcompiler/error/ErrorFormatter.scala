@@ -35,7 +35,7 @@ case class ErrorFormatter(
   import ErrorFormatter._
   import formatting._
   import formatting.box._
-  import formatting.colorizer._
+  import formatting.colors._
 
   private val QuoteColor   = Magenta
   private val MessageStyle = Bold
@@ -55,7 +55,7 @@ case class ErrorFormatter(
   private val QuoteRegex        = """'(.+?)'""".r
   private val pos               = error.pos
   private val lines             = if (pos.hasFile) getLines(pos.file.get) else Nil
-  private val syntaxHighlighter = new SyntaxHighlighter(formatting.colorizer)
+  private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
   private val wordWrapper       = new AnsiWordWrapper
 
   def format(): String = {
@@ -91,7 +91,7 @@ case class ErrorFormatter(
   private def filePrefix: String = {
     val Style = Bold + NumColor
     var position = pos.position
-    if (useColor) {
+    if (active) {
       val fileName = pos.file.get.getName.replaceAll(Main.FileEnding, "")
       position = position.replaceAll("(\\d)", s"$Style$$1$Reset")
       position = position.replaceAll(fileName, s"$Style$fileName$Reset")
@@ -121,20 +121,16 @@ case class ErrorFormatter(
     val indent = getIndent(ctxLines)
     val lineLength = formatting.width - digits - 3
 
-    val trimmed = ctxLines.map { case (num, line) =>
-      val t = if (line.isEmpty) "" else line.substring(indent)
-      (num, t)
-    }
-
-    val lines = if (useColor)
-      trimmed.map { case (num, line) => (num, syntaxHighlighter(line, Marking(num, pos, ErrorStyle))) }
+    val lines = if (colors.active)
+      ctxLines.map { case (i, line) => (i, syntaxHighlighter(line, Marking(i, pos, ErrorStyle))) }
     else
-      trimmed.flatMap { case (num, line) => indicatorLines(num, line, indent) }
+      ctxLines.flatMap { case (i, line) => indicatorLines(i, line, indent) }
 
     sb ++= lines
-      .flatMap { case (lineNum, line) =>
+      .map { case (i, line) => (i, if (line.isEmpty) "" else line.substring(indent)) }
+      .flatMap { case (i, line) =>
         val lines = wordWrapper(line, lineLength)
-        val lineNumbers = lineNum :: List.fill(lines.size - 1)(-1)
+        val lineNumbers = i :: List.fill(lines.size - 1)(-1)
         lineNumbers.zip(lines)
       }
       .map { case (i, line) => lineNumPrefix(i, digits) + makeLine(line, lineLength) }

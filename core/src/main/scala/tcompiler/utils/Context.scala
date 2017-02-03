@@ -13,12 +13,12 @@ import scala.collection.mutable
 
 case class Context(
   reporter: Reporter,
-  files: List[File],
-  classPaths: List[String] = Nil,
-  outDirs: List[File] = List(new File(".")),
+  files: Set[File],
+  classPaths: Set[String] = Set(),
+  outDirs: Set[File] = Set(new File(".")),
   printCodeStages: Set[String] = Set(),
   formatting: Formatting = SimpleFormatting,
-  printer: PrettyPrinter = new PrettyPrinter(Colorizer(false)),
+  printer: PrettyPrinter = PrettyPrinter(Colors(false)),
   printInfo: Boolean = false,
   ignoredImports: Set[String] = Set()
 ) {
@@ -26,7 +26,7 @@ case class Context(
   private val JavaClassPath = "java.class.path"
   val executionTimes: mutable.Map[Pipeline[_, _], Double] = mutable.Map()
 
-  def getClassPaths: List[String] = "." :: classPaths ::: System.getProperty(JavaClassPath).split(";").toList
+  def getClassPaths: Set[String] = classPaths ++ System.getProperty(JavaClassPath).split(";").toSet + "."
 
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)

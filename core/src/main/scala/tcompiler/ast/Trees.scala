@@ -13,7 +13,7 @@ import scala.collection.{TraversableLike, mutable}
 @GenerateTreeHelpers
 object Trees {
 
-  private val printer = new PrettyPrinter(new Colorizer(false))
+  private val printer = new PrettyPrinter(new Colors(false))
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 

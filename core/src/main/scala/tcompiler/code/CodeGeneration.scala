@@ -17,24 +17,24 @@ import tcompiler.utils._
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
+object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] {
 
   import CodeGenerator._
 
-  def run(ctx: Context)(cus: List[CompilationUnit]): Unit = {
+  def run(ctx: Context)(cus: List[CompilationUnit]): List[StackTrace] = {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
-    InfoPrinter(this, ctx).printHeader()
-    val outputFiles = classes.flatMap(generateClassFile(_, ctx))
-    // TODO: this should be done for one file and then be copied
-    outputFiles foreach generateStackMapFrames
-    InfoPrinter(this, ctx).printEnd()
+    val genResults = classes.map(generateClassFile(_, ctx))
 
+    genResults.foreach(_.files.foreach(generateStackMapFrames))
+    genResults.flatMap(_.stackTraces)
   }
 
+  case class GenerateClassResult(files: Set[String], stackTraces: List[StackTrace])
+
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): List[String] = {
+  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): GenerateClassResult = {
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -43,9 +43,20 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
     }
 
     initializeStaticFields(classDecl, classFile)
-    val classSymbol = classDecl.getSymbol
 
-    classDecl.methods.foreach { methodDecl =>
+    if (!classDecl.methods.exists(_.isInstanceOf[ConstructorDecl]))
+      generateDefaultConstructor(classFile, classDecl)
+
+    val stackTraces = generateMethods(ctx, classDecl, classFile)
+
+    val className = classDecl.getSymbol.name
+    val files = ctx.outDirs.map(getFilePath(_, className))
+    files.foreach(classFile.writeToFile)
+    GenerateClassResult(files, stackTraces)
+  }
+
+  private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[StackTrace] = {
+    classDecl.methods.flatMap { methodDecl =>
       val methSymbol = methodDecl.getSymbol
 
       val methodHandle = methodDecl match {
@@ -65,6 +76,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
       if (!methodDecl.isAbstract) {
         val ch = generateMethod(methodHandle, methodDecl)
 
+        val classSymbol = classDecl.getSymbol
         // If a method is overriden but with another return type
         // a bridge method needs to be generated
         classSymbol.overriddenMethod(methSymbol)
@@ -76,14 +88,14 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
             generateBridgeMethod(classFile, overriden, methSymbol, flags, thisTree)
           }
 
-        InfoPrinter(this, ctx).printStacktrace(ch)
+        Some(ch.stackTrace(ctx.formatting.colors))
+      } else {
+        None
       }
-
     }
+  }
 
-    if (!classDecl.methods.exists(_.isInstanceOf[ConstructorDecl]))
-      generateDefaultConstructor(classFile, classDecl)
-
+  private def generateObjectInterfaceBridgeMethods() = {
     // TODO: Generate methods so that toString etc. can be defined in an interface
     /*
     if(!classSymbol.isAbstract){
@@ -102,12 +114,6 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], Unit] {
       }
     }
     */
-
-
-    val className = classDecl.getSymbol.name
-    val files = ctx.outDirs.map(getFilePath(_, className))
-    files.foreach(classFile.writeToFile)
-    files
   }
 
   private def generateBridgeMethod(classFile: ClassFile, overriden: MethodSymbol, meth: MethodSymbol, flags: U2, base: ExprTree) = {

@@ -6,15 +6,13 @@ import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tcompiler.Flags.LineWidth
 import tcompiler.ast.PrettyPrinter
 import tcompiler.ast.Trees.CompilationUnit
-import tcompiler.error.Boxes.Simple
+import tcompiler.error.Boxes.Light
 import tcompiler.error.{DefaultReporter, Formatting}
 import tcompiler.imports.ClassSymbolLocator
-import tcompiler.utils.{Colorizer, Context, Pipeline}
+import tcompiler.utils.{Colors, Context, Pipeline}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, _}
+import scala.concurrent._
 import scala.io.Source
-import scala.sys.process._
 import scala.util.matching.Regex
 
 /**
@@ -26,7 +24,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
   def Name: String
   def Path: String
-  def Pipeline: Pipeline[List[File], List[CompilationUnit]]
+  def Pipeline: Pipeline[Set[File], List[CompilationUnit]]
 
   def testFile(file: File): Unit
 
@@ -119,34 +117,22 @@ object Tester {
     val (files, outDir) = file match {
       case Some(f) =>
         val mainName = f.getName.replaceAll(Main.FileEnding, "")
-        (List(f), List(getOutDir(mainName)))
-      case None    => (Nil, List(new File(".")))
+        (Set(f), Set(getOutDir(mainName)))
+      case None    => (Set[File](), Set(new File(".")))
     }
 
-    val colorizer = new Colorizer(UseColor)
-    val formatting = Formatting(Simple, LineWidth.defaultValue, colorizer)
+    val colors = Colors(UseColor)
+    val formatting = Formatting(Light, LineWidth.defaultValue, colors)
     val reporter = new DefaultReporter(formatting = formatting)
     val cp = Main.TDirectory
     Context(
       reporter = reporter,
       files = files,
       outDirs = outDir,
-      classPaths = List(cp),
+      classPaths = Set(cp),
       printCodeStages = PrintCodeStages,
       formatting = formatting,
-      printer = new PrettyPrinter(colorizer))
-  }
-
-
-  def executeTProgram(classPaths: List[String], mainName: String): Option[String] = {
-    val cp = formatClassPath(classPaths)
-    val command = s"java -cp $cp $mainName"
-    val future = Future(blocking(command !!))
-    try {
-      Some(Await.result(future, Timeout))
-    } catch {
-      case _: TimeoutException => None
-    }
+      printer = PrettyPrinter(colors))
   }
 
   private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")

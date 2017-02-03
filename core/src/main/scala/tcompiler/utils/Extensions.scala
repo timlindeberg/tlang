@@ -34,6 +34,19 @@ object Extensions {
       str.codePointCount(0, str.length)
     }
 
+    def takeChars(num: Int) = {
+      var i = 0
+      var s = ""
+      while (s.charCount < num) {
+        s += str(i)
+        i += 1
+      }
+      s
+    }
+
+    def ltrim: String = str.replaceAll("^\\s+", "")
+    def rtrim: String = str.replaceAll("\\s+$", "")
+
     def allIndexesOf(pattern: String): List[Int] = {
       val buf = ListBuffer[Int]()
 

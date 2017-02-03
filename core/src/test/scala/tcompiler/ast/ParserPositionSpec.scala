@@ -20,7 +20,7 @@ class ParserPositionSpec extends FunSuite with Matchers {
   val TestContext: Context = Tester.getTestContext(None)
 
   val Tree: Tree = {
-    val file = List(new File(TestFile))
+    val file = Set(new File(TestFile))
     (Lexer andThen Parser).run(TestContext)(file).head
   }
 

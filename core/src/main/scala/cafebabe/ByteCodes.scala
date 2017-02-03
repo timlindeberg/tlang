@@ -2,8 +2,8 @@ package cafebabe
 
 object ByteCodes {
 
-  import ClassFileTypes._
   import AbstractByteCodes._
+  import ClassFileTypes._
 
   sealed abstract class ByteCode(val code: U1, se: Option[Int], l: Option[Int]) extends AbstractByteCode {
     val size       : Int         = 1
@@ -12,7 +12,7 @@ object ByteCodes {
     override def toStream(bs: ByteStream): ByteStream = bs << code
   }
 
-  private implicit def intToOptionInt(i: Int) = Some(i)
+  private implicit def intToOptionInt(i: Int): Some[U4] = Some(i)
 
   // @formatter:off
   case object AALOAD          extends ByteCode(0x32, -1, 1)

@@ -47,6 +47,8 @@ class DefaultReporter(
   val errors  : mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
   val warnings: mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
 
+  import formatting.colors._
+
 
   def report(error: Error): Unit = {
     error.errorLevel match {
@@ -93,39 +95,36 @@ class DefaultReporter(
   def hasWarnings: Boolean = warnings.nonEmpty
 
   def errorMessage: String = {
-    import formatting.colorizer._
 
-    val err = errorString(errors)
     val numErrors = errors.size
-    val num = Red + Bold + numErrors + Reset
+    val num = Red(numErrors)
 
-    val prefix = if (hitMaxErrors)
-      s"There were more than $num errors, only showing the first $num"
+    val header = if (hitMaxErrors)
+      s"${Bold}There were more than $num$Bold errors, only showing the first $num$Reset"
     else
       getPrefix(errors, "error", num)
 
-    prefix + s":\n\n$err"
+    formatting.makeBox(header, Nil) + format(errors)
   }
 
 
   def warningMessage: String = {
-    import formatting.colorizer._
     val numWarnings = warnings.size
-    val num = Yellow + Bold + numWarnings + Reset
-    getPrefix(warnings, "warning", num) + ":\n\n" + errorString(warnings)
+    val num = Yellow(numWarnings)
+    val header = getPrefix(warnings, "warning", num)
+    formatting.makeBox(header, Nil) + format(warnings)
   }
 
   private def getPrefix(errors: mutable.LinkedHashSet[Error], tpe: String, num: String) = {
-    if (errors.size == 1)
-      s"There was $num $tpe"
-    else
-      s"There were $num ${tpe}s"
+    val n = errors.size
+    val was = if (n == 1) "was" else "were"
+    s"${Bold}There $was $num$Bold $tpe" + (if (n > 1) "s" else "") + Reset
   }
 
-  private def errorString(errors: mutable.LinkedHashSet[Error]) =
+  private def format(errors: mutable.LinkedHashSet[Error]) =
     errors
       .map { err => ErrorFormatter(err, formatting, errorContext).format() }
-      .mkString("\n")
+      .mkString
 
   private def isValidError(error: Error): Boolean = {
     if (error.msg.toString.contains(Errors.ErrorName))

@@ -1,7 +1,3 @@
-var i: Int = "1" // res: T2000
-var f: Float = 1.0 // res: T2000
-
-
 class A {
     Def Test() = return 1
 

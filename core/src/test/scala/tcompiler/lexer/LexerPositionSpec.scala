@@ -18,7 +18,7 @@ class LexerPositionSpec extends FunSuite with Matchers {
 
   val Tokens: List[Token] = {
     val file = new File(TestFile)
-    Lexer.run(TestContext)(List(file)).head
+    Lexer.run(TestContext)(Set(file)).head
   }
 
   def testPositions(predicate: Token => Boolean, positions: (String, Pos)*): Unit = {

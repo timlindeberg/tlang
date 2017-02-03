@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colors
 
 
 class ConstantPool extends Streamable {
@@ -42,8 +42,8 @@ class ConstantPool extends Streamable {
   def size: U2 = entries.length
 
   // Ugly way of printing nicer debug info
-  def getByteInfo(idx: U2, colorizer: Colorizer): String = {
-    import colorizer._
+  def getByteInfo(idx: U2, colors: Colors): String = {
+    import colors._
 
     if (inverseClassMap.contains(idx))
       return ClassColor(inverseStringMap(inverseClassMap(idx)))

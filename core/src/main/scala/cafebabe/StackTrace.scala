@@ -2,7 +2,7 @@ package cafebabe
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
-import tcompiler.utils.Colorizer
+import tcompiler.utils.Colors
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -10,7 +10,18 @@ import scala.collection.mutable.ListBuffer
 /**
   * Created by Tim Lindeberg on 2/2/2017.
   */
-case class StackTrace(abcBuffer: ListBuffer[AbstractByteCode], heightArray: Array[Int], cp: ConstantPool, signature: String) {
+case class StackTrace(
+  abcBuffer: ListBuffer[AbstractByteCode],
+  heightArray: Array[Int],
+  cp: ConstantPool,
+  signature: String,
+  colors: Colors
+) {
+
+  val heights: Array[Int]             = heightArray.clone()
+  val abcs   : List[AbstractByteCode] = abcBuffer.toList
+
+  import colors._
 
   private val UninitializedHeight: Int = Int.MinValue
   private val types                    = Map(
@@ -26,74 +37,72 @@ case class StackTrace(abcBuffer: ListBuffer[AbstractByteCode], heightArray: Arra
 
   private var colorIndex = -1
   private val colorMap   = mutable.HashMap[String, String]()
-  private def labelColor(label: String, colorizer: Colorizer) = {
-    import colorizer._
+  private def labelColor(label: String, colors: Colors) = {
     val color = colorMap.getOrElseUpdate(label, {
-      colorIndex = (colorIndex + 1) % Colors.length
-      Colors(colorIndex)
+      colorIndex = (colorIndex + 1) % AllColors.length
+      AllColors(colorIndex)
     })
     color + label + Reset
   }
 
+  override def toString: String = content
+  def content: String = makeStacktrace
 
-  def apply(colorizer: Colorizer): String = {
-    import colorizer._
-
-    if (abcBuffer.isEmpty)
+  private def makeStacktrace: String = {
+    if (abcs.isEmpty)
       return ""
 
     val sb = new StringBuilder()
-    sb ++= header(colorizer, signature)
     sb ++= s"$Bold%-6s %-6s %-6s %-15s %s$Reset\n".format("Line", "PC", "Height", "ByteCode", "Info")
 
     var pc = 0
     var currentLineNumber = 0
 
-    def appendAbc(abc: AbstractByteCode, extraInfo: String) = {
-      val h = if (pc > heightArray.length) UninitializedHeight else heightArray(pc)
+    def appendLine(abc: AbstractByteCode, extraInfo: String) = {
+      val h = if (pc > heights.length) UninitializedHeight else heights(pc)
       val height = if (h == UninitializedHeight) "" else String.valueOf(h)
       // Colorize labels
-      sb ++= s"$VarColor%-6d $KeywordColor%-6d $VarColor%-6s $KeywordColor%-15s %s$Reset\n"
+      sb ++= s"$NumColor%-6s $KeywordColor%-6s $NumColor%-6s $KeywordColor%-15s %s$Reset\n"
         .format(currentLineNumber, pc, height, abc, extraInfo)
     }
 
     var i = 0
-    while (i < abcBuffer.size) {
-      val abc = abcBuffer(i)
+    while (i < abcs.size) {
+      val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          sb.append(s"%16s%s:\n".format("", labelColor(name, colorizer)))
+          sb.append(s"%16s%s:\n".format("", labelColor(name, colors)))
         case LineNumber(line)                           =>
           currentLineNumber = line
         case _: RawByte | _: RawBytes                   =>
         case NEWARRAY                                   =>
-          abcBuffer(i + 1) match {
-            case RawByte(tpe) => appendAbc(abc, s"$NumColor${types(tpe)}")
+          abcs(i + 1) match {
+            case RawByte(tpe) => appendLine(abc, s"$NumColor${types(tpe)}")
           }
         case IINC                                       =>
-          abcBuffer(i + 1) match {
-            case RawByte(index) => abcBuffer(i + 2) match {
-              case RawByte(amount) => appendAbc(abc, s"$NumColor$index $amount")
+          abcs(i + 1) match {
+            case RawByte(index) => abcs(i + 2) match {
+              case RawByte(amount) => appendLine(abc, s"$NumColor$index $amount")
             }
           }
         case BIPUSH | SIPUSH | ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
              ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
-          abcBuffer(i + 1) match {
-            case RawByte(value)  => appendAbc(abc, s"$NumColor$value")
-            case RawBytes(value) => appendAbc(abc, s"$NumColor$value")
+          abcs(i + 1) match {
+            case RawByte(value)  => appendLine(abc, s"$NumColor$value")
+            case RawBytes(value) => appendLine(abc, s"$NumColor$value")
           }
         case co: ControlOperator                        =>
-          appendAbc(co.opCode, labelColor(co.target, colorizer))
+          appendLine(co.opCode, labelColor(co.target, colors))
         case _                                          =>
           var extraInfo = ""
-          if (i + 1 < abcBuffer.size) {
-            abcBuffer(i + 1) match {
-              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, colorizer)
-              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, colorizer)
+          if (i + 1 < abcs.size) {
+            abcs(i + 1) match {
+              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, colors)
+              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, colors)
               case _             =>
             }
           }
-          appendAbc(abc, extraInfo)
+          appendLine(abc, extraInfo)
       }
       pc += abc.size
       i += 1
@@ -102,14 +111,13 @@ case class StackTrace(abcBuffer: ListBuffer[AbstractByteCode], heightArray: Arra
     sb.toString
   }
 
-  private def header(colorizer: Colorizer, signature: String) = {
-    import colorizer._
+  def header: String = {
     val split1 = signature.split("\\.")
     val className = split1(0)
     val split2 = split1(1).split(":")
     val methName = split2(0)
     val sig = split2(1)
-    s"${Bold("[>")} ${ClassColor(className)}.${MethodColor(methName)}: ${ClassColor(sig)} ${Bold("<]")}\n"
+    s"${ClassColor(className)}.${MethodColor(methName)}: ${ClassColor(sig)}"
   }
 
 }
