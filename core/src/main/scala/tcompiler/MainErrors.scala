@@ -10,9 +10,9 @@ import tcompiler.utils.Context
   */
 trait MainErrors extends Errors {
 
-  override var ctx: Context = _
-  override val ErrorLetters = "M"
-  override var importMap    = new ImportMap()
+  override var ctx      : Context   = _
+  override val ErrorLetters         = "M"
+  override var importMap: ImportMap = _
 
   private val nameSuggestor = new NameSuggestor
 

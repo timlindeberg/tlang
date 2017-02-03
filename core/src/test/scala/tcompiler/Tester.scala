@@ -32,6 +32,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   protected val PrintErrors: Boolean = sys.env.get("printerrors").contains("true")
 
   private val testPath = sys.env.get("testfile")
+    .filter(_.nonEmpty)
     .map(file => s"$Path/$file${Main.FileEnding}")
     .getOrElse(Path)
 
@@ -107,8 +108,8 @@ object Tester {
   val Timeout                      = duration.Duration(2, "sec")
   val IgnoreRegex    : Regex       = """.*// *[I|i]gnore.*""".r
   val SolutionRegex  : Regex       = """.*// *[R|r]es:(.*)""".r
-  val UseColor       : Boolean     = sys.env.get("usecolor").contains("true")
-  val PrintCodeStages: Set[String] = sys.env.get("printcode").map(_.split(",").toSet).getOrElse(Set())
+  val UseColor       : Boolean     = !sys.env.get("usecolor").contains("false")
+  val PrintCodeStages: Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None)
 
@@ -136,11 +137,5 @@ object Tester {
   }
 
   private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")
-
-  private def formatClassPath(classPaths: List[String]): String =
-    if (System.getProperty("os.name").startsWith("Windows"))
-      "\"" + classPaths.mkString(";") + "\""
-    else
-      classPaths.mkString(":")
 
 }

@@ -16,14 +16,18 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
   val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
   var methodUsage       : Map[MethodSymbol, Boolean] = Map()
 
+  val emptyClassSym = new ClassSymbol("", false)
+  val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
   /**
     * Typechecking does not produce a value, but has the side effect of
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus foreach { cu => typecheckFields(ctx, cu) }
-    cus foreach { cu => typecheckMethods(ctx, cu) }
+    cus foreach {typecheckFields(ctx, _)}
+    cus foreach {typecheckMethods(ctx, _)}
+    cus foreach {verify(ctx, _)}
+
     cus
   }
 
@@ -42,11 +46,10 @@ object TypeChecking extends Pipeline[List[CompilationUnit], List[CompilationUnit
         new TypeChecker(ctx, cu.importMap, methodSymbol).tcMethod()
       }
     }
+  }
 
-    val emptyClassSym = new ClassSymbol("", false)
-    val emptyMethSym = new MethodSymbol("", emptyClassSym, None, Set())
+  private def verify(ctx: Context, cu: CompilationUnit): Unit = {
     val typeChecker = new TypeChecker(ctx, cu.importMap, emptyMethSym)
-
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
     typeChecker.checkTraitsAreImplemented(cu)
@@ -307,7 +310,7 @@ class TypeChecker(override var ctx: Context,
                   checkConstructorPrivacy(classSymbol, constructorSymbol, newDecl)
                   newDecl.setSymbol(constructorSymbol)
                 case None if exprs.nonEmpty  =>
-                  val methodSignature = tpe.name + exprs.map(_.getType).mkString("(", " , ", ")")
+                  val methodSignature = "new" + exprs.map(_.getType).mkString("(", " , ", ")")
                   ErrorDoesntHaveConstructor(tpe.name, methodSignature, newDecl)
                 case _                       =>
                   val defaultConstructor = new MethodSymbol("new", classSymbol, None, Set(Public()))

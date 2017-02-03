@@ -4,7 +4,7 @@ import kool::std::List
 import kool::std::Collection
 import kool::std::Iterator
 
-class Vector<T>: List<T, Vector<T>> {
+class Vector<T>: List<T> {
 
 	val static InitialCapacity = 10
 	var size = 0

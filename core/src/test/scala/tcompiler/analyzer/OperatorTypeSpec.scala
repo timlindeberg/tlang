@@ -6,28 +6,27 @@ import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.imports.ImportMap
-import tcompiler.utils.Context
 
-class OperatorTypeSpec extends FlatSpec with Matchers {
+class OperatorTypeSpec extends FunSuite with Matchers {
 
-  val ClassSymbol               = new ClassSymbol("obj", false)
-  val MainMethod : MethodSymbol = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  val TestContext: Context      = Tester.testContext
-  val TestImportMap             = new ImportMap(TestContext)
-  val TypeChecker               = new TypeChecker(TestContext, TestImportMap, MainMethod)
+  private val ClassSymbol   = new ClassSymbol("obj", false)
+  private val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  private val TestContext   = Tester.testContext
+  private val TestImportMap = new ImportMap(TestContext)
+  private val TypeChecker   = new TypeChecker(TestContext, TestImportMap, MainMethod)
 
 
-  val int    = new TypeConstructor(Int)
-  val bool   = new TypeConstructor(Bool)
-  val long   = new TypeConstructor(Long)
-  val float  = new TypeConstructor(Float)
-  val double = new TypeConstructor(Double)
-  val char   = new TypeConstructor(Char)
-  val array  = new TypeConstructor(TArray(Int))
-  val obj    = new TypeConstructor(Object)
+  private val int    = new TypeConstructor(Int)
+  private val bool   = new TypeConstructor(Bool)
+  private val long   = new TypeConstructor(Long)
+  private val float  = new TypeConstructor(Float)
+  private val double = new TypeConstructor(Double)
+  private val char   = new TypeConstructor(Char)
+  private val array  = new TypeConstructor(TArray(Int))
+  private val obj    = new TypeConstructor(Object)
 
-  val allTypes       : List[() => VariableID]                     = List[() => VariableID](int, bool, long, float, double, char, array, obj)
-  val allCombinations: List[(() => VariableID, () => VariableID)] = for (x <- allTypes; y <- allTypes) yield (x, y)
+  private val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
+  private val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
   private def createIdentifier(tpe: Type) = VariableID("").setSymbol(new VariableSymbol("")).setType(tpe)
 
@@ -38,43 +37,41 @@ class OperatorTypeSpec extends FlatSpec with Matchers {
     def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
   }
 
-  behavior of "Operators"
+  test("Plus") {arithmeticOperator(Plus)}
+  test("Minus") {arithmeticOperator(Minus)}
+  test("Times") {arithmeticOperator(Times)}
+  test("Div") {arithmeticOperator(Div)}
+  test("Modulo") {arithmeticOperator(Modulo)}
 
-  it should "Plus" in arithmeticOperator(Plus)
-  it should "Minus" in arithmeticOperator(Minus)
-  it should "Times" in arithmeticOperator(Times)
-  it should "Div" in arithmeticOperator(Div)
-  it should "Modulo" in arithmeticOperator(Modulo)
+  test("LogicAnd") {logicOperator(LogicAnd)}
+  test("LogicOr") {logicOperator(LogicOr)}
+  test("LogicXor") {logicOperator(LogicXor)}
 
-  it should "LogicAnd" in logicOperator(LogicAnd)
-  it should "LogicOr" in logicOperator(LogicOr)
-  it should "LogicXor" in logicOperator(LogicXor)
+  test("LeftShift") {shiftOperator(LeftShift)}
+  test("RightShift") {shiftOperator(RightShift)}
 
-  it should "LeftShift" in shiftOperator(LeftShift)
-  it should "RightShift" in shiftOperator(RightShift)
+  test("Assign") {assignOperator()}
+  test("ArrayAssign") {arrayAssignOperator()}
 
-  it should "Assign" in assignOperator
-  it should "ArrayAssign" in arrayAssignOperator
+  test("LessThan") {comparisonOperator(LessThan)}
+  test("LessThanEquals") {comparisonOperator(LessThanEquals)}
+  test("GreaterThan") {comparisonOperator(GreaterThan)}
+  test("GreaterThanEquals") {comparisonOperator(GreaterThanEquals)}
 
-  it should "LessThan" in comparisonOperator(LessThan)
-  it should "LessThanEquals" in comparisonOperator(LessThanEquals)
-  it should "GreaterThan" in comparisonOperator(GreaterThan)
-  it should "GreaterThanEquals" in comparisonOperator(GreaterThanEquals)
+  test("Equals") {equalsOperator(Equals)}
+  test("NotEquals") {equalsOperator(NotEquals)}
 
-  it should "Equals" in equalsOperator(Equals)
-  it should "NotEquals" in equalsOperator(NotEquals)
+  test("And") {andOr(And)}
+  test("Or") {andOr(Or)}
+  test("Not") {not(Not)}
 
-  it should "And" in andOr(And)
-  it should "Or" in andOr(Or)
-  it should "Not" in not(Not)
+  test("Negation") {negation(Negation)}
+  test("LogicalNot") {logicalNot(LogicNot)}
 
-  it should "Negation" in negation(Negation)
-  it should "LogicalNot" in logicalNot(LogicNot)
-
-  it should "PreIncrement" in incrementDecrement(PreIncrement)
-  it should "PostIncrement" in incrementDecrement(PostIncrement)
-  it should "PreDecrement" in incrementDecrement(PreDecrement)
-  it should "PostDecrement" in incrementDecrement(PostDecrement)
+  test("PreIncrement") {incrementDecrement(PreIncrement)}
+  test("PostIncrement") {incrementDecrement(PostIncrement)}
+  test("PreDecrement") {incrementDecrement(PreDecrement)}
+  test("PostDecrement") {incrementDecrement(PostDecrement)}
 
 
   private def arithmeticOperator(expressionType: (VariableID, VariableID) => ExprTree) =

@@ -11,14 +11,17 @@ import scala.collection.mutable
   * Created by Tim Lindeberg on 7/5/2016.
   */
 
-class ImportMap(override var ctx: Context) extends ImportErrors {
-
+class ImportMap(
+  var ctx: Context,
+  val imports: List[Import] = Nil,
+  val pack: Package = Package(Nil),
+  val classes: List[ClassDeclTree] = Nil
+) extends ImportErrors {
 
   override var importMap: ImportMap = this
   private  val shortToFull          = mutable.Map[String, String]()
   private  val fullToShort          = mutable.Map[String, String]()
 
-  var imports         : List[Import]               = Nil
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
   private val javaObject = List("java", "lang", "Object")
@@ -32,11 +35,9 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
     ExtensionImport(koolLang, javaString)
   )
 
-  def this() = this(null)
-  def this(imports: List[Import], pack: Package, classes: List[ClassDeclTree], ctx: Context) {
-    this(ctx)
-    this.imports = imports
+  init()
 
+  def init(): Unit = {
     val ignoredImports = ctx.ignoredImports
 
     val defaultImportNames = DefaultImports.map(_.writtenName)
@@ -55,6 +56,7 @@ class ImportMap(override var ctx: Context) extends ImportErrors {
       }
     }
   }
+
 
   private def addImport(imp: Import): Unit = imp match {
     case regImp: RegularImport            =>

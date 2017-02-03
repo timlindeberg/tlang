@@ -1,5 +1,5 @@
 val a = new A()
-val b = new A()
+val b = -a
 
 a.Test() // res: A
 a.Test(5) // res: A5

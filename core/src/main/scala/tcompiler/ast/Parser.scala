@@ -51,7 +51,11 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
   import ASTBuilder._
 
+  // Remove comments and adjecant new line tokens
   tokens = tokens.filter(!_.isInstanceOf[COMMENTLIT])
+  tokens = tokens.zipWithIndex.filter {
+    case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE)
+  }.map(_._1)
 
   private var currentIndex        = 0
   private var currentToken: Token = tokens(currentIndex)
@@ -92,7 +96,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
     val classes = createMainClass(code)
 
-    val importMap = new ImportMap(imp, pack, classes, ctx)
+    val importMap = new ImportMap(ctx, imp, pack, classes)
     CompilationUnit(pack, classes, importMap)
   }
 

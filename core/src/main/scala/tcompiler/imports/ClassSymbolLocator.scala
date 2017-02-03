@@ -67,7 +67,7 @@ object ClassSymbolLocator {
     classSymbol.methods = methods.filterNotInstance[OperatorSymbol]
     classSymbol.operators = methods.filterInstance[OperatorSymbol]
     classSymbol.parents = convertParents(clazz)
-    classSymbol.isAbstract = clazz.isAbstract
+    classSymbol.isAbstract = clazz.isInterface
     classSymbol.fields = clazz.getFields.map { field =>
       val f = convertField(classSymbol, field)
       (f.name, f)

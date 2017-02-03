@@ -1,7 +1,6 @@
-// ignore
 var a = new A()
 
-a.lol() // res: lol
+a.test() // res: lol
 // Uses D:s version
 println(a.implemented(0)) // res: 3
 
@@ -16,7 +15,7 @@ class A : B, C, D {
 
 class B {
 
-    Def lol() = println("lol")
+    Def test() = println("lol")
 
 }
 

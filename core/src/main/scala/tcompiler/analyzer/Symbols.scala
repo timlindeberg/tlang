@@ -87,7 +87,9 @@ object Symbols {
 
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
       findMethod(abstractMeth.name, abstractMeth.argTypes, exactTypes = true)
-        .filter(concreteMeth => !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType))
+        .filter { concreteMeth =>
+          !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType)
+        }
         .orElse(parents.findDefined(_.implementingMethod(abstractMeth)))
 
     def overriddenMethod(concreteMeth: MethodSymbol): Option[MethodSymbol] =
@@ -132,8 +134,9 @@ object Symbols {
       fields.get(name).orElse(lookupParentField(name))
 
 
-    def abstractMethods(): List[(MethodSymbol, ClassSymbol)] =
+    def abstractMethods(): List[(MethodSymbol, ClassSymbol)] = {
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.abstractMethods())
+    }
 
     def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
       val ops = operators.filter(sym => sameOperatorType(operatorType, sym.operatorType))
@@ -170,7 +173,7 @@ object Symbols {
       if (args.size != symbol.argList.size)
         return false
 
-      args.zip(symbol.argList.map(_.getType)).forall {
+      args.zip(symbol.argTypes).forall {
         case (expectedArg, methodArg) =>
           if (exactTypes)
             expectedArg == methodArg

@@ -1,4 +1,4 @@
-// ignore
+// Ignore
 new CowboyArtist().Draw() // res: A pretty painting
 
 trait Drawable {

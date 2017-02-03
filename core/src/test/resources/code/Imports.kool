@@ -4,7 +4,7 @@ import java::lang::System
 import kool::lang::extension java::lang::Object
 import kool::lang::extension java::lang::String
 
-// TODO: This test only works in sweden on a computer with english Locale :)
+// TODO: This test only works in CET on a computer with english Locale :)
 
 new A().AD() // res: 1
 new A().BC() // res: 0

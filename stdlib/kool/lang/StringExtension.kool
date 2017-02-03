@@ -86,7 +86,7 @@ extension java::lang::String {
         val capacity = (e - s + st - 1) / st
         val chars = new Char[capacity]
         for(var i = s; i < e; i += st)
-            chars[(i - s) / step] = charAt(i)
+            chars[(i - s) / st] = charAt(i)
 
         new String(chars)
     }

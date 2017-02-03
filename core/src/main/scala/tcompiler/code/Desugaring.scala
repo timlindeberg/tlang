@@ -39,11 +39,10 @@ class Desugarer(importMap: ImportMap) {
 
       override protected def _transform(t: Tree): Tree = {
         t match {
-          case extensionDecl: ExtensionDecl =>
-            val desugared = desugarExtensionDecl(extensionDecl)
-            _transform(desugared) // transform operators inside the extension class
           case opDecl: OperatorDecl         =>
             replaceOperatorDecl(opDecl)
+          case extensionDecl: ExtensionDecl =>
+            desugarExtensionDecl(super._transform(extensionDecl))
           case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
           case _                            => super._transform(t)
         }
@@ -57,21 +56,21 @@ class Desugarer(importMap: ImportMap) {
     val transformer = new Trees.Transformer {
 
       override protected def _transform(t: Tree): Tree = t match {
-        case slice: ArraySlice if !isObject(slice)    =>
+        case slice: ArraySlice if !isObject(slice)               =>
           desugarArraySlice(super._transform(slice))
-        case incDec: IncrementDecrementTree           =>
+        case incDec: IncrementDecrementTree if !isObject(incDec) =>
           desugarIncrementDecrement(super._transform(incDec))
-        case safeAccess: SafeAccess                   =>
+        case safeAccess: SafeAccess                              =>
           // Recurse again to replace all calls in the desugared version
           super._transform(desugarSafeAccess(safeAccess))
-        case acc@NormalAccess(_, MethodCall(meth, _)) =>
+        case acc@NormalAccess(_, MethodCall(meth, _))            =>
           val newAcc = super._transform(acc)
           val classSymbol = meth.getSymbol.classSymbol
           classSymbol match {
             case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
             case _                       => newAcc
           }
-        case assign: Assign                           =>
+        case assign: Assign                                      =>
           val to = assign.to
           if (to.isInstanceOf[ArrayRead] && isObject(to)) {
             val expr = super.apply(assign.from)
@@ -81,14 +80,14 @@ class Desugarer(importMap: ImportMap) {
           } else {
             super._transform(assign)
           }
-        case op: OperatorTree                         =>
+        case op: OperatorTree                                    =>
           replaceOperatorCall(super._transform(op)) match {
             case op: OperatorTree => op // Finished transform
             case tree             => _transform(tree) // Transform again to replace external method calls etc.
           }
-        case foreach: Foreach                         => _transform(desugarForeach(foreach))
-        case elvis: Elvis                             => _transform(desugarElvisOp(elvis))
-        case _                                        => super._transform(t)
+        case foreach: Foreach                                    => _transform(desugarForeach(foreach))
+        case elvis: Elvis                                        => _transform(desugarElvisOp(elvis))
+        case _                                                   => super._transform(t)
       }
     }
     transformer(cu)
@@ -383,8 +382,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarIncrementDecrement(t: Tree): Tree
-  = {
+  private def desugarIncrementDecrement(t: Tree): Tree = {
     if (!t.isInstanceOf[IncrementDecrementTree])
       return t
 
@@ -455,8 +453,7 @@ class Desugarer(importMap: ImportMap) {
   /**
     * Desugars for each loops, either array based or an iterator based.
     */
-  private def desugarForeach(t: Tree): Tree
-  = {
+  private def desugarForeach(t: Tree): Tree = {
     if (!t.isInstanceOf[Foreach])
       return t
 
@@ -494,8 +491,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarArrayForeach(varDecl: VarDecl, container: ExprTree, stat: StatTree)
-  = {
+  private def desugarArrayForeach(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
     val indexDecl = c.createVarDecl("i", IntLit(0))
     val index = indexDecl.id
@@ -542,8 +538,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree)
-  = {
+  private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
 
     val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap, List())
@@ -589,8 +584,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarArraySlice(t: Tree): Tree
-  = {
+  private def desugarArraySlice(t: Tree): Tree = {
     if (!t.isInstanceOf[ArraySlice])
       return t
 
@@ -683,8 +677,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarSafeAccess(t: Tree): Tree
-  = {
+  private def desugarSafeAccess(t: Tree): Tree = {
     if (!t.isInstanceOf[SafeAccess])
       return t
 
@@ -738,8 +731,7 @@ class Desugarer(importMap: ImportMap) {
     * --------------------------------------------------------------------------------
     */
   //@formatter:on
-  private def desugarElvisOp(t: Tree): Tree
-  = {
+  private def desugarElvisOp(t: Tree): Tree = {
     if (!t.isInstanceOf[Elvis])
       return t
 
@@ -757,11 +749,9 @@ class Desugarer(importMap: ImportMap) {
     c.getCode
   }
 
-  private def isObject(e: ExprTree)
-  = e.getType.isInstanceOf[TObject]
+  private def isObject(e: ExprTree) = e.getType.isInstanceOf[TObject]
 
-  private def getClassID(operatorSymbol: OperatorSymbol)
-  = {
+  private def getClassID(operatorSymbol: OperatorSymbol) = {
     val classSymbol = operatorSymbol.classSymbol
     ClassID(classSymbol.name).setSymbol(classSymbol)
   }

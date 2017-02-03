@@ -1,6 +1,7 @@
 package kool::std
 
 import kool::std::Collection
+import kool::std::Vector
 
 /**
 * An ordered collection of elements.
@@ -158,9 +159,9 @@ trait List<T>: Collection<T> {
         val s  = start ?: 0
         val e  = end   ?: Size()
         val st = step  ?: 1
-        val newList = new Vector<T>((e - s + st - 1) / st)
+        val newList = new Vector<T>((e - s + st - 1) / st, new T())
         for(var i = s; i < e; i += st)
-            newList.Add(Get(i))
+            newList[(i - s) / st] = Get(i)
 
         newList
     }

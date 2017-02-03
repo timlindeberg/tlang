@@ -33,9 +33,7 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
         val token = createToken(NEWLINE, 1)
         column = 1
         line += 1
-        // Don't put two newline tokens in a row
-        val t = if (tokens.nonEmpty && tokens.head.kind != NEWLINE) token :: tokens else tokens
-        readTokens(r, t)
+        readTokens(r, token :: tokens)
       case (c :: r) if c.isWhitespace =>
         column += 1
         readTokens(r, tokens)

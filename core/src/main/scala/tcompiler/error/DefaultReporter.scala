@@ -76,8 +76,7 @@ class DefaultReporter(
         errors += error
       case ErrorLevel.Fatal   =>
         errors += error
-        val errorFormatter = ErrorFormatter(error, formatting, errorContext)
-        throw new CompilationException(errorFormatter.format())
+        throw new CompilationException(errorMessage)
     }
   }
 

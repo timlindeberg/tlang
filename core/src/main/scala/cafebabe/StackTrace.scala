@@ -84,6 +84,10 @@ case class StackTrace(
             case RawByte(index) => abcs(i + 2) match {
               case RawByte(amount) => appendLine(abc, s"$NumColor$index $amount")
             }
+            // Can use multiple bytes if preceded by a WIDE
+            case RawBytes(index) => abcs(i + 2) match {
+              case RawBytes(amount) => appendLine(abc, s"$NumColor$index $amount")
+            }
           }
         case BIPUSH | SIPUSH | ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
              ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
