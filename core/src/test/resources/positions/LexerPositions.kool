@@ -28,8 +28,8 @@ print	println	error // tabs here
 
 /**/break  /*  */ continue /******/ in /** */
 // null
-null // null
-
+null /* null
+     null          */
 identifier a hej /**/ test id // dsa
 
 // Literals

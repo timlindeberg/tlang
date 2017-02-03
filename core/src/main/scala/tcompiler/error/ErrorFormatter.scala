@@ -6,23 +6,8 @@ import java.util.regex.Matcher
 import tcompiler.Main
 import tcompiler.utils.Helpers
 
-import scala.collection.mutable
 import scala.io.Source
 
-object ErrorFormatter {
-
-  val NonColoredIndicationChar                         = "~"
-  val LineCache: mutable.Map[File, IndexedSeq[String]] = mutable.Map()
-
-  def getLines(f: File): IndexedSeq[String] =
-    LineCache.getOrElseUpdate(f, {
-      val source = Source.fromFile(f).withPositioning(true)
-      val lines = source.getLines().toIndexedSeq
-      source.close()
-      lines
-    })
-
-}
 
 /**
   * Created by Tim Lindeberg on 1/14/2017.
@@ -32,7 +17,6 @@ case class ErrorFormatter(
   formatting: Formatting,
   errorContextSize: Int) {
 
-  import ErrorFormatter._
   import formatting._
   import formatting.box._
   import formatting.colors._
@@ -52,11 +36,12 @@ case class ErrorFormatter(
     Underline + color
   }
 
-  private val QuoteRegex        = """'(.+?)'""".r
-  private val pos               = error.pos
-  private val lines             = if (pos.hasFile) getLines(pos.file.get) else Nil
-  private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
-  private val wordWrapper       = new AnsiWordWrapper
+  private val NonColoredIndicationChar = "~"
+  private val QuoteRegex               = """'(.+?)'""".r
+  private val pos                      = error.pos
+  private val lines                    = if (pos.hasFile) getLines(pos.file.get) else Nil
+  private val syntaxHighlighter        = SyntaxHighlighter(formatting.colors)
+  private val wordWrapper              = new AnsiWordWrapper
 
   def format(): String = {
     val sb = new StringBuilder
@@ -77,6 +62,13 @@ case class ErrorFormatter(
       sb ++= bottom
 
     sb.toString()
+  }
+
+  private def getLines(f: File): IndexedSeq[String] = {
+    val source = Source.fromFile(f)
+    val lines = source.getLines().toIndexedSeq
+    source.close()
+    lines
   }
 
   private def errorPrefix: String = {

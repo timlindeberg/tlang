@@ -25,9 +25,11 @@ case class SyntaxHighlighter(colors: Colors) {
   }
 
   private def highlight(line: String, markings: Seq[Marking]): String = {
+    if (line.isEmpty)
+      return line
 
     val tokenizer = new Tokenizer(context, None)
-    val tokens = tokenizer.apply(line.toList)
+    val tokens = tokenizer(line.toList)
     val sb = new StringBuilder()
     sb ++= line.substring(0, tokens.head.col - 1)
     var prevColor = ""

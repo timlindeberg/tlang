@@ -26,8 +26,6 @@ class LexerPositionSpec extends FunSuite with Matchers {
       .filterNot(_.kind == NEWLINE)
       .filter(predicate)
 
-    assert(t.length == positions.length)
-
     val tests = t.zip(positions)
 
     tests foreach { case (token, (name, expectedPos)) =>
@@ -156,17 +154,28 @@ class LexerPositionSpec extends FunSuite with Matchers {
 
   /*-------------------------------- Char literals --------------------------------*/
   testPositions(_.kind == CHARLITKIND,
-    "'a'"          -> Pos(55, 6, 55, 9),
-    "'\\n'"        -> Pos(56, 6, 56, 10),
-    "'\\uabcd'"    -> Pos(57, 6, 57, 14)
+    "'a'"       -> Pos(55, 6, 55, 9),
+    "'\\n'"     -> Pos(56, 6, 56, 10),
+    "'\\uabcd'" -> Pos(57, 6, 57, 14)
   )
 
-  /*-------------------------------- String literals --------------------------------*/
+  /*-------------------------------- String literals ------------------------------*/
   testPositions(_.kind == STRLITKIND,
     "\"\""                            -> Pos(59, 6, 59, 8),
     "\"string\""                      -> Pos(60, 6, 60, 14),
     "\"stri\\ng\\uabcdhej\""          -> Pos(61, 6, 61, 24),
     "eine kleine multilinen stringen" -> Pos(62, 6, 65, 7)
+  )
+
+    /*---------------------------- Comment literals ------------------------------*/
+  testPositions(_.kind == COMMENTLITKIND,
+    "// tabs here"          -> Pos(27, 21, 27, 33),
+    "/**/"                  -> Pos(29, 1, 29, 5),
+    "/*  */"                -> Pos(29, 12, 29, 18),
+    "/******/"              -> Pos(29, 28, 29, 36),
+    "/** */"                -> Pos(29, 40, 29, 46),
+    "// null"               -> Pos(30, 1, 30, 8),
+    "/* null  \\n null  */" -> Pos(31, 6, 32, 22)
   )
 
   // @formatter:on

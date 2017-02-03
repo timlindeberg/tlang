@@ -37,8 +37,7 @@ trait LexerErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorInvalidCharacter(c: Char): Unit =
-    error(0, s"Invalid character: '$c'.", 1)
+  // Missing 0
 
   protected def ErrorInvalidIdentifier(c: Char, length: Int): Unit =
     error(1, s"Invalid character in identifier: '$c'.", length)
@@ -58,11 +57,11 @@ trait LexerErrors extends Errors {
   protected def ErrorInvalidUnicode(length: Int): Unit =
     error(6, "Invalid unicode escape sequence.", length)
 
-  protected def ErrorUnclosedCharLiteral(startPos: Positioned): Unit =
-    error(7, "Unclosed character literal.", startPos)
+  protected def ErrorUnclosedCharLiteral(length: Int): Unit =
+    error(7, "Unclosed character literal.", length)
 
-  protected def ErrorUnclosedStringLiteral(startPos: Positioned): Unit =
-    error(8, "Unclosed string literal.", startPos)
+  protected def ErrorUnclosedStringLiteral(length: Int): Unit =
+    error(8, "Unclosed string literal.", length)
 
   protected def ErrorNumberTooLargeForInt(length: Int): Unit =
     error(9, "Number is too large to fit in an Int.", length)
@@ -70,18 +69,15 @@ trait LexerErrors extends Errors {
   protected def ErrorNumberTooLargeForLong(length: Int): Unit =
     error(10, "Number is too large to fit in a Long.", length)
 
-  protected def ErrorInvalidNumber(length: Int, rest: List[Char]): Unit =
-    error(11, "Invalid number.", getLength(length, rest))
+  protected def ErrorInvalidNumber(length: Int): Unit =
+    error(11, "Invalid number.", length)
 
-  protected def ErrorInvalidFloat(length: Int, rest: List[Char]): Unit =
-    error(12, "Invalid floating point number.", getLength(length, rest))
+  protected def ErrorInvalidFloat(length: Int): Unit =
+    error(12, "Invalid floating point number.", length)
 
-  protected def ErrorInvalidBinaryLiteral(length: Int, rest: List[Char]): Unit =
-    error(13, "Invalid binary literal.", getLength(length, rest))
+  protected def ErrorInvalidBinaryLiteral(length: Int): Unit =
+    error(13, "Invalid binary literal.", length)
 
-  protected def ErrorInvalidHexadecimalLiteral(length: Int, rest: List[Char]): Unit =
-    error(14, "Invalid hexadecimal literal.", getLength(length, rest))
-
-  private def getLength(length: Int, rest: List[Char]) = length + rest.indexWhere(_.isWhitespace) + 1
-
+  protected def ErrorInvalidHexadecimalLiteral(length: Int): Unit =
+    error(14, "Invalid hexadecimal literal.", length)
 }
