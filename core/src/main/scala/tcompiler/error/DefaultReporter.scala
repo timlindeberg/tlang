@@ -103,7 +103,7 @@ class DefaultReporter(
     else
       getPrefix(errors, "error", num)
 
-    formatting.makeBox(header, Nil) + format(errors)
+    format(header, errors)
   }
 
 
@@ -111,7 +111,7 @@ class DefaultReporter(
     val numWarnings = warnings.size
     val num = Yellow(numWarnings)
     val header = getPrefix(warnings, "warning", num)
-    formatting.makeBox(header, Nil) + format(warnings)
+    format(header, warnings)
   }
 
   private def getPrefix(errors: mutable.LinkedHashSet[Error], tpe: String, num: String) = {
@@ -120,9 +120,12 @@ class DefaultReporter(
     s"${Bold}There $was $num$Bold $tpe" + (if (n > 1) "s" else "") + Reset
   }
 
-  private def format(errors: mutable.LinkedHashSet[Error]) =
+  private def format(header: String, errors: mutable.LinkedHashSet[Error]): String =
+    formatting.makeBox(header, Nil) + format(errors)
+
+  private def format(errors: mutable.LinkedHashSet[Error]): String =
     errors
-      .map { err => ErrorFormatter(err, formatting, errorContext).format() }
+      .map {ErrorFormatter(_, formatting, errorContext).format()}
       .mkString
 
   private def isValidError(error: Error): Boolean = {

@@ -1,5 +1,8 @@
 package tcompiler.error
 
+import java.io.File
+
+import tcompiler.Main
 import tcompiler.error.Boxes.{Box, Simple}
 import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colors, Enumeration}
@@ -11,18 +14,19 @@ import tcompiler.utils.{Colors, Enumeration}
 case class Formatting(box: Box, width: Int, colors: Colors) {
 
   import box._
+  import colors._
 
   private val wordWrapper = new AnsiWordWrapper
 
-  def top: String = (┌ + ─ * (width - 2) + ┐).rtrim + "\n"
-  def bottom: String = (└ + ─ * (width - 2) + ┘).rtrim + "\n"
-  def divider: String = (├ + ─ * (width - 2) + ┤).rtrim + "\n"
+  def top: String = (┌ + ─ * (width - 2) + ┐).rtrimWhiteSpaces + "\n"
+  def bottom: String = (└ + ─ * (width - 2) + ┘).rtrimWhiteSpaces + "\n"
+  def divider: String = (├ + ─ * (width - 2) + ┤).rtrimWhiteSpaces + "\n"
 
   def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
     val rest = ─ * (width - bridgeAt - 5)
     val overNumbers = ─ * (bridgeAt + 2)
     val line = left + overNumbers + bridge + rest + right
-    line.rtrim + "\n"
+    line.rtrimWhiteSpaces + "\n"
   }
 
   def center(text: String): String = {
@@ -35,18 +39,18 @@ case class Formatting(box: Box, width: Int, colors: Colors) {
 
   def makeHeader(text: String): String = {
     val line = │ + " " + center(text) + " " + │
-    top + line.rtrim + "\n"
+    top + line.rtrimWhiteSpaces + "\n"
   }
 
 
-  def makeLines(line: String, width: Int = width): String =
-    wordWrapper(line, width - 4).map(makeLine(_, width)).mkString
+  def makeLines(lines: String, width: Int = width): String =
+    wordWrapper(lines, width - 4).map(makeLine(_, width)).mkString
 
 
   def makeLine(line: String, width: Int = width): String = {
     val whitespaces = " " * (width - line.charCount - 4)
     val l = │ + " " + line + whitespaces + " " + │
-    l.rtrim + "\n"
+    l.rtrimWhiteSpaces + "\n"
   }
 
   def makeBlock(block: String): String = {
@@ -62,6 +66,20 @@ case class Formatting(box: Box, width: Int, colors: Colors) {
     blocks foreach {sb ++= makeBlock(_)}
     sb ++= bottom
     sb.toString
+  }
+
+  def formatFileName(file: Option[File]): String = {
+    file match {
+      case Some(f) => formatFileName(f)
+      case None    => Bold(Magenta("No file"))
+    }
+  }
+
+  def formatFileName(file: File): String = formatFileName(file.getName)
+
+  def formatFileName(name: String): String = {
+    val start = name.dropRight(Main.FileEnding.length)
+    Bold(Magenta(start)) + Main.FileEnding
   }
 }
 

@@ -2,8 +2,6 @@ package tcompiler
 package utils
 
 import java.io.File
-import java.lang.reflect.Method
-import java.net.{URL, URLClassLoader}
 
 import tcompiler.ast.PrettyPrinter
 import tcompiler.error.{Formatting, Reporter, SimpleFormatting}
@@ -26,18 +24,11 @@ case class Context(
   private val JavaClassPath = "java.class.path"
   val executionTimes: mutable.Map[Pipeline[_, _], Double] = mutable.Map()
 
-  def getClassPaths: Set[String] = classPaths ++ System.getProperty(JavaClassPath).split(";").toSet + "."
+  def javaClassPath: Set[String] = System.getProperty(JavaClassPath).split(";").toSet
+  
+  def getClassPaths: Set[String] = classPaths ++ javaClassPath + "." + Main.TDirectory
 
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)
-
-  val method: Method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
-  method.setAccessible(true)
-
-  for (p <- getClassPaths) {
-    val f = new File(p)
-    method.invoke(ClassLoader.getSystemClassLoader, f.toURI.toURL)
-  }
-
 
 }

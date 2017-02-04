@@ -37,10 +37,21 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     .getOrElse(Path)
 
 
-  testFiles(testPath).foreach(test)
-
   before {
     ClassSymbolLocator.clearCache()
+  }
+
+  testFiles(new File(testPath)).foreach { file =>
+    val name = file.getName
+    val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)
+    execute {testFile(file)}
+  }
+
+  private def testFiles(file: File): Array[File] = {
+    if (file.isFile && file.getName.endsWith(Main.FileEnding))
+      return Array(file)
+    Console
+    file.listFiles.flatMap(testFiles)
   }
 
   protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = ""): String = {
@@ -70,27 +81,6 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     }.mkString("\n", "\n", "\n")
 
     if (errors == "") results else results + "\n" + errors
-  }
-
-  private def test(file: File): Unit = {
-    if (file.isDirectory)
-      testFiles(file.getPath).foreach(test)
-    else if (shouldBeIgnored(file))
-      ignore(file.getName) {testFile(file)}
-    else
-      test(file.getName) {testFile(file)}
-  }
-
-  private def testFiles(dir: String): Array[File] = {
-    val f = new File(dir)
-    if (!f.isDirectory)
-      return Array[File](f)
-
-    if (f.exists())
-      return f.listFiles.filter(_.getName.endsWith(Main.FileEnding))
-
-    f.mkdir
-    Array[File]()
   }
 
   private def shouldBeIgnored(file: File): Boolean = {
@@ -125,12 +115,10 @@ object Tester {
     val colors = Colors(UseColor)
     val formatting = Formatting(Light, LineWidth.defaultValue, colors)
     val reporter = new DefaultReporter(formatting = formatting)
-    val cp = Main.TDirectory
     Context(
       reporter = reporter,
       files = files,
       outDirs = outDir,
-      classPaths = Set(cp),
       printCodeStages = PrintCodeStages,
       formatting = formatting,
       printer = PrettyPrinter(colors))

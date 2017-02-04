@@ -22,27 +22,15 @@ case class PrettyPrinter(colors: Colors) {
     prettyPrint(t)
   }
 
-  private def comment(cu: CompilationUnit) = {
-    val fileName = if (cu.hasFile)
-      cu.file.get.getName
-    else
-      "No file"
-
-    s"""|
-        |//-------------------------------------------------------------
-        |//--- $fileName
-        |//-------------------------------------------------------------""".stripMargin
-  }
-
   private def prettyPrint(t: Tree): String = t match {
-    case cu@CompilationUnit(pack, classes, importMap)               => p"${comment(cu)}$pack${imports(importMap.imports)}$classes"
+    case CompilationUnit(pack, classes, importMap)                  => p"$pack${imports(importMap.imports)}$classes"
     case Package(address)                                           => p"${packDecl(address)}"
     case RegularImport(address)                                     => p"import ${address.mkString("::")}"
     case ExtensionImport(address, className)                        => p"import ${address.mkString("::")}::extension ${className.mkString("::")}"
     case WildCardImport(address)                                    => p"import ${address.mkString("::")}.*"
-    case ClassDecl(id, parents, fields, methods)                    => p"$N${N}class ${restOfClassDecl(id, parents, fields, methods)}"
-    case TraitDecl(id, parents, fields, methods)                    => p"$N${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
-    case ExtensionDecl(id, methods)                                 => p"$N${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
+    case ClassDecl(id, parents, fields, methods)                    => p"${N}class ${restOfClassDecl(id, parents, fields, methods)}"
+    case TraitDecl(id, parents, fields, methods)                    => p"${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
+    case ExtensionDecl(id, methods)                                 => p"${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
     case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
     case MethodDecl(modifiers, id, args, retType, stat)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
     case ConstructorDecl(modifiers, _, args, _, stat)               => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"

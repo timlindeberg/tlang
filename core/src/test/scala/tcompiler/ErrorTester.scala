@@ -29,7 +29,7 @@ trait ErrorTester extends Tester {
 
       val warnings = ctx.reporter.warningMessage
       if (PrintErrors)
-        println(warnings)
+        print(warnings)
 
       val expectedWarnings = parseSolutions(file)
       val warningCodes = parseErrorCodes(warnings, ctx)
@@ -38,7 +38,7 @@ trait ErrorTester extends Tester {
       case t: CompilationException =>
         val errors = t.getMessage
         if (PrintErrors)
-          println(errors)
+          print(errors)
         val errorCodes = parseErrorCodes(errors, ctx)
         val expectedErrors = parseSolutions(file)
         assertCorrect(errorCodes, expectedErrors, errors)

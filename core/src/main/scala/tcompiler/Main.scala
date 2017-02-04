@@ -45,7 +45,6 @@ object Main extends MainErrors {
     val options = Options(args)
     val useColor = options.boxType != Simple
     val colors = Colors(useColor)
-
     if (args.isEmpty) {
       printHelp(colors)
       sys.exit(1)
@@ -78,7 +77,7 @@ object Main extends MainErrors {
     compilation.run(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
-      println(ctx.reporter.warningMessage)
+      print(ctx.reporter.warningMessage)
 
     if (options(Verbose))
       printExecutionTimes(ctx)
@@ -95,7 +94,7 @@ object Main extends MainErrors {
       frontEnd.run(ctx)(ctx.files)
     } catch {
       case e: CompilationException =>
-        println(e.getMessage)
+        print(e.getMessage)
         sys.exit(1)
     }
 
@@ -222,13 +221,9 @@ object Main extends MainErrors {
     val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
     val outputBlocks = cus.flatMap { cu =>
       val file = cu.file.get
-      val output = syntaxHighlighter(programExecutor(ctx, file).get)
-      val name = file.getName.dropRight(Main.FileEnding.length)
-      val mainName = s"$Bold${Magenta(name)}${Bold(Main.FileEnding)}"
-
-      List(center(mainName), output)
+      val output = syntaxHighlighter(programExecutor(ctx, file).get.trim)
+      List(center(formatFileName(file)), output)
     }
-
     print(makeBox(Bold(header), outputBlocks))
   }
 

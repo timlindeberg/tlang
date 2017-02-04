@@ -73,7 +73,7 @@ case class SyntaxHighlighter(colors: Colors) {
         case CHARLITKIND | STRLITKIND                                => StringColor
         case IDKIND                                                  => VarColor
         case x if x in Tokens.Keywords                               => KeywordColor
-        case _                                                       => ""
+        case _                                                       => SymbolColor
       }
     }
   }

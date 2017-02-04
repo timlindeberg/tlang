@@ -10,14 +10,22 @@ case class Colors(active: Boolean) {
   val Bold     : String = GetColor(Console.BOLD)
   val Underline: String = GetColor(Console.UNDERLINED)
 
-  val Black  : String = GetColor(Console.BLACK)
-  val Red    : String = GetColor(Console.RED)
-  val Green  : String = GetColor(Console.GREEN)
-  val Yellow : String = GetColor(Console.YELLOW)
-  val Blue   : String = GetColor(Console.BLUE)
-  val Magenta: String = GetColor(Console.MAGENTA)
-  val Cyan   : String = GetColor(Console.CYAN)
-  val White  : String = GetColor(Console.WHITE)
+  val Black       : String = GetColor(Console.BLACK)
+  val Red         : String = GetColor(Console.RED)
+  val Green       : String = GetColor(Console.GREEN)
+  val Yellow      : String = GetColor(Console.YELLOW)
+  val Blue        : String = GetColor(Console.BLUE)
+  val Magenta     : String = GetColor(Console.MAGENTA)
+  val Cyan        : String = GetColor(Console.CYAN)
+  val White       : String = GetColor(Console.WHITE)
+  val Gray        : String = GetColor("\u001b[1;30m")
+  val LightRed    : String = GetColor("\u001b[1;31m")
+  val LightGreen  : String = GetColor("\u001b[1;32m")
+  val LightYellow : String = GetColor("\u001b[1;33m")
+  val LightBlue   : String = GetColor("\u001b[1;34m")
+  val LightMagenta: String = GetColor("\u001b[1;35m")
+  val LightCyan   : String = GetColor("\u001b[1;36m")
+  val LightGray   : String = GetColor("\u001b[1;37m")
 
   val AllColors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 
@@ -53,8 +61,11 @@ case class Colors(active: Boolean) {
   val NumColor: String = Magenta
   def NumColor(s: Any): String = NumColor + s + Reset
 
-  val CommentColor: String = White
+  val CommentColor: String = Black
   def CommentColor(s: Any): String = CommentColor + s + Reset
+
+  val SymbolColor: String = White
+  def SymbolColor(s: Any): String = SymbolColor + s + Reset
 
   private def GetColor(color: String) = if (active) color else ""
 

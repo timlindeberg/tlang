@@ -11,15 +11,29 @@ class AnsiWordWrapper {
 
   private val EarlyBreakChars: String = """\/.:;-_()"""
 
+
   def apply(texts: List[String], maxWidth: Int): List[String] = texts.flatMap(apply(_, maxWidth))
 
   def apply(text: String, maxWidth: Int): List[String] = {
-    text.split("\n").toList.flatMap(wrap(_, maxWidth))
-  }
 
-  private def wrap(text: String, maxWidth: Int): List[String] = {
+    @tailrec def whiteSpaces(chars: List[Char], s: StringBuilder = new StringBuilder): (String, List[Char]) = chars match {
+      case c :: rest if isWhiteSpace(c) => whiteSpaces(rest, s + c)
+      case rest                         => (s.toString, rest)
+    }
+
 
     @tailrec def wordWrap(chars: List[Char], currentWord: String, currentLine: String, lines: List[String]): List[String] = {
+      def currentLength: Int = currentLine.charCount + currentWord.charCount
+
+      def newLine(): List[String] = {
+        if (currentLength > maxWidth) {
+          val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
+          word :: wrappedLines ::: lines
+        } else {
+          currentLine + currentWord :: lines
+        }
+      }
+
       chars match {
         case '\u001b' :: '[' :: '0' :: 'm' :: rest    =>
           wordWrap(rest, currentWord + Console.RESET, currentLine, lines)
@@ -27,28 +41,26 @@ class AnsiWordWrapper {
           wordWrap(rest, currentWord + s"\u001b[$a${b}m", currentLine, lines)
         case '\u001b' :: '[' :: a :: 'm' :: rest      =>
           wordWrap(rest, currentWord + s"\u001b[${a}m", currentLine, lines)
-        case c :: rest if c.isWhitespace              =>
-          val currentLength = currentLine.charCount + currentWord.charCount + 1
+        case '\r' :: '\n' :: rest                     =>
+          wordWrap(rest, "", "", newLine())
+        case '\n' :: rest                             =>
+          wordWrap(rest, "", "", newLine())
+        case c :: _ if isWhiteSpace(c)                =>
+          val (spaces, rest) = whiteSpaces(chars)
           if (currentLength > maxWidth) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
-            wordWrap(rest, "", word, wrappedLines ::: lines)
-          } else if (currentWord.forall(_.isWhitespace)) {
-            wordWrap(rest, currentWord + " ", currentLine, lines)
-          } else if (currentWord.startsWith(" ") || currentLine.isEmpty) {
-            wordWrap(rest, "", currentLine + currentWord, lines)
+            wordWrap(rest, "", word + spaces, wrappedLines ::: lines)
           } else {
-            wordWrap(rest, "", currentLine + " " + currentWord, lines)
+            wordWrap(rest, spaces, currentLine + currentWord, lines)
           }
         case c :: rest                                =>
           wordWrap(rest, currentWord + c, currentLine, lines)
         case Nil                                      =>
-          val currentLength = currentLine.charCount + currentWord.charCount + 1
           val res = if (currentLength > maxWidth) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
             word :: wrappedLines ::: lines
           } else {
-            val line = if (currentLine == "") currentWord else currentLine + " " + currentWord
-            line :: lines
+            currentLine + currentWord :: lines
           }
           res.reverse
       }
@@ -57,6 +69,43 @@ class AnsiWordWrapper {
     val wrapped = wordWrap(text.toList, "", "", Nil)
     wrapAnsi(wrapped)
   }
+
+  private def isWhiteSpace(c: Char) = c in " \t"
+
+  private def trimWhiteSpace(s: String) = s.dropWhile(isWhiteSpace)
+
+  private def wrap(currentWord: String, currentLine: String, maxWidth: Int): (String, List[String]) = {
+    val trimmed = trimWhiteSpace(currentWord)
+    if (trimmed.charCount <= maxWidth)
+      return (trimmed, List(currentLine))
+
+
+    var word = trimmed
+    var line = currentLine
+    var lines: List[String] = Nil
+
+    do {
+      if (line == "") {
+        val breakpoint = findBreakpoint(word, maxWidth)
+
+        val (w1, w2) = word.splitAt(breakpoint)
+
+        word = w2
+        lines ::= w1
+      } else {
+        val breakpoint = findBreakpoint(word, maxWidth - line.charCount - 1)
+
+        val (w1, w2) = word.splitAt(breakpoint)
+
+        word = w2
+        lines ::= line + " " + w1
+        line = ""
+      }
+    } while (word.charCount > maxWidth)
+
+    (word, lines)
+  }
+
 
   private def findBreakpoint(word: String, width: Int): Int = {
     val chars = word.toList
@@ -87,44 +136,16 @@ class AnsiWordWrapper {
     }
   }
 
-
-  private def wrap(currentWord: String, currentLine: String, maxWidth: Int): (String, List[String]) = {
-    if (currentWord.charCount <= maxWidth)
-      return (currentWord, List(currentLine))
-
-
-    var word = currentWord
-    var line = currentLine
-    var lines: List[String] = Nil
-
-    do {
-      if (line == "") {
-        val breakpoint = findBreakpoint(word, maxWidth)
-
-        val (w1, w2) = word.splitAt(breakpoint)
-
-        word = w2
-        lines ::= w1
-      } else {
-        val breakpoint = findBreakpoint(word, maxWidth - line.charCount - 1)
-
-        val (w1, w2) = word.splitAt(breakpoint)
-
-        word = w2
-        lines ::= line + " " + w1
-        line = ""
-      }
-    } while (word.charCount > maxWidth)
-
-    (word, lines)
-  }
-
   private def wrapAnsi(lines: List[String]): List[String] = {
 
     @tailrec def getAnsi(chars: List[Char], ansi: List[String]): List[String] = chars match {
       case '\u001b' :: '[' :: '0' :: 'm' :: rest    => getAnsi(rest, Nil)
-      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${b}m" :: ansi)
-      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${a}m" :: ansi)
+      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${
+        b
+      }m" :: ansi)
+      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${
+        a
+      }m" :: ansi)
       case _ :: rest                                => getAnsi(rest, ansi)
       case Nil                                      => ansi
     }

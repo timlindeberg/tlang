@@ -111,17 +111,17 @@ case class ErrorFormatter(
     sb ++= seperator(├, ┬, ┤, digits)
 
     val indent = getIndent(ctxLines)
-    val lineLength = formatting.width - digits - 3
 
     val lines = if (colors.active)
       ctxLines.map { case (i, line) => (i, syntaxHighlighter(line, Marking(i, pos, ErrorStyle))) }
     else
       ctxLines.flatMap { case (i, line) => indicatorLines(i, line, indent) }
 
+    val lineLength = formatting.width - digits - 3
     sb ++= lines
       .map { case (i, line) => (i, if (line.isEmpty) "" else line.substring(indent)) }
       .flatMap { case (i, line) =>
-        val lines = wordWrapper(line, lineLength)
+        val lines = wordWrapper(line, lineLength - 4)
         val lineNumbers = i :: List.fill(lines.size - 1)(-1)
         lineNumbers.zip(lines)
       }

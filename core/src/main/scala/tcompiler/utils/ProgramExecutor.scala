@@ -1,8 +1,8 @@
-package tcompiler
+package tcompiler.utils
 
 import java.io.File
 
-import tcompiler.utils.Context
+import tcompiler.Main
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration

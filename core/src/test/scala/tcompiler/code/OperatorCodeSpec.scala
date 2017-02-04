@@ -3,6 +3,7 @@ package tcompiler.code
 import java.io.{File, FileWriter, IOException}
 
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import tcompiler.Interpreter
 import tcompiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tcompiler.analyzer.Types._
 import tcompiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
@@ -13,8 +14,7 @@ import tcompiler.imports.ImportMap
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{Colors, Context}
-import tcompiler.{Interpreter, Main, ProgramExecutor}
+import tcompiler.utils.{Colors, Context, ProgramExecutor}
 
 import scala.util.Random
 
@@ -213,8 +213,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private def getResult(program: String) = {
     setTestProgram(program)
     Compiler.run(TestCtx)(TestCtx.files)
-    val mainName = TestCtx.files.head.getName.dropRight(Main.FileEnding.length)
-    programExecutor(List(TestFolder, Main.TDirectory), mainName).get.trim
+    programExecutor(TestCtx, TestCtx.files.head).get
   }
 
   private def getScalaResult(operation: String) = {

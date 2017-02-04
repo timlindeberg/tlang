@@ -34,7 +34,7 @@ object Extensions {
       str.codePointCount(0, str.length)
     }
 
-    def takeChars(num: Int) = {
+    def takeChars(num: Int): String = {
       var i = 0
       var s = ""
       while (s.charCount < num) {
@@ -44,8 +44,9 @@ object Extensions {
       s
     }
 
-    def ltrim: String = str.replaceAll("^\\s+", "")
-    def rtrim: String = str.replaceAll("\\s+$", "")
+    def trimWhiteSpaces: String = str.ltrimWhiteSpaces.rtrimWhiteSpaces
+    def ltrimWhiteSpaces: String = str.replaceAll("^\\s+", "")
+    def rtrimWhiteSpaces: String = str.replaceAll("\\s+$", "")
 
     def allIndexesOf(pattern: String): List[Int] = {
       val buf = ListBuffer[Int]()

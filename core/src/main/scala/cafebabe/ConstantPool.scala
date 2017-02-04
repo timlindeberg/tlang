@@ -46,25 +46,25 @@ class ConstantPool extends Streamable {
     import colors._
 
     if (inverseClassMap.contains(idx))
-      return ClassColor(inverseStringMap(inverseClassMap(idx)))
+      return ClassColor + inverseStringMap(inverseClassMap(idx))
 
     if (inverseIntMap.contains(idx))
-      return NumColor(inverseIntMap(idx))
+      return NumColor + inverseIntMap(idx)
 
     if (inverseFloatMap.contains(idx))
-      return NumColor(inverseFloatMap(idx))
+      return NumColor + inverseFloatMap(idx)
 
     if (inverseLongMap.contains(idx))
-      return NumColor(inverseLongMap(idx))
+      return NumColor + inverseLongMap(idx)
 
     if (inverseDoubleMap.contains(idx))
-      return NumColor(inverseDoubleMap(idx))
+      return NumColor + inverseDoubleMap(idx)
 
     if (inverseStringMap.contains(idx))
-      return StringColor("\"" + inverseStringMap(idx) + "\"")
+      return StringColor + '"' + inverseStringMap(idx) + '"'
 
     if (inverseStringConstMap.contains(idx))
-      return StringColor("\"" + inverseStringMap(inverseStringConstMap(idx)) + "\"")
+      return StringColor + '"' + inverseStringMap(inverseStringConstMap(idx)) + '"'
 
 
     inverseFieldRefMap.get(idx).orElse(inverseMethodRefMap.get(idx)) match {
@@ -74,7 +74,7 @@ class ConstantPool extends Streamable {
         val className = inverseStringMap(classId)
         val methName = inverseStringMap(natId._1)
         val methSig = inverseStringMap(natId._2)
-        s"$ClassColor$className $MethodColor$methName $VarColor$methSig$Reset"
+        s"$ClassColor$className $MethodColor$methName $VarColor$methSig"
       case None      =>
         s"Cannot find idx $idx"
     }

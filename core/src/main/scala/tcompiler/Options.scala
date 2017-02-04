@@ -36,9 +36,9 @@ case class Options(arguments: Array[String]) extends MainErrors {
         flagArgs.addBinding(flag, flag.defaultArg)
         Nil
       case OptionalArgumentFlag(flag) :: maybeArg :: rest =>
-        val args = splitArgs(maybeArg).filter(flag.isValidArg)
-        if (args.nonEmpty) {
-          args foreach { arg => flagArgs.addBinding(flag, arg.toLowerCase) }
+        val allArgs = splitArgs(maybeArg)
+        if (allArgs.exists(flag.isValidArg)) {
+          allArgs foreach { arg => flagArgs.addBinding(flag, arg.toLowerCase) }
           rest
         } else {
           flagArgs.addBinding(flag, flag.defaultArg)
@@ -68,7 +68,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   val classPaths: Set[String] = {
     val paths = flagArgs(ClassPath)
     paths.filter(!isValidPath(_)).foreach(FatalInvalidClassPath)
-    paths.toSet + Main.TDirectory
+    paths.toSet
   }
 
   val outDirectories: Set[File] = {

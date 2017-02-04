@@ -9,7 +9,7 @@ import tcompiler.code.{CodeGeneration, Desugaring}
 import tcompiler.error.CompilationException
 import tcompiler.lexer.Lexer
 import tcompiler.modification.Templates
-import tcompiler.utils.Pipeline
+import tcompiler.utils.{Pipeline, ProgramExecutor}
 
 import scala.io.Source
 

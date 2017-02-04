@@ -53,25 +53,28 @@ case class StackTrace(
       return ""
 
     val sb = new StringBuilder()
-    sb ++= s"$Bold%-6s %-6s %-6s %-15s %s$Reset\n".format("Line", "PC", "Height", "ByteCode", "Info")
-
     var pc = 0
     var currentLineNumber = 0
 
+    var first = true
     def appendLine(abc: AbstractByteCode, extraInfo: String) = {
       val h = if (pc > heights.length) UninitializedHeight else heights(pc)
       val height = if (h == UninitializedHeight) "" else String.valueOf(h)
       // Colorize labels
-      sb ++= s"$NumColor%-6s $KeywordColor%-6s $NumColor%-6s $KeywordColor%-15s %s$Reset\n"
+      if (!first)
+        sb ++= "\n"
+      first = false
+      sb ++= s"$NumColor%-6s $KeywordColor%-6s $NumColor%-7s $KeywordColor%-15s%s$Reset"
         .format(currentLineNumber, pc, height, abc, extraInfo)
     }
 
+    val labelIndent = "\n" + " " * 18
     var i = 0
     while (i < abcs.size) {
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          sb.append(s"%16s%s:\n".format("", labelColor(name, colors)))
+          sb.append(labelIndent + labelColor(name, colors))
         case LineNumber(line)                           =>
           currentLineNumber = line
         case _: RawByte | _: RawBytes                   =>
@@ -96,22 +99,20 @@ case class StackTrace(
             case RawBytes(value) => appendLine(abc, s"$NumColor$value")
           }
         case co: ControlOperator                        =>
-          appendLine(co.opCode, labelColor(co.target, colors))
+          appendLine(co.opCode, labelColor(co.target.trim, colors))
         case _                                          =>
-          var extraInfo = ""
-          if (i + 1 < abcs.size) {
+          val extraInfo = if (i + 1 < abcs.size) {
             abcs(i + 1) match {
-              case RawByte(idx)  => extraInfo = cp.getByteInfo(idx, colors)
-              case RawBytes(idx) => extraInfo = cp.getByteInfo(idx, colors)
-              case _             =>
+              case RawByte(idx)  => cp.getByteInfo(idx, colors)
+              case RawBytes(idx) => cp.getByteInfo(idx, colors)
+              case _             => ""
             }
-          }
+          } else ""
           appendLine(abc, extraInfo)
       }
       pc += abc.size
       i += 1
     }
-    sb ++= "\n"
     sb.toString
   }
 
@@ -121,7 +122,7 @@ case class StackTrace(
     val split2 = split1(1).split(":")
     val methName = split2(0)
     val sig = split2(1)
-    s"${ClassColor(className)}.${MethodColor(methName)}: ${ClassColor(sig)}"
+    Magenta(className) + "." + Bold(Magenta(methName)) + ":" + sig
   }
 
 }

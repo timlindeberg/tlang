@@ -18,7 +18,7 @@ abstract class Pipeline[-F, +T] {
   }
 
   private def execute(ctx: Context)(v: F): T = {
-    val infoPrinter = InfoPrinter(this, ctx)
+    val infoPrinter = OutputPrinter(this, ctx)
     val (output, time) = Helpers.timed {run(ctx)(v)}
     if (Main.CompilerStages.contains(this))
       ctx.executionTimes += this -> time
