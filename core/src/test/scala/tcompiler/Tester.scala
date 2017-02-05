@@ -33,7 +33,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
   private val testPath = sys.env.get("testfile")
     .filter(_.nonEmpty)
-    .map(file => s"$Path/$file${Main.FileEnding}")
+    .map(file => s"$Path/$file")
     .getOrElse(Path)
 
 
@@ -42,7 +42,11 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   }
 
   testFiles(new File(testPath)).foreach { file =>
-    val name = file.getName
+    val name = file.getPath
+      .replaceAll("\\\\", "/")
+      .replaceAll(testPath + "/", "")
+      .replaceAll(Main.FileEnding, "")
+
     val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)
     execute {testFile(file)}
   }
@@ -50,8 +54,12 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   private def testFiles(file: File): Array[File] = {
     if (file.isFile && file.getName.endsWith(Main.FileEnding))
       return Array(file)
-    Console
-    file.listFiles.flatMap(testFiles)
+
+    val files = file.listFiles
+    if (files == null || files.isEmpty)
+      Array()
+    else
+      files.flatMap(testFiles)
   }
 
   protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = ""): String = {
@@ -84,8 +92,11 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   }
 
   private def shouldBeIgnored(file: File): Boolean = {
-    val firstLine = Source.fromFile(file.getPath).getLines().take(1).toList.head
-    IgnoreRegex.findFirstIn(firstLine).isDefined
+    val firstLine = Source.fromFile(file.getPath).getLines().take(1).toList.headOption
+    if (firstLine.isEmpty)
+      return true
+
+    IgnoreRegex.findFirstIn(firstLine.get).isDefined
   }
 
   private def flattenTuples[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))

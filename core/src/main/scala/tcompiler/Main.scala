@@ -44,9 +44,11 @@ object Main extends MainErrors {
   def main(args: Array[String]) {
     val options = Options(args)
     val useColor = options.boxType != Simple
-    val colors = Colors(useColor)
+    val colors = Colors(useColor, options.colorScheme)
+    val formatting = error.Formatting(options.boxType, options(LineWidth), colors)
+
     if (args.isEmpty) {
-      printHelp(colors)
+      printHelp(formatting)
       sys.exit(1)
     }
 
@@ -54,13 +56,12 @@ object Main extends MainErrors {
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
 
-    val formatting = error.Formatting(options.boxType, options(LineWidth), colors)
     if (options(Version)) {
       printVersion()
       sys.exit()
     }
     if (options(Help).nonEmpty) {
-      printHelp(colors, options(Help))
+      printHelp(formatting, options(Help))
       sys.exit()
     }
     if (options.files.isEmpty)
@@ -124,11 +125,7 @@ object Main extends MainErrors {
     import ctx.formatting._
     import ctx.formatting.colors._
     val numFiles = ctx.files.size
-    val files = ctx.files.map { f =>
-      val name = f.getName.dropRight(Main.FileEnding.length)
-      val full = s"${Magenta(name)}${Main.FileEnding}"
-      s"$full"
-    }.mkString("\n")
+    val files = ctx.files.map(formatFileName).mkString("\n")
     val end = if (numFiles > 1) "files" else "file"
     val header = Bold("Compiling") + " " + Magenta(numFiles) + " " + Bold(end)
 
@@ -153,25 +150,24 @@ object Main extends MainErrors {
 
   private def printVersion() = println(s"T-Compiler $VersionNumber")
 
-  private def printHelp(colors: Colors, args: Set[String] = Set("")) = args foreach { arg =>
-    import colors._
-    val message = arg match {
-      case "stages" =>
-        val stages = CompilerStages.map(stage => s"   <$Blue${stage.stageName.capitalize}$Reset>").mkString("\n")
-        s"""|The compiler stages are executed in the following order:
-            |
-            |$stages
-            |"""
-      case ""       =>
-        val flags = Flag.All.map(_.format(colors)).mkString
-        s"""|Usage: tcomp <options> <source files>
-            |Options:
-            |
-            |$flags
-            |"""
-      case _        => ???
+  private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
+    args foreach { arg =>
+      import formatting._
+      import formatting.colors._
+
+      val help = Flag.get(arg) match {
+        case Some(flag) =>
+          val header = flag.flagName(formatting)
+          makeBox(header, List(flag.extendedDescription(formatting)))
+        case None       =>
+          val tcomp = "> " + Green("tcomp") + " <" + Blue("options") + "> <" + Blue("source files") + ">"
+          val header = tcomp + "\n\n" + Bold(Magenta("Options"))
+
+          val flags = Flag.All.map { flag => (flag.flagName(formatting), flag.description(formatting)) }
+          makeBoxWithColumn(header, flags)
+      }
+      print(help)
     }
-    print(message.stripMargin)
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {
@@ -222,7 +218,7 @@ object Main extends MainErrors {
     val outputBlocks = cus.flatMap { cu =>
       val file = cu.file.get
       val output = syntaxHighlighter(programExecutor(ctx, file).get.trim)
-      List(center(formatFileName(file)), output)
+      center(formatFileName(file)) :: output :: Nil
     }
     print(makeBox(Bold(header), outputBlocks))
   }

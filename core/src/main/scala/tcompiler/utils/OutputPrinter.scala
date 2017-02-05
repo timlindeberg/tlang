@@ -49,8 +49,7 @@ case class OutputPrinter[-F, +T](stage: Pipeline[F, T], ctx: Context) {
   }
 
   private def printTokens(allTokens: List[List[Token]]) = {
-    val legend = s"$Bold%-35s %-16s %s$Reset"
-      .format("Text", "Token", "Position")
+    val legend = s"$Bold%-35s %-16s %s$Reset".format("Text", "Token", "Position")
     val blocks = allTokens.flatMap { tokens =>
       val file = tokens.head.file
       val header = center(formatFileName(file)) + "\n\n" + legend
@@ -60,13 +59,14 @@ case class OutputPrinter[-F, +T](stage: Pipeline[F, T], ctx: Context) {
     print(makeBox(header, blocks))
   }
 
-  private def formatToken(t: Token) = {
-    val tokenName = t.kind.getClass.getSimpleName.dropRight(1)
-    val token = t.toString
-    val trimmed = if (token.charCount >= 34) token.takeChars(30) + "..." else token
-    val pos = Red(t.line) + ":" + Red(t.col) + " - " + Red(t.endLine) + ":" + Red(t.endCol)
-    s"$Blue%-35s$Reset $Bold%-16s$Reset %s"
-      .format(trimmed, tokenName, pos)
+  private def formatToken(token: Token) = {
+    val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
+    val text = token.toString
+    val trimmed = if (text.charCount >= 35) text.takeChars(31) + "..." else text
+    val start = NumColor(token.line) + ":" + NumColor(token.col)
+    val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
+    val pos = s"$start - $end"
+    s"$Blue%-35s$Reset $Bold%-16s$Reset %s".format(trimmed, tokenName, pos)
   }
 
 }

@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colors
+import tcompiler.error.{Formatting, SimpleFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -276,7 +276,8 @@ class CodeHandler private[cafebabe](
     heightArray.max.asInstanceOf[U2]
   }
 
-  def stackTrace(colors: Colors = Colors(false)): StackTrace = StackTrace(abcBuffer, heightArray, cp, signature, colors)
+  def stackTrace(formatting: Formatting = SimpleFormatting): StackTrace =
+    StackTrace(abcBuffer, heightArray, cp, signature, formatting)
 
   def print(): Unit = if (!frozen) {
     var pc = 0

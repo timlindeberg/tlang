@@ -12,7 +12,7 @@ import scala.util.matching.Regex
   */
 object Extensions {
 
-  val AnsiRegex: Regex = """\x1b[^m]*m""".r
+  private val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
 
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
@@ -27,7 +27,12 @@ object Extensions {
 
   }
 
+  implicit class RegexExtensions(r: Regex) {
+    def matches(s: String): Boolean = r.pattern.matcher(s).matches
+  }
+
   implicit class StringExtensions(val str: String) extends AnyVal {
+    def isAnsi: Boolean = AnsiRegex.matches(str)
     def clearAnsi: String = AnsiRegex.replaceAllIn(str, "")
     def charCount: Int = {
       val str = clearAnsi
@@ -44,9 +49,9 @@ object Extensions {
       s
     }
 
-    def trimWhiteSpaces: String = str.ltrimWhiteSpaces.rtrimWhiteSpaces
-    def ltrimWhiteSpaces: String = str.replaceAll("^\\s+", "")
-    def rtrimWhiteSpaces: String = str.replaceAll("\\s+$", "")
+    def trimWhiteSpaces: String = str.leftTrimWhiteSpaces.rightTrimWhiteSpaces
+    def leftTrimWhiteSpaces: String = str.replaceAll("^\\s+", "")
+    def rightTrimWhiteSpaces: String = str.replaceAll("\\s+$", "")
 
     def allIndexesOf(pattern: String): List[Int] = {
       val buf = ListBuffer[Int]()
@@ -71,6 +76,7 @@ object Extensions {
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
     def use(f: T => Unit): T = {f(t); t}
+    def print: T = {println(t); t}
     def in(seq: Traversable[T]): Boolean = seq.exists(_ == t)
     def in(seq: Set[T]): Boolean = seq.contains(t)
   }

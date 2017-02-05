@@ -7,8 +7,10 @@ import tcompiler.Flags.{Flag, _}
 import tcompiler.error.Boxes
 import tcompiler.error.Boxes.Box
 import tcompiler.utils.Extensions._
+import tcompiler.utils.{ColorScheme, Colors, DefaultColorScheme}
 
 import scala.collection.mutable
+import scala.util.parsing.json.JSON
 
 
 class FlagArgs extends mutable.HashMap[Flag, mutable.Set[String]] with mutable.MultiMap[Flag, String] {
@@ -32,6 +34,17 @@ case class Options(arguments: Array[String]) extends MainErrors {
       return
 
     val rest = args match {
+      case JsonFlag(flag) :: rest                         =>
+        val s = rest.mkString(" ")
+        val jsonStart = s.indexOf("{")
+        val jsonEnd = s.lastIndexOf("}")
+        if (jsonStart == -1 || jsonEnd == -1)
+          FatalInvalidJsonArgument(flag, s)
+
+        val json = s.substring(jsonStart, jsonEnd + 1)
+        flagArgs.addBinding(flag, json)
+        val afterJson = s.substring(jsonEnd + 1).trim
+        afterJson.split(" ").toList
       case OptionalArgumentFlag(flag) :: Nil              =>
         flagArgs.addBinding(flag, flag.defaultArg)
         Nil
@@ -87,7 +100,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   val files: Set[File] = {
     val files = filePaths.flatMap { path =>
       if (path.startsWith("-"))
-        FatalInvalidFlag(path)
+        FatalInvalidFlag(path, Flag.flagNames)
 
       val file = new File(path)
       if (file.isDirectory) {
@@ -110,22 +123,64 @@ case class Options(arguments: Array[String]) extends MainErrors {
 
   val boxType: Box = {
     val formattings = flagArgs(Formatting)
-    val boxNames = Boxes.All.map(_.name)
+    val boxNames = Boxes.All.map(_.name.toLowerCase)
     formattings.foreach { formatting =>
       if (!(formatting in boxNames))
         FatalInvalidArgToFlag(Formatting, formatting, boxNames.toList)
     }
     formattings.headOption
-      .flatMap(formatting => Boxes.All.find(_.name == formatting))
+      .flatMap(formatting => Boxes.All.find(_.name.toLowerCase == formatting))
       .getOrElse(Boxes.DefaultBox)
   }
 
+  val colorScheme: ColorScheme = {
+    val jsons = flagArgs(Flags.ColorScheme)
+    if (jsons.isEmpty) {
+      DefaultColorScheme
+    } else {
+      val json = jsons.head
+      JSON.parseFull(jsons.head) match {
+        case Some(values: Map[String, String]) =>
+          val lowercase = values map { case (key, value) => key.toLowerCase -> value.toLowerCase }
+          getColorScheme(lowercase)
+        case _                                 => FatalInvalidJsonArgument(Flags.ColorScheme, json)
+      }
+    }
+  }
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
     val validStages = Main.CompilerStages.map(_.stageName)
     stages.foreach { stage =>
       if (!(stage in validStages))
         FatalInvalidArgToFlag(PrintOutput, stage, validStages)
+    }
+  }
+
+  private def getColorScheme(json: Map[String, String]): ColorScheme = {
+    import ColorScheme._
+
+    json.keys
+      .find { key => !(key in ColorScheme.ColorSchemeNames) }
+      .foreach {FatalInvalidColorSchemeKey(_, ColorScheme.ColorSchemeNames)}
+
+    val colors = ColorScheme.ColorSchemeNames.map { name =>
+      val color = json.get(name) match {
+        case Some(color) =>
+          Colors.getColor(color).getOrElse(FatalInvalidColorSchemeArg(color, Colors.ColorNames))
+        case None        => ""
+      }
+      name -> color
+    }.toMap
+
+    new ColorScheme {
+      override val Keyword : String = colors(KeywordName)
+      override val Variable: String = colors(VariableName)
+      override val Class   : String = colors(ClassName)
+      override val Method  : String = colors(MethodName)
+      override val String  : String = colors(StringName)
+      override val Number  : String = colors(NumberName)
+      override val Comment : String = colors(CommentName)
+      override val Symbol  : String = colors(SymbolName)
     }
   }
 

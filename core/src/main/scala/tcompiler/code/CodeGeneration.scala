@@ -88,7 +88,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
             generateBridgeMethod(classFile, overriden, methSymbol, flags, thisTree)
           }
 
-        Some(ch.stackTrace(ctx.formatting.colors))
+        Some(ch.stackTrace(ctx.formatting))
       } else {
         None
       }

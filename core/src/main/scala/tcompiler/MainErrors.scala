@@ -53,11 +53,20 @@ trait MainErrors extends Errors {
   protected def FatalGivenDirectoryContainsNoTFiles(path: String): Nothing =
     fatal(s"The given directory '$path' does not contain any T-files.")
 
-  protected def FatalInvalidFlag(flag: String): Nothing =
-    fatal(s"'$flag' is not a valid flag. Type --help to see what type of input is valid.")
+  protected def FatalInvalidFlag(flag: String, alternatives: List[String]): Nothing =
+    fatal(s"'$flag' is not a valid flag.${nameSuggestor(flag, alternatives)} Type --help to see what type of input is valid.")
+
+  protected def FatalInvalidJsonArgument(flag: Flag, rest: String): Nothing =
+    fatal(s"Input following JSON flag '${flag.flag}' is not valid JSON: '$rest'.")
 
   protected def FatalGivenFileIsNotTFile(path: String): Nothing =
     fatal(s"The given file '$path' is not a T-file.")
+
+  protected def FatalInvalidColorSchemeKey(key: String, alternatives: List[String]): Nothing =
+    fatal(s"'$key' is not a valid part of color scheme.${nameSuggestor(key, alternatives)}")
+
+  protected def FatalInvalidColorSchemeArg(arg: String, alternatives: List[String]): Nothing =
+    fatal(s"'$arg' is not a valid color.${nameSuggestor(arg, alternatives)}")
 
   protected def FatalInvalidArgToFlag(flag: Flag, arg: String, alternatives: List[String]): Nothing =
     fatal(s"'$arg' is not a valid argument to flag '--${flag.flag}'.${nameSuggestor(arg, alternatives)}")

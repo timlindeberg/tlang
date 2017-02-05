@@ -2,6 +2,7 @@ package cafebabe
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
+import tcompiler.error.Formatting
 import tcompiler.utils.Colors
 
 import scala.collection.mutable
@@ -15,13 +16,14 @@ case class StackTrace(
   heightArray: Array[Int],
   cp: ConstantPool,
   signature: String,
-  colors: Colors
+  formatting: Formatting
 ) {
 
   val heights: Array[Int]             = heightArray.clone()
   val abcs   : List[AbstractByteCode] = abcBuffer.toList
 
-  import colors._
+  import formatting._
+  import formatting.colors._
 
   private val UninitializedHeight: Int = Int.MinValue
   private val types                    = Map(
@@ -68,13 +70,13 @@ case class StackTrace(
         .format(currentLineNumber, pc, height, abc, extraInfo)
     }
 
-    val labelIndent = "\n" + " " * 18
     var i = 0
     while (i < abcs.size) {
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          sb.append(labelIndent + labelColor(name, colors))
+          val label = labelColor(name, colors)
+          sb.append("\n" + rightAlign(label))
         case LineNumber(line)                           =>
           currentLineNumber = line
         case _: RawByte | _: RawBytes                   =>

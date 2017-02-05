@@ -18,7 +18,6 @@ case class ErrorFormatter(
   errorContextSize: Int) {
 
   import formatting._
-  import formatting.box._
   import formatting.colors._
 
   private val QuoteColor   = Magenta
@@ -41,7 +40,6 @@ case class ErrorFormatter(
   private val pos                      = error.pos
   private val lines                    = if (pos.hasFile) getLines(pos.file.get) else Nil
   private val syntaxHighlighter        = SyntaxHighlighter(formatting.colors)
-  private val wordWrapper              = new AnsiWordWrapper
 
   def format(): String = {
     val sb = new StringBuilder
@@ -57,7 +55,7 @@ case class ErrorFormatter(
 
 
     if (validPosition)
-      sb ++= locationInFile
+      sb ++= makeBlockWithColumn(locationInFile)
     else
       sb ++= bottom
 
@@ -103,34 +101,20 @@ case class ErrorFormatter(
     makeLines(errorPrefix + msgFormat + s + Reset)
   }
 
-  private def locationInFile: String = {
+  private def locationInFile: List[(String, String)] = {
     val ctxLines = contextLines
-    val digits = ctxLines.map { case (i, _) => numDigits(i) }.max
-
-    val sb = new StringBuilder
-    sb ++= seperator(├, ┬, ┤, digits)
-
     val indent = getIndent(ctxLines)
 
     val lines = if (colors.active)
-      ctxLines.map { case (i, line) => (i, syntaxHighlighter(line, Marking(i, pos, ErrorStyle))) }
-    else
-      ctxLines.flatMap { case (i, line) => indicatorLines(i, line, indent) }
-
-    val lineLength = formatting.width - digits - 3
-    sb ++= lines
-      .map { case (i, line) => (i, if (line.isEmpty) "" else line.substring(indent)) }
-      .flatMap { case (i, line) =>
-        val lines = wordWrapper(line, lineLength - 4)
-        val lineNumbers = i :: List.fill(lines.size - 1)(-1)
-        lineNumbers.zip(lines)
+      ctxLines.map { case (lineNum, line) =>
+        (lineNum.toString, syntaxHighlighter(line, Marking(lineNum, pos, ErrorStyle)))
       }
-      .map { case (i, line) => lineNumPrefix(i, digits) + makeLine(line, lineLength) }
-      .mkString
+    else
+      ctxLines.flatMap { case (lineNum, line) =>
+        indicatorLines(lineNum, line, indent)
+      }
 
-
-    sb ++= seperator(└, ┴, ┘, digits)
-    sb.toString()
+    lines.map { case (lineNum, line) => (NumColor(lineNum), if (line.isEmpty) "" else line.substring(indent)) }
   }
 
   private def getIndent(ctxLines: List[(Int, String)]): Int = {
@@ -148,8 +132,8 @@ case class ErrorFormatter(
       .toList
   }
 
-  private def indicatorLines(lineNum: Int, line: String, indent: Int): List[(Int, String)] = {
-    val lines = List((lineNum, line))
+  private def indicatorLines(lineNum: Int, line: String, indent: Int): List[(String, String)] = {
+    val lines = List((lineNum.toString, line))
     if (lineNum != pos.line)
       return lines
 
@@ -157,28 +141,7 @@ case class ErrorFormatter(
     val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
     val whitespaces = " " * (start - indent)
     val indicator = NonColoredIndicationChar * (end - start)
-    lines :+ (-1, whitespaces + indicator)
-  }
-
-  private def lineNumPrefix(lineNumber: Int, digits: Int) = {
-    val digitsInLineNum = if (lineNumber == -1) 0 else numDigits(lineNumber)
-    val whiteSpaces = " " * (digits - digitsInLineNum)
-    val sb = new StringBuilder
-    sb ++= │ + " "
-    if (lineNumber != -1)
-      sb ++= NumColor + lineNumber.toString + Reset
-    sb ++= whiteSpaces + " "
-    sb.toString()
-  }
-
-  private def numDigits(num: Int): Int = {
-    var n = 1
-    var i = num
-    if (i >= 100000000) {n += 8; i /= 100000000}
-    if (i >= 10000) {n += 4; i /= 10000}
-    if (i >= 100) {n += 2; i /= 100}
-    if (i >= 10) {n += 1;}
-    n
+    lines :+ ("", whitespaces + indicator)
   }
 
 }

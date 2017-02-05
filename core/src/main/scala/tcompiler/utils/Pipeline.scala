@@ -7,7 +7,7 @@ abstract class Pipeline[-F, +T] {
 
   def run(ctx: Context)(v: F): T
 
-  def stageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  val stageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
 
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: F): G = {

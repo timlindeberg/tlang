@@ -11,46 +11,53 @@ import tcompiler.utils.{Colors, Enumeration}
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Formatting(box: Box, width: Int, colors: Colors) {
+case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = true) {
 
   import box._
   import colors._
 
+  private val width: Int = lineWidth - 4
+
   private val wordWrapper = new AnsiWordWrapper
 
-  def top: String = (┌ + ─ * (width - 2) + ┐).rtrimWhiteSpaces + "\n"
-  def bottom: String = (└ + ─ * (width - 2) + ┘).rtrimWhiteSpaces + "\n"
-  def divider: String = (├ + ─ * (width - 2) + ┤).rtrimWhiteSpaces + "\n"
+  def top: String = trimRight(┌ + ─ * (lineWidth - 2) + ┐) + "\n"
+  def bottom: String = trimRight(└ + ─ * (lineWidth - 2) + ┘) + "\n"
+  def divider: String = trimRight(├ + ─ * (lineWidth - 2) + ┤) + "\n"
 
   def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
-    val rest = ─ * (width - bridgeAt - 5)
+    val rest = ─ * (lineWidth - bridgeAt - 5)
     val overNumbers = ─ * (bridgeAt + 2)
     val line = left + overNumbers + bridge + rest + right
-    line.rtrimWhiteSpaces + "\n"
+    trimRight(line) + "\n"
   }
 
-  def center(text: String): String = {
-    val x = width - text.charCount - 4
-    val space = " " * (x / 2)
-    val left = space
-    val right = if (x % 2 == 0) space else space + " "
-    left + text + right
-  }
+  def rightAlign(text: String, fill: Char = ' '): String =
+    wordWrapper(text, width).map { line =>
+      ("" + fill) * (width - line.charCount) + line
+    }.mkString("\n")
+
+  def center(text: String, fill: Char = ' '): String =
+    wordWrapper(text, width).map { line =>
+      val x = width - line.charCount
+      val space = ("" + fill) * (x / 2)
+      val left = space
+      val right = if (x % 2 == 0) space else space + fill
+      left + line + right
+    }.mkString("\n")
 
   def makeHeader(text: String): String = {
-    val line = │ + " " + center(text) + " " + │
-    top + line.rtrimWhiteSpaces + "\n"
+    val lines = makeLines(center(text)).mkString
+    top + lines
   }
 
+  def makeLines(lines: String, w: Int = width): String =
+    wordWrapper(lines, w).map(makeLine(_, w)).mkString
 
-  def makeLines(lines: String, width: Int = width): String =
-    wordWrapper(lines, width - 4).map(makeLine(_, width)).mkString
 
-
-  def makeLine(line: String, width: Int = width): String = {
-    val whitespaces = " " * (width - line.charCount - 4)
+  def makeLine(line: String, w: Int = width): String = {
+    val whitespaces = " " * (w - line.charCount)
     val l = │ + " " + line + whitespaces + " " + │
-    l.rtrimWhiteSpaces + "\n"
+    trimRight(l) + "\n"
   }
 
   def makeBlock(block: String): String = {
@@ -58,6 +65,37 @@ case class Formatting(box: Box, width: Int, colors: Colors) {
     sb ++= divider
     sb ++= makeLines(block)
     sb.toString()
+  }
+
+  def makeBlockWithColumn(block: List[(String, String)]): String = {
+    val sb = new StringBuilder
+
+    val columnVars = block.unzip._1
+    val maxColumnWidth = columnVars.map(_.charCount).max
+    val width = lineWidth - maxColumnWidth - 7
+
+    sb ++= sb ++= seperator(├, ┬, ┤, maxColumnWidth)
+
+    sb ++= block
+      .flatMap { case (col, line) =>
+        val lines = wordWrapper(line, width)
+        val columns = col :: List.fill(lines.size - 1)("")
+        columns zip lines
+      }
+      .map { case (col, line) =>
+        val columnWidth = col.charCount
+        val whiteSpaces = " " * (maxColumnWidth - columnWidth)
+        │ + " " + col + whiteSpaces + " " + makeLine(line, width)
+      }.mkString
+    sb ++= seperator(└, ┴, ┘, maxColumnWidth)
+    sb.toString
+  }
+
+  def makeBoxWithColumn(header: String, block: List[(String, String)]): String = {
+    val sb = new StringBuilder
+    sb ++= makeHeader(header)
+    sb ++= makeBlockWithColumn(block)
+    sb.toString
   }
 
   def makeBox(header: String, blocks: List[String]): String = {
@@ -81,6 +119,9 @@ case class Formatting(box: Box, width: Int, colors: Colors) {
     val start = name.dropRight(Main.FileEnding.length)
     Bold(Magenta(start)) + Main.FileEnding
   }
+
+
+  private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
 }
 
 object SimpleFormatting extends Formatting(Simple, 80, Colors(active = false))
@@ -103,7 +144,7 @@ object Boxes {
     val ┼ : String = chars(10).toString
 
     // Drop right to remove $ at end of object class name
-    val name: String = getClass.getSimpleName.dropRight(1).toLowerCase
+    val name: String = getClass.getSimpleName.dropRight(1)
   }
 
 

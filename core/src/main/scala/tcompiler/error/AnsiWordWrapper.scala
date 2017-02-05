@@ -47,6 +47,7 @@ class AnsiWordWrapper {
           wordWrap(rest, "", "", newLine())
         case c :: _ if isWhiteSpace(c)                =>
           val (spaces, rest) = whiteSpaces(chars)
+          val h = currentLength
           if (currentLength > maxWidth) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
             wordWrap(rest, "", word + spaces, wrappedLines ::: lines)
@@ -98,7 +99,7 @@ class AnsiWordWrapper {
         val (w1, w2) = word.splitAt(breakpoint)
 
         word = w2
-        lines ::= line + " " + w1
+        lines ::= line + w1
         line = ""
       }
     } while (word.charCount > maxWidth)

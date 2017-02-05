@@ -15,168 +15,168 @@ case class PrettyPrinter(colors: Colors) {
 
   val Indentation = 3
 
-  private var indent: Int = 0
+  private var currentIndent: Int = 0
 
   def apply(t: Tree): String = {
-    indent = 0
+    currentIndent = 0
     prettyPrint(t)
   }
 
   private def prettyPrint(t: Tree): String = t match {
-    case CompilationUnit(pack, classes, importMap)                  => p"$pack${imports(importMap.imports)}$classes"
-    case Package(address)                                           => p"${packDecl(address)}"
-    case RegularImport(address)                                     => p"import ${address.mkString("::")}"
-    case ExtensionImport(address, className)                        => p"import ${address.mkString("::")}::extension ${className.mkString("::")}"
-    case WildCardImport(address)                                    => p"import ${address.mkString("::")}.*"
-    case ClassDecl(id, parents, fields, methods)                    => p"${N}class ${restOfClassDecl(id, parents, fields, methods)}"
-    case TraitDecl(id, parents, fields, methods)                    => p"${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
-    case ExtensionDecl(id, methods)                                 => p"${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
-    case VarDecl(tpe, id, expr, modifiers)                          => p"${varDecl(modifiers)} $id${optional(tpe)(t => p": $t")}${optional(expr)(t => p" = $t")}"
-    case MethodDecl(modifiers, id, args, retType, stat)             => p"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => p": $t")}${optional(stat)(s => p" = $s")}$N"
-    case ConstructorDecl(modifiers, _, args, _, stat)               => p"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
-    case OperatorDecl(modifiers, operatorType, args, retType, stat) => p"${definition(modifiers)} ${operatorType.opSign}(${Separated(args, ", ")})${optional(retType)(t => p": $t")} = $stat$N"
-    case Formal(tpe, id)                                            => p"$id: $tpe"
-    case Private()                                                  => p"private"
-    case Public()                                                   => p"public"
-    case Protected()                                                => p"protected"
-    case Final()                                                    => p"final"
-    case Static()                                                   => p"static"
+    case CompilationUnit(pack, classes, importMap)                  => pp"$pack${imports(importMap.imports)}$classes"
+    case Package(address)                                           => pp"${packDecl(address)}"
+    case RegularImport(address)                                     => pp"import ${address.mkString("::")}"
+    case ExtensionImport(address, className)                        => pp"import ${address.mkString("::")}::extension ${className.mkString("::")}"
+    case WildCardImport(address)                                    => pp"import ${address.mkString("::")}.*"
+    case ClassDecl(id, parents, fields, methods)                    => pp"${N}class ${restOfClassDecl(id, parents, fields, methods)}"
+    case TraitDecl(id, parents, fields, methods)                    => pp"${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
+    case ExtensionDecl(id, methods)                                 => pp"${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
+    case VarDecl(tpe, id, expr, modifiers)                          => pp"${varDecl(modifiers)} $id${optional(tpe)(t => pp": $t")}${optional(expr)(t => pp" = $t")}"
+    case MethodDecl(modifiers, id, args, retType, stat)             => pp"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => pp": $t")}${optional(stat)(s => pp" = $s")}$N"
+    case ConstructorDecl(modifiers, _, args, _, stat)               => pp"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
+    case OperatorDecl(modifiers, operatorType, args, retType, stat) => pp"${definition(modifiers)} ${operatorType.opSign}(${Separated(args, ", ")})${optional(retType)(t => pp": $t")} = $stat$N"
+    case Formal(tpe, id)                                            => pp"$id: $tpe"
+    case Private()                                                  => pp"private"
+    case Public()                                                   => pp"public"
+    case Protected()                                                => pp"protected"
+    case Final()                                                    => pp"final"
+    case Static()                                                   => pp"static"
     // Types
-    case ArrayType(tpe)    => p"$tpe[]"
-    case IntType()         => p"Int"
-    case LongType()        => p"Long"
-    case FloatType()       => p"Float"
-    case DoubleType()      => p"Double"
-    case BooleanType()     => p"Bool"
-    case CharType()        => p"Char"
-    case UnitType()        => p"Unit"
-    case NullableType(tpe) => p"$tpe?"
+    case ArrayType(tpe)    => pp"$tpe[]"
+    case IntType()         => pp"Int"
+    case LongType()        => pp"Long"
+    case FloatType()       => pp"Float"
+    case DoubleType()      => pp"Double"
+    case BooleanType()     => pp"Bool"
+    case CharType()        => pp"Char"
+    case UnitType()        => pp"Unit"
+    case NullableType(tpe) => pp"$tpe?"
     // Statements
-    case Block(stats)                      => if (stats.isEmpty) "{}" else p"$L$stats$R"
-    case If(condition, thn, els)           => p"if($condition) ${Stat(thn)}${optional(els)(stat => p"${N}else ${Stat(stat)}")}"
-    case While(condition, stat)            => p"while($condition) ${Stat(stat)}"
-    case For(init, condition, post, stat)  => p"for(${Separated(init, ", ")} ; $condition ; ${Separated(post, ", ")}) ${Stat(stat)}"
-    case Foreach(varDecl, container, stat) => p"for($varDecl in $container) ${Stat(stat)}"
-    case Print(expr)                       => p"print($expr)"
-    case Println(expr)                     => p"println($expr)"
-    case Error(expr)                       => p"error($expr)"
-    case Assign(id, expr)                  => p"$id = $expr"
-    case Return(expr)                      => p"return $expr"
+    case Block(stats)                      => if (stats.isEmpty) "{}" else pp"$L$stats$R"
+    case If(condition, thn, els)           => pp"if($condition) ${Stat(thn)}${optional(els)(stat => pp"${N}else ${Stat(stat)}")}"
+    case While(condition, stat)            => pp"while($condition) ${Stat(stat)}"
+    case For(init, condition, post, stat)  => pp"for(${Separated(init, ", ")} ; $condition ; ${Separated(post, ", ")}) ${Stat(stat)}"
+    case Foreach(varDecl, container, stat) => pp"for($varDecl in $container) ${Stat(stat)}"
+    case Print(expr)                       => pp"print($expr)"
+    case Println(expr)                     => pp"println($expr)"
+    case Error(expr)                       => pp"error($expr)"
+    case Assign(id, expr)                  => pp"$id = $expr"
+    case Return(expr)                      => pp"return $expr"
     // Expressions
-    case And(lhs, rhs)                     => p"($lhs && $rhs)"
-    case Or(lhs, rhs)                      => p"($lhs || $rhs)"
-    case Plus(lhs, rhs)                    => p"($lhs + $rhs)"
-    case Minus(lhs, rhs)                   => p"($lhs - $rhs)"
-    case LogicAnd(lhs, rhs)                => p"($lhs & $rhs)"
-    case LogicOr(lhs, rhs)                 => p"($lhs | $rhs)"
-    case LogicXor(lhs, rhs)                => p"($lhs ^ $rhs)"
-    case LeftShift(lhs, rhs)               => p"($lhs << $rhs)"
-    case RightShift(lhs, rhs)              => p"($lhs >> $rhs)"
-    case Times(lhs, rhs)                   => p"($lhs * $rhs)"
-    case Div(lhs, rhs)                     => p"($lhs / $rhs)"
-    case Modulo(lhs, rhs)                  => p"($lhs % $rhs)"
-    case LessThan(lhs, rhs)                => p"($lhs < $rhs)"
-    case LessThanEquals(lhs, rhs)          => p"($lhs <= $rhs)"
-    case GreaterThan(lhs, rhs)             => p"($lhs > $rhs)"
-    case GreaterThanEquals(lhs, rhs)       => p"($lhs >= $rhs)"
-    case Equals(lhs, rhs)                  => p"($lhs == $rhs)"
-    case NotEquals(lhs, rhs)               => p"($lhs != $rhs)"
-    case Is(expr, id)                      => p"($expr is $id)"
-    case As(expr, tpe)                     => p"($expr as $tpe)"
-    case Not(expr)                         => p"!($expr)"
-    case Negation(expr)                    => p"-($expr)"
-    case LogicNot(expr)                    => p"~($expr)"
-    case Hash(expr)                        => p"#($expr)"
-    case ArrayRead(arr, index)             => p"$arr[$index]"
-    case ArraySlice(arr, start, end, step) => p"$arr[$start:$end:$step]"
-    case NormalAccess(obj, application)    => p"$obj.$application"
-    case SafeAccess(obj, application)      => p"$obj?.$application"
-    case MethodCall(meth, args)            => p"$meth(${Separated(args, ", ")})"
-    case IntLit(value)                     => p"$value"
-    case LongLit(value)                    => p"${value}L"
-    case FloatLit(value)                   => p"${value}F"
-    case DoubleLit(value)                  => p"$value"
-    case CharLit(value)                    => p"'${escapeJava(p"$value")}'"
-    case StringLit(value)                  => "\"" + p"${escapeJava(p"$value")}" + "\""
-    case ArrayLit(expressions)             => p"{ ${Separated(expressions, ", ")} }"
-    case TrueLit()                         => p"true"
-    case FalseLit()                        => p"false"
-    case NullLit()                         => p"null"
-    case id@ClassID(value, _)              => p"$value${templateList(id)}"
-    case Identifier(value)                 => p"$value"
-    case This()                            => p"this"
-    case Super(spec)                       => p"super${optional(spec)(s => p"<$s>")}"
-    case NewArray(tpe, sizes)              => p"new ${newArray(tpe, sizes)}"
-    case New(tpe, exprs)                   => p"new $tpe(${Separated(exprs, ", ")})"
-    case PreIncrement(id)                  => p"++$id"
-    case PostIncrement(id)                 => p"$id++"
-    case PreDecrement(id)                  => p"--$id"
-    case PostDecrement(id)                 => p"$id--"
-    case Ternary(condition, thn, els)      => p"($condition ? $thn : $els)"
-    case Elvis(nullableValue, ifNull)      => p"($nullableValue ?: $ifNull)"
-    case ExtractNullable(expr)             => p"$expr!!"
-    case Break()                           => p"break"
-    case Continue()                        => p"continue"
-    case Empty()                           => p"<EMPTY>"
-    case GeneratedExpr(stats)              => p"${genExpr(stats)}"
-    case PutValue(expr)                    => s"<PutValue(${p"$expr"})>"
+    case And(lhs, rhs)                     => pp"($lhs && $rhs)"
+    case Or(lhs, rhs)                      => pp"($lhs || $rhs)"
+    case Plus(lhs, rhs)                    => pp"($lhs + $rhs)"
+    case Minus(lhs, rhs)                   => pp"($lhs - $rhs)"
+    case LogicAnd(lhs, rhs)                => pp"($lhs & $rhs)"
+    case LogicOr(lhs, rhs)                 => pp"($lhs | $rhs)"
+    case LogicXor(lhs, rhs)                => pp"($lhs ^ $rhs)"
+    case LeftShift(lhs, rhs)               => pp"($lhs << $rhs)"
+    case RightShift(lhs, rhs)              => pp"($lhs >> $rhs)"
+    case Times(lhs, rhs)                   => pp"($lhs * $rhs)"
+    case Div(lhs, rhs)                     => pp"($lhs / $rhs)"
+    case Modulo(lhs, rhs)                  => pp"($lhs % $rhs)"
+    case LessThan(lhs, rhs)                => pp"($lhs < $rhs)"
+    case LessThanEquals(lhs, rhs)          => pp"($lhs <= $rhs)"
+    case GreaterThan(lhs, rhs)             => pp"($lhs > $rhs)"
+    case GreaterThanEquals(lhs, rhs)       => pp"($lhs >= $rhs)"
+    case Equals(lhs, rhs)                  => pp"($lhs == $rhs)"
+    case NotEquals(lhs, rhs)               => pp"($lhs != $rhs)"
+    case Is(expr, id)                      => pp"($expr is $id)"
+    case As(expr, tpe)                     => pp"($expr as $tpe)"
+    case Not(expr)                         => pp"!($expr)"
+    case Negation(expr)                    => pp"-($expr)"
+    case LogicNot(expr)                    => pp"~($expr)"
+    case Hash(expr)                        => pp"#($expr)"
+    case ArrayRead(arr, index)             => pp"$arr[$index]"
+    case ArraySlice(arr, start, end, step) => pp"$arr[$start:$end:$step]"
+    case NormalAccess(obj, application)    => pp"$obj.$application"
+    case SafeAccess(obj, application)      => pp"$obj?.$application"
+    case MethodCall(meth, args)            => pp"$meth(${Separated(args, ", ")})"
+    case IntLit(value)                     => pp"$value"
+    case LongLit(value)                    => pp"${value}L"
+    case FloatLit(value)                   => pp"${value}F"
+    case DoubleLit(value)                  => pp"$value"
+    case CharLit(value)                    => pp"'${escapeJava(pp"$value")}'"
+    case StringLit(value)                  => "\"" + pp"${escapeJava(pp"$value")}" + "\""
+    case ArrayLit(expressions)             => pp"{ ${Separated(expressions, ", ")} }"
+    case TrueLit()                         => pp"true"
+    case FalseLit()                        => pp"false"
+    case NullLit()                         => pp"null"
+    case id@ClassID(value, _)              => pp"$value${templateList(id)}"
+    case Identifier(value)                 => pp"$value"
+    case This()                            => pp"this"
+    case Super(spec)                       => pp"super${optional(spec)(s => pp"<$s>")}"
+    case NewArray(tpe, sizes)              => pp"new ${newArray(tpe, sizes)}"
+    case New(tpe, exprs)                   => pp"new $tpe(${Separated(exprs, ", ")})"
+    case PreIncrement(id)                  => pp"++$id"
+    case PostIncrement(id)                 => pp"$id++"
+    case PreDecrement(id)                  => pp"--$id"
+    case PostDecrement(id)                 => pp"$id--"
+    case Ternary(condition, thn, els)      => pp"($condition ? $thn : $els)"
+    case Elvis(nullableValue, ifNull)      => pp"($nullableValue ?: $ifNull)"
+    case ExtractNullable(expr)             => pp"$expr!!"
+    case Break()                           => pp"break"
+    case Continue()                        => pp"continue"
+    case Empty()                           => pp"<EMPTY>"
+    case GeneratedExpr(stats)              => pp"${genExpr(stats)}"
+    case PutValue(expr)                    => s"<PutValue(${pp"$expr"})>"
   }
 
   private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
-    val start = p"$id${parentList(parents)}"
+    val start = pp"$id${parentList(parents)}"
     if (fields.isEmpty && methods.isEmpty)
       return s"$start { }"
 
     if (fields.isEmpty)
-      return p"$start $L$N$methods$R"
+      return pp"$start $L$N$methods$R"
 
     if (methods.isEmpty)
-      return p"$start $L$N$fields$R$R"
+      return pp"$start $L$N$fields$R$R"
 
-    p"$start $L$N$fields$N$N$methods$R"
+    pp"$start $L$N$fields$N$N$methods$R"
   }
 
   private def imports(imps: List[Import]) = {
     if (imps.isEmpty) ""
     else
-      p"${Separated(imps, "\n")}$N"
+      pp"${Separated(imps, "\n")}$N"
   }
 
   private def genExpr(stats: List[StatTree]) = {
-    if (stats.size == 1) p"<${stats.head}>"
-    else p"<$L$stats$R>"
+    if (stats.size == 1) pp"<${stats.head}>"
+    else pp"<$L$stats$R>"
   }
 
   private def packDecl(address: List[String]) = {
     if (address.isEmpty) ""
     else
-      p"package ${address.mkString("::")}$N"
+      pp"package ${address.mkString("::")}$N"
   }
 
   private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""
     else
-      p": ${Separated(parents, ", ")}"
+      pp": ${Separated(parents, ", ")}"
   }
 
   private def newArray(tpe: TypeTree, sizes: List[ExprTree]) = {
     def str(tpe: TypeTree, sizes: List[ExprTree]): String =
       tpe match {
-        case NullableType(t) => p"${str(t, sizes)}?"
-        case ArrayType(t)    => p"${str(t, sizes.tail)}[${sizes.head}]"
-        case t               => p"$t"
+        case NullableType(t) => pp"${str(t, sizes)}?"
+        case ArrayType(t)    => pp"${str(t, sizes.tail)}[${sizes.head}]"
+        case t               => pp"$t"
       }
 
     str(tpe, sizes.reverse)
   }
 
-  private def templateList(id: ClassID) = if (id.isTemplated) p"<${Separated(id.templateTypes, ", ")}>" else ""
+  private def templateList(id: ClassID) = if (id.isTemplated) pp"<${Separated(id.templateTypes, ", ")}>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private()   => p"def"
-      case Public()    => p"Def"
-      case Protected() => p"def protected"
+      case Private()   => pp"def"
+      case Public()    => pp"Def"
+      case Protected() => pp"def protected"
     }
 
     decl + mods(modifiers)
@@ -185,12 +185,12 @@ case class PrettyPrinter(colors: Colors) {
   private def varDecl(modifiers: Set[Modifier]) = {
     val isFinal = modifiers.contains(Final())
     val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private() if isFinal   => p"val"
-      case Private()              => p"var"
-      case Public() if isFinal    => p"Val"
-      case Public()               => p"Var"
-      case Protected() if isFinal => p"val protected"
-      case Protected()            => p"var protected"
+      case Private() if isFinal   => pp"val"
+      case Private()              => pp"var"
+      case Public() if isFinal    => pp"Val"
+      case Public()               => pp"Var"
+      case Protected() if isFinal => pp"val protected"
+      case Protected()            => pp"var protected"
     }
 
     decl + mods(modifiers)
@@ -198,8 +198,8 @@ case class PrettyPrinter(colors: Colors) {
 
   private def mods(modifiers: Set[Modifier]) =
     modifiers.map {
-      case Static()   => p"static"
-      case Implicit() => p"implicit"
+      case Static()   => pp"static"
+      case Implicit() => pp"implicit"
       case _          => ""
     }.mkString(" ")
 
@@ -212,44 +212,43 @@ case class PrettyPrinter(colors: Colors) {
 
   object L extends Formatter {
     def apply(): String = {
-      indent += 1
+      currentIndent += 1
       "{" + N()
     }
   }
 
   object R extends Formatter {
     def apply(): String = {
-      indent -= 1
+      currentIndent -= 1
       N() + "}"
     }
   }
 
   object N extends Formatter {
-    def apply(): String = "\n" + " " * (Indentation * indent)
+    def apply(): String = "\n" + " " * (Indentation * currentIndent)
   }
 
   case class Stat(stat: StatTree) extends Formatter {
 
     def apply(): String = {
       stat match {
-        case Block(_) => p"$stat"
+        case Block(_) => pp"$stat"
         case _        =>
-          indent += 1
-          val s = p"$N$stat"
-          indent -= 1
+          currentIndent += 1
+          val s = pp"$N$stat"
+          currentIndent -= 1
           s
       }
     }
-
   }
 
   case class Separated(list: List[Tree], seperator: String) extends Formatter {
-    def apply(): String = list.map(t => p"$t").mkString(seperator)
+    def apply(): String = list.map(t => pp"$t").mkString(seperator)
   }
 
-  implicit class PrinterContext(val sc: StringContext) {
+  implicit class PrettyPrinterContext(val sc: StringContext) {
 
-    def p(args: Any*): String = {
+    def pp(args: Any*): String = {
       val strings = sc.parts.iterator
       val expressions = args.iterator
       val sb = new StringBuilder(colorKeywords(strings.next))
@@ -291,7 +290,7 @@ case class PrettyPrinter(colors: Colors) {
     }
 
     private def colorKeywords(output: String): String = {
-      if (!active)
+      if (!colors.active)
         return output
 
       Tokens.KeywordsRegex.replaceAllIn(output, m => {
