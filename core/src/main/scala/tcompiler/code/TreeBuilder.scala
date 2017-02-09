@@ -89,12 +89,6 @@ class TreeBuilder {
 
   def getTypeTree(tpe: Type): TypeTree = (tpe match {
     case TUnit                => UnitType()
-    case _: TChar             => CharType()
-    case _: TBool             => BooleanType()
-    case _: TInt              => IntType()
-    case _: TLong             => LongType()
-    case _: TFloat            => FloatType()
-    case _: TDouble           => DoubleType()
     case TArray(t)            => ArrayType(getTypeTree(t))
     case TObject(classSymbol) => ClassID(classSymbol.name).setSymbol(classSymbol)
     case _                    => ???

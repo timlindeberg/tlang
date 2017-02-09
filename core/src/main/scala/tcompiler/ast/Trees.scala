@@ -13,7 +13,7 @@ import scala.collection.{TraversableLike, mutable}
 @GenerateTreeHelpers
 object Trees {
 
-  private val printer = new PrettyPrinter(new Colors(false))
+  private val printer = PrettyPrinter(Colors(isActive = false))
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -87,6 +87,7 @@ object Trees {
     def packageName: String = pack.address.mkString(".")
   }
 
+  case class Annotation() extends Tree
 
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
@@ -127,11 +128,15 @@ object Trees {
 
 
   object ClassDeclTree {
-    def unapply(c: ClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods)
+    def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods)
+  }
+
+  object IDClassDeclTree {
+    def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods)
   }
 
   trait ClassDeclTree extends Tree with Symbolic[ClassSymbol] {
-    val id     : ClassID
+    val tpe    : TypeTree
     var parents: List[ClassID]
     val fields : List[VarDecl]
     var methods: List[MethodDeclTree]
@@ -141,17 +146,24 @@ object Trees {
     def traits: List[ClassID] = parents.filter(_.getSymbol.isAbstract)
   }
 
+  trait IDClassDeclTree extends ClassDeclTree {
+    val id: ClassID
+    override val tpe: ClassID = id
+  }
+
+
   case class ClassDecl(id: ClassID,
     var parents: List[ClassID],
     fields: List[VarDecl],
-    var methods: List[MethodDeclTree]) extends ClassDeclTree {
+    var methods: List[MethodDeclTree]) extends IDClassDeclTree {
+
     val isAbstract = false
   }
 
   case class TraitDecl(id: ClassID,
     var parents: List[ClassID],
     fields: List[VarDecl],
-    var methods: List[MethodDeclTree]) extends ClassDeclTree {
+    var methods: List[MethodDeclTree]) extends IDClassDeclTree {
     val isAbstract = true
   }
 
@@ -159,7 +171,7 @@ object Trees {
     val seperator = "$EX"
   }
 
-  case class ExtensionDecl(id: ClassID, var methods: List[MethodDeclTree]) extends ClassDeclTree {
+  case class ExtensionDecl(tpe: TypeTree, var methods: List[MethodDeclTree]) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
     var parents: List[ClassID] = List[ClassID]()
@@ -237,24 +249,6 @@ object Trees {
 
   case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
 
-  /*-------------------------------- Type Trees --------------------------------*/
-
-  trait TypeTree extends Tree with Typed {
-    val name: String
-  }
-
-  trait PrimitiveTypeTree extends TypeTree with Leaf
-
-  case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]"}
-  case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?"}
-  case class IntType() extends PrimitiveTypeTree {val name = "Int"}
-  case class LongType() extends PrimitiveTypeTree {val name = "Long"}
-  case class FloatType() extends PrimitiveTypeTree {val name = "Float"}
-  case class DoubleType() extends PrimitiveTypeTree {val name = "Double"}
-  case class BooleanType() extends PrimitiveTypeTree {val name = "Bool"}
-  case class CharType() extends PrimitiveTypeTree {val name = "Char"}
-  case class UnitType() extends PrimitiveTypeTree {val name = "Unit"}
-
   /*-------------------------------- Statement Trees --------------------------------*/
 
   trait StatTree extends Tree
@@ -282,9 +276,21 @@ object Trees {
   case class Print(expr: ExprTree) extends PrintStatTree
   case class Println(expr: ExprTree) extends PrintStatTree
 
-  /*-------------------------------- Binary Operator Trees --------------------------------*/
-
   trait ExprTree extends StatTree with Typed
+
+  /*-------------------------------- Type Trees --------------------------------*/
+
+  trait TypeTree extends Tree with Typed {
+    val name: String
+  }
+
+  trait PrimitiveTypeTree extends TypeTree with Leaf
+
+  case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]"}
+  case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?"}
+  case class UnitType() extends PrimitiveTypeTree {val name = "Unit"}
+
+  /*-------------------------------- Binary Operator Trees --------------------------------*/
 
 
   trait OperatorTree extends ExprTree {

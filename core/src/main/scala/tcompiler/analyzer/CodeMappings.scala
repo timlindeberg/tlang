@@ -140,7 +140,7 @@ object IntCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Int)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TInt())
 
 }
 
@@ -181,7 +181,7 @@ object LongCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << L2F
   override def toInt(ch: CodeHandler): CodeHandler = ch << L2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Long)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TLong())
 
 }
 
@@ -217,7 +217,7 @@ object FloatCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << F2L
   override def toInt(ch: CodeHandler): CodeHandler = ch << F2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Float)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TFloat())
 }
 
 object DoubleCodeMap extends CodeMap {
@@ -252,7 +252,7 @@ object DoubleCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << D2L
   override def toInt(ch: CodeHandler): CodeHandler = ch << D2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Double)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TDouble())
 }
 
 object CharCodeMap extends CodeMap {
@@ -293,7 +293,7 @@ object CharCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Char)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TChar())
 
 }
 
@@ -317,7 +317,7 @@ object BoolCodeMap extends CodeMap {
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, Types.Bool)
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, TBool())
 
 }
 

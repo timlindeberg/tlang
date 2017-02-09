@@ -4,6 +4,7 @@ import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import tcompiler.error.Formatting
 import tcompiler.utils.Colors
+import tcompiler.utils.Colors._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -38,13 +39,13 @@ case class StackTrace(
   )
 
   private var colorIndex = -1
-  private val colorMap   = mutable.HashMap[String, String]()
+  private val colorMap   = mutable.HashMap[String, Color]()
   private def labelColor(label: String, colors: Colors) = {
     val color = colorMap.getOrElseUpdate(label, {
       colorIndex = (colorIndex + 1) % AllColors.length
       AllColors(colorIndex)
     })
-    color + label + Reset
+    color(label)
   }
 
   override def toString: String = content

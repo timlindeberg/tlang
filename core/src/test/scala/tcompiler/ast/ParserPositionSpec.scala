@@ -66,12 +66,6 @@ class ParserPositionSpec extends FunSuite with Matchers {
 
   testPositions[ArrayType](Pos(14, 36, 14, 44))
   testPositions[NullableType](Pos(20, 17, 20, 22))
-  testPositions[IntType](Pos(9, 12, 9, 15))
-  testPositions[LongType](Pos(11, 22, 11, 26))
-  testPositions[FloatType](Pos(12, 19, 12, 24))
-  testPositions[DoubleType](Pos(14, 25, 14, 31))
-  testPositions[BooleanType](Pos(20, 17, 20, 21))
-  testPositions[CharType](Pos(20, 27, 20, 31))
   testPositions[UnitType](Pos(18, 25, 18, 29))
 
   testPositions[VarDecl](
@@ -186,6 +180,8 @@ class ParserPositionSpec extends FunSuite with Matchers {
   testPositions[FalseLit](Pos(42, 13, 42, 18))
   testPositions[NullLit](Pos(42, 22, 42, 26))
   testPositions[ArrayLit](Pos(36, 17, 43, 10))
+
+  // TODO: FIX
   testPositions[ClassID](
     Pos(7, 7, 7, 15),
     Pos(7, 13, 7, 14),

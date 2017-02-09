@@ -67,7 +67,7 @@ class Desugarer(importMap: ImportMap) {
           val newAcc = super._transform(acc)
           val classSymbol = meth.getSymbol.classSymbol
           classSymbol match {
-            case e: ExtensionClassSymbol => replaceExtensionCall(newAcc)
+            case _: ExtensionClassSymbol => replaceExtensionCall(newAcc)
             case _                       => newAcc
           }
         case assign: Assign                                      =>
@@ -133,7 +133,6 @@ class Desugarer(importMap: ImportMap) {
     val extensionClassSymbol = extensionDecl.getSymbol.asInstanceOf[ExtensionClassSymbol]
     val exName = extensionClassSymbol.name
     val classSymbol = new ClassSymbol(exName, false)
-    val originalClass = extensionClassSymbol.originalClassSymbol.get
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
@@ -163,13 +162,14 @@ class Desugarer(importMap: ImportMap) {
       } else {
         val methSym = meth.getSymbol
         val modifiers = meth.modifiers + Static()
-        val thisSym = new VariableSymbol(ThisName).setType(TObject(originalClass))
+        val extendedType = extensionClassSymbol.getExtendedType
+        val thisSym = new VariableSymbol(ThisName).setType(extendedType)
         val thisId = VariableID(ThisName).setSymbol(thisSym)
         val newMethSym = new MethodSymbol(methSym.name, classSymbol, None, modifiers).setType(methSym)
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
         newMethSym.annotations = Main.TExtensionAnnotation :: methSym.annotations
-        val thisArg = Formal(extensionDecl.id, thisId)
+        val thisArg = Formal(extensionDecl.tpe, thisId)
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }
@@ -211,7 +211,7 @@ class Desugarer(importMap: ImportMap) {
       } else {
         val modifiers = methSym.modifiers + Static()
         val newMethSymbol = new MethodSymbol(methSym.name, classSym, None, modifiers).setType(methSym)
-        val originalClass = extSymbol.originalClassSymbol.get
+        val originalClass = extSymbol.extendedType.get
         val newArg = new VariableSymbol(ThisName).setType(originalClass)
         newMethSymbol.argList = newArg :: methSym.argList
         val methId = MethodID(meth.name).setSymbol(newMethSymbol)
@@ -248,6 +248,7 @@ class Desugarer(importMap: ImportMap) {
       case _                                            =>
     }
 
+
     val c = new TreeBuilder
 
     op match {
@@ -279,7 +280,6 @@ class Desugarer(importMap: ImportMap) {
           case ArrayRead(obj, index)               =>
             (obj, List(index))
           case Assign(ArrayRead(obj, index), expr) =>
-
             (obj, List(index, expr))
           case ArraySlice(obj, start, end, step)   =>
             (obj, List(start.getOrElse(NullLit()), end.getOrElse(NullLit()), step.getOrElse(NullLit())))

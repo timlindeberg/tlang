@@ -2,6 +2,7 @@ package tcompiler.error
 
 import tcompiler.lexer.Tokens._
 import tcompiler.lexer.{Token, Tokenizer, Tokens}
+import tcompiler.utils.Colors._
 import tcompiler.utils.Extensions._
 import tcompiler.utils.{Colors, Context, Positioned}
 
@@ -9,7 +10,7 @@ import tcompiler.utils.{Colors, Context, Positioned}
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Marking(lineOffset: Int, pos: Positioned, style: String)
+case class Marking(lineOffset: Int, pos: Positioned, style: Color)
 
 case class SyntaxHighlighter(colors: Colors) {
 
@@ -18,7 +19,7 @@ case class SyntaxHighlighter(colors: Colors) {
   val context = Context(new VoidReporter(), Set())
 
   def apply(code: String, markings: Marking*): String = {
-    if (!colors.active)
+    if (!colors.isActive)
       return code
 
     code.split("\n").map(highlight(_, markings)).mkString("\n")
@@ -81,11 +82,11 @@ case class SyntaxHighlighter(colors: Colors) {
   private def findMatchingMarking(token: Token, markings: Seq[Marking]): Option[String] =
     markings
       .find { case Marking(offset, pos, _) =>
-        encodePos(token.line + offset - 1, token.col) >= encodePos(pos.line, pos.col) &&
-          encodePos(token.endLine + offset - 1, token.endCol) <= encodePos(pos.endLine, pos.endCol)
+        val offsetPos = new Token(BAD)
+          .setPos(None, token.line + offset - 1, token.col, token.endLine + offset - 1, token.endCol)
+
+        offsetPos.encodedStartPos >= pos.encodedStartPos &&
+          offsetPos.encodedEndPos <= pos.encodedEndPos
       }
       .map(_.style)
-
-  private def encodePos(line: Int, col: Int) = (line << 16) + col
-
 }

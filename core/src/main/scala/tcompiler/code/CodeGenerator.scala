@@ -193,7 +193,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           case _ if args.anyIs(Long)   => Long
           case _                       => Int
         }
-
         compileAndConvert(lhs, desiredType)
         compileAndConvert(rhs, desiredType)
         val codes = desiredType.codes

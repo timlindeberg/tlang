@@ -50,9 +50,9 @@ object Errors {
 
 case class Error(code: String, msg: Any, errorLevel: ErrorLevel, pos: Positioned, names: Map[String, String]) {
   override def equals(obj: scala.Any): Boolean = obj match {
-    case Error(code0, msg0, errorLevel0, pos0, names0) =>
+    case Error(code0, msg0, errorLevel0, pos0, _) =>
       code == code0 && msg0 == msg0 && errorLevel == errorLevel0 && pos.equalPos(pos0)
-    case _                                             => false
+    case _                                        => false
   }
 }
 

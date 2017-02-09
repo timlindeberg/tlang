@@ -1,23 +1,28 @@
 package tcompiler.utils
 
+import tcompiler.utils.Colors.{Color, ColorScheme, DefaultColorScheme}
 import tcompiler.utils.Extensions._
+
+import scala.Console._
 
 /**
   * Created by Tim Lindeberg on 1/27/2017.
   */
 object Colors {
 
+  import Console._
+
   val ColorNameMap = Map(
-    "black" -> Console.BLACK,
-    "red" -> Console.RED,
-    "green" -> Console.GREEN,
-    "yellow" -> Console.YELLOW,
-    "blue" -> Console.BLUE,
-    "magenta" -> Console.MAGENTA,
-    "cyan" -> Console.CYAN,
-    "white" -> Console.WHITE,
-    "bold" -> Console.BOLD,
-    "underlined" -> Console.UNDERLINED
+    "black" -> BLACK,
+    "red" -> RED,
+    "green" -> GREEN,
+    "yellow" -> YELLOW,
+    "blue" -> BLUE,
+    "magenta" -> MAGENTA,
+    "cyan" -> CYAN,
+    "white" -> WHITE,
+    "bold" -> BOLD,
+    "underlined" -> UNDERLINED
   )
 
   val ColorNames: List[String] = ColorNameMap.keys.toList
@@ -32,139 +37,129 @@ object Colors {
     ColorNameMap.get(color)
   }
 
-}
+  implicit class ColorString(val s: Any) extends AnyVal {
+    def +(c: Color): String = s.toString + c.value
+  }
 
-case class Colors(active: Boolean, colorScheme: ColorScheme = DefaultColorScheme) {
+  implicit def ColorToString(c: Color): String = c.value
 
-  val Reset: String = _getColor(Console.RESET)
+  case class Color(color: String, implicit val isActive: Boolean) {
 
-  val Bold     : String = _getColor(Console.BOLD)
-  val Underline: String = _getColor(Console.UNDERLINED)
+    val value: String = if (isActive) color else ""
+    private val reset = if (isActive) RESET else ""
 
-  val Black  : String = _getColor(Console.BLACK)
-  val Red    : String = _getColor(Console.RED)
-  val Green  : String = _getColor(Console.GREEN)
-  val Yellow : String = _getColor(Console.YELLOW)
-  val Blue   : String = _getColor(Console.BLUE)
-  val Magenta: String = _getColor(Console.MAGENTA)
-  val Cyan   : String = _getColor(Console.CYAN)
-  val White  : String = _getColor(Console.WHITE)
+    override def toString: String = value
 
-  val AllColors: Array[String] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+    def +(c: Color): Color = Color(value + c.value, isActive = true)
+    def +(s: Any): String = value + s.toString
+    def apply(s: Any): String = value + s.toString + reset
 
-  def Underline(s: Any): String = Underline + s + Reset
-  def Bold(s: Any): String = Bold + s + Reset
-  def Black(s: Any): String = Black + s + Reset
-  def Red(s: Any): String = Red + s + Reset
-  def Green(s: Any): String = Green + s + Reset
-  def Yellow(s: Any): String = Yellow + s + Reset
-  def Blue(s: Any): String = Blue + s + Reset
-  def Magenta(s: Any): String = Magenta + s + Reset
-  def Cyan(s: Any): String = Cyan + s + Reset
-  def White(s: Any): String = White + s + Reset
+  }
 
-  // Color scheme
 
-  val KeywordColor: String = _getColor(colorScheme.Keyword)
-  def KeywordColor(s: Any): String = KeywordColor + s + Reset
+  object ColorScheme {
 
-  val VarColor: String = _getColor(colorScheme.Variable)
-  def VarColor(s: Any): String = VarColor + s + Reset
+    val KeywordName  = "keyword"
+    val VariableName = "variable"
+    val ClassName    = "class"
+    val MethodName   = "method"
+    val StringName   = "string"
+    val NumberName   = "number"
+    val CommentName  = "comment"
+    val SymbolName   = "symbol"
 
-  val ClassColor: String = _getColor(colorScheme.Class)
-  def ClassColor(s: Any): String = ClassColor + s + Reset
+    val ColorSchemeNames: List[String] = List(
+      KeywordName,
+      VariableName,
+      ClassName,
+      MethodName,
+      StringName,
+      NumberName,
+      CommentName,
+      SymbolName
+    )
+  }
 
-  val MethodColor: String = _getColor(colorScheme.Method)
-  def MethodColor(s: Any): String = MethodColor + s + Reset
+  trait ColorScheme {
 
-  val StringColor: String = _getColor(colorScheme.String)
-  def StringColor(s: Any): String = StringColor + s + Reset
+    import ColorScheme._
 
-  val NumColor: String = _getColor(colorScheme.Number)
-  def NumColor(s: Any): String = NumColor + s + Reset
+    def Keyword: String
+    def Variable: String
+    def Class: String
+    def Method: String
+    def String: String
+    def Number: String
+    def Comment: String
+    def Symbol: String
 
-  val CommentColor: String = _getColor(colorScheme.Comment)
-  def CommentColor(s: Any): String = CommentColor + s + Reset
+    def colorMap = Map(
+      KeywordName -> Keyword,
+      VariableName -> Variable,
+      ClassName -> Class,
+      MethodName -> Method,
+      StringName -> String,
+      NumberName -> Number,
+      CommentName -> Comment,
+      SymbolName -> Symbol
+    )
 
-  val SymbolColor: String = _getColor(colorScheme.Symbol)
-  def SymbolColor(s: Any): String = SymbolColor + s + Reset
+    def toJson: String = {
+      val values = colorMap.map { case (key, value) => s"""""$key": "$value"""" }.mkString(",")
+      s"{ $values }"
+    }
 
-  private def _getColor(color: String) = if (active) color else ""
+  }
 
-}
+  case object NoColors extends ColorScheme {
+    val Keyword : String = ""
+    val Variable: String = ""
+    val Class   : String = ""
+    val Method  : String = ""
+    val String  : String = ""
+    val Number  : String = ""
+    val Comment : String = ""
+    val Symbol  : String = ""
+  }
 
-object ColorScheme {
-
-  val KeywordName  = "keyword"
-  val VariableName = "variable"
-  val ClassName    = "class"
-  val MethodName   = "method"
-  val StringName   = "string"
-  val NumberName   = "number"
-  val CommentName  = "comment"
-  val SymbolName   = "symbol"
-
-  val ColorSchemeNames: List[String] = List(
-    KeywordName,
-    VariableName,
-    ClassName,
-    MethodName,
-    StringName,
-    NumberName,
-    CommentName,
-    SymbolName
-  )
-}
-
-trait ColorScheme {
-
-  import ColorScheme._
-
-  def Keyword: String
-  def Variable: String
-  def Class: String
-  def Method: String
-  def String: String
-  def Number: String
-  def Comment: String
-  def Symbol: String
-
-  def colorMap = Map(
-    KeywordName -> Keyword,
-    VariableName -> Variable,
-    ClassName -> Class,
-    MethodName -> Method,
-    StringName -> String,
-    NumberName -> Number,
-    CommentName -> Comment,
-    SymbolName -> Symbol
-  )
-
-  def toJson: String = {
-    val values = colorMap.map { case (key, value) => s"""""$key": "$value"""" }.mkString(",")
-    s"{ $values }"
+  case object DefaultColorScheme extends ColorScheme {
+    val Keyword : String = BLUE
+    val Variable: String = CYAN
+    val Class   : String = GREEN
+    val Method  : String = YELLOW
+    val String  : String = YELLOW
+    val Number  : String = MAGENTA
+    val Comment : String = BLACK
+    val Symbol  : String = WHITE
   }
 
 }
 
-case object NoColors extends ColorScheme {
-  val Keyword : String = ""
-  val Variable: String = ""
-  val Class   : String = ""
-  val Method  : String = ""
-  val String  : String = ""
-  val Number  : String = ""
-  val Comment : String = ""
-  val Symbol  : String = ""
-}
+case class Colors(isActive: Boolean, colorScheme: ColorScheme = DefaultColorScheme) {
 
-case object DefaultColorScheme extends ColorScheme {
-  val Keyword : String = Console.BLUE
-  val Variable: String = Console.CYAN
-  val Class   : String = Console.GREEN
-  val Method  : String = Console.YELLOW
-  val String  : String = Console.YELLOW
-  val Number  : String = Console.MAGENTA
-  val Comment : String = Console.BLACK
-  val Symbol  : String = Console.WHITE
+  val Reset     = Color(RESET, isActive)
+  val Bold      = Color(BOLD, isActive)
+  val Underline = Color(UNDERLINED, isActive)
+
+  val Black   = Color(BLACK, isActive)
+  val Red     = Color(RED, isActive)
+  val Green   = Color(GREEN, isActive)
+  val Yellow  = Color(YELLOW, isActive)
+  val Blue    = Color(BLUE, isActive)
+  val Magenta = Color(MAGENTA, isActive)
+  val Cyan    = Color(CYAN, isActive)
+  val White   = Color(WHITE, isActive)
+
+  val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+
+  // Color scheme
+
+  val KeywordColor = Color(colorScheme.Keyword, isActive)
+  val VarColor     = Color(colorScheme.Variable, isActive)
+  val ClassColor   = Color(colorScheme.Class, isActive)
+  val MethodColor  = Color(colorScheme.Method, isActive)
+  val StringColor  = Color(colorScheme.String, isActive)
+  val NumColor     = Color(colorScheme.Number, isActive)
+  val CommentColor = Color(colorScheme.Comment, isActive)
+  val SymbolColor  = Color(colorScheme.Symbol, isActive)
 }

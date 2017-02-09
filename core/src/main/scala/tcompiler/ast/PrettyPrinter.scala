@@ -30,7 +30,7 @@ case class PrettyPrinter(colors: Colors) {
     case WildCardImport(address)                                    => pp"import ${address.mkString("::")}.*"
     case ClassDecl(id, parents, fields, methods)                    => pp"${N}class ${restOfClassDecl(id, parents, fields, methods)}"
     case TraitDecl(id, parents, fields, methods)                    => pp"${N}trait ${restOfClassDecl(id, parents, fields, methods)}"
-    case ExtensionDecl(id, methods)                                 => pp"${N}extension ${restOfClassDecl(id, Nil, Nil, methods)}"
+    case ExtensionDecl(tpe, methods)                                => pp"${N}extension ${restOfClassDecl(tpe, Nil, Nil, methods)}"
     case VarDecl(tpe, id, expr, modifiers)                          => pp"${varDecl(modifiers)} $id${optional(tpe)(t => pp": $t")}${optional(expr)(t => pp" = $t")}"
     case MethodDecl(modifiers, id, args, retType, stat)             => pp"${definition(modifiers)} $id(${Separated(args, ", ")})${optional(retType)(t => pp": $t")}${optional(stat)(s => pp" = $s")}$N"
     case ConstructorDecl(modifiers, _, args, _, stat)               => pp"${definition(modifiers)} new(${Separated(args, ", ")}) = $stat$N"
@@ -43,12 +43,6 @@ case class PrettyPrinter(colors: Colors) {
     case Static()                                                   => pp"static"
     // Types
     case ArrayType(tpe)    => pp"$tpe[]"
-    case IntType()         => pp"Int"
-    case LongType()        => pp"Long"
-    case FloatType()       => pp"Float"
-    case DoubleType()      => pp"Double"
-    case BooleanType()     => pp"Bool"
-    case CharType()        => pp"Char"
     case UnitType()        => pp"Unit"
     case NullableType(tpe) => pp"$tpe?"
     // Statements
@@ -122,8 +116,8 @@ case class PrettyPrinter(colors: Colors) {
     case PutValue(expr)                    => s"<PutValue(${pp"$expr"})>"
   }
 
-  private def restOfClassDecl(id: ClassID, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
-    val start = pp"$id${parentList(parents)}"
+  private def restOfClassDecl(tpe: TypeTree, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
+    val start = pp"$tpe${parentList(parents)}"
     if (fields.isEmpty && methods.isEmpty)
       return s"$start { }"
 
@@ -290,7 +284,7 @@ case class PrettyPrinter(colors: Colors) {
     }
 
     private def colorKeywords(output: String): String = {
-      if (!colors.active)
+      if (!colors.isActive)
         return output
 
       Tokens.KeywordsRegex.replaceAllIn(output, m => {

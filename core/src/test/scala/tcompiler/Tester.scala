@@ -44,7 +44,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   testFiles(new File(testPath)).foreach { file =>
     val name = file.getPath
       .replaceAll("\\\\", "/")
-      .replaceAll(testPath + "/", "")
+      .replaceAll(Path + "/", "")
       .replaceAll(Main.FileEnding, "")
 
     val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)

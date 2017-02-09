@@ -7,7 +7,6 @@ prefix 1____.e10f postfix
 prefix 1____.e10f postfix
 prefix 1_1_2_3_.e10f postfix
 
-prefix 1_1_2_3_.e_10f postfix // res: L2012
 prefix 1e.10 postfix       // res: L2012
 prefix 1e1.0 postfix       // res: L2011
 prefix 1e1.0f postfix      // res: L2011
@@ -17,15 +16,9 @@ prefix 1e. postfix         // res: L2012
 prefix 1e postfix          // res: L2012
 prefix 1e- postfix         // res: L2012
 prefix 1e-f postfix        // res: L2012
-prefix 1..f postfix        // res: L2011
-prefix 1.......f postfix   // res: L2011
 prefix 1eeeeeeee10 postfix // res: L2012
 prefix 1eL postfix         // res: L2012
 prefix 1e10L postfix       // res: L2012
-prefix 1.eL postfix        // res: L2012
-prefix 1.L postfix         // res: L2012
 
 
 prefix 1e10Lasda postfix       // res: L2012
-prefix 1.eL12 postfix        // res: L2012
-prefix 1.L23         // res: L2012

@@ -29,7 +29,7 @@ object ClassSymbolLocator {
       val originalClassName = extensionName.replaceAll(".*\\$EX\\.", "")
       val originalSymbol = findSymbol(originalClassName)
 
-      new ExtensionClassSymbol(extensionName).use(_.originalClassSymbol = originalSymbol)
+      new ExtensionClassSymbol(extensionName).use(_.setExtendedType(TObject(originalSymbol.get)))
     })
 
   private def _findSymbol[T <: ClassSymbol](className: String, cons: JavaClass => T): Option[T] = {
@@ -158,13 +158,13 @@ object ClassSymbolLocator {
     case x: ObjectType                        =>
       val name = x.getClassName
       name.replaceAll("\\.", "/") match {
-        case x if x == Int.koolWrapper    => NullableInt
-        case x if x == Bool.koolWrapper   => NullableBool
-        case x if x == Char.koolWrapper   => NullableChar
-        case x if x == Double.koolWrapper => NullableDouble
-        case x if x == Float.koolWrapper  => NullableFloat
-        case x if x == Long.koolWrapper   => NullableLong
-        case _                            => TObject(incompleteClass(x))
+        case "kool/lang/IntWrapper"    => Int
+        case "kool/lang/LongWrapper"   => Long
+        case "kool/lang/FloatWrapper"  => Float
+        case "kool/lang/DoubleWrapper" => Double
+        case "kool/lang/CharWrapper"   => Char
+        case "kool/lang/BoolWrapper"   => Bool
+        case _                         => TObject(incompleteClass(x))
       }
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
@@ -196,6 +196,7 @@ object ClassSymbolLocator {
       case "ArrayRead"         => ArrayRead(e, e)
       case "Assign"            => Assign(ArrayRead(e, e), e)
       case "ArraySlice"        => ArraySlice(e, None, None, None)
+      case "Negation"          => Negation(e)
       case x                   => ???
     }
   }

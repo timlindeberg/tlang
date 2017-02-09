@@ -4,6 +4,7 @@ package modification
 import tcompiler.ast.Trees
 import tcompiler.ast.Trees._
 import tcompiler.imports.{ImportMap, TemplateImporter}
+import tcompiler.utils.Extensions._
 import tcompiler.utils.{Context, Pipeline}
 
 import scala.collection.mutable
@@ -29,7 +30,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     //  Add all original template classes
     cus foreach { cu =>
       importMap = cu.importMap
-      cu.classes.filter(_.id.isTemplated) foreach { clazz =>
+      cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach { clazz =>
         checkDuplicateTemplateNames(clazz)
         templateCus(clazz.id.name) = cu
       }
@@ -52,7 +53,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     // Remove all template classes and replace types in rest of the classes
     val replaced = allCus map { cu =>
-      cu.classes = cu.classes.filter(!_.id.isTemplated)
+      cu.classes = cu.classes.filterInstance[IDClassDeclTree].filter(!_.id.isTemplated) ++ cu.classes.filterInstance[ExtensionDecl]
       replaceTypes(cu)
     }
 
@@ -79,7 +80,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     replace(cu)
   }
 
-  private def checkDuplicateTemplateNames(templateClass: ClassDeclTree) = {
+  private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree) = {
     var seen = Set[TypeTree]()
     var reportedFor = Set[TypeTree]()
     val templateTypes = templateClass.id.templateTypes
@@ -175,7 +176,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       val importedCus = templateImporter.importCus(importName)
 
       importedCus foreach { cu =>
-        cu.classes foreach { clazz =>
+        cu.classes.filterInstance[IDClassDeclTree] foreach { clazz =>
           templateCus(clazz.id.name) = cu
         }
       }
@@ -186,7 +187,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     private def newTemplateClass(templateCU: CompilationUnit, typeId: ClassID): ClassDeclTree = {
       val shortName = typeId.name.split("::").last
-      val template = templateCU.classes.find(_.id.name == shortName).get
+      val template = templateCU.classes.filterInstance[IDClassDeclTree].find(_.id.name == shortName).get
 
       checkDuplicateTemplateNames(template)
 

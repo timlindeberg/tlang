@@ -21,8 +21,15 @@ object Main extends MainErrors {
   val THome                = "T_HOME"
   val JavaObject           = "java/lang/Object"
   val JavaString           = "java/lang/String"
+  val KoolInt              = "kool/lang/Int"
+  val KoolLong             = "kool/lang/Long"
+  val KoolFloat            = "kool/lang/Float"
+  val KoolDouble           = "kool/lang/Double"
+  val KoolChar             = "kool/lang/Char"
+  val KoolBool             = "kool/lang/Bool"
   val TExtensionAnnotation = "kool/lang/$ExtensionMethod"
 
+  val Primitives = List(KoolInt, KoolLong, KoolFloat, KoolDouble, KoolBool, KoolChar)
 
   lazy val TDirectory: String = {
     if (!sys.env.contains(THome))
@@ -160,8 +167,10 @@ object Main extends MainErrors {
           val header = flag.flagName(formatting)
           makeBox(header, List(flag.extendedDescription(formatting)))
         case None       =>
-          val tcomp = "> " + Green("tcomp") + " <" + Blue("options") + "> <" + Blue("source files") + ">"
-          val header = tcomp + "\n\n" + Bold(Magenta("Options"))
+          val tcomp = Green("tcomp")
+          val options = Blue("options")
+          val source = Blue("source files")
+          val header = s"> $tcomp <$options> <$source> \n\n" + Bold(Magenta("Options"))
 
           val flags = Flag.All.map { flag => (flag.flagName(formatting), flag.description(formatting)) }
           makeBoxWithColumn(header, flags)

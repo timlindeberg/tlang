@@ -223,7 +223,7 @@ object Flags {
       val perRow = formatting.lineWidth / (boxWidth + seperator.length)
       val styles = boxes
         .map { box =>
-          val colors = if (box == Simple) Colors(active = false) else formatting.colors
+          val colors = if (box == Simple) Colors(isActive = false) else formatting.colors
           val blocks = List("A " + colors.Blue("block") + ".", "Another " + colors.Blue("block") + ".")
 
           val exampleFormatting = error.Formatting(box, boxWidth, colors, trim = false)
@@ -327,7 +327,7 @@ object Flags {
 
     override def extendedDescription(formatting: Formatting): String = {
       import formatting.colors._
-      import utils.ColorScheme._
+      import utils.Colors.ColorScheme._
 
       val validKeys = ColorSchemeNames.map("   " + Blue(_)).mkString("\n")
       val validColors = Colors.ColorNames.map("   " + Magenta(_)).mkString("\n")

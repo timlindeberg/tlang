@@ -6,8 +6,9 @@ import java.nio.file.{InvalidPathException, Paths}
 import tcompiler.Flags.{Flag, _}
 import tcompiler.error.Boxes
 import tcompiler.error.Boxes.Box
+import tcompiler.utils.Colors
+import tcompiler.utils.Colors.{ColorScheme, _}
 import tcompiler.utils.Extensions._
-import tcompiler.utils.{ColorScheme, Colors, DefaultColorScheme}
 
 import scala.collection.mutable
 import scala.util.parsing.json.JSON
@@ -157,13 +158,12 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   private def getColorScheme(json: Map[String, String]): ColorScheme = {
-    import ColorScheme._
-
+    import Colors.ColorScheme._
     json.keys
-      .find { key => !(key in ColorScheme.ColorSchemeNames) }
-      .foreach {FatalInvalidColorSchemeKey(_, ColorScheme.ColorSchemeNames)}
+      .find { key => !(key in ColorSchemeNames) }
+      .foreach {FatalInvalidColorSchemeKey(_, ColorSchemeNames)}
 
-    val colors = ColorScheme.ColorSchemeNames.map { name =>
+    val colors = ColorSchemeNames.map { name =>
       val color = json.get(name) match {
         case Some(color) =>
           Colors.getColor(color).getOrElse(FatalInvalidColorSchemeArg(color, Colors.ColorNames))

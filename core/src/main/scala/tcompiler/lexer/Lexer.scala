@@ -272,7 +272,10 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
         case '.' :: r            =>
           if (!foundDecimal && !foundE) {
             foundDecimal = true
-            getNumberLiteral(r, s + ".", parsed + 1)
+            r match {
+              case c :: r if c.isDigit => getNumberLiteral(r, s + "." + c, parsed + 2)
+              case _                   => (parseIntToken(s, parsed), chars)
+            }
           } else {
             endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidNumber)
           }
@@ -296,10 +299,12 @@ class Tokenizer(override var ctx: Context, override val file: Option[File]) exte
             endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidFloat)
           }
         case r                   =>
-          if (foundDecimal || foundE)
+          if (foundDecimal || foundE) {
             (parseDoubleToken(s, parsed), r)
-          else
-            (parseIntToken(s, parsed), r)
+          } else {
+            val rest = if (foundDecimal) '.' :: r else r
+            (parseIntToken(s, parsed), rest)
+          }
       }
 
     getNumberLiteral(chars, "", 0)

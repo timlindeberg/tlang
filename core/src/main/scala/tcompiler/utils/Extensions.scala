@@ -14,6 +14,13 @@ object Extensions {
 
   private val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
+  def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
+    try {
+      block(resource)
+    } finally {
+      if (resource != null) resource.close()
+    }
+  }
 
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
 

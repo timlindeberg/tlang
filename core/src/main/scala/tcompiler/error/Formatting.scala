@@ -124,7 +124,7 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
 }
 
-object SimpleFormatting extends Formatting(Simple, 80, Colors(active = false))
+object SimpleFormatting extends Formatting(Simple, 80, Colors(isActive = false))
 
 object Boxes {
 

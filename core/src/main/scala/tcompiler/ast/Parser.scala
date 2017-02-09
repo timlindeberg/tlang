@@ -107,7 +107,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
     if (stats.nonEmpty || methods.nonEmpty) {
       val mainName = currentToken.file.get.getName.dropRight(Main.FileEnding.length)
-      val mainClass = classes.find(_.id.name == mainName) match {
+      val mainClass = classes.filterInstance[IDClassDeclTree].find(_.id.name == mainName) match {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
@@ -183,12 +183,12 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
   /**
     * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> "{" { <varDeclaration> } { <methodDeclaration> } "}"
-    * | extension <classTypeIdentifier> "{" { <methodDeclaration> } "}"
+    * | extension <tpe> "{" { <methodDeclaration> } "}"
     */
   def classDeclaration: ClassDeclTree = positioned {
     if (nextTokenKind == EXTENSION) {
       eat(EXTENSION)
-      val id = classIdentifier
+      val id = tpe
       eat(LBRACE)
       val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
       eat(RBRACE)
@@ -501,30 +501,11 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
   }
 
   /**
-    * <basicTpe> ::= ( Int | Long | Float | Double | Bool | Char | String | <classIdentifier> )
-    */
-  def basicTpe: TypeTree = positioned {
-    val id = classIdentifier
-
-    // These are kind of keywords but are parsed by the lexer.
-    // This enables names like java::lang::Long to be valid.
-    id.name match {
-      case "Int"    => IntType()
-      case "Long"   => LongType()
-      case "Float"  => FloatType()
-      case "Double" => DoubleType()
-      case "Bool"   => BooleanType()
-      case "Char"   => CharType()
-      case _        => id
-    }
-  }
-
-  /**
-    * <tpe> ::= <basicTpe> { "[]" | "?" }
+    * <tpe> ::= <classIdentifier> { "[]" | "?" }
     */
   def tpe: TypeTree = {
     val startPos = nextToken
-    var e = basicTpe
+    var e: TypeTree = classIdentifier
     var dimension = 0
 
     while (nextTokenKind == QUESTIONMARK || nextTokenKind == LBRACKET) {
@@ -1040,7 +1021,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
   def newExpression: ExprTree = {
     val startPos = nextToken
     eat(NEW)
-    val tpe = basicTpe
+    val tpe: TypeTree = classIdentifier
 
     nextTokenKind match {
       case LPAREN                  =>

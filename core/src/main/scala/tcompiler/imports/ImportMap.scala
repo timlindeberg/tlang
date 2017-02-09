@@ -31,6 +31,12 @@ class ImportMap(
   private val DefaultImports = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
+    RegularImport(List("kool", "lang", "Int")),
+    RegularImport(List("kool", "lang", "Long")),
+    RegularImport(List("kool", "lang", "Float")),
+    RegularImport(List("kool", "lang", "Double")),
+    RegularImport(List("kool", "lang", "Char")),
+    RegularImport(List("kool", "lang", "Bool")),
     ExtensionImport(koolLang, javaObject),
     ExtensionImport(koolLang, javaString)
   )
@@ -50,7 +56,7 @@ class ImportMap(
 
     val packName = pack.name
     if (packName.nonEmpty) {
-      classes.filterNotInstance[ExtensionDecl] foreach { c =>
+      classes.filterInstance[IDClassDeclTree] foreach { c =>
         val className = c.id.name
         addImport(className, s"$packName.$className")
       }

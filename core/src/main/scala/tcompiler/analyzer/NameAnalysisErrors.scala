@@ -35,7 +35,8 @@ trait NameAnalysisErrors extends Errors {
     error(0, s"A cycle was found in the inheritance graph: $list", pos)
   }
 
-  // 1 missing
+  protected def ErrorAbstractOperator(pos: Positioned): Symbol =
+    error(1, s"Operators cannot be abstract.", pos)
 
   protected def ErrorNullableInOperator(operator: String, pos: Positioned): Symbol =
     error(2, s"Operator '$operator' cannot have nullable types as arguments or return type.", pos)
@@ -51,7 +52,6 @@ trait NameAnalysisErrors extends Errors {
 
   protected def ErrorUnknownType(name: String, alternatives: List[String], pos: Positioned): Symbol =
     error(6, s"Unknown type: '$name'.${nameSuggestor(name, alternatives)}", pos)
-
 
   protected def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned): Symbol =
     error(7, s"Method '$methodSignature' is already defined at line '$line'.", pos)
@@ -99,8 +99,8 @@ trait NameAnalysisErrors extends Errors {
   protected def ErrorUnimplementedMethodNoReturnType(method: String, pos: Positioned): Symbol =
     error(19, s"Unimplemented method '$method' needs a return type.", pos)
 
-  protected def ErrorAbstractOperator(pos: Positioned): Symbol =
-    error(19, s"Operators cannot be abstract.", pos)
+  protected def ErrorAbstractConstructor(pos: Positioned): Symbol =
+    error(19, s"Constructors cannot be abstract.", pos)
 
   protected def ErrorSuperInStaticContext(pos: Positioned): Symbol =
     error(20, "'super' can not be used in a static context.", pos)

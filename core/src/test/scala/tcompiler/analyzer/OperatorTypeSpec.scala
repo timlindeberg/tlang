@@ -25,13 +25,12 @@ class OperatorTypeSpec extends FunSuite with Matchers {
   private val array  = new TypeConstructor(TArray(Int))
   private val obj    = new TypeConstructor(Object)
 
-  private val allTypes        = List[() => VariableID](int, bool, long, float, double, char, array, obj)
+  private val allTypes        = List[TypeConstructor](int, bool, long, float, double, char, array, obj)
   private val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
   private def createIdentifier(tpe: Type) = VariableID("").setSymbol(new VariableSymbol("")).setType(tpe)
 
-  class TypeConstructor(val tpe: Type)
-    extends (() => VariableID) {
+  class TypeConstructor(val tpe: Type) {
     def apply(): VariableID = createIdentifier(tpe)
     override def toString(): String = tpe.toString
     def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
@@ -74,7 +73,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
   test("PostDecrement") {incrementDecrement(PostDecrement)}
 
 
-  private def arithmeticOperator(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def arithmeticOperator(expressionType: (VariableID, VariableID) => BinaryOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Int),
 
@@ -97,7 +96,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       (double, char, Double)
     )
 
-  private def logicOperator(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def logicOperator(expressionType: (VariableID, VariableID) => LogicalOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, Int),
       (int, long, Long),
@@ -110,7 +109,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       (bool, bool, Bool)
     )
 
-  private def shiftOperator(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def shiftOperator(expressionType: (VariableID, VariableID) => ShiftOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, Int),
       (int, long, Long),
@@ -197,7 +196,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
     )
 
-  private def comparisonOperator(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def comparisonOperator(expressionType: (VariableID, VariableID) => ComparisonOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Bool),
 
@@ -220,7 +219,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       (double, char, Bool)
     )
 
-  private def equalsOperator(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def equalsOperator(expressionType: (VariableID, VariableID) => EqualsOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Bool),
 
@@ -255,17 +254,17 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       (bool, bool, Bool)
     )
 
-  private def andOr(expressionType: (VariableID, VariableID) => ExprTree) =
+  private def andOr(expressionType: (VariableID, VariableID) => BinaryOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,
       (bool, bool, Bool)
     )
 
-  private def not(expressionType: VariableID => ExprTree) =
+  private def not(expressionType: VariableID => UnaryOperatorTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (bool, Bool)
     )
 
-  private def negation(expressionType: VariableID => ExprTree) =
+  private def negation(expressionType: VariableID => UnaryOperatorTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Int),
@@ -274,14 +273,14 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       (double, Double)
     )
 
-  private def logicalNot(expressionType: VariableID => ExprTree) =
+  private def logicalNot(expressionType: VariableID => UnaryOperatorTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Int),
       (long, Long)
     )
 
-  private def incrementDecrement(expressionType: VariableID => ExprTree) =
+  private def incrementDecrement(expressionType: VariableID => UnaryOperatorTree) =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Char),
@@ -293,12 +292,12 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
   object UnaryExpressionAsserter {
 
-    def getInvalidCombinations(validTpes: List[(() => VariableID, Type)]): List[() => VariableID] =
+    def getInvalidCombinations(validTpes: List[(TypeConstructor, Type)]): List[TypeConstructor] =
       allTypes.filter(tpe => {
         !validTpes.exists(listElem => tpe == listElem._1)
       })
 
-    def valid(expressionType: VariableID => ExprTree, validTpes: (() => VariableID, Type)*): Unit = {
+    def valid(expressionType: VariableID => UnaryOperatorTree, validTpes: (TypeConstructor, Type)*): Unit = {
       validTpes.foreach { case (id, tpe) =>
         TestContext.reporter.clear()
         val resType = TypeChecker.tcExpr(expressionType(id()))
@@ -319,8 +318,8 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
   object BinaryExpressionAsserter {
 
-    def valid(expressionType: (VariableID, VariableID) => ExprTree,
-      validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
+    def valid(expressionType: (VariableID, VariableID) => BinaryOperatorTree,
+      validCombinations: (TypeConstructor, TypeConstructor, Type)*): Unit = {
 
       validCombinations.foreach { case (lhs, rhs, tpe) =>
         TestContext.reporter.clear()
@@ -346,7 +345,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       }
     }
 
-    private def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]) =
+    private def getInvalidCombinations(validCombinations: List[(TypeConstructor, TypeConstructor, Type)]) =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -359,7 +358,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
   class AssignmentAsserter(expressionType: (VariableID, VariableID) => ExprTree) {
 
-    def valid(validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
+    def valid(validCombinations: (TypeConstructor, TypeConstructor, Type)*): Unit = {
       validCombinations.foreach { case (id, expr, tpe) =>
 
         TestContext.reporter.clear()
@@ -379,7 +378,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
       }
     }
 
-    protected def getInvalidCombinations(validCombinations: List[(() => VariableID, () => VariableID, Type)]): List[(() => VariableID, () => VariableID)] =
+    protected def getInvalidCombinations(validCombinations: List[(TypeConstructor, TypeConstructor, Type)]): List[(TypeConstructor, TypeConstructor)] =
       allCombinations.filter(combination => {
         !validCombinations.exists(listElem => {
           val tuple1 = (listElem._1, listElem._2)
@@ -390,7 +389,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
   class ArrayAssignmentAsserter() extends AssignmentAsserter(Assign) {
 
-    override def valid(validCombinations: (() => VariableID, () => VariableID, Type)*): Unit = {
+    override def valid(validCombinations: (TypeConstructor, TypeConstructor, Type)*): Unit = {
       validCombinations.foreach { case (identifier, expr, tpe) =>
         TestContext.reporter.clear()
         val id = createIdentifier(TArray(identifier().getType))

@@ -76,6 +76,10 @@ trait Positioned {
       _lineEnd == other._lineEnd &&
       _colEnd == other._colEnd
 
+  def encodedStartPos: Int = (line << 16) + col
+  def encodedEndPos: Int = (line << 16) + col
+
+
 }
 
 case object NoPosition extends Positioned

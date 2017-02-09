@@ -4,42 +4,47 @@ import java.io.File
 import java.util.regex.Matcher
 
 import tcompiler.Main
+import tcompiler.utils.Colors.Color
+import tcompiler.utils.Extensions._
 import tcompiler.utils.Helpers
 
+import scala.collection.mutable
 import scala.io.Source
 
+
+object ErrorFormatter {
+
+  val NonColoredIndicationChar = "~"
+
+  private val LineCache: mutable.Map[File, IndexedSeq[String]] = mutable.Map()
+  def getLines(file: File): IndexedSeq[String] =
+    LineCache.getOrElseUpdate(file, using(Source.fromFile(file)) {_.getLines().toIndexedSeq})
+
+}
 
 /**
   * Created by Tim Lindeberg on 1/14/2017.
   */
-case class ErrorFormatter(
-  error: Error,
-  formatting: Formatting,
-  errorContextSize: Int) {
+case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize: Int) {
 
+  import ErrorFormatter._
   import formatting._
   import formatting.colors._
 
   private val QuoteColor   = Magenta
   private val MessageStyle = Bold
-  private val WarningColor = Yellow + Bold
-  private val ErrorColor   = Red + Bold
-  private val FatalColor   = Red + Bold
 
-  private val ErrorStyle: String = {
-    val color = error.errorLevel match {
-      case ErrorLevel.Warning => WarningColor
-      case ErrorLevel.Error   => ErrorColor
-      case ErrorLevel.Fatal   => FatalColor
+  private val ErrorColor: Color =
+    error.errorLevel match {
+      case ErrorLevel.Warning => Yellow + Bold
+      case ErrorLevel.Error   => Red + Bold
+      case ErrorLevel.Fatal   => Red + Bold
     }
-    Underline + color
-  }
 
-  private val NonColoredIndicationChar = "~"
-  private val QuoteRegex               = """'(.+?)'""".r
-  private val pos                      = error.pos
-  private val lines                    = if (pos.hasFile) getLines(pos.file.get) else Nil
-  private val syntaxHighlighter        = SyntaxHighlighter(formatting.colors)
+  private val QuoteRegex        = """'(.+?)'""".r
+  private val pos               = error.pos
+  private val lines             = if (pos.hasFile) getLines(pos.file.get) else Nil
+  private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
 
   def format(): String = {
     val sb = new StringBuilder
@@ -71,17 +76,17 @@ case class ErrorFormatter(
 
   private def errorPrefix: String = {
     val pre = error.errorLevel match {
-      case ErrorLevel.Warning => WarningColor + "Warning"
-      case ErrorLevel.Error   => ErrorColor + "Error"
-      case ErrorLevel.Fatal   => FatalColor + " Fatal"
+      case ErrorLevel.Warning => "Warning"
+      case ErrorLevel.Error   => "Error"
+      case ErrorLevel.Fatal   => "Fatal"
     }
-    pre + " " + error.code + Reset + ": "
+    ErrorColor(pre + " " + error.code) + ": "
   }
 
   private def filePrefix: String = {
-    val Style = Bold + NumColor
     var position = pos.position
-    if (active) {
+    if (colors.isActive) {
+      val Style = Bold + NumColor
       val fileName = pos.file.get.getName.replaceAll(Main.FileEnding, "")
       position = position.replaceAll("(\\d)", s"$Style$$1$Reset")
       position = position.replaceAll(fileName, s"$Style$fileName$Reset")
@@ -105,9 +110,9 @@ case class ErrorFormatter(
     val ctxLines = contextLines
     val indent = getIndent(ctxLines)
 
-    val lines = if (colors.active)
+    val lines = if (colors.isActive)
       ctxLines.map { case (lineNum, line) =>
-        (lineNum.toString, syntaxHighlighter(line, Marking(lineNum, pos, ErrorStyle)))
+        (lineNum.toString, syntaxHighlighter(line, Marking(lineNum, pos, Underline + ErrorColor)))
       }
     else
       ctxLines.flatMap { case (lineNum, line) =>

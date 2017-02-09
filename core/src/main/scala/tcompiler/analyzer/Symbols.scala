@@ -36,7 +36,14 @@ object Symbols {
 
   class GlobalScope {
 
-    val classes: mutable.Map[String, ClassSymbol] = mutable.Map[String, ClassSymbol]()
+    val classes: mutable.Map[String, ClassSymbol] = mutable.Map[String, ClassSymbol](
+      "kool.lang.Int" -> Types.IntSymbol,
+      "kool.lang.Long" -> Types.LongSymbol,
+      "kool.lang.Float" -> Types.FloatSymbol,
+      "kool.lang.Double" -> Types.DoubleSymbol,
+      "kool.lang.Char" -> Types.CharSymbol,
+      "kool.lang.Bool" -> Types.BoolSymbol
+    )
 
     def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
       val fullName = importMap.getFullName(name)
@@ -46,6 +53,13 @@ object Symbols {
     def classNames: List[String] = classes.keys.toList
 
   }
+
+  object IntSymbol extends ClassSymbol("Int", false)
+  object LongSymbol extends ClassSymbol("Long", false)
+  object FloatSymbol extends ClassSymbol("Float", false)
+  object DoubleSymbol extends ClassSymbol("Double", false)
+  object CharSymbol extends ClassSymbol("Char", false)
+  object BoolSymbol extends ClassSymbol("Bool", false)
 
   class ClassSymbol(className: String,
     var isAbstract: Boolean,
@@ -78,6 +92,12 @@ object Symbols {
       _fields
     }
     def fields_=(m: Map[String, FieldSymbol]): Unit = _fields = m
+
+    def implicitConstructors: List[MethodSymbol] = methods.filter { method =>
+      method.name == "new" &&
+        method.modifiers.contains(Implicit()) &&
+        method.argList.size == 1
+    }
 
     def addOperator(operatorSymbol: OperatorSymbol): Unit = operators ::= operatorSymbol
 
@@ -194,17 +214,27 @@ object Symbols {
   }
 
   class ExtensionClassSymbol(name: String) extends ClassSymbol(name, false, true) {
-    var originalClassSymbol: Option[ClassSymbol] = None
+    var extendedType: Option[Type] = None
 
-    override def lookupField(name: String): Option[FieldSymbol] = originalClassSymbol.flatMap(_.lookupField(name))
+    def setExtendedType(tpe: Type): Unit = extendedType = Some(tpe)
+    def getExtendedType: Type = extendedType.get
+
+    override def lookupField(name: String): Option[FieldSymbol] = {
+      classSymbol.flatMap(_.lookupField(name))
+    }
 
     override def lookupMethod(name: String, args: List[Type], importMap: ImportMap, exactTypes: Boolean = false): Option[MethodSymbol] =
       super.lookupMethod(name, args, importMap, exactTypes).
-        orElse(originalClassSymbol.flatMap(_.lookupMethod(name, args, importMap, exactTypes)))
+        orElse(classSymbol.flatMap(_.lookupMethod(name, args, importMap, exactTypes)))
 
     override def lookupOperator(operatorType: OperatorTree, args: List[Type], importMap: ImportMap, exactTypes: Boolean = false): Option[OperatorSymbol] =
       super.lookupOperator(operatorType, args, importMap, exactTypes).
-        orElse(originalClassSymbol.flatMap(_.lookupOperator(operatorType, args, importMap, exactTypes)))
+        orElse(classSymbol.flatMap(_.lookupOperator(operatorType, args, importMap, exactTypes)))
+
+    private def classSymbol: Option[ClassSymbol] = extendedType flatMap {
+      case TObject(classSymbol) => Some(classSymbol)
+      case _                    => None
+    }
 
   }
 

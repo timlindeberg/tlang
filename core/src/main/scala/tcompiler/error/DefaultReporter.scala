@@ -42,91 +42,75 @@ class DefaultReporter(
   errorContext: Int = Flags.ErrorContext.defaultValue
 ) extends Reporter {
 
-  private var hitMaxErrors = false
 
-  val errors  : mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
-  val warnings: mutable.LinkedHashSet[Error] = mutable.LinkedHashSet()
+  val hitMax: mutable.Set[ErrorLevel]                               = mutable.Set()
+  val errors: mutable.Map[ErrorLevel, mutable.LinkedHashSet[Error]] = mutable.Map(
+    ErrorLevel.Warning -> mutable.LinkedHashSet[Error](),
+    ErrorLevel.Error -> mutable.LinkedHashSet[Error]()
+  )
 
   import formatting.colors._
 
 
   def report(error: Error): Unit = {
-    error.errorLevel match {
-      case ErrorLevel.Warning =>
-        if (warningIsError) {
-          report(error.copy(errorLevel = ErrorLevel.Error))
-          return
-        }
-
-        if (suppressWarnings || warnings.contains(error))
-          return
-
-        warnings += error
-      case ErrorLevel.Error   =>
-        if (!isValidError(error))
-          return
-
-        if (maxErrors != -1 && errors.size >= maxErrors) {
-          hitMaxErrors = true
-          return
-        }
-        if (errors.contains(error))
-          return
-
-        errors += error
-      case ErrorLevel.Fatal   =>
-        errors += error
-        throw new CompilationException(errorMessage)
+    val errorLevel = error.errorLevel
+    if (errorLevel == ErrorLevel.Fatal) {
+      errors(ErrorLevel.Error) += error
+      throw new CompilationException(errorMessage)
     }
+
+    if (errorLevel == ErrorLevel.Warning && warningIsError) {
+      report(error.copy(errorLevel = ErrorLevel.Error))
+      return
+    }
+    if (maxErrors != -1 && errors(errorLevel).size >= maxErrors) {
+      hitMax.add(errorLevel)
+      return
+    }
+
+    if (!isValidError(error) || errors(errorLevel).contains(error))
+      return
+
+    errors(errorLevel) += error
   }
 
   def clear(): Unit = {
-    errors.clear()
-    warnings.clear()
-    hitMaxErrors = false
+    errors.values.foreach(_.clear())
+    hitMax.clear()
   }
 
   def terminateIfErrors(): Unit =
     if (hasErrors)
       throw new CompilationException(errorMessage)
 
-  def hasErrors: Boolean = errors.nonEmpty
-  def hasWarnings: Boolean = warnings.nonEmpty
+  def hasErrors: Boolean = errors(ErrorLevel.Error).nonEmpty
+  def hasWarnings: Boolean = errors(ErrorLevel.Warning).nonEmpty
 
-  def errorMessage: String = {
+  def errorMessage: String = format(ErrorLevel.Error)
 
-    val numErrors = errors.size
-    val num = Red(numErrors)
+  def warningMessage: String = format(ErrorLevel.Warning)
 
-    val header = if (hitMaxErrors)
-      s"${Bold}There were more than $num$Bold errors, only showing the first $num$Reset"
+  private def format(errorLevel: ErrorLevel) = {
+    val n = errors(errorLevel).size
+    val (was, appendix) = if (n == 1) ("was", "s") else ("were", "")
+
+    val (color, name) = errorLevel match {
+      case ErrorLevel.Error   => (Red, "error" + appendix)
+      case ErrorLevel.Warning => (Yellow, "warning" + appendix)
+    }
+
+
+    val num = color(n)
+    val header = if (hitMax(errorLevel))
+      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
     else
-      getPrefix(errors, "error", num)
+      s"${Bold}There $was $num$Bold $name.$Reset"
 
-    format(header, errors)
+    formatting.makeBox(header, Nil) +
+      errors(errorLevel)
+        .map {ErrorFormatter(_, formatting, errorContext).format()}
+        .mkString
   }
-
-
-  def warningMessage: String = {
-    val numWarnings = warnings.size
-    val num = Yellow(numWarnings)
-    val header = getPrefix(warnings, "warning", num)
-    format(header, warnings)
-  }
-
-  private def getPrefix(errors: mutable.LinkedHashSet[Error], tpe: String, num: String) = {
-    val n = errors.size
-    val was = if (n == 1) "was" else "were"
-    s"${Bold}There $was $num$Bold $tpe" + (if (n > 1) "s" else "") + Reset
-  }
-
-  private def format(header: String, errors: mutable.LinkedHashSet[Error]): String =
-    formatting.makeBox(header, Nil) + format(errors)
-
-  private def format(errors: mutable.LinkedHashSet[Error]): String =
-    errors
-      .map {ErrorFormatter(_, formatting, errorContext).format()}
-      .mkString
 
   private def isValidError(error: Error): Boolean = {
     if (error.msg.toString.contains(Errors.ErrorName))
