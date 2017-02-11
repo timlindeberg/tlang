@@ -258,11 +258,6 @@ object Symbols {
 
     def signature: String = name + argTypes.mkString("(", ", ", ")")
 
-    def byteCodeSignature: String = {
-      val types = argTypes.map(_.byteCodeName).mkString
-      s"($types)${getType.byteCodeName}"
-    }
-
     def isMainMethod: Boolean = {
       // Since we can't know a lot about the method at all stages the definition
       // of a main method is quite loose

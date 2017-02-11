@@ -135,9 +135,9 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     }
 
     val defaultValue = tpe match {
-      case _: TInt | _: TLong | _: TFloat | _: TDouble | _: TChar => "0"
-      case _: TBool                                               => "false"
-      case _                                                      => ???
+      case _ if tpe in List(Int, Long, Float, Double, Char) => "0"
+      case Bool                                             => "false"
+      case _                                                => ???
     }
     s"var $IdName: $scalaType = $defaultValue"
   }

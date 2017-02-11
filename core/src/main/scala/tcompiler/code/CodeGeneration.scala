@@ -230,7 +230,11 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
   }
 
   private def methodDescriptor(methSym: MethodSymbol) = {
-    methSym.classSymbol.name + "." + methSym.signature + ":" + methSym.byteCodeSignature
+    val byteCodeSignature = {
+      val types = methSym.argTypes.map(_.byteCodeName).mkString
+      s"($types)${methSym.getType.byteCodeName}"
+    }
+    methSym.classSymbol.name + "." + methSym.signature + ":" + byteCodeSignature
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {

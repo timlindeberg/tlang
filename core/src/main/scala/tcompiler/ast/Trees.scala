@@ -605,7 +605,7 @@ object Trees {
   case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>"}
 
 
-  //Statements that have no effect on their own.
+  // Statements that have no effect on their own.
   object UselessStatement {
     def unapply(e: StatTree): Option[ExprTree] = e match {
       case Access(_, MethodCall(_, _)) => None

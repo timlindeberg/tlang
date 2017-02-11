@@ -1,4 +1,4 @@
-package tcompiler.analyzer
+package tcompiler.code
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
@@ -17,7 +17,8 @@ object CodeMap {
 
 }
 
-import tcompiler.analyzer.CodeMap._
+import tcompiler.code.CodeGenerator.JVMType
+import tcompiler.code.CodeMap._
 
 trait CodeMap {
 
@@ -92,7 +93,7 @@ trait CodeMap {
 
   def box(ch: CodeHandler): CodeHandler = ch
 
-  protected def _box(ch: CodeHandler, tpe: PrimitiveType): CodeHandler = {
+  protected def _box(ch: CodeHandler, tpe: Type): CodeHandler = {
     val className = tpe.koolWrapper
     val typeName = tpe.byteCodeName
     ch << InvokeStatic(className, "ValueOf", s"($typeName)L$className;")
@@ -140,7 +141,7 @@ object IntCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TInt())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Int)
 
 }
 
@@ -181,7 +182,7 @@ object LongCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << L2F
   override def toInt(ch: CodeHandler): CodeHandler = ch << L2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TLong())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Long)
 
 }
 
@@ -217,7 +218,7 @@ object FloatCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << F2L
   override def toInt(ch: CodeHandler): CodeHandler = ch << F2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TFloat())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Float)
 }
 
 object DoubleCodeMap extends CodeMap {
@@ -252,7 +253,7 @@ object DoubleCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << D2L
   override def toInt(ch: CodeHandler): CodeHandler = ch << D2I
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TDouble())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Double)
 }
 
 object CharCodeMap extends CodeMap {
@@ -293,7 +294,7 @@ object CharCodeMap extends CodeMap {
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TChar())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Char)
 
 }
 
@@ -317,7 +318,7 @@ object BoolCodeMap extends CodeMap {
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
 
-  override def box(ch: CodeHandler): CodeHandler = _box(ch, TBool())
+  override def box(ch: CodeHandler): CodeHandler = _box(ch, Bool)
 
 }
 

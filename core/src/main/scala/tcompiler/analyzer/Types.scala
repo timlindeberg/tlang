@@ -2,7 +2,6 @@ package tcompiler
 package analyzer
 
 import tcompiler.analyzer.Symbols._
-import tcompiler.code.CodeGenerator._
 import tcompiler.error.Errors
 import tcompiler.imports.ClassSymbolLocator
 
@@ -41,23 +40,15 @@ object Types {
   val ObjectSymbol: ClassSymbol = getMainSymbol(Main.JavaObject)
   val StringSymbol: ClassSymbol = getMainSymbol(Main.JavaString)
 
-  val Int            = TInt()
-  val NullableInt    = TInt(isNullable = true)
-  val Long           = TLong()
-  val NullableLong   = TLong(isNullable = true)
-  val Float          = TFloat()
-  val NullableFloat  = TFloat(isNullable = true)
-  val Double         = TDouble()
-  val NullableDouble = TDouble(isNullable = true)
-  val Char           = TChar()
-  val NullableChar   = TChar(isNullable = true)
-  val Bool           = TBool()
-  val NullableBool   = TBool(isNullable = true)
-
+  val Int    = TObject(IntSymbol)
+  val Long   = TObject(LongSymbol)
+  val Float  = TObject(FloatSymbol)
+  val Double = TObject(DoubleSymbol)
+  val Char   = TObject(CharSymbol)
+  val Bool   = TObject(BoolSymbol)
   val Object = TObject(ObjectSymbol)
   val String = TObject(StringSymbol)
-
-  val Array = TArray(Object)
+  val Array  = TArray(Object)
 
   val Primitives = List(Int, Long, Float, Double, Char, Bool)
 
@@ -80,9 +71,6 @@ object Types {
 
     def implicitlyConvertibleFrom: List[Type] = List()
 
-    def byteCodeName: String
-    def codes: CodeMap
-    def size: Int
     def name: String
   }
 
@@ -91,10 +79,7 @@ object Types {
     override val getNullable   : TError.type = this
     override val getNonNullable: TError.type = this
     override def isSubTypeOf(tpe: Type): Boolean = true
-    override val name                 = Errors.ErrorName
-    override val byteCodeName: String = Errors.ErrorName
-    override val codes                = EmptyCodeMap
-    override val size        : Int    = 0
+    override val name = Errors.ErrorName
   }
 
   case object TUntyped extends Type {
@@ -102,10 +87,7 @@ object Types {
     override val getNullable   : TUntyped.type = this
     override val getNonNullable: TUntyped.type = this
     override def isSubTypeOf(tpe: Type): Boolean = false
-    override val name                 = "[untyped]"
-    override val byteCodeName: String = "UNTYPED"
-    override val codes                = EmptyCodeMap
-    override val size        : Int    = 0
+    override val name = "[untyped]"
   }
 
   case object TUnit extends Type {
@@ -113,9 +95,6 @@ object Types {
     override val getNullable   : TUnit.type = this
     override val getNonNullable: TUnit.type = this
     override val name                       = "Unit"
-    override val byteCodeName  : String     = "V"
-    override val codes                      = EmptyCodeMap
-    override val size          : Int        = 0
   }
 
   case object TNull extends Type {
@@ -124,81 +103,6 @@ object Types {
     override val isNullable                 = false
     override val name                       = "null"
     override def isSubTypeOf(tpe: Type): Boolean = tpe.isNullable
-    override val byteCodeName: String = s"L$JavaObject;"
-    override val codes                = new ObjectCodeMap(JavaObject)
-    override val size        : Int    = 1
-  }
-
-  sealed abstract class PrimitiveType(symbol: ClassSymbol, override val isNullable: Boolean = false)
-    extends TObject(symbol, isNullable) {
-
-    def javaWrapper: String
-    val primitiveCodeMap: CodeMap
-    def primitiveByteCodeName: String
-
-    val koolWrapper = s"kool/lang/${name}Wrapper"
-    override def byteCodeName: String = if (isNullable) s"L$koolWrapper;" else primitiveByteCodeName
-    override val codes: CodeMap = if (isNullable) new ObjectCodeMap(koolWrapper) else primitiveCodeMap
-  }
-
-  case class TInt(override val isNullable: Boolean = false) extends PrimitiveType(IntSymbol, isNullable) {
-    override val getNullable   : TInt  = if (isNullable) NullableInt else Int
-    override val getNonNullable: TInt  = if (isNullable) Int else NullableInt
-    override val name                  = "Int"
-    override val primitiveByteCodeName = "I"
-    override val primitiveCodeMap      = IntCodeMap
-    override val size                  = 1
-    override val javaWrapper           = JavaInt
-  }
-
-  case class TLong(override val isNullable: Boolean = false) extends PrimitiveType(LongSymbol, isNullable) {
-    override val getNullable   : TLong = if (isNullable) NullableLong else Long
-    override val getNonNullable: TLong = if (isNullable) Long else NullableLong
-    override val name                  = "Long"
-    override val primitiveByteCodeName = "J"
-    override val primitiveCodeMap      = LongCodeMap
-    override val size                  = 2
-    override val javaWrapper           = JavaLong
-  }
-
-  case class TFloat(override val isNullable: Boolean = false) extends PrimitiveType(FloatSymbol, isNullable) {
-    override val getNullable   : TFloat = if (isNullable) NullableFloat else Float
-    override val getNonNullable: TFloat = if (isNullable) Float else NullableFloat
-    override val name                   = "Float"
-    override val primitiveByteCodeName  = "F"
-    override val primitiveCodeMap       = FloatCodeMap
-    override val size                   = 1
-    override val javaWrapper            = JavaFloat
-  }
-
-  case class TDouble(override val isNullable: Boolean = false) extends PrimitiveType(DoubleSymbol, isNullable) {
-    override val getNullable   : TDouble = if (isNullable) NullableDouble else Double
-    override val getNonNullable: TDouble = if (isNullable) Double else NullableDouble
-    override val name                    = "Double"
-    override val primitiveByteCodeName   = "D"
-    override val primitiveCodeMap        = DoubleCodeMap
-    override val size                    = 2
-    override val javaWrapper             = JavaDouble
-  }
-
-  case class TChar(override val isNullable: Boolean = false) extends PrimitiveType(CharSymbol, isNullable) {
-    override val getNullable   : TChar = if (isNullable) NullableChar else Char
-    override val getNonNullable: TChar = if (isNullable) Char else NullableChar
-    override val name                  = "Char"
-    override val primitiveByteCodeName = "C"
-    override val primitiveCodeMap      = CharCodeMap
-    override val size                  = 1
-    override val javaWrapper           = JavaChar
-  }
-
-  case class TBool(override val isNullable: Boolean = false) extends PrimitiveType(BoolSymbol, isNullable) {
-    override val getNullable   : TBool = if (isNullable) NullableBool else Bool
-    override val getNonNullable: TBool = if (isNullable) Bool else NullableBool
-    override val name                  = "Bool"
-    override val primitiveByteCodeName = "Z"
-    override val primitiveCodeMap      = BoolCodeMap
-    override val size                  = 1
-    override val javaWrapper           = JavaBool
   }
 
   object TArray {
@@ -227,9 +131,6 @@ object Types {
     }
 
     override def name = s"$tpe[]"
-    override def byteCodeName: String = "[" + tpe.byteCodeName
-    override def codes = new ArrayCodeMap(tpe.byteCodeName)
-    override val size: Int = 1
     def dimension: Int = tpe match {
       case t: TArray => 1 + t.dimension
       case _         => 1
@@ -266,26 +167,17 @@ object Types {
       implicitTypes ::: Primitives
     }
 
-    def implicitTypes: List[Type] = {
-      classSymbol.implicitConstructors.map(_.argList.head.getType)
-    }
+    def implicitTypes: List[Type] = classSymbol.implicitConstructors.map(_.argList.head.getType)
 
     override def getSuperTypes: Set[Type] = (this :: classSymbol.parents.flatMap(_.getType.getSuperTypes)).toSet
 
     override def name: String = classSymbol.name
-    override def byteCodeName: String = {
-      val name = classSymbol.name.replaceAll("\\.", "/")
-      s"L$name;"
-    }
 
     override def equals(any: Any): Boolean = any match {
       case TObject(c) => classSymbol.name == c.name
       case _          => false
     }
     override def hashCode: Int = classSymbol.hashCode
-
-    override def codes: CodeMap = new ObjectCodeMap(classSymbol.name)
-    override val size = 1
   }
 
 }

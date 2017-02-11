@@ -124,6 +124,7 @@ class TypeChecker(override var ctx: Context,
       (tpe, init) match {
         case (Some(tpe), Some(expr)) => tcExpr(expr, tpe.getType)
         case (None, Some(expr))      => id.setType(tcExpr(expr))
+        case (Some(tpe), None)       => // Abstract
         case (None, None)            => ErrorNoTypeNoInitalizer(varSym.name, varDecl)
       }
     case If(condition, thn, els)           =>
@@ -392,7 +393,7 @@ class TypeChecker(override var ctx: Context,
     val tpe =
       if (uniqueTpes.size == 1) {
         uniqueTpes.head
-      } else if (uniqueTpes.exists(_.isInstanceOf[PrimitiveType])) {
+      } else if (uniqueTpes.exists(_ in Primitives)) {
         // More than one type and at least one is a primitive
         Object
       } else {

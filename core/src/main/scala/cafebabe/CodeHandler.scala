@@ -1,6 +1,9 @@
 package cafebabe
 
+import tcompiler.Flags.LineWidth
+import tcompiler.error.Boxes.Light
 import tcompiler.error.{Formatting, SimpleFormatting}
+import tcompiler.utils.Colors
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -179,11 +182,11 @@ class CodeHandler private[cafebabe](
     // An invocation of this function reads as "when the pc reaches `from`, the stack height should be `there`".
     def setHeight(from: Int, there: Int): Unit = {
       if (from < 0 || from >= actualSize)
-        throw CodeFreezingException(s"No bytecode at pc=$from. Missing instructions?\n${stackTrace()}")
+        error(s"No bytecode at pc=$from. Missing instructions?")
 
       if (there < 0) {
         heightArray(from) = there
-        throw CodeFreezingException(s"Negative stack height ($there) at pc=$from (which is ${codeArray(from)}).\n${stackTrace()}")
+        error(s"Negative stack height ($there) at pc=$from (which is ${codeArray(from)}).")
       }
 
       if (heightArray(from) != UninitializedHeight) {
@@ -191,7 +194,7 @@ class CodeHandler private[cafebabe](
         if (heightArray(from) == there) {
           return
         } else {
-          throw CodeFreezingException(s"Inconsistent stack height at pc=$from(${heightArray(from)} and $there)\n${stackTrace()}")
+          error(s"Inconsistent stack height at pc=$from(${heightArray(from)} and $there).")
         }
       }
 
@@ -205,37 +208,37 @@ class CodeHandler private[cafebabe](
             case ILOAD | FLOAD | ALOAD | DLOAD |
                  ISTORE | FSTORE | ASTORE | DSTORE => setHeight(from + 4, there - 2)
             case _                                 =>
-              throw CodeFreezingException("Expected IINC or LOAD/STORE instruction after WIDE.")
+              error(s"Expected IINC or LOAD/STORE instruction after WIDE at pc=$from")
           }
-        case RETURN => if (there != 0) throw CodeFreezingException(s"Non-empty stack after return in void method\n${stackTrace()}")
+        case RETURN => if (there != 0) error(s"Non-empty stack after return in void method.")
         case ATHROW =>
         // Nothing really matters.
         case ARETURN | DRETURN | FRETURN | IRETURN | LRETURN =>
           if (there + codeArray(pc).asInstanceOf[ByteCode].stackEffect.get != 0)
-            throw CodeFreezingException(s"Stack not empty after return.\n ${stackTrace()}")
+            error("Stack not empty after return.")
         case bc: ByteCode if bc.stackEffect.isDefined        => setHeight(from + bc.length.get, there + bc.stackEffect.get)
         case GETFIELD                                        => codeArray(pc + 1) match {
           case RawBytes(idx) => setHeight(from + 3, (there + constantPool.getFieldSize(idx)) - 1)
-          case _             => throw CodeFreezingException("Expected RawBytes after GETFIELD.")
+          case _             => error(s"Expected RawBytes after GETFIELD at pc=$from")
         }
         case GETSTATIC                                       => codeArray(pc + 1) match {
           case RawBytes(idx) => setHeight(from + 3, there + constantPool.getFieldSize(idx))
-          case _             => throw CodeFreezingException("Expected RawBytes after GETSTATIC.")
+          case _             => error(s"Expected RawBytes after GETSTATIC at pc=$from.")
         }
         case PUTFIELD                                        => codeArray(pc + 1) match {
           case RawBytes(idx) => setHeight(from + 3, there - constantPool.getFieldSize(idx) - 1)
-          case _             => throw CodeFreezingException("Expected RawBytes after PUTFIELD.")
+          case _             => error(s"Expected RawBytes after PUTFIELD at pc=$from.")
         }
         case PUTSTATIC                                       => codeArray(pc + 1) match {
           case RawBytes(idx) => // setHeight(from + 3, -(there + constantPool.getFieldSize(idx)))
             setHeight(from + 3, there - constantPool.getFieldSize(idx))
-          case _             => throw CodeFreezingException("Expected RawBytes after PUTSTATIC.")
+          case _             => error(s"Expected RawBytes after PUTSTATIC at pc=$from.")
         }
         case INVOKEVIRTUAL | INVOKESPECIAL                   => codeArray(pc + 1) match {
           case RawBytes(idx) =>
             val se = constantPool.getMethodEffect(idx) - 1
             setHeight(from + 3, there + se)
-          case _             => throw CodeFreezingException("Expected RawBytes after INVOKEVIRTUAL/INVOKESPECIAL.")
+          case _             => error(s"Expected RawBytes after INVOKEVIRTUAL/INVOKESPECIAL at pc=$from.")
         }
         case INVOKEINTERFACE                                 => codeArray(pc + 1) match {
           case RawBytes(idx) => codeArray(pc + 3) match {
@@ -243,25 +246,25 @@ class CodeHandler private[cafebabe](
               val se = constantPool.getMethodEffect(idx)
               codeArray(pc + 4) match {
                 case RawByte(0) => setHeight(from + 5, there + se - 1)
-                case _          => throw CodeFreezingException("Expected RawByte(0) as the last param for INVOKEINTERFACE")
+                case _          => error(s"Expected RawByte(0) as the last param for INVOKEINTERFACE at pc=$from.")
               }
-            case b          => throw CodeFreezingException("Expected RawByte after the RawBytes in INVOKEINTERFACE @ " + pc + " ; found: " + b)
+            case b          => error(s"Expected RawByte after the RawBytes in INVOKEINTERFACE at pc=$from.")
 
           }
-          case _             => throw CodeFreezingException("Expected RawBytes after INVOKEINTERFACE.")
+          case _             => error(s"Expected RawBytes after INVOKEINTERFACE at pc=$from.")
         }
         case INVOKESTATIC                                    => codeArray(pc + 1) match {
           case RawBytes(idx) =>
             val se = constantPool.getMethodEffect(idx)
             setHeight(from + 3, there + se)
-          case _             => throw CodeFreezingException("Expected RawBytes after INVOKESTATIC.")
+          case _             => error("Expected RawBytes after INVOKESTATIC at pc=$from.")
         }
         case MULTIANEWARRAY                                  => codeArray(pc + 1) match {
           case RawBytes(_) => codeArray(pc + 3) match {
             case RawByte(dimension) => setHeight(from + 4, there - dimension + 1)
-            case _                  => throw CodeFreezingException("Expected RawByte after the RawBytes in MULTINEWARRAY.")
+            case _                  => error(s"Expected RawByte after the RawBytes in MULTINEWARRAY at pc=$from.")
           }
-          case _           => throw CodeFreezingException("Expected RawBytes after MULTINEWARRAY.")
+          case _           => error(s"Expected RawBytes after MULTINEWARRAY at pc=$from.")
 
         }
         case g@Goto(_)                                       => setHeight(from + g.offset, there)
@@ -276,7 +279,8 @@ class CodeHandler private[cafebabe](
     heightArray.max.asInstanceOf[U2]
   }
 
-  def stackTrace(formatting: Formatting = SimpleFormatting): StackTrace =
+  def stackTrace: StackTrace = StackTrace(abcBuffer, heightArray, cp, signature, SimpleFormatting)
+  def stackTrace(formatting: Formatting): StackTrace =
     StackTrace(abcBuffer, heightArray, cp, signature, formatting)
 
   def print(): Unit = if (!frozen) {
@@ -290,5 +294,12 @@ class CodeHandler private[cafebabe](
           pc += abc.size
       }
     }
+  }
+
+  def error(message: String): Unit = {
+    println(message)
+    println(stackTrace(Formatting(Light, LineWidth.defaultValue, Colors(isActive = true))))
+    throw CodeFreezingException(message)
+
   }
 }

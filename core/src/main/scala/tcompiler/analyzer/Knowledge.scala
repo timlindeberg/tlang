@@ -1,7 +1,7 @@
 package tcompiler.analyzer
 
 import tcompiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, VariableSymbol}
-import tcompiler.analyzer.Types.{PrimitiveType, TArray, TBool, TInt, TNull, TObject, Type, Typed}
+import tcompiler.analyzer.Types._
 import tcompiler.ast.Trees._
 import tcompiler.utils.Extensions._
 
@@ -308,7 +308,7 @@ object Knowledge {
 
     private def getInitialKnowledge(varId: Identifier, varTpe: Type, maybeInit: Option[ExprTree]): List[(Identifier, Set[VarKnowledge])] = {
       if (maybeInit.isEmpty) {
-        val s: Set[VarKnowledge] = if (varTpe.isInstanceOf[PrimitiveType]) Set(Initialized) else Set()
+        val s: Set[VarKnowledge] = if (varTpe in Primitives) Set(Initialized) else Set()
         return List(varId -> s)
       }
       val init = maybeInit.get
@@ -333,7 +333,7 @@ object Knowledge {
       }
 
       varTpe match {
-        case TArray(arrTpe) =>
+        case TArray(arrTpe)      =>
           init match {
             case ArrayLit(value)        =>
               value.zipWithIndex.foreach { case (init, index) =>
@@ -345,9 +345,9 @@ object Knowledge {
               getNumericValue(size) ifDefined { value => varIdKnowledge += ArraySize(value) }
             case _                      =>
           }
-        case _: TInt        => getNumericValue(init) ifDefined { value => varIdKnowledge += NumericValue(value) }
-        case _: TBool       => varIdKnowledge += BoolValue(init)
-        case _              =>
+        case _ if varTpe == Int  => getNumericValue(init) ifDefined { value => varIdKnowledge += NumericValue(value) }
+        case _ if varTpe == Bool => varIdKnowledge += BoolValue(init)
+        case _                   =>
       }
 
       knowledge += varId -> varIdKnowledge

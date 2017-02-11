@@ -77,13 +77,13 @@ class TreeBuilder {
     varDecl
   }
 
-  def createOne(tpe: Type): ExprTree = tpe match {
-    case _: TInt    => IntLit(1)
-    case _: TChar   => IntLit(1)
-    case _: TLong   => LongLit(1l)
-    case _: TFloat  => FloatLit(1.0f)
-    case _: TDouble => DoubleLit(1.0)
-    case _          => ???
+  def createOne(t: Type): ExprTree = t match {
+    case _ if t == Int    => IntLit(1)
+    case _ if t == Char   => IntLit(1)
+    case _ if t == Long   => LongLit(1l)
+    case _ if t == Float  => FloatLit(1.0f)
+    case _ if t == Double => DoubleLit(1.0)
+    case _                => ???
   }
 
 
