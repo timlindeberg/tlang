@@ -21,12 +21,12 @@ object ClassSymbolLocator {
   }
 
   def findSymbol(className: String): Option[ClassSymbol] =
-    _findSymbol(className, clazz => new ClassSymbol(clazz.getClassName, clazz.isInterface))
+    _findSymbol(className, clazz => new ClassSymbol(toKoolName(clazz.getClassName), clazz.isInterface))
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] =
     _findSymbol(className, clazz => {
-      val extensionName = clazz.getClassName
-      val originalClassName = extensionName.replaceAll(".*\\$EX\\.", "")
+      val extensionName = toKoolName(clazz.getClassName)
+      val originalClassName = toKoolName(ExtensionDecl.stripExtension(extensionName))
       val originalSymbol = findSymbol(originalClassName)
 
       new ExtensionClassSymbol(extensionName).use(_.setExtendedType(TObject(originalSymbol.get)))
@@ -51,7 +51,7 @@ object ClassSymbolLocator {
 
   def findClass(name: String): Option[JavaClass] =
     try {
-      Some(Repository.lookupClass(name))
+      Some(Repository.lookupClass(toBCELName(name)))
     } catch {
       case _: ClassNotFoundException   => None
       case _: IllegalArgumentException => None
@@ -61,6 +61,9 @@ object ClassSymbolLocator {
   def classExists(name: String): Boolean = findClass(name).isDefined
 
   def clearCache(): Unit = Repository.clearCache()
+
+  private def toBCELName(name: String) = name.replaceAll("::", ".")
+  private def toKoolName(name: String) = name.replaceAll("\\.", "::")
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
@@ -75,16 +78,18 @@ object ClassSymbolLocator {
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
-    val className = clazz.getClassName.replaceAll("\\.", "/")
+    val className = toKoolName(clazz.getClassName)
     // Primitives and Object have no parents
     if (className in (Main.JavaObject :: Main.Primitives))
       return Nil
 
     val parent = clazz.getSuperClass match {
       case null   => List(ObjectSymbol)
-      case parent => List(incompleteClass(parent.getClassName, parent.isAbstract))
+      case parent => List(incompleteClass(toKoolName(parent.getClassName), parent.isAbstract))
     }
-    val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, isAbstract = true)).toList
+    val traits = clazz.getInterfaces.map { interface =>
+      incompleteClass(toKoolName(interface.getClassName), isAbstract = true)
+    }.toList
     parent ::: traits
   }
 
@@ -105,7 +110,8 @@ object ClassSymbolLocator {
     }
 
     def isAnnotatedWith(annotation: String) = {
-      meth.getAnnotationEntries.exists(_.getAnnotationType == annotation)
+      val annotations = meth.getAnnotationEntries.map(a => a.getAnnotationType.replaceAll("/", "::"))
+      annotation in annotations
     }
 
     if (isAnnotatedWith(Main.TImplicitConstructorAnnotation))
@@ -167,15 +173,15 @@ object ClassSymbolLocator {
       case Type.VOID    => TUnit
     }
     case x: ObjectType                        =>
-      val name = x.getClassName
+      val name = toKoolName(x.getClassName)
       name match {
-        case "kool.lang.IntWrapper"    => Int.getNullable
-        case "kool.lang.LongWrapper"   => Long.getNullable
-        case "kool.lang.FloatWrapper"  => Float.getNullable
-        case "kool.lang.DoubleWrapper" => Double.getNullable
-        case "kool.lang.CharWrapper"   => Char.getNullable
-        case "kool.lang.BoolWrapper"   => Bool.getNullable
-        case _                         => TObject(incompleteClass(x))
+        case "kool::lang::IntWrapper"    => Int.getNullable
+        case "kool::lang::LongWrapper"   => Long.getNullable
+        case "kool::lang::FloatWrapper"  => Float.getNullable
+        case "kool::lang::DoubleWrapper" => Double.getNullable
+        case "kool::lang::CharWrapper"   => Char.getNullable
+        case "kool::lang::BoolWrapper"   => Bool.getNullable
+        case _                           => TObject(incompleteClass(name, x.getClass.isInterface))
       }
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
@@ -211,9 +217,6 @@ object ClassSymbolLocator {
       case x                   => ???
     }
   }
-
-  private def incompleteClass(tpe: ObjectType): ClassSymbol =
-    incompleteClass(tpe.getClassName, tpe.getClass.isInterface)
 
   private def incompleteClass(name: String, isAbstract: Boolean): ClassSymbol =
     new ClassSymbol(name, isAbstract, isComplete = false)

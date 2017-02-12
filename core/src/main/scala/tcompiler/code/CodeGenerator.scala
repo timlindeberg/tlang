@@ -52,6 +52,19 @@ object CodeGenerator {
     }
   }
 
+  implicit class JVMClassSymbol(val s: ClassSymbol) extends AnyVal {
+    def JVMName: String = s.name.replaceAll("::", "/")
+  }
+
+  implicit class JVMMethodSymbol(val s: MethodSymbol) extends AnyVal {
+
+    def byteCodeSignature: String = {
+      val types = s.argTypes.map(_.byteCodeName).mkString
+      s"($types)${s.getType.byteCodeName}"
+    }
+
+  }
+
   implicit class JVMType(val t: Type) extends AnyVal {
 
     def javaWrapper: String = t match {
@@ -86,7 +99,7 @@ object CodeGenerator {
       case Double                       => "D"
       case Char                         => "C"
       case Bool                         => "Z"
-      case objTpe: TObject              => "L" + objTpe.classSymbol.name.replaceAll("\\.", "/") + ";"
+      case objTpe: TObject              => "L" + objTpe.classSymbol.JVMName + ";"
       case TArray(arrTpe)               => "[" + arrTpe.byteCodeName
     }
 
@@ -100,7 +113,7 @@ object CodeGenerator {
       case Double                       => DoubleCodeMap
       case Char                         => CharCodeMap
       case Bool                         => BoolCodeMap
-      case objTpe: TObject              => new ObjectCodeMap(objTpe.classSymbol.name)
+      case objTpe: TObject              => new ObjectCodeMap(objTpe.classSymbol.JVMName)
       case TArray(arrTpe)               => new ArrayCodeMap(arrTpe.byteCodeName)
     }
 
@@ -196,7 +209,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << cafebabe.AbstractByteCodes.New(JavaRuntimeException) << DUP
         compileExpr(expr)
         // Convert TString to JavaString
-        val stringName = Types.String.classSymbol.name
+        val stringName = Types.String.classSymbol.JVMName
         ch << InvokeVirtual(stringName, "toString", s"()L$JavaString;")
         ch << InvokeSpecial(JavaRuntimeException, "<init>", s"(L$JavaString;)V")
         ch << ATHROW
@@ -270,7 +283,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         val jvmTypeName = tpe.getType match {
           case arrTpe: TArray => arrTpe.byteCodeName
           case obj: TObject   => obj match {
-            case NonPrimitive(_)      => obj.classSymbol.name
+            case NonPrimitive(_)      => obj.classSymbol.JVMName
             case Primitive(primitive) => primitive.koolWrapper
           }
         }
@@ -279,7 +292,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         (expr.getType, tpe.getType) match {
           case (NonPrimitive(_), NonPrimitive(tpe)) =>
             compileExpr(expr)
-            val name = tpe.classSymbol.name
+            val name = tpe.classSymbol.JVMName
             ch << CheckCast(name)
           case _                                    =>
             compileAndConvert(expr, tpe.getType)
@@ -305,7 +318,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         }
 
         val classSymbol = obj.getType.asInstanceOf[TObject].classSymbol
-        val className = classSymbol.name
+        val className = classSymbol.JVMName
 
         application match {
           case id@Identifier(fieldName) =>
@@ -321,7 +334,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
               compilePrimitiveOperatorCall(acc)
             } else {
               val methName = meth.name
-              val signature = byteCodeSignature(meth.getSymbol)
+              val signature = meth.getSymbol.byteCodeSignature
 
               // Static calls are executed with InvokeStatic.
               // Super calls and private calls are executed with invokespecial.
@@ -353,12 +366,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
             else
               primitiveType.codes.defaultConstant(ch)
           case TObject(classSymbol)     =>
-            ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
+            ch << cafebabe.AbstractByteCodes.New(classSymbol.JVMName)
             tpe.getType.codes.dup(ch)
             val methodSymbol = newTree.getSymbol
             compileArguments(methodSymbol, args)
             // Constructors are always called with InvokeSpecial
-            ch << InvokeSpecial(classSymbol.name, ConstructorName, byteCodeSignature(methodSymbol))
+            ch << InvokeSpecial(classSymbol.JVMName, ConstructorName, methodSymbol.byteCodeSignature)
         }
       case ExtractNullable(expr)                        =>
         compileAndConvert(expr, expression.getType)
@@ -513,7 +526,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case (NonPrimitive(found), NonPrimitive(desired)) if found.isSubTypeOf(desired) =>
         compileExpr(expr)
       case (_, NonPrimitive(desired)) if desired.implicitTypes.contains(found)        =>
-        val name = desired.classSymbol.name
+        val name = desired.classSymbol.JVMName
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
         compileExpr(expr)
@@ -649,7 +662,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           putObject()
 
         // Must be a field since it's not a local variable
-        val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
+        val className = variable.asInstanceOf[FieldSymbol].classSymbol.JVMName
 
         putValue()
 
@@ -674,7 +687,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case Some(id) => tpe.codes.load(ch, id)
       case None     =>
         // Must be a field since it's not a local variable
-        val className = variable.asInstanceOf[FieldSymbol].classSymbol.name
+        val className = variable.asInstanceOf[FieldSymbol].classSymbol.JVMName
 
         if (variable.isStatic) {
           ch << GetStatic(className, name, tpe.byteCodeName)
@@ -686,11 +699,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   private def anyIs(tpes: (Type, Type), tpe: Type) = tpes._1 == tpe || tpes._2 == tpe
-
-  private def byteCodeSignature(methSym: MethodSymbol): String = {
-    val types = methSym.argTypes.map(_.byteCodeName).mkString
-    s"($types)${methSym.getType.byteCodeName}"
-  }
 
   object LocalIntIncrementDecrement {
 

@@ -102,17 +102,15 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val sym = classDecl match {
       case ext: ExtensionDecl     =>
         val tpe = ext.tpe
-        val name = tpe.name.replaceAll("::", ".")
-        val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ name).mkString(".")
+        val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ tpe.name).mkString("::")
         val newSymbol = new ExtensionClassSymbol(fullName)
         importMap.addExtensionClass(newSymbol)
         newSymbol
       case clazz: IDClassDeclTree =>
         val id = clazz.id
-        val fullName = (cu.pack.address :+ id.name).mkString(".")
-        val lolName = (cu.pack.address :+ id.name).mkString("/")
+        val fullName = (cu.pack.address :+ id.name).mkString("::")
 
-        if (lolName in Main.Primitives) {
+        if (fullName in Main.Primitives) {
           globalScope.classes(fullName)
         } else {
           ensureClassNotDefined(id)

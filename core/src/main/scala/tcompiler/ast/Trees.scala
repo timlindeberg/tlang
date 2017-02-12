@@ -82,9 +82,8 @@ object Trees {
     var classes: List[ClassDeclTree],
     importMap: ImportMap) extends Tree {
 
-    def getPackageDirectory: String = pack.directory
+    def packageName: String = pack.address.mkString("::")
 
-    def packageName: String = pack.address.mkString(".")
   }
 
   case class Annotation() extends Tree
@@ -92,8 +91,7 @@ object Trees {
   /*-------------------------------- Package and Import Trees --------------------------------*/
 
   case class Package(address: List[String]) extends Tree with Leaf {
-    val directory: String = address.mkString("/")
-    val name     : String = address.mkString(".")
+    val name: String = address.mkString("::")
   }
 
   object Import {
@@ -103,11 +101,11 @@ object Trees {
   trait Import extends Tree with Leaf {
     val address: List[String]
 
-    def name: String = address.mkString(".")
+    def name: String = address.mkString("::")
+    def writtenName: String = name
 
     def shortName: String = address.last
 
-    def writtenName: String = address.mkString("::")
   }
 
   case class RegularImport(address: List[String]) extends Import
@@ -115,7 +113,7 @@ object Trees {
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 
     override def name: String = {
-      ((address :+ ExtensionDecl.seperator) ::: className).mkString(".")
+      ((address :+ ExtensionDecl.seperator) ::: className).mkString("::")
     }
 
     override def writtenName: String = {
@@ -168,6 +166,7 @@ object Trees {
   }
 
   object ExtensionDecl {
+    def stripExtension(fullName: String): String = fullName.replaceAll(""".*\$EX::""", "")
     val seperator = "$EX"
   }
 

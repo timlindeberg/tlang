@@ -113,7 +113,7 @@ class Desugarer(importMap: ImportMap) {
     *
     * becomes:
     *
-    * class $EX.A {
+    * class $EX::A {
     *
     *   Def static Method($this: A, arg1: A, arg2: Int) = {
     *     $this.OtherMethod() + arg1.i + $this.i + arg2.M()

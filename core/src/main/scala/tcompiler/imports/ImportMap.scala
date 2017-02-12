@@ -69,7 +69,7 @@ class ImportMap(
     if (packName.nonEmpty) {
       classes.filterInstance[IDClassDeclTree] foreach { c =>
         val className = c.id.name
-        addImport(className, s"$packName.$className")
+        addImport(className, s"$packName::$className")
       }
     }
   }
@@ -89,7 +89,7 @@ class ImportMap(
         addImport(shortName, fullName)
     case extensionImport: ExtensionImport =>
       ClassSymbolLocator.findExtensionSymbol(extensionImport.name) match {
-        case Some(e) => extensionSymbols ::= e
+        case Some(e) => addExtensionClass(e)
         case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
       }
     case _: WildCardImport                => // TODO: Support wild card imports.
@@ -97,7 +97,7 @@ class ImportMap(
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
     extensionSymbols.filter { extSym =>
-      val name = extSym.name.replaceAll(""".*\$EX\/""", "")
+      val name = ExtensionDecl.stripExtension(extSym.name)
       name == className
     }
 
@@ -105,30 +105,18 @@ class ImportMap(
 
   def addImport(tup: (String, String)): Unit = addImport(tup._1, tup._2)
   def addImport(short: String, full: String): Unit = {
-    val f = full.replaceAll("::", ".").replaceAll("/", ".")
-    shortToFull += short -> f
-    fullToShort += f -> short
+    shortToFull += short -> full
+    fullToShort += full -> short
   }
 
-  def importNames: List[String] = imports map importName
-
-  def importName(imp: Import): String = getFullName(imp.name)
-
-  def importName(typeId: ClassID): String = {
-    val name = typeId.name.replaceAll("::", ".")
-    getFullName(name)
-  }
-
-  def importEntries: List[String] = shortToFull.values.toList
-
-  def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName).replaceAll("::", ".")
-  def getShortName(fullName: String): String = fullToShort.getOrElse(fullName.replaceAll("::", "."), fullName)
+  def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName)
+  def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)
 
   def getErrorName(name: String): String = {
     var s = name
     for (e <- fullToShort)
       s = s.replaceAll(e._1, e._2)
-    s.replaceAll("/", "::")
+    s
   }
 
   def contains(shortName: String): Boolean = shortToFull.contains(shortName)

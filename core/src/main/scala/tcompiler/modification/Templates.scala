@@ -16,7 +16,7 @@ object Templates extends Pipeline[List[CompilationUnit], List[CompilationUnit]] 
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     val templateClassGenerator = new TemplateModifier(ctx)
-    templateClassGenerator.generateTemplatePrograms(cus)
+    templateClassGenerator.generateTemplates(cus)
   }
 }
 
@@ -26,7 +26,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
   private  val templateCus          = mutable.Map[String, CompilationUnit]()
   private  var generatedClassNames  = mutable.Set[String]()
 
-  def generateTemplatePrograms(cus: List[CompilationUnit]): List[CompilationUnit] = {
+  def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
     //  Add all original template classes
     cus foreach { cu =>
       importMap = cu.importMap
@@ -97,8 +97,8 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
   private def getImportEntry(importMap: ImportMap, classId: ClassID) = {
     val templateName = classId.templatedClassName
     val fullName = importMap.getFullName(classId.name)
-    val prefix = fullName.split("\\.").dropRight(1).mkString(".")
-    templateName -> s"$prefix.$templateName"
+    val prefix = fullName.split("::").dropRight(1).mkString("::")
+    templateName -> s"$prefix::$templateName"
   }
 
   class TemplateClassGenerator(cu: CompilationUnit) {
@@ -172,7 +172,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
         return Some(templateCus(className))
 
       val templateImporter = new TemplateImporter(ctx)
-      val importName = cu.importMap.importName(typeId)
+      val importName = cu.importMap.getFullName(typeId.name)
       val importedCus = templateImporter.importCus(importName)
 
       importedCus foreach { cu =>

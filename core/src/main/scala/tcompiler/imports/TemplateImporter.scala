@@ -30,7 +30,7 @@ class TemplateImporter(ctx: Context,
   def classExists(importName: String): Boolean = findClassFile(importName).isDefined
 
   def findClassFile(importName: String): Option[File] = {
-    val fileName = importName.replaceAll("\\.", "/") + Main.FileEnding
+    val fileName = importName.replaceAll("::", "/") + Main.FileEnding
     importedFiles.get(fileName) match {
       case Some(f) => Some(f)
       case None    =>
@@ -53,13 +53,13 @@ class TemplateImporter(ctx: Context,
     imported += importName
     findClassFile(importName) match {
       case Some(file) =>
-        parseGenericFile(ctx, file) match {
+        parseTemplateFile(ctx, file) match {
           case Some(importedCU) =>
             // Recursively import generics
             val importedCUs: ArrayBuffer[CompilationUnit] = ArrayBuffer(importedCU)
-            importedCU.importMap.importNames foreach { recursiveImport =>
+            importedCU.importMap.imports foreach { recursiveImport =>
               val templateImporter = new TemplateImporter(ctx, imported)
-              importedCUs ++= templateImporter.importCus(recursiveImport)
+              importedCUs ++= templateImporter.importCus(recursiveImport.name)
             }
             importedCUs.toList
           case None             => Nil
@@ -68,7 +68,7 @@ class TemplateImporter(ctx: Context,
     }
   }
 
-  private def parseGenericFile(ctx: Context, file: File): Option[CompilationUnit] =
+  private def parseTemplateFile(ctx: Context, file: File): Option[CompilationUnit] =
     try {
       val parsedProgram = (Lexer andThen Parser).run(ctx)(Set(file)).head
       Some(parsedProgram)

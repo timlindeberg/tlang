@@ -49,7 +49,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
 
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
-    val className = classDecl.getSymbol.name
+    val className = classDecl.getSymbol.JVMName
     val files = ctx.outDirs.map(getFilePath(_, className))
     files.foreach(classFile.writeToFile)
     GenerateClassResult(files, stackTraces)
@@ -161,7 +161,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
     val classSymbol = classDecl.getSymbol
     // java.lang.Object is already implicitly a parent of all classes
     val parents = classSymbol.parents.filter(_ != ObjectSymbol)
-    val className = classSymbol.name
+    val className = classSymbol.JVMName
 
     val (parent, traits) = if (classSymbol.isAbstract)
       (None, parents)
@@ -170,10 +170,10 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
     else if (parents.head.isAbstract)
       (None, parents)
     else
-      (Some(parents.head.name), parents.drop(1))
+      (Some(parents.head.JVMName), parents.drop(1))
 
     val classFile = new ClassFile(className, parent)
-    traits.foreach(t => classFile.addInterface(t.name))
+    traits.foreach(t => classFile.addInterface(t.JVMName))
     classFile.setSourceFile(classDecl.file.get.getName)
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
@@ -231,11 +231,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
   }
 
   private def methodDescriptor(methSym: MethodSymbol) = {
-    val byteCodeSignature = {
-      val types = methSym.argTypes.map(_.byteCodeName).mkString
-      s"($types)${methSym.getType.byteCodeName}"
-    }
-    methSym.classSymbol.name + "." + methSym.signature + ":" + byteCodeSignature
+    methSym.classSymbol.JVMName + "." + methSym.signature + ":" + methSym.byteCodeSignature
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {
@@ -265,7 +261,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
   private def compileField(expr: ExprTree, id: VariableID, classDecl: ClassDeclTree, ch: CodeHandler, codeGenerator: CodeGenerator) = {
     codeGenerator.compileExpr(expr)
     val sym = id.getSymbol
-    val className = classDecl.getSymbol.name
+    val className = classDecl.getSymbol.JVMName
     val fieldName = id.getSymbol.name
     val typeName = sym.getType.byteCodeName
     if (sym.isStatic)
@@ -343,7 +339,7 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
 
   private def addSuperCall(mh: MethodHandler, classDecl: ClassDeclTree) = {
     val superClassName = classDecl.getSymbol.parents match {
-      case (c: ClassSymbol) :: _ => if (c.isAbstract) JavaObject else c.name
+      case (c: ClassSymbol) :: _ => if (c.isAbstract) JavaObject else c.JVMName
       case Nil                   => JavaObject
     }
 

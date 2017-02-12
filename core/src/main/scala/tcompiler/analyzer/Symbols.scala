@@ -37,12 +37,12 @@ object Symbols {
   class GlobalScope {
 
     val classes: mutable.Map[String, ClassSymbol] = mutable.Map[String, ClassSymbol](
-      "kool.lang.Int" -> Types.IntSymbol,
-      "kool.lang.Long" -> Types.LongSymbol,
-      "kool.lang.Float" -> Types.FloatSymbol,
-      "kool.lang.Double" -> Types.DoubleSymbol,
-      "kool.lang.Char" -> Types.CharSymbol,
-      "kool.lang.Bool" -> Types.BoolSymbol
+      "kool::lang::Int" -> Types.IntSymbol,
+      "kool::lang::Long" -> Types.LongSymbol,
+      "kool::lang::Float" -> Types.FloatSymbol,
+      "kool::lang::Double" -> Types.DoubleSymbol,
+      "kool::lang::Char" -> Types.CharSymbol,
+      "kool::lang::Bool" -> Types.BoolSymbol
     )
 
     def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
@@ -54,18 +54,9 @@ object Symbols {
 
   }
 
-  object IntSymbol extends ClassSymbol("Int", false)
-  object LongSymbol extends ClassSymbol("Long", false)
-  object FloatSymbol extends ClassSymbol("Float", false)
-  object DoubleSymbol extends ClassSymbol("Double", false)
-  object CharSymbol extends ClassSymbol("Char", false)
-  object BoolSymbol extends ClassSymbol("Bool", false)
-
-  class ClassSymbol(className: String,
+  class ClassSymbol(override val name: String,
     var isAbstract: Boolean,
     var isComplete: Boolean = true) extends Symbol {
-
-    val name: String = className.replaceAll("\\.", "/")
 
     override def getType = TObject(this)
     override def setType(tpe: Type): Nothing = sys.error("Set type on ClassSymbol")
@@ -208,7 +199,7 @@ object Symbols {
 
   }
 
-  class ExtensionClassSymbol(name: String) extends ClassSymbol(name, false, true) {
+  class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name, false, true) {
     var extendedType: Option[Type] = None
 
     def setExtendedType(tpe: Type): Unit = extendedType = Some(tpe)
