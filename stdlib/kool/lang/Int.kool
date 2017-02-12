@@ -1,6 +1,6 @@
 package kool::lang
 
-trait Int {
+class Int {
 
     Def new()                 = {}
     Def new(v: Int)           = {}

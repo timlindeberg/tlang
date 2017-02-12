@@ -1,6 +1,6 @@
 package kool::lang
 
-trait Long {
+class Long {
 
     Def new()                 = {}
     Def new(v: Long)          = {}

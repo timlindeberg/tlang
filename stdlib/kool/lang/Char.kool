@@ -1,6 +1,6 @@
 package kool::lang
 
-trait Char {
+class Char {
 
     Def new()                = {}
     Def new(v: Char)         = {}

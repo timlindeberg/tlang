@@ -26,19 +26,30 @@ class ImportMap(
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
+  private val koolInt    = List("kool", "lang", "Int")
+  private val koolLong   = List("kool", "lang", "Long")
+  private val koolFloat  = List("kool", "lang", "Float")
+  private val koolDouble = List("kool", "lang", "Double")
+  private val koolChar   = List("kool", "lang", "Char")
+  private val koolBool   = List("kool", "lang", "Bool")
   private val koolLang   = List("kool", "lang")
 
   private val DefaultImports = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
-    RegularImport(List("kool", "lang", "Int")),
-    RegularImport(List("kool", "lang", "Long")),
-    RegularImport(List("kool", "lang", "Float")),
-    RegularImport(List("kool", "lang", "Double")),
-    RegularImport(List("kool", "lang", "Char")),
-    RegularImport(List("kool", "lang", "Bool")),
+    RegularImport(koolInt),
+    RegularImport(koolLong),
+    RegularImport(koolFloat),
+    RegularImport(koolDouble),
+    RegularImport(koolChar),
+    RegularImport(koolBool),
     ExtensionImport(koolLang, javaObject),
-    ExtensionImport(koolLang, javaString)
+    ExtensionImport(koolLang, javaString),
+    ExtensionImport(koolLang, koolInt),
+    ExtensionImport(koolLang, koolLong),
+    ExtensionImport(koolLang, koolFloat),
+    ExtensionImport(koolLang, koolDouble),
+    ExtensionImport(koolLang, koolChar)
   )
 
   init()
