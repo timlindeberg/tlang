@@ -40,44 +40,44 @@ trait LexerErrors extends Errors {
   // Missing 0
 
   protected def ErrorInvalidIdentifier(c: Char, length: Int): Unit =
-    error(1, s"Invalid character in identifier: '$c'.", length)
+    error(1, err"Invalid character in identifier: $c.", length)
 
   protected def ErrorUnclosedMultilineString(startPos: Positioned): Unit =
-    error(2, "Unclosed multiline string literal.", startPos)
+    error(2, err"Unclosed multiline string literal.", startPos)
 
   protected def ErrorEmptyCharLiteral(): Unit =
-    error(3, "Empty character literal.", 2)
+    error(3, err"Empty character literal.", 2)
 
   protected def ErrorInvalidEscapeSequence(length: Int): Unit =
-    error(4, "Invalid escape sequence.", length)
+    error(4, err"Invalid escape sequence.", length)
 
   protected def ErrorInvalidCharLiteral(length: Int): Unit =
-    error(5, "Invalid character literal.", length)
+    error(5, err"Invalid character literal.", length)
 
   protected def ErrorInvalidUnicode(length: Int): Unit =
-    error(6, "Invalid unicode escape sequence.", length)
+    error(6, err"Invalid unicode escape sequence.", length)
 
   protected def ErrorUnclosedCharLiteral(length: Int): Unit =
-    error(7, "Unclosed character literal.", length)
+    error(7, err"Unclosed character literal.", length)
 
   protected def ErrorUnclosedStringLiteral(length: Int): Unit =
-    error(8, "Unclosed string literal.", length)
+    error(8, err"Unclosed string literal.", length)
 
   protected def ErrorNumberTooLargeForInt(length: Int): Unit =
-    error(9, "Number is too large to fit in an Int.", length)
+    error(9, err"Number is too large to fit in an Int.", length)
 
   protected def ErrorNumberTooLargeForLong(length: Int): Unit =
-    error(10, "Number is too large to fit in a Long.", length)
+    error(10, err"Number is too large to fit in a Long.", length)
 
   protected def ErrorInvalidNumber(length: Int): Unit =
-    error(11, "Invalid number.", length)
+    error(11, err"Invalid number.", length)
 
   protected def ErrorInvalidFloat(length: Int): Unit =
-    error(12, "Invalid floating point number.", length)
+    error(12, err"Invalid floating point number.", length)
 
   protected def ErrorInvalidBinaryLiteral(length: Int): Unit =
-    error(13, "Invalid binary literal.", length)
+    error(13, err"Invalid binary literal.", length)
 
   protected def ErrorInvalidHexadecimalLiteral(length: Int): Unit =
-    error(14, "Invalid hexadecimal literal.", length)
+    error(14, err"Invalid hexadecimal literal.", length)
 }

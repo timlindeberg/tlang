@@ -1,7 +1,6 @@
 package tcompiler.error
 
 import java.io.File
-import java.util.regex.Matcher
 
 import tcompiler.Main
 import tcompiler.utils.Colors.Color
@@ -56,7 +55,7 @@ case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize
     if (validPosition)
       sb ++= filePrefix
 
-    sb ++= formattedMessage
+    sb ++= makeLines(errorPrefix + error.msg)
 
 
     if (validPosition)
@@ -92,18 +91,6 @@ case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize
       position = position.replaceAll(fileName, s"$Style$fileName$Reset")
     }
     makeLines(position)
-  }
-
-  private def formattedMessage: String = {
-    val msgFormat = Reset + MessageStyle
-
-    val s = QuoteRegex.replaceAllIn(error.msg.toString, m => {
-      var name = m.group(1)
-      name = error.names.getOrElse(name, name)
-      name = TemplateNameParser.parseTemplateName(name)
-      Matcher.quoteReplacement("\'" + Reset + QuoteColor + name + msgFormat + "\'") // escape dollar signs etc.
-    })
-    makeLines(errorPrefix + msgFormat + s + Reset)
   }
 
   private def locationInFile: List[(String, String)] = {

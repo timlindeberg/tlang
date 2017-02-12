@@ -18,12 +18,12 @@ trait TemplateErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def ErrorWrongNumGenerics(expected: Int, found: Int, pos: Positioned): Unit =
-    error(0, s"Wrong number of template parameters, expected '$expected', found '$found'.", pos)
+    error(0, err"Wrong number of template parameters, expected $expected, found $found.", pos)
 
   protected def ErrorDoesNotExist(name: String, pos: Positioned): Unit =
-    error(1, s"Can not find template class named '$name'.", pos)
+    error(1, err"Can not find template class named $name.", pos)
 
   protected def ErrorSameName(name: String, pos: Positioned): Unit =
-    error(2, s"Generic parameter '$name' appears multiple times.", pos)
+    error(2, err"Generic parameter $name appears multiple times.", pos)
 
 }

@@ -257,7 +257,6 @@ class TypeChecker(override var ctx: Context,
           case TArray(arrTpe) =>
             tcExpr(index, Int)
             arrTpe
-          case tpe            => ErrorWrongType("array", tpe, arr)
         }
       case ArraySlice(arr, start, end, step)  =>
         List(start, end, step).filter(_.isDefined).map(e => tcExpr(e.get, Int))
@@ -304,7 +303,7 @@ class TypeChecker(override var ctx: Context,
               checkPrivacy(classSymbol, constructorSymbol, newExpr, ErrorConstructorPrivacy)
               newExpr.setSymbol(constructorSymbol)
             case None if exprs.nonEmpty  =>
-              val methodSignature = "new" + exprs.map(_.getType).mkString("(", " , ", ")")
+              val methodSignature = "new" + exprs.map(_.getType).mkString("(", ", ", ")")
               ErrorDoesntHaveConstructor(tpe.name, methodSignature, newExpr)
             case _                       =>
               val defaultConstructor = new MethodSymbol("new", classSymbol, None, Set(Public()))
@@ -480,7 +479,6 @@ class TypeChecker(override var ctx: Context,
             tcExpr(index, Int)
             tcExpr(expr, arrayTpe)
             arrTpe.asInstanceOf[TArray].tpe
-          case tpe              => ErrorWrongType(arr.getType + "[]", tpe, arr)
         }
     }
   }

@@ -112,7 +112,7 @@ object Main extends MainErrors {
 
   private def createContext(options: Options, formatting: Formatting): Context =
     Context(
-      reporter = new DefaultReporter(
+      reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
         maxErrors = options(MaxErrors),

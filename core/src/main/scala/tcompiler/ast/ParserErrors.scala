@@ -21,14 +21,14 @@ trait ParserErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def ErrorImplicitMethodOrOperator(pos: Positioned): Unit =
-    error(0, "Only constructors can be declared implicit.", pos)
+    error(0, err"Only constructors can be declared implicit.", pos)
 
   protected def ErrorStaticIndexingOperator(pos: Positioned): Unit =
-    error(1, s"Indexing operators cannot be declared static.", pos)
+    error(1, err"Indexing operators cannot be declared static.", pos)
 
   protected def ErrorInvalidArrayDimension(size: Int, pos: Positioned): Unit = {
     val maxArraySize = ASTBuilder.MaximumArraySize
-    error(2, s"Invalid array dimension: '$size', '$maxArraySize' is the maximum dimension of an array.", pos)
+    error(2, err"Invalid array dimension: $size, $maxArraySize is the maximum dimension of an array.", pos)
   }
 
   //---------------------------------------------------------------------------------------
@@ -36,22 +36,22 @@ trait ParserErrors extends Errors {
   //---------------------------------------------------------------------------------------
 
   protected def FatalExpectedIdAssignment(pos: Positioned): Nothing =
-    fatal(1, "Expected identifier or array access on left side of assignment.", pos)
+    fatal(1, err"Expected identifier or array access on left side of assignment.", pos)
 
   protected def FatalWrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*): Nothing = {
-    val l = (kind :: more.toList).map(k => s"'$k'")
+    val l = (kind :: more.toList).map(k => err"$k")
     val expected = l.size match {
       case 1 => l.head
-      case 2 => l.head + " or " + l.tail.mkString(", ")
-      case _ => l.dropRight(1).mkString(", ") + " or " + l.last
+      case 2 => l.head + err" or " + l.tail.mkString(err", ")
+      case _ => l.dropRight(1).mkString(", ") + err" or " + l.last
     }
     FatalWrongToken(expected, currentToken.toString, currentToken)
   }
 
   protected def FatalWrongToken(expected: String, found: String, pos: Positioned): Nothing =
-    fatal(2, s"Expected $expected, found: '$found'.", pos)
+    fatal(2, err"Expected " + expected + err", found: $found.", pos)
 
   protected def FatalUnexpectedToken(currentToken: Token): Nothing =
-    fatal(3, s"Unexpected token: '$currentToken'", currentToken)
+    fatal(3, err"Unexpected token: $currentToken", currentToken)
 
 }

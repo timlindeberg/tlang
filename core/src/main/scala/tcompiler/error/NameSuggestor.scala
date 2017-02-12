@@ -1,5 +1,8 @@
 package tcompiler.error
 
+case class Suggestion(suggestion: Option[String])
+
+
 /**
   * Created by Tim Lindeberg on 1/15/2017.
   */
@@ -8,9 +11,10 @@ class NameSuggestor {
   private val AcceptableDistance = 3
   private val MinLength          = 3
 
-  def apply(name: String, alternatives: List[String]): String = {
+
+  def apply(name: String, alternatives: List[String]): Suggestion = {
     if (name.length < MinLength)
-      return ""
+      return Suggestion(None)
 
     val alts = alternatives
       .filter(_.length >= MinLength)
@@ -18,11 +22,8 @@ class NameSuggestor {
       .filter(_.isAcceptable)
       .sortBy(_.distance)
 
-    if (alts.isEmpty)
-      return ""
-
-    val suggestion = alts.head.alternative
-    s" Did you mean '$suggestion'?"
+    val res = if (alts.isEmpty) None else Some(alts.head.alternative)
+    Suggestion(res)
   }
 
 

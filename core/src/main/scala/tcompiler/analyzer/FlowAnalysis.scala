@@ -293,8 +293,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       case Some(varId) =>
         knowledge.get[IsNull](varId) match {
           case Some(IsNull(knownNull)) =>
-            val known = if (knownNull) "to be 'null'" else "not to be 'null'"
-            WarningUnnecessaryCheck(obj, known, t)
+            WarningUnnecessaryCheck(obj, knownNull, t)
             knowledge
           case None                    => knowledge.add(varId, IsNull(isNull))
         }

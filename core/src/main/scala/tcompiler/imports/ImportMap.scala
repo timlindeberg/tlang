@@ -67,8 +67,8 @@ class ImportMap(
 
     val packName = pack.name
     if (packName.nonEmpty) {
-      classes.filterInstance[IDClassDeclTree] foreach { c =>
-        val className = c.id.name
+      classes.filterInstance[IDClassDeclTree] foreach { clazz =>
+        val className = clazz.id.name
         addImport(className, s"$packName::$className")
       }
     }
@@ -112,12 +112,8 @@ class ImportMap(
   def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName)
   def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)
 
-  def getErrorName(name: String): String = {
-    var s = name
-    for (e <- fullToShort)
-      s = s.replaceAll(e._1, e._2)
-    s
-  }
+  def replaceNames(str: String): String =
+    fullToShort.foldLeft(str) { case (s, (full, short)) => s.replaceAll(full, short) }
 
   def contains(shortName: String): Boolean = shortToFull.contains(shortName)
 
