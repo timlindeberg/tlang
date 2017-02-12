@@ -73,17 +73,13 @@ class Desugarer(importMap: ImportMap) {
           }
         case assign: Assign                                                 =>
           val to = assign.to
-          if (to.isInstanceOf[ArrayRead]) {
-            to.getType match {
-              case t: TObject if !(t in Primitives) =>
-                val expr = super.apply(assign.from)
-                val newAssign = treeCopy.Assign(assign, to, expr)
-                // Transform again to replace external method calls etc.
-                _transform(replaceOperatorCall(newAssign))
-              case _                                => super._transform(assign)
-            }
-          } else {
-            super._transform(assign)
+          to match {
+            case ArrayRead(arr, _) if arr.getType.isInstanceOf[TObject] =>
+              val expr = super.apply(assign.from)
+              val newAssign = treeCopy.Assign(assign, to, expr)
+              // Transform again to replace external method calls etc.
+              _transform(replaceOperatorCall(newAssign))
+            case _                                                      => super._transform(assign)
           }
         case op: OperatorTree                                               =>
           replaceOperatorCall(super._transform(op)) match {

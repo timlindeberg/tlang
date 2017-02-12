@@ -33,7 +33,8 @@ case class SyntaxHighlighter(colors: Colors) {
     val tokens = tokenizer(line.toList)
     val sb = new StringBuilder()
     sb ++= line.substring(0, tokens.head.col - 1)
-    var prevColor = ""
+    val noColor = Color("", isActive = true)
+    var prevColor = noColor
 
     for (token :: next :: Nil <- tokens.sliding(2)) {
       val start = token.col - 1
@@ -41,7 +42,7 @@ case class SyntaxHighlighter(colors: Colors) {
 
       val color = getColor(token, markings)
       if (color != prevColor) {
-        if (prevColor != "")
+        if (prevColor != noColor)
           sb ++= Reset
         sb ++= color
       }
@@ -85,8 +86,7 @@ case class SyntaxHighlighter(colors: Colors) {
         val offsetPos = new Token(BAD)
           .setPos(None, token.line + offset - 1, token.col, token.endLine + offset - 1, token.endCol)
 
-        offsetPos.encodedStartPos >= pos.encodedStartPos &&
-          offsetPos.encodedEndPos <= pos.encodedEndPos
+        offsetPos.encodedStartPos >= pos.encodedStartPos && offsetPos.encodedEndPos <= pos.encodedEndPos
       }
       .map(_.style)
 }

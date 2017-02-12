@@ -86,7 +86,8 @@ class ImportMap(
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
     extensionSymbols.filter { extSym =>
-      extSym.name.replaceAll(""".*\$EX\/""", "") == className
+      val name = extSym.name.replaceAll(""".*\$EX\/""", "")
+      name == className
     }
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol): Unit = extensionSymbols ::= extensionClassSymbol

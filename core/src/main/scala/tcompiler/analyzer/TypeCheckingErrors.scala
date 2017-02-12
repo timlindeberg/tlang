@@ -85,13 +85,13 @@ trait TypeCheckingErrors extends Errors {
 
   protected def ErrorIndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], className: String, pos: Positioned): Type = {
     val operatorName = expr.operatorString(args, className)
-    error(13, s"The class '$className' does not contain an operator '$operatorName'.", pos)
+    error(13, s"The class '$className' does not define an operator '$operatorName'.", pos)
   }
 
   protected def ErrorOverloadedOperatorNotFound(op: OperatorTree, args: List[Type], pos: Positioned): Type = {
     val classesString = overloadedOperatorClassesString(args)
     val operatorName = op.signature(args)
-    error(13, s"$classesString contain an operator '$operatorName'.", pos)
+    error(13, s"$classesString define an operator '$operatorName'.", pos)
   }
 
   protected def ErrorOperatorWrongReturnType(op: String, expected: String, found: String, pos: Positioned): Type =
