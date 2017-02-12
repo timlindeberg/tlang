@@ -46,7 +46,10 @@ object CodeGenerator {
   }
 
   object NonPrimitive {
-    def unapply(tpe: Type): Option[TObject] = if (!(tpe in Primitives)) Some(tpe.asInstanceOf[TObject]) else None
+    def unapply(tpe: Type): Option[TObject] = tpe match {
+      case t: TObject if !(t in Primitives) => Some(t)
+      case _                                => None
+    }
   }
 
   implicit class JVMType(val t: Type) extends AnyVal {
@@ -61,29 +64,44 @@ object CodeGenerator {
       case _      => ???
     }
 
-    def koolWrapper: String = s"kool/lang/${t.name}Wrapper"
+    def koolWrapper: String = {
+      val name = t match {
+        case Int    => "Int"
+        case Long   => "Long"
+        case Float  => "Float"
+        case Double => "Double"
+        case Char   => "Char"
+        case Bool   => "Bool"
+      }
+      s"kool/lang/${name}Wrapper"
+    }
+
     def byteCodeName: String = t match {
-      case TUnit      => "V"
-      case Int        => "I"
-      case Long       => "J"
-      case Float      => "F"
-      case Double     => "D"
-      case Char       => "C"
-      case Bool       => "Z"
-      case t: TObject => "L" + t.classSymbol.name.replaceAll("\\.", "/") + ";"
-      case TArray(t)  => "[" + t.byteCodeName
+      case TUnit                        => "V"
+      case TNull                        => s"L$JavaObject;"
+      case Primitive(p) if p.isNullable => s"L$koolWrapper;"
+      case Int                          => "I"
+      case Long                         => "J"
+      case Float                        => "F"
+      case Double                       => "D"
+      case Char                         => "C"
+      case Bool                         => "Z"
+      case objTpe: TObject              => "L" + objTpe.classSymbol.name.replaceAll("\\.", "/") + ";"
+      case TArray(arrTpe)               => "[" + arrTpe.byteCodeName
     }
 
     def codes: CodeMap = t match {
-      case TUnit      => EmptyCodeMap
-      case Int        => IntCodeMap
-      case Long       => LongCodeMap
-      case Float      => FloatCodeMap
-      case Double     => DoubleCodeMap
-      case Char       => CharCodeMap
-      case Bool       => BoolCodeMap
-      case _: TArray  => new ArrayCodeMap(t.byteCodeName)
-      case t: TObject => new ObjectCodeMap(t.classSymbol.name)
+      case TUnit                        => EmptyCodeMap
+      case TNull                        => new ObjectCodeMap(JavaObject)
+      case Primitive(p) if p.isNullable => new ObjectCodeMap(koolWrapper)
+      case Int                          => IntCodeMap
+      case Long                         => LongCodeMap
+      case Float                        => FloatCodeMap
+      case Double                       => DoubleCodeMap
+      case Char                         => CharCodeMap
+      case Bool                         => BoolCodeMap
+      case objTpe: TObject              => new ObjectCodeMap(objTpe.classSymbol.name)
+      case TArray(arrTpe)               => new ArrayCodeMap(arrTpe.byteCodeName)
     }
 
     def size: Int = t match {
@@ -201,31 +219,20 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     if (expression.hasFile)
       ch << LineNumber(expression.line)
     expression match {
-      case TrueLit()  => ch << Ldc(1)
-      case FalseLit() => ch << Ldc(0)
-      case NullLit()  => ch << ACONST_NULL
-      //case Literal(value)                               => ch << Ldc(value)
+      case TrueLit()                                    => ch << Ldc(1)
+      case FalseLit()                                   => ch << Ldc(0)
+      case NullLit()                                    => ch << ACONST_NULL
       case IntLit(value)                                => ch << Ldc(value)
       case LongLit(value)                               => ch << Ldc(value)
       case CharLit(value)                               => ch << Ldc(value)
       case FloatLit(value)                              => ch << Ldc(value)
       case DoubleLit(value)                             => ch << Ldc(value)
-      case StringLit(value)                             =>
-        ch << Ldc(value)
+      case StringLit(value)                             => ch << Ldc(value)
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
-      case _: BranchingOperatorTree                     =>
-        val thn = ch.getFreshLabel("then")
-        val els = ch.getFreshLabel("else")
-        val after = ch.getFreshLabel("after")
-        compileBranch(expression, Label(thn), Label(els))
-        ch << Label(thn)
-        ch << Ldc(1)
-        ch << Goto(after)
-        ch << Label(els)
-        ch << Ldc(0)
-        ch << Label(after)
+      case branch: BranchingOperatorTree                =>
+        compileValueBranch(branch)
       case arrLit: ArrayLit                             =>
         compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
@@ -259,19 +266,23 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         }
       case Is(expr, tpe)                                =>
         compileExpr(expr)
-        tpe.getType match {
-          case NonPrimitive(obj)    => ch << InstanceOf(obj.classSymbol.name)
-          case Primitive(primitive) => ch << InstanceOf(primitive.koolWrapper)
+
+        val jvmTypeName = tpe.getType match {
+          case arrTpe: TArray => arrTpe.byteCodeName
+          case obj: TObject   => obj match {
+            case NonPrimitive(_)      => obj.classSymbol.name
+            case Primitive(primitive) => primitive.koolWrapper
+          }
         }
+        ch << InstanceOf(jvmTypeName)
       case As(expr, tpe)                                =>
-        if (expr.getType == tpe.getType) {
-          compileExpr(expr)
-        } else if (tpe.getType.isSubTypeOf(expr.getType)) {
-          compileExpr(expr)
-          val name = tpe.getType.asInstanceOf[TObject].classSymbol.name
-          ch << CheckCast(name)
-        } else {
-          compileAndConvert(expr, tpe.getType)
+        (expr.getType, tpe.getType) match {
+          case (NonPrimitive(_), NonPrimitive(tpe)) =>
+            compileExpr(expr)
+            val name = tpe.classSymbol.name
+            ch << CheckCast(name)
+          case _                                    =>
+            compileAndConvert(expr, tpe.getType)
         }
       case ArrayRead(arr, index)                        =>
         compileExpr(arr)
@@ -304,10 +315,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
             else
               ch << GetField(className, fieldName, bytecode)
           case MethodCall(meth, args)   =>
+            val methSymbol = meth.getSymbol
+
             if (isPrimitiveOperatorCall(acc)) {
               compilePrimitiveOperatorCall(acc)
             } else {
-              val methSymbol = meth.getSymbol
               val methName = meth.name
               val signature = byteCodeSignature(meth.getSymbol)
 
@@ -315,7 +327,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
               // Super calls and private calls are executed with invokespecial.
               // Methods called on traits are always called with invokeinterface
               // The rest are called with invokevirtual
-
 
               compileArguments(methSymbol, args)
               ch << (
@@ -328,27 +339,26 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
                 else
                   InvokeVirtual(className, methName, signature)
                 )
-
-              if (!duplicate && methSymbol.getType != TUnit)
-                ch << POP
             }
 
+            if (!duplicate && methSymbol.getType != TUnit)
+              ch << POP
         }
       case newTree@Trees.New(tpe, args)                 =>
         tpe.getType match {
-          case TObject(classSymbol) =>
+          case Primitive(primitiveType) =>
+            // args size can only be 0 or 1 for primitive types
+            if (args.size == 1)
+              compileAndConvert(args.head, primitiveType)
+            else
+              primitiveType.codes.defaultConstant(ch)
+          case TObject(classSymbol)     =>
             ch << cafebabe.AbstractByteCodes.New(classSymbol.name)
             tpe.getType.codes.dup(ch)
             val methodSymbol = newTree.getSymbol
             compileArguments(methodSymbol, args)
             // Constructors are always called with InvokeSpecial
             ch << InvokeSpecial(classSymbol.name, ConstructorName, byteCodeSignature(methodSymbol))
-          case primitiveType        =>
-            // args size can only be 0 or 1
-            if (args.size == 1)
-              compileAndConvert(args.head, primitiveType)
-            else
-              primitiveType.codes.defaultConstant(ch)
         }
       case ExtractNullable(expr)                        =>
         compileAndConvert(expr, expression.getType)
@@ -377,7 +387,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     }
   }
 
-  private def isPrimitiveOperatorCall(acc: Access) = acc.isStatic && Primitive.unapply(acc.getType).isDefined
+  private def isPrimitiveOperatorCall(acc: Access): Boolean = {
+    acc.isStatic && Primitive.unapply(acc.obj.getType).isDefined
+  }
 
   private def compilePrimitiveOperatorCall(acc: Access) = acc match {
     case Access(_, MethodCall(meth, args)) =>
@@ -389,7 +401,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         case 2 => // binary
           val lhs = args(0)
           val rhs = args(1)
-          compilePrimitiveBinaryOperatorCall(lhs, rhs, methName)
+          compilePrimitiveBinaryOperatorCall(acc, lhs, rhs, methName)
       }
   }
 
@@ -413,44 +425,51 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     }
   }
 
-  private def compilePrimitiveBinaryOperatorCall(lhs: ExprTree, rhs: ExprTree, methName: String) = {
-    val args = (lhs.getType, rhs.getType)
-    val desiredType = args match {
-      case _ if args.anyIs(Double) => Double
-      case _ if args.anyIs(Float)  => Float
-      case _ if args.anyIs(Long)   => Long
-      case _                       => Int
-    }
-
-    compileAndConvert(lhs, desiredType)
-    compileAndConvert(rhs, desiredType)
-
-    val codes = desiredType.codes
-
+  private def compilePrimitiveBinaryOperatorCall(acc: Access, lhs: ExprTree, rhs: ExprTree, methName: String) = {
     methName match {
-      case "Plus"       => codes.add(ch)
-      case "Minus"      => codes.sub(ch)
-      case "Times"      => codes.mul(ch)
-      case "Div"        => codes.div(ch)
-      case "Modulo"     => codes.mod(ch)
-      case "LogicAnd"   => codes.and(ch)
-      case "LogicOr"    => codes.or(ch)
-      case "LogicXor"   => codes.xor(ch)
-      case "LeftShift"  => codes.leftShift(ch)
-      case "RightShift" => codes.rightShift(ch)
-      case _            => ???
+      case "LessThan" | "LessThanEquals" | "GreaterThan" | "GreaterThanEquals" | "Equals" | "NotEquals" =>
+        compileValueBranch(acc)
+      case _                                                                                            =>
+        val args = (lhs.getType, rhs.getType)
+        val desiredType = args match {
+          case _ if anyIs(args, Double) => Double
+          case _ if anyIs(args, Float)  => Float
+          case _ if anyIs(args, Long)   => Long
+          case _                        => Int
+        }
+
+        // Right hand side of shift operator is always converted to Int
+        val rhsType = if (methName in List("LeftShift", "RightShift")) Int else desiredType
+        compileAndConvert(lhs, desiredType)
+        compileAndConvert(rhs, rhsType)
+
+        val codes = desiredType.codes
+
+        methName match {
+          case "Plus"       => codes.add(ch)
+          case "Minus"      => codes.sub(ch)
+          case "Times"      => codes.mul(ch)
+          case "Div"        => codes.div(ch)
+          case "Modulo"     => codes.mod(ch)
+          case "LogicAnd"   => codes.and(ch)
+          case "LogicOr"    => codes.or(ch)
+          case "LogicXor"   => codes.xor(ch)
+          case "LeftShift"  => codes.leftShift(ch)
+          case "RightShift" => codes.rightShift(ch)
+          case _            =>
+        }
     }
   }
 
   private def compilePrimitiveBranchingOperatorCall(lhs: ExprTree, rhs: ExprTree, methName: String, label: Label) = {
     val args = (lhs.getType, rhs.getType)
     val desiredType = args match {
-      case _ if args.anyIs(Object) => Object
-      case _ if args.anyIs(Array)  => Array
-      case _ if args.anyIs(Double) => Double
-      case _ if args.anyIs(Float)  => Float
-      case _ if args.anyIs(Long)   => Long
-      case _                       => Int
+      case _ if anyIs(args, Object) => Object
+      case _ if anyIs(args, Array)  => Array
+      case _ if anyIs(args, Double) => Double
+      case _ if anyIs(args, Float)  => Float
+      case _ if anyIs(args, Long)   => Long
+      case _                        => Int
     }
 
     compileAndConvert(lhs, desiredType)
@@ -469,6 +488,18 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     }
   }
 
+  private def compileValueBranch(condition: ExprTree) = {
+    val thn = ch.getFreshLabel("then")
+    val els = ch.getFreshLabel("else")
+    val after = ch.getFreshLabel("after")
+    compileBranch(condition, Label(thn), Label(els))
+    ch << Label(thn)
+    ch << Ldc(1)
+    ch << Goto(after)
+    ch << Label(els)
+    ch << Ldc(0)
+    ch << Label(after)
+  }
 
   private def compileArguments(methodSymbol: MethodSymbol, args: List[ExprTree]) =
     args.zip(methodSymbol.argList.map(_.getType)).foreach {
@@ -477,28 +508,23 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
   private def compileAndConvert(expr: ExprTree, desired: Type): Unit = {
     val found = expr.getType
-    if (found.isSubTypeOf(desired)) {
-      compileExpr(expr)
-      return
-    }
-
     val codes = found.codes
     (found, desired) match {
-      case (_, NonPrimitive(desired)) if desired.implicitTypes.contains(found) =>
+      case (NonPrimitive(found), NonPrimitive(desired)) if found.isSubTypeOf(desired) =>
+        compileExpr(expr)
+      case (_, NonPrimitive(desired)) if desired.implicitTypes.contains(found)        =>
         val name = desired.classSymbol.name
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
         compileExpr(expr)
         val signature = s"(${found.byteCodeName})V"
         ch << InvokeSpecial(name, ConstructorName, signature)
-      case (_: TArray, desired: TArray)                                        =>
-        // Found an array and wanted an array, expr must be an arraylit
-        // Convert each argument to the desired type
+      case (_: TArray, desired: TArray)                                               =>
         expr match {
           case arrLit: ArrayLit => compileArrayLiteral(arrLit, Some(desired.tpe))
-          case _                => ???
+          case _                => compileExpr(expr)
         }
-      case _                                                                   =>
+      case _                                                                          =>
         compileExpr(expr)
         (found, desired) match {
           case (NonPrimitive(_), Primitive(desired)) if !desired.isNullable                      =>
@@ -513,11 +539,11 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           case (Primitive(found), Primitive(desired)) if !found.isNullable && desired.isNullable =>
             // found non nullable primitive, need nullable primitive, box
             codes.box(ch)
-          case (_, desired) if desired == Double                                                 =>
+          case (_, Double)                                                                       =>
             codes.toDouble(ch)
-          case (_, desired) if desired == Float                                                  =>
+          case (_, Float)                                                                        =>
             codes.toFloat(ch)
-          case (_, desired) if desired == Long                                                   =>
+          case (_, Long)                                                                         =>
             codes.toLong(ch)
           case _                                                                                 =>
             codes.toInt(ch)
@@ -565,23 +591,22 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       ch << next
       compileBranch(rhs, thn, els)
     case EqualsOperatorTree(lhs, rhs)                                          =>
-      val argTypes = (lhs.getType, rhs.getType)
-      argTypes match {
-        case _ if argTypes.anyIs(TNull) =>
-          val toCompile = if (lhs.getType == TNull) rhs else lhs
-          compileExpr(toCompile)
-          expression match {
-            case _: Equals    => ch << IfNull(thn.id)
-            case _: NotEquals => ch << IfNonNull(thn.id)
-          }
-        case _ if argTypes.anyIs(Array) =>
-          compileExpr(lhs)
-          compileExpr(rhs)
-          expression match {
-            case _: Equals    => Array.codes.cmpEq(ch, thn.id)
-            case _: NotEquals => Array.codes.cmpNe(ch, thn.id)
-          }
-        case _                          => ???
+      val t1 = lhs.getType
+      val t2 = rhs.getType
+      if (t1 == TNull || t2 == TNull) {
+        val toCompile = if (t1 == TNull) rhs else lhs
+        compileExpr(toCompile)
+        expression match {
+          case _: Equals    => ch << IfNull(thn.id)
+          case _: NotEquals => ch << IfNonNull(thn.id)
+        }
+      } else if (t1.isInstanceOf[TArray] || t2.isInstanceOf[TArray]) {
+        compileExpr(lhs)
+        compileExpr(rhs)
+        expression match {
+          case _: Equals    => Array.codes.cmpEq(ch, thn.id)
+          case _: NotEquals => Array.codes.cmpNe(ch, thn.id)
+        }
       }
       ch << Goto(els.id)
     case acc@Access(_, MethodCall(meth, args)) if isPrimitiveOperatorCall(acc) =>
@@ -589,6 +614,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       val lhs = args(0)
       val rhs = args(1)
       compilePrimitiveBranchingOperatorCall(lhs, rhs, methName, thn)
+      ch << Goto(els.id)
     case expr: ExprTree                                                        =>
 
       compileExpr(expr)
@@ -658,6 +684,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         }
     }
   }
+
+  private def anyIs(tpes: (Type, Type), tpe: Type) = tpes._1 == tpe || tpes._2 == tpe
 
   private def byteCodeSignature(methSym: MethodSymbol): String = {
     val types = methSym.argTypes.map(_.byteCodeName).mkString

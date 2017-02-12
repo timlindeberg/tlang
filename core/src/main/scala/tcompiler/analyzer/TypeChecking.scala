@@ -223,6 +223,8 @@ class TypeChecker(override var ctx: Context,
           if (lhsTpe == TNull && !rhsTpe.isNullable || rhsTpe == TNull && !lhsTpe.isNullable)
             ErrorNonNullableEqualsNull(rhs.getType, eqOp)
           Bool
+        } else if (lhsTpe.isInstanceOf[TArray] && rhsTpe.isInstanceOf[TArray]) {
+          Bool
         } else {
           tcBinaryOperator(eqOp, lhsTpe, rhsTpe)
         }
@@ -241,7 +243,7 @@ class TypeChecker(override var ctx: Context,
       case unaryOp@UnaryOperatorTree(expr)    =>
         tcUnaryOperator(unaryOp, tcExpr(expr))
       case Is(expr, _)                        =>
-        tcExpr(expr, Object)
+        tcExpr(expr)
         Bool
       case As(expr, tpe)                      =>
         tcExpr(expr, Object)
@@ -273,8 +275,11 @@ class TypeChecker(override var ctx: Context,
         nullableTpe.getNonNullable
     }
 
-    def correctType(expectedTpe: Type) =
-      foundType.isSubTypeOf(expectedTpe) || expectedTpe.isImplicitlyConvertibleFrom(foundType)
+    def correctType(expectedTpe: Type): Boolean = {
+      (expectedTpe == Bool && foundType.isNullable) ||
+        foundType.isSubTypeOf(expectedTpe) ||
+        expectedTpe.isImplicitlyConvertibleFrom(foundType)
+    }
 
     val res = if (expected.nonEmpty && !expected.exists(correctType))
       ErrorWrongType(expected, foundType, expression)
@@ -349,7 +354,7 @@ class TypeChecker(override var ctx: Context,
               ErrorMethodOnWrongType(methSignature, objType.toString, app)
             meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
             Int
-          case _                    => ErrorMethodOnWrongType(methSignature, objType.toString, app)
+          case _                    => TError
         }
       case fieldId@VariableID(fieldName) =>
         objType match {

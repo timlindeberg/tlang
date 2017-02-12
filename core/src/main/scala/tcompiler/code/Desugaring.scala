@@ -58,7 +58,7 @@ class Desugarer(importMap: ImportMap) {
 
       override protected def _transform(t: Tree): Tree = t match {
         case slice: ArraySlice if !isObject(slice)                          =>
-          desugarArraySlice(super._transform(slice))
+          super._transform(desugarArraySlice(super._transform(slice)))
         case incDec: IncrementDecrementTree if incDec.getType in Primitives =>
           super._transform(desugarIncrementDecrement(incDec))
         case safeAccess: SafeAccess                                         =>
@@ -73,11 +73,15 @@ class Desugarer(importMap: ImportMap) {
           }
         case assign: Assign                                                 =>
           val to = assign.to
-          if (to.isInstanceOf[ArrayRead] && isObject(to)) {
-            val expr = super.apply(assign.from)
-            val newAssign = treeCopy.Assign(assign, to, expr)
-            // Transform again to replace external method calls etc.
-            _transform(replaceOperatorCall(newAssign))
+          if (to.isInstanceOf[ArrayRead]) {
+            to.getType match {
+              case t: TObject if !(t in Primitives) =>
+                val expr = super.apply(assign.from)
+                val newAssign = treeCopy.Assign(assign, to, expr)
+                // Transform again to replace external method calls etc.
+                _transform(replaceOperatorCall(newAssign))
+              case _                                => super._transform(assign)
+            }
           } else {
             super._transform(assign)
           }
@@ -283,7 +287,10 @@ class Desugarer(importMap: ImportMap) {
           case Assign(ArrayRead(obj, index), expr) =>
             (obj, List(index, expr))
           case ArraySlice(obj, start, end, step)   =>
-            (obj, List(start.getOrElse(NullLit()), end.getOrElse(NullLit()), step.getOrElse(NullLit())))
+            val s = start.getOrElse(NullLit()).setType(Int.getNullable)
+            val e = end.getOrElse(NullLit()).setType(Int.getNullable)
+            val st = step.getOrElse(NullLit()).setType(Int.getNullable)
+            (obj, List(s, e, st))
           case _                                   => ???
         }
         val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), importMap).get

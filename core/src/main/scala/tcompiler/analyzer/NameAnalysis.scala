@@ -111,6 +111,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         val id = clazz.id
         val fullName = (cu.pack.address :+ id.name).mkString(".")
         val lolName = (cu.pack.address :+ id.name).mkString("/")
+
         if (lolName in Main.Primitives) {
           globalScope.classes(fullName)
         } else {
@@ -124,8 +125,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
-    classDecl.fields foreach { f => addSymbols(f, sym) }
-    classDecl.methods foreach { m => addSymbols(m, sym) }
+    classDecl.fields foreach {addSymbols(_, sym)}
+    classDecl.methods foreach {addSymbols(_, sym)}
   }
 
   private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
@@ -164,7 +165,10 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         if (stat.isEmpty)
           ErrorAbstractConstructor(conDecl)
 
-        new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
+        val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
+        if (modifiers.contains(Implicit()))
+          methSym.annotations = Main.TImplicitConstructorAnnotation :: Nil
+        methSym
       case opDecl@OperatorDecl(modifiers, operatorType, _, _, stat) =>
         if (stat.isEmpty)
           ErrorAbstractOperator(opDecl)
@@ -281,7 +285,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
 
   private def bindArguments(args: List[Formal]) =
-    args.foreach { case Formal(typeTree, id) =>
+    for (Formal(typeTree, id) <- args) {
       val tpe = setType(typeTree)
       id.setType(tpe)
     }
@@ -585,6 +589,11 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
   private def setParentSymbol(classDecl: ClassDeclTree): Unit = {
     val parents = classDecl.parents
+    if (parents.isEmpty) {
+      classDecl.getSymbol.parents ::= ObjectSymbol
+      return
+    }
+
     parents.foreach { parentId =>
       globalScope.lookupClass(importMap, parentId.name) match {
         case Some(parentSymbol) => parentId.setSymbol(parentSymbol)

@@ -1,10 +1,10 @@
 package tcompiler
 package analyzer
 
+import tcompiler.Main._
 import tcompiler.analyzer.Symbols._
 import tcompiler.error.Errors
-import tcompiler.imports.ClassSymbolLocator
-
+import tcompiler.imports.ClassSymbolLocator._
 
 object Types {
 
@@ -27,18 +27,14 @@ object Types {
     def getType: Type = _tpe
   }
 
-
-  private def getMainSymbol(name: String): ClassSymbol =
-    ClassSymbolLocator.findSymbol(name).getOrElse(new ClassSymbol(name, isAbstract = false))
-
-  val IntSymbol   : ClassSymbol = getMainSymbol(Main.KoolInt)
-  val LongSymbol  : ClassSymbol = getMainSymbol(Main.KoolLong)
-  val FloatSymbol : ClassSymbol = getMainSymbol(Main.KoolFloat)
-  val DoubleSymbol: ClassSymbol = getMainSymbol(Main.KoolDouble)
-  val CharSymbol  : ClassSymbol = getMainSymbol(Main.KoolChar)
-  val BoolSymbol  : ClassSymbol = getMainSymbol(Main.KoolBool)
-  val ObjectSymbol: ClassSymbol = getMainSymbol(Main.JavaObject)
-  val StringSymbol: ClassSymbol = getMainSymbol(Main.JavaString)
+  val IntSymbol    = new ClassSymbol(KoolInt, isAbstract = false)
+  val LongSymbol   = new ClassSymbol(KoolLong, isAbstract = false)
+  val FloatSymbol  = new ClassSymbol(KoolFloat, isAbstract = false)
+  val DoubleSymbol = new ClassSymbol(KoolDouble, isAbstract = false)
+  val CharSymbol   = new ClassSymbol(KoolChar, isAbstract = false)
+  val BoolSymbol   = new ClassSymbol(KoolBool, isAbstract = false)
+  val ObjectSymbol = new ClassSymbol(JavaObject, isAbstract = false)
+  val StringSymbol = new ClassSymbol(JavaString, isAbstract = false)
 
   val Int    = TObject(IntSymbol)
   val Long   = TObject(LongSymbol)
@@ -51,6 +47,15 @@ object Types {
   val Array  = TArray(Object)
 
   val Primitives = List(Int, Long, Float, Double, Char, Bool)
+
+  fillClassSymbol(IntSymbol)
+  fillClassSymbol(LongSymbol)
+  fillClassSymbol(FloatSymbol)
+  fillClassSymbol(DoubleSymbol)
+  fillClassSymbol(CharSymbol)
+  fillClassSymbol(BoolSymbol)
+  fillClassSymbol(ObjectSymbol)
+  fillClassSymbol(StringSymbol)
 
   sealed abstract class Type {
     def isNullable: Boolean
@@ -154,7 +159,7 @@ object Types {
     override def getNonNullable: TObject = if (isNullable) TObject(classSymbol, isNullable = false) else this
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
-        if (classSymbol.name == c.name || c.name == Object.name) true
+        if (classSymbol.name == c.name) true
         else classSymbol.parents exists {_.getType.isSubTypeOf(tpe)}
       case _          => false
     }

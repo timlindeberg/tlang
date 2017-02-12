@@ -227,7 +227,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     case COLON =>
       eat(COLON)
       nonEmptyList(classIdentifier, COMMA)
-    case _     => List()
+    case _     => Nil
   }
 
   /**

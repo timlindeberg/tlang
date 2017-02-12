@@ -1,7 +1,5 @@
 package tcompiler.utils
 
-import tcompiler.analyzer.Types.Type
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.{ClassTag, _}
@@ -86,12 +84,6 @@ object Extensions {
     def print: T = {println(t); t}
     def in(seq: Traversable[T]): Boolean = seq.exists(_ == t)
     def in(seq: Set[T]): Boolean = seq.contains(t)
-  }
-
-  implicit class TypeTuple(val t: (Type, Type)) extends AnyVal {
-
-    def anyIs(types: Type*): Boolean = types.map(_.getClass).exists(c => c == t._1.getClass || c == t._2.getClass)
-    def bothAre(types: Type*): Boolean = types.map(_.getClass).exists(c => c == t._1.getClass && c == t._2.getClass)
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {

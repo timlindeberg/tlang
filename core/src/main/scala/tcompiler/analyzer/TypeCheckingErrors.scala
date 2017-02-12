@@ -39,7 +39,6 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], pos: Positioned): Type =
     error(1, s"Class '$className' does not contain a method '$methSignature'.${nameSuggestor(methName, alternatives)}", pos)
 
-
   protected def ErrorMethodOnWrongType(method: String, tpe: String, pos: Positioned): Type =
     error(2, s"Cannot call method '$method' on type '$tpe'.", pos)
 
@@ -104,8 +103,7 @@ trait TypeCheckingErrors extends Errors {
   protected def ErrorDoesntHaveConstructor(className: String, methodSignature: String, pos: Positioned): Type =
     error(16, s"Class '$className' does not contain a constructor '$methodSignature'.", pos)
 
-  protected def ErrorNewPrimitive(tpe: String, args: List[Type], pos: Positioned): Type =
-    error(17, s"Cannot construct primitive '$tpe' with argument(s) '(${args.mkString(", ")})'.", pos)
+  // Missing 17
 
   protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned): Type =
     error(18, s"Variable '$name' declared with no type or initialization.", pos)
@@ -124,10 +122,7 @@ trait TypeCheckingErrors extends Errors {
     error(22, s"Invalid $incOrDec expression.", pos)
   }
 
-  protected def ErrorOperatorDoesNotExist(expr: OperatorTree, args: (Type, Type), pos: Positioned): Type = {
-    val operator = expr.signature(List(args._1, args._2))
-    error(23, s"Operator '$operator' does not exist.", pos)
-  }
+  // Missing 23
 
   protected def ErrorInstantiateTrait(treit: String, pos: Positioned): Type =
     error(24, s"Cannot instantiate trait '$treit'.", pos)

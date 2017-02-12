@@ -7,7 +7,7 @@ import tcompiler.Flags.LineWidth
 import tcompiler.ast.PrettyPrinter
 import tcompiler.ast.Trees.CompilationUnit
 import tcompiler.error.Boxes.Light
-import tcompiler.error.{DefaultReporter, Formatting}
+import tcompiler.error.{DefaultReporter, Formatting, Reporter, VoidReporter}
 import tcompiler.imports.ClassSymbolLocator
 import tcompiler.utils.{Colors, Context, Pipeline}
 
@@ -33,7 +33,19 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
   private val testPath = sys.env.get("testfile")
     .filter(_.nonEmpty)
-    .map(file => s"$Path/$file")
+    .map { f =>
+      val path = s"$Path/$f"
+      val file = new File(path)
+      if (file.isDirectory || file.exists()) {
+        path
+      } else {
+        val withEnding = path + Main.FileEnding
+        if (new File(withEnding).exists())
+          withEnding
+        else
+          throw new Exception(s"No such file: $f")
+      }
+    }
     .getOrElse(Path)
 
 
@@ -112,10 +124,14 @@ object Tester {
   val UseColor       : Boolean     = !sys.env.get("usecolor").contains("false")
   val PrintCodeStages: Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
 
-  def testContext: Context = getTestContext(None)
+  def testContext: Context = getTestContext(None, Some(VoidReporter()))
 
-  def getTestContext(file: File): Context = getTestContext(Some(file))
-  def getTestContext(file: Option[File]): Context = {
+  def getTestContext(
+    file: Option[File],
+    reporter: Option[Reporter] = None,
+    formatting: Option[Formatting] = None
+  ): Context = {
+
     val (files, outDir) = file match {
       case Some(f) =>
         val mainName = f.getName.replaceAll(Main.FileEnding, "")
@@ -124,14 +140,14 @@ object Tester {
     }
 
     val colors = Colors(UseColor)
-    val formatting = Formatting(Light, LineWidth.defaultValue, colors)
-    val reporter = new DefaultReporter(formatting = formatting)
+    val f = formatting.getOrElse(Formatting(Light, LineWidth.defaultValue, colors))
+    val r = reporter.getOrElse(DefaultReporter(formatting = f))
     Context(
-      reporter = reporter,
+      reporter = r,
       files = files,
       outDirs = outDir,
       printCodeStages = PrintCodeStages,
-      formatting = formatting,
+      formatting = f,
       printer = PrettyPrinter(colors))
   }
 

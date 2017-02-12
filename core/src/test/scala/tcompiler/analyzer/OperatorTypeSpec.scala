@@ -32,7 +32,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
 
   class TypeConstructor(val tpe: Type) {
     def apply(): VariableID = createIdentifier(tpe)
-    override def toString(): String = tpe.toString
+    override def toString: String = tpe.toString
     def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
   }
 
@@ -56,6 +56,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
   test("LessThanEquals") {comparisonOperator(LessThanEquals)}
   test("GreaterThan") {comparisonOperator(GreaterThan)}
   test("GreaterThanEquals") {comparisonOperator(GreaterThanEquals)}
+
 
   test("Equals") {equalsOperator(Equals)}
   test("NotEquals") {equalsOperator(NotEquals)}

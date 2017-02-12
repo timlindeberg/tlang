@@ -22,19 +22,30 @@ trait Reporter {
 
 }
 
-class VoidReporter extends Reporter {
-  override def report(error: Error): Unit = {}
-  override def clear(): Unit = {}
+case class VoidReporter() extends Reporter {
+
+  private var _hasErrors   = false
+  private var _hasWarnings = false
+
+  override def report(error: Error): Unit = error.errorLevel match {
+    case ErrorLevel.Warning => _hasWarnings = true
+    case _                  => _hasErrors = true
+  }
+
+  override def clear(): Unit = {
+    _hasErrors = false
+    _hasWarnings = false
+  }
   override def terminateIfErrors(): Unit = {}
 
-  override def hasErrors: Boolean = false
-  override def hasWarnings: Boolean = false
-  override def errorMessage: String = ""
-  override def warningMessage: String = ""
+  override def hasErrors: Boolean = _hasErrors
+  override def hasWarnings: Boolean = _hasWarnings
+  override val errorMessage  : String = ""
+  override val warningMessage: String = ""
 }
 
 
-class DefaultReporter(
+case class DefaultReporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
   formatting: Formatting = SimpleFormatting,

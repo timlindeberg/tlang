@@ -27,7 +27,7 @@ trait ValidTester extends Tester {
     Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
 
   def testFile(file: File): Unit = {
-    val ctx = getTestContext(file)
+    val ctx = getTestContext(Some(file))
 
     try {
       val cus = Pipeline.run(ctx)(Set(file))

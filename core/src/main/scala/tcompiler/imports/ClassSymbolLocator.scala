@@ -75,8 +75,13 @@ object ClassSymbolLocator {
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
+    val className = clazz.getClassName.replaceAll("\\.", "/")
+    // Primitives and Object have no parents
+    if (className in (Main.JavaObject :: Main.Primitives))
+      return Nil
+
     val parent = clazz.getSuperClass match {
-      case null   => List()
+      case null   => List(ObjectSymbol)
       case parent => List(incompleteClass(parent.getClassName, parent.isAbstract))
     }
     val traits = clazz.getInterfaces.map(interface => incompleteClass(interface.getClassName, isAbstract = true)).toList
@@ -99,8 +104,14 @@ object ClassSymbolLocator {
       case name     => name
     }
 
-    val isExtensionMethod = meth.getAnnotationEntries.exists(_.getAnnotationType == Main.TExtensionAnnotation)
-    if (isExtensionMethod)
+    def isAnnotatedWith(annotation: String) = {
+      meth.getAnnotationEntries.exists(_.getAnnotationType == annotation)
+    }
+
+    if (isAnnotatedWith(Main.TImplicitConstructorAnnotation))
+      modifiers += Implicit()
+
+    if (isAnnotatedWith(Main.TExtensionAnnotation))
       modifiers -= Static() // Remove the added static modifier
 
     val symbol = name.head match {
@@ -116,7 +127,7 @@ object ClassSymbolLocator {
       convertArgument(tpe, s"arg$i")
     }.toList
 
-    if (isExtensionMethod)
+    if (isAnnotatedWith(Main.TExtensionAnnotation))
       args = args.drop(1) // Remove the added this argument
 
     symbol.argList = args
@@ -157,13 +168,13 @@ object ClassSymbolLocator {
     }
     case x: ObjectType                        =>
       val name = x.getClassName
-      name.replaceAll("\\.", "/") match {
-        case "kool/lang/IntWrapper"    => Int
-        case "kool/lang/LongWrapper"   => Long
-        case "kool/lang/FloatWrapper"  => Float
-        case "kool/lang/DoubleWrapper" => Double
-        case "kool/lang/CharWrapper"   => Char
-        case "kool/lang/BoolWrapper"   => Bool
+      name match {
+        case "kool.lang.IntWrapper"    => Int.getNullable
+        case "kool.lang.LongWrapper"   => Long.getNullable
+        case "kool.lang.FloatWrapper"  => Float.getNullable
+        case "kool.lang.DoubleWrapper" => Double.getNullable
+        case "kool.lang.CharWrapper"   => Char.getNullable
+        case "kool.lang.BoolWrapper"   => Bool.getNullable
         case _                         => TObject(incompleteClass(x))
       }
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))

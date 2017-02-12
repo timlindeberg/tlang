@@ -17,7 +17,7 @@ class ParserPositionSpec extends FunSuite with Matchers {
 
   val NoPos      : Pos     = Pos(-1, -1, -1, -1)
   val TestFile   : String  = Tester.Resources + "positions/ParserPositions.kool"
-  val TestContext: Context = Tester.getTestContext(None)
+  val TestContext: Context = Tester.testContext
 
   val Tree: Tree = {
     val file = Set(new File(TestFile))
@@ -181,13 +181,16 @@ class ParserPositionSpec extends FunSuite with Matchers {
   testPositions[NullLit](Pos(42, 22, 42, 26))
   testPositions[ArrayLit](Pos(36, 17, 43, 10))
 
-  // TODO: FIX
   testPositions[ClassID](
     Pos(7, 7, 7, 15),
     Pos(7, 13, 7, 14),
     Pos(7, 18, 7, 19),
     Pos(7, 21, 7, 22),
     Pos(7, 24, 7, 25),
+    Pos(9, 12, 9, 15),
+    Pos(11, 22, 11, 26),
+    Pos(12, 19, 12, 24),
+    Pos(14, 25, 14, 31),
     Pos(14, 36, 14, 42),
     Pos(16, 14, 16, 22),
     Pos(16, 20, 16, 21),
@@ -195,6 +198,8 @@ class ParserPositionSpec extends FunSuite with Matchers {
     Pos(16, 33, 16, 34),
     Pos(16, 38, 16, 46),
     Pos(16, 44, 16, 45),
+    Pos(20, 17, 20, 21),
+    Pos(20, 27, 20, 31),
     Pos(50, 21, 50, 22),
     Pos(54, 17, 54, 18),
     Pos(55, 19, 55, 25),

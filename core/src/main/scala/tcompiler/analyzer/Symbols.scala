@@ -139,16 +139,11 @@ object Symbols {
       findMethod(name, args, exactTypes)
         .orElse(findExtensionMethod(name, args, importMap, exactTypes))
         .orElse(lookupParentMethod(name, args, importMap, exactTypes))
-        .orElse(ObjectSymbol.findMethod(name, args, exactTypes))
-        .orElse(ObjectSymbol.findExtensionMethod(name, args, importMap, exactTypes))
 
     def lookupOperator(operatorType: OperatorTree, args: List[Type], importMap: ImportMap, exactTypes: Boolean = false): Option[OperatorSymbol] =
       findOperator(operatorType, args, exactTypes)
         .orElse(findExtensionOperator(operatorType, args, importMap, exactTypes))
         .orElse(lookupParentOperator(operatorType, args, importMap, exactTypes))
-        .orElse(ObjectSymbol.findOperator(operatorType, args, exactTypes))
-        .orElse(ObjectSymbol.findExtensionOperator(operatorType, args, importMap, exactTypes))
-
 
     def lookupField(name: String): Option[FieldSymbol] =
       fields.get(name).orElse(lookupParentField(name))
@@ -243,11 +238,10 @@ object Symbols {
     val stat: Option[StatTree],
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
-    var isAbstract       : Boolean                     = stat.isEmpty
-    val isExtensionMethod: Boolean                     = classSymbol.isInstanceOf[ExtensionClassSymbol]
-    var args             : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
-    var argList          : List[VariableSymbol]        = Nil
-    var annotations      : List[String]                = Nil
+    var isAbstract : Boolean                     = stat.isEmpty
+    var args       : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
+    var argList    : List[VariableSymbol]        = Nil
+    var annotations: List[String]                = Nil
 
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)

@@ -159,7 +159,8 @@ object CodeGeneration extends Pipeline[List[CompilationUnit], List[StackTrace]] 
 
   private def makeClassFile(classDecl: ClassDeclTree) = {
     val classSymbol = classDecl.getSymbol
-    val parents = classSymbol.parents
+    // java.lang.Object is already implicitly a parent of all classes
+    val parents = classSymbol.parents.filter(_ != ObjectSymbol)
     val className = classSymbol.name
 
     val (parent, traits) = if (classSymbol.isAbstract)

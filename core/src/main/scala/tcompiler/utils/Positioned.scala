@@ -77,7 +77,7 @@ trait Positioned {
       _colEnd == other._colEnd
 
   def encodedStartPos: Int = (line << 16) + col
-  def encodedEndPos: Int = (line << 16) + col
+  def encodedEndPos: Int = (endLine << 16) + endCol
 
 
 }

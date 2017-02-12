@@ -18,7 +18,7 @@ trait ErrorTester extends Tester {
   import Tester._
 
   def testFile(file: File): Unit = {
-    val ctx = Tester.getTestContext(file)
+    val ctx = Tester.getTestContext(Some(file))
 
     try {
       Pipeline.run(ctx)(Set(file))

@@ -63,7 +63,7 @@ case class SyntaxHighlighter(colors: Colors) {
     sb.toString()
   }
 
-  def getColor(token: Token, markings: Seq[Marking]): String = {
+  def getColor(token: Token, markings: Seq[Marking]): Color = {
     if (token.kind == COMMENTLITKIND)
       return CommentColor
 
@@ -79,7 +79,7 @@ case class SyntaxHighlighter(colors: Colors) {
     }
   }
 
-  private def findMatchingMarking(token: Token, markings: Seq[Marking]): Option[String] =
+  private def findMatchingMarking(token: Token, markings: Seq[Marking]): Option[Color] =
     markings
       .find { case Marking(offset, pos, _) =>
         val offsetPos = new Token(BAD)
