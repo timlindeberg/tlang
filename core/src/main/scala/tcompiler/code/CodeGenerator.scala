@@ -77,7 +77,7 @@ object CodeGenerator {
       case _      => ???
     }
 
-    def koolWrapper: String = {
+    def TRef: String = {
       val name = t match {
         case Int    => "Int"
         case Long   => "Long"
@@ -86,13 +86,13 @@ object CodeGenerator {
         case Char   => "Char"
         case Bool   => "Bool"
       }
-      s"kool/lang/${name}Wrapper"
+      s"T/lang/${name}Ref"
     }
 
     def byteCodeName: String = t match {
       case TUnit                        => "V"
       case TNull                        => s"L$JavaObject;"
-      case Primitive(p) if p.isNullable => s"L$koolWrapper;"
+      case Primitive(p) if p.isNullable => s"L$TRef;"
       case Int                          => "I"
       case Long                         => "J"
       case Float                        => "F"
@@ -106,7 +106,7 @@ object CodeGenerator {
     def codes: CodeMap = t match {
       case TUnit                        => EmptyCodeMap
       case TNull                        => new ObjectCodeMap(JavaObject)
-      case Primitive(p) if p.isNullable => new ObjectCodeMap(koolWrapper)
+      case Primitive(p) if p.isNullable => new ObjectCodeMap(TRef)
       case Int                          => IntCodeMap
       case Long                         => LongCodeMap
       case Float                        => FloatCodeMap
@@ -284,7 +284,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           case arrTpe: TArray => arrTpe.byteCodeName
           case obj: TObject   => obj match {
             case NonPrimitive(_)      => obj.classSymbol.JVMName
-            case Primitive(primitive) => primitive.koolWrapper
+            case Primitive(primitive) => primitive.TRef
           }
         }
         ch << InstanceOf(jvmTypeName)
@@ -566,7 +566,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
   private def unbox(to: Type) = {
     val bcName = to.byteCodeName
-    val className = to.koolWrapper
+    val className = to.TRef
     ch << CheckCast(className) << InvokeVirtual(className, s"Value", s"()$bcName")
   }
 

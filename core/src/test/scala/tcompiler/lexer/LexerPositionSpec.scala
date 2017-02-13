@@ -13,7 +13,7 @@ import tcompiler.{Pos, Tester}
   */
 class LexerPositionSpec extends FunSuite with Matchers {
 
-  val TestFile   : String  = Tester.Resources + "positions/LexerPositions.kool"
+  val TestFile   : String  = Tester.Resources + "positions/LexerPositions.t"
   val TestContext: Context = Tester.testContext
 
   val Tokens: List[Token] = {

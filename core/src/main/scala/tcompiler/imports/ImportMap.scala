@@ -26,30 +26,30 @@ class ImportMap(
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
-  private val koolInt    = List("kool", "lang", "Int")
-  private val koolLong   = List("kool", "lang", "Long")
-  private val koolFloat  = List("kool", "lang", "Float")
-  private val koolDouble = List("kool", "lang", "Double")
-  private val koolChar   = List("kool", "lang", "Char")
-  private val koolBool   = List("kool", "lang", "Bool")
-  private val koolLang   = List("kool", "lang")
+  private val TInt    = List("T", "lang", "Int")
+  private val TLong   = List("T", "lang", "Long")
+  private val TFloat  = List("T", "lang", "Float")
+  private val TDouble = List("T", "lang", "Double")
+  private val TChar   = List("T", "lang", "Char")
+  private val TBool   = List("T", "lang", "Bool")
+  private val TLang   = List("T", "lang")
 
   private val DefaultImports = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
-    RegularImport(koolInt),
-    RegularImport(koolLong),
-    RegularImport(koolFloat),
-    RegularImport(koolDouble),
-    RegularImport(koolChar),
-    RegularImport(koolBool),
-    ExtensionImport(koolLang, javaObject),
-    ExtensionImport(koolLang, javaString),
-    ExtensionImport(koolLang, koolInt),
-    ExtensionImport(koolLang, koolLong),
-    ExtensionImport(koolLang, koolFloat),
-    ExtensionImport(koolLang, koolDouble),
-    ExtensionImport(koolLang, koolChar)
+    RegularImport(TInt),
+    RegularImport(TLong),
+    RegularImport(TFloat),
+    RegularImport(TDouble),
+    RegularImport(TChar),
+    RegularImport(TBool),
+    ExtensionImport(TLang, javaObject),
+    ExtensionImport(TLang, javaString),
+    ExtensionImport(TLang, TInt),
+    ExtensionImport(TLang, TLong),
+    ExtensionImport(TLang, TFloat),
+    ExtensionImport(TLang, TDouble),
+    ExtensionImport(TLang, TChar)
   )
 
   init()

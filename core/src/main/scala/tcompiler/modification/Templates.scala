@@ -143,7 +143,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
             case classId: ClassID =>
               // Update the import map with the instantiated types:
               // e.g. Iterator<Vector<Int>> updates the
-              // Iterator's import map with Vector<Int> -> kool.std.Vector<Int>
+              // Iterator's import map with Vector<Int> -> T.std.Vector<Int>
               updateImportMap(templateCU.importMap, classId)
             case _                =>
           }

@@ -32,7 +32,7 @@ case class ProgramExecutor(timeout: Duration = duration.Duration(2, "sec")) {
     }
   }
 
-  def mainName(file: File): String = file.getName.replaceAll(Main.FileEnding, "")
+  def mainName(file: File): String = file.getName.replaceAll("\\" + Main.FileEnding, "")
 
   private def formatClassPath(classPaths: List[String]): String =
     if (System.getProperty("os.name").startsWith("Windows"))

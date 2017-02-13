@@ -36,14 +36,10 @@ object Symbols {
 
   class GlobalScope {
 
-    val classes: mutable.Map[String, ClassSymbol] = mutable.Map[String, ClassSymbol](
-      "kool::lang::Int" -> Types.IntSymbol,
-      "kool::lang::Long" -> Types.LongSymbol,
-      "kool::lang::Float" -> Types.FloatSymbol,
-      "kool::lang::Double" -> Types.DoubleSymbol,
-      "kool::lang::Char" -> Types.CharSymbol,
-      "kool::lang::Bool" -> Types.BoolSymbol
-    )
+    val classes: mutable.Map[String, ClassSymbol] =
+      mutable.Map[String, ClassSymbol]() ++
+        Types.Primitives.map(p => p.name -> p.classSymbol).toMap ++
+        Map(String.name -> StringSymbol, Object.name -> ObjectSymbol)
 
     def lookupClass(importMap: ImportMap, name: String): Option[ClassSymbol] = {
       val fullName = importMap.getFullName(name)

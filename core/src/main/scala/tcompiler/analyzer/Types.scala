@@ -27,12 +27,12 @@ object Types {
     def getType: Type = _tpe
   }
 
-  val IntSymbol    = new ClassSymbol(KoolInt, isAbstract = false)
-  val LongSymbol   = new ClassSymbol(KoolLong, isAbstract = false)
-  val FloatSymbol  = new ClassSymbol(KoolFloat, isAbstract = false)
-  val DoubleSymbol = new ClassSymbol(KoolDouble, isAbstract = false)
-  val CharSymbol   = new ClassSymbol(KoolChar, isAbstract = false)
-  val BoolSymbol   = new ClassSymbol(KoolBool, isAbstract = false)
+  val IntSymbol    = new ClassSymbol(TInt, isAbstract = false)
+  val LongSymbol   = new ClassSymbol(TLong, isAbstract = false)
+  val FloatSymbol  = new ClassSymbol(TFloat, isAbstract = false)
+  val DoubleSymbol = new ClassSymbol(TDouble, isAbstract = false)
+  val CharSymbol   = new ClassSymbol(TChar, isAbstract = false)
+  val BoolSymbol   = new ClassSymbol(TBool, isAbstract = false)
   val ObjectSymbol = new ClassSymbol(JavaObject, isAbstract = false)
   val StringSymbol = new ClassSymbol(JavaString, isAbstract = false)
 
@@ -46,7 +46,7 @@ object Types {
   val String = TObject(StringSymbol)
   val Array  = TArray(Object)
 
-  val Primitives = List(Int, Long, Float, Double, Char, Bool)
+  val Primitives: List[TObject] = List(Int, Long, Float, Double, Char, Bool)
 
   fillClassSymbol(IntSymbol)
   fillClassSymbol(LongSymbol)

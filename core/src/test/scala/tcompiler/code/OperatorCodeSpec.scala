@@ -24,17 +24,17 @@ import scala.util.Random
 class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   private val TestFolder           = "./tmpTest"
-  private val TestFilePath: String = TestFolder + "/tmpTestFile.kool"
+  private val TestFilePath: String = TestFolder + "/tmpTestFile.t"
 
   private val testFolderFile = new File(TestFolder)
   private val testFile       = new File(TestFilePath)
 
-  private val Printer       = PrettyPrinter(Colors(false))
+  private val Printer       = PrettyPrinter(Colors(isActive = false))
   private val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
   private val Rand          = new Random()
-  private val TestCtx       = Context(reporter = new DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
+  private val TestCtx       = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
   private val TestImportMap = new ImportMap(TestCtx)
-  private val TypeCheckCtx  = Context(reporter = new DefaultReporter(suppressWarnings = true), files = Set(testFile))
+  private val TypeCheckCtx  = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile))
   private val ClassSymbol   = new ClassSymbol("obj", false)
   private val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)

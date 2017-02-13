@@ -94,7 +94,7 @@ trait CodeMap {
   def box(ch: CodeHandler): CodeHandler = ch
 
   protected def _box(ch: CodeHandler, tpe: Type): CodeHandler = {
-    val className = tpe.koolWrapper
+    val className = tpe.TRef
     val typeName = tpe.byteCodeName
     ch << InvokeStatic(className, "ValueOf", s"($typeName)L$className;")
   }

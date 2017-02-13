@@ -571,7 +571,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         globalScope.lookupClass(importMap, name) match {
           case Some(classSymbol) => tpeId.setSymbol(classSymbol)
           case None              =>
-            val alternatives = globalScope.classNames ::: Types.Primitives.map(_.name)
+            val alternatives = globalScope.classNames
             ErrorUnknownType(name, alternatives, tpeId)
         }
       case ArrayType(arrayTpe)       =>

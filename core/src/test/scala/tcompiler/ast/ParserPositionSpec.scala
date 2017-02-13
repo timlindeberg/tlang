@@ -16,7 +16,7 @@ import scala.reflect.{ClassTag, classTag}
 class ParserPositionSpec extends FunSuite with Matchers {
 
   val NoPos      : Pos     = Pos(-1, -1, -1, -1)
-  val TestFile   : String  = Tester.Resources + "positions/ParserPositions.kool"
+  val TestFile   : String  = Tester.Resources + "positions/ParserPositions.t"
   val TestContext: Context = Tester.testContext
 
   val Tree: Tree = {

@@ -21,12 +21,12 @@ object ClassSymbolLocator {
   }
 
   def findSymbol(className: String): Option[ClassSymbol] =
-    _findSymbol(className, clazz => new ClassSymbol(toKoolName(clazz.getClassName), clazz.isInterface))
+    _findSymbol(className, clazz => new ClassSymbol(toTName(clazz.getClassName), clazz.isInterface))
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] =
     _findSymbol(className, clazz => {
-      val extensionName = toKoolName(clazz.getClassName)
-      val originalClassName = toKoolName(ExtensionDecl.stripExtension(extensionName))
+      val extensionName = toTName(clazz.getClassName)
+      val originalClassName = toTName(ExtensionDecl.stripExtension(extensionName))
       val originalSymbol = findSymbol(originalClassName)
 
       new ExtensionClassSymbol(extensionName).use(_.setExtendedType(TObject(originalSymbol.get)))
@@ -63,7 +63,7 @@ object ClassSymbolLocator {
   def clearCache(): Unit = Repository.clearCache()
 
   private def toBCELName(name: String) = name.replaceAll("::", ".")
-  private def toKoolName(name: String) = name.replaceAll("\\.", "::")
+  private def toTName(name: String) = name.replaceAll("\\.", "::")
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     val methods = clazz.getMethods.map(convertMethod(_, clazz, classSymbol)).toList
@@ -78,17 +78,17 @@ object ClassSymbolLocator {
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
-    val className = toKoolName(clazz.getClassName)
+    val className = toTName(clazz.getClassName)
     // Primitives and Object have no parents
     if (className in (Main.JavaObject :: Main.Primitives))
       return Nil
 
     val parent = clazz.getSuperClass match {
       case null   => List(ObjectSymbol)
-      case parent => List(incompleteClass(toKoolName(parent.getClassName), parent.isAbstract))
+      case parent => List(incompleteClass(toTName(parent.getClassName), parent.isAbstract))
     }
     val traits = clazz.getInterfaces.map { interface =>
-      incompleteClass(toKoolName(interface.getClassName), isAbstract = true)
+      incompleteClass(toTName(interface.getClassName), isAbstract = true)
     }.toList
     parent ::: traits
   }
@@ -173,15 +173,15 @@ object ClassSymbolLocator {
       case Type.VOID    => TUnit
     }
     case x: ObjectType                        =>
-      val name = toKoolName(x.getClassName)
+      val name = toTName(x.getClassName)
       name match {
-        case "kool::lang::IntWrapper"    => Int.getNullable
-        case "kool::lang::LongWrapper"   => Long.getNullable
-        case "kool::lang::FloatWrapper"  => Float.getNullable
-        case "kool::lang::DoubleWrapper" => Double.getNullable
-        case "kool::lang::CharWrapper"   => Char.getNullable
-        case "kool::lang::BoolWrapper"   => Bool.getNullable
-        case _                           => TObject(incompleteClass(name, x.getClass.isInterface))
+        case "T::lang::IntRef"    => Int.getNullable
+        case "T::lang::LongRef"   => Long.getNullable
+        case "T::lang::FloatRef"  => Float.getNullable
+        case "T::lang::DoubleRef" => Double.getNullable
+        case "T::lang::CharRef"   => Char.getNullable
+        case "T::lang::BoolRef"   => Bool.getNullable
+        case _                    => TObject(incompleteClass(name, x.getClass.isInterface))
       }
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }

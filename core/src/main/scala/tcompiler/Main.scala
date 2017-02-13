@@ -16,21 +16,21 @@ object Main extends MainErrors {
 
   import Flags._
 
-  val FileEnding                     = ".kool"
+  val FileEnding                     = ".t"
   val VersionNumber                  = "0.0.1"
   val THome                          = "T_HOME"
   val JavaObject                     = "java::lang::Object"
   val JavaString                     = "java::lang::String"
-  val KoolInt                        = "kool::lang::Int"
-  val KoolLong                       = "kool::lang::Long"
-  val KoolFloat                      = "kool::lang::Float"
-  val KoolDouble                     = "kool::lang::Double"
-  val KoolChar                       = "kool::lang::Char"
-  val KoolBool                       = "kool::lang::Bool"
-  val TExtensionAnnotation           = "kool::lang::$ExtensionMethod"
-  val TImplicitConstructorAnnotation = "kool::lang::$ImplicitConstructor"
+  val TInt                        = "T::lang::Int"
+  val TLong                       = "T::lang::Long"
+  val TFloat                      = "T::lang::Float"
+  val TDouble                     = "T::lang::Double"
+  val TChar                       = "T::lang::Char"
+  val TBool                       = "T::lang::Bool"
+  val TExtensionAnnotation           = "T::lang::$ExtensionMethod"
+  val TImplicitConstructorAnnotation = "T::lang::$ImplicitConstructor"
 
-  val Primitives = List(KoolInt, KoolLong, KoolFloat, KoolDouble, KoolBool, KoolChar)
+  val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
   lazy val TDirectory: String = {
     if (!sys.env.contains(THome))
@@ -192,11 +192,11 @@ object Main extends MainErrors {
 
     val files = listFiles(new File(path))
     val neededFiles = List(
-      "kool",
-      "kool/lang",
-      "kool/lang/Object.kool",
-      "kool/lang/String.kool",
-      "kool/std"
+      "T",
+      "T/lang",
+      "T/lang/Object.t",
+      "T/lang/String.t",
+      "T/std"
     )
     val fileMap = mutable.Map() ++ neededFiles.map((_, false))
     val filePaths = files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/"))
