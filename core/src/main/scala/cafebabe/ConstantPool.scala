@@ -1,6 +1,6 @@
 package cafebabe
 
-import tcompiler.utils.Colors
+import tlang.utils.Colors
 
 
 class ConstantPool extends Streamable {

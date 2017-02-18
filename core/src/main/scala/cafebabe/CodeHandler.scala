@@ -1,9 +1,9 @@
 package cafebabe
 
-import tcompiler.Flags.LineWidth
-import tcompiler.error.Boxes.Light
-import tcompiler.error.{Formatting, SimpleFormatting}
-import tcompiler.utils.Colors
+import tlang.compiler.error.Boxes.Light
+import tlang.compiler.error.{Formatting, SimpleFormatting}
+import tlang.compiler.main.Flags.LineWidth
+import tlang.utils.Colors
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 

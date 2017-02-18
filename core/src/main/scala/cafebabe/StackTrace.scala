@@ -2,9 +2,9 @@ package cafebabe
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
-import tcompiler.error.Formatting
-import tcompiler.utils.Colors
-import tcompiler.utils.Colors._
+import tlang.compiler.error.Formatting
+import tlang.utils.Colors
+import tlang.utils.Colors.Color
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
