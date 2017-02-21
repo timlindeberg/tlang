@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
   * Created by Tim Lindeberg on 7/5/2016.
   */
 
-class TreeBuilder {
+case class TreeBuilder() {
   val code: ListBuffer[StatTree] = ListBuffer()
 
   def put(stat: StatTree): code.type = {

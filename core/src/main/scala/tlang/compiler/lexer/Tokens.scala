@@ -51,7 +51,7 @@ object Tokens {
 
 
   // @formatter:off
-  case object EOF             extends TokenKind("")
+  case object EOF             extends TokenKind("EOF")
   case object BAD             extends TokenKind("")
   case object SEMICOLON       extends TokenKind(";")
   case object DOT             extends TokenKind(".")

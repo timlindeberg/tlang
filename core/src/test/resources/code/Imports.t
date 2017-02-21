@@ -23,11 +23,6 @@ println(st.getMin()) // res: 8
 
 println(1 + java::lang::Math.PI + 1) // res: 5.141592653589793
 
-
-System.exit(0)
-
-println("This never happens")
-
 class A : java::util::GregorianCalendar {
 
     Def AD() = println(AD)

@@ -12,7 +12,6 @@ import org.objectweb.asm.{ClassReader, ClassWriter}
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.utils._
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
@@ -62,7 +61,7 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
 
       val methodHandle = methodDecl match {
         case _: MethodDecl =>
-          val argTypes = methSymbol.argList.map(_.getType.byteCodeName).mkString
+          val argTypes = methSymbol.argTypes.map(_.byteCodeName).mkString
           val methDescriptor = methodDescriptor(methSymbol)
           classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, methDescriptor)
 
@@ -118,7 +117,7 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
   }
 
   private def generateBridgeMethod(classFile: ClassFile, overriden: MethodSymbol, meth: MethodSymbol, flags: U2, base: ExprTree) = {
-    val argTypes = overriden.argList.map(_.getType.byteCodeName).mkString
+    val argTypes = overriden.argTypes.map(_.byteCodeName).mkString
     val retType = overriden.getType.byteCodeName
 
     val descriptor = methodDescriptor(overriden)
@@ -222,7 +221,7 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
   private def generateConstructor(con: Option[ConstructorDecl], classFile: ClassFile, classDecl: ClassDeclTree): MethodHandler = {
     val mh = con match {
       case Some(conDecl) =>
-        val argTypes = conDecl.getSymbol.argList.map(_.getType.byteCodeName).mkString
+        val argTypes = conDecl.getSymbol.argTypes.map(_.byteCodeName).mkString
         val methDescriptor = methodDescriptor(conDecl.getSymbol)
         classFile.addConstructor(argTypes, methDescriptor)
       case _             =>

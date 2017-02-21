@@ -1,11 +1,12 @@
-package tlang.compiler.main
+package tlang.compiler.options
 
 import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
 import tlang.compiler.error.Boxes
 import tlang.compiler.error.Boxes.Box
-import tlang.compiler.main.Flags._
+import tlang.compiler.options.Flags._
+import tlang.compiler.{Main, MainErrors}
 import tlang.utils.Colors
 import tlang.utils.Colors.{ColorScheme, DefaultColorScheme}
 import tlang.utils.Extensions._
@@ -150,7 +151,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
-    val validStages = Main.CompilerStages.map(_.stageName)
+    val validStages = Main.CompilerStages.map(_.compilerStageName)
     stages.foreach { stage =>
       if (!(stage in validStages))
         FatalInvalidArgToFlag(PrintOutput, stage, validStages)

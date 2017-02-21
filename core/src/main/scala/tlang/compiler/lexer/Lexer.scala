@@ -67,15 +67,13 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
       case Nil                              =>
-        line += 1
-        column = 1
-        createToken(EOF, 1) :: tokens
+        createToken(EOF, 0) :: tokens
       case c :: _                           =>
         val (token, tail) = endInvalidToken(chars, 0, isEndingChar, ErrorInvalidIdentifier(c, _))
         readTokens(tail, token :: tokens)
     }
 
-    val res = readTokens(source.text.toList, List[Token]()).reverse
+    val res = readTokens(source.text.toList, Nil).reverse
 
     line = 1
     column = 1

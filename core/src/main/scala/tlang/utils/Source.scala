@@ -2,8 +2,8 @@ package tlang.utils
 
 import java.io.File
 
+import tlang.compiler.Main
 import tlang.compiler.error.Formatting
-import tlang.compiler.main.Main
 import tlang.utils.Extensions._
 
 import scala.collection.mutable

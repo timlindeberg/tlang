@@ -3,7 +3,6 @@ package tlang.compiler.code
 import java.io.{File, FileWriter, IOException}
 
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import tlang.compiler.{Context, Interpreter}
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
@@ -13,9 +12,9 @@ import tlang.compiler.error.DefaultReporter
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
+import tlang.compiler.{Context, Interpreter}
 import tlang.utils.Extensions._
-import tlang.compiler.utils.ProgramExecutor
-import tlang.utils.{Colors, FileSource}
+import tlang.utils.{Colors, FileSource, ProgramExecutor}
 
 import scala.util.Random
 

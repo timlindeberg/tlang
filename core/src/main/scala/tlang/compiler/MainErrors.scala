@@ -1,9 +1,8 @@
-package tlang.compiler.main
+package tlang.compiler
 
-import tlang.compiler.Context
 import tlang.compiler.error.Errors
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.main.Flags.Flag
+import tlang.compiler.options.Flags.Flag
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.

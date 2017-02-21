@@ -5,14 +5,13 @@ import java.io.File
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{Formatting, Reporter, SimpleFormatting}
 import tlang.compiler.imports.ClassSymbolLocator
-import tlang.compiler.main.Main
 import tlang.utils.Colors
 
 import scala.collection.mutable
 
 case class Context(
   reporter: Reporter,
-  files: Set[File],
+  files: Set[File] = Set(),
   classPaths: Set[String] = Set(),
   outDirs: Set[File] = Set(new File(".")),
   printCodeStages: Set[String] = Set(),

@@ -5,8 +5,8 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.Errors
 import tlang.compiler.imports.{ClassSymbolLocator, ImportMap}
-import tlang.utils.Extensions._
 import tlang.compiler.utils._
+import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
@@ -230,6 +230,10 @@ object Symbols {
     var argList    : List[VariableSymbol]        = Nil
     var annotations: List[String]                = Nil
 
+    def addArgument(arg: VariableSymbol): Unit = {
+      args += arg.name -> arg
+      argList :+= arg
+    }
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)
 

@@ -9,9 +9,8 @@ import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
-import tlang.compiler.utils.ProgramExecutor
-import tlang.utils.{FileSource, Source}
-
+import tlang.utils.Extensions._
+import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 /**
   * Created by Tim Lindeberg on 4/11/2016.
@@ -50,21 +49,24 @@ trait ValidTester extends Tester {
 
   private def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList
 
-  private def parseSolutions(file: File): List[String] = {
+  private def parseSolutions(file: File): List[(Int, String)] = {
     val fileName = file.getPath
-    io.Source.fromFile(fileName).getLines().collect { case SolutionRegex(line) => line.trim }.toList
+    using(io.Source.fromFile(fileName)) { source =>
+      source.getLines().zipWithIndex.collect {
+        case (SolutionRegex(line), lineNumber) => (lineNumber + 1, line.trim)
+      }.toList
+    }
   }
 
-  private def assertCorrect(res: List[String], sol: List[String]): Unit = {
-    res.zip(sol).zipWithIndex.foreach {
-      case ((r, s), i) =>
-        val extraInfo = formatTestFailedMessage(i + 1, res, sol)
-        if (r != s)
-          fail(s"Expected '$s' but found '$r' $extraInfo")
+  private def assertCorrect(results: List[String], solutions: List[(Int, String)]): Unit = {
+    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, results, solutions.map(_._2))
+    results.zip(solutions).zipWithIndex.foreach {
+      case ((res, (line, sol)), i) =>
+        if (res != sol)
+          fail(s"Expected '$sol' but found '$res' at line $line ${extraInfo(i)}")
     }
-    if (res.length != sol.length) {
-      val extraInfo = formatTestFailedMessage(-1, res, sol)
-      fail(s"Expected ${sol.length} errors but ${res.length} were thrown $extraInfo")
+    if (results.length != solutions.length) {
+      fail(s"Expected ${solutions.length} lines but ${results.length} were output ${extraInfo(-1)}")
     }
   }
 

@@ -5,7 +5,6 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.main.Main
 import tlang.compiler.utils._
 import tlang.utils.Colors
 import tlang.utils.Extensions._
@@ -219,6 +218,8 @@ object Trees {
       val meth = MethodDecl(modifiers, id, args, retType, stat)
       if (classSym.isDefined) {
         val mainSym = new MethodSymbol("main", classSym.get, stat, modifiers).setType(TUnit)
+        val argsSym = new VariableSymbol("args").setType(TArray(String))
+        mainSym.addArgument(argsSym)
         meth.setSymbol(mainSym)
       }
       meth

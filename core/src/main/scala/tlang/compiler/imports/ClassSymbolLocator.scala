@@ -4,10 +4,10 @@ import org.apache.bcel.Repository
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
 import org.apache.bcel.util.{ClassPath, SyntheticRepository}
+import tlang.compiler.Main
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.main.Main
 import tlang.utils.Extensions._
 
 /**

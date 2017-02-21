@@ -3,7 +3,6 @@ package tlang.compiler
 import cafebabe.StackTrace
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
-import tlang.compiler.main.Main
 import tlang.utils.Extensions._
 
 abstract class Pipeline[-F, +T] {
@@ -12,7 +11,7 @@ abstract class Pipeline[-F, +T] {
 
   def run(ctx: Context)(v: List[F]): List[T]
 
-  val stageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  val compilerStageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
 
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: List[F]): List[G] = {
@@ -37,7 +36,7 @@ abstract class Pipeline[-F, +T] {
     import ctx.formatting._
     import ctx.formatting.colors._
 
-    private val stageNameCapitalized = stageName.capitalize
+    private val stageNameCapitalized = compilerStageName.capitalize
     private val shouldPrint          = ctx.printCodeStages.contains(stageNameCapitalized.toLowerCase)
     private val header               = Bold("Output after ") + Blue(stageNameCapitalized)
 

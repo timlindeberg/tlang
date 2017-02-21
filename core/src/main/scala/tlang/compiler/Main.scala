@@ -1,6 +1,5 @@
-package tlang.compiler.main
+package tlang.compiler
 
-import tlang.compiler._
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter}
@@ -9,8 +8,8 @@ import tlang.compiler.error.Boxes.Simple
 import tlang.compiler.error.{CompilationException, DefaultReporter, Formatting, SyntaxHighlighter}
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
-import tlang.compiler.utils._
-import tlang.utils.{Colors, FileSource, Source}
+import tlang.compiler.options.{Flags, Options}
+import tlang.utils.{Colors, FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration
 
@@ -43,7 +42,7 @@ object Main extends MainErrors {
 
   val FrontEnd: Pipeline[Source, CompilationUnit] =
     Lexer andThen Parser andThen Templates andThen
-      NameAnalysis andThen TypeChecking andThen FlowAnalysis
+      NameAnalysis andThen TypeChecking andThen FlowAnalysis andThen Desugaring
 
   val CompilerStages = List(
     Lexer,
@@ -90,8 +89,7 @@ object Main extends MainErrors {
 
     val cus = runFrontend(ctx)
 
-    val compilation = Desugaring andThen CodeGeneration
-    compilation.run(ctx)(cus)
+    CodeGeneration.run(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
       print(ctx.reporter.warningMessage)
@@ -109,6 +107,7 @@ object Main extends MainErrors {
       FrontEnd.run(ctx)(sources)
     } catch {
       case e: CompilationException =>
+        print(e.header)
         print(e.getMessage)
         sys.exit(1)
     }
@@ -149,7 +148,7 @@ object Main extends MainErrors {
     import ctx.formatting.colors._
     val totalTime = ctx.executionTimes.values.sum
     val individualTimes = CompilerStages.map { stage =>
-      val name = Blue(stage.stageName.capitalize)
+      val name = Blue(stage.compilerStageName.capitalize)
       val time = ctx.executionTimes(stage)
       val t = Green(f"$time%.2f$Reset")
       f"$name%-25s $t s"

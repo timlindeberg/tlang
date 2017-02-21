@@ -1,10 +1,10 @@
 package tlang.compiler
 package analyzer
 
+import tlang.compiler.Main._
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.error.Errors
 import tlang.compiler.imports.ClassSymbolLocator._
-import tlang.compiler.main.Main._
 
 object Types {
 

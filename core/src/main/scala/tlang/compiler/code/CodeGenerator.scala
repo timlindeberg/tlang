@@ -514,7 +514,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   private def compileArguments(methodSymbol: MethodSymbol, args: List[ExprTree]) =
-    args.zip(methodSymbol.argList.map(_.getType)).foreach {
+    args.zip(methodSymbol.argTypes).foreach {
       case (givenExpr, expected) => compileAndConvert(givenExpr, expected)
     }
 

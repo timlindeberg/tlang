@@ -2,7 +2,7 @@ package tlang.compiler.error
 
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
-import tlang.compiler.main.Flags
+import tlang.compiler.options.Flags
 
 import scala.collection.mutable
 
@@ -51,8 +51,8 @@ case class DefaultReporter(
   errorContext: Int = Flags.ErrorContext.defaultValue
 ) extends Reporter {
 
-  val hitMax: mutable.Set[ErrorLevel]                               = mutable.Set()
-  val errors: mutable.Map[ErrorLevel, mutable.LinkedHashSet[Error]] = mutable.Map(
+  val hitMax  : mutable.Set[ErrorLevel]                       = mutable.Set()
+  val messages: Map[ErrorLevel, mutable.LinkedHashSet[Error]] = Map(
     ErrorLevel.Warning -> mutable.LinkedHashSet[Error](),
     ErrorLevel.Error -> mutable.LinkedHashSet[Error]()
   )
@@ -63,44 +63,53 @@ case class DefaultReporter(
   def report(error: Error): Unit = {
     val errorLevel = error.errorLevel
     if (errorLevel == ErrorLevel.Fatal) {
-      errors(ErrorLevel.Error) += error
-      throw new CompilationException(errorMessage)
+      messages(ErrorLevel.Error) += error
+      throwException()
     }
 
     if (errorLevel == ErrorLevel.Warning && warningIsError) {
       report(error.copy(errorLevel = ErrorLevel.Error))
       return
     }
-    if (maxErrors != -1 && errors(errorLevel).size >= maxErrors) {
+    if (maxErrors != -1 && messages(errorLevel).size >= maxErrors) {
       hitMax.add(errorLevel)
       return
     }
 
-    if (!isValidError(error) || errors(errorLevel).contains(error))
+    if (!isValidError(error) || messages(errorLevel).contains(error))
       return
 
-    errors(errorLevel) += error
+    messages(errorLevel) += error
   }
 
   def clear(): Unit = {
-    errors.values.foreach(_.clear())
+    messages.values.foreach(_.clear())
     hitMax.clear()
   }
 
   def terminateIfErrors(): Unit =
     if (hasErrors)
-      throw new CompilationException(errorMessage)
+      throwException()
 
-  def hasErrors: Boolean = errors(ErrorLevel.Error).nonEmpty
-  def hasWarnings: Boolean = errors(ErrorLevel.Warning).nonEmpty
+  def hasErrors: Boolean = messages(ErrorLevel.Error).nonEmpty
+  def hasWarnings: Boolean = messages(ErrorLevel.Warning).nonEmpty
 
-  def errorMessage: String = format(ErrorLevel.Error)
+  def errorMessage: String = formatMessages(ErrorLevel.Error)
 
-  def warningMessage: String = format(ErrorLevel.Warning)
+  def warningMessage: String = formatMessages(ErrorLevel.Warning)
 
-  private def format(errorLevel: ErrorLevel) = {
-    val n = errors(errorLevel).size
-    val (was, appendix) = if (n == 1) ("was", "s") else ("were", "")
+  def errorHeader: String = formatHeader(ErrorLevel.Error)
+  def warningHeader: String = formatHeader(ErrorLevel.Warning)
+
+  private def throwException() = {
+    val exception = new CompilationException(errorHeader, errorMessage)
+    clear()
+    throw exception
+  }
+
+  private def formatHeader(errorLevel: ErrorLevel) = {
+    val n = messages(errorLevel).size
+    val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
     val (color, name) = errorLevel match {
       case ErrorLevel.Error   => (Red, "error" + appendix)
@@ -109,15 +118,16 @@ case class DefaultReporter(
 
 
     val num = color(n)
-    val header = if (hitMax(errorLevel))
+    if (hitMax(errorLevel))
       s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
     else
       s"${Bold}There $was $num$Bold $name.$Reset"
+  }
 
-    formatting.makeBox(header, Nil) +
-      errors(errorLevel)
-        .map {ErrorFormatter(_, formatting, errorContext).format()}
-        .mkString
+  private def formatMessages(errorLevel: ErrorLevel) = {
+    messages(errorLevel)
+      .map {ErrorFormatter(_, formatting, errorContext).format()}
+      .mkString
   }
 
   private def isValidError(error: Error): Boolean = {

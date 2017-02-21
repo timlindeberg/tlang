@@ -2,12 +2,11 @@ package tlang.compiler.imports
 
 import java.io.File
 
-import tlang.compiler.Context
 import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexer
-import tlang.compiler.main.Main
+import tlang.compiler.{Context, Main}
 import tlang.utils.FileSource
 
 import scala.collection.mutable

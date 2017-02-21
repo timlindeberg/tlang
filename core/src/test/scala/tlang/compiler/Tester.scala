@@ -8,8 +8,7 @@ import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error.Boxes.Light
 import tlang.compiler.error.{DefaultReporter, Formatting, Reporter, VoidReporter}
 import tlang.compiler.imports.ClassSymbolLocator
-import tlang.compiler.main.Flags.LineWidth
-import tlang.compiler.main.Main
+import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, Source}
 
@@ -44,7 +43,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
         if (new File(withEnding).exists())
           withEnding
         else
-          throw new Exception(s"No such file: $f")
+          fail(s"No such file: $f")
       }
     }
     .getOrElse(Path)
@@ -75,7 +74,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
       files.flatMap(testFiles)
   }
 
-  protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String], errors: String = ""): String = {
+  protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
     var res = result
     var sol = solution
     if (res.size < sol.size)
@@ -90,18 +89,14 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     val list = ("", "Result:", "Solution:") :: numbered
 
     val failedLine = failedTest.toString
-    val results = list.map { case (i, r, s) =>
+    list.map { case (i, r, s) =>
       val lineNum = s"$i"
       val sizedStr = s"%-${colLength}s"
       val format = s"%-4s$sizedStr$sizedStr"
       val line = String.format(format, lineNum, r, s)
-      if (i == failedLine)
-        s"$line <<<<<"
-      else
-        line
-    }.mkString("\n", "\n", "\n")
 
-    if (errors == "") results else results + "\n" + errors
+      if (i == failedLine) s"$line <<<<<" else line
+    }.mkString("\n", "\n", "\n")
   }
 
   private def shouldBeIgnored(file: File): Boolean = {
@@ -135,7 +130,7 @@ object Tester {
 
     val (files, outDir) = file match {
       case Some(f) =>
-        val mainName = f.getName.replaceAll(Main.FileEnding, "")
+        val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
         (Set(f), Set(getOutDir(mainName)))
       case None    => (Set[File](), Set(new File(".")))
     }

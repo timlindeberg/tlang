@@ -48,59 +48,61 @@ trait ErrorTester extends Tester {
 
   private def parseSolutions(file: File): List[(Int, String)] = {
     val fileName = file.getPath
-    Source.fromFile(fileName).getLines().zipWithIndex.flatMap {
-      case (SolutionRegex(line), lineNumber) =>
-        line.split(",").map(res => (lineNumber + 1, res.trim))
-      case _                                 => Nil
-    }.toList
+    using(Source.fromFile(fileName)) { source =>
+      source.getLines().zipWithIndex.flatMap {
+        case (SolutionRegex(line), lineNumber) =>
+          line.split(",").map(res => (lineNumber + 1, res.trim))
+        case _                                 => Nil
+      }.toList
+    }
   }
 
   private val ErrorCode   = """(?:Fatal|Warning|Error) ([A-Z]\d\d\d\d)""".r
   private val LineNumbers = """(\d+)""".r // First number in error message is the line number
 
   private def parseErrorCodes(errorMessages: String, ctx: Context): List[(Int, String)] = {
-    import ctx.formatting._
-    val errors = errorMessages.clearAnsi.split(top).toList.drop(2)
+    val errors = errorMessages.clearAnsi.split(ctx.formatting.top).toList.drop(1)
+
     val lineNumbers = errors.map(LineNumbers.findFirstMatchIn(_).get.group(1).toInt)
     val errorCodes = errors.map(ErrorCode.findFirstMatchIn(_).get.group(1))
     lineNumbers.zip(errorCodes)
   }
 
-  private def assertCorrect(res: List[(Int, String)], sol: List[(Int, String)], errors: String): Unit = {
+  private def assertCorrect(results: List[(Int, String)], solutions: List[(Int, String)], errors: String): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
       val num = s"$lineNumber:"
       f"$num%-4s $msg"
     }
-    val resStrings = asString(res)
-    val solStrings = asString(sol)
+    val resStrings = asString(results)
+    val solStrings = asString(solutions)
 
+    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + "\n" + errors
 
     val resMap = mutable.HashMap[Int, ArrayBuffer[String]]()
-    res foreach { case (line, r) =>
+    results foreach { case (line, res) =>
       val l = resMap.getOrElse(line, ArrayBuffer[String]())
-      l += r.trim
+      l += res.trim
       resMap += line -> l
     }
 
-    sol.zipWithIndex foreach { case ((line, s), i) =>
-      val extraInfo = formatTestFailedMessage(i + 1, resStrings, solStrings, errors)
+
+    solutions.zipWithIndex foreach { case ((line, sol), i) =>
       resMap.get(line) match {
-        case Some(r) =>
-          val strim = s.trim
-          if (r.contains(strim))
-            r -= strim
+        case Some(res) =>
+          val strim = sol.trim
+          if (res.contains(strim))
+            res -= strim
           else
-            failTest(s"Expected $s on line $line but found ${r.mkString(", ")}", extraInfo)
-        case None    =>
-          val errMsg = s"Line $line did not produce $s"
-          System.err.println(s"$errMsg $extraInfo")
+            failTest(s"Expected $sol on line $line but found ${res.mkString(", ")}", extraInfo(i))
+        case None      =>
+          val errMsg = s"Line $line did not produce $sol"
+          System.err.println(s"$errMsg ${extraInfo(i)}")
           fail(errMsg)
       }
     }
-    val extraInfo = formatTestFailedMessage(-1, resStrings, solStrings, errors)
     resMap foreach { case (line, res) =>
       if (res.nonEmpty)
-        failTest(s"Unexpected '${res.mkString(", ")}' was found on line $line", extraInfo)
+        failTest(s"Unexpected '${res.mkString(", ")}' was found on line $line", extraInfo(-1))
     }
 
   }

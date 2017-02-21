@@ -5,8 +5,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.main.Main
-import tlang.compiler.{Context, Pipeline}
+import tlang.compiler.{Context, Main, Pipeline}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer

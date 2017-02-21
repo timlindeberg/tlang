@@ -6,7 +6,6 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.main.Main
 import tlang.compiler.utils._
 import tlang.utils.Extensions._
 
@@ -189,8 +188,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
-    methSymbol.args += (id.name -> newSymbol)
-    methSymbol.argList ++= List(newSymbol)
+    methSymbol.addArgument(newSymbol)
 
     // Don't put out warning when args is unused since it's implicitly defined
     // or if the method is abstract
