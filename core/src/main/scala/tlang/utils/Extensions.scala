@@ -1,5 +1,7 @@
 package tlang.utils
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.{ClassTag, _}
@@ -18,6 +20,19 @@ object Extensions {
     } finally {
       if (resource != null) resource.close()
     }
+  }
+
+  def stdoutOutput[T](block: => T): String = {
+    val sysOut = System.out
+    val bytes = new ByteArrayOutputStream()
+    System.setOut(new PrintStream(bytes))
+
+    block
+
+    System.out.flush()
+    val res = bytes.toString
+    System.setOut(sysOut)
+    res
   }
 
   def timed[T](block: => T): (T, Double) = {
@@ -105,6 +120,7 @@ object Extensions {
       }
       None
     }
+    def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]
   }
 
   implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {
