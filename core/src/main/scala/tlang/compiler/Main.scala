@@ -66,8 +66,7 @@ object Main extends MainErrors {
       sys.exit(1)
     }
 
-    if (!isValidTHomeDirectory(TDirectory))
-      FatalInvalidTHomeDirectory(TDirectory, THome)
+    checkTHome()
 
     if (options(Version)) {
       printVersion()
@@ -99,6 +98,11 @@ object Main extends MainErrors {
 
     if (options(Exec))
       executeProgram(ctx, cus)
+  }
+
+  def checkTHome(): Unit = {
+    if (!isValidTHomeDirectory(TDirectory))
+      FatalInvalidTHomeDirectory(TDirectory, THome)
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {

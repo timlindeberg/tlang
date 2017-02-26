@@ -98,7 +98,6 @@ object Extensions {
   implicit class AnyExtensions(val a: Any) extends AnyVal {
 
     def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
-
   }
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {

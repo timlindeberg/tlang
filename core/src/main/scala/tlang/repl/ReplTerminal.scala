@@ -1,0 +1,136 @@
+package tlang.repl
+
+import java.awt.event._
+import java.util.concurrent.TimeUnit
+
+import com.googlecode.lanterna.TextColor.ANSI
+import com.googlecode.lanterna.graphics.TextGraphics
+import com.googlecode.lanterna.input.KeyStroke
+import com.googlecode.lanterna.terminal.swing._
+import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
+import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
+import tlang.compiler.error.{Formatting, SyntaxHighlighter}
+import tlang.utils.Extensions._
+
+class ReplTerminal(formatting: Formatting) extends Terminal {
+
+  import formatting._
+  import formatting.colors._
+
+  private val backingTerminal = createTerminal()
+
+
+  private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
+
+  private var boxStartPos = getCursorPosition
+
+
+  def onClose(f: => Unit): Unit = {
+    backingTerminal.ifInstanceOf[SwingTerminalFrame] { swingTerminal =>
+      swingTerminal addWindowListener new WindowAdapter {
+        override def windowClosing(windowEvent: WindowEvent): Unit = f
+      }
+    }
+  }
+
+  def putBox(header: String, blocks: List[String]): Unit = {
+    val box = makeBox(header, blocks)
+    put(box)
+  }
+
+  def putResultBox(input: String, results: List[String]): Unit = {
+    setCursorPosition(boxStartPos)
+    val text = highlight(input)
+    putBox(Bold(Cyan("Result")), text :: results.mkString("\n") :: Nil)
+    boxStartPos = getCursorPosition
+  }
+
+  def putInputBox(input: String): Unit = {
+    setCursorPosition(boxStartPos)
+    val text = highlight(input)
+    putBox(Bold(Green("Input")), text :: Nil)
+    val lines = input.split("\n")
+    setCursorPosition(boxStartPos.withRelativeRow(2 + lines.length).withRelativeColumn(2 + lines.last.length))
+  }
+
+  def putWelcomeBox(): Unit = {
+    val header = Bold("Welcome to the ") + Green("T-Repl") + Bold("!")
+    val description =
+      s"""
+         |Type in code to have it evaluated or type one of the following commands:
+         |   ${Magenta(":help")}
+         |   ${Magenta(":quit")}
+         |   ${Magenta(":print")}
+     """.trim.stripMargin
+    putBox(header, List(description))
+    boxStartPos = getCursorPosition
+  }
+
+  def put(chars: IndexedSeq[Char]): Unit = {
+    var i = 0
+    while (i < chars.size) {
+      chars(i) match {
+        case '\u001b' if chars(i + 1) == '[' =>
+          val endOfAnsi = chars.indexOf('m', i + 1)
+          val ansi = chars.subSequence(i + 2, endOfAnsi).toString
+          ansi.split(":").map(_.toList).foreach {
+            case '0' :: Nil                           => resetColorAndSGR()
+            case '1' :: Nil                           => enableSGR(SGR.BOLD)
+            case '4' :: Nil                           => enableSGR(SGR.UNDERLINE)
+            case '3' :: c :: Nil if c in ('1' to '7') => setForegroundColor(getColor(c))
+            case '4' :: c :: Nil if c in ('1' to '7') => setBackgroundColor(getColor(c))
+            case _                                    =>
+          }
+          i = endOfAnsi
+        case c                               => putCharacter(c)
+      }
+      i += 1
+    }
+  }
+
+  private def highlight(text: String) = if (text.startsWith(":")) Magenta(text) else syntaxHighlighter(text)
+
+  private def getColor(char: Char) = char match {
+    case '0' => ANSI.BLACK
+    case '1' => ANSI.RED
+    case '2' => ANSI.GREEN
+    case '3' => ANSI.YELLOW
+    case '4' => ANSI.BLUE
+    case '5' => ANSI.MAGENTA
+    case '6' => ANSI.CYAN
+    case '7' => ANSI.WHITE
+    case _   => ???
+  }
+
+  override def disableSGR(sgr: SGR): Unit = backingTerminal.disableSGR(sgr)
+  override def resetColorAndSGR(): Unit = backingTerminal.resetColorAndSGR()
+  override def enterPrivateMode(): Unit = backingTerminal.enterPrivateMode()
+  override def newTextGraphics(): TextGraphics = backingTerminal.newTextGraphics()
+  override def enquireTerminal(timeout: Int, timeoutUnit: TimeUnit): Array[Byte] = backingTerminal.enquireTerminal(timeout, timeoutUnit)
+  override def exitPrivateMode(): Unit = backingTerminal.enterPrivateMode()
+  override def enableSGR(sgr: SGR): Unit = backingTerminal.enableSGR(sgr)
+  override def setCursorPosition(x: Int, y: Int): Unit = backingTerminal.setCursorPosition(x, y)
+  override def setCursorPosition(position: TerminalPosition): Unit = backingTerminal.setCursorPosition(position)
+  override def getTerminalSize: TerminalSize = backingTerminal.getTerminalSize
+  override def clearScreen(): Unit = backingTerminal.clearScreen()
+  override def bell(): Unit = backingTerminal.bell()
+  override def setCursorVisible(visible: Boolean): Unit = backingTerminal.setCursorVisible(visible)
+  override def putCharacter(c: Char): Unit = backingTerminal.putCharacter(c)
+  override def addResizeListener(listener: TerminalResizeListener): Unit = backingTerminal.addResizeListener(listener)
+  override def setBackgroundColor(color: TextColor): Unit = backingTerminal.setBackgroundColor(color)
+  override def removeResizeListener(listener: TerminalResizeListener): Unit = backingTerminal.removeResizeListener(listener)
+  override def setForegroundColor(color: TextColor): Unit = backingTerminal.setForegroundColor(color)
+  override def pollInput(): KeyStroke = backingTerminal.pollInput()
+  override def getCursorPosition: TerminalPosition = backingTerminal.getCursorPosition
+  override def flush(): Unit = backingTerminal.flush()
+  override def readInput(): KeyStroke = backingTerminal.readInput()
+
+  private def createTerminal() =
+    new DefaultTerminalFactory()
+      .setTerminalEmulatorColorConfiguration(
+        TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
+      .setTerminalEmulatorFontConfiguration(
+        SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 22)))
+      .createTerminal()
+
+}

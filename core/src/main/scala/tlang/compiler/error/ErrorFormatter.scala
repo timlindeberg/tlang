@@ -21,7 +21,7 @@ case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize
     }
 
   private val pos               = error.pos
-  private val lines             = pos.source.text.lines.toIndexedSeq
+  private val lines             = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
 
   def format(): String = {
@@ -29,7 +29,7 @@ case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize
 
     sb ++= top
 
-    val validPosition = 1 to lines.size contains pos.line
+    val validPosition = pos.hasSource && (1 to lines.size contains pos.line)
 
     if (validPosition)
       sb ++= sourceDescription

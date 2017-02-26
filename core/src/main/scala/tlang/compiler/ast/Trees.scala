@@ -14,7 +14,8 @@ import scala.collection.{TraversableLike, mutable}
 @GenerateTreeHelpers
 object Trees {
 
-  private val printer = PrettyPrinter(Colors(isActive = false))
+  private val printer      = PrettyPrinter(Colors(isActive = false))
+  private val colorPrinter = PrettyPrinter(Colors(isActive = true))
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -72,6 +73,8 @@ object Trees {
         case _                 => ???
       }
     }
+
+    def prettyPrint: this.type = {println(colorPrinter(this)); this}
   }
 
   // Signals that the node is a leaf and no further recursion is necessary
@@ -613,7 +616,6 @@ object Trees {
 
   // Used as a placeholder
   case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>"}
-
 
   // Statements that have no effect on their own.
   object UselessStatement {

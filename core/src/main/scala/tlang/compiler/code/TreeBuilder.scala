@@ -59,14 +59,14 @@ case class TreeBuilder() {
 
   private def createMethodId(methodSymbol: MethodSymbol): MethodID = MethodID(methodSymbol.name).setSymbol(methodSymbol)
 
-  def createVarDecl(idName: String, initExpression: ExprTree): VarDecl = {
+  def createVarDecl(idName: String, initExpression: ExprTree, prependDollar: Boolean = true): VarDecl = {
     val modifiers = scala.collection.immutable.Set[Modifier](Private())
     val tpe = initExpression.getType
     if (tpe == TUntyped)
       sys.error("Cannot create var decl from an untyped initial expression.")
 
     initExpression.setType(tpe)
-    val name = '$' + idName
+    val name = if (prependDollar) '$' + idName else idName
     val id = VariableID(name)
     val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
     val symbol = new VariableSymbol(idName)

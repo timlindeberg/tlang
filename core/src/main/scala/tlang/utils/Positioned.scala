@@ -55,6 +55,8 @@ trait Positioned {
     this
   }
 
+  def hasSource: Boolean = _source != null
+
   def source: Source = _source
   def line: Int = _lineStart
   def col: Int = _colStart

@@ -23,7 +23,8 @@ trait ErrorTester extends Tester {
     try {
       val sources = FileSource(file) :: Nil
       Pipeline.run(ctx)(sources)
-      // Check for warnings:
+
+      // If we got here there were no errors, check for warnings instaed
       if (!ctx.reporter.hasWarnings)
         fail("Test failed: No errors or warnings!")
 

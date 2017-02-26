@@ -52,7 +52,8 @@ lazy val core = project
       "org.ow2.asm" % "asm-all" % "5.1",
       "org.graphstream" % "gs-core" % "1.1.1",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-      "com.googlecode.lanterna" % "lanterna" % "3.0.0-beta3"
+      "com.googlecode.lanterna" % "lanterna" % "3.0.0-beta3",
+      "org.scalaz" %% "scalaz-core" % "7.2.9"
     ),
 
     parallelExecution in Test := false
