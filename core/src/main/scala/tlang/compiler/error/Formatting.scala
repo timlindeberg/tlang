@@ -4,9 +4,8 @@ import java.io.File
 
 import tlang.compiler.Main
 import tlang.compiler.error.Boxes.{Box, Simple}
-import tlang.compiler.utils.Enumeration
-import tlang.utils.Colors
 import tlang.utils.Extensions._
+import tlang.utils.{Colors, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.

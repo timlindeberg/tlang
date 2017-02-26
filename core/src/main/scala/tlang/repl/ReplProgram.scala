@@ -3,7 +3,7 @@ package tlang.repl
 import java.io.File
 import java.nio.file.Files
 
-import cafebabe.StackTrace
+import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
@@ -14,9 +14,8 @@ import tlang.compiler.error.SyntaxHighlighter
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
-import tlang.compiler.{Context, Pipeline}
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, ProgramExecutor, Source, StringSource}
+import tlang.utils.{Colors, ProgramExecutor, StringSource}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -29,13 +28,13 @@ case class ReplProgram(ctx: Context) {
 
   import ctx.formatting.colors._
 
-  private val TempDir: File = Files.createTempDirectory("repl").toFile
+  private val TempDir = Files.createTempDirectory("repl").toFile
   TempDir.deleteOnExit()
 
   private val ClassName        = "ReplClass"
   private val ReplOutputPrefix = "$ReplRes$"
   private val PrintPrefix      = Print(StringLit(ReplOutputPrefix))
-  private val ClassFile: File  = new File(TempDir.getAbsolutePath + File.separator + ClassName + ".class")
+  private val ClassFile        = new File(TempDir.getAbsolutePath + File.separator + ClassName + ".class")
   private val OutDirectories   = Set(TempDir)
   private val Ctx              = ctx.copy(outDirs = OutDirectories)
 
@@ -50,17 +49,15 @@ case class ReplProgram(ctx: Context) {
   private val newStatementTransformer = new NewStatementTransformer()
   private val syntaxHighlighter       = SyntaxHighlighter(ctx.formatting.colors)
 
-  private val parse   : Pipeline[Source, CompilationUnit]          = Lexer andThen Parser
-  private val frontEnd: Pipeline[CompilationUnit, CompilationUnit] =
-    Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
-  private val compile : Pipeline[CompilationUnit, StackTrace]      = Desugaring andThen CodeGeneration
+  private val parse    = Lexer andThen Parser
+  private val frontEnd = Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
+  private val compile  = Desugaring andThen CodeGeneration
 
-  private val classes      : mutable.Map[String, ClassDeclTree]  = mutable.Map()
-  private val fields       : mutable.Map[String, VarDecl]        = mutable.Map()
-  private val methods      : mutable.Map[String, MethodDeclTree] = mutable.Map()
-  private var history      : ListBuffer[StatTree]                = ListBuffer()
-  private var newStatements: List[StatTree]                      = Nil
-  private var resultCounter                                      = 0
+  private val classes       = mutable.Map[String, ClassDeclTree]()
+  private val methods       = mutable.Map[String, MethodDeclTree]()
+  private var history       = ListBuffer[StatTree]()
+  private var newStatements = List[StatTree]()
+  private var resultCounter = 0
 
   def execute(command: String): List[String] = {
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
@@ -93,7 +90,7 @@ case class ReplProgram(ctx: Context) {
 
     val block = Some(Block(stats))
     val mainMethod = MethodDeclTree.mainMethod(block, ReplClassSymbol)
-    val mainClass = ClassDecl(ReplClassID, Nil, fields.values.toList, mainMethod :: methods.values.toList).setSymbol(ReplClassSymbol)
+    val mainClass = ClassDecl(ReplClassID, Nil, Nil, mainMethod :: methods.values.toList).setSymbol(ReplClassSymbol)
     val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, new ImportMap(Ctx))
     val analyzed = frontEnd.run(Ctx)(cu :: Nil).head
     newStatementTransformer(analyzed).prettyPrint

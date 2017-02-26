@@ -6,10 +6,9 @@ import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.code.{CodeGeneration, Desugaring}
-import tlang.compiler.error.CompilationException
+import tlang.compiler.error.{CompilationException, ErrorLevel}
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
-import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 /**
@@ -40,8 +39,8 @@ trait ValidTester extends Tester {
       val sol = parseSolutions(file)
       assertCorrect(resLines, sol)
     } catch {
-      case t: CompilationException  =>
-        println(t.getMessage)
+      case e: CompilationException  =>
+        print(e.messages.formattedMessage(ErrorLevel.Error))
         fail("Compilation failed")
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
     }
@@ -49,14 +48,10 @@ trait ValidTester extends Tester {
 
   private def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList
 
-  private def parseSolutions(file: File): List[(Int, String)] = {
-    val fileName = file.getPath
-    using(io.Source.fromFile(fileName)) { source =>
-      source.getLines().zipWithIndex.collect {
-        case (SolutionRegex(line), lineNumber) => (lineNumber + 1, line.trim)
-      }.toList
-    }
-  }
+  private def parseSolutions(file: File): List[(Int, String)] =
+    Source.getText(file).lines.zipWithIndex.collect {
+      case (SolutionRegex(line), lineNumber) => (lineNumber + 1, line.trim)
+    }.toList
 
   private def assertCorrect(results: List[String], solutions: List[(Int, String)]): Unit = {
     def extraInfo(i: Int) = formatTestFailedMessage(i + 1, results, solutions.map(_._2))

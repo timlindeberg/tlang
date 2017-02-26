@@ -45,12 +45,14 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     boxStartPos = getCursorPosition
   }
 
-  def putInputBox(input: String): Unit = {
+  def putInputBox(commandBuffer: CommandBuffer): Unit = {
+    val input = commandBuffer.command
     setCursorPosition(boxStartPos)
     val text = highlight(input)
     putBox(Bold(Green("Input")), text :: Nil)
-    val lines = input.split("\n")
-    setCursorPosition(boxStartPos.withRelativeRow(2 + lines.length).withRelativeColumn(2 + lines.last.length))
+    val linePos = commandBuffer.translatedPosition
+    println("pos: " + linePos)
+    setCursorPosition(boxStartPos.withRelativeRow(3 + linePos._1).withRelativeColumn(2 + linePos._2))
   }
 
   def putWelcomeBox(): Unit = {

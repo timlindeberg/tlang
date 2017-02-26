@@ -5,7 +5,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter}
 import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.error.Boxes.Simple
-import tlang.compiler.error.{CompilationException, DefaultReporter, Formatting, SyntaxHighlighter}
+import tlang.compiler.error._
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.compiler.options.{Flags, Options}
@@ -91,7 +91,8 @@ object Main extends MainErrors {
     CodeGeneration.run(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
-      print(ctx.reporter.warningMessage)
+      print(ctx.reporter.messages.formattedMessage(ErrorLevel.Warning))
+
 
     if (options(Verbose))
       printExecutionTimes(ctx)
@@ -111,8 +112,7 @@ object Main extends MainErrors {
       FrontEnd.run(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        print(e.header)
-        print(e.getMessage)
+        print(e.messages.formattedMessage(ErrorLevel.Warning, ErrorLevel.Error))
         sys.exit(1)
     }
   }
@@ -123,9 +123,9 @@ object Main extends MainErrors {
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
         maxErrors = options(MaxErrors),
-        errorContext = options(ErrorContext),
         formatting = formatting
       ),
+      errorContext = options(ErrorContext),
       files = options.files,
       classPaths = options.classPaths,
       outDirs = options.outDirectories,

@@ -18,6 +18,7 @@ case class Context(
   formatting: Formatting = SimpleFormatting,
   printer: PrettyPrinter = PrettyPrinter(Colors(isActive = false)),
   printInfo: Boolean = false,
+  errorContext: Int = 2,
   ignoredImports: Set[String] = Set()
 ) {
 

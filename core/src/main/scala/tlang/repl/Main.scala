@@ -21,7 +21,7 @@ object Main {
     val colors = Colors(useColor, options.colorScheme)
 
 
-    val formatting = Formatting(options.boxType, 80, colors)
+    val formatting = Formatting(options.boxType, options(LineWidth), colors)
 
     tlang.compiler.Main.checkTHome()
 
@@ -34,7 +34,7 @@ object Main {
       printHelp(formatting, options(Help))
       sys.exit()
     }
-    
+
     val context = createContext(options, formatting)
 
     val replLoop = ReplLoop(context)

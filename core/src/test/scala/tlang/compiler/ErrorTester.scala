@@ -2,13 +2,11 @@ package tlang.compiler
 
 import java.io.File
 
-import tlang.compiler.error.CompilationException
-import tlang.utils.Extensions._
-import tlang.utils.FileSource
+import tlang.compiler.error.{CompilationException, Error, ErrorLevel}
+import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.io.Source
 
 /**
   * Created by Tim Lindeberg on 4/2/2016.
@@ -19,57 +17,43 @@ trait ErrorTester extends Tester {
 
   def testFile(file: File): Unit = {
     val ctx = Tester.getTestContext(Some(file))
+    val sources = FileSource(file) :: Nil
 
     try {
-      val sources = FileSource(file) :: Nil
       Pipeline.run(ctx)(sources)
-
-      // If we got here there were no errors, check for warnings instaed
-      if (!ctx.reporter.hasWarnings)
-        fail("Test failed: No errors or warnings!")
-
-
-      val warnings = ctx.reporter.warningMessage
-      if (PrintErrors)
-        print(warnings)
-
-      val expectedWarnings = parseSolutions(file)
-      val warningCodes = parseErrorCodes(warnings, ctx)
-      assertCorrect(warningCodes, expectedWarnings, warnings)
     } catch {
-      case t: CompilationException =>
-        val errors = t.getMessage
+      case e: CompilationException =>
         if (PrintErrors)
-          print(errors)
-        val errorCodes = parseErrorCodes(errors, ctx)
+          print(e.messages.formattedMessage(ErrorLevel.Error))
+        val errorCodes = getErrorCodes(e.messages(ErrorLevel.Error))
         val expectedErrors = parseSolutions(file)
-        assertCorrect(errorCodes, expectedErrors, errors)
+        assertCorrect(errorCodes, expectedErrors)
+        return
     }
+
+    // If we got here there were no errors, check for warnings instaed
+    val reporter = ctx.reporter
+    if (!reporter.hasWarnings)
+      fail("Test failed: No errors or warnings!")
+
+    if (PrintErrors)
+      print(reporter.messages.formattedMessage(ErrorLevel.Warning))
+
+    val expectedWarnings = parseSolutions(file)
+    val warningCodes = getErrorCodes(reporter.messages(ErrorLevel.Warning))
+    assertCorrect(warningCodes, expectedWarnings)
   }
 
-  private def parseSolutions(file: File): List[(Int, String)] = {
-    val fileName = file.getPath
-    using(Source.fromFile(fileName)) { source =>
-      source.getLines().zipWithIndex.flatMap {
-        case (SolutionRegex(line), lineNumber) =>
-          line.split(",").map(res => (lineNumber + 1, res.trim))
-        case _                                 => Nil
-      }.toList
-    }
-  }
+  private def getErrorCodes(errors: List[Error]) = errors.map { error => (error.pos.line, error.code) }
 
-  private val ErrorCode   = """(?:Fatal|Warning|Error) ([A-Z]\d\d\d\d)""".r
-  private val LineNumbers = """(\d+)""".r // First number in error message is the line number
+  private def parseSolutions(file: File): List[(Int, String)] =
+    Source.getText(file).lines.zipWithIndex.flatMap {
+      case (SolutionRegex(line), lineNumber) => line.split(",").map(res => (lineNumber + 1, res.trim))
+      case _                                 => Nil
+    }.toList
 
-  private def parseErrorCodes(errorMessages: String, ctx: Context): List[(Int, String)] = {
-    val errors = errorMessages.clearAnsi.split(ctx.formatting.top).toList.drop(1)
 
-    val lineNumbers = errors.map(LineNumbers.findFirstMatchIn(_).get.group(1).toInt)
-    val errorCodes = errors.map(ErrorCode.findFirstMatchIn(_).get.group(1))
-    lineNumbers.zip(errorCodes)
-  }
-
-  private def assertCorrect(results: List[(Int, String)], solutions: List[(Int, String)], errors: String): Unit = {
+  private def assertCorrect(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
       val num = s"$lineNumber:"
       f"$num%-4s $msg"
@@ -77,7 +61,7 @@ trait ErrorTester extends Tester {
     val resStrings = asString(results)
     val solStrings = asString(solutions)
 
-    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + "\n" + errors
+    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + "\n"
 
     val resMap = mutable.HashMap[Int, ArrayBuffer[String]]()
     results foreach { case (line, res) =>
@@ -86,21 +70,18 @@ trait ErrorTester extends Tester {
       resMap += line -> l
     }
 
-
     solutions.zipWithIndex foreach { case ((line, sol), i) =>
       resMap.get(line) match {
         case Some(res) =>
-          val strim = sol.trim
-          if (res.contains(strim))
-            res -= strim
-          else
+          val solTrimmed = sol.trim
+          if (!res.contains(solTrimmed))
             failTest(s"Expected $sol on line $line but found ${res.mkString(", ")}", extraInfo(i))
+          res -= solTrimmed
         case None      =>
-          val errMsg = s"Line $line did not produce $sol"
-          System.err.println(s"$errMsg ${extraInfo(i)}")
-          fail(errMsg)
+          failTest(s"Line $line did not produce $sol", extraInfo(i))
       }
     }
+
     resMap foreach { case (line, res) =>
       if (res.nonEmpty)
         failTest(s"Unexpected '${res.mkString(", ")}' was found on line $line", extraInfo(-1))

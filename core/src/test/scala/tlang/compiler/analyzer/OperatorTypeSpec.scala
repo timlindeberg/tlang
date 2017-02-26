@@ -5,6 +5,7 @@ import tlang.compiler.Tester
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.ErrorLevel
 import tlang.compiler.imports.ImportMap
 
 class OperatorTypeSpec extends FunSuite with Matchers {
@@ -322,8 +323,10 @@ class OperatorTypeSpec extends FunSuite with Matchers {
     def valid(expressionType: (VariableID, VariableID) => BinaryOperatorTree,
       validCombinations: (TypeConstructor, TypeConstructor, Type)*): Unit = {
 
+      val reporter = TestContext.reporter
       validCombinations.foreach { case (lhs, rhs, tpe) =>
-        TestContext.reporter.clear()
+
+        reporter.clear()
 
         val resType1 = TypeChecker.tcExpr(expressionType(rhs(), lhs()))
         assert(resType1 == tpe, "for (" + rhs + ", " + lhs + ")")
@@ -331,11 +334,10 @@ class OperatorTypeSpec extends FunSuite with Matchers {
         val resType2 = TypeChecker.tcExpr(expressionType(lhs(), rhs()))
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
-        val noErrors = !TestContext.reporter.hasErrors
-        if (!noErrors) {
-          println(TestContext.reporter.errorMessage)
+        if (reporter.hasErrors) {
+          print(TestContext.reporter.messages.formattedMessage(ErrorLevel.Error))
         }
-        assert(noErrors, "for (" + lhs + ", " + rhs + ")")
+        assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }
 
       getInvalidCombinations(validCombinations.toList).foreach { case (lhs, rhs) =>

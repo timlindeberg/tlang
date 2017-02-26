@@ -1,7 +1,8 @@
 package tlang.compiler
 package lexer
 
-import tlang.compiler.utils.{Enumeration, Positioned}
+import tlang.compiler.utils.Positioned
+import tlang.utils.Enumeration
 
 import scala.util.matching.Regex
 

@@ -91,8 +91,8 @@ trait ErrorLevel {
 }
 
 object ErrorLevel {
-  case object Warning extends ErrorLevel {val num = 1}
-  case object Error extends ErrorLevel {val num = 2}
-  case object Fatal extends ErrorLevel {val num = 3}
+  object Warning extends ErrorLevel {val num = 1}
+  object Error extends ErrorLevel {val num = 2}
+  object Fatal extends ErrorLevel {val num = 3}
 }
 

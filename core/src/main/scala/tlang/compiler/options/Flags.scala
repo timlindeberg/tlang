@@ -3,10 +3,9 @@ package tlang.compiler.options
 import tlang.compiler.code.Desugaring
 import tlang.compiler.error.Boxes.{Box, Simple}
 import tlang.compiler.error.{Boxes, Formatting}
-import tlang.compiler.utils.Enumeration
 import tlang.compiler.{Main, error}
-import tlang.utils.Colors
 import tlang.utils.Extensions._
+import tlang.utils.{Colors, Enumeration}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
