@@ -4,9 +4,9 @@ import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
 import tlang.compiler.error.Boxes
-import tlang.compiler.error.Boxes.Box
+import tlang.compiler.error.Boxes.{Box, Simple}
 import tlang.compiler.options.Flags._
-import tlang.compiler.{Main, MainErrors}
+import tlang.compiler.{Main, MainErrors, error}
 import tlang.utils.Colors
 import tlang.utils.Colors.{ColorScheme, DefaultColorScheme}
 import tlang.utils.Extensions._
@@ -149,6 +149,9 @@ case class Options(arguments: Array[String]) extends MainErrors {
       }
     }
   }
+
+  val colors    : Colors           = Colors(isActive = boxType != Simple, colorScheme)
+  val formatting: error.Formatting = error.Formatting(boxType, apply(LineWidth), colors)
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
     val validStages = Main.CompilerStages.map(_.compilerStageName)

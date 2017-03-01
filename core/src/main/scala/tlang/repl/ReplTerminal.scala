@@ -9,7 +9,7 @@ import com.googlecode.lanterna.input.KeyStroke
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
-import tlang.compiler.error.{Formatting, SyntaxHighlighter}
+import tlang.compiler.error.{AnsiWordWrapper, Formatting, SyntaxHighlighter}
 import tlang.utils.Extensions._
 
 class ReplTerminal(formatting: Formatting) extends Terminal {
@@ -21,9 +21,10 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
 
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
+  private val wordWrapper       = new AnsiWordWrapper
 
-  private var boxStartPos = getCursorPosition
-
+  private var boxStartPos        = getCursorPosition
+  private var lastInputBoxEndPos = getCursorPosition
 
   def onClose(f: => Unit): Unit = {
     backingTerminal.ifInstanceOf[SwingTerminalFrame] { swingTerminal =>
@@ -45,14 +46,24 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     boxStartPos = getCursorPosition
   }
 
+  def clearLines(num: Int): Unit = {
+    val clearLine = (" " * formatting.lineWidth) + "\n"
+    put(clearLine * num)
+  }
+
   def putInputBox(commandBuffer: CommandBuffer): Unit = {
     val input = commandBuffer.command
     setCursorPosition(boxStartPos)
     val text = highlight(input)
     putBox(Bold(Green("Input")), text :: Nil)
-    val linePos = commandBuffer.translatedPosition
-    println("pos: " + linePos)
-    setCursorPosition(boxStartPos.withRelativeRow(3 + linePos._1).withRelativeColumn(2 + linePos._2))
+    val currentPos = getCursorPosition
+
+    val diff = lastInputBoxEndPos.getRow - currentPos.getRow
+    if (diff > 0)
+      clearLines(diff)
+
+    lastInputBoxEndPos = getCursorPosition
+    setCursorPosition(boxStartPos.withRelativeRow(3 + commandBuffer.y).withRelativeColumn(2 + commandBuffer.x))
   }
 
   def putWelcomeBox(): Unit = {

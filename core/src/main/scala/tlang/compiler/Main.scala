@@ -4,12 +4,11 @@ import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter}
 import tlang.compiler.code.{CodeGeneration, Desugaring}
-import tlang.compiler.error.Boxes.Simple
 import tlang.compiler.error._
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.compiler.options.{Flags, Options}
-import tlang.utils.{Colors, FileSource, ProgramExecutor, Source}
+import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration
 
@@ -57,12 +56,9 @@ object Main extends MainErrors {
 
   def main(args: Array[String]) {
     val options = Options(args)
-    val useColor = options.boxType != Simple
-    val colors = Colors(useColor, options.colorScheme)
-    val formatting = error.Formatting(options.boxType, options(LineWidth), colors)
 
     if (args.isEmpty) {
-      printHelp(formatting)
+      printHelp(options.formatting)
       sys.exit(1)
     }
 
@@ -74,14 +70,14 @@ object Main extends MainErrors {
     }
 
     if (options(Help).nonEmpty) {
-      printHelp(formatting, options(Help))
+      printHelp(options.formatting, options(Help))
       sys.exit()
     }
 
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
-    ctx = createContext(options, formatting)
+    ctx = createContext(options)
 
     if (options(Verbose))
       printFilesToCompile(ctx)
@@ -117,13 +113,13 @@ object Main extends MainErrors {
     }
   }
 
-  private def createContext(options: Options, formatting: Formatting): Context =
+  private def createContext(options: Options): Context =
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
         maxErrors = options(MaxErrors),
-        formatting = formatting
+        formatting = options.formatting
       ),
       errorContext = options(ErrorContext),
       files = options.files,
@@ -132,8 +128,8 @@ object Main extends MainErrors {
       printCodeStages = options(PrintOutput),
       printInfo = options(Verbose),
       ignoredImports = options(IgnoreDefaultImports),
-      formatting = formatting,
-      printer = PrettyPrinter(formatting.colors)
+      formatting = options.formatting,
+      printer = PrettyPrinter(options.formatting.colors)
     )
 
   private def printFilesToCompile(ctx: Context) = {

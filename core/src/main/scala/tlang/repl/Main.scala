@@ -1,12 +1,13 @@
 package tlang.repl
 
+import java.io.File
+import java.nio.file.Files
+
 import tlang.compiler.Context
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.error.Boxes.Simple
 import tlang.compiler.error.{DefaultReporter, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
-import tlang.utils.Colors
 
 /**
   * Created by Tim Lindeberg on 2/13/2017.
@@ -15,13 +16,9 @@ object Main {
 
   val VersionNumber = "0.0.1"
 
+
   def main(args: Array[String]): Unit = {
     val options = Options(args)
-    val useColor = options.boxType != Simple
-    val colors = Colors(useColor, options.colorScheme)
-
-
-    val formatting = Formatting(options.boxType, options(LineWidth), colors)
 
     tlang.compiler.Main.checkTHome()
 
@@ -31,29 +28,34 @@ object Main {
     }
 
     if (options(Help).nonEmpty) {
-      printHelp(formatting, options(Help))
+      printHelp(options.formatting, options(Help))
       sys.exit()
     }
 
-    val context = createContext(options, formatting)
 
+    val tempDir = Files.createTempDirectory("repl").toFile
+    val context = createContext(options, tempDir)
     val replLoop = ReplLoop(context)
+
     replLoop.start()
+
+    tempDir.delete()
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, formatting: Formatting): Context =
+  private def createContext(options: Options, tempDir: File): Context =
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        maxErrors = options(MaxErrors),
+        maxErrors = 3,
         errorContext = options(ErrorContext),
-        formatting = formatting
+        formatting = options.formatting
       ),
-      formatting = formatting,
-      printer = PrettyPrinter(formatting.colors)
+      outDirs = Set(tempDir),
+      formatting = options.formatting,
+      printer = PrettyPrinter(options.formatting.colors)
     )
 
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {

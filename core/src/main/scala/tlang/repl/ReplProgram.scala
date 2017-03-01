@@ -1,7 +1,6 @@
 package tlang.repl
 
 import java.io.File
-import java.nio.file.Files
 
 import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
@@ -28,15 +27,11 @@ case class ReplProgram(ctx: Context) {
 
   import ctx.formatting.colors._
 
-  private val TempDir = Files.createTempDirectory("repl").toFile
-  TempDir.deleteOnExit()
 
-  private val ClassName        = "ReplClass"
+  private val ClassName        = "REPL"
   private val ReplOutputPrefix = "$ReplRes$"
   private val PrintPrefix      = Print(StringLit(ReplOutputPrefix))
-  private val ClassFile        = new File(TempDir.getAbsolutePath + File.separator + ClassName + ".class")
-  private val OutDirectories   = Set(TempDir)
-  private val Ctx              = ctx.copy(outDirs = OutDirectories)
+  private val ClassFile        = new File(ctx.outDirs.head.getAbsolutePath + File.separator + ClassName + ".class")
 
   private val ReplClassID        = ClassID(ClassName)
   private val ReplClassSymbol    = new ClassSymbol(ClassName, isAbstract = false)
@@ -66,13 +61,13 @@ case class ReplProgram(ctx: Context) {
 
     val definitionMessages = extractDefinitionsFromInput(command)
 
-    compile.run(Ctx)(generateCompilationUnit() :: Nil)
+    compile.run(ctx)(generateCompilationUnit() :: Nil)
 
     val executionMessages = programExecutor(ClassFile) match {
       case Some(res) =>
         res.lines
           .filter(_.startsWith(ReplOutputPrefix))
-          .map(_.drop(ReplOutputPrefix.length))
+          .map(msg => syntaxHighlighter(msg.drop(ReplOutputPrefix.length)))
           .toList
       case None      => List(s"Execution timed out after $maxDuration.")
     }
@@ -91,14 +86,14 @@ case class ReplProgram(ctx: Context) {
     val block = Some(Block(stats))
     val mainMethod = MethodDeclTree.mainMethod(block, ReplClassSymbol)
     val mainClass = ClassDecl(ReplClassID, Nil, Nil, mainMethod :: methods.values.toList).setSymbol(ReplClassSymbol)
-    val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, new ImportMap(Ctx))
-    val analyzed = frontEnd.run(Ctx)(cu :: Nil).head
+    val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, new ImportMap(ctx))
+    val analyzed = frontEnd.run(ctx)(cu :: Nil).head
     newStatementTransformer(analyzed).prettyPrint
   }
 
   private def parseInput(command: String) = {
     val input = StringSource(command, ClassName) :: Nil
-    parse.run(Ctx)(input).head
+    parse.run(ctx)(input).head
   }
 
   // Updates the internal state of the Repl Class and returns messages for all new
@@ -123,7 +118,7 @@ case class ReplProgram(ctx: Context) {
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     classes ++= newClasses.map(clazz => clazz.tpe.name -> clazz)
     newClasses.map { clazz =>
-      "Defined " + KeywordColor("class ") + VarColor(clazz.tpe.toString)
+      "Defined " + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
     }
   }
 
@@ -145,7 +140,7 @@ case class ReplProgram(ctx: Context) {
 
     newStatements = stats
     stats.filterInstance[VarDecl].map { variable =>
-      "Defined " + KeywordColor("variable ") + VarColor(variable.id.name)
+      "Defined " + KeywordColor("variable ") + syntaxHighlighter(variable.id.name)
     }
   }
 
