@@ -1,5 +1,9 @@
 package tlang.compiler.error
 
+import java.io.File
+
+import tlang.utils.FileSource
+
 import scala.collection.mutable
 
 /**
@@ -31,6 +35,7 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
     messages.values.foreach(_.clear())
     hitMax.clear()
   }
+
   def apply(errorLevel: ErrorLevel): List[Error] = messages(errorLevel).toList
   def contains(error: Error): Boolean = messages(error.errorLevel).contains(error)
 
@@ -49,12 +54,44 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
     sb.toString()
   }
 
-  private def formatMessages(messages: mutable.LinkedHashSet[Error]) =
-    messages
-      .map {ErrorFormatter(_, formatting, errorContext).format()}
-      .mkString
+  private def formatMessages(messages: mutable.LinkedHashSet[Error]) = {
+    import formatting._
+    import formatting.colors._
+
+    messages.map { error =>
+      val errorFormatter = ErrorFormatter(error, formatting, errorContext)
+      val sb = new StringBuilder
+
+      sb ++= top
+
+      val pos = error.pos
+      val lines = errorFormatter.lines
+
+      val validPosition = error.pos.hasSource && (1 to lines.size contains pos.line)
+
+      if (validPosition && error.pos.source.isInstanceOf[FileSource]) {
+        val file = error.pos.source.asInstanceOf[FileSource].file
+        val FileNameStyle = Bold + NumColor
+        val fileName = FileNameStyle(file.getName)
+        sb ++= file.getParent + File.separator + fileName + " | "
+        sb ++= errorFormatter.position
+      }
+
+      sb ++= makeLines(errorFormatter.errorPrefix + error.msg)
+
+
+      if (validPosition)
+        sb ++= makeBlocksWithColumns(errorFormatter.locationInFile, endOfBlock = true)
+      else
+        sb ++= bottom
+
+      sb.toString()
+    }.mkString
+  }
+
 
   private def formatHeader(errorLevel: ErrorLevel) = {
+
     import formatting.colors._
 
     val n = messages(errorLevel).size
@@ -68,9 +105,13 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
     val num = color(n)
     if (hitMax(errorLevel))
-      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
+      s"${
+        Bold
+      }There were more than $num$Bold $name, only showing the first $num$Reset."
     else
-      s"${Bold}There $was $num$Bold $name.$Reset"
+      s"${
+        Bold
+      }There $was $num$Bold $name.$Reset"
   }
 
 

@@ -6,8 +6,8 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.utils._
-import tlang.utils.Colors
 import tlang.utils.Extensions._
+import tlang.utils.{Colors, GenerateTreeHelpers}
 
 import scala.collection.{TraversableLike, mutable}
 

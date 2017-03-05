@@ -3,7 +3,6 @@ package tlang.utils
 import java.io.File
 
 import tlang.compiler.Main
-import tlang.compiler.error.Formatting
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -14,7 +13,6 @@ import scala.collection.mutable
 
 trait Source {
   def mainName: String
-  def description(formatting: Formatting): String
   def text: String
 }
 
@@ -29,16 +27,9 @@ case class FileSource(file: File) extends Source {
 
   override def mainName: String = file.getName.dropRight(Main.FileEnding.length)
   override def text: String = Source.getText(file)
-  override def description(formatting: Formatting): String = {
-    import formatting.colors._
-    val FileNameStyle = Bold + NumColor
-    val fileName = FileNameStyle(file.getName)
-    file.getParent + File.separator + fileName + " | "
-  }
 
 }
 
 case class StringSource(str: String, override val mainName: String) extends Source {
   override def text: String = str
-  override def description(formatting: Formatting) = ""
 }

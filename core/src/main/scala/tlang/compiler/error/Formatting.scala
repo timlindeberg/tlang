@@ -67,7 +67,7 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
     sb.toString()
   }
 
-  def makeBlockWithColumn(block: List[(String, String)]): String = {
+  def makeBlocksWithColumns(block: Traversable[(String, String)], endOfBlock: Boolean): String = {
     val sb = new StringBuilder
 
     val columnVars = block.unzip._1
@@ -87,18 +87,18 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
         val whiteSpaces = " " * (maxColumnWidth - columnWidth)
         │ + " " + col + whiteSpaces + " " + makeLine(line, width)
       }.mkString
-    sb ++= seperator(└, ┴, ┘, maxColumnWidth)
+    sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
     sb.toString
   }
 
-  def makeBoxWithColumn(header: String, block: List[(String, String)]): String = {
+  def makeBoxWithColumn(header: String, block: Traversable[(String, String)]): String = {
     val sb = new StringBuilder
     sb ++= makeHeader(header)
-    sb ++= makeBlockWithColumn(block)
+    sb ++= makeBlocksWithColumns(block, endOfBlock = true)
     sb.toString
   }
 
-  def makeBox(header: String, blocks: List[String]): String = {
+  def makeBox(header: String, blocks: Traversable[String]): String = {
     val sb = new StringBuilder
     sb ++= makeHeader(header)
     blocks foreach {sb ++= makeBlock(_)}

@@ -63,7 +63,7 @@ trait Errors {
         })
         sb ++= strings.next
       }
-      sb.toString
+      sb.toString + Reset
     }
   }
 

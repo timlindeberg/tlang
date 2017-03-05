@@ -9,7 +9,7 @@ import com.googlecode.lanterna.input.KeyStroke
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
-import tlang.compiler.error.{AnsiWordWrapper, Formatting, SyntaxHighlighter}
+import tlang.compiler.error._
 import tlang.utils.Extensions._
 
 class ReplTerminal(formatting: Formatting) extends Terminal {
@@ -21,7 +21,6 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
 
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
-  private val wordWrapper       = new AnsiWordWrapper
 
   private var boxStartPos        = getCursorPosition
   private var lastInputBoxEndPos = getCursorPosition
@@ -41,8 +40,27 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
   def putResultBox(input: String, results: List[String]): Unit = {
     setCursorPosition(boxStartPos)
-    val text = highlight(input)
-    putBox(Bold(Cyan("Result")), text :: results.mkString("\n") :: Nil)
+    putBox(Bold(Green("Result")), highlight(input) :: results.mkString("\n") :: Nil)
+    boxStartPos = getCursorPosition
+  }
+
+  def putErrorBox(input: String, errors: Seq[Error]): Unit = {
+    setCursorPosition(boxStartPos)
+    val sb = new StringBuilder
+
+    val markings = errors.map { errors => Marking(1, errors.pos, Bold + Underline + Red) }
+    sb ++= makeHeader(Bold(Red("Error")))
+    sb ++= divider
+    sb ++= makeLines(syntaxHighlighter(input, markings))
+
+    val lines = errors.map { error =>
+      val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
+      (errorFormatter.position, errorFormatter.errorPrefix + error.msg)
+    }
+
+    sb ++= makeBlocksWithColumns(lines, endOfBlock = true)
+
+    put(sb)
     boxStartPos = getCursorPosition
   }
 
@@ -52,10 +70,10 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   }
 
   def putInputBox(commandBuffer: CommandBuffer): Unit = {
-    val input = commandBuffer.command
+    val input = commandBuffer.text
     setCursorPosition(boxStartPos)
     val text = highlight(input)
-    putBox(Bold(Green("Input")), text :: Nil)
+    putBox(Bold(Magenta("Input")), text :: Nil)
     val currentPos = getCursorPosition
 
     val diff = lastInputBoxEndPos.getRow - currentPos.getRow
@@ -138,12 +156,11 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   override def flush(): Unit = backingTerminal.flush()
   override def readInput(): KeyStroke = backingTerminal.readInput()
 
-  private def createTerminal() =
-    new DefaultTerminalFactory()
-      .setTerminalEmulatorColorConfiguration(
-        TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
-      .setTerminalEmulatorFontConfiguration(
-        SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 22)))
-      .createTerminal()
-
+  private def createTerminal() = new DefaultTerminalFactory()
+    // .setForceTextTerminal(true)
+    .setTerminalEmulatorColorConfiguration(
+    TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
+    .setTerminalEmulatorFontConfiguration(
+      SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 16)))
+    .createTerminal()
 }

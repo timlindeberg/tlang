@@ -118,14 +118,14 @@ case class ReplProgram(ctx: Context) {
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     classes ++= newClasses.map(clazz => clazz.tpe.name -> clazz)
     newClasses.map { clazz =>
-      "Defined " + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
+      Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
     }
   }
 
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     methods ++= newMethods.map(meth => meth.signature -> meth)
     newMethods.map { meth =>
-      "Defined " + KeywordColor("method ") + syntaxHighlighter(meth.signature)
+      Bold("Defined ") + KeywordColor("method ") + syntaxHighlighter(meth.signature)
     }
   }
 
@@ -140,7 +140,7 @@ case class ReplProgram(ctx: Context) {
 
     newStatements = stats
     stats.filterInstance[VarDecl].map { variable =>
-      "Defined " + KeywordColor("variable ") + syntaxHighlighter(variable.id.name)
+      Bold("Defined ") + KeywordColor("variable ") + syntaxHighlighter(variable.id.name)
     }
   }
 

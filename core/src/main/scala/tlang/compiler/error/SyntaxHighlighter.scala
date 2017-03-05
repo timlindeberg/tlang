@@ -20,13 +20,14 @@ case class SyntaxHighlighter(colors: Colors) {
 
   val context = Context(VoidReporter(), Set())
 
-  def apply(code: String, markings: Marking*): String = {
+  def apply(code: String, markings: Seq[Marking] = Seq()): String = {
     if (!colors.isActive)
       return code
     val lines = code.split("\n", -1)
     val highlighted = lines.map(highlight(_, markings))
     highlighted.mkString("\n")
   }
+
 
   private def highlight(line: String, markings: Seq[Marking]): String = {
     if (line.isEmpty)
