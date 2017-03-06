@@ -6,7 +6,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error.Boxes.Light
-import tlang.compiler.error.{DefaultReporter, Formatting, Reporter, VoidReporter}
+import tlang.compiler.error._
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
@@ -112,21 +112,21 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
 object Tester {
 
-  val TestDirectory                = "gen"
-  val Resources                    = "core/src/test/resources/"
-  val Timeout                      = duration.Duration(2, "sec")
-  val IgnoreRegex    : Regex       = """.*// *[I|i]gnore.*""".r
-  val SolutionRegex  : Regex       = """.*// *[R|r]es:(.*)""".r
-  val UseColor       : Boolean     = !sys.env.get("usecolor").contains("false")
-  val PrintCodeStages: Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
+  val TestDirectory                    = "gen"
+  val Resources                        = "core/src/test/resources/"
+  val Timeout                          = duration.Duration(2, "sec")
+  val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
+  val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
+  val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
+  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
 
   def getTestContext(
     file: Option[File],
-    reporter: Option[Reporter] = None,
-    formatting: Option[Formatting] = None
+    reporter: Option[Reporter] = None
   ): Context = {
+
 
     val (files, outDir) = file match {
       case Some(f) =>
@@ -135,15 +135,21 @@ object Tester {
       case None    => (Set[File](), Set(new File(".")))
     }
 
-    val colors = Colors(UseColor)
-    val f = formatting.getOrElse(Formatting(Light, LineWidth.defaultValue, colors))
-    val r = reporter.getOrElse(DefaultReporter(formatting = f))
+
+    val colors = Colors(!UseSimpleFormatting)
+
+    val formatting =
+      if (UseSimpleFormatting)
+        SimpleFormatting
+      else
+        Formatting(Light, LineWidth.defaultValue, colors)
+    val r = reporter.getOrElse(DefaultReporter(formatting = formatting))
     Context(
       reporter = r,
       files = files,
       outDirs = outDir,
       printCodeStages = PrintCodeStages,
-      formatting = f,
+      formatting = formatting,
       printer = PrettyPrinter(colors))
   }
 

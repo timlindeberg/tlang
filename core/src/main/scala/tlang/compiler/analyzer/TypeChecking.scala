@@ -5,8 +5,8 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
-import tlang.utils.Extensions._
 import tlang.compiler.utils._
+import tlang.utils.Extensions._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -69,7 +69,7 @@ class TypeChecker(override var ctx: Context,
       return
 
     if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
-      ErrorCantInferTypeRecursiveMethod(currentMethodSymbol)
+      report(CantInferTypeRecursiveMethod(currentMethodSymbol))
       return
     }
 
@@ -107,7 +107,7 @@ class TypeChecker(override var ctx: Context,
         case _                          => return
       }
       if (tpe != correctOperatorType)
-        ErrorOperatorWrongReturnType(op.signature, correctOperatorType.toString, tpe.toString, op)
+        report(OperatorWrongReturnType(op, correctOperatorType, tpe))
     case _                  =>
   }
 
@@ -117,13 +117,13 @@ class TypeChecker(override var ctx: Context,
     case varDecl@VarDecl(tpe, id, init, _) =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
-        ErrorValueMustBeInitialized(varSym.name, varDecl)
+        report(ValueMustBeInitialized(varSym))
 
       (tpe, init) match {
         case (Some(tpe), Some(expr)) => tcExpr(expr, tpe.getType)
         case (None, Some(expr))      => id.setType(tcExpr(expr))
         case (Some(tpe), None)       => // Abstract
-        case (None, None)            => ErrorNoTypeNoInitalizer(varSym.name, varDecl)
+        case (None, None)            => report(NoTypeNoInitializer(varSym))
       }
     case If(condition, thn, els)           =>
       tcExpr(condition, Bool)
@@ -143,19 +143,19 @@ class TypeChecker(override var ctx: Context,
         case TArray(arrTpe)       =>
           arrTpe
         case TObject(classSymbol) =>
-          getIteratorType(classSymbol) getOrElse ErrorForeachNotIterable(containerType, container)
-        case _                    => ErrorForeachNotIterable(containerType, container)
+          getIteratorType(classSymbol) getOrElse report(ForeachNotIterable(container))
+        case _                    => report(ForeachNotIterable(container))
       }
       varDecl.id.getType match {
         case TUntyped                      => varDecl.id.setType(expectedVarType)
-        case tpe if tpe != expectedVarType => ErrorWrongType(expectedVarType, tpe, varDecl.id)
+        case tpe if tpe != expectedVarType => report(WrongType(expectedVarType, tpe, varDecl.id))
         case _                             =>
       }
       tcStat(stat)
     case PrintStatTree(expr)               =>
       tcExpr(expr)
       if (expr.getType == TUnit)
-        ErrorCantPrintUnitType(expr)
+        report(CantPrintUnitType(expr))
     case Error(expr)                       =>
       tcExpr(expr, String)
     case ret@Return(Some(expr))            =>
@@ -166,7 +166,7 @@ class TypeChecker(override var ctx: Context,
       returnStatements += ((ret, retType))
     case ret@Return(None)                  =>
       if (currentMethodSymbol.getType != TUntyped && currentMethodSymbol.getType != TUnit)
-        ErrorWrongReturnType(currentMethodSymbol.getType.toString, ret)
+        report(WrongReturnType(currentMethodSymbol.getType, ret))
       returnStatements += ((ret, TUnit))
     case _: Break | _: Continue            =>
     case expr: ExprTree                    =>
@@ -180,7 +180,7 @@ class TypeChecker(override var ctx: Context,
       case lit: Literal[_]                    => lit.getType
       case id: VariableID                     =>
         id.getSymbol.ifInstanceOf[FieldSymbol] { fieldSymbol =>
-          checkPrivacy(fieldSymbol.classSymbol, fieldSymbol, id, ErrorFieldPrivacy)
+          checkPrivacy(fieldSymbol, fieldSymbol.classSymbol, id)
         }
         id.getType
       case id: ClassID                        => id.getType
@@ -210,7 +210,7 @@ class TypeChecker(override var ctx: Context,
       case notOp@Not(expr)                    =>
         val tpe = tcExpr(expr)
         if (!tpe.isNullable && tpe != Bool)
-          ErrorNotOnNonNullable(notOp)
+          report(NotOnNonNullable(notOp))
 
         Bool
       case eqOp@EqualsOperatorTree(lhs, rhs)  =>
@@ -219,7 +219,7 @@ class TypeChecker(override var ctx: Context,
 
         if (lhsTpe == TNull || rhsTpe == TNull) {
           if (lhsTpe == TNull && !rhsTpe.isNullable || rhsTpe == TNull && !lhsTpe.isNullable)
-            ErrorNonNullableEqualsNull(rhs.getType, eqOp)
+            report(NonNullableEqualsNull(rhs.getType, eqOp))
           Bool
         } else if (lhsTpe.isInstanceOf[TArray] && rhsTpe.isInstanceOf[TArray]) {
           Bool
@@ -230,13 +230,13 @@ class TypeChecker(override var ctx: Context,
         tcBinaryOperator(binOp, tcExpr(lhs), tcExpr(rhs))
       case incOp@IncrementDecrementTree(obj)  =>
         if (!obj.isInstanceOf[Assignable])
-          ErrorInvalidIncrementDecrementExpr(incOp, incOp)
+          report(InvalidIncrementDecrementExpr(incOp))
 
         tcUnaryOperator(incOp, tcExpr(obj))
       case ExtractNullable(expr)              =>
         val exprTpe = tcExpr(expr)
         if (!exprTpe.isNullable)
-          ErrorExtractNullableNonNullable(exprTpe, expr)
+          report(ExtractNullableNonNullable(exprTpe, expr))
         exprTpe.getNonNullable
       case unaryOp@UnaryOperatorTree(expr)    =>
         tcUnaryOperator(unaryOp, tcExpr(expr))
@@ -267,7 +267,7 @@ class TypeChecker(override var ctx: Context,
       case Elvis(nullableValue, ifNull)       =>
         val nullableTpe = tcExpr(nullableValue)
         if (!nullableTpe.isNullable)
-          ErrorElvisOperatorNonNullable(nullableTpe, nullableValue)
+          report(ElvisOperatorNonNullable(nullableTpe, nullableValue))
         tcExpr(ifNull, nullableTpe)
         nullableTpe.getNonNullable
     }
@@ -279,7 +279,7 @@ class TypeChecker(override var ctx: Context,
     }
 
     val res = if (expected.nonEmpty && !expected.exists(correctType))
-      ErrorWrongType(expected, foundType, expression)
+      report(WrongType(expected, foundType, expression))
     else
       foundType
 
@@ -294,15 +294,15 @@ class TypeChecker(override var ctx: Context,
     tpe.getType match {
       case TObject(classSymbol) =>
         if (classSymbol.isAbstract) {
-          ErrorInstantiateTrait(classSymbol.name, newExpr)
+          report(InstantiateTrait(classSymbol.name, newExpr))
         } else {
           classSymbol.lookupMethod("new", argTypes, importMap) match {
             case Some(constructorSymbol) =>
-              checkPrivacy(classSymbol, constructorSymbol, newExpr, ErrorConstructorPrivacy)
+              checkPrivacy(constructorSymbol, classSymbol, newExpr)
               newExpr.setSymbol(constructorSymbol)
             case None if exprs.nonEmpty  =>
               val methodSignature = "new" + exprs.map(_.getType).mkString("(", ", ", ")")
-              ErrorDoesntHaveConstructor(tpe.name, methodSignature, newExpr)
+              report(DoesntHaveConstructor(tpe.name, methodSignature, newExpr))
             case _                       =>
               val defaultConstructor = new MethodSymbol("new", classSymbol, None, Set(Public()))
               newExpr.setSymbol(defaultConstructor)
@@ -336,7 +336,7 @@ class TypeChecker(override var ctx: Context,
         objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupMethod(meth.name, argTypes.get, importMap) map { methSymbol =>
-              checkPrivacy(classSymbol, methSymbol, app, ErrorMethodPrivacy)
+              checkPrivacy(methSymbol, classSymbol, app)
               checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
               TypeChecking.methodUsage += methSymbol -> true
               inferTypeOfMethod(methSymbol)
@@ -344,11 +344,11 @@ class TypeChecker(override var ctx: Context,
               meth.getType
             } getOrElse {
               val alternatives = classSymbol.methods.filter(_.argTypes == argTypes.get).map(_.name)
-              ErrorClassDoesntHaveMethod(classSymbol.name, methSignature, meth.name, alternatives, app)
+              report(ClassDoesntHaveMethod(classSymbol.name, methSignature, meth.name, alternatives, app))
             }
           case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
-              ErrorMethodOnWrongType(methSignature, objType.toString, app)
+              report(MethodOnWrongType(methSignature, objType.toString, app))
             meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
             Int
           case _                    => TError
@@ -357,15 +357,15 @@ class TypeChecker(override var ctx: Context,
         objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupField(fieldName) map { fieldSymbol =>
-              checkPrivacy(classSymbol, fieldSymbol, app, ErrorFieldPrivacy)
+              checkPrivacy(fieldSymbol, classSymbol, app)
               checkStaticFieldConstraints(acc, classSymbol, fieldSymbol, app)
               fieldId.setSymbol(fieldSymbol)
               fieldId.getType
             } getOrElse {
               val alternatives = classSymbol.fields.keys.toList
-              ErrorClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app)
+              report(ClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app))
             }
-          case _                    => ErrorFieldOnWrongType(objType.toString, app)
+          case _                    => TError
         }
     }
 
@@ -373,7 +373,7 @@ class TypeChecker(override var ctx: Context,
     val t = acc match {
       case _: SafeAccess   =>
         if (!objType.isNullable)
-          ErrorSafeAccessOnNonNullable(objType, acc)
+          report(SafeAccessOnNonNullable(objType, acc))
         tpe.getNullable
       case _: NormalAccess => tpe
     }
@@ -426,13 +426,13 @@ class TypeChecker(override var ctx: Context,
             thisSymbol.lookupParentMethod(meth.name, argTypes.get, importMap) map {
               _.classSymbol
             } getOrElse {
-              return ErrorNoSuperTypeHasMethod(thisSymbol.name, methSignature, app)
+              return report(NoSuperTypeHasMethod(thisSymbol.name, methSignature, app))
             }
           case Identifier(fieldName) =>
             thisSymbol.lookupParentField(fieldName).map {
               _.classSymbol
             } getOrElse {
-              return ErrorNoSuperTypeHasField(thisSymbol.name, fieldName, app)
+              return report(NoSuperTypeHasField(thisSymbol.name, fieldName, app))
             }
           case _                     => ???
         }
@@ -455,7 +455,7 @@ class TypeChecker(override var ctx: Context,
         toTpe
       case Access(_, application) =>
         application match {
-          case _: MethodCall => ErrorAssignValueToMethodCall(assignment)
+          case _: MethodCall => report(AssignValueToMethodCall(assignment))
           case _: VariableID =>
             val toTpe = tcExpr(to)
             tcExpr(expr, toTpe)
@@ -485,18 +485,18 @@ class TypeChecker(override var ctx: Context,
     val argList = List(arg1, arg2)
     typeCheckOperator(arg1, operator, argList)
       .orElse(typeCheckOperator(arg2, operator, argList))
-      .getOrElse(ErrorOverloadedOperatorNotFound(operator, argList, operator))
+      .getOrElse(report(OverloadedOperatorNotFound(operator, argList, operator)))
   }
 
   def tcUnaryOperator(expr: OperatorTree, arg: Type): Type = {
     val argList = List(arg)
     typeCheckOperator(arg, expr, argList)
-      .getOrElse(ErrorOverloadedOperatorNotFound(expr, argList, expr))
+      .getOrElse(report(OverloadedOperatorNotFound(expr, argList, expr)))
   }
 
   def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
     typeCheckOperator(classTpe, opType, argList)
-      .getOrElse(ErrorIndexingOperatorNotFound(opType, argList, arrTpe.toString, pos))
+      .getOrElse(report(IndexingOperatorNotFound(opType, argList, arrTpe.toString, pos)))
   }
 
   def checkMethodUsage(): Unit = {
@@ -504,32 +504,20 @@ class TypeChecker(override var ctx: Context,
     // TODO: Refactoring of typechecker global variables etc.
     methodUsage
       .filter { case (_, used) => !used }
-      .foreach { case (method, _) => WarningUnusedPrivateMethod(method.signature, method) }
+      .foreach { case (method, _) => report(UnusedPrivateMethod(method.signature, method)) }
     methodUsage = Map[MethodSymbol, Boolean]()
   }
 
   def checkCorrectOverrideReturnTypes(cu: CompilationUnit): Unit =
-    cu.classes.foreach {
-      clazz =>
-        clazz.methods.foreach {
-          meth =>
-            val classSymbol = clazz.getSymbol
-            val methSymbol = meth.getSymbol
-            val methType = meth.getSymbol.getType
-            classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, importMap)
-              .filter { parentMeth =>
-                parentMeth.getType != methType && !methType.isSubTypeOf(parentMeth.getType)
-              }
-              .foreach { parentMeth =>
-                ErrorOverridingMethodDifferentReturnType(meth.getSymbol.signature,
-                  classSymbol.name,
-                  meth.getSymbol.getType.toString,
-                  parentMeth.classSymbol.name,
-                  parentMeth.getType.toString,
-                  meth
-                )
-              }
-        }
+    cu.classes.foreach { clazz =>
+      clazz.methods.foreach { meth =>
+        val classSymbol = clazz.getSymbol
+        val methSymbol = meth.getSymbol
+        val methType = meth.getSymbol.getType
+        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, importMap)
+          .filter { parentMeth => parentMeth.getType != methType && !methType.isSubTypeOf(parentMeth.getType) }
+          .foreach { parentMeth => report(OverridingMethodDifferentReturnType(methSymbol, parentMeth)) }
+      }
     }
 
 
@@ -541,20 +529,20 @@ class TypeChecker(override var ctx: Context,
   private def typeCheckOperator(classType: Type, operator: OperatorTree, args: List[Type]): Option[Type] =
     operator.lookupOperator(classType, args, importMap).map { operatorSymbol =>
       val classSymbol = classType.asInstanceOf[TObject].classSymbol
-      checkPrivacy(classSymbol, operatorSymbol, operator, ErrorOperatorPrivacy)
+      checkPrivacy(operatorSymbol, classSymbol, operator)
       inferTypeOfMethod(operatorSymbol)
       operator.setType(operatorSymbol.getType)
       operatorSymbol.getType
     }
 
-  private def checkTraitIsImplemented(classDecl: IDClassDeclTree, implementedTrait: ClassSymbol) =
-    implementedTrait.abstractMethods()
-      .filter { case (method, _) => !classDecl.getSymbol.implementsMethod(method) }
-      .foreach { case (method, owningTrait) =>
-        ErrorUnimplementedMethodFromTrait(classDecl.id.name,
-          method.signature,
-          owningTrait.name, classDecl.id)
-      }
+  private def checkTraitIsImplemented(classDecl: IDClassDeclTree, implementedTrait: ClassSymbol) = {
+    val classSymbol = classDecl.getSymbol
+    val unimplementedMethods = implementedTrait.abstractMethods()
+      .filter { case (method, _) => !classSymbol.implementsMethod(method) }
+
+    if (unimplementedMethods.nonEmpty)
+      report(UnimplementedMethodFromTrait(classDecl, unimplementedMethods))
+  }
 
 
   /**
@@ -588,27 +576,23 @@ class TypeChecker(override var ctx: Context,
 
   private def checkStaticMethodConstraints(acc: Access, classSymbol: ClassSymbol, methodSymbol: MethodSymbol, pos: Positioned) = {
     if (!methodSymbol.isStatic && acc.isStatic)
-      ErrorNonStaticMethodAsStatic(methodSymbol.name, pos)
+      report(NonStaticMethodAsStatic(methodSymbol.name, pos))
 
     if (acc.obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !methodSymbol.isStatic)
-      ErrorNonStaticMethodFromStatic(methodSymbol.name, pos)
+      report(NonStaticMethodFromStatic(methodSymbol.name, pos))
   }
 
   private def checkStaticFieldConstraints(acc: Access, classSymbol: ClassSymbol, varSymbol: FieldSymbol, pos: Positioned) = {
     if (!varSymbol.isStatic && acc.isStatic)
-      ErrorNonStaticFieldAsStatic(varSymbol.name, pos)
+      report(NonStaticFieldAsStatic(varSymbol.name, pos))
 
     if (acc.obj.isInstanceOf[This] && currentMethodSymbol.isStatic && !varSymbol.isStatic)
-      ErrorNonStaticFieldFromStatic(varSymbol.name, pos)
+      report(NonStaticFieldFromStatic(varSymbol.name, pos))
   }
 
-  private def checkPrivacy[Sym <: Symbol with Modifiable](
-    classSymbol: ClassSymbol,
-    sym: Sym,
-    pos: Positioned,
-    error: (Sym, String, String, Positioned) => Type) = {
+  private def checkPrivacy(sym: Symbol with Modifiable, classSymbol: ClassSymbol, pos: Positioned) = {
     if (!isValidAccess(classSymbol, sym.accessability))
-      error(sym, classSymbol.name, currentMethodSymbol.classSymbol.name, pos)
+      report(InvalidPrivacyAccess(sym, classSymbol, currentMethodSymbol.classSymbol, pos))
   }
 
   private def isValidAccess(classSymbol: ClassSymbol, access: Accessability) = access match {

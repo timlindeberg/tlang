@@ -11,53 +11,61 @@ import scala.collection.mutable
   */
 case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: Int) {
 
-  import ErrorLevel._
+  import formatting._
+  import formatting.colors._
 
-  private val hitMax: mutable.Set[ErrorLevel] = mutable.Set()
+  private var hitMaxWarnings = false
+  private var hitMaxErrors   = false
+  val warnings: mutable.LinkedHashSet[Warning]      = mutable.LinkedHashSet()
+  val errors  : mutable.LinkedHashSet[ErrorMessage] = mutable.LinkedHashSet()
 
-  private val messages: Map[ErrorLevel, mutable.LinkedHashSet[Error]] = Map(
-    Warning -> mutable.LinkedHashSet[Error](),
-    Error -> mutable.LinkedHashSet[Error]()
-  )
+  def getErrors: List[ErrorMessage] = errors.toList
+  def getWarnings: List[Warning] = warnings.toList
 
-  def +=(error: Error): ErrorMessages = {
-    val errorLevel = if (error.errorLevel == Fatal) Error else error.errorLevel
-
-    if (maxErrors != -1 && messages(errorLevel).size >= maxErrors) {
-      hitMax.add(errorLevel)
-      return this
+  def +=(error: ErrorMessage): ErrorMessages = {
+    error match {
+      case warning: Warning =>
+        if (maxErrors != -1 && warnings.size >= maxErrors) {
+          hitMaxWarnings = true
+          return this
+        }
+        warnings += warning
+      case _                =>
+        if (maxErrors != -1 && errors.size >= maxErrors) {
+          hitMaxErrors = true
+          return this
+        }
+        errors += error
     }
-    messages(errorLevel) += error
     this
   }
 
   def clear(): Unit = {
-    messages.values.foreach(_.clear())
-    hitMax.clear()
+    warnings.clear()
+    errors.clear()
+    hitMaxErrors = false
+    hitMaxWarnings = false
   }
 
-  def apply(errorLevel: ErrorLevel): List[Error] = messages(errorLevel).toList
-  def contains(error: Error): Boolean = messages(error.errorLevel).contains(error)
-
-  def formattedMessage(errorLevels: ErrorLevel*): String = {
+  def formattedWarnings: String = {
     val sb = new StringBuilder
-    val warnings = formatMessages(messages(Warning))
-    if (warnings.nonEmpty && errorLevels.contains(Warning)) {
-      sb ++= formatHeader(Warning)
-      sb ++= warnings
+    val messages = formatMessages(warnings)
+    if (messages.nonEmpty) {
+      sb ++= warningHeader
+      sb ++= messages
     }
 
-    if (errorLevels.contains(Error)) {
-      sb ++= formatHeader(Error)
-      sb ++= formatMessages(messages(Error))
-    }
     sb.toString()
   }
 
-  private def formatMessages(messages: mutable.LinkedHashSet[Error]) = {
-    import formatting._
-    import formatting.colors._
+  def formattedErrors: String = {
+    val sb = new StringBuilder
+    sb ++= errorHeader
+    sb ++= formatMessages(errors)
+    sb.toString()
+  }
 
+  private def formatMessages(messages: mutable.LinkedHashSet[_ <: ErrorMessage]): String = {
     messages.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContext)
       val sb = new StringBuilder
@@ -71,13 +79,14 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
       if (validPosition && error.pos.source.isInstanceOf[FileSource]) {
         val file = error.pos.source.asInstanceOf[FileSource].file
-        val FileNameStyle = Bold + NumColor
-        val fileName = FileNameStyle(file.getName)
-        sb ++= file.getParent + File.separator + fileName + " | "
-        sb ++= errorFormatter.position
+        val fileNameStyle = Bold + NumColor
+        val fileName = fileNameStyle(file.getName)
+        val fileDescription = file.getParent + File.separator + fileName
+        val sourceDescription = errorFormatter.position + " " + fileDescription
+        sb ++= makeLines(sourceDescription)
       }
 
-      sb ++= makeLines(errorFormatter.errorPrefix + error.msg)
+      sb ++= makeLines(errorFormatter.errorPrefix + error.message)
 
 
       if (validPosition)
@@ -89,30 +98,33 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
     }.mkString
   }
 
-
-  private def formatHeader(errorLevel: ErrorLevel) = {
-
-    import formatting.colors._
-
-    val n = messages(errorLevel).size
+  private def warningHeader = {
+    val n = warnings.size
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
-    val (color, name) = errorLevel match {
-      case ErrorLevel.Error   => (Red, "error" + appendix)
-      case ErrorLevel.Warning => (Yellow, "warning" + appendix)
-    }
+    val name = "warning" + appendix
 
-
-    val num = color(n)
-    if (hitMax(errorLevel))
-      s"${
-        Bold
-      }There were more than $num$Bold $name, only showing the first $num$Reset."
+    val num = Yellow(n)
+    val text = if (hitMaxWarnings)
+      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
     else
-      s"${
-        Bold
-      }There $was $num$Bold $name.$Reset"
+      s"${Bold}There $was $num$Bold $name.$Reset"
+    makeBox(text, Nil)
   }
 
+
+  private def errorHeader = {
+    val n = errors.size
+    val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
+
+    val name = "error" + appendix
+
+    val num = Red(n)
+    val text = if (hitMaxErrors)
+      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
+    else
+      s"${Bold}There $was $num$Bold $name.$Reset"
+    makeBox(text, Nil)
+  }
 
 }

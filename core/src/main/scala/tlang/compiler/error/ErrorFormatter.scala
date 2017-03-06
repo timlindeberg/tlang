@@ -6,29 +6,27 @@ import tlang.utils.Colors.Color
 /**
   * Created by Tim Lindeberg on 1/14/2017.
   */
-case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize: Int) {
+case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int) {
 
   import formatting._
   import formatting.colors._
 
   val NonColoredIndicationChar = "~"
 
-  val ErrorColor: Color =
-    error.errorLevel match {
-      case ErrorLevel.Warning => Yellow + Bold
-      case ErrorLevel.Error   => Red + Bold
-      case ErrorLevel.Fatal   => Red + Bold
-    }
+  val ErrorColor: Color = error match {
+    case _: Warning => Yellow + Bold
+    case _          => Red + Bold
+  }
 
   val pos  : Positioned         = error.pos
   val lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
   val syntaxHighlighter         = SyntaxHighlighter(formatting.colors)
 
   def errorPrefix: String = {
-    val pre = error.errorLevel match {
-      case ErrorLevel.Warning => "Warning"
-      case ErrorLevel.Error   => "Error"
-      case ErrorLevel.Fatal   => "Fatal"
+    val pre = error match {
+      case _: Warning => "Warning"
+      case _: Error   => "Error"
+      case _: Fatal   => "Fatal"
     }
     ErrorColor(pre + " " + error.code) + ": "
   }
@@ -44,8 +42,8 @@ case class ErrorFormatter(error: Error, formatting: Formatting, errorContextSize
 
     val lines = if (colors.isActive)
       ctxLines.map { case (lineNum, line) =>
-        val markings = Seq(Marking(lineNum, pos, Underline + ErrorColor))
-        (lineNum.toString, syntaxHighlighter(line, markings))
+        val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
+        (lineNum.toString, syntaxHighlighter(line, marking))
       }
     else
       ctxLines.flatMap { case (lineNum, line) =>

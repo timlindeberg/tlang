@@ -85,7 +85,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     val templateTypes = templateClass.id.templateTypes
     templateTypes foreach { tType =>
       if (seen(tType) && !reportedFor(tType)) {
-        ErrorSameName(tType.name, tType)
+        report(SameName(tType.name, tType))
         reportedFor += tType
       }
       seen += tType
@@ -148,7 +148,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
           }
           val generatedClass = newTemplateClass(templateCU, typeId)
           templateCU.classes ::= generatedClass
-        case None             => ErrorDoesNotExist(typeId.name, typeId)
+        case None             => report(ClassDoesNotExist(typeId.name, typeId))
       }
     }
 
@@ -227,7 +227,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
 
     private def constructTemplateMapping(typedId: ClassID, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
       if (templateTypes.size != templateList.size) {
-        ErrorWrongNumGenerics(templateList.size, templateTypes.size, typedId)
+        report(WrongNumGenerics(templateList.size, templateTypes.size, typedId))
         Map()
       } else {
         templateList.zip(templateTypes).toMap

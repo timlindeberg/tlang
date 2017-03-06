@@ -6,7 +6,7 @@ import java.io.{File, FileWriter}
 
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
-import tlang.compiler.error.{CompilationException, ErrorLevel, ErrorMessages}
+import tlang.compiler.error.{CompilationException, ErrorMessages}
 import tlang.utils.Extensions._
 import tlang.utils.{Enumerable, Enumeration}
 
@@ -16,8 +16,8 @@ import scalaz.Cord
 /**
   * Created by Tim Lindeberg on 2/25/2017.
   */
-case class ReplLoop(ctx: Context) {
-  
+case class Loop(ctx: Context) {
+
   private val MaxRedoSize       = 500
   private val TabSize           = 4
   private val HistorySeperator  = "★"
@@ -129,7 +129,7 @@ case class ReplLoop(ctx: Context) {
           saveCommand(command)
           evaluate(command) match {
             case Right(messages)     => terminal.putResultBox(command, messages)
-            case Left(errorMessages) => terminal.putErrorBox(command, errorMessages(ErrorLevel.Error))
+            case Left(errorMessages) => terminal.putErrorBox(command, errorMessages.getErrors)
           }
         }
       }

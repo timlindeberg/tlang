@@ -2,24 +2,24 @@ var a1 = new A() // res: T2009
 var a2 = new A(1) // res: T2009
 var a = new A("")
 
-a.A() // res: T2010
-a.B() // res: T2010
+a.A() // res: T2009
+a.B() // res: T2009
 a.C()
 
-A.D() // res: T2010
-A.E() // res: T2010
+A.D() // res: T2009
+A.E() // res: T2009
 A.F()
 
-print(a.x) // res: T2011
-print(a.y) // res: T2011
+print(a.x) // res: T2009
+print(a.y) // res: T2009
 print(a.z)
 
-print(a1 + a2) // res: T2012
-print(a1 - a2) // res: T2012
+print(a1 + a2) // res: T2009
+print(a1 - a2) // res: T2009
 print(a1 * a2)
 
-print(a[1]) // res: T2012
-a[1] = 1 // res: T2012
+print(a[1]) // res: T2009
+a[1] = 1 // res: T2009
 
 class A {
 

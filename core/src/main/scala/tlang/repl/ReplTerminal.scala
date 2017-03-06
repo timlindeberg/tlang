@@ -44,18 +44,18 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     boxStartPos = getCursorPosition
   }
 
-  def putErrorBox(input: String, errors: Seq[Error]): Unit = {
+  def putErrorBox(input: String, errors: List[ErrorMessage]): Unit = {
     setCursorPosition(boxStartPos)
     val sb = new StringBuilder
 
-    val markings = errors.map { errors => Marking(1, errors.pos, Bold + Underline + Red) }
+    val markings = errors.map { errors => Marking(errors.pos, Bold + Underline + Red) }
     sb ++= makeHeader(Bold(Red("Error")))
     sb ++= divider
     sb ++= makeLines(syntaxHighlighter(input, markings))
 
     val lines = errors.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
-      (errorFormatter.position, errorFormatter.errorPrefix + error.msg)
+      (errorFormatter.position, errorFormatter.errorPrefix + error.message)
     }
 
     sb ++= makeBlocksWithColumns(lines, endOfBlock = true)

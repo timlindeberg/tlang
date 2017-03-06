@@ -1,42 +1,48 @@
 package tlang.compiler.imports
 
 import tlang.compiler.ast.Trees.ExtensionImport
-import tlang.compiler.error.{ErrorLevel, Errors}
+import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.compiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/14/2016.
   */
-trait ImportErrors extends Errors {
+trait ImportErrors extends ErrorHandling {
 
-  override val ErrorLetters = "I"
 
-  def error(errorCode: Int, msg: String, pos: Positioned): Unit =
-    report(errorCode, msg, ErrorLevel.Error, pos)
+  def report(error: Error): Unit = ctx.reporter.report(error)
 
+  val ErrorLetters = "I"
+  abstract class ImportError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+  abstract class ImportWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorCantResolveImport(imp: String, pos: Positioned): Unit =
-    error(0, err"Cannot resolve import $imp.", pos)
+  case class CantResolveImport(imp: String, override val pos: Positioned) extends ImportError(0, pos) {
+    lazy val message = err"Cannot resolve import $imp."
+  }
 
-  protected def ErrorConflictingImport(imp1: String, imp2: String, pos: Positioned): Unit =
-    error(1, err"Imports $imp1 and $imp2 are conflicting.", pos)
+  case class ConflictingImport(imp1: String, imp2: String, override val pos: Positioned) extends ImportError(1, pos) {
+    lazy val message = err"Imports $imp1 and $imp2 are conflicting."
+  }
 
-  protected def ErrorCantResolveExtensionsImport(imp: ExtensionImport, pos: Positioned): Unit =
-    error(2, err"Cannot resolve extension import $imp.", pos)
+  case class CantResolveExtensionsImport(imp: ExtensionImport, override val pos: Positioned) extends ImportError(2, pos) {
+    lazy val message = err"Cannot resolve extension import $imp."
+  }
 
-  protected def ErrorDefaultImportDoesntExist(ignoredImport: String, pos: Positioned): Unit =
-    error(3, err"There is no default import called $ignoredImport.", pos)
+  case class DefaultImportDoesntExist(ignoredImport: String, override val pos: Positioned) extends ImportError(3, pos) {
+    lazy val message = err"There is no default import called $ignoredImport."
+  }
 
 
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  protected def WarningNoGenerics(fileName: String, pos: Positioned): Unit =
-    warning(0, err"Generic import $fileName did not contain any generic classes.", pos)
+  case class NoGenerics(fileName: String, override val pos: Positioned) extends ImportWarning(0, pos) {
+    lazy val message = err"Generic import $fileName did not contain any generic classes."
+  }
 
 }

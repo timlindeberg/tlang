@@ -69,7 +69,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
       case Nil                              =>
         createToken(EOF, 0) :: tokens
       case c :: _                           =>
-        val (token, tail) = endInvalidToken(chars, 0, isEndingChar, ErrorInvalidIdentifier(c, _))
+        val (token, tail) = endInvalidToken(chars, 0, isEndingChar, length => report(InvalidIdentifier(c, length)))
         readTokens(tail, token :: tokens)
     }
 
@@ -94,7 +94,8 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
       chars match {
         case c :: r if validChar(c)    => getIdentifierOrKeyword(r, s + c, parsed + 1)
         case c :: _ if isEndingChar(c) => (createIdentifierOrKeyWord(s.toString), chars)
-        case c :: r                    => endInvalidToken(r, parsed, isEndingChar, ErrorInvalidIdentifier(c, _))
+        case c :: r                    =>
+          endInvalidToken(r, parsed, isEndingChar, length => report(InvalidIdentifier(c, length)))
         case Nil                       => (createIdentifierOrKeyWord(s.toString), chars)
       }
     }
@@ -107,10 +108,10 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
     @tailrec def toEnd(charList: List[Char], parsed: Int): (Token, List[Char]) =
       charList match {
         case Nil       =>
-          ErrorUnclosedCharLiteral(parsed)
+          report(UnclosedCharLiteral(parsed))
           (createToken(BAD, parsed), Nil)
         case '\'' :: r =>
-          ErrorInvalidCharLiteral(parsed)
+          report(InvalidCharLiteral(parsed))
           (createToken(BAD, parsed), r)
         case _ :: r    =>
           toEnd(r, parsed + 1)
@@ -118,7 +119,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
 
     chars match {
       case '\'' :: r =>
-        ErrorEmptyCharLiteral()
+        report(EmptyCharLiteral())
         (createToken(BAD, 2), r)
 
       // Unicodes
@@ -127,19 +128,19 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
           val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
           (createToken(unicodeNumber.toChar, 8), r)
         case _ :: _ :: _ :: _ :: '\'' :: r                                     =>
-          ErrorInvalidUnicode(8)
+          report(InvalidUnicode(8))
           (createToken(BAD, 8), r)
         case _ :: _ :: _ :: '\'' :: r                                          =>
-          ErrorInvalidUnicode(7)
+          report(InvalidUnicode(7))
           (createToken(BAD, 7), r)
         case _ :: _ :: '\'' :: r                                               =>
-          ErrorInvalidUnicode(6)
+          report(InvalidUnicode(6))
           (createToken(BAD, 6), r)
         case _ :: '\'' :: r                                                    =>
-          ErrorInvalidUnicode(5)
+          report(InvalidUnicode(5))
           (createToken(BAD, 5), r)
         case '\'' :: r                                                         =>
-          ErrorInvalidUnicode(4)
+          report(InvalidUnicode(4))
           (createToken(BAD, 4), r)
         case r                                                                 =>
           toEnd(r, 3)
@@ -155,11 +156,11 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
         case '''  => (createToken('\'', 4), r)
         case '\\' => (createToken('\\', 4), r)
         case _    =>
-          ErrorInvalidEscapeSequence(4)
+          report(InvalidEscapeSequence(4))
           (createToken(BAD, 4), r)
       }
       case '\\' :: '\'' :: r      =>
-        ErrorInvalidCharLiteral(3)
+        report(InvalidCharLiteral(3))
         (createToken(BAD, 4), r)
       case c :: '\'' :: r         =>
         (createToken(c, 3), r)
@@ -177,7 +178,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
     @tailrec def getStringLiteral(chars: List[Char], s: StringBuilder, parsed: Int): (Token, List[Char]) = chars match {
       case '"' :: r  => (createToken(s.toString, parsed + 1), r)
       case '\n' :: _ =>
-        ErrorUnclosedStringLiteral(parsed)
+        report(UnclosedStringLiteral(parsed))
         (startPos, chars)
       case '\\' :: r => r match {
         case 't' :: r  => getStringLiteral(r, s + '\t', parsed + 2)
@@ -194,14 +195,14 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
             val unicodeNumber = Integer.parseInt("" + c1 + c2 + c3 + c4, 16)
             getStringLiteral(r, s + unicodeNumber.toChar, parsed + 6)
           case _                                                         =>
-            endInvalidToken(chars, parsed, endAt, ErrorInvalidUnicode)
+            endInvalidToken(chars, parsed, endAt, len => report(InvalidUnicode(len)))
         }
         case _         =>
-          endInvalidToken(chars, parsed, endAt, ErrorInvalidEscapeSequence)
+          endInvalidToken(chars, parsed, endAt, len => report(InvalidEscapeSequence(len)))
       }
       case c :: r    => getStringLiteral(r, s + c, parsed + 1)
       case Nil       =>
-        ErrorUnclosedStringLiteral(parsed)
+        report(UnclosedStringLiteral(parsed))
         (startPos, chars)
     }
     getStringLiteral(chars, new StringBuilder, 1)
@@ -224,7 +225,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
         column += 1
         getStringIdentifier(r, s + c)
       case Nil       =>
-        ErrorUnclosedMultilineString(startPos)
+        report(UnclosedMultilineString(startPos))
         (startPos, chars)
     }
     getStringIdentifier(chars, new StringBuilder)
@@ -236,11 +237,11 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
       case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c, parsed + 1)
       case ('l' | 'L') :: r          => (parseLongToken(s.toString, parsed + 1), r)
       case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, parsed), chars)
-      case _                         => endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidHexadecimalLiteral)
+      case _                         => endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidHexadecimalLiteral(len)))
     }
 
     if (isEndingChar(chars.head))
-      endInvalidToken(chars, 2, _.isWhitespace, ErrorInvalidHexadecimalLiteral)
+      endInvalidToken(chars, 2, _.isWhitespace, len => report(InvalidHexadecimalLiteral(len)))
     else
       getHexadecimalLiteral(chars, new StringBuilder("0x"), 2)
   }
@@ -253,11 +254,11 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
       case '1' :: r                  => getBinaryLiteral(r, s + '1', parsed + 1)
       case ('l' | 'L') :: r          => (parseLongToken(s.toString, parsed + 1), r)
       case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, parsed), chars)
-      case _                         => endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidBinaryLiteral)
+      case _                         => endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidBinaryLiteral(len)))
     }
 
     if (isEndingChar(chars.head))
-      endInvalidToken(chars, 2, _.isWhitespace, ErrorInvalidBinaryLiteral)
+      endInvalidToken(chars, 2, _.isWhitespace, len => report(InvalidBinaryLiteral(len)))
     else
       getBinaryLiteral(chars, new StringBuilder("0b"), 2)
   }
@@ -277,7 +278,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
               case _                   => (parseIntToken(s, parsed), chars)
             }
           } else {
-            endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidNumber)
+            endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidNumber(len)))
           }
         case ('e' | 'E') :: r    =>
           if (!foundE) {
@@ -286,17 +287,17 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
               case '-' :: c :: r if c.isDigit => getNumberLiteral(r, s + "E-" + c, parsed + 3)
               case c :: r if c.isDigit        => getNumberLiteral(r, s + "E" + c, parsed + 2)
               case _                          =>
-                endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidFloat)
+                endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidFloat(len)))
             }
           } else {
-            endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidFloat)
+            endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidFloat(len)))
           }
         case ('f' | 'F') :: r    => (parseFloatToken(s, parsed + 1), r)
         case ('l' | 'L') :: r    =>
           if (!foundE && !foundDecimal) {
             (parseLongToken(s, parsed + 1), r)
           } else {
-            endInvalidToken(chars, parsed, _.isWhitespace, ErrorInvalidFloat)
+            endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidFloat(len)))
           }
         case r                   =>
           if (foundDecimal || foundE) {
@@ -372,7 +373,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
 
   private def parseIntToken(numStr: String, len: Int): Token = {
     def invalid(len: Int) = {
-      ErrorNumberTooLargeForInt(len)
+      report(NumberTooLargeForInt(len))
       createToken(BAD, len)
     }
 
@@ -397,7 +398,7 @@ class Tokenizer(override var ctx: Context, override val source: Source) extends 
 
   private def parseLongToken(numStr: String, len: Int): Token = {
     def invalid(len: Int) = {
-      ErrorNumberTooLargeForLong(len)
+      report(NumberTooLargeForLong(len))
       createToken(BAD, len)
     }
 

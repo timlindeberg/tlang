@@ -87,7 +87,7 @@ object Main extends MainErrors {
     CodeGeneration.run(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
-      print(ctx.reporter.messages.formattedMessage(ErrorLevel.Warning))
+      print(ctx.reporter.messages.formattedWarnings)
 
 
     if (options(Verbose))
@@ -108,7 +108,8 @@ object Main extends MainErrors {
       FrontEnd.run(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        print(e.messages.formattedMessage(ErrorLevel.Warning, ErrorLevel.Error))
+        print(e.messages.formattedWarnings)
+        print(e.messages.formattedErrors)
         sys.exit(1)
     }
   }

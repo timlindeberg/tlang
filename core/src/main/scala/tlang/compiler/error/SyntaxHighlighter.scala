@@ -12,7 +12,7 @@ import tlang.utils.{Colors, StringSource}
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Marking(lineOffset: Int, pos: Positioned, style: Color)
+case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
 
 case class SyntaxHighlighter(colors: Colors) {
 
@@ -20,6 +20,7 @@ case class SyntaxHighlighter(colors: Colors) {
 
   val context = Context(VoidReporter(), Set())
 
+  def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
     if (!colors.isActive)
       return code
@@ -87,7 +88,7 @@ case class SyntaxHighlighter(colors: Colors) {
 
   private def findMatchingMarking(token: Token, markings: Seq[Marking]): Option[Color] =
     markings
-      .find { case Marking(offset, pos, _) =>
+      .find { case Marking(pos, _, offset) =>
         val offsetPos = Position(token.line + offset - 1, token.col, token.endLine + offset - 1, token.endCol)
         offsetPos.encodedStartPos >= pos.encodedStartPos && offsetPos.encodedEndPos <= pos.encodedEndPos
       }

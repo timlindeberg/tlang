@@ -6,7 +6,7 @@ import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.code.{CodeGeneration, Desugaring}
-import tlang.compiler.error.{CompilationException, ErrorLevel}
+import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.utils.{FileSource, ProgramExecutor, Source}
@@ -40,7 +40,7 @@ trait ValidTester extends Tester {
       assertCorrect(resLines, sol)
     } catch {
       case e: CompilationException  =>
-        print(e.messages.formattedMessage(ErrorLevel.Error))
+        print(e.messages.formattedErrors)
         fail("Compilation failed")
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
     }

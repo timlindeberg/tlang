@@ -3,147 +3,199 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees.{Break, Tree, _}
-import tlang.compiler.error.{ErrorLevel, Errors}
+import tlang.compiler.error.{Error, ErrorHandling, ErrorMessage, Warning}
 import tlang.compiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
-trait NameAnalysisErrors extends Errors {
+trait NameAnalysisErrors extends ErrorHandling {
 
-  override val ErrorLetters = "N"
+  def report(error: Error): Symbol = {
+    ctx.reporter.report(error)
 
-  def error(errorCode: Int, msg: String, pos: Positioned): Symbol = {
-    report(errorCode, msg, ErrorLevel.Error, pos)
-
-    pos match {
-      case id: ClassID    => id.setSymbol(new ClassSymbol(Errors.ErrorName, false))
-      case id: VariableID => id.setSymbol(new VariableSymbol(Errors.ErrorName))
+    error.pos match {
+      case id: ClassID    => id.setSymbol(new ClassSymbol(ErrorMessage.ErrorName, false))
+      case id: VariableID => id.setSymbol(new VariableSymbol(ErrorMessage.ErrorName))
       case _              =>
     }
 
     ErrorSymbol
   }
 
+  val ErrorLetters = "N"
+  abstract class NameAnalysisError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+  abstract class NameAnalysisWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
+
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorInheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, pos: Positioned): Symbol = {
-    val list = inheritanceList(set, c)
-    error(0, err"A cycle was found in the inheritance graph: " + list, pos)
+  case class InheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, override val pos: Positioned)
+    extends NameAnalysisError(0, pos) {
+    lazy val message: String = {
+      val list = inheritanceList(set, c)
+      err"A cycle was found in the inheritance graph: " + list
+    }
+
+    private def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol) = {
+      val first = if (set.size >= 2)
+        set.map(c => err"${c.name}").mkString(err" <: ")
+      else
+        err"${c.name}"
+      first + err" <: ${c.name}"
+    }
   }
 
-  protected def ErrorAbstractOperator(pos: Positioned): Symbol =
-    error(1, err"Operators cannot be abstract.", pos)
+  case class AbstractOperator(override val pos: Positioned)
+    extends NameAnalysisError(1, pos) {
+    lazy val message = err"Operators cannot be abstract."
+  }
 
-  protected def ErrorNullableInOperator(operator: String, pos: Positioned): Symbol =
-    error(2, err"Operator $operator cannot have nullable types as arguments or return type.", pos)
+  case class NullableInOperator(operator: String, override val pos: Positioned)
+    extends NameAnalysisError(2, pos) {
+    lazy val message = err"Operator $operator cannot have nullable types as arguments or return type."
+  }
 
-  protected def ErrorClassAlreadyDefined(name: String, line: Int, pos: Positioned): Symbol =
-    error(3, err"Class $name is already defined at line $line.", pos)
+  case class ClassAlreadyDefined(name: String, line: Int, override val pos: Positioned)
+    extends NameAnalysisError(3, pos) {
+    lazy val message = err"Class $name is already defined at line $line."
+  }
 
-  protected def ErrorVariableAlreadyDefined(name: String, line: Int, pos: Positioned): Symbol =
-    error(4, err"Variable named $name is already defined at line $line.", pos)
+  case class VariableAlreadyDefined(name: String, line: Int, override val pos: Positioned)
+    extends NameAnalysisError(4, pos) {
+    lazy val message = err"Variable named $name is already defined at line $line."
+  }
 
-  protected def ErrorFieldDefinedInSuperClass(name: String, pos: Positioned): Symbol =
-    error(5, err"Field $name is already defined in super class.", pos)
+  case class FieldDefinedInSuperClass(name: String, override val pos: Positioned)
+    extends NameAnalysisError(5, pos) {
+    lazy val message = err"Field $name is already defined in super class."
+  }
 
-  protected def ErrorUnknownType(name: String, alternatives: List[String], pos: Positioned): Symbol =
-    error(6, err"Unknown type: $name.${nameSuggestor(name, alternatives)}", pos)
+  case class UnknownType(name: String, alternatives: List[String], override val pos: Positioned)
+    extends NameAnalysisError(6, pos) {
+    lazy val message = err"Unknown type: $name.${nameSuggestor(name, alternatives)}"
+  }
 
-  protected def ErrorMethodAlreadyDefined(methodSignature: String, line: Int, pos: Positioned): Symbol =
-    error(7, err"Method $methodSignature is already defined at line $line.", pos)
+  case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
+    extends NameAnalysisError(7, pos) {
+    lazy val message = err"Method $methodSignature is already defined at line $line."
+  }
 
   // Missing 8
 
-  protected def ErrorOperatorAlreadyDefined(operator: String, line: Int, pos: Positioned): Symbol =
-    error(9, err"Operator $operator is already defined at line $line.", pos)
+  case class OperatorAlreadyDefined(operator: String, line: Int, override val pos: Positioned)
+    extends NameAnalysisError(9, pos) {
+    lazy val message = err"Operator $operator is already defined at line $line."
+  }
 
-  protected def ErrorCantResolveSymbol(name: String, alternatives: List[String], pos: Positioned): Symbol =
-    error(10, err"Could not resolve symbol $name.${nameSuggestor(name, alternatives)}", pos)
+  case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)
+    extends NameAnalysisError(10, pos) {
+    lazy val message = err"Could not resolve symbol $name.${nameSuggestor(name, alternatives)}"
+  }
 
-  protected def ErrorAccessNonStaticFromStatic(name: String, pos: Positioned): Symbol =
-    error(11, err"Non-static field $name cannot be accessed from a static function.", pos)
+  case class AccessNonStaticFromStatic(name: String, override val pos: Positioned)
+    extends NameAnalysisError(11, pos) {
+    lazy val message = err"Non-static field $name cannot be accessed from a static function."
+  }
 
-  protected def ErrorParentNotDeclared(name: String, alternatives: List[String], pos: Positioned): Symbol =
-    error(12, err"Could not resolve parent symbol $name.${nameSuggestor(name, alternatives)}", pos)
+  case class ParentNotDeclared(name: String, alternatives: List[String], override val pos: Positioned)
+    extends NameAnalysisError(12, pos) {
+    lazy val message = err"Could not resolve parent symbol $name.${nameSuggestor(name, alternatives)}"
+  }
 
-  protected def ErrorThisInStaticContext(pos: Positioned): Symbol =
-    error(13, err"${"this"} can not be used in a static context.", pos)
+  case class ThisInStaticContext(override val pos: Positioned)
+    extends NameAnalysisError(13, pos) {
+    lazy val message = err"${"this"} can not be used in a static context."
+  }
 
-  protected def ErrorOperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, className: String, pos: Positioned): Symbol = {
-    val op = operatorType.signature(argTypes)
-    val classString = classSymbol match {
-      case _: ExtensionClassSymbol => err"extension class of $className"
-      case _                       => err"class $className"
+  case class OperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, className: String,
+    override val pos: Positioned)
+    extends NameAnalysisError(14, pos) {
+    lazy val message: String = {
+      val op = operatorType.signature(argTypes)
+      val classString = classSymbol match {
+        case _: ExtensionClassSymbol => err"extension class of $className"
+        case _                       => err"class $className"
+      }
+      err"Operator $op defined in " + classString + err" needs to have $className as an argument."
     }
-    error(14, err"Operator $op defined in " + classString + err" needs to have $className as an argument.", pos)
   }
 
-  protected def ErrorBreakContinueOutsideLoop(stat: Tree, pos: Positioned): Symbol = {
-    val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
-    error(15, err"Can not use $breakOrContinue statement outside of a loop.", pos)
+  case class BreakContinueOutsideLoop(stat: Tree, override val pos: Positioned)
+    extends NameAnalysisError(15, pos) {
+    lazy val message: String = {
+      val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
+      err"Can not use $breakOrContinue statement outside of a loop."
+    }
   }
 
-  protected def ErrorExtendMultipleClasses(pos: Positioned): Symbol =
-    error(16, err"Can only extend from multiple traits, not classes.", pos)
+  case class ExtendMultipleClasses(override val pos: Positioned)
+    extends NameAnalysisError(16, pos) {
+    lazy val message = err"Can only extend from multiple traits, not classes."
+  }
 
-  protected def ErrorNonFirstArgumentIsClass(pos: Positioned): Symbol =
-    error(17, err"Only the first parent can be a class.", pos)
+  case class NonFirstArgumentIsClass(override val pos: Positioned)
+    extends NameAnalysisError(17, pos) {
+    lazy val message = err"Only the first parent can be a class."
+  }
 
-  protected def ErrorClassUnimplementedMethod(pos: Positioned): Symbol =
-    error(18, err"Only traits can have unimplemented methods.", pos)
+  case class ClassUnimplementedMethod(override val pos: Positioned)
+    extends NameAnalysisError(18, pos) {
+    lazy val message = err"Only traits can have unimplemented methods."
+  }
 
-  protected def ErrorUnimplementedMethodNoReturnType(method: String, pos: Positioned): Symbol =
-    error(19, err"Unimplemented method $method needs a return type.", pos)
+  case class UnimplementedMethodNoReturnType(method: String, override val pos: Positioned)
+    extends NameAnalysisError(19, pos) {
+    lazy val message = err"Unimplemented method $method needs a return type."
+  }
 
-  protected def ErrorAbstractConstructor(pos: Positioned): Symbol =
-    error(19, err"Constructors cannot be abstract.", pos)
+  case class AbstractConstructor(override val pos: Positioned)
+    extends NameAnalysisError(19, pos) {
+    lazy val message = err"Constructors cannot be abstract."
+  }
 
-  protected def ErrorSuperInStaticContext(pos: Positioned): Symbol =
-    error(20, err"${"super"} can not be used in a static context.", pos)
+  case class SuperInStaticContext(override val pos: Positioned)
+    extends NameAnalysisError(20, pos) {
+    lazy val message = err"${"super"} can not be used in a static context."
+  }
 
-  protected def ErrorSuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, pos: Positioned): Symbol =
-    error(21, err"Super refers to class $inheritedClass which $clazz does not inherit from.", pos)
+  case class SuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, override val pos: Positioned)
+    extends NameAnalysisError(21, pos) {
+    lazy val message = err"Super refers to class $inheritedClass which $clazz does not inherit from."
+  }
 
-  protected def ErrorNonStaticFinalFieldInTrait(pos: Positioned): Symbol =
-    error(22, err"Fields in traits need to be val static.", pos)
+  case class NonStaticFinalFieldInTrait(override val pos: Positioned)
+    extends NameAnalysisError(22, pos) {
+    lazy val message = err"Fields in traits need to be val static."
+  }
 
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  protected def WarningUnusedVar(v: VariableSymbol): Unit = v match {
-    case _: FieldSymbol => WarningUnusedPrivateField(v.name, v)
-    case _              => WarningUnusedVar(v.name, v)
+  case class UnusedVar(variable: VariableSymbol)
+    extends NameAnalysisWarning(0, variable) {
+    lazy val message: String = {
+      val name = variable.name
+      variable match {
+        case _: FieldSymbol => err"Private field $name is never used."
+        case _              => err"Variable $name is never used."
+      }
+    }
   }
 
-  protected def WarningUnusedVar(name: String, pos: Positioned): Unit =
-    warning(0, err"Variable $name is never used.", pos)
-
   // Missing 1
+  // Missing 2
 
-  protected def WarningUnusedPrivateField(name: String, pos: Positioned): Unit =
-    warning(2, err"Private field $name is never used.", pos)
+  case class UselessStatement(override val pos: Positioned)
+    extends NameAnalysisWarning(3, pos) {
+    lazy val message = err"Statement has no effect."
+  }
 
-  protected def WarningUselessStatement(pos: Positioned): Unit =
-    warning(3, err"Statement has no effect.", pos)
-
-  protected def WarningCouldBeVal(value: String, pos: Positioned): Unit =
-    warning(4, err"Variable $value could be val.", pos)
-
-
-  //---------------------------------------------------------------------------------------
-  //  Private methods
-  //---------------------------------------------------------------------------------------
-
-  private def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol) = {
-    val first = if (set.size >= 2)
-      set.map(c => err"${c.name}").mkString(err" <: ")
-    else
-      err"${c.name}"
-    first + err" <: ${c.name}"
+  case class CouldBeVal(value: String, override val pos: Positioned)
+    extends NameAnalysisWarning(4, pos) {
+    lazy val message = err"Variable $value could be val."
   }
 
 }

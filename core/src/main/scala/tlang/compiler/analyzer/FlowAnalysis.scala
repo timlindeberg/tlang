@@ -63,7 +63,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             val startStat = stats(index + 1)
             val endStat = stats.last
             val pos = Block(Nil).setPos(startStat, endStat)
-            WarningDeadCode(startStat.line, endStat.line, pos)
+            report(DeadCode(startStat.line, endStat.line, pos))
           case _                                =>
         }
         endKnowledge
@@ -102,7 +102,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           case Some(elsKnowledge) =>
             val elsEnded = elsKnowledge.flowEnded.isDefined
             if (thnEnded)
-              WarningUnnecessaryElse(els.get)
+              report(UnnecessaryElse(els.get))
 
             if (elsEnded && !thnEnded)
               thnKnowledge // we know the then branch has executed
@@ -231,7 +231,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
           _traverse(lhs)
           _traverse(rhs)
           binOp ifInstanceOf[Div] { _ =>
-            knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) ErrorDivideByZero(rhs, binOp) }
+            knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) report(DivideByZero(rhs, binOp)) }
           }
           binOp match {
             case _: EqualsOperatorTree | _: And | _: Or =>
@@ -259,11 +259,11 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
             case arrRead@ArrayRead(_, index) =>
               knowledge.getNumericValue(index) ifDefined { value =>
                 if (value < 0)
-                  ErrorOutOfBounds(index, value, 0, arrRead)
+                  report(OutOfBounds(index, value, 0, arrRead))
                 else
                   getArraySize(arr, knowledge) ifDefined { size =>
                     if (value >= size)
-                      ErrorOutOfBounds(index, value, size - 1, arrRead)
+                      report(OutOfBounds(index, value, size - 1, arrRead))
                   }
               }
             case _                           =>
@@ -280,7 +280,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
   private def checkReassignment(varId: Identifier, pos: Positioned) =
     varId.symbol ifDefined { sym =>
       if (sym.modifiers.contains(Final()))
-        ErrorReassignmentToVal(sym.name, pos)
+        report(ReassignmentToVal(sym.name, pos))
     }
 
   private def getBoolVarCondition(obj: ExprTree, knowledge: Knowledge) =
@@ -294,7 +294,7 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
       case Some(varId) =>
         knowledge.get[IsNull](varId) match {
           case Some(IsNull(knownNull)) =>
-            WarningUnnecessaryCheck(obj, knownNull, t)
+            report(UnnecessaryCheck(obj, knownNull, t))
             knowledge
           case None                    => knowledge.add(varId, IsNull(isNull))
         }
@@ -309,19 +309,19 @@ class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap)
     obj match {
       case NormalAccess(_, MethodCall(meth, _)) if meth.getType.isNullable =>
         if (objTpe.isNullable)
-          ErrorAccessNullableMethod(meth.getSymbol.signature, obj)
+          report(AccessNullableMethod(meth.getSymbol.signature, obj))
       case _                                                               =>
         knowledge.getIdentifier(obj) match {
           case Some(varId) =>
             if (objTpe.isNullable)
               knowledge.get[IsNull](varId) match {
-                case Some(IsNull(isNull)) if isNull => ErrorAccessIsNull(obj, obj)
-                case None                           => ErrorAccessMightBeNull(obj, obj)
+                case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj, obj))
+                case None                           => report(AccessMightBeNull(obj, obj))
                 case _                              =>
               }
             varId.symbol ifDefined { varSym =>
               if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-                ErrorVariableNotInitialized(obj, obj)
+                report(VariableNotInitialized(obj, obj))
             }
           case _           =>
         }

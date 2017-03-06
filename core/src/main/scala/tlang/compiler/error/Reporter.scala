@@ -7,7 +7,7 @@ import tlang.compiler.options.Flags
 trait Reporter {
 
   def messages: ErrorMessages
-  def report(error: Error): Unit
+  def report(error: ErrorMessage): Unit
   def clear(): Unit
   def terminateIfErrors(): Unit
 
@@ -21,9 +21,9 @@ case class VoidReporter() extends Reporter {
   private var _hasErrors   = false
   private var _hasWarnings = false
 
-  override def report(error: Error): Unit = error.errorLevel match {
-    case ErrorLevel.Warning => _hasWarnings = true
-    case _                  => _hasErrors = true
+  override def report(error: ErrorMessage): Unit = error match {
+    case _: Warning => _hasWarnings = true
+    case _          => _hasErrors = true
   }
 
   override def clear(): Unit = {
@@ -45,23 +45,19 @@ case class DefaultReporter(
   errorContext: Int = Flags.ErrorContext.defaultValue
 ) extends Reporter {
 
-  import ErrorLevel._
-
   var messages: ErrorMessages = ErrorMessages(formatting, maxErrors, errorContext)
 
-  def report(error: Error): Unit = {
-    val errorLevel = error.errorLevel
-    if (errorLevel == Fatal) {
-      messages += error
-      throwException()
+  def report(error: ErrorMessage): Unit = {
+    error match {
+      case _: Fatal   =>
+        messages += error
+        throwException()
+      case w: Warning =>
+        if (warningIsError) messages.errors += w else messages.warnings += w
+      case _          =>
     }
 
-    if (errorLevel == Warning && warningIsError) {
-      report(error.copy(errorLevel = Error))
-      return
-    }
-
-    if (!isValidError(error) || messages.contains(error))
+    if (!isValidError(error))
       return
 
     messages += error
@@ -73,8 +69,8 @@ case class DefaultReporter(
     if (hasErrors)
       throwException()
 
-  def hasErrors: Boolean = messages(ErrorLevel.Error).nonEmpty
-  def hasWarnings: Boolean = messages(ErrorLevel.Warning).nonEmpty
+  def hasErrors: Boolean = messages.errors.nonEmpty
+  def hasWarnings: Boolean = messages.warnings.nonEmpty
 
   private def throwException() = {
     val exception = new CompilationException(messages)
@@ -82,15 +78,12 @@ case class DefaultReporter(
     throw exception
   }
 
-  private def isValidError(error: Error): Boolean = {
-    if (error.msg.toString.contains(Errors.ErrorName))
-      return false
-
+  private def isValidError(error: ErrorMessage): Boolean =
     error.pos match {
-      case t: Typed if t.getType.name == Errors.ErrorName                        => false
-      case s: Symbolic[_] if s.hasSymbol && s.getSymbol.name == Errors.ErrorName => false
-      case _                                                                     => true
+      case t: Typed if t.getType.name == ErrorMessage.ErrorName                        => false
+      case s: Symbolic[_] if s.hasSymbol && s.getSymbol.name == ErrorMessage.ErrorName => false
+      case _                                                                           => true
     }
-  }
+
 }
 

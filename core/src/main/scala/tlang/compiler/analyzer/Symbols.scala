@@ -3,7 +3,7 @@ package analyzer
 
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.Errors
+import tlang.compiler.error.ErrorMessage
 import tlang.compiler.imports.{ClassSymbolLocator, ImportMap}
 import tlang.compiler.utils._
 import tlang.utils.Extensions._
@@ -285,6 +285,6 @@ object Symbols {
     override val modifiers: Set[Modifier] = Set(),
     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol {val name = Errors.ErrorName}
+  case object ErrorSymbol extends Symbol {val name = ErrorMessage.ErrorName}
 
 }

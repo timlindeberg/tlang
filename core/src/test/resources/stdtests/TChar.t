@@ -11,7 +11,7 @@ println('5'.Digit(10)) // res: 5
 println('5'.Name()) // res: DIGIT FIVE
 println('5'.NumericValue()) // res: 5
 println('5'.Type()) // res: 9
-println('5'.HighSurrogate()) // res: ퟀ
+
 
 println('a'.IsAlphabetic())    // res: true
 println('a'.IsBmpCodePoint())  // res: true
@@ -39,7 +39,6 @@ println('5'.IsValidCodePoint()) // res: true
 println('5'.IsWhitespace()) // res: false
 
 println('5'.LowSurrogate()) // res: ?
-println('5'.ReverseBytes()) // res: 㔀
 
 println('A'.ToLower()) // res: a
 println('a'.ToUpper()) // res: A

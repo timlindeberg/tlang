@@ -1,29 +1,33 @@
 package tlang.compiler.modification
 
-import tlang.compiler.error.{ErrorLevel, Errors}
+import tlang.compiler.error.{Error, ErrorHandling}
 import tlang.compiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 6/22/2016.
   */
-trait TemplateErrors extends Errors {
-
-  override val ErrorLetters = "G"
-
-  private def error(errorCode: Int, msg: String, pos: Positioned): Unit =
-    report(errorCode, msg, ErrorLevel.Error, pos)
+trait TemplateErrors extends ErrorHandling {
 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorWrongNumGenerics(expected: Int, found: Int, pos: Positioned): Unit =
-    error(0, err"Wrong number of template parameters, expected $expected, found $found.", pos)
 
-  protected def ErrorDoesNotExist(name: String, pos: Positioned): Unit =
-    error(1, err"Can not find template class named $name.", pos)
+  def report(error: Error): Unit = ctx.reporter.report(error)
 
-  protected def ErrorSameName(name: String, pos: Positioned): Unit =
-    error(2, err"Generic parameter $name appears multiple times.", pos)
+
+  abstract class TemplateError(code: Int, pos: Positioned) extends Error("G", code, pos)
+
+  case class WrongNumGenerics(expected: Int, found: Int, override val pos: Positioned) extends TemplateError(0, pos) {
+    lazy val message = err"Wrong number of template parameters, expected $expected, found $found."
+  }
+
+  case class ClassDoesNotExist(name: String, override val pos: Positioned) extends TemplateError(1, pos) {
+    lazy val message = err"Can not find template class named $name."
+  }
+
+  case class SameName(name: String, override val pos: Positioned) extends TemplateError(2, pos) {
+    lazy val message = err"Generic parameter $name appears multiple times."
+  }
 
 }

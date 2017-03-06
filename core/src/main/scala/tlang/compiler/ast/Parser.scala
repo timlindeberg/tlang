@@ -6,8 +6,8 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
-import tlang.utils.Extensions._
 import tlang.compiler.utils._
+import tlang.utils.Extensions._
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -201,7 +201,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
         case TRAIT =>
           eat(TRAIT)
           true
-        case _     => FatalWrongToken(currentToken, CLASS, TRAIT)
+        case _     => report(WrongToken(currentToken, CLASS, TRAIT))
       }
       val id = classTypeIdentifier
       val parents = parentsDeclaration
@@ -248,7 +248,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(Private(), Final())
-      case _       => FatalWrongToken(nextToken, PRIVVAR, PRIVVAL)
+      case _       => report(WrongToken(nextToken, PRIVVAR, PRIVVAL))
     }
     varDeclEnd(modifiers)
   }
@@ -299,7 +299,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case PRIVDEF =>
         eat(PRIVDEF)
         Set(protectedOrPrivate.setPos(startPos, previousToken))
-      case _       => FatalWrongToken(nextToken, PUBDEF, PRIVDEF)
+      case _       => report(WrongToken(nextToken, PUBDEF, PRIVDEF))
     }
 
     while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
@@ -322,7 +322,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) <methodBody>
     */
   def method(modifiers: Set[Modifier]): MethodDecl = {
-    modifiers.filterInstance[Implicit].foreach(ErrorImplicitMethodOrOperator)
+    modifiers.filterInstance[Implicit].foreach(mod => report(ImplicitMethodOrOperator(mod)))
 
     val id = methodIdentifier
     eat(LPAREN)
@@ -355,7 +355,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     **/
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
-      ErrorImplicitMethodOrOperator(impl)
+      report(ImplicitMethodOrOperator(impl))
     }
 
     // TODO: Find better way of parsing operators than hard coding how many
@@ -425,26 +425,26 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
               case EQSIGN =>
                 eat(EQSIGN, LPAREN)
                 (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
-              case _      => FatalWrongToken(nextToken, EQSIGN, LPAREN)
+              case _      => report(WrongToken(nextToken, EQSIGN, LPAREN))
             }
           case COLON    =>
             eat(COLON, COLON, RBRACKET, LPAREN)
             (3, ArraySlice(Empty(), None, None, None))
-          case _        => FatalWrongToken(nextToken, RBRACKET, COLON)
+          case _        => report(WrongToken(nextToken, RBRACKET, COLON))
         }
         modifiers.findInstance[Static].ifDefined { static =>
-          ErrorStaticIndexingOperator(static)
+          report(StaticIndexingOperator(static))
         }
 
         val args = commaList(formal)
         if (args.size != numArgs)
-          FatalUnexpectedToken(currentToken)
+          report(UnexpectedToken(currentToken))
 
         (operatorType, args, modifiers)
       case _             =>
-        FatalWrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
+        report(WrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
           RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
-          LOGICNOT, LBRACKET)
+          LOGICNOT, LBRACKET))
     }
     eat(RPAREN)
     val retType = optional(returnType, COLON)
@@ -487,7 +487,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(protectedOrPrivate.setPos(startPos, previousToken), Final().setPos(startPos, previousToken))
-      case _       => FatalWrongToken(nextToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+      case _       => report(WrongToken(nextToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
     }
 
     val pos = nextToken
@@ -521,7 +521,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       e.setPos(startPos, previousToken)
     }
     if (dimension > MaximumArraySize)
-      ErrorInvalidArrayDimension(dimension, e)
+      report(InvalidArrayDimension(dimension, e))
 
     e
   }
@@ -692,7 +692,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
                  OREQ | XOREQ |
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
               assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, previousToken)
-            case _                          => FatalWrongToken(nextToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ)
+            case _                          => report(WrongToken(nextToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ))
           }
       }
     }, SEMICOLON)
@@ -706,7 +706,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
     case EOF | RBRACE        =>
-    case _                   => FatalWrongToken(nextToken, SEMICOLON, NEWLINE)
+    case _                   => report(WrongToken(nextToken, SEMICOLON, NEWLINE))
   }
 
   /**
@@ -731,7 +731,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
 
       e match {
         case a: Assignable => Assign(a, assignmentExpr)
-        case _             => FatalExpectedIdAssignment(e)
+        case _             => report(ExpectedIdAssignment(e))
       }
     }
 
@@ -914,7 +914,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
         val sup = superCall
         access(sup)
       case NEW           => newExpression
-      case _             => FatalUnexpectedToken(currentToken)
+      case _             => report(UnexpectedToken(currentToken))
     }
   }
 
@@ -970,7 +970,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case DOT        =>
         eat(DOT)
         NormalAccess
-      case _          => FatalWrongToken(nextToken, DOT, QUESTIONMARK)
+      case _          => report(WrongToken(nextToken, DOT, QUESTIONMARK))
     }
 
     val application = positioned {
@@ -1050,7 +1050,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
           _nullableBracket()
 
         NewArray(e, sizes.toList)
-      case _                       => FatalWrongToken(nextToken, LPAREN, LBRACKET)
+      case _                       => report(WrongToken(nextToken, LPAREN, LBRACKET))
     }
   }
 
@@ -1103,7 +1103,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case Some(e1) :: None :: None :: Some(e2) :: Nil             => ArraySlice(arr, Some(e1), None, Some(e2)) //     [e::e]
       case None :: Some(e1) :: None :: Some(e2) :: Nil             => ArraySlice(arr, None, Some(e1), Some(e2)) //     [:e:e]
       case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
-      case _                                                       => FatalUnexpectedToken(nextToken)
+      case _                                                       => report(UnexpectedToken(nextToken))
     }
   }
 
@@ -1171,7 +1171,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       if (nextTokenKind == k) {
         readToken()
       } else {
-        FatalWrongToken(nextToken, k)
+        report(WrongToken(nextToken, k))
       }
     }
   }
@@ -1208,7 +1208,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
           case _        => List()
         }
         ClassID(id.value, tIds)
-      case _      => FatalWrongToken(nextToken, IDKIND)
+      case _      => report(WrongToken(nextToken, IDKIND))
     }
   }
 
@@ -1242,7 +1242,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
     case id: ID =>
       eat(IDKIND)
       id.value
-    case _      => FatalWrongToken(nextToken, IDKIND)
+    case _      => report(WrongToken(nextToken, IDKIND))
   }
 
   /**
@@ -1253,7 +1253,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case id: ID =>
         eat(IDKIND)
         VariableID(id.value)
-      case _      => FatalWrongToken(nextToken, IDKIND)
+      case _      => report(WrongToken(nextToken, IDKIND))
     }
   }
 
@@ -1265,7 +1265,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case id: ID =>
         eat(IDKIND)
         MethodID(id.value)
-      case _      => FatalWrongToken(nextToken, IDKIND)
+      case _      => report(WrongToken(nextToken, IDKIND))
     }
   }
 
@@ -1277,7 +1277,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case strlit: STRLIT =>
         eat(STRLITKIND)
         StringLit(strlit.value)
-      case _              => FatalWrongToken(nextToken, STRLITKIND)
+      case _              => report(WrongToken(nextToken, STRLITKIND))
     }
   }
 
@@ -1289,7 +1289,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case intLit: INTLIT =>
         eat(INTLITKIND)
         IntLit(intLit.value)
-      case _              => FatalWrongToken(nextToken, INTLITKIND)
+      case _              => report(WrongToken(nextToken, INTLITKIND))
     }
   }
 
@@ -1302,7 +1302,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case longLit: LONGLIT =>
         eat(LONGLITKIND)
         LongLit(longLit.value)
-      case _                => FatalWrongToken(nextToken, LONGLITKIND)
+      case _                => report(WrongToken(nextToken, LONGLITKIND))
     }
   }
 
@@ -1314,7 +1314,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case floatLit: FLOATLIT =>
         eat(FLOATLITKIND)
         FloatLit(floatLit.value)
-      case _                  => FatalWrongToken(nextToken, FLOATLITKIND)
+      case _                  => report(WrongToken(nextToken, FLOATLITKIND))
     }
   }
 
@@ -1327,7 +1327,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case doubleLit: DOUBLELIT =>
         eat(DOUBLELITKIND)
         DoubleLit(doubleLit.value)
-      case _                    => FatalWrongToken(nextToken, DOUBLELITKIND)
+      case _                    => report(WrongToken(nextToken, DOUBLELITKIND))
     }
   }
 
@@ -1339,7 +1339,7 @@ class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends Pa
       case charLit: CHARLIT =>
         eat(CHARLITKIND)
         CharLit(charLit.value)
-      case _                => FatalWrongToken(nextToken, CHARLITKIND)
+      case _                => report(WrongToken(nextToken, CHARLITKIND))
     }
   }
 

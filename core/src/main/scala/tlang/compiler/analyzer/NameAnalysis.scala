@@ -59,7 +59,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       if (set.contains(classSymbol)) {
         classesFoundInCycle ++= set
-        ErrorInheritanceCycle(set, classSymbol, classSymbol)
+        report(InheritanceCycle(set, classSymbol, classSymbol))
         return
       }
 
@@ -74,25 +74,25 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
   def checkVariableUsage(): Unit =
     variableUsage
       .filter { case (_, used) => !used }
-      .foreach { case (variable, _) => WarningUnusedVar(variable) }
+      .foreach { case (variable, _) => report(UnusedVar(variable)) }
 
   def checkVariableReassignments(): Unit =
     variableReassignment
       .filter { case (_, reassigned) => !reassigned }
-      .foreach { case (variable, _) => WarningCouldBeVal(variable.name, variable) }
+      .foreach { case (variable, _) => report(CouldBeVal(variable.name, variable)) }
 
   def checkValidParenting(): Unit =
     cu.classes.foreach { classDecl =>
 
       val nonTraits = classDecl.parents.filter(!_.getSymbol.isAbstract)
       if (nonTraits.size > 1) {
-        ErrorExtendMultipleClasses(nonTraits(1))
+        report(ExtendMultipleClasses(nonTraits(1)))
         return
       }
 
       val nonTraitsAfterFirst = classDecl.parents.drop(1).filter(!_.getSymbol.isAbstract)
       if (nonTraitsAfterFirst.nonEmpty)
-        ErrorNonFirstArgumentIsClass(nonTraits.head)
+        report(NonFirstArgumentIsClass(nonTraits.head))
     }
 
 
@@ -136,7 +136,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
     val isStaticFinal = newSymbol.isStatic && newSymbol.isFinal
     if (classSymbol.isAbstract && !isStaticFinal)
-      ErrorNonStaticFinalFieldInTrait(varDecl)
+      report(NonStaticFinalFieldInTrait(varDecl))
 
     // Check usage for private fields
     varDecl.accessability match {
@@ -153,15 +153,15 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val sym = funcTree match {
       case methDecl@MethodDecl(modifiers, _, _, retType, stat)      =>
         if (!classSymbol.isAbstract && stat.isEmpty)
-          ErrorClassUnimplementedMethod(methDecl)
+          report(ClassUnimplementedMethod(methDecl))
 
         if (classSymbol.isAbstract && retType.isEmpty && stat.isEmpty)
-          ErrorUnimplementedMethodNoReturnType(methDecl.signature, methDecl)
+          report(UnimplementedMethodNoReturnType(methDecl.signature, methDecl))
 
         new MethodSymbol(name, classSymbol, stat, modifiers)
       case conDecl@ConstructorDecl(modifiers, _, _, _, stat)        =>
         if (stat.isEmpty)
-          ErrorAbstractConstructor(conDecl)
+          report(AbstractConstructor(conDecl))
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
         if (modifiers.contains(Implicit()))
@@ -169,7 +169,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         methSym
       case opDecl@OperatorDecl(modifiers, operatorType, _, _, stat) =>
         if (stat.isEmpty)
-          ErrorAbstractOperator(opDecl)
+          report(AbstractOperator(opDecl))
 
         new OperatorSymbol(operatorType, classSymbol, stat, modifiers)
     }
@@ -188,7 +188,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
-    methSymbol.addArgument(newSymbol)
+    methSymbol.args += (id.name -> newSymbol)
+    methSymbol.argList ++= List(newSymbol)
 
     // Don't put out warning when args is unused since it's implicitly defined
     // or if the method is abstract
@@ -202,13 +203,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val name = id.name
     val fullName = importMap.getFullName(name)
     globalScope.classes.get(fullName) ifDefined { old =>
-      ErrorClassAlreadyDefined(name, old.line, id)
+      report(ClassAlreadyDefined(name, old.line, id))
     }
   }
 
   private def ensureIdentifierNotDefined[T <: Symbol](map: Map[String, T], id: String, pos: Positioned): Unit =
     map.get(id) ifDefined { oldSymbol =>
-      ErrorVariableAlreadyDefined(id, oldSymbol.line, pos)
+      report(VariableAlreadyDefined(id, oldSymbol.line, pos))
     }
 
 
@@ -266,7 +267,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
 
       // We don't want to report OperatorWrongTypes if types are nullable
       if (!operatorType.isInstanceOf[ArraySlice] && nullableTypes.nonEmpty) {
-        nullableTypes.foreach(tpe => ErrorNullableInOperator(operatorType.opSign, tpe))
+        nullableTypes.foreach(tpe => report(NullableInOperator(operatorType.opSign, tpe)))
       } else if (isStaticOperator) {
         val tpe = classSymbol match {
           case e: ExtensionClassSymbol => e.getExtendedType
@@ -274,7 +275,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         }
 
         if (!argTypes.contains(tpe))
-          ErrorOperatorWrongTypes(operatorType, argTypes, classSymbol, tpe.name, operatorDecl)
+          report(OperatorWrongTypes(operatorType, argTypes, classSymbol, tpe.name, operatorDecl))
       }
 
       stat ifDefined {new StatementBinder(opSym, isStaticOperator).bindStatement(_)}
@@ -310,8 +311,8 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1)
-            .collect { case UselessStatement(expr) => expr }
-            .foreach { expr => WarningUselessStatement(expr) }
+            .collect { case Trees.UselessStatement(expr) => expr }
+            .foreach { expr => report(UselessStatement(expr)) }
 
           stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue))
           localVars
@@ -332,7 +333,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           init ifDefined { expr => bind(expr, localVars, scopeLevel, canBreakContinue) }
 
           localVars.get(id.name).filter(_.scopeLevel == scopeLevel) ifDefined { varId =>
-            ErrorVariableAlreadyDefined(id.name, varId.symbol.line, varDecl)
+            report(VariableAlreadyDefined(id.name, varId.symbol.line, varDecl))
           }
 
           localVars + (id.name -> new VariableData(newSymbol, scopeLevel))
@@ -367,7 +368,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           localVars
         case _: Break | _: Continue                         =>
           if (!canBreakContinue)
-            ErrorBreakContinueOutsideLoop(statement, statement)
+            report(BreakContinueOutsideLoop(statement, statement))
           localVars
         case expr: ExprTree                                 =>
           bindExpr(expr, localVars, scopeLevel)
@@ -410,7 +411,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                             val alternatives = variableAlternatives(localVars) :::
                               globalScope.classNames ::: Primitives.map(_.name)
 
-                            ErrorCantResolveSymbol(name, alternatives, id)
+                            report(CantResolveSymbol(name, alternatives, id))
                             new ClassSymbol("", false)
                         }
                     }
@@ -441,7 +442,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
             scope match {
               case methodSymbol: MethodSymbol =>
                 if (isStaticContext)
-                  ErrorThisInStaticContext(thisTree)
+                  report(ThisInStaticContext(thisTree))
                 methodSymbol.classSymbol match {
                   case e: ExtensionClassSymbol => e.getExtendedType match {
                     case TObject(sym) => thisTree.setSymbol(sym)
@@ -449,14 +450,14 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                   }
                   case classSymbol             => thisTree.setSymbol(classSymbol)
                 }
-              case _: ClassSymbol             => ErrorThisInStaticContext(thisTree)
+              case _: ClassSymbol             => report(ThisInStaticContext(thisTree))
               case _                          => ???
             }
           case superSymbol@Super(specifier) =>
             scope match {
               case methodSymbol: MethodSymbol =>
                 if (isStaticContext)
-                  ErrorSuperInStaticContext(superSymbol)
+                  report(SuperInStaticContext(superSymbol))
                 val parents = methodSymbol.classSymbol.parents
 
                 specifier match {
@@ -465,13 +466,13 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
                       case Some(p) =>
                         superSymbol.setSymbol(p)
                       case None    =>
-                        ErrorSuperSpecifierDoesNotExist(spec.name, methodSymbol.classSymbol.name, spec)
+                        report(SuperSpecifierDoesNotExist(spec.name, methodSymbol.classSymbol.name, spec))
                     }
                   case None       =>
                     superSymbol.setSymbol(methodSymbol.classSymbol)
                   // Set symbol to this and let the typechecker decide later.
                 }
-              case _: ClassSymbol             => ErrorSuperInStaticContext(superSymbol)
+              case _: ClassSymbol             => report(SuperInStaticContext(superSymbol))
               case _                          => ???
             }
           case tpe: TypeTree                => setType(tpe)
@@ -488,7 +489,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     private def setVarIdentifierSymbol(id: VariableID, localVars: Map[String, VariableData]): Unit = {
       lookupVariableSymbol(id, localVars) match {
         case Some(symbol) => setVarIdentifierSymbol(id, symbol)
-        case None         => ErrorCantResolveSymbol(id.name, variableAlternatives(localVars), id)
+        case None         => report(CantResolveSymbol(id.name, variableAlternatives(localVars), id))
       }
     }
 
@@ -523,7 +524,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
         val m = methodSymbol.lookupField(name)
         m map { sym =>
           if (isStaticContext && !sym.isStatic)
-            ErrorAccessNonStaticFromStatic(id.name, id)
+            report(AccessNonStaticFromStatic(id.name, id))
         }
         m
       }
@@ -544,7 +545,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val argTypes = meth.args.map(_.tpe.getType)
     val classSymbol = meth.getSymbol.classSymbol
     classSymbol.findMethod(name, argTypes, exactTypes = true) match {
-      case Some(oldMeth) => ErrorMethodAlreadyDefined(meth.getSymbol.signature, oldMeth.line, meth)
+      case Some(oldMeth) => report(MethodAlreadyDefined(meth.getSymbol.signature, oldMeth.line, meth))
       case None          => classSymbol.addMethod(meth.getSymbol)
     }
   }
@@ -558,7 +559,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
     val classSymbol = operator.getSymbol.classSymbol
     classSymbol.lookupOperator(operatorType, argTypes, importMap, exactTypes = true) match {
-      case Some(oldOperator) => ErrorOperatorAlreadyDefined(op.signature, oldOperator.line, operator)
+      case Some(oldOperator) => report(OperatorAlreadyDefined(op.signature, oldOperator.line, operator))
       case None              => operator.getSymbol.classSymbol.addOperator(op)
     }
   }
@@ -571,7 +572,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
           case Some(classSymbol) => tpeId.setSymbol(classSymbol)
           case None              =>
             val alternatives = globalScope.classNames
-            ErrorUnknownType(name, alternatives, tpeId)
+            report(UnknownType(name, alternatives, tpeId))
         }
       case ArrayType(arrayTpe)       =>
         setType(arrayTpe)
@@ -594,7 +595,7 @@ class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameA
     parents.foreach { parentId =>
       globalScope.lookupClass(importMap, parentId.name) match {
         case Some(parentSymbol) => parentId.setSymbol(parentSymbol)
-        case None               => ErrorParentNotDeclared(parentId.name, globalScope.classNames, parentId)
+        case None               => report(ParentNotDeclared(parentId.name, globalScope.classNames, parentId))
       }
     }
 

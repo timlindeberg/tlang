@@ -61,7 +61,7 @@ class ImportMap(
     val defaultImportNames = DefaultImports.map(_.writtenName)
     ignoredImports
       .filter(!defaultImportNames.contains(_))
-      .foreach(ErrorDefaultImportDoesntExist(_, NoPosition))
+      .foreach(imp => report(DefaultImportDoesntExist(imp, NoPosition)))
 
     val defaultImports = DefaultImports.filter(imp => !ctx.ignoredImports.contains(imp.writtenName))
     defaultImports ++ imports foreach addImport
@@ -83,15 +83,15 @@ class ImportMap(
       val templateImporter = new TemplateImporter(ctx)
 
       if (contains(shortName))
-        ErrorConflictingImport(regImp.writtenName, getFullName(shortName), regImp)
+        report(ConflictingImport(regImp.writtenName, getFullName(shortName), regImp))
       else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
-        ErrorCantResolveImport(regImp.writtenName, regImp)
+        report(CantResolveImport(regImp.writtenName, regImp))
       else
         addImport(shortName, fullName)
     case extensionImport: ExtensionImport =>
       ClassSymbolLocator.findExtensionSymbol(extensionImport.name) match {
         case Some(e) => addExtensionClass(e)
-        case None    => ErrorCantResolveExtensionsImport(extensionImport, extensionImport)
+        case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
       }
     case _: WildCardImport                => // TODO: Support wild card imports.
   }

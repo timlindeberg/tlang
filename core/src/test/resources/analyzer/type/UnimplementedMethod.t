@@ -13,7 +13,7 @@ trait B : A {
 
 }
 
-class C : A { // res: T2025, T2025
+class C : A { // res: T2025
 
     Def Test(): Int = 1
 
@@ -26,4 +26,4 @@ class D : A {
 
 }
 
-class E : B { } // res: T2025, T2025
+class E : B { } // res: T2025

@@ -2,7 +2,7 @@ package tlang.compiler
 
 import java.io.File
 
-import tlang.compiler.error.{CompilationException, Error, ErrorLevel}
+import tlang.compiler.error.{CompilationException, ErrorMessage}
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
@@ -24,8 +24,8 @@ trait ErrorTester extends Tester {
     } catch {
       case e: CompilationException =>
         if (PrintErrors)
-          print(e.messages.formattedMessage(ErrorLevel.Error))
-        val errorCodes = getErrorCodes(e.messages(ErrorLevel.Error))
+          print(e.messages.formattedErrors)
+        val errorCodes = getErrorCodes(e.messages.getErrors)
         val expectedErrors = parseSolutions(file)
         assertCorrect(errorCodes, expectedErrors)
         return
@@ -37,14 +37,14 @@ trait ErrorTester extends Tester {
       fail("Test failed: No errors or warnings!")
 
     if (PrintErrors)
-      print(reporter.messages.formattedMessage(ErrorLevel.Warning))
+      print(reporter.messages.formattedWarnings)
 
     val expectedWarnings = parseSolutions(file)
-    val warningCodes = getErrorCodes(reporter.messages(ErrorLevel.Warning))
+    val warningCodes = getErrorCodes(reporter.messages.getWarnings)
     assertCorrect(warningCodes, expectedWarnings)
   }
 
-  private def getErrorCodes(errors: List[Error]) = errors.map { error => (error.pos.line, error.code) }
+  private def getErrorCodes(errors: List[ErrorMessage]) = errors.map { error => (error.pos.line, error.code) }
 
   private def parseSolutions(file: File): List[(Int, String)] =
     Source.getText(file).lines.zipWithIndex.flatMap {

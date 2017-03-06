@@ -1,21 +1,19 @@
 package tlang.compiler.analyzer
 
-import tlang.compiler.analyzer.Symbols.{MethodSymbol, OperatorSymbol, VariableSymbol}
-import tlang.compiler.analyzer.Types.{TError, TObject, Type}
+import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, VariableSymbol}
+import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
 import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
-import tlang.compiler.error.{ErrorLevel, Errors}
+import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.compiler.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
-trait TypeCheckingErrors extends Errors {
+trait TypeCheckingErrors extends ErrorHandling {
 
-  override val ErrorLetters = "T"
 
-  def error(errorCode: Int, msg: String, pos: Positioned): Type = {
-    if (!msg.contains(s"$TError"))
-      report(errorCode, msg, ErrorLevel.Error, pos)
+  def report(error: Error): Type = {
+    ctx.reporter.report(error)
     TError
   }
 
@@ -23,187 +21,283 @@ trait TypeCheckingErrors extends Errors {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  protected def ErrorWrongType(expected: Type, found: Type, pos: Positioned): Type = ErrorWrongType(err"$expected", err"$found", pos)
+  val ErrorLetters = "T"
+  abstract class TypeCheckingError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
 
-  protected def ErrorWrongType(expected: String, found: Type, pos: Positioned): Type = ErrorWrongType(expected, err"$found", pos)
+  object WrongType {
+    def apply(expected: Type, found: Type, pos: Positioned): WrongType = WrongType(err"$expected", err"$found", pos)
+    def apply(expected: String, found: Type, pos: Positioned): WrongType = WrongType(expected, err"$found", pos)
+    def apply(expected: Traversable[Type], found: Type, pos: Positioned): WrongType = WrongType(makeExpectedString(expected), found, pos)
 
-  protected def ErrorWrongType(expected: Traversable[Type], found: Type, pos: Positioned): Type = {
-    val s = makeExpectedString(expected)
-    ErrorWrongType(s, found, pos)
+    private def makeExpectedString(expected: Traversable[Type]): String = expected.size match {
+      case 0 => ""
+      case 1 => err"${
+        expected.head
+      }"
+      case n => expected.take(n - 1).map(t => err"$t").mkString(", ") + " or " + expected.last + ""
+    }
+
+  }
+  case class WrongType(expected: String, found: String, override val pos: Positioned)
+    extends TypeCheckingError(0, pos) {
+    lazy val message: String = err"Expected type: " + expected + err", found: " + found + err"."
   }
 
-  protected def ErrorWrongType(expected: String, found: String, pos: Positioned): Type =
-    error(0, err"Expected type: " + expected + err", found: " + found + err".", pos)
-
-  protected def ErrorClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], pos: Positioned): Type =
-    error(1, err"Class $className does not contain a method $methSignature.${nameSuggestor(methName, alternatives)}", pos)
-
-  protected def ErrorMethodOnWrongType(method: String, tpe: String, pos: Positioned): Type =
-    error(2, err"Cannot call method $method on type $tpe.", pos)
-
-  protected def ErrorClassDoesntHaveField(className: String, fieldName: String, alternatives: List[String], pos: Positioned): Type =
-    error(3, err"Class $className does not contain a field $fieldName.${nameSuggestor(fieldName, alternatives)}", pos)
-
-  protected def ErrorFieldOnWrongType(tpe: String, pos: Positioned): Type =
-    error(4, err"Cannot access field on type $tpe.", pos)
-
-  protected def ErrorNonStaticMethodAsStatic(methodName: String, pos: Positioned): Type =
-    error(5, err"Trying to call method $methodName statically but the method is not declared as static.", pos)
-
-  protected def ErrorNonStaticMethodFromStatic(methodName: String, pos: Positioned): Type =
-    error(6, err"Cannot access non-static method $methodName from a static method.", pos)
-
-  protected def ErrorNonStaticFieldAsStatic(fieldName: String, pos: Positioned): Type =
-    error(7, err"Trying to access field $fieldName statically but the field is not declared as static.", pos)
-
-  protected def ErrorNonStaticFieldFromStatic(fieldName: String, pos: Positioned): Type =
-    error(8, err"Cannot access non-static field $fieldName from a static method.", pos)
-
-  protected def ErrorConstructorPrivacy(methodSymbol: MethodSymbol, className: String, callingClass: String, pos: Positioned): Type = {
-    val accessability = err"Cannot call " + accessabilityString(methodSymbol)
-    error(9, accessability + err" constructor of $className from class $callingClass.", pos)
+  case class ClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], override val pos: Positioned)
+    extends TypeCheckingError(1, pos) {
+    lazy val message = err"Class $className does not contain a method $methSignature.${nameSuggestor(methName, alternatives)}"
   }
 
-  protected def ErrorMethodPrivacy(methodSymbol: MethodSymbol, className: String, callingClass: String, pos: Positioned): Type = {
-    val accessability = err"Cannot call " + accessabilityString(methodSymbol)
-    val methodName = methodSymbol.signature
-    error(10, accessability + err" method $methodName defined in $className from class $callingClass.", pos)
+  case class MethodOnWrongType(method: String, tpe: String, override val pos: Positioned)
+    extends TypeCheckingError(2, pos) {
+    lazy val message = err"Cannot call method $method on type $tpe."
   }
 
-  protected def ErrorFieldPrivacy(varSymbol: VariableSymbol, className: String, callingClass: String, pos: Positioned): Type = {
-    val accessability = err"Cannot access " + accessabilityString(varSymbol)
-    val fieldName = varSymbol.name
-    error(11, accessability + err" field $fieldName defined in $className from class $callingClass.", pos)
+  case class ClassDoesntHaveField(className: String, fieldName: String, alternatives: List[String], override val pos: Positioned)
+    extends TypeCheckingError(3, pos) {
+    lazy val message = err"Class $className does not contain a field $fieldName.${nameSuggestor(fieldName, alternatives)}"
   }
 
-  protected def ErrorOperatorPrivacy(opSymbol: OperatorSymbol, className: String, callingClass: String, pos: Positioned): Type = {
-    val accessability = err"Cannot call " + accessabilityString(opSymbol)
-    val operatorName = opSymbol.signature
-    error(12, accessability + err" operator $operatorName defined in $className from class $callingClass.", pos)
+  case class FieldOnWrongType(tpe: String, override val pos: Positioned)
+    extends TypeCheckingError(4, pos) {
+    lazy val message = err"Cannot access field on type $tpe."
   }
 
-  protected def ErrorIndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], className: String, pos: Positioned): Type = {
-    val operatorName = expr.operatorString(args, className)
-    error(13, err"The class $className does not define an operator $operatorName.", pos)
+  case class NonStaticMethodAsStatic(methodName: String, override val pos: Positioned)
+    extends TypeCheckingError(5, pos) {
+    lazy val message = err"Trying to call method $methodName statically but the method is not declared as static."
   }
 
-  protected def ErrorOverloadedOperatorNotFound(op: OperatorTree, args: List[Type], pos: Positioned): Type = {
-    val classesString = overloadedOperatorClassesString(args)
-    val operatorName = op.signature(args)
-    error(13, classesString + err" define an operator $operatorName.", pos)
+  case class NonStaticMethodFromStatic(methodName: String, override val pos: Positioned)
+    extends TypeCheckingError(6, pos) {
+    lazy val message = err"Cannot access non-static method $methodName from a static method."
   }
 
-  protected def ErrorOperatorWrongReturnType(op: String, expected: String, found: String, pos: Positioned): Type =
-    error(14, err"Operator $op has wrong return type: expected $expected, found $found.", pos)
+  case class NonStaticFieldAsStatic(fieldName: String, override val pos: Positioned)
+    extends TypeCheckingError(7, pos) {
+    lazy val message = err"Trying to access field $fieldName statically but the field is not declared as static."
+  }
 
-  protected def ErrorWrongReturnType(tpe: String, pos: Positioned): Type =
-    error(15, err"Expected a return value of type $tpe.", pos)
+  case class NonStaticFieldFromStatic(fieldName: String, override val pos: Positioned)
+    extends TypeCheckingError(8, pos) {
+    lazy val message = err"Cannot access non-static field $fieldName from a static method."
+  }
 
-  protected def ErrorDoesntHaveConstructor(className: String, methodSignature: String, pos: Positioned): Type =
-    error(16, err"Class $className does not contain a constructor $methodSignature.", pos)
+  case class InvalidPrivacyAccess(sym: Symbol with Modifiable, clazz: ClassSymbol, callingClass: ClassSymbol, override val pos: Positioned)
+    extends TypeCheckingError(9, pos) {
+    lazy val message: String = {
+
+      val accessability = sym.accessability match {
+        case Protected() => "protected"
+        case Private()   => "private"
+        case _           => ???
+      }
+      val tpe = sym match {
+        case f: FieldSymbol  => err"field ${f.name}"
+        case m: MethodSymbol => err"method ${m.signature}"
+      }
+      val className = clazz.name
+      val callingClassName = callingClass.name
+      err"Cannot use $accessability " + tpe + err" in class $className from class $callingClassName."
+    }
+
+  }
+
+  // Missing 10, 11, 12
+
+  case class IndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], className: String, override val pos: Positioned)
+    extends TypeCheckingError(13, pos) {
+    lazy val message: String = {
+      val operatorName = expr.operatorString(args, className)
+      err"The class $className does not define an operator $operatorName."
+    }
+  }
+
+  case class OverloadedOperatorNotFound(op: OperatorTree, args: List[Type], override val pos: Positioned)
+    extends TypeCheckingError(13, pos) {
+    lazy val message: String = {
+      val classesString = overloadedOperatorClassesString(args)
+      val operatorName = op.signature(args)
+      classesString + err" define an operator $operatorName."
+    }
+
+    private def overloadedOperatorClassesString(args: List[Type]) =
+      if (args.size != 2 || args(0) == args(1))
+        err"The class ${
+          args.head
+        } does not"
+      else if (!args(0).isInstanceOf[TObject])
+        err"The class ${
+          args(1)
+        } does not"
+      else if (!args(1).isInstanceOf[TObject])
+        err"The class ${
+          args(0)
+        } does not"
+      else
+        err"None of the classes " + args.map(arg => err"$arg").mkString(err" or ")
+
+  }
+
+  case class OperatorWrongReturnType(op: OperatorSymbol, expected: Type, found: Type)
+    extends TypeCheckingError(14, op) {
+    lazy val message = {
+      val opSignature = op.signature
+      err"Operator $opSignature has wrong return type: expected $expected, found $found."
+    }
+  }
+
+  case class WrongReturnType(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(15, pos) {
+    lazy val message = err"Expected a return value of type $tpe."
+  }
+
+  case class DoesntHaveConstructor(className: String, methodSignature: String, override val pos: Positioned)
+    extends TypeCheckingError(16, pos) {
+    lazy val message = err"Class $className does not contain a constructor $methodSignature."
+  }
 
   // Missing 17
 
-  protected def ErrorNoTypeNoInitalizer(name: String, pos: Positioned): Type =
-    error(18, err"Variable $name declared with no type or initialization.", pos)
+  case class NoTypeNoInitializer(variable: VariableSymbol)
+    extends TypeCheckingError(18, variable) {
+    lazy val message = {
+      val name = variable.name
+      err"Variable $name declared with no type or initialization."
+    }
+  }
 
-  protected def ErrorValueMustBeInitialized(name: String, pos: Positioned): Type =
-    error(19, err"Value $name must be initialized.", pos)
+  case class ValueMustBeInitialized(variable: VariableSymbol)
+    extends TypeCheckingError(19, variable) {
+    lazy val message = {
+      val name = variable.name
+      err"Value $name is not initialized."
+    }
+  }
 
-  protected def ErrorNotOnNonNullable(pos: Positioned): Type =
-    error(20, err"${"!"} operator can only be applied to ${"Bool"} and nullable types.", pos)
+  case class NotOnNonNullable(override val pos: Positioned)
+    extends TypeCheckingError(20, pos) {
+    lazy val message = err"${"!"} operator can only be applied to ${"Bool"} and nullable types."
+  }
 
-  protected def ErrorCantInferTypeRecursiveMethod(pos: Positioned): Type =
-    error(21, err"Cannot infer type of recursive method.", pos)
+  case class CantInferTypeRecursiveMethod(override val pos: Positioned)
+    extends TypeCheckingError(21, pos) {
+    lazy val message = err"Cannot infer type of recursive method."
+  }
 
-  protected def ErrorInvalidIncrementDecrementExpr(expr: ExprTree, pos: Positioned): Type = {
-    val msg = expr match {
+  case class InvalidIncrementDecrementExpr(expr: ExprTree)
+    extends TypeCheckingError(22, expr) {
+    lazy val message: String = expr match {
       case _: PreIncrement | _: PostIncrement => err"Invalid increment expression."
       case _: PreDecrement | _: PostDecrement => err"Invalid decrement expression."
     }
-    error(22, msg, pos)
   }
 
   // Missing 23
 
-  protected def ErrorInstantiateTrait(treit: String, pos: Positioned): Type =
-    error(24, err"Cannot instantiate trait $treit.", pos)
+  case class InstantiateTrait(treit: String, override val pos: Positioned)
+    extends TypeCheckingError(24, pos) {
+    lazy val message = err"Cannot instantiate trait $treit."
+  }
 
-  protected def ErrorUnimplementedMethodFromTrait(clazz: String, method: String, treit: String, pos: Positioned): Type =
-    error(25, err"Class $clazz does not implement method $method from trait $treit.", pos)
+  case class UnimplementedMethodFromTrait(clazz: IDClassDeclTree, unimplementedMethods: List[(MethodSymbol, ClassSymbol)])
+    extends TypeCheckingError(25, clazz.id) {
+    lazy val message: String = {
+      val methods = ctx.formatting.makeList(unimplementedMethods.map { case (meth, from) =>
+        val methSignature = meth.signature
+        err"$methSignature from trait $from"
+      })
+      val className = clazz.id.name
+      err"Class $className does not implement the following methods:" + "\n" + methods
+    }
+  }
 
-  protected def ErrorUnimplementedOperatorFromTrait(clazz: String, operator: String, tr: String, pos: Positioned): Type =
-    error(26, err"Class $clazz does not implement operator $operator from trait $tr.", pos)
+  case class UnimplementedOperatorFromTrait(clazz: String, operator: String, tr: String, override val pos: Positioned)
+    extends TypeCheckingError(26, pos) {
+    lazy val message = err"Class $clazz does not implement operator $operator from trait $tr."
+  }
 
-  protected def ErrorOverridingMethodDifferentReturnType(method: String, clazz: String, retType: String, parent: String, parentType: String, pos: Positioned): Type =
-    error(27, err"Overriding method $method in class $clazz has return type $retType while the method in parent $parent has return type $parentType.", pos)
+  case class OverridingMethodDifferentReturnType(meth: MethodSymbol, parentMeth: MethodSymbol)
+    extends TypeCheckingError(27, meth) {
+    lazy val message: String = {
+      val method = meth.signature
+      val clazz = meth.classSymbol.name
+      val retType = meth.getType
+      val parent = parentMeth.classSymbol.name
+      val parentType = parentMeth.getType
+      err"Overriding method $method in class $clazz has return type $retType while the method in parent $parent has return type $parentType."
+    }
+  }
 
-  protected def ErrorCantPrintUnitType(pos: Positioned): Type =
-    error(28, err"Cannot print an expression of type ${"Unit"}.", pos)
+  case class CantPrintUnitType(override val pos: Positioned)
+    extends TypeCheckingError(28, pos) {
+    lazy val message = err"Cannot print an expression of type $TUnit."
+  }
 
-  protected def ErrorNoSuperTypeHasMethod(clazz: String, method: String, pos: Positioned): Type =
-    error(29, err"No super type of class $clazz implements a method $method.", pos)
+  case class NoSuperTypeHasMethod(clazz: String, method: String, override val pos: Positioned)
+    extends TypeCheckingError(29, pos) {
+    lazy val message = err"No super type of class $clazz implements a method $method."
+  }
 
-  protected def ErrorNoSuperTypeHasField(clazz: String, field: String, pos: Positioned): Type =
-    error(30, err"No super type of class $clazz has a field $field.", pos)
+  case class NoSuperTypeHasField(clazz: String, field: String, override val pos: Positioned)
+    extends TypeCheckingError(30, pos) {
+    lazy val message = err"No super type of class $clazz has a field $field."
+  }
 
   // Missing 31
 
-  protected def ErrorForeachNotIterable(tpe: Type, pos: Positioned): Type =
-    error(32, err"Type $tpe is not iterable.", pos)
+  case class ForeachNotIterable(container: ExprTree)
+    extends TypeCheckingError(32, container) {
+    lazy val message = {
+      val tpe = container.getType
+      err"Type $tpe is not iterable."
+    }
+  }
 
-  protected def ErrorAssignNullToNonNullable(tpe: Type, pos: Positioned): Type =
-    error(33, err"Cannot assign null to non nullable type $tpe.", pos)
+  case class AssignNullToNonNullable(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(33, pos) {
+    lazy val message = err"Cannot assign null to non nullable type $tpe."
+  }
 
-  protected def ErrorSafeAccessOnNonNullable(tpe: Type, pos: Positioned): Type =
-    error(34, err"Cannot use safe access on non nullable type $tpe.", pos)
+  case class SafeAccessOnNonNullable(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(34, pos) {
+    lazy val message = err"Cannot use safe access on non nullable type $tpe."
+  }
 
-  protected def ErrorExtractNullableNonNullable(tpe: Type, pos: Positioned): Type =
-    error(35, err"Cannot use the nullable extraction operator on non nullable type $tpe.", pos)
+  case class ExtractNullableNonNullable(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(35, pos) {
+    lazy val message = err"Cannot use the nullable extraction operator on non nullable type $tpe."
+  }
 
-  protected def ErrorElvisOperatorNonNullable(tpe: Type, pos: Positioned): Type =
-    error(36, err"Cannot use the elvis operator on non-nullable type $tpe.", pos)
+  case class ElvisOperatorNonNullable(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(36, pos) {
+    lazy val message = err"Cannot use the elvis operator on non-nullable type $tpe."
+  }
 
-  protected def ErrorAssignValueToMethodCall(pos: Positioned): Type =
-    error(37, err"Cannot assign a value to the result of a method call.", pos)
+  case class AssignValueToMethodCall(override val pos: Positioned)
+    extends TypeCheckingError(37, pos) {
+    lazy val message = err"Cannot assign a value to the result of a method call."
+  }
 
-  protected def ErrorNonNullableEqualsNull(tpe: Type, pos: Positioned): Type =
-    error(38, err"Cannot check if non nullable type $tpe is null.", pos)
+  case class NonNullableEqualsNull(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(38, pos) {
+    lazy val message = err"Cannot check if non nullable type $tpe is null."
+  }
 
 
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
 
-  protected def WarningUnusedPrivateMethod(name: String, pos: Positioned): Unit =
-    warning(0, err"Private method $name is never used.", pos)
+  case class UnusedPrivateMethod(name: String, override val pos: Positioned)
+    extends TypeCheckingWarning(0, pos) {
+    lazy val message = err"Private method $name is never used."
+  }
 
   //---------------------------------------------------------------------------------------
   //  Private methods
   //---------------------------------------------------------------------------------------
-
-  private def makeExpectedString(expected: Traversable[Type]): String = expected.size match {
-    case 0 => ""
-    case 1 => err"${expected.head}"
-    case n => expected.take(n - 1).map(t => err"$t").mkString(", ") + " or " + expected.last + ""
-  }
-
-  private def accessabilityString(modifiable: Modifiable) = modifiable.accessability match {
-    case Public()    => err"public"
-    case Protected() => err"protected"
-    case Private()   => err"private"
-    case _           => ???
-  }
-
-  private def overloadedOperatorClassesString(args: List[Type]) =
-    if (args.size != 2 || args(0) == args(1))
-      err"The class ${args.head} does not"
-    else if (!args(0).isInstanceOf[TObject])
-      err"The class ${args(1)} does not"
-    else if (!args(1).isInstanceOf[TObject])
-      err"The class ${args(0)} does not"
-    else
-      err"None of the classes " + args.map(arg => err"$arg").mkString(err" or ")
 
 
 }

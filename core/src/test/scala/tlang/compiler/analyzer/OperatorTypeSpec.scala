@@ -5,7 +5,6 @@ import tlang.compiler.Tester
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.ErrorLevel
 import tlang.compiler.imports.ImportMap
 
 class OperatorTypeSpec extends FunSuite with Matchers {
@@ -335,7 +334,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         if (reporter.hasErrors) {
-          print(TestContext.reporter.messages.formattedMessage(ErrorLevel.Error))
+          print(TestContext.reporter.messages.formattedErrors)
         }
         assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }
