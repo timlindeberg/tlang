@@ -162,4 +162,5 @@ case class Colors(isActive: Boolean, colorScheme: ColorScheme = DefaultColorSche
   val NumColor     = Color(colorScheme.Number, isActive)
   val CommentColor = Color(colorScheme.Comment, isActive)
   val SymbolColor  = Color(colorScheme.Symbol, isActive)
+  val NoColor      = Color("", isActive = false)
 }

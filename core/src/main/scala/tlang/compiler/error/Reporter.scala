@@ -22,6 +22,7 @@ case class VoidReporter() extends Reporter {
   private var _hasWarnings = false
 
   override def report(error: ErrorMessage): Unit = error match {
+    case _: Fatal   => throw new CompilationException(messages += error)
     case _: Warning => _hasWarnings = true
     case _          => _hasErrors = true
   }

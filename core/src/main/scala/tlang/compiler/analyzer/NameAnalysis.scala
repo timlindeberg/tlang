@@ -37,11 +37,11 @@ object NameAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
 }
 
-class NameAnalyser(override var ctx: Context, cu: CompilationUnit) extends NameAnalysisErrors {
+class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameAnalysisErrors {
 
   import NameAnalysis._
 
-  override var importMap: ImportMap = cu.importMap
+  override val importMap: ImportMap = cu.importMap
   private  var variableUsage        = Map[VariableSymbol, Boolean]()
   private  var variableReassignment = Map[VariableSymbol, Boolean]()
 

@@ -55,8 +55,8 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
 
 }
 
-class TypeChecker(override var ctx: Context,
-  override var importMap: ImportMap,
+class TypeChecker(override val ctx: Context,
+  override val importMap: ImportMap,
   currentMethodSymbol: MethodSymbol,
   methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
 

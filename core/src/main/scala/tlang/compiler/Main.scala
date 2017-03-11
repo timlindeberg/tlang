@@ -77,7 +77,7 @@ object Main extends MainErrors {
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
-    ctx = createContext(options)
+    val ctx = createContext(options)
 
     if (options(Verbose))
       printFilesToCompile(ctx)

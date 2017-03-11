@@ -1,16 +1,14 @@
 package tlang.compiler
 
-import tlang.compiler.error.ErrorHandling
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.error.NameSuggestor
 import tlang.compiler.options.Flags.Flag
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
   */
-trait MainErrors extends ErrorHandling {
+trait MainErrors {
 
-  override var ctx      : Context   = _
-  override var importMap: ImportMap = _
+  val nameSuggestor = new NameSuggestor
 
   private def fatal(message: String) = {
     println(message)

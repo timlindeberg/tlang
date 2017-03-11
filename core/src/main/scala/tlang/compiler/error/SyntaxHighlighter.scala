@@ -70,19 +70,20 @@ case class SyntaxHighlighter(colors: Colors) {
     sb.toString()
   }
 
-  def getColor(token: Token, markings: Seq[Marking]): Color = {
+  private def getColor(token: Token, markings: Seq[Marking]): Color = {
     if (token.kind == COMMENTLITKIND)
       return CommentColor
 
-    findMatchingMarking(token, markings) match {
-      case Some(style) => style
-      case None        => token.kind match {
-        case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
-        case CHARLITKIND | STRLITKIND                                => StringColor
-        case IDKIND                                                  => VarColor
-        case x if x in Tokens.Keywords                               => KeywordColor
-        case _                                                       => SymbolColor
-      }
+    findMatchingMarking(token, markings) ifDefined { style =>
+      return style
+    }
+
+    token.kind match {
+      case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
+      case CHARLITKIND | STRLITKIND                                => StringColor
+      case IDKIND                                                  => VarColor
+      case x if x in Tokens.Keywords                               => KeywordColor
+      case _                                                       => SymbolColor
     }
   }
 

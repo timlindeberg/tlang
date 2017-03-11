@@ -1,7 +1,8 @@
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
   scalaVersion := "2.11.8",
   organization := "com.tcompiler",
-  version := "1.0"
+  version := "1.0",
+  javacOptions ++= Seq("-encoding", "UTF-8")
 )
 
 scalacOptions ++= Seq(

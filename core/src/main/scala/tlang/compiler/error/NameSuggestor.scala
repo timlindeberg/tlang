@@ -1,11 +1,10 @@
 package tlang.compiler.error
 
-case class Suggestion(suggestion: Option[String])
-
 
 /**
   * Created by Tim Lindeberg on 1/15/2017.
   */
+case class Suggestion(suggestion: Option[String])
 class NameSuggestor {
 
   private val AcceptableDistance = 3

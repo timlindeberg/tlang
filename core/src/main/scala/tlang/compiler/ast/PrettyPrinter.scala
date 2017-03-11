@@ -6,6 +6,7 @@ import java.util.regex.Matcher
 import org.apache.commons.lang3.StringEscapeUtils._
 import tlang.compiler.lexer.Tokens
 import tlang.utils.Colors
+import tlang.utils.Colors.Color
 
 
 case class PrettyPrinter(colors: Colors) {
@@ -83,8 +84,8 @@ case class PrettyPrinter(colors: Colors) {
     case Hash(expr)                        => pp"#($expr)"
     case ArrayRead(arr, index)             => pp"$arr[$index]"
     case ArraySlice(arr, start, end, step) => pp"$arr[$start:$end:$step]"
-    case NormalAccess(obj, application)    => pp"$obj.$application"
-    case SafeAccess(obj, application)      => pp"$obj?.$application"
+    case NormalAccess(obj, application)    => access(obj, application, ".")
+    case SafeAccess(obj, application)      => access(obj, application, "?.")
     case MethodCall(meth, args)            => pp"$meth(${Separated(args, ", ")})"
     case IntLit(value)                     => pp"$value"
     case LongLit(value)                    => pp"${value}L"
@@ -114,6 +115,11 @@ case class PrettyPrinter(colors: Colors) {
     case Empty()                           => pp"<EMPTY>"
     case GeneratedExpr(stats)              => pp"${genExpr(stats)}"
     case PutValue(expr)                    => s"<PutValue(${pp"$expr"})>"
+  }
+
+  private def access(obj: ExprTree, application: ExprTree, dotNotation: String) = obj match {
+    case Empty() => pp"$application"
+    case _       => pp"$obj$dotNotation$application"
   }
 
   private def restOfClassDecl(tpe: TypeTree, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
@@ -256,18 +262,12 @@ case class PrettyPrinter(colors: Colors) {
     private def evaluate(obj: Any): String = obj match {
       case f: Formatter  => f()
       case t: Tree       =>
-        t match {
-          case _: VariableID       => VarColor(prettyPrint(t))
-          case _: MethodID         => MethodColor(prettyPrint(t))
-          case _: ClassID          => ClassColor(prettyPrint(t))
-          case _: StringLit |
-               _: CharLit          => StringColor(prettyPrint(t))
-          case _: NumberLiteral[_] => NumColor(prettyPrint(t))
-          case _                   => prettyPrint(t)
-        }
+        val color = getColor(t)
+        color(prettyPrint(t))
       case Some(t: Tree) => evaluate(t)
       case None          => ""
-      case l: List[Tree] => mkString(l)
+      case l: List[Tree] =>
+        mkString(l)
       case s: String     => s
       case x             => x.toString
     }
@@ -281,6 +281,16 @@ case class PrettyPrinter(colors: Colors) {
           s += N()
       }
       s
+    }
+
+    private def getColor(t: Tree): Color = t match {
+      case _: VariableID       => VarColor
+      case _: MethodID         => MethodColor
+      case _: ClassID          => ClassColor
+      case _: StringLit |
+           _: CharLit          => StringColor
+      case _: NumberLiteral[_] => NumColor
+      case _                   => SymbolColor
     }
 
     private def colorKeywords(output: String): String = {

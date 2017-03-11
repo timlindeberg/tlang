@@ -13,9 +13,12 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
 
   val NonColoredIndicationChar = "~"
 
-  val ErrorColor: Color = error match {
-    case _: Warning => Yellow + Bold
-    case _          => Red + Bold
+  val ErrorColor: Color = {
+    val color = error match {
+      case _: Warning => Yellow
+      case _          => Red
+    }
+    color + Bold
   }
 
   val pos  : Positioned         = error.pos
@@ -28,7 +31,7 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
       case _: Error   => "Error"
       case _: Fatal   => "Fatal"
     }
-    ErrorColor(pre + " " + error.code) + ": "
+    ErrorColor(pre + " " + error.code) + " "
   }
 
   def position: String = {

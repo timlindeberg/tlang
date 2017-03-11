@@ -12,14 +12,14 @@ import scala.collection.mutable
   * Created by Tim Lindeberg on 7/5/2016.
   */
 
-class ImportMap(
-  var ctx: Context,
-  val imports: List[Import] = Nil,
-  val pack: Package = Package(Nil),
-  val classes: List[ClassDeclTree] = Nil
+case class ImportMap(
+  ctx: Context,
+  imports: List[Import] = Nil,
+  pack: Package = Package(Nil),
+  classes: List[ClassDeclTree] = Nil
 ) extends ImportErrors {
 
-  override var importMap: ImportMap = this
+  override val importMap: ImportMap = this
   private  val shortToFull          = mutable.Map[String, String]()
   private  val fullToShort          = mutable.Map[String, String]()
 

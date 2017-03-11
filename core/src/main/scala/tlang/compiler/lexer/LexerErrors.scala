@@ -11,7 +11,7 @@ import tlang.utils.Source
   */
 trait LexerErrors extends ErrorHandling {
 
-  override var importMap = new ImportMap(ctx)
+  override val importMap = ImportMap(ctx)
   val source: Source
   var line  : Int
   var column: Int

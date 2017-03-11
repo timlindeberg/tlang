@@ -26,7 +26,7 @@ object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
 }
 
-class FlowAnalyser(override var ctx: Context, override var importMap: ImportMap) extends FlowAnalysisErrors {
+class FlowAnalyser(override val ctx: Context, override val importMap: ImportMap) extends FlowAnalysisErrors {
 
   def apply(clazz: ClassDeclTree): Unit = {
 

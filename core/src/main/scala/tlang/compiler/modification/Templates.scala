@@ -14,39 +14,34 @@ object Templates extends Pipeline[CompilationUnit, CompilationUnit] {
   val Seperator = "$"
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    val templateClassGenerator = new TemplateModifier(ctx)
+    val templateClassGenerator = TemplateModifier(ctx)
     templateClassGenerator.generateTemplates(cus)
   }
 }
 
-class TemplateModifier(override var ctx: Context) extends TemplateErrors {
+case class TemplateModifier(ctx: Context) {
 
-  override var importMap: ImportMap = new ImportMap(ctx)
-  private  val templateCus          = mutable.Map[String, CompilationUnit]()
-  private  var generatedClassNames  = mutable.Set[String]()
+  private val templateCus         = mutable.Map[String, CompilationUnit]()
+  private var generatedClassNames = mutable.Set[String]()
 
   def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
     //  Add all original template classes
     cus foreach { cu =>
-      importMap = cu.importMap
       cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach { clazz =>
-        checkDuplicateTemplateNames(clazz)
         templateCus(clazz.id.name) = cu
       }
     }
 
     // Generate all needed classes
     cus foreach { cu =>
-      importMap = cu.importMap
-      val templateClassGenerator = new TemplateClassGenerator(cu)
-      templateClassGenerator.generateNeededTemplates()
+      val templateClassGenerator = TemplateClassGenerator(ctx, cu)
+      templateClassGenerator()
     }
 
     // all needed classes are generated,
     // construct final program list and filter old classes
     val allCus = mutable.Set[CompilationUnit]()
 
-    // TODO: This is probably pretty expensive
     allCus ++= cus
     allCus ++= templateCus.values
 
@@ -79,19 +74,6 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     replace(cu)
   }
 
-  private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree) = {
-    var seen = Set[TypeTree]()
-    var reportedFor = Set[TypeTree]()
-    val templateTypes = templateClass.id.templateTypes
-    templateTypes foreach { tType =>
-      if (seen(tType) && !reportedFor(tType)) {
-        report(SameName(tType.name, tType))
-        reportedFor += tType
-      }
-      seen += tType
-    }
-  }
-
 
   private def getImportEntry(importMap: ImportMap, classId: ClassID) = {
     val templateName = classId.templatedClassName
@@ -100,13 +82,17 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
     templateName -> s"$prefix::$templateName"
   }
 
-  class TemplateClassGenerator(cu: CompilationUnit) {
+  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit) extends TemplateErrors {
+
+    override val importMap: ImportMap = cu.importMap
 
     /**
       * Has the side effect of filling the programs in the template program map with
       * generated template classes.
       */
-    def generateNeededTemplates(): Unit = {
+    def apply(): Unit = {
+      cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
+      
       val traverser = new Trees.Traverser {
         override def _traverse(t: Tree): Unit = t match {
           case ClassDeclTree(_, parents, fields, methods) =>
@@ -122,7 +108,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
       traverser.traverse(cu)
     }
 
-    def generateClass(typeId: ClassID): Unit = {
+    private def generateClass(typeId: ClassID): Unit = {
       val shortName = typeId.templatedClassName.split("::").last
 
       if (generatedClassNames(shortName))
@@ -149,6 +135,19 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
           val generatedClass = newTemplateClass(templateCU, typeId)
           templateCU.classes ::= generatedClass
         case None             => report(ClassDoesNotExist(typeId.name, typeId))
+      }
+    }
+
+    private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree) = {
+      var seen = Set[TypeTree]()
+      var reportedFor = Set[TypeTree]()
+      val templateTypes = templateClass.id.templateTypes
+      templateTypes foreach { tType =>
+        if (seen(tType) && !reportedFor(tType)) {
+          report(SameName(tType.name, tType))
+          reportedFor += tType
+        }
+        seen += tType
       }
     }
 
@@ -212,7 +211,7 @@ class TemplateModifier(override var ctx: Context) extends TemplateErrors {
           case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated)
-              new TemplateClassGenerator(templateCU).generateClass(newId)
+              TemplateClassGenerator(ctx, templateCU).generateClass(newId)
 
             templateMap.get(newId) match {
               case Some(replacement) => replacement.copyAttributes(classId)

@@ -18,7 +18,7 @@ object Lexer extends Pipeline[Source, List[Token]] {
   }
 }
 
-class Tokenizer(override var ctx: Context, override val source: Source) extends LexerErrors {
+class Tokenizer(override val ctx: Context, override val source: Source) extends LexerErrors {
 
   override var line   = 1
   override var column = 1

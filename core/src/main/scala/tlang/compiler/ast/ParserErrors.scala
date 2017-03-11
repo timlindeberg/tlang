@@ -10,7 +10,7 @@ import tlang.compiler.utils.Positioned
   */
 trait ParserErrors extends ErrorHandling {
 
-  override var importMap = new ImportMap(ctx)
+  override val importMap = ImportMap(ctx)
 
   def report(error: Error): Unit = ctx.reporter.report(error)
 
@@ -34,7 +34,7 @@ trait ParserErrors extends ErrorHandling {
 
 
   case class InvalidArrayDimension(size: Int, override val pos: Positioned) extends ParserError(2, pos) {
-    lazy val message = {
+    lazy val message: String = {
       val maxArraySize = ASTBuilder.MaximumArraySize
       err"Invalid array dimension: $size, $maxArraySize is the maximum dimension of an array."
     }
@@ -52,7 +52,7 @@ trait ParserErrors extends ErrorHandling {
 
   case class WrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*) extends ParserFatal(2, currentToken) {
 
-    lazy val message = {
+    lazy val message: String = {
       val l = (kind :: more.toList).map(k => err"$k")
       val expected = l.size match {
         case 1 => l.head

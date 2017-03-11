@@ -33,10 +33,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class InheritanceCycle(set: Set[ClassSymbol], c: ClassSymbol, override val pos: Positioned)
     extends NameAnalysisError(0, pos) {
-    lazy val message: String = {
-      val list = inheritanceList(set, c)
-      err"A cycle was found in the inheritance graph: " + list
-    }
+    lazy val message: String = err"A cycle was found in the inheritance graph: " + inheritanceList(set, c)
 
     private def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol) = {
       val first = if (set.size >= 2)

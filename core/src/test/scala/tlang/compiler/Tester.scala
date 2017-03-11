@@ -5,15 +5,51 @@ import java.io.File
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.error.Boxes.Light
+import tlang.compiler.error.Boxes.{Light, Simple}
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassSymbolLocator
-import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, Source}
 
 import scala.concurrent._
 import scala.util.matching.Regex
+
+object Tester {
+
+  val TestDirectory                    = "gen"
+  val Resources                        = "core/src/test/resources/"
+  val Timeout                          = duration.Duration(2, "sec")
+  val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
+  val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
+  val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
+  val UseColor           : Boolean     = sys.env.get("usecolor").contains("true")
+  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
+
+  def testContext: Context = getTestContext(None, Some(VoidReporter()))
+
+  def getTestContext(file: Option[File], reporter: Option[Reporter] = None): Context = {
+    val (files, outDir) = file.map { f =>
+      val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
+      (Set(f), new File(s"$TestDirectory/$mainName/"))
+    }.getOrElse {
+      (Set[File](), new File("."))
+    }
+
+    val colors = Colors(UseColor)
+
+    val box = if (UseSimpleFormatting) Simple else Light
+    val formatting = Formatting(box, 80, colors)
+    val r = reporter.getOrElse(DefaultReporter(formatting = formatting))
+    Context(
+      reporter = r,
+      files = files,
+      outDirs = Set(outDir),
+      printCodeStages = PrintCodeStages,
+      formatting = formatting,
+      printer = PrettyPrinter(colors))
+  }
+
+}
 
 /**
   * Created by Tim Lindeberg on 4/11/2016.
@@ -67,11 +103,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     if (file.isFile && file.getName.endsWith(Main.FileEnding))
       return Array(file)
 
-    val files = file.listFiles
-    if (files == null || files.isEmpty)
-      Array()
-    else
-      files.flatMap(testFiles)
+    file.listFiles.flatMap(testFiles)
   }
 
   protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
@@ -108,51 +140,4 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   }
 
   private def flattenTuples[A, B, C](t: List[((A, B), C)]): List[(A, B, C)] = t.map(x => (x._1._1, x._1._2, x._2))
-}
-
-object Tester {
-
-  val TestDirectory                    = "gen"
-  val Resources                        = "core/src/test/resources/"
-  val Timeout                          = duration.Duration(2, "sec")
-  val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
-  val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
-  val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
-  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
-
-  def testContext: Context = getTestContext(None, Some(VoidReporter()))
-
-  def getTestContext(
-    file: Option[File],
-    reporter: Option[Reporter] = None
-  ): Context = {
-
-
-    val (files, outDir) = file match {
-      case Some(f) =>
-        val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
-        (Set(f), Set(getOutDir(mainName)))
-      case None    => (Set[File](), Set(new File(".")))
-    }
-
-
-    val colors = Colors(!UseSimpleFormatting)
-
-    val formatting =
-      if (UseSimpleFormatting)
-        SimpleFormatting
-      else
-        Formatting(Light, LineWidth.defaultValue, colors)
-    val r = reporter.getOrElse(DefaultReporter(formatting = formatting))
-    Context(
-      reporter = r,
-      files = files,
-      outDirs = outDir,
-      printCodeStages = PrintCodeStages,
-      formatting = formatting,
-      printer = PrettyPrinter(colors))
-  }
-
-  private def getOutDir(name: String) = new File(s"$TestDirectory/$name/")
-
 }

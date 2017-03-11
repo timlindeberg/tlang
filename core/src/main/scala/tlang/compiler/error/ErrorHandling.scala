@@ -9,53 +9,51 @@ import tlang.compiler.utils.Positioned
   */
 trait ErrorHandling {
 
-  var ctx      : Context
-  var importMap: ImportMap
+  def ctx: Context
+  def importMap: ImportMap
 
   val nameSuggestor = new NameSuggestor
 
   def report(warning: Warning): Unit = ctx.reporter.report(warning)
   def report(fatal: Fatal): Nothing = {
     ctx.reporter.report(fatal)
+    // Reporter will throw an exception but this is here so the type can be Nothing
     throw new Exception
   }
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
+    private val colors = ctx.formatting.colors
+
+    import colors._
+
     def err(args: Any*): String = {
-      val colors = ctx.formatting.colors
-
-      import colors._
-
       val strings = sc.parts.iterator
       val expressions = args.iterator
       val sb = new StringBuilder(Bold + strings.next)
       while (strings.hasNext) {
-        val next = expressions.next
-        sb ++= (next match {
-          case Suggestion(Some(suggestion)) => err"Did you mean $suggestion?"
-          case Suggestion(None)             => ""
-          case _                            =>
-            var str = next.toString
-            str = TemplateNameParser.parseTemplateName(str)
-            str = importMap.replaceNames(str)
-            s"'$Reset$Magenta$str$Reset$Bold'"
-        })
-        sb ++= strings.next
+        sb ++= evaluate(expressions.next)
+        sb ++= Reset + Bold + strings.next
       }
-      sb.toString + Reset
+      sb ++= Reset
+      sb.toString
+    }
+
+    private def evaluate(any: Any) = any match {
+      case Suggestion(Some(suggestion)) => err"Did you mean $suggestion?"
+      case Suggestion(None)             => ""
+      case any                          =>
+        var str = any.toString
+        str = TemplateNameParser.parseTemplateName(str)
+        str = importMap.replaceNames(str)
+
+        if (colors.isActive) s"$Reset$Magenta$str" else s"'$str'"
     }
   }
 
 }
 
-object ErrorMessage {
-  val ErrorName = "$ERROR$"
-
-  def unapply(err: ErrorMessage) = Some((err.code, err.message, err.pos))
-}
-
-
+object ErrorMessage {val ErrorName = "$ERROR"}
 abstract class ErrorMessage(val errorNum: Int, val errorLetters: String, val codeNum: Int, val pos: Positioned) {
 
   val code: String = errorLetters + errorNum + leftPadCode(codeNum)
@@ -80,7 +78,6 @@ abstract class ErrorMessage(val errorNum: Int, val errorLetters: String, val cod
     case x if x >= 100 && x < 1000 => "" + x
   }
 }
-
 
 abstract class Warning(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
   extends ErrorMessage(1, errorLetters, codeNum, pos)

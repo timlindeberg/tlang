@@ -47,7 +47,7 @@ object ASTBuilder {
   )
 }
 
-class ASTBuilder(override var ctx: Context, var tokens: Array[Token]) extends ParserErrors {
+class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
 
   import ASTBuilder._
 

@@ -20,11 +20,6 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
 
   private val wordWrapper = new AnsiWordWrapper
 
-  def makeList(items: Traversable[String], indent: String = "  ") = {
-    val listSign = if (colors.isActive) "•" else "*"
-    items.map(item => s"$indent$listSign $item").mkString("\n")
-  }
-
   def top: String = trimRight(┌ + ─ * (lineWidth - 2) + ┐) + "\n"
   def bottom: String = trimRight(└ + ─ * (lineWidth - 2) + ┘) + "\n"
   def divider: String = trimRight(├ + ─ * (lineWidth - 2) + ┤) + "\n"
@@ -121,9 +116,14 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   def formatFileName(file: File): String = formatFileName(file.getName)
 
   def formatFileName(name: String): String = {
-    Bold(Magenta(name)) + Main.FileEnding
+    val style = Bold + Magenta
+    Bold(Magenta(name) + Main.FileEnding)
   }
 
+  def makeList(items: Traversable[String], indent: String = "  "): String = {
+    val listSign = if (colors.isActive) "•" else "*"
+    items.map(item => s"$indent$listSign $item").mkString("\n")
+  }
 
   private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
 }

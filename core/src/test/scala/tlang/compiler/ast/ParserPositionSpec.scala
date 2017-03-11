@@ -15,18 +15,18 @@ import scala.reflect.{ClassTag, classTag}
   */
 class ParserPositionSpec extends FunSuite with Matchers {
 
-  val NoPos      : Pos     = Pos(-1, -1, -1, -1)
-  val TestFile   : String  = Tester.Resources + "positions/ParserPositions.t"
-  val TestContext: Context = Tester.testContext
+  private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
+  private val TestFile   : String  = Tester.Resources + "positions/ParserPositions.t"
+  private val TestContext: Context = Tester.testContext
 
-  val Tree: Tree = {
+  private val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
     (Lexer andThen Parser).run(TestContext)(file).head
   }
 
-  val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
+  private val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
 
-  def testPositions[T <: Tree : ClassTag](positions: Pos*): Unit = {
+  private def testPositions[T <: Tree : ClassTag](positions: Pos*): Unit = {
     val clazz = classTag[T].runtimeClass
     val className = clazz.getSimpleName
     test(className) {
