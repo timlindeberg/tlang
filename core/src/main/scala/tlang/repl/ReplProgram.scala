@@ -55,13 +55,13 @@ case class ReplProgram(ctx: Context) {
   private var resultCounter = 0
 
   def execute(command: String): List[String] = {
-    history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
-    newStatements = Nil
-
-
     val definitionMessages = extractDefinitionsFromInput(command)
 
-    compile.run(ctx)(generateCompilationUnit() :: Nil)
+    val CU = generateCompilationUnit()
+    compile.run(ctx)(CU :: Nil)
+
+    history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
+    newStatements = Nil
 
     val executionMessages = programExecutor(ClassFile) match {
       case Some(res) =>
@@ -86,7 +86,7 @@ case class ReplProgram(ctx: Context) {
     val block = Some(Block(stats))
     val mainMethod = MethodDeclTree.mainMethod(block, ReplClassSymbol)
     val mainClass = ClassDecl(ReplClassID, Nil, Nil, mainMethod :: methods.values.toList).setSymbol(ReplClassSymbol)
-    val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, new ImportMap(ctx))
+    val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, ImportMap(ctx))
     val analyzed = frontEnd.run(ctx)(cu :: Nil).head
     newStatementTransformer(analyzed).prettyPrint
   }

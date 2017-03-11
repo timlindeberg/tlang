@@ -2,7 +2,6 @@ package tlang.repl
 
 import java.awt.Toolkit
 import java.awt.datatransfer.{Clipboard, DataFlavor}
-import java.io.{File, FileWriter}
 
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
@@ -10,36 +9,26 @@ import tlang.compiler.error.{CompilationException, ErrorMessages}
 import tlang.utils.Extensions._
 import tlang.utils.{Enumerable, Enumeration}
 
-import scala.collection.mutable.ListBuffer
-import scalaz.Cord
-
 /**
   * Created by Tim Lindeberg on 2/25/2017.
   */
-case class Loop(ctx: Context) {
+case class ReplLoop(ctx: Context) {
 
-  private val MaxRedoSize       = 500
-  private val TabSize           = 4
-  private val HistorySeperator  = "★"
-  private val SettingsDirectory = System.getProperty("user.home") + File.separator + ".tlang"
-  private val HistoryFileName   = "repl_history"
+  private val MaxRedoSize = 500
+  private val TabSize     = 4
 
-  private val historyFile    = new File(SettingsDirectory, HistoryFileName)
-  private val replProgram    = ReplProgram(ctx)
-  private val terminal       = new ReplTerminal(ctx.formatting)
-  private var running        = false
-  private val commandBuffers = CircularBuffer[CommandBuffer](CommandBuffer(MaxRedoSize, TabSize))
-
-  private def currentCommand = commandBuffers()
+  private val replProgram = ReplProgram(ctx)
+  private val terminal    = new ReplTerminal(ctx.formatting)
+  private var running     = false
+  private val commands    = CommandHistory(MaxRedoSize, TabSize)
 
   def start(): Unit = {
 
     sys.addShutdownHook {
-      saveHistory()
+      commands.saveToFile()
     }
 
     running = true
-    loadHistory()
 
     terminal.onClose {running = false}
     terminal.putWelcomeBox()
@@ -47,13 +36,13 @@ case class Loop(ctx: Context) {
     try {
       loop()
     } finally {
-      saveHistory()
+      commands.saveToFile()
     }
   }
 
   private def loop() =
     while (running) {
-      terminal.putInputBox(currentCommand)
+      terminal.putInputBox(commands.current)
       terminal.flush()
 
       val keyStroke = terminal.readInput()
@@ -62,52 +51,9 @@ case class Loop(ctx: Context) {
         case Some(command) => command.execute(keyStroke)
         case None          =>
           val c = keyStroke.getCharacter
-          if (c != null) currentCommand += c
+          if (c != null) commands.current += c
       }
     }
-
-
-  private def loadHistory(): Unit = {
-    if (historyFile.getParentFile.mkdirs() || historyFile.createNewFile())
-      return
-
-    val lines = new ListBuffer[String]()
-    using(io.Source.fromFile(historyFile)) {
-      _.getLines().foreach { line =>
-        if (line == HistorySeperator && lines.nonEmpty) {
-          val cord = Cord.empty :+ lines.mkString("\n")
-          commandBuffers += CommandBuffer(MaxRedoSize, TabSize, cord)
-          lines.clear()
-        } else {
-          lines += line
-        }
-      }
-    }
-  }
-
-  private def saveHistory(): Unit =
-    using(new FileWriter(historyFile, false)) {
-      _.write(
-        commandBuffers
-          .drop(1)
-          .map(_.cord.toString())
-          .mkString("\n" + HistorySeperator + "\n")
-      )
-    }
-
-  private def saveCommand(command: String): Unit = {
-    // Reset base command buffer
-    commandBuffers.setIndex(0)
-    currentCommand.clear()
-
-    // Remove previous if it already existed
-    commandBuffers.find(_.cord.toString() == command) ifDefined { alreadyExisting =>
-      commandBuffers -= alreadyExisting
-    }
-
-    commandBuffers += CommandBuffer(MaxRedoSize, TabSize, Cord.empty :+ command)
-    using(new FileWriter(historyFile, true)) {_.write(command + "\n" + HistorySeperator + "\n")}
-  }
 
   sealed abstract class Command() extends Product with Serializable {
     def matches(keyStroke: KeyStroke): Boolean
@@ -124,9 +70,9 @@ case class Loop(ctx: Context) {
         keyStroke.getKeyType == KeyType.Enter && keyStroke.isCtrlDown
 
       override def execute(keyStroke: KeyStroke): Unit = {
-        val command = currentCommand.text
+        val command = commands.current.text
         if (command.nonEmpty) {
-          saveCommand(command)
+          commands.saveCurrent()
           evaluate(command) match {
             case Right(messages)     => terminal.putResultBox(command, messages)
             case Left(errorMessages) => terminal.putErrorBox(command, errorMessages.getErrors)
@@ -162,14 +108,14 @@ case class Loop(ctx: Context) {
       override def matches(keyStroke: KeyStroke): Boolean =
         keyStroke.isCtrlDown && !keyStroke.isAltDown && keyStroke.getCharacter == 'z'
 
-      override def execute(keyStroke: KeyStroke): Unit = currentCommand.undo()
+      override def execute(keyStroke: KeyStroke): Unit = commands.current.undo()
     }
 
     case object Redo extends Command {
       override def matches(keyStroke: KeyStroke): Boolean =
         keyStroke.isCtrlDown && keyStroke.isAltDown && keyStroke.getCharacter == 'z'
 
-      override def execute(keyStroke: KeyStroke): Unit = currentCommand.redo()
+      override def execute(keyStroke: KeyStroke): Unit = commands.current.redo()
     }
 
 
@@ -177,14 +123,14 @@ case class Loop(ctx: Context) {
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.Backspace
 
       override def execute(keyStroke: KeyStroke): Unit =
-        if (largeMovement(keyStroke)) currentCommand.removeToLeftWord() else currentCommand.remove()
+        if (largeMovement(keyStroke)) commands.current.removeToLeftWord() else commands.current.remove()
     }
 
     case object GoLeft extends Command {
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowLeft
 
       override def execute(keyStroke: KeyStroke): Unit = {
-        if (largeMovement(keyStroke)) currentCommand.goToLeftWord() else currentCommand.moveLeft(1)
+        if (largeMovement(keyStroke)) commands.current.goToLeftWord() else commands.current.moveLeft(1)
       }
     }
 
@@ -192,7 +138,7 @@ case class Loop(ctx: Context) {
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowRight
 
       override def execute(keyStroke: KeyStroke): Unit = {
-        if (largeMovement(keyStroke)) currentCommand.goToRightWord() else currentCommand.moveRight(1)
+        if (largeMovement(keyStroke)) commands.current.goToRightWord() else commands.current.moveRight(1)
       }
     }
 
@@ -200,8 +146,8 @@ case class Loop(ctx: Context) {
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowUp
 
       override def execute(keyStroke: KeyStroke): Unit = {
-        if (!currentCommand.up())
-          commandBuffers -= 1
+        if (!commands.current.up())
+          commands.goToPrevious()
       }
     }
 
@@ -209,8 +155,8 @@ case class Loop(ctx: Context) {
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowDown
 
       override def execute(keyStroke: KeyStroke): Unit = {
-        if (!currentCommand.down())
-          commandBuffers += 1
+        if (!commands.current.down())
+          commands.goToNext()
       }
     }
 
@@ -218,7 +164,7 @@ case class Loop(ctx: Context) {
 
       override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.getCharacter == 'v'
 
-      override def execute(keyStroke: KeyStroke): Unit = currentCommand ++= clipboardContents
+      override def execute(keyStroke: KeyStroke): Unit = commands.current ++= clipboardContents
 
       private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
       private def clipboardContents: String = systemClipboard.getData(DataFlavor.stringFlavor).asInstanceOf[String]

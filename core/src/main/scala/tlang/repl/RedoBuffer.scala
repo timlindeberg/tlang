@@ -10,8 +10,7 @@ case object State {
   val Empty = State(Cord.empty, List(0), 0)
 }
 case class State(cord: Cord, linePositions: List[Int], position: Int)
-case class History(maxSize: Int) {
-
+case class RedoBuffer(maxSize: Int) {
 
   private var _first: Option[HistoryNode] = None
   private var _last : Option[HistoryNode] = None

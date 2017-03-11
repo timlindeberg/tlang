@@ -35,7 +35,7 @@ object Main {
 
     val tempDir = Files.createTempDirectory("repl").toFile
     val context = createContext(options, tempDir)
-    val replLoop = Loop(context)
+    val replLoop = ReplLoop(context)
 
     replLoop.start()
 

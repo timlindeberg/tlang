@@ -48,9 +48,10 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     setCursorPosition(boxStartPos)
     val sb = new StringBuilder
 
-    val markings = errors.map { errors => Marking(errors.pos, Bold + Underline + Red) }
     sb ++= makeHeader(Bold(Red("Error")))
     sb ++= divider
+
+    val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
     sb ++= makeLines(syntaxHighlighter(input, markings))
 
     val lines = errors.map { error =>
@@ -69,7 +70,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     put(clearLine * num)
   }
 
-  def putInputBox(commandBuffer: CommandBuffer): Unit = {
+  def putInputBox(commandBuffer: Command): Unit = {
     val input = commandBuffer.text
     setCursorPosition(boxStartPos)
     val text = highlight(input)

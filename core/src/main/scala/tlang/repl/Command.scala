@@ -5,10 +5,9 @@ import scalaz.Cord
 /**
   * Created by Tim Lindeberg on 2/26/2017.
   */
-case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.empty) {
+case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
 
-
-  private val history = History(maxHistorySize)
+  private val history = RedoBuffer(maxHistorySize)
 
   private var linePositions: List[Int] = _
   private var position     : Int       = _
@@ -20,10 +19,9 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
   private def x_=(v: Int) = _x = v
   private def y_=(v: Int) = _y = v
 
+  def currentCord: Cord = history.current.cord
 
-  private def current: Cord = history.current.cord
-
-  clear(cord)
+  reset(cord)
 
   def x: Int = _x
   def y: Int = _y
@@ -39,7 +37,7 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
     }
 
     upDownX = 0
-    val text = current
+    val text = currentCord
     if (position != text.length)
       linePositions = linePositions.map { pos => if (pos > position) pos + 1 else pos }
 
@@ -62,7 +60,7 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
 
   def remove(): Unit = {
     upDownX = 0
-    val text = current
+    val text = currentCord
 
     if (text.isEmpty || position == 0)
       return
@@ -138,7 +136,7 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
   def redo(): Boolean = _changeState(history.redo)
 
 
-  def clear(cord: Cord = Cord.empty): Unit = {
+  def reset(cord: Cord = Cord.empty): Unit = {
     position = 0
     x = 0
     y = 0
@@ -150,11 +148,11 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
     history += State(cord, linePositions, 0)
   }
 
-  def text: String = current.toString
+  def text: String = currentCord.toString
 
 
   private def leftPosition: Int = {
-    val text = current
+    val text = currentCord
     if (text.isEmpty || position == 0)
       return position
 
@@ -165,7 +163,7 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
   }
 
   private def rightPosition: Int = {
-    val text = current
+    val text = currentCord
     if (text.isEmpty || position == text.length)
       return position
 
@@ -176,7 +174,7 @@ case class CommandBuffer(maxHistorySize: Int, tabSize: Int, cord: Cord = Cord.em
   }
 
   private def charsUntilStop(iterator: Iterator[String], pos: Int): Int = {
-    val currentChar = current(math.max(0, pos))
+    val currentChar = currentCord(math.max(0, pos))
 
     val currentIsWhiteSpace = currentChar.isWhitespace
     var i = 0
