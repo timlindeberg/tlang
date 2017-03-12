@@ -10,8 +10,6 @@ import tlang.compiler.modification.Templates
 import tlang.compiler.options.{Flags, Options}
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
-import scala.concurrent.duration
-
 object Main extends MainErrors {
 
   import Flags._
@@ -227,11 +225,11 @@ object Main extends MainErrors {
     val header = if (mainMethods.size > 1) "Executing programs" else "Executing program"
 
 
-    val programExecutor = ProgramExecutor(duration.Duration(1, "min"))
+    val programExecutor = ProgramExecutor(timeout = None)
     val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
     val outputBlocks = cus.flatMap { cu =>
       val file = cu.source.asInstanceOf[FileSource].file
-      val output = syntaxHighlighter(programExecutor(ctx, file).get.trim)
+      val output = syntaxHighlighter(programExecutor(ctx, file))
       center(formatFileName(file)) :: output :: Nil
     }
     print(makeBox(Bold(header), outputBlocks))

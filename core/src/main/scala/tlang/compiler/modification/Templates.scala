@@ -109,9 +109,10 @@ case class TemplateModifier(ctx: Context) {
     }
 
     private def generateClass(typeId: ClassID): Unit = {
-      val shortName = typeId.templatedClassName.split("::").last
+      val name = typeId.templatedClassName
+      val shortName = name.split("::").last
 
-      if (generatedClassNames(shortName))
+      if (generatedClassNames(shortName) || cu.classes.exists(_.tpe.toString == name))
         return
 
       generatedClassNames += shortName

@@ -34,7 +34,7 @@ trait ValidTester extends Tester {
 
       val compilation = Desugaring andThen CodeGeneration
       compilation.run(ctx)(cus)
-      val res = programExecutor(ctx, file).getOrElse(fail(s"Test timed out!"))
+      val res = programExecutor(ctx, file)
       val resLines = lines(res)
       val sol = parseSolutions(file)
       assertCorrect(resLines, sol)

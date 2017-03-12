@@ -12,6 +12,7 @@ import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
 import tlang.compiler.error._
 import tlang.utils.Extensions._
 
+
 class ReplTerminal(formatting: Formatting) extends Terminal {
 
   import formatting._
@@ -37,9 +38,10 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     put(box)
   }
 
-  def putResultBox(input: String, results: List[String]): Unit = {
+  def putResultBox(input: String, results: String, success: Boolean): Unit = {
     setCursorPosition(boxStartPos)
-    putBox(Bold(Green("Result")), highlight(input) :: results.mkString("\n") :: Nil)
+    val header = if (success) Green("Result") else Red("Error")
+    putBox(Bold(header), highlight(input) :: results :: Nil)
     boxStartPos = getCursorPosition
   }
 
@@ -86,7 +88,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   }
 
   def putWelcomeBox(): Unit = {
-    val header = Bold("Welcome to the ") + Green("T-REPL") + Bold("!")
+    val header = Bold("Welcome to the ") + Bold(Green("T-REPL")) + Bold("!")
     val description =
       s"""
          |Type in code to have it evaluated or type one of the following commands:

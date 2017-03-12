@@ -9,6 +9,8 @@ import tlang.compiler.error.{CompilationException, ErrorMessages}
 import tlang.utils.Extensions._
 import tlang.utils.{Enumerable, Enumeration}
 
+import scala.concurrent.{TimeoutException, duration}
+
 /**
   * Created by Tim Lindeberg on 2/25/2017.
   */
@@ -16,8 +18,9 @@ case class ReplLoop(ctx: Context) {
 
   private val MaxRedoSize = 500
   private val TabSize     = 4
+  private val Timeout     = duration.Duration(2, "sec")
 
-  private val replProgram = ReplProgram(ctx)
+  private val replProgram = ReplProgram(ctx, Timeout)
   private val terminal    = new ReplTerminal(ctx.formatting)
   private var running     = false
   private val commands    = CommandHistory(MaxRedoSize, TabSize)
@@ -62,6 +65,12 @@ case class ReplLoop(ctx: Context) {
 
   object Commands extends Enumerable[Command] {
 
+    trait EvaluationResult
+
+    case class CompilationFailed(messages: ErrorMessages) extends EvaluationResult
+    case class Failure(message: String) extends EvaluationResult
+    case class Success(message: String) extends EvaluationResult
+
     private def largeMovement(keyStroke: KeyStroke): Boolean = keyStroke.isAltDown
 
     case object Evaluate extends Command {
@@ -74,18 +83,24 @@ case class ReplLoop(ctx: Context) {
         if (command.nonEmpty) {
           commands.saveCurrent()
           evaluate(command) match {
-            case Right(messages)     => terminal.putResultBox(command, messages)
-            case Left(errorMessages) => terminal.putErrorBox(command, errorMessages.getErrors)
+            case Success(message)            => terminal.putResultBox(command, message, success = true)
+            case Failure(message)            => terminal.putResultBox(command, message, success = false)
+            case CompilationFailed(messages) => terminal.putErrorBox(command, messages.getErrors)
           }
         }
       }
 
-      def evaluate(command: String): Either[ErrorMessages, List[String]] = {
+      def evaluate(command: String): EvaluationResult = {
+        import ctx.formatting.colors._
+
         if (!command.startsWith(":")) {
           try {
-            return Right(replProgram.execute(command))
+            return Success(replProgram.execute(command))
           } catch {
-            case e: CompilationException => return Left(e.messages)
+            case e: CompilationException => return CompilationFailed(e.messages)
+            case _: TimeoutException     =>
+              val msg = Bold("Execution timed out after " + Red(Timeout)) + Bold(".")
+              return Failure(msg)
           }
 
         }
@@ -97,9 +112,10 @@ case class ReplLoop(ctx: Context) {
             "Exiting..."
           case "print" =>
             replProgram.prettyPrinted.trimWhiteSpaces
-          case _       => s"Command not supported: $command"
+          case _       =>
+            return Failure(Bold + "Command not supported: " + Red(command))
         }
-        Right(List(message))
+        Success(message)
       }
 
     }

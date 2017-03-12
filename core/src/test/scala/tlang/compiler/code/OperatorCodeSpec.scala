@@ -215,7 +215,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     val files = TestCtx.files.map(FileSource).toList
     Compiler.run(TestCtx)(files)
-    programExecutor(TestCtx, TestCtx.files.head).get
+    programExecutor(TestCtx, TestCtx.files.head)
   }
 
   private def getScalaResult(operation: String) = {

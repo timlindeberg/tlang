@@ -4,6 +4,8 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.{ClassTag, _}
 import scala.util.matching.Regex
 
@@ -22,20 +24,32 @@ object Extensions {
     }
   }
 
+  def withTimeout[T](duration: Duration)(block: => T): T = {
+    implicit val exec = new TimeoutExecutionContext()
+    try {
+      Await.result(Future(block), duration)
+    } catch {
+      case e: Exception =>
+        exec.lastThread.getOrElse(throw new RuntimeException("Not started")).stop()
+        throw e
+    }
+  }
+
   def stdoutOutput[T](block: => T): String = {
     val sysOut = System.out
     val bytes = new ByteArrayOutputStream()
     System.setOut(new PrintStream(bytes))
 
-    block
-
-    System.out.flush()
-    val res = bytes.toString
-    System.setOut(sysOut)
-    res
+    try {
+      block
+    } finally {
+      System.out.flush()
+      System.setOut(sysOut)
+    }
+    bytes.toString
   }
 
-  def timed[T](block: => T): (T, Double) = {
+  def measureTime[T](block: => T): (T, Double) = {
     val t0 = System.nanoTime()
     val res = block
     val t1 = System.nanoTime()
@@ -43,15 +57,11 @@ object Extensions {
   }
 
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
-
     def ifDefined(f: T => Unit): Unit = if (o.isDefined) f(o.get)
-
   }
 
   implicit class IntExtensions(val i: Int) extends AnyVal {
-
     def times(f: => Unit): Unit = 1 to i foreach { _ => f }
-
   }
 
   implicit class RegexExtensions(r: Regex) {
@@ -96,7 +106,6 @@ object Extensions {
   }
 
   implicit class AnyExtensions(val a: Any) extends AnyVal {
-
     def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
   }
 
@@ -107,7 +116,6 @@ object Extensions {
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {
-
     def filterInstance[A <: T : ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
     def filterNotInstance[A <: T : ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
     def findInstance[A <: T : ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
@@ -122,7 +130,6 @@ object Extensions {
   }
 
   implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {
-
     def getOrElseMaybeUpdate(key: K, op: => Option[V]): Option[V] =
       m.get(key) match {
         case Some(v) => Some(v)
@@ -133,8 +140,20 @@ object Extensions {
           case None    => None
         }
       }
-
   }
 
+  private class TimeoutExecutionContext extends AnyRef with ExecutionContext {
+
+    @volatile var lastThread: Option[Thread] = None
+    override def execute(runnable: Runnable): Unit = {
+      ExecutionContext.Implicits.global.execute(new Runnable() {
+        override def run() {
+          lastThread = Some(Thread.currentThread)
+          runnable.run()
+        }
+      })
+    }
+    override def reportFailure(t: Throwable): Unit = ???
+  }
 
 }
