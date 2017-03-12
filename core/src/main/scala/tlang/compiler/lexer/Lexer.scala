@@ -237,10 +237,11 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
       case c :: r if isHexDigit(c)   => getHexadecimalLiteral(r, s + c, parsed + 1)
       case ('l' | 'L') :: r          => (parseLongToken(s.toString, parsed + 1), r)
       case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, parsed), chars)
+      case Nil                       => (parseIntToken(s.toString, parsed), chars)
       case _                         => endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidHexadecimalLiteral(len)))
     }
 
-    if (isEndingChar(chars.head))
+    if (chars.isEmpty || isEndingChar(chars.head))
       endInvalidToken(chars, 2, _.isWhitespace, len => report(InvalidHexadecimalLiteral(len)))
     else
       getHexadecimalLiteral(chars, new StringBuilder("0x"), 2)
@@ -254,10 +255,11 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
       case '1' :: r                  => getBinaryLiteral(r, s + '1', parsed + 1)
       case ('l' | 'L') :: r          => (parseLongToken(s.toString, parsed + 1), r)
       case c :: _ if isEndingChar(c) => (parseIntToken(s.toString, parsed), chars)
+      case Nil                       => (parseIntToken(s.toString, parsed), chars)
       case _                         => endInvalidToken(chars, parsed, _.isWhitespace, len => report(InvalidBinaryLiteral(len)))
     }
 
-    if (isEndingChar(chars.head))
+    if (chars.isEmpty || isEndingChar(chars.head))
       endInvalidToken(chars, 2, _.isWhitespace, len => report(InvalidBinaryLiteral(len)))
     else
       getBinaryLiteral(chars, new StringBuilder("0b"), 2)

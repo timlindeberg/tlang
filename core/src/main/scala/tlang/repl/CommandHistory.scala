@@ -7,16 +7,10 @@ import tlang.utils.Extensions._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scalaz.Cord
 
-object CordExtension {
-
-
-}
-
 /**
   * Created by Tim Lindeberg on 3/11/2017.
   */
 case class CommandHistory(maxRedoSize: Int, tabSize: Int) {
-
 
   private val HistorySeperator  = "★"
   private val HistoryFileName   = "repl_history"

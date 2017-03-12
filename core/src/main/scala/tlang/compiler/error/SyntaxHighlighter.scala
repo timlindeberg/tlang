@@ -3,10 +3,9 @@ package tlang.compiler.error
 import tlang.compiler.Context
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, Tokenizer, Tokens}
-import tlang.compiler.utils._
 import tlang.utils.Colors._
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, StringSource}
+import tlang.utils.{Colors, Position, Positioned, StringSource}
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.
@@ -22,27 +21,24 @@ case class SyntaxHighlighter(colors: Colors) {
 
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
-    if (!colors.isActive)
+    if (code.isEmpty || !colors.isActive)
       return code
-    val lines = code.split("\n", -1)
-    val highlighted = lines.map(highlight(_, markings))
-    highlighted.mkString("\n")
-  }
 
-
-  private def highlight(line: String, markings: Seq[Marking]): String = {
-    if (line.isEmpty)
-      return line
-
-    val source = StringSource(line, "")
+    val source = StringSource(code, "")
     val tokenizer = new Tokenizer(context, source)
     val tokens = tokenizer()
     val sb = new StringBuilder()
-    sb ++= line.substring(0, tokens.head.col - 1)
+
+    val lines = code.split("\n", -1)
+    sb ++= code.substring(0, tokens.head.col - 1)
     val noColor = Color("", isActive = true)
     var prevColor = noColor
 
+    var lineIndex = 0
     for (token :: next :: Nil <- tokens.sliding(2)) {
+
+      val line = lines(lineIndex)
+
       val start = token.col - 1
       val end = token.endCol - 1
 
@@ -52,22 +48,41 @@ case class SyntaxHighlighter(colors: Colors) {
           sb ++= Reset
         sb ++= color
       }
-      prevColor = color
-      sb ++= line.substring(start, end)
-      if (next.kind != EOF) {
-        val nextColor = getColor(next, markings)
-        if (nextColor != color)
-          sb ++= Reset
 
-        sb ++= line.substring(end, next.col - 1)
+      prevColor = color
+      token.kind match {
+        case NEWLINE =>
+          lineIndex += 1
+          sb += '\n'
+          sb ++= Reset
+          if (lineIndex < lines.length && next.kind != EOF)
+            sb ++= lines(lineIndex).substring(0, next.col - 1)
+          sb ++= color
+        case EOF     => sb ++= line.substring(start, end)
+        case _       =>
+          sb ++= line.substring(start, end)
+          if (next.kind != EOF) {
+            val nextColor = getColor(next, markings)
+            if (nextColor != color)
+              sb ++= Reset
+
+            sb ++= line.substring(end, next.col - 1)
+          }
       }
     }
 
-    if (tokens.length >= 2) {
-      val last = tokens(tokens.length - 2)
-      sb ++= line.substring(last.endCol - 1, line.length)
+    val lastLine = lines.last
+    if (lastLine.nonEmpty && tokens.length >= 2) {
+      val lastToken = tokens(tokens.length - 2)
+      if (lastToken.endLine < lines.size)
+        sb ++= lastLine
+      else
+        sb ++= lastLine.substring(lastToken.endCol - 1, lastLine.length)
     }
-    sb.toString()
+
+
+    sb ++= Reset
+    sb.toString
   }
 
   private def getColor(token: Token, markings: Seq[Marking]): Color = {

@@ -1,8 +1,8 @@
 package tlang.compiler.analyzer
 
-import tlang.compiler.ast.Trees._
+import tlang.compiler.ast.Trees.ExprTree
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.

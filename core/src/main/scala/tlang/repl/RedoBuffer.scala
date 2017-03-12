@@ -31,24 +31,6 @@ case class RedoBuffer(maxSize: Int) {
     _size = 0
   }
 
-  private def add(t: State): Unit = {
-    if (_size >= maxSize)
-      removeFirst()
-
-    val node = Some(new HistoryNode(t, None, None))
-
-    _size += 1
-    if (_first.isEmpty) {
-      _first = node
-      _last = node
-      return
-    }
-
-    node.get.prev = _last
-    _last.get.next = node
-    _last = node
-  }
-
   def undo(): Boolean = {
     if (isEmpty || _last.get.prev.isEmpty)
       return false
@@ -120,6 +102,24 @@ case class RedoBuffer(maxSize: Int) {
       node = n.next
     }
     sb.toString()
+  }
+
+  private def add(t: State): Unit = {
+    if (_size >= maxSize)
+      removeFirst()
+
+    val node = Some(new HistoryNode(t, None, None))
+
+    _size += 1
+    if (_first.isEmpty) {
+      _first = node
+      _last = node
+      return
+    }
+
+    node.get.prev = _last
+    _last.get.next = node
+    _last = node
   }
 
   private class HistoryNode(var elem: State, var prev: Option[HistoryNode], var next: Option[HistoryNode])

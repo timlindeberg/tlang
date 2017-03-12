@@ -19,7 +19,6 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
   private val backingTerminal = createTerminal()
 
-
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
 
   private var boxStartPos        = getCursorPosition
@@ -52,14 +51,15 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     sb ++= divider
 
     val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
+
     sb ++= makeLines(syntaxHighlighter(input, markings))
 
-    val lines = errors.map { error =>
+    val errorLines = errors.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
       (errorFormatter.position, errorFormatter.errorPrefix + error.message)
     }
 
-    sb ++= makeBlocksWithColumns(lines, endOfBlock = true)
+    sb ++= makeBlocksWithColumns(errorLines, endOfBlock = true)
 
     put(sb)
     boxStartPos = getCursorPosition
@@ -73,8 +73,8 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   def putInputBox(commandBuffer: Command): Unit = {
     val input = commandBuffer.text
     setCursorPosition(boxStartPos)
-    val text = highlight(input)
-    putBox(Bold(Magenta("Input")), text :: Nil)
+    putBox(Bold(Magenta("Input")), highlight(input) :: Nil)
+
     val currentPos = getCursorPosition
 
     val diff = lastInputBoxEndPos.getRow - currentPos.getRow
@@ -86,7 +86,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   }
 
   def putWelcomeBox(): Unit = {
-    val header = Bold("Welcome to the ") + Green("T-Repl") + Bold("!")
+    val header = Bold("Welcome to the ") + Green("T-REPL") + Bold("!")
     val description =
       s"""
          |Type in code to have it evaluated or type one of the following commands:
@@ -163,5 +163,6 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
     .setTerminalEmulatorFontConfiguration(
       SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 16)))
+    .setInitialTerminalSize(new TerminalSize(80, 500))
     .createTerminal()
 }

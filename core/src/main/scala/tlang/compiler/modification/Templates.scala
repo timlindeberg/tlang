@@ -63,7 +63,7 @@ case class TemplateModifier(ctx: Context) {
           val shortName = tpe.name.split("::").last
           if (cu.importMap.contains(shortName)) {
             val entry = getImportEntry(cu.importMap, tpe)
-            cu.importMap.addImport(entry)
+            cu.importMap += entry
           }
           treeCopy.ClassID(tpe, tpe.templatedClassName)
         case _                               => super._transform(t)
@@ -92,7 +92,7 @@ case class TemplateModifier(ctx: Context) {
       */
     def apply(): Unit = {
       cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
-      
+
       val traverser = new Trees.Traverser {
         override def _traverse(t: Tree): Unit = t match {
           case ClassDeclTree(_, parents, fields, methods) =>
@@ -119,7 +119,7 @@ case class TemplateModifier(ctx: Context) {
       // Update import map to include the newly generated class
       if (cu.importMap.contains(typeId.name)) {
         val entry = getImportEntry(cu.importMap, typeId)
-        cu.importMap.addImport(entry)
+        cu.importMap.+=(entry)
       }
 
       findTemplateCU(typeId) match {
@@ -156,10 +156,10 @@ case class TemplateModifier(ctx: Context) {
       val templateName = classId.templatedClassName
       if (cu.importMap.contains(templateName)) {
         val fullName = cu.importMap.getFullName(templateName)
-        importMap.addImport(templateName, fullName)
+        importMap.+=(templateName, fullName)
       } else if (cu.importMap.contains(classId.name)) {
         val entry = getImportEntry(cu.importMap, classId)
-        importMap.addImport(entry)
+        importMap.+=(entry)
       }
     }
 

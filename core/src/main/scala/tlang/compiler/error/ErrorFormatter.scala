@@ -1,7 +1,7 @@
 package tlang.compiler.error
 
-import tlang.compiler.utils.Positioned
 import tlang.utils.Colors.Color
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 1/14/2017.

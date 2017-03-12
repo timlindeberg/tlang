@@ -2,7 +2,7 @@ package tlang.compiler.imports
 
 import tlang.compiler.ast.Trees.ExtensionImport
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/14/2016.

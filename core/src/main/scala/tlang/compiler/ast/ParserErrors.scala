@@ -3,7 +3,7 @@ package tlang.compiler.ast
 import tlang.compiler.error.{Error, ErrorHandling, Fatal}
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.{Token, TokenKind}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -12,7 +12,9 @@ trait ParserErrors extends ErrorHandling {
 
   override val importMap = ImportMap(ctx)
 
-  def report(error: Error): Unit = ctx.reporter.report(error)
+  protected def lastToken: Token
+
+  protected def report(error: Error): Unit = ctx.reporter.report(error)
 
   val ErrorLetters = "P"
   abstract class ParserFatal(code: Int, pos: Positioned) extends Fatal(ErrorLetters, code, pos)
@@ -49,8 +51,8 @@ trait ParserErrors extends ErrorHandling {
     lazy val message = err"Expected identifier or array access on left side of assignment."
   }
 
-
-  case class WrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*) extends ParserFatal(2, currentToken) {
+  case class WrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*)
+    extends ParserFatal(2, restOf(currentToken)) {
 
     lazy val message: String = {
       val l = (kind :: more.toList).map(k => err"$k")
@@ -62,12 +64,15 @@ trait ParserErrors extends ErrorHandling {
       val found = currentToken.toString
       err"Expected " + expected + err", found: $found."
     }
+
   }
 
 
-  case class UnexpectedToken(currentToken: Token) extends ParserFatal(3, currentToken) {
+  case class UnexpectedToken(currentToken: Token) extends ParserFatal(3, restOf(currentToken)) {
     lazy val message = err"Unexpected token: $currentToken"
   }
+
+  private def restOf(currentToken: Token) = new Positioned {setPos(currentToken, lastToken)}
 
 
 }

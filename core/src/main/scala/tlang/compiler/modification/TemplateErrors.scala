@@ -1,7 +1,7 @@
 package tlang.compiler.modification
 
 import tlang.compiler.error.{Error, ErrorHandling}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 6/22/2016.

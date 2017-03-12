@@ -6,8 +6,8 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
-import tlang.compiler.utils._
 import tlang.utils.Extensions._
+import tlang.utils.Positioned
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -57,8 +57,9 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE)
   }.map(_._1)
 
-  private var currentIndex        = 0
-  private var currentToken: Token = tokens(currentIndex)
+  protected override val lastToken    = tokens.last
+  private            var currentIndex = 0
+  private            var currentToken = tokens(currentIndex)
 
   private def previousToken: Token = {
     if (currentIndex == 0)
@@ -96,7 +97,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
 
     val classes = createMainClass(code)
 
-    val importMap = new ImportMap(ctx, imp, pack, classes)
+    val importMap = ImportMap(ctx, imp, pack, classes)
     CompilationUnit(pack, classes, importMap)
   }
 

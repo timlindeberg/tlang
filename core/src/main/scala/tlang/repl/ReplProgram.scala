@@ -4,7 +4,7 @@ import java.io.File
 
 import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
-import tlang.compiler.analyzer.Types.TUnit
+import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter, Trees}
@@ -28,10 +28,10 @@ case class ReplProgram(ctx: Context) {
   import ctx.formatting.colors._
 
 
-  private val ClassName        = "REPL"
-  private val ReplOutputPrefix = "$ReplRes$"
-  private val PrintPrefix      = Print(StringLit(ReplOutputPrefix))
-  private val ClassFile        = new File(ctx.outDirs.head.getAbsolutePath + File.separator + ClassName + ".class")
+  private val ClassName          = "REPL"
+  private val ReplOutputMarker   = "__ReplRes__"
+  private val ExtracReplMessages = s"""$ReplOutputMarker((?:.|\r?\n)*?)$ReplOutputMarker""".r
+  private val ClassFile          = new File(ctx.outDirs.head.getAbsolutePath + File.separator + ClassName + ".class")
 
   private val ReplClassID        = ClassID(ClassName)
   private val ReplClassSymbol    = new ClassSymbol(ClassName, isAbstract = false)
@@ -52,29 +52,32 @@ case class ReplProgram(ctx: Context) {
   private val methods       = mutable.Map[String, MethodDeclTree]()
   private var history       = ListBuffer[StatTree]()
   private var newStatements = List[StatTree]()
+  private var imports       = ImportMap(ctx)
   private var resultCounter = 0
 
   def execute(command: String): List[String] = {
     val definitionMessages = extractDefinitionsFromInput(command)
 
+    val stats = newStatements.map(_.clone)
     val CU = generateCompilationUnit()
     compile.run(ctx)(CU :: Nil)
 
-    history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
+    history ++= stats.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
     newStatements = Nil
 
     val executionMessages = programExecutor(ClassFile) match {
       case Some(res) =>
-        res.lines
-          .filter(_.startsWith(ReplOutputPrefix))
-          .map(msg => syntaxHighlighter(msg.drop(ReplOutputPrefix.length)))
+        ExtracReplMessages.findAllMatchIn(res)
+          .map(_.group(1))
+          .filter(_.nonEmpty)
+          .map(s => syntaxHighlighter(s.trim))
           .toList
       case None      => List(s"Execution timed out after $maxDuration.")
     }
     definitionMessages ++ executionMessages
   }
 
-  def prettyPrinted: String = printer(generateCompilationUnit())
+  def prettyPrinted: String = printer(generateCompilationUnit()).trimWhiteSpaces
 
   private def generateCompilationUnit(): CompilationUnit = {
     var stats = history.toList
@@ -86,7 +89,8 @@ case class ReplProgram(ctx: Context) {
     val block = Some(Block(stats))
     val mainMethod = MethodDeclTree.mainMethod(block, ReplClassSymbol)
     val mainClass = ClassDecl(ReplClassID, Nil, Nil, mainMethod :: methods.values.toList).setSymbol(ReplClassSymbol)
-    val cu = CompilationUnit(Package(Nil), mainClass :: classes.values.toList, ImportMap(ctx))
+    val allClasses = mainClass :: classes.values.toList
+    val cu = CompilationUnit(Package(Nil), allClasses, imports)
     val analyzed = frontEnd.run(ctx)(cu :: Nil).head
     newStatementTransformer(analyzed).prettyPrint
   }
@@ -102,30 +106,42 @@ case class ReplProgram(ctx: Context) {
     val parsedInput = parseInput(command)
 
     val mainClass = parsedInput.classes.find {_.tpe == ReplClassID}
-    mainClass match {
+    extractImports(parsedInput.importMap) ++ (mainClass match {
       case Some(mainClass) =>
         val classes = parsedInput.classes.remove(mainClass)
         val (methods, stats) = mainClass.methods.find(_.isMain) match {
           case Some(mainMethod) => (mainClass.methods.remove(mainMethod), mainMethod.stat)
           case None             => (mainClass.methods, None)
         }
+        extractClasses(classes) ++
+          extractMethods(methods) ++
+          extractStatements(stats)
 
-        extractClasses(classes) ++ extractMethods(methods) ++ extractStatements(stats)
-      case None            => extractClasses(parsedInput.classes)
-    }
+      case None => extractClasses(parsedInput.classes)
+    })
   }
 
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
-    classes ++= newClasses.map(clazz => clazz.tpe.name -> clazz)
-    newClasses.map { clazz =>
+    classes ++= newClasses.map(clazz => clazz.tpe match {
+      case c: ClassID => c.templatedClassName -> clazz
+      case tpe        => tpe.name -> clazz
+    })
+    newClasses map { clazz =>
       Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
     }
   }
 
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     methods ++= newMethods.map(meth => meth.signature -> meth)
-    newMethods.map { meth =>
+    newMethods map { meth =>
       Bold("Defined ") + KeywordColor("method ") + syntaxHighlighter(meth.signature)
+    }
+  }
+
+  private def extractImports(importMap: ImportMap): List[String] = {
+    imports ++= importMap
+    importMap.imports map { imp =>
+      Bold("Imported ") + syntaxHighlighter(imp.name)
     }
   }
 
@@ -139,7 +155,7 @@ case class ReplProgram(ctx: Context) {
     }
 
     newStatements = stats
-    stats.filterInstance[VarDecl].map { variable =>
+    stats.filterInstance[VarDecl] map { variable =>
       Bold("Defined ") + KeywordColor("variable ") + syntaxHighlighter(variable.id.name)
     }
   }
@@ -147,6 +163,9 @@ case class ReplProgram(ctx: Context) {
   // Adds a variable declaration and print statement for each of the entered
   // expressions
   private class NewStatementTransformer extends Trees.Transformer {
+
+    val quote       = StringLit("\"")
+    val printMarker = Print(StringLit(ReplOutputMarker))
 
     // This could potentially transform other code as well
     override protected def _transform(t: Tree): Tree = t match {
@@ -161,11 +180,10 @@ case class ReplProgram(ctx: Context) {
     }
 
     private def convert(statTree: StatTree): List[StatTree] = statTree match {
-      case Block(stats)                 => Block(stats.flatMap(convert)) :: Nil
-      case acc@Access(_, _: MethodCall) => if (acc.getType == TUnit) acc :: Nil else saveAndPrint(acc)
+      case Block(stats)                 => Block(stats flatMap convert) :: Nil
+      case acc@Access(_, _: MethodCall) => if (acc.getType == TUnit) print(acc) else saveAndPrint(acc)
       case UselessStatement(e)          => saveAndPrint(e)
-      case p: Println                   => PrintPrefix :: p :: Nil
-      case p: Print                     => PrintPrefix :: p :: Nil
+      case p: PrintStatTree             => print(p)
       case _                            => statTree :: Nil
     }
 
@@ -173,13 +191,15 @@ case class ReplProgram(ctx: Context) {
       val varName = ResultVariableName + resultCounter
       resultCounter += 1
 
-      val varDecl = treeBuilder.createVarDecl(varName, e, prependDollar = false)
+      val varDecl = treeBuilder.createValDecl(varName, e, prefix = "")
 
+      val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName = "), quote, varDecl.id, quote)
       // Prints the prefix so we know to parse it later as well as a variable declaration message
-      val stats = varDecl :: PrintPrefix :: Print(StringLit(varName + " = ")) :: Println(varDecl.id) :: Nil
-      stats
+      varDecl :: printMarker :: Println(varDeclMessage) :: printMarker :: Nil
     }
 
+    private def print(stat: StatTree) = {
+      printMarker :: stat :: printMarker :: Nil
+    }
   }
-
 }

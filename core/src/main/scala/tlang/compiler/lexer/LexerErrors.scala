@@ -3,8 +3,7 @@ package tlang.compiler.lexer
 import tlang.compiler.error.{Error, ErrorHandling}
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Tokens.BAD
-import tlang.compiler.utils.Positioned
-import tlang.utils.Source
+import tlang.utils.{Positioned, Source}
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.
@@ -67,11 +66,11 @@ trait LexerErrors extends ErrorHandling {
   }
 
   case class NumberTooLargeForInt(length: Int) extends LexerError(9, pos(length)) {
-    lazy val message = err"Number is too large to fit in an Int."
+    lazy val message = err"Number is too large to fit in an ${"Int"}."
   }
 
   case class NumberTooLargeForLong(length: Int) extends LexerError(10, pos(length)) {
-    lazy val message = err"Number is too large to fit in a Long."
+    lazy val message = err"Number is too large to fit in a ${"Long"}."
   }
 
   case class InvalidNumber(length: Int) extends LexerError(11, pos(length)) {

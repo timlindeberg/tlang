@@ -1,4 +1,4 @@
-package tlang.compiler.utils
+package tlang.utils
 
 /**
   * Created by Tim Lindeberg on 2/18/2017.

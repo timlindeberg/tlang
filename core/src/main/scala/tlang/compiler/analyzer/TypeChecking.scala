@@ -5,8 +5,8 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.utils._
 import tlang.utils.Extensions._
+import tlang.utils.Positioned
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

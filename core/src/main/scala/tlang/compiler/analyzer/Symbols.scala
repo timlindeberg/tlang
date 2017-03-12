@@ -5,8 +5,8 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.ErrorMessage
 import tlang.compiler.imports.{ClassSymbolLocator, ImportMap}
-import tlang.compiler.utils._
 import tlang.utils.Extensions._
+import tlang.utils.Positioned
 
 import scala.collection.mutable
 

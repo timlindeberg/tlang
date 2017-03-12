@@ -191,7 +191,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
     cord.self.iterator.flatMap(_.iterator)
       .zipWithIndex
       .filter { case (c, _) => c == '\n' }
-      .map { case (_, index) => index }
+      .map { case (_, index) => index + 1 }
       .toList
   }
 

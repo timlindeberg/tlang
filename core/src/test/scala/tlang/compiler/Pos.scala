@@ -1,6 +1,6 @@
 package tlang.compiler
 
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 1/22/2017.

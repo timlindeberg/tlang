@@ -3,8 +3,8 @@ package tlang.compiler.imports
 import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
-import tlang.compiler.utils.NoPosition
 import tlang.utils.Extensions._
+import tlang.utils.NoPosition
 
 import scala.collection.mutable
 
@@ -12,8 +12,7 @@ import scala.collection.mutable
   * Created by Tim Lindeberg on 7/5/2016.
   */
 
-case class ImportMap(
-  ctx: Context,
+case class ImportMap(ctx: Context,
   imports: List[Import] = Nil,
   pack: Package = Package(Nil),
   classes: List[ClassDeclTree] = Nil
@@ -53,9 +52,8 @@ case class ImportMap(
     ExtensionImport(TLang, TChar)
   )
 
-  init()
-
-  def init(): Unit = {
+  // Initialize
+  {
     val ignoredImports = ctx.ignoredImports
 
     val defaultImportNames = DefaultImports.map(_.writtenName)
@@ -64,36 +62,15 @@ case class ImportMap(
       .foreach(imp => report(DefaultImportDoesntExist(imp, NoPosition)))
 
     val defaultImports = DefaultImports.filter(imp => !ctx.ignoredImports.contains(imp.writtenName))
-    defaultImports ++ imports foreach addImport
+    defaultImports ++ imports foreach +=
 
     val packName = pack.name
     if (packName.nonEmpty) {
       classes.filterInstance[IDClassDeclTree] foreach { clazz =>
         val className = clazz.id.name
-        addImport(className, s"$packName::$className")
+        this += (className, s"$packName::$className")
       }
     }
-  }
-
-
-  private def addImport(imp: Import): Unit = imp match {
-    case regImp: RegularImport            =>
-      val fullName = regImp.name
-      val shortName = regImp.shortName
-      val templateImporter = new TemplateImporter(ctx)
-
-      if (contains(shortName))
-        report(ConflictingImport(regImp.writtenName, getFullName(shortName), regImp))
-      else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
-        report(CantResolveImport(regImp.writtenName, regImp))
-      else
-        addImport(shortName, fullName)
-    case extensionImport: ExtensionImport =>
-      ClassSymbolLocator.findExtensionSymbol(extensionImport.name) match {
-        case Some(e) => addExtensionClass(e)
-        case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
-      }
-    case _: WildCardImport                => // TODO: Support wild card imports.
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
@@ -104,11 +81,37 @@ case class ImportMap(
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol): Unit = extensionSymbols ::= extensionClassSymbol
 
-  def addImport(tup: (String, String)): Unit = addImport(tup._1, tup._2)
-  def addImport(short: String, full: String): Unit = {
+  def +=(tup: (String, String)): Unit = this += (tup._1, tup._2)
+  def +=(short: String, full: String): this.type = {
     shortToFull += short -> full
     fullToShort += full -> short
+    this
   }
+
+  def +=(imp: Import): this.type = {
+    imp match {
+      case regImp: RegularImport            =>
+        val fullName = regImp.name
+        val shortName = regImp.shortName
+        val templateImporter = new TemplateImporter(ctx)
+
+        if (contains(shortName))
+          report(ConflictingImport(regImp.writtenName, getFullName(shortName), regImp))
+        else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
+          report(CantResolveImport(regImp.writtenName, regImp))
+        else
+          this += (shortName, fullName)
+      case extensionImport: ExtensionImport =>
+        ClassSymbolLocator.findExtensionSymbol(extensionImport.name) match {
+          case Some(e) => addExtensionClass(e)
+          case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
+        }
+      case _: WildCardImport                => // TODO: Support wild card imports.
+    }
+    this
+  }
+
+  def ++=(imps: ImportMap): this.type = {imps.imports foreach {this += _}; this}
 
   def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName)
   def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)
@@ -123,5 +126,6 @@ case class ImportMap(
   override def toString: String = {
     shortToFull.map { case (short, full) => s"$short -> $full" }.mkString("\n")
   }
+
 
 }

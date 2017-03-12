@@ -4,7 +4,7 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees.{Break, Tree, _}
 import tlang.compiler.error.{Error, ErrorHandling, ErrorMessage, Warning}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 /**
   * Created by Tim Lindeberg on 5/13/2016.

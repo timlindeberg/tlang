@@ -4,7 +4,7 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbo
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, ImportMap}
-import tlang.compiler.utils.Positioned
+import tlang.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
 
@@ -59,14 +59,27 @@ case class TreeBuilder() {
 
   private def createMethodId(methodSymbol: MethodSymbol): MethodID = MethodID(methodSymbol.name).setSymbol(methodSymbol)
 
-  def createVarDecl(idName: String, initExpression: ExprTree, prependDollar: Boolean = true): VarDecl = {
-    val modifiers = scala.collection.immutable.Set[Modifier](Private())
+  def stringConcat(exprTree: ExprTree, rest: ExprTree*): ExprTree = {
+    def concat(exprs: List[ExprTree]): ExprTree = exprs match {
+      case x :: Nil  => x
+      case x :: rest => Plus(x, concat(rest)).setType(String)
+    }
+    concat(exprTree :: rest.toList)
+  }
+
+  def createValDecl(idName: String, initExpression: ExprTree, prefix: String = "$"): VarDecl =
+    _createVarDecl(Set[Modifier](Private(), Final()), idName, initExpression, prefix)
+
+  def createVarDecl(idName: String, initExpression: ExprTree, prefix: String = "$"): VarDecl =
+    _createVarDecl(Set[Modifier](Private()), idName, initExpression, prefix)
+
+  private def _createVarDecl(modifiers: Set[Modifier], idName: String, initExpression: ExprTree, prefix: String) = {
     val tpe = initExpression.getType
     if (tpe == TUntyped)
       sys.error("Cannot create var decl from an untyped initial expression.")
 
     initExpression.setType(tpe)
-    val name = if (prependDollar) '$' + idName else idName
+    val name = s"$prefix$idName"
     val id = VariableID(name)
     val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
     val symbol = new VariableSymbol(idName)

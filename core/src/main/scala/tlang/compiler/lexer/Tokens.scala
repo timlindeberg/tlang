@@ -1,8 +1,7 @@
 package tlang.compiler
 package lexer
 
-import tlang.compiler.utils.Positioned
-import tlang.utils.Enumeration
+import tlang.utils.{Enumeration, Positioned}
 
 import scala.util.matching.Regex
 
@@ -156,7 +155,6 @@ object Tokens {
   class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
     override def toString: String = s"$value"
   }
-
 
   class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
     override def toString: String = s"$value"

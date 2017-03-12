@@ -48,7 +48,6 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.0.1" % "test",
       "com.google.code.findbugs" % "bcel-findbugs" % "6.0",
-      "org.apache.commons" % "commons-lang3" % "3.4",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.ow2.asm" % "asm-all" % "5.1",
       "org.graphstream" % "gs-core" % "1.1.1",

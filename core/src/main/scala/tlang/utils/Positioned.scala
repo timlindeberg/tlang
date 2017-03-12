@@ -1,7 +1,4 @@
-package tlang.compiler
-package utils
-
-import tlang.utils.Source
+package tlang.utils
 
 trait Positioned {
   private var _source   : Source = _

@@ -5,9 +5,9 @@ import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.utils.Positioned
 import tlang.compiler.{Context, Pipeline}
 import tlang.utils.Extensions._
+import tlang.utils.Positioned
 
 /**
   * Created by timlindeberg on 22/07/16.

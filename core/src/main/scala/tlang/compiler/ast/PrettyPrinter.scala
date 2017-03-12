@@ -3,10 +3,10 @@ package ast
 
 import java.util.regex.Matcher
 
-import org.apache.commons.lang3.StringEscapeUtils._
 import tlang.compiler.lexer.Tokens
 import tlang.utils.Colors
 import tlang.utils.Colors.Color
+import tlang.utils.Extensions._
 
 
 case class PrettyPrinter(colors: Colors) {
@@ -91,8 +91,8 @@ case class PrettyPrinter(colors: Colors) {
     case LongLit(value)                    => pp"${value}L"
     case FloatLit(value)                   => pp"${value}F"
     case DoubleLit(value)                  => pp"$value"
-    case CharLit(value)                    => pp"'${escapeJava(pp"$value")}'"
-    case StringLit(value)                  => "\"" + pp"${escapeJava(pp"$value")}" + "\""
+    case CharLit(value)                    => pp"'${escapeChar(pp"$value")}'"
+    case StringLit(value)                  => "\"" + pp"${escapeString(pp"$value")}" + "\""
     case ArrayLit(expressions)             => pp"{ ${Separated(expressions, ", ")} }"
     case TrueLit()                         => pp"true"
     case FalseLit()                        => pp"false"
@@ -115,6 +115,19 @@ case class PrettyPrinter(colors: Colors) {
     case Empty()                           => pp"<EMPTY>"
     case GeneratedExpr(stats)              => pp"${genExpr(stats)}"
     case PutValue(expr)                    => s"<PutValue(${pp"$expr"})>"
+  }
+
+  private def escapeChar(str: String) = _escape(str, List('\t', '\b', '\n', '\r', '\f', '\\'))
+  private def escapeString(str: String) = _escape(str, List('\t', '\b', '\n', '\r', '\f', '\\', ''', '"'))
+
+  private def _escape(str: String, escapeChars: Traversable[Char]) = {
+    val sb = new StringBuilder
+    str.foreach { c =>
+      if (c in escapeChars)
+        sb += '\\'
+      sb += c
+    }
+    sb.toString
   }
 
   private def access(obj: ExprTree, application: ExprTree, dotNotation: String) = obj match {
@@ -205,6 +218,9 @@ case class PrettyPrinter(colors: Colors) {
 
   private def optional[T](t: Option[T])(f: (T => String)) = if (t.isDefined) f(t.get) else ""
 
+  //--------------------------------------------------------
+  // Custom string context to enable pp-string interpolation
+  //--------------------------------------------------------
 
   trait Formatter {
     def apply(): String

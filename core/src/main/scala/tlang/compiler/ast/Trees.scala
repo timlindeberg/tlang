@@ -5,9 +5,8 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.ImportMap
-import tlang.compiler.utils._
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, GenerateTreeHelpers}
+import tlang.utils.{Colors, GenerateTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}
 
@@ -75,6 +74,13 @@ object Trees {
     }
 
     def prettyPrint: this.type = {println(colorPrinter(this)); this}
+
+    override def clone: this.type = {
+      val transformer = new Trees.Transformer {
+        override val treeCopy = new Trees.Copier
+      }
+      transformer.transform(this)
+    }
   }
 
   // Signals that the node is a leaf and no further recursion is necessary
