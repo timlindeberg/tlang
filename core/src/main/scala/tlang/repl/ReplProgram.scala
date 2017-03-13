@@ -31,12 +31,11 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
   private val MaxNumLines      = 20
   private val ClassName        = "REPL"
   private val ReplOutputMarker = "__ReplRes__"
+  private val PrintMarker      = Print(StringLit(ReplOutputMarker))
   private val ClassFile        = new File(ctx.outDirs.head, ClassName + ".class")
 
-  private val ReplClassID        = ClassID(ClassName)
-  private val ReplClassSymbol    = new ClassSymbol(ClassName, isAbstract = false)
-  private val ResultVariableName = "res"
-
+  private val ReplClassID             = ClassID(ClassName)
+  private val ReplClassSymbol         = new ClassSymbol(ClassName, isAbstract = false)
   private val printer                 = PrettyPrinter(Colors(isActive = true))
   private val programExecutor         = ProgramExecutor(Some(timeout))
   private val treeBuilder             = TreeBuilder()
@@ -106,8 +105,7 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
   private def generateCompilationUnit(): CompilationUnit = {
     var stats = history.toList
     if (newStatements != Nil) {
-      val printMarker = Print(StringLit(ReplOutputMarker))
-      val newStats = Block(printMarker :: (newStatements :+ printMarker))
+      val newStats = Block(PrintMarker :: (newStatements :+ PrintMarker))
       stats = stats :+ newStats
     }
 
@@ -188,10 +186,12 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
     override protected def _transform(t: Tree): Tree = t match {
       case block@Block(stats) if stats.nonEmpty =>
         stats.last match {
-          case Block(newStats) =>
+          case Block(newStats) if newStats.length > 2 &&
+            newStats.head == PrintMarker &&
+            newStats.last == PrintMarker =>
             newStatements = newStats.flatMap(convert)
             Block(stats.dropRight(1) ++ newStatements)
-          case _               => block
+          case _                         => block
         }
       case _                                    => super._transform(t)
     }
@@ -204,7 +204,7 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
     }
 
     private def saveAndPrint(e: ExprTree) = {
-      val varName = ResultVariableName + resultCounter
+      val varName = "res" + resultCounter
       resultCounter += 1
 
       val varDecl = treeBuilder.createValDecl(varName, e, prefix = "")

@@ -255,6 +255,7 @@ class TypeChecker(override val ctx: Context,
           case TArray(arrTpe) =>
             tcExpr(index, Int)
             arrTpe
+          case _              => ???
         }
       case ArraySlice(arr, start, end, step)  =>
         List(start, end, step).filter(_.isDefined).map(e => tcExpr(e.get, Int))
@@ -477,6 +478,7 @@ class TypeChecker(override val ctx: Context,
             tcExpr(index, Int)
             tcExpr(expr, arrayTpe)
             arrTpe.asInstanceOf[TArray].tpe
+          case _                => ???
         }
     }
   }

@@ -85,6 +85,7 @@ object CodeGenerator {
         case Double => "Double"
         case Char   => "Char"
         case Bool   => "Bool"
+        case _      => ???
       }
       s"T/lang/${name}Ref"
     }
@@ -285,6 +286,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
             case NonPrimitive(_)      => obj.classSymbol.JVMName
             case Primitive(primitive) => primitive.TRef
           }
+          case _              => ???
         }
         ch << InstanceOf(jvmTypeName)
       case As(expr, tpe)                                =>

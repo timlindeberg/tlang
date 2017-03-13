@@ -29,7 +29,6 @@ case class ProgramExecutor(timeout: Option[Duration] = Some(duration.Duration(2,
     apply(List(path, Main.TDirectory), name)
   }
 
-
   def apply(classPaths: List[String], mainName: String): String = {
     val method = getMainMethod(classPaths, mainName)
 
@@ -49,6 +48,6 @@ case class ProgramExecutor(timeout: Option[Duration] = Some(duration.Duration(2,
     clazz.getMethod("main", classOf[Array[String]])
   }
 
-  def mainName(file: File): String = file.getName.replaceAll("\\" + Main.FileEnding, "")
+  private def mainName(file: File): String = file.getName.replaceAll("\\" + Main.FileEnding, "")
 
 }

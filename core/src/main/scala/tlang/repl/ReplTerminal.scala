@@ -22,8 +22,8 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
 
-  private var boxStartPos        = getCursorPosition
-  private var lastInputBoxEndPos = getCursorPosition
+  private var boxStartPos       = getCursorPosition
+  private var previousBoxHeight = 0
 
   def onClose(f: => Unit): Unit = {
     backingTerminal.ifInstanceOf[SwingTerminalFrame] { swingTerminal =>
@@ -33,7 +33,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     }
   }
 
-  def putBox(header: String, blocks: List[String]): Unit = {
+  def putBox(header: String, blocks: List[String]): Int = {
     val box = makeBox(header, blocks)
     put(box)
   }
@@ -74,16 +74,19 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
   def putInputBox(commandBuffer: Command): Unit = {
     val input = commandBuffer.text
+
     setCursorPosition(boxStartPos)
-    putBox(Bold(Magenta("Input")), highlight(input) :: Nil)
 
-    val currentPos = getCursorPosition
+    var linesPut = putBox(Bold(Magenta("Input")), highlight(input) :: Nil)
 
-    val diff = lastInputBoxEndPos.getRow - currentPos.getRow
-    if (diff > 0)
-      clearLines(diff)
+    val heightDifference = previousBoxHeight - commandBuffer.height
+    if (heightDifference > 0) {
+      clearLines(heightDifference)
+      linesPut += heightDifference
+    }
 
-    lastInputBoxEndPos = getCursorPosition
+    previousBoxHeight = commandBuffer.height
+    boxStartPos = getCursorPosition.withRelativeRow(-linesPut).withColumn(0)
     setCursorPosition(boxStartPos.withRelativeRow(3 + commandBuffer.y).withRelativeColumn(2 + commandBuffer.x))
   }
 
@@ -100,8 +103,9 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     boxStartPos = getCursorPosition
   }
 
-  def put(chars: IndexedSeq[Char]): Unit = {
+  def put(chars: IndexedSeq[Char]): Int = {
     var i = 0
+    var linesPut = 0
     while (i < chars.size) {
       chars(i) match {
         case '\u001b' if chars(i + 1) == '[' =>
@@ -116,10 +120,14 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
             case _                                    =>
           }
           i = endOfAnsi
+        case '\n'                            =>
+          linesPut += 1
+          putCharacter('\n')
         case c                               => putCharacter(c)
       }
       i += 1
     }
+    linesPut
   }
 
   private def highlight(text: String) = if (text.startsWith(":")) Magenta(text) else syntaxHighlighter(text)

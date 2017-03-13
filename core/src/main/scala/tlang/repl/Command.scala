@@ -19,6 +19,8 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
   private def x_=(v: Int) = _x = v
   private def y_=(v: Int) = _y = v
 
+  def height = linePositions.length
+
   def currentCord: Cord = history.current.cord
 
   reset(cord)

@@ -5,7 +5,7 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.reflect.{ClassTag, _}
 import scala.util.matching.Regex
 
@@ -29,7 +29,7 @@ object Extensions {
     try {
       Await.result(Future(block), duration)
     } catch {
-      case e: Exception =>
+      case e: TimeoutException =>
         exec.lastThread.getOrElse(throw new RuntimeException("Not started")).stop()
         throw e
     }

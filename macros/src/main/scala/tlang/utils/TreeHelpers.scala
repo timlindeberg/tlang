@@ -148,6 +148,7 @@ object GenerateTreeHelpers {
       params match {
         case param :: Nil  => compare(param)
         case param :: rest => q"${compare(param)} && (${_equality(rest)})"
+        case _             => ???
       }
     }
 

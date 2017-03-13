@@ -518,6 +518,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
           eat(LBRACKET, RBRACKET)
           dimension += 1
           ArrayType(e)
+        case _            => ???
       }
       e.setPos(startPos, previousToken)
     }

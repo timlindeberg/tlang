@@ -134,6 +134,7 @@ class AnsiWordWrapper {
       case '\u001b' :: '[' :: _ :: _ :: 'm' :: rest => findBreakPoint(rest, index + 5, width)
       case '\u001b' :: '[' :: _ :: 'm' :: rest      => findBreakPoint(rest, index + 4, width)
       case _ :: rest                                => findBreakPoint(rest, index + 1, width - 1)
+      case _                                        => ???
     }
   }
 
@@ -141,12 +142,8 @@ class AnsiWordWrapper {
 
     @tailrec def getAnsi(chars: List[Char], ansi: List[String]): List[String] = chars match {
       case '\u001b' :: '[' :: '0' :: 'm' :: rest    => getAnsi(rest, Nil)
-      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${
-        b
-      }m" :: ansi)
-      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${
-        a
-      }m" :: ansi)
+      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${b}m" :: ansi)
+      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${a}m" :: ansi)
       case _ :: rest                                => getAnsi(rest, ansi)
       case Nil                                      => ansi
     }

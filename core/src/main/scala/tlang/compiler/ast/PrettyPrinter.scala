@@ -282,8 +282,8 @@ case class PrettyPrinter(colors: Colors) {
         color(prettyPrint(t))
       case Some(t: Tree) => evaluate(t)
       case None          => ""
-      case l: List[Tree] =>
-        mkString(l)
+      case l: List[_]    =>
+        mkString(l.asInstanceOf[List[Tree]])
       case s: String     => s
       case x             => x.toString
     }

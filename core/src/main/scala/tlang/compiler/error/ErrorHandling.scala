@@ -40,7 +40,7 @@ trait ErrorHandling {
     }
 
     private def evaluate(any: Any) = any match {
-      case Suggestion(Some(suggestion)) => err"Did you mean $suggestion?"
+      case Suggestion(Some(suggestion)) => err" Did you mean $suggestion?"
       case Suggestion(None)             => ""
       case any                          =>
         var str = any.toString

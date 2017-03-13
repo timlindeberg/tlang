@@ -120,7 +120,7 @@ object Visualizer {
           val nodeName = addNode(tree)
           val r = currentMirror.reflect(t)
           val fields = r.symbol.typeSignature.members.toStream.collect {
-            case s: TermSymbol if !s.isMethod => r.reflectField(s)
+            case s if !s.isMethod => r.reflectField(s.asInstanceOf[TermSymbol])
           }
 
           fields.foreach { f =>

@@ -50,8 +50,8 @@ case class TreeBuilder() {
   def createMethodCall(obj: ExprTree, methodSymbol: MethodSymbol, args: List[ExprTree]): NormalAccess = {
     val tpe = methodSymbol.getType
     val sizeMethId = createMethodId(methodSymbol)
-    val mCall = MethodCall(sizeMethId, args).setType(tpe)
-    NormalAccess(obj, mCall).setType(tpe)
+    val methCall = MethodCall(sizeMethId, args).setType(tpe)
+    NormalAccess(obj, methCall).setType(tpe)
   }
 
   private def createMethodSymbol(name: String, tpe: Type) =
@@ -63,6 +63,7 @@ case class TreeBuilder() {
     def concat(exprs: List[ExprTree]): ExprTree = exprs match {
       case x :: Nil  => x
       case x :: rest => Plus(x, concat(rest)).setType(String)
+      case _         => ???
     }
     concat(exprTree :: rest.toList)
   }

@@ -96,6 +96,7 @@ trait TypeCheckingErrors extends ErrorHandling {
       val tpe = sym match {
         case f: FieldSymbol  => err"field ${f.name}"
         case m: MethodSymbol => err"method ${m.signature}"
+        case _               => ???
       }
       val className = clazz.name
       val callingClassName = callingClass.name

@@ -142,10 +142,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
     } else {
       val json = jsons.head
       JSON.parseFull(jsons.head) match {
-        case Some(values: Map[String, String]) =>
-          val lowercase = values map { case (key, value) => key.toLowerCase -> value.toLowerCase }
+        case Some(values: Map[_, _]) =>
+          val casted = values.asInstanceOf[Map[String, String]]
+          val lowercase = casted map { case (key, value) => key.toLowerCase -> value.toLowerCase }
           getColorScheme(lowercase)
-        case _                                 => FatalInvalidJsonArgument(Flags.ColorScheme, json)
+        case _                       => FatalInvalidJsonArgument(Flags.ColorScheme, json)
       }
     }
   }
