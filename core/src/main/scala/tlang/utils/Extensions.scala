@@ -113,6 +113,7 @@ object Extensions {
     def use(f: T => Unit): T = {f(t); t}
     def print: T = {println(t); t}
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
+    def in(range: Range): Boolean = range.contains(t)
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {

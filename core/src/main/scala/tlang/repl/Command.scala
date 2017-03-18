@@ -1,45 +1,76 @@
 package tlang.repl
 
+import tlang.utils.Extensions._
+
 import scalaz.Cord
 
-/**
-  * Created by Tim Lindeberg on 2/26/2017.
-  */
+object Cursor {
+  def apply(x: Int, y: Int): Cursor = Cursor(0, x, y)
+  def apply(): Cursor = Cursor(0, 0, 0)
+
+}
+case class Cursor(var position: Int, var x: Int, var y: Int) {
+
+  def reset(): Unit = {
+    position = 0
+    x = 0
+    y = 0
+  }
+
+  def withX(x: Int) = Cursor(x, y)
+  def withY(y: Int) = Cursor(x, y)
+  def withRelativePos(deltaX: Int, deltaY: Int) = Cursor(x + deltaX, y + deltaY)
+  def withRelativeX(deltaX: Int) = Cursor(x + deltaX, y)
+  def withRelativeY(deltaY: Int) = Cursor(x, y + deltaY)
+}
+
+case class Position(mainCursor: Cursor, secondaryCursor: Cursor) {
+  def isWithin(x: Int, y: Int): Boolean = {
+    val minX = math.min(mainCursor.x, secondaryCursor.x)
+    val maxX = math.max(mainCursor.x, secondaryCursor.x)
+    val minY = math.min(mainCursor.y, secondaryCursor.y)
+    val maxY = math.max(mainCursor.y, secondaryCursor.y)
+    (x in (minX until maxX)) && (y in (minY to maxY))
+  }
+
+}
+
+object NoPosition extends Position(Cursor(), Cursor()) {
+  override def isWithin(x: Int, y: Int): Boolean = false
+}
+
 case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
 
   private val history = RedoBuffer(maxHistorySize)
 
   private var linePositions: List[Int] = _
-  private var position     : Int       = _
   private var upDownX      : Int       = _
 
+  val mainCursor      = Cursor()
+  val secondaryCursor = Cursor()
 
-  private var _x: Int = _
-  private var _y: Int = _
-  private def x_=(v: Int) = _x = v
-  private def y_=(v: Int) = _y = v
+  def getPosition = Position(mainCursor, secondaryCursor)
 
-  def height = linePositions.length
+  def height: Int = linePositions.length
 
   def currentCord: Cord = history.current.cord
 
   reset(cord)
 
-  def x: Int = _x
-  def y: Int = _y
   def lines: Int = linePositions.size
 
   def ++=(str: String): Unit = str.foreach(this += _)
   def +=(char: Char): Unit = {
 
     if (char == '\t') {
-      val numSpaces = tabSize - (x % tabSize)
+      val numSpaces = tabSize - (mainCursor.x % tabSize)
       this ++= " " * numSpaces
       return
     }
 
     upDownX = 0
     val text = currentCord
+    val position = mainCursor.position
     if (position != text.length)
       linePositions = linePositions.map { pos => if (pos > position) pos + 1 else pos }
 
@@ -56,7 +87,8 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       val (before, after) = text.split(position)
       (before :- char) ++ after
     }
-    setPos(position + 1)
+    setPos(mainCursor, position + 1)
+    setPos(secondaryCursor, position + 1)
     history += State(newValue, linePositions, position)
   }
 
@@ -64,47 +96,72 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
     upDownX = 0
     val text = currentCord
 
-    if (text.isEmpty || position == 0)
+
+    if (text.isEmpty)
       return
 
-    if (position != text.length)
-      linePositions = linePositions.map { pos => if (pos > position) pos - 1 else pos }
+    val position = mainCursor.position
+
+    val (newValue, newCursorPos) = if (mainCursor == secondaryCursor) {
+      val v = if (position == text.length) {
+        text.init
+      } else if (position == 1) {
+        text.tail
+      } else {
+        val (before, after) = text.split(position)
+        before.init ++ after
+      }
+      (v, position - 1)
+    } else {
+      val start = math.min(mainCursor.position, secondaryCursor.position)
+      val end = math.max(mainCursor.position, secondaryCursor.position)
+      val (before, _) = text.split(start)
+      val (_, after) = text.split(end)
+      (before ++ after, start)
+    }
+
+    val charsRemoved = text.length - newValue.length
+    // Realign line positions
+    linePositions = linePositions.map { pos => if (pos > position) pos - charsRemoved else pos }
 
     if (text(position - 1) == '\n')
       linePositions = linePositions.filter(_ != position)
 
-
-    val newValue = if (position == text.length) {
-      text.init
-    } else if (position == 1) {
-      text.tail
-    } else {
-      val (before, after) = text.split(position)
-      before.init ++ after
-    }
-
-    setPos(position - 1)
-    history += State(newValue, linePositions, position)
+    setPos(mainCursor, newCursorPos)
+    setPos(secondaryCursor, newCursorPos)
+    history += State(newValue, linePositions, newCursorPos)
   }
 
   def removeToLeftWord(): Unit = {
     val left = leftPosition
     //noinspection LoopVariableNotUpdated
+    val position = mainCursor.position
+
     while (position != left)
       remove()
   }
 
-  def goToLeftWord(): Unit = setPos(leftPosition)
-  def goToRightWord(): Unit = setPos(rightPosition)
+  def setSecondaryCursorPosition(): Unit = {
+    secondaryCursor.position = mainCursor.position
+    secondaryCursor.x = mainCursor.x
+    secondaryCursor.y = mainCursor.y
+  }
+
+  def goToLeftWord(): Unit = setPos(mainCursor, leftPosition)
+  def goToRightWord(): Unit = setPos(mainCursor, rightPosition)
 
   def moveLeft(count: Int): Unit = {
     upDownX = 0
-    setPos(math.max(position - count, 0))
+
+    val position = math.max(mainCursor.position - count, 0)
+    setPos(mainCursor, position)
   }
 
   def moveRight(count: Int): Unit = {
     upDownX = 0
-    setPos(math.min(position + count, history.current.cord.size))
+
+    val position = math.min(mainCursor.position + count, history.current.cord.size)
+    setPos(mainCursor, position)
   }
 
   def up(): Boolean = {
@@ -113,11 +170,11 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       return false
 
     if (upDownX == 0)
-      upDownX = x
+      upDownX = mainCursor.x
 
 
     val (nextStart, nextEnd) = linePosition(currentLine + 1)
-    setPos(nextStart + math.min(upDownX, nextEnd - nextStart))
+    setPos(mainCursor, nextStart + math.min(upDownX, nextEnd - nextStart))
     true
   }
 
@@ -127,10 +184,10 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       return false
 
     if (upDownX == 0)
-      upDownX = x
+      upDownX = mainCursor.x
 
     val (nextStart, nextEnd) = linePosition(currentLine - 1)
-    setPos(nextStart + math.min(upDownX, nextEnd - nextStart))
+    setPos(mainCursor, nextStart + math.min(upDownX, nextEnd - nextStart))
     true
   }
 
@@ -139,9 +196,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
 
 
   def reset(cord: Cord = Cord.empty): Unit = {
-    position = 0
-    x = 0
-    y = 0
+    mainCursor.reset()
     upDownX = 0
     linePositions = List(0)
     linePositions ++= getLinePositions(cord)
@@ -155,6 +210,8 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
 
   private def leftPosition: Int = {
     val text = currentCord
+    val position = mainCursor.position
+
     if (text.isEmpty || position == 0)
       return position
 
@@ -166,6 +223,8 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
 
   private def rightPosition: Int = {
     val text = currentCord
+    val position = mainCursor.position
+
     if (text.isEmpty || position == text.length)
       return position
 
@@ -197,16 +256,14 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       .toList
   }
 
-  private def setPos(pos: Int): Unit = {
-    position = pos
+  private def setPos(cursor: Cursor, pos: Int): Unit = {
+    cursor.position = pos
     val index = lineIndex
-    x = position - linePositions(index)
-    y = linePositions.length - index - 1
+    cursor.x = pos - linePositions(index)
+    cursor.y = linePositions.length - index - 1
   }
 
-  override def toString: String = {
-    "Lines: " + linePositions + "\n" + history
-  }
+  override def toString: String = "Lines: " + linePositions + "\n" + history
 
   private def linePosition(line: Int): (Int, Int) = {
     val start = linePositions(line)
@@ -214,7 +271,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
     (start, end)
   }
 
-  private def lineIndex = linePositions.indices.find(i => linePositions(i) <= position).getOrElse(0)
+  private def lineIndex = linePositions.indices.find(i => linePositions(i) <= mainCursor.position).getOrElse(0)
 
   private def _changeState(f: () => Boolean): Boolean = {
     if (!f())
@@ -222,7 +279,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
 
     upDownX = 0
     val newState = history.current
-    setPos(newState.position)
+    setPos(mainCursor, newState.position)
     linePositions = newState.linePositions
     true
   }

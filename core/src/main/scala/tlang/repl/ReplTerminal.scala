@@ -1,16 +1,20 @@
 package tlang.repl
 
-import java.awt.event._
+import java.awt.event.{KeyEvent, _}
+import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 import java.util.concurrent.TimeUnit
 
+import com.googlecode.lanterna
 import com.googlecode.lanterna.TextColor.ANSI
 import com.googlecode.lanterna.graphics.TextGraphics
-import com.googlecode.lanterna.input.KeyStroke
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
 import tlang.compiler.error._
 import tlang.utils.Extensions._
+
+import scala.collection.mutable.ListBuffer
 
 
 class ReplTerminal(formatting: Formatting) extends Terminal {
@@ -22,8 +26,22 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
 
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
 
-  private var boxStartPos       = getCursorPosition
-  private var previousBoxHeight = 0
+  private var previousBoxHeight   = 0
+  private var boxStartingPosition = getCursorPosition
+
+  private var isShiftDown = false
+  private var isCtrlDown  = false
+  private var isAltDown   = false
+
+  KeyboardFocusManager.getCurrentKeyboardFocusManager addKeyEventDispatcher
+    new KeyEventDispatcher() {
+      def dispatchKeyEvent(e: KeyEvent): Boolean = {
+        isShiftDown = e.isShiftDown
+        isCtrlDown = e.isControlDown
+        isAltDown = e.isAltDown
+        false
+      }
+    }
 
   def onClose(f: => Unit): Unit = {
     backingTerminal.ifInstanceOf[SwingTerminalFrame] { swingTerminal =>
@@ -33,20 +51,20 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     }
   }
 
-  def putBox(header: String, blocks: List[String]): Int = {
-    val box = makeBox(header, blocks)
-    put(box)
+  def putBox(chars: IndexedSeq[Char], position: Position = NoPosition): Int = {
+    setCursorPosition(boxStartingPosition)
+    val linesPut = put(chars, position)
+    boxStartingPosition = getCursorPosition
+    linesPut
   }
 
   def putResultBox(input: String, results: String, success: Boolean): Unit = {
-    setCursorPosition(boxStartPos)
     val header = if (success) Green("Result") else Red("Error")
-    putBox(Bold(header), highlight(input) :: results :: Nil)
-    boxStartPos = getCursorPosition
+    val box = makeBox(Bold(header), highlight(input) :: results :: Nil)
+    putBox(box)
   }
 
   def putErrorBox(input: String, errors: List[ErrorMessage]): Unit = {
-    setCursorPosition(boxStartPos)
     val sb = new StringBuilder
 
     sb ++= makeHeader(Bold(Red("Error")))
@@ -62,9 +80,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     }
 
     sb ++= makeBlocksWithColumns(errorLines, endOfBlock = true)
-
-    put(sb)
-    boxStartPos = getCursorPosition
+    putBox(sb)
   }
 
   def clearLines(num: Int): Unit = {
@@ -75,9 +91,16 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   def putInputBox(commandBuffer: Command): Unit = {
     val input = commandBuffer.text
 
-    setCursorPosition(boxStartPos)
+    val box = makeBox(Bold(Magenta("Input")), highlight(input) :: Nil)
 
-    var linesPut = putBox(Bold(Magenta("Input")), highlight(input) :: Nil)
+    val yIndent = 3
+    val xIndent = 2
+
+    setCursorVisible(false)
+    val pos = commandBuffer.getPosition
+    val main = pos.mainCursor.withRelativePos(xIndent, yIndent)
+    val secondary = pos.secondaryCursor.withRelativePos(xIndent, yIndent)
+    var linesPut = putBox(box, Position(main, secondary))
 
     val heightDifference = previousBoxHeight - commandBuffer.height
     if (heightDifference > 0) {
@@ -86,8 +109,12 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     }
 
     previousBoxHeight = commandBuffer.height
-    boxStartPos = getCursorPosition.withRelativeRow(-linesPut).withColumn(0)
-    setCursorPosition(boxStartPos.withRelativeRow(3 + commandBuffer.y).withRelativeColumn(2 + commandBuffer.x))
+
+    // Reset position to beginning of box
+    boxStartingPosition = getCursorPosition.withRelativeRow(-linesPut).withColumn(0)
+    val cursor = commandBuffer.mainCursor
+    setCursorPosition(boxStartingPosition.withRelativeRow(yIndent + cursor.y).withRelativeColumn(xIndent + cursor.x))
+    setCursorVisible(true)
   }
 
   def putWelcomeBox(): Unit = {
@@ -99,35 +126,61 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
          |   ${Magenta(":quit")}
          |   ${Magenta(":print")}
      """.trim.stripMargin
-    putBox(header, List(description))
-    boxStartPos = getCursorPosition
+    val box = makeBox(header, description :: Nil)
+    put(box)
+    boxStartingPosition = getCursorPosition
   }
 
-  def put(chars: IndexedSeq[Char]): Int = {
+  def put(chars: IndexedSeq[Char], position: Position = NoPosition): Int = {
+    var currentColor = ANSI.DEFAULT
+    var currentBGColor = ANSI.DEFAULT
+    var SGRs = ListBuffer[SGR]()
+
+    def applyColors() = {
+      SGRs.foreach(enableSGR)
+      setForegroundColor(currentColor)
+      setBackgroundColor(currentBGColor)
+    }
+
     var i = 0
-    var linesPut = 0
+    var x = 0
+    var y = 0
     while (i < chars.size) {
       chars(i) match {
         case '\u001b' if chars(i + 1) == '[' =>
           val endOfAnsi = chars.indexOf('m', i + 1)
           val ansi = chars.subSequence(i + 2, endOfAnsi).toString
           ansi.split(":").map(_.toList).foreach {
-            case '0' :: Nil                           => resetColorAndSGR()
-            case '1' :: Nil                           => enableSGR(SGR.BOLD)
-            case '4' :: Nil                           => enableSGR(SGR.UNDERLINE)
-            case '3' :: c :: Nil if c in ('1' to '7') => setForegroundColor(getColor(c))
-            case '4' :: c :: Nil if c in ('1' to '7') => setBackgroundColor(getColor(c))
+            case '0' :: Nil                           =>
+              currentBGColor = ANSI.DEFAULT
+              currentColor = ANSI.DEFAULT
+              SGRs.clear()
+              resetColorAndSGR()
+            case '1' :: Nil                           => SGRs += SGR.BOLD
+            case '4' :: Nil                           => SGRs += SGR.UNDERLINE
+            case '3' :: c :: Nil if c in ('1' to '7') => currentColor = getColor(c)
+            case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = getColor(c)
             case _                                    =>
           }
+          applyColors()
           i = endOfAnsi
         case '\n'                            =>
-          linesPut += 1
+          y += 1
+          x = 0
           putCharacter('\n')
-        case c                               => putCharacter(c)
+        case c                               =>
+          if (position.isWithin(x, y)) {
+            resetColorAndSGR()
+            setForegroundColor(ANSI.BLACK)
+            setBackgroundColor(ANSI.WHITE)
+          }
+          x += 1
+          putCharacter(c)
+          applyColors()
       }
       i += 1
     }
-    linesPut
+    y
   }
 
   private def highlight(text: String) = if (text.startsWith(":")) Magenta(text) else syntaxHighlighter(text)
@@ -162,10 +215,16 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
   override def setBackgroundColor(color: TextColor): Unit = backingTerminal.setBackgroundColor(color)
   override def removeResizeListener(listener: TerminalResizeListener): Unit = backingTerminal.removeResizeListener(listener)
   override def setForegroundColor(color: TextColor): Unit = backingTerminal.setForegroundColor(color)
-  override def pollInput(): KeyStroke = backingTerminal.pollInput()
+  override def pollInput(): lanterna.input.KeyStroke = backingTerminal.pollInput()
+  override def readInput(): lanterna.input.KeyStroke = backingTerminal.readInput()
   override def getCursorPosition: TerminalPosition = backingTerminal.getCursorPosition
   override def flush(): Unit = backingTerminal.flush()
-  override def readInput(): KeyStroke = backingTerminal.readInput()
+
+  def read(): KeyStroke = {
+    val key = backingTerminal.readInput()
+    KeyStroke(key.getKeyType, key.getCharacter, isCtrlDown, isAltDown, isShiftDown)
+  }
+
 
   private def createTerminal() = new DefaultTerminalFactory()
     // .setForceTextTerminal(true)
@@ -174,5 +233,7 @@ class ReplTerminal(formatting: Formatting) extends Terminal {
     .setTerminalEmulatorFontConfiguration(
       SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 16)))
     .setInitialTerminalSize(new TerminalSize(80, 500))
+    .setTerminalEmulatorDeviceConfiguration(
+      new TerminalEmulatorDeviceConfiguration(50, 1, CursorStyle.VERTICAL_BAR, ANSI.RED, false))
     .createTerminal()
 }
