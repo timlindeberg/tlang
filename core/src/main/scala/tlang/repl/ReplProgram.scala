@@ -24,11 +24,10 @@ import scala.concurrent.duration.Duration
 /**
   * Created by Tim Lindeberg on 2/14/2017.
   */
-case class ReplProgram(ctx: Context, timeout: Duration) {
+case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
 
   import ctx.formatting.colors._
 
-  private val MaxNumLines      = 20
   private val ClassName        = "REPL"
   private val ReplOutputMarker = "__ReplRes__"
   private val PrintMarker      = Print(StringLit(ReplOutputMarker))
@@ -54,6 +53,9 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
   private var newStatements = List[StatTree]()
   private var resultCounter = 0
 
+  // For warmup
+  execute("val theAnswerToLifeInTheUniverseAndEverything = 21 * 2")
+
   def execute(command: String): String = {
     newStatements = Nil
 
@@ -76,7 +78,7 @@ case class ReplProgram(ctx: Context, timeout: Duration) {
     val executionMessages = getOutput(res)
       .map { output =>
         val lines = output.split("\n").toList
-        val s = if (lines.length > MaxNumLines) lines.take(MaxNumLines) :+ "..." else lines
+        val s = if (lines.length > maxOutputLines) lines.take(maxOutputLines) :+ "..." else lines
         s.map(colorOutput)
       }
       .getOrElse(Nil)

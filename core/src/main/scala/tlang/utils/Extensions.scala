@@ -103,6 +103,9 @@ object Extensions {
       }
       buf.toList
     }
+
+    def toColoredString(colors: Colors) = ColoredString(colors, str)
+
   }
 
   implicit class AnyExtensions(val a: Any) extends AnyVal {

@@ -70,6 +70,9 @@ trait Positioned {
   def encodedStartPos: Int = (line << 16) + col
   def encodedEndPos: Int = (endLine << 16) + endCol
 
+  def isWithin(position: Positioned): Boolean =
+    encodedStartPos >= position.encodedStartPos && encodedEndPos <= position.encodedEndPos
+
 
 }
 

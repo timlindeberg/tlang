@@ -49,7 +49,7 @@ object Main {
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        maxErrors = 3,
+        maxErrors = 25,
         errorContext = options(ErrorContext),
         formatting = options.formatting
       ),

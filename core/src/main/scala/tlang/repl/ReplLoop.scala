@@ -1,9 +1,6 @@
 package tlang.repl
 
-import java.awt.Toolkit
-import java.awt.datatransfer.{Clipboard, DataFlavor}
-
-import com.googlecode.lanterna.input.KeyType
+import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
 import tlang.compiler.error.{CompilationException, ErrorMessages}
 import tlang.utils.Extensions._
@@ -16,12 +13,13 @@ import scala.concurrent.{TimeoutException, duration}
   */
 case class ReplLoop(ctx: Context) {
 
-  private val MaxRedoSize = 500
-  private val TabSize     = 4
-  private val Timeout     = duration.Duration(2, "sec")
+  private val MaxRedoSize    = 500
+  private val MaxOutputLines = 5
+  private val TabSize        = 4
+  private val Timeout        = duration.Duration(2, "sec")
 
-  private val replProgram = ReplProgram(ctx, Timeout)
-  private val terminal    = new ReplTerminal(ctx.formatting)
+  private val replProgram = ReplProgram(ctx, MaxOutputLines, Timeout)
+  private val terminal    = new ReplTerminal(ctx.formatting, MaxOutputLines)
   private var running     = false
   private val commands    = CommandHistory(MaxRedoSize, TabSize)
   var isShiftDown = false
@@ -48,17 +46,16 @@ case class ReplLoop(ctx: Context) {
       terminal.putInputBox(commands.current)
       terminal.flush()
 
-      val keyStroke = terminal.read()
-      println(keyStroke)
+      val keyStroke = terminal.readInput()
       Commands.find(_.matches(keyStroke)) match {
         case Some(command) => command.execute(keyStroke)
         case None          =>
-          val c = keyStroke.char
+          val c = keyStroke.getCharacter
           if (c != null) commands.current += c
       }
 
       if (!keyStroke.isShiftDown)
-        commands.current.setSecondaryCursorPosition()
+        commands.current.setMark()
     }
 
   sealed abstract class Command() extends Product with Serializable {
@@ -79,7 +76,9 @@ case class ReplLoop(ctx: Context) {
     case object Evaluate extends Command {
 
       override def matches(keyStroke: KeyStroke): Boolean =
-        keyStroke.keyType == KeyType.Enter && keyStroke.isCtrlDown
+        keyStroke.getKeyType == KeyType.Character &&
+          (keyStroke.getCharacter == ' ' || keyStroke.getCharacter == 128) &&
+          keyStroke.isCtrlDown
 
       override def execute(keyStroke: KeyStroke): Unit = {
         val command = commands.current.text
@@ -124,28 +123,28 @@ case class ReplLoop(ctx: Context) {
 
     case object Undo extends Command {
       override def matches(keyStroke: KeyStroke): Boolean =
-        keyStroke.isCtrlDown && !keyStroke.isAltDown && keyStroke.char == 'z'
+        keyStroke.isCtrlDown && !keyStroke.isAltDown && keyStroke.getCharacter == 'z'
 
       override def execute(keyStroke: KeyStroke): Unit = commands.current.undo()
     }
 
     case object Redo extends Command {
       override def matches(keyStroke: KeyStroke): Boolean =
-        keyStroke.isCtrlDown && keyStroke.isAltDown && keyStroke.char == 'z'
+        keyStroke.isCtrlDown && keyStroke.isAltDown && keyStroke.getCharacter == 'z'
 
       override def execute(keyStroke: KeyStroke): Unit = commands.current.redo()
     }
 
 
     case object Remove extends Command {
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.keyType == KeyType.Backspace
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.Backspace
 
       override def execute(keyStroke: KeyStroke): Unit =
         if (largeMovement(keyStroke)) commands.current.removeToLeftWord() else commands.current.remove()
     }
 
     case object GoLeft extends Command {
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.keyType == KeyType.ArrowLeft
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowLeft
 
       override def execute(keyStroke: KeyStroke): Unit = {
         val cmd = commands.current
@@ -154,7 +153,7 @@ case class ReplLoop(ctx: Context) {
     }
 
     case object GoRight extends Command {
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.keyType == KeyType.ArrowRight
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowRight
 
       override def execute(keyStroke: KeyStroke): Unit = {
         val cmd = commands.current
@@ -163,7 +162,7 @@ case class ReplLoop(ctx: Context) {
     }
 
     case object GoUp extends Command {
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.keyType == KeyType.ArrowUp
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowUp
 
       override def execute(keyStroke: KeyStroke): Unit = {
         if (!commands.current.up())
@@ -172,7 +171,7 @@ case class ReplLoop(ctx: Context) {
     }
 
     case object GoDown extends Command {
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.keyType == KeyType.ArrowDown
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.getKeyType == KeyType.ArrowDown
 
       override def execute(keyStroke: KeyStroke): Unit = {
         if (!commands.current.down())
@@ -180,14 +179,19 @@ case class ReplLoop(ctx: Context) {
       }
     }
 
+    case object Copy extends Command {
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.getCharacter == 'c'
+      override def execute(keyStroke: KeyStroke): Unit = commands.current.copy()
+    }
+
     case object Paste extends Command {
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.getCharacter == 'v'
+      override def execute(keyStroke: KeyStroke): Unit = commands.current.paste()
+    }
 
-      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.char == 'v'
-
-      override def execute(keyStroke: KeyStroke): Unit = commands.current ++= clipboardContents
-
-      private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
-      private def clipboardContents: String = systemClipboard.getData(DataFlavor.stringFlavor).asInstanceOf[String]
+    case object Cut extends Command {
+      override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.getCharacter == 'x'
+      override def execute(keyStroke: KeyStroke): Unit = commands.current.cut()
     }
 
     protected lazy val All: Set[Command] = Enumeration.instancesOf[Command]

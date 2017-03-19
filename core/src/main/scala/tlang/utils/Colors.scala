@@ -43,19 +43,20 @@ object Colors {
 
   implicit def ColorToString(c: Color): String = c.value
 
-  case class Color(color: String, implicit val isActive: Boolean) {
-
-    val value: String = if (isActive) color else ""
-    private val reset = if (isActive) RESET else ""
-
-    override def toString: String = value
-
-    def +(c: Color): Color = Color(value + c.value, isActive = true)
-    def +(s: Any): String = value + s.toString
-    def apply(s: Any): String = value + s.toString + reset
-
+  case object Color {
+    def apply(s: String, isActive: Boolean): Color = Color(Set(s), isActive)
   }
 
+  case class Color(colors: Set[String], isActive: Boolean) {
+
+    def value: String = if (isActive) colors.mkString else ""
+    override def toString: String = value
+
+    def +(c: Color): Color = Color(colors ++ c.colors, isActive || c.isActive)
+    def +(s: Any): String = value + s.toString
+    def apply(s: Any): String = value + s.toString + (if (isActive) RESET else "")
+
+  }
 
   object ColorScheme {
 
@@ -149,6 +150,15 @@ case class Colors(isActive: Boolean, colorScheme: ColorScheme = DefaultColorSche
   val Magenta = Color(MAGENTA, isActive)
   val Cyan    = Color(CYAN, isActive)
   val White   = Color(WHITE, isActive)
+
+  val BlackBG   = Color(BLACK_B, isActive)
+  val RedBG     = Color(RED_B, isActive)
+  val GreenBG   = Color(GREEN_B, isActive)
+  val YellowBG  = Color(YELLOW_B, isActive)
+  val BlueBG    = Color(BLUE_B, isActive)
+  val MagentaBG = Color(MAGENTA_B, isActive)
+  val CyanBG    = Color(CYAN_B, isActive)
+  val WhiteBG   = Color(WHITE_B, isActive)
 
   val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 

@@ -5,7 +5,7 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, Tokenizer, Tokens}
 import tlang.utils.Colors._
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, Position, Positioned, StringSource}
+import tlang.utils._
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.
@@ -27,86 +27,49 @@ case class SyntaxHighlighter(colors: Colors) {
     val source = StringSource(code, "")
     val tokenizer = new Tokenizer(context, source)
     val tokens = tokenizer()
-    val sb = new StringBuilder()
 
-    val lines = code.split("\n", -1)
-    sb ++= code.substring(0, tokens.head.col - 1)
-    val noColor = Color("", isActive = true)
-    var prevColor = noColor
+    var line = 1
+    var col = 1
 
-    var lineIndex = 0
-    for (token :: next :: Nil <- tokens.sliding(2)) {
-
-      val line = lines(lineIndex)
-
-      val start = token.col - 1
-      val end = token.endCol - 1
-
-      val color = getColor(token, markings)
-      if (color != prevColor) {
-        if (prevColor != noColor)
-          sb ++= Reset
-        sb ++= color
-      }
-
-      prevColor = color
-      token.kind match {
-        case NEWLINE =>
-          lineIndex += 1
-          sb += '\n'
-          sb ++= Reset
-          if (lineIndex < lines.length && next.kind != EOF)
-            sb ++= lines(lineIndex).substring(0, next.col - 1)
-          sb ++= color
-        case EOF     => sb ++= line.substring(start, end)
-        case _       =>
-          sb ++= line.substring(start, end)
-          if (next.kind != EOF) {
-            val nextColor = getColor(next, markings)
-            if (nextColor != color)
-              sb ++= Reset
-
-            sb ++= line.substring(end, next.col - 1)
-          }
-      }
+    def updatePos(char: Char) = char match {
+      case '\n' =>
+        line += 1
+        col = 1
+      case _    => col += 1
     }
 
-    val lastLine = lines.last
-    if (lastLine.nonEmpty && tokens.length >= 2) {
-      val lastToken = tokens(tokens.length - 2)
-      if (lastToken.endLine < lines.size)
-        sb ++= lastLine
-      else
-        sb ++= lastLine.substring(lastToken.endCol - 1, lastLine.length)
+    val highlighted = code.toColoredString(colors) map { case cc@ColoredCharacter(color, char) =>
+      val pos = Position(line, col, line, col + 1)
+
+      updatePos(char)
+
+      findMatchingMarking(pos, markings) match {
+        case Some(style)              => ColoredCharacter(style, char)
+        case None if color == NoColor => ColoredCharacter(getColor(pos, tokens.find(pos.isWithin(_))), char)
+        case _                        => cc
+      }
     }
-
-
-    sb ++= Reset
-    sb.toString
+    highlighted.toAnsiString
   }
 
-  private def getColor(token: Token, markings: Seq[Marking]): Color = {
-    if (token.kind == COMMENTLITKIND)
-      return CommentColor
-
-    findMatchingMarking(token, markings) ifDefined { style =>
-      return style
-    }
-
-    token.kind match {
+  private def getColor(pos: Position, token: Option[Token]): Color = token match {
+    case Some(x) => x.kind match {
+      case NEWLINE                                                 => NoColor
+      case COMMENTLITKIND                                          => CommentColor
       case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
       case CHARLITKIND | STRLITKIND                                => StringColor
       case IDKIND                                                  => VarColor
       case x if x in Tokens.Keywords                               => KeywordColor
       case _                                                       => SymbolColor
     }
+    case None    => NoColor
   }
 
-  private def findMatchingMarking(token: Token, markings: Seq[Marking]): Option[Color] =
+  private def findMatchingMarking(pos: Position, markings: Seq[Marking]): Option[Color] =
     markings
-      .find { case Marking(pos, _, offset) =>
-        val offsetPos = Position(token.line + offset - 1, token.col, token.endLine + offset - 1, token.endCol)
-        offsetPos.encodedStartPos >= pos.encodedStartPos && offsetPos.encodedEndPos <= pos.encodedEndPos
+      .find { case Marking(markedPos, _, offset) =>
+        val offsetPos = Position(pos.line + offset - 1, pos.col, pos.endLine + offset - 1, pos.endCol)
+        offsetPos.isWithin(markedPos)
       }
       .map(_.style)
 }

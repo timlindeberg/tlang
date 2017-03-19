@@ -1,6 +1,11 @@
 package tlang.repl
 
+import java.awt.Toolkit
+import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
+
+import tlang.repl.CordExtensions._
 import tlang.utils.Extensions._
+import tlang.utils.Position
 
 import scalaz.Cord
 
@@ -9,7 +14,7 @@ object Cursor {
   def apply(): Cursor = Cursor(0, 0, 0)
 
 }
-case class Cursor(var position: Int, var x: Int, var y: Int) {
+case class Cursor(var position: Int, var x: Int, var y: Int) extends Ordered[Cursor] {
 
   def reset(): Unit = {
     position = 0
@@ -22,34 +27,26 @@ case class Cursor(var position: Int, var x: Int, var y: Int) {
   def withRelativePos(deltaX: Int, deltaY: Int) = Cursor(x + deltaX, y + deltaY)
   def withRelativeX(deltaX: Int) = Cursor(x + deltaX, y)
   def withRelativeY(deltaY: Int) = Cursor(x, y + deltaY)
-}
-
-case class Position(mainCursor: Cursor, secondaryCursor: Cursor) {
-  def isWithin(x: Int, y: Int): Boolean = {
-    val minX = math.min(mainCursor.x, secondaryCursor.x)
-    val maxX = math.max(mainCursor.x, secondaryCursor.x)
-    val minY = math.min(mainCursor.y, secondaryCursor.y)
-    val maxY = math.max(mainCursor.y, secondaryCursor.y)
-    (x in (minX until maxX)) && (y in (minY to maxY))
-  }
-
-}
-
-object NoPosition extends Position(Cursor(), Cursor()) {
-  override def isWithin(x: Int, y: Int): Boolean = false
+  override def compare(that: Cursor): Int = position - that.position
 }
 
 case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
+
+  private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
+
 
   private val history = RedoBuffer(maxHistorySize)
 
   private var linePositions: List[Int] = _
   private var upDownX      : Int       = _
 
-  val mainCursor      = Cursor()
-  val secondaryCursor = Cursor()
+  val mainCursor = Cursor()
+  val mark       = Cursor()
 
-  def getPosition = Position(mainCursor, secondaryCursor)
+  def getMarkedPosition: Position = {
+    val cursors = List(mainCursor, mark).sorted
+    Position(cursors(0).y + 1, cursors(0).x + 1, cursors(1).y + 1, cursors(1).x + 1)
+  }
 
   def height: Int = linePositions.length
 
@@ -88,8 +85,32 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       (before :- char) ++ after
     }
     setPos(mainCursor, position + 1)
-    setPos(secondaryCursor, position + 1)
+    setPos(mark, position + 1)
     history += State(newValue, linePositions, position)
+  }
+
+  def paste(): Unit = {
+    this ++= systemClipboard.getData(DataFlavor.stringFlavor).asInstanceOf[String]
+  }
+
+  def copy(): Unit = {
+    val selected = if (mainCursor == mark) {
+      val (start, end) = startAndEndOfLine
+      currentCord.slice(start, end)
+    } else {
+      val cursors = List(mainCursor, mark).sorted
+      currentCord.slice(cursors(0).position, cursors(1).position)
+    }
+
+    val selection = new StringSelection(selected.toString)
+    systemClipboard.setContents(selection, selection)
+  }
+
+  def cut(): Unit = {
+    if (mainCursor == mark)
+      return
+    copy()
+    remove()
   }
 
   def remove(): Unit = {
@@ -102,7 +123,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
 
     val position = mainCursor.position
 
-    val (newValue, newCursorPos) = if (mainCursor == secondaryCursor) {
+    val (newValue, newCursorPos) = if (mainCursor == mark) {
       val v = if (position == text.length) {
         text.init
       } else if (position == 1) {
@@ -111,25 +132,30 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
         val (before, after) = text.split(position)
         before.init ++ after
       }
+      linePositions = linePositions.filter(_ != math.max(1, position))
       (v, position - 1)
     } else {
-      val start = math.min(mainCursor.position, secondaryCursor.position)
-      val end = math.max(mainCursor.position, secondaryCursor.position)
+      val start = math.min(mainCursor.position, mark.position)
+      val end = math.max(mainCursor.position, mark.position)
+
+      // Filter linepositions in the removed area but don't remove the initial line
+      linePositions = linePositions.filter(pos => !(pos in (math.max(1, start) to end)))
+
       val (before, _) = text.split(start)
       val (_, after) = text.split(end)
       (before ++ after, start)
     }
 
     val charsRemoved = text.length - newValue.length
+
     // Realign line positions
     linePositions = linePositions.map { pos => if (pos > position) pos - charsRemoved else pos }
 
-    if (text(position - 1) == '\n')
-      linePositions = linePositions.filter(_ != position)
+    val cursorPos = math.min(math.max(newCursorPos, 0), currentCord.length)
 
-    setPos(mainCursor, newCursorPos)
-    setPos(secondaryCursor, newCursorPos)
-    history += State(newValue, linePositions, newCursorPos)
+    setPos(mainCursor, cursorPos)
+    setPos(mark, cursorPos)
+    history += State(newValue, linePositions, cursorPos)
   }
 
   def removeToLeftWord(): Unit = {
@@ -141,10 +167,10 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       remove()
   }
 
-  def setSecondaryCursorPosition(): Unit = {
-    secondaryCursor.position = mainCursor.position
-    secondaryCursor.x = mainCursor.x
-    secondaryCursor.y = mainCursor.y
+  def setMark(): Unit = {
+    mark.position = mainCursor.position
+    mark.x = mainCursor.x
+    mark.y = mainCursor.y
   }
 
   def goToLeftWord(): Unit = setPos(mainCursor, leftPosition)
@@ -216,8 +242,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       return position
 
     val leftOf = text.split(position)._1
-    val it = leftOf.self.reverseIterator
-    val untilStop = charsUntilStop(it, position - 1)
+    val untilStop = charsUntilStop(leftOf.reverseIterator, position - 1)
     if (untilStop == -1) 0 else position - untilStop
   }
 
@@ -229,17 +254,15 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
       return position
 
     val rightOf = text.split(position)._2
-    val it = rightOf.self.iterator
-    val untilStop = charsUntilStop(it, position)
+    val untilStop = charsUntilStop(rightOf.iterator, position)
     if (untilStop == -1) text.length else position + untilStop
   }
 
-  private def charsUntilStop(iterator: Iterator[String], pos: Int): Int = {
+  private def charsUntilStop(it: Iterator[Char], pos: Int): Int = {
     val currentChar = currentCord(math.max(0, pos))
 
     val currentIsWhiteSpace = currentChar.isWhitespace
     var i = 0
-    val it = iterator.flatMap(_.iterator)
     while (it.hasNext) {
       val c = it.next()
       if (currentIsWhiteSpace != c.isWhitespace) return i
@@ -259,11 +282,22 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
   private def setPos(cursor: Cursor, pos: Int): Unit = {
     cursor.position = pos
     val index = lineIndex
+
     cursor.x = pos - linePositions(index)
     cursor.y = linePositions.length - index - 1
   }
 
   override def toString: String = "Lines: " + linePositions + "\n" + history
+
+  private def startAndEndOfLine = {
+    val line = lineIndex
+    val end = if (line == 0)
+      currentCord.length
+    else
+      linePositions(lineIndex - 1)
+
+    (linePositions(line), end)
+  }
 
   private def linePosition(line: Int): (Int, Int) = {
     val start = linePositions(line)
