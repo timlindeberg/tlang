@@ -69,7 +69,7 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
       .filter { clazz => clazz.tpe != ReplClassID && clazz.tpe.toString.contains("$") }
       .map { clazz => clazz.tpe.toString -> clazz }
 
-    val transformed: CompilationUnit = newStatementTransformer(analyzed).prettyPrint
+    val transformed: CompilationUnit = newStatementTransformer(analyzed)
     compile.run(ctx)(transformed :: Nil)
 
     val res = programExecutor(ClassFile)
@@ -216,4 +216,5 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
     }
 
   }
+
 }

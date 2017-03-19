@@ -109,7 +109,6 @@ class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Terminal
 
     val t = if (input.startsWith(":")) InputColor(input) else input
     val markedPos = commandBuffer.getMarkedPosition
-    println(markedPos)
     val highlighted = syntaxHighlighter(t, Marking(markedPos, MarkedColor))
 
     val box = makeBox(InputColor("Input"), highlighted :: Nil)

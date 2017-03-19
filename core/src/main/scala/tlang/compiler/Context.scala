@@ -1,6 +1,7 @@
 package tlang.compiler
 
 import java.io.File
+import java.net.{URL, URLClassLoader}
 
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{Formatting, Reporter, SimpleFormatting}
@@ -31,5 +32,14 @@ case class Context(
 
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)
+
+  // Hack to inject the class paths in to the current class loader
+  val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
+  method.setAccessible(true)
+
+  for (p <- getClassPaths) {
+    val f = new File(p)
+    method.invoke(ClassLoader.getSystemClassLoader, f.toURI.toURL)
+  }
 
 }

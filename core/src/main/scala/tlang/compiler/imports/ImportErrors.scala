@@ -13,7 +13,9 @@ trait ImportErrors extends ErrorHandling {
   def report(error: Error): Unit = ctx.reporter.report(error)
 
   val ErrorLetters = "I"
+
   abstract class ImportError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+
   abstract class ImportWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
@@ -29,7 +31,7 @@ trait ImportErrors extends ErrorHandling {
   }
 
   case class CantResolveExtensionsImport(imp: ExtensionImport, override val pos: Positioned) extends ImportError(2, pos) {
-    lazy val message = err"Cannot resolve extension import $imp."
+    lazy val message = err"Cannot resolve extension import ${imp.writtenName}"
   }
 
   case class DefaultImportDoesntExist(ignoredImport: String, override val pos: Positioned) extends ImportError(3, pos) {
