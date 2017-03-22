@@ -25,6 +25,9 @@ object Extensions {
   }
 
   def withTimeout[T](duration: Duration)(block: => T): T = {
+    if (duration.toNanos == 0)
+      return block
+
     implicit val exec = new TimeoutExecutionContext()
     try {
       Await.result(Future(block), duration)

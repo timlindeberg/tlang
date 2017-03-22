@@ -1,8 +1,10 @@
 package tlang.repl
 
+import java.lang.reflect.InvocationTargetException
+
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
-import tlang.compiler.error.{CompilationException, ErrorMessages}
+import tlang.compiler.error.{CompilationException, ErrorMessages, SyntaxHighlighter}
 import tlang.utils.Extensions._
 import tlang.utils.{Enumerable, Enumeration}
 
@@ -18,11 +20,11 @@ case class ReplLoop(ctx: Context) {
   private val TabSize        = 4
   private val Timeout        = duration.Duration(2, "sec")
 
-  private val replProgram = ReplProgram(ctx, MaxOutputLines, Timeout)
-  private val terminal    = new ReplTerminal(ctx.formatting, MaxOutputLines)
-  private var running     = false
-  private val commands    = CommandHistory(MaxRedoSize, TabSize)
-  var isShiftDown = false
+  private val replProgram       = ReplProgram(ctx, MaxOutputLines, Timeout)
+  private val terminal          = ReplTerminal(ctx.formatting, MaxOutputLines)
+  private var running           = false
+  private val commands          = CommandHistory(MaxRedoSize, TabSize)
+  private val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
 
   def start(): Unit = {
     sys.addShutdownHook {
@@ -75,6 +77,8 @@ case class ReplLoop(ctx: Context) {
 
     case object Evaluate extends Command {
 
+      private val stackTraceHighlighter = StackTraceHighlighter(ctx.formatting.colors)
+
       override def matches(keyStroke: KeyStroke): Boolean =
         keyStroke.getKeyType == KeyType.Character &&
           (keyStroke.getCharacter == ' ' || keyStroke.getCharacter == 128) &&
@@ -97,12 +101,15 @@ case class ReplLoop(ctx: Context) {
 
         if (!command.startsWith(":")) {
           try {
-            return Success(replProgram.execute(command))
+            val res = replProgram.execute(command)
+            return Success(res)
           } catch {
-            case e: CompilationException => return CompilationFailed(e.messages)
-            case _: TimeoutException     =>
+            case e: CompilationException      => return CompilationFailed(e.messages)
+            case _: TimeoutException          =>
               val msg = Bold("Execution timed out after " + Red(Timeout)) + Bold(".")
               return Failure(msg)
+            case e: InvocationTargetException =>
+              return Failure(stackTraceHighlighter(e.getCause))
           }
         }
 
@@ -118,7 +125,6 @@ case class ReplLoop(ctx: Context) {
         }
         Success(message)
       }
-
     }
 
     case object Undo extends Command {

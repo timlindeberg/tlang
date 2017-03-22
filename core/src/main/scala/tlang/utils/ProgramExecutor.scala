@@ -31,11 +31,9 @@ case class ProgramExecutor(timeout: Option[Duration] = Some(duration.Duration(2,
 
   def apply(classPaths: List[String], mainName: String): String = {
     val method = getMainMethod(classPaths, mainName)
-
     stdoutOutput {
-      timeout match {
-        case Some(t) => withTimeout(t) {method.invoke(null, Array[String]())}
-        case None    => method.invoke(null, Array[String]())
+      withTimeout(timeout.getOrElse(Duration(0, "sec"))) {
+        method.invoke(null, Array[String]())
       }
     }
   }

@@ -28,25 +28,25 @@ object Tester {
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
 
   def getTestContext(file: Option[File], reporter: Option[Reporter] = None): Context = {
-    val (files, outDir) = file.map { f =>
-      val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
-      (Set(f), new File(s"$TestDirectory/$mainName/"))
-    }.getOrElse {
-      (Set[File](), new File("."))
+    val (files, outDir) = file match {
+      case Some(f) =>
+        val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
+        (Set(f), new File(s"$TestDirectory/$mainName/"))
+      case None    => (Set[File](), new File("."))
     }
 
     val colors = Colors(UseColor)
 
     val box = if (UseSimpleFormatting) Simple else Light
     val formatting = Formatting(box, 80, colors)
-    val r = reporter.getOrElse(DefaultReporter(formatting = formatting))
     Context(
-      reporter = r,
+      reporter = reporter.getOrElse(DefaultReporter(messages = ErrorMessages(formatting))),
       files = files,
       outDirs = Set(outDir),
       printCodeStages = PrintCodeStages,
       formatting = formatting,
-      printer = PrettyPrinter(colors))
+      printer = PrettyPrinter(colors)
+    )
   }
 
 }

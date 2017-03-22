@@ -296,7 +296,7 @@ object Flags {
   }
 
   case object LineWidth extends NumberFlag {
-    override val defaultValue = 80
+    override val defaultValue = 120
 
     override val flag = "linewidth"
     override val arg  = "num"

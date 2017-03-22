@@ -112,13 +112,14 @@ object Main extends MainErrors {
     }
   }
 
-  private def createContext(options: Options): Context =
+  private def createContext(options: Options): Context = {
+    val formatting = options.formatting
+
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        maxErrors = options(MaxErrors),
-        formatting = options.formatting
+        messages = ErrorMessages(formatting, options(MaxErrors), options(ErrorContext))
       ),
       errorContext = options(ErrorContext),
       files = options.files,
@@ -127,10 +128,11 @@ object Main extends MainErrors {
       printCodeStages = options(PrintOutput),
       printInfo = options(Verbose),
       ignoredImports = options(IgnoreDefaultImports),
-      formatting = options.formatting,
-      printer = PrettyPrinter(options.formatting.colors)
+      formatting = formatting,
+      printer = PrettyPrinter(formatting.colors)
     )
 
+  }
   private def printFilesToCompile(ctx: Context) = {
     import ctx.formatting._
     import ctx.formatting.colors._

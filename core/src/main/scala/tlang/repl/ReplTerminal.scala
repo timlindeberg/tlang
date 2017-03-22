@@ -20,7 +20,7 @@ import tlang.utils.Extensions._
 import scala.collection.mutable.ListBuffer
 
 
-class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Terminal {
+case class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Terminal {
 
   import formatting._
   import formatting.colors._
@@ -192,7 +192,7 @@ class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Terminal
     y
   }
 
-  private def highlight(text: String) = if (text.startsWith(":")) Magenta(text) else syntaxHighlighter(text)
+  private def highlight(text: String) = if (text.startsWith(":")) InputColor(text) else syntaxHighlighter(text)
 
   private def getColor(char: Char) = char match {
     case '0' => ANSI.BLACK
@@ -269,7 +269,7 @@ class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Terminal
       TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
       .setTerminalEmulatorFontConfiguration(
         SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 16)))
-      .setInitialTerminalSize(new TerminalSize(80, 500))
+      .setInitialTerminalSize(new TerminalSize(120, 500))
       .setTerminalEmulatorDeviceConfiguration(
         new TerminalEmulatorDeviceConfiguration(50, 1, CursorStyle.VERTICAL_BAR, ANSI.RED, false))
       .createTerminal()

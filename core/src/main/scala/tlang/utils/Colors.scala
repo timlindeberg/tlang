@@ -54,7 +54,12 @@ object Colors {
 
     def +(c: Color): Color = Color(colors ++ c.colors, isActive || c.isActive)
     def +(s: Any): String = value + s.toString
-    def apply(s: Any): String = value + s.toString + (if (isActive) RESET else "")
+    def apply(any: Any): String = {
+      val s = any.toString
+      if (s.isEmpty || !isActive)
+        return s
+      value + s + RESET
+    }
 
   }
 

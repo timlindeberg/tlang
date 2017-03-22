@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import tlang.compiler.Context
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.error.{DefaultReporter, Formatting}
+import tlang.compiler.error.{DefaultReporter, ErrorMessages, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
 
@@ -19,7 +19,6 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val options = Options(args)
-
     tlang.compiler.Main.checkTHome()
 
     if (options(Version)) {
@@ -44,19 +43,20 @@ object Main {
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, tempDir: File): Context =
+  private def createContext(options: Options, tempDir: File): Context = {
+    val formatting = options.formatting
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        maxErrors = 25,
-        errorContext = options(ErrorContext),
-        formatting = options.formatting
+        messages = ErrorMessages(formatting, 25, options(ErrorContext))
       ),
       outDirs = Set(tempDir),
-      formatting = options.formatting,
-      printer = PrettyPrinter(options.formatting.colors)
+      formatting = formatting,
+      printer = PrettyPrinter(formatting.colors)
     )
+  }
+
 
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
     args foreach { arg =>
