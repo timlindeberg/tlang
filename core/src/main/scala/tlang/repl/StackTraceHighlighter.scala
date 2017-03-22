@@ -41,12 +41,13 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
   private def parseError(msg: String, nxt: StackTraceHighlighter.this.Input) = {
     val s = nxt.source
     val offset = nxt.offset
-    val errorMessage =
+
+    throw new RuntimeException(
       s"""
          |Failed to parse stack trace.
          |Message: $msg
          |
-         |Parsed $offset chars
+         |Parsed ($offset chars):
          |------------------------------------------------------------
          |${s.subSequence(0, offset)}
          |------------------------------------------------------------
@@ -54,9 +55,7 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
          |------------------------------------------------------------
          |${s.subSequence(offset, s.length)}
          |------------------------------------------------------------
-     """.stripMargin.trim
-
-    throw new RuntimeException(errorMessage)
+     """.stripMargin.trim)
   }
 
   object StackTraceParser {

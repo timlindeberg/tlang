@@ -2,7 +2,6 @@ package tlang.compiler.error
 
 import java.io.File
 
-import tlang.compiler.options.Flags
 import tlang.utils.FileSource
 
 import scala.collection.mutable
@@ -10,10 +9,7 @@ import scala.collection.mutable
 /**
   * Created by Tim Lindeberg on 2/26/2017.
   */
-case class ErrorMessages(
-  formatting: Formatting = SimpleFormatting,
-  maxErrors: Int = Flags.MaxErrors.defaultValue,
-  errorContext: Int = Flags.ErrorContext.defaultValue) {
+case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: Int) {
 
   import formatting._
   import formatting.colors._

@@ -15,6 +15,7 @@ import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
 import tlang.compiler.error._
+import tlang.utils.Colors.Color
 import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
@@ -28,6 +29,7 @@ case class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Ter
   private val backingTerminal = createTerminal()
 
   private val syntaxHighlighter = SyntaxHighlighter(formatting.colors)
+  private val wordWrapper       = new AnsiWordWrapper
 
   private var previousBoxHeight   = 0
   private var boxStartingPosition = getCursorPosition
@@ -40,6 +42,7 @@ case class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Ter
   private val ErrorColor   = Bold + Red
   private val MarkedColor  = WhiteBG + Black
   private val InputColor   = Bold + Magenta
+
 
   KeyboardFocusManager.getCurrentKeyboardFocusManager addKeyEventDispatcher
     new KeyEventDispatcher() {
@@ -66,10 +69,20 @@ case class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Ter
     linesPut
   }
 
-  def putResultBox(input: String, results: String, success: Boolean): Unit = {
-    val header = if (success) SuccessColor("Result") else ErrorColor("Error")
-    val box = makeBox(Bold(header), highlight(input) :: results :: Nil)
+  def putResultBox(input: String, output: String, success: Boolean): Unit = {
+    val (color, header) = if (success) (SuccessColor, "Result") else (ErrorColor, "Error")
+    val result = truncate(output, color)
+    val box = makeBox(color(Bold(header)), highlight(input) :: result :: Nil)
     putBox(box)
+  }
+
+  def truncate(output: String, color: Color): String = {
+    val wordWrapped = wordWrapper(output, formatting.lineWidth)
+
+    val diff = wordWrapped.size - maxOutputLines
+    val lines = wordWrapped.take(maxOutputLines)
+    val truncated = if (diff <= 0) lines else lines :+ color(s"... $diff more")
+    truncated.mkString("\n")
   }
 
   def putErrorBox(input: String, errors: List[ErrorMessage]): Unit = {
@@ -82,14 +95,15 @@ case class ReplTerminal(formatting: Formatting, maxOutputLines: Int) extends Ter
 
     sb ++= makeLines(syntaxHighlighter(input, markings))
 
+
     val errorLines = errors.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
       (errorFormatter.position, errorFormatter.errorPrefix + error.message)
     }
-    val truncated = if (errorLines.size > maxOutputLines)
-      errorLines.take(maxOutputLines) :+ ("", "...")
-    else
-      errorLines
+    val diff = errorLines.size - maxOutputLines
+    val lines = errorLines.take(maxOutputLines)
+    val truncated = if (diff <= 0) lines else lines :+ ("", ErrorColor(s"... $diff more"))
+
 
     sb ++= makeBlocksWithColumns(truncated, endOfBlock = true)
     putBox(sb)

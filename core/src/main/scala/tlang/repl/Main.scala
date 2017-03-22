@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import tlang.compiler.Context
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.error.{DefaultReporter, ErrorMessages, Formatting}
+import tlang.compiler.error.{DefaultReporter, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
 
@@ -49,7 +49,9 @@ object Main {
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        messages = ErrorMessages(formatting, 25, options(ErrorContext))
+        formatting = formatting,
+        maxErrors = 25,
+        errorContext = 0
       ),
       outDirs = Set(tempDir),
       formatting = formatting,

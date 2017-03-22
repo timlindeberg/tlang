@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException
 
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
-import tlang.compiler.error.{CompilationException, ErrorMessages, SyntaxHighlighter}
+import tlang.compiler.error.{CompilationException, ErrorMessages}
 import tlang.utils.Extensions._
 import tlang.utils.{Enumerable, Enumeration}
 
@@ -16,15 +16,14 @@ import scala.concurrent.{TimeoutException, duration}
 case class ReplLoop(ctx: Context) {
 
   private val MaxRedoSize    = 500
-  private val MaxOutputLines = 5
+  private val MaxOutputLines = 10
   private val TabSize        = 4
   private val Timeout        = duration.Duration(2, "sec")
 
-  private val replProgram       = ReplProgram(ctx, MaxOutputLines, Timeout)
-  private val terminal          = ReplTerminal(ctx.formatting, MaxOutputLines)
-  private var running           = false
-  private val commands          = CommandHistory(MaxRedoSize, TabSize)
-  private val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
+  private val replProgram = ReplProgram(ctx, MaxOutputLines, Timeout)
+  private val terminal    = ReplTerminal(ctx.formatting, MaxOutputLines)
+  private var running     = false
+  private val commands    = CommandHistory(MaxRedoSize, TabSize)
 
   def start(): Unit = {
     sys.addShutdownHook {
@@ -101,13 +100,11 @@ case class ReplLoop(ctx: Context) {
 
         if (!command.startsWith(":")) {
           try {
-            val res = replProgram.execute(command)
-            return Success(res)
+            return Success(replProgram.execute(command))
           } catch {
             case e: CompilationException      => return CompilationFailed(e.messages)
             case _: TimeoutException          =>
-              val msg = Bold("Execution timed out after " + Red(Timeout)) + Bold(".")
-              return Failure(msg)
+              return Failure(Bold("Execution timed out after " + Red(Timeout)) + Bold("."))
             case e: InvocationTargetException =>
               return Failure(stackTraceHighlighter(e.getCause))
           }

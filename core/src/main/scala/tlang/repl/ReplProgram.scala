@@ -75,31 +75,27 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
     val res = programExecutor(ClassFile)
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
 
-    val executionMessages = getOutput(res)
-      .map { output =>
-        val lines = output.split("\n").toList
-        val s = if (lines.length > maxOutputLines) lines.take(maxOutputLines) :+ "..." else lines
-        s.map(colorOutput)
-      }
-      .getOrElse(Nil)
+    val executionMessages = getOutput(res).lines.map(colorOutput)
 
-
-    (definitionMessages ++ executionMessages).mkString("\n")
-
+    val sb = new StringBuilder
+    definitionMessages.foreach(sb ++= _ + "\n")
+    executionMessages.foreach(sb ++= _ + "\n")
+    sb.toString
   }
 
   def prettyPrinted: String = printer(generateCompilationUnit()).trimWhiteSpaces
 
-  private def getOutput(s: String): Option[String] = {
-    val split = s.split(ReplOutputMarker)
-    if (split.length != 2) None else Some(split(1).filter(_ != '\r'))
+  private def getOutput(s: String): String = {
+    val start = s.indexOf(ReplOutputMarker)
+    val end = s.lastIndexOf(ReplOutputMarker)
+    if (start != -1 && end != -1) s.slice(start + ReplOutputMarker.length, end) else ""
   }
 
   private def colorOutput(s: String): String = {
     if (s.startsWith("val res") && s.contains("=")) {
-      val split = s.split("=").map(_.trimWhiteSpaces)
+      val split = s.split("=")
       if (split.length == 2)
-        return syntaxHighlighter(split(0)) + " = " + Bold(Green(split(1)))
+        return syntaxHighlighter(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
     }
     Bold(Green(s.trim))
   }

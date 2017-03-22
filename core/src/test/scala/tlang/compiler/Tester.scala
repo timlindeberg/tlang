@@ -40,7 +40,7 @@ object Tester {
     val box = if (UseSimpleFormatting) Simple else Light
     val formatting = Formatting(box, 80, colors)
     Context(
-      reporter = reporter.getOrElse(DefaultReporter(messages = ErrorMessages(formatting))),
+      reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
       files = files,
       outDirs = Set(outDir),
       printCodeStages = PrintCodeStages,

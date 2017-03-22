@@ -2,6 +2,7 @@ package tlang.compiler.error
 
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
+import tlang.compiler.options.Flags
 
 trait Reporter {
 
@@ -40,8 +41,12 @@ case class VoidReporter() extends Reporter {
 case class DefaultReporter(
   suppressWarnings: Boolean = false,
   warningIsError: Boolean = false,
-  messages: ErrorMessages = ErrorMessages()
+  formatting: Formatting = SimpleFormatting,
+  maxErrors: Int = Flags.MaxErrors.defaultValue,
+  errorContext: Int = Flags.ErrorContext.defaultValue
 ) extends Reporter {
+
+  var messages: ErrorMessages = ErrorMessages(formatting, maxErrors, errorContext)
 
   def report(error: ErrorMessage): Unit = {
     error match {
@@ -59,7 +64,7 @@ case class DefaultReporter(
     messages += error
   }
 
-  def clear(): Unit = messages.clear()
+  def clear(): Unit = messages = ErrorMessages(formatting, maxErrors, errorContext)
 
   def terminateIfErrors(): Unit =
     if (hasErrors)

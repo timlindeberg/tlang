@@ -119,7 +119,9 @@ object Main extends MainErrors {
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        messages = ErrorMessages(formatting, options(MaxErrors), options(ErrorContext))
+        formatting = formatting,
+        maxErrors = options(MaxErrors),
+        errorContext = options(ErrorContext)
       ),
       errorContext = options(ErrorContext),
       files = options.files,

@@ -16,17 +16,19 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   import box._
   import colors._
 
-  private val width: Int = lineWidth - 4
+  private val Indent = 2
+
+  private val width: Int = lineWidth - (2 * Indent)
 
   private val wordWrapper = new AnsiWordWrapper
 
-  def top: String = trimRight(┌ + ─ * (lineWidth - 2) + ┐) + "\n"
-  def bottom: String = trimRight(└ + ─ * (lineWidth - 2) + ┘) + "\n"
-  def divider: String = trimRight(├ + ─ * (lineWidth - 2) + ┤) + "\n"
+  def top: String = trimRight(┌ + ─ * (lineWidth - Indent) + ┐) + "\n"
+  def bottom: String = trimRight(└ + ─ * (lineWidth - Indent) + ┘) + "\n"
+  def divider: String = trimRight(├ + ─ * (lineWidth - Indent) + ┤) + "\n"
 
   def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
-    val rest = ─ * (lineWidth - bridgeAt - 5)
-    val overNumbers = ─ * (bridgeAt + 2)
+    val rest = ─ * (lineWidth - bridgeAt - (2 * Indent + 1))
+    val overNumbers = ─ * (bridgeAt + Indent)
     val line = left + overNumbers + bridge + rest + right
     trimRight(line) + "\n"
   }
@@ -72,20 +74,20 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
 
     val columnVars = block.unzip._1
     val maxColumnWidth = columnVars.map(_.charCount).max
-    val width = lineWidth - maxColumnWidth - 7
+    val w = width - maxColumnWidth - 3
 
     sb ++= sb ++= seperator(├, ┬, ┤, maxColumnWidth)
 
     sb ++= block
       .flatMap { case (col, line) =>
-        val lines = wordWrapper(line, width)
+        val lines = wordWrapper(line, w)
         val columns = col :: List.fill(lines.size - 1)("")
         columns zip lines
       }
       .map { case (col, line) =>
         val columnWidth = col.charCount
         val whiteSpaces = " " * (maxColumnWidth - columnWidth)
-        │ + " " + col + whiteSpaces + " " + makeLine(line, width)
+        │ + " " + col + whiteSpaces + " " + makeLine(line, w)
       }.mkString
     sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
     sb.toString
@@ -115,10 +117,8 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
 
   def formatFileName(file: File): String = formatFileName(file.getName)
 
-  def formatFileName(name: String): String = {
-    val style = Bold + Magenta
-    Bold(Magenta(name) + Main.FileEnding)
-  }
+  def formatFileName(name: String): String = Bold(Magenta(name) + Main.FileEnding)
+
 
   def makeList(items: Traversable[String], indent: String = "  "): String = {
     val listSign = if (colors.isActive) "•" else "*"
