@@ -227,10 +227,10 @@ object Flags {
       val perRow = lineWidth / (boxWidth + seperator.length)
       val styles = boxes
         .map { box =>
-          val colors = if (box == Simple) Colors(isActive = false) else colors
+          val newColors = if (box == Simple) Colors(isActive = false) else colors
           val blocks = List("A " + Blue("block") + ".", "Another " + Blue("block") + ".")
 
-          val exampleFormatting = error.Formatting(box, colors, boxWidth, trim = false)
+          val exampleFormatting = error.Formatting(box, newColors, boxWidth, trim = false)
           val header = Bold(Magenta(box.name))
           exampleFormatting.makeBox(header, blocks).split("\n").toList
         }

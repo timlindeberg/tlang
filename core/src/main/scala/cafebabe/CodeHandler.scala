@@ -186,7 +186,7 @@ class CodeHandler private[cafebabe](
 
       if (there < 0) {
         heightArray(from) = there
-        error(s"Negative stack height ($there) at pc=$from (which is ${codeArray(from)}).")
+        error(s"Negative stack height ($there) at pc=$from (which is ${ codeArray(from) }).")
       }
 
       if (heightArray(from) != UninitializedHeight) {
@@ -194,7 +194,7 @@ class CodeHandler private[cafebabe](
         if (heightArray(from) == there) {
           return
         } else {
-          error(s"Inconsistent stack height at pc=$from(${heightArray(from)} and $there).")
+          error(s"Inconsistent stack height at pc=$from(${ heightArray(from) } and $there).")
         }
       }
 
@@ -298,7 +298,7 @@ class CodeHandler private[cafebabe](
 
   def error(message: String): Unit = {
     println(message)
-    println(stackTrace(Formatting(Light, LineWidth.defaultValue, Colors(isActive = true))))
+    println(stackTrace(Formatting(Light, Colors(isActive = true), LineWidth.defaultValue)))
     throw CodeFreezingException(message)
 
   }

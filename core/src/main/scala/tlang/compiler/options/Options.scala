@@ -152,7 +152,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   val colors    : Colors           = Colors(isActive = boxType != Simple, colorScheme)
-  val formatting: error.Formatting = error.Formatting(boxType, apply(LineWidth), colors)
+  val formatting: error.Formatting = error.Formatting(boxType, colors, apply(LineWidth))
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
     val validStages = Main.CompilerStages.map(_.compilerStageName)
@@ -166,7 +166,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
     import Colors.ColorScheme._
     json.keys
       .find { key => !(key in ColorSchemeNames) }
-      .foreach {FatalInvalidColorSchemeKey(_, ColorSchemeNames)}
+      .foreach { FatalInvalidColorSchemeKey(_, ColorSchemeNames) }
 
     val colors = ColorSchemeNames.map { name =>
       val color = json.get(name) match {

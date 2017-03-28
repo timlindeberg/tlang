@@ -38,7 +38,7 @@ object Tester {
     val colors = Colors(UseColor)
 
     val box = if (UseSimpleFormatting) Simple else Light
-    val formatting = Formatting(box, 80, colors)
+    val formatting = Formatting(box, colors, 80)
     Context(
       reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
       files = files,
@@ -96,7 +96,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
       .replaceAll("\\" + Main.FileEnding, "")
 
     val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)
-    execute {testFile(file)}
+    execute { testFile(file) }
   }
 
   private def testFiles(file: File): Array[File] = {
@@ -123,7 +123,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     val failedLine = failedTest.toString
     list.map { case (i, r, s) =>
       val lineNum = s"$i"
-      val sizedStr = s"%-${colLength}s"
+      val sizedStr = s"%-${ colLength }s"
       val format = s"%-4s$sizedStr$sizedStr"
       val line = String.format(format, lineNum, r, s)
 
@@ -132,7 +132,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   }
 
   private def shouldBeIgnored(file: File): Boolean = {
-    val firstLine = using(io.Source.fromFile(file.getPath)) {_.getLines().take(1).toList.headOption}
+    val firstLine = using(io.Source.fromFile(file.getPath)) { _.getLines().take(1).toList.headOption }
     if (firstLine.isEmpty)
       return true
 
