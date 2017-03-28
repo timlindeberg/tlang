@@ -158,7 +158,7 @@ object Main extends MainErrors {
     }.mkString("\n")
 
     val header =
-      f"${Bold}Compilation executed ${Green("successfully")}$Bold in $Green$totalTime%.2f$Reset ${Bold}seconds.$Reset"
+      f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset"
     print(makeBox(header, List(individualTimes)))
   }
 
@@ -230,7 +230,6 @@ object Main extends MainErrors {
 
 
     val programExecutor = ProgramExecutor(timeout = None)
-    val syntaxHighlighter = SyntaxHighlighter(ctx.formatting.colors)
     val outputBlocks = cus.flatMap { cu =>
       val file = cu.source.asInstanceOf[FileSource].file
       val output = syntaxHighlighter(programExecutor(ctx, file))

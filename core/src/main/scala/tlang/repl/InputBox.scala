@@ -3,27 +3,8 @@ package tlang.repl
 import tlang.compiler.error.{ErrorFormatter, ErrorMessage, Formatting, Marking}
 import tlang.utils.Colors.Color
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
-abstract class Spinner(characters: IndexedSeq[Char], val frameTime: FiniteDuration) {
-
-  private var index        = 0
-  private var _elapsedTime = Duration(0, "ms")
-
-  def nextCharacter: Char = {
-    val c = characters(index)
-    index = (index + 1) % characters.size
-    _elapsedTime += frameTime
-    c
-  }
-
-  def elapsedTime: FiniteDuration = _elapsedTime
-  def reset(): Unit = index = 0
-
-}
-
-case class BrailSpinner() extends Spinner("⣾⣽⣻⢿⡿⣟⣯⣷", FiniteDuration(200, "ms"))
-case class ASCIISpinner() extends Spinner("|/—\\\\", FiniteDuration(200, "ms"))
 class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTerminal) {
 
   import formatting._
@@ -48,7 +29,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   private var isFinished          = false
 
   def nextLoadingState(): Unit = {
-    var text = Bold(spinner.nextCharacter)
+    var text = Bold(spinner.nextImage)
     if (spinner.elapsedTime > ShowCtrlCReminder)
       text += InputColor("   Press Ctrl+C to cancel execution.")
     result = divider + makeLine(text) + bottom

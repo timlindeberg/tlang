@@ -1,7 +1,6 @@
 package tlang.repl
 
 import akka.actor.{Actor, Props}
-import akka.util.Timeout
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
 import tlang.repl.InputHandler.{InputHandlerMessage, NewInput, SaveToFile}
@@ -10,7 +9,6 @@ import tlang.repl.ReplProgram.ReplProgramMessage
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
-import scala.concurrent.duration._
 
 object Repl {
   case object Start
@@ -36,6 +34,10 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     case Start                    =>
       renderer ! Renderer.Start
       self ! Next
+    case Stop                     =>
+      inputHandler ! SaveToFile
+      renderer ! Renderer.Stop
+      context.system.terminate()
     case Next                     =>
       Future { terminal.readInput() } onSuccess {
         case key: KeyStroke if key.getKeyType == KeyType.EOF =>
@@ -44,19 +46,8 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
           self ! Next
           inputHandler ! NewInput(key)
       }
-    case Stop                     =>
-      implicit val timeout = Timeout(5 seconds)
-      inputHandler ! SaveToFile
-      renderer ! Renderer.Stop
-      context.system.terminate()
-    case msg: RendererMessage     =>
-      //println("forwarded to renderer: " + msg)
-      renderer forward msg
-    case msg: ReplProgramMessage  =>
-      //println("forwarded to replProgram: " + msg)
-      replProgram forward msg
-    case msg: InputHandlerMessage =>
-      //println("forwarded to inputHandler: " + msg)
-      inputHandler forward msg
+    case msg: RendererMessage     => renderer forward msg
+    case msg: ReplProgramMessage  => replProgram forward msg
+    case msg: InputHandlerMessage => inputHandler forward msg
   }
 }

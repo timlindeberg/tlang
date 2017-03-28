@@ -4,15 +4,16 @@ import java.io.File
 
 import tlang.compiler.Main
 import tlang.compiler.error.Boxes.{Box, Simple}
-import tlang.repl.{ASCIISpinner, BrailSpinner, Spinner}
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, Enumeration}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Created by Tim Lindeberg on 1/29/2017.
   */
 
-case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = true) {
+case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = true) {
 
   import box._
   import colors._
@@ -20,8 +21,9 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   private val Indent     = 2
   private val Width: Int = lineWidth - (2 * Indent)
 
-  val wordWrapper       = new AnsiWordWrapper
-  val syntaxHighlighter = SyntaxHighlighter(colors)
+  val wordWrapper        = new AnsiWordWrapper
+  val syntaxHighlighter  = SyntaxHighlighter(colors)
+  val listMarker: String = if (colors.isActive) "•" else "*"
 
   def spinner: Spinner = if (colors.isActive) BrailSpinner() else ASCIISpinner()
 
@@ -57,7 +59,6 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
 
   def makeLines(lines: String, w: Int = Width): String =
     wordWrapper(lines, w).map(makeLine(_, w)).mkString
-
 
   def makeLine(line: String, w: Int = Width): String = {
     val whitespaces = " " * (w - line.charCount)
@@ -124,14 +125,14 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
 
 
   def makeList(items: Traversable[String], indent: String = "  "): String = {
-    val listSign = if (colors.isActive) "•" else "*"
-    items.map(item => s"$indent$listSign $item").mkString("\n")
+    items.map(item => s"$indent$listMarker $item").mkString("\n")
   }
 
   private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
+
 }
 
-object SimpleFormatting extends Formatting(Simple, 80, Colors(isActive = false))
+object SimpleFormatting extends Formatting(Simple, Colors(isActive = false), 80)
 
 object Boxes {
 
@@ -171,3 +172,42 @@ object Boxes {
 
   lazy val All: Set[Box] = Enumeration.instancesOf[Box]
 }
+
+sealed abstract class Spinner(val frameTime: FiniteDuration, images: String*) {
+
+  private var index        = 0
+  private var _elapsedTime = FiniteDuration(0, "ms")
+
+  def nextImage: String = {
+    _elapsedTime += frameTime
+    val image = images(index)
+    index = (index + 1) % images.size
+    image
+  }
+
+  def elapsedTime: FiniteDuration = _elapsedTime
+  def reset(): Unit = {
+    _elapsedTime = FiniteDuration(0, "ms")
+    index = 0
+  }
+}
+
+case class AwesomeSpinner() extends Spinner(FiniteDuration(100, "ms"),
+  "█▇▆▅▄▃▁▁▂▃▄▅▆▇█",
+  "▇▆▅▄▃▁▁▂▃▄▅▆▇█▇",
+  "▇▆▅▄▃▁▁▂▃▄▅▆▇█▇",
+  "▆▅▄▃▁▁▂▃▄▅▆▇█▇▆",
+  "▅▄▃▁▁▂▃▄▅▆▇█▇▆▅",
+  "▄▃▁▁▂▃▄▅▆▇█▇▆▅▄",
+  "▃▁▁▂▃▄▅▆▇█▇▆▅▄▃",
+  "▁▁▂▃▄▅▆▇█▇▆▅▄▃▁",
+  "▁▂▃▄▅▆▇█▇▆▅▄▃▁▁",
+  "▂▃▄▅▆▇█▇▆▅▄▃▁▁▂",
+  "▃▄▅▆▇█▇▆▅▄▃▁▁▂▃",
+  "▄▅▆▇█▇▆▅▄▃▁▁▂▃▄",
+  "▅▆▇█▇▆▅▄▃▁▁▂▃▄▅",
+  "▆▇█▇▆▅▄▃▁▁▂▃▄▅▆",
+  "▇█▇▆▅▄▃▁▁▂▃▄▅▆▇",
+  "█▇▆▅▄▃▁▁▂▃▄▅▆▇█")
+case class BrailSpinner() extends Spinner(FiniteDuration(100, "ms"), "⢎⡰", "⢎⡡", "⢎⡑", "⢎⠱", "⠎⡱", "⢊⡱", "⢌⡱", "⢆⡱")
+case class ASCIISpinner() extends Spinner(FiniteDuration(200, "ms"), "|", "/", "—", "\\\\")

@@ -183,7 +183,8 @@ class ReplTerminal extends Terminal {
       .setTerminalEmulatorColorConfiguration(
         TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
       .setTerminalEmulatorFontConfiguration(
-        SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Menlo", 0, 16)))
+        new SwingTerminalFontConfiguration(true, AWTTerminalFontConfiguration.BoldMode.EVERYTHING, new java.awt.Font("Meslo LG S", 0, 14))
+      )
       .setInitialTerminalSize(new TerminalSize(120, 500))
       .setTerminalEmulatorDeviceConfiguration(
         new TerminalEmulatorDeviceConfiguration(50, 1, CursorStyle.VERTICAL_BAR, ANSI.RED, false))

@@ -23,7 +23,6 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
 
   val pos  : Positioned         = error.pos
   val lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
-  val syntaxHighlighter         = SyntaxHighlighter(formatting.colors)
 
   def errorPrefix: String = {
     val pre = error match {

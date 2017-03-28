@@ -11,7 +11,7 @@ import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter, Trees}
 import tlang.compiler.code.{CodeGeneration, Desugaring, TreeBuilder}
-import tlang.compiler.error.{CompilationException, SyntaxHighlighter}
+import tlang.compiler.error.CompilationException
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
@@ -46,6 +46,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
 
   import ReplProgram._
+  import ctx.formatting._
   import ctx.formatting.colors._
 
   private val ClassName        = "REPL"
@@ -59,7 +60,6 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val programExecutor         = ProgramExecutor()
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()
-  private val syntaxHighlighter       = SyntaxHighlighter(ctx.formatting.colors)
   private val stackTraceHighlighter   = StackTraceHighlighter(ctx.formatting.colors)
 
   private val parse    = Lexer andThen Parser
