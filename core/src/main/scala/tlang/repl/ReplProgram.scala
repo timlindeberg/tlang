@@ -1,7 +1,9 @@
 package tlang.repl
 
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 
+import akka.actor.{Actor, Props}
 import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
@@ -9,7 +11,7 @@ import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter, Trees}
 import tlang.compiler.code.{CodeGeneration, Desugaring, TreeBuilder}
-import tlang.compiler.error.SyntaxHighlighter
+import tlang.compiler.error.{CompilationException, SyntaxHighlighter}
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
@@ -18,14 +20,32 @@ import tlang.utils.{Colors, ProgramExecutor, StringSource}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{CancellationException, TimeoutException}
+import scala.util.{Failure, Success}
 
 
 /**
   * Created by Tim Lindeberg on 2/14/2017.
   */
-case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
+object ReplProgram {
 
+  trait ReplProgramMessage
+
+  case class Execute(command: String) extends ReplProgramMessage
+  case object PrettyPrint extends ReplProgramMessage
+  case object StopExecution extends ReplProgramMessage
+
+  def props(ctx: Context, maxOutputLines: Int) =
+    Props(new ReplProgram(ctx, maxOutputLines))
+
+  val name = "replProgram"
+}
+
+class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
+
+
+  import ReplProgram._
   import ctx.formatting.colors._
 
   private val ClassName        = "REPL"
@@ -36,10 +56,11 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
   private val ReplClassID             = ClassID(ClassName)
   private val ReplClassSymbol         = new ClassSymbol(ClassName, isAbstract = false)
   private val printer                 = PrettyPrinter(Colors(isActive = true))
-  private val programExecutor         = ProgramExecutor(Some(timeout))
+  private val programExecutor         = ProgramExecutor()
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()
   private val syntaxHighlighter       = SyntaxHighlighter(ctx.formatting.colors)
+  private val stackTraceHighlighter   = StackTraceHighlighter(ctx.formatting.colors)
 
   private val parse    = Lexer andThen Parser
   private val frontEnd = Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
@@ -53,12 +74,45 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
   private var newStatements = List[StatTree]()
   private var resultCounter = 0
 
+  private def parent = context.parent
+
+  private val NoCancel        = () => false
+  private var cancelExecution = NoCancel
+
   // For warmup
-  execute("val theAnswerToLifeInTheUniverseAndEverything = 21 * 2")
+  compileAndExecute("val theAnswerToLifeInTheUniverseAndEverything = 21 * 2")
 
-  def execute(command: String): String = {
-    newStatements = Nil
 
+  override def receive: Receive = {
+    case Execute(command) => execute(command)
+    case StopExecution    => cancelExecution()
+    case PrettyPrint      => prettyPrint()
+    case _                => ???
+  }
+
+  private def execute(command: String): Unit = {
+    val (f, cancel) = CancellableFuture { compileAndExecute(command) }
+    cancelExecution = cancel
+    f onComplete { res =>
+      cancelExecution = NoCancel
+      val failureColor = Bold + Red
+      val message = res match {
+        case Success(res) => Renderer.Success(res, truncate = true)
+        case Failure(e)   => e match {
+          case e: CompilationException      => Renderer.CompileError(e.messages.getErrors)
+          case _: TimeoutException          => Renderer.Failure(failureColor("Execution timed out."), truncate = true)
+          case _: CancellationException     => Renderer.Failure(failureColor("Execution cancelled."), truncate = true)
+          case e: InvocationTargetException => Renderer.Failure(stackTraceHighlighter(e.getCause), truncate = true)
+          case e                            => throw e
+        }
+      }
+      newStatements = Nil
+      parent ! message
+    }
+  }
+
+
+  private def compileAndExecute(command: String): String = {
     val definitionMessages = extractDefinitionsFromInput(command)
 
     val CU = generateCompilationUnit()
@@ -80,10 +134,14 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
     val sb = new StringBuilder
     definitionMessages.foreach(sb ++= _ + "\n")
     executionMessages.foreach(sb ++= _ + "\n")
-    sb.toString
+    sb.toString.trimWhiteSpaces
   }
 
-  def prettyPrinted: String = printer(generateCompilationUnit()).trimWhiteSpaces
+  private def prettyPrint(): Unit = {
+    newStatements = Nil
+    val code = printer(generateCompilationUnit()).trimWhiteSpaces
+    parent ! Renderer.Success(code, truncate = false)
+  }
 
   private def getOutput(s: String): String = {
     val start = s.indexOf(ReplOutputMarker)
@@ -124,7 +182,7 @@ case class ReplProgram(ctx: Context, maxOutputLines: Int, timeout: Duration) {
   private def extractDefinitionsFromInput(command: String): List[String] = {
     val parsedInput = parseInput(command)
 
-    val mainClass = parsedInput.classes.find {_.tpe == ReplClassID}
+    val mainClass = parsedInput.classes.find { _.tpe == ReplClassID }
     extractImports(parsedInput.importMap) ++ (mainClass match {
       case Some(mainClass) =>
         val classes = parsedInput.classes.remove(mainClass)

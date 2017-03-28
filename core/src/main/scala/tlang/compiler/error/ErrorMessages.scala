@@ -90,7 +90,7 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
 
       if (validPosition)
-        sb ++= makeBlocksWithColumns(errorFormatter.locationInFile, endOfBlock = true)
+        sb ++= makeBlockWithColumn(errorFormatter.locationInFile, endOfBlock = true)
       else
         sb ++= bottom
 
@@ -106,9 +106,9 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
     val num = Yellow(n)
     val text = if (hitMaxWarnings)
-      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
+      s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
     else
-      s"${Bold}There $was $num$Bold $name.$Reset"
+      s"${ Bold }There $was $num$Bold $name.$Reset"
     makeBox(text, Nil)
   }
 
@@ -121,9 +121,9 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
     val num = Red(n)
     val text = if (hitMaxErrors)
-      s"${Bold}There were more than $num$Bold $name, only showing the first $num$Reset."
+      s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
     else
-      s"${Bold}There $was $num$Bold $name.$Reset"
+      s"${ Bold }There $was $num$Bold $name.$Reset"
     makeBox(text, Nil)
   }
 

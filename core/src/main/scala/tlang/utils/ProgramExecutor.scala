@@ -7,13 +7,12 @@ import java.net.{URL, URLClassLoader}
 import tlang.compiler.{Context, Main}
 import tlang.utils.Extensions._
 
-import scala.concurrent._
 import scala.concurrent.duration.Duration
 
 /**
   * Created by Tim Lindeberg on 2/3/2017.
   */
-case class ProgramExecutor(timeout: Option[Duration] = Some(duration.Duration(2, "sec"))) {
+case class ProgramExecutor(timeout: Option[Duration] = None) {
 
   def apply(classFilePath: String): String = apply(new File(classFilePath))
 

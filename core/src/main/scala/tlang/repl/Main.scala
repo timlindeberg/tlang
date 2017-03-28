@@ -3,11 +3,13 @@ package tlang.repl
 import java.io.File
 import java.nio.file.Files
 
+import akka.actor.ActorSystem
 import tlang.compiler.Context
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{DefaultReporter, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
+import tlang.repl.Repl.{Start, Stop}
 
 /**
   * Created by Tim Lindeberg on 2/13/2017.
@@ -15,6 +17,8 @@ import tlang.compiler.options.Options
 object Main {
 
   val VersionNumber = "0.0.1"
+  val MaxRedoSize   = 500
+  val TabSize       = 4
 
 
   def main(args: Array[String]): Unit = {
@@ -31,14 +35,21 @@ object Main {
       sys.exit()
     }
 
-
     val tempDir = Files.createTempDirectory("repl").toFile
+    tempDir.deleteOnExit()
     val context = createContext(options, tempDir)
-    val replLoop = ReplLoop(context)
 
-    replLoop.start()
 
-    tempDir.delete()
+    val actorSystem = ActorSystem("tRepl")
+
+    val replTerminal = new ReplTerminal
+    val inputHistory = InputHistory(MaxRedoSize, TabSize)
+    val repl = actorSystem.actorOf(Repl.props(context, replTerminal, inputHistory), Repl.name)
+
+    // In case were using a Swing terminal
+    replTerminal onClose {repl ! Stop}
+
+    repl ! Start
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")

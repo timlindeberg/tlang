@@ -14,7 +14,7 @@ class AnsiWordWrapper {
 
   def apply(texts: List[String], maxWidth: Int): List[String] = texts.flatMap(apply(_, maxWidth))
 
-  def apply(text: String, maxWidth: Int): List[String] = {
+  def apply(text: String, maxWidth: Int, maxLines: Int = -1): List[String] = {
 
     @tailrec def whiteSpaces(chars: List[Char], s: StringBuilder = new StringBuilder): (String, List[Char]) = chars match {
       case c :: rest if isWhiteSpace(c) => whiteSpaces(rest, s + c)

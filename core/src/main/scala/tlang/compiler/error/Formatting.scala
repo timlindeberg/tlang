@@ -4,6 +4,7 @@ import java.io.File
 
 import tlang.compiler.Main
 import tlang.compiler.error.Boxes.{Box, Simple}
+import tlang.repl.{ASCIISpinner, BrailSpinner, Spinner}
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, Enumeration}
 
@@ -16,11 +17,13 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   import box._
   import colors._
 
-  private val Indent = 2
+  private val Indent     = 2
+  private val Width: Int = lineWidth - (2 * Indent)
 
-  private val width: Int = lineWidth - (2 * Indent)
+  val wordWrapper       = new AnsiWordWrapper
+  val syntaxHighlighter = SyntaxHighlighter(colors)
 
-  private val wordWrapper = new AnsiWordWrapper
+  def spinner: Spinner = if (colors.isActive) BrailSpinner() else ASCIISpinner()
 
   def top: String = trimRight(┌ + ─ * (lineWidth - Indent) + ┐) + "\n"
   def bottom: String = trimRight(└ + ─ * (lineWidth - Indent) + ┘) + "\n"
@@ -34,13 +37,13 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
   }
 
   def rightAlign(text: String, fill: Char = ' '): String =
-    wordWrapper(text, width).map { line =>
-      ("" + fill) * (width - line.charCount) + line
+    wordWrapper(text, Width).map { line =>
+      ("" + fill) * (Width - line.charCount) + line
     }.mkString("\n")
 
   def center(text: String, fill: Char = ' '): String =
-    wordWrapper(text, width).map { line =>
-      val x = width - line.charCount
+    wordWrapper(text, Width).map { line =>
+      val x = Width - line.charCount
       val space = ("" + fill) * (x / 2)
       val left = space
       val right = if (x % 2 == 0) space else space + fill
@@ -52,11 +55,11 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
     top + lines
   }
 
-  def makeLines(lines: String, w: Int = width): String =
+  def makeLines(lines: String, w: Int = Width): String =
     wordWrapper(lines, w).map(makeLine(_, w)).mkString
 
 
-  def makeLine(line: String, w: Int = width): String = {
+  def makeLine(line: String, w: Int = Width): String = {
     val whitespaces = " " * (w - line.charCount)
     val l = │ + " " + line + whitespaces + " " + │
     trimRight(l) + "\n"
@@ -69,14 +72,14 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
     sb.toString()
   }
 
-  def makeBlocksWithColumns(block: Traversable[(String, String)], endOfBlock: Boolean): String = {
+  def makeBlockWithColumn(block: Traversable[(String, String)], endOfBlock: Boolean): String = {
     val sb = new StringBuilder
 
     val columnVars = block.unzip._1
     val maxColumnWidth = columnVars.map(_.charCount).max
-    val w = width - maxColumnWidth - 3
+    val w = Width - maxColumnWidth - 3
 
-    sb ++= sb ++= seperator(├, ┬, ┤, maxColumnWidth)
+    sb ++= seperator(├, ┬, ┤, maxColumnWidth)
 
     sb ++= block
       .flatMap { case (col, line) =>
@@ -90,20 +93,20 @@ case class Formatting(box: Box, lineWidth: Int, colors: Colors, trim: Boolean = 
         │ + " " + col + whiteSpaces + " " + makeLine(line, w)
       }.mkString
     sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
-    sb.toString
+    sb.toString.print
   }
 
-  def makeBoxWithColumn(header: String, block: Traversable[(String, String)]): String = {
+  def makeBoxWithColumn(header: String, block: Traversable[(String, String)], endOfBlock: Boolean = true): String = {
     val sb = new StringBuilder
     sb ++= makeHeader(header)
-    sb ++= makeBlocksWithColumns(block, endOfBlock = true)
+    sb ++= makeBlockWithColumn(block, endOfBlock)
     sb.toString
   }
 
   def makeBox(header: String, blocks: Traversable[String]): String = {
     val sb = new StringBuilder
     sb ++= makeHeader(header)
-    blocks foreach {sb ++= makeBlock(_)}
+    blocks foreach { sb ++= makeBlock(_) }
     sb ++= bottom
     sb.toString
   }

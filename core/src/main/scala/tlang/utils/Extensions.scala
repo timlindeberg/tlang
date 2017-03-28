@@ -28,12 +28,12 @@ object Extensions {
     if (duration.toNanos == 0)
       return block
 
-    implicit val exec = new TimeoutExecutionContext()
+    implicit val exec = new CancelableExecutionContext()
     try {
       Await.result(Future(block), duration)
     } catch {
-      case e: TimeoutException =>
-        exec.lastThread.getOrElse(throw new RuntimeException("Not started")).stop()
+      case e@(_: TimeoutException | _: InterruptedException) =>
+        exec.cancel()
         throw e
     }
   }
@@ -90,8 +90,22 @@ object Extensions {
     }
 
     def trimWhiteSpaces: String = str.leftTrimWhiteSpaces.rightTrimWhiteSpaces
-    def leftTrimWhiteSpaces: String = str.replaceAll("^\\s+", "")
-    def rightTrimWhiteSpaces: String = str.replaceAll("\\s+$", "")
+    def leftTrimWhiteSpaces: String = {
+      val s = str.replaceAll("^\\s+", "")
+      if (s(0) == '\u001b' && s(1) == '[') {
+        val ansiStop = s.indexOf('m')
+        if (ansiStop + 1 < s.length && s(ansiStop + 1).isWhitespace) {
+          val ansi = s.substring(0, ansiStop + 1)
+          val trimmed = s.substring(ansiStop + 2, s.length)
+          return ansi + trimmed
+        }
+      }
+      s
+    }
+    def rightTrimWhiteSpaces: String = {
+      // TODO: This should trim at the end even if the string ends with ANSI-colors
+      str.replaceAll("\\s+$", "")
+    }
 
     def allIndexesOf(pattern: String): List[Int] = {
       val buf = ListBuffer[Int]()
@@ -116,8 +130,8 @@ object Extensions {
   }
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
-    def use(f: T => Unit): T = {f(t); t}
-    def print: T = {println(t); t}
+    def use(f: T => Unit): T = { f(t); t }
+    def print: T = { println(t); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
     def in(range: Range): Boolean = range.contains(t)
   }
@@ -149,7 +163,7 @@ object Extensions {
       }
   }
 
-  private class TimeoutExecutionContext extends AnyRef with ExecutionContext {
+  class CancelableExecutionContext extends AnyRef with ExecutionContext {
 
     @volatile var lastThread: Option[Thread] = None
     override def execute(runnable: Runnable): Unit = {
@@ -160,6 +174,9 @@ object Extensions {
         }
       })
     }
+
+    def cancel(): Unit = lastThread ifDefined { _.stop }
+
     override def reportFailure(t: Throwable): Unit = ???
   }
 

@@ -10,21 +10,21 @@ import scalaz.Cord
 /**
   * Created by Tim Lindeberg on 3/11/2017.
   */
-case class CommandHistory(maxRedoSize: Int, tabSize: Int) {
+case class InputHistory(maxRedoSize: Int, tabSize: Int) {
 
   private val HistorySeperator  = "★"
   private val HistoryFileName   = "repl_history"
   private val SettingsDirectory = System.getProperty("user.home") + File.separator + ".tlang"
   private val historyFile       = new File(SettingsDirectory, HistoryFileName)
 
-  private val commands = CircularBuffer[Command](Command(maxRedoSize, tabSize))
+  private val commands = CircularBuffer[InputBuffer](InputBuffer(maxRedoSize, tabSize))
 
   private val originalCommands = ArrayBuffer[String]()
   private var dirty            = false
 
   loadFromFile()
 
-  def current: Command = commands.current
+  def current: InputBuffer = commands.current
 
   def goToNext(): Unit = commands += 1
   def goToPrevious(): Unit = commands -= 1
@@ -50,7 +50,7 @@ case class CommandHistory(maxRedoSize: Int, tabSize: Int) {
     }
 
     dirty = true
-    commands += Command(maxRedoSize, tabSize, command)
+    commands += InputBuffer(maxRedoSize, tabSize, command)
     originalCommands += command.toString
   }
 
@@ -89,7 +89,7 @@ case class CommandHistory(maxRedoSize: Int, tabSize: Int) {
         if (line == HistorySeperator && lines.nonEmpty) {
           val str = lines.mkString("\n")
           originalCommands += str
-          commands += Command(maxRedoSize, tabSize, Cord.empty :+ str)
+          commands += InputBuffer(maxRedoSize, tabSize, Cord.empty :+ str)
           lines.clear()
         } else {
           lines += line

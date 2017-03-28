@@ -53,7 +53,8 @@ lazy val core = project
       "org.graphstream" % "gs-core" % "1.1.1",
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "com.googlecode.lanterna" % "lanterna" % "3.0.0-beta3",
-      "org.scalaz" %% "scalaz-core" % "7.2.9"
+      "org.scalaz" %% "scalaz-core" % "7.2.9",
+      "com.typesafe.akka" %% "akka-actor" % "2.4.17"
     ),
 
     parallelExecution in Test := false

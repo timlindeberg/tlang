@@ -30,7 +30,7 @@ case class Cursor(var position: Int, var x: Int, var y: Int) extends Ordered[Cur
   override def compare(that: Cursor): Int = position - that.position
 }
 
-case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
+case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
 
   private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
 
@@ -231,7 +231,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
     history += State(cord, linePositions, 0)
   }
 
-  def text: String = currentCord.toString
+  override def toString: String = currentCord.toString
 
 
   private def leftPosition: Int = {
@@ -287,7 +287,7 @@ case class Command(maxHistorySize: Int, tabSize: Int, private val cord: Cord = C
     cursor.y = linePositions.length - index - 1
   }
 
-  override def toString: String = "Lines: " + linePositions + "\n" + history
+  def debugString: String = "Lines: " + linePositions + "\n" + history
 
   private def startAndEndOfLine = {
     val line = lineIndex
