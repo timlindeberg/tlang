@@ -6,7 +6,6 @@ import java.util.regex.Matcher
 import tlang.compiler.lexer.Tokens
 import tlang.utils.Colors
 import tlang.utils.Colors.Color
-import tlang.utils.Extensions._
 
 
 case class PrettyPrinter(colors: Colors) {
@@ -118,15 +117,21 @@ case class PrettyPrinter(colors: Colors) {
     case PutValue(expr)                    => s"<PutValue(${ pp"$expr" })>"
   }
 
-  private def escapeChar(str: String) = _escape(str, List('\t', '\b', '\n', '\r', '\f', '\\'))
-  private def escapeString(str: String) = _escape(str, List('\t', '\b', '\n', '\r', '\f', '\\', ''', '"'))
+  private val charEscapeChars   = Map('\t' -> 't', '\b' -> 'b', '\n' -> 'n', '\r' -> 'r', '\f' -> 'f', '\\' -> '\\')
+  private val stringEscapeChars = charEscapeChars ++ Map(''' -> ''', '"' -> '"')
 
-  private def _escape(str: String, escapeChars: Traversable[Char]) = {
+  private def escapeChar(str: String) = _escape(str, charEscapeChars)
+  private def escapeString(str: String) = _escape(str, stringEscapeChars)
+
+  private def _escape(str: String, escapeChars: Map[Char, Char]) = {
     val sb = new StringBuilder
     str.foreach { c =>
-      if (c in escapeChars)
-        sb += '\\'
-      sb += c
+      escapeChars.get(c) match {
+        case Some(x) =>
+          sb += '\\'
+          sb += x
+        case None    => sb += c
+      }
     }
     sb.toString
   }
