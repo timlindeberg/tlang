@@ -2,6 +2,7 @@ package tlang.repl
 
 import java.awt.event._
 import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
+import java.nio.charset.Charset
 import java.util
 import java.util.concurrent.TimeUnit
 
@@ -9,7 +10,7 @@ import com.googlecode.lanterna.TextColor.ANSI
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input.{CharacterPattern, KeyDecodingProfile, KeyStroke, KeyType}
-import com.googlecode.lanterna.terminal.ansi.StreamBasedTerminal
+import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
@@ -117,10 +118,7 @@ class ReplTerminal extends Terminal {
   override def exitPrivateMode(): Unit = backingTerminal.enterPrivateMode()
   override def enableSGR(sgr: SGR): Unit = backingTerminal.enableSGR(sgr)
   override def setCursorPosition(x: Int, y: Int): Unit = backingTerminal.setCursorPosition(x, y)
-  override def setCursorPosition(position: TerminalPosition): Unit = {
-    println("newPos: " + position)
-    backingTerminal.setCursorPosition(position)
-  }
+  override def setCursorPosition(position: TerminalPosition): Unit = backingTerminal.setCursorPosition(position)
   override def getTerminalSize: TerminalSize = backingTerminal.getTerminalSize
   override def clearScreen(): Unit = backingTerminal.clearScreen()
   override def bell(): Unit = backingTerminal.bell()
@@ -170,22 +168,25 @@ class ReplTerminal extends Terminal {
   }
 
 
-  private def createTerminal() = {
-    val term = new DefaultTerminalFactory()
-      // .setForceTextTerminal(true)
+  private def createTerminal(): Terminal = {
+    if (sys.env.get("useTerminalEmulator").contains("true"))
+      return createTerminalEmulator()
+
+    val charset = Charset.forName(System.getProperty("file.encoding"))
+    new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use {
+      _.getInputDecoder.addProfile(CustomKeyProfile)
+    }
+  }
+
+  private def createTerminalEmulator() =
+    new DefaultTerminalFactory()
       .setTerminalEmulatorColorConfiguration(
-      TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
-      //.setTerminalEmulatorFontConfiguration(
-      //  SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Consolas", 0, 16)))
+        TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
+      .setTerminalEmulatorFontConfiguration(
+        SwingTerminalFontConfiguration.newInstance(new java.awt.Font("Menlo", 0, 16)))
       .setInitialTerminalSize(new TerminalSize(120, 500))
       .setTerminalEmulatorDeviceConfiguration(
         new TerminalEmulatorDeviceConfiguration(50, 1, CursorStyle.VERTICAL_BAR, ANSI.RED, false))
       .createTerminal()
-
-    term use {
-      case streamTerm: StreamBasedTerminal => streamTerm.getInputDecoder.addProfile(CustomKeyProfile)
-      case _                               =>
-    }
-  }
 
 }
