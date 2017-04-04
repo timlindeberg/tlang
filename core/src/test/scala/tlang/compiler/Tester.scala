@@ -3,13 +3,11 @@ package tlang.compiler
 import java.io.File
 
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
-import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.error.Boxes.{Light, Simple}
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, Source}
+import tlang.utils.Source
 
 import scala.concurrent._
 import scala.util.matching.Regex
@@ -22,7 +20,6 @@ object Tester {
   val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
   val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
   val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
-  val UseColor           : Boolean     = sys.env.get("usecolor").contains("true")
   val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
@@ -35,17 +32,13 @@ object Tester {
       case None    => (Set[File](), new File("."))
     }
 
-    val colors = Colors(UseColor)
-
-    val box = if (UseSimpleFormatting) Simple else Light
-    val formatting = Formatting(box, colors, 80)
+    val formatting = if (UseSimpleFormatting) SimpleFormatting else FancyFormatting
     Context(
       reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
       files = files,
       outDirs = Set(outDir),
       printCodeStages = PrintCodeStages,
-      formatting = formatting,
-      printer = PrettyPrinter(colors)
+      formatting = formatting
     )
   }
 

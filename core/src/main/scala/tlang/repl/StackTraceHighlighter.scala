@@ -2,13 +2,13 @@ package tlang.repl
 
 import java.io.{PrintWriter, StringWriter}
 
-import tlang.utils.Colors
+import tlang.compiler.error.Formatting
 
 import scala.util.parsing.combinator.RegexParsers
 
-case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
+case class StackTraceHighlighter(formatting: Formatting) extends RegexParsers {
 
-  import colors._
+  import formatting._
 
   private val TextColor = Bold
   private val FileColor = Cyan + Bold
@@ -18,7 +18,7 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
 
   def apply(throwable: Throwable): String = apply(getStackTrace(throwable))
   def apply(stackTrace: String): String = {
-    if (!colors.isActive)
+    if (!formatting.useColor)
       return stackTrace
 
     parseAll(StackTraceParser(), stackTrace) match {

@@ -1,5 +1,6 @@
 package tlang.utils
 
+import tlang.compiler.error.{Formatting, SimpleFormatting}
 import tlang.utils.Colors.Color
 import tlang.utils.Extensions._
 
@@ -11,26 +12,27 @@ case class ColoredCharacter(color: Color, char: Char)
 
 object ColoredString {
 
-  def apply(colors: Colors, s: String) = new ColoredString(colors, s)
+  def apply(formatting: Formatting, s: String) = new ColoredString(formatting, s)
 
-  def newBuilder(colors: Colors): mutable.Builder[ColoredCharacter, ColoredString] = new mutable.Builder[ColoredCharacter, ColoredString] {
+  def newBuilder(formatting: Formatting): mutable.Builder[ColoredCharacter, ColoredString] = new mutable.Builder[ColoredCharacter, ColoredString] {
     val buff = new ArrayBuffer[ColoredCharacter]()
     override def +=(elem: ColoredCharacter): this.type = {
       buff += elem
       this
     }
     override def clear(): Unit = buff.clear()
-    override def result(): ColoredString = new ColoredString(colors, buff)
+    override def result(): ColoredString = new ColoredString(formatting, buff)
   }
 
   implicit def canBuildFrom: CanBuildFrom[ColoredString, ColoredCharacter, ColoredString] =
     new CanBuildFrom[ColoredString, ColoredCharacter, ColoredString] {
-      override def apply(from: ColoredString): mutable.Builder[ColoredCharacter, ColoredString] = newBuilder(from.colors)
-      override def apply(): mutable.Builder[ColoredCharacter, ColoredString] = newBuilder(Colors(isActive = false))
+      override def apply(from: ColoredString): mutable.Builder[ColoredCharacter, ColoredString] = newBuilder(from.formatting)
+      override def apply(): mutable.Builder[ColoredCharacter, ColoredString] = newBuilder(SimpleFormatting)
     }
 
-  def getColoredChars(colors: Colors, s: String): ArrayBuffer[ColoredCharacter] = {
-    import colors._
+  def getColoredChars(formatting: Formatting, s: String): ArrayBuffer[ColoredCharacter] = {
+
+    import formatting._
 
     var currentColor: Color = NoColor
     var currentBGColor: Color = NoColor
@@ -50,8 +52,8 @@ object ColoredString {
               SGRs.clear()
             case '1' :: Nil                           => SGRs += Bold
             case '4' :: Nil                           => SGRs += Underline
-            case '3' :: c :: Nil if c in ('1' to '7') => currentColor = getAnsiColor(colors, c, isBG = false)
-            case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = getAnsiColor(colors, c, isBG = true)
+            case '3' :: c :: Nil if c in ('1' to '7') => currentColor = getAnsiColor(formatting, c, isBG = false)
+            case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = getAnsiColor(formatting, c, isBG = true)
             case _                                    =>
           }
 
@@ -66,8 +68,8 @@ object ColoredString {
     coloredChars
   }
 
-  private def getAnsiColor(colors: Colors, char: Char, isBG: Boolean) = {
-    import colors._
+  private def getAnsiColor(formatting: Formatting, char: Char, isBG: Boolean) = {
+    import formatting._
     char match {
       case '0' => if (isBG) BlackBG else Black
       case '1' => if (isBG) RedBG else Red
@@ -83,12 +85,12 @@ object ColoredString {
 
 
 }
-case class ColoredString(colors: Colors, chars: IndexedSeq[ColoredCharacter])
+case class ColoredString(formatting: Formatting, chars: IndexedSeq[ColoredCharacter])
   extends IndexedSeq[ColoredCharacter] with IndexedSeqLike[ColoredCharacter, ColoredString] {
 
-  import colors._
+  def this(formatting: Formatting, s: String) = this(formatting, ColoredString.getColoredChars(formatting, s))
 
-  def this(colors: Colors, s: String) = this(colors, ColoredString.getColoredChars(colors, s))
+  import formatting._
 
   override def apply(idx: Int): ColoredCharacter = chars(idx)
 
@@ -113,7 +115,7 @@ case class ColoredString(colors: Colors, chars: IndexedSeq[ColoredCharacter])
     sb.toString()
   }
 
-  override def newBuilder: mutable.Builder[ColoredCharacter, ColoredString] = ColoredString.newBuilder(colors)
+  override def newBuilder: mutable.Builder[ColoredCharacter, ColoredString] = ColoredString.newBuilder(formatting)
 
   override def foreach[U](f: (ColoredCharacter) => U): Unit = chars.foreach(f)
   override def length: Int = chars.length

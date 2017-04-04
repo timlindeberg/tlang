@@ -1,9 +1,6 @@
 package cafebabe
 
-import tlang.compiler.error.Boxes.Light
-import tlang.compiler.error.{Formatting, SimpleFormatting}
-import tlang.compiler.options.Flags.LineWidth
-import tlang.utils.Colors
+import tlang.compiler.error.{FancyFormatting, Formatting, SimpleFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -298,7 +295,7 @@ class CodeHandler private[cafebabe](
 
   def error(message: String): Unit = {
     println(message)
-    println(stackTrace(Formatting(Light, Colors(isActive = true), LineWidth.defaultValue)))
+    println(stackTrace(FancyFormatting))
     throw CodeFreezingException(message)
 
   }

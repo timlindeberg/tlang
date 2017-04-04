@@ -5,7 +5,6 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import tlang.compiler.Context
-import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{DefaultReporter, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
@@ -63,8 +62,7 @@ object Main {
         errorContext = 0
       ),
       outDirs = Set(tempDir),
-      formatting = formatting,
-      printer = PrettyPrinter(formatting.colors)
+      formatting = formatting
     )
   }
 
@@ -72,7 +70,6 @@ object Main {
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
     args foreach { arg =>
       import formatting._
-      import formatting.colors._
 
       val help = Flag.get(arg) match {
         case Some(flag) =>

@@ -3,9 +3,10 @@ package tlang.compiler.ast
 import java.io.File
 
 import org.scalatest.{FunSuite, Matchers}
+import tlang.compiler.error.SimpleFormatting
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.{Context, Tester}
-import tlang.utils.{Colors, FileSource, StringSource}
+import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends FunSuite with Matchers {
 
@@ -14,7 +15,7 @@ class PrettyPrinterSpec extends FunSuite with Matchers {
 
 
   private val parser        = (Lexer andThen Parser).run(TestContext) _
-  private val prettyPrinter = PrettyPrinter(Colors(isActive = false))
+  private val prettyPrinter = PrettyPrinter(SimpleFormatting)
 
   test("Tree is the same after being pretty printed and reparsed") {
     val file = FileSource(new File(TestFile)) :: Nil

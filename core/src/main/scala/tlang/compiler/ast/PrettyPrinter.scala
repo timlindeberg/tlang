@@ -3,15 +3,15 @@ package ast
 
 import java.util.regex.Matcher
 
+import tlang.compiler.error.Formatting
 import tlang.compiler.lexer.Tokens
-import tlang.utils.Colors
 import tlang.utils.Colors.Color
 
 
-case class PrettyPrinter(colors: Colors) {
+case class PrettyPrinter(formatting: Formatting) {
 
   import Trees._
-  import colors._
+  import formatting._
 
   val Indentation = 3
 
@@ -316,7 +316,7 @@ case class PrettyPrinter(colors: Colors) {
     }
 
     private def colorKeywords(output: String): String = {
-      if (!colors.isActive)
+      if (!formatting.useColor)
         return output
 
       Tokens.KeywordsRegex.replaceAllIn(output, m => {

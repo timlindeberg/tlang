@@ -9,7 +9,6 @@ import scala.collection.mutable
 case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: Int) {
 
   import formatting._
-  import formatting.colors._
 
   private var hitMaxWarnings = false
   private var hitMaxErrors   = false

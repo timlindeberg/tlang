@@ -26,7 +26,6 @@ class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTermin
 
   import Renderer._
   import formatting._
-  import formatting.colors._
 
   private val SuccessColor = Bold + Green
   private val InputColor   = Bold + Magenta

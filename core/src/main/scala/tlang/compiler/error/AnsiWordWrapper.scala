@@ -4,7 +4,7 @@ import tlang.utils.Extensions._
 
 import scala.annotation.tailrec
 
-class AnsiWordWrapper {
+case class AnsiWordWrapper() {
 
   private val EarlyBreakChars: String = """\/.:;-_()"""
 

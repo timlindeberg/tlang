@@ -9,7 +9,6 @@ import scala.concurrent.duration.FiniteDuration
 class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTerminal) {
 
   import formatting._
-  import formatting.colors._
 
   private val SuccessColor      = Bold + Green
   private val ErrorColor        = Bold + Red

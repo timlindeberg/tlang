@@ -1,12 +1,11 @@
 package tlang.compiler
 
 import java.io.File
+import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
-import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{Formatting, Reporter, SimpleFormatting}
 import tlang.compiler.imports.ClassSymbolLocator
-import tlang.utils.Colors
 
 import scala.collection.mutable
 
@@ -17,7 +16,6 @@ case class Context(
   outDirs: Set[File] = Set(new File(".")),
   printCodeStages: Set[String] = Set(),
   formatting: Formatting = SimpleFormatting,
-  printer: PrettyPrinter = PrettyPrinter(Colors(isActive = false)),
   printInfo: Boolean = false,
   errorContext: Int = 2,
   ignoredImports: Set[String] = Set()
@@ -33,8 +31,8 @@ case class Context(
   // Updates the repository in which to search for java classes.
   ClassSymbolLocator.setClassPath(getClassPaths)
 
-  // Hack to inject the class paths in to the current class loader
-  val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
+  // Ugly hack to inject the class paths in to the current class loader
+  private val method: Method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
   method.setAccessible(true)
 
   for (p <- getClassPaths) {

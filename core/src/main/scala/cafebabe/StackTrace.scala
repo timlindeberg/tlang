@@ -3,7 +3,6 @@ package cafebabe
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import tlang.compiler.error.Formatting
-import tlang.utils.Colors
 import tlang.utils.Colors.Color
 
 import scala.collection.mutable
@@ -21,7 +20,6 @@ case class StackTrace(
   val abcs   : List[AbstractByteCode] = abcBuffer.toList
 
   import formatting._
-  import formatting.colors._
 
   private val UninitializedHeight: Int = Int.MinValue
   private val types                    = Map(
@@ -37,7 +35,7 @@ case class StackTrace(
 
   private var colorIndex = -1
   private val colorMap   = mutable.HashMap[String, Color]()
-  private def labelColor(label: String, colors: Colors) = {
+  private def labelColor(label: String) = {
     val color = colorMap.getOrElseUpdate(label, {
       colorIndex = (colorIndex + 1) % AllColors.length
       AllColors(colorIndex)
@@ -73,7 +71,7 @@ case class StackTrace(
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          val label = labelColor(name, colors)
+          val label = labelColor(name)
           sb.append("\n" + rightAlign(label))
         case LineNumber(line)                           =>
           currentLineNumber = line
@@ -99,12 +97,12 @@ case class StackTrace(
             case RawBytes(value) => appendLine(abc, s"$NumColor$value")
           }
         case co: ControlOperator                        =>
-          appendLine(co.opCode, labelColor(co.target.trim, colors))
+          appendLine(co.opCode, labelColor(co.target.trim))
         case _                                          =>
           val extraInfo = if (i + 1 < abcs.size) {
             abcs(i + 1) match {
-              case RawByte(idx)  => cp.getByteInfo(idx, colors)
-              case RawBytes(idx) => cp.getByteInfo(idx, colors)
+              case RawByte(idx)  => cp.getByteInfo(idx, formatting)
+              case RawBytes(idx) => cp.getByteInfo(idx, formatting)
               case _             => ""
             }
           } else ""

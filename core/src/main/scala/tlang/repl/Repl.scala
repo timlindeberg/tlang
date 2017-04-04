@@ -37,7 +37,7 @@ sealed abstract class Command() extends Product with Serializable {
 class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
 
   import Repl._
-  import ctx.formatting.colors._
+  import ctx.formatting._
 
   private val MaxOutputLines  = 10
   private val LoadingInterval = ctx.formatting.spinner.frameTime.length

@@ -9,15 +9,15 @@ import tlang.utils._
 
 case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
 
-case class SyntaxHighlighter(colors: Colors) {
+case class SyntaxHighlighter(formatting: Formatting) {
 
-  import colors._
+  import formatting._
 
   val context = Context(VoidReporter(), Set())
 
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
-    if (code.isEmpty || !colors.isActive)
+    if (code.isEmpty || !formatting.useColor)
       return code
 
     val source = StringSource(code, "")
@@ -34,7 +34,7 @@ case class SyntaxHighlighter(colors: Colors) {
       case _    => col += 1
     }
 
-    val highlighted = code.toColoredString(colors) map { case cc@ColoredCharacter(color, char) =>
+    val highlighted = code.toColoredString(formatting) map { case cc@ColoredCharacter(color, char) =>
       val pos = Position(line, col, line, col + 1)
 
       updatePos(char)

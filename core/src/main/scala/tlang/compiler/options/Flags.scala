@@ -17,7 +17,7 @@ object Flags {
     def extendedDescription(formatting: Formatting): String = description(formatting).stripMargin.trim
 
     def flagName(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       val shortFlagDescription = shortFlag.map(f => s" (-${ Magenta(f) })").getOrElse("")
       "--" + Magenta(flag) + shortFlagDescription
     }
@@ -41,7 +41,7 @@ object Flags {
     val arg: String
 
     override def flagName(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       // Dropping space
       super.flagName(formatting) + s" <${ Blue(arg) }> "
     }
@@ -95,7 +95,7 @@ object Flags {
     private val validArgs = Main.CompilerStages.map(_.compilerStageName)
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Prints the output after a given tlang.compiler stage.
          |If no argument is given the code is printed as it looks before the final code is generated.
@@ -105,7 +105,7 @@ object Flags {
 
 
     override def extendedDescription(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
 
       val stages = Main.CompilerStages.map(stage => "  " + Blue(stage.compilerStageName.capitalize)).mkString("\n")
       s"""|The --${ Magenta(flag) } flag prints the output after a given tlang.compiler stage.
@@ -186,7 +186,7 @@ object Flags {
     override val arg  = "style"
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Chooses the formatting style of messages produced by the tlang.compiler.
          |'${ Blue("Simple") }' will only produce ASCII-characters and use no colors.
@@ -196,7 +196,7 @@ object Flags {
 
 
     override def extendedDescription(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
 
       val boxes = Boxes.All.toList
       val boxNames = boxes.map(box => "  " + Blue(box.name)).mkString("\n")
@@ -217,17 +217,16 @@ object Flags {
 
     private def formatBoxes(boxes: List[Box], formatting: Formatting): String = {
       import formatting._
-      import formatting.colors._
 
       val seperator = "  "
       val boxWidth = boxes.map(_.name.length).max + 4
       val perRow = lineWidth / (boxWidth + seperator.length)
       val styles = boxes
         .map { box =>
-          val newColors = if (box == Simple) Colors(isActive = false) else colors
           val blocks = List("A " + Blue("block") + ".", "Another " + Blue("block") + ".")
-
-          val exampleFormatting = error.Formatting(box, newColors, boxWidth, trim = false)
+          val simple = box == Simple
+          val exampleFormatting = error.Formatting(
+            box, boxWidth, colorScheme = formatting.colorScheme, useColor = !simple, asciiOnly = simple, trim = false)
           val header = Bold(Magenta(box.name))
           exampleFormatting.makeBox(header, blocks).split("\n").toList
         }
@@ -244,7 +243,7 @@ object Flags {
     override val arg       = "path"
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"Specify a ${ Blue("path") } where classes should be searched for."
     }
   }
@@ -254,7 +253,7 @@ object Flags {
     override val flag         = "maxerrors"
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Specify the maximum number of errors to report. The default is '${ Blue(defaultValue) }'.
          |Enter '${ Blue("-1") }' to show all errors.
@@ -268,7 +267,7 @@ object Flags {
     override val arg  = "import"
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Specify a default import to ignore.
          |Example: --${ Magenta(flag) } java::lang::object
@@ -286,7 +285,7 @@ object Flags {
 
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Specify how many lines to display around an error position in error messages.
          |The default is '${ Blue(defaultValue) }'.
@@ -296,14 +295,14 @@ object Flags {
   }
 
   case object LineWidth extends NumberFlag {
-    override val defaultValue = 120
+    override val defaultValue = 80
 
     override val flag = "linewidth"
     override val arg  = "num"
 
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Specify the width of a line in error message and output.
          |The default is '${ Blue(defaultValue) }' chars.
@@ -318,7 +317,7 @@ object Flags {
     override val arg : String = "colormap"
 
     override def description(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       s"""
          |Define the color scheme to use when printing error messages and code output.
          |Argument is a JSON map of colors, type --${ Magenta(Help.flag) } ${ Magenta(flag) } for more details.
@@ -327,7 +326,7 @@ object Flags {
 
 
     override def extendedDescription(formatting: Formatting): String = {
-      import formatting.colors._
+      import formatting._
       import tlang.utils.Colors.ColorScheme._
 
       val validKeys = ColorSchemeNames.map("   " + Blue(_)).mkString("\n")

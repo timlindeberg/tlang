@@ -2,6 +2,8 @@ package tlang.utils
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
+import tlang.compiler.error.Formatting
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -120,7 +122,7 @@ object Extensions {
       buf.toList
     }
 
-    def toColoredString(colors: Colors) = ColoredString(colors, str)
+    def toColoredString(formatting: Formatting) = ColoredString(formatting, str)
 
   }
 

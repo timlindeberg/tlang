@@ -148,8 +148,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
     }
   }
 
-  val colors    : Colors           = Colors(isActive = boxType != Simple, colorScheme)
-  val formatting: error.Formatting = error.Formatting(boxType, colors, apply(LineWidth))
+  val formatting: error.Formatting = error.Formatting(boxType, apply(LineWidth), colorScheme, boxType != Simple, boxType == Simple)
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
     val validStages = Main.CompilerStages.map(_.compilerStageName)

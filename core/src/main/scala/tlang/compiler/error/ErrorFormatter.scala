@@ -6,7 +6,6 @@ import tlang.utils.Positioned
 case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int) {
 
   import formatting._
-  import formatting.colors._
 
   val NonColoredIndicationChar = "~"
 
@@ -39,7 +38,7 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
     val ctxLines = contextLines
     val indent = getIndent(ctxLines)
 
-    val lines = if (colors.isActive)
+    val lines = if (formatting.useColor)
       ctxLines.map { case (lineNum, line) =>
         val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
         (lineNum.toString, syntaxHighlighter(line, marking))

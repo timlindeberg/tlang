@@ -9,7 +9,7 @@ import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.ast.{Parser, PrettyPrinter, Trees}
+import tlang.compiler.ast.{Parser, Trees}
 import tlang.compiler.code.{CodeGeneration, Desugaring, TreeBuilder}
 import tlang.compiler.error.CompilationException
 import tlang.compiler.imports.ImportMap
@@ -17,7 +17,7 @@ import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, ProgramExecutor, StringSource}
+import tlang.utils.{ProgramExecutor, StringSource}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -45,7 +45,6 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   import ReplProgram._
   import ctx.formatting._
-  import ctx.formatting.colors._
 
   private val ClassName        = "REPL"
   private val ReplOutputMarker = "__ReplRes__"
@@ -54,11 +53,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   private val ReplClassID             = ClassID(ClassName)
   private val ReplClassSymbol         = new ClassSymbol(ClassName, isAbstract = false)
-  private val printer                 = PrettyPrinter(Colors(isActive = true))
   private val programExecutor         = ProgramExecutor()
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()
-  private val stackTraceHighlighter   = StackTraceHighlighter(ctx.formatting.colors)
 
   private val parse    = Lexer andThen Parser
   private val frontEnd = Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
@@ -106,7 +103,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => Renderer.DrawFailure(stackTraceHighlighter(e.getCause), truncate = true)
-            case e                            => Renderer.DrawFailure(stackTraceHighlighter(e), truncate = true)
+            case e                            => throw e
           }
       }
       newStatements = Nil
@@ -143,7 +140,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   private def prettyPrint(): Unit = {
     newStatements = Nil
-    val code = printer(generateCompilationUnit()).trimWhiteSpaces
+    val code = prettyPrinter(generateCompilationUnit()).trimWhiteSpaces
     parent ! Renderer.DrawSuccess(code, truncate = false)
   }
 

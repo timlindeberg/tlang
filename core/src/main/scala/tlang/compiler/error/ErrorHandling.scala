@@ -20,9 +20,9 @@ trait ErrorHandling {
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
-    private val colors = ctx.formatting.colors
+    private val formatting = ctx.formatting
 
-    import colors._
+    import formatting._
 
     def err(args: Any*): String = {
       val strings = sc.parts.iterator
@@ -44,7 +44,7 @@ trait ErrorHandling {
         str = TemplateNameParser.parseTemplateName(str)
         str = importMap.replaceNames(str)
 
-        if (colors.isActive) s"$Reset$Magenta$str" else s"'$str'"
+        if (formatting.useColor) s"$Reset$Magenta$str" else s"'$str'"
     }
   }
 

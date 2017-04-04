@@ -23,7 +23,7 @@ abstract class Pipeline[-F, +T] {
 
   private def execute(ctx: Context)(v: List[F]): List[T] = {
     val infoPrinter = OutputPrinter(ctx)
-    val (output, time) = measureTime {run(ctx)(v)}
+    val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerStages.contains(this))
       ctx.executionTimes += this -> time
     infoPrinter.printCode(output)
@@ -34,7 +34,6 @@ abstract class Pipeline[-F, +T] {
   private case class OutputPrinter(ctx: Context) {
 
     import ctx.formatting._
-    import ctx.formatting.colors._
 
     private val stageNameCapitalized = compilerStageName.capitalize
     private val shouldPrint          = ctx.printCodeStages.contains(stageNameCapitalized.toLowerCase)
@@ -54,7 +53,7 @@ abstract class Pipeline[-F, +T] {
     }
 
     private def printCompilationUnits(cus: List[CompilationUnit]) = {
-      val blocks = cus.flatMap { cu => center(formatFileName(cu.source.mainName)) :: ctx.printer(cu).trimWhiteSpaces :: Nil }
+      val blocks = cus.flatMap { cu => center(formatFileName(cu.source.mainName)) :: prettyPrinter(cu).trimWhiteSpaces :: Nil }
       print(makeBox(header, blocks))
     }
 

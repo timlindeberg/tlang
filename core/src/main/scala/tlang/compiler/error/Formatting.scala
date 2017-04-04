@@ -3,25 +3,85 @@ package tlang.compiler.error
 import java.io.File
 
 import tlang.compiler.Main
-import tlang.compiler.error.Boxes.{Box, Simple}
+import tlang.compiler.ast.PrettyPrinter
+import tlang.compiler.error.Boxes.{Box, Light, Simple}
+import tlang.compiler.options.Flags.LineWidth
+import tlang.repl.StackTraceHighlighter
+import tlang.utils.Colors.{Color, ColorScheme, DefaultColorScheme}
+import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, Enumeration}
 
 import scala.concurrent.duration.FiniteDuration
 
-case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = true) {
+object FancyFormatting extends Formatting(Light, LineWidth.defaultValue, useColor = true, asciiOnly = false)
+object SimpleFormatting extends Formatting(Simple, LineWidth.defaultValue, useColor = false, asciiOnly = true)
+
+case class Formatting(
+  box: Box,
+  lineWidth: Int,
+  colorScheme: ColorScheme = DefaultColorScheme,
+  useColor: Boolean = true,
+  asciiOnly: Boolean = false,
+  trim: Boolean = true) {
 
   import box._
-  import colors._
+
+  import Console._
+
+  /*-------------------------------- Colors --------------------------------*/
+
+  val NoColor   = Color("", isActive = false)
+  val Reset     = Color(RESET, useColor)
+  val Bold      = Color(BOLD, useColor)
+  val Underline = Color(UNDERLINED, useColor)
+
+  val Black   = Color(BLACK, useColor)
+  val Red     = Color(RED, useColor)
+  val Green   = Color(GREEN, useColor)
+  val Yellow  = Color(YELLOW, useColor)
+  val Blue    = Color(BLUE, useColor)
+  val Magenta = Color(MAGENTA, useColor)
+  val Cyan    = Color(CYAN, useColor)
+  val White   = Color(WHITE, useColor)
+
+  val BlackBG   = Color(BLACK_B, useColor)
+  val RedBG     = Color(RED_B, useColor)
+  val GreenBG   = Color(GREEN_B, useColor)
+  val YellowBG  = Color(YELLOW_B, useColor)
+  val BlueBG    = Color(BLUE_B, useColor)
+  val MagentaBG = Color(MAGENTA_B, useColor)
+  val CyanBG    = Color(CYAN_B, useColor)
+  val WhiteBG   = Color(WHITE_B, useColor)
+
+  val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+
+  /*-------------------------------- Color Scheme --------------------------------*/
+
+  val KeywordColor = Color(colorScheme.Keyword, useColor)
+  val VarColor     = Color(colorScheme.Variable, useColor)
+  val ClassColor   = Color(colorScheme.Class, useColor)
+  val MethodColor  = Color(colorScheme.Method, useColor)
+  val StringColor  = Color(colorScheme.String, useColor)
+  val NumColor     = Color(colorScheme.Number, useColor)
+  val CommentColor = Color(colorScheme.Comment, useColor)
+  val SymbolColor  = Color(colorScheme.Symbol, useColor)
+
+  /*-------------------------------- Utilities --------------------------------*/
+
+  val wordWrapper           = AnsiWordWrapper()
+  val syntaxHighlighter     = SyntaxHighlighter(this)
+  val stackTraceHighlighter = StackTraceHighlighter(this)
+  val prettyPrinter         = PrettyPrinter(this)
+
+  val listMarker: String = if (asciiOnly) "*" else "•"
+
+  def spinner: Spinner = if (asciiOnly) ASCIISpinner() else BrailSpinner()
+
+  /*-------------------------------- Box handling --------------------------------*/
 
   private val Indent     = 2
   private val Width: Int = lineWidth - (2 * Indent)
 
-  val wordWrapper        = new AnsiWordWrapper
-  val syntaxHighlighter  = SyntaxHighlighter(colors)
-  val listMarker: String = if (colors.isActive) "•" else "*"
-
-  def spinner: Spinner = if (colors.isActive) BrailSpinner() else ASCIISpinner()
 
   def top: String = trimRight(┌ + ─ * (lineWidth - Indent) + ┐) + "\n"
   def bottom: String = trimRight(└ + ─ * (lineWidth - Indent) + ┘) + "\n"
@@ -89,6 +149,7 @@ case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = 
         val whiteSpaces = " " * (maxColumnWidth - columnWidth)
         │ + " " + col + whiteSpaces + " " + makeLine(line, w)
       }.mkString
+
     sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
     sb.toString.print
   }
@@ -119,7 +180,6 @@ case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = 
 
   def formatFileName(name: String): String = Bold(Magenta(name) + Main.FileEnding)
 
-
   def makeList(items: Traversable[String], indent: String = "  "): String = {
     items.map(item => s"$indent$listMarker $item").mkString("\n")
   }
@@ -128,7 +188,6 @@ case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = 
 
 }
 
-object SimpleFormatting extends Formatting(Simple, Colors(isActive = false), 80)
 
 object Boxes {
 

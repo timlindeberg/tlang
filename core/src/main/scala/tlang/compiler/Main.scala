@@ -1,8 +1,8 @@
 package tlang.compiler
 
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
+import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees._
-import tlang.compiler.ast.{Parser, PrettyPrinter}
 import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.error._
 import tlang.compiler.lexer.Lexer
@@ -39,7 +39,7 @@ object Main extends MainErrors {
 
   val FrontEnd: Pipeline[Source, CompilationUnit] =
     Lexer andThen Parser andThen Templates andThen
-      NameAnalysis andThen TypeChecking andThen FlowAnalysis andThen Desugaring
+    NameAnalysis andThen TypeChecking andThen FlowAnalysis andThen Desugaring
 
   val CompilerStages = List(
     Lexer,
@@ -130,14 +130,12 @@ object Main extends MainErrors {
       printCodeStages = options(PrintOutput),
       printInfo = options(Verbose),
       ignoredImports = options(IgnoreDefaultImports),
-      formatting = formatting,
-      printer = PrettyPrinter(formatting.colors)
+      formatting = formatting
     )
 
   }
   private def printFilesToCompile(ctx: Context) = {
     import ctx.formatting._
-    import ctx.formatting.colors._
     val numFiles = ctx.files.size
     val files = ctx.files.map(formatFileName).mkString("\n")
     val end = if (numFiles > 1) "files" else "file"
@@ -148,7 +146,6 @@ object Main extends MainErrors {
 
   private def printExecutionTimes(ctx: Context) = {
     import ctx.formatting._
-    import ctx.formatting.colors._
     val totalTime = ctx.executionTimes.values.sum
     val individualTimes = CompilerStages.map { stage =>
       val name = Blue(stage.compilerStageName.capitalize)
@@ -167,7 +164,6 @@ object Main extends MainErrors {
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
     args foreach { arg =>
       import formatting._
-      import formatting.colors._
 
       val help = Flag.get(arg) match {
         case Some(flag) =>
@@ -218,7 +214,6 @@ object Main extends MainErrors {
 
   private def executeProgram(ctx: Context, cus: List[CompilationUnit]): Unit = {
     import ctx.formatting._
-    import ctx.formatting.colors._
 
     val mainMethods = cus.flatMap(_.classes.flatMap(_.methods.filter(_.isMain)))
     if (mainMethods.isEmpty) {

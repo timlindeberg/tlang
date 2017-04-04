@@ -1,9 +1,6 @@
 package tlang.utils
 
-import tlang.utils.Colors.{Color, ColorScheme, DefaultColorScheme}
 import tlang.utils.Extensions._
-
-import scala.Console._
 
 object Colors {
 
@@ -136,43 +133,4 @@ object Colors {
     val Symbol  : String = WHITE
   }
 
-}
-
-case class Colors(isActive: Boolean, colorScheme: ColorScheme = DefaultColorScheme) {
-
-  val Reset     = Color(RESET, isActive)
-  val Bold      = Color(BOLD, isActive)
-  val Underline = Color(UNDERLINED, isActive)
-
-  val Black   = Color(BLACK, isActive)
-  val Red     = Color(RED, isActive)
-  val Green   = Color(GREEN, isActive)
-  val Yellow  = Color(YELLOW, isActive)
-  val Blue    = Color(BLUE, isActive)
-  val Magenta = Color(MAGENTA, isActive)
-  val Cyan    = Color(CYAN, isActive)
-  val White   = Color(WHITE, isActive)
-
-  val BlackBG   = Color(BLACK_B, isActive)
-  val RedBG     = Color(RED_B, isActive)
-  val GreenBG   = Color(GREEN_B, isActive)
-  val YellowBG  = Color(YELLOW_B, isActive)
-  val BlueBG    = Color(BLUE_B, isActive)
-  val MagentaBG = Color(MAGENTA_B, isActive)
-  val CyanBG    = Color(CYAN_B, isActive)
-  val WhiteBG   = Color(WHITE_B, isActive)
-
-  val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
-
-  // Color scheme
-
-  val KeywordColor = Color(colorScheme.Keyword, isActive)
-  val VarColor     = Color(colorScheme.Variable, isActive)
-  val ClassColor   = Color(colorScheme.Class, isActive)
-  val MethodColor  = Color(colorScheme.Method, isActive)
-  val StringColor  = Color(colorScheme.String, isActive)
-  val NumColor     = Color(colorScheme.Number, isActive)
-  val CommentColor = Color(colorScheme.Comment, isActive)
-  val SymbolColor  = Color(colorScheme.Symbol, isActive)
-  val NoColor      = Color("", isActive = false)
 }
