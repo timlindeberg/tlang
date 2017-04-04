@@ -9,10 +9,6 @@ import tlang.utils.{Colors, Enumeration}
 
 import scala.concurrent.duration.FiniteDuration
 
-/**
-  * Created by Tim Lindeberg on 1/29/2017.
-  */
-
 case class Formatting(box: Box, colors: Colors, lineWidth: Int, trim: Boolean = true) {
 
   import box._
@@ -170,7 +166,7 @@ object Boxes {
   case object QuadrupleDashHeavy extends Box("┉┋┏┓┛┗┳┻┣┫╋")
   // @formatter:on
 
-  lazy val All: Set[Box] = Enumeration.instancesOf[Box]
+  lazy val All: List[Box] = Enumeration.instancesOf[Box]
 }
 
 sealed abstract class Spinner(val frameTime: FiniteDuration, images: String*) {
@@ -201,12 +197,12 @@ case class AwesomeSpinner() extends Spinner(FiniteDuration(100, "ms"),
   "▆▇█▇▆▅▄▃▄▅▆▇█▇▆",
   "▇█▇▆▅▄▃▂▃▄▅▆▇█▇",
   "█▇▆▅▄▃▂▁▂▃▄▅▆▇█",
-  "▇█▇▆▅▄▃▂▃▄▅▆▇█▇",
-  "▆▇█▇▆▅▄▃▄▅▆▇█▇▆",
-  "▅▆▇█▇▆▅▄▅▆▇█▇▆▅",
-  "▄▅▆▇█▇▆▅▆▇█▇▆▅▄",
-  "▃▄▅▆▇█▇▆▇█▇▆▅▄▃",
-  "▂▃▄▅▆▇█▇█▇▆▅▄▃▂"
+  "▇▆▅▄▃▂▁▂▁▂▃▄▅▆▇",
+  "▆▅▄▃▂▁▂▃▂▁▂▃▄▅▆",
+  "▅▄▃▂▁▂▃▄▃▂▁▂▃▄▅",
+  "▄▃▂▁▂▃▄▅▄▃▂▁▂▃▄",
+  "▃▂▁▂▃▄▅▆▅▄▃▂▁▂▃",
+  "▂▁▂▃▄▅▆▇▆▅▄▃▂▁▂"
 )
 case class BrailSpinner() extends Spinner(FiniteDuration(100, "ms"), "⢎⡰", "⢎⡡", "⢎⡑", "⢎⠱", "⠎⡱", "⢊⡱", "⢌⡱", "⢆⡱")
-case class ASCIISpinner() extends Spinner(FiniteDuration(200, "ms"), "|", "/", "—", "\\\\")
+case class ASCIISpinner() extends Spinner(FiniteDuration(200, "ms"), "|", "/", "—", "\\")

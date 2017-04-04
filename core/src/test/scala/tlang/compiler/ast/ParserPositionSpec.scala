@@ -10,9 +10,6 @@ import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}
 
-/**
-  * Created by Tim Lindeberg on 1/19/2017.
-  */
 class ParserPositionSpec extends FunSuite with Matchers {
 
   private val NoPos      : Pos     = Pos(-1, -1, -1, -1)

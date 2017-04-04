@@ -11,9 +11,6 @@ import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
-/**
-  * Created by Tim Lindeberg on 4/11/2016.
-  */
 trait ValidTester extends Tester {
 
   import Tester._

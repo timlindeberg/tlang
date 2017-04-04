@@ -4,9 +4,6 @@ import tlang.compiler.Context
 import tlang.compiler.imports.ImportMap
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait ErrorHandling {
 
   def ctx: Context
@@ -53,7 +50,7 @@ trait ErrorHandling {
 
 }
 
-object ErrorMessage {val ErrorName = "$ERROR"}
+object ErrorMessage {val ErrorName = "$ERROR" }
 abstract class ErrorMessage(val errorNum: Int, val errorLetters: String, val codeNum: Int, val pos: Positioned) {
 
   val code: String = errorLetters + errorNum + leftPadCode(codeNum)
@@ -63,10 +60,10 @@ abstract class ErrorMessage(val errorNum: Int, val errorLetters: String, val cod
   override def equals(obj: Any): Boolean = obj match {
     case err: ErrorMessage =>
       err.errorLetters == errorLetters &&
-        err.errorNum == errorNum &&
-        err.codeNum == codeNum &&
-        err.pos.encodedStartPos == pos.encodedStartPos &&
-        err.pos.encodedEndPos == pos.encodedEndPos
+      err.errorNum == errorNum &&
+      err.codeNum == codeNum &&
+      err.pos.encodedStartPos == pos.encodedStartPos &&
+      err.pos.encodedEndPos == pos.encodedEndPos
     case _                 => false
   }
 

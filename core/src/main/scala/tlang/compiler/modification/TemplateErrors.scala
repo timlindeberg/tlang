@@ -3,9 +3,6 @@ package tlang.compiler.modification
 import tlang.compiler.error.{Error, ErrorHandling}
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 6/22/2016.
-  */
 trait TemplateErrors extends ErrorHandling {
 
   //---------------------------------------------------------------------------------------

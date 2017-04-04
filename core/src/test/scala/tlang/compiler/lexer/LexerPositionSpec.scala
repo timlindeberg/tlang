@@ -8,9 +8,6 @@ import tlang.compiler.{Context, Pos, Tester}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
-/**
-  * Created by Tim Lindeberg on 1/19/2017.
-  */
 class LexerPositionSpec extends FunSuite with Matchers {
 
   val TestFile   : String  = Tester.Resources + "positions/LexerPositions.t"

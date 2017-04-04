@@ -2,22 +2,20 @@ package tlang.repl
 
 import akka.actor.{Actor, Props}
 import tlang.compiler.error._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import tlang.repl.input.InputBuffer
 
 object Renderer {
 
   trait RendererMessage
 
-  case object Start extends RendererMessage
-  case object Stop extends RendererMessage
-  case object Loading extends RendererMessage
+  case object StartRepl extends RendererMessage
+  case object StopRepl extends RendererMessage
 
-  case class NewInput(inputBuffer: InputBuffer) extends RendererMessage
-  case class CompileError(errors: List[ErrorMessage]) extends RendererMessage
-  case class Success(output: String, truncate: Boolean) extends RendererMessage
-  case class Failure(output: String, truncate: Boolean) extends RendererMessage
+  case object DrawLoading extends RendererMessage
+  case class DrawNewInput(inputBuffer: InputBuffer) extends RendererMessage
+  case class DrawCompileError(errors: List[ErrorMessage]) extends RendererMessage
+  case class DrawSuccess(output: String, truncate: Boolean) extends RendererMessage
+  case class DrawFailure(output: String, truncate: Boolean) extends RendererMessage
 
   def props(formatting: Formatting, maxOutputLines: Int, terminal: ReplTerminal) =
     Props(new Renderer(formatting, maxOutputLines, terminal))
@@ -33,46 +31,37 @@ class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTermin
   private val SuccessColor = Bold + Green
   private val InputColor   = Bold + Magenta
 
-  private var isLoading          = false
   private var inputBox: InputBox = _
 
 
   override def receive: Receive = {
-    case Loading              =>
-      isLoading = true
-      Future { Thread.sleep(spinner.frameTime.length) } onSuccess { case _ =>
-        if (isLoading) {
-          inputBox.nextLoadingState()
-          inputBox.render()
-          self ! Loading
-        }
-      }
     case msg: RendererMessage =>
-      def newInputBox = new InputBox(formatting, maxOutputLines, terminal)
-      isLoading = false
+      println(s"Got message: $msg from $sender")
       msg match {
-        case Start                     =>
+        case StartRepl           =>
           drawWelcomeBox()
           inputBox = newInputBox
-        case Stop                      =>
-          inputBox.exit()
-        case NewInput(input)           =>
+        case DrawLoading         =>
+          terminal.setCursorVisible(false)
+          inputBox.nextLoadingState()
+        case StopRepl            => inputBox.exit()
+        case DrawNewInput(input) =>
+          terminal.setCursorVisible(true)
           inputBox.newInput(input)
-        case CompileError(errors)      =>
-          inputBox.compileError(errors)
+        case msg                 =>
+          msg match {
+            case DrawCompileError(errors)            => inputBox.compileError(errors)
+            case DrawSuccess(output, shouldTruncate) => inputBox.success(output, shouldTruncate)
+            case DrawFailure(output, shouldTruncate) => inputBox.failure(output, shouldTruncate)
+          }
           inputBox.render()
           inputBox = newInputBox
-        case Success(output, truncate) =>
-          inputBox.success(output, truncate)
-          inputBox.render()
-          inputBox = newInputBox
-        case Failure(output, truncate) =>
-          inputBox.failure(output, truncate)
-          inputBox.render()
-          inputBox = newInputBox
+
       }
       inputBox.render()
   }
+
+  private def newInputBox = new InputBox(formatting, maxOutputLines, terminal)
 
   private def drawWelcomeBox(): Unit = {
     val header = Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!")

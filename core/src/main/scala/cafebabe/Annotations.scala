@@ -2,10 +2,6 @@ package cafebabe
 
 import cafebabe.ClassFileTypes.{U2, U4}
 
-/**
-  * Created by Tim Lindeberg on 8/21/2016.
-  */
-
 class RuntimeAnnotationAttribute(override val attributeNameIndex: U2) extends AttributeInfo(attributeNameIndex, Nil) {
 
   var annotations: List[AnnotationInfo] = Nil

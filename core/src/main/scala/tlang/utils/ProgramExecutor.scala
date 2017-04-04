@@ -9,9 +9,6 @@ import tlang.utils.Extensions._
 
 import scala.concurrent.duration.Duration
 
-/**
-  * Created by Tim Lindeberg on 2/3/2017.
-  */
 case class ProgramExecutor(timeout: Option[Duration] = None) {
 
   def apply(classFilePath: String): String = apply(new File(classFilePath))

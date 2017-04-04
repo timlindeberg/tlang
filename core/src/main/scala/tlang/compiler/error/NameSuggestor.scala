@@ -1,9 +1,5 @@
 package tlang.compiler.error
 
-
-/**
-  * Created by Tim Lindeberg on 1/15/2017.
-  */
 case class Suggestion(suggestion: Option[String])
 class NameSuggestor {
 

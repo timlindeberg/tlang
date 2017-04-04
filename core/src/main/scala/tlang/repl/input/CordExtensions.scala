@@ -1,10 +1,7 @@
-package tlang.repl
+package tlang.repl.input
 
 import scalaz.Cord
 
-/**
-  * Created by Tim Lindeberg on 3/19/2017.
-  */
 object CordExtensions {
 
   implicit class CordExtension(val cord: Cord) extends AnyVal {

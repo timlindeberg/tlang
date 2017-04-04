@@ -5,9 +5,6 @@ import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait ParserErrors extends ErrorHandling {
 
   override val importMap = ImportMap(ctx)
@@ -72,7 +69,7 @@ trait ParserErrors extends ErrorHandling {
     lazy val message = err"Unexpected token: $currentToken"
   }
 
-  private def restOf(currentToken: Token) = new Positioned {setPos(currentToken, lastToken)}
+  private def restOf(currentToken: Token) = new Positioned {setPos(currentToken, lastToken) }
 
 
 }

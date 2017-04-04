@@ -15,6 +15,7 @@ import tlang.compiler.error.CompilationException
 import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
+import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, ProgramExecutor, StringSource}
 
@@ -25,9 +26,6 @@ import scala.concurrent.{CancellationException, TimeoutException}
 import scala.util.{Failure, Success}
 
 
-/**
-  * Created by Tim Lindeberg on 2/14/2017.
-  */
 object ReplProgram {
 
   trait ReplProgramMessage
@@ -66,10 +64,11 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val frontEnd = Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
   private val compile  = Desugaring andThen CodeGeneration
 
-  private val classes = mutable.Map[String, ClassDeclTree]()
-  private val methods = mutable.Map[String, MethodDeclTree]()
-  private val history = ListBuffer[StatTree]()
-  private val imports = ImportMap(ctx)
+  private val classes      = mutable.Map[String, ClassDeclTree]()
+  private val methods      = mutable.Map[String, MethodDeclTree]()
+  private val history      = ListBuffer[StatTree]()
+  private val imports      = ImportMap(ctx)
+  private val FailureColor = Bold + Red
 
   private var newStatements = List[StatTree]()
   private var resultCounter = 0
@@ -84,10 +83,13 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
 
   override def receive: Receive = {
-    case Execute(command) => execute(command)
-    case StopExecution    => cancelExecution()
+    case Execute(command) =>
+      println("Executing command: " + command.trim)
+      execute(command)
+    case StopExecution    =>
+      println("Stopping execution")
+      cancelExecution()
     case PrettyPrint      => prettyPrint()
-    case _                => ???
   }
 
   private def execute(command: String): Unit = {
@@ -95,19 +97,21 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     cancelExecution = cancel
     f onComplete { res =>
       cancelExecution = NoCancel
-      val failureColor = Bold + Red
-      val message = res match {
-        case Success(res) => Renderer.Success(res, truncate = true)
-        case Failure(e)   => e match {
-          case e: CompilationException      => Renderer.CompileError(e.messages.getErrors)
-          case _: TimeoutException          => Renderer.Failure(failureColor("Execution timed out."), truncate = true)
-          case _: CancellationException     => Renderer.Failure(failureColor("Execution cancelled."), truncate = true)
-          case e: InvocationTargetException => Renderer.Failure(stackTraceHighlighter(e.getCause), truncate = true)
-          case e                            => throw e
-        }
+      val renderMessage = res match {
+        case Success(res) => Renderer.DrawSuccess(res, truncate = true)
+        case Failure(e)   =>
+          println("Failed execution with exception: " + e)
+          e match {
+            case e: CompilationException      => Renderer.DrawCompileError(e.messages.getErrors)
+            case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
+            case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
+            case e: InvocationTargetException => Renderer.DrawFailure(stackTraceHighlighter(e.getCause), truncate = true)
+            case e                            => Renderer.DrawFailure(stackTraceHighlighter(e), truncate = true)
+          }
       }
       newStatements = Nil
-      parent ! message
+      parent ! SetState(Normal)
+      parent ! renderMessage
     }
   }
 
@@ -140,7 +144,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private def prettyPrint(): Unit = {
     newStatements = Nil
     val code = printer(generateCompilationUnit()).trimWhiteSpaces
-    parent ! Renderer.Success(code, truncate = false)
+    parent ! Renderer.DrawSuccess(code, truncate = false)
   }
 
   private def getOutput(s: String): String = {
@@ -191,8 +195,8 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
           case None             => (mainClass.methods, None)
         }
         extractClasses(classes) ++
-          extractMethods(methods) ++
-          extractStatements(stats)
+        extractMethods(methods) ++
+        extractStatements(stats)
 
       case None => extractClasses(parsedInput.classes)
     })
@@ -243,11 +247,11 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
       case block@Block(stats) if stats.nonEmpty =>
         stats.last match {
           case Block(newStats) if newStats.length > 2 &&
-            newStats.head == PrintMarker &&
-            newStats.last == PrintMarker =>
+                                  newStats.head == PrintMarker &&
+                                  newStats.last == PrintMarker =>
             newStatements = newStats.flatMap(convert)
             Block(stats.dropRight(1) ++ newStatements)
-          case _                         => block
+          case _                                               => block
         }
       case _                                    => super._transform(t)
     }

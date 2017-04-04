@@ -18,9 +18,6 @@ import tlang.utils.{Colors, FileSource, ProgramExecutor}
 
 import scala.util.Random
 
-/**
-  * Created by Tim Lindeberg on 4/2/2016.
-  */
 class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   private val TestFolder           = "./tmpTest"

@@ -12,10 +12,6 @@ import tlang.utils.FileSource
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-/**
-  * Created by Tim Lindeberg on 5/15/2016.
-  */
-
 object TemplateImporter {
 
   val importedFiles: mutable.Map[String, File] = mutable.Map()

@@ -1,4 +1,4 @@
-package tlang.repl
+package tlang.repl.input
 
 import java.io.{File, FileWriter}
 
@@ -7,9 +7,6 @@ import tlang.utils.Extensions._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scalaz.Cord
 
-/**
-  * Created by Tim Lindeberg on 3/11/2017.
-  */
 case class InputHistory(maxRedoSize: Int, tabSize: Int) {
 
   private val HistorySeperator  = "★"
@@ -110,8 +107,8 @@ class CircularBuffer[T] extends ArrayBuffer[T] {
   def index: Int = _index
   private var _index = 0
 
-  def +=(i: Int): this.type = {_index = mod(_index + i, size); this}
-  def -=(i: Int): this.type = {_index = mod(_index - i, size); this}
+  def +=(i: Int): this.type = { _index = mod(_index + i, size); this }
+  def -=(i: Int): this.type = { _index = mod(_index - i, size); this }
 
   def current: T = apply(_index)
 

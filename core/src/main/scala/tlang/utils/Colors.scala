@@ -5,9 +5,6 @@ import tlang.utils.Extensions._
 
 import scala.Console._
 
-/**
-  * Created by Tim Lindeberg on 1/27/2017.
-  */
 object Colors {
 
   import Console._

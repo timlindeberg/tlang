@@ -7,9 +7,6 @@ import tlang.compiler.{Main, error}
 import tlang.utils.Extensions._
 import tlang.utils.{Colors, Enumeration}
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 object Flags {
 
   sealed abstract class Flag extends Ordered[Flag] with Product with Serializable {
@@ -395,9 +392,9 @@ object Flags {
   object Flag {
     lazy val All: List[Flag] =
       (JsonFlag.All ++
-        OptionalArgumentFlag.All ++
-        BooleanFlag.All ++
-        ArgumentFlag.All
+       OptionalArgumentFlag.All ++
+       BooleanFlag.All ++
+       ArgumentFlag.All
         ).sortBy(_.flag)
 
     def flagNames: List[String] = All.flatMap { flag =>

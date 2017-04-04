@@ -9,9 +9,6 @@ import tlang.utils.Colors.Color
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-/**
-  * Created by Tim Lindeberg on 2/2/2017.
-  */
 case class StackTrace(
   abcBuffer: ListBuffer[AbstractByteCode],
   heightArray: Array[Int],
@@ -83,7 +80,7 @@ case class StackTrace(
         case _: RawByte | _: RawBytes                   =>
         case NEWARRAY                                   =>
           abcs(i + 1) match {
-            case RawByte(tpe) => appendLine(abc, s"$NumColor${types(tpe)}")
+            case RawByte(tpe) => appendLine(abc, s"$NumColor${ types(tpe) }")
           }
         case IINC                                       =>
           abcs(i + 1) match {

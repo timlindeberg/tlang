@@ -7,9 +7,6 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IndexedSeqLike, mutable}
 
-/**
-  * Created by Tim Lindeberg on 3/19/2017.
-  */
 case class ColoredCharacter(color: Color, char: Char)
 
 object ColoredString {

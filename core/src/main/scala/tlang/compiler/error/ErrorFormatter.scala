@@ -3,9 +3,6 @@ package tlang.compiler.error
 import tlang.utils.Colors.Color
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 1/14/2017.
-  */
 case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int) {
 
   import formatting._

@@ -4,9 +4,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.{CancellationException, ExecutionContext, Future, Promise}
 
-/**
-  * Created by Tim Lindeberg on 3/26/2017.
-  */
 object CancellableFuture {
 
   def apply[T](fun: => T)(implicit ex: ExecutionContext): (Future[T], () => Boolean) = {
@@ -23,7 +20,7 @@ object CancellableFuture {
     }
 
     (f, () => {
-      aref.synchronized { Option(aref getAndSet null) foreach { _.interrupt() } }
+      aref.synchronized { Option(aref getAndSet null) foreach { _.stop() } }
       p.tryFailure(new CancellationException)
     })
   }

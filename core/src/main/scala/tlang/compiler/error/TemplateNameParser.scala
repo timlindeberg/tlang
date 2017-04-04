@@ -2,9 +2,6 @@ package tlang.compiler.error
 
 import scala.util.parsing.combinator.RegexParsers
 
-/**
-  * Created by Tim Lindeberg on 1/29/2017.
-  */
 object TemplateNameParser extends RegexParsers {
 
   import tlang.compiler.modification.Templates._

@@ -9,9 +9,6 @@ import tlang.compiler.{Context, Pipeline}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
-/**
-  * Created by timlindeberg on 22/07/16.
-  */
 object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
@@ -130,7 +127,7 @@ class FlowAnalyser(override val ctx: Context, override val importMap: ImportMap)
         analyzeExpr(expr, knowledge)
         knowledge.endFlow(tree)
       case Return(expr)                      =>
-        expr ifDefined {analyzeExpr(_, knowledge)}
+        expr ifDefined { analyzeExpr(_, knowledge) }
         knowledge.endFlow(tree)
       case _: Break | _: Continue            =>
         knowledge.endFlow(tree)

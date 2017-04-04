@@ -1,9 +1,9 @@
-package tlang.repl
+package tlang.repl.input
 
 import java.awt.Toolkit
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 
-import tlang.repl.CordExtensions._
+import tlang.repl.input.CordExtensions._
 import tlang.utils.Extensions._
 import tlang.utils.Position
 
@@ -30,12 +30,15 @@ case class Cursor(var position: Int, var x: Int, var y: Int) extends Ordered[Cur
   override def compare(that: Cursor): Int = position - that.position
 }
 
+
+case class InputState(cord: Cord, linePositions: List[Int], position: Int)
+
 case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
 
   private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
 
 
-  private val history = RedoBuffer(maxHistorySize)
+  private val history = RedoHistory(maxHistorySize)
 
   private var linePositions: List[Int] = _
   private var upDownX      : Int       = _
@@ -58,6 +61,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
   def ++=(str: String): Unit = str.foreach(this += _)
   def +=(char: Char): Unit = {
+    if (char == null)
+      return
 
     if (char == '\t') {
       val numSpaces = tabSize - (mainCursor.x % tabSize)
@@ -86,7 +91,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     }
     setPos(mainCursor, position + 1)
     setPos(mark, position + 1)
-    history += State(newValue, linePositions, position)
+    history += InputState(newValue, linePositions, position)
   }
 
   def paste(): Unit = {
@@ -155,7 +160,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
     setPos(mainCursor, cursorPos)
     setPos(mark, cursorPos)
-    history += State(newValue, linePositions, cursorPos)
+    history += InputState(newValue, linePositions, cursorPos)
   }
 
   def removeToLeftWord(): Unit = {
@@ -228,7 +233,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     linePositions ++= getLinePositions(cord)
     linePositions = linePositions.sortWith(_ >= _)
     history.clear()
-    history += State(cord, linePositions, 0)
+    history += InputState(cord, linePositions, 0)
   }
 
   override def toString: String = currentCord.toString

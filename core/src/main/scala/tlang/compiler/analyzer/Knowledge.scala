@@ -9,9 +9,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.{ClassTag, classTag}
 
-/**
-  * Created by Tim Lindeberg on 1/14/2017.
-  */
 object Knowledge {
 
   trait Identifier extends Typed {
@@ -48,7 +45,7 @@ object Knowledge {
     }
 
     override val getType: Type = varSymbol.getType
-    override def toString = s"$id.${varSymbol.name}"
+    override def toString = s"$id.${ varSymbol.name }"
   }
 
   case class ArrayItemIdentifier(id: Identifier, index: Int) extends Identifier {
@@ -73,17 +70,17 @@ object Knowledge {
   }
 
   // Used to wrap knowledge to show it came from an and or an or expression
-  case class OrKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = AndKnowledge(inner.invert)}
-  case class AndKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = OrKnowledge(inner.invert)}
+  case class OrKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = AndKnowledge(inner.invert) }
+  case class AndKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = OrKnowledge(inner.invert) }
 
   // These should be objects but then it doesnt work as type parameters
-  class Initialized extends VarKnowledge {override def toString = "Initialized"}
-  class Used extends VarKnowledge {override def toString = "Used"}
+  class Initialized extends VarKnowledge {override def toString = "Initialized" }
+  class Used extends VarKnowledge {override def toString = "Used" }
   val Initialized = new Initialized
   val Used        = new Used
 
-  case class Reassigned(at: StatTree) extends VarKnowledge {override def toString = s"Reassigned(${at.line}:${at.col})"}
-  case class IsNull(value: Boolean) extends VarKnowledge {override def invert = IsNull(!value)}
+  case class Reassigned(at: StatTree) extends VarKnowledge {override def toString = s"Reassigned(${ at.line }:${ at.col })" }
+  case class IsNull(value: Boolean) extends VarKnowledge {override def invert = IsNull(!value) }
   case class ArraySize(size: Int) extends VarKnowledge
   case class NumericValue(value: Int) extends VarKnowledge
   case class BoolValue(condition: ExprTree) extends VarKnowledge
@@ -379,11 +376,11 @@ object Knowledge {
 
     override def toString: String = {
       val vars = varKnowledge.map { case (expr, knowledge) =>
-        s"$expr -> { ${knowledge.mkString(", ")} }"
+        s"$expr -> { ${ knowledge.mkString(", ") } }"
       }.mkString("\n")
 
       val flow = flowEnded match {
-        case Some(ended) => s"\nFlow ended at ${ended.line}: $ended"
+        case Some(ended) => s"\nFlow ended at ${ ended.line }: $ended"
         case None        => ""
       }
       vars + flow

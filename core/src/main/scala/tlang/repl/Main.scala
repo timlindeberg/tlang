@@ -9,11 +9,9 @@ import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.error.{DefaultReporter, Formatting}
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
-import tlang.repl.Repl.{Start, Stop}
+import tlang.repl.Repl.{StartRepl, StopRepl}
+import tlang.repl.input.InputHistory
 
-/**
-  * Created by Tim Lindeberg on 2/13/2017.
-  */
 object Main {
 
   val VersionNumber = "0.0.1"
@@ -47,9 +45,9 @@ object Main {
     val repl = actorSystem.actorOf(Repl.props(context, replTerminal, inputHistory), Repl.name)
 
     // In case were using a Swing terminal
-    replTerminal onClose {repl ! Stop}
+    replTerminal onClose { repl ! StopRepl }
 
-    repl ! Start
+    repl ! StartRepl
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")

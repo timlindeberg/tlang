@@ -7,10 +7,6 @@ import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
-/**
-  * Created by Tim Lindeberg on 2/18/2017.
-  */
-
 trait Source {
   def mainName: String
   def text: String
@@ -20,7 +16,7 @@ object Source {
 
   private val TextCache: mutable.Map[File, String] = mutable.Map()
   def getText(file: File): String =
-    TextCache.getOrElseUpdate(file, using(io.Source.fromFile(file)) {_.mkString})
+    TextCache.getOrElseUpdate(file, using(io.Source.fromFile(file)) { _.mkString })
 }
 
 case class FileSource(file: File) extends Source {

@@ -10,9 +10,6 @@ import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 
-/**
-  * Created by Tim Lindeberg on 7/1/2016.
-  */
 object Desugaring extends Pipeline[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map { cu =>

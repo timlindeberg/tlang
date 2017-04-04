@@ -51,9 +51,6 @@ object Tester {
 
 }
 
-/**
-  * Created by Tim Lindeberg on 4/11/2016.
-  */
 trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
   import Tester._

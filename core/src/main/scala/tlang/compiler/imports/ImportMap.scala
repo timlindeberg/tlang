@@ -8,10 +8,6 @@ import tlang.utils.NoPosition
 
 import scala.collection.mutable
 
-/**
-  * Created by Tim Lindeberg on 7/5/2016.
-  */
-
 case class ImportMap(ctx: Context,
   imports: List[Import] = Nil,
   pack: Package = Package(Nil),
@@ -111,7 +107,7 @@ case class ImportMap(ctx: Context,
     this
   }
 
-  def ++=(imps: ImportMap): this.type = {imps.imports foreach {this += _}; this}
+  def ++=(imps: ImportMap): this.type = { imps.imports foreach { this += _ }; this }
 
   def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName)
   def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)

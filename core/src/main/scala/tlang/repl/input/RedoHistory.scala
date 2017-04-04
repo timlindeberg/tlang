@@ -1,29 +1,24 @@
-package tlang.repl
+package tlang.repl.input
 
 import scalaz.Cord
 
-/**
-  * Created by Tim Lindeberg on 2/26/2017.
-  */
-
 case object State {
-  val Empty = State(Cord.empty, List(0), 0)
+  val Empty = InputState(Cord.empty, List(0), 0)
 }
-case class State(cord: Cord, linePositions: List[Int], position: Int)
-case class RedoBuffer(maxSize: Int) {
+case class RedoHistory(maxSize: Int) {
 
   private var _first: Option[HistoryNode] = None
   private var _last : Option[HistoryNode] = None
   private var _size : Int                 = 0
 
 
-  def current: State = if (_last.isEmpty) State.Empty else _last.get.elem
+  def current: InputState = if (_last.isEmpty) State.Empty else _last.get.elem
 
   def size: Int = _size
   def isEmpty: Boolean = _size == 0
   def nonEmpty: Boolean = _size != 0
 
-  def +=(state: State): Unit = add(state)
+  def +=(state: InputState): Unit = add(state)
 
   def clear(): Unit = {
     _first = None
@@ -104,7 +99,7 @@ case class RedoBuffer(maxSize: Int) {
     sb.toString()
   }
 
-  private def add(t: State): Unit = {
+  private def add(t: InputState): Unit = {
     if (_size >= maxSize)
       removeFirst()
 
@@ -122,7 +117,7 @@ case class RedoBuffer(maxSize: Int) {
     _last = node
   }
 
-  private class HistoryNode(var elem: State, var prev: Option[HistoryNode], var next: Option[HistoryNode])
+  private class HistoryNode(var elem: InputState, var prev: Option[HistoryNode], var next: Option[HistoryNode])
 
 }
 

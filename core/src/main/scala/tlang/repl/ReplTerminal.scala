@@ -4,46 +4,47 @@ import java.awt.event._
 import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 import java.nio.charset.Charset
 import java.util
-import java.util.concurrent.TimeUnit
 
 import com.googlecode.lanterna.TextColor.ANSI
-import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input.{CharacterPattern, KeyDecodingProfile, KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
-import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
+import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
+import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 
-/**
-  * Created by Tim Lindeberg on 3/25/2017.
-  */
-class ReplTerminal extends Terminal {
+class ReplTerminal {
 
-  private val backingTerminal = createTerminal()
+  private val term = createTerminal()
 
-  private var isShiftDown = false
-  private var isCtrlDown  = false
-  private var isAltDown   = false
+  private var isShiftDown      = false
+  private var isCtrlDown       = false
+  private var isAltDown        = false
+  private var _isCursorVisible = true
 
 
   KeyboardFocusManager.getCurrentKeyboardFocusManager addKeyEventDispatcher
-    new KeyEventDispatcher() {
-      def dispatchKeyEvent(e: KeyEvent): Boolean = {
-        isShiftDown = e.isShiftDown
-        isCtrlDown = e.isControlDown
-        isAltDown = e.isAltDown
-        false
-      }
+  new KeyEventDispatcher() {
+    def dispatchKeyEvent(e: KeyEvent): Boolean = {
+      isShiftDown = e.isShiftDown
+      isCtrlDown = e.isControlDown
+      isAltDown = e.isAltDown
+      false
+    }
+  }
+
+
+  def close(): Unit =
+    term.ifInstanceOf[SwingTerminalFrame] { frame =>
+      frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
     }
 
-
   def onClose(f: => Unit): Unit = {
-    backingTerminal.ifInstanceOf[SwingTerminalFrame] {
+    term.ifInstanceOf[SwingTerminalFrame] {
       _ addWindowListener new WindowAdapter {
         override def windowClosing(windowEvent: WindowEvent): Unit = f
       }
@@ -56,9 +57,9 @@ class ReplTerminal extends Terminal {
     var SGRs = ListBuffer[SGR]()
 
     def applyColors() = {
-      SGRs.foreach(enableSGR)
-      setForegroundColor(currentColor)
-      setBackgroundColor(currentBGColor)
+      SGRs.foreach(term.enableSGR)
+      term.setForegroundColor(currentColor)
+      term.setBackgroundColor(currentBGColor)
     }
 
     var i = 0
@@ -74,7 +75,7 @@ class ReplTerminal extends Terminal {
               currentBGColor = ANSI.DEFAULT
               currentColor = ANSI.DEFAULT
               SGRs.clear()
-              resetColorAndSGR()
+              term.resetColorAndSGR()
             case '1' :: Nil                           => SGRs += SGR.BOLD
             case '4' :: Nil                           => SGRs += SGR.UNDERLINE
             case '3' :: c :: Nil if c in ('1' to '7') => currentColor = getColor(c)
@@ -86,17 +87,37 @@ class ReplTerminal extends Terminal {
         case '\n'                            =>
           y += 1
           x = 0
-          putCharacter('\n')
+          term.putCharacter('\n')
         case c                               =>
           x += 1
-          putCharacter(c)
+          term.putCharacter(c)
       }
       i += 1
     }
-    flush()
+    term.flush()
     y
   }
 
+  def readInput(): KeyStroke = {
+    val k = term.readInput()
+    if (k.getKeyType != KeyType.Character) {
+      val shift = isShiftDown || k.isShiftDown
+      val alt = isAltDown || k.isAltDown
+      val ctrl = isCtrlDown || k.isCtrlDown
+      new KeyStroke(k.getKeyType, ctrl, alt, shift)
+    } else {
+      k
+    }
+  }
+
+  def getCursorPosition: TerminalPosition = term.getCursorPosition
+  def setCursorPosition(pos: TerminalPosition): Unit = term.setCursorPosition(pos)
+  def setCursorVisible(visible: Boolean): Unit = {
+    _isCursorVisible = visible
+    term.setCursorVisible(visible)
+  }
+
+  def isCursorVisible: Boolean = _isCursorVisible
 
   private def getColor(char: Char) = char match {
     case '0' => ANSI.BLACK
@@ -109,40 +130,6 @@ class ReplTerminal extends Terminal {
     case '7' => ANSI.WHITE
     case _   => ???
   }
-
-  override def disableSGR(sgr: SGR): Unit = backingTerminal.disableSGR(sgr)
-  override def resetColorAndSGR(): Unit = backingTerminal.resetColorAndSGR()
-  override def enterPrivateMode(): Unit = backingTerminal.enterPrivateMode()
-  override def newTextGraphics(): TextGraphics = backingTerminal.newTextGraphics()
-  override def enquireTerminal(timeout: Int, timeoutUnit: TimeUnit): Array[Byte] = backingTerminal.enquireTerminal(timeout, timeoutUnit)
-  override def exitPrivateMode(): Unit = backingTerminal.enterPrivateMode()
-  override def enableSGR(sgr: SGR): Unit = backingTerminal.enableSGR(sgr)
-  override def setCursorPosition(x: Int, y: Int): Unit = backingTerminal.setCursorPosition(x, y)
-  override def setCursorPosition(position: TerminalPosition): Unit = backingTerminal.setCursorPosition(position)
-  override def getTerminalSize: TerminalSize = backingTerminal.getTerminalSize
-  override def clearScreen(): Unit = backingTerminal.clearScreen()
-  override def bell(): Unit = backingTerminal.bell()
-  override def setCursorVisible(visible: Boolean): Unit = backingTerminal.setCursorVisible(visible)
-  override def putCharacter(c: Char): Unit = backingTerminal.putCharacter(c)
-  override def addResizeListener(listener: TerminalResizeListener): Unit = backingTerminal.addResizeListener(listener)
-  override def setBackgroundColor(color: TextColor): Unit = backingTerminal.setBackgroundColor(color)
-  override def removeResizeListener(listener: TerminalResizeListener): Unit = backingTerminal.removeResizeListener(listener)
-  override def setForegroundColor(color: TextColor): Unit = backingTerminal.setForegroundColor(color)
-  override def pollInput(): KeyStroke = backingTerminal.pollInput()
-  override def readInput(): KeyStroke = {
-    val k = backingTerminal.readInput()
-    if (k.getKeyType != KeyType.Character) {
-      val shift = isShiftDown || k.isShiftDown
-      val alt = isAltDown || k.isAltDown
-      val ctrl = isCtrlDown || k.isCtrlDown
-      new KeyStroke(k.getKeyType, ctrl, alt, shift)
-    } else {
-      k
-    }
-  }
-
-  override def getCursorPosition: TerminalPosition = backingTerminal.getCursorPosition
-  override def flush(): Unit = backingTerminal.flush()
 
 
   // Translates '[f' to Alt-Right and '[b' to Alt-Left
@@ -187,7 +174,7 @@ class ReplTerminal extends Terminal {
       )
       .setInitialTerminalSize(new TerminalSize(120, 500))
       .setTerminalEmulatorDeviceConfiguration(
-        new TerminalEmulatorDeviceConfiguration(50, 1, CursorStyle.VERTICAL_BAR, ANSI.RED, false))
+        new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true))
       .createTerminal()
 
 }

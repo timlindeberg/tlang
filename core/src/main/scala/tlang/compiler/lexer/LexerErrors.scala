@@ -5,9 +5,6 @@ import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.Tokens.BAD
 import tlang.utils.{Positioned, Source}
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait LexerErrors extends ErrorHandling {
 
   override val importMap = ImportMap(ctx)

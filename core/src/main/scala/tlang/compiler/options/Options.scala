@@ -19,9 +19,6 @@ class FlagArgs extends mutable.HashMap[Flag, mutable.Set[String]] with mutable.M
   override def apply(key: Flag): mutable.Set[String] = getOrElse(key, mutable.Set())
 }
 
-/**
-  * Created by Tim Lindeberg on 2/1/2017.
-  */
 case class Options(arguments: Array[String]) extends MainErrors {
 
   val flagArgs : FlagArgs            = new FlagArgs()

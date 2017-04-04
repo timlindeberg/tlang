@@ -8,10 +8,6 @@ import tlang.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
 
-/**
-  * Created by Tim Lindeberg on 7/5/2016.
-  */
-
 case class TreeBuilder() {
   val code: ListBuffer[StatTree] = ListBuffer()
 

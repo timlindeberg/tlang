@@ -4,9 +4,6 @@ import tlang.compiler.ast.Trees.ExprTree
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait FlowAnalysisErrors extends ErrorHandling {
 
   def report(error: Error): Unit =

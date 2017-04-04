@@ -8,9 +8,6 @@ import tlang.utils.{FileSource, Source}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-/**
-  * Created by Tim Lindeberg on 4/2/2016.
-  */
 trait ErrorTester extends Tester {
 
   import Tester._
@@ -75,7 +72,7 @@ trait ErrorTester extends Tester {
         case Some(res) =>
           val solTrimmed = sol.trim
           if (!res.contains(solTrimmed))
-            failTest(s"Expected $sol on line $line but found ${res.mkString(", ")}", extraInfo(i))
+            failTest(s"Expected $sol on line $line but found ${ res.mkString(", ") }", extraInfo(i))
           res -= solTrimmed
         case None      =>
           failTest(s"Line $line did not produce $sol", extraInfo(i))
@@ -84,7 +81,7 @@ trait ErrorTester extends Tester {
 
     resMap foreach { case (line, res) =>
       if (res.nonEmpty)
-        failTest(s"Unexpected '${res.mkString(", ")}' was found on line $line", extraInfo(-1))
+        failTest(s"Unexpected '${ res.mkString(", ") }' was found on line $line", extraInfo(-1))
     }
 
   }

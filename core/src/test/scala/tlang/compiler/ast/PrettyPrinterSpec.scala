@@ -7,9 +7,6 @@ import tlang.compiler.lexer.Lexer
 import tlang.compiler.{Context, Tester}
 import tlang.utils.{Colors, FileSource, StringSource}
 
-/**
-  * Created by Tim Lindeberg on 3/7/2017.
-  */
 class PrettyPrinterSpec extends FunSuite with Matchers {
 
   private val TestFile   : String  = Tester.Resources + "positions/ParserPositions.t"

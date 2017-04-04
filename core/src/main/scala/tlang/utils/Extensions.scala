@@ -9,9 +9,6 @@ import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.reflect.{ClassTag, _}
 import scala.util.matching.Regex
 
-/**
-  * Created by Tim Lindeberg on 4/16/2016.
-  */
 object Extensions {
 
   private val AnsiRegex: Regex = """\x1b[^m]*m""".r
@@ -92,16 +89,18 @@ object Extensions {
     def trimWhiteSpaces: String = str.leftTrimWhiteSpaces.rightTrimWhiteSpaces
     def leftTrimWhiteSpaces: String = {
       val s = str.replaceAll("^\\s+", "")
-      if (s(0) == '\u001b' && s(1) == '[') {
-        val ansiStop = s.indexOf('m')
-        if (ansiStop + 1 < s.length && s(ansiStop + 1).isWhitespace) {
-          val ansi = s.substring(0, ansiStop + 1)
-          val trimmed = s.substring(ansiStop + 2, s.length)
-          return ansi + trimmed
-        }
-      }
-      s
+      if (s.length < 2 || s(0) != '\u001b' || s(1) == '[')
+        return s
+
+      val ansiStop = s.indexOf('m')
+      if (ansiStop + 1 >= s.length || !s(ansiStop + 1).isWhitespace)
+        return s
+
+      val ansi = s.substring(0, ansiStop + 1)
+      val trimmed = s.substring(ansiStop + 2, s.length)
+      ansi + trimmed
     }
+
     def rightTrimWhiteSpaces: String = {
       // TODO: This should trim at the end even if the string ends with ANSI-colors
       str.replaceAll("\\s+$", "")

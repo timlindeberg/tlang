@@ -10,9 +10,9 @@ import scala.reflect.macros.whitebox
 */
 object Enumeration {
 
-  def instancesOf[A]: Set[A] = macro instancesOf_impl[A]
+  def instancesOf[A]: List[A] = macro instancesOf_impl[A]
 
-  def instancesOf_impl[A: c.WeakTypeTag](c: whitebox.Context): c.Expr[Set[A]] = {
+  def instancesOf_impl[A: c.WeakTypeTag](c: whitebox.Context): c.Expr[List[A]] = {
     import c.universe._
 
     def getSymbol(sym: c.universe.Symbol) =
@@ -25,9 +25,9 @@ object Enumeration {
 
     val children = symbol.asClass.knownDirectSubclasses.filter(_.isModuleClass).toList
 
-    c.Expr[Set[A]] {
+    c.Expr[List[A]] {
       Apply(
-        Select(reify(Set).tree, TermName("apply")),
+        Select(reify(List).tree, TermName("apply")),
         children.map(sym => Ident(getSymbol(sym)))
       )
     }

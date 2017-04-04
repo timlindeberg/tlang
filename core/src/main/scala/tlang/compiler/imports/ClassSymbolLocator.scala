@@ -10,9 +10,6 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._
 
-/**
-  * Created by Tim Lindeberg on 5/14/2016.
-  */
 object ClassSymbolLocator {
 
   def setClassPath(classPaths: Set[String]): Unit = {

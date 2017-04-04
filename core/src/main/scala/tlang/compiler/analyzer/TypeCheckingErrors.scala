@@ -6,9 +6,6 @@ import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, Pre
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait TypeCheckingErrors extends ErrorHandling {
 
 
@@ -46,7 +43,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   case class ClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], override val pos: Positioned)
     extends TypeCheckingError(1, pos) {
-    lazy val message = err"Class $className does not contain a method $methSignature.${nameSuggestor(methName, alternatives)}"
+    lazy val message = err"Class $className does not contain a method $methSignature.${ nameSuggestor(methName, alternatives) }"
   }
 
   case class MethodOnWrongType(method: String, tpe: String, override val pos: Positioned)
@@ -56,7 +53,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   case class ClassDoesntHaveField(className: String, fieldName: String, alternatives: List[String], override val pos: Positioned)
     extends TypeCheckingError(3, pos) {
-    lazy val message = err"Class $className does not contain a field $fieldName.${nameSuggestor(fieldName, alternatives)}"
+    lazy val message = err"Class $className does not contain a field $fieldName.${ nameSuggestor(fieldName, alternatives) }"
   }
 
   case class FieldOnWrongType(tpe: String, override val pos: Positioned)
@@ -94,8 +91,8 @@ trait TypeCheckingErrors extends ErrorHandling {
         case _           => ???
       }
       val tpe = sym match {
-        case f: FieldSymbol  => err"field ${f.name}"
-        case m: MethodSymbol => err"method ${m.signature}"
+        case f: FieldSymbol  => err"field ${ f.name }"
+        case m: MethodSymbol => err"method ${ m.signature }"
         case _               => ???
       }
       val className = clazz.name
@@ -179,7 +176,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   case class NotOnNonNullable(override val pos: Positioned)
     extends TypeCheckingError(20, pos) {
-    lazy val message = err"${"!"} operator can only be applied to ${"Bool"} and nullable types."
+    lazy val message = err"${ "!" } operator can only be applied to ${ "Bool" } and nullable types."
   }
 
   case class CantInferTypeRecursiveMethod(override val pos: Positioned)

@@ -6,9 +6,6 @@ import tlang.utils.FileSource
 
 import scala.collection.mutable
 
-/**
-  * Created by Tim Lindeberg on 2/26/2017.
-  */
 case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: Int) {
 
   import formatting._

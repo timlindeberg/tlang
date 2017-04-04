@@ -1,6 +1,7 @@
 package tlang.repl
 
 import tlang.compiler.error.{ErrorFormatter, ErrorMessage, Formatting, Marking}
+import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.Colors.Color
 
 import scala.concurrent.duration.FiniteDuration
@@ -90,6 +91,8 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     sb ++= makeLines(inputText)
     sb ++= (if (result == "") bottom else result)
 
+    val isCursorVisible = terminal.isCursorVisible
+
     terminal.setCursorVisible(false)
     var linesPut = putBox(sb.toString)
 
@@ -109,7 +112,8 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
       terminal.setCursorPosition(newPos)
     }
 
-    terminal.setCursorVisible(true)
+    if (isCursorVisible)
+      terminal.setCursorVisible(true)
   }
 
   private def setResult(output: String, shouldTruncate: Boolean, color: Color, headerText: String): Unit = {
@@ -142,8 +146,5 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     val truncated = if (diff <= 0) lines else lines :+ color(s"... $diff more")
     truncated.mkString("\n")
   }
-
-  private def highlight(text: String) = if (text.startsWith(":")) InputColor(text) else syntaxHighlighter(text)
-
 
 }

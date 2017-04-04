@@ -6,9 +6,6 @@ import tlang.compiler.ast.Trees.{Break, Tree, _}
 import tlang.compiler.error.{Error, ErrorHandling, ErrorMessage, Warning}
 import tlang.utils.Positioned
 
-/**
-  * Created by Tim Lindeberg on 5/13/2016.
-  */
 trait NameAnalysisErrors extends ErrorHandling {
 
   def report(error: Error): Symbol = {

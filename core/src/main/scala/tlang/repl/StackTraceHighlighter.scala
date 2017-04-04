@@ -6,9 +6,6 @@ import tlang.utils.Colors
 
 import scala.util.parsing.combinator.RegexParsers
 
-/**
-  * Created by Tim Lindeberg on 3/20/2017.
-  */
 case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
 
   import colors._
@@ -49,11 +46,11 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
          |
          |Parsed ($offset chars):
          |------------------------------------------------------------
-         |${s.subSequence(0, offset)}
+         |${ s.subSequence(0, offset) }
          |------------------------------------------------------------
          |Remaining input:
          |------------------------------------------------------------
-         |${s.subSequence(offset, s.length)}
+         |${ s.subSequence(offset, s.length) }
          |------------------------------------------------------------
      """.stripMargin.trim)
   }
@@ -62,12 +59,12 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
 
     def apply(): Parser[String] =
       description ~ stackTraceLine.+ ~ suppressed.? ~
-        ("Caused by:" ~> description ~ stackTraceLine.+ ~ suppressed.?).* ^^ {
+      ("Caused by:" ~> description ~ stackTraceLine.+ ~ suppressed.?).* ^^ {
         case desc ~ stackPoses ~ more ~ rest =>
           formatStack(desc, stackPoses, more) +
-            rest.map { case desc ~ stackPoses ~ more =>
-              "\n" + TextColor("Caused by") + SymbolColor(":") + " " + formatStack(desc, stackPoses, more)
-            }.mkString
+          rest.map { case desc ~ stackPoses ~ more =>
+            "\n" + TextColor("Caused by") + SymbolColor(":") + " " + formatStack(desc, stackPoses, more)
+          }.mkString
       }
 
     // A description starts the stack trace eg.
@@ -118,8 +115,8 @@ case class StackTraceHighlighter(colors: Colors) extends RegexParsers {
 
     private def formatStack(desc: String, stackPoses: List[String], more: Option[String]) = {
       desc + "\n" +
-        stackPoses.map(Indent + _).mkString("\n") +
-        more.map(m => "\n" + Indent + m).getOrElse("")
+      stackPoses.map(Indent + _).mkString("\n") +
+      more.map(m => "\n" + Indent + m).getOrElse("")
     }
   }
 

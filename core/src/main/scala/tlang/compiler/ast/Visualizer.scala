@@ -8,9 +8,6 @@ import tlang.utils.Extensions._
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe.TermSymbol
 
-/**
-  * Created by Tim Lindeberg on 5/28/2016.
-  */
 object Visualizer {
 
   val ClassColor       = "#EF767A"
@@ -128,7 +125,7 @@ object Visualizer {
             f.get match {
               case l: List[_] => l.zipWithIndex.foreach {
                 case (t: Tree, i) =>
-                  val e = addEdge(nodeName, t, s"$fieldName${i + 1}")
+                  val e = addEdge(nodeName, t, s"$fieldName${ i + 1 }")
                   val p = new java.lang.Double(i / l.size.asInstanceOf[Double])
                   e.addAttribute("ui.class", "Numbered")
                   e.setAttribute("ui.color", p)

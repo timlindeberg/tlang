@@ -7,10 +7,6 @@ import tlang.utils.Colors._
 import tlang.utils.Extensions._
 import tlang.utils._
 
-/**
-  * Created by Tim Lindeberg on 1/29/2017.
-  */
-
 case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
 
 case class SyntaxHighlighter(colors: Colors) {

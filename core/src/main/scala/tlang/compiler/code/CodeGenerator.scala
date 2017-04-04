@@ -14,9 +14,6 @@ import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
-/**
-  * Created by Tim Lindeberg on 4/2/2016.
-  */
 object CodeGenerator {
 
   val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
@@ -60,7 +57,7 @@ object CodeGenerator {
 
     def byteCodeSignature: String = {
       val types = s.argTypes.map(_.byteCodeName).mkString
-      s"($types)${s.getType.byteCodeName}"
+      s"($types)${ s.getType.byteCodeName }"
     }
 
   }
@@ -87,7 +84,7 @@ object CodeGenerator {
         case Bool   => "Bool"
         case _      => ???
       }
-      s"T/lang/${name}Ref"
+      s"T/lang/${ name }Ref"
     }
 
     def byteCodeName: String = t match {
@@ -431,7 +428,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << cafebabe.AbstractByteCodes.New(className) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(className, ConstructorName, "(" + expr.getType.byteCodeName + ")V") <<
-          InvokeVirtual(className, "hashCode", "()I")
+        InvokeVirtual(className, "hashCode", "()I")
       case "LogicNot" =>
         compileExpr(expr)
         ch << Ldc(-1)
@@ -531,7 +528,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
         compileExpr(expr)
-        val signature = s"(${found.byteCodeName})V"
+        val signature = s"(${ found.byteCodeName })V"
         ch << InvokeSpecial(name, ConstructorName, signature)
       case (_: TArray, desired: TArray)                                               =>
         expr match {

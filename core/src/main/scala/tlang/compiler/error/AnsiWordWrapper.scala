@@ -4,9 +4,6 @@ import tlang.utils.Extensions._
 
 import scala.annotation.tailrec
 
-/**
-  * Created by Tim Lindeberg on 1/29/2017.
-  */
 class AnsiWordWrapper {
 
   private val EarlyBreakChars: String = """\/.:;-_()"""
@@ -38,9 +35,9 @@ class AnsiWordWrapper {
         case '\u001b' :: '[' :: '0' :: 'm' :: rest    =>
           wordWrap(rest, currentWord + Console.RESET, currentLine, lines)
         case '\u001b' :: '[' :: a :: b :: 'm' :: rest =>
-          wordWrap(rest, currentWord + s"\u001b[$a${b}m", currentLine, lines)
+          wordWrap(rest, currentWord + s"\u001b[$a${ b }m", currentLine, lines)
         case '\u001b' :: '[' :: a :: 'm' :: rest      =>
-          wordWrap(rest, currentWord + s"\u001b[${a}m", currentLine, lines)
+          wordWrap(rest, currentWord + s"\u001b[${ a }m", currentLine, lines)
         case '\r' :: '\n' :: rest                     =>
           wordWrap(rest, "", "", newLine())
         case '\n' :: rest                             =>
@@ -142,8 +139,8 @@ class AnsiWordWrapper {
 
     @tailrec def getAnsi(chars: List[Char], ansi: List[String]): List[String] = chars match {
       case '\u001b' :: '[' :: '0' :: 'm' :: rest    => getAnsi(rest, Nil)
-      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${b}m" :: ansi)
-      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${a}m" :: ansi)
+      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${ b }m" :: ansi)
+      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${ a }m" :: ansi)
       case _ :: rest                                => getAnsi(rest, ansi)
       case Nil                                      => ansi
     }
