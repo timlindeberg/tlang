@@ -172,12 +172,13 @@ object Tokens {
     override def toString: String = value
   }
 
+
   // These need to be lazy otherwise the program crashes
-  lazy val Tokens       : Set[TokenKind]         = Enumeration.instancesOf[TokenKind]
-  lazy val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+"))
+  lazy val Tokens       : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
+  lazy val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+")).toSet
   lazy val KeywordMap   : Map[String, TokenKind] = Keywords.map(t => t.str -> t).toMap
   lazy val NonKeywords  : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !KeywordMap.contains(t.str)).map(t => t.str -> t).toMap
-  lazy val KeywordsRegex: Regex                  = s"(${Keywords.toList.sortBy(-_.str.length).mkString("|")})".r
+  lazy val KeywordsRegex: Regex                  = s"(${ Keywords.toList.sortBy(-_.str.length).mkString("|") })".r
 
 
 }

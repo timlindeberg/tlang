@@ -61,9 +61,6 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
   def ++=(str: String): Unit = str.foreach(this += _)
   def +=(char: Char): Unit = {
-    if (char == null)
-      return
-
     if (char == '\t') {
       val numSpaces = tabSize - (mainCursor.x % tabSize)
       this ++= " " * numSpaces

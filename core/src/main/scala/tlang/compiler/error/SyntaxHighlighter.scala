@@ -2,7 +2,7 @@ package tlang.compiler.error
 
 import tlang.compiler.Context
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.lexer.{Token, Tokenizer, Tokens}
+import tlang.compiler.lexer.{Token, Tokenizer}
 import tlang.utils.Colors._
 import tlang.utils.Extensions._
 import tlang.utils._
@@ -55,7 +55,7 @@ case class SyntaxHighlighter(formatting: Formatting) {
       case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
       case CHARLITKIND | STRLITKIND                                => StringColor
       case IDKIND                                                  => VarColor
-      case x if x in Tokens.Keywords                               => KeywordColor
+      case x if x in Keywords                                      => KeywordColor
       case _                                                       => SymbolColor
     }
     case None    => NoColor

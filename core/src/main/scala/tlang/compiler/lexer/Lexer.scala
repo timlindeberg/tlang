@@ -80,7 +80,7 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
     res
   }
 
-  private def tokenExists(str: String): Boolean = NonKeywords.get(str).isDefined
+  private def tokenExists(str: String): Boolean = NonKeywords.contains(str)
 
   private def getIdentifierOrKeyword(chars: List[Char]): (Token, List[Char]) = {
 
