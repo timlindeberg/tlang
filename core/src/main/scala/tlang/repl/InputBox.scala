@@ -121,9 +121,14 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
       return
 
     isFinished = true
-    header = color(headerText)
     val txt = if (shouldTruncate) truncate(output, color) else output
-    result = divider + makeLines(txt) + bottom
+
+    if (txt.isEmpty) {
+      result = bottom
+    } else {
+      header = color(headerText)
+      result = divider + makeLines(txt) + bottom
+    }
   }
 
   private def clearLines(num: Int): Unit = {
