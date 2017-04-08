@@ -3,6 +3,7 @@ package tlang.compiler.error
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
 import tlang.compiler.options.Flags
+import tlang.utils.formatting.{Formatting, SimpleFormatting}
 
 trait Reporter {
 

@@ -1,7 +1,8 @@
 package tlang.compiler.error
 
-import tlang.utils.Colors.Color
 import tlang.utils.Positioned
+import tlang.utils.formatting.Colors.Color
+import tlang.utils.formatting.{Formatting, Marking}
 
 case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int) {
 

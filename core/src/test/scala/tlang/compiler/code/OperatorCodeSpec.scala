@@ -8,12 +8,13 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, PrettyPrinter}
-import tlang.compiler.error.{DefaultReporter, SimpleFormatting}
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.error.DefaultReporter
+import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.compiler.{Context, Interpreter}
 import tlang.utils.Extensions._
+import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, ProgramExecutor}
 
 import scala.util.Random
@@ -26,16 +27,16 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private val testFolderFile = new File(TestFolder)
   private val testFile       = new File(TestFilePath)
 
-  private val Printer       = PrettyPrinter(SimpleFormatting)
-  private val Compiler      = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
-  private val Rand          = new Random()
-  private val TestCtx       = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
-  private val TestImportMap = ImportMap(TestCtx)
-  private val TypeCheckCtx  = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile))
-  private val ClassSymbol   = new ClassSymbol("obj", false)
-  private val MainMethod    = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  private val TypeChecker   = new TypeChecker(TypeCheckCtx, TestImportMap, MainMethod)
-  private val Interpreter   = new Interpreter
+  private val Printer      = PrettyPrinter(SimpleFormatting)
+  private val Compiler     = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  private val Rand         = new Random()
+  private val TestCtx      = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
+  private val TestImports  = Imports(TestCtx)
+  private val TypeCheckCtx = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile))
+  private val ClassSymbol  = new ClassSymbol("obj", false)
+  private val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  private val TypeChecker  = new TypeChecker(TypeCheckCtx, TestImports, MainMethod)
+  private val Interpreter  = new Interpreter
 
   private val programExecutor = ProgramExecutor()
 

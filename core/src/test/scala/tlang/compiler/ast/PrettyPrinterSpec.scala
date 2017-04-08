@@ -3,9 +3,9 @@ package tlang.compiler.ast
 import java.io.File
 
 import org.scalatest.{FunSuite, Matchers}
-import tlang.compiler.error.SimpleFormatting
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.{Context, Tester}
+import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends FunSuite with Matchers {

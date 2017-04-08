@@ -1,13 +1,10 @@
 package tlang.compiler.ast
 
 import tlang.compiler.error.{Error, ErrorHandling, Fatal}
-import tlang.compiler.imports.ImportMap
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Positioned
 
 trait ParserErrors extends ErrorHandling {
-
-  override val importMap = ImportMap(ctx)
 
   protected def lastToken: Token
 

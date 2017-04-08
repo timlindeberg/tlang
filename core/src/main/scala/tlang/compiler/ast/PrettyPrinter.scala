@@ -3,9 +3,10 @@ package ast
 
 import java.util.regex.Matcher
 
-import tlang.compiler.error.Formatting
+import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens
-import tlang.utils.Colors.Color
+import tlang.utils.formatting.Colors.Color
+import tlang.utils.formatting.Formatting
 
 
 case class PrettyPrinter(formatting: Formatting) {
@@ -17,19 +18,21 @@ case class PrettyPrinter(formatting: Formatting) {
 
   private var currentIndent: Int = 0
 
+  private val seperator = "\n\n/* ----------------------------------------------------------------- */\n\n"
+
+  def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
     currentIndent = 0
     prettyPrint(t)
   }
 
   private def prettyPrint(t: Tree): String = t match {
-    case CompilationUnit(pack, classes, importMap)                  => pp"$pack${ imports(importMap.imports) }$classes"
+    case CompilationUnit(pack, classes, imps)                       => pp"$pack${ imports(imps) }$classes"
     case Package(address)                                           => pp"${ packDecl(address) }"
     case RegularImport(address)                                     => pp"import ${ address.mkString("::") }"
     case ExtensionImport(address, className)                        => pp"import ${ address.mkString("::") }::extension ${ className.mkString("::") }"
     case WildCardImport(address)                                    => pp"import ${ address.mkString("::") }.*"
-    case ClassDecl(id, parents, fields, methods)                    =>
-      pp"${ N }class ${ restOfClassDecl(id, parents, fields, methods) }"
+    case ClassDecl(id, parents, fields, methods)                    => pp"${ N }class ${ restOfClassDecl(id, parents, fields, methods) }"
     case TraitDecl(id, parents, fields, methods)                    => pp"${ N }trait ${ restOfClassDecl(id, parents, fields, methods) }"
     case ExtensionDecl(tpe, methods)                                => pp"${ N }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
     case VarDecl(tpe, id, expr, modifiers)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe)(t => pp": $t") }${ optional(expr)(t => pp" = $t") }"
@@ -155,10 +158,10 @@ case class PrettyPrinter(formatting: Formatting) {
     pp"$start $L$N$fields$N$N$methods$R"
   }
 
-  private def imports(imps: List[Import]) = {
-    if (imps.isEmpty) ""
+  private def imports(imps: Imports) = {
+    if (imps.imports.isEmpty) ""
     else
-      pp"${ Separated(imps, "\n") }$N"
+      pp"${ Separated(imps.imports, "\n") }$N"
   }
 
   private def genExpr(stats: List[StatTree]) = {

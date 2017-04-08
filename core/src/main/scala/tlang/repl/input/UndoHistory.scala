@@ -5,7 +5,7 @@ import scalaz.Cord
 case object State {
   val Empty = InputState(Cord.empty, List(0), 0)
 }
-case class RedoHistory(maxSize: Int) {
+case class UndoHistory(maxSize: Int) {
 
   private var _first: Option[HistoryNode] = None
   private var _last : Option[HistoryNode] = None

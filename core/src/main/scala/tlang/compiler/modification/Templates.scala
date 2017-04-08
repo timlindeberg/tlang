@@ -3,7 +3,7 @@ package modification
 
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.{ImportMap, TemplateImporter}
+import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -25,11 +25,10 @@ case class TemplateModifier(ctx: Context) {
   private var generatedClassNames = mutable.Set[String]()
 
   def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    //  Add all original template classes
-    cus foreach { cu =>
-      cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach { clazz =>
-        templateCus(clazz.id.name) = cu
-      }
+
+    templateCus ++= cus.flatMap { cu =>
+      val classes = cu.classes.filterInstance[IDClassDeclTree]
+      classes.filter(_.id.isTemplated).map { clazz => (clazz.id.name, cu) }
     }
 
     // Generate all needed classes
@@ -61,9 +60,9 @@ case class TemplateModifier(ctx: Context) {
       override def _transform(t: Tree): Tree = t match {
         case tpe: ClassID if tpe.isTemplated =>
           val shortName = tpe.name.split("::").last
-          if (cu.importMap.contains(shortName)) {
-            val entry = getImportEntry(cu.importMap, tpe)
-            cu.importMap += entry
+          if (cu.imports.contains(shortName)) {
+            val entry = getImportEntry(cu.imports, tpe)
+            cu.imports += entry
           }
           treeCopy.ClassID(tpe, tpe.templatedClassName)
         case _                               => super._transform(t)
@@ -75,16 +74,16 @@ case class TemplateModifier(ctx: Context) {
   }
 
 
-  private def getImportEntry(importMap: ImportMap, classId: ClassID) = {
+  private def getImportEntry(imports: Imports, classId: ClassID) = {
     val templateName = classId.templatedClassName
-    val fullName = importMap.getFullName(classId.name)
+    val fullName = imports.getFullName(classId.name)
     val prefix = fullName.split("::").dropRight(1).mkString("::")
     templateName -> s"$prefix::$templateName"
   }
 
   case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit) extends TemplateErrors {
 
-    override val importMap: ImportMap = cu.importMap
+    override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
     /**
       * Has the side effect of filling the programs in the template program map with
@@ -112,15 +111,15 @@ case class TemplateModifier(ctx: Context) {
       val name = typeId.templatedClassName
       val shortName = name.split("::").last
 
-      if (generatedClassNames(shortName) || cu.classes.exists(_.tpe.toString == name))
+      if (generatedClassNames(shortName) || ClassSymbolLocator.classExists(name))
         return
 
       generatedClassNames += shortName
 
       // Update import map to include the newly generated class
-      if (cu.importMap.contains(typeId.name)) {
-        val entry = getImportEntry(cu.importMap, typeId)
-        cu.importMap.+=(entry)
+      if (cu.imports.contains(typeId.name)) {
+        val entry = getImportEntry(cu.imports, typeId)
+        cu.imports.+=(entry)
       }
 
       findTemplateCU(typeId) match {
@@ -130,7 +129,7 @@ case class TemplateModifier(ctx: Context) {
               // Update the import map with the instantiated types:
               // e.g. Iterator<Vector<Int>> updates the
               // Iterator's import map with Vector<Int> -> T.std.Vector<Int>
-              updateImportMap(templateCU.importMap, classId)
+              updateImports(templateCU.imports, classId)
             case _                =>
           }
           val generatedClass = newTemplateClass(templateCU, typeId)
@@ -152,15 +151,15 @@ case class TemplateModifier(ctx: Context) {
       }
     }
 
-    private def updateImportMap(importMap: ImportMap, classId: ClassID) = {
+    private def updateImports(imports: Imports, classId: ClassID) = {
       // Add the classId to the import map
       val templateName = classId.templatedClassName
-      if (cu.importMap.contains(templateName)) {
-        val fullName = cu.importMap.getFullName(templateName)
-        importMap.+=(templateName, fullName)
-      } else if (cu.importMap.contains(classId.name)) {
-        val entry = getImportEntry(cu.importMap, classId)
-        importMap.+=(entry)
+      if (cu.imports.contains(templateName)) {
+        val fullName = cu.imports.getFullName(templateName)
+        imports.+=(templateName, fullName)
+      } else if (cu.imports.contains(classId.name)) {
+        val entry = getImportEntry(cu.imports, classId)
+        imports.+=(entry)
       }
     }
 
@@ -171,7 +170,7 @@ case class TemplateModifier(ctx: Context) {
         return Some(templateCus(className))
 
       val templateImporter = new TemplateImporter(ctx)
-      val importName = cu.importMap.getFullName(typeId.name)
+      val importName = cu.imports.getFullName(typeId.name)
       val importedCus = templateImporter.importCus(importName)
 
       importedCus foreach { cu =>

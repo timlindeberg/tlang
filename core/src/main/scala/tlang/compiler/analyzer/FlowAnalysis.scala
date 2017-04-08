@@ -4,7 +4,7 @@ import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.compiler.{Context, Pipeline}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
@@ -14,7 +14,7 @@ object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     cus foreach { cu =>
       cu.classes foreach { clazz =>
-        val flowAnalyser = new FlowAnalyser(ctx, cu.importMap)
+        val flowAnalyser = new FlowAnalyser(ctx, cu.imports)
         flowAnalyser(clazz)
       }
     }
@@ -23,7 +23,9 @@ object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
 }
 
-class FlowAnalyser(override val ctx: Context, override val importMap: ImportMap) extends FlowAnalysisErrors {
+class FlowAnalyser(override val ctx: Context, val imports: Imports) extends FlowAnalysisErrors {
+
+  override def replaceNames(str: String): String = imports.replaceNames(str)
 
   def apply(clazz: ClassDeclTree): Unit = {
 

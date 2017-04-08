@@ -53,7 +53,7 @@ class TemplateImporter(ctx: Context,
           case Some(importedCU) =>
             // Recursively import generics
             val importedCUs: ArrayBuffer[CompilationUnit] = ArrayBuffer(importedCU)
-            importedCU.importMap.imports foreach { recursiveImport =>
+            importedCU.imports.imports foreach { recursiveImport =>
               val templateImporter = new TemplateImporter(ctx, imported)
               importedCUs ++= templateImporter.importCus(recursiveImport.name)
             }

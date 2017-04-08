@@ -12,12 +12,12 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parser, Trees}
 import tlang.compiler.code.{CodeGeneration, Desugaring, TreeBuilder}
 import tlang.compiler.error.CompilationException
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
-import tlang.utils.{ProgramExecutor, StringSource}
+import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -31,6 +31,7 @@ object ReplProgram {
   trait ReplProgramMessage
 
   case class Execute(command: String) extends ReplProgramMessage
+  case object Warmup extends ReplProgramMessage
   case object PrettyPrint extends ReplProgramMessage
   case object StopExecution extends ReplProgramMessage
 
@@ -51,6 +52,8 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val PrintMarker      = Print(StringLit(ReplOutputMarker))
   private val ClassFile        = new File(ctx.outDirs.head, ClassName + ".class")
 
+  private val WarmupProgram = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
+
   private val ReplClassID             = ClassID(ClassName)
   private val ReplClassSymbol         = new ClassSymbol(ClassName, isAbstract = false)
   private val programExecutor         = ProgramExecutor()
@@ -64,7 +67,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val classes      = mutable.Map[String, ClassDeclTree]()
   private val methods      = mutable.Map[String, MethodDeclTree]()
   private val history      = ListBuffer[StatTree]()
-  private val imports      = ImportMap(ctx)
+  private val imports      = Imports(ctx)
   private val FailureColor = Bold + Red
 
   private var newStatements = List[StatTree]()
@@ -75,11 +78,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val NoCancel        = () => false
   private var cancelExecution = NoCancel
 
-  // For warmup
-  compileAndExecute("val theAnswerToLifeInTheUniverseAndEverything = 21 * 2")
-
 
   override def receive: Receive = {
+    case Warmup           => compileAndExecute(WarmupProgram)
     case Execute(command) =>
       println("Executing command: " + command.trim)
       execute(command)
@@ -103,7 +104,12 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => Renderer.DrawFailure(stackTraceHighlighter(e.getCause), truncate = true)
-            case e                            => throw e
+            case e                            =>
+              val err = FailureColor("Internal compiler error: \n") + stackTraceHighlighter(e)
+              println(err)
+              println("Internal state:")
+              println(prettyPrinted)
+              Renderer.DrawFailure(err, truncate = true)
           }
       }
       newStatements = Nil
@@ -114,20 +120,25 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
 
   private def compileAndExecute(command: String): String = {
+    newStatements = Nil
     val definitionMessages = extractDefinitionsFromInput(command)
 
     val CU = generateCompilationUnit()
-    val analyzed = frontEnd.run(ctx)(CU :: Nil).head
 
-    // Add generated template classes
-    classes ++= analyzed.classes
-      .filter { clazz => clazz.tpe != ReplClassID && clazz.tpe.toString.contains("$") }
-      .map { clazz => clazz.tpe.toString -> clazz }
+    println("CU:\n")
+    CU.prettyPrint
 
-    val transformed: CompilationUnit = newStatementTransformer(analyzed)
-    compile.run(ctx)(transformed :: Nil)
+    val allCUs = frontEnd.run(ctx)(CU :: Nil)
 
-    val res = programExecutor(ClassFile)
+    val replCU = allCUs.find { _.classes.exists(_.tpe == ReplClassID) }.get
+    val rest = allCUs.remove(replCU)
+
+    val transformed: CompilationUnit = newStatementTransformer(replCU)
+    println("Transformed:\n")
+    transformed.prettyPrint
+    compile.run(ctx)(transformed :: rest)
+
+    val res = programExecutor(ctx, ClassFile)
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
 
     val executionMessages = getOutput(res).lines.map(colorOutput)
@@ -138,10 +149,11 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     sb.toString.trimWhiteSpaces
   }
 
+  private def prettyPrinted: String = prettyPrinter(generateCompilationUnit() :: Nil).trimWhiteSpaces
+
   private def prettyPrint(): Unit = {
     newStatements = Nil
-    val code = prettyPrinter(generateCompilationUnit()).trimWhiteSpaces
-    parent ! Renderer.DrawSuccess(code, truncate = false)
+    parent ! Renderer.DrawSuccess(prettyPrinted, truncate = false)
   }
 
   private def getOutput(s: String): String = {
@@ -184,7 +196,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     val parsedInput = parseInput(command)
 
     val mainClass = parsedInput.classes.find { _.tpe == ReplClassID }
-    extractImports(parsedInput.importMap) ++ (mainClass match {
+    extractImports(parsedInput.imports) ++ (mainClass match {
       case Some(mainClass) =>
         val classes = parsedInput.classes.remove(mainClass)
         val (methods, stats) = mainClass.methods.find(_.isMain) match {
@@ -213,9 +225,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     }
   }
 
-  private def extractImports(importMap: ImportMap): List[String] = {
-    imports ++= importMap
-    importMap.imports map { imp =>
+  private def extractImports(imports: Imports): List[String] = {
+    imports ++= imports
+    imports.imports map { imp =>
       Bold("Imported ") + syntaxHighlighter(imp.name)
     }
   }

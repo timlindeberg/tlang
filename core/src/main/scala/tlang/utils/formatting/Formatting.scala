@@ -1,17 +1,13 @@
-package tlang.compiler.error
+package tlang.utils.formatting
 
 import java.io.File
 
 import tlang.compiler.Main
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.error.Boxes.{Box, Light, Simple}
 import tlang.compiler.options.Flags.LineWidth
-import tlang.repl.StackTraceHighlighter
-import tlang.utils.Colors.{Color, ColorScheme, DefaultColorScheme}
-import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-
-import scala.concurrent.duration.FiniteDuration
+import tlang.utils.formatting.Boxes.{Box, Light, Simple}
+import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
 
 object FancyFormatting extends Formatting(Light, LineWidth.defaultValue, useColor = true, asciiOnly = false)
 object SimpleFormatting extends Formatting(Simple, LineWidth.defaultValue, useColor = false, asciiOnly = true)
@@ -187,81 +183,3 @@ case class Formatting(
   private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
 
 }
-
-
-object Boxes {
-
-  val DefaultBox: Box = Light
-
-  sealed abstract class Box(val chars: String) extends Product with Serializable {
-    val ─ : String = chars(0).toString
-    val │ : String = chars(1).toString
-    val ┌ : String = chars(2).toString
-    val ┐ : String = chars(3).toString
-    val ┘ : String = chars(4).toString
-    val └ : String = chars(5).toString
-    val ┬ : String = chars(6).toString
-    val ┴ : String = chars(7).toString
-    val ├ : String = chars(8).toString
-    val ┤ : String = chars(9).toString
-    val ┼ : String = chars(10).toString
-
-    // Drop right to remove $ at end of object class name
-    val name: String = getClass.getSimpleName.dropRight(1)
-  }
-
-
-  // @formatter:off
-  case object Simple             extends Box("-|    --||-")
-  case object NoLines            extends Box("           ")
-  case object Double             extends Box("═║╔╗╝╚╦╩╠╣╬")
-  case object Light              extends Box("─│┌┐┘└┬┴├┤┼")
-  case object Heavy              extends Box("━┃┏┓┛┗┳┻┣┫╋")
-  case object DoubleDashLight    extends Box("╌╎┌┐┘└┬┴├┤┼")
-  case object DoubleDashHeavy    extends Box("╍╏┏┓┛┗┳┻┣┫╋")
-  case object TripleDashLight    extends Box("┄┆┌┐┘└┬┴├┤┼")
-  case object TripleDashHeavy    extends Box("┅┇┏┓┛┗┳┻┣┫╋")
-  case object QuadrupleDashLight extends Box("┈┊┌┐┘└┬┴├┤┼")
-  case object QuadrupleDashHeavy extends Box("┉┋┏┓┛┗┳┻┣┫╋")
-  // @formatter:on
-
-  lazy val All: List[Box] = Enumeration.instancesOf[Box]
-}
-
-sealed abstract class Spinner(val frameTime: FiniteDuration, images: String*) {
-
-  private var index        = 0
-  private var _elapsedTime = FiniteDuration(0, "ms")
-
-  def nextImage: String = {
-    _elapsedTime += frameTime
-    val image = images(index)
-    index = (index + 1) % images.size
-    image
-  }
-
-  def elapsedTime: FiniteDuration = _elapsedTime
-  def reset(): Unit = {
-    _elapsedTime = FiniteDuration(0, "ms")
-    index = 0
-  }
-}
-
-case class AwesomeSpinner() extends Spinner(FiniteDuration(100, "ms"),
-  "▁▂▃▄▅▆▇█▇▆▅▄▃▂▁",
-  "▂▃▄▅▆▇█▇█▇▆▅▄▃▂",
-  "▃▄▅▆▇█▇▆▇█▇▆▅▄▃",
-  "▄▅▆▇█▇▆▅▆▇█▇▆▅▄",
-  "▅▆▇█▇▆▅▄▅▆▇█▇▆▅",
-  "▆▇█▇▆▅▄▃▄▅▆▇█▇▆",
-  "▇█▇▆▅▄▃▂▃▄▅▆▇█▇",
-  "█▇▆▅▄▃▂▁▂▃▄▅▆▇█",
-  "▇▆▅▄▃▂▁▂▁▂▃▄▅▆▇",
-  "▆▅▄▃▂▁▂▃▂▁▂▃▄▅▆",
-  "▅▄▃▂▁▂▃▄▃▂▁▂▃▄▅",
-  "▄▃▂▁▂▃▄▅▄▃▂▁▂▃▄",
-  "▃▂▁▂▃▄▅▆▅▄▃▂▁▂▃",
-  "▂▁▂▃▄▅▆▇▆▅▄▃▂▁▂"
-)
-case class BrailSpinner() extends Spinner(FiniteDuration(100, "ms"), "⢎⡰", "⢎⡡", "⢎⡑", "⢎⠱", "⠎⡱", "⢊⡱", "⢌⡱", "⢆⡱")
-case class ASCIISpinner() extends Spinner(FiniteDuration(200, "ms"), "|", "/", "—", "\\")

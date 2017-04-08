@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.utils.formatting
 
 import tlang.utils.Extensions._
 

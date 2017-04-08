@@ -3,6 +3,7 @@ package tlang.repl
 import akka.actor.{Actor, Props}
 import tlang.compiler.error._
 import tlang.repl.input.InputBuffer
+import tlang.utils.formatting.Formatting
 
 object Renderer {
 

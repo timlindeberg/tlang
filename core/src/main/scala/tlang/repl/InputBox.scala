@@ -1,8 +1,9 @@
 package tlang.repl
 
-import tlang.compiler.error.{ErrorFormatter, ErrorMessage, Formatting, Marking}
+import tlang.compiler.error.{ErrorFormatter, ErrorMessage}
 import tlang.repl.input.{Cursor, InputBuffer}
-import tlang.utils.Colors.Color
+import tlang.utils.formatting.Colors.Color
+import tlang.utils.formatting.{Formatting, Marking}
 
 import scala.concurrent.duration.FiniteDuration
 

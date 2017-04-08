@@ -4,7 +4,7 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.compiler.{Context, Main, Pipeline}
 import tlang.utils.Extensions._
 
@@ -13,13 +13,13 @@ import scala.collection.mutable.ListBuffer
 object Desugaring extends Pipeline[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map { cu =>
-    val desugarer = new Desugarer(cu.importMap)
+    val desugarer = new Desugarer(cu.imports)
     desugarer(cu)
   }
 
 }
 
-class Desugarer(importMap: ImportMap) {
+class Desugarer(imports: Imports) {
 
   private val ThisName = "$this"
 
@@ -255,14 +255,14 @@ class Desugarer(importMap: ImportMap) {
         if (!(isObject(lhs) || isObject(rhs)))
           return op
 
-        val opSymbol = op.lookupOperator((lhs.getType, rhs.getType), importMap).get
+        val opSymbol = op.lookupOperator((lhs.getType, rhs.getType), imports).get
         val obj = getClassID(opSymbol)
         c.createMethodCall(obj, opSymbol, lhs, rhs)
       case UnaryOperatorTree(expr)      =>
         if (!isObject(expr))
           return op
 
-        val opSymbol = op.lookupOperator(expr.getType, importMap).get
+        val opSymbol = op.lookupOperator(expr.getType, imports).get
         val obj = getClassID(opSymbol)
         c.createMethodCall(obj, opSymbol, expr)
       case ArrayOperatorTree(arr)       =>
@@ -283,7 +283,7 @@ class Desugarer(importMap: ImportMap) {
             (obj, List(s, e, st))
           case _                                   => ???
         }
-        val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), importMap).get
+        val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), imports).get
         if (op.isInstanceOf[Assign])
           opSymbol.setType(args(1))
         c.createMethodCall(obj, opSymbol, args)
@@ -539,13 +539,13 @@ class Desugarer(importMap: ImportMap) {
   private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
     val c = new TreeBuilder
 
-    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", importMap, List())
+    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", imports, List())
     val iterator = c.putVarDecl("it", iteratorCall)
 
     val iteratorClass = iteratorCall.getType.asInstanceOf[TObject].classSymbol
 
-    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", importMap, List())
-    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", importMap, List())
+    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", imports, List())
+    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", imports, List())
 
     val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)

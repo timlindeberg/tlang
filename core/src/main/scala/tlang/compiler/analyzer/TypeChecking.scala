@@ -4,7 +4,7 @@ package analyzer
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
@@ -24,16 +24,16 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
     * attaching types to trees and potentially outputting error messages.
     */
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus foreach {typecheckFields(ctx, _)}
-    cus foreach {typecheckMethods(ctx, _)}
-    cus foreach {verify(ctx, _)}
+    cus foreach { typecheckFields(ctx, _) }
+    cus foreach { typecheckMethods(ctx, _) }
+    cus foreach { verify(ctx, _) }
 
     cus
   }
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
-      val typeChecker = new TypeChecker(ctx, cu.importMap, new MethodSymbol("", classDecl.getSymbol, None, Set()))
+      val typeChecker = new TypeChecker(ctx, cu.imports, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
     }
 
@@ -42,12 +42,12 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
         methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
-      new TypeChecker(ctx, cu.importMap, methodSymbol).tcMethod()
+      new TypeChecker(ctx, cu.imports, methodSymbol).tcMethod()
     }
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
-    val typeChecker = new TypeChecker(ctx, cu.importMap, emptyMethSym)
+    val typeChecker = new TypeChecker(ctx, cu.imports, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
     typeChecker.checkTraitsAreImplemented(cu)
@@ -56,9 +56,11 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
 }
 
 class TypeChecker(override val ctx: Context,
-  override val importMap: ImportMap,
+  imports: Imports,
   currentMethodSymbol: MethodSymbol,
   methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+
+  override def replaceNames(str: String): String = imports.replaceNames(str)
 
   import TypeChecking._
 
@@ -90,7 +92,7 @@ class TypeChecker(override val ctx: Context,
 
     val returnTypes = returnStatements.map(_._2)
     val inferredType = getReturnType(returnTypes)
-    returnStatements.map(_._1) foreach {_.setType(inferredType)}
+    returnStatements.map(_._1) foreach { _.setType(inferredType) }
 
     checkOperatorType(inferredType)
     currentMethodSymbol.setType(inferredType)
@@ -275,8 +277,8 @@ class TypeChecker(override val ctx: Context,
 
     def correctType(expectedTpe: Type): Boolean = {
       (expectedTpe == Bool && foundType.isNullable) ||
-        foundType.isSubTypeOf(expectedTpe) ||
-        expectedTpe.isImplicitlyConvertibleFrom(foundType)
+      foundType.isSubTypeOf(expectedTpe) ||
+      expectedTpe.isImplicitlyConvertibleFrom(foundType)
     }
 
     val res = if (expected.nonEmpty && !expected.exists(correctType))
@@ -297,7 +299,7 @@ class TypeChecker(override val ctx: Context,
         if (classSymbol.isAbstract) {
           report(InstantiateTrait(classSymbol.name, newExpr))
         } else {
-          classSymbol.lookupMethod("new", argTypes, importMap) match {
+          classSymbol.lookupMethod("new", argTypes, imports) match {
             case Some(constructorSymbol) =>
               checkPrivacy(constructorSymbol, classSymbol, newExpr)
               newExpr.setSymbol(constructorSymbol)
@@ -336,7 +338,7 @@ class TypeChecker(override val ctx: Context,
       case MethodCall(meth, args)        =>
         objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupMethod(meth.name, argTypes.get, importMap) map { methSymbol =>
+            classSymbol.lookupMethod(meth.name, argTypes.get, imports) map { methSymbol =>
               checkPrivacy(methSymbol, classSymbol, app)
               checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
               TypeChecking.methodUsage += methSymbol -> true
@@ -424,7 +426,7 @@ class TypeChecker(override val ctx: Context,
         val thisSymbol = sup.getSymbol
         val classSymbol = app match {
           case MethodCall(meth, _)   =>
-            thisSymbol.lookupParentMethod(meth.name, argTypes.get, importMap) map {
+            thisSymbol.lookupParentMethod(meth.name, argTypes.get, imports) map {
               _.classSymbol
             } getOrElse {
               return report(NoSuperTypeHasMethod(thisSymbol.name, methSignature, app))
@@ -516,7 +518,7 @@ class TypeChecker(override val ctx: Context,
         val classSymbol = clazz.getSymbol
         val methSymbol = meth.getSymbol
         val methType = meth.getSymbol.getType
-        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, importMap)
+        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, imports)
           .filter { parentMeth => parentMeth.getType != methType && !methType.isSubTypeOf(parentMeth.getType) }
           .foreach { parentMeth => report(OverridingMethodDifferentReturnType(methSymbol, parentMeth)) }
       }
@@ -529,7 +531,7 @@ class TypeChecker(override val ctx: Context,
     }
 
   private def typeCheckOperator(classType: Type, operator: OperatorTree, args: List[Type]): Option[Type] =
-    operator.lookupOperator(classType, args, importMap).map { operatorSymbol =>
+    operator.lookupOperator(classType, args, imports).map { operatorSymbol =>
       val classSymbol = classType.asInstanceOf[TObject].classSymbol
       checkPrivacy(operatorSymbol, classSymbol, operator)
       inferTypeOfMethod(operatorSymbol)
@@ -558,13 +560,13 @@ class TypeChecker(override val ctx: Context,
     * through extension methods.
     */
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] =
-    classSymbol.lookupMethod("Iterator", Nil, importMap).flatMap { methSymbol =>
+    classSymbol.lookupMethod("Iterator", Nil, imports).flatMap { methSymbol =>
       inferTypeOfMethod(methSymbol) match {
         case TObject(methodClassSymbol) =>
-          methodClassSymbol.lookupMethod("HasNext", Nil, importMap)
-            .filter {inferTypeOfMethod(_) == Bool}
+          methodClassSymbol.lookupMethod("HasNext", Nil, imports)
+            .filter { inferTypeOfMethod(_) == Bool }
             .flatMap { _ =>
-              methodClassSymbol.lookupMethod("Next", Nil, importMap).map(inferTypeOfMethod)
+              methodClassSymbol.lookupMethod("Next", Nil, imports).map(inferTypeOfMethod)
             }
         case _                          => None
       }
@@ -572,7 +574,7 @@ class TypeChecker(override val ctx: Context,
 
   private def inferTypeOfMethod(methodSymbol: MethodSymbol): Type = {
     if (methodSymbol.getType == TUntyped)
-      new TypeChecker(ctx, importMap, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+      new TypeChecker(ctx, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
     methodSymbol.getType
   }
 

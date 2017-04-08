@@ -2,7 +2,7 @@ package tlang.utils
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import tlang.compiler.error.Formatting
+import tlang.utils.formatting.{ColoredString, Formatting}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

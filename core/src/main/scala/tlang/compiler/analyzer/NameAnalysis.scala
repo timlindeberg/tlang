@@ -5,7 +5,6 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.ImportMap
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
@@ -41,9 +40,10 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
   import NameAnalysis._
 
-  override val importMap: ImportMap = cu.importMap
-  private  var variableUsage        = Map[VariableSymbol, Boolean]()
-  private  var variableReassignment = Map[VariableSymbol, Boolean]()
+  override def replaceNames(str: String): String = cu.imports.replaceNames(str)
+
+  private var variableUsage        = Map[VariableSymbol, Boolean]()
+  private var variableReassignment = Map[VariableSymbol, Boolean]()
 
 
   def addSymbols(): Unit = cu.classes foreach addSymbols
@@ -104,7 +104,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
         val tpe = ext.tpe
         val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ tpe.name).mkString("::")
         val newSymbol = new ExtensionClassSymbol(fullName)
-        importMap.addExtensionClass(newSymbol)
+        cu.imports.addExtensionClass(newSymbol)
         newSymbol
       case clazz: IDClassDeclTree =>
         val id = clazz.id
@@ -123,8 +123,8 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
-    classDecl.fields foreach {addSymbols(_, sym)}
-    classDecl.methods foreach {addSymbols(_, sym)}
+    classDecl.fields foreach { addSymbols(_, sym) }
+    classDecl.methods foreach { addSymbols(_, sym) }
   }
 
   private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
@@ -201,7 +201,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
   private def ensureClassNotDefined(id: ClassID): Unit = {
     val name = id.name
-    val fullName = importMap.getFullName(name)
+    val fullName = cu.imports.getFullName(name)
     globalScope.classes.get(fullName) ifDefined { old =>
       report(ClassAlreadyDefined(name, old.line, id))
     }
@@ -236,14 +236,14 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
-      stat ifDefined {new StatementBinder(methSym, methDecl.isStatic).bindStatement(_)}
+      stat ifDefined { new StatementBinder(methSym, methDecl.isStatic).bindStatement(_) }
     case constructorDecl@ConstructorDecl(_, _, args, _, stat)            =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
       val conSym = constructorDecl.getSymbol
-      stat ifDefined {new StatementBinder(conSym, false).bindStatement(_)}
+      stat ifDefined { new StatementBinder(conSym, false).bindStatement(_) }
     case operatorDecl@OperatorDecl(_, operatorType, args, retType, stat) =>
       val opSym = operatorDecl.getSymbol
 
@@ -278,7 +278,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
           report(OperatorWrongTypes(operatorType, argTypes, classSymbol, tpe.name, operatorDecl))
       }
 
-      stat ifDefined {new StatementBinder(opSym, isStaticOperator).bindStatement(_)}
+      stat ifDefined { new StatementBinder(opSym, isStaticOperator).bindStatement(_) }
   }
 
 
@@ -295,7 +295,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
         varId.setType(tpe)
       }
 
-      init ifDefined {new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_)}
+      init ifDefined { new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_) }
     }
 
   private class StatementBinder(scope: Symbol, isStaticContext: Boolean) {
@@ -405,11 +405,11 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
                     // eg. StaticClass.method()
                     val sym = name match {
                       case _ =>
-                        globalScope.lookupClass(importMap, name) match {
+                        globalScope.lookupClass(cu.imports, name) match {
                           case Some(classSymbol) => classSymbol
                           case None              =>
                             val alternatives = variableAlternatives(localVars) :::
-                              globalScope.classNames ::: Primitives.map(_.name)
+                                               globalScope.classNames ::: Primitives.map(_.name)
 
                             report(CantResolveSymbol(name, alternatives, id))
                             new ClassSymbol("", false)
@@ -558,7 +558,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
     val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
     val classSymbol = operator.getSymbol.classSymbol
-    classSymbol.lookupOperator(operatorType, argTypes, importMap, exactTypes = true) match {
+    classSymbol.lookupOperator(operatorType, argTypes, cu.imports, exactTypes = true) match {
       case Some(oldOperator) => report(OperatorAlreadyDefined(op.signature, oldOperator.line, operator))
       case None              => operator.getSymbol.classSymbol.addOperator(op)
     }
@@ -568,7 +568,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
     tpe match {
       case UnitType()                => tpe.setType(TUnit)
       case tpeId@ClassID(name, _)    =>
-        globalScope.lookupClass(importMap, name) match {
+        globalScope.lookupClass(cu.imports, name) match {
           case Some(classSymbol) => tpeId.setSymbol(classSymbol)
           case None              =>
             val alternatives = globalScope.classNames
@@ -593,7 +593,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
     }
 
     parents.foreach { parentId =>
-      globalScope.lookupClass(importMap, parentId.name) match {
+      globalScope.lookupClass(cu.imports, parentId.name) match {
         case Some(parentSymbol) => parentId.setSymbol(parentSymbol)
         case None               => report(ParentNotDeclared(parentId.name, globalScope.classNames, parentId))
       }

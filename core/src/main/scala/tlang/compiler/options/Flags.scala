@@ -1,11 +1,11 @@
 package tlang.compiler.options
 
+import tlang.compiler.Main
 import tlang.compiler.code.Desugaring
-import tlang.compiler.error.Boxes.{Box, Simple}
-import tlang.compiler.error.{Boxes, Formatting}
-import tlang.compiler.{Main, error}
+import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-import tlang.utils.{Colors, Enumeration}
+import tlang.utils.formatting.Boxes.{Box, Simple}
+import tlang.utils.formatting.{Boxes, Colors, Formatting}
 
 object Flags {
 
@@ -225,7 +225,7 @@ object Flags {
         .map { box =>
           val blocks = List("A " + Blue("block") + ".", "Another " + Blue("block") + ".")
           val simple = box == Simple
-          val exampleFormatting = error.Formatting(
+          val exampleFormatting = tlang.utils.formatting.Formatting(
             box, boxWidth, colorScheme = formatting.colorScheme, useColor = !simple, asciiOnly = simple, trim = false)
           val header = Bold(Magenta(box.name))
           exampleFormatting.makeBox(header, blocks).split("\n").toList
@@ -327,7 +327,7 @@ object Flags {
 
     override def extendedDescription(formatting: Formatting): String = {
       import formatting._
-      import tlang.utils.Colors.ColorScheme._
+      import tlang.utils.formatting.Colors.ColorScheme._
 
       val validKeys = ColorSchemeNames.map("   " + Blue(_)).mkString("\n")
       val validColors = Colors.ColorNames.map("   " + Magenta(_)).mkString("\n")

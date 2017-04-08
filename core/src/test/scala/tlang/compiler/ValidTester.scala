@@ -39,7 +39,7 @@ trait ValidTester extends Tester {
       case e: CompilationException  =>
         print(e.messages.formattedErrors)
         fail("Compilation failed")
-      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${file.getPath}")
+      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.getPath }")
     }
   }
 
@@ -55,10 +55,10 @@ trait ValidTester extends Tester {
     results.zip(solutions).zipWithIndex.foreach {
       case ((res, (line, sol)), i) =>
         if (res != sol)
-          fail(s"Expected '$sol' but found '$res' at line $line ${extraInfo(i)}")
+          fail(s"Expected '$sol' but found '$res' at line $line ${ extraInfo(i) }")
     }
     if (results.length != solutions.length) {
-      fail(s"Expected ${solutions.length} lines but ${results.length} were output ${extraInfo(-1)}")
+      fail(s"Expected ${ solutions.length } lines but ${ results.length } were output ${ extraInfo(-1) }")
     }
   }
 

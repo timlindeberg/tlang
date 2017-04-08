@@ -1,11 +1,12 @@
-package tlang.compiler.error
+package tlang.utils.formatting
 
 import tlang.compiler.Context
+import tlang.compiler.error.VoidReporter
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, Tokenizer}
-import tlang.utils.Colors._
 import tlang.utils.Extensions._
-import tlang.utils._
+import tlang.utils.formatting.Colors._
+import tlang.utils.{Position, Positioned, StringSource}
 
 case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
 

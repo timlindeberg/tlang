@@ -3,7 +3,7 @@ package ast
 
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
 import tlang.utils.Extensions._
@@ -97,8 +97,8 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
 
     val classes = createMainClass(code)
 
-    val importMap = ImportMap(ctx, imp, pack, classes)
-    CompilationUnit(pack, classes, importMap)
+    val imports = Imports(ctx, imp, pack, classes)
+    CompilationUnit(pack, classes, imports)
   }
 
   private def createMainClass(code: List[Tree]) = {

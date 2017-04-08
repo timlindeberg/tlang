@@ -3,13 +3,13 @@ package tlang.compiler.options
 import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
-import tlang.compiler.error.Boxes
-import tlang.compiler.error.Boxes.{Box, Simple}
 import tlang.compiler.options.Flags._
-import tlang.compiler.{Main, MainErrors, error}
-import tlang.utils.Colors
-import tlang.utils.Colors.{ColorScheme, DefaultColorScheme}
+import tlang.compiler.{Main, MainErrors}
+import tlang.utils
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Boxes.{Box, Simple}
+import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
+import tlang.utils.formatting.{Boxes, Colors, Formatting}
 
 import scala.collection.mutable
 import scala.util.parsing.json.JSON
@@ -21,8 +21,8 @@ class FlagArgs extends mutable.HashMap[Flag, mutable.Set[String]] with mutable.M
 
 case class Options(arguments: Array[String]) extends MainErrors {
 
-  val flagArgs : FlagArgs            = new FlagArgs()
-  val filePaths: mutable.Set[String] = mutable.Set()
+  private val flagArgs : FlagArgs            = new FlagArgs()
+  private val filePaths: mutable.Set[String] = mutable.Set()
 
   def apply(flag: BooleanFlag): Boolean = flagArgs(flag).nonEmpty
   def apply(flag: ArgumentFlag): Set[String] = flagArgs(flag).toSet
@@ -121,11 +121,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   val boxType: Box = {
-    val formattings = flagArgs(Formatting)
+    val formattings = flagArgs(Flags.Formatting)
     val boxNames = Boxes.All.map(_.name.toLowerCase)
     formattings.foreach { formatting =>
       if (!(formatting in boxNames))
-        FatalInvalidArgToFlag(Formatting, formatting, boxNames.toList)
+        FatalInvalidArgToFlag(Flags.Formatting, formatting, boxNames.toList)
     }
     formattings.headOption
       .flatMap(formatting => Boxes.All.find(_.name.toLowerCase == formatting))
@@ -148,7 +148,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
     }
   }
 
-  val formatting: error.Formatting = error.Formatting(boxType, apply(LineWidth), colorScheme, boxType != Simple, boxType == Simple)
+  val formatting: Formatting = utils.formatting.Formatting(boxType, apply(LineWidth), colorScheme, boxType != Simple, boxType == Simple)
 
   private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
     val validStages = Main.CompilerStages.map(_.compilerStageName)
@@ -159,7 +159,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   private def getColorScheme(json: Map[String, String]): ColorScheme = {
-    import Colors.ColorScheme._
+    import tlang.utils.formatting.Colors.ColorScheme._
     json.keys
       .find { key => !(key in ColorSchemeNames) }
       .foreach { FatalInvalidColorSchemeKey(_, ColorSchemeNames) }

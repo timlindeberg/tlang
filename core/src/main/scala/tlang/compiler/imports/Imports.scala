@@ -8,15 +8,15 @@ import tlang.utils.NoPosition
 
 import scala.collection.mutable
 
-case class ImportMap(ctx: Context,
+
+case class Imports(ctx: Context,
   imports: List[Import] = Nil,
   pack: Package = Package(Nil),
   classes: List[ClassDeclTree] = Nil
 ) extends ImportErrors {
 
-  override val importMap: ImportMap = this
-  private  val shortToFull          = mutable.Map[String, String]()
-  private  val fullToShort          = mutable.Map[String, String]()
+  private val shortToFull = mutable.Map[String, String]()
+  private val fullToShort = mutable.Map[String, String]()
 
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
@@ -58,7 +58,7 @@ case class ImportMap(ctx: Context,
       .foreach(imp => report(DefaultImportDoesntExist(imp, NoPosition)))
 
     val defaultImports = DefaultImports.filter(imp => !ctx.ignoredImports.contains(imp.writtenName))
-    defaultImports ++ imports foreach +=
+    defaultImports ++ imports foreach { this += _ }
 
     val packName = pack.name
     if (packName.nonEmpty) {
@@ -107,12 +107,12 @@ case class ImportMap(ctx: Context,
     this
   }
 
-  def ++=(imps: ImportMap): this.type = { imps.imports foreach { this += _ }; this }
+  def ++=(imps: Imports): this.type = { imps.imports foreach { this += _ }; this }
 
   def getFullName(shortName: String): String = shortToFull.getOrElse(shortName, shortName)
   def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)
 
-  def replaceNames(str: String): String =
+  override def replaceNames(str: String): String =
     fullToShort.foldLeft(str) { case (s, (full, short)) => s.replaceAll(full, short) }
 
   def contains(shortName: String): Boolean = shortToFull.contains(shortName)

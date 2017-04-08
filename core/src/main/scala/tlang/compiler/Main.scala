@@ -5,9 +5,11 @@ import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.error._
+import tlang.compiler.imports.ClassSymbolLocator
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.compiler.options.{Flags, Options}
+import tlang.utils.formatting.Formatting
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 object Main extends MainErrors {
@@ -76,6 +78,7 @@ object Main extends MainErrors {
       FatalNoFilesGiven()
 
     val ctx = createContext(options)
+    ClassSymbolLocator.setClassPath(ctx.getClassPaths)
 
     if (options(Verbose))
       printFilesToCompile(ctx)

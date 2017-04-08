@@ -1,6 +1,6 @@
 package cafebabe
 
-import tlang.compiler.error.Formatting
+import tlang.utils.formatting.Formatting
 
 
 class ConstantPool extends Streamable {

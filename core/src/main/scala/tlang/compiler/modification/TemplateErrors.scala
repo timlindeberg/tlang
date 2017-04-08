@@ -12,7 +12,6 @@ trait TemplateErrors extends ErrorHandling {
 
   def report(error: Error): Unit = ctx.reporter.report(error)
 
-
   abstract class TemplateError(code: Int, pos: Positioned) extends Error("G", code, pos)
 
   case class WrongNumGenerics(expected: Int, found: Int, override val pos: Positioned) extends TemplateError(0, pos) {

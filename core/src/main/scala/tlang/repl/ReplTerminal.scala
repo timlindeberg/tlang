@@ -113,8 +113,10 @@ class ReplTerminal {
   def getCursorPosition: TerminalPosition = term.getCursorPosition
   def setCursorPosition(pos: TerminalPosition): Unit = term.setCursorPosition(pos)
   def setCursorVisible(visible: Boolean): Unit = {
-    _isCursorVisible = visible
-    term.setCursorVisible(visible)
+    if (visible != _isCursorVisible) {
+      _isCursorVisible = visible
+      term.setCursorVisible(visible)
+    }
   }
 
   def isCursorVisible: Boolean = _isCursorVisible

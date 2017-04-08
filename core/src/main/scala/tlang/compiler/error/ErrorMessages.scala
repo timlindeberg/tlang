@@ -3,6 +3,7 @@ package tlang.compiler.error
 import java.io.File
 
 import tlang.utils.FileSource
+import tlang.utils.formatting.Formatting
 
 import scala.collection.mutable
 

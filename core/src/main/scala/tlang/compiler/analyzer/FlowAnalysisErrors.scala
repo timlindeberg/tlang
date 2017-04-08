@@ -6,6 +6,7 @@ import tlang.utils.Positioned
 
 trait FlowAnalysisErrors extends ErrorHandling {
 
+
   def report(error: Error): Unit =
     ctx.reporter.report(error)
 
@@ -30,7 +31,7 @@ trait FlowAnalysisErrors extends ErrorHandling {
   }
 
   case class DivideByZero(zeroExpr: ExprTree, override val pos: Positioned) extends FlowAnalysisError(3, pos) {
-    lazy val message = err"Division by expression $zeroExpr is illegal since it is known to have the value ${0}."
+    lazy val message = err"Division by expression $zeroExpr is illegal since it is known to have the value ${ 0 }."
   }
 
   case class OutOfBounds(index: ExprTree, value: Int, size: Int, override val pos: Positioned) extends FlowAnalysisError(4, pos) {
@@ -62,7 +63,7 @@ trait FlowAnalysisErrors extends ErrorHandling {
 
   case class UnnecessaryCheck(value: ExprTree, knownNull: Boolean, override val pos: Positioned) extends FlowAnalysisWarning(1, pos) {
     lazy val message: String = {
-      val known = if (knownNull) err"to be ${"null"}" else err"not to be ${"null"}"
+      val known = if (knownNull) err"to be ${ "null" }" else err"not to be ${ "null" }"
       err"Check is unnecessary, $value is known " + known
     }
   }

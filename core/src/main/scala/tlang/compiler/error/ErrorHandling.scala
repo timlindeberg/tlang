@@ -1,13 +1,12 @@
 package tlang.compiler.error
 
 import tlang.compiler.Context
-import tlang.compiler.imports.ImportMap
 import tlang.utils.Positioned
 
 trait ErrorHandling {
 
   def ctx: Context
-  def importMap: ImportMap
+  def replaceNames(str: String): String = str
 
   val nameSuggestor = new NameSuggestor
 
@@ -42,7 +41,7 @@ trait ErrorHandling {
       case any                          =>
         var str = any.toString
         str = TemplateNameParser.parseTemplateName(str)
-        str = importMap.replaceNames(str)
+        str = replaceNames(str)
 
         if (formatting.useColor) s"$Reset$Magenta$str" else s"'$str'"
     }

@@ -4,9 +4,9 @@ package ast
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
-import tlang.compiler.error.{FancyFormatting, SimpleFormatting}
-import tlang.compiler.imports.ImportMap
+import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
+import tlang.utils.formatting.{FancyFormatting, SimpleFormatting}
 import tlang.utils.{GenerateTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}
@@ -91,7 +91,7 @@ object Trees {
 
   case class CompilationUnit(pack: Package,
     var classes: List[ClassDeclTree],
-    importMap: ImportMap) extends Tree {
+    imports: Imports) extends Tree {
 
     def packageName: String = pack.address.mkString("::")
 
@@ -317,13 +317,13 @@ object Trees {
 
     def signature(args: List[Any]): String
 
-    def lookupOperator(arg: Type, importMap: ImportMap): Option[OperatorSymbol] = lookupOperator(List(arg), importMap)
+    def lookupOperator(arg: Type, imports: Imports): Option[OperatorSymbol] = lookupOperator(List(arg), imports)
 
-    def lookupOperator(args: (Type, Type), importMap: ImportMap): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2), importMap)
+    def lookupOperator(args: (Type, Type), imports: Imports): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2), imports)
 
-    def lookupOperator(args: List[Type], importMap: ImportMap): Option[OperatorSymbol] = {
+    def lookupOperator(args: List[Type], imports: Imports): Option[OperatorSymbol] = {
       args.foreach { arg =>
-        lookupOperator(arg, args, importMap) match {
+        lookupOperator(arg, args, imports) match {
           case Some(op) => return Some(op)
           case None     =>
         }
@@ -331,9 +331,9 @@ object Trees {
       None
     }
 
-    def lookupOperator(classType: Type, args: List[Type], importMap: ImportMap): Option[OperatorSymbol] = {
+    def lookupOperator(classType: Type, args: List[Type], imports: Imports): Option[OperatorSymbol] = {
       classType match {
-        case TObject(classSymbol) => classSymbol.lookupOperator(this, args, importMap)
+        case TObject(classSymbol) => classSymbol.lookupOperator(this, args, imports)
         case _                    => None
       }
     }

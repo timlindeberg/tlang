@@ -4,7 +4,7 @@ import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.compiler.Context
 import tlang.repl.Renderer._
-import tlang.repl.ReplProgram.{Execute, PrettyPrint, ReplProgramMessage, StopExecution}
+import tlang.repl.ReplProgram._
 import tlang.repl.input.InputHistory
 import tlang.utils.{Enumerable, Enumeration}
 
@@ -55,6 +55,7 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
       this.state = state
     case StartRepl               =>
       println(s"Got message: StartRepl from $sender")
+      replProgram ! Warmup
       renderer ! Renderer.StartRepl
       awaitInput()
     case StopRepl                =>
@@ -78,7 +79,11 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
           case _                     =>
             val updateRenderer = Commands.find(_.unapply(keyStroke)) match {
               case Some(command) => command(keyStroke)
-              case None          => false
+              case None          =>
+                val validInput = state == Normal && keyStroke.getCharacter != null
+                if (validInput)
+                  currentInput += keyStroke.getCharacter
+                validInput
             }
 
             if (updateRenderer) {
@@ -259,16 +264,6 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
           case Normal            => self ! StopRepl
         }
         false
-      }
-    }
-
-    case object CharacterInput extends Command {
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.Character
-      }
-      override def apply(keyStroke: KeyStroke): Boolean = {
-        currentInput += keyStroke.getCharacter
-        true
       }
     }
 

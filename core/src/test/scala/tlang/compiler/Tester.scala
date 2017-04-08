@@ -8,6 +8,7 @@ import tlang.compiler.error._
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
 import tlang.utils.Source
+import tlang.utils.formatting.{FancyFormatting, SimpleFormatting}
 
 import scala.concurrent._
 import scala.util.matching.Regex
@@ -33,13 +34,16 @@ object Tester {
     }
 
     val formatting = if (UseSimpleFormatting) SimpleFormatting else FancyFormatting
-    Context(
+    val ctx = Context(
       reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
       files = files,
       outDirs = Set(outDir),
+      classPaths = Set(outDir.getAbsolutePath),
       printCodeStages = PrintCodeStages,
       formatting = formatting
     )
+    ClassSymbolLocator.setClassPath(ctx.getClassPaths)
+    ctx
   }
 
 }

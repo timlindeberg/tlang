@@ -1,8 +1,6 @@
-package tlang.repl
+package tlang.utils.formatting
 
 import java.io.{PrintWriter, StringWriter}
-
-import tlang.compiler.error.Formatting
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -110,7 +108,7 @@ case class StackTraceHighlighter(formatting: Formatting) extends RegexParsers {
     }
 
     private val num                = """\d+""".r
-    private val id                 ="""[0-9A-Za-z$_]+""".r
+    private val id                 ="""[0-9A-Za-z$_\-]+""".r
     private val descriptionMessage = "(.|\n)+".r
 
     private def formatStack(desc: String, stackPoses: List[String], more: Option[String]) = {

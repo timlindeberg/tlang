@@ -20,10 +20,10 @@ class GenerateTreeHelpers extends StaticAnnotation {
       case q"object Trees { ..$stats }" =>
         val asts = getASTs(stats)
         val newStats = stats :+
-          createCopier(asts) :+
-          createLazyCopier(asts) :+
-          createTransformer(asts) :+
-          createTraverser(asts)
+                       createCopier(asts) :+
+                       createLazyCopier(asts) :+
+                       createTransformer(asts) :+
+                       createTraverser(asts)
         q"object Trees { ..$newStats }"
       case _                            =>
         abort("@GenerateTreeHelpers must annotate Trees object.")
@@ -34,7 +34,7 @@ class GenerateTreeHelpers extends StaticAnnotation {
 object GenerateTreeHelpers {
 
   private val Primitives   = List("Int", "Long", "Float", "Double", "Char")
-  private val IgnoredTypes = Primitives ::: List("String", "List[String]", "ImportMap")
+  private val IgnoredTypes = Primitives ::: List("String", "List[String]", "Imports")
 
   def getASTs(stats: Seq[Stat]): Seq[AST] = stats.collect {
     case q"case class $clazz[..$_] ..$_ (...$paramss) extends $_" =>
@@ -46,7 +46,7 @@ object GenerateTreeHelpers {
   def createCopier(asts: Seq[AST]): Defn.Class = {
     val copyFunctions = asts map { case ast@AST(name, params) =>
       val ctor = Ctor.Ref.Name(name.value)
-      q"def $name(t: Tree, ..$params) = new $ctor(..${ast.args}).copyAttributes(t)"
+      q"def $name(t: Tree, ..$params) = new $ctor(..${ ast.args }).copyAttributes(t)"
     }
     q"class Copier { ..$copyFunctions }"
   }
@@ -78,10 +78,10 @@ object GenerateTreeHelpers {
       val transforms = params.map { param =>
         val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
         val name = Term.Name(param.name.value)
-        if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${Type.Name(tpe)}]"
+        if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${ Type.Name(tpe) }]"
       }
 
-      p"case $name(..${ast.patTerms}) => treeCopy.$name(t, ..$transforms)"
+      p"case $name(..${ ast.patTerms }) => treeCopy.$name(t, ..$transforms)"
     }
 
     q"""
@@ -114,11 +114,11 @@ object GenerateTreeHelpers {
             val tpe = p.decltpe.map(_.syntax).getOrElse("")
             !IgnoredTypes.contains(tpe)
           }
-          .map { p => q"_traverse(${Term.Name(p.name.value)})" }
+          .map { p => q"_traverse(${ Term.Name(p.name.value) })" }
         (ast, traverses)
       }
       .filter { case (_, traverses) => traverses.nonEmpty }
-      .map { case (ast@AST(name, _), traverses) => p"case $name(..${ast.patTerms}) => { ..$traverses }" }
+      .map { case (ast@AST(name, _), traverses) => p"case $name(..${ ast.patTerms }) => { ..$traverses }" }
 
     q"""
       class Traverser {
@@ -139,7 +139,7 @@ object GenerateTreeHelpers {
   // Used to log trees to file during compilation
   def logTree(t: Tree): Unit = {
     val path = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\log.txt"
-    new PrintWriter(path) {write(t.syntax); close()}
+    new PrintWriter(path) {write(t.syntax); close() }
   }
 
   private def equality(params: List[Term.Param]): Option[Term] = {
@@ -147,7 +147,7 @@ object GenerateTreeHelpers {
     def _equality(params: List[Term.Param]): Term = {
       params match {
         case param :: Nil  => compare(param)
-        case param :: rest => q"${compare(param)} && (${_equality(rest)})"
+        case param :: rest => q"${ compare(param) } && (${ _equality(rest) })"
         case _             => ???
       }
     }

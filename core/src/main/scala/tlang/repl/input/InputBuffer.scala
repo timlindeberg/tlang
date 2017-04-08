@@ -38,7 +38,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
 
 
-  private val history = RedoHistory(maxHistorySize)
+  private val history = UndoHistory(maxHistorySize)
 
   private var linePositions: List[Int] = _
   private var upDownX      : Int       = _

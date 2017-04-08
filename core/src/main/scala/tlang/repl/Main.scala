@@ -5,11 +5,13 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import tlang.compiler.Context
-import tlang.compiler.error.{DefaultReporter, Formatting}
+import tlang.compiler.error.DefaultReporter
+import tlang.compiler.imports.ClassSymbolLocator
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.InputHistory
+import tlang.utils.formatting.Formatting
 
 object Main {
 
@@ -33,9 +35,10 @@ object Main {
     }
 
     val tempDir = Files.createTempDirectory("repl").toFile
+    println("Temp directory: " + tempDir.getAbsolutePath)
     tempDir.deleteOnExit()
     val context = createContext(options, tempDir)
-
+    ClassSymbolLocator.setClassPath(context.getClassPaths)
 
     val actorSystem = ActorSystem("tRepl")
 
@@ -61,6 +64,7 @@ object Main {
         maxErrors = 25,
         errorContext = 0
       ),
+      classPaths = Set(tempDir.getAbsolutePath),
       outDirs = Set(tempDir),
       formatting = formatting
     )
