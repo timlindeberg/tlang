@@ -9,27 +9,6 @@ import tlang.utils.Position
 
 import scalaz.Cord
 
-object Cursor {
-  def apply(x: Int, y: Int): Cursor = Cursor(0, x, y)
-  def apply(): Cursor = Cursor(0, 0, 0)
-
-}
-case class Cursor(var position: Int, var x: Int, var y: Int) extends Ordered[Cursor] {
-
-  def reset(): Unit = {
-    position = 0
-    x = 0
-    y = 0
-  }
-
-  def withX(x: Int) = Cursor(x, y)
-  def withY(y: Int) = Cursor(x, y)
-  def withRelativePos(deltaX: Int, deltaY: Int) = Cursor(x + deltaX, y + deltaY)
-  def withRelativeX(deltaX: Int) = Cursor(x + deltaX, y)
-  def withRelativeY(deltaY: Int) = Cursor(x, y + deltaY)
-  override def compare(that: Cursor): Int = position - that.position
-}
-
 
 case class InputState(cord: Cord, linePositions: List[Int], position: Int)
 
@@ -62,8 +41,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   def ++=(str: String): Unit = {
     upDownX = 0
 
-    addChars(str)
-    history += InputState(str, linePositions, mainCursor.position)
+    val newCord = addChars(str)
+    history += InputState(newCord, linePositions, mainCursor.position)
   }
 
   def +=(char: Char): Unit = {
@@ -77,7 +56,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
         addChars(" " * numSpaces)
       case '\n'                                        =>
         var indent = " " * line.iterator.indexWhere(!_.isWhitespace)
-        if (line(line.length - 1) == '{')
+        if (line.nonEmpty && line(line.length - 1) == '{')
           indent += " " * tabSize
 
         addChars("\n" + indent)
@@ -103,30 +82,34 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   def copy(): Unit = {
     val selected = if (mainCursor == mark) {
       val (start, end) = startAndEndOfLine
-      currentCord.slice(start, end)
+      "\n" + currentCord.slice(start, end).toString
     } else {
       val cursors = List(mainCursor, mark).sorted
-      currentCord.slice(cursors(0).position, cursors(1).position)
+      currentCord.slice(cursors(0).position, cursors(1).position).toString
     }
 
-    val selection = new StringSelection(selected.toString)
+    val selection = new StringSelection(selected)
     systemClipboard.setContents(selection, selection)
   }
 
   def cut(): Unit = {
-    if (mainCursor == mark)
-      return
+    if (mainCursor == mark) {
+      val (start, end) = startAndEndOfLine
+      setPos(mainCursor, math.max(0, start - 1))
+      setPos(mark, end)
+    }
     copy()
-    _remove()
+    val text = _remove()
+    history += InputState(text, linePositions, mainCursor.position)
   }
 
   def removeToLeftWord(): Unit = {
+    upDownX = 0
     val left = leftPosition
-    //noinspection LoopVariableNotUpdated
-    val position = mainCursor.position
-
-    while (position != left)
-      _remove()
+    var text = currentCord
+    while (mainCursor.position != left)
+      text = _remove(text)
+    history += InputState(text, linePositions, mainCursor.position)
   }
 
   def setMark(): Unit = {
@@ -179,8 +162,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     true
   }
 
-  def undo(): Boolean = _changeState(history.undo)
-  def redo(): Boolean = _changeState(history.redo)
+  def undo(): Boolean = updateState(history.undo)
+  def redo(): Boolean = updateState(history.redo)
 
   def reset(cord: Cord = Cord.empty): Unit = {
     mainCursor.reset()
@@ -192,12 +175,25 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     history += InputState(cord, linePositions, 0)
   }
 
+  def currentLine: String = {
+    val (start, end) = startAndEndOfLine
+    if (start == end)
+      return ""
+
+    currentCord.slice(start, end).toString
+  }
+
   override def toString: String = currentCord.toString
+  def debugString: String = "Lines: " + linePositions + "\n" + history
 
   private def addChars(chars: String, text: Cord = currentCord): Cord =
     chars.foldLeft(text) { case (current, char) => addChar(char, current) }
 
-  private def addChar(char: Char, text: Cord = currentCord): Cord = {
+  private def addChar(char: Char, cord: Cord = currentCord): Cord = {
+
+    // Remove marked text
+    val text = if (mainCursor != mark) _remove() else cord
+
     val position = mainCursor.position
     if (position != text.length)
       linePositions = linePositions.map { pos => if (pos > position) pos + 1 else pos }
@@ -224,25 +220,28 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     if (text.isEmpty)
       return text
 
-    val position = mainCursor.position
 
-    val (newValue, newCursorPos) = if (mainCursor == mark) {
-      val v = if (position == text.length) {
+    val start = math.min(mainCursor.position, mark.position)
+    val end = math.max(mainCursor.position, mark.position)
+
+    val (newValue, newCursorPos) = if (start == end) {
+      linePositions = linePositions.filter(_ != math.max(1, start))
+
+      val v = if (start == text.length) {
         text.init
-      } else if (position == 1) {
+      } else if (start == 1) {
         text.tail
       } else {
-        val (before, after) = text.split(position)
+        val (before, after) = text.split(start)
         before.init ++ after
       }
-      linePositions = linePositions.filter(_ != math.max(1, position))
-      (v, position - 1)
+      (v, start - 1)
     } else {
-      val start = math.min(mainCursor.position, mark.position)
-      val end = math.max(mainCursor.position, mark.position)
 
       // Filter linepositions in the removed area but don't remove the initial line
-      linePositions = linePositions.filter(pos => !(pos in (math.max(1, start) to end)))
+      val removedRange = math.max(1, start) until end
+
+      linePositions = linePositions.filter(pos => !(pos - 1 in removedRange))
 
       val (before, _) = text.split(start)
       val (_, after) = text.split(end)
@@ -252,7 +251,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     val charsRemoved = text.length - newValue.length
 
     // Realign line positions
-    linePositions = linePositions.map { pos => if (pos > position) pos - charsRemoved else pos }
+    linePositions = linePositions.map { pos => if (pos > start) pos - charsRemoved else pos }
 
     val cursorPos = math.min(math.max(newCursorPos, 0), currentCord.length)
 
@@ -314,16 +313,14 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     cursor.y = linePositions.length - index - 1
   }
 
-  def debugString: String = "Lines: " + linePositions + "\n" + history
-
-  private def startAndEndOfLine = {
+  private def startAndEndOfLine: (Int, Int) = {
     val line = lineIndex
-    val end = if (line == 0)
-      currentCord.length
-    else
-      linePositions(lineIndex - 1)
+    val start = linePositions(line)
 
-    (linePositions(line), end)
+    if (line == 0)
+      return (start, currentCord.length)
+
+    (start, linePositions(line - 1) - 1)
   }
 
   private def linePosition(line: Int): (Int, Int) = {
@@ -334,7 +331,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
   private def lineIndex = linePositions.indices.find(i => linePositions(i) <= mainCursor.position).getOrElse(0)
 
-  private def _changeState(f: () => Boolean): Boolean = {
+  private def updateState(f: () => Boolean): Boolean = {
     if (!f())
       return false
 

@@ -71,7 +71,7 @@ case class Formatting(
 
   val listMarker: String = if (asciiOnly) "*" else "•"
 
-  def spinner: Spinner = if (asciiOnly) ASCIISpinner() else BrailSpinner()
+  def spinner: Spinner = ASCIISpinner() // if (asciiOnly) ASCIISpinner() else BrailSpinner()
 
   /*-------------------------------- Box handling --------------------------------*/
 

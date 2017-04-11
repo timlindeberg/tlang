@@ -7,6 +7,8 @@ case object State {
 }
 case class UndoHistory(maxSize: Int) {
 
+  private case class HistoryNode(elem: InputState, var prev: Option[HistoryNode], var next: Option[HistoryNode])
+
   private var _first: Option[HistoryNode] = None
   private var _last : Option[HistoryNode] = None
   private var _size : Int                 = 0
@@ -103,7 +105,7 @@ case class UndoHistory(maxSize: Int) {
     if (_size >= maxSize)
       removeFirst()
 
-    val node = Some(new HistoryNode(t, None, None))
+    val node = Some(HistoryNode(t, None, None))
 
     _size += 1
     if (_first.isEmpty) {
@@ -116,8 +118,5 @@ case class UndoHistory(maxSize: Int) {
     _last.get.next = node
     _last = node
   }
-
-  private class HistoryNode(var elem: InputState, var prev: Option[HistoryNode], var next: Option[HistoryNode])
-
 }
 

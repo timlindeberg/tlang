@@ -32,6 +32,7 @@ object Repl {
 sealed abstract class Command() extends Product with Serializable {
   def unapply(keyStroke: KeyStroke): Boolean
   def apply(keyStroke: KeyStroke): Boolean
+  def order: Int
 }
 
 class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
@@ -73,27 +74,22 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
       case key: KeyStroke if key.getKeyType == KeyType.EOF => self ! StopRepl
       case keyStroke: KeyStroke                            =>
         println(s"Got input: $keyStroke")
-        keyStroke match {
-          case Commands.Evaluate()   => Commands.Evaluate(keyStroke)
-          case Commands.CancelExec() => Commands.CancelExec(keyStroke)
-          case _                     =>
-            val updateRenderer = Commands.find(_.unapply(keyStroke)) match {
-              case Some(command) => command(keyStroke)
-              case None          =>
-                val validInput = state == Normal && keyStroke.getCharacter != null
-                if (validInput)
-                  currentInput += keyStroke.getCharacter
-                validInput
-            }
 
-            if (updateRenderer) {
-              if (!keyStroke.isShiftDown)
-                currentInput.setMark()
-
-              renderer ! Renderer.DrawNewInput(inputHistory.current)
-            }
-
+        val updateRenderer = Commands.find(_.unapply(keyStroke)) match {
+          case Some(command) => command(keyStroke)
+          case None          => false
         }
+
+        println(inputHistory.current.debugString)
+        println("Line: \"" + inputHistory.current.currentLine + "\"")
+        if (updateRenderer) {
+
+          if (!keyStroke.isShiftDown)
+            currentInput.setMark()
+
+          renderer ! Renderer.DrawNewInput(inputHistory.current)
+        }
+
         awaitInput()
     }
   }
@@ -118,6 +114,7 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
     case object Evaluate extends Command {
 
+      override val order = 1
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
         keyStroke.isCtrlDown &&
@@ -149,6 +146,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object Undo extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.isCtrlDown && keyStroke.getCharacter == 'z'
       }
@@ -157,6 +157,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object Redo extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.isCtrlDown && keyStroke.isAltDown && keyStroke.getCharacter == 'z'
       }
@@ -165,6 +168,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object Remove extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.getKeyType == KeyType.Backspace
       }
@@ -176,6 +182,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object GoLeft extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.getKeyType == KeyType.ArrowLeft
       }
@@ -188,6 +197,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object GoRight extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.getKeyType == KeyType.ArrowRight
       }
@@ -200,6 +212,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object GoUp extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.getKeyType == KeyType.ArrowUp
       }
@@ -213,6 +228,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object GoDown extends Command {
+
+      override val order = 1
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         state == Normal && keyStroke.getKeyType == KeyType.ArrowDown
       }
@@ -225,15 +243,30 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
     }
 
-    //case object Copy extends Command {
-    //  override def matches(keyStroke: KeyStroke): Boolean = keyStroke.isCtrlDown && keyStroke.getCharacter == 'c'
-    //  override def execute(keyStroke: KeyStroke): Unit = currentInput.copy()
-    //}
+    case object Copy extends Command {
+
+      override val order = 1
+
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.isCtrlDown &&
+        keyStroke.isAltDown &&
+        keyStroke.getCharacter == 'c'
+      override def apply(keyStroke: KeyStroke): Boolean = {
+        currentInput.copy()
+        false
+      }
+    }
 
     case object Paste extends Command {
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.isCtrlDown && keyStroke.getCharacter == 'v'
-      }
+
+      override val order = 1
+
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.isCtrlDown &&
+        keyStroke.isAltDown &&
+        keyStroke.getCharacter == 'v'
 
       override def apply(keyStroke: KeyStroke): Boolean = {
         currentInput.paste()
@@ -242,9 +275,15 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object Cut extends Command {
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.isCtrlDown && keyStroke.getCharacter == 'x'
-      }
+
+      override val order = 1
+
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.isCtrlDown &&
+        keyStroke.isAltDown &&
+        keyStroke.getCharacter == 'x'
+
 
       override def apply(keyStroke: KeyStroke): Boolean = {
         currentInput.cut()
@@ -253,6 +292,9 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     }
 
     case object CancelExec extends Command {
+
+      override val order = 2
+
       override def unapply(keyStroke: KeyStroke): Boolean = {
         keyStroke.isCtrlDown && keyStroke.getCharacter == 'c'
       }
@@ -267,9 +309,22 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
       }
     }
 
+    case object NewCharacter extends Command {
+
+      override val order = 3
+
+      override def unapply(keyStroke: KeyStroke): Boolean = {
+        state == Normal && keyStroke.getCharacter != null
+      }
+      override def apply(keyStroke: KeyStroke): Boolean = {
+        currentInput += keyStroke.getCharacter
+        true
+      }
+    }
+
     private def largeMovement(keyStroke: KeyStroke): Boolean = keyStroke.isAltDown
 
-    protected lazy val All: List[Command] = Enumeration.instancesOf[Command]
+    protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.order)
   }
 
 }
