@@ -4,9 +4,9 @@ import java.io.File
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
-import tlang.compiler.Context
+import tlang.Context
 import tlang.compiler.error.DefaultReporter
-import tlang.compiler.imports.ClassSymbolLocator
+import tlang.compiler.imports.ClassPath
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
 import tlang.repl.Repl.{StartRepl, StopRepl}
@@ -21,6 +21,7 @@ object Main {
 
 
   def main(args: Array[String]): Unit = {
+
     val options = Options(args)
     tlang.compiler.Main.checkTHome()
 
@@ -38,7 +39,6 @@ object Main {
     println("Temp directory: " + tempDir.getAbsolutePath)
     tempDir.deleteOnExit()
     val context = createContext(options, tempDir)
-    ClassSymbolLocator.setClassPath(context.getClassPaths)
 
     val actorSystem = ActorSystem("tRepl")
 
@@ -56,6 +56,8 @@ object Main {
 
   private def createContext(options: Options, tempDir: File): Context = {
     val formatting = options.formatting
+    val default = ClassPath.Default
+    val classPath = default ++ (options.classPaths + tempDir.getAbsolutePath)
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
@@ -64,7 +66,7 @@ object Main {
         maxErrors = 25,
         errorContext = 0
       ),
-      classPaths = Set(tempDir.getAbsolutePath),
+      classPath = classPath,
       outDirs = Set(tempDir),
       formatting = formatting
     )

@@ -1,6 +1,7 @@
 package tlang.compiler
 package ast
 
+import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
@@ -222,7 +223,7 @@ object Trees {
     private def _mainMethod(stat: Option[StatTree], classSym: Option[ClassSymbol]): MethodDecl = {
       val modifiers: Set[Modifier] = Set(Public(), Static())
       val id = MethodID("main")
-      val args = Formal(ArrayType(ClassID(Main.JavaString, List())), VariableID("args")) :: Nil
+      val args = Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")) :: Nil
       val retType = Some(UnitType())
       val meth = MethodDecl(modifiers, id, args, retType, stat)
       if (classSym.isDefined) {

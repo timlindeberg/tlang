@@ -12,7 +12,7 @@ trait NameAnalysisErrors extends ErrorHandling {
     ctx.reporter.report(error)
 
     error.pos match {
-      case id: ClassID    => id.setSymbol(new ClassSymbol(ErrorMessage.ErrorName, false))
+      case id: ClassID    => id.setSymbol(new ClassSymbol(ErrorMessage.ErrorName))
       case id: VariableID => id.setSymbol(new VariableSymbol(ErrorMessage.ErrorName))
       case _              =>
     }
@@ -34,10 +34,10 @@ trait NameAnalysisErrors extends ErrorHandling {
 
     private def inheritanceList(set: Set[ClassSymbol], c: ClassSymbol) = {
       val first = if (set.size >= 2)
-        set.map(c => err"${c.name}").mkString(err" <: ")
+        set.map(c => err"${ c.name }").mkString(err" <: ")
       else
-        err"${c.name}"
-      first + err" <: ${c.name}"
+        err"${ c.name }"
+      first + err" <: ${ c.name }"
     }
   }
 
@@ -68,7 +68,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class UnknownType(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(6, pos) {
-    lazy val message = err"Unknown type: $name.${nameSuggestor(name, alternatives)}"
+    lazy val message = err"Unknown type: $name.${ nameSuggestor(name, alternatives) }"
   }
 
   case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
@@ -85,7 +85,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(10, pos) {
-    lazy val message = err"Could not resolve symbol $name.${nameSuggestor(name, alternatives)}"
+    lazy val message = err"Could not resolve symbol $name.${ nameSuggestor(name, alternatives) }"
   }
 
   case class AccessNonStaticFromStatic(name: String, override val pos: Positioned)
@@ -95,12 +95,12 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class ParentNotDeclared(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(12, pos) {
-    lazy val message = err"Could not resolve parent symbol $name.${nameSuggestor(name, alternatives)}"
+    lazy val message = err"Could not resolve parent symbol $name.${ nameSuggestor(name, alternatives) }"
   }
 
   case class ThisInStaticContext(override val pos: Positioned)
     extends NameAnalysisError(13, pos) {
-    lazy val message = err"${"this"} can not be used in a static context."
+    lazy val message = err"${ "this" } can not be used in a static context."
   }
 
   case class OperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, className: String,
@@ -151,7 +151,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class SuperInStaticContext(override val pos: Positioned)
     extends NameAnalysisError(20, pos) {
-    lazy val message = err"${"super"} can not be used in a static context."
+    lazy val message = err"${ "super" } can not be used in a static context."
   }
 
   case class SuperSpecifierDoesNotExist(inheritedClass: String, clazz: String, override val pos: Positioned)

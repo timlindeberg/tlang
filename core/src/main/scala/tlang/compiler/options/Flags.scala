@@ -237,7 +237,7 @@ object Flags {
     }
   }
 
-  case object ClassPath extends ArgumentFlag {
+  case object ClassPathFlag extends ArgumentFlag {
     override val flag      = "classpath"
     override val shortFlag = Some("cp")
     override val arg       = "path"

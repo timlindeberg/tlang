@@ -1,6 +1,6 @@
 package tlang.compiler.imports
 
-import tlang.compiler.Context
+import tlang.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._
@@ -15,10 +15,11 @@ case class Imports(ctx: Context,
   classes: List[ClassDeclTree] = Nil
 ) extends ImportErrors {
 
-  private val shortToFull = mutable.Map[String, String]()
-  private val fullToShort = mutable.Map[String, String]()
-
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
+
+  private val shortToFull        = mutable.Map[String, String]()
+  private val fullToShort        = mutable.Map[String, String]()
+  private val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
@@ -51,7 +52,6 @@ case class Imports(ctx: Context,
   // Initialize
   {
     val ignoredImports = ctx.ignoredImports
-
     val defaultImportNames = DefaultImports.map(_.writtenName)
     ignoredImports
       .filter(!defaultImportNames.contains(_))
@@ -93,12 +93,12 @@ case class Imports(ctx: Context,
 
         if (contains(shortName))
           report(ConflictingImport(regImp.writtenName, getFullName(shortName), regImp))
-        else if (!(templateImporter.classExists(fullName) || ClassSymbolLocator.classExists(fullName)))
+        else if (!(templateImporter.classExists(fullName) || classSymbolLocator.classExists(fullName)))
           report(CantResolveImport(regImp.writtenName, regImp))
         else
           this += (shortName, fullName)
       case extensionImport: ExtensionImport =>
-        ClassSymbolLocator.findExtensionSymbol(extensionImport.name) match {
+        classSymbolLocator.findExtensionSymbol(extensionImport.name) match {
           case Some(e) => addExtensionClass(e)
           case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
         }

@@ -1,6 +1,7 @@
 package tlang.compiler
 package modification
 
+import tlang.Context
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
@@ -31,9 +32,10 @@ case class TemplateModifier(ctx: Context) {
       classes.filter(_.id.isTemplated).map { clazz => (clazz.id.name, cu) }
     }
 
+    val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
     cus foreach { cu =>
-      val templateClassGenerator = TemplateClassGenerator(ctx, cu)
+      val templateClassGenerator = TemplateClassGenerator(ctx, cu, classSymbolLocator)
       templateClassGenerator()
     }
 
@@ -81,7 +83,7 @@ case class TemplateModifier(ctx: Context) {
     templateName -> s"$prefix::$templateName"
   }
 
-  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit) extends TemplateErrors {
+  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit, classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
 
     override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
@@ -111,7 +113,7 @@ case class TemplateModifier(ctx: Context) {
       val name = typeId.templatedClassName
       val shortName = name.split("::").last
 
-      if (generatedClassNames(shortName) || ClassSymbolLocator.classExists(name))
+      if (generatedClassNames(shortName) || classSymbolLocator.classExists(name))
         return
 
       generatedClassNames += shortName
@@ -171,7 +173,7 @@ case class TemplateModifier(ctx: Context) {
 
       val templateImporter = new TemplateImporter(ctx)
       val importName = cu.imports.getFullName(typeId.name)
-      val importedCus = templateImporter.importCus(importName)
+      val importedCus = templateImporter.importCUs(importName)
 
       importedCus foreach { cu =>
         cu.classes.filterInstance[IDClassDeclTree] foreach { clazz =>
@@ -211,7 +213,7 @@ case class TemplateModifier(ctx: Context) {
           case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated)
-              TemplateClassGenerator(ctx, templateCU).generateClass(newId)
+              TemplateClassGenerator(ctx, templateCU, classSymbolLocator).generateClass(newId)
 
             templateMap.get(newId) match {
               case Some(replacement) => replacement.copyAttributes(classId)

@@ -1,6 +1,7 @@
 package tlang.compiler
 package ast
 
+import tlang.Context
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports

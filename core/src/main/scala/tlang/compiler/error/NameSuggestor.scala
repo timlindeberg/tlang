@@ -1,6 +1,11 @@
 package tlang.compiler.error
 
-case class Suggestion(suggestion: Option[String])
+case class Suggestion(suggestion: Option[String]) {
+  override def toString: String = suggestion match {
+    case Some(v) => s" Did you mean $v?"
+    case None    => ""
+  }
+}
 class NameSuggestor {
 
   private val AcceptableDistance = 3

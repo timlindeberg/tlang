@@ -1,6 +1,7 @@
 package tlang.compiler
 
 import cafebabe.StackTrace
+import tlang.Context
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
 import tlang.utils.Extensions._

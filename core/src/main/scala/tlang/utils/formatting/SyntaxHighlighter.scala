@@ -1,6 +1,6 @@
 package tlang.utils.formatting
 
-import tlang.compiler.Context
+import tlang.Context
 import tlang.compiler.error.VoidReporter
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, Tokenizer}

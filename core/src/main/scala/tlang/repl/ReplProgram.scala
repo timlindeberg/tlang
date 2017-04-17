@@ -4,7 +4,7 @@ import java.io.File
 import java.lang.reflect.InvocationTargetException
 
 import akka.actor.{Actor, Props}
-import tlang.compiler.Context
+import tlang.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
@@ -55,7 +55,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val WarmupProgram = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
 
   private val ReplClassID             = ClassID(ClassName)
-  private val ReplClassSymbol         = new ClassSymbol(ClassName, isAbstract = false)
+  private val ReplClassSymbol         = new ClassSymbol(ClassName)
   private val programExecutor         = ProgramExecutor()
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()

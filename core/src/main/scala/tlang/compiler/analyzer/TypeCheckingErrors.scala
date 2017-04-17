@@ -29,9 +29,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
     private def makeExpectedString(expected: Traversable[Type]): String = expected.size match {
       case 0 => ""
-      case 1 => err"${
-        expected.head
-      }"
+      case 1 => err"${ expected.head }"
       case n => expected.take(n - 1).map(t => err"$t").mkString(", ") + " or " + expected.last + ""
     }
 
@@ -112,7 +110,7 @@ trait TypeCheckingErrors extends ErrorHandling {
     }
   }
 
-  case class OverloadedOperatorNotFound(op: OperatorTree, args: List[Type], override val pos: Positioned)
+  case class OperatorNotFound(op: OperatorTree, args: List[Type], override val pos: Positioned)
     extends TypeCheckingError(13, pos) {
     lazy val message: String = {
       val classesString = overloadedOperatorClassesString(args)

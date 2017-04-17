@@ -1,11 +1,13 @@
 package tlang.compiler
 
+import tlang.Constants._
+import tlang.Context
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.error._
-import tlang.compiler.imports.ClassSymbolLocator
+import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.modification.Templates
 import tlang.compiler.options.{Flags, Options}
@@ -15,29 +17,6 @@ import tlang.utils.{FileSource, ProgramExecutor, Source}
 object Main extends MainErrors {
 
   import Flags._
-
-
-  val FileEnding                     = ".t"
-  val VersionNumber                  = "0.0.1"
-  val THome                          = "T_HOME"
-  val JavaObject                     = "java::lang::Object"
-  val JavaString                     = "java::lang::String"
-  val TInt                           = "T::lang::Int"
-  val TLong                          = "T::lang::Long"
-  val TFloat                         = "T::lang::Float"
-  val TDouble                        = "T::lang::Double"
-  val TChar                          = "T::lang::Char"
-  val TBool                          = "T::lang::Bool"
-  val TExtensionAnnotation           = "T::lang::$ExtensionMethod"
-  val TImplicitConstructorAnnotation = "T::lang::$ImplicitConstructor"
-
-  val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
-
-  lazy val TDirectory: String = {
-    if (!sys.env.contains(THome))
-      FatalCantFindTHome(THome)
-    sys.env(THome)
-  }
 
   val FrontEnd: Pipeline[Source, CompilationUnit] =
     Lexer andThen Parser andThen Templates andThen
@@ -78,7 +57,6 @@ object Main extends MainErrors {
       FatalNoFilesGiven()
 
     val ctx = createContext(options)
-    ClassSymbolLocator.setClassPath(ctx.getClassPaths)
 
     if (options(Verbose))
       printFilesToCompile(ctx)
@@ -105,7 +83,7 @@ object Main extends MainErrors {
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
     try {
-      val sources = ctx.files.toList.map(FileSource)
+      val sources = ctx.files.toList.map(FileSource(_))
       FrontEnd.run(ctx)(sources)
     } catch {
       case e: CompilationException =>
@@ -117,7 +95,6 @@ object Main extends MainErrors {
 
   private def createContext(options: Options): Context = {
     val formatting = options.formatting
-
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
@@ -128,7 +105,7 @@ object Main extends MainErrors {
       ),
       errorContext = options(ErrorContext),
       files = options.files,
-      classPaths = options.classPaths,
+      classPath = ClassPath.Default ++ options.classPaths,
       outDirs = options.outDirectories,
       printCodeStages = options(PrintOutput),
       printInfo = options(Verbose),

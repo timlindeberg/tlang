@@ -1,11 +1,12 @@
 package tlang.compiler.analyzer
 
+import tlang.Context
+import tlang.compiler.Pipeline
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.compiler.{Context, Pipeline}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 

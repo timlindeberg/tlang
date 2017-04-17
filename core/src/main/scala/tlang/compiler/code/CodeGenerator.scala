@@ -6,8 +6,8 @@ import cafebabe.ClassFileTypes._
 import cafebabe.CodeHandler
 import cafebabe.Flags._
 import tlang.compiler.analyzer.Symbols._
+import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
-import tlang.compiler.analyzer._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._

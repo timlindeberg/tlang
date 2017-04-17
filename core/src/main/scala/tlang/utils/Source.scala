@@ -2,7 +2,7 @@ package tlang.utils
 
 import java.io.File
 
-import tlang.compiler.Main
+import tlang.Constants
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -19,9 +19,12 @@ object Source {
     TextCache.getOrElseUpdate(file, using(io.Source.fromFile(file)) { _.mkString })
 }
 
+object FileSource {
+  def apply(path: String): FileSource = apply(new File(path))
+}
 case class FileSource(file: File) extends Source {
 
-  override def mainName: String = file.getName.dropRight(Main.FileEnding.length)
+  override def mainName: String = file.getName.dropRight(Constants.FileEnding.length)
   override def text: String = Source.getText(file)
 
 }

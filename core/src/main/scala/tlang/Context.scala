@@ -1,7 +1,8 @@
-package tlang.compiler
+package tlang
 
 import java.io.File
 
+import tlang.compiler.Pipeline
 import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassPath
 import tlang.utils.formatting.{Formatting, SimpleFormatting}

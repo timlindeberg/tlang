@@ -9,11 +9,12 @@ import cafebabe.ClassFileTypes._
 import cafebabe.Flags._
 import cafebabe._
 import org.objectweb.asm.{ClassReader, ClassWriter}
+import tlang.Context
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._
-import tlang.utils.FileSource
+import tlang.utils.{FileSource, StringSource}
 
 import scala.collection.mutable
 
@@ -175,8 +176,10 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
     val classFile = new ClassFile(className, parent)
     traits.foreach(t => classFile.addInterface(t.JVMName))
 
-    classDecl.source.ifInstanceOf[FileSource] { fileSource =>
-      classFile.setSourceFile(fileSource.file.getName)
+    classDecl.source match {
+      case FileSource(file)            => classFile.setSourceFile(file.getName)
+      case StringSource(str, mainName) => classFile.setSourceFile(mainName)
+      case _                           =>
     }
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
@@ -317,7 +320,7 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
     val filePath = prefix + packageDir
     val f = new File(filePath)
     if (!f.getAbsoluteFile.exists() && !f.mkdirs())
-      sys.error(s"Could not create output directory '${f.getAbsolutePath}'.")
+      sys.error(s"Could not create output directory '${ f.getAbsolutePath }'.")
 
 
     prefix + className + ".class"

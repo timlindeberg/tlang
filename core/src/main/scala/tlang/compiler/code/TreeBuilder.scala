@@ -3,7 +3,7 @@ package tlang.compiler.code
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.imports.{ClassSymbolLocator, Imports}
+import tlang.compiler.imports.Imports
 import tlang.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
@@ -25,13 +25,6 @@ case class TreeBuilder() {
     decl.id
   }
 
-  def createMethodCall(className: String, methName: String, imports: Imports, args: List[ExprTree]): NormalAccess = {
-    val classSym = ClassSymbolLocator.findSymbol("java.lang.Math").get
-    val classId = ClassID("java.lang.Math").setSymbol(classSym)
-    val methodSymbol = classSym.lookupMethod(methName, args.map(_.getType), imports).get
-    createMethodCall(classId, methodSymbol, args)
-  }
-
   def createMethodCall(obj: ExprTree, classSymbol: ClassSymbol, methName: String, imports: Imports, args: List[ExprTree]): NormalAccess = {
     val methodSymbol = classSymbol.lookupMethod(methName, args.map(_.getType), imports).get
     createMethodCall(obj, methodSymbol, args)
@@ -51,7 +44,7 @@ case class TreeBuilder() {
   }
 
   private def createMethodSymbol(name: String, tpe: Type) =
-    new MethodSymbol(name, new ClassSymbol("", false), None, Set()).setType(tpe)
+    new MethodSymbol(name, new ClassSymbol(""), None, Set()).setType(tpe)
 
   private def createMethodId(methodSymbol: MethodSymbol): MethodID = MethodID(methodSymbol.name).setSymbol(methodSymbol)
 

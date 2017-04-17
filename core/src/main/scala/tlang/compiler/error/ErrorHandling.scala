@@ -1,6 +1,6 @@
 package tlang.compiler.error
 
-import tlang.compiler.Context
+import tlang.Context
 import tlang.utils.Positioned
 
 trait ErrorHandling {

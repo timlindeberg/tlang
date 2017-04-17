@@ -5,11 +5,11 @@ import java.nio.file.{InvalidPathException, Paths}
 
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
-import tlang.utils
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Boxes.{Box, Simple}
 import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
 import tlang.utils.formatting.{Boxes, Colors, Formatting}
+import tlang.{Constants, utils}
 
 import scala.collection.mutable
 import scala.util.parsing.json.JSON
@@ -78,7 +78,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
 
 
   val classPaths: Set[String] = {
-    val paths = flagArgs(ClassPath)
+    val paths = flagArgs(ClassPathFlag)
     paths.filter(!isValidPath(_)).foreach(FatalInvalidClassPath)
     paths.toSet
   }
@@ -103,13 +103,13 @@ case class Options(arguments: Array[String]) extends MainErrors {
 
       val file = new File(path)
       if (file.isDirectory) {
-        val tFiles = file.listFiles().filter(_.getName.endsWith(Main.FileEnding))
+        val tFiles = file.listFiles().filter(_.getName.endsWith(Constants.FileEnding))
         if (tFiles.isEmpty)
           FatalGivenDirectoryContainsNoTFiles(path)
 
         tFiles.toList
       } else {
-        if (!file.getName.endsWith(Main.FileEnding))
+        if (!file.getName.endsWith(Constants.FileEnding))
           FatalGivenFileIsNotTFile(path)
 
         List(file)

@@ -2,7 +2,7 @@ package tlang.repl
 
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
-import tlang.compiler.Context
+import tlang.Context
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
 import tlang.repl.input.InputHistory

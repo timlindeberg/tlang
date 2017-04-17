@@ -1,6 +1,7 @@
 package tlang.compiler
 package analyzer
 
+import tlang.Context
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -16,7 +17,7 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
   val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
   var methodUsage       : Map[MethodSymbol, Boolean] = Map()
 
-  val emptyClassSym = new ClassSymbol("", false)
+  val emptyClassSym = new ClassSymbol("")
   val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
   /**
@@ -352,7 +353,7 @@ class TypeChecker(override val ctx: Context,
           case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
               report(MethodOnWrongType(methSignature, objType.toString, app))
-            meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array", false), None, Set()).setType(Int))
+            meth.setSymbol(new MethodSymbol("Size", new ClassSymbol("Array"), None, Set()).setType(Int))
             Int
           case _                    => TError
         }
@@ -489,13 +490,13 @@ class TypeChecker(override val ctx: Context,
     val argList = List(arg1, arg2)
     typeCheckOperator(arg1, operator, argList)
       .orElse(typeCheckOperator(arg2, operator, argList))
-      .getOrElse(report(OverloadedOperatorNotFound(operator, argList, operator)))
+      .getOrElse(report(OperatorNotFound(operator, argList, operator)))
   }
 
   def tcUnaryOperator(expr: OperatorTree, arg: Type): Type = {
     val argList = List(arg)
     typeCheckOperator(arg, expr, argList)
-      .getOrElse(report(OverloadedOperatorNotFound(expr, argList, expr)))
+      .getOrElse(report(OperatorNotFound(expr, argList, expr)))
   }
 
   def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {

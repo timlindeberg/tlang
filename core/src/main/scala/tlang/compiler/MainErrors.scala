@@ -34,9 +34,6 @@ trait MainErrors {
   protected def FatalInvalidClassPath(classPath: String): Nothing =
     fatal(s"Invalid output class path: '$classPath'.")
 
-  protected def FatalCantFindTHome(tHome: String): Nothing =
-    fatal(s"$tHome environment variable is not set. It needs to point to the directory of the T standard library.")
-
   protected def FatalInvalidTHomeDirectory(path: String, tHome: String): Nothing =
     fatal(s"'$path' is not a valid $tHome directory.")
 
@@ -44,7 +41,7 @@ trait MainErrors {
     fatal(s"The given directory '$path' does not contain any T-files.")
 
   protected def FatalInvalidFlag(flag: String, alternatives: List[String]): Nothing =
-    fatal(s"'$flag' is not a valid flag.${ nameSuggestor(flag, alternatives) } Type --help to see what type of input is valid.")
+    fatal(s"'$flag' is not a valid flag.${ nameSuggestor(flag, alternatives) } Type --help to see a list of valid commands.")
 
   protected def FatalInvalidJsonArgument(flag: Flag, rest: String): Nothing =
     fatal(s"Input following JSON flag '${ flag.flag }' is not valid JSON: '$rest'.")

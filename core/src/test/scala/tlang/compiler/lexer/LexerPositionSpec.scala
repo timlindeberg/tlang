@@ -3,8 +3,9 @@ package tlang.compiler.lexer
 import java.io.File
 
 import org.scalatest.{FunSuite, Matchers}
+import tlang.Context
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.{Context, Pos, Tester}
+import tlang.compiler.{Pos, Tester}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 

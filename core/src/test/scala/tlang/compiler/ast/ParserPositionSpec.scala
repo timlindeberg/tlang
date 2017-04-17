@@ -3,9 +3,10 @@ package tlang.compiler.ast
 import java.io.File
 
 import org.scalatest.{FunSuite, Matchers}
+import tlang.Context
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexer
-import tlang.compiler.{Context, Pos, Tester}
+import tlang.compiler.{Pos, Tester}
 import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}

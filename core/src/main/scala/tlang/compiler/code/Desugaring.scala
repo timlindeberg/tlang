@@ -1,12 +1,13 @@
 package tlang.compiler.code
 
+import tlang.compiler.Pipeline
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.compiler.{Context, Main, Pipeline}
 import tlang.utils.Extensions._
+import tlang.{Constants, Context}
 
 import scala.collection.mutable.ListBuffer
 
@@ -127,7 +128,7 @@ class Desugarer(imports: Imports) {
     val extensionDecl = t.asInstanceOf[ExtensionDecl]
     val extensionClassSymbol = extensionDecl.getSymbol.asInstanceOf[ExtensionClassSymbol]
     val exName = extensionClassSymbol.name
-    val classSymbol = new ClassSymbol(exName, false)
+    val classSymbol = new ClassSymbol(exName)
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
@@ -163,7 +164,7 @@ class Desugarer(imports: Imports) {
         val newMethSym = new MethodSymbol(methSym.name, classSymbol, None, modifiers).setType(methSym)
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
-        newMethSym.annotations = Main.TExtensionAnnotation :: methSym.annotations
+        newMethSym.annotations = Constants.ExtensionAnnotation :: methSym.annotations
         val thisArg = Formal(extensionDecl.tpe, thisId)
 
         // Replace references to this with the this variable
@@ -198,7 +199,7 @@ class Desugarer(imports: Imports) {
       val methSym = meth.getSymbol
       val extSymbol = meth.getSymbol.classSymbol.asInstanceOf[ExtensionClassSymbol]
       val className = extSymbol.name
-      val classSym = new ClassSymbol(className, false)
+      val classSym = new ClassSymbol(className)
       val classId = ClassID(className).setSymbol(classSym)
       val treeCopy = new Trees.LazyCopier
       if (methSym.isStatic) {

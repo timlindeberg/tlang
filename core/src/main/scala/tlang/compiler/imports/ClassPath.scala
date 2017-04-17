@@ -1,0 +1,91 @@
+package tlang.compiler.imports
+
+import tlang.Constants
+
+import scala.collection.mutable.ListBuffer
+
+object ClassPath {
+
+  lazy val Default = ClassPath(System.getProperty("java.class.path").split(";").toSet + Constants.TDirectory)
+  val Empty = new ClassPath(Map(), Array(), Set())
+
+  def apply(): ClassPath = Empty
+  def apply(paths: Set[String]): ClassPath = {
+    val classPathParser = new ClassPathParser(paths)
+    val (pathToFile, classes) = classPathParser.parse()
+    new ClassPath(pathToFile, classes, paths)
+  }
+}
+
+case class ClassPath private(pathToFile: Map[String, ClassFile], classes: Array[String], paths: Set[String]) {
+
+  def +(path: String): ClassPath = this ++ ClassPath(Set(path))
+
+  def ++(paths: Set[String]): ClassPath = this ++ ClassPath(paths)
+
+  def ++(other: ClassPath): ClassPath = {
+    if (this.isEmpty) return other
+    if (other.isEmpty) return this
+
+    val allClasses = classes ++ other.classes
+    // Use insertion sort since it's very fast for almost sorted arrays
+    insertionSort(allClasses)
+    new ClassPath(pathToFile ++ other.pathToFile, allClasses, paths ++ other.paths)
+  }
+
+  def apply(className: String): Option[ClassFile] = pathToFile.get(ImportUtils.toPath(className))
+
+  def getClassesInPackage(packageName: String): List[String] = {
+    val name = ImportUtils.toPath(packageName)
+    var index = getStartPosition(name)
+    if (index == -1)
+      return Nil
+
+    val listBuff = ListBuffer[String]()
+    while (index < classes.length && classes(index).startsWith(name)) {
+      listBuff += ImportUtils.toTName(classes(index))
+      index += 1
+    }
+    listBuff.toList
+  }
+
+  def size: Int = paths.size
+  def isEmpty: Boolean = size == 0
+  def nonEmpty: Boolean = size != 0
+
+  private def getStartPosition(path: String): Int = {
+    var low = 0
+    var high = classes.length - 1
+
+    while (low <= high) {
+      val mid = (low + high) >>> 1
+      val midVal = classes(mid)
+
+      if (midVal < path)
+        low = mid + 1
+      else if (midVal > path)
+        high = mid - 1
+      else if (low != mid) // Equal but range is not fully scanned
+        high = mid // Set upper bound to current number and rescan
+    }
+
+    // low will point to first index that starts with 'path' if such an index exists in the list
+    if (classes(low).startsWith(path)) low else -1
+  }
+
+  private def insertionSort(array: Array[String]): Unit = {
+    var i = 0
+    while (i < array.length) {
+      var j = i
+      while (j > 0 && array(j) < array(j - 1)) {
+        val tmp = array(j)
+        array(j) = array(j - 1)
+        array(j - 1) = tmp
+
+        j -= 1
+      }
+      i += 1
+    }
+  }
+
+}

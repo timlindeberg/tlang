@@ -5,22 +5,24 @@ import java.io.File
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
-import tlang.compiler.imports.ClassSymbolLocator
+import tlang.compiler.imports.ClassPath
 import tlang.utils.Extensions._
 import tlang.utils.Source
 import tlang.utils.formatting.{FancyFormatting, SimpleFormatting}
+import tlang.{Constants, Context}
 
-import scala.concurrent._
+import scala.concurrent.duration.Duration
 import scala.util.matching.Regex
 
 object Tester {
 
-  val TestDirectory                    = "gen"
-  val Resources                        = "core/src/test/resources/"
-  val Timeout                          = duration.Duration(2, "sec")
+  val TestDirectory      : String      = "gen"
+  val Resources          : String      = "core/src/test/resources/"
+  val Timeout            : Duration    = Duration(2, "sec")
   val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
   val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
   val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
+  val PrintErrors        : Boolean     = sys.env.get("printerrors").contains("true")
   val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
@@ -28,22 +30,23 @@ object Tester {
   def getTestContext(file: Option[File], reporter: Option[Reporter] = None): Context = {
     val (files, outDir) = file match {
       case Some(f) =>
-        val mainName = f.getName.replaceAll("\\" + Main.FileEnding, "")
-        (Set(f), new File(s"$TestDirectory/$mainName/"))
+        val mainName = f.getName.replaceAll("\\" + Constants.FileEnding, "")
+        val outDir = new File(s"$TestDirectory/$mainName/")
+        outDir.mkdirs()
+        (Set(f), outDir)
       case None    => (Set[File](), new File("."))
     }
 
     val formatting = if (UseSimpleFormatting) SimpleFormatting else FancyFormatting
-    val ctx = Context(
+
+    Context(
       reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
       files = files,
       outDirs = Set(outDir),
-      classPaths = Set(outDir.getAbsolutePath),
+      classPath = ClassPath.Default,
       printCodeStages = PrintCodeStages,
       formatting = formatting
     )
-    ClassSymbolLocator.setClassPath(ctx.getClassPaths)
-    ctx
   }
 
 }
@@ -59,8 +62,6 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   def testFile(file: File): Unit
 
 
-  protected val PrintErrors: Boolean = sys.env.get("printerrors").contains("true")
-
   private val testPath = sys.env.get("testfile")
     .filter(_.nonEmpty)
     .map { f =>
@@ -69,7 +70,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
       if (file.isDirectory || file.exists()) {
         path
       } else {
-        val withEnding = path + Main.FileEnding
+        val withEnding = path + Constants.FileEnding
         if (new File(withEnding).exists())
           withEnding
         else
@@ -78,26 +79,21 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     }
     .getOrElse(Path)
 
-
-  before {
-    ClassSymbolLocator.clearCache()
-  }
-
-  testFiles(new File(testPath)).foreach { file =>
+  testFiles(new File(testPath)) foreach { file =>
     val name = file.getPath
       .replaceAll("\\\\", "/")
       .replaceAll(Path + "/", "")
-      .replaceAll("\\" + Main.FileEnding, "")
+      .replaceAll("\\" + Constants.FileEnding, "")
 
     val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)
     execute { testFile(file) }
   }
 
   private def testFiles(file: File): Array[File] = {
-    if (file.isFile && file.getName.endsWith(Main.FileEnding))
+    if (file.isFile && file.getName.endsWith(Constants.FileEnding))
       return Array(file)
 
-    file.listFiles.flatMap(testFiles)
+    file.listFiles flatMap testFiles
   }
 
   protected def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
@@ -128,7 +124,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
   private def shouldBeIgnored(file: File): Boolean = {
     val firstLine = using(io.Source.fromFile(file.getPath)) { _.getLines().take(1).toList.headOption }
     if (firstLine.isEmpty)
-      return true
+      return true // Ignore empty files
 
     IgnoreRegex.findFirstIn(firstLine.get).isDefined
   }

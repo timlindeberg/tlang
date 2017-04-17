@@ -1,35 +1,38 @@
 package tlang.utils
 
 import java.io._
-import java.lang.reflect.Method
+import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.{URL, URLClassLoader}
 
-import tlang.compiler.Context
+import tlang.Context
 import tlang.utils.Extensions._
 
 import scala.concurrent.duration.Duration
 
+
 case class ProgramExecutor(timeout: Option[Duration] = None) {
 
-  def apply(ctx: Context, classFile: File): String = {
-    apply(ctx.getClassPaths.toList, classFile)
-  }
-  
-  def apply(classPaths: List[String], classFile: File): String = {
+  def apply(ctx: Context, classFile: File): String = apply(ctx.classPath.paths, classFile)
+
+  def apply(classPaths: Set[String], classFile: File): String = {
     val mainName = classFile.getName.replaceAll("\\..*", "")
     apply(classPaths, mainName)
   }
 
-  def apply(classPaths: List[String], mainName: String): String = {
+  def apply(classPaths: Set[String], mainName: String): String = {
     val method = getMainMethod(classPaths, mainName)
     stdoutOutput {
       withTimeout(timeout.getOrElse(Duration(0, "sec"))) {
-        method.invoke(null, Array[String]())
+        try {
+          method.invoke(null, Array[String]())
+        } catch {
+          case e: InvocationTargetException => throw e.getCause
+        }
       }
     }
   }
 
-  private def getMainMethod(classPaths: List[String], mainName: String): Method = {
+  private def getMainMethod(classPaths: Set[String], mainName: String): Method = {
     val urls = classPaths.map(cp => new URL(s"file:$cp/")).toArray
 
     val classLoader = new URLClassLoader(urls)

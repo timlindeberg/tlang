@@ -34,51 +34,41 @@ object Symbols {
     def name: String
   }
 
-  class GlobalScope {
+  class GlobalScope(classSymbolLocator: ClassSymbolLocator) {
 
     val classes: mutable.Map[String, ClassSymbol] =
-      mutable.Map[String, ClassSymbol]() ++
-      Types.Primitives.map(p => p.name -> p.classSymbol).toMap ++
-      Map(String.name -> StringSymbol, Object.name -> ObjectSymbol)
+      mutable.Map() ++ Types.DefaultTypes.map(tpe => tpe.name -> tpe.classSymbol).toMap
 
     def lookupClass(imports: Imports, name: String): Option[ClassSymbol] = {
       val fullName = imports.getFullName(name)
-      classes.getOrElseMaybeUpdate(fullName, ClassSymbolLocator.findSymbol(fullName))
+      classes.getOrElseMaybeUpdate(fullName) { classSymbolLocator.findSymbol(fullName) }
     }
 
     def classNames: List[String] = classes.keys.toList
 
   }
 
-  class ClassSymbol(override val name: String,
-    var isAbstract: Boolean,
-    var isComplete: Boolean = true) extends Symbol {
+  class ClassSymbol(override val name: String) extends Symbol {
 
-    override def getType = TObject(this)
-    override def setType(tpe: Type): Nothing = sys.error("Set type on ClassSymbol")
+    protected var _parents   : List[ClassSymbol]        = Nil
+    protected var _methods   : List[MethodSymbol]       = Nil
+    protected var _operators : List[OperatorSymbol]     = Nil
+    protected var _fields    : Map[String, FieldSymbol] = Map()
+    protected var _isAbstract: Boolean                  = false
 
-    var parents: List[ClassSymbol] = Nil
+    def parents: List[ClassSymbol] = _parents
+    def methods: List[MethodSymbol] = _methods
+    def operators: List[OperatorSymbol] = _operators
+    def fields: Map[String, FieldSymbol] = _fields
+    def isAbstract: Boolean = _isAbstract
+    def isAbstract_=(isAbstract: Boolean): Unit = _isAbstract = isAbstract
 
-    private var _methods: List[MethodSymbol] = Nil
-    def methods: List[MethodSymbol] = {
-      completeClassSymbol()
-      _methods
-    }
-    def methods_=(l: List[MethodSymbol]): Unit = _methods = l
+    def addOperator(operator: OperatorSymbol): Unit = _operators ::= operator
+    def addMethod(method: MethodSymbol): Unit = _methods ::= method
+    def addField(field: FieldSymbol): Unit = _fields += (field.name -> field)
+    def addParent(parent: ClassSymbol): Unit = _parents ::= parent
 
-    private var _operators: List[OperatorSymbol] = Nil
-    def operators: List[OperatorSymbol] = {
-      completeClassSymbol()
-      _operators
-    }
-    def operators_=(l: List[OperatorSymbol]): Unit = _operators = l
-
-    private var _fields = Map[String, FieldSymbol]()
-    def fields: Map[String, FieldSymbol] = {
-      completeClassSymbol()
-      _fields
-    }
-    def fields_=(m: Map[String, FieldSymbol]): Unit = _fields = m
+    def parents_=(parents: List[ClassSymbol]): Unit = _parents = parents
 
     def implicitConstructors: List[MethodSymbol] = methods.filter { method =>
       method.name == "new" &&
@@ -86,17 +76,9 @@ object Symbols {
       method.argList.size == 1
     }
 
-    def addOperator(operatorSymbol: OperatorSymbol): Unit = operators ::= operatorSymbol
-
-    def addMethod(methodSymbol: MethodSymbol): Unit = methods ::= methodSymbol
-
-    def addField(varSymbol: FieldSymbol): Unit = fields += (varSymbol.name -> varSymbol)
-
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
       findMethod(abstractMeth.name, abstractMeth.argTypes, exactTypes = true)
-        .filter { concreteMeth =>
-          !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType)
-        }
+        .filter(concreteMeth => !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType))
         .orElse(parents.findDefined(_.implementingMethod(abstractMeth)))
 
     def overriddenMethod(concreteMeth: MethodSymbol): Option[MethodSymbol] =
@@ -151,12 +133,8 @@ object Symbols {
     }
 
     override def toString: String = name
-
-    protected def completeClassSymbol(): Unit =
-      if (!isComplete) {
-        ClassSymbolLocator.fillClassSymbol(this)
-        isComplete = true
-      }
+    override def getType = TObject(this)
+    override def setType(tpe: Type): Nothing = sys.error("Cannot set type on ClassSymbol")
 
     protected def findMethodPrioritiseExactMatch[T <: MethodSymbol](methods: List[T], name: String, args: List[Type], exactTypes: Boolean): Option[T] =
       methods.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true))
@@ -195,7 +173,7 @@ object Symbols {
 
   }
 
-  class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name, false, true) {
+  class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name) {
     var extendedType: Option[Type] = None
 
     def setExtendedType(tpe: Type): Unit = extendedType = Some(tpe)
@@ -220,7 +198,8 @@ object Symbols {
 
   }
 
-  class MethodSymbol(val name: String,
+  class MethodSymbol(
+    val name: String,
     val classSymbol: ClassSymbol,
     val stat: Option[StatTree],
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
@@ -259,12 +238,11 @@ object Symbols {
     }
 
     override def toString: String = signature
-
-
   }
 
 
-  class OperatorSymbol(val operatorType: OperatorTree,
+  class OperatorSymbol(
+    val operatorType: OperatorTree,
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]

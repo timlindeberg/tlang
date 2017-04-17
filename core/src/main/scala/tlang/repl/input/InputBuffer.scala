@@ -25,17 +25,15 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   val mainCursor = Cursor()
   val mark       = Cursor()
 
+  reset(cord)
+
   def getMarkedPosition: Position = {
     val cursors = List(mainCursor, mark).sorted
     Position(cursors(0).y + 1, cursors(0).x + 1, cursors(1).y + 1, cursors(1).x + 1)
   }
 
   def height: Int = linePositions.length
-
   def currentCord: Cord = history.current.cord
-
-  reset(cord)
-
   def lines: Int = linePositions.size
 
   def ++=(str: String): Unit = {
@@ -240,7 +238,6 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
       // Filter linepositions in the removed area but don't remove the initial line
       val removedRange = math.max(1, start) until end
-
       linePositions = linePositions.filter(pos => !(pos - 1 in removedRange))
 
       val (before, _) = text.split(start)
@@ -291,7 +288,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     var i = 0
     while (it.hasNext) {
       val c = it.next()
-      if (currentIsWhiteSpace != c.isWhitespace) return i
+      if (currentIsWhiteSpace != c.isWhitespace)
+        return i
       i += 1
     }
     -1

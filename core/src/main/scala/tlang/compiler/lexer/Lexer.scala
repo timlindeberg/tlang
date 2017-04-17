@@ -3,6 +3,7 @@ package lexer
 
 import java.math.BigInteger
 
+import tlang.Context
 import tlang.compiler.lexer.Tokens._
 import tlang.utils.Source
 

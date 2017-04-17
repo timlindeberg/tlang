@@ -1,10 +1,10 @@
 package tlang.compiler
 package analyzer
 
-import tlang.compiler.Main._
+import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.error.ErrorMessage
-import tlang.compiler.imports.ClassSymbolLocator._
+import tlang.compiler.imports.{ClassPath, ClassSymbolLocator}
 
 object Types {
 
@@ -27,14 +27,14 @@ object Types {
     def getType: Type = _tpe
   }
 
-  val IntSymbol    = new ClassSymbol(TInt, isAbstract = false)
-  val LongSymbol   = new ClassSymbol(TLong, isAbstract = false)
-  val FloatSymbol  = new ClassSymbol(TFloat, isAbstract = false)
-  val DoubleSymbol = new ClassSymbol(TDouble, isAbstract = false)
-  val CharSymbol   = new ClassSymbol(TChar, isAbstract = false)
-  val BoolSymbol   = new ClassSymbol(TBool, isAbstract = false)
-  val ObjectSymbol = new ClassSymbol(JavaObject, isAbstract = false)
-  val StringSymbol = new ClassSymbol(JavaString, isAbstract = false)
+  val IntSymbol    = new ClassSymbol(TInt)
+  val LongSymbol   = new ClassSymbol(TLong)
+  val FloatSymbol  = new ClassSymbol(TFloat)
+  val DoubleSymbol = new ClassSymbol(TDouble)
+  val CharSymbol   = new ClassSymbol(TChar)
+  val BoolSymbol   = new ClassSymbol(TBool)
+  val ObjectSymbol = new ClassSymbol(JavaObject)
+  val StringSymbol = new ClassSymbol(JavaString)
 
   val Int    = TObject(IntSymbol)
   val Long   = TObject(LongSymbol)
@@ -46,16 +46,16 @@ object Types {
   val String = TObject(StringSymbol)
   val Array  = TArray(Object)
 
-  val Primitives: List[TObject] = List(Int, Long, Float, Double, Char, Bool)
+  val Primitives  : List[TObject] = List(Int, Long, Float, Double, Char, Bool)
+  val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
 
-  fillClassSymbol(IntSymbol)
-  fillClassSymbol(LongSymbol)
-  fillClassSymbol(FloatSymbol)
-  fillClassSymbol(DoubleSymbol)
-  fillClassSymbol(CharSymbol)
-  fillClassSymbol(BoolSymbol)
-  fillClassSymbol(ObjectSymbol)
-  fillClassSymbol(StringSymbol)
+  private def initialize(symbols: ClassSymbol*): Unit = {
+    val classSymbolLocator = ClassSymbolLocator(ClassPath.Default)
+    for (sym <- symbols)
+      classSymbolLocator fillClassSymbol sym
+  }
+
+  initialize(IntSymbol, LongSymbol, FloatSymbol, DoubleSymbol, CharSymbol, BoolSymbol, ObjectSymbol, StringSymbol)
 
   sealed abstract class Type {
     def isNullable: Boolean
@@ -160,7 +160,7 @@ object Types {
     override def isSubTypeOf(tpe: Type): Boolean = tpe match {
       case TObject(c) =>
         if (classSymbol.name == c.name) true
-        else classSymbol.parents exists {_.getType.isSubTypeOf(tpe)}
+        else classSymbol.parents exists { _.getType.isSubTypeOf(tpe) }
       case _          => false
     }
 

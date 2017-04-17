@@ -2,6 +2,7 @@ package tlang.compiler
 
 import java.io.{File, FileNotFoundException}
 
+import tlang.Constants
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
 import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees.CompilationUnit
@@ -31,7 +32,7 @@ trait ValidTester extends Tester {
 
       val compilation = Desugaring andThen CodeGeneration
       compilation.run(ctx)(cus)
-      val res = programExecutor(ctx, file)
+      val res = programExecutor(ctx.outDirs.map(_.getAbsolutePath) + Constants.TDirectory, file)
       val resLines = lines(res)
       val sol = parseSolutions(file)
       assertCorrect(resLines, sol)

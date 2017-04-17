@@ -58,6 +58,12 @@ object Extensions {
     (res, (t1 - t0) / 1000000000.0)
   }
 
+  def benchmark[T](block: => T): (List[Double], Double) = {
+    val iterations = 10
+    val times = (0 until iterations).map { _ => measureTime(block)._2 }.toList
+    (times, times.sum / iterations)
+  }
+
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
     def ifDefined(f: T => Unit): Unit = if (o.isDefined) f(o.get)
   }
@@ -133,6 +139,7 @@ object Extensions {
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
     def use(f: T => Unit): T = { f(t); t }
     def print: T = { println(t); t }
+    def print(prefix: String): T = { println(prefix + ": " + t); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
     def in(range: Range): Boolean = range.contains(t)
   }
@@ -148,11 +155,16 @@ object Extensions {
       }
       None
     }
+    def partitionInstance[A <: T : ClassTag]: (Collection[A], Collection[T]) = {
+      val (a, b) = collection.partition(classTag[A].runtimeClass.isInstance(_))
+      (a.asInstanceOf[Collection[A]], b.asInstanceOf[Collection[T]])
+    }
+
     def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]
   }
 
   implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {
-    def getOrElseMaybeUpdate(key: K, op: => Option[V]): Option[V] =
+    def getOrElseMaybeUpdate(key: K)(op: => Option[V]): Option[V] =
       m.get(key) match {
         case Some(v) => Some(v)
         case None    => op match {

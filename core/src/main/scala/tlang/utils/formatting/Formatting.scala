@@ -2,7 +2,7 @@ package tlang.utils.formatting
 
 import java.io.File
 
-import tlang.compiler.Main
+import tlang.Constants
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
@@ -174,7 +174,7 @@ case class Formatting(
 
   def formatFileName(file: File): String = formatFileName(file.getName)
 
-  def formatFileName(name: String): String = Bold(Magenta(name) + Main.FileEnding)
+  def formatFileName(name: String): String = Bold(Magenta(name) + Constants.FileEnding)
 
   def makeList(items: Traversable[String], indent: String = "  "): String = {
     items.map(item => s"$indent$listMarker $item").mkString("\n")

@@ -9,7 +9,7 @@ import tlang.compiler.imports.Imports
 
 class OperatorTypeSpec extends FunSuite with Matchers {
 
-  private val ClassSymbol = new ClassSymbol("obj", false)
+  private val ClassSymbol = new ClassSymbol("obj")
   private val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val TestContext = Tester.testContext
   private val TestImports = Imports(TestContext)

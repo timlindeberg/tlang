@@ -5,20 +5,20 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
+import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
+import tlang.{Constants, Context}
 
 object NameAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
-  var globalScope: GlobalScope = _
-
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    globalScope = new GlobalScope
+    val globalScope = new GlobalScope(ClassSymbolLocator(ctx.classPath))
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
     val analyzers = cus map { cu =>
-      val nameAnalyzer = new NameAnalyser(ctx, cu)
+      val nameAnalyzer = new NameAnalyser(ctx, cu, globalScope)
       nameAnalyzer.addSymbols()
       nameAnalyzer
     }
@@ -36,15 +36,12 @@ object NameAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
 }
 
-class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameAnalysisErrors {
-
-  import NameAnalysis._
+class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalScope: GlobalScope) extends NameAnalysisErrors {
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
   private var variableUsage        = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
-
 
   def addSymbols(): Unit = cu.classes foreach addSymbols
 
@@ -83,7 +80,6 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
   def checkValidParenting(): Unit =
     cu.classes.foreach { classDecl =>
-
       val nonTraits = classDecl.parents.filter(!_.getSymbol.isAbstract)
       if (nonTraits.size > 1) {
         report(ExtendMultipleClasses(nonTraits(1)))
@@ -110,11 +106,12 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
         val id = clazz.id
         val fullName = (cu.pack.address :+ id.name).mkString("::")
 
-        if (fullName in Main.Primitives) {
+        if (fullName in Constants.Primitives) {
           globalScope.classes(fullName)
         } else {
           ensureClassNotDefined(id)
-          val newSymbol = new ClassSymbol(fullName, classDecl.isAbstract)
+          val newSymbol = new ClassSymbol(fullName)
+          newSymbol.isAbstract = classDecl.isAbstract
           id.setSymbol(newSymbol)
           globalScope.classes += (fullName -> newSymbol)
           newSymbol
@@ -165,7 +162,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
         if (modifiers.contains(Implicit()))
-          methSym.annotations = Main.TImplicitConstructorAnnotation :: Nil
+          methSym.annotations = Constants.ImplicitConstructorAnnotation :: Nil
         methSym
       case opDecl@OperatorDecl(modifiers, operatorType, _, _, stat) =>
         if (stat.isEmpty)
@@ -409,10 +406,11 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
                           case Some(classSymbol) => classSymbol
                           case None              =>
                             val alternatives = variableAlternatives(localVars) :::
-                                               globalScope.classNames ::: Primitives.map(_.name)
+                                               globalScope.classNames :::
+                                               Primitives.map(_.name)
 
                             report(CantResolveSymbol(name, alternatives, id))
-                            new ClassSymbol("", false)
+                            new ClassSymbol("")
                         }
                     }
                     acc.obj = ClassID(name).setPos(id).setSymbol(sym)
@@ -587,8 +585,10 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
 
   private def setParentSymbol(classDecl: ClassDeclTree): Unit = {
     val parents = classDecl.parents
+    val classSymbol = classDecl.getSymbol
+
     if (parents.isEmpty) {
-      classDecl.getSymbol.parents ::= ObjectSymbol
+      classSymbol.addParent(ObjectSymbol)
       return
     }
 
@@ -599,6 +599,6 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit) extends NameA
       }
     }
 
-    classDecl.getSymbol.parents = classDecl.parents.map(_.getSymbol)
+    classSymbol.parents = classDecl.parents.map(_.getSymbol)
   }
 }

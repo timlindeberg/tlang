@@ -117,10 +117,8 @@ case class StackTrace(
   def header: String = {
     val split1 = signature.split("\\.")
     val className = split1(0)
-    val split2 = split1(1).split(":")
-    val methName = split2(0)
-    val sig = split2(1)
-    Magenta(className) + "." + Bold(Magenta(methName)) + ":" + sig
+    val rest = split1(1)
+    Green(className) + "." + Bold(Magenta(rest))
   }
 
 }
