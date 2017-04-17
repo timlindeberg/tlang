@@ -1,5 +1,5 @@
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.1",
   organization := "com.tcompiler",
   version := "1.0",
   javacOptions ++= Seq("-encoding", "UTF-8")
@@ -20,7 +20,7 @@ lazy val metaMacroSettings: Seq[Def.Setting[_]] = Seq(
   // A dependency on macro paradise 3.x is required to both write and expand
   // new-style macros.  This is similar to how it works for old-style macro
   // annotations and a dependency on macro paradise 2.x.
-  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-beta4" cross CrossVersion.full),
+  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M8" cross CrossVersion.full),
   scalacOptions += "-Xplugin-require:macroparadise",
   scalacOptions += "-language:experimental.macros",
   // temporary workaround for https://github.com/scalameta/paradise/issues/10
@@ -34,7 +34,7 @@ lazy val macros = project
     commonSettings,
     metaMacroSettings,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "1.4.0",
+      "org.scalameta" %% "scalameta" % "1.7.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
