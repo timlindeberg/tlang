@@ -41,9 +41,16 @@ case class ClassPath private(pathToFile: Map[String, ClassFile], classes: Array[
     if (index == -1)
       return Nil
 
+    val packageLevel = name.count(_ == '/')
+
     val listBuff = ListBuffer[String]()
     while (index < classes.length && classes(index).startsWith(name)) {
-      listBuff += ImportUtils.toTName(classes(index))
+      val clazz = classes(index)
+
+      // Check if the class belongs to the same package or if it's part of a subpackage
+      val clazzPackageLevel = clazz.count(_ == '/') - 1
+      if (clazzPackageLevel == packageLevel)
+        listBuff += ImportUtils.toTName(clazz)
       index += 1
     }
     listBuff.toList

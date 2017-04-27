@@ -226,10 +226,8 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   }
 
   private def extractImports(imports: Imports): List[String] = {
-    imports ++= imports
-    imports.imports map { imp =>
-      Bold("Imported ") + syntaxHighlighter(imp.name)
-    }
+    this.imports ++= imports
+    imports.imports map { imp => Bold("Imported ") + syntaxHighlighter(imp.name) }
   }
 
   private def extractStatements(stat: Option[StatTree]): List[String] = {

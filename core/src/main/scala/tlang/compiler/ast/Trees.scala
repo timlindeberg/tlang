@@ -120,7 +120,12 @@ object Trees {
 
   }
 
-  case class RegularImport(address: List[String]) extends Import
+  case object RegularImport {
+    def apply(fullName: String) = new RegularImport(fullName)
+  }
+  case class RegularImport(address: List[String]) extends Import {
+    def this(fullName: String) = this(fullName.split("::").toList)
+  }
   case class WildCardImport(address: List[String]) extends Import
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 

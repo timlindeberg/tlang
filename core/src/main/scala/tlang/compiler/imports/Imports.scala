@@ -19,7 +19,8 @@ case class Imports(ctx: Context,
 
   private val shortToFull        = mutable.Map[String, String]()
   private val fullToShort        = mutable.Map[String, String]()
-  private val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
+  private val classPath          = ctx.classPath
+  private val classSymbolLocator = ClassSymbolLocator(classPath)
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
@@ -102,7 +103,8 @@ case class Imports(ctx: Context,
           case Some(e) => addExtensionClass(e)
           case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
         }
-      case _: WildCardImport                => // TODO: Support wild card imports.
+      case wildCardImport: WildCardImport   =>
+        classPath.getClassesInPackage(wildCardImport.name) foreach { name => this += RegularImport(name) }
     }
     this
   }
