@@ -147,7 +147,7 @@ case class Formatting(
       }.mkString
 
     sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
-    sb.toString.print
+    sb.toString
   }
 
   def makeBoxWithColumn(header: String, block: Traversable[(String, String)], endOfBlock: Boolean = true): String = {

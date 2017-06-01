@@ -36,7 +36,6 @@ object Main {
     }
 
     val tempDir = Files.createTempDirectory("repl").toFile
-    println("Temp directory: " + tempDir.getAbsolutePath)
     tempDir.deleteOnExit()
     val context = createContext(options, tempDir)
 

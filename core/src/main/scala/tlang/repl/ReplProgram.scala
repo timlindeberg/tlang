@@ -81,12 +81,8 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   override def receive: Receive = {
     case Warmup           => compileAndExecute(WarmupProgram)
-    case Execute(command) =>
-      println("Executing command: " + command.trim)
-      execute(command)
-    case StopExecution    =>
-      println("Stopping execution")
-      cancelExecution()
+    case Execute(command) => execute(command)
+    case StopExecution    => cancelExecution()
     case PrettyPrint      => prettyPrint()
   }
 
@@ -98,7 +94,6 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
       val renderMessage = res match {
         case Success(res) => Renderer.DrawSuccess(res, truncate = true)
         case Failure(e)   =>
-          println("Failed execution with exception: " + e)
           e match {
             case e: CompilationException      => Renderer.DrawCompileError(e.messages.getErrors)
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
@@ -125,17 +120,12 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
     val CU = generateCompilationUnit()
 
-    println("CU:\n")
-    CU.prettyPrint
-
     val allCUs = frontEnd.run(ctx)(CU :: Nil)
 
     val replCU = allCUs.find { _.classes.exists(_.tpe == ReplClassID) }.get
     val rest = allCUs.remove(replCU)
 
     val transformed: CompilationUnit = newStatementTransformer(replCU)
-    println("Transformed:\n")
-    transformed.prettyPrint
     compile.run(ctx)(transformed :: rest)
 
     val res = programExecutor(ctx, ClassFile)

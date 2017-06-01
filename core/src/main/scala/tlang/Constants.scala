@@ -1,8 +1,6 @@
 package tlang
 
-import tlang.compiler.MainErrors
-
-object Constants extends MainErrors {
+object Constants {
 
   val FileEnding                    = ".t"
   val VersionNumber                 = "0.0.1"
@@ -26,14 +24,10 @@ object Constants extends MainErrors {
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
-  lazy val TDirectory: String = {
-    if (!sys.env.contains(THome))
-      FatalCantFindTHome(THome)
-    sys.env(THome)
-  }
+  lazy val TDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
 
-  protected def FatalCantFindTHome(tHome: String): Nothing = {
-    println(s"$tHome environment variable is not set. It needs to point to the directory of the T standard library.")
+  private def FatalCantFindTHome: Nothing = {
+    println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")
     sys.exit(1)
   }
 

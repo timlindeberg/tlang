@@ -52,15 +52,12 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
   override def receive: Receive = {
     case SetState(state)         =>
-      println(s"Got message: SetState($state) from $sender")
       this.state = state
     case StartRepl               =>
-      println(s"Got message: StartRepl from $sender")
       replProgram ! Warmup
       renderer ! Renderer.StartRepl
       awaitInput()
     case StopRepl                =>
-      println(s"Got message: StopRepl from $sender")
       renderer ! Renderer.StopRepl
       terminal.close()
       inputHistory.saveToFile()
@@ -73,17 +70,12 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
     Future { terminal.readInput() } onSuccess {
       case key: KeyStroke if key.getKeyType == KeyType.EOF => self ! StopRepl
       case keyStroke: KeyStroke                            =>
-        println(s"Got input: $keyStroke")
-
-        val updateRenderer = Commands.find(_.unapply(keyStroke)) match {
+        val shouldUpdateRenderer = Commands.find(_.unapply(keyStroke)) match {
           case Some(command) => command(keyStroke)
           case None          => false
         }
 
-        println(inputHistory.current.debugString)
-        println("Line: \"" + inputHistory.current.currentLine + "\"")
-        if (updateRenderer) {
-
+        if (shouldUpdateRenderer) {
           if (!keyStroke.isShiftDown)
             currentInput.setMark()
 
@@ -149,9 +141,10 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.isCtrlDown && keyStroke.getCharacter == 'z'
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.isCtrlDown &&
+        keyStroke.getCharacter == 'z'
 
       override def apply(keyStroke: KeyStroke): Boolean = currentInput.undo()
     }
@@ -160,9 +153,11 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.isCtrlDown && keyStroke.isAltDown && keyStroke.getCharacter == 'z'
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.isCtrlDown &&
+        keyStroke.isAltDown &&
+        keyStroke.getCharacter == 'z'
 
       override def apply(keyStroke: KeyStroke): Boolean = currentInput.redo()
     }
@@ -171,12 +166,12 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.Backspace
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getKeyType == KeyType.Backspace
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.removeToLeftWord() else currentInput.remove()
+        if (largeMovement(keyStroke)) currentInput.removeToLeftWord() else currentInput.removeOne()
         true
       }
     }
@@ -185,12 +180,13 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.ArrowLeft
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getKeyType == KeyType.ArrowLeft
+
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.goToLeftWord() else currentInput.moveLeft(1)
+        if (largeMovement(keyStroke)) currentInput.goToLeftWord() else currentInput.moveCursorLeft(1)
         true
       }
 
@@ -200,12 +196,13 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.ArrowRight
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getKeyType == KeyType.ArrowRight
+
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.goToRightWord() else currentInput.moveRight(1)
+        if (largeMovement(keyStroke)) currentInput.goToRightWord() else currentInput.moveCursorRight(1)
         true
       }
 
@@ -215,12 +212,12 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.ArrowUp
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getKeyType == KeyType.ArrowUp
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!currentInput.up())
+        if (!currentInput.moveCursorUp())
           inputHistory.goToPrevious()
         true
       }
@@ -231,12 +228,12 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 1
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getKeyType == KeyType.ArrowDown
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getKeyType == KeyType.ArrowDown
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!currentInput.down())
+        if (!currentInput.moveCursorDown())
           inputHistory.goToNext()
         true
       }
@@ -252,6 +249,7 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
         keyStroke.isCtrlDown &&
         keyStroke.isAltDown &&
         keyStroke.getCharacter == 'c'
+
       override def apply(keyStroke: KeyStroke): Boolean = {
         currentInput.copy()
         false
@@ -295,9 +293,10 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 2
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        keyStroke.isCtrlDown && keyStroke.getCharacter == 'c'
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        keyStroke.isCtrlDown &&
+        keyStroke.getCharacter == 'c'
+
       override def apply(keyStroke: KeyStroke): Boolean = {
         state match {
           case AwaitingExecution =>
@@ -313,9 +312,10 @@ class Repl(ctx: Context, terminal: ReplTerminal, inputHistory: InputHistory) ext
 
       override val order = 3
 
-      override def unapply(keyStroke: KeyStroke): Boolean = {
-        state == Normal && keyStroke.getCharacter != null
-      }
+      override def unapply(keyStroke: KeyStroke): Boolean =
+        state == Normal &&
+        keyStroke.getCharacter != null
+
       override def apply(keyStroke: KeyStroke): Boolean = {
         currentInput += keyStroke.getCharacter
         true

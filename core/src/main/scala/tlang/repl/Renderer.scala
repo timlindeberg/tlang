@@ -36,7 +36,6 @@ class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTermin
 
   override def receive: Receive = {
     case msg: RendererMessage =>
-      println(s"Got message: $msg from $sender")
       msg match {
         case StartRepl           =>
           drawWelcomeBox()

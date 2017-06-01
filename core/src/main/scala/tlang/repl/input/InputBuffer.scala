@@ -53,11 +53,12 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
         val numSpaces = tabSize - (mainCursor.x % tabSize)
         addChars(" " * numSpaces)
       case '\n'                                        =>
-        var indent = " " * line.iterator.indexWhere(!_.isWhitespace)
+        val firstNonWhitespace = line.iterator.indexWhere(!_.isWhitespace)
+        var indent = " " * (if (firstNonWhitespace == -1) line.length else firstNonWhitespace)
         if (line.nonEmpty && line(line.length - 1) == '{')
           indent += " " * tabSize
 
-        addChars("\n" + indent)
+        addChars('\n' + indent)
       case '}' if line.iterator.forall(_.isWhitespace) =>
         val trimmed = (0 until tabSize).foldLeft(currentCord) { case (current, _) => _remove(current) }
         addChar('}', trimmed)
@@ -65,12 +66,11 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
         addChar(char)
     }
     history += InputState(newCord, linePositions, mainCursor.position)
-
   }
 
-  def remove(): Unit = {
-    val newValue = _remove()
-    history += InputState(newValue, linePositions, mainCursor.position)
+  def removeOne(): Unit = {
+    val newCord = _remove()
+    history += InputState(newCord, linePositions, mainCursor.position)
   }
 
   def paste(): Unit = {
@@ -119,21 +119,21 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   def goToLeftWord(): Unit = setPos(mainCursor, leftPosition)
   def goToRightWord(): Unit = setPos(mainCursor, rightPosition)
 
-  def moveLeft(count: Int): Unit = {
+  def moveCursorLeft(steps: Int): Unit = {
     upDownX = 0
 
-    val position = math.max(mainCursor.position - count, 0)
+    val position = math.max(mainCursor.position - steps, 0)
     setPos(mainCursor, position)
   }
 
-  def moveRight(count: Int): Unit = {
+  def moveCursorRight(steps: Int): Unit = {
     upDownX = 0
 
-    val position = math.min(mainCursor.position + count, history.current.cord.size)
+    val position = math.min(mainCursor.position + steps, history.current.cord.size)
     setPos(mainCursor, position)
   }
 
-  def up(): Boolean = {
+  def moveCursorUp(): Boolean = {
     val currentLine = lineIndex
     if (currentLine == linePositions.length - 1)
       return false
@@ -147,7 +147,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     true
   }
 
-  def down(): Boolean = {
+  def moveCursorDown(): Boolean = {
     val currentLine = lineIndex
     if (currentLine == 0)
       return false

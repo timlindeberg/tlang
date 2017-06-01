@@ -28,10 +28,9 @@ class ParserPositionSpec extends FunSuite with Matchers {
     val clazz = classTag[T].runtimeClass
     val className = clazz.getSimpleName
     test(className) {
-      val className = clazz.getSimpleName
       val trees = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
-        .filter { t => new Pos(t) != NoPos }
+        .filter { t => Pos(t) != NoPos }
 
       trees.zip(positions) foreach { case (tree, expectedPos) =>
         val pos = new Pos(tree)
@@ -205,7 +204,7 @@ class ParserPositionSpec extends FunSuite with Matchers {
     Pos(62, 7, 62, 8),
     Pos(67, 11, 67, 12)
   )
-  // Skipping some VariableID since there are so many
+  // Skipping some VariableIDs since there are so many
   testPositions[VariableID](
     Pos(9, 9, 9, 10),
     Pos(10, 9, 10, 10),
