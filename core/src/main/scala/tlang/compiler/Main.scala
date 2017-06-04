@@ -84,7 +84,7 @@ object Main extends MainErrors {
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
     try {
       val sources = ctx.files.toList.map(FileSource(_))
-      FrontEnd.run(ctx)(sources)
+      FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
         print(e.messages.formattedWarnings)

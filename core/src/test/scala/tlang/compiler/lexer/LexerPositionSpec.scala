@@ -16,7 +16,7 @@ class LexerPositionSpec extends FunSuite with Matchers {
 
   val Tokens: List[Token] = {
     val file = FileSource(new File(TestFile)) :: Nil
-    Lexer.run(TestContext)(file).head
+    Lexer.execute(TestContext)(file).head
   }
 
   def testPositions(predicate: Token => Boolean, positions: (String, Pos)*): Unit = {
@@ -36,7 +36,7 @@ class LexerPositionSpec extends FunSuite with Matchers {
 
   // @formatter:off
 
-  /*-------------------------------- Basic tokens --------------------------------*/
+  /*------------------------------ Basic tokens -----------------------------*/
   testPositions(_.kind.str.length > 0,
     ";"         -> Pos(1, 1, 1, 2),
     "."         -> Pos(1, 3, 1, 4),
@@ -122,7 +122,7 @@ class LexerPositionSpec extends FunSuite with Matchers {
     "null"      -> Pos(31, 1, 31, 5)
   )
 
-  /*-------------------------------- Identifiers --------------------------------*/
+  /*------------------------------ Identifiers ------------------------------*/
   testPositions(_.kind == IDKIND,
     "identifier" -> Pos(33, 1, 33, 11),
     "a"          -> Pos(33, 12, 33, 13),
@@ -131,7 +131,7 @@ class LexerPositionSpec extends FunSuite with Matchers {
     "id"         -> Pos(33, 28, 33, 30)
   )
 
-  /*-------------------------------- Number literals --------------------------------*/
+  /*---------------------------- Number literals ----------------------------*/
   testPositions(_.kind in List(INTLITKIND, LONGLITKIND, FLOATLITKIND, DOUBLELITKIND),
     "0"           -> Pos(38, 6, 38, 7),
     "123456789"   -> Pos(39, 6, 39, 15),
@@ -150,14 +150,14 @@ class LexerPositionSpec extends FunSuite with Matchers {
     "0.1E123F"    -> Pos(52, 6, 52, 14)
   )
 
-  /*-------------------------------- Char literals --------------------------------*/
+  /*----------------------------- Char literals -----------------------------*/
   testPositions(_.kind == CHARLITKIND,
     "'a'"       -> Pos(55, 6, 55, 9),
     "'\\n'"     -> Pos(56, 6, 56, 10),
     "'\\uabcd'" -> Pos(57, 6, 57, 14)
   )
 
-  /*-------------------------------- String literals ------------------------------*/
+  /*---------------------------- String literals ----------------------------*/
   testPositions(_.kind == STRLITKIND,
     "\"\""                            -> Pos(59, 6, 59, 8),
     "\"string\""                      -> Pos(60, 6, 60, 14),
@@ -165,15 +165,28 @@ class LexerPositionSpec extends FunSuite with Matchers {
     "eine kleine multilinen stringen" -> Pos(62, 6, 65, 7)
   )
 
-    /*---------------------------- Comment literals ------------------------------*/
+  /*---------------------------- Comment literals ---------------------------*/
   testPositions(_.kind == COMMENTLITKIND,
-    "// tabs here"          -> Pos(27, 21, 27, 33),
     "/**/"                  -> Pos(29, 1, 29, 5),
     "/*  */"                -> Pos(29, 12, 29, 18),
     "/******/"              -> Pos(29, 28, 29, 36),
     "/** */"                -> Pos(29, 40, 29, 46),
     "// null"               -> Pos(30, 1, 30, 8),
     "/* null  \\n null  */" -> Pos(31, 6, 32, 22)
+  )
+
+  /*-------------------------------- Indents --------------------------------*/
+  testPositions(_.kind == INDENT,
+    "a->b"     -> Pos(68, 1, 68, 2),
+    "b->->c"   -> Pos(69, 1, 69, 3),
+    "c->->->d" -> Pos(70, 1, 70, 4)
+  )
+
+  /*-------------------------------- Dedents --------------------------------*/
+  testPositions(_.kind == DEDENT,
+    "d<-<-e"   -> Pos(71, 1, 71, 3),
+    "e<-<-EOF" -> Pos(71, 4, 71, 4),
+    "e<-EOF"   -> Pos(71, 4, 71, 4)
   )
 
   // @formatter:on

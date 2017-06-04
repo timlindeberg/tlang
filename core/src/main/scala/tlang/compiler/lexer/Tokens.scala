@@ -11,6 +11,7 @@ sealed class Token(val kind: TokenKind) extends Positioned {
 
 sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
   def compare(that: TokenKind): Int = str.length - that.str.length
+
   override def toString: String = str
 }
 
@@ -138,6 +139,10 @@ object Tokens {
   // @formatter:on
 
   case object NEWLINE extends TokenKind("\\n")
+
+  case object INDENT extends TokenKind("->")
+
+  case object DEDENT extends TokenKind("<-")
 
 
   class ID(val value: String) extends Token(IDKIND) {

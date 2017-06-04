@@ -10,7 +10,7 @@ abstract class Pipeline[-F, +T] {
   self =>
 
 
-  def run(ctx: Context)(v: List[F]): List[T]
+  protected def run(ctx: Context)(v: List[F]): List[T]
 
   val compilerStageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
 
@@ -22,7 +22,7 @@ abstract class Pipeline[-F, +T] {
     }
   }
 
-  private def execute(ctx: Context)(v: List[F]): List[T] = {
+  def execute(ctx: Context)(v: List[F]): List[T] = {
     val infoPrinter = OutputPrinter(ctx)
     val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerStages.contains(this))

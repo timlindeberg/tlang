@@ -84,4 +84,22 @@ trait LexerErrors extends ErrorHandling {
     lazy val message = err"Invalid hexadecimal literal."
   }
 
+  case class IndentationMixesTabsAndSpaces(length: Int) extends LexerError(15, pos(length)) {
+    lazy val message = err"Cannot mix tabs and spaces. Use tabs for indentation and spaces for alignment."
+  }
+
+  case class IndentationTooLong(originalIndent: Int, newIndent: Int, length: Int) extends LexerError(16, pos(length)) {
+    lazy val message =
+      err"""Indentation is too large. Indentation level went from $originalIndent to $newIndent.
+           |Indentation can only increase one level at a time.""".stripMargin
+  }
+
+  case class TabsNonIndentation(length: Int) extends LexerError(17, pos(length)) {
+    lazy val message = err"Tabs should only be used for indentation. Use spaces for alignment."
+  }
+
+  case class UnnecessaryWhitespaceOnBlankLine(length: Int) extends LexerError(18, pos(length)) {
+    lazy val message = err"Unnecessary whitespaces on blank line."
+  }
+
 }

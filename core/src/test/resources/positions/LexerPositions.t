@@ -24,7 +24,7 @@ if else return
 true false this
 super new implicit
 
-print	println	error // tabs here
+print println error
 
 /**/break  /*  */ continue /******/ in /** */
 // null
@@ -63,3 +63,9 @@ identifier a hej /**/ test id // dsa
 ist gut \n
 \uabcd
 /**/ ` /**/
+
+a
+	b
+		c
+			d
+		e

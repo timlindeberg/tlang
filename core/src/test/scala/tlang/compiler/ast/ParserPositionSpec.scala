@@ -19,7 +19,7 @@ class ParserPositionSpec extends FunSuite with Matchers {
 
   private val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
-    (Lexer andThen Parser).run(TestContext)(file).head
+    (Lexer andThen Parser).execute(TestContext)(file).head
   }
 
   private val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
@@ -32,9 +32,9 @@ class ParserPositionSpec extends FunSuite with Matchers {
         .getOrElse(clazz, fail(s"No trees of class $className"))
         .filter { t => Pos(t) != NoPos }
 
-      trees.zip(positions) foreach { case (tree, expectedPos) =>
+      trees.zip(positions.zipWithIndex) foreach { case (tree, (expectedPos, index)) =>
         val pos = new Pos(tree)
-        pos shouldBe expectedPos
+        assert(pos == expectedPos, s" for $className number ${ index + 1 }.")
       }
     }
   }

@@ -26,12 +26,12 @@ trait ValidTester extends Tester {
 
     try {
       val sources = FileSource(file) :: Nil
-      val cus = Pipeline.run(ctx)(sources)
+      val cus = Pipeline.execute(ctx)(sources)
 
       ctx.reporter.hasErrors should be(false)
 
       val compilation = Desugaring andThen CodeGeneration
-      compilation.run(ctx)(cus)
+      compilation.execute(ctx)(cus)
       val res = programExecutor(ctx.outDirs.map(_.getAbsolutePath) + Constants.TDirectory, file)
       val resLines = lines(res)
       val sol = parseSolutions(file)

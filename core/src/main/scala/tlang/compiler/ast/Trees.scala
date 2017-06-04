@@ -88,7 +88,7 @@ object Trees {
   // Signals that the node is a leaf and no further recursion is necessary
   trait Leaf
 
-  /*-------------------------------- Top level Trees --------------------------------*/
+  /*---------------------------- Top level Trees ----------------------------*/
 
   case class CompilationUnit(pack: Package,
     var classes: List[ClassDeclTree],
@@ -100,7 +100,7 @@ object Trees {
 
   case class Annotation() extends Tree
 
-  /*-------------------------------- Package and Import Trees --------------------------------*/
+  /*------------------------ Package and Import Trees -----------------------*/
 
   case class Package(address: List[String]) extends Tree with Leaf {
     val name: String = address.mkString("::")
@@ -134,7 +134,7 @@ object Trees {
 
   }
 
-  /*-------------------------------- Class Declaration Trees --------------------------------*/
+  /*------------------------ Class Declaration Trees ------------------------*/
 
 
   object ClassDeclTree {
@@ -190,7 +190,7 @@ object Trees {
     val isAbstract             = false
   }
 
-  /*-------------------------------- Modifier Trees --------------------------------*/
+  /*----------------------------- Modifier Trees ----------------------------*/
 
   trait Modifier extends Tree with Leaf
 
@@ -211,7 +211,7 @@ object Trees {
     val accessability: Accessability = modifiers.findInstance[Accessability].getOrElse(Private())
   }
 
-  /*-------------------------------- Function Declaration Trees --------------------------------*/
+  /*----------------------- Function Declaration Trees ----------------------*/
 
 
   object MethodDeclTree {
@@ -269,7 +269,7 @@ object Trees {
 
   case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
 
-  /*-------------------------------- Statement Trees --------------------------------*/
+  /*---------------------------- Statement Trees ----------------------------*/
 
   trait StatTree extends Tree
 
@@ -298,7 +298,7 @@ object Trees {
 
   trait ExprTree extends StatTree with Typed
 
-  /*-------------------------------- Type Trees --------------------------------*/
+  /*------------------------------- Type Trees ------------------------------*/
 
   trait TypeTree extends Tree with Typed {
     val name: String
@@ -310,7 +310,7 @@ object Trees {
   case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?" }
   case class UnitType() extends PrimitiveTypeTree {val name = "Unit" }
 
-  /*-------------------------------- Binary Operator Trees --------------------------------*/
+  /*------------------------- Binary Operator Trees -------------------------*/
 
 
   trait OperatorTree extends ExprTree {
@@ -380,7 +380,7 @@ object Trees {
   case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val opSign = "<<" }
   case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {val opSign = ">>" }
 
-  /*-------------------------------- Branching Operator Trees --------------------------------*/
+  /*------------------------ Branching Operator Trees -----------------------*/
 
   trait BranchingOperatorTree extends OperatorTree
 
@@ -405,7 +405,7 @@ object Trees {
   case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val opSign = "&&" }
   case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {val opSign = "||" }
 
-  /*-------------------------------- Unary Operator Trees --------------------------------*/
+  /*-------------------------- Unary Operator Trees -------------------------*/
 
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
@@ -453,7 +453,7 @@ object Trees {
     override def signature(args: List[Any]): String = args.head + opSign
   }
 
-  /*-------------------------------- Array Operator Trees --------------------------------*/
+  /*-------------------------- Array Operator Trees -------------------------*/
 
   trait ArrayOperatorTree extends OperatorTree {
     val arr: ExprTree
@@ -473,7 +473,7 @@ object Trees {
     override def signature(args: List[Any]): String = s"[${ args(0) }:${ args(1) }]"
   }
 
-  /*-------------------------------- Literal and Identifier Trees --------------------------------*/
+  /*---------------------- Literal and Identifier Trees ---------------------*/
 
 
   trait Literal[T] extends ExprTree with Leaf {
@@ -560,7 +560,7 @@ object Trees {
   case class VariableID(name: String) extends Identifier[VariableSymbol] with Leaf with Assignable
   case class MethodID(name: String) extends Identifier[MethodSymbol] with Leaf
 
-  /*-------------------------------- Access Trees --------------------------------*/
+  /*------------------------------ Access Trees -----------------------------*/
 
   trait Access extends Assignable {
     var obj        : ExprTree
@@ -585,7 +585,7 @@ object Trees {
   case class NormalAccess(var obj: ExprTree, application: ExprTree) extends Access
   case class SafeAccess(var obj: ExprTree, application: ExprTree) extends Access
 
-  /*-------------------------------- Expression Trees --------------------------------*/
+  /*---------------------------- Expression Trees ---------------------------*/
 
   trait Assignable extends ExprTree
 
@@ -607,7 +607,7 @@ object Trees {
   case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree
   case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree
 
-  /*-------------------------------- Misc expression Trees --------------------------------*/
+  /*------------------------- Misc expression Trees -------------------------*/
 
   // Used to generate code which doesn't fit the tree structure but
   // which fits when generating bytecode. Can be used to transform an expression
