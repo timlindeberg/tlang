@@ -1,7 +1,6 @@
 var a = new A()
 
-if(!a){ // res: T2020
-    println("Test")
-}
+if(!a) // res: T2020
+	println("Test")
 
-class A {}
+class A

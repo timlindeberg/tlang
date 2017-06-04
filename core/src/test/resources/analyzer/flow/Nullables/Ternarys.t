@@ -3,7 +3,7 @@ val a = GetA()
 // but seems like a very strange case. It would only apply when
 // we know the result of the ternary check is true or false
 if(a == null ? true : false)
-    a.Test() // res: F2000
+	a.Test() // res: F2000
 
 val b1 = a == null ? 1 : a.GetInt()
 val b2 = a != null ? a.GetInt() : 1
@@ -19,9 +19,7 @@ val b8 = a  ? 1 : a.GetInt() // res: F2001
 
 Def GetA(): A? = null
 
-class A {
+class A =
 
-    Def GetInt() = 5
-    Def Test() = println("Test")
-
-}
+	Def GetInt() = 5
+	Def Test() = println("Test")

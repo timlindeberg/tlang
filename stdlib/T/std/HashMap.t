@@ -158,7 +158,7 @@ class HashMap<K, V>: Map<K, V> =
 		var h = hash
 		h ^= (h >> 20) ^ (h >> 12)
 		h ^ (h >> 7) ^ (h >> 4)
-}
+
 
 class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> =
 
@@ -189,6 +189,7 @@ class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> =
 		this.value = value
 		Hash = hash
 
+
 class EntryListIterator<K, V>: Iterator<HashMapEntry<K, V>> =
 
 	var hasNext: Bool
@@ -207,7 +208,8 @@ class EntryListIterator<K, V>: Iterator<HashMapEntry<K, V>> =
 			current = current.Next!!
 		res
 
-class KeyIterator<K, V>: Iterator<K>
+
+class KeyIterator<K, V>: Iterator<K> =
 
 	var it: EntryIterator<K, V>
 
@@ -217,7 +219,8 @@ class KeyIterator<K, V>: Iterator<K>
 	Def HasNext() = it.HasNext()
 	Def Next() = it.Next().Key()
 
-class ValueIterator<K, V>: Iterator<V>
+
+class ValueIterator<K, V>: Iterator<V> =
 
 	var it: EntryIterator<K, V>
 
@@ -227,7 +230,8 @@ class ValueIterator<K, V>: Iterator<V>
 	Def HasNext() = it.HasNext()
 	Def Next() = it.Next().Value()
 
-class EntryIterator<K, V>: Iterator<MapEntry<K, V>>
+
+class EntryIterator<K, V>: Iterator<MapEntry<K, V>> =
 
 	var hasNext: Bool
 	var currentEntry: HashMapEntry<K, V>?

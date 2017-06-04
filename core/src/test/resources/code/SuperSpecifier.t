@@ -12,46 +12,34 @@ println(f.Test2())  // res: E
 println(f.TestV())  // res: A
 println(f.TestV1()) // res: E
 
-trait A {
+trait A =
 
-    Val static V = "A"
-    Def Test() = "A"
+	Val static V = "A"
+	Def Test() = "A"
 
-}
+trait B =
 
-trait B {
+	Val static V = "B"
+	Def Test() = "B"
 
-    Val static V = "B"
-    Def Test() = "B"
+class C: A, B =
 
-}
+	Def TestV() = super<A>.V
+	Def Test() = super<A>.Test()
 
-class C: A, B {
+class D: A, B =
 
-    Def TestV() = super<A>.V
-    Def Test() = super<A>.Test()
+	Def TestV() = super<B>.V
+	Def Test() = super<B>.Test()
 
-}
+trait E =
 
-class D: A, B {
+	Val static V1 = "E"
+	Def Test2() = "E"
 
-    Def TestV() = super<B>.V
-    Def Test() = super<B>.Test()
+class F: A, E =
 
-}
-
-trait E {
-
-    Val static V1 = "E"
-    Def Test2() = "E"
-
-}
-
-class F: A, E {
-
-    Def Test() = super.Test()
-    Def Test2() = super.Test2()
-    Def TestV() = super.V
-    Def TestV1() = super.V1
-
-}
+	Def Test() = super.Test()
+	Def Test2() = super.Test2()
+	Def TestV() = super.V
+	Def TestV1() = super.V1

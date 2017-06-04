@@ -13,4 +13,3 @@ i = GetInt()
 println(i / i)
 
 Def GetInt() = 5
-

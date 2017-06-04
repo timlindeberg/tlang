@@ -16,30 +16,6 @@ println(locale.getDisplayLanguage()) // res: Swedish
 val ran = new Random(0)
 println(ran.nextInt()) // res: -1155484576
 
-Def Lol() =
-	val x = 5 +
-			5
-
-	println("HEJ!" +
-	        "hej" +
-	        "hej!"
-	        )
-
-	val x = 10
-		val x = 5
-		println(x)
-	println(x)
-
-	for(val x in 0..10)
-		println(x)
-		println(x + 5)
-		if(x > 10)
-			println(10 * x)
-			println(100 * x)
-
-	println("END")
-
-
 val st = new java::util::IntSummaryStatistics()
 st.accept(8)
 println(st.getMin()) // res: 8
@@ -52,10 +28,3 @@ class A : java::util::GregorianCalendar =
 	Def BC() = println(BC)
 
 	Def TimeZone() = println(getTimeZone().getDisplayName())
-
-class B: java::util::GregorianCalendar =
-
-	Def Löööl()
-
-	class C: A =
-		Def Bröööl()

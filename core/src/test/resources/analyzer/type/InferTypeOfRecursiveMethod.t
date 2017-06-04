@@ -1,5 +1,2 @@
-class A {
-
-    Def Test() = return Test() // res: T2021
-
-}
+class A =
+	Def Test() = return Test() // res: T2021

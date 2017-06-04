@@ -35,11 +35,12 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
   private def parseTemplateFile(path: String): Option[CompilationUnit] = {
     val sources = FileSource(path) :: Nil
     try {
-      val parsedProgram = (Lexer andThen Parser).run(ctx)(sources).head
+      val parsedProgram = (Lexer andThen Parser).execute(ctx)(sources).head
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        println(e.getMessage)
+        print(e.messages.formattedWarnings)
+        print(e.messages.formattedErrors)
         None
     }
   }

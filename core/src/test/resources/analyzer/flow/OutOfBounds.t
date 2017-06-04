@@ -33,14 +33,13 @@ k = (i++ + --j) * (i + j)
 a = new Int[k]
 println(a[90])
 
-if(true){
-    println("true")
-    i = 2
-    j = 1
-}else{
-    i = 2
-    j = 5
-}
+if(true)
+	println("true")
+	i = 2
+	j = 1
+else
+	i = 2
+	j = 5
 
 a = new Int[i]
 println(a[2])  // res: F2004

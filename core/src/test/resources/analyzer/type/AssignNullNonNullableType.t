@@ -25,12 +25,10 @@ k = null // res: T2000
 Test1(null)
 Test2(null) // res: T2001
 
-Def Test1(i: Int?) = {
-    println(i)
-}
+Def Test1(i: Int?) =
+	println(i)
 
-Def Test2(i: Int) = {
-    println(i)
-}
+Def Test2(i: Int) =
+	println(i)
 
-class A {}
+class A

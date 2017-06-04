@@ -6,18 +6,15 @@ x.Blest("5").Rest()
 println(x.bield)
 test()
 
-class A {
+class A =
 
-    val field = 0
-    val field2 = test()
-    Def Test() = println("Test")
-    Def Test(s: String) = println(s)
-}
+	val field = 0
+	val field2 = test()
+	Def Test() = println("Test")
+	Def Test(s: String) = println(s)
 
-class B {
+class B =
 
-    Def Test() = {
-        test("hej" + "hej" +
-             "Hej" + "hej")
-    }
-}
+	Def Test() =
+		test("hej" + "hej" +
+		     "Hej" + "hej")

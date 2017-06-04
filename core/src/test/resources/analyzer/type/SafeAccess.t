@@ -12,15 +12,13 @@ s = a.GetB()?.Test() // res: T2034
 
 Def GetNullable() = true ? null : new A()
 
-class A  {
-    Val X: Int = 5
+class A =
+	Val X: Int = 5
 
-    Def GetB() = new B()
-    Def Test() = "A"
-}
+	Def GetB() = new B()
+	Def Test() = "A"
 
-class B {
+class B =
 
-    Val Y: Int = 6
-    Def Test() =  "B"
-}
+	Val Y: Int = 6
+	Def Test() =  "B"

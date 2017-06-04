@@ -5,18 +5,16 @@ println(Int.GetValue()) // res: 1
 println(x.subtract(5)) // res: 0
 println(5.subtract(10)) // res: -5
 
-extension T::lang::Int {
+extension T::lang::Int =
 
-    Def subtract(x: Int) = this - x
+	Def subtract(x: Int) = this - x
 
-    Def static GetValue() = 1
+	Def static GetValue() = 1
 
-    Def +(a: Int, rhs: A): Int = a + rhs.i
+	Def +(a: Int, rhs: A): Int = a + rhs.i
 
-    Def []=(index: Int, value: Int): Unit = println("Int setter")
+	Def []=(index: Int, value: Int): Unit = println("Int setter")
 
-}
 
-class A  {
-    Val i: Int = 5
-}
+class A =
+	Val i: Int = 5

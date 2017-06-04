@@ -6,19 +6,16 @@ a.Test(5) // res: A5
 val x = a.Test2()
 println(x) // res: 6
 
-extension A {
+extension A =
 
-    Def Test(i: Int) = println("A" + i)
-    Def Test() = println("A")
-    Def Test2() = GetInt() + this.i
+	Def Test(i: Int) = println("A" + i)
+	Def Test() = println("A")
+	Def Test2() = GetInt() + this.i
 
-}
+class A =
 
-class A {
+	Var i = 1
 
-    Var i = 1
+	Def GetInt() = 5
 
-    Def GetInt() = 5
-
-    Def -(a: A) = new A()
-}
+	Def -(a: A) = new A()

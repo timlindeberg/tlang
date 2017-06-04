@@ -18,16 +18,15 @@ println(m[0].Size()) // res: 2
 println(m[0][0].Size()) // res: 2
 
 for(var i = 0; i < m.Size(); i++)
-    for(var j = 0; j < m[0].Size(); j++)
-        for(var k = 0; k < m[0][0].Size(); k++)
-            print(m[i][j][k] + " ") // res: 1 2 3 4 5 6 7 8
+	for(var j = 0; j < m[0].Size(); j++)
+		for(var k = 0; k < m[0][0].Size(); k++)
+			print(m[i][j][k] + " ") // res: 1 2 3 4 5 6 7 8
 
 println("")
 
 Def Test() = return "Test"
 
-Def Test2(arr: Int[]) = {
-    for(var i = 0; i < arr.Size(); i++)
-        print(arr[i] + " ")
-    println("")
-}
+Def Test2(arr: Int[]) =
+	for(var i = 0; i < arr.Size(); i++)
+		print(arr[i] + " ")
+	println("")

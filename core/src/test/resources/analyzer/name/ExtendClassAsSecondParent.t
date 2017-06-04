@@ -1,9 +1,9 @@
-class Valid : A, B, C {}
+class Valid : A, B, C
 
-class Invalid: B, C, A {} // res: N2017
+class Invalid: B, C, A // res: N2017
 
-class A {}
+class A
 
-trait B {}
+trait B
 
-trait C {}
+trait C

@@ -1,22 +1,18 @@
 new B().Test()
 
-class A {
+class A =
 
-    Var i = 1
+	Var i = 1
 
-    Def A() = "A"
+	Def A() = "A"
 
-}
+class B : A =
 
-class B : A {
+	Var i = 2
+	Def A() = "B"
 
-    Var i = 2
-    Def A() = "B"
-
-    Def Test() = {
-        println(i) // res: 2
-        println(super.i) // res: 1
-        println(A()) // res: B
-        println(super.A()) // res: A
-    }
-}
+	Def Test() =
+		println(i) // res: 2
+		println(super.i) // res: 1
+		println(A()) // res: B
+		println(super.A()) // res: A

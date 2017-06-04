@@ -8,34 +8,31 @@ println(str.Size())  // res: 5
 println(bool.Size()) // res: 5
 println(a.Size())    // res: 5
 
-for(var i = 0; i < 5; i++){
-    int[i]  = i
-    str[i]  = "" + i
-    bool[i] = i % 2 == 0
-    a[i]    = new A(i)
-}
+for(var i = 0; i < 5; i++)
+	int[i]  = i
+	str[i]  = "" + i
+	bool[i] = i % 2 == 0
+	a[i]    = new A(i)
 
 for(var i = 0; i < 5; i++)
-    print(int[i] + " ") // res: 0 1 2 3 4
+	print(int[i] + " ") // res: 0 1 2 3 4
 println("")
 
 for(var i = 0; i < 5; i++)
-    print(str[i] + " ") // res: 0 1 2 3 4
+	print(str[i] + " ") // res: 0 1 2 3 4
 println("")
 
 for(var i = 0; i < 5; i++)
-    print(bool[i] + " ") // res: true false true false true
+	print(bool[i] + " ") // res: true false true false true
 println("")
 
 for(var i = 0; i < 5; i++)
-    print(a[i] + " ")    // res: 0 1 2 3 4
+	print(a[i] + " ")    // res: 0 1 2 3 4
 
-class A {
+class A =
 
-  var int: Int
+	var int: Int
 
-  Def new(i: Int) = int = i
+	Def new(i: Int) = int = i
 
-  Def toString(): String = "" + int
-
-}
+	Def toString(): String = "" + int

@@ -1,17 +1,15 @@
 val i: Int? = 5
 val j: Int? = null
 
-if(i){
-    println("Not Null") // res: Not Null
-}else{
-    println("Null")
-}
+if(i)
+	println("Not Null") // res: Not Null
+else
+	println("Null")
 
-if(j){
-    println("Not Null")
-}else{
-    println("Null") // res: Null
-}
+if(j)
+	println("Not Null")
+else
+	println("Null") // res: Null
 
 println(i && j) // res: false
 println(i || j) // res: true

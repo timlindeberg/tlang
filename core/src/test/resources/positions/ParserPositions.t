@@ -4,20 +4,20 @@
 
 
 
-class Class<T> : T, B, C {
+class Class<T> : T, B, C =
 
 	var a: Int = 0
 	Var b = 1
 	val protected c: Long
 	Val static d: Float = "hej"
 
-	def implicit new(a: Double, b: String[]) = {}
+	def implicit new(a: Double, b: String[]) = ;
 
-	Def +(a: Class<T>, b: Class<T>): Class<T> = {}
+	Def +(a: Class<T>, b: Class<T>): Class<T> = ;
 
-	def static Func2(): Unit = {}
+	def static Func2(): Unit = ;
 
-	Def Func(d: Bool?, e: Char) = {
+	Def Func(d: Bool?, e: Char) =
 		if(!a < #b && -a <= ~b && a!! > ++b && a++ >= --b)
 			println(a + b)
 		else
@@ -34,12 +34,12 @@ class Class<T> : T, B, C {
 
 		Func2(a / b)
 		var a = {
-			1 % 1l,
-			1.0 & 1.3e-5f,
-			10 | 5,
-			1.0 ^ 'a',
-			"hej" << true,
-			false >> null
+		    1 % 1l,
+		    1.0 & 1.3e-5f,
+		    10 | 5,
+		    1.0 ^ 'a',
+		    "hej" << true,
+		    false >> null
 		}
 
 
@@ -55,13 +55,13 @@ class Class<T> : T, B, C {
 		d = (a is String) ? b : (c ?: 5)
 		d = new String(5, 7)
 		return d
-	}
-
-}
-
-trait B {
 
 
-}
 
-extension A {   }
+
+trait B
+
+
+
+
+extension A

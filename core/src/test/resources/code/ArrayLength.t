@@ -1,3 +1,6 @@
+
+
+
 var a = {1, 2, 3}
 println(a.Size()) // res: 3
 println({1, 2}.Size()) // res: 2

@@ -213,7 +213,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
     setTestProgram(program)
 
     val files = TestCtx.files.map(FileSource(_)).toList
-    Compiler.run(TestCtx)(files)
+    Compiler.execute(TestCtx)(files)
     programExecutor(TestCtx, TestCtx.files.head)
   }
 

@@ -4,7 +4,7 @@ import T::std::List
 import T::std::Collection
 import T::std::Iterator
 
-class Vector<T>: List<T> {
+class Vector<T>: List<T> =
 
 	val static InitialCapacity = 10
 	var size = 0
@@ -12,37 +12,33 @@ class Vector<T>: List<T> {
 
 	Def new() = Clear()
 
-	Def new(elements: Collection<T>) = {
+	Def new(elements: Collection<T>) =
 		Clear()
 		AddAll(elements)
-	}
 
-	Def implicit new(array: T[]) = {
+	Def implicit new(array: T[]) =
 		Clear()
 		for(val e in array)
-		    Add(e)
-	}
+			Add(e)
 
-	Def new(initSize: Int, value: T) = {
+	Def new(initSize: Int, value: T) =
 		size = initSize
 		data = new T[size]
 		for(var i = 0; i < size; i++)
 			data[i] = value
-	}
 
-    Def Get(index: Int) = data[index]
-    Def Set(index: Int, value: T) = (data[index] = value)
+	Def Get(index: Int) = data[index]
+	Def Set(index: Int, value: T) = (data[index] = value)
 
 	Def Size() = size
 
-	Def Clear() = {
+	Def Clear() =
 		size = 0
 		data = new T[InitialCapacity]
-	}
 
 	Def Iterator(): Iterator<T> = new VectorIterator<T>(this)
 
-	Def Add(index: Int, value: T) = {
+	Def Add(index: Int, value: T) =
 		if(index != size)
 			checkBounds(index)
 
@@ -54,17 +50,16 @@ class Vector<T>: List<T> {
 
 		data[index] = value
 		size++
-	}
 
-	Def AddAll(index: Int, elements: Collection<T>) = {
+	Def AddAll(index: Int, elements: Collection<T>) =
 		if(index != size)
-        	checkBounds(index)
+			checkBounds(index)
 
-        val numElements = elements.Size()
+		val numElements = elements.Size()
 
 		val newData = new T[size + numElements]
 
-        val it = elements.Iterator()
+		val it = elements.Iterator()
 		for(var i = 0; i < index; i++)
 			newData[i] = data[i]
 
@@ -76,52 +71,44 @@ class Vector<T>: List<T> {
 
 		data = newData
 		size += numElements
-	}
 
-	Def RemoveIndex(index: Int) = {
+	Def RemoveIndex(index: Int) =
 		for(var i = index; i < size; i++)
 			data[i] = data[i + 1]
 
 		size--
-	}
 
-    Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
+	Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
-    /**
-    * Increases the size of the underlying storage.
-    */
-	def increaseStorage() = {
+	/**
+	* Increases the size of the underlying storage.
+	*/
+	def increaseStorage() =
 		val newData = new T[(data.Size() * 3) / 2 + 1]
 
 		for(var i = 0; i < data.Size(); i++)
 			newData[i] = data[i]
 		data = newData
-	}
 
-    def checkBounds(index: Int) =
-        if(index < 0 || index >= size)
-            outOfBoundsError(index)
+	def checkBounds(index: Int) =
+		if(index < 0 || index >= size)
+			outOfBoundsError(index)
 
-    def outOfBoundsError(index: Int) = error("Index out of bounds: " + index + " (size: " + size + ")")
+	def outOfBoundsError(index: Int) = error("Index out of bounds: " + index + " (size: " + size + ")")
 
-}
 
-class VectorIterator<T>: Iterator<T> {
+class VectorIterator<T>: Iterator<T> =
 	var current: Int
 	var hasNext: Bool
 	var vector: Vector<T>
 
-	Def new(list: Vector<T>) = {
+	Def new(list: Vector<T>) =
 		current = 0
 		hasNext = list.NonEmpty()
 		vector = list
-	}
 
 	Def HasNext() = hasNext
 
-	Def Next() = {
+	Def Next() =
 		hasNext = current < vector.Size() - 1
 		vector[current++]
-	}
-
-}

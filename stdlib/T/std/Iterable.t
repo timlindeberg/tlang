@@ -2,11 +2,9 @@ package T::std
 
 import T::std::Iterator
 
-trait Iterable<T> {
+trait Iterable<T> =
 
-    /**
-    * Returns an iterator over this iterable instance.
-    */
-    Def Iterator(): Iterator<T>
-
-}
+	/**
+	* Returns an iterator over this iterable instance.
+	*/
+	Def Iterator(): Iterator<T>

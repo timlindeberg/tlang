@@ -23,7 +23,7 @@ object Tester {
   val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
   val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
   val PrintErrors        : Boolean     = sys.env.get("printerrors").contains("true")
-  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(",").toSet).getOrElse(Set())
+  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(", *").toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
 

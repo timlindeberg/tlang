@@ -4,7 +4,7 @@ var l: Long = 2l;
 var f: Float = 2f;
 var d: Double = 2.0;
 
-  // Char
+// Char
 println(c / c);  // res: 1
 
 // Int
@@ -29,6 +29,6 @@ println(c / f);  // res: 49.0
 println(d / d);  // res: 1.0
 println(c / d);  // res: 49.0
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";
+

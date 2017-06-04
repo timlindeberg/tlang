@@ -18,20 +18,16 @@ println(v2) // res: (1, 1, 1)
 //println(Tester<Int>.AssertEquals(1, 1))
 
 for(val i in new A())
-    print(i + " ") // res: 0 1 2 3 4
+	print(i + " ") // res: 0 1 2 3 4
 println()
 
-class A : T::std::Iterable<Int> {
+class A : T::std::Iterable<Int> =
 
-    Def Iterator() = new AIterator()
+	Def Iterator() = new AIterator()
 
-}
+class AIterator : T::std::Iterator<Int> =
 
-class AIterator : T::std::Iterator<Int> {
+	var i = 0
 
-    var i = 0
-
-    Def HasNext() = i < 5
-    Def Next() = return i++
-
-}
+	Def HasNext() = i < 5
+	Def Next() = return i++

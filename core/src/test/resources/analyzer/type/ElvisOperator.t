@@ -11,4 +11,4 @@ val f: A = b ?: new A()
 val g = b ?: 1 // res: T2000
 val h = b ?: "hej" // res: T2000
 
-class A {}
+class A

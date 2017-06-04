@@ -6,21 +6,15 @@ a = new A();
 println(b.Test(0)); // res: 1
 println(a.Test(0)); // res: 1
 
-class A {
+class A =
 
-  def protected test(i: Int): Int = {
-    return i + 1;
-  }
+	def protected test(i: Int): Int =
+		return i + 1;
 
-  Def Test(i: Int): Int = {
-    return test(i);
-  }
-}
+	Def Test(i: Int): Int =
+		return test(i);
 
-class B : A {
+class B : A =
 
-  Def Test(i: Int): Int = {
-    return test(i);
-  }
-
-}
+	Def Test(i: Int): Int =
+		return test(i);

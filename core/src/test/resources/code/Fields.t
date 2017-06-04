@@ -8,24 +8,18 @@ b.Test2(a2) // res: 2
 println(a1.J = 1)      // res: 1
 println(a1.J += a1.J)  // res: 2
 
-class A {
+class A =
 
-  Var J: Int
-  var i: Int
-  var protected k: Int
+	Var J: Int
+	var i: Int
+	var protected k: Int
 
-  Def Test(a: A): Unit = {
-    println(a.i = 1)
-    println(a.i += a.i)
-  }
+	Def Test(a: A): Unit =
+		println(a.i = 1)
+		println(a.i += a.i)
 
-}
+class B : A =
 
-class B : A {
-
-  Def Test2(a: A): Unit = {
-    println(a.k = 1)
-    println(a.k += a.k)
-  }
-
-}
+	Def Test2(a: A): Unit =
+		println(a.k = 1)
+		println(a.k += a.k)

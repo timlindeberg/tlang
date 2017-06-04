@@ -4,17 +4,14 @@ val b = new A()
 a.StaticTest() // res: Static A
 A.StaticTest() // res: Static A
 
-extension A {
+extension A =
 
-    Def static StaticTest() = println("Static A")
+	Def static StaticTest() = println("Static A")
 
-}
+class A =
 
-class A {
+	Var i = 1
 
-    Var i = 1
+	Def GetInt() = 5
 
-    Def GetInt() = 5
-
-    Def -(a: A) = new A()
-}
+	Def -(a: A) = new A()

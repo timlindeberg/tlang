@@ -184,16 +184,23 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   }
 
   /**
-    * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> "{" { <varDeclaration> } { <methodDeclaration> } "}"
-    * | extension <tpe> "{" { <methodDeclaration> } "}"
+    * <classDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> [ "=\n<indent>" { <varDeclaration> } { <methodDeclaration> } "<dedent>" ]
+    * | extension <tpe> [ "=\n <indent>" { <methodDeclaration> } "<dedent>" ]
+    *
     */
   def classDeclaration: ClassDeclTree = positioned {
     if (nextTokenKind == EXTENSION) {
       eat(EXTENSION)
       val id = tpe
-      eat(LBRACE)
-      val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
-      eat(RBRACE)
+      val methods = if (nextTokenKind == EQSIGN) {
+        eat(EQSIGN)
+        eat(INDENT)
+        val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
+        eat(DEDENT)
+        methods
+      } else {
+        Nil
+      }
       ExtensionDecl(id, methods)
     } else {
       val isTrait = nextTokenKind match {
@@ -207,14 +214,21 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
       }
       val id = classTypeIdentifier
       val parents = parentsDeclaration
-      eat(LBRACE)
-      val vars = untilNot({
-        val v = fieldDeclaration
-        endStatement()
-        v
-      }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
-      val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
-      eat(RBRACE)
+      val (vars, methods) = if (nextTokenKind == EQSIGN) {
+        eat(EQSIGN)
+        eat(INDENT)
+        val vars = untilNot({
+          val v = fieldDeclaration
+          endStatement()
+          v
+        }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
+        val methods = untilNot(methodDeclaration(id.name), PRIVDEF, PUBDEF)
+        eat(DEDENT)
+        (vars, methods)
+      } else {
+        (Nil, Nil)
+      }
+
       if (isTrait)
         TraitDecl(id, parents, vars, methods)
       else
@@ -321,7 +335,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   }
 
   /**
-    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " (<tpe> | Unit) <methodBody>
+    * <method> ::= <identifier> "(" [ <formal> { "," <formal> } ] "): " <returnType> <methodBody>
     */
   def method(modifiers: Set[Modifier]): MethodDecl = {
     modifiers.filterInstance[Implicit].foreach(mod => report(ImplicitMethodOrOperator(mod)))
@@ -337,7 +351,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   }
 
   /**
-    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")"  "=" <statement>
+    * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")" <methodBody>
     */
   def constructor(modifiers: Set[Modifier], className: String): ConstructorDecl = {
     val pos = nextToken
@@ -353,7 +367,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
 
 
   /**
-    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe>  = {" { <varDeclaration> } { <statement> } "}"
+    * <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- ) "(" <formal> [ "," <formal> ] "): <tpe> <methodBody>
     **/
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
@@ -564,10 +578,10 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     }
 
     nextTokenKind match {
-      case LBRACE                  =>
-        eat(LBRACE)
-        val stmts = until(statement, RBRACE)
-        eat(RBRACE)
+      case INDENT                  =>
+        eat(INDENT)
+        val stmts = until(statement, DEDENT)
+        eat(DEDENT)
         Block(stmts)
       case IF                      =>
         eat(IF, LPAREN)
@@ -612,6 +626,9 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
         eat(CONTINUE)
         endStatement()
         Continue()
+      case SEMICOLON               =>
+        eat(SEMICOLON)
+        Block(Nil)
       case _                       =>
         val expr = expression
         endStatement()
@@ -917,7 +934,8 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
         val sup = superCall
         access(sup)
       case NEW           => newExpression
-      case _             => report(UnexpectedToken(currentToken))
+      case _             =>
+        report(UnexpectedToken(currentToken))
     }
   }
 

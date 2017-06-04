@@ -31,9 +31,10 @@ case class TreePrinter(formatting: Formatting, width: Int = 1) {
 
     sb ++= formatTree(tree) + "\n"
     for ((child, i) <- children.zipWithIndex) {
-      sb ++= stack.reverseIterator.mkString("") + ((if (i == children.size - 1) └ else ├) + ─ * width)
+      val last = i == children.size - 1
+      sb ++= stack.reverseIterator.mkString("") + ((if (last) └ else ├) + ─ * width)
 
-      val c = if (i != children.size - 1) │.head else ' '
+      val c = if (last) │.head else ' '
 
       printTree(child, sb, (indent :+ c) ::: stack, first = false)
     }

@@ -5,6 +5,7 @@ import java.io.File
 import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexer
 import tlang.compiler.{Pos, Tester}
 import tlang.utils.FileSource
@@ -19,7 +20,15 @@ class ParserPositionSpec extends FunSuite with Matchers {
 
   private val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
-    (Lexer andThen Parser).execute(TestContext)(file).head
+    try {
+      (Lexer andThen Parser).execute(TestContext)(file).head
+    } catch {
+      case e: CompilationException =>
+        println("Could not parser ParserPositions.t:")
+        print(e.messages.formattedWarnings)
+        print(e.messages.formattedErrors)
+        throw e
+    }
   }
 
   private val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)

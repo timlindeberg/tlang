@@ -1,23 +1,21 @@
 package T::lang
 
-class Bool {
+class Bool =
 
-    Def new()        = {}
-    Def new(v: Bool) = {}
+	Def new()        = ;
+	Def new(v: Bool) = ;
 
-    // Logical operators
+	// Logical operators
 
-    Def &(a: Bool, b: Bool) : Bool = {}
-    Def |(a: Bool, b: Bool) : Bool = {}
-    Def ^(a: Bool, b: Bool) : Bool = {}
+	Def &(a: Bool, b: Bool) : Bool = ;
+	Def |(a: Bool, b: Bool) : Bool = ;
+	Def ^(a: Bool, b: Bool) : Bool = ;
 
-    // Equals operators
+	// Equals operators
 
-    Def ==(a: Bool, b: Bool): Bool = {}
-    Def !=(a: Bool, b: Bool): Bool = {}
+	Def ==(a: Bool, b: Bool): Bool = ;
+	Def !=(a: Bool, b: Bool): Bool = ;
 
-    // Unary operators
+	// Unary operators
 
-    Def #(a: Bool) : Int = {}
-
-}
+	Def #(a: Bool) : Int = ;

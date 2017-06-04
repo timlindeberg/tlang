@@ -41,6 +41,5 @@ println(s = "str");    // res: str
 // String
 println(a = new A());  // res: A
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";

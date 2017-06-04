@@ -20,6 +20,6 @@ println(i | c);   // res: 99
 println(l | l);   // res: 2
 println(l | c);   // res: 99
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";
+

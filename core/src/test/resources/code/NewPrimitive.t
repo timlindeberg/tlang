@@ -26,12 +26,10 @@ println(a3) // res: 0.0
 
 
 
-class A<T> {
+class A<T> =
 
-    var t: T
+	var t: T
 
-    Def new() = (t = new T())
+	Def new() = (t = new T())
 
-    Def toString() = return "" + t
-
-}
+	Def toString() = return "" + t

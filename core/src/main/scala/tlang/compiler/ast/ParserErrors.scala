@@ -1,6 +1,7 @@
 package tlang.compiler.ast
 
 import tlang.compiler.error.{Error, ErrorHandling, Fatal}
+import tlang.compiler.lexer.Tokens.{DEDENT, INDENT}
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Positioned
 
@@ -49,15 +50,22 @@ trait ParserErrors extends ErrorHandling {
     extends ParserFatal(2, restOf(currentToken)) {
 
     lazy val message: String = {
-      val l = (kind :: more.toList).map(k => err"$k")
-      val expected = l.size match {
-        case 1 => l.head
-        case 2 => l.head + err" or " + l.tail.mkString(err", ")
-        case _ => l.dropRight(1).mkString(", ") + err" or " + l.last
+      val expected = kind :: more.toList
+      val expectedStrings = expected.map(k => err"$k")
+      val expectedMessage = expectedStrings.size match {
+        case 1 => expectedStrings.head
+        case 2 => expectedStrings.head + err" or " + expectedStrings.tail.mkString(err", ")
+        case _ => expectedStrings.dropRight(1).mkString(", ") + err" or " + expectedStrings.last
       }
       val found = currentToken.toString
-      err"Expected " + expected + err", found: $found."
+      err"Expected " + expectedMessage + err", found: $found." + indentWarning(expected)
     }
+
+    private def indentWarning(expected: List[TokenKind]) =
+      if (expected.contains(INDENT) || expected.contains(DEDENT))
+        " Make sure you're using tabs and not spaces for indentation."
+      else
+        ""
 
   }
 

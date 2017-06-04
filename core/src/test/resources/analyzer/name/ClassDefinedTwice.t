@@ -1,2 +1,2 @@
-class Test {}
-class Test {} // res: N2003
+class Test
+class Test // res: N2003

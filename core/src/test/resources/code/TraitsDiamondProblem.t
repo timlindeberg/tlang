@@ -1,18 +1,14 @@
 // Ignore
 new CowboyArtist().Draw() // res: A pretty painting
 
-trait Drawable {
+trait Drawable =
 
-    Def Draw(): Unit
+	Def Draw(): Unit
 
-}
+trait Cowboy : Drawable =
+	Def Draw() = println("Bang!")
 
-trait Cowboy : Drawable {
-    Def Draw() = println("Bang!")
-}
+trait Artist : Drawable =
+	Def Draw() = println("A pretty painting")
 
-trait Artist : Drawable {
-    Def Draw() = println("A pretty painting")
-}
-
-class CowboyArtist : Cowboy, Artist {}
+class CowboyArtist : Cowboy, Artist

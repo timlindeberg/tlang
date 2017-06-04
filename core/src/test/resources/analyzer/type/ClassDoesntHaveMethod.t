@@ -12,4 +12,4 @@ var c = a.x // res: T2003
 var d = A.x // res: T2003
 var e = b.x // res: T2003
 
-class A {}
+class A

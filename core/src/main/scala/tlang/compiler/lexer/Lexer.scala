@@ -78,7 +78,12 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
         readTokens(tail, token :: tokens)
       case Nil                              =>
         val dedent = (0 until indent).map(_ => createToken(DEDENT, 0)).toList
-        (createToken(EOF, 0) :: dedent) ::: tokens
+        val eof = if (tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
+          createToken(EOF, 0) :: dedent ::: (createToken(NEWLINE, 0) :: Nil)
+        else
+          createToken(EOF, 0) :: dedent
+
+        eof ::: tokens
       case c :: _                           =>
         val (token, tail) = endInvalidToken(chars, 0, isEndingChar, length => report(InvalidIdentifier(c, length)))
         readTokens(tail, token :: tokens)

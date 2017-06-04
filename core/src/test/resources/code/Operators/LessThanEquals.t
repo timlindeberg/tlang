@@ -39,6 +39,5 @@ println(c <= f);  // res: false
 println(c <= d);  // res: false
 println(c <= c);  // res: true
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";

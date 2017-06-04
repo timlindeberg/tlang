@@ -29,6 +29,5 @@ println(f * c);  // res: 194.0
 println(d * d);  // res: 4.0
 println(d * c);  // res: 194.0
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";

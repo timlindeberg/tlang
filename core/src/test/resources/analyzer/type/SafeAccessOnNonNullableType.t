@@ -10,13 +10,10 @@ i = b?.a?.i
 
 i = b!!.a2?.i // res: T2034
 
-class A {
-    Val i = 5
-}
+class A =
+	Val i = 5
 
-class B {
+class B =
 
-    Val a: A? = new A()
-    Val a2: A = new A()
-
-}
+	Val a: A? = new A()
+	Val a2: A = new A()

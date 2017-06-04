@@ -15,6 +15,5 @@ println(c is B); // res: true
 println(arr is Int[]); // res: true
 println(arr is A); // res: false
 
-class A {}
-class B : A {}
-
+class A
+class B : A

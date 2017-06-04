@@ -12,10 +12,8 @@ println(b) // res: false
 b = true || Test.Foo()
 println(b) // res: true
 
-class Test {
+class Test =
 
-    Def static Foo(): Bool = {
-        println("Never called")
-        return true
-    }
-}
+	Def static Foo(): Bool =
+		println("Never called")
+		return true

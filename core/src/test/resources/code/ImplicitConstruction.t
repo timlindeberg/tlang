@@ -15,7 +15,7 @@ var implArray: Implicit[] = {1, 2, 3}
 implArray[1] = 5
 
 for(var i = 0; i < 3; i++)
-    print(implArray[i].GetValue() + " ") // res: 1 5 3
+	print(implArray[i].GetValue() + " ") // res: 1 5 3
 println("")
 
 
@@ -33,30 +33,26 @@ println(implArr) // res: 1 2 3
 
 Def GetInt() = return 5
 Def PrintImplicit(impl: Implicit): Unit = println(impl)
-Def PrintImplicitArray(implArray: Implicit[]) = {
-    for(var i = 0; i < implArray.Size(); i++)
-        print(implArray[i] + " ")
-    println("")
-}
+Def PrintImplicitArray(implArray: Implicit[]) =
+	for(var i = 0; i < implArray.Size(); i++)
+		print(implArray[i] + " ")
+	println("")
 
-class Implicit {
+class Implicit =
 
-    var x: Int
+	var x: Int
 
-    Def implicit new(i: Int) = x = i
-    Def GetValue()           = return x
-    Def toString()           = return "" + x
-}
+	Def implicit new(i: Int) = x = i
+	Def GetValue()           = return x
+	Def toString()           = return "" + x
 
-class ImplicitArr {
+class ImplicitArr =
 
-    var impl: Int[]
+	var impl: Int[]
 
-    Def implicit new(arr: Int[]) = this.impl = arr
-    Def toString() = {
-        var str = ""
-        for(var i = 0; i < impl.Size(); i++)
-            str += impl[i] + " "
-        return str
-    }
-}
+	Def implicit new(arr: Int[]) = this.impl = arr
+	Def toString() =
+		var str = ""
+		for(var i = 0; i < impl.Size(); i++)
+			str += impl[i] + " "
+		return str

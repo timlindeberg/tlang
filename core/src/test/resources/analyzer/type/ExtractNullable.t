@@ -15,7 +15,5 @@ PrintA(b!!) // res: T2035
 
 Def PrintA(a: A) = println("An A!")
 
-class A {
-
-    Def Test() = "A"
-}
+class A =
+	Def Test() = "A"

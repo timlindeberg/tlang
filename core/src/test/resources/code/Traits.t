@@ -4,31 +4,24 @@ a.test() // res: lol
 // Uses D:s version
 println(a.implemented(0)) // res: 3
 
+class A : B, C, D =
 
-class A : B, C, D {
+	Def method(i: Int) = return i + 1
 
-    Def method(i: Int) = return i + 1
+	Def implemented(i: Int) = super<D>.implemented(i)
 
-    Def implemented(i: Int) = super<D>.implemented(i)
+class B =
 
-}
+	Def test() = println("lol")
 
-class B {
+trait C =
 
-    Def test() = println("lol")
+	Def method(i: Int): Int
 
-}
+	Def implemented(i: Int) = return method(i) + 1
 
-trait C {
+trait D =
 
-    Def method(i: Int): Int
+	Def method(i: Int): Int
 
-    Def implemented(i: Int) = return method(i) + 1
-}
-
-trait D {
-
-    Def method(i: Int): Int
-
-    Def implemented(i: Int) = return method(i) + 2
-}
+	Def implemented(i: Int) = return method(i) + 2

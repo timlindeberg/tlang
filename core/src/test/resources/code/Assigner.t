@@ -20,38 +20,30 @@ println(c.foo())        // res: 0
 c = new D()
 println(c.foo())        // res: 1
 
-class Foo {
-  Def bar(a: Int): Int = {
-    return 5
-  }
-  Def baz(a: Int): Int = {
-    return a
-  }
+class Foo =
+	Def bar(a: Int): Int = 5
 
-  Def foo():String = return "foo"
-}
+	Def baz(a: Int): Int = a
 
-class Test {
-    Def Method () : String = return "String"
-}
-class Test2 : Test { }
-class Test3 : Test2 { }
-class Test4 : Test3 {
-    Def Method () : String = return "Test4"
-}
+	Def foo(): String = "foo"
 
-class A { 
-  Def foo(a: Int, b: String): Int = return 0
-}
+class Test =
+	Def Method (): String = "String"
 
-class B : A {
-  Def foo(a: Int, b: String): Int = return 1
-}
+class Test2 : Test
+class Test3 : Test2
+class Test4 : Test3 =
+	Def Method () : String = "Test4"
 
-class C { 
-  Def foo():Int = return 0
-}
+class A =
+	Def foo(a: Int, b: String): Int = 0
 
-class D : C {
-  Def foo(): Int = return 1
-}
+class B : A =
+	Def foo(a: Int, b: String): Int = 1
+
+class C =
+	Def foo():Int = 0
+
+class D : C =
+	Def foo(): Int = 1
+

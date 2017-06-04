@@ -4,23 +4,20 @@ var b = new B("Test")
 println(a + "Test") // res: TestTestTest
 println(b + "Test") // res: TestTest
 
-class A {
+class A =
 
-    var x: String
+	var x: String
 
-    Def new(s: String) = (x = s)
+	Def new(s: String) = (x = s)
 
-    Def +(a: A, s: String) = return new A(a.x + s + s)
+	Def +(a: A, s: String) = return new A(a.x + s + s)
 
-    Def toString() = return x
-}
+	Def toString() = return x
 
-class B {
+class B =
 
-    var x: String
+	var x: String
 
-    Def new(s: String) = (x = s)
+	Def new(s: String) = (x = s)
 
-    Def toString() = return x
-
-}
+	Def toString() = return x

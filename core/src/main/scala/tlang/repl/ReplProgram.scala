@@ -120,13 +120,13 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
     val CU = generateCompilationUnit()
 
-    val allCUs = frontEnd.run(ctx)(CU :: Nil)
+    val allCUs = frontEnd.execute(ctx)(CU :: Nil)
 
     val replCU = allCUs.find { _.classes.exists(_.tpe == ReplClassID) }.get
     val rest = allCUs.remove(replCU)
 
     val transformed: CompilationUnit = newStatementTransformer(replCU)
-    compile.run(ctx)(transformed :: rest)
+    compile.execute(ctx)(transformed :: rest)
 
     val res = programExecutor(ctx, ClassFile)
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
@@ -177,7 +177,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   private def parseInput(command: String) = {
     val input = StringSource(command, ClassName) :: Nil
-    parse.run(ctx)(input).head
+    parse.execute(ctx)(input).head
   }
 
   // Updates the internal state of the Repl Class and returns messages for all new

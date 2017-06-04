@@ -20,6 +20,5 @@ println(i & c);  // res: 0
 println(l & l);  // res: 2
 println(l & c);  // res: 0
 
-class A {
-   Def toString(): String = return "A";
-}
+class A =
+	Def toString(): String = return "A";

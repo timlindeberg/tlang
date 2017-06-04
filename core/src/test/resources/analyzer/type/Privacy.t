@@ -21,40 +21,35 @@ print(a1 * a2)
 print(a[1]) // res: T2009
 a[1] = 1 // res: T2009
 
-class A {
+class A =
 
-    var x: Int = 1
-    var protected y: Int = 1
-    Var z: Int = 1
+	var x: Int = 1
+	var protected y: Int = 1
+	Var z: Int = 1
 
-    def new() = {}
-    def protected new(i: Int) = {}
-    Def new(s: String) = {}
+	def new() = ;
+	def protected new(i: Int) = ;
+	Def new(s: String) = ;
 
-    def A() = return 1
-    def protected B() = return 1
-    Def C() = return 1
+	def A() = return 1
+	def protected B() = return 1
+	Def C() = return 1
 
-    def static D() = return 1
-    def protected static E() = return 1
-    Def static F() = return 1
+	def static D() = return 1
+	def protected static E() = return 1
+	Def static F() = return 1
 
-    def +(lhs: A, rhs: A) = return 1
-    def protected -(lhs: A, rhs: A) = return 1
-    Def *(lhs: A, rhs: A) = return 1
+	def +(lhs: A, rhs: A) = return 1
+	def protected -(lhs: A, rhs: A) = return 1
+	Def *(lhs: A, rhs: A) = return 1
 
-    def [](index: Int) = return 1
-    def protected []=(index: Int, value: Int) = {}
+	def [](index: Int) = return 1
+	def protected []=(index: Int, value: Int) = ;
 
-}
+class B : A =
 
-class B : A {
-
-    Def G() = {
-        var a: A = new A(1)
-        print(a.B())
-        print(A.E())
-        a[1] = 1
-    }
-
-}
+	Def G() =
+		var a: A = new A(1)
+		print(a.B())
+		print(A.E())
+		a[1] = 1

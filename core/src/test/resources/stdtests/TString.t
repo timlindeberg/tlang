@@ -17,7 +17,7 @@ println(s.NonEmpty()) // res: true
 
 // Iterator
 for(val c in s)
-    print(c + " ") // res: S t r i n g
+	print(c + " ") // res: S t r i n g
 println()
 
 // To Numbers
@@ -142,7 +142,7 @@ println(s.Contains("lol")) // res: false
 var chars = {'a', 'b', 'c'}
 s.GetChars(1, 3, chars, 1)
 for(val c in chars)
-    print(c)
+	print(c)
 println() // res: atr
 
 // IndexOf
@@ -199,7 +199,7 @@ println(s.StartsWith("St", 2)) // res: false
 // ToArray
 chars = s.ToArray()
 for(val c in chars)
-    print(c + " ")
+	print(c + " ")
 println() // res: S t r i n g
 
 // ToLower/UpperCase
@@ -225,7 +225,5 @@ println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(new A())) // res: ObjectA
 
-
-class A {
-    Def toString() = "ObjectA"
-}
+class A =
+	Def toString() = "ObjectA"

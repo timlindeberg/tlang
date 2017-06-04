@@ -16,8 +16,6 @@ println(#a) // res: 85
 println(#b1) // res: 1231
 println(#b2) // res: 1237
 
-class A {
+class A =
 
-   Def #(a: A): Int = return 85
-
-}
+	Def #(a: A): Int = return 85

@@ -2,26 +2,21 @@ var a: A
 a = new B()
 (a as B).testB() // res: B
 
-class A {
+class A =
 
-    Def test(): Unit = println("A")
+	Def test(): Unit = println("A")
 
-    Def testA(): Unit = println("A")
+	Def testA(): Unit = println("A")
 
-}
+class B : A =
 
-class B : A {
+	Def test(): Unit = println("B")
 
-    Def test(): Unit = println("B")
+	Def testB(): Unit = println("B")
 
-    Def testB(): Unit = println("B")
+class C : B =
 
-}
+	Def test(): Unit = println("C")
 
-class C : B {
+	Def testC(): Unit = println("C")
 
-    Def test(): Unit = println("C")
-
-    Def testC(): Unit = println("C")
-
-}
