@@ -83,6 +83,17 @@ object Trees {
       }
       transformer.transform(this)
     }
+
+    def children: List[Tree] = {
+      val x = productIterator.flatMap {
+        case l: Traversable[_] if l.nonEmpty && l.head.isInstanceOf[Tree] => l.asInstanceOf[Traversable[Tree]]
+        case o: Option[_] if o.nonEmpty && o.get.isInstanceOf[Tree]       => o.get.asInstanceOf[Tree] :: Nil
+        case t: Tree                                                      => t :: Nil
+        case _                                                            => Nil
+      }
+      x.toList
+    }
+
   }
 
   // Signals that the node is a leaf and no further recursion is necessary
@@ -96,6 +107,8 @@ object Trees {
 
     def packageName: String = pack.address.mkString("::")
 
+    override def children: List[Tree] = imports.imports ::: classes
+
   }
 
   case class Annotation() extends Tree
@@ -103,6 +116,7 @@ object Trees {
   /*------------------------ Package and Import Trees -----------------------*/
 
   case class Package(address: List[String]) extends Tree with Leaf {
+    override val isEmpty = address.isEmpty
     val name: String = address.mkString("::")
   }
 
