@@ -78,7 +78,7 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
         readTokens(tail, token :: tokens)
       case Nil                              =>
         val dedent = (0 until indent).map(_ => createToken(DEDENT, 0)).toList
-        val eof = if (tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
+        val eof = if (tokens.nonEmpty && tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
           createToken(EOF, 0) :: dedent ::: (createToken(NEWLINE, 0) :: Nil)
         else
           createToken(EOF, 0) :: dedent
@@ -121,9 +121,10 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
       createToken(INDENT, newIndent) :: Nil
     else if (difference < 0)
       (0 until -difference).map(_ => createToken(DEDENT, newIndent)).toList
-    else
+    else {
       Nil
-
+    }
+    column = 1 + parsedChars
     indent = newIndent
     (tokens, rest)
   }

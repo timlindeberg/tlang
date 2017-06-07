@@ -12,10 +12,8 @@ import tlang.utils.Extensions._
 abstract class Pipeline[F, T] {
   self =>
 
-
-  protected def run(ctx: Context)(v: List[F]): List[T]
-
   val compilerStageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  protected def run(ctx: Context)(v: List[F]): List[T]
 
   def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
     def run(ctx: Context)(v: List[F]): List[G] = {
@@ -26,11 +24,11 @@ abstract class Pipeline[F, T] {
   }
 
   def execute(ctx: Context)(v: List[F]): List[T] = {
-    val infoPrinter = OutputPrinter(ctx)
     val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerStages.contains(this)) {
       ctx.executionTimes += this -> time
-      infoPrinter.printCode(this, output)
+      if (compilerStageName in ctx.printCodeStages)
+        OutputPrinter(ctx).printCode(this, output)
     }
     ctx.reporter.terminateIfErrors()
     output
@@ -40,29 +38,27 @@ abstract class Pipeline[F, T] {
 
     import ctx.formatting._
 
-    private val stageNameCapitalized = compilerStageName.capitalize
-    private val shouldPrint          = ctx.printCodeStages.contains(compilerStageName)
-    private val header               = Bold("Output after ") + Blue(stageNameCapitalized)
+    private val tabWidth = 2
 
+    private def header = Bold("Output after ") + Blue(compilerStageName.capitalize)
 
-    def printCode(stage: Pipeline[_, _], output: List[T]): Unit = {
-      if (!shouldPrint)
-        return
-
-      stage match {
-        case Lexer          => printTokens(output.asInstanceOf[List[List[Token]]])
-        case Parser         => printASTs(output.asInstanceOf[List[CompilationUnit]])
-        case NameAnalysis
-             | TypeChecking
-             | FlowAnalysis
-             | Desugaring   => printCompilationUnits(output.asInstanceOf[List[CompilationUnit]])
-        case CodeGeneration => printStackTraces(output.asInstanceOf[List[StackTrace]])
-        case _              =>
-      }
+    def printCode(stage: Pipeline[_, _], output: List[T]): Unit = stage match {
+      case Lexer          => printTokens(output.asInstanceOf[List[List[Token]]])
+      case Parser         => printASTs(output.asInstanceOf[List[CompilationUnit]])
+      case NameAnalysis
+           | TypeChecking
+           | FlowAnalysis
+           | Desugaring   => prettyPrintCode(output.asInstanceOf[List[CompilationUnit]])
+      case CodeGeneration => printStackTraces(output.asInstanceOf[List[StackTrace]])
+      case _              =>
     }
 
-    private def printCompilationUnits(cus: List[CompilationUnit]) = {
-      val blocks = cus.flatMap { cu => center(formatFileName(cu.source.mainName)) :: prettyPrinter(cu).trimWhiteSpaces :: Nil }
+    private def prettyPrintCode(cus: List[CompilationUnit]) = {
+      val blocks = cus.flatMap { cu =>
+        center(formatFileName(cu.source.mainName)) ::
+        prettyPrinter(cu).replaceAll("\t", " " * tabWidth).trimWhiteSpaces ::
+        Nil
+      }
       print(makeBox(header, blocks))
     }
 
@@ -100,8 +96,7 @@ abstract class Pipeline[F, T] {
     }
 
     private def printASTs(cus: List[CompilationUnit]) = {
-      val width = if (lineWidth <= 80) 1 else 2
-      val treePrinter = TreePrinter(ctx.formatting, width)
+      val treePrinter = TreePrinter(ctx.formatting)
       val blocks = cus.flatMap { cu => center(formatFileName(cu.source.mainName)) :: treePrinter(cu).trimWhiteSpaces :: Nil }
       print(makeBox(header, blocks))
     }

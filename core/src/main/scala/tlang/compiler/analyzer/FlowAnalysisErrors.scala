@@ -56,7 +56,7 @@ trait FlowAnalysisErrors extends ErrorHandling {
   case class DeadCode(startLine: Int, endLine: Int, override val pos: Positioned) extends FlowAnalysisWarning(0, pos) {
     lazy val message: String = {
       val line = if (startLine == endLine) err"line $startLine" else err"lines $startLine - $endLine"
-      err"Code on " + line + err"is unreachable."
+      err"Code on " + line + err" is unreachable."
     }
 
   }

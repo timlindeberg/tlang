@@ -49,12 +49,12 @@ Def ImplicitArrayConstructor() =
 	val ti = new Tester<Int>()
 	val ts = new Tester<String>()
 
-	val map: HashMap<Int, String> = {
-	    { 1, "1" },
-	    { 2, "2" },
-	    { 3, "3" },
-	    { 4, "4" }
-	}
+	val map: HashMap<Int, String> = [
+	    [ 1, "1" ],
+	    [ 2, "2" ],
+	    [ 3, "3" ],
+	    [ 4, "4" ]
+	]
 	ti.AssertEquals(map.Size(), 4)
 	ts.AssertEquals(map[1], "1")
 	ts.AssertEquals(map[2], "2")
@@ -63,11 +63,11 @@ Def ImplicitArrayConstructor() =
 
 	// TODO: This doesn't work since the arrays are inferred as Int[][] and not Object[][]
 /*
-	val map2: HashMap<Int, Int> = {
-		{1, 1},
-		{2, 2},
-		{3, 3},
-		{4, 4} }
+	val map2: HashMap<Int, Int> = [
+		[1, 1],
+		[2, 2],
+		[3, 3],
+		[4, 4] ]
 	ti.AssertEquals(map2.Size(), 4)
 	ts.AssertEquals(map2[1], 1)
 	ts.AssertEquals(map2[2], 2)
@@ -132,10 +132,10 @@ Def Iterators() =
 	val t = new Tester<Int>()
 	val map = new HashMap<Int, Int>()
 	val entries = new Int[4][2]
-	entries[0] = { 1, 1 }
-	entries[1] = { 2, 6 }
-	entries[2] = { 90, -5 }
-	entries[3] = {-2, 35}
+	entries[0] = [ 1, 1 ]
+	entries[1] = [ 2, 6 ]
+	entries[2] = [ 90, -5 ]
+	entries[3] = [-2, 35]
 
 	for(var i = 0; i < entries.Size(); i++)
 		map[entries[i][0]] = entries[i][1]

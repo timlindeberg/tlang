@@ -112,8 +112,8 @@ object Main extends MainErrors {
       ignoredImports = options(IgnoreDefaultImports),
       formatting = formatting
     )
-
   }
+
   private def printFilesToCompile(ctx: Context) = {
     import ctx.formatting._
     val numFiles = ctx.files.size

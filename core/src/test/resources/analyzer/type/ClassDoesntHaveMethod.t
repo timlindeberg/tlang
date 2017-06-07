@@ -1,6 +1,6 @@
 var a = new A()
 var b = 1
-var arr = {1, 2, 3}
+var arr = [ 1, 2, 3 ]
 a.Test() // res: T2001
 A.Test() // res: T2001
 

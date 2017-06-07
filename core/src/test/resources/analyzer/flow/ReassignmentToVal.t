@@ -25,7 +25,7 @@ class A =
 		F-- // res: F2005
 		--F // res: F2005
 
-		for(val i in {1, 2, 3})
+		for(val i in [ 1, 2, 3 ])
 			i = 5 // res: F2005
 
 		for(val i = 0; i < 5; i++); // res: F2005

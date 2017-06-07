@@ -125,10 +125,16 @@ class LexerPositionSpec extends FunSuite with Matchers {
   /*------------------------------ Identifiers ------------------------------*/
   testPositions(_.kind == IDKIND,
     "identifier" -> Pos(33, 1, 33, 11),
-    "a"          -> Pos(33, 12, 33, 13),
+    "x"          -> Pos(33, 12, 33, 13),
     "hej"        -> Pos(33, 14, 33, 17),
     "test"       -> Pos(33, 23, 33, 27),
-    "id"         -> Pos(33, 28, 33, 30)
+    "id"         -> Pos(33, 28, 33, 30),
+    "a"          -> Pos(67, 1, 67, 2),
+    "b"          -> Pos(68, 2, 68, 3),
+    "c"          -> Pos(69, 3, 69, 4),
+    "d"          -> Pos(70, 8, 70, 9),
+    "e"          -> Pos(70, 17, 70, 18),
+    "f"          -> Pos(71, 3, 71, 4)
   )
 
   /*---------------------------- Number literals ----------------------------*/

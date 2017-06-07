@@ -1,9 +1,3 @@
-
-
-
-
-
-
 class Class<T> : T, B, C =
 
 	var a: Int = 0
@@ -33,35 +27,31 @@ class Class<T> : T, B, C =
 			break
 
 		Func2(a / b)
-		var a = {
+		var a = [
 		    1 % 1l,
 		    1.0 & 1.3e-5f,
 		    10 | 5,
-		    1.0 ^ 'a',
+		    5.6 ^ 'a',
 		    "hej" << true,
 		    false >> null
-		}
+		]
 
 
 		A?.Func(a[b])
 		this.Func(a[:])
-		a.Func(a[1:2:3])
+		a.Func(a[  1  :  2  :  3  ])
 		super.Func(a[:2])
 		a[b] = c as A
 
 		a = a[1:]
-		a.b = a[1:2:]
+		a.b = a[ 1 : 2 : ]
 		c = new A[5]
 		d = (a is String) ? b : (c ?: 5)
 		d = new String(5, 7)
 		return d
 
 
-
-
 trait B
-
-
 
 
 extension A

@@ -4,12 +4,12 @@ for(val v in C)
 	print(v) // res: AAAAAAAAAA
 println()
 
-for(val v: Int in {1, 2, 3, 4, 5})
+for(val v: Int in [ 1, 2, 3, 4, 5 ])
 	print(v) // res: 12345
 println()
 
 
-val arr: Int[] = {1, 2, 3, 4, 5}
+val arr: Int[] = [ 1, 2, 3, 4, 5 ]
 
 for(var v in arr)
 	print(++v) // res: 23456

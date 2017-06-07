@@ -17,7 +17,7 @@ trait ErrorTester extends Tester {
     val sources = FileSource(file) :: Nil
 
     try {
-      Pipeline.run(ctx)(sources)
+      Pipeline.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
         if (PrintErrors)

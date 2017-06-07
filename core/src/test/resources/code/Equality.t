@@ -47,5 +47,5 @@ println(i1 == i2)      // res: false
 i1 = i2
 println(i1 == i2)      // res: true
 
-class A { }
-class B : A { }
+class A
+class B : A

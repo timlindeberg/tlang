@@ -139,7 +139,7 @@ println(s.EndsWith("Strin")) // res: false
 println(s.Contains("lol")) // res: false
 
 // GetChars
-var chars = {'a', 'b', 'c'}
+var chars = [ 'a', 'b', 'c' ]
 s.GetChars(1, 3, chars, 1)
 for(val c in chars)
 	print(c)

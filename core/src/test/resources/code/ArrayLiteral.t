@@ -1,17 +1,17 @@
-var intArray = {1 + 1, 2, 3}
+var intArray = [ 1 + 1, 2, 3 ]
 println(intArray.Size()) // res: 3
 println(intArray[0]) // res: 2
 println(intArray[1]) // res: 2
 println(intArray[2]) // res: 3
 
-var stringArray  = { "1", Test(), "3" }
+var stringArray  = [ "1", Test(), "3" ]
 println(stringArray[0]) // res: 1
 println(stringArray[1]) // res: Test
 println(stringArray[2]) // res: 3
 
-Test2({1, 8, 6, 9, 3}) // res: 1 8 6 9 3
+Test2([ 1, 8, 6, 9, 3 ]) // res: 1 8 6 9 3
 
-var m: Int[][][] = {{{1, 2}, {3, 4}}, {{5, 6}, {7, 8}}}
+var m: Int[][][] = [ [ [ 1, 2 ], [ 3, 4 ] ], [ [ 5, 6 ], [ 7, 8 ] ] ]
 
 println(m.Size()) // res: 2
 println(m[0].Size()) // res: 2

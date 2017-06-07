@@ -14,8 +14,6 @@ case class PrettyPrinter(formatting: Formatting) {
   import Trees._
   import formatting._
 
-  val Indentation = 3
-
   private var currentIndent: Int = 0
 
   private val seperator = "\n\n/* ----------------------------------------------------------------- */\n\n"
@@ -23,7 +21,7 @@ case class PrettyPrinter(formatting: Formatting) {
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
     currentIndent = 0
-    prettyPrint(t)
+    prettyPrint(t).replaceAll("\n\t+\n", "\n\n")
   }
 
   private def prettyPrint(t: Tree): String = t match {
@@ -36,9 +34,9 @@ case class PrettyPrinter(formatting: Formatting) {
     case TraitDecl(id, parents, fields, methods)                    => pp"${ N }trait ${ restOfClassDecl(id, parents, fields, methods) }"
     case ExtensionDecl(tpe, methods)                                => pp"${ N }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
     case VarDecl(tpe, id, expr, modifiers)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe)(t => pp": $t") }${ optional(expr)(t => pp" = $t") }"
-    case MethodDecl(modifiers, id, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") }${ optional(stat)(s => pp" = $s") }$N"
-    case ConstructorDecl(modifiers, _, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args, ", ") }) = $stat$N"
-    case OperatorDecl(modifiers, operatorType, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") } = $stat$N"
+    case MethodDecl(modifiers, id, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") }${ optional(stat)(s => pp" = $s") }"
+    case ConstructorDecl(modifiers, _, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args, ", ") }) = $stat"
+    case OperatorDecl(modifiers, operatorType, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") } = $stat"
     case Formal(tpe, id)                                            => pp"$id: $tpe"
     case Private()                                                  => pp"private"
     case Public()                                                   => pp"public"
@@ -50,7 +48,7 @@ case class PrettyPrinter(formatting: Formatting) {
     case UnitType()        => pp"Unit"
     case NullableType(tpe) => pp"$tpe?"
     // Statements
-    case Block(stats)                      => if (stats.isEmpty) "{}" else pp"$L$stats$R"
+    case Block(stats)                      => if (stats.isEmpty) ";" else pp"$L$stats$R"
     case If(condition, thn, els)           => pp"if($condition) ${ Stat(thn) }${ optional(els)(stat => pp"${ N }else ${ Stat(stat) }") }"
     case While(condition, stat)            => pp"while($condition) ${ Stat(stat) }"
     case For(init, condition, post, stat)  => pp"for(${ Separated(init, ", ") } ; $condition ; ${ Separated(post, ", ") }) ${ Stat(stat) }"
@@ -96,7 +94,7 @@ case class PrettyPrinter(formatting: Formatting) {
     case DoubleLit(value)                  => pp"$value"
     case CharLit(value)                    => pp"'${ escapeChar(pp"$value") }'"
     case StringLit(value)                  => "\"" + pp"${ escapeString(pp"$value") }" + "\""
-    case ArrayLit(expressions)             => pp"{ ${ Separated(expressions, ", ") } }"
+    case ArrayLit(expressions)             => pp"[ ${ Separated(expressions, ", ") } ]"
     case TrueLit()                         => pp"true"
     case FalseLit()                        => pp"false"
     case NullLit()                         => pp"null"
@@ -147,15 +145,15 @@ case class PrettyPrinter(formatting: Formatting) {
   private def restOfClassDecl(tpe: TypeTree, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
     val start = pp"$tpe${ parentList(parents) }"
     if (fields.isEmpty && methods.isEmpty)
-      return s"$start { }"
+      return s"$start"
 
     if (fields.isEmpty)
-      return pp"$start $L$N$methods$R"
+      return pp"$start = $L$methods$R"
 
     if (methods.isEmpty)
-      return pp"$start $L$N$fields$R$R"
+      return pp"$start = $L$fields$R"
 
-    pp"$start $L$N$fields$N$N$methods$R"
+    pp"$start = $L$fields$N$methods$R"
   }
 
   private def imports(imps: Imports) = {
@@ -238,23 +236,22 @@ case class PrettyPrinter(formatting: Formatting) {
   object L extends Formatter {
     def apply(): String = {
       currentIndent += 1
-      "{" + N()
+      N()
     }
   }
 
   object R extends Formatter {
     def apply(): String = {
       currentIndent -= 1
-      N() + "}"
+      N()
     }
   }
 
   object N extends Formatter {
-    def apply(): String = "\n" + " " * (Indentation * currentIndent)
+    def apply(): String = "\n" + "\t" * currentIndent
   }
 
   case class Stat(stat: StatTree) extends Formatter {
-
     def apply(): String = {
       stat match {
         case Block(_) => pp"$stat"

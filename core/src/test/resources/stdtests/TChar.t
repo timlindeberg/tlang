@@ -2,8 +2,8 @@ println('a'.Size())      // res: 16
 println('a'.Bytes())     // res: 2
 
 println(Char.CharCount(1234)) // res: 1
-println(Char.CodePointAt({'a', 'b', 'c'}, 1)) // res: 98
-println(Char.CodePointAt({'a', 'b', 'c'}, 1, 3)) // res: 98
+println(Char.CodePointAt([ 'a', 'b', 'c' ], 1)) // res: 98
+println(Char.CodePointAt([ 'a', 'b', 'c' ], 1, 3)) // res: 98
 // println(Char.ToChars(1234)
 println(Char.ToCodePoint('a', 'b')) // res: -56514462
 

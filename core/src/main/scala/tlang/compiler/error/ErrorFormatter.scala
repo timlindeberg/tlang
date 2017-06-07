@@ -4,7 +4,7 @@ import tlang.utils.Positioned
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.{Formatting, Marking}
 
-case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int) {
+case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int, tabWidth: Int = 2) {
 
   import formatting._
 
@@ -37,26 +37,44 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
 
   def locationInFile: List[(String, String)] = {
     val ctxLines = contextLines
-    val indent = getIndent(ctxLines)
+    val indent = getMinimumIndent(ctxLines)
 
-    val lines = if (formatting.useColor)
-      ctxLines.map { case (lineNum, line) =>
-        val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
-        (lineNum.toString, syntaxHighlighter(line, marking))
-      }
-    else
-      ctxLines.flatMap { case (lineNum, line) =>
-        indicatorLines(lineNum, line, indent)
-      }
+    val lines =
+      if (formatting.useColor)
+        ctxLines.map { case (lineNum, line) =>
+          val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
+          val coloredLine = syntaxHighlighter(line, marking)
+          (lineNum.toString, replaceTabs(coloredLine))
+        }
+      else
+        ctxLines.flatMap { case (lineNum, line) =>
+          indicatorLines(lineNum, replaceTabs(line), indent)
+        }
 
-    lines.map { case (lineNum, line) => (NumColor(lineNum), if (line.isEmpty) "" else line.substring(indent)) }
+    lines.map { case (lineNum, line) =>
+      val trimmedLine = if (line.isEmpty) line else line.substring(indent)
+      (NumColor(lineNum), trimmedLine)
+    }
   }
 
-  def getIndent(ctxLines: List[(Int, String)]): Int = {
-    val indents = ctxLines
-      .filter { case (_, str) => str.exists(!_.isWhitespace) }
-      .map { case (_, str) => str.indexWhere(!_.isWhitespace) }
-    if (indents.isEmpty) 0 else indents.min
+  def replaceTabs(s: String): String = s.replaceAll("\t", " " * tabWidth)
+
+  def getMinimumIndent(ctxLines: List[(Int, String)]): Int =
+    ctxLines
+      .filter { case (_, line) => line.nonEmpty }
+      .map { case (_, line) => indent(line) }.min
+
+  def indent(line: String): Int = {
+    var i = 0
+    var indent = 0
+    while (i < line.length && line(i).isWhitespace) {
+      if (line(i) == '\t')
+        indent += tabWidth
+      else
+        indent += 1
+      i += 1
+    }
+    indent
   }
 
   def contextLines: List[(Int, String)] = {

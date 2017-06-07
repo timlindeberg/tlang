@@ -150,7 +150,8 @@ class HashMap<K, V>: Map<K, V> =
 	def closestPowerOfTwo(value: Int) =
 		for(var i = 2; ; i <<= 1)
 			if(i >= value)
-			   return i
+				return i
+		return -1
 
 	def index(hashCode: Int, capacity: Int) = improvedHash(hashCode) & capacity - 1
 
@@ -167,13 +168,13 @@ class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> =
 	Var Hash: Int
 	Var Next: HashMapEntry<K, V>?
 
-	Def new(key: K, value: V)              = init(key, value, 0)
+	Def new(key: K, value: V)            = init(key, value, 0)
 	Def new(key: K, value: V, hash: Int) = init(key, value, hash)
 
 	Def Key() = key
 	Def Value() = value
 
-	Def SetKey(key: K) = (this.key = key)
+	Def SetKey(key: K)     = (this.key = key)
 	Def SetValue(value: V) = (this.value = value)
 
 	Def Iterator() = new EntryListIterator<K, V>(this)

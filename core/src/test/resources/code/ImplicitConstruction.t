@@ -10,7 +10,7 @@ println(impl) // res: 10
 PrintImplicit(10) // res: 10
 PrintImplicit(GetInt()) // res: 5
 
-var implArray: Implicit[] = {1, 2, 3}
+var implArray: Implicit[] = [ 1, 2, 3 ]
 
 implArray[1] = 5
 
@@ -19,13 +19,13 @@ for(var i = 0; i < 3; i++)
 println("")
 
 
-PrintImplicitArray({1, 2, 3}) // res: 1 2 3
+PrintImplicitArray([ 1, 2, 3 ]) // res: 1 2 3
 
 impl = 10 as Implicit
 println(impl) // res: 10
 
 
-var arr = {1, 2, 3}
+var arr = [ 1, 2, 3 ]
 
 var implArr: ImplicitArr = arr
 

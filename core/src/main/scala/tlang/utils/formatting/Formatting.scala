@@ -6,11 +6,15 @@ import tlang.Constants
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Boxes.{Box, Light, Simple}
+import tlang.utils.formatting.Boxes.Box
 import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
 
-object FancyFormatting extends Formatting(Light, LineWidth.defaultValue, useColor = true, asciiOnly = false)
-object SimpleFormatting extends Formatting(Simple, LineWidth.defaultValue, useColor = false, asciiOnly = true)
+object FancyFormatting extends Formatting(
+  Boxes.Light, LineWidth.defaultValue, useColor = true, asciiOnly = false
+)
+object SimpleFormatting extends Formatting(
+  Boxes.Simple, LineWidth.defaultValue, useColor = false, asciiOnly = true
+)
 
 case class Formatting(
   box: Box,
@@ -24,7 +28,7 @@ case class Formatting(
 
   import Console._
 
-  /*-------------------------------- Colors --------------------------------*/
+  /*--------------------------------- Colors --------------------------------*/
 
   val NoColor   = Color("", isActive = false)
   val Reset     = Color(RESET, useColor)
@@ -51,7 +55,7 @@ case class Formatting(
 
   val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
 
-  /*-------------------------------- Color Scheme --------------------------------*/
+  /*------------------------------ Color Scheme -----------------------------*/
 
   val KeywordColor = Color(colorScheme.Keyword, useColor)
   val VarColor     = Color(colorScheme.Variable, useColor)
@@ -62,7 +66,7 @@ case class Formatting(
   val CommentColor = Color(colorScheme.Comment, useColor)
   val SymbolColor  = Color(colorScheme.Symbol, useColor)
 
-  /*-------------------------------- Utilities --------------------------------*/
+  /*------------------------------- Utilities -------------------------------*/
 
   val wordWrapper           = AnsiWordWrapper()
   val syntaxHighlighter     = SyntaxHighlighter(this)
@@ -73,7 +77,7 @@ case class Formatting(
 
   def spinner: Spinner = ASCIISpinner() // if (asciiOnly) ASCIISpinner() else BrailSpinner()
 
-  /*-------------------------------- Box handling --------------------------------*/
+  /*------------------------------ Box handling -----------------------------*/
 
   private val Indent     = 2
   private val Width: Int = lineWidth - (2 * Indent)

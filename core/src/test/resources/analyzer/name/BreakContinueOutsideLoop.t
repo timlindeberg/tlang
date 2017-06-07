@@ -19,7 +19,7 @@ while(true)
 		while(true)
 			break
 
-for(val v in {1, 2, 3, 4})
+for(val v in [ 1, 2, 3, 4 ] )
 	while(true)
 		break
 

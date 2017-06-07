@@ -1,4 +1,4 @@
-var arr: A?[] = { new A(), null, GetA() }
+var arr: A?[] = [ new A(), null, GetA() ]
 
 arr[0].Test()
 arr[1].Test() // res: F2001
@@ -52,7 +52,7 @@ if(arr[i + j])
 	if(arr[i])
 		arr[1].Test()
 
-var nullableNullableArr: A?[]?[] = { GetNullableArr(), null, GetNullableArr() }
+var nullableNullableArr: A?[]?[] = [ GetNullableArr(), null, GetNullableArr() ]
 
 if(nullableNullableArr[0] && nullableNullableArr[0][1])
 	nullableNullableArr[0][1].Test()
@@ -74,7 +74,7 @@ arr[2].Test()
 /*------------------------------------------------------------------------*/
 
 Def GetA(): A? = null
-Def GetNullableArr(): A?[] = return { new A(), null, new A() }
+Def GetNullableArr(): A?[] = return [ new A(), null, new A() ]
 
 class A =
 	Def Test() = println("Test")

@@ -3,7 +3,7 @@ println(a[-1]) // res: F2004
 
 println(a[5]) // res: F2004
 
-a = {1, 2, 3, 4, 5}
+a = [ 1, 2, 3, 4, 5 ]
 
 var i = 5
 var j = 5
@@ -47,4 +47,4 @@ println(a[2])  // res: F2004
 a = new Int[j]
 println(a[2])
 
-Def GetArr() = return {1, 2, 3, 4, 5}
+Def GetArr() = return [ 1, 2, 3, 4, 5 ]

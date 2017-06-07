@@ -21,7 +21,7 @@ println("All tests succeeded.") // res: All tests succeeded.
 
 Def Construction() =
 	val t = new Tester<Int>()
-	val v1: Vector<Int> = {1, 2, 3}
+	val v1: Vector<Int> = [ 1, 2, 3 ]
 	t.AssertEquals(v1.Get(0), 1)
 	t.AssertEquals(v1.Get(1), 2)
 	t.AssertEquals(v1.Get(2), 3)
@@ -45,7 +45,7 @@ Def Construction() =
 
 Def Set() =
 	val t = new Tester<Int>()
-	val v1: Vector<Int> = {1, 2, 3}
+	val v1: Vector<Int> = [ 1, 2, 3 ]
 
 	v1.Set(1, 1)
 	v1[2] = 1
@@ -56,7 +56,7 @@ Def Set() =
 
 Def IsEmpty() =
 	val t = new Tester<Int>()
-	val v1: Vector<Int> = {1, 2, 3}
+	val v1: Vector<Int> = [ 1, 2, 3 ]
 	val v2: Vector<Int> = new Vector<Int>()
 
 	t.AssertTrue(v1.NonEmpty())
@@ -67,7 +67,7 @@ Def IsEmpty() =
 
 Def Clear() =
 	val t = new Tester<Int>()
-	val v1: Vector<Int> = {1, 2, 3}
+	val v1: Vector<Int> = [ 1, 2, 3 ]
 	v1.Clear()
 
 	t.AssertTrue(v1.IsEmpty())
@@ -75,7 +75,7 @@ Def Clear() =
 
 Def Iterator() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 3}
+	val v: Vector<Int> = [ 1, 2, 3 ]
 	val it = v.Iterator()
 
 	t.AssertTrue(it.HasNext())
@@ -98,7 +98,7 @@ Def Iterator() =
 
 Def Add() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1}
+	val v: Vector<Int> = [ 1 ]
 	v.AddFirst(0)
 	t.AssertEquals(v[0], 0)
 	t.AssertEquals(v[1], 1)
@@ -117,7 +117,7 @@ Def Add() =
 	t.AssertEquals(v[3], 3)
 	t.AssertEquals(v.Size(), 4)
 
-	val v2: Vector<Int> = {4, 5, 6}
+	val v2: Vector<Int> = [ 4, 5, 6 ]
 	v.AddAll(v2)
 	t.AssertEquals(v[0], 0)
 	t.AssertEquals(v[1], 2)
@@ -130,8 +130,8 @@ Def Add() =
 
 Def Remove() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 3, 4, 5}
-	val v2: Vector<Int> = {2, 3}
+	val v: Vector<Int> = [ 1, 2, 3, 4, 5 ]
+	val v2: Vector<Int> = [ 2, 3 ]
 
 	t.AssertFalse(v.Remove(0))
 	t.AssertFalse(v.Remove(6))
@@ -161,7 +161,7 @@ Def Remove() =
 
 Def RemoveIndex() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 3, 4, 5}
+	val v: Vector<Int> = [ 1, 2, 3, 4, 5 ]
 
 	v.RemoveIndex(3)
 	t.AssertEquals(v[0], 1)
@@ -183,7 +183,7 @@ Def RemoveIndex() =
 
 Def IndexOf() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+	val v: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
 
 	t.AssertEquals(v.IndexOf(1), 0)
 	t.AssertEquals(v.IndexOf(2), 1)
@@ -201,15 +201,15 @@ Def IndexOf() =
 
 Def FirstLast() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 2, 4, 5}
+	val v: Vector<Int> = [ 1, 2, 2, 4, 5 ]
 
 	t.AssertEquals(v.First(), 1)
 	t.AssertEquals(v.Last(), 5)
 
 Def Contains() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
-	val v2: Vector<Int> = {1, 4, 5}
+	val v: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
+	val v2: Vector<Int> = [ 1, 4, 5 ]
 
 	t.AssertTrue(v.Contains(1))
 	t.AssertTrue(v.Contains(2))
@@ -224,7 +224,7 @@ Def Contains() =
 
 Def ToArray() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+	val v: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
 	val a: Int[] = v.ToArray()
 	t.AssertEquals(a.Size(), 6)
 	t.AssertEquals(a[0], 1)
@@ -236,17 +236,17 @@ Def ToArray() =
 
 Def MakeString() =
 	val t = new Tester<String>()
-	val v: Vector<Int> = {1, 2, 2, 4, 5, 1}
+	val v: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
 	t.AssertEquals(v.MakeString(" + "), "1 + 2 + 2 + 4 + 5 + 1")
 	t.AssertEquals(v.toString(), "[ 1, 2, 2, 4, 5, 1 ]")
 
 Def Equals() =
 	val t = new Tester<Int>()
 
-	val v1: Vector<Int> = {1, 2, 2, 4, 5, 1}
-	val v2: Vector<Int> = {1, 2, 2, 4, 5, 1}
-	val v3: Vector<Int> = {1, 2, 3, 4, 5, 1}
-	val v4: Vector<Int> = {1, 4, 5}
+	val v1: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
+	val v2: Vector<Int> = [ 1, 2, 2, 4, 5, 1 ]
+	val v3: Vector<Int> = [ 1, 2, 3, 4, 5, 1 ]
+	val v4: Vector<Int> = [ 1, 4, 5 ]
 
 	t.AssertTrue(v1 == v1)
 	t.AssertTrue(v1 == v2)
@@ -270,7 +270,7 @@ Def Equals() =
 
 Def Foreach() =
 	val t = new Tester<Int>()
-	val v: Vector<Int> = {1, 2, 3, 4, 5, 6}
+	val v: Vector<Int> = [ 1, 2, 3, 4, 5, 6 ]
 
 	var i = 1
 	for(var value in v)
@@ -278,7 +278,7 @@ Def Foreach() =
 
 Def Splice() =
 	val t = new Tester<String>()
-	val v: Vector<Int> = {1, 2, 3, 4, 5, 6}
+	val v: Vector<Int> = [ 1, 2, 3, 4, 5, 6 ]
 
 	t.AssertEquals(v[:].toString(), "[ 1, 2, 3, 4, 5, 6 ]")
 	t.AssertEquals(v[1:].toString(), "[ 2, 3, 4, 5, 6 ]")

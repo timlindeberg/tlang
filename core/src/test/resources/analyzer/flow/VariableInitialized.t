@@ -69,7 +69,7 @@ for(var i = 0; i < 5; i++)
 
 g.Test() // res: F2006
 
-for(val x in {new A(), new A(), new A()})
+for(val x in [ new A(), new A(), new A() ])
 	x.Test()
 
 class A =

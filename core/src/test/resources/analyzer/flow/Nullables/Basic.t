@@ -38,7 +38,7 @@ if(a != null)
 if(b != null)
 	println(a + b) // res: F2000
 
-var arr: Int[]? = {1, 2, 3}
+var arr: Int[]? = [ 1, 2, 3 ]
 
 println(arr[0])
 

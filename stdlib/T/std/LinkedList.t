@@ -7,7 +7,7 @@ import T::std::Iterator
 class LinkedList<T> : List<T> =
 
 	var first: LinkedListNode<T>? = null
-	var last: LinkedListNode<T>?  = null
+	var last:  LinkedListNode<T>? = null
 
 	var size = 0
 

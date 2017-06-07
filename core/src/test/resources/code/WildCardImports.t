@@ -1,7 +1,7 @@
 import java::util::*
 import java::math::*
 
-val a = { 5, 4, 3, 2, 1 }
+val a = [ 5, 4, 3, 2, 1 ]
 Arrays.sort(a)
 println(Arrays.toString(a)) // res: [1, 2, 3, 4, 5]
 

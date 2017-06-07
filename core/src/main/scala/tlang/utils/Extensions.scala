@@ -141,6 +141,7 @@ object Extensions {
     def print: T = { println(t); t }
     def print(prefix: String): T = { println(prefix + ": " + t); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
+    def in(set: Set[T]): Boolean = set.contains(t)
     def in(range: Range): Boolean = range.contains(t)
   }
 

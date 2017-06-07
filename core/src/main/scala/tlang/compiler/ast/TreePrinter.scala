@@ -5,17 +5,17 @@ import tlang.utils.formatting.Formatting
 
 case class TreePrinter(formatting: Formatting, width: Int = 1) {
 
-  import formatting._
   import formatting.box._
 
-  private val seperator = "\n\n"
-  private val indent    = List.fill(width)(' ')
+  private val seperator    = "\n\n"
+  private val indent       = List.fill(width)(' ')
+  private val whitespace   = ' ' :: indent
+  private val continuation = │.head :: indent
 
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
     val sb = new StringBuilder
-    val stack = List[Char]()
-    printTree(t, sb, stack, first = true)
+    printTree(t, sb, Nil, first = true)
     sb.toString()
   }
 
@@ -29,18 +29,21 @@ case class TreePrinter(formatting: Formatting, width: Int = 1) {
     if (!first)
       sb ++= ┬ + " "
 
-    sb ++= formatTree(tree) + "\n"
-    for ((child, i) <- children.zipWithIndex) {
+    sb ++= formatTree(tree) + '\n'
+    children.zipWithIndex foreach { case (child, i) =>
       val last = i == children.size - 1
-      sb ++= stack.reverseIterator.mkString("") + ((if (last) └ else ├) + ─ * width)
+      sb ++= stack.mkString("")
+      sb ++= (if (last) └ else ├) + (─ * width)
 
-      val c = if (last) │.head else ' '
+      val c = if (last) whitespace else continuation
 
-      printTree(child, sb, (indent :+ c) ::: stack, first = false)
+      printTree(child, sb, stack ::: c, first = false)
     }
   }
 
   private def formatTree(t: Tree): String = {
+    import formatting._
+
     val content = t match {
       case c: CompilationUnit  => formatFileName(c.source.mainName)
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)

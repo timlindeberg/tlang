@@ -30,7 +30,7 @@ print println error
 // null
 null /* null
      null          */
-identifier a hej /**/ test id // dsa
+identifier x hej /**/ test id // dsa
 
 // Literals
 
@@ -67,5 +67,5 @@ ist gut \n
 a
 	b
 		c
-			d
-		e
+			    d        e
+		f
