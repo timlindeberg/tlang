@@ -1,5 +1,6 @@
-# T-tlang.compiler
-A tlang.compiler project for the awesome new T-language. T is an object-oriented language compiled to the JVM which supports C++-like generics. The T-tlang.compiler is written in Scala.
+# T-lang Compiler
+A compiler project for the awesome new T-language. T is an object-oriented language compiled to the JVM which supports C++-like generics. 
+The T-tlang.compiler is written in Scala.
 
 ## Features
 * Classes and inheritence.
@@ -10,8 +11,9 @@ A tlang.compiler project for the awesome new T-language. T is an object-oriented
 * Extension methods (currently only for classes).
 * Can interface with Java code.
 * Elimination of null pointer exceptions through nullable types and mandatory null checks. Accessing a nullable type without a null check is a compilation error.
-* Great error messages.
+* Beautiful error messages.
 * Pretty printing with syntax highlighting.
+* REPL with syntax highlighting, multiline-navigation and clean formatting.
 
 ## Planned features.
 * Extension methods for types (e.g extension methods for Int[]? (nullable Int array)).
