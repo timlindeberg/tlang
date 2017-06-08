@@ -36,7 +36,7 @@ The T-tlang.compiler is written in Scala.
 Note that these examples uses Scala for syntax highlighting which doesn't quite match T-Language.
 
 ### Hash Map
-```
+```scala
 package T::std
 
 import T::std::Map
@@ -311,8 +311,8 @@ class EntryIterator<K, V>: Iterator<MapEntry<K, V>> =
 
 ```
 
-### Matrix 
-```
+### Matrix class 
+```scala
 package T::std
 
 class Matrix<T> =
