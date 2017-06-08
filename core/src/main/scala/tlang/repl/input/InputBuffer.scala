@@ -49,20 +49,11 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     val (start, end) = startAndEndOfLine
     val line = if (linePositions.size <= 1) currentCord else currentCord.slice(start, end)
     val newCord = char match {
-      case '\t'                                        =>
-        val numSpaces = tabSize - (mainCursor.x % tabSize)
-        addChars(" " * numSpaces)
-      case '\n'                                        =>
-        val firstNonWhitespace = line.iterator.indexWhere(!_.isWhitespace)
-        var indent = " " * (if (firstNonWhitespace == -1) line.length else firstNonWhitespace)
-        if (line.nonEmpty && line(line.length - 1) == '{')
-          indent += " " * tabSize
-
+      case '\n' =>
+        val indentation = line.iterator.indexWhere(_ != '\t')
+        val indent = "\t" * (if (indentation == -1) 0 else indentation)
         addChars('\n' + indent)
-      case '}' if line.iterator.forall(_.isWhitespace) =>
-        val trimmed = (0 until tabSize).foldLeft(currentCord) { case (current, _) => _remove(current) }
-        addChar('}', trimmed)
-      case _                                           =>
+      case _    =>
         addChar(char)
     }
     history += InputState(newCord, linePositions, mainCursor.position)

@@ -17,6 +17,8 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   private val InputColor        = Bold + Magenta
   private val YIndent           = 3
   private val XIndent           = 2
+  private val TabWidth          = 1
+  private val TabReplacement    = " " * TabWidth
   private val ShowCtrlCReminder = FiniteDuration(2, "sec")
   private val spinner           = formatting.spinner
 
@@ -45,6 +47,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
     inputText = syntaxHighlighter(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
+      .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()
   }
@@ -71,6 +74,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
 
     val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
     inputText = syntaxHighlighter(inputText, markings)
+      .replaceAll("\t", TabReplacement)
 
     val errorLines = errors.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
