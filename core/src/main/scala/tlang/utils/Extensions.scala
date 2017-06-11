@@ -58,10 +58,19 @@ object Extensions {
     (res, (t1 - t0) / 1000000000.0)
   }
 
-  def benchmark[T](block: => T): (List[Double], Double) = {
+  def benchmark[T](block: => T): T = {
     val iterations = 10
-    val times = (0 until iterations).map { _ => measureTime(block)._2 }.toList
+    (iterations - 1) times {
+      block
+    }
+
+    var res: T = block
+    val times = (0 until iterations).map { _ =>
+      res = block
+      measureTime(block)._2
+    }.toList
     (times, times.sum / iterations)
+    res
   }
 
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {

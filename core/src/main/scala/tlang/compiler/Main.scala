@@ -63,7 +63,7 @@ object Main extends MainErrors {
 
     val cus = runFrontend(ctx)
 
-    CodeGeneration.run(ctx)(cus)
+    CodeGeneration.execute(ctx)(cus)
 
     if (ctx.reporter.hasWarnings)
       print(ctx.reporter.messages.formattedWarnings)

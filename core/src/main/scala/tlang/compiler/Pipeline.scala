@@ -3,10 +3,11 @@ package tlang.compiler
 import cafebabe.StackTrace
 import tlang.Context
 import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
+import tlang.compiler.ast.Parser
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.ast.{Parser, TreePrinter}
 import tlang.compiler.code.{CodeGeneration, Desugaring}
 import tlang.compiler.lexer.{Lexer, Token}
+import tlang.compiler.modification.Templates
 import tlang.utils.Extensions._
 
 abstract class Pipeline[F, T] {
@@ -26,7 +27,8 @@ abstract class Pipeline[F, T] {
   def execute(ctx: Context)(v: List[F]): List[T] = {
     val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerStages.contains(this)) {
-      ctx.executionTimes += this -> time
+      if (!ctx.executionTimes.contains(this))
+        ctx.executionTimes += this -> time
       if (compilerStageName in ctx.printCodeStages)
         OutputPrinter(ctx).printCode(this, output)
     }
@@ -44,22 +46,14 @@ abstract class Pipeline[F, T] {
 
     def printCode(stage: Pipeline[_, _], output: List[T]): Unit = stage match {
       case Lexer          => printTokens(output.asInstanceOf[List[List[Token]]])
-      case Parser         => printASTs(output.asInstanceOf[List[CompilationUnit]])
-      case NameAnalysis
+      case Parser
+           | Templates
+           | NameAnalysis
            | TypeChecking
            | FlowAnalysis
-           | Desugaring   => prettyPrintCode(output.asInstanceOf[List[CompilationUnit]])
+           | Desugaring   => printASTs(output.asInstanceOf[List[CompilationUnit]])
       case CodeGeneration => printStackTraces(output.asInstanceOf[List[StackTrace]])
       case _              =>
-    }
-
-    private def prettyPrintCode(cus: List[CompilationUnit]) = {
-      val blocks = cus.flatMap { cu =>
-        center(formatFileName(cu.source.mainName)) ::
-        prettyPrinter(cu).replaceAll("\t", " " * tabWidth).trimWhiteSpaces ::
-        Nil
-      }
-      print(makeBox(header, blocks))
     }
 
     private def printStackTraces(stackTraces: List[StackTrace]) = {
@@ -96,8 +90,16 @@ abstract class Pipeline[F, T] {
     }
 
     private def printASTs(cus: List[CompilationUnit]) = {
-      val treePrinter = TreePrinter(ctx.formatting)
-      val blocks = cus.flatMap { cu => center(formatFileName(cu.source.mainName)) :: treePrinter(cu).trimWhiteSpaces :: Nil }
+      val mediumHeaderColor = Blue + Bold
+      val blocks = cus.flatMap { cu =>
+        val printedTree = treePrinter(cu).trimWhiteSpaces
+        center(formatFileName(cu.source.mainName)) ::
+        center(mediumHeaderColor("Pretty printed code")) + "\n\n" +
+        prettyPrinter(cu).replaceAll("\t", " " * tabWidth).trimWhiteSpaces ::
+        center(mediumHeaderColor("Formatted AST")) + "\n\n" + treePrinter.header ::
+        printedTree ::
+        Nil
+      }
       print(makeBox(header, blocks))
     }
   }

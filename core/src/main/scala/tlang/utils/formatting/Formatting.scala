@@ -3,7 +3,7 @@ package tlang.utils.formatting
 import java.io.File
 
 import tlang.Constants
-import tlang.compiler.ast.PrettyPrinter
+import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Boxes.Box
@@ -53,18 +53,19 @@ case class Formatting(
   val CyanBG    = Color(CYAN_B, useColor)
   val WhiteBG   = Color(WHITE_B, useColor)
 
-  val AllColors: Array[Color] = Array(Red, Green, White, Yellow, Blue, Reset, Magenta, Cyan)
+  val AllColors: Array[Color] = Array(Black, Red, Green, White, Yellow, Blue, Magenta, Cyan, White)
 
   /*------------------------------ Color Scheme -----------------------------*/
 
-  val KeywordColor = Color(colorScheme.Keyword, useColor)
-  val VarColor     = Color(colorScheme.Variable, useColor)
-  val ClassColor   = Color(colorScheme.Class, useColor)
-  val MethodColor  = Color(colorScheme.Method, useColor)
-  val StringColor  = Color(colorScheme.String, useColor)
-  val NumColor     = Color(colorScheme.Number, useColor)
-  val CommentColor = Color(colorScheme.Comment, useColor)
-  val SymbolColor  = Color(colorScheme.Symbol, useColor)
+  val KeywordColor     = Color(colorScheme.Keyword, useColor)
+  val VarColor         = Color(colorScheme.Variable, useColor)
+  val ClassColor       = Color(colorScheme.Class, useColor)
+  val MethodColor      = Color(colorScheme.Method, useColor)
+  val StringColor      = Color(colorScheme.String, useColor)
+  val NumColor         = Color(colorScheme.Number, useColor)
+  val CommentColor     = Color(colorScheme.Comment, useColor)
+  val SymbolColor      = Color(colorScheme.Symbol, useColor)
+  val FileColor: Color = Bold + Magenta
 
   /*------------------------------- Utilities -------------------------------*/
 
@@ -72,8 +73,12 @@ case class Formatting(
   val syntaxHighlighter     = SyntaxHighlighter(this)
   val stackTraceHighlighter = StackTraceHighlighter(this)
   val prettyPrinter         = PrettyPrinter(this)
+  val treePrinter           = TreePrinter(this)
 
-  val listMarker: String = if (asciiOnly) "*" else "•"
+  /*----------------------------- ASCII Variants ----------------------------*/
+
+  def ListMarker: String = if (asciiOnly) "*" else "•"
+  def Cross: String = if (asciiOnly) "-" else "×"
 
   def spinner: Spinner = ASCIISpinner() // if (asciiOnly) ASCIISpinner() else BrailSpinner()
 
@@ -172,16 +177,16 @@ case class Formatting(
   def formatFileName(file: Option[File]): String = {
     file match {
       case Some(f) => formatFileName(f)
-      case None    => Bold(Magenta("No file"))
+      case None    => FileColor("No file")
     }
   }
 
   def formatFileName(file: File): String = formatFileName(file.getName)
 
-  def formatFileName(name: String): String = Bold(Magenta(name) + Constants.FileEnding)
+  def formatFileName(name: String): String = FileColor(name + Constants.FileEnding)
 
   def makeList(items: Traversable[String], indent: String = "  "): String = {
-    items.map(item => s"$indent$listMarker $item").mkString("\n")
+    items.map(item => s"$indent$ListMarker $item").mkString("\n")
   }
 
   private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
