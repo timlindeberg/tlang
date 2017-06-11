@@ -7,10 +7,11 @@ import tlang.Context
 import tlang.compiler.lexer.Tokens._
 import tlang.utils.Extensions._
 import tlang.utils.Source
+import tlang.utils.formatting.Formatting
 
 import scala.annotation.tailrec
 
-object Lexer extends Pipeline[Source, List[Token]] {
+object Lexing extends CompilerPhase[Source, List[Token]] {
 
   def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
@@ -18,6 +19,11 @@ object Lexer extends Pipeline[Source, List[Token]] {
       tokenizer()
     }
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Lexes the input and produces tokens.
+    """.stripMargin.trim
 }
 
 class Tokenizer(override val ctx: Context, override val source: Source) extends LexerErrors {

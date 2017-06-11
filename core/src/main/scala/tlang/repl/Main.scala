@@ -23,8 +23,6 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     val options = Options(args)
-    tlang.compiler.Main.checkTHome()
-
     if (options(Version)) {
       printVersion()
       sys.exit()

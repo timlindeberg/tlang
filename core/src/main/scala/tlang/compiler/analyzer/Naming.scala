@@ -8,9 +8,10 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
+import tlang.utils.formatting.Formatting
 import tlang.{Constants, Context}
 
-object NameAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
+object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     val globalScope = new GlobalScope(ClassSymbolLocator(ctx.classPath))
@@ -33,6 +34,11 @@ object NameAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
 
     cus
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Resolves names and attaches symbols to tress.
+    """.stripMargin.trim
 
 }
 
@@ -537,7 +543,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalSco
   }
 
   private def ensureMethodNotDefined(meth: MethodDeclTree): Unit = {
-    // This is done in the binding stage since we are then guaranteed that
+    // This is done in the binding phase since we are then guaranteed that
     // all types have been added to the global scope
     val name = meth.id.name
     val argTypes = meth.args.map(_.tpe.getType)
@@ -549,7 +555,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalSco
   }
 
   private def ensureOperatorNotDefined(operator: OperatorDecl): Unit = {
-    // This is done in the binding stage since we are then guaranteed that
+    // This is done in the binding phase since we are then guaranteed that
     // all types have been added to the global scope
     val operatorType = operator.operatorType
     val argTypes = operator.args.map(_.tpe.getType)

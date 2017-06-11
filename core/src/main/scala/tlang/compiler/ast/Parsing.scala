@@ -9,16 +9,22 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
+import tlang.utils.formatting.Formatting
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-object Parser extends Pipeline[List[Token], CompilationUnit] {
+object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
       val astBuilder = new ASTBuilder(ctx, tokens.toArray)
       astBuilder.compilationUnit
     }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Parses the tokens produced by the lexing phase and generates an AST.
+    """.stripMargin.trim
 
 }
 

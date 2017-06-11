@@ -2,15 +2,16 @@ package tlang.compiler
 
 import tlang.Constants._
 import tlang.Context
-import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
-import tlang.compiler.ast.Parser
+import tlang.compiler.analyzer.{Flowing, Naming, Typing}
+import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
-import tlang.compiler.code.{CodeGeneration, Desugaring}
+import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.lexer.Lexer
-import tlang.compiler.modification.Templates
+import tlang.compiler.lexer.Lexing
+import tlang.compiler.modification.Templating
 import tlang.compiler.options.{Flags, Options}
+import tlang.utils.Extensions._
 import tlang.utils.formatting.Formatting
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
@@ -18,18 +19,19 @@ object Main extends MainErrors {
 
   import Flags._
 
-  val FrontEnd: Pipeline[Source, CompilationUnit] =
-    Lexer andThen Parser andThen Templates andThen
-    NameAnalysis andThen TypeChecking andThen FlowAnalysis andThen Desugaring
+  val FrontEnd: CompilerPhase[Source, CompilationUnit] =
+    Lexing andThen Parsing andThen Templating andThen
+    Naming andThen Typing andThen Flowing andThen Lowering
 
-  val CompilerStages = List(
-    Lexer,
-    Parser,
-    Templates,
-    NameAnalysis,
-    TypeChecking,
-    FlowAnalysis,
-    Desugaring,
+
+  val CompilerPhases = List(
+    Lexing,
+    Parsing,
+    Templating,
+    Naming,
+    Typing,
+    Flowing,
+    Lowering,
     CodeGeneration
   )
 
@@ -37,48 +39,34 @@ object Main extends MainErrors {
     val options = Options(args)
 
     if (args.isEmpty) {
-      printHelp(options.formatting)
+      print(helpInfo(options.formatting))
       sys.exit(1)
     }
 
-    checkTHome()
+    printHelp(options)
 
-    if (options(Version)) {
-      printVersion()
-      sys.exit()
-    }
-
-    if (options(Help).nonEmpty) {
-      printHelp(options.formatting, options(Help))
-      sys.exit()
-    }
+    if (!isValidTHomeDirectory(TDirectory))
+      FatalInvalidTHomeDirectory(TDirectory, THome)
 
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
     val ctx = createContext(options)
 
-    if (options(Verbose))
-      printFilesToCompile(ctx)
+    if (options(Verbose)) printFilesToCompile(ctx)
 
-    val cus = runFrontend(ctx)
+    val CUs = runFrontend(ctx)
 
-    CodeGeneration.execute(ctx)(cus)
+    CodeGeneration.execute(ctx)(CUs)
 
     if (ctx.reporter.hasWarnings)
       print(ctx.reporter.messages.formattedWarnings)
-
 
     if (options(Verbose))
       printExecutionTimes(ctx)
 
     if (options(Exec))
-      executeProgram(ctx, cus)
-  }
-
-  def checkTHome(): Unit = {
-    if (!isValidTHomeDirectory(TDirectory))
-      FatalInvalidTHomeDirectory(TDirectory, THome)
+      executeProgram(ctx, CUs)
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -107,7 +95,7 @@ object Main extends MainErrors {
       files = options.files,
       classPath = ClassPath.Default ++ options.classPaths,
       outDirs = options.outDirectories,
-      printCodeStages = options(PrintOutput),
+      printCodePhase = options(PrintOutput),
       printInfo = options(Verbose),
       ignoredImports = options(IgnoreDefaultImports),
       formatting = formatting
@@ -127,9 +115,9 @@ object Main extends MainErrors {
   private def printExecutionTimes(ctx: Context) = {
     import ctx.formatting._
     val totalTime = ctx.executionTimes.values.sum
-    val individualTimes = CompilerStages.map { stage =>
-      val name = Blue(stage.compilerStageName.capitalize)
-      val time = ctx.executionTimes(stage)
+    val individualTimes = CompilerPhases.map { phase =>
+      val name = Blue(phase.name.capitalize)
+      val time = ctx.executionTimes(phase)
       val t = Green(f"$time%.2f$Reset")
       f"$name%-25s $t s"
     }.mkString("\n")
@@ -139,27 +127,62 @@ object Main extends MainErrors {
     print(makeBox(header, List(individualTimes)))
   }
 
-  private def printVersion() = println(s"T-Compiler $VersionNumber")
+  private def versionInfo = s"T-Compiler $VersionNumber"
 
-  private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
-    args foreach { arg =>
-      import formatting._
+  private def printHelp(options: Options) = {
+    val formatting = options.formatting
 
-      val help = Flag.get(arg) match {
-        case Some(flag) =>
-          val header = flag.flagName(formatting)
-          makeBox(header, List(flag.extendedDescription(formatting)))
-        case None       =>
-          val tcomp = Green("tcomp")
-          val options = Blue("options")
-          val source = Blue("source files")
-          val header = s"> $tcomp <$options> <$source> \n\n" + Bold(Magenta("Options"))
-
-          val flags = Flag.All.map { flag => (flag.flagName(formatting), flag.description(formatting)) }
-          makeBoxWithColumn(header, flags)
-      }
-      print(help)
+    if (options(Version)) {
+      print(versionInfo)
+      sys.exit(0)
     }
+
+    if (options(Phases)) {
+      print(phaseInfo(options.formatting))
+      sys.exit(0)
+    }
+
+    val args = options(Help)
+    if (args.contains("")) {
+      print(helpInfo(formatting))
+      sys.exit(0)
+    }
+
+    args.foreach(Flag.get(_) ifDefined { flag =>
+      print(flagInfo(flag, formatting))
+    })
+
+    if (args.nonEmpty) {
+      sys.exit(0)
+    }
+  }
+
+  private def flagInfo(flag: Flag, formatting: Formatting) = {
+    import formatting._
+
+    val header = flag.flagName(formatting)
+    makeBox(header, List(flag.extendedDescription(formatting)))
+  }
+
+  private def helpInfo(formatting: Formatting) = {
+    import formatting._
+
+    val tcomp = Green("tcomp")
+    val options = Blue("options")
+    val source = Blue("source files")
+    val header = s"> $tcomp <$options> <$source> \n\n" + Bold(Magenta("Options"))
+
+    val flags = Flag.All.map { flag => (flag.flagName(formatting), flag.description(formatting)) }
+    makeBoxWithColumn(header, flags)
+  }
+
+  private def phaseInfo(formatting: Formatting) = {
+    import formatting._
+    val header = Bold(s"Phases of the T-Compiler")
+    val phases = CompilerPhases.map { phase =>
+      (Magenta(phase.name.capitalize), phase.description(formatting))
+    }
+    makeBoxWithColumn(header, phases)
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {

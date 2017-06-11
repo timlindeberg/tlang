@@ -8,11 +8,12 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
+import tlang.utils.formatting.Formatting
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
+object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
   var methodUsage       : Map[MethodSymbol, Boolean] = Map()
@@ -31,6 +32,11 @@ object TypeChecking extends Pipeline[CompilationUnit, CompilationUnit] {
 
     cus
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Performs type checking and attaches types to trees.
+    """.stripMargin.trim
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
@@ -63,12 +69,12 @@ class TypeChecker(override val ctx: Context,
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
-  import TypeChecking._
+  import Typing._
 
   val returnStatements: ArrayBuffer[(Return, Type)] = ArrayBuffer()
 
   def tcMethod(): Unit = {
-    if (TypeChecking.hasBeenTypechecked(currentMethodSymbol))
+    if (Typing.hasBeenTypechecked(currentMethodSymbol))
       return
 
     if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
@@ -342,7 +348,7 @@ class TypeChecker(override val ctx: Context,
             classSymbol.lookupMethod(meth.name, argTypes.get, imports) map { methSymbol =>
               checkPrivacy(methSymbol, classSymbol, app)
               checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
-              TypeChecking.methodUsage += methSymbol -> true
+              Typing.methodUsage += methSymbol -> true
               inferTypeOfMethod(methSymbol)
               meth.setSymbol(methSymbol)
               meth.getType

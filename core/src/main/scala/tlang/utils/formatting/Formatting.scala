@@ -181,7 +181,7 @@ case class Formatting(
     }
   }
 
-  def formatFileName(file: File): String = formatFileName(file.getName)
+  def formatFileName(file: File): String = formatFileName(file.getName.replaceAll("\\..*$", ""))
 
   def formatFileName(name: String): String = FileColor(name + Constants.FileEnding)
 

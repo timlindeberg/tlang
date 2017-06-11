@@ -4,7 +4,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 object TemplateNameParser extends RegexParsers {
 
-  import tlang.compiler.modification.Templates._
+  import tlang.compiler.modification.Templating._
 
   def parseTemplateName(s: String): String = {
     val first = s.indexOf('-')

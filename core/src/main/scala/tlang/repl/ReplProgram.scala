@@ -7,14 +7,14 @@ import akka.actor.{Actor, Props}
 import tlang.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
-import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
+import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.ast.{Parser, Trees}
-import tlang.compiler.code.{CodeGeneration, Desugaring, TreeBuilder}
+import tlang.compiler.ast.{Parsing, Trees}
+import tlang.compiler.code.{CodeGeneration, Lowering, TreeBuilder}
 import tlang.compiler.error.CompilationException
 import tlang.compiler.imports.Imports
-import tlang.compiler.lexer.Lexer
-import tlang.compiler.modification.Templates
+import tlang.compiler.lexer.Lexing
+import tlang.compiler.modification.Templating
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
 import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}
@@ -60,9 +60,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()
 
-  private val parse    = Lexer andThen Parser
-  private val frontEnd = Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
-  private val compile  = Desugaring andThen CodeGeneration
+  private val parse    = Lexing andThen Parsing
+  private val frontEnd = Templating andThen Naming andThen Typing andThen Flowing
+  private val compile  = Lowering andThen CodeGeneration
 
   private val classes      = mutable.Map[String, ClassDeclTree]()
   private val methods      = mutable.Map[String, MethodDeclTree]()

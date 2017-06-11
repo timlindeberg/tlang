@@ -14,11 +14,12 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Formatting
 import tlang.utils.{FileSource, StringSource}
 
 import scala.collection.mutable
 
-object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
+object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
 
   import CodeGenerator._
 
@@ -31,6 +32,11 @@ object CodeGeneration extends Pipeline[CompilationUnit, StackTrace] {
     genResults.foreach(_.files.foreach(generateStackMapFrames))
     genResults.flatMap(_.stackTraces)
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Generates bytecode that can run on the JVM.
+    """.stripMargin.trim
 
   case class GenerateClassResult(files: Set[String], stackTraces: List[StackTrace])
 

@@ -9,14 +9,14 @@ import tlang.compiler.{Pos, Tester}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
-class LexerPositionSpec extends FunSuite with Matchers {
+class LexingPositionSpec extends FunSuite with Matchers {
 
   val TestFile   : String  = Tester.Resources + "positions/LexerPositions.t"
   val TestContext: Context = Tester.testContext
 
   val Tokens: List[Token] = {
     val file = FileSource(new File(TestFile)) :: Nil
-    Lexer.execute(TestContext)(file).head
+    Lexing.execute(TestContext)(file).head
   }
 
   def testPositions(predicate: Token => Boolean, positions: (String, Pos)*): Unit = {

@@ -23,7 +23,7 @@ object Tester {
   val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
   val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
   val PrintErrors        : Boolean     = sys.env.get("printerrors").contains("true")
-  val PrintCodeStages    : Set[String] = sys.env.get("printoutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
+  val PrintCodePhases    : Set[String] = sys.env.get("printoutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
 
   def testContext: Context = getTestContext(None, Some(VoidReporter()))
 
@@ -44,7 +44,7 @@ object Tester {
       files = files,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,
-      printCodeStages = PrintCodeStages,
+      printCodePhase = PrintCodePhases,
       formatting = formatting
     )
   }
@@ -57,7 +57,7 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
 
   def Name: String
   def Path: String
-  def Pipeline: Pipeline[Source, CompilationUnit]
+  def Pipeline: CompilerPhase[Source, CompilationUnit]
 
   def testFile(file: File): Unit
 

@@ -544,7 +544,7 @@ object Trees {
 
   case class ClassID(name: String, templateTypes: List[TypeTree] = List()) extends Identifier[ClassSymbol] with TypeTree {
 
-    import tlang.compiler.modification.Templates._
+    import tlang.compiler.modification.Templating._
 
     // The type of the identifier depends on the type of the symbol
     override def getType: Type = if (hasSymbol) getSymbol.getType else TUntyped

@@ -108,14 +108,13 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
   private def getContent(t: Tree, stack: List[Char]): String = {
     val content = (getSymbolContent(t), getTypeContent(t)) match {
-      case (None, None)                                       =>
-        ""
-      case (Some((s, color)), None)                           =>
-        color(s)
-      case (None, Some((s, color)))                           =>
-        " " * SymbolWidth + color(s)
+      case (None, None)                                       => ""
+      case (Some((s, color)), None)                           => color(s)
+      case (None, Some((s, color)))                           => " " * SymbolWidth + color(s)
       case (Some((sString, sColor)), Some((tString, tColor))) =>
-        sColor(sString) + " " * (SymbolWidth - sString.length) + tColor(tString)
+        val sym = sColor(sString)
+        val tpe = tColor(tString)
+        sym + " " * (SymbolWidth - sString.length) + tpe
     }
 
     if (content.isEmpty)
@@ -134,8 +133,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
           .replaceAll(".*::", "")
           .replaceAll("\\$ERROR", "Error")
         Some(s, color)
-      case _: Typed                                  =>
-        Missing
+      case _: Typed                                  => Missing
       case _                                         => None
     }
   }
@@ -161,8 +159,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
       }
       val symbolLetter = getSymbolLetter(symbol)
       Some(symbolLetter + id, fullColor)
-    case _: Symbolic[_]                              =>
-      Missing
+    case _: Symbolic[_]                              => Missing
     case _                                           => None
   }
 

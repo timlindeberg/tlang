@@ -2,34 +2,38 @@ package tlang.compiler
 
 import cafebabe.StackTrace
 import tlang.Context
-import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
-import tlang.compiler.ast.Parser
+import tlang.compiler.analyzer.{Flowing, Naming, Typing}
+import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.code.{CodeGeneration, Desugaring}
-import tlang.compiler.lexer.{Lexer, Token}
-import tlang.compiler.modification.Templates
+import tlang.compiler.code.{CodeGeneration, Lowering}
+import tlang.compiler.lexer.{Lexing, Token}
+import tlang.compiler.modification.Templating
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Formatting
 
-abstract class Pipeline[F, T] {
+abstract class CompilerPhase[F, T] {
   self =>
 
-  val compilerStageName: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  val name: String = getClass.getSimpleName.dropRight(1).toLowerCase
   protected def run(ctx: Context)(v: List[F]): List[T]
+  def description(formatting: Formatting): String
 
-  def andThen[G](thenn: Pipeline[T, G]): Pipeline[F, G] = new Pipeline[F, G] {
+  def andThen[G](thenn: CompilerPhase[T, G]): CompilerPhase[F, G] = new CompilerPhase[F, G] {
     def run(ctx: Context)(v: List[F]): List[G] = {
       val first = self.execute(ctx)(v)
       val second = thenn.execute(ctx)(first)
       second
     }
+
+    override def description(formatting: Formatting): String = ""
   }
 
   def execute(ctx: Context)(v: List[F]): List[T] = {
     val (output, time) = measureTime { run(ctx)(v) }
-    if (Main.CompilerStages.contains(this)) {
+    if (Main.CompilerPhases.contains(this)) {
       if (!ctx.executionTimes.contains(this))
         ctx.executionTimes += this -> time
-      if (compilerStageName in ctx.printCodeStages)
+      if (name in ctx.printCodePhase)
         OutputPrinter(ctx).printCode(this, output)
     }
     ctx.reporter.terminateIfErrors()
@@ -42,16 +46,16 @@ abstract class Pipeline[F, T] {
 
     private val tabWidth = 2
 
-    private def header = Bold("Output after ") + Blue(compilerStageName.capitalize)
+    private def header = Bold("Output after ") + Blue(Bold(name.capitalize))
 
-    def printCode(stage: Pipeline[_, _], output: List[T]): Unit = stage match {
-      case Lexer          => printTokens(output.asInstanceOf[List[List[Token]]])
-      case Parser
-           | Templates
-           | NameAnalysis
-           | TypeChecking
-           | FlowAnalysis
-           | Desugaring   => printASTs(output.asInstanceOf[List[CompilationUnit]])
+    def printCode(phase: CompilerPhase[_, _], output: List[T]): Unit = phase match {
+      case Lexing         => printTokens(output.asInstanceOf[List[List[Token]]])
+      case Parsing
+           | Templating
+           | Naming
+           | Typing
+           | Flowing
+           | Lowering     => printASTs(output.asInstanceOf[List[CompilationUnit]])
       case CodeGeneration => printStackTraces(output.asInstanceOf[List[StackTrace]])
       case _              =>
     }

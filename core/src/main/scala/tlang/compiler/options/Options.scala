@@ -70,11 +70,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   private def addArgs(flag: Flag, arg: String) =
-    splitArgs(arg) foreach { arg => flagArgs.addBinding(flag, arg) }
+    splitArgs(arg) foreach { arg => flagArgs.addBinding(flag, arg.toLowerCase) }
 
   processOptions(arguments.toList)
 
-  verifyOutputStages(flagArgs(PrintOutput))
+  verifyOutputPhases(flagArgs(PrintOutput))
 
 
   val classPaths: Set[String] = {
@@ -150,11 +150,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
 
   val formatting: Formatting = utils.formatting.Formatting(boxType, apply(LineWidth), colorScheme, boxType != Simple, boxType == Simple)
 
-  private def verifyOutputStages(stages: mutable.Set[String]): Unit = {
-    val validStages = Main.CompilerStages.map(_.compilerStageName)
-    stages.foreach { stage =>
-      if (!(stage in validStages))
-        FatalInvalidArgToFlag(PrintOutput, stage, validStages)
+  private def verifyOutputPhases(phases: mutable.Set[String]): Unit = {
+    val validPhases = Main.CompilerPhases.map(_.name)
+    phases.foreach { phase =>
+      if (!(phase in validPhases))
+        FatalInvalidArgToFlag(PrintOutput, phase, validPhases)
     }
   }
 

@@ -1,10 +1,10 @@
 package tlang.compiler.imports
 
 import tlang.Context
-import tlang.compiler.ast.Parser
+import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.CompilationException
-import tlang.compiler.lexer.Lexer
+import tlang.compiler.lexer.Lexing
 import tlang.utils.FileSource
 
 import scala.collection.mutable
@@ -35,7 +35,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
   private def parseTemplateFile(path: String): Option[CompilationUnit] = {
     val sources = FileSource(path) :: Nil
     try {
-      val parsedProgram = (Lexer andThen Parser).execute(ctx)(sources).head
+      val parsedProgram = (Lexing andThen Parsing).execute(ctx)(sources).head
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>

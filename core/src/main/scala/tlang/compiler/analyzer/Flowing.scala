@@ -1,7 +1,7 @@
 package tlang.compiler.analyzer
 
 import tlang.Context
-import tlang.compiler.Pipeline
+import tlang.compiler.CompilerPhase
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
@@ -9,8 +9,9 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
+import tlang.utils.formatting.Formatting
 
-object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
+object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     cus foreach { cu =>
@@ -21,6 +22,12 @@ object FlowAnalysis extends Pipeline[CompilationUnit, CompilationUnit] {
     }
     cus
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Performs flow analysis and catches errors such as accessing objects that
+      |could potentially be null or using uninitialized variables.
+    """.stripMargin.trim
 
 }
 

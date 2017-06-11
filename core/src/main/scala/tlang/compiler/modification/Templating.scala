@@ -6,10 +6,11 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Formatting
 
 import scala.collection.mutable
 
-object Templates extends Pipeline[CompilationUnit, CompilationUnit] {
+object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   val StartEnd  = "-"
   val Seperator = "$"
@@ -18,6 +19,11 @@ object Templates extends Pipeline[CompilationUnit, CompilationUnit] {
     val templateClassGenerator = TemplateModifier(ctx)
     templateClassGenerator.generateTemplates(cus)
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Imports template classes and instantiates templates from generic classes.
+    """.stripMargin.trim
 }
 
 case class TemplateModifier(ctx: Context) {

@@ -24,7 +24,7 @@ object CodeGenerator {
   val JavaLang = "java/lang/"
   val JavaIO   = "java/io/"
 
-  /* Java classes used by tlang.compiler */
+  /* Java classes used by T compiler */
   val JavaStringBuilder   : String = JavaLang + "StringBuilder"
   val JavaString          : String = JavaLang + "String"
   val JavaSystem          : String = JavaLang + "System"

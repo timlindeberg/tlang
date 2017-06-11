@@ -7,13 +7,13 @@ import tlang.Context
 import tlang.compiler.Interpreter
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
-import tlang.compiler.analyzer.{NameAnalysis, TypeChecker, TypeChecking}
+import tlang.compiler.analyzer.{Naming, TypeChecker, Typing}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.ast.{Parser, PrettyPrinter}
+import tlang.compiler.ast.{Parsing, PrettyPrinter}
 import tlang.compiler.error.DefaultReporter
 import tlang.compiler.imports.Imports
-import tlang.compiler.lexer.Lexer
-import tlang.compiler.modification.Templates
+import tlang.compiler.lexer.Lexing
+import tlang.compiler.modification.Templating
 import tlang.utils.Extensions._
 import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, ProgramExecutor}
@@ -29,7 +29,7 @@ class OperatorCodeSpec extends FlatSpec with Matchers with BeforeAndAfter {
   private val testFile       = new File(TestFilePath)
 
   private val Printer      = PrettyPrinter(SimpleFormatting)
-  private val Compiler     = Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen CodeGeneration
+  private val Compiler     = Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen CodeGeneration
   private val Rand         = new Random()
   private val TestCtx      = Context(reporter = DefaultReporter(suppressWarnings = true), files = Set(testFile), outDirs = Set(testFolderFile))
   private val TestImports  = Imports(TestCtx)

@@ -69,6 +69,7 @@ object Extensions {
       res = block
       measureTime(block)._2
     }.toList
+    println("")
     (times, times.sum / iterations)
     res
   }

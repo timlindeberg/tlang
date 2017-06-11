@@ -1,26 +1,32 @@
 package tlang.compiler.code
 
-import tlang.compiler.Pipeline
+import tlang.compiler.CompilerPhase
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Formatting
 import tlang.{Constants, Context}
 
 import scala.collection.mutable.ListBuffer
 
-object Desugaring extends Pipeline[CompilationUnit, CompilationUnit] {
+object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map { cu =>
-    val desugarer = new Desugarer(cu.imports)
-    desugarer(cu)
+    val lowerer = new Lowerer(cu.imports)
+    lowerer(cu)
   }
+
+  override def description(formatting: Formatting): String =
+    """
+      |Lowers the tree to simpler components. Performs desugaring.
+    """.stripMargin.trim
 
 }
 
-class Desugarer(imports: Imports) {
+class Lowerer(imports: Imports) {
 
   private val ThisName = "$this"
 

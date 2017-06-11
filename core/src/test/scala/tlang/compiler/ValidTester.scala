@@ -3,13 +3,13 @@ package tlang.compiler
 import java.io.{File, FileNotFoundException}
 
 import tlang.Constants
-import tlang.compiler.analyzer.{FlowAnalysis, NameAnalysis, TypeChecking}
-import tlang.compiler.ast.Parser
+import tlang.compiler.analyzer.{Flowing, Naming, Typing}
+import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.code.{CodeGeneration, Desugaring}
+import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.error.CompilationException
-import tlang.compiler.lexer.Lexer
-import tlang.compiler.modification.Templates
+import tlang.compiler.lexer.Lexing
+import tlang.compiler.modification.Templating
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 trait ValidTester extends Tester {
@@ -18,8 +18,8 @@ trait ValidTester extends Tester {
 
   val programExecutor = ProgramExecutor()
 
-  override def Pipeline: Pipeline[Source, CompilationUnit] =
-    Lexer andThen Parser andThen Templates andThen NameAnalysis andThen TypeChecking andThen FlowAnalysis
+  override def Pipeline: CompilerPhase[Source, CompilationUnit] =
+    Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
 
   def testFile(file: File): Unit = {
     val ctx = getTestContext(Some(file))
@@ -30,7 +30,7 @@ trait ValidTester extends Tester {
 
       ctx.reporter.hasErrors should be(false)
 
-      val compilation = Desugaring andThen CodeGeneration
+      val compilation = Lowering andThen CodeGeneration
       compilation.execute(ctx)(cus)
       val res = programExecutor(ctx.outDirs.map(_.getAbsolutePath) + Constants.TDirectory, file)
       val resLines = lines(res)
