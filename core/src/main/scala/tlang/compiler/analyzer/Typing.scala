@@ -21,10 +21,6 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   val emptyClassSym = new ClassSymbol("")
   val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
-  /**
-    * Typechecking does not produce a value, but has the side effect of
-    * attaching types to trees and potentially outputting error messages.
-    */
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     cus foreach { typecheckFields(ctx, _) }
     cus foreach { typecheckMethods(ctx, _) }
@@ -37,6 +33,10 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
     """
       |Performs type checking and attaches types to trees.
     """.stripMargin.trim
+
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
@@ -123,7 +123,7 @@ class TypeChecker(override val ctx: Context,
   def tcStat(statement: StatTree): Unit = statement match {
     case Block(stats)                      =>
       stats.foreach(tcStat)
-    case varDecl@VarDecl(tpe, id, init, _) =>
+    case VarDecl(tpe, id, init, _)         =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
         report(ValueMustBeInitialized(varSym))
@@ -131,7 +131,7 @@ class TypeChecker(override val ctx: Context,
       (tpe, init) match {
         case (Some(tpe), Some(expr)) => tcExpr(expr, tpe.getType)
         case (None, Some(expr))      => id.setType(tcExpr(expr))
-        case (Some(tpe), None)       => // Abstract
+        case (Some(_), None)         => // Abstract
         case (None, None)            => report(NoTypeNoInitializer(varSym))
       }
     case If(condition, thn, els)           =>

@@ -92,7 +92,7 @@ object Types {
     override val getNullable   : TUntyped.type = this
     override val getNonNullable: TUntyped.type = this
     override def isSubTypeOf(tpe: Type): Boolean = false
-    override val name = "[Untyped]"
+    override val name = "[untyped]"
   }
 
   case object TUnit extends Type {

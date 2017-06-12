@@ -38,6 +38,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
       |Generates bytecode that can run on the JVM.
     """.stripMargin.trim
 
+  override def printDebugOutput(output: List[StackTrace], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatStackTraces(output))
+  }
+
   case class GenerateClassResult(files: Set[String], stackTraces: List[StackTrace])
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */

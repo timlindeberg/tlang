@@ -58,7 +58,7 @@ object Extensions {
     (res, (t1 - t0) / 1000000000.0)
   }
 
-  def benchmark[T](block: => T): T = {
+  def benchmark[T](name: String)(block: => T): T = {
     val iterations = 10
     (iterations - 1) times {
       block
@@ -69,8 +69,9 @@ object Extensions {
       res = block
       measureTime(block)._2
     }.toList
-    println("")
-    (times, times.sum / iterations)
+    println(s"Results for $name:")
+    println(times.map(t => f"   $t%.5f s").mkString("\n"))
+    println(f"Average time: ${ times.sum / iterations }%.5f s")
     res
   }
 

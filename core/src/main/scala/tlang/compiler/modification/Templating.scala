@@ -24,6 +24,10 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] {
     """
       |Imports template classes and instantiates templates from generic classes.
     """.stripMargin.trim
+
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
 }
 
 case class TemplateModifier(ctx: Context) {

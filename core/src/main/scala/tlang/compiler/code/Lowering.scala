@@ -1,11 +1,11 @@
 package tlang.compiler.code
 
-import tlang.compiler.CompilerPhase
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Formatting
 import tlang.{Constants, Context}
@@ -23,6 +23,10 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
     """
       |Lowers the tree to simpler components. Performs desugaring.
     """.stripMargin.trim
+
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
 
 }
 

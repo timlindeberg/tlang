@@ -26,6 +26,9 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
       |Parses the tokens produced by the lexing phase and generates an AST.
     """.stripMargin.trim
 
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
 }
 
 object ASTBuilder {

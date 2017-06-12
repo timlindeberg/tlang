@@ -77,10 +77,12 @@ case class Formatting(
 
   /*----------------------------- ASCII Variants ----------------------------*/
 
-  def ListMarker: String = if (asciiOnly) "*" else "•"
-  def Cross: String = if (asciiOnly) "-" else "×"
+  def ListMarker: String = ascii("*", "•")
+  def Cross: String = ascii("x", "×")
 
-  def spinner: Spinner = ASCIISpinner() // if (asciiOnly) ASCIISpinner() else BrailSpinner()
+  def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
+
+  private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
 
   /*------------------------------ Box handling -----------------------------*/
 

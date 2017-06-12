@@ -1,12 +1,12 @@
 package tlang.compiler.analyzer
 
 import tlang.Context
-import tlang.compiler.CompilerPhase
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 import tlang.utils.formatting.Formatting
@@ -28,6 +28,10 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
       |Performs flow analysis and catches errors such as accessing objects that
       |could potentially be null or using uninitialized variables.
     """.stripMargin.trim
+
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
 
 }
 

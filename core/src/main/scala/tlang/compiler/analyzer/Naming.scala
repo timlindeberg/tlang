@@ -40,6 +40,10 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
       |Resolves names and attaches symbols to tress.
     """.stripMargin.trim
 
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatASTs(output))
+  }
+
 }
 
 class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalScope: GlobalScope) extends NameAnalysisErrors {

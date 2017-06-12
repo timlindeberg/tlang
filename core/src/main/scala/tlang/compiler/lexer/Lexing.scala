@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 
 object Lexing extends CompilerPhase[Source, List[Token]] {
 
-  def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
+  override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
       val tokenizer = new Tokenizer(ctx, source)
       tokenizer()
@@ -24,6 +24,10 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
     """
       |Lexes the input and produces tokens.
     """.stripMargin.trim
+
+  override def printDebugOutput(output: List[List[Token]], formatting: Formatting): Unit = {
+    print(DebugOutputFormatter(name, formatting).formatTokens(output))
+  }
 }
 
 class Tokenizer(override val ctx: Context, override val source: Source) extends LexerErrors {
