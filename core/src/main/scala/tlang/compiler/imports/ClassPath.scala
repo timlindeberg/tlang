@@ -1,12 +1,17 @@
 package tlang.compiler.imports
 
+import java.io.File
+
 import tlang.Constants
 
 import scala.collection.mutable.ListBuffer
 
 object ClassPath {
 
-  lazy val Default = ClassPath(System.getProperty("java.class.path").split(";").toSet + Constants.TDirectory)
+
+  lazy val Default = ClassPath(
+    System.getProperty("java.class.path").split(File.pathSeparator).toSet + Constants.TDirectory
+  )
   val Empty = new ClassPath(Map(), Array(), Set())
 
   def apply(): ClassPath = Empty
