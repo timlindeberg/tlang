@@ -23,23 +23,18 @@ class ClassPathParser(paths: Set[String]) {
     val classArray = classes.toArray
     Sorting.quickSort(classArray)
 
-    // Build immutable map from java map
-    val b = Map.newBuilder[String, ClassFile]
-    pathToFile forEach { (k, v) => b += k -> v }
-    (b.result(), classArray)
+    (toImmutableMap(pathToFile), classArray)
   }
 
   private def addClasses(jar: JarFile): Unit = {
-    val entries = jar.entries
-    val path = jar.getName
-    while (entries.hasMoreElements) {
-      val entryName = entries.nextElement().getName
-      if (entryName.endsWith(".class")) {
+    jar.stream()
+      .filter(_.getName.endsWith(".class"))
+      .forEach { entry =>
+        val entryName = entry.getName
         val name = entryName.substring(0, entryName.length - ".class".length)
-        addClass(name, JarClassFile(path, entryName))
+        addClass(name, JarClassFile(jar.getName, entryName))
       }
-      // TODO: Template files should also be able to reside in jar-files
-    }
+    // TODO: Template files should also be able to reside in jar-files
   }
 
   private def addClasses(dir: File): Unit = {
@@ -66,6 +61,12 @@ class ClassPathParser(paths: Set[String]) {
       case null            => pathToFile.put(name, classFile)
       case _               =>
     }
+  }
+
+  private def toImmutableMap[K, V](map: java.util.HashMap[K, V]) = {
+    val builder = Map.newBuilder[K, V]
+    map forEach { (k, v) => builder += k -> v }
+    builder.result()
   }
 
 }

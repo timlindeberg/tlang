@@ -7,8 +7,8 @@ import tlang.utils.{Positioned, Source}
 trait LexerErrors extends ErrorHandling {
 
   val source: Source
-  var line  : Int
-  var column: Int
+  protected var line  : Int
+  protected var column: Int
 
   def report(error: Error): Unit = ctx.reporter.report(error)
 
@@ -61,11 +61,11 @@ trait LexerErrors extends ErrorHandling {
   }
 
   case class NumberTooLargeForInt(length: Int) extends LexerError(9, pos(length)) {
-    lazy val message = err"Number is too large to fit in an ${ "Int" }."
+    lazy val message = err"Number is too large to fit in an ${"Int"}."
   }
 
   case class NumberTooLargeForLong(length: Int) extends LexerError(10, pos(length)) {
-    lazy val message = err"Number is too large to fit in a ${ "Long" }."
+    lazy val message = err"Number is too large to fit in a ${"Long"}."
   }
 
   case class InvalidNumber(length: Int) extends LexerError(11, pos(length)) {
