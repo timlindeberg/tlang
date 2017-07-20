@@ -46,7 +46,7 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
-class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalScope: GlobalScope) extends NameAnalysisErrors {
+class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalScope: GlobalScope) extends NamingErrors {
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
@@ -364,7 +364,7 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalSco
           bind(condition, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
-        case PrintStatTree(expr)                            =>
+        case PrintExprTree(expr)                            =>
           bind(expr, localVars, scopeLevel)
           localVars
         case Error(expr)                                    =>

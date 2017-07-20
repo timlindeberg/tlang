@@ -3,7 +3,7 @@ package tlang.utils.formatting
 import tlang.Context
 import tlang.compiler.error.VoidReporter
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.lexer.{Token, Tokenizer}
+import tlang.compiler.lexer.{Lexer, Token}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Colors._
 import tlang.utils.{Position, Positioned, StringSource}
@@ -14,7 +14,7 @@ case class SyntaxHighlighter(formatting: Formatting) {
 
   import formatting._
 
-  val context = Context(VoidReporter(), Set())
+  val context = Context(VoidReporter())
 
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
@@ -22,7 +22,7 @@ case class SyntaxHighlighter(formatting: Formatting) {
       return code
 
     val source = StringSource(code, "")
-    val tokenizer = new Tokenizer(context, source)
+    val tokenizer = new Lexer(context, source)
     val tokens = tokenizer()
 
     var line = 1

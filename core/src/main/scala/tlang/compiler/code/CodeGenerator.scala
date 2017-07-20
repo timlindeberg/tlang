@@ -188,7 +188,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << Label(condition)
         compileBranch(conditionExpr, Label(body), Label(after))
         ch << Label(after)
-      case PrintStatTree(expr)                       =>
+      case PrintExprTree(expr)                       =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
         val arg = expr.getType match {

@@ -6,9 +6,11 @@ import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
+import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.Source
-import tlang.utils.formatting.{FancyFormatting, SimpleFormatting}
+import tlang.utils.formatting.Boxes.Light
+import tlang.utils.formatting.{Formatting, SimpleFormatting}
 import tlang.{Constants, Context}
 
 import scala.concurrent.duration.Duration
@@ -22,12 +24,11 @@ object Tester {
   val IgnoreRegex        : Regex       = """.*// *[I|i]gnore.*""".r
   val SolutionRegex      : Regex       = """.*// *[R|r]es:(.*)""".r
   val UseSimpleFormatting: Boolean     = sys.env.get("simple").contains("true")
+  val UseColors          : Boolean     = sys.env.get("colors").contains("true")
   val PrintErrors        : Boolean     = sys.env.get("printerrors").contains("true")
   val PrintCodePhases    : Set[String] = sys.env.get("printoutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
 
-  def testContext: Context = getTestContext(None, Some(VoidReporter()))
-
-  def getTestContext(file: Option[File], reporter: Option[Reporter] = None): Context = {
+  def getTestContext(file: Option[File] = None): Context = {
     val (files, outDir) = file match {
       case Some(f) =>
         val mainName = f.getName.replaceAll("\\" + Constants.FileEnding, "")
@@ -37,10 +38,14 @@ object Tester {
       case None    => (Set[File](), new File("."))
     }
 
-    val formatting = if (UseSimpleFormatting) SimpleFormatting else FancyFormatting
+    val formatting =
+      if (UseSimpleFormatting)
+        SimpleFormatting
+      else
+        Formatting(Light, LineWidth.defaultValue, useColor = UseColors)
 
     Context(
-      reporter = reporter.getOrElse(DefaultReporter(formatting = formatting)),
+      reporter = DefaultReporter(formatting = formatting),
       files = files,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,

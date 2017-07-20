@@ -35,7 +35,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
-class FlowAnalyser(override val ctx: Context, val imports: Imports) extends FlowAnalysisErrors {
+class FlowAnalyser(override val ctx: Context, val imports: Imports) extends FlowingErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
@@ -62,9 +62,6 @@ class FlowAnalyser(override val ctx: Context, val imports: Imports) extends Flow
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    //println(s"${tree.line}: $tree")
-    //println(knowledge)
-    //println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
@@ -135,7 +132,7 @@ class FlowAnalyser(override val ctx: Context, val imports: Imports) extends Flow
         val afterCondition = analyzeCondition(condition, knowledge)
         val afterWhile = analyze(stat, afterCondition)
         knowledge.filterReassignedVariables(tree, afterWhile)
-      case PrintStatTree(expr)               =>
+      case PrintExprTree(expr)               =>
         analyzeExpr(expr, knowledge)
       case Error(expr)                       =>
         analyzeExpr(expr, knowledge)
@@ -322,19 +319,17 @@ class FlowAnalyser(override val ctx: Context, val imports: Imports) extends Flow
         if (objTpe.isNullable)
           report(AccessNullableMethod(meth.getSymbol.signature, obj))
       case _                                                               =>
-        knowledge.getIdentifier(obj) match {
-          case Some(varId) =>
-            if (objTpe.isNullable)
-              knowledge.get[IsNull](varId) match {
-                case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj, obj))
-                case None                           => report(AccessMightBeNull(obj, obj))
-                case _                              =>
-              }
-            varId.symbol ifDefined { varSym =>
-              if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-                report(VariableNotInitialized(obj, obj))
+        knowledge.getIdentifier(obj) ifDefined { varId =>
+          if (objTpe.isNullable)
+            knowledge.get[IsNull](varId) match {
+              case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj, obj))
+              case None                           => report(AccessMightBeNull(obj, obj))
+              case _                              =>
             }
-          case _           =>
+          varId.symbol ifDefined { varSym =>
+            if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
+              report(VariableNotInitialized(obj, obj))
+          }
         }
     }
   }

@@ -287,42 +287,41 @@ object Trees {
 
   trait StatTree extends Tree
 
-  trait PrintStatTree extends StatTree {
+  trait PrintExprTree extends ExprTree {
     val expr: ExprTree
   }
-  object PrintStatTree {
-    def unapply(e: PrintStatTree) = Some(e.expr)
+  object PrintExprTree {
+    def unapply(e: PrintExprTree) = Some(e.expr)
   }
 
 
   case class VarDecl(tpe: Option[TypeTree], id: VariableID, initation: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
-  case class Block(stats: List[StatTree]) extends StatTree
-  case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(condition: ExprTree, stat: StatTree) extends StatTree
   case class For(initiation: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree
   case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree
 
-  case class Error(expr: ExprTree) extends StatTree
-  case class Return(expr: Option[ExprTree]) extends StatTree with Typed
-  case class Break() extends StatTree with Leaf
-  case class Continue() extends StatTree with Leaf
-
-  case class Print(expr: ExprTree) extends PrintStatTree
-  case class Println(expr: ExprTree) extends PrintStatTree
-
-  trait ExprTree extends StatTree with Typed
-
   /*------------------------------- Type Trees ------------------------------*/
 
   trait TypeTree extends Tree with Typed {
-    val name: String
+    def name: String
   }
-
-  trait PrimitiveTypeTree extends TypeTree with Leaf
 
   case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]" }
   case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?" }
-  case class UnitType() extends PrimitiveTypeTree {val name = "Unit" }
+  case class UnitType() extends TypeTree with Leaf {val name = "Unit" }
+
+  /*------------------------------- Expr Trees ------------------------------*/
+
+  case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends ExprTree
+  case class Block(stats: List[StatTree]) extends ExprTree
+  case class Print(expr: ExprTree) extends PrintExprTree
+  case class Println(expr: ExprTree) extends PrintExprTree
+  case class Error(expr: ExprTree) extends ExprTree
+  case class Return(expr: Option[ExprTree]) extends ExprTree with Typed
+  case class Break() extends ExprTree with Leaf
+  case class Continue() extends ExprTree with Leaf
+
+  trait ExprTree extends StatTree with Typed
 
   /*------------------------- Binary Operator Trees -------------------------*/
 

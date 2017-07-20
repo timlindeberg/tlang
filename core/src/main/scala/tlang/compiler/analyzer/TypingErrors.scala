@@ -6,7 +6,7 @@ import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, Pre
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.utils.Positioned
 
-trait TypeCheckingErrors extends ErrorHandling {
+trait TypingErrors extends ErrorHandling {
 
 
   def report(error: Error): Type = {

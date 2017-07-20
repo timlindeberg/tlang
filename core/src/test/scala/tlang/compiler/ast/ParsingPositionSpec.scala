@@ -8,16 +8,18 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.{Pos, Tester}
+import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}
 
 class ParsingPositionSpec extends FunSuite with Matchers {
 
-  private val File                 = "ParserPositions.t"
-  private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
-  private val TestFile   : String  = Tester.Resources + "positions/" + File
-  private val TestContext: Context = Tester.testContext
+  private val File                                      = "ParserPositions.t"
+  private val NoPos                    : Pos            = Pos(-1, -1, -1, -1)
+  private val TestFile                 : String         = Tester.Resources + "positions/" + File
+  private val TestContext              : Context        = Tester.getTestContext()
+  private var compilationFailureMessage: Option[String] = None
 
   private val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
@@ -25,7 +27,7 @@ class ParsingPositionSpec extends FunSuite with Matchers {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        sys.error(e.messages.formattedErrors)
+        compilationFailureMessage = Some(e.messages.formattedErrors.clearAnsi)
         Empty()
     }
   }
@@ -36,8 +38,10 @@ class ParsingPositionSpec extends FunSuite with Matchers {
     val clazz = classTag[T].runtimeClass
     val className = clazz.getSimpleName
     test(className) {
-      if (Tree == Empty())
-        fail(s"Failed to parse $File")
+
+      compilationFailureMessage ifDefined { msg =>
+        fail(s"Failed to parse $File:\n$msg")
+      }
 
       val trees = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))

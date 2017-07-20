@@ -15,8 +15,8 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
-      val tokenizer = new Tokenizer(ctx, source)
-      tokenizer()
+      val lexer = new Lexer(ctx, source)
+      lexer()
     }
   }
 
@@ -30,7 +30,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
   }
 }
 
-class Tokenizer(override val ctx: Context, override val source: Source) extends LexerErrors {
+class Lexer(override val ctx: Context, override val source: Source) extends LexerErrors {
 
   override var line   = 1
   override var column = 1
@@ -130,10 +130,10 @@ class Tokenizer(override val ctx: Context, override val source: Source) extends 
     val tokens = if (difference == 1)
       createToken(INDENT, newIndent) :: Nil
     else if (difference < 0)
-      (0 until -difference).map(_ => createToken(DEDENT, newIndent)).toList
-    else {
+      createToken(NEWLINE, 0) :: (0 until -difference).map(_ => createToken(DEDENT, newIndent)).toList
+    else
       Nil
-    }
+
     column = 1 + parsedChars
     indent = newIndent
     (tokens, rest)

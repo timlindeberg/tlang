@@ -12,7 +12,7 @@ import tlang.utils.FileSource
 class LexingPositionSpec extends FunSuite with Matchers {
 
   val TestFile   : String  = Tester.Resources + "positions/LexerPositions.t"
-  val TestContext: Context = Tester.testContext
+  val TestContext: Context = Tester.getTestContext()
 
   val Tokens: List[Token] = {
     val file = FileSource(new File(TestFile)) :: Nil

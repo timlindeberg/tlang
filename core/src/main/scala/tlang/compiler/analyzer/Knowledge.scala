@@ -245,7 +245,8 @@ object Knowledge {
     def getNumericValue(expr: ExprTree): Option[Int] = {
       expr match {
         case IntLit(value)                   => Some(value)
-        case assignable: Assignable          => getIdentifier(assignable) flatMap { id => get[NumericValue](id).map(_.value) }
+        case assignable: Assignable          =>
+          getIdentifier(assignable) flatMap { id => get[NumericValue](id).map(_.value) }
         case op@BinaryOperatorTree(lhs, rhs) =>
           getNumericValue(lhs) flatMap { lhsValue =>
             getNumericValue(rhs) map { rhsValue =>

@@ -93,7 +93,7 @@ case class TemplateModifier(ctx: Context) {
     templateName -> s"$prefix::$templateName"
   }
 
-  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit, classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
+  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit, classSymbolLocator: ClassSymbolLocator) extends TemplatingErrors {
 
     override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 

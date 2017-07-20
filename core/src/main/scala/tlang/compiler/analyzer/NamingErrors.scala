@@ -6,7 +6,7 @@ import tlang.compiler.ast.Trees.{Break, Tree, _}
 import tlang.compiler.error.{Error, ErrorHandling, ErrorMessage, Warning}
 import tlang.utils.Positioned
 
-trait NameAnalysisErrors extends ErrorHandling {
+trait NamingErrors extends ErrorHandling {
 
   def report(error: Error): Symbol = {
     ctx.reporter.report(error)

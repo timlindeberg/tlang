@@ -32,7 +32,7 @@ trait ParserErrors extends ErrorHandling {
 
   case class InvalidArrayDimension(size: Int, override val pos: Positioned) extends ParserError(2, pos) {
     lazy val message: String = {
-      val maxArraySize = ASTBuilder.MaximumArraySize
+      val maxArraySize = Parser.MaximumArraySize
       err"Invalid array dimension: $size, $maxArraySize is the maximum dimension of an array."
     }
   }

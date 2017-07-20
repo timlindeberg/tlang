@@ -3,7 +3,7 @@ package tlang.compiler.modification
 import tlang.compiler.error.{Error, ErrorHandling}
 import tlang.utils.Positioned
 
-trait TemplateErrors extends ErrorHandling {
+trait TemplatingErrors extends ErrorHandling {
 
   //---------------------------------------------------------------------------------------
   //  Error messages

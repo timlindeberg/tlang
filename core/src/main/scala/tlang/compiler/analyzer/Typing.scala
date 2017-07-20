@@ -65,7 +65,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 class TypeChecker(override val ctx: Context,
   imports: Imports,
   currentMethodSymbol: MethodSymbol,
-  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+  methodStack: List[MethodSymbol] = List()) extends TypingErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
@@ -161,7 +161,7 @@ class TypeChecker(override val ctx: Context,
         case _                             =>
       }
       tcStat(stat)
-    case PrintStatTree(expr)               =>
+    case PrintExprTree(expr)               =>
       tcExpr(expr)
       if (expr.getType == TUnit)
         report(CantPrintUnitType(expr))

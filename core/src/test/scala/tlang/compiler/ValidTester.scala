@@ -10,6 +10,7 @@ import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
+import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 trait ValidTester extends Tester {
@@ -38,8 +39,9 @@ trait ValidTester extends Tester {
       assertCorrect(resLines, sol)
     } catch {
       case e: CompilationException  =>
-        print(e.messages.formattedErrors)
-        fail("Compilation failed")
+        // Clear Ansi since Intellij/ScalaTest can't parse error messages with ansi colors.
+        val msg = e.messages.formattedErrors.clearAnsi
+        fail(s"Compilation failed:\n$msg")
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.getPath }")
     }
   }

@@ -4,7 +4,7 @@ import tlang.compiler.ast.Trees.ExprTree
 import tlang.compiler.error.{Error, ErrorHandling, Warning}
 import tlang.utils.Positioned
 
-trait FlowAnalysisErrors extends ErrorHandling {
+trait FlowingErrors extends ErrorHandling {
 
 
   def report(error: Error): Unit =

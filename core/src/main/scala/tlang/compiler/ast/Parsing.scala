@@ -17,7 +17,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
-      val astBuilder = new ASTBuilder(ctx, tokens.toArray)
+      val astBuilder = new Parser(ctx, tokens.toArray)
       astBuilder.compilationUnit
     }
 
@@ -31,7 +31,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
   }
 }
 
-object ASTBuilder {
+object Parser {
 
   val MaximumArraySize = 255
 
@@ -57,11 +57,11 @@ object ASTBuilder {
   )
 }
 
-class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
+class Parser(override val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
 
-  import ASTBuilder._
+  import Parser._
 
-  // Remove comments and adjacant new line tokens
+  // Remove comments and adjacent new line tokens
   tokens = tokens.filter(!_.isInstanceOf[COMMENTLIT])
   tokens = tokens.zipWithIndex.filter {
     case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE)
@@ -82,7 +82,7 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     tokens(i)
   }
 
-  private def nextToken = if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
+  private var nextToken = if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
 
   private def nextTokenKind = nextToken.kind
 
@@ -569,82 +569,40 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   /**
     * <statement> ::= "{" { <statement> } "}
     * | <varDeclaration>
-    * | if"(" <expression> ")" <statement> [ else <statement> ]
-    * | while"(" <expression> ")" <statement>
-    * | <forloop> <endStatement>
-    * | (print|println|error)"(" [ <expression> ] ")" <endStatement>
-    * | break
-    * | continue
-    * | return [ <expression> ] <endStatement>
+    * | while "(" <expression> ")" <statement>
+    * | (print|println) "(" [ <expression> ] ")" <endStatement>
+    * | for "(" <forloop> <endStatement>
     * | <expression> <endStatement>
     **/
-  def statement: StatTree = positioned {
-    // Variable needs custom end position in order to
-    // only highlight expression up to equals sign
-    nextTokenKind match {
-      case PRIVVAR | PRIVVAL =>
-        val variable = localVarDeclaration
-        endStatement()
-        return variable
-      case _                 =>
-    }
+  def statement: StatTree = {
+    positioned {
+      // Variable needs custom end position in order to
+      // only highlight expression up to equals sign
+      nextTokenKind match {
+        case PRIVVAR | PRIVVAL =>
+          val variable = localVarDeclaration
+          endStatement()
+          return variable
+        case _                 =>
+      }
 
-    nextTokenKind match {
-      case INDENT                  =>
-        eat(INDENT)
-        val stmts = until(statement, DEDENT)
-        eat(DEDENT)
-        Block(stmts)
-      case IF                      =>
-        eat(IF, LPAREN)
-        val condition = expression
-        eat(RPAREN)
-        val stmt = statement
-        val els = optional(statement, ELSE)
-        If(condition, stmt, els)
-      case WHILE                   =>
-        eat(WHILE, LPAREN)
-        val condition = expression
-        eat(RPAREN)
-        While(condition, statement)
-      case FOR                     =>
-        forLoop
-      case PRINT | PRINTLN | ERROR =>
-        val methType = nextTokenKind
-        eat(methType)
-        eat(LPAREN)
-        val expr = nextTokenKind match {
-          case RPAREN => StringLit("")
-          case _      => expression
-        }
-        eat(RPAREN)
-        endStatement()
-        methType match {
-          case PRINT   => Print(expr)
-          case PRINTLN => Println(expr)
-          case ERROR   => Error(expr)
-          case _       => ???
-        }
-      case RETURN                  =>
-        eat(RETURN)
-        val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression) else None
-        endStatement()
-        Return(expr)
-      case BREAK                   =>
-        eat(BREAK)
-        endStatement()
-        Break()
-      case CONTINUE                =>
-        eat(CONTINUE)
-        endStatement()
-        Continue()
-      case SEMICOLON               =>
-        eat(SEMICOLON)
-        Block(Nil)
-      case _                       =>
-        val expr = expression
-        endStatement()
-        expr
+      nextTokenKind match {
+        case WHILE     =>
+          eat(WHILE, LPAREN)
+          val condition = expression
+          eat(RPAREN)
+          While(condition, statement)
+        case FOR       =>
+          eat(FOR, LPAREN)
+          forLoop
+        case SEMICOLON =>
+          eat(SEMICOLON)
+          Block(Nil)
+        case _         =>
+          val expr = expression
+          endStatement()
+          expr
+      }
     }
   }
 
@@ -652,8 +610,6 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
   def forLoop: StatTree = positioned {
-    eat(FOR, LPAREN)
-
     nextTokenKind match {
       case PRIVVAR | PRIVVAL =>
         val varDecl = localVarDeclaration
@@ -874,7 +830,12 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     * | <stringLit>
     * | <identifier> { :: <identifier> } [ "(" <expression> { "," <expression> } ")" ]
     * | <classIdentifier>
-    * | "{" { <expression> } "}"
+    * | <indent> { <statement> } <dedent>
+    * | error "(" [ <expression> ] ")"
+    * | break
+    * | continue
+    * | return [ <expression> ]
+    * | "[" { <expression> } "]"
     * | true
     * | false
     * | this
@@ -885,39 +846,12 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     */
   def termFirst: ExprTree = positioned {
     nextTokenKind match {
-      case LPAREN        =>
+      case LPAREN                  =>
         eat(LPAREN)
         val expr = expression
         eat(RPAREN)
         expr
-      case LBRACKET      =>
-        eat(LBRACKET)
-        val expressions = commaList(expression, RBRACKET)
-        eat(RBRACKET)
-        ArrayLit(expressions)
-      case BANG          =>
-        eat(BANG)
-        Not(term)
-      case MINUS         => negation
-      case LOGICNOT      =>
-        eat(LOGICNOT)
-        LogicNot(term)
-      case HASH          =>
-        eat(HASH)
-        Hash(term)
-      case DECREMENT     =>
-        eat(DECREMENT)
-        PreDecrement(term)
-      case INCREMENT     =>
-        eat(INCREMENT)
-        PreIncrement(term)
-      case INTLITKIND    => intLit
-      case LONGLITKIND   => longLit
-      case FLOATLITKIND  => floatLit
-      case DOUBLELITKIND => doubleLit
-      case CHARLITKIND   => charLit
-      case STRLITKIND    => stringLit
-      case IDKIND        =>
+      case IDKIND                  =>
         val methStartPos = nextToken
         val ids = nonEmptyList(identifierName, COLON, COLON)
         val name = ids.mkString("::")
@@ -931,23 +865,87 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
             NormalAccess(Empty(), meth)
           case _      => VariableID(name)
         }
-      case TRUE          =>
+      case INTLITKIND              => intLit
+      case LONGLITKIND             => longLit
+      case FLOATLITKIND            => floatLit
+      case DOUBLELITKIND           => doubleLit
+      case CHARLITKIND             => charLit
+      case STRLITKIND              => stringLit
+      case TRUE                    =>
         eat(TRUE)
         TrueLit()
-      case FALSE         =>
+      case FALSE                   =>
         eat(FALSE)
         FalseLit()
-      case THIS          =>
+      case THIS                    =>
         eat(THIS)
         This()
-      case NULL          =>
+      case NULL                    =>
         eat(NULL)
         NullLit()
-      case SUPER         =>
+      case SUPER                   =>
         val sup = superCall
         access(sup)
-      case NEW           => newExpression
-      case _             =>
+      case NEW                     => newExpression
+      case INDENT                  =>
+        eat(INDENT)
+        val stmts = until(statement, DEDENT)
+        eat(DEDENT)
+        Block(stmts)
+      case IF                      =>
+        eat(IF, LPAREN)
+        val condition = expression
+        eat(RPAREN)
+        val thn = expression
+        val els = optional(expression, ELSE)
+        If(condition, thn, els)
+      case RETURN                  =>
+        eat(RETURN)
+        val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression) else None
+        Return(expr)
+      case BREAK                   =>
+        eat(BREAK)
+        Break()
+      case CONTINUE                =>
+        eat(CONTINUE)
+        Continue()
+      case PRINT | PRINTLN | ERROR =>
+        val methType = nextTokenKind
+        eat(methType)
+        eat(LPAREN)
+        val expr = nextTokenKind match {
+          case RPAREN => StringLit("")
+          case _      => expression
+        }
+        eat(RPAREN)
+        methType match {
+          case PRINT   => Print(expr)
+          case PRINTLN => Println(expr)
+          case ERROR   => Error(expr)
+          case _       => ???
+        }
+      case LBRACKET                =>
+        eat(LBRACKET)
+        val expressions = commaList(expression, RBRACKET)
+        eat(RBRACKET)
+        ArrayLit(expressions)
+      case BANG                    =>
+        eat(BANG)
+        Not(term)
+      case MINUS                   => negation
+      case LOGICNOT                =>
+        eat(LOGICNOT)
+        LogicNot(term)
+      case HASH                    =>
+        eat(HASH)
+        Hash(term)
+      case DECREMENT               =>
+        eat(DECREMENT)
+        PreDecrement(term)
+      case INCREMENT               =>
+        eat(INCREMENT)
+        PreIncrement(term)
+      case _                       =>
         report(UnexpectedToken(currentToken))
     }
   }
@@ -1187,12 +1185,12 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   }
 
 
-  /** Store the current token, as read from the lexer. */
-
   private def readToken(): Unit = {
     currentIndex += 1
-    if (currentIndex < tokens.length)
+    if (currentIndex < tokens.length) {
       currentToken = tokens(currentIndex)
+      nextToken = if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
+    }
   }
 
   private def eatNewLines(): Unit =
@@ -1202,13 +1200,12 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
   /** ''Eats'' the expected token, or terminates with an error. */
   private def eat(kind: TokenKind*): Unit = {
     eatNewLines()
-    for (k <- kind) {
-      if (nextTokenKind == k) {
+    for (k <- kind)
+      if (nextTokenKind == k)
         readToken()
-      } else {
+      else
         report(WrongToken(nextToken, k))
-      }
-    }
+
   }
 
   private var usedOneGreaterThan = false
@@ -1465,9 +1462,10 @@ class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends Pa
     arrBuff.toList
   }
 
-  private def positioned[T <: Positioned](f: => T): T = {
+  private val parsedTrees = ListBuffer[Tree]()
+  private def positioned[T <: Tree](f: => T): T = {
     val startPos = nextToken
-    f.setPos(startPos, lastVisibleToken)
+    f.setPos(startPos, lastVisibleToken).use { tree => parsedTrees += tree }
   }
 
 }
