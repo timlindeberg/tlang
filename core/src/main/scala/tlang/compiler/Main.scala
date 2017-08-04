@@ -21,7 +21,7 @@ object Main extends MainErrors {
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
     Lexing andThen Parsing andThen Templating andThen
-    Naming andThen Typing andThen Flowing andThen Lowering
+      Naming andThen Typing andThen Flowing andThen Lowering
 
 
   val CompilerPhases = List(
@@ -134,18 +134,18 @@ object Main extends MainErrors {
 
     if (options(Version)) {
       print(versionInfo)
-      sys.exit(0)
+      sys.exit()
     }
 
     if (options(Phases)) {
       print(phaseInfo(options.formatting))
-      sys.exit(0)
+      sys.exit()
     }
 
     val args = options(Help)
     if (args.contains("")) {
       print(helpInfo(formatting))
-      sys.exit(0)
+      sys.exit()
     }
 
     args.foreach(Flag.get(_) ifDefined { flag =>
@@ -153,7 +153,7 @@ object Main extends MainErrors {
     })
 
     if (args.nonEmpty) {
-      sys.exit(0)
+      sys.exit()
     }
   }
 
@@ -227,7 +227,7 @@ object Main extends MainErrors {
     val header = if (mainMethods.size > 1) "Executing programs" else "Executing program"
 
 
-    val programExecutor = ProgramExecutor(timeout = None)
+    val programExecutor = ProgramExecutor()
     val outputBlocks = cus.flatMap { cu =>
       val file = cu.source.asInstanceOf[FileSource].file
       val output = syntaxHighlighter(programExecutor(ctx, file))

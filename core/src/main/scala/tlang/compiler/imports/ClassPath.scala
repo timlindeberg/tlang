@@ -1,17 +1,25 @@
 package tlang.compiler.imports
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 
 import tlang.Constants
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
 object ClassPath {
 
+  lazy val Default: ClassPath = {
+    val javaLibDirectory = Paths.get(System.getProperty("java.home") + File.separator + "lib")
 
-  lazy val Default = ClassPath(
-    System.getProperty("java.class.path").split(File.pathSeparator).toSet + Constants.TDirectory
-  )
+    val javaLibJarFiles: Set[String] = Files.find(javaLibDirectory, 1000,
+      (path, attr) => attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
+    ).iterator().asScala.map(_.toString).toSet
+
+    val javaClassPath = System.getProperty("java.class.path").split(File.pathSeparator).toSet
+    ClassPath(javaClassPath ++ javaLibJarFiles + Constants.TDirectory)
+  }
   val Empty = new ClassPath(Map(), Array(), Set())
 
   def apply(): ClassPath = Empty
@@ -39,6 +47,7 @@ case class ClassPath private(pathToFile: Map[String, ClassFile], classes: Array[
   }
 
   def apply(className: String): Option[ClassFile] = pathToFile.get(ImportUtils.toPath(className))
+
 
   def getClassesInPackage(packageName: String): List[String] = {
     val name = ImportUtils.toPath(packageName)

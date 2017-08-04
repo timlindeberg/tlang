@@ -10,7 +10,7 @@ import tlang.utils.Extensions._
 import scala.concurrent.duration.Duration
 
 
-case class ProgramExecutor(timeout: Option[Duration] = None) {
+case class ProgramExecutor(timeout: Duration = Duration(0, "sec")) {
 
   def apply(ctx: Context, classFile: File): String = apply(ctx.classPath.paths, classFile)
 
@@ -22,7 +22,7 @@ case class ProgramExecutor(timeout: Option[Duration] = None) {
   def apply(classPaths: Set[String], mainName: String): String = {
     val method = getMainMethod(classPaths, mainName)
     stdoutOutput {
-      withTimeout(timeout.getOrElse(Duration(0, "sec"))) {
+      withTimeout(timeout) {
         try {
           method.invoke(null, Array[String]())
         } catch {

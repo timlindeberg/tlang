@@ -156,10 +156,11 @@ class Lexer(override val ctx: Context, override val source: Source) extends Lexe
         (currentIndent, parsedChars, chars)
       case _            => (currentIndent, parsedChars, chars)
     }
-
-    indent(chars, 0, 0) use { case (_, parsedChars, _) if mixedTabsAndSpaces =>
-      report(IndentationMixesTabsAndSpaces(parsedChars))
+    indent(chars, 0, 0) use { case (_, parsedChars, _) =>
+      if (mixedTabsAndSpaces)
+        report(IndentationMixesTabsAndSpaces(parsedChars))
     }
+
   }
 
   private def tokenExists(str: String): Boolean = NonKeywords.contains(str)

@@ -22,6 +22,7 @@ trait ValidTester extends Tester {
     Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
 
   def testFile(file: File): Unit = {
+    println(s"Testing ${ file.getName }")
     val ctx = getTestContext(Some(file))
 
     try {

@@ -4,6 +4,8 @@ import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.jar.JarFile
 
+import tlang.utils.Extensions._
+
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Sorting
 
@@ -31,7 +33,7 @@ class ClassPathParser(paths: Set[String]) {
       .filter(_.getName.endsWith(".class"))
       .forEach { entry =>
         val entryName = entry.getName
-        val name = entryName.substring(0, entryName.length - ".class".length)
+        val name = entryName.removeSuffix(".class")
         addClass(name, JarClassFile(jar.getName, entryName))
       }
     // TODO: Template files should also be able to reside in jar-files
