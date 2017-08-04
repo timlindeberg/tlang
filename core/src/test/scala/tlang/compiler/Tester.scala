@@ -2,7 +2,7 @@ package tlang.compiler
 
 import java.io.File
 
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import org.scalatest.{BeforeAndAfter, FunSuite, Matchers, ParallelTestExecution}
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
@@ -51,7 +51,7 @@ object Tester {
 
 }
 
-trait Tester extends FunSuite with Matchers with BeforeAndAfter {
+trait Tester extends FunSuite with Matchers with BeforeAndAfter with ParallelTestExecution {
 
   import Tester._
 
@@ -80,12 +80,12 @@ trait Tester extends FunSuite with Matchers with BeforeAndAfter {
     .getOrElse(Path)
 
   testFiles(new File(testPath)) foreach { file =>
-    val name = file.getPath
+    val path = file.getPath
       .replaceAll("\\\\", "/")
       .replaceAll(Path + "/", "")
       .replaceAll("\\" + Constants.FileEnding, "")
 
-    val execute = if (shouldBeIgnored(file)) ignore(name)(_) else test(name)(_)
+    val execute = if (shouldBeIgnored(file)) ignore(path)(_) else test(path)(_)
     execute { testFile(file) }
   }
 

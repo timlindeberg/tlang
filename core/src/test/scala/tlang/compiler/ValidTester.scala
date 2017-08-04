@@ -12,17 +12,18 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
+import scala.concurrent.duration.Duration
+
 trait ValidTester extends Tester {
 
   import Tester._
 
-  val programExecutor = ProgramExecutor()
+  val programExecutor = ProgramExecutor(Duration(5, "sec"))
 
   override def Pipeline: CompilerPhase[Source, CompilationUnit] =
     Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
 
   def testFile(file: File): Unit = {
-    println(s"Testing ${ file.getName }")
     val ctx = getTestContext(Some(file))
 
     try {

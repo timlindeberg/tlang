@@ -56,9 +56,7 @@ lazy val core = project
       "org.scalaz" %% "scalaz-core" % "7.2.9",
       "com.typesafe.akka" %% "akka-actor" % "2.4.17"
     ),
-    parallelExecution in Test := false,
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-P2"),
-    logBuffered in Test := false,
-    concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
+    parallelExecution in Test := true,
+    logBuffered in Test := false
   )
   .dependsOn(macros)

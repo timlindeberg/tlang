@@ -1,7 +1,5 @@
 package tlang.utils
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-
 import tlang.utils.formatting.{ColoredString, Formatting}
 
 import scala.collection.mutable
@@ -35,20 +33,6 @@ object Extensions {
         exec.cancel()
         throw e
     }
-  }
-
-  def stdoutOutput[T](block: => T): String = {
-    val sysOut = System.out
-    val bytes = new ByteArrayOutputStream()
-    System.setOut(new PrintStream(bytes))
-
-    try {
-      block
-    } finally {
-      System.out.flush()
-      System.setOut(sysOut)
-    }
-    bytes.toString
   }
 
   def measureTime[T](block: => T): (T, Double) = {
@@ -193,11 +177,9 @@ object Extensions {
 
     @volatile var lastThread: Option[Thread] = None
     override def execute(runnable: Runnable): Unit = {
-      ExecutionContext.Implicits.global.execute(new Runnable() {
-        override def run() {
-          lastThread = Some(Thread.currentThread)
-          runnable.run()
-        }
+      ExecutionContext.Implicits.global.execute(() => {
+        lastThread = Some(Thread.currentThread)
+        runnable.run()
       })
     }
 
