@@ -4,21 +4,20 @@ import java.io.File
 
 import tlang.Constants
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
-import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Boxes.Box
 import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
 
 object FancyFormatting extends Formatting(
-  Boxes.Light, LineWidth.defaultValue, useColor = true, asciiOnly = false
+  Boxes.Light, -1, useColor = true, asciiOnly = false
 )
 object SimpleFormatting extends Formatting(
-  Boxes.Simple, LineWidth.defaultValue, useColor = false, asciiOnly = true
+  Boxes.Simple, -1, useColor = false, asciiOnly = true
 )
 
 case class Formatting(
   box: Box,
-  lineWidth: Int,
+  lineWidth: Int = 80,
   colorScheme: ColorScheme = DefaultColorScheme,
   useColor: Boolean = true,
   asciiOnly: Boolean = false,
@@ -86,8 +85,9 @@ case class Formatting(
 
   /*------------------------------ Box handling -----------------------------*/
 
-  private val Indent     = 2
-  private val Width: Int = lineWidth - (2 * Indent)
+
+  private val Indent = 2
+  private def Width: Int = lineWidth - (2 * Indent)
 
 
   def top: String = trimRight(┌ + ─ * (lineWidth - Indent) + ┐) + "\n"

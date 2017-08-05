@@ -1,7 +1,7 @@
 package tlang.repl
 
+import java.awt.KeyboardFocusManager
 import java.awt.event._
-import java.awt.{KeyEventDispatcher, KeyboardFocusManager}
 import java.nio.charset.Charset
 import java.util
 
@@ -27,14 +27,11 @@ class ReplTerminal {
   private var _isCursorVisible = true
 
 
-  KeyboardFocusManager.getCurrentKeyboardFocusManager addKeyEventDispatcher
-  new KeyEventDispatcher() {
-    def dispatchKeyEvent(e: KeyEvent): Boolean = {
-      isShiftDown = e.isShiftDown
-      isCtrlDown = e.isControlDown
-      isAltDown = e.isAltDown
-      false
-    }
+  KeyboardFocusManager.getCurrentKeyboardFocusManager.addKeyEventDispatcher { e =>
+    isShiftDown = e.isShiftDown
+    isCtrlDown = e.isControlDown
+    isAltDown = e.isAltDown
+    false
   }
 
 

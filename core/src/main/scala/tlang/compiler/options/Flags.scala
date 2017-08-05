@@ -296,7 +296,9 @@ object Flags {
   }
 
   case object LineWidth extends NumberFlag {
-    override val defaultValue = 100
+    override val defaultValue = -1
+
+    val DefaultWidth = 80
 
     override val flag = "linewidth"
     override val arg  = "num"
@@ -305,8 +307,9 @@ object Flags {
     override def description(formatting: Formatting): String = {
       import formatting._
       s"""
-         |Specify the width of a line in error message and output.
-         |The default is '${ Blue(defaultValue) }' chars.
+         |Specifies the width of a line in error messages and output.
+         |If none is given (or ${ Blue(-1) } is given) the width of the terminal will be used, if it can be determined.
+         |Otherwise, '${ Blue(DefaultWidth) }' will be used.
       """.stripMargin.trim
     }
 
@@ -398,9 +401,9 @@ object Flags {
   object Flag {
     lazy val All: List[Flag] =
       (JsonFlag.All ++
-       OptionalArgumentFlag.All ++
-       BooleanFlag.All ++
-       ArgumentFlag.All
+        OptionalArgumentFlag.All ++
+        BooleanFlag.All ++
+        ArgumentFlag.All
         ).sortBy(_.flag)
 
     def flagNames: List[String] = All.flatMap { flag =>

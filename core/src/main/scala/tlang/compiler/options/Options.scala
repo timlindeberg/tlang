@@ -12,6 +12,7 @@ import tlang.utils.formatting.{Boxes, Colors, Formatting}
 import tlang.{Constants, utils}
 
 import scala.collection.mutable
+import scala.tools.jline.TerminalFactory
 import scala.util.parsing.json.JSON
 
 
@@ -148,7 +149,18 @@ case class Options(arguments: Array[String]) extends MainErrors {
     }
   }
 
-  val formatting: Formatting = utils.formatting.Formatting(boxType, apply(LineWidth), colorScheme, boxType != Simple, boxType == Simple)
+  val lineWidth: Int = {
+    val givenWidth = apply(LineWidth)
+    if (givenWidth != -1)
+      givenWidth
+    else if (System.console() == null)
+      LineWidth.DefaultWidth
+    else
+      TerminalFactory.create().getWidth
+  }
+
+  val formatting: Formatting =
+    utils.formatting.Formatting(boxType, lineWidth, colorScheme, boxType != Simple, boxType == Simple)
 
   private def verifyOutputPhases(phases: mutable.Set[String]): Unit = {
     val validPhases = Main.CompilerPhases.map(_.name)
