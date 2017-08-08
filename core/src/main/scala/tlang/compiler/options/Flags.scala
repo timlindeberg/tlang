@@ -4,8 +4,8 @@ import tlang.compiler.Main
 import tlang.compiler.code.Lowering
 import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Boxes.{Box, Simple}
-import tlang.utils.formatting.{Boxes, Colors, Formatting}
+import tlang.utils.formatting.BoxStyles.{BoxStyle, Simple}
+import tlang.utils.formatting.{BoxStyles, Colors, Formatting}
 
 object Flags {
 
@@ -199,12 +199,12 @@ object Flags {
     override def extendedDescription(formatting: Formatting): String = {
       import formatting._
 
-      val boxes = Boxes.All.toList
+      val boxes = BoxStyles.All
       val boxNames = boxes.map(box => "  " + Blue(box.name)).mkString("\n")
       val desc =
         s"""|The --${ Magenta(flag) } flag determines what style to use for all output produced by the T compiler.
             |The style '${ Blue("Simple") }' only produces ASCII-characters and no colors which can be useful when the tlang.compiler is ran on simpler terminals.
-            |The default formatting style is '${ Blue(Boxes.DefaultBox.name) }'.
+            |The default formatting style is '${ Blue(BoxStyles.DefaultBox.name) }'.
             |
             |The following styles are available:
             |
@@ -216,7 +216,7 @@ object Flags {
       desc + "\n\n" + formatBoxes(boxes, formatting)
     }
 
-    private def formatBoxes(boxes: List[Box], formatting: Formatting): String = {
+    private def formatBoxes(boxes: List[BoxStyle], formatting: Formatting): String = {
       import formatting._
 
       val seperator = "  "
@@ -298,7 +298,7 @@ object Flags {
   case object LineWidth extends NumberFlag {
     override val defaultValue = -1
 
-    val DefaultWidth = 80
+    val DefaultWidth = 120
 
     override val flag = "linewidth"
     override val arg  = "num"

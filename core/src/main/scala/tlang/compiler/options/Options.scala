@@ -6,9 +6,9 @@ import java.nio.file.{InvalidPathException, Paths}
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Boxes.{Box, Simple}
+import tlang.utils.formatting.BoxStyles.{BoxStyle, Simple}
 import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
-import tlang.utils.formatting.{Boxes, Colors, Formatting}
+import tlang.utils.formatting.{BoxStyles, Colors, Formatting}
 import tlang.{Constants, utils}
 
 import scala.collection.mutable
@@ -121,16 +121,16 @@ case class Options(arguments: Array[String]) extends MainErrors {
     files.toSet
   }
 
-  val boxType: Box = {
+  val boxType: BoxStyle = {
     val formattings = flagArgs(Flags.Formatting)
-    val boxNames = Boxes.All.map(_.name.toLowerCase)
+    val boxNames = BoxStyles.All.map(_.name.toLowerCase)
     formattings.foreach { formatting =>
       if (!(formatting in boxNames))
         FatalInvalidArgToFlag(Flags.Formatting, formatting, boxNames.toList)
     }
     formattings.headOption
-      .flatMap(formatting => Boxes.All.find(_.name.toLowerCase == formatting))
-      .getOrElse(Boxes.DefaultBox)
+      .flatMap(formatting => BoxStyles.All.find(_.name.toLowerCase == formatting))
+      .getOrElse(BoxStyles.DefaultBox)
   }
 
   val colorScheme: ColorScheme = {

@@ -258,8 +258,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
     // TODO: why lazy?
     lazy val ch: CodeHandler = classFile.addClassInitializer.codeHandler
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    staticFields.foreach { case VarDecl(_, id, Some(expr), _) =>
-      compileField(expr, id, classDecl, ch, codeGenerator)
+    staticFields.foreach {
+      case VarDecl(_, id, Some(expr), _) => compileField(expr, id, classDecl, ch, codeGenerator)
+      case _                             =>
     }
     ch << RETURN
     ch.freeze
@@ -268,9 +269,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
   private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler) = {
     val nonStaticFields = classDecl.fields.filter(v => v.initation.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    nonStaticFields foreach { case VarDecl(_, id, Some(expr), _) =>
-      ch << ArgLoad(0) // put this-reference on stack
-      compileField(expr, id, classDecl, ch, codeGenerator)
+    nonStaticFields foreach {
+      case VarDecl(_, id, Some(expr), _) =>
+        ch << ArgLoad(0) // put this-reference on stack
+        compileField(expr, id, classDecl, ch, codeGenerator)
+      case _                             =>
     }
   }
 

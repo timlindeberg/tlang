@@ -129,6 +129,7 @@ object Visualizer {
                   val p = new java.lang.Double(i / l.size.asInstanceOf[Double])
                   e.addAttribute("ui.class", "Numbered")
                   e.setAttribute("ui.color", p)
+                case _            =>
               }
               case t: Tree    => addEdge(nodeName, t, fieldName)
               case _          =>

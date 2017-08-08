@@ -3,6 +3,7 @@ package tlang.utils.formatting
 import tlang.utils.Extensions._
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 case class AnsiWordWrapper() {
 
@@ -137,28 +138,60 @@ case class AnsiWordWrapper() {
 
   private def wrapAnsi(lines: List[String]): List[String] = {
 
-    @tailrec def getAnsi(chars: List[Char], ansi: List[String]): List[String] = chars match {
-      case '\u001b' :: '[' :: '0' :: 'm' :: rest    => getAnsi(rest, Nil)
-      case '\u001b' :: '[' :: a :: b :: 'm' :: rest => getAnsi(rest, s"\u001b[$a${ b }m" :: ansi)
-      case '\u001b' :: '[' :: a :: 'm' :: rest      => getAnsi(rest, s"\u001b[${ a }m" :: ansi)
-      case _ :: rest                                => getAnsi(rest, ansi)
-      case Nil                                      => ansi
+
+    var currentColor: String = ""
+    var currentBGColor: String = ""
+    var SGRs = mutable.Set[String]()
+    var ansi = ""
+
+    def updateFrom(line: String, index: Int): Int = {
+      val endOfAnsi = line.indexOf('m', index + 1)
+      val ansiValues = line.subSequence(index + 2, endOfAnsi).toString
+
+      ansiValues.split(":").map(_.toList).foreach {
+        case '0' :: Nil                           =>
+          currentColor = ""
+          currentBGColor = ""
+          SGRs.clear()
+        case ('1' | '4') :: Nil                   => SGRs += s"\u001b[${ ansiValues }m"
+        case '3' :: c :: Nil if c in ('1' to '7') => currentColor = s"\u001b[${ ansiValues }m"
+        case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = s"\u001b[${ ansiValues }m"
+        case _                                    =>
+      }
+      ansi = currentColor + currentBGColor + SGRs.mkString
+      endOfAnsi
     }
 
-    val seq = lines.toIndexedSeq
-    var ansi: List[String] = Nil
-    seq.indices.map {
-      i =>
-        var sb = new StringBuilder
-        if (ansi.nonEmpty)
-          sb ++= ansi.mkString
+    def updateAnsi(line: String): Unit = {
+      var i = 0
+      while (i < line.length) {
+        line(i) match {
+          case '\u001b' if line(i + 1) == '[' =>
+            val endOfAnsi = updateFrom(line, i)
+            ansi = currentColor + currentBGColor + SGRs.mkString
+            i = endOfAnsi
+          case _                              =>
+        }
+        i += 1
+      }
+    }
 
-        sb ++= seq(i)
-        ansi = getAnsi(seq(i).toList, ansi)
-        if (ansi.nonEmpty)
-          sb ++= Console.RESET
-        sb.toString
-    }.toList
+    lines.map { line =>
+      var sb = new StringBuilder
+      if (line.startsWith("\u001b[")) {
+        // Make sure we don't repeat the previous ansi if it is immediately updated
+        val endOfAnsi = updateFrom(line, 0)
+        sb ++= ansi
+        sb ++= line.substring(endOfAnsi + 1)
+      } else {
+        sb ++= ansi
+        sb ++= line
+      }
+      updateAnsi(line)
+      if (ansi.nonEmpty)
+        sb ++= Console.RESET
+      sb.toString
+    }
   }
 
 }

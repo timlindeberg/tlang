@@ -18,6 +18,9 @@ case class PrettyPrinter(formatting: Formatting) {
 
   private val seperator = "\n\n/* ----------------------------------------------------------------- */\n\n"
 
+  private val charEscapeChars   = Map('\t' -> 't', '\b' -> 'b', '\n' -> 'n', '\r' -> 'r', '\f' -> 'f', '\\' -> '\\')
+  private val stringEscapeChars = charEscapeChars ++ Map(''' -> ''', '"' -> '"')
+
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
     currentIndent = 0
@@ -118,9 +121,6 @@ case class PrettyPrinter(formatting: Formatting) {
     case PutValue(expr)                    => s"<PutValue(${ pp"$expr" })>"
   }
 
-  private val charEscapeChars   = Map('\t' -> 't', '\b' -> 'b', '\n' -> 'n', '\r' -> 'r', '\f' -> 'f', '\\' -> '\\')
-  private val stringEscapeChars = charEscapeChars ++ Map(''' -> ''', '"' -> '"')
-
   private def escapeChar(str: String) = _escape(str, charEscapeChars)
   private def escapeString(str: String) = _escape(str, stringEscapeChars)
 
@@ -217,11 +217,13 @@ case class PrettyPrinter(formatting: Formatting) {
   }
 
   private def mods(modifiers: Set[Modifier]) =
-    modifiers.map {
-      case Static()   => pp"static"
-      case Implicit() => pp"implicit"
-      case _          => ""
-    }.mkString(" ")
+    modifiers
+      .map {
+        case Static()   => pp"static"
+        case Implicit() => pp"implicit"
+        case _          => ""
+      }
+      .mkString(" ")
 
   private def optional[T](t: Option[T])(f: (T => String)) = if (t.isDefined) f(t.get) else ""
 
@@ -288,8 +290,7 @@ case class PrettyPrinter(formatting: Formatting) {
         color(prettyPrint(t))
       case Some(t: Tree) => evaluate(t)
       case None          => ""
-      case l: List[_]    =>
-        mkString(l.asInstanceOf[List[Tree]])
+      case l: List[_]    => mkString(l.asInstanceOf[List[Tree]]) // Only lists of trees should be used
       case s: String     => s
       case x             => x.toString
     }

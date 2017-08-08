@@ -133,7 +133,7 @@ object Extensions {
   }
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
-    def use(f: T => Unit): T = { f(t); t }
+    def use(f: T => Unit): T = { val x = t; f(t); x }
     def print: T = { println(t); t }
     def print(prefix: String): T = { println(prefix + ": " + t); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)

@@ -5,7 +5,7 @@ lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
   javacOptions ++= Seq("-encoding", "UTF-8")
 )
 
-scalacOptions ++= Seq(
+scalacOptions in ThisBuild ++= Seq(
   "-deprecation",
   "-unchecked",
   "–encoding UTF8"
@@ -61,3 +61,4 @@ lazy val core = project
     logBuffered in Test := false
   )
   .dependsOn(macros)
+

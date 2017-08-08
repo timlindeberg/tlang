@@ -151,8 +151,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
     true
   }
 
-  def undo(): Boolean = updateState(history.undo)
-  def redo(): Boolean = updateState(history.redo)
+  def undo(): Boolean = updateState { history.undo() }
+  def redo(): Boolean = updateState { history.redo() }
 
   def reset(cord: Cord = Cord.empty): Unit = {
     mainCursor.reset()
@@ -320,8 +320,8 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
   private def lineIndex = linePositions.indices.find(i => linePositions(i) <= mainCursor.position).getOrElse(0)
 
-  private def updateState(f: () => Boolean): Boolean = {
-    if (!f())
+  private def updateState(f: => Boolean): Boolean = {
+    if (!f)
       return false
 
     upDownX = 0
