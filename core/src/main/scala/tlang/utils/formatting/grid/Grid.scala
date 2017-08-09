@@ -1,0 +1,317 @@
+package tlang.utils.formatting.grid
+
+import tlang.utils.Extensions._
+import tlang.utils.formatting._
+
+import scala.collection.mutable.ListBuffer
+
+
+case class Grid(var formatting: Formatting) {
+
+  private val rows: ListBuffer[Row] = ListBuffer()
+  private var indent                = 1
+
+  private var _currentRow: Option[Row] = None
+  private def currentRow: Row = {
+    if (_currentRow.isEmpty) {
+      row()
+    }
+    _currentRow.get
+  }
+
+  def apply(i: Int): Row = rows(i)
+  def size: Int = rows.size
+
+  def formatting(formatting: Formatting): Grid = {
+    this.formatting = formatting
+    this
+  }
+
+  def indent(indent: Int): Grid = {
+    this.indent = indent
+    this
+  }
+
+  def row(
+    widthType: Width = Width.Auto,
+    handleOverflow: OverflowHandling = OverflowHandling.Wrap,
+    alignment: Alignment = Alignment.Left
+  ): Grid =
+    row(Column(widthType, alignment, handleOverflow))
+
+  def row(column: Column, moreColumns: Column*): Grid = {
+    // This allows us to pass the Column object to receive a column with default values
+    // That way we can write .row(Column, Column) instead of .row(Column(), Column())
+    val columns = (column :: moreColumns.toList) map {
+      case Column => Column.copy()
+      case c      => c
+    }
+    val row = Row(rows.length + 1, columns)
+    verifyRowWidth(row)
+    _currentRow = Some(row)
+    rows += row
+    this
+  }
+
+  def content(content: String, moreContent: String*): Grid = {
+    val allContent = content :: moreContent.toList
+    verifyNumValues(allContent.length)
+    addContent(allContent)
+    this
+  }
+
+  def content(content: Seq[String], moreContent: Seq[String]*): Grid = {
+    val allContent = content :: moreContent.toList
+    verifyNumValues(allContent.length)
+    allContent.transpose foreach addContent
+    this
+  }
+
+  def columnWidths: Seq[Int] = currentRow.columnWidths
+
+  override def toString: String = GridRenderer(formatting).render()
+
+  private def addContent(allContent: Seq[String]) = {
+    currentRow.columnWidthsDirty = true
+    currentRow.columns.zip(allContent).foreach { case (column, content) =>
+      val lines = content.split('\n').toList
+      column.addLines(lines)
+    }
+  }
+
+  private def verifyNumValues(contentLength: Int) = {
+    val columnLength = currentRow.columns.length
+    if (contentLength != columnLength) {
+      throw new IllegalArgumentException(
+        s"Number of column values given to content doesn't match the number of columns in the row: $contentLength != $columnLength"
+      )
+    }
+  }
+
+  private def verifyRowWidth(row: Row) = {
+    val columns = row.columns
+
+    val lineWidth = formatting.lineWidth
+    val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
+
+    val neededWidth = indentAndBorderSize + columns
+      .map(_.width)
+      .collect {
+        case Width.Auto    => 1 // Auto needs at least one character
+        case w: FixedWidth => w(lineWidth - indentAndBorderSize)
+      }
+      .sum
+
+    if (neededWidth > lineWidth)
+      throw new IllegalStateException(s"The minimum needed width of columns in row ${ row.rowNumber } is larger than the total width: $neededWidth > $lineWidth.")
+  }
+
+  case class Row(rowNumber: Int, columns: Seq[Column] = Seq(Column())) {
+
+    private[grid] var columnWidthsDirty       = true
+    private       var _columnWidths: Seq[Int] = Seq()
+
+    def apply(i: Int): Column = columns(i)
+    def size: Int = columns.size
+    def height: Int = 0
+
+    private[grid] def spaceForContent(): Int = {
+      val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
+      formatting.lineWidth - indentAndBorderSize
+    }
+
+    def columnWidths: Seq[Int] = {
+      if (columnWidthsDirty) {
+        _columnWidths = calculateColumnWidths()
+        columnWidthsDirty = false
+      }
+      _columnWidths
+    }
+
+    private def calculateColumnWidths(): Seq[Int] = {
+      val contentSpace = spaceForContent()
+      val numAuto = columns.count(_.width == Width.Auto)
+
+      if (numAuto == 0) {
+        // If all columns have fixed width we let the last one should take up the remaining space
+        columnWidthsOnlyFixedSize(contentSpace)
+      } else {
+        // Otherwise the last auto should take up the remaining space
+        columnWidthsWithAuto(contentSpace, numAuto)
+      }
+    }
+
+    private def columnWidthsOnlyFixedSize(actualSpace: Int) = {
+      var remainingWidth = actualSpace
+      columns.zipWithIndex.map { case (column, i) =>
+        val columnWidth = column.width.asInstanceOf[FixedWidth]
+        val width = if (i == columns.length - 1)
+          remainingWidth
+        else
+          columnWidth(actualSpace)
+
+        remainingWidth -= width
+        width
+      }
+    }
+
+    private def columnWidthsWithAuto(contentSpace: Int, numAuto: Int) = {
+      val fixedWidth = columns
+        .map(_.width)
+        .collect { case w: FixedWidth => w(contentSpace) }
+        .sum
+
+      var remainingWidth = contentSpace - fixedWidth
+      var remainingAutos = numAuto
+      val widths = Array.ofDim[Int](columns.length)
+
+
+      // We sort the columns by maximum width. We want to select the smallest
+      // ones first in order to maximize the available space
+      columns.zipWithIndex.sortBy(_._1.maxWidth).foreach { case (column, index) =>
+        val width = column.width match {
+          case Width.Auto    =>
+            if (remainingAutos == 1) {
+              remainingWidth
+            } else {
+              val possibleSpace = remainingWidth.toDouble / remainingAutos
+              remainingAutos -= 1
+
+              // If rounding up makes the content fit, we do that but otherwise
+              // we round down. If the maxWidth is less than the available space
+              // we only use the maximum width
+              val w = if (Math.ceil(possibleSpace) == column.maxWidth || column.maxWidth <= possibleSpace) {
+                Math.max(1, column.maxWidth) // Never render completely empty columns
+              } else {
+                possibleSpace.toInt
+              }
+              remainingWidth -= w
+              w
+            }
+          case w: FixedWidth => w(contentSpace)
+        }
+        widths(index) = width
+      }
+      widths.toList
+    }
+
+  }
+
+  case class GridRenderer(formatting: Formatting) {
+
+    import formatting.box._
+
+    def render(): String = {
+      val sb = new StringBuilder
+
+      var i = 0
+
+      sb ++= drawTopLine(rows.head)
+      sb ++= "\n"
+      while (i < rows.size) {
+        val row = rows(i)
+        drawContent(sb, row)
+
+        if (i < rows.size - 1) {
+          sb ++= drawMiddleLine(row, rows(i + 1))
+          sb ++= "\n"
+        }
+        i += 1
+      }
+      sb ++= drawBottomLine(rows.last)
+      sb.toString
+    }
+
+    private def drawTopLine(row: Row) = drawTopOrBottom(┌, ┬, ┐, row)
+    private def drawBottomLine(row: Row) = drawTopOrBottom(└, ┴, ┘, row)
+
+    private def drawTopOrBottom(left: String, middle: String, right: String, row: Row): String = {
+      val sb = new StringBuilder
+      sb ++= left
+      row.columnWidths.zipWithIndex.foreach { case (width, index) =>
+        val num = 2 * indent + width
+        sb ++= ─ * num
+        if (index != row.columns.size - 1)
+          sb ++= middle
+      }
+
+      sb ++= right
+      trimRight(sb.toString)
+    }
+
+    private def drawMiddleLine(before: Row, after: Row) = {
+      // Returns the positions where the row has a column break
+      def getBreakPositions(row: Row): Iterator[Int] = {
+        val widths = row.columnWidths
+        var acc = 2 * indent + widths.head
+        widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
+      }
+
+      val sb = new StringBuilder
+      val maxWidth = formatting.lineWidth
+
+      sb ++= ├
+
+      val upPositions = getBreakPositions(before)
+      val downPositions = getBreakPositions(after)
+      var up = if (upPositions.hasNext) upPositions.next() else -1
+      var down = if (downPositions.hasNext) downPositions.next() else -1
+      var x = 0
+      while (x < maxWidth - 2) {
+        val X = x // X is a stable identifier, we cant use x since it's a var
+        sb ++= ((up, down) match {
+          case (X, X) => ┼
+          case (X, _) => ┴
+          case (_, X) => ┬
+          case _      => ─
+        })
+
+        if (upPositions.hasNext && x >= up)
+          up = upPositions.next()
+        if (downPositions.hasNext && x >= down)
+          down = downPositions.next()
+
+        x += 1
+      }
+      sb ++= ┤
+      trimRight(sb.toString)
+    }
+
+    private def drawContent(sb: StringBuilder, row: Row): Unit = {
+      val columns = row.columns
+      val columnWidths = row.columnWidths
+
+      sb ++= columns
+        .map(column => if (column.lines.nonEmpty) column.lines else List(""))
+        // Transpose to get the corresponding line in each column together
+        .transpose
+        .map { lines =>
+          // Word wrap each line in each column
+          val wrappedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
+            columns(columnIndex).overflowHandling(line, columnWidths(columnIndex))
+          }
+          val maxNumLines = wrappedLines.map(_.length).max
+          // Fill out the columns with empty lines so that each column has the same
+          // number of lines after word wrapping
+          wrappedLines.map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
+        }
+        .transpose // Transpose back so that we have a list of list of lines for each column
+        .map(_.flatten) // Flatten the list so we just have one list of lines for each column
+        // Transpose to get the lists of each line to draw
+        .transpose
+        .map { lines =>
+          // Draw each line
+          val content = lines.zipWithIndex.map { case (line, columnIndex) =>
+            columns(columnIndex).alignment(line, columnWidths(columnIndex))
+          }
+          val fill = " " * indent
+          trimRight(│ + fill + content.mkString(fill + │ + fill) + fill + │)
+        }
+        .mkString("\n")
+      sb ++= "\n"
+    }
+
+    private def trimRight(s: String) = s.rightTrimWhiteSpaces
+  }
+
+}
