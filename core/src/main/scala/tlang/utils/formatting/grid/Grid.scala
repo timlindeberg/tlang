@@ -1,6 +1,7 @@
 package tlang.utils.formatting.grid
 
 import tlang.utils.Extensions._
+import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting._
 
 import scala.collection.mutable.ListBuffer
@@ -10,17 +11,22 @@ case class Grid(var formatting: Formatting) {
 
   private val rows: ListBuffer[Row] = ListBuffer()
   private var indent                = 1
+  private var borderColor           = formatting.NoColor
+  private var shouldTrim            = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
-    if (_currentRow.isEmpty) {
+    if (_currentRow.isEmpty)
       row()
-    }
     _currentRow.get
   }
 
   def apply(i: Int): Row = rows(i)
   def size: Int = rows.size
+  def clear(): Unit = {
+    rows.clear()
+    _currentRow = None
+  }
 
   def formatting(formatting: Formatting): Grid = {
     this.formatting = formatting
@@ -32,12 +38,32 @@ case class Grid(var formatting: Formatting) {
     this
   }
 
+  def borderColor(color: Color): Grid = {
+    this.borderColor = color
+    this
+  }
+
+  def trim(shouldTrim: Boolean): Grid = {
+    this.shouldTrim = shouldTrim
+    this
+  }
+
+  def header(content: String): Grid = {
+    if (_currentRow.isDefined)
+      throw new IllegalStateException("Cannot add a header once a row has been added.")
+
+    addRow(List(Column(alignment = Alignment.Center)), isHeader = true)
+    addContent(List(content))
+  }
+
   def row(
-    widthType: Width = Width.Auto,
+    width: Width = Width.Auto,
     handleOverflow: OverflowHandling = OverflowHandling.Wrap,
     alignment: Alignment = Alignment.Left
   ): Grid =
-    row(Column(widthType, alignment, handleOverflow))
+    row(Column(width, alignment, handleOverflow))
+
+  def row(numColumns: Int): Grid = row(List.fill(numColumns)(Column.copy()))
 
   def row(column: Column, moreColumns: Column*): Grid = {
     // This allows us to pass the Column object to receive a column with default values
@@ -46,37 +72,82 @@ case class Grid(var formatting: Formatting) {
       case Column => Column.copy()
       case c      => c
     }
-    val row = Row(rows.length + 1, columns)
+    row(columns)
+  }
+
+  def row(columns: Iterable[Column]): Grid = addRow(columns, isHeader = false)
+
+  private def addRow(columns: Iterable[Column], isHeader: Boolean): Grid = {
+    val row = Row(rows.length + 1, isHeader, columns.toList)
     verifyRowWidth(row)
     _currentRow = Some(row)
     rows += row
     this
   }
 
+  def content(): Grid = allContent(List.fill(currentRow.size)(List("")))
+
+  // Yay!
+  def content(t: (String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
+
+
   def content(content: String, moreContent: String*): Grid = {
     val allContent = content :: moreContent.toList
     verifyNumValues(allContent.length)
     addContent(allContent)
+  }
+
+  def contents(content: Iterable[String], moreContent: Iterable[String]*): Grid = {
+    allContent(content :: moreContent.toList)
+  }
+
+  def allContent(content: Iterable[Iterable[Any]]): Grid = {
+    verifyNumValues(content.size)
+    content.transpose foreach addContent
     this
   }
 
-  def content(content: Seq[String], moreContent: Seq[String]*): Grid = {
-    val allContent = content :: moreContent.toList
-    verifyNumValues(allContent.length)
-    allContent.transpose foreach addContent
+  def content[T](content: Iterable[T])(f: (T) => Product): Grid = {
+    content.map(f).foreach(addTuple)
     this
   }
 
   def columnWidths: Seq[Int] = currentRow.columnWidths
 
+  def print(): Unit = println(toString)
   override def toString: String = GridRenderer(formatting).render()
 
-  private def addContent(allContent: Seq[String]) = {
+  private def addTuple(t: Product): Grid = {
+    verifyNumValues(t.productArity)
+    addContent(t.productIterator.toList)
+  }
+
+  private def addContent(content: Iterable[Any]) = {
     currentRow.columnWidthsDirty = true
-    currentRow.columns.zip(allContent).foreach { case (column, content) =>
-      val lines = content.split('\n').toList
-      column.addLines(lines)
+    currentRow.columns.zip(content).foreach { case (column, content) =>
+      column.addLine(content.toString)
     }
+    this
   }
 
   private def verifyNumValues(contentLength: Int) = {
@@ -106,7 +177,7 @@ case class Grid(var formatting: Formatting) {
       throw new IllegalStateException(s"The minimum needed width of columns in row ${ row.rowNumber } is larger than the total width: $neededWidth > $lineWidth.")
   }
 
-  case class Row(rowNumber: Int, columns: Seq[Column] = Seq(Column())) {
+  case class Row private(rowNumber: Int, isHeader: Boolean, columns: Seq[Column]) {
 
     private[grid] var columnWidthsDirty       = true
     private       var _columnWidths: Seq[Int] = Seq()
@@ -199,9 +270,12 @@ case class Grid(var formatting: Formatting) {
 
   case class GridRenderer(formatting: Formatting) {
 
-    import formatting.box._
+    import formatting.boxStyle._
 
     def render(): String = {
+      if (rows.isEmpty)
+        return ""
+
       val sb = new StringBuilder
 
       var i = 0
@@ -222,21 +296,32 @@ case class Grid(var formatting: Formatting) {
       sb.toString
     }
 
-    private def drawTopLine(row: Row) = drawTopOrBottom(┌, ┬, ┐, row)
-    private def drawBottomLine(row: Row) = drawTopOrBottom(└, ┴, ┘, row)
+    private def drawTopLine(row: Row) = {
+      if (row.isHeader)
+        drawTopOrBottom(╒, ═, ╤, ╕, row)
+      else
+        drawTopOrBottom(┌, ─, ┬, ┐, row)
+    }
+    private def drawBottomLine(row: Row) = {
+      if (row.isHeader)
+        drawTopOrBottom(╘, ═, ╧, ╛, row)
+      else
+        drawTopOrBottom(└, ─, ┴, ┘, row)
 
-    private def drawTopOrBottom(left: String, middle: String, right: String, row: Row): String = {
+    }
+
+    private def drawTopOrBottom(left: String, middle: String, middleBreak: String, right: String, row: Row): String = {
       val sb = new StringBuilder
       sb ++= left
       row.columnWidths.zipWithIndex.foreach { case (width, index) =>
         val num = 2 * indent + width
-        sb ++= ─ * num
+        sb ++= middle * num
         if (index != row.columns.size - 1)
-          sb ++= middle
+          sb ++= middleBreak
       }
 
       sb ++= right
-      trimRight(sb.toString)
+      formatLine(sb.toString)
     }
 
     private def drawMiddleLine(before: Row, after: Row) = {
@@ -250,7 +335,9 @@ case class Grid(var formatting: Formatting) {
       val sb = new StringBuilder
       val maxWidth = formatting.lineWidth
 
-      sb ++= ├
+      def ifHeader(a: String, b: String) = if (before.isHeader) a else b
+
+      sb ++= ifHeader(╞, ├)
 
       val upPositions = getBreakPositions(before)
       val downPositions = getBreakPositions(after)
@@ -260,10 +347,10 @@ case class Grid(var formatting: Formatting) {
       while (x < maxWidth - 2) {
         val X = x // X is a stable identifier, we cant use x since it's a var
         sb ++= ((up, down) match {
-          case (X, X) => ┼
-          case (X, _) => ┴
-          case (_, X) => ┬
-          case _      => ─
+          case (X, X) => ifHeader(╪, ┼)
+          case (X, _) => ifHeader(╧, ┴)
+          case (_, X) => ifHeader(╤, ┬)
+          case _      => ifHeader(═, ─)
         })
 
         if (upPositions.hasNext && x >= up)
@@ -273,9 +360,11 @@ case class Grid(var formatting: Formatting) {
 
         x += 1
       }
-      sb ++= ┤
-      trimRight(sb.toString)
+      sb ++= ifHeader(╡, ┤)
+      formatLine(sb.toString)
     }
+
+    private def formatLine(line: String) = borderColor(trimRight(line))
 
     private def drawContent(sb: StringBuilder, row: Row): Unit = {
       val columns = row.columns
@@ -305,13 +394,14 @@ case class Grid(var formatting: Formatting) {
             columns(columnIndex).alignment(line, columnWidths(columnIndex))
           }
           val fill = " " * indent
-          trimRight(│ + fill + content.mkString(fill + │ + fill) + fill + │)
+          val columnBreak = borderColor(│)
+          trimRight(columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak)
         }
         .mkString("\n")
       sb ++= "\n"
     }
 
-    private def trimRight(s: String) = s.rightTrimWhiteSpaces
+    private def trimRight(s: String) = if (shouldTrim) s.rightTrimWhiteSpaces else s
   }
 
 }

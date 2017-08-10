@@ -1,21 +1,24 @@
 package tlang.utils.formatting.grid
 
 import org.scalatest.{FlatSpec, Matchers}
-import tlang.utils.formatting.BoxStyles.Light
+import tlang.utils.Extensions._
+import tlang.utils.formatting.BoxStyles.Unicode
 import tlang.utils.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
-import tlang.utils.formatting.grid.Width.{Fixed, Percentage}
+import tlang.utils.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.utils.formatting.{BoxStyles, Formatting}
 
 class GridSpec extends FlatSpec with Matchers {
 
   val DefaultMaxWidth   = 20
-  val DefaultFormatting = Formatting(Light, DefaultMaxWidth, useColor = false)
+  val DefaultFormatting = Formatting(Unicode, DefaultMaxWidth, useColor = false)
 
   behavior of "A Grid"
 
   it should "have correct grid size and attributes" in {
+    val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))
     val grid = Grid(DefaultFormatting)
+      .header("ABC")
       .row()
       .content("A")
       .row(Column, Column(width = Fixed(5)), Column(width = Percentage(0.2), alignment = Center, overflowHandling = Truncate))
@@ -27,46 +30,67 @@ class GridSpec extends FlatSpec with Matchers {
       .row(Column(), Column())
       /**/ .content("AB", "KL")
       /**/ .content("CD", "MN")
-      /**/ .content(List("EF", "GH", "IJ"), List("OP", "QR", "ST"))
+      /**/ .contents(List("EF", "GH", "IJ"), List("OP", "QR", "ST"))
+      .row(threeColumns)
+      .row(4)
 
-    grid should have size 6
+    grid should have size 9
+
     grid(0) should have size 1
-    grid(0)(0).content shouldBe "A"
-    grid(0)(0).width shouldBe Width.Auto
-    grid(0)(0).overflowHandling shouldBe OverflowHandling.Wrap
-    grid(0)(0).alignment shouldBe Alignment.Left
+    grid(0).isHeader shouldBe true
+    grid(0)(0).content shouldBe "ABC"
+    grid(0)(0).width shouldBe Auto
+    grid(0)(0).overflowHandling shouldBe Wrap
+    grid(0)(0).alignment shouldBe Center
 
-    grid(1) should have size 3
-    grid(1)(0).content shouldBe "A\nA"
-    grid(1)(0).width shouldBe Width.Auto
-    grid(1)(0).overflowHandling shouldBe OverflowHandling.Wrap
-    grid(1)(0).alignment shouldBe Alignment.Left
+    grid(1) should have size 1
+    grid(1)(0).content shouldBe "A"
+    grid(1)(0).width shouldBe Auto
+    grid(1)(0).overflowHandling shouldBe Wrap
+    grid(1)(0).alignment shouldBe Left
 
-    grid(1)(1).content shouldBe "B\nB"
-    grid(1)(1).width shouldBe Width.Fixed(5)
-    grid(1)(1).overflowHandling shouldBe OverflowHandling.Wrap
-    grid(1)(1).alignment shouldBe Alignment.Left
+    grid(2) should have size 3
+    grid(2)(0).content shouldBe "A\nA"
+    grid(2)(0).width shouldBe Auto
+    grid(2)(0).overflowHandling shouldBe Wrap
+    grid(2)(0).alignment shouldBe Left
 
-    grid(1)(2).content shouldBe "C\nC"
-    grid(1)(2).width shouldBe Width.Percentage(0.2)
-    grid(1)(2).overflowHandling shouldBe OverflowHandling.Truncate
-    grid(1)(2).alignment shouldBe Alignment.Center
+    grid(2)(1).content shouldBe "B\nB"
+    grid(2)(1).width shouldBe Fixed(5)
+    grid(2)(1).overflowHandling shouldBe Wrap
+    grid(2)(1).alignment shouldBe Left
 
-    grid(2) should have size 1
-    grid(2)(0).content shouldBe ""
-    grid(2)(0).overflowHandling shouldBe OverflowHandling.Wrap
-    grid(2)(0).alignment shouldBe Alignment.Center
-
+    grid(2)(2).content shouldBe "C\nC"
+    grid(2)(2).width shouldBe Percentage(0.2)
+    grid(2)(2).overflowHandling shouldBe Truncate
+    grid(2)(2).alignment shouldBe Center
 
     grid(3) should have size 1
     grid(3)(0).content shouldBe ""
+    grid(3)(0).overflowHandling shouldBe Wrap
+    grid(3)(0).alignment shouldBe Center
 
-    grid(4) should have size 4
+
+    grid(4) should have size 1
     grid(4)(0).content shouldBe ""
 
-    grid(5) should have size 2
-    grid(5)(0).content shouldBe "AB\nCD\nEF\nGH\nIJ"
-    grid(5)(1).content shouldBe "KL\nMN\nOP\nQR\nST"
+    grid(5) should have size 4
+    grid(5)(0).content shouldBe ""
+
+    grid(6) should have size 2
+    grid(6)(0).content shouldBe "AB\nCD\nEF\nGH\nIJ"
+    grid(6)(1).content shouldBe "KL\nMN\nOP\nQR\nST"
+
+    grid(7) should have size 3
+    grid(7)(0).width shouldBe Fixed(5)
+    grid(7)(1).width shouldBe Auto
+    grid(7)(2).overflowHandling shouldBe Except
+
+    grid(8) should have size 4
+    grid(8)(0).content shouldBe ""
+    grid(8)(0).width shouldBe Auto
+    grid(8)(1).alignment shouldBe Left
+    grid(8)(2).overflowHandling shouldBe Wrap
   }
 
   it should "be initialized with a default row" in {
@@ -76,6 +100,91 @@ class GridSpec extends FlatSpec with Matchers {
     grid(0)(0).content shouldBe "ABC"
     grid(0)(0).width shouldBe Width.Auto
     grid(0)(0).alignment shouldBe Alignment.Left
+  }
+
+  it should "have correct content" in {
+
+    val sixTuple = ("A", "B", "C", "D", "E", "F")
+    val grid = Grid(DefaultFormatting.copy(lineWidth = 10000))
+      .row()
+      .content("A")
+      .row(Column, Column)
+      .content("A", "B")
+      .row(Column, Column)
+      .content(("A", "B"))
+      .row(Column, Column, Column, Column, Column, Column)
+      .content(sixTuple)
+      .row(Column, Column, Column, Column, Column, Column)
+      .content(0 to 3) { i => (i, i + 1, i + 2, i + 3, i + 4, i + 5) }
+      .row(Column, Column, Column)
+      .contents(Seq("A", "B", "C"), Seq("D", "E", "F"), Seq("G", "H", "I"))
+      .row(Column, Column)
+      .content(Seq("ABCDE", "EFGHI")) { s => (s.reverse, s) }
+      .row(Column, Column, Column)
+      .allContent(Seq(Seq("A", "B", "C"), Seq("D", "E", "F"), Seq("I", "J", "K")))
+      .row(Column, Column, Column)
+      .content()
+
+    grid(0)(0).content shouldBe "A"
+
+    grid(1)(0).content shouldBe "A"
+    grid(1)(1).content shouldBe "B"
+
+    grid(2)(0).content shouldBe "A"
+    grid(2)(1).content shouldBe "B"
+
+    grid(3)(0).content shouldBe "A"
+    grid(3)(1).content shouldBe "B"
+    grid(3)(2).content shouldBe "C"
+    grid(3)(3).content shouldBe "D"
+    grid(3)(4).content shouldBe "E"
+    grid(3)(5).content shouldBe "F"
+
+    grid(4)(0).content shouldBe "0\n1\n2\n3"
+    grid(4)(1).content shouldBe "1\n2\n3\n4"
+    grid(4)(2).content shouldBe "2\n3\n4\n5"
+    grid(4)(3).content shouldBe "3\n4\n5\n6"
+    grid(4)(4).content shouldBe "4\n5\n6\n7"
+    grid(4)(5).content shouldBe "5\n6\n7\n8"
+
+    grid(5)(0).content shouldBe "A\nB\nC"
+    grid(5)(1).content shouldBe "D\nE\nF"
+    grid(5)(2).content shouldBe "G\nH\nI"
+
+    grid(6)(0).content shouldBe "EDCBA\nIHGFE"
+    grid(6)(1).content shouldBe "ABCDE\nEFGHI"
+
+    grid(5)(0).content shouldBe "A\nB\nC"
+    grid(5)(1).content shouldBe "D\nE\nF"
+    grid(5)(2).content shouldBe "G\nH\nI"
+  }
+
+  it should "be reset when calling clear" in {
+    val grid = Grid(DefaultFormatting.copy(lineWidth = 10000))
+      .row()
+      .content("A")
+      .row(Column, Column)
+      .content("A", "B")
+      .row(Column, Column)
+      .content(("A", "B"))
+
+    grid should have size 3
+    grid(1) should have size 2
+
+    grid.clear()
+
+    grid should have size 0
+    grid.toString shouldBe ""
+
+    grid
+      .row()
+      .content("A")
+      .row(2)
+      .content("A", "B")
+
+    grid should have size 2
+    grid(1) should have size 2
+    grid(1)(0).content shouldBe "A"
   }
 
   it should "have correct column widths" in {
@@ -309,36 +418,50 @@ class GridSpec extends FlatSpec with Matchers {
          |└─────────────┴──────────────┘""".stripMargin
   }
 
+  it should "render correctly with a header" in {
+    Grid(DefaultFormatting)
+      .header("Header")
+      .row(Column, Column, Column)
+      .content("ABC", "DEFG", "HIJ")
+      .toString.print shouldBe
+      """|╒══════════════════╕
+         |│      Header      │
+         |╞═════╤══════╤═════╡
+         |│ ABC │ DEFG │ HIJ │
+         |└─────┴──────┴─────┘""".stripMargin
+
+  }
+
   it should "render correctly with different box styles" in {
     val grid = Grid(DefaultFormatting)
+      .header("Header")
       .row(Column, Column)
       .content("ABC", "DEF")
       .row(Column, Column)
       .content("ABC", "DEF")
 
     grid.toString shouldBe
-      """|┌─────┬────────────┐
+      """|╒══════════════════╕
+         |│      Header      │
+         |╞═════╤════════════╡
          |│ ABC │ DEF        │
          |├─────┼────────────┤
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
 
-    grid.formatting(DefaultFormatting.copy(box = BoxStyles.NoLines)).toString shouldBe
+    grid.formatting(DefaultFormatting.copy(boxStyle = BoxStyles.NoLines)).toString shouldBe
       """|
+         |       Header
+         |
          |  ABC   DEF
          |
          |  ABC   DEF
          |""".stripMargin
 
-    grid.formatting(DefaultFormatting.copy(box = BoxStyles.Double)).toString shouldBe
-      """|╔═════╦════════════╗
-         |║ ABC ║ DEF        ║
-         |╠═════╬════════════╣
-         |║ ABC ║ DEF        ║
-         |╚═════╩════════════╝""".stripMargin
-
-    grid.formatting(DefaultFormatting.copy(box = BoxStyles.Simple)).toString shouldBe
-      """| ------------------
+    grid.formatting(DefaultFormatting.copy(boxStyle = BoxStyles.Ascii)).toString shouldBe
+      """| ==================
+         ||      Header      |
+         ||==================|
          || ABC | DEF        |
          ||-----+------------|
          || ABC | DEF        |
@@ -369,6 +492,22 @@ class GridSpec extends FlatSpec with Matchers {
           |│ \u001b[31mABCDEFGHIJKLMNOP\u001b[0m │
           |│ \u001b[31mQRSTUVXYZ\u001b[0m        │
           |└──────────────────┘""".stripMargin
+  }
+
+  it should "render correctly with colored borders" in {
+    val formatting = DefaultFormatting.copy(useColor = true)
+    Grid(DefaultFormatting)
+      .borderColor(formatting.Red)
+      .row(Column, Column)
+      .content("ABC", "DEF")
+      .row(Column, Column)
+      .content("ABC", "DEF")
+      .toString shouldBe
+      """|\u001b[31m┌─────┬────────────┐\u001b[0m
+         |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
+         |\u001b[31m├─────┼────────────┤\u001b[0m
+         |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
+         |\u001b[31m└─────┴────────────┘\u001b[0m""".stripMargin
   }
 
   it should "render correctly with line wrapping" in {
@@ -521,7 +660,7 @@ class GridSpec extends FlatSpec with Matchers {
     intercept[IllegalArgumentException] {
       Grid(DefaultFormatting)
         .row(Column, Column, Column)
-        .content(List("A", "B"), List("C", "D"))
+        .contents(List("A", "B"), List("C", "D"))
 
     }.getMessage should include("2 != 3")
   }
@@ -562,6 +701,29 @@ class GridSpec extends FlatSpec with Matchers {
       Grid(DefaultFormatting).row(Column(width = Fixed(5)), Column(width = Fixed(5)), Column)
 
     }.getMessage should include("21 > 20")
+  }
+
+  it should "throw when adding a header once a rows been added" in {
+    intercept[IllegalStateException] {
+      Grid(DefaultFormatting).row().header("Header")
+    }
+
+    intercept[IllegalStateException] {
+      Grid(DefaultFormatting)
+        .content("ABC")
+        .header("Header")
+    }
+
+    intercept[IllegalStateException] {
+      Grid(DefaultFormatting)
+        .row(Column, Column, Column, Column)
+        .content("", "ABC", "", "")
+        .row()
+        .row(Column, Column)
+        .content("", "")
+        .header("Header")
+        .row(Column, Column, Column, Column)
+    }
   }
 
 
@@ -622,7 +784,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
 
-  behavior of "Overflow handlong"
+  behavior of "Overflow handling"
 
 
   it should "truncate regular text" in {

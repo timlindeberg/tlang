@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 
 case class ProgramExecutor(timeout: Duration = Duration(0, "sec")) {
 
-  def apply(ctx: Context, classFile: File): String = apply(ctx.classPath.paths, classFile)
+  def apply(ctx: Context, classFile: File): String = apply(ctx.outDirs.map(_.getAbsolutePath) ++ ctx.classPath.paths, classFile)
 
   def apply(classPaths: Set[String], classFile: File): String = {
     val mainName = classFile.getName.replaceAll("\\..*", "")

@@ -3,6 +3,7 @@ package tlang.repl
 import tlang.compiler.error.{ErrorFormatter, ErrorMessage}
 import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.formatting.Colors.Color
+import tlang.utils.formatting.grid.Grid
 import tlang.utils.formatting.{Formatting, Marking}
 
 import scala.concurrent.duration.FiniteDuration
@@ -23,7 +24,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   private val spinner           = formatting.spinner
 
   private var inputText           = ""
-  private var result              = ""
+  private var result              = List[List[String]]()
   private var cursor              = Cursor()
   private var boxStartingPosition = terminal.getCursorPosition
   private var previousBoxHeight   = 0
@@ -31,11 +32,12 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   private var header              = InputColor("Input")
   private var isFinished          = false
 
+
   def nextLoadingState(): Unit = {
     var text = Bold(spinner.nextImage)
     if (spinner.elapsedTime > ShowCtrlCReminder)
       text += InputColor("   Press Ctrl+C to cancel execution.")
-    result = divider + makeLine(text) + bottom
+    setResult(text)
   }
 
 
@@ -58,9 +60,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
       return
 
     isFinished = true
-    val text = Bold("Thanks for using the ") + SuccessColor("T-REPL") + Bold("!")
-
-    result = divider + makeLines(text) + bottom
+    setResult(Bold("Thanks for using the ") + SuccessColor("T-REPL") + Bold("!"))
   }
 
   def success(output: String, truncate: Boolean): Unit = setResult(output, truncate, SuccessColor, "Result")
@@ -73,8 +73,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     header = ErrorColor("Error")
 
     val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
-    inputText = syntaxHighlighter(inputText, markings)
-      .replaceAll("\t", TabReplacement)
+    inputText = syntaxHighlighter(inputText, markings).replaceAll("\t", TabReplacement)
 
     val errorLines = errors.map { error =>
       val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
@@ -84,21 +83,22 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     val diff = errorLines.size - maxOutputLines
     val lines = errorLines.take(maxOutputLines)
     val truncated = if (diff <= 0) lines else lines :+ ("", ErrorColor(s"... $diff more"))
-
-    result = makeBlockWithColumn(truncated, endOfBlock = true)
+    setResult(truncated)
   }
 
   def render(): Unit = {
-    val sb = new StringBuilder
-    sb ++= makeHeader(header)
-    sb ++= divider
-    sb ++= makeLines(inputText)
-    sb ++= (if (result == "") bottom else result)
+    val grid = Grid(formatting)
+      .header(header)
+      .row()
+      .content(inputText)
+
+    if (result.nonEmpty)
+      grid.row(result.size).allContent(result)
 
     val isCursorVisible = terminal.isCursorVisible
 
     terminal.setCursorVisible(false)
-    var linesPut = putBox(sb.toString)
+    var linesPut = putGrid(grid)
 
     val heightDifference = previousBoxHeight - boxHeight
     if (heightDifference > 0) {
@@ -125,14 +125,21 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
       return
 
     isFinished = true
-    val txt = if (shouldTruncate) truncate(output, color) else output
+    val text = if (shouldTruncate) truncate(output, color) else output
 
-    if (txt.isEmpty) {
-      result = bottom
-    } else {
+    if (text.nonEmpty) {
       header = color(headerText)
-      result = divider + makeLines(txt) + bottom
+      setResult(text)
     }
+  }
+
+  private def setResult(text: String) = {
+    result = List(List(text))
+  }
+
+  private def setResult(content: List[(String, String)]) = {
+    val unzipped = content.unzip
+    result = List(unzipped._1, unzipped._2)
   }
 
   private def clearLines(num: Int): Unit = {
@@ -140,9 +147,9 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     terminal.put(clearLine * num)
   }
 
-  private def putBox(chars: IndexedSeq[Char]): Int = {
+  private def putGrid(grid: Grid): Int = {
     terminal.setCursorPosition(boxStartingPosition)
-    val linesPut = terminal.put(chars)
+    val linesPut = terminal.put(grid.toString + "\n")
     boxStartingPosition = terminal.getCursorPosition
     linesPut
   }

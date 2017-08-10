@@ -6,7 +6,7 @@ import java.nio.file.{InvalidPathException, Paths}
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{BoxStyle, Simple}
+import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle}
 import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
 import tlang.utils.formatting.{BoxStyles, Colors, Formatting}
 import tlang.{Constants, utils}
@@ -123,13 +123,13 @@ case class Options(arguments: Array[String]) extends MainErrors {
 
   val boxType: BoxStyle = {
     val formattings = flagArgs(Flags.Formatting)
-    val boxNames = BoxStyles.All.map(_.name.toLowerCase)
+    val boxNames = BoxStyles.All.map(_.styleName.toLowerCase)
     formattings.foreach { formatting =>
       if (!(formatting in boxNames))
-        FatalInvalidArgToFlag(Flags.Formatting, formatting, boxNames.toList)
+        FatalInvalidArgToFlag(Flags.Formatting, formatting, boxNames)
     }
     formattings.headOption
-      .flatMap(formatting => BoxStyles.All.find(_.name.toLowerCase == formatting))
+      .flatMap(formatting => BoxStyles.All.find(_.styleName.toLowerCase == formatting))
       .getOrElse(BoxStyles.DefaultBox)
   }
 
@@ -160,7 +160,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   val formatting: Formatting =
-    utils.formatting.Formatting(boxType, lineWidth, colorScheme, boxType != Simple, boxType == Simple)
+    utils.formatting.Formatting(boxType, lineWidth, colorScheme, boxType != Ascii, boxType == Ascii)
 
   private def verifyOutputPhases(phases: mutable.Set[String]): Unit = {
     val validPhases = Main.CompilerPhases.map(_.name)

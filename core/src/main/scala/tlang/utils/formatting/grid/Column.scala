@@ -21,10 +21,9 @@ case class Column(
   private       var _maxWidth                 = 0
 
   def maxWidth: Int = _maxWidth
-  def addLines(newLines: Seq[String]): Unit = {
-    val newLinesMaxWidth = newLines.map(_.charCount).max
-    _maxWidth = Math.max(_maxWidth, newLinesMaxWidth)
-    lines ++= newLines
+  def addLine(newLine: String): Unit = {
+    _maxWidth = Math.max(_maxWidth, newLine.charCount)
+    lines += newLine
   }
 
   def content: String = lines.mkString("\n")

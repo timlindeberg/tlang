@@ -1,8 +1,10 @@
 package tlang.compiler.error
 
-import tlang.utils.Positioned
+import java.io.File
+
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.{Formatting, Marking}
+import tlang.utils.{FileSource, Positioned}
 
 case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int, tabWidth: Int = 2) {
 
@@ -33,6 +35,14 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
   def position: String = {
     val Style = Bold + NumColor
     Style(pos.line) + ":" + Style(pos.col)
+  }
+
+  def sourceDescription = {
+    val file = error.pos.source.asInstanceOf[FileSource].file
+    val fileNameStyle = Bold + NumColor
+    val fileName = fileNameStyle(file.getName)
+    val fileDescription = file.getParent + File.separator + fileName
+    position + " " + fileDescription
   }
 
   def locationInFile: List[(String, String)] = {

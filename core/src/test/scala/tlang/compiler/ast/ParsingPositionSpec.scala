@@ -17,7 +17,7 @@ class ParsingPositionSpec extends FunSuite with Matchers {
   private val File                 = "ParserPositions.t"
   private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
   private val TestFile   : String  = Tester.Resources + "positions/" + File
-  private val TestContext: Context = Tester.testContext
+  private val TestContext: Context = Tester.getTestContext()
 
   private val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
@@ -25,7 +25,7 @@ class ParsingPositionSpec extends FunSuite with Matchers {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        sys.error(e.messages.formattedErrors)
+        e.messages.printErrors()
         Empty()
     }
   }

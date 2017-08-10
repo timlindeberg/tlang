@@ -125,7 +125,6 @@ object Extensions {
 
     def toColoredString(formatting: Formatting) = ColoredString(formatting, str)
 
-    def removeSuffix(suffix: String) = str.substring(0, str.length - suffix.length)
   }
 
   implicit class AnyExtensions(val a: Any) extends AnyVal {

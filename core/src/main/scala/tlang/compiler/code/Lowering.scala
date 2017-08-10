@@ -20,13 +20,10 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Lowers the tree to simpler components. Performs desugaring.
-    """.stripMargin.trim
+    "Lowers the tree to simpler components. Performs desugaring."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatASTs(output))
-  }
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printASTs(output)
 
 }
 

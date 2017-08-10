@@ -9,7 +9,7 @@ import tlang.compiler.imports.ClassPath
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.Source
-import tlang.utils.formatting.BoxStyles.Light
+import tlang.utils.formatting.BoxStyles.Unicode
 import tlang.utils.formatting.{Formatting, SimpleFormatting}
 import tlang.{Constants, Context}
 
@@ -42,7 +42,7 @@ object Tester {
       if (UseSimpleFormatting)
         SimpleFormatting
       else
-        Formatting(Light, LineWidth.defaultValue, useColor = UseColors)
+        Formatting(Unicode, LineWidth.defaultValue, useColor = UseColors)
 
     Context(
       reporter = DefaultReporter(formatting = formatting),

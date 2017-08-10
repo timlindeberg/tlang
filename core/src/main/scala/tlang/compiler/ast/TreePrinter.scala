@@ -3,48 +3,45 @@ package tlang.compiler.ast
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.utils.Extensions._
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.Formatting
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
   import formatting._
-  import formatting.box._
+  import formatting.boxStyle._
 
-  private val Seperator    = "\n\n"
   private val Indent       = List.fill(spacing)(' ')
   private val Whitespace   = ' ' :: Indent
   private val Continuation = │.head :: Indent
-  private val PaddingChar  = " "
-  private val SymbolWidth  = 8
-  private val Missing      = Some(Cross, Red + Bold)
+  private val Missing      = Red(Bold(Cross))
 
-  private var maxWidth                                     = -1
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
-  var header: String = _
-
-  def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(Seperator)
-  def apply(t: Tree): String = {
-    maxWidth = widthOf(t)
+  def apply(t: Tree): List[(String, String, String)] = {
     symbolId = 0
     symbolMap = new java.util.IdentityHashMap[Symbol, (Int, Color)].asScala
 
     var first = true
+    val lines: ListBuffer[(String, String, String)] = ListBuffer()
     val sb = new StringBuilder
 
-    header = Bold(s"%-${ maxWidth }s %-${ SymbolWidth }s %s").format("Tree", "Symbol", "Type")
-
     def printTree(tree: Tree, stack: List[Char]): Unit = {
+      def addLine() = {
+        val line = (sb.toString, symbolContent(tree), typeContent(tree))
+        lines += line
+        sb.clear()
+      }
+
       val children = tree.children
-      val content = getContent(tree, stack)
       if (children.isEmpty) {
-        sb ++= ─ + " " + formatTree(tree) + content + '\n'
+        sb ++= ─ + " " + formatTree(tree)
+        addLine()
         return
       }
 
@@ -53,7 +50,8 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
       else
         sb ++= ┬ + " "
 
-      sb ++= formatTree(tree) + content + '\n'
+      sb ++= formatTree(tree)
+      addLine()
       children.zipWithIndex foreach { case (child, i) =>
         val last = i == children.size - 1
         sb ++= stack.mkString("")
@@ -66,28 +64,8 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     }
 
     printTree(t, Nil)
-    sb.toString
+    lines.toList
   }
-
-  private def getPadding(tree: Tree, stack: List[Char]) = {
-    val width = formattedWidth(tree) + stack.size + (1 + spacing)
-    val diff = maxWidth - width
-
-    if (diff == 0) " " else " " + (PaddingChar * (diff - 1)) + " "
-  }
-
-  private def widthOf(t: Tree) = {
-    var maxWidth = -1
-    val traverser = new DepthTraverser((tree, depth) => {
-      var width = formattedWidth(tree)
-      if (depth > 0) width += (1 + spacing) * depth + (1 + spacing)
-      maxWidth = math.max(maxWidth, width)
-    })
-    traverser.traverse(t)
-    maxWidth
-  }
-
-  private def formattedWidth(t: Tree) = formatTree(t).charCount
 
   private def formatTree(t: Tree): String = {
     val content = t match {
@@ -105,38 +83,34 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     Bold(t.getClass.getSimpleName) + (if (content.nonEmpty) Bold("(") + content + Bold(")") else "")
   }
 
+  private def typeContent(t: Tree): String = t match {
+    case typed: Typed if typed.getType != TUntyped =>
+      val tpe = typed.getType
+      val color = typeColor(tpe)
+      val s = tpe.toString
+        .replaceAll(".*::", "")
+        .replaceAll("\\$ERROR", "Error")
 
-  private def getContent(t: Tree, stack: List[Char]): String = {
-    val content = (getSymbolContent(t), getTypeContent(t)) match {
-      case (None, None)                                       => ""
-      case (Some((s, color)), None)                           => color(s)
-      case (None, Some((s, color)))                           => " " * SymbolWidth + color(s)
-      case (Some((sString, sColor)), Some((tString, tColor))) =>
-        val sym = sColor(sString)
-        val tpe = tColor(tString)
-        sym + " " * (SymbolWidth - sString.length) + tpe
-    }
-
-    if (content.isEmpty)
-      return ""
-
-    val padding = getPadding(t, stack)
-    padding + content
+      color(s)
+    case _: Typed                                  => Missing
+    case _                                         => ""
   }
 
-  private def getTypeContent(t: Tree): Option[(String, Color)] = {
-    t match {
-      case typed: Typed if typed.getType != TUntyped =>
-        val tpe = typed.getType
-        val color = typeColor(tpe)
-        val s = tpe.toString
-          .replaceAll(".*::", "")
-          .replaceAll("\\$ERROR", "Error")
-        Some(s, color)
-      case _: Typed                                  => Missing
-      case _                                         => None
-    }
+
+  private def symbolContent(t: Tree): String = t match {
+    case symbolic: Symbolic[_] if symbolic.hasSymbol =>
+      val symbol = symbolic.getSymbol
+      val (id, color) = symbolMap.getOrElseUpdate(symbol, newSymbolFormatting)
+      val fullColor = t match {
+        case _: MethodDeclTree | _: ClassDeclTree | _: VarDecl => Underline + color
+        case _                                                 => color
+      }
+      val symbolLetter = getSymbolLetter(symbol)
+      fullColor(symbolLetter + id)
+    case _: Symbolic[_]                              => Missing
+    case _                                           => ""
   }
+
 
   private def typeColor(tpe: Type): Color = tpe match {
     case TUnit                       => NoColor
@@ -147,20 +121,6 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     case _: TObject                  => ClassColor
     case TArray(t)                   => typeColor(t)
     case TUntyped                    => Red
-  }
-
-  private def getSymbolContent(t: Tree): Option[(String, Color)] = t match {
-    case symbolic: Symbolic[_] if symbolic.hasSymbol =>
-      val symbol = symbolic.getSymbol
-      val (id, color) = symbolMap.getOrElseUpdate(symbol, newSymbolFormatting)
-      val fullColor = t match {
-        case _: MethodDeclTree | _: ClassDeclTree | _: VarDecl => Underline + color
-        case _                                                 => color
-      }
-      val symbolLetter = getSymbolLetter(symbol)
-      Some(symbolLetter + id, fullColor)
-    case _: Symbolic[_]                              => Missing
-    case _                                           => None
   }
 
   private def getSymbolLetter(symbol: Symbol) = symbol match {
@@ -180,17 +140,5 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     (id, AllColors(colorIndex))
   }
 
-
-  private class DepthTraverser[U] private(depth: Int, f: (Tree, Int) => U) extends Trees.Traverser {
-
-    def this(f: (Tree, Int) => U) = this(0, f)
-
-    private def superTraverse(t: Tree): Unit = super._traverse(t)
-
-    override def _traverse(t: Tree): Unit = {
-      f(t, depth)
-      new DepthTraverser(depth + 1, f).superTraverse(t)
-    }
-  }
 
 }

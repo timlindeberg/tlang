@@ -35,22 +35,27 @@ case class StackTrace(
 
   private var colorIndex = -1
   private val colorMap   = mutable.HashMap[String, Color]()
-  private def labelColor(label: String) = {
-    val color = colorMap.getOrElseUpdate(label, {
+
+  private def getLabelColor(label: String) = {
+    colorMap.getOrElseUpdate(label, {
       colorIndex = (colorIndex + 1) % AllColors.length
       AllColors(colorIndex)
     })
+  }
+
+  private def labelColor(label: String): String = {
+    val color = getLabelColor(label)
     color(label)
   }
 
-  override def toString: String = content
-  def content: String = makeStacktrace
+  private type StackTraceLine = (String, String, String, String, String)
 
-  private def makeStacktrace: String = {
+  override def toString: String = content.mkString
+  def content: List[StackTraceLine] = {
     if (abcs.isEmpty)
-      return ""
+      return Nil
 
-    val sb = new StringBuilder()
+    val lines: ListBuffer[StackTraceLine] = ListBuffer()
     var pc = 0
     var currentLineNumber = 0
 
@@ -59,11 +64,9 @@ case class StackTrace(
       val h = if (pc > heights.length) UninitializedHeight else heights(pc)
       val height = if (h == UninitializedHeight) "" else String.valueOf(h)
       // Colorize labels
-      if (!first)
-        sb ++= "\n"
       first = false
-      sb ++= s"$NumColor%-6s $KeywordColor%-6s $NumColor%-7s $KeywordColor%-15s%s$Reset"
-        .format(currentLineNumber, pc, height, abc, extraInfo)
+      val line = (NumColor(currentLineNumber), KeywordColor(pc), NumColor(height), KeywordColor(abc), extraInfo)
+      lines += line
     }
 
     var i = 0
@@ -71,8 +74,11 @@ case class StackTrace(
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          val label = labelColor(name)
-          sb.append("\n" + rightAlign(label))
+          import formatting.boxStyle.─
+          val color = getLabelColor(name)
+          // Reasonable estimates for the sizes of the columns (mostly based on the width of the header)
+          val line = (color(─ * 4), color(─ * 3), color(─ * 6), color(─ * 13), color(─ * 2 + "> " + name))
+          lines += line
         case LineNumber(line)                           =>
           currentLineNumber = line
         case _: RawByte | _: RawBytes                   =>
@@ -111,7 +117,7 @@ case class StackTrace(
       pc += abc.size
       i += 1
     }
-    sb.toString
+    lines.toList
   }
 
   def header: String = {

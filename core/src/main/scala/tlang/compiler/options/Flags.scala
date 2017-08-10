@@ -4,7 +4,8 @@ import tlang.compiler.Main
 import tlang.compiler.code.Lowering
 import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{BoxStyle, Simple}
+import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle}
+import tlang.utils.formatting.grid.Grid
 import tlang.utils.formatting.{BoxStyles, Colors, Formatting}
 
 object Flags {
@@ -190,7 +191,7 @@ object Flags {
       import formatting._
       s"""
          |Chooses the formatting style of messages produced by the tlang.compiler.
-         |'${ Blue("Simple") }' will only produce ASCII-characters and use no colors.
+         |'${ Blue(BoxStyles.Ascii.styleName) }' will only produce ASCII-characters.
          |Type --${ Magenta(Help.flag) } ${ Magenta(flag) } for more information.
       """.stripMargin.trim
     }
@@ -200,11 +201,11 @@ object Flags {
       import formatting._
 
       val boxes = BoxStyles.All
-      val boxNames = boxes.map(box => "  " + Blue(box.name)).mkString("\n")
+      val boxNames = formatting.makeList(boxes.map(box => Blue(box.styleName)))
       val desc =
         s"""|The --${ Magenta(flag) } flag determines what style to use for all output produced by the T compiler.
-            |The style '${ Blue("Simple") }' only produces ASCII-characters and no colors which can be useful when the tlang.compiler is ran on simpler terminals.
-            |The default formatting style is '${ Blue(BoxStyles.DefaultBox.name) }'.
+            |The style '${ Blue(BoxStyles.Ascii.styleName) }' only produces ASCII-characters which can be useful when the T compiler is ran on simpler terminals.
+            |The default formatting style is '${ Blue(BoxStyles.DefaultBox.styleName) }'.
             |
             |The following styles are available:
             |
@@ -216,25 +217,33 @@ object Flags {
       desc + "\n\n" + formatBoxes(boxes, formatting)
     }
 
-    private def formatBoxes(boxes: List[BoxStyle], formatting: Formatting): String = {
+    private def formatBoxes(boxStyles: List[BoxStyle], formatting: Formatting): String = {
       import formatting._
+      val exampleFormatting = formatting.copy(lineWidth = formatting.lineWidth - 4)
 
-      val seperator = "  "
-      val boxWidth = boxes.map(_.name.length).max + 4
-      val perRow = lineWidth / (boxWidth + seperator.length)
-      val styles = boxes
-        .map { box =>
-          val blocks = List("A " + Blue("block") + ".", "Another " + Blue("block") + ".")
-          val simple = box == Simple
-          val exampleFormatting = tlang.utils.formatting.Formatting(
-            box, boxWidth, colorScheme = formatting.colorScheme, useColor = !simple, asciiOnly = simple, trim = false)
-          val header = Bold(Magenta(box.name))
-          exampleFormatting.makeBox(header, blocks).split("\n").toList
+      val lorumIpsum =
+        s"""|Lorem ipsum dolor sit amet, consectetur ${ Red("adipiscing") } elit. Vestibulum massa augue,
+            |${ Magenta("dictum") } eget metus ac, bibendum ${ Yellow("ultricies") } ligula.
+            |Aliquam ${ Green("commodo") } ante vitae tellus pharetra dignissim. ${ Cyan("Suspendisse") } non arcu
+            |vitae ligula ${ Blue("varius") } suscipit. Etiam tincidunt pretium est, auctor ${ Red("congue") } est
+            |laoreet et. Sed ${ Blue("congue") } eu semut sodales.
+        """.stripMargin.trim
+
+      boxStyles
+        .map { style =>
+          val format = exampleFormatting.copy(boxStyle = style, asciiOnly = style == Ascii)
+          val list = s"A ${ Cyan("list") }\n${ format.makeList(Red("A"), Green("B"), Blue("C")) }"
+          val column = s"A ${ Yellow("column") }."
+          Grid(format)
+            .trim(false)
+            .header(Bold(Blue(style.styleName)))
+            .row()
+            .content(lorumIpsum)
+            .row(3)
+            .content(list, column, lorumIpsum)
+            .toString
         }
-        .grouped(perRow)
-        .map { group => group.transpose.map(_.mkString(seperator)).mkString("\n") }
-        .mkString("\n")
-      center(styles)
+        .mkString("\n\n")
     }
   }
 

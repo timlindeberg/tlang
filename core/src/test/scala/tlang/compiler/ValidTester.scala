@@ -40,7 +40,7 @@ trait ValidTester extends Tester {
       assertCorrect(resLines, sol)
     } catch {
       case e: CompilationException  =>
-        print(e.messages.formattedErrors)
+        e.messages.printErrors()
         fail("Compilation failed")
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.getPath }")
     }

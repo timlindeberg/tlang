@@ -34,13 +34,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Generates bytecode that can run on the JVM.
-    """.stripMargin.trim
+    "Generates bytecode that can run on the JVM."
 
-  override def printDebugOutput(output: List[StackTrace], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatStackTraces(output))
-  }
+  override def printDebugOutput(output: List[StackTrace], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printStackTraces(output)
 
   case class GenerateClassResult(files: Set[String], stackTraces: List[StackTrace])
 

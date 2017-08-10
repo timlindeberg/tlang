@@ -21,13 +21,11 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Lexes the input and produces tokens.
-    """.stripMargin.trim
+    "Lexes the input and produces tokens."
 
-  override def printDebugOutput(output: List[List[Token]], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatTokens(output))
-  }
+  override def printDebugOutput(output: List[List[Token]], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printTokens(output)
+
 }
 
 class Lexer(override val ctx: Context, override val source: Source) extends LexerErrors {

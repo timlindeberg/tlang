@@ -4,6 +4,7 @@ import akka.actor.{Actor, Props}
 import tlang.compiler.error._
 import tlang.repl.input.InputBuffer
 import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.grid.Grid
 
 object Renderer {
 
@@ -63,16 +64,20 @@ class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTermin
   private def newInputBox = new InputBox(formatting, maxOutputLines, terminal)
 
   private def drawWelcomeBox(): Unit = {
-    val header = Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!")
-    val description =
-      s"""
-         |Type in code to have it evaluated or type one of the following commands:
-         |   ${ InputColor(":help") }
-         |   ${ InputColor(":quit") }
-         |   ${ InputColor(":print") }
-     """.trim.stripMargin
-    val box = makeBox(header, description :: Nil)
-    terminal.put(box)
+    val commands = List("help", "quit", "print").map(command => Magenta(s":$command"))
+    val commandList = formatting.makeList(commands)
+    val grid = Grid(formatting)
+      .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
+      .row()
+      .content(
+        s"""|Type in code to have it evaluated or type one of the following commands:
+            |
+            |$commandList
+            |
+            |Press ${ Blue("CTRL") }+${ Blue("Space") } to evaluate the input.
+          """.stripMargin.trim
+      )
+    terminal.put(grid.toString + "\n")
   }
 
 

@@ -21,7 +21,7 @@ trait ErrorTester extends Tester {
     } catch {
       case e: CompilationException =>
         if (PrintErrors)
-          print(e.messages.formattedErrors)
+          e.messages.printErrors()
         val errorCodes = getErrorCodes(e.messages.getErrors)
         val expectedErrors = parseSolutions(file)
         assertCorrect(errorCodes, expectedErrors)
@@ -34,7 +34,7 @@ trait ErrorTester extends Tester {
       fail("Test failed: No errors or warnings!")
 
     if (PrintErrors)
-      print(reporter.messages.formattedWarnings)
+      reporter.messages.printWarnings()
 
     val expectedWarnings = parseSolutions(file)
     val warningCodes = getErrorCodes(reporter.messages.getWarnings)

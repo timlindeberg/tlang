@@ -5,26 +5,22 @@ import java.io.File
 import tlang.Constants
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.options.Flags.LineWidth
-import tlang.utils.Extensions._
 import tlang.utils.formatting.BoxStyles.BoxStyle
 import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
 
 object FancyFormatting extends Formatting(
-  BoxStyles.Light, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
+  BoxStyles.Unicode, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
 )
 object SimpleFormatting extends Formatting(
-  BoxStyles.Simple, LineWidth.DefaultWidth, useColor = false, asciiOnly = true
+  BoxStyles.Ascii, LineWidth.DefaultWidth, useColor = false, asciiOnly = true
 )
 
 case class Formatting(
-  box: BoxStyle = BoxStyles.Light,
+  boxStyle: BoxStyle = BoxStyles.Unicode,
   lineWidth: Int = LineWidth.DefaultWidth,
   colorScheme: ColorScheme = DefaultColorScheme,
   useColor: Boolean = true,
-  asciiOnly: Boolean = false,
-  trim: Boolean = true) {
-
-  import box._
+  asciiOnly: Boolean = false) {
 
   import Console._
 
@@ -79,101 +75,11 @@ case class Formatting(
 
   def ListMarker: String = ascii("*", "•")
   def Cross: String = ascii("x", "×")
+  def RightArrow: String = ascii("-", "→")
 
   def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
 
   private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
-
-  /*------------------------------ Box handling -----------------------------*/
-
-  private val Indent     = 2
-  private val Width: Int = lineWidth - (2 * Indent)
-
-  def top: String = trimRight(┌ + ─ * (lineWidth - Indent) + ┐) + "\n"
-  def bottom: String = trimRight(└ + ─ * (lineWidth - Indent) + ┘) + "\n"
-  def divider: String = trimRight(├ + ─ * (lineWidth - Indent) + ┤) + "\n"
-
-  def seperator(left: String, bridge: String, right: String, bridgeAt: Int): String = {
-    val rest = ─ * (lineWidth - bridgeAt - (2 * Indent + 1))
-    val overNumbers = ─ * (bridgeAt + Indent)
-    val line = left + overNumbers + bridge + rest + right
-    trimRight(line) + "\n"
-  }
-
-  def rightAlign(text: String, fill: Char = ' '): String =
-    wordWrapper(text, Width).map { line =>
-      ("" + fill) * (Width - line.charCount) + line
-    }.mkString("\n")
-
-  def center(text: String, fill: Char = ' '): String =
-    wordWrapper(text, Width).map { line =>
-      val x = Width - line.charCount
-      val space = ("" + fill) * (x / 2)
-      val left = space
-      val right = if (x % 2 == 0) space else space + fill
-      left + line + right
-    }.mkString("\n")
-
-  def makeHeader(text: String): String = {
-    val lines = makeLines(center(text)).mkString
-    top + lines
-  }
-
-  def makeLines(lines: String, w: Int = Width): String =
-    wordWrapper(lines, w).map(makeLine(_, w)).mkString
-
-  def makeLine(line: String, w: Int = Width): String = {
-    val whitespaces = " " * (w - line.charCount)
-    val l = │ + " " + line + whitespaces + " " + │
-    trimRight(l) + "\n"
-  }
-
-  def makeBlock(block: String): String = {
-    val sb = new StringBuilder
-    sb ++= divider
-    sb ++= makeLines(block)
-    sb.toString()
-  }
-
-  def makeBlockWithColumn(block: Traversable[(String, String)], endOfBlock: Boolean): String = {
-    val sb = new StringBuilder
-
-    val columnVars = block.unzip._1
-    val maxColumnWidth = columnVars.map(_.charCount).max
-    val w = Width - maxColumnWidth - 3
-
-    sb ++= seperator(├, ┬, ┤, maxColumnWidth)
-
-    sb ++= block
-      .flatMap { case (col, line) =>
-        val lines = wordWrapper(line, w)
-        val columns = col :: List.fill(lines.size - 1)("")
-        columns zip lines
-      }
-      .map { case (col, line) =>
-        val columnWidth = col.charCount
-        val whiteSpaces = " " * (maxColumnWidth - columnWidth)
-        │ + " " + col + whiteSpaces + " " + makeLine(line, w)
-      }.mkString
-
-    sb ++= (if (endOfBlock) seperator(└, ┴, ┘, maxColumnWidth) else seperator(├, ┴, ┤, maxColumnWidth))
-    sb.toString
-  }
-
-  def makeBoxWithColumn(header: String, block: Traversable[(String, String)], endOfBlock: Boolean = true): String = {
-    val sb = new StringBuilder
-    sb ++= makeHeader(header)
-    sb ++= makeBlockWithColumn(block, endOfBlock)
-    sb.toString
-  }
-
-  def makeBox(header: String, blocks: Traversable[String]): String = {
-    val sb = new StringBuilder
-    sb ++= makeHeader(header)
-    blocks foreach { sb ++= makeBlock(_) }
-    sb ++= bottom
-    sb.toString
-  }
 
   def formatFileName(file: Option[File]): String = {
     file match {
@@ -186,10 +92,7 @@ case class Formatting(
 
   def formatFileName(name: String): String = FileColor(name + Constants.FileEnding)
 
-  def makeList(items: Traversable[String], indent: String = "  "): String = {
-    items.map(item => s"$indent$ListMarker $item").mkString("\n")
-  }
-
-  private def trimRight(s: String) = if (trim) s.rightTrimWhiteSpaces else s
+  def makeList(items: String*): String = makeList(items)
+  def makeList(items: Traversable[String]): String = items.map(item => s"  $ListMarker $item").mkString("\n")
 
 }

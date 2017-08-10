@@ -36,13 +36,10 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Resolves names and attaches symbols to tress.
-    """.stripMargin.trim
+    "Resolves names and attaches symbols to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatASTs(output))
-  }
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printASTs(output)
 
 }
 
@@ -416,8 +413,8 @@ class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalSco
                           case Some(classSymbol) => classSymbol
                           case None              =>
                             val alternatives = variableAlternatives(localVars) :::
-                                               globalScope.classNames :::
-                                               Primitives.map(_.name)
+                              globalScope.classNames :::
+                              Primitives.map(_.name)
 
                             report(CantResolveSymbol(name, alternatives, id))
                             new ClassSymbol("")

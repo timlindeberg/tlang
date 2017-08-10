@@ -4,7 +4,7 @@ import tlang.utils.Enumeration
 
 object BoxStyles {
 
-  val DefaultBox: BoxStyle = Light
+  val DefaultBox: BoxStyle = Unicode
 
   sealed abstract class BoxStyle(val chars: String) extends Product with Serializable {
     val ─ : String = chars(0).toString
@@ -18,24 +18,25 @@ object BoxStyles {
     val ├ : String = chars(8).toString
     val ┤ : String = chars(9).toString
     val ┼ : String = chars(10).toString
+    val ═ : String = chars(11).toString
+    val ╒ : String = chars(12).toString
+    val ╕ : String = chars(13).toString
+    val ╘ : String = chars(14).toString
+    val ╛ : String = chars(15).toString
+    val ╞ : String = chars(16).toString
+    val ╡ : String = chars(17).toString
+    val ╤ : String = chars(18).toString
+    val ╧ : String = chars(19).toString
+    val ╪ : String = chars(20).toString
 
     // Drop right to remove $ at end of object class name
-    val name: String = getClass.getSimpleName.dropRight(1)
+    val styleName: String = getClass.getSimpleName.dropRight(1)
   }
 
-
   // @formatter:off
-  case object Simple             extends BoxStyle("-|    --||+")
-  case object NoLines            extends BoxStyle("           ")
-  case object Double             extends BoxStyle("═║╔╗╝╚╦╩╠╣╬")
-  case object Light              extends BoxStyle("─│┌┐┘└┬┴├┤┼")
-  case object Heavy              extends BoxStyle("━┃┏┓┛┗┳┻┣┫╋")
-  case object DoubleDashLight    extends BoxStyle("╌╎┌┐┘└┬┴├┤┼")
-  case object DoubleDashHeavy    extends BoxStyle("╍╏┏┓┛┗┳┻┣┫╋")
-  case object TripleDashLight    extends BoxStyle("┄┆┌┐┘└┬┴├┤┼")
-  case object TripleDashHeavy    extends BoxStyle("┅┇┏┓┛┗┳┻┣┫╋")
-  case object QuadrupleDashLight extends BoxStyle("┈┊┌┐┘└┬┴├┤┼")
-  case object QuadrupleDashHeavy extends BoxStyle("┉┋┏┓┛┗┳┻┣┫╋")
+  case object Ascii   extends BoxStyle("-|    --||+=    ||==+")
+  case object NoLines extends BoxStyle("                     ")
+  case object Unicode extends BoxStyle("─│┌┐┘└┬┴├┤┼═╒╕╘╛╞╡╤╧╪")
   // @formatter:on
 
   lazy val All: List[BoxStyle] = Enumeration.instancesOf[BoxStyle]

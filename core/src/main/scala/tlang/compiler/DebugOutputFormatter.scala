@@ -5,63 +5,69 @@ import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.grid.Alignment.Center
+import tlang.utils.formatting.grid.OverflowHandling.Truncate
+import tlang.utils.formatting.grid.{Column, Grid}
 
 case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
 
   import formatting._
 
-  private val tabWidth = 2
+  private val TabWidth    = 2
+  private val HeaderColor = Bold + Blue
 
-  def formatStackTraces(stackTraces: List[StackTrace]): String = {
-    val legend = s"$Bold%-6s %-6s %-7s %-15s%s$Reset"
-      .format("Line", "PC", "Height", "ByteCode", "Info")
-
-    val blocks = stackTraces.flatMap { st =>
-      val header = center(st.header) + "\n\n" + legend
-      header :: st.content :: Nil
+  def printStackTraces(stackTraces: List[StackTrace]): Unit = {
+    val grid = makeGrid()
+    stackTraces.foreach { st =>
+      grid
+        .row(alignment = Center)
+        .content(st.header)
+        .row(5)
+        .content(HeaderColor("Line"), HeaderColor("PC"), HeaderColor("Height"), HeaderColor("ByteCode"), HeaderColor("Info"))
+        .content()
+        .content(st.content) { x => x }
     }
-    format(blocks)
+    grid.print()
   }
 
-  def formatTokens(allTokens: List[List[Token]]): String = {
+  def printTokens(allTokens: List[List[Token]]): Unit = {
     import formatting._
 
-    val legend = s"$Bold%-35s %-16s %s$Reset".format("Text", "Token", "Position")
-    val blocks = allTokens.flatMap { tokens =>
+    val grid = makeGrid()
+
+    allTokens.foreach { tokens =>
       val source = tokens.head.source
-      val header = center(formatFileName(source.mainName)) + "\n\n" + legend
-      val body = tokens.map(formatToken(_, formatting)).mkString("\n")
-      header :: body :: Nil
+      grid
+        .row(alignment = Center)
+        .content(formatFileName(source.mainName))
+        .row(Column(overflowHandling = Truncate), Column, Column)
+        .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Position"))
+        .content()
+        .content(tokens) { token =>
+          val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
+          val start = NumColor(token.line) + ":" + NumColor(token.col)
+          val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
+          (token.toString, tokenName, s"$start - $end")
+        }
     }
-    format(blocks)
+    grid.print()
   }
 
-  def formatASTs(cus: List[CompilationUnit]): String = {
-    val mediumHeaderColor = Blue + Bold
-    val blocks = cus.flatMap { cu =>
-      val printedTree = treePrinter(cu).trimWhiteSpaces
-      center(formatFileName(cu.source.mainName)) ::
-      center(mediumHeaderColor("Pretty printed code")) + "\n\n" +
-      prettyPrinter(cu).replaceAll("\t", " " * tabWidth).trimWhiteSpaces ::
-      center(mediumHeaderColor("Formatted AST")) + "\n\n" + treePrinter.header ::
-      printedTree ::
-      Nil
+  def printASTs(cus: List[CompilationUnit]): Unit = {
+    val grid = makeGrid()
+    cus.foreach { cu =>
+      grid
+        .row(alignment = Center)
+        .content(formatFileName(cu.source.mainName))
+        .row()
+        .content(prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
+        .row(Column(overflowHandling = Truncate), Column, Column)
+        .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
+        .content()
+        .content(treePrinter(cu)) { x => x }
     }
-    format(blocks)
+    grid.print()
   }
 
-  private def format(blocks: List[String]) = makeBox(header, blocks)
-  private def header = Bold("Output after ") + Blue(phaseName.capitalize)
-
-  private def formatToken(token: Token, formatting: Formatting) = {
-    import formatting._
-
-    val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
-    val text = token.toString
-    val trimmed = if (text.charCount >= 35) text.takeChars(31) + "..." else text
-    val start = NumColor(token.line) + ":" + NumColor(token.col)
-    val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
-    val pos = s"$start - $end"
-    s"$Blue%-35s$Reset $Bold%-16s$Reset %s".format(trimmed, tokenName, pos)
-  }
+  private def makeGrid() = Grid(formatting).header(Bold("Output after ") + Blue(phaseName.capitalize))
 }

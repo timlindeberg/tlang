@@ -30,13 +30,10 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Performs type checking and attaches types to trees.
-    """.stripMargin.trim
+    "Performs type checking and attaches types to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatASTs(output))
-  }
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printASTs(output)
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
@@ -284,8 +281,8 @@ class TypeChecker(override val ctx: Context,
 
     def correctType(expectedTpe: Type): Boolean = {
       (expectedTpe == Bool && foundType.isNullable) ||
-      foundType.isSubTypeOf(expectedTpe) ||
-      expectedTpe.isImplicitlyConvertibleFrom(foundType)
+        foundType.isSubTypeOf(expectedTpe) ||
+        expectedTpe.isImplicitlyConvertibleFrom(foundType)
     }
 
     val res = if (expected.nonEmpty && !expected.exists(correctType))

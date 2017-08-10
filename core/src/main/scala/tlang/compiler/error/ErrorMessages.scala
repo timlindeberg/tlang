@@ -1,9 +1,10 @@
 package tlang.compiler.error
 
-import java.io.File
-
+import tlang.utils.Extensions._
 import tlang.utils.FileSource
+import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.grid.Grid
 
 import scala.collection.mutable
 
@@ -13,8 +14,8 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
   private var hitMaxWarnings = false
   private var hitMaxErrors   = false
-  val warnings: mutable.LinkedHashSet[Warning]      = mutable.LinkedHashSet()
-  val errors  : mutable.LinkedHashSet[ErrorMessage] = mutable.LinkedHashSet()
+  val warnings: mutable.Set[Warning]      = mutable.LinkedHashSet()
+  val errors  : mutable.Set[ErrorMessage] = mutable.LinkedHashSet()
 
   def getErrors: List[ErrorMessage] = errors.toList
   def getWarnings: List[Warning] = warnings.toList
@@ -44,84 +45,65 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
     hitMaxWarnings = false
   }
 
-  def formattedWarnings: String = {
-    val sb = new StringBuilder
-    val messages = formatMessages(warnings)
-    if (messages.nonEmpty) {
-      sb ++= warningHeader
-      sb ++= messages
-    }
+  def printWarnings(): Unit = {
+    if (warnings.isEmpty)
+      return
 
-    sb.toString()
+    println(formattedWarnings)
+  }
+
+  def printErrors(): Unit = {
+    if (errors.isEmpty)
+      return
+
+    println(formattedErrors)
+  }
+
+  def formattedWarnings: String = {
+    val grid = Grid(formatting).header(warningHeader)
+
+    warnings.foreach { addToGrid(grid, _) }
+    grid.toString
   }
 
   def formattedErrors: String = {
-    val sb = new StringBuilder
-    sb ++= errorHeader
-    sb ++= formatMessages(errors)
-    sb.toString()
+    val grid = Grid(formatting).header(errorHeader)
+
+    errors.foreach { addToGrid(grid, _) }
+    grid.toString
   }
 
-  private def formatMessages(messages: mutable.LinkedHashSet[_ <: ErrorMessage]): String = {
-    messages.map { error =>
-      val errorFormatter = ErrorFormatter(error, formatting, errorContext)
-      val sb = new StringBuilder
+  private def addToGrid(grid: Grid, error: ErrorMessage): Unit = {
+    val errorFormatter = ErrorFormatter(error, formatting, errorContext)
 
-      sb ++= top
+    grid.row()
 
-      val pos = error.pos
-      val lines = errorFormatter.lines
+    val pos = error.pos
+    val validPosition = error.pos.hasSource && (pos.line in (1 to errorFormatter.lines.size))
 
-      val validPosition = error.pos.hasSource && (1 to lines.size contains pos.line)
+    if (validPosition && error.pos.source.isInstanceOf[FileSource])
+      grid.content(errorFormatter.sourceDescription)
 
-      if (validPosition && error.pos.source.isInstanceOf[FileSource]) {
-        val file = error.pos.source.asInstanceOf[FileSource].file
-        val fileNameStyle = Bold + NumColor
-        val fileName = fileNameStyle(file.getName)
-        val fileDescription = file.getParent + File.separator + fileName
-        val sourceDescription = errorFormatter.position + " " + fileDescription
-        sb ++= makeLines(sourceDescription)
-      }
+    grid.content(errorFormatter.errorPrefix + error.message)
 
-      sb ++= makeLines(errorFormatter.errorPrefix + error.message)
-
-
-      if (validPosition)
-        sb ++= makeBlockWithColumn(errorFormatter.locationInFile, endOfBlock = true)
-      else
-        sb ++= bottom
-
-      sb.toString()
-    }.mkString
+    if (validPosition) {
+      grid.row(2)
+      grid.content(errorFormatter.locationInFile) { x => x }
+    }
   }
 
-  private def warningHeader = {
-    val n = warnings.size
+  private def warningHeader: String = header("warning", Yellow, hitMaxWarnings, warnings)
+  private def errorHeader: String = header("error", Red, hitMaxErrors, errors)
+
+  private def header(messageType: String, color: Color, hitMax: Boolean, messages: Iterable[ErrorMessage]): String = {
+    val n = messages.size
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
-    val name = "warning" + appendix
-
+    val name = messageType + appendix
     val num = Yellow(n)
-    val text = if (hitMaxWarnings)
+    if (hitMax)
       s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
     else
       s"${ Bold }There $was $num$Bold $name.$Reset"
-    makeBox(text, Nil)
   }
-
-
-  private def errorHeader = {
-    val n = errors.size
-    val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
-
-    val name = "error" + appendix
-
-    val num = Red(n)
-    val text = if (hitMaxErrors)
-      s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
-    else
-      s"${ Bold }There $was $num$Bold $name.$Reset"
-    makeBox(text, Nil)
-  }
-
 }

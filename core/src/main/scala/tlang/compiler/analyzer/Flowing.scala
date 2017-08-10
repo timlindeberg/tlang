@@ -24,14 +24,12 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   override def description(formatting: Formatting): String =
-    """
-      |Performs flow analysis and catches errors such as accessing objects that
-      |could potentially be null or using uninitialized variables.
-    """.stripMargin.trim
+    "Performs flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit = {
-    print(DebugOutputFormatter(name, formatting).formatASTs(output))
-  }
+
+  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
+    DebugOutputFormatter(name, formatting).printASTs(output)
+
 
 }
 
