@@ -1,8 +1,9 @@
-package tlang.compiler
+package tlang.testutils
 
 import java.io.{File, FileNotFoundException}
 
 import tlang.Constants
+import tlang.compiler.CompilerPhase
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit

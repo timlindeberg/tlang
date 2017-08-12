@@ -1,8 +1,9 @@
 package tlang.compiler.ast
 
+import tlang.compiler.CompilerPhase
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Lexing
-import tlang.compiler.{ErrorTester, CompilerPhase, Tester}
+import tlang.testutils.{ErrorTester, Tester}
 import tlang.utils.Source
 
 class ParsingSpec extends ErrorTester {

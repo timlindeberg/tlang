@@ -155,7 +155,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   }
 
   private def truncate(output: String, color: Color): String = {
-    val wordWrapped = wordWrapper(output, formatting.lineWidth, maxLines = maxOutputLines)
+    val wordWrapped = wordWrapper(output, formatting.lineWidth)
 
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)

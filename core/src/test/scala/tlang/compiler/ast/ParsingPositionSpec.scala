@@ -7,7 +7,7 @@ import tlang.Context
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexing
-import tlang.compiler.{Pos, Tester}
+import tlang.testutils.{Pos, Tester}
 import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}

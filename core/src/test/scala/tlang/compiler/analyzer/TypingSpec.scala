@@ -1,10 +1,11 @@
 package tlang.compiler.analyzer
 
+import tlang.compiler.CompilerPhase
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.compiler.{ErrorTester, CompilerPhase, Tester}
+import tlang.testutils.{ErrorTester, Tester}
 import tlang.utils.Source
 
 class TypingSpec extends ErrorTester {

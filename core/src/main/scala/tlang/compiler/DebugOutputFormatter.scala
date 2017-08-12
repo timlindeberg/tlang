@@ -18,14 +18,14 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
 
   def printStackTraces(stackTraces: List[StackTrace]): Unit = {
     val grid = makeGrid()
-    stackTraces.foreach { st =>
+    stackTraces.foreach { stackTrace =>
       grid
         .row(alignment = Center)
-        .content(st.header)
+        .content(stackTrace.header)
         .row(5)
         .content(HeaderColor("Line"), HeaderColor("PC"), HeaderColor("Height"), HeaderColor("ByteCode"), HeaderColor("Info"))
         .content()
-        .content(st.content) { x => x }
+        .contents(stackTrace.content)
     }
     grid.print()
   }
@@ -43,11 +43,11 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
         .row(Column(overflowHandling = Truncate), Column, Column)
         .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Position"))
         .content()
-        .content(tokens) { token =>
+        .mapContent(tokens) { token =>
           val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
           val start = NumColor(token.line) + ":" + NumColor(token.col)
           val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
-          (token.toString, tokenName, s"$start - $end")
+          (token.toString, Bold(tokenName), s"$start - $end")
         }
     }
     grid.print()
@@ -64,7 +64,7 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
         .row(Column(overflowHandling = Truncate), Column, Column)
         .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
-        .content(treePrinter(cu)) { x => x }
+        .contents(treePrinter(cu))
     }
     grid.print()
   }

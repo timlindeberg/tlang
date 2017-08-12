@@ -76,10 +76,9 @@ case class Formatting(
   def ListMarker: String = ascii("*", "•")
   def Cross: String = ascii("x", "×")
   def RightArrow: String = ascii("-", "→")
+  def UnderlineCharacter: String = ascii("~", "‾")
 
   def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
-
-  private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
 
   def formatFileName(file: Option[File]): String = {
     file match {
@@ -94,5 +93,7 @@ case class Formatting(
 
   def makeList(items: String*): String = makeList(items)
   def makeList(items: Traversable[String]): String = items.map(item => s"  $ListMarker $item").mkString("\n")
+
+  private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
 
 }

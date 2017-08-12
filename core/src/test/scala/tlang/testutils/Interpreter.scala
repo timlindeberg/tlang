@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package tlang.compiler
+package tlang.testutils
 
 import java.io.{PrintStream, PrintWriter, _}
 

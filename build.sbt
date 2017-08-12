@@ -40,6 +40,7 @@ lazy val macros = project
     )
   )
 
+
 lazy val core = project
   .settings(
     commonSettings,

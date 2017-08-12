@@ -59,10 +59,10 @@ abstract class ErrorMessage(val errorNum: Int, val errorLetters: String, val cod
   override def equals(obj: Any): Boolean = obj match {
     case err: ErrorMessage =>
       err.errorLetters == errorLetters &&
-      err.errorNum == errorNum &&
-      err.codeNum == codeNum &&
-      err.pos.encodedStartPos == pos.encodedStartPos &&
-      err.pos.encodedEndPos == pos.encodedEndPos
+        err.errorNum == errorNum &&
+        err.codeNum == codeNum &&
+        err.pos.encodedStartPos == pos.encodedStartPos &&
+        err.pos.encodedEndPos == pos.encodedEndPos
     case _                 => false
   }
 

@@ -88,7 +88,7 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
 
     if (validPosition) {
       grid.row(2)
-      grid.content(errorFormatter.locationInFile) { x => x }
+      grid.mapContent(errorFormatter.locationInFile) { x => x }
     }
   }
 
@@ -100,7 +100,7 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
     val name = messageType + appendix
-    val num = Yellow(n)
+    val num = color(n)
     if (hitMax)
       s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
     else

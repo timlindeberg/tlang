@@ -121,7 +121,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
     files.toSet
   }
 
-  val boxType: BoxStyle = {
+  val boxStyle: BoxStyle = {
     val formattings = flagArgs(Flags.Formatting)
     val boxNames = BoxStyles.All.map(_.styleName.toLowerCase)
     formattings.foreach { formatting =>
@@ -160,7 +160,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   val formatting: Formatting =
-    utils.formatting.Formatting(boxType, lineWidth, colorScheme, boxType != Ascii, boxType == Ascii)
+    utils.formatting.Formatting(
+      boxStyle, lineWidth, colorScheme,
+      useColor = !apply(Flags.NoColor),
+      asciiOnly = boxStyle == Ascii
+    )
 
   private def verifyOutputPhases(phases: mutable.Set[String]): Unit = {
     val validPhases = Main.CompilerPhases.map(_.name)

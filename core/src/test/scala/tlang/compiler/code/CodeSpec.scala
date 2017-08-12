@@ -1,6 +1,7 @@
 package tlang.compiler.code
 
-import tlang.compiler.{Tester, ValidTester}
+
+import tlang.testutils.{Tester, ValidTester}
 
 
 class CodeSpec extends ValidTester {

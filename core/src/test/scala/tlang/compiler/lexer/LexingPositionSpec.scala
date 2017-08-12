@@ -5,7 +5,7 @@ import java.io.File
 import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.{Pos, Tester}
+import tlang.testutils.{Pos, Tester}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
@@ -28,8 +28,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
 
     tests foreach { case (token, (name, expectedPos)) =>
       test(name) {
-        val pos = new Pos(token)
-        pos shouldBe expectedPos
+        Pos(token) shouldBe expectedPos
       }
     }
   }

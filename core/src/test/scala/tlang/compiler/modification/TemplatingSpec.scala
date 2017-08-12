@@ -1,9 +1,10 @@
 package tlang.compiler.modification
 
+import tlang.compiler.CompilerPhase
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Lexing
-import tlang.compiler.{CompilerPhase, ErrorTester, Tester}
+import tlang.testutils.{ErrorTester, Tester}
 import tlang.utils.Source
 
 class TemplatingSpec extends ErrorTester {

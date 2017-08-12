@@ -13,7 +13,7 @@ import tlang.compiler.options.{Flags, Options}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Formatting
 import tlang.utils.formatting.grid.Alignment.Center
-import tlang.utils.formatting.grid.Width.{Fixed, Percentage}
+import tlang.utils.formatting.grid.Width.Percentage
 import tlang.utils.formatting.grid.{Column, Grid}
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 import tlang.{Constants, Context}
@@ -114,23 +114,24 @@ object Main extends MainErrors {
 
     val fileNames = ctx.files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
     formatting.lineWidth match {
-      case x if x in (0 to 59)  => grid.row().contents(fileNames)
+      case x if x in (0 to 59)  =>
+        grid.row().allContent(List(fileNames))
       case x if x in (60 to 99) =>
         grid
           .row(Column(width = Percentage(0.5)), Column(width = Percentage(0.5)))
-          .content(fileNames.grouped(2).toList) {
+          .mapContent(fileNames.grouped(2).toList) {
             case f1 :: f2 :: Nil => (f1, f2)
             case f :: Nil        => (f, "")
-            case Nil             => ("", "")
+            case _               => ("", "")
           }
       case x if x >= 100        =>
         grid
           .row(Column(width = Percentage(0.333)), Column(width = Percentage(0.333)), Column(width = Percentage(0.333)))
-          .content(fileNames.grouped(3).toList) {
+          .mapContent(fileNames.grouped(3).toList) {
             case f1 :: f2 :: f3 :: _ => (f1, f2, f3)
             case f1 :: f2 :: Nil     => (f1, f2, "")
             case f :: Nil            => (f, "", "")
-            case Nil                 => ("", "", "")
+            case _                   => ("", "", "")
           }
     }
     grid.print()
@@ -140,11 +141,10 @@ object Main extends MainErrors {
     import ctx.formatting._
     val totalTime = ctx.executionTimes.values.sum
 
-    val nameLength = CompilerPhases.map(_.name.length).max
     Grid(ctx.formatting)
       .header(f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset")
-      .row(Column(width = Fixed(nameLength)), Column)
-      .content(CompilerPhases) { phase =>
+      .row(2)
+      .mapContent(CompilerPhases) { phase =>
         val time = ctx.executionTimes(phase)
         (Blue(phase.name.capitalize), Green(f"$time%.2f$Reset") + " s")
       }
@@ -200,7 +200,7 @@ object Main extends MainErrors {
     Grid(formatting)
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
-      .content(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatting)) }
+      .mapContent(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatting)) }
       .toString
   }
 
@@ -209,7 +209,7 @@ object Main extends MainErrors {
     Grid(formatting)
       .header(Bold(s"Phases of the T-Compiler"))
       .row(2)
-      .content(CompilerPhases) { phase => (Magenta(phase.name.capitalize), phase.description(formatting)) }
+      .mapContent(CompilerPhases) { phase => (Magenta(phase.name.capitalize), phase.description(formatting)) }
       .toString
   }
 
@@ -263,7 +263,7 @@ object Main extends MainErrors {
         .row(alignment = Center)
         .content(formatFileName(file))
         .row(2)
-        .content(output.split("\n").zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
+        .mapContent(output.split("\n").zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
     }
     grid.print()
   }

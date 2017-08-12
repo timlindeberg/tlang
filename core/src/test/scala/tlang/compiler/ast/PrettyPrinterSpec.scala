@@ -4,9 +4,9 @@ import java.io.File
 
 import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
-import tlang.compiler.Tester
 import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexing
+import tlang.testutils.Tester
 import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, StringSource}
 

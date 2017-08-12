@@ -127,6 +127,18 @@ object Extensions {
 
   }
 
+  implicit class StringBuilderExtensions(val sb: scala.collection.mutable.StringBuilder) extends AnyVal {
+
+    def appendTimes(char: Char, times: Int): mutable.StringBuilder = {
+      var i = 0
+      while (i < times) {
+        sb.append(char)
+        i += 1
+      }
+      sb
+    }
+  }
+
   implicit class AnyExtensions(val a: Any) extends AnyVal {
     def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
   }

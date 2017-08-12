@@ -12,7 +12,7 @@ case class AnsiWordWrapper() {
 
   def apply(texts: List[String], maxWidth: Int): List[String] = texts.flatMap(apply(_, maxWidth))
 
-  def apply(text: String, maxWidth: Int, maxLines: Int = -1): List[String] = {
+  def apply(text: String, maxWidth: Int): List[String] = {
 
     @tailrec def whiteSpaces(chars: List[Char], s: StringBuilder = new StringBuilder): (String, List[Char]) = chars match {
       case c :: rest if isWhiteSpace(c) => whiteSpaces(rest, s + c)
@@ -45,7 +45,6 @@ case class AnsiWordWrapper() {
           wordWrap(rest, "", "", newLine())
         case c :: _ if isWhiteSpace(c)                =>
           val (spaces, rest) = whiteSpaces(chars)
-          val h = currentLength
           if (currentLength > maxWidth) {
             val (word, wrappedLines) = wrap(currentWord, currentLine, maxWidth)
             wordWrap(rest, "", word + spaces, wrappedLines ::: lines)
@@ -147,18 +146,18 @@ case class AnsiWordWrapper() {
     def updateFrom(line: String, index: Int): Int = {
       val endOfAnsi = line.indexOf('m', index + 1)
       val ansiValues = line.subSequence(index + 2, endOfAnsi).toString
-
+      val ansiString = s"\u001b[${ ansiValues }m"
       ansiValues.split(":").map(_.toList).foreach {
         case '0' :: Nil                           =>
           currentColor = ""
           currentBGColor = ""
           SGRs.clear()
-        case ('1' | '4') :: Nil                   => SGRs += s"\u001b[${ ansiValues }m"
-        case '3' :: c :: Nil if c in ('1' to '7') => currentColor = s"\u001b[${ ansiValues }m"
-        case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = s"\u001b[${ ansiValues }m"
+        case ('1' | '4') :: Nil                   => SGRs += ansiString
+        case '3' :: c :: Nil if c in ('1' to '7') => currentColor = ansiString
+        case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = ansiString
         case _                                    =>
       }
-      ansi = currentColor + currentBGColor + SGRs.mkString
+      ansi = SGRs.mkString + currentBGColor + currentColor
       endOfAnsi
     }
 
@@ -166,10 +165,7 @@ case class AnsiWordWrapper() {
       var i = 0
       while (i < line.length) {
         line(i) match {
-          case '\u001b' if line(i + 1) == '[' =>
-            val endOfAnsi = updateFrom(line, i)
-            ansi = currentColor + currentBGColor + SGRs.mkString
-            i = endOfAnsi
+          case '\u001b' if line(i + 1) == '[' => i = updateFrom(line, i)
           case _                              =>
         }
         i += 1

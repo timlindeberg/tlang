@@ -1,11 +1,11 @@
 package tlang.compiler.analyzer
 
 import org.scalatest._
-import tlang.compiler.Tester
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.testutils.Tester
 
 class OperatorTypeSpec extends FunSuite with Matchers {
 

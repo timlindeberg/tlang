@@ -10,8 +10,6 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
 
   import formatting._
 
-  val NonColoredIndicationChar = "~"
-
   val ErrorColor: Color = {
     val color = error match {
       case _: Warning => Yellow
@@ -103,7 +101,7 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
     val start = pos.col - 1
     val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
     val whitespaces = " " * (start - indent)
-    val indicator = NonColoredIndicationChar * (end - start)
+    val indicator = UnderlineCharacter * (end - start)
     lines :+ ("", whitespaces + indicator)
   }
 

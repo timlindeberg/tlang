@@ -54,7 +54,7 @@ trait Alignment {
 
     val textWidth = text.charCount
     if (textWidth > width)
-      throw new IllegalArgumentException(s"Cannot align text $text in the given space: $textWidth > $width")
+      throw new IllegalArgumentException(s"Cannot align text '$text' in the given space: $textWidth > $width")
 
     align(text, width - textWidth, fill)
   }
@@ -131,14 +131,14 @@ object OverflowHandling {
       while (i < line.length) {
         val c = line(i)
         c match {
-          case '\u001b' =>
+          case '\u001b' if line(i + 1) == '[' =>
             val endOfAnsi = line.indexOf('m', i + 1)
             ansiChars += endOfAnsi - i + 1
             lastAnsi = line.substring(i, endOfAnsi + 1)
             i = endOfAnsi
-          case _        =>
-            val realChars = i - ansiChars
-            if (realChars == width - TruncationWidth) {
+          case _                              =>
+            val visibleChars = i - ansiChars
+            if (visibleChars == width - TruncationWidth) {
               val truncated = line.substring(0, i)
               if (lastAnsi.isEmpty || lastAnsi == Console.RESET)
                 return truncated + Truncation

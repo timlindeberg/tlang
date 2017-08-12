@@ -1,12 +1,12 @@
-package tlang.compiler
+package tlang.testutils
 
 import java.io.File
 
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers, ParallelTestExecution}
+import org.scalatest.{FunSuite, Matchers, ParallelTestExecution}
+import tlang.compiler.CompilerPhase
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.Extensions._
 import tlang.utils.Source
 import tlang.utils.formatting.BoxStyles.Unicode
@@ -42,7 +42,7 @@ object Tester {
       if (UseSimpleFormatting)
         SimpleFormatting
       else
-        Formatting(Unicode, LineWidth.defaultValue, useColor = UseColors)
+        Formatting(Unicode, 80, useColor = UseColors)
 
     Context(
       reporter = DefaultReporter(formatting = formatting),
@@ -56,7 +56,7 @@ object Tester {
 
 }
 
-trait Tester extends FunSuite with Matchers with BeforeAndAfter with ParallelTestExecution {
+trait Tester extends FunSuite with Matchers with ParallelTestExecution {
 
   import Tester._
 

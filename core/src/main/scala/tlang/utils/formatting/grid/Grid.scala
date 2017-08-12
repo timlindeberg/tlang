@@ -117,8 +117,16 @@ case class Grid(var formatting: Formatting) {
     addContent(allContent)
   }
 
-  def contents(content: Iterable[String], moreContent: Iterable[String]*): Grid = {
-    allContent(content :: moreContent.toList)
+  // Result of mapping function should be a Tuple
+  def mapContent[T](content: Iterable[T])(f: (T) => Product): Grid = {
+    content.map(f) foreach addTuple
+    this
+  }
+
+  // Should be a list of tuples with the correct size
+  def contents(content: Iterable[Product]): Grid = {
+    content foreach addTuple
+    this
   }
 
   def allContent(content: Iterable[Iterable[Any]]): Grid = {
@@ -127,19 +135,19 @@ case class Grid(var formatting: Formatting) {
     this
   }
 
-  def content[T](content: Iterable[T])(f: (T) => Product): Grid = {
-    content.map(f).foreach(addTuple)
-    this
-  }
-
   def columnWidths: Seq[Int] = currentRow.columnWidths
 
   def print(): Unit = println(toString)
+
   override def toString: String = GridRenderer(formatting).render()
 
-  private def addTuple(t: Product): Grid = {
-    verifyNumValues(t.productArity)
-    addContent(t.productIterator.toList)
+  private def addTuple(tuple: Product): Grid = {
+    val className = tuple.getClass.getName
+    if (!className.startsWith("scala.Tuple"))
+      throw new IllegalArgumentException(s"Wanted a tuple but received a $className.")
+
+    verifyNumValues(tuple.productArity)
+    addContent(tuple.productIterator.toList)
   }
 
   private def addContent(content: Iterable[Any]) = {
@@ -184,12 +192,6 @@ case class Grid(var formatting: Formatting) {
 
     def apply(i: Int): Column = columns(i)
     def size: Int = columns.size
-    def height: Int = 0
-
-    private[grid] def spaceForContent(): Int = {
-      val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
-      formatting.lineWidth - indentAndBorderSize
-    }
 
     def columnWidths: Seq[Int] = {
       if (columnWidthsDirty) {
@@ -199,27 +201,29 @@ case class Grid(var formatting: Formatting) {
       _columnWidths
     }
 
+    private def spaceForContent(): Int = {
+      val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
+      formatting.lineWidth - indentAndBorderSize
+    }
+
     private def calculateColumnWidths(): Seq[Int] = {
       val contentSpace = spaceForContent()
       val numAuto = columns.count(_.width == Width.Auto)
 
-      if (numAuto == 0) {
-        // If all columns have fixed width we let the last one should take up the remaining space
+      if (numAuto == 0)
         columnWidthsOnlyFixedSize(contentSpace)
-      } else {
-        // Otherwise the last auto should take up the remaining space
+      else
         columnWidthsWithAuto(contentSpace, numAuto)
-      }
     }
 
     private def columnWidthsOnlyFixedSize(actualSpace: Int) = {
       var remainingWidth = actualSpace
       columns.zipWithIndex.map { case (column, i) =>
-        val columnWidth = column.width.asInstanceOf[FixedWidth]
+        val fixedWidth = column.width.asInstanceOf[FixedWidth]
         val width = if (i == columns.length - 1)
           remainingWidth
         else
-          columnWidth(actualSpace)
+          fixedWidth(actualSpace)
 
         remainingWidth -= width
         width
@@ -227,42 +231,45 @@ case class Grid(var formatting: Formatting) {
     }
 
     private def columnWidthsWithAuto(contentSpace: Int, numAuto: Int) = {
-      val fixedWidth = columns
-        .map(_.width)
-        .collect { case w: FixedWidth => w(contentSpace) }
-        .sum
+      val widths = Array.fill(columns.length)(0)
 
-      var remainingWidth = contentSpace - fixedWidth
-      var remainingAutos = numAuto
-      val widths = Array.ofDim[Int](columns.length)
+      // Calculate width for the fixed columns first
+      columns.zipWithIndex.foreach { case (column, i) =>
+        column.width.ifInstanceOf[FixedWidth] { fixedWidth =>
+          widths(i) = fixedWidth(contentSpace)
+        }
+      }
 
+      val fixedWidth = widths.sum
 
       // We sort the columns by maximum width. We want to select the smallest
       // ones first in order to maximize the available space
-      columns.zipWithIndex.sortBy(_._1.maxWidth).foreach { case (column, index) =>
-        val width = column.width match {
-          case Width.Auto    =>
-            if (remainingAutos == 1) {
-              remainingWidth
-            } else {
-              val possibleSpace = remainingWidth.toDouble / remainingAutos
-              remainingAutos -= 1
+      var remainingWidth = contentSpace - fixedWidth
+      var remainingAutos = numAuto
+      columns.zipWithIndex
+        .filter(_._1.width == Width.Auto)
+        .sortBy(_._1.maxWidth)
+        .foreach { case (column, i) =>
+          val possibleSpace = remainingWidth.toDouble / remainingAutos
+          remainingAutos -= 1
 
-              // If rounding up makes the content fit, we do that but otherwise
-              // we round down. If the maxWidth is less than the available space
-              // we only use the maximum width
-              val w = if (Math.ceil(possibleSpace) == column.maxWidth || column.maxWidth <= possibleSpace) {
-                Math.max(1, column.maxWidth) // Never render completely empty columns
-              } else {
-                possibleSpace.toInt
-              }
-              remainingWidth -= w
-              w
-            }
-          case w: FixedWidth => w(contentSpace)
+          // If rounding up makes the content fit, we do that but otherwise
+          // we round down. If the maxWidth of the column is less than the
+          // available space we only use the needed width
+          widths(i) = if (Math.ceil(possibleSpace) == column.maxWidth || column.maxWidth <= possibleSpace) {
+            Math.max(1, column.maxWidth) // Never render columns completely empty
+          } else {
+            possibleSpace.toInt
+          }
+          remainingWidth -= widths(i)
         }
-        widths(index) = width
+
+      // Give the last of the remaining space to the right most column with Auto width
+      if (remainingWidth > 0) {
+        val lastAuto = columns.lastIndexWhere(_.width == Width.Auto)
+        widths(lastAuto) += remainingWidth
       }
+
       widths.toList
     }
 
@@ -272,11 +279,11 @@ case class Grid(var formatting: Formatting) {
 
     import formatting.boxStyle._
 
+    val sb = new StringBuilder()
+
     def render(): String = {
       if (rows.isEmpty)
         return ""
-
-      val sb = new StringBuilder
 
       var i = 0
 
@@ -284,7 +291,7 @@ case class Grid(var formatting: Formatting) {
       sb ++= "\n"
       while (i < rows.size) {
         val row = rows(i)
-        drawContent(sb, row)
+        drawContent(row)
 
         if (i < rows.size - 1) {
           sb ++= drawMiddleLine(row, rows(i + 1))
@@ -302,6 +309,7 @@ case class Grid(var formatting: Formatting) {
       else
         drawTopOrBottom(┌, ─, ┬, ┐, row)
     }
+
     private def drawBottomLine(row: Row) = {
       if (row.isHeader)
         drawTopOrBottom(╘, ═, ╧, ╛, row)
@@ -331,11 +339,10 @@ case class Grid(var formatting: Formatting) {
         var acc = 2 * indent + widths.head
         widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
       }
+      def ifHeader(a: String, b: String) = if (before.isHeader) a else b
 
       val sb = new StringBuilder
       val maxWidth = formatting.lineWidth
-
-      def ifHeader(a: String, b: String) = if (before.isHeader) a else b
 
       sb ++= ifHeader(╞, ├)
 
@@ -366,9 +373,10 @@ case class Grid(var formatting: Formatting) {
 
     private def formatLine(line: String) = borderColor(trimRight(line))
 
-    private def drawContent(sb: StringBuilder, row: Row): Unit = {
+    private def drawContent(row: Row): Unit = {
       val columns = row.columns
       val columnWidths = row.columnWidths
+
 
       sb ++= columns
         .map(column => if (column.lines.nonEmpty) column.lines else List(""))
@@ -380,6 +388,8 @@ case class Grid(var formatting: Formatting) {
             columns(columnIndex).overflowHandling(line, columnWidths(columnIndex))
           }
           val maxNumLines = wrappedLines.map(_.length).max
+
+
           // Fill out the columns with empty lines so that each column has the same
           // number of lines after word wrapping
           wrappedLines.map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }

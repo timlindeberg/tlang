@@ -1,7 +1,7 @@
 package tlang.utils.formatting.grid
 
 import org.scalatest.{FlatSpec, Matchers}
-import tlang.utils.Extensions._
+import tlang.testutils.AnsiMatchers._
 import tlang.utils.formatting.BoxStyles.Unicode
 import tlang.utils.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
@@ -30,7 +30,7 @@ class GridSpec extends FlatSpec with Matchers {
       .row(Column(), Column())
       /**/ .content("AB", "KL")
       /**/ .content("CD", "MN")
-      /**/ .contents(List("EF", "GH", "IJ"), List("OP", "QR", "ST"))
+      /**/ .contents(List(("EF", "OP"), ("GH", "QR"), ("IJ", "ST")))
       .row(threeColumns)
       .row(4)
 
@@ -115,11 +115,11 @@ class GridSpec extends FlatSpec with Matchers {
       .row(Column, Column, Column, Column, Column, Column)
       .content(sixTuple)
       .row(Column, Column, Column, Column, Column, Column)
-      .content(0 to 3) { i => (i, i + 1, i + 2, i + 3, i + 4, i + 5) }
+      .mapContent(0 to 3) { i => (i, i + 1, i + 2, i + 3, i + 4, i + 5) }
       .row(Column, Column, Column)
-      .contents(Seq("A", "B", "C"), Seq("D", "E", "F"), Seq("G", "H", "I"))
+      .contents(Seq(("A", "D", "G"), ("B", "E", "H"), ("C", "F", "I")))
       .row(Column, Column)
-      .content(Seq("ABCDE", "EFGHI")) { s => (s.reverse, s) }
+      .mapContent(Seq("ABCDE", "EFGHI")) { s => (s.reverse, s) }
       .row(Column, Column, Column)
       .allContent(Seq(Seq("A", "B", "C"), Seq("D", "E", "F"), Seq("I", "J", "K")))
       .row(Column, Column, Column)
@@ -191,116 +191,130 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    Grid(DefaultFormatting)
+    var grid = Grid(DefaultFormatting)
       .row()
       .content("A")
-      .columnWidths should contain theSameElementsInOrderAs Seq(16)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(16)
 
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column(Width.Fixed(5)))
       .content("A")
-      .columnWidths should contain theSameElementsInOrderAs Seq(16)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(16)
 
     // ┌───┬──────────────┐
     // │ A │ B            │
     // └───┴──────────────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column)
       .content("A", "B")
-      .columnWidths should contain theSameElementsInOrderAs Seq(1, 12)
 
-    // ┌──────────────┬───┐
-    // │ AB           │ C │
-    // └──────────────┴───┘
-    Grid(DefaultFormatting)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(1, 12)
+
+    // ┌────┬─────────────┐
+    // │ AB │ C           │
+    // └────┴─────────────┘
+    grid = Grid(DefaultFormatting)
       .row(Column, Column)
       .content("AB", "C")
-      .columnWidths should contain theSameElementsInOrderAs Seq(12, 1)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(2, 11)
 
     // ┌───┬──────────────┐
     // │ A │ BC           │
     // └───┴──────────────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column)
       .content("A", "BC")
-      .columnWidths should contain theSameElementsInOrderAs Seq(1, 12)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(1, 12)
 
     // ┌───┬───┬───┬──────┐
     // │ A │ B │ C │ D    │
     // └───┴───┴───┴──────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column, Column, Column)
       .content("A", "B", "C", "D")
-      .columnWidths should contain theSameElementsInOrderAs Seq(1, 1, 1, 4)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(1, 1, 1, 4)
 
     // ┌────────┬─────────┐
     // │ ABC    │ DEF     │
     // └────────┴─────────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column(Width.Percentage(0.5)), Column)
       .content("ABC", "DEF")
-      .columnWidths should contain theSameElementsInOrderAs Seq(6, 7)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(6, 7)
 
     // ┌──────────┬───────┐
     // │ ABC      │ D     │
     // └──────────┴───────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column(Width.Fixed(5)))
       .content("ABC", "D")
-      .columnWidths should contain theSameElementsInOrderAs Seq(8, 5)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(8, 5)
 
 
     // ┌────┬───────┬─────┐
     // │ AB │ D     │ DE  │
     // └────┴───────┴─────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column(Width.Fixed(5)), Column)
       .content("AB", "C", "DE")
-      .columnWidths should contain theSameElementsInOrderAs Seq(2, 5, 3)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(2, 5, 3)
 
     // ┌─────┬─────┬──────┐
     // │ A   │ B   │ C    │
     // └─────┴─────┴──────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)))
       .content("A", "B", "C")
-      .columnWidths should contain theSameElementsInOrderAs Seq(3, 3, 4)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(3, 3, 4)
 
     // ┌──────┬──────┬────┐
     // │ A    │ B    │ C  │
     // └──────┴──────┴────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column(Width.Fixed(4)), Column(Width.Fixed(4)), Column)
       .content("A", "B", "C")
-      .columnWidths should contain theSameElementsInOrderAs Seq(4, 4, 2)
 
-    // ┌───────┬──────┬───┐
-    // │ A     │ BCD  │ E │
-    // └───────┴──────┴───┘
-    Grid(DefaultFormatting)
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(4, 4, 2)
+
+    // ┌───────┬─────┬────┐
+    // │ A     │ BCD │ E  │
+    // └───────┴─────┴────┘
+    grid = Grid(DefaultFormatting)
       .row(Column(Width.Fixed(5)), Column, Column)
       .content("A", "BCD", "E")
-      .columnWidths should contain theSameElementsInOrderAs Seq(5, 4, 1)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(5, 3, 2)
 
     // ┌────────┬─────────┐
     // │ ABCDEF │ ABCDEFG │
     // │ GHIJKL │ HIJKLMN │
     // │ MNO    │ O       │
     // └────────┴─────────┘
-    Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column)
       .content("ABCDEFGHIJKLMNO", "ABCDEFGHIJKLMNO")
-      .columnWidths should contain theSameElementsInOrderAs Seq(6, 7)
+
+    grid(0).columnWidths should contain theSameElementsInOrderAs Seq(6, 7)
 
     // ┌────┬───────┬─────┐
     // │ AB │ 12345 │ CDE │
     // ├────┴┬──────┼─────┤
     // │ ABC │ 1234 │ DEF │
     // └─────┴──────┴─────┘
-    val grid = Grid(DefaultFormatting)
+    grid = Grid(DefaultFormatting)
       .row(Column, Column, Column)
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
@@ -423,7 +437,7 @@ class GridSpec extends FlatSpec with Matchers {
       .header("Header")
       .row(Column, Column, Column)
       .content("ABC", "DEFG", "HIJ")
-      .toString.print shouldBe
+      .toString shouldBe
       """|╒══════════════════╕
          |│      Header      │
          |╞═════╤══════╤═════╡
@@ -487,11 +501,11 @@ class GridSpec extends FlatSpec with Matchers {
     Grid(formatting)
       .row()
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m")
-      .toString shouldBe
+      .toString should matchWithAnsi(
       s"""|┌──────────────────┐
           |│ \u001b[31mABCDEFGHIJKLMNOP\u001b[0m │
           |│ \u001b[31mQRSTUVXYZ\u001b[0m        │
-          |└──────────────────┘""".stripMargin
+          |└──────────────────┘""".stripMargin)
   }
 
   it should "render correctly with colored borders" in {
@@ -502,12 +516,12 @@ class GridSpec extends FlatSpec with Matchers {
       .content("ABC", "DEF")
       .row(Column, Column)
       .content("ABC", "DEF")
-      .toString shouldBe
+      .toString should matchWithAnsi(
       """|\u001b[31m┌─────┬────────────┐\u001b[0m
          |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
          |\u001b[31m├─────┼────────────┤\u001b[0m
          |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
-         |\u001b[31m└─────┴────────────┘\u001b[0m""".stripMargin
+         |\u001b[31m└─────┴────────────┘\u001b[0m""".stripMargin)
   }
 
   it should "render correctly with line wrapping" in {
@@ -580,9 +594,9 @@ class GridSpec extends FlatSpec with Matchers {
       .content("", "")
       .row(Column, Column, Column, Column)
       .toString shouldBe
-      """|┌───┬──────┬───┬───┐
-         |│   │ ABC  │   │   │
-         |├───┴──────┴───┴───┤
+      """|┌───┬─────┬───┬────┐
+         |│   │ ABC │   │    │
+         |├───┴─────┴───┴────┤
          |│                  │
          |├───┬──────────────┤
          |│   │              │
@@ -598,7 +612,7 @@ class GridSpec extends FlatSpec with Matchers {
         "\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m",
         "AB\u001b[31mCDE\u001b[0mF"
       )
-      .toString shouldBe
+      .toString should matchWithAnsi(
       s"""|┌──────┬─────┬─────┐
           |│ \u001b[31mABCD\u001b[0m │ \u001b[31mABC\u001b[0m │ AB\u001b[31mC\u001b[0m │
           |│ \u001b[32mEFGH\u001b[0m │ \u001b[31mD\u001b[32mEF\u001b[0m │ \u001b[31mDE\u001b[0mF │
@@ -607,7 +621,7 @@ class GridSpec extends FlatSpec with Matchers {
           |│ \u001b[35mQRST\u001b[0m │ \u001b[34mMN\u001b[0m  │     │
           |│ \u001b[36mUVXY\u001b[0m │     │     │
           |│ \u001b[37mZ\u001b[0m    │     │     │
-          |└──────┴─────┴─────┘""".stripMargin
+          |└──────┴─────┴─────┘""".stripMargin)
   }
 
   it should "render correctly with truncation" in {
@@ -633,13 +647,13 @@ class GridSpec extends FlatSpec with Matchers {
       .row(Column(overflowHandling = Truncate), Column(overflowHandling = Truncate), Column(overflowHandling = Truncate))
       .content("ABC", "\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", "\u001b[34mABCD\u001b[0m")
       .content("ABCDEFGHIJKLMNOP", "ABC", "\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m")
-      .toString shouldBe
+      .toString should matchWithAnsi(
       s"""|┌──────┬──────┬────┐
           |│ \u001b[31mA\u001b[0m... │ A... │ \u001b[32mAB\u001b[0m │
           |├─────┬┴────┬─┴────┤
           |│ ABC │ ... │ \u001b[34mABCD\u001b[0m │
           |│ ... │ ABC │ \u001b[35mA\u001b[0m... │
-          |└─────┴─────┴──────┘""".stripMargin
+          |└─────┴─────┴──────┘""".stripMargin)
   }
 
   it should "throw when given content with improper dimension" in {
@@ -660,7 +674,7 @@ class GridSpec extends FlatSpec with Matchers {
     intercept[IllegalArgumentException] {
       Grid(DefaultFormatting)
         .row(Column, Column, Column)
-        .contents(List("A", "B"), List("C", "D"))
+        .contents(List(("A", "B"), ("C", "D")))
 
     }.getMessage should include("2 != 3")
   }
@@ -726,6 +740,22 @@ class GridSpec extends FlatSpec with Matchers {
     }
   }
 
+  it should "throw when given contents other than a tuple" in {
+    intercept[IllegalArgumentException] {
+      Grid(DefaultFormatting)
+        .contents(List(Nil))
+
+    }.getMessage should include("Nil")
+
+    // Column is a case class and there for implements Product
+    intercept[IllegalArgumentException] {
+      Grid(DefaultFormatting)
+        .row(3)
+        .contents(List(("1", "2", "3"), ("4", "5", "6"), Column))
+
+    }.getMessage should include("Column")
+  }
+
 
   behavior of "Alignment"
 
@@ -767,9 +797,9 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "align correctly with ansi colors" in {
     val str = "A\u001b[31mB\u001b[0mC"
-    Left(str, 10) shouldBe "A\u001b[31mB\u001b[0mC       "
-    Center(str, 10) shouldBe "   A\u001b[31mB\u001b[0mC    "
-    Right(str, 10) shouldBe "       A\u001b[31mB\u001b[0mC"
+    Left(str, 10) should matchWithAnsi("A\u001b[31mB\u001b[0mC       ")
+    Center(str, 10) should matchWithAnsi("   A\u001b[31mB\u001b[0mC    ")
+    Right(str, 10) should matchWithAnsi("       A\u001b[31mB\u001b[0mC")
   }
 
   it should "throw when size is larger then width" in {
@@ -802,16 +832,16 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "truncate ansi colored text" in {
     val text = "\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m" // 15 real chars long
-    Truncate(text, 1).head shouldBe "."
-    Truncate(text, 2).head shouldBe ".."
-    Truncate(text, 3).head shouldBe "..."
-    Truncate(text, 4).head shouldBe "\u001b[32mA\u001b[0m..."
-    Truncate(text, 5).head shouldBe "\u001b[32mAB\u001b[0m..."
-    Truncate(text, 10).head shouldBe "\u001b[32mABC\u001b[33mDEF\u001b[34mG\u001b[0m..."
-    Truncate(text, 14).head shouldBe "\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJK\u001b[0m..."
-    Truncate(text, 15).head shouldBe "\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m"
+    Truncate(text, 1).head should matchWithAnsi(".")
+    Truncate(text, 2).head should matchWithAnsi("..")
+    Truncate(text, 3).head should matchWithAnsi("...")
+    Truncate(text, 4).head should matchWithAnsi("\u001b[32mA\u001b[0m...")
+    Truncate(text, 5).head should matchWithAnsi("\u001b[32mAB\u001b[0m...")
+    Truncate(text, 10).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mG\u001b[0m...")
+    Truncate(text, 14).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJK\u001b[0m...")
+    Truncate(text, 15).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m")
     Truncate(text, 15).head should be theSameInstanceAs text
-    Truncate(text, 16).head shouldBe "\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m"
+    Truncate(text, 16).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m")
     Truncate(text, 16).head should be theSameInstanceAs text
   }
 

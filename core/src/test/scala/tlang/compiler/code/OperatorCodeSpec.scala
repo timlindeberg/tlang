@@ -4,7 +4,6 @@ import java.io.{File, FileWriter, IOException}
 
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import tlang.Context
-import tlang.compiler.Interpreter
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{Naming, TypeChecker, Typing}
@@ -14,6 +13,7 @@ import tlang.compiler.error.DefaultReporter
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
+import tlang.testutils.Interpreter
 import tlang.utils.Extensions._
 import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, ProgramExecutor}

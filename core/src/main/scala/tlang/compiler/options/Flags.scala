@@ -183,6 +183,15 @@ object Flags {
     }
   }
 
+  case object NoColor extends BooleanFlag {
+    override val flag = "no-color"
+
+    override def description(formatting: Formatting): String = {
+      import formatting._
+      s"Removes all ${ Red }c${ Green }o${ Blue }l${ Yellow }o${ Magenta }r${ Reset } from the output."
+    }
+  }
+
   case object Formatting extends ArgumentFlag {
     override val flag = "formatting"
     override val arg  = "style"
