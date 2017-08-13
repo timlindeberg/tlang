@@ -19,7 +19,8 @@ class ParsingPositionSpec extends FunSuite with Matchers {
   private val TestFile   : String  = Tester.Resources + "positions/" + File
   private val TestContext: Context = Tester.getTestContext()
 
-  private val Tree: Tree = {
+  // We make Tree lazy so the parsing time counts towards the test execution time
+  private lazy val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
     try {
       (Lexing andThen Parsing).execute(TestContext)(file).head
@@ -30,7 +31,7 @@ class ParsingPositionSpec extends FunSuite with Matchers {
     }
   }
 
-  private val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
+  private lazy val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
 
   private def testPositions[T <: Tree : ClassTag](positions: Pos*): Unit = {
     val clazz = classTag[T].runtimeClass
@@ -39,13 +40,13 @@ class ParsingPositionSpec extends FunSuite with Matchers {
       if (Tree == Empty())
         fail(s"Failed to parse $File")
 
-      val trees = Trees
+      val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
-        .filter { t => Pos(t) != NoPos }
+        .map(Pos(_))
+        .filter { pos => pos != NoPos }
 
-      trees.zip(positions.zipWithIndex) foreach { case (tree, (expectedPos, index)) =>
-        val pos = new Pos(tree)
-        assert(pos == expectedPos, s" for $className number ${ index + 1 }.")
+      treePositions.zip(positions.zipWithIndex) foreach { case (foundPos, (expectedPos, index)) =>
+        assert(foundPos == expectedPos, s" for $className number ${ index + 1 }.")
       }
     }
   }
