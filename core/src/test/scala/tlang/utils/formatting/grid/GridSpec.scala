@@ -843,6 +843,12 @@ class GridSpec extends FlatSpec with Matchers {
     Truncate(text, 15).head should be theSameInstanceAs text
     Truncate(text, 16).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m")
     Truncate(text, 16).head should be theSameInstanceAs text
+
+    Truncate("ABCDEF\u001b[32mGHIJ\u001b[0m", 9).head should matchWithAnsi("ABCDEF...")
+    Truncate("ABCDEF\u001b[32mGHIJK\u001b[0m", 10).head should matchWithAnsi("ABCDEF\u001b[32mG\u001b[0m...")
+    Truncate("\u001b[31mABCDEF\u001b[32mGHIJ\u001b[0m", 9).head should matchWithAnsi("\u001b[31mABCDEF\u001b[0m...")
+    Truncate("\u001b[31mABCDEF\u001b[0mGHIJ", 9).head should matchWithAnsi("\u001b[31mABCDEF\u001b[0m...")
+    Truncate("\u001b[31mABC\u001b[0mDEFGHIJ", 9).head should matchWithAnsi("\u001b[31mABC\u001b[0mDEF...")
   }
 
   it should "throw when given an invalid width" in {

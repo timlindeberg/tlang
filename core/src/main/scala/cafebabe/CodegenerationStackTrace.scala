@@ -8,7 +8,7 @@ import tlang.utils.formatting.Formatting
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class StackTrace(
+case class CodegenerationStackTrace(
   abcBuffer: ListBuffer[AbstractByteCode],
   heightArray: Array[Int],
   cp: ConstantPool,
@@ -59,12 +59,9 @@ case class StackTrace(
     var pc = 0
     var currentLineNumber = 0
 
-    var first = true
     def appendLine(abc: AbstractByteCode, extraInfo: String) = {
       val h = if (pc > heights.length) UninitializedHeight else heights(pc)
       val height = if (h == UninitializedHeight) "" else String.valueOf(h)
-      // Colorize labels
-      first = false
       val line = (NumColor(currentLineNumber), KeywordColor(pc), NumColor(height), KeywordColor(abc), extraInfo)
       lines += line
     }
@@ -84,23 +81,23 @@ case class StackTrace(
         case _: RawByte | _: RawBytes                   =>
         case NEWARRAY                                   =>
           abcs(i + 1) match {
-            case RawByte(tpe) => appendLine(abc, s"$NumColor${ types(tpe) }")
+            case RawByte(tpe) => appendLine(abc, NumColor(types(tpe)))
           }
         case IINC                                       =>
           abcs(i + 1) match {
             case RawByte(index) => abcs(i + 2) match {
-              case RawByte(amount) => appendLine(abc, s"$NumColor$index $amount")
+              case RawByte(amount) => appendLine(abc, NumColor(s"$index $amount"))
             }
             // Can use multiple bytes if preceded by a WIDE
             case RawBytes(index) => abcs(i + 2) match {
-              case RawBytes(amount) => appendLine(abc, s"$NumColor$index $amount")
+              case RawBytes(amount) => appendLine(abc, NumColor(s"$index $amount"))
             }
           }
         case BIPUSH | SIPUSH | ALOAD | ILOAD | FLOAD | LLOAD | DLOAD |
              ASTORE | ISTORE | FSTORE | LSTORE | DSTORE =>
           abcs(i + 1) match {
-            case RawByte(value)  => appendLine(abc, s"$NumColor$value")
-            case RawBytes(value) => appendLine(abc, s"$NumColor$value")
+            case RawByte(value)  => appendLine(abc, NumColor(value))
+            case RawBytes(value) => appendLine(abc, NumColor(value))
           }
         case co: ControlOperator                        =>
           appendLine(co.opCode, labelColor(co.target.trim))

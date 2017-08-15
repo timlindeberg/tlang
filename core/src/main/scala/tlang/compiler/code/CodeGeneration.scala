@@ -19,11 +19,11 @@ import tlang.utils.{FileSource, StringSource}
 
 import scala.collection.mutable
 
-object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
+object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStackTrace] {
 
   import CodeGenerator._
 
-  def run(ctx: Context)(cus: List[CompilationUnit]): List[StackTrace] = {
+  def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
@@ -36,10 +36,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
   override def description(formatting: Formatting): String =
     "Generates bytecode that can run on the JVM."
 
-  override def printDebugOutput(output: List[StackTrace], formatting: Formatting): Unit =
+  override def printDebugOutput(output: List[CodegenerationStackTrace], formatting: Formatting): Unit =
     DebugOutputFormatter(name, formatting).printStackTraces(output)
 
-  case class GenerateClassResult(files: Set[String], stackTraces: List[StackTrace])
+  case class GenerateClassResult(files: Set[String], stackTraces: List[CodegenerationStackTrace])
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): GenerateClassResult = {
@@ -63,7 +63,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, StackTrace] {
     GenerateClassResult(files, stackTraces)
   }
 
-  private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[StackTrace] = {
+  private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[CodegenerationStackTrace] = {
     classDecl.methods.flatMap { methodDecl =>
       val methSymbol = methodDecl.getSymbol
 

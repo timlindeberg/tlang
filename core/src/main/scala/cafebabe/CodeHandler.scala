@@ -276,9 +276,9 @@ class CodeHandler private[cafebabe](
     heightArray.max.asInstanceOf[U2]
   }
 
-  def stackTrace: StackTrace = StackTrace(abcBuffer, heightArray, cp, signature, SimpleFormatting)
-  def stackTrace(formatting: Formatting): StackTrace =
-    StackTrace(abcBuffer, heightArray, cp, signature, formatting)
+  def stackTrace: CodegenerationStackTrace = CodegenerationStackTrace(abcBuffer, heightArray, cp, signature, SimpleFormatting)
+  def stackTrace(formatting: Formatting): CodegenerationStackTrace =
+    CodegenerationStackTrace(abcBuffer, heightArray, cp, signature, formatting)
 
   def print(): Unit = if (!frozen) {
     var pc = 0

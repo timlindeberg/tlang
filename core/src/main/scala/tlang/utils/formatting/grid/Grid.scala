@@ -3,6 +3,7 @@ package tlang.utils.formatting.grid
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting._
+import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ListBuffer
 
@@ -151,10 +152,7 @@ case class Grid(var formatting: Formatting) {
   }
 
   private def addContent(content: Iterable[Any]) = {
-    currentRow.columnWidthsDirty = true
-    currentRow.columns.zip(content).foreach { case (column, content) =>
-      column.addLine(content.toString)
-    }
+    currentRow.addContent(content)
     this
   }
 
@@ -187,18 +185,15 @@ case class Grid(var formatting: Formatting) {
 
   case class Row private(rowNumber: Int, isHeader: Boolean, columns: Seq[Column]) {
 
-    private[grid] var columnWidthsDirty       = true
-    private       var _columnWidths: Seq[Int] = Seq()
+
+    def columnWidths: Seq[Int] = calculateColumnWidths()
 
     def apply(i: Int): Column = columns(i)
     def size: Int = columns.size
 
-    def columnWidths: Seq[Int] = {
-      if (columnWidthsDirty) {
-        _columnWidths = calculateColumnWidths()
-        columnWidthsDirty = false
-      }
-      _columnWidths
+    def addContent(content: Iterable[Any]): Unit = {
+      calculateColumnWidths.reset()
+      columns.zip(content).foreach { case (column, content) => column.addLine(content.toString) }
     }
 
     private def spaceForContent(): Int = {
@@ -206,7 +201,7 @@ case class Grid(var formatting: Formatting) {
       formatting.lineWidth - indentAndBorderSize
     }
 
-    private def calculateColumnWidths(): Seq[Int] = {
+    private val calculateColumnWidths: Memoized[Seq[Int]] = Memoize {
       val contentSpace = spaceForContent()
       val numAuto = columns.count(_.width == Width.Auto)
 

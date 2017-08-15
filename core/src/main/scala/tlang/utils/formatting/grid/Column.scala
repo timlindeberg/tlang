@@ -1,7 +1,7 @@
 package tlang.utils.formatting.grid
 
 import tlang.utils.Extensions._
-import tlang.utils.formatting.AnsiWordWrapper
+import tlang.utils.formatting.WordWrapper
 
 import scala.collection.mutable.ListBuffer
 
@@ -53,8 +53,9 @@ trait Alignment {
       throw new IllegalArgumentException(s"Cannot align text within a space smaller than 1: $width")
 
     val textWidth = text.charCount
-    if (textWidth > width)
+    if (textWidth > width) {
       throw new IllegalArgumentException(s"Cannot align text '$text' in the given space: $textWidth > $width")
+    }
 
     align(text, width - textWidth, fill)
   }
@@ -105,7 +106,7 @@ object OverflowHandling {
   }
 
   case object Wrap extends OverflowHandling {
-    private val wordWrapper = AnsiWordWrapper()
+    private val wordWrapper = WordWrapper()
     def handle(line: String, width: Int): List[String] = wordWrapper(line, width)
   }
 
@@ -125,25 +126,25 @@ object OverflowHandling {
       if (width <= TruncationWidth)
         return s"$TruncationChar" * width
 
-      var ansiChars = 0
-      var lastAnsi = ""
+      var resetAnsi = false
       var i = 0
+      var len = 0
       while (i < line.length) {
-        val c = line(i)
-        c match {
+        if (len == width - TruncationWidth) {
+          val truncated = line.substring(0, i)
+          if (resetAnsi)
+            return truncated + Console.RESET + Truncation
+          return truncated + Truncation
+        }
+
+        line(i) match {
           case '\u001b' if line(i + 1) == '[' =>
             val endOfAnsi = line.indexOf('m', i + 1)
-            ansiChars += endOfAnsi - i + 1
-            lastAnsi = line.substring(i, endOfAnsi + 1)
+            val ansi = line.substring(i, endOfAnsi + 1)
+            resetAnsi = ansi != Console.RESET
             i = endOfAnsi
           case _                              =>
-            val visibleChars = i - ansiChars
-            if (visibleChars == width - TruncationWidth) {
-              val truncated = line.substring(0, i)
-              if (lastAnsi.isEmpty || lastAnsi == Console.RESET)
-                return truncated + Truncation
-              return truncated + Console.RESET + Truncation
-            }
+            len += 1
         }
         i += 1
       }

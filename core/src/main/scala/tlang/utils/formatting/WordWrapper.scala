@@ -5,36 +5,42 @@ import tlang.utils.Extensions._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class WordWrapper() {
+case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
 
 
-  val BreakChars  = "-/._\\;:()"
-  val WhiteSpaces = " \t"
-
+  val BreakCharacters = "-/.,_\\;:()[]{}"
+  val WhiteSpaces     = " \t"
 
   def apply(text: String, maxWidth: Int): List[String] = {
+    val lineBuffer: ListBuffer[String] = ListBuffer()
 
-    var currentColor: String = ""
-    var currentBGColor: String = ""
-    var SGRs = mutable.Set[String]()
-    var currentAnsi = ""
+    text.replaceAll("\r\n", "\n").split("\n", -1) foreach { wrap(_, maxWidth, lineBuffer) }
+
+    val lines = lineBuffer.toList
+    if (wrapAnsiColors) wrapAnsiFormatting(lineBuffer.toList) else lines
+  }
+
+  private def wrap(line: String, maxWidth: Int, lines: ListBuffer[String]): Unit = {
+    if (line.isEmpty) {
+      lines += ""
+      return
+    }
 
     var hasWrapped = false
 
-    var spaceStart = 0
-    var spaceLen = 0
-    var lineLen = 0
+    var (spaceLen, lineLen, wordLen) = (0, 0, 0)
     var wordStart = 0
-    var wordLen = 0
-    val lines: ListBuffer[String] = ListBuffer()
-    val currentLine = new StringBuilder(2 * maxWidth)
+    val currentLine = new StringBuilder(2 * maxWidth) // to make room for one line and hopefully some ANSI escape codes
 
     def addLine(): Unit = {
-      hasWrapped = true
+      if (lineLen == 0)
+        return
+
       lines += currentLine.toString
       currentLine.clear()
+
+      hasWrapped = true
       lineLen = 0
-      spaceLen = 0
     }
 
     def addWordToLine(word: String, len: Int) = {
@@ -45,7 +51,8 @@ case class WordWrapper() {
 
     def addSpacesToLine(len: Int): Int = {
       // If we're at the start of a line and already have wrapped we don't
-      // want to add any indentation
+      // want to add any spaces. We should only preserve indentation for the first
+      // line.
       if (lineLen == 0 && hasWrapped)
         return 0
 
@@ -56,56 +63,15 @@ case class WordWrapper() {
       numSpaces
     }
 
-
-    def updateAnsi(text: String, index: Int): Int = {
-      val endOfAnsi = text.indexOf('m', index + 1)
-      val ansiValues = text.subSequence(index + 2, endOfAnsi).toString
-
-      ansiValues.split(":").map(_.toList).foreach {
-        case '0' :: Nil                           =>
-          currentColor = ""
-          currentBGColor = ""
-          SGRs.clear()
-        case ('1' | '4') :: Nil                   => SGRs += s"\u001b[${ ansiValues }m"
-        case '3' :: c :: Nil if c in ('1' to '7') => currentColor = s"\u001b[${ ansiValues }m"
-        case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = s"\u001b[${ ansiValues }m"
-        case _                                    =>
-      }
-      // Guarantees the same order each time, for instance Bold will appear before Underline since [1m < [4m
-      currentAnsi = SGRs.toList.sorted.mkString + currentColor + currentBGColor
-      endOfAnsi
-    }
-
-    def findBreakpoint(word: String, widthAvailable: Int): (Int, Int) = {
-      var i = 0
-      var breakPoint = -1
-      var len = 0
-      while (i < word.length) {
-        text(i) match {
-          case '\u001b' if text(i + 1) == '[' =>
-            i = text.indexOf('m', i + 1)
-          case c                              =>
-            if (c in BreakChars)
-              breakPoint = i
-            len += 1
-            if (len == widthAvailable) {
-              if (breakPoint == -1) breakPoint = widthAvailable
-              return (breakPoint, len)
-            }
-        }
-        i += 1
-      }
-      (breakPoint, len)
-    }
-
-    var i = 0
-
-    def endOfWord(): Unit = {
+    // When reaching the end of a word (or the end of input) we need to determine
+    // whether we add the word to the current line, put it on the next line or
+    // split the word up
+    def endOfWord(endIndex: Int): Unit = {
       if (wordLen == 0)
         return
 
       // The word including potential ansi formatting
-      var word = text.substring(wordStart, i)
+      var word = line.substring(wordStart, endIndex)
       // The word fits on the line if we use one space
       if (lineLen + 1 + wordLen <= maxWidth) {
         val numSpaces = addSpacesToLine(wordLen)
@@ -130,43 +96,42 @@ case class WordWrapper() {
         val spaceLeft = if (lineLen == 0) maxWidth else maxWidth - lineLen - 1
         val (breakPoint, len) = findBreakpoint(word, spaceLeft)
         val restLen = wordLen - len
-        val (w, nextWord) = word.splitAt(breakPoint)
-        if (len <= spaceLeft) {
+        val (w, nextPart) = word.splitAt(breakPoint)
+        if (breakPoint == -1) {
+          // If we couldn't find a place to split the word we use the line as it is
+          addLine()
+        } else if (len <= spaceLeft) {
+          // The split word fits on the given line, add the split and then the line
           val numSpaces = addSpacesToLine(len)
           addWordToLine(w, len + numSpaces)
           addLine()
         } else {
+          // The split word does not fit on the line, add it first and add the split
+          // to the next line
           addLine()
           addWordToLine(w, len)
         }
         wordLen = restLen
-        word = nextWord
+        word = nextPart
       }
       if (wordLen > 0)
         addWordToLine(word, wordLen)
       wordLen = 0
     }
 
-    while (i < text.length) {
-      val c = text(i)
+    var i = 0
+    while (i < line.length) {
+      val c = line(i)
       c match {
-        case '\u001b' if text(i + 1) == '[' =>
-          // Update the current ansi colors and skip past the ansi characters
-          // They are not added towards the current length
-          i = updateAnsi(text, i)
-        case '\r' if text(i + 1) == '\n'    =>
-          addLine()
-          i += 1
-          hasWrapped = false
-        case '\n'                           =>
-          addLine()
-          hasWrapped = false
+        case '\u001b' if line(i + 1) == '[' =>
+          // Skip past ANSI characters since they are not added towards the word length
+          i = line.indexOf('m', i + 1)
         case c if c in WhiteSpaces          =>
-          endOfWord()
-          spaceLen += 1
-          while (text(i + 1) in WhiteSpaces) {
+          endOfWord(i)
+          spaceLen = if (c == '\t') tabSize else 1
+          while (i + 1 < line.length && (line(i + 1) in WhiteSpaces)) {
+            spaceLen += (if (line(i + 1) == '\t') tabSize else 1)
             i += 1
-            spaceLen += 1
           }
           wordStart = i + 1
         case _                              =>
@@ -174,11 +139,112 @@ case class WordWrapper() {
       }
       i += 1
     }
-    endOfWord()
-    if (currentLine.nonEmpty)
+
+    endOfWord(i)
+    if (lineLen > 0)
       addLine()
-    lines.toList
   }
 
+  // Locates a place to break the word up. If there exists any special characters in the string,
+  // or if there exists a place where the string goes from lowercase to uppercase it will break
+  // at the last such character otherwise it will break at the last possible character for the
+  // given width.
+  // Returns the break point index and the number of visible characters up to that point
+  private def findBreakpoint(word: String, widthAvailable: Int): (Int, Int) = {
+    if (widthAvailable <= 0)
+      return (-1, 0)
+
+    var i = 0
+    var breakPoint = -1
+    var breakLen = 0
+    var len = 0
+    while (i < word.length) {
+      word(i) match {
+        case '\u001b' if word(i + 1) == '[' =>
+          // Don't count the length of ANSI characters
+          i = word.indexOf('m', i + 1)
+        case c                              =>
+          len += 1
+
+          val isCamelCase = i + 1 < word.length && c.isLower && word(i + 1).isUpper
+          if ((c in BreakCharacters) || isCamelCase) {
+            breakPoint = i + 1
+            breakLen = len
+          }
+          if (len == widthAvailable)
+            return if (breakPoint == -1) (i + 1, len) else (breakPoint, breakLen)
+      }
+      i += 1
+    }
+    (breakPoint, 0)
+  }
+
+
+  private def wrapAnsiFormatting(lines: List[String]): List[String] = {
+    var SGRs = mutable.Set[Int]()
+    var color = -1
+    var BGColor = -1
+    var ansi = ""
+
+    def clearAnsi(): Unit = {
+      color = -1
+      BGColor = -1
+      SGRs.clear()
+    }
+
+    // Updates the current state of ANSI colors by looking at the ANSI escape
+    // code at line(index)
+    def updateFrom(line: String, startIndex: Int): Int = {
+      var i = startIndex
+      while (i < line.length && line(i) == '\u001b' && line(i + 1) == '[') {
+        val endOfAnsi = line.indexOf('m', i + 1)
+
+        val ansiValues = line.substring(i + 2, endOfAnsi).split(";").map(_.toInt)
+        ansiValues.foreach {
+          case 0                       => clearAnsi()
+          case v if v in (1 until 10)  => SGRs += v
+          case v if v in (30 until 40) => color = v
+          case v if v in (40 until 50) => BGColor = v
+          case _                       =>
+        }
+        // Guarantees the same order each time
+        val escapes = (color :: BGColor :: SGRs.toList)
+          .filter(_ != -1)
+          .sorted
+
+        ansi = if (escapes.isEmpty) "" else escapes.mkString("\u001b[", ";", "m")
+        i = endOfAnsi + 1
+      }
+      i
+    }
+
+    def updateAnsi(line: String): Unit = {
+      var i = 0
+      while (i < line.length) {
+        line(i) match {
+          case '\u001b' if line(i + 1) == '[' => i = updateFrom(line, i)
+          case _                              =>
+        }
+        i += 1
+      }
+    }
+
+    lines.map { line =>
+      var sb = new StringBuilder
+      if (line.startsWith("\u001b[")) {
+        // Make sure we don't repeat the previous ansi if it is immediately updated
+        val endOfAnsi = updateFrom(line, 0)
+        sb ++= ansi
+        sb ++= line.substring(endOfAnsi)
+      } else {
+        sb ++= ansi
+        sb ++= line
+      }
+      updateAnsi(line)
+      if (ansi.nonEmpty && !line.endsWith(Console.RESET))
+        sb ++= Console.RESET
+      sb.toString
+    }
+  }
 
 }

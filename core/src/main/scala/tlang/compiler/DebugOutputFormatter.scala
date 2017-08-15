@@ -1,6 +1,6 @@
 package tlang.compiler
 
-import cafebabe.StackTrace
+import cafebabe.CodegenerationStackTrace
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
 import tlang.utils.Extensions._
@@ -16,7 +16,7 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
   private val TabWidth    = 2
   private val HeaderColor = Bold + Blue
 
-  def printStackTraces(stackTraces: List[StackTrace]): Unit = {
+  def printStackTraces(stackTraces: List[CodegenerationStackTrace]): Unit = {
     val grid = makeGrid()
     stackTraces.foreach { stackTrace =>
       grid

@@ -42,21 +42,18 @@ object Extensions {
     (res, (t1 - t0) / 1000000000.0)
   }
 
-  def benchmark[T](name: String)(block: => T): T = {
-    val iterations = 10
-    (iterations - 1) times {
+  def benchmark[T](name: String, iterations: Int = 10)(block: => T): T = {
+    // Warmup
+    Math.round(iterations * 0.1) times {
       block
     }
 
-    var res: T = block
-    val times = (0 until iterations).map { _ =>
-      res = block
-      measureTime(block)._2
-    }.toList
-    println(s"Results for $name:")
-    println(times.map(t => f"   $t%.5f s").mkString("\n"))
-    println(f"Average time: ${ times.sum / iterations }%.5f s")
-    res
+    var time = 0.0
+    iterations times { time += measureTime(block)._2 }
+
+    time /= iterations
+    println(f"Average time for $name: $time%.5f s")
+    block
   }
 
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
@@ -64,7 +61,11 @@ object Extensions {
   }
 
   implicit class IntExtensions(val i: Int) extends AnyVal {
-    def times(f: => Unit): Unit = 1 to i foreach { _ => f }
+    def times[U](f: => U): Unit = (1 to i) foreach { _ => f }
+  }
+
+  implicit class LongExtensions(val i: Long) extends AnyVal {
+    def times[U](f: => U): Unit = (1 to i.toInt) foreach { _ => f }
   }
 
   implicit class RegexExtensions(r: Regex) {
@@ -77,6 +78,16 @@ object Extensions {
     def charCount: Int = {
       val str = clearAnsi
       str.codePointCount(0, str.length)
+    }
+
+    def ansiDebugString: String = {
+      str.toList
+        .map {
+          case '\u001b' => '�'
+          case c        => c
+        }
+        .map("'" + _ + "'")
+        .mkString(" ")
     }
 
     def takeChars(num: Int): String = {
@@ -146,7 +157,7 @@ object Extensions {
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
     def use(f: T => Unit): T = { val x = t; f(t); x }
     def print: T = { println(t); t }
-    def print(prefix: String): T = { println(prefix + ": " + t); t }
+    def print[U](f: T => U): T = { println(f(t)); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
     def in(set: Set[T]): Boolean = set.contains(t)
     def in(range: Range): Boolean = range.contains(t)

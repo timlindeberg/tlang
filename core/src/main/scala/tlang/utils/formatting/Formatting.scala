@@ -65,7 +65,7 @@ case class Formatting(
 
   /*------------------------------- Utilities -------------------------------*/
 
-  val wordWrapper           = AnsiWordWrapper()
+  val wordWrapper           = WordWrapper()
   val syntaxHighlighter     = SyntaxHighlighter(this)
   val stackTraceHighlighter = StackTraceHighlighter(this)
   val prettyPrinter         = PrettyPrinter(this)

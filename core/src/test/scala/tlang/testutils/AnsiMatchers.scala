@@ -1,6 +1,7 @@
 package tlang.testutils
 
 import org.scalatest.matchers.{MatchResult, Matcher}
+import tlang.utils.Extensions._
 
 // When comparing Strings with ansi colors the parser for IntelliJ:s test runner
 // breaks. Comparing lists of characters works a lot better and has the added benefit
@@ -10,22 +11,13 @@ trait AnsiMatchers {
 
   private def format(found: String, expected: String): String =
     s"""
-       |${ formatLines(found, "   Found") }
-       |${ formatLines(expected, "Expected") }""".stripMargin
+       |${ formatLine(expected, "Expected") }
+       |${ formatLine(found, "  Actual") }""".stripMargin
 
-  private def formatLines(s: String, name: String): String = {
-    val lines = s.split("\n")
-      .map { line =>
-        line.toList
-          .map {
-            case '\u001b' => '�'
-            case c        => c
-          }
-          .map("'" + _ + "'")
-          .mkString(" ")
-      }
 
-    val prefix = s"$name: "
+  private def formatLine(line: String, name: String, seperator: String = ": "): String = {
+    val lines = line.split("\n").map(l => if (l.isEmpty) "<empty>" else l.ansiDebugString)
+    val prefix = s"$name$seperator"
     val first = prefix + lines.head
     if (lines.length == 1)
       return first
@@ -51,19 +43,39 @@ trait AnsiMatchers {
 
     val Matched = "All strings matched"
 
-    def apply(foundStrings: Iterable[String]): MatchResult = {
-      val numExpected = expectedStrings.size
-      val numFound = foundStrings.size
-      if (numExpected != numFound)
-        return MatchResult(matches = false, s"Expected '$numExpected' strings, got '$numFound'", Matched)
+    private def errMessage(actual: Iterable[String], expected: Iterable[String]) = {
+      s"""|Expected '${ expected.size }' strings, found '${ actual.size }':
+          |${ formatResult(actual, expected) }
+           """.stripMargin
+    }
 
-      val (matches, onFailure) = foundStrings
+    private def formatResult(actual: Iterable[String], expected: Iterable[String]) = {
+      actual
+        .zipAll(expected, "-", "-")
+        .zipWithIndex
+        .map { case ((actual, expected), i) =>
+          val c = if (actual == expected) "✓" else "×  "
+          val num = i + 1
+          formatLine(actual, s"  Actual $num: $c  ", " ") + "\n" +
+            formatLine(expected, s"Expected $num: $c  ", " ")
+        }
+        .mkString("\n")
+    }
+
+    def apply(actualStrings: Iterable[String]): MatchResult = {
+      val numExpected = expectedStrings.size
+      val numFound = actualStrings.size
+      if (numExpected != numFound) {
+        return MatchResult(matches = false, errMessage(actualStrings, expectedStrings), Matched)
+      }
+
+      val (matches, failMessage) = actualStrings
         .zip(expectedStrings)
         .zipWithIndex
-        .find { case ((found, expected), _) => found != expected }
-        .map { case ((found, expected), i) => (false, s"String number ${ i + 1 } did not match:${ format(found, expected) }") }
+        .find { case ((actual, expected), _) => actual != expected }
+        .map { case ((actual, expected), i) => (false, s"String number ${ i + 1 } did not match:${ format(actual, expected) }") }
         .getOrElse((true, s""))
-      MatchResult(matches, onFailure, Matched)
+      MatchResult(matches, failMessage, Matched)
     }
 
   }
