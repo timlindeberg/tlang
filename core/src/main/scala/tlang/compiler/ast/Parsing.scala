@@ -4,6 +4,7 @@ package ast
 import tlang.Context
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
@@ -17,19 +18,19 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
-      val astBuilder = new ASTBuilder(ctx, tokens.toArray)
+      val astBuilder = Parser(ctx, tokens.toArray)
       astBuilder.compilationUnit
     }
 
   override def description(formatting: Formatting): String =
     "Parses the tokens produced by the lexing phase and generates an AST."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
 }
 
-object ASTBuilder {
+object Parser {
 
   val MaximumArraySize = 255
 
@@ -55,9 +56,13 @@ object ASTBuilder {
   )
 }
 
-class ASTBuilder(override val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
+case class Parser(val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
 
-  import ASTBuilder._
+  override val reporter  : Reporter   = ctx.reporter
+  override val formatting: Formatting = ctx.formatting
+
+
+  import Parser._
 
   // Remove comments and adjacant new line tokens
   tokens = tokens.filter(!_.isInstanceOf[COMMENTLIT])

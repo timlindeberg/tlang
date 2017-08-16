@@ -4,6 +4,7 @@ package lexer
 import java.math.BigInteger
 
 import tlang.Context
+import tlang.compiler.error.Reporter
 import tlang.compiler.lexer.Tokens._
 import tlang.utils.Extensions._
 import tlang.utils.Source
@@ -11,30 +12,33 @@ import tlang.utils.formatting.Formatting
 
 import scala.annotation.tailrec
 
+
 object Lexing extends CompilerPhase[Source, List[Token]] {
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
-      val lexer = new Lexer(ctx, source)
-      lexer()
+      val lexer = Lexer(ctx.reporter, ctx.formatting)
+      lexer(source)
     }
   }
 
   override def description(formatting: Formatting): String =
     "Lexes the input and produces tokens."
 
-  override def printDebugOutput(output: List[List[Token]], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printTokens(output)
+  override def printDebugOutput(output: List[List[Token]], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printTokens(phaseName, output)
 
 }
 
-class Lexer(override val ctx: Context, override val source: Source) extends LexerErrors {
+case class Lexer(override val reporter: Reporter, override val formatting: Formatting) extends LexerErrors {
 
   protected override var line   = 1
   protected override var column = 1
   protected          var indent = 0
 
-  def apply(): List[Token] = {
+  override var source: Source = _
+
+  def apply(source: Source): List[Token] = {
 
     @tailrec def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
       case '\n' :: _                  =>
@@ -97,6 +101,7 @@ class Lexer(override val ctx: Context, override val source: Source) extends Lexe
         readTokens(tail, token :: tokens)
     }
 
+    this.source = source
     val characters = stripReturnCarriage(source.text).toList
     val res = readTokens(characters, Nil).reverse
 

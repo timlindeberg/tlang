@@ -47,7 +47,8 @@ lazy val core = project
     metaMacroSettings,
     name := "T-Compiler",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+      "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+      "org.scalamock" %% "scalamock-scalatest-support" % "3.6.0" % Test,
       "com.google.code.findbugs" % "bcel-findbugs" % "6.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.ow2.asm" % "asm-all" % "5.1",

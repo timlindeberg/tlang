@@ -1,23 +1,47 @@
 package tlang.utils.formatting.grid
 
-import org.scalatest.{FlatSpec, Matchers}
-import tlang.testutils.AnsiMatchers._
-import tlang.utils.formatting.BoxStyles.Unicode
+import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
+import tlang.testutils.UnitSpec
+import tlang.utils.Extensions._
+import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle, NoLines, Unicode}
+import tlang.utils.formatting._
 import tlang.utils.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.utils.formatting.grid.Width.{Auto, Fixed, Percentage}
-import tlang.utils.formatting.{BoxStyles, Formatting}
 
-class GridSpec extends FlatSpec with Matchers {
+class GridSpec extends UnitSpec {
 
-  val DefaultMaxWidth   = 20
-  val DefaultFormatting = Formatting(Unicode, DefaultMaxWidth, useColor = false)
+  val DefaultMaxWidth = 20
+
+  def mockedFormatter(
+    width: Int = DefaultMaxWidth,
+    boxStyle: BoxStyle = Unicode,
+    wordWrapper: Option[WordWrapper] = None,
+    truncator: Option[Truncator] = None
+  ): Formatter = {
+    Formatter(
+      formatting = Formatting(boxStyle, width),
+      wordWrapper = wordWrapper.getOrElse(defaultMockedWordWrapper),
+      truncator = truncator.getOrElse(mock[Truncator]),
+      prettyPrinter = mock[PrettyPrinter],
+      treePrinter = mock[TreePrinter],
+      syntaxHighlighter = mock[SyntaxHighlighter],
+      stackTraceHighlighter = mock[StackTraceHighlighter]
+    )
+  }
+
+  // Default behaviour of the mocked word wrapper is to return the given line
+  private def defaultMockedWordWrapper =
+    mock[WordWrapper] use { wordWrapper =>
+      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
+    }
+
 
   behavior of "A Grid"
 
   it should "have correct grid size and attributes" in {
     val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))
-    val grid = Grid(DefaultFormatting)
+    val grid = Grid(mockedFormatter())
       .header("ABC")
       .row()
       .content("A")
@@ -94,7 +118,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "be initialized with a default row" in {
-    val grid = Grid(DefaultFormatting).content("ABC")
+    val grid = Grid(mockedFormatter()).content("ABC")
     grid should have size 1
     grid(0) should have size 1
     grid(0)(0).content shouldBe "ABC"
@@ -105,7 +129,7 @@ class GridSpec extends FlatSpec with Matchers {
   it should "have correct content" in {
 
     val sixTuple = ("A", "B", "C", "D", "E", "F")
-    val grid = Grid(DefaultFormatting.copy(lineWidth = 10000))
+    val grid = Grid(mockedFormatter(width = 10000))
       .row()
       .content("A")
       .row(Column, Column)
@@ -160,7 +184,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "be reset when calling clear" in {
-    val grid = Grid(DefaultFormatting.copy(lineWidth = 10000))
+    val grid = Grid(mockedFormatter(width = 10000))
       .row()
       .content("A")
       .row(Column, Column)
@@ -191,7 +215,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    var grid = Grid(DefaultFormatting)
+    var grid = Grid(mockedFormatter())
       .row()
       .content("A")
 
@@ -200,7 +224,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column(Width.Fixed(5)))
       .content("A")
 
@@ -209,7 +233,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌───┬──────────────┐
     // │ A │ B            │
     // └───┴──────────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column)
       .content("A", "B")
 
@@ -219,7 +243,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌────┬─────────────┐
     // │ AB │ C           │
     // └────┴─────────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column)
       .content("AB", "C")
 
@@ -228,7 +252,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌───┬──────────────┐
     // │ A │ BC           │
     // └───┴──────────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column)
       .content("A", "BC")
 
@@ -237,7 +261,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌───┬───┬───┬──────┐
     // │ A │ B │ C │ D    │
     // └───┴───┴───┴──────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column, Column, Column)
       .content("A", "B", "C", "D")
 
@@ -246,7 +270,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌────────┬─────────┐
     // │ ABC    │ DEF     │
     // └────────┴─────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column(Width.Percentage(0.5)), Column)
       .content("ABC", "DEF")
 
@@ -255,7 +279,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌──────────┬───────┐
     // │ ABC      │ D     │
     // └──────────┴───────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column(Width.Fixed(5)))
       .content("ABC", "D")
 
@@ -265,7 +289,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌────┬───────┬─────┐
     // │ AB │ D     │ DE  │
     // └────┴───────┴─────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column(Width.Fixed(5)), Column)
       .content("AB", "C", "DE")
 
@@ -274,7 +298,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌─────┬─────┬──────┐
     // │ A   │ B   │ C    │
     // └─────┴─────┴──────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)))
       .content("A", "B", "C")
 
@@ -283,7 +307,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌──────┬──────┬────┐
     // │ A    │ B    │ C  │
     // └──────┴──────┴────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column(Width.Fixed(4)), Column(Width.Fixed(4)), Column)
       .content("A", "B", "C")
 
@@ -292,7 +316,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ┌───────┬─────┬────┐
     // │ A     │ BCD │ E  │
     // └───────┴─────┴────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column(Width.Fixed(5)), Column, Column)
       .content("A", "BCD", "E")
 
@@ -303,7 +327,7 @@ class GridSpec extends FlatSpec with Matchers {
     // │ GHIJKL │ HIJKLMN │
     // │ MNO    │ O       │
     // └────────┴─────────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column)
       .content("ABCDEFGHIJKLMNO", "ABCDEFGHIJKLMNO")
 
@@ -314,7 +338,7 @@ class GridSpec extends FlatSpec with Matchers {
     // ├────┴┬──────┼─────┤
     // │ ABC │ 1234 │ DEF │
     // └─────┴──────┴─────┘
-    grid = Grid(DefaultFormatting)
+    grid = Grid(mockedFormatter())
       .row(Column, Column, Column)
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
@@ -324,8 +348,39 @@ class GridSpec extends FlatSpec with Matchers {
     grid(1).columnWidths should contain theSameElementsInOrderAs Seq(3, 4, 3)
   }
 
+  it should "should be able to accept the same column multiple times" in {
+    var grid = Grid(mockedFormatter())
+      .row(Column, Column)
+      .content("AB", "12345")
+
+    grid(0)(0).content shouldBe "AB"
+    grid(0)(1).content shouldBe "12345"
+
+    grid = Grid(mockedFormatter())
+      .row(CenteredColumn, CenteredColumn)
+      .content("AB", "12345")
+
+    grid(0)(0).content shouldBe "AB"
+    grid(0)(1).content shouldBe "12345"
+    grid(0)(0).alignment shouldBe Center
+    grid(0)(1).alignment shouldBe Center
+
+    val RightAlignedTruncatedColumn = Column(alignment = Right, overflowHandling = Truncate)
+
+    grid = Grid(mockedFormatter())
+      .row(RightAlignedTruncatedColumn, RightAlignedTruncatedColumn)
+      .content("AB", "12345")
+
+    grid(0)(0).content shouldBe "AB"
+    grid(0)(1).content shouldBe "12345"
+    grid(0)(0).alignment shouldBe Right
+    grid(0)(1).alignment shouldBe Right
+    grid(0)(0).overflowHandling shouldBe Truncate
+    grid(0)(1).overflowHandling shouldBe Truncate
+  }
+
   it should "render correctly with a single row" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row()
       .content("ABC")
       .toString shouldBe
@@ -335,7 +390,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with a centered text" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column(alignment = Center))
       .content("ABC")
       .toString shouldBe
@@ -345,7 +400,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with a right aligned text" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column(alignment = Right))
       .content("ABC")
       .toString shouldBe
@@ -355,7 +410,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with two columns" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column)
       .content("ABC", "DEF")
       .toString shouldBe
@@ -365,7 +420,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with two columns and fixed width and centered text" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column(Width.Fixed(3)), Column(alignment = Alignment.Center))
       .content("ABC", "DEF")
       .toString shouldBe
@@ -375,7 +430,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with multiple rows and columns" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column, Column)
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
@@ -387,7 +442,7 @@ class GridSpec extends FlatSpec with Matchers {
          |│ ABC │ 1234 │ DEF │
          |└─────┴──────┴─────┘""".stripMargin
 
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column)
       .content("ABC", "DEF")
       .row(Column, Column)
@@ -401,7 +456,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with fixed and auto column widths" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column(width = Fixed(2)), Column)
       .content("ABCDEFG", "12345", "HIJKMLN")
       .row(Column, Column, Column(width = Fixed(2)))
@@ -418,7 +473,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with different indentation" in {
-    Grid(DefaultFormatting.copy(lineWidth = 30))
+    Grid(mockedFormatter(width = 30))
       .indent(5)
       .row(Column, Column)
       .content("ABC", "DEF")
@@ -433,7 +488,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with a header" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .header("Header")
       .row(Column, Column, Column)
       .content("ABC", "DEFG", "HIJ")
@@ -447,7 +502,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with different box styles" in {
-    val grid = Grid(DefaultFormatting)
+    val grid = Grid(mockedFormatter())
       .header("Header")
       .row(Column, Column)
       .content("ABC", "DEF")
@@ -463,7 +518,7 @@ class GridSpec extends FlatSpec with Matchers {
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
 
-    grid.formatting(DefaultFormatting.copy(boxStyle = BoxStyles.NoLines)).toString shouldBe
+    grid.formatter(mockedFormatter(boxStyle = NoLines)).toString shouldBe
       """|
          |       Header
          |
@@ -472,7 +527,7 @@ class GridSpec extends FlatSpec with Matchers {
          |  ABC   DEF
          |""".stripMargin
 
-    grid.formatting(DefaultFormatting.copy(boxStyle = BoxStyles.Ascii)).toString shouldBe
+    grid.formatter(mockedFormatter(boxStyle = Ascii)).toString shouldBe
       """| ==================
          ||      Header      |
          ||==================|
@@ -484,21 +539,26 @@ class GridSpec extends FlatSpec with Matchers {
 
 
   it should "render correctly with ansi colors" in {
-    val formatting = DefaultFormatting.copy(useColor = true)
-    Grid(formatting)
+    Grid(mockedFormatter())
       .row(Column, Column)
       .content("\u001b[31mABC\u001b[0m", "\u001b[32mDEF\u001b[0m")
       .row(Column, Column)
       .content("A\u001b[1mB\u001b[0mC", "\u001b[4mD\u001b[0mEF")
-      .toString shouldBe
+      .toString should matchWithAnsi(
       s"""|┌─────┬────────────┐
           |│ \u001b[31mABC\u001b[0m │ \u001b[32mDEF\u001b[0m        │
           |├─────┼────────────┤
           |│ A\u001b[1mB\u001b[0mC │ \u001b[4mD\u001b[0mEF        │
           |└─────┴────────────┘""".stripMargin
-
-
-    Grid(formatting)
+    )
+    val wordWrapper = mock[WordWrapper]
+    mockCalls(wordWrapper.apply _,
+      ("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 16) -> List(
+        "\u001b[31mABCDEFGHIJKLMNOP\u001b[0m",
+        "\u001b[31mQRSTUVXYZ\u001b[0m"
+      )
+    )
+    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
       .row()
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m")
       .toString should matchWithAnsi(
@@ -509,9 +569,9 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with colored borders" in {
-    val formatting = DefaultFormatting.copy(useColor = true)
-    Grid(DefaultFormatting)
-      .borderColor(formatting.Red)
+    val f = mockedFormatter()
+    Grid(f)
+      .borderColor(f.formatting.Red)
       .row(Column, Column)
       .content("ABC", "DEF")
       .row(Column, Column)
@@ -525,7 +585,23 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with line wrapping" in {
-    Grid(DefaultFormatting)
+
+    var wordWrapper = mock[WordWrapper]
+    mockCalls(wordWrapper.apply _,
+      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z"),
+      ("ABCDEFGHIJKLMN", 3) -> List("ABC", "DEF", "GHI", "JKL", "MN"),
+      ("ABCDEF", 3) -> List("ABC", "DEF"),
+
+      ("ABCDEFGHIJ", 3) -> List("ABC", "DEF", "GHI", "J"),
+      ("ABCDEFGHIJKLMNOPQRS", 3) -> List("ABC", "DEF", "GHI", "JKL", "MNO", "PQR", "S"),
+      ("ABCD", 4) -> List("ABCD"),
+
+      ("ABCDEFGHIJKLMNOP", 3) -> List("ABC", "DEF", "GHI", "JKL", "MNO", "P"),
+      ("ABCDEFG", 3) -> List("ABC", "DEF", "G"),
+      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
+    )
+
+    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
       .row(Column, Column, Column)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "ABCDEF")
       .row(Column, Column, Column)
@@ -557,7 +633,16 @@ class GridSpec extends FlatSpec with Matchers {
          |│     │     │ Z    │
          |└─────┴─────┴──────┘""".stripMargin
 
-    Grid(DefaultFormatting.copy(lineWidth = 21))
+    wordWrapper = mock[WordWrapper]
+    mockCalls(wordWrapper.apply _,
+      ("ABCDEFGHIJKL", 1) -> List("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"),
+      ("ABCDEFGHI", 1) -> List("A", "B", "C", "D", "E", "F", "G", "H", "I"),
+      ("ABCDEF", 1) -> List("A", "B", "C", "D", "E", "F"),
+      ("ABC", 1) -> List("A", "B", "C"),
+      ("A", 1) -> List("A")
+    )
+
+    Grid(mockedFormatter(width = 21, wordWrapper = Some(wordWrapper)))
       .row(Column, Column, Column, Column, Column)
       .content("ABCDEFGHIJKL", "ABCDEFGHI", "ABCDEF", "ABC", "A")
       .toString shouldBe
@@ -578,7 +663,7 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with empty columns" in {
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column)
       .content("", "ABC")
       .toString shouldBe
@@ -586,7 +671,7 @@ class GridSpec extends FlatSpec with Matchers {
          |│   │ ABC          │
          |└───┴──────────────┘""".stripMargin.trim
 
-    Grid(DefaultFormatting)
+    Grid(mockedFormatter())
       .row(Column, Column, Column, Column)
       .content("", "ABC", "", "")
       .row()
@@ -606,7 +691,31 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with line wrapping and ansi colors" in {
-    Grid(DefaultFormatting)
+    val wordWrapper = mock[WordWrapper]
+    mockCalls(wordWrapper.apply _,
+      ("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m", 4) -> List(
+        "\u001b[31mABCD\u001b[0m",
+        "\u001b[32mEFGH\u001b[0m",
+        "\u001b[33mIJKL\u001b[0m",
+        "\u001b[34mMNOP\u001b[0m",
+        "\u001b[35mQRST\u001b[0m",
+        "\u001b[36mUVXY\u001b[0m",
+        "\u001b[37mZ\u001b[0m"
+      ),
+      ("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m", 3) -> List(
+        "\u001b[31mABC\u001b[0m",
+        "\u001b[31mD\u001b[32mEF\u001b[0m",
+        "\u001b[32mGH\u001b[33mI\u001b[0m",
+        "\u001b[33mJKL\u001b[0m",
+        "\u001b[34mMN\u001b[0m"
+      ),
+      ("AB\u001b[31mCDE\u001b[0mF", 3) -> List(
+        "AB\u001b[31mC\u001b[0m",
+        "\u001b[31mDE\u001b[0mF"
+      )
+    )
+
+    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
       .row(Column, Column, Column)
       .content("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m",
         "\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m",
@@ -625,10 +734,25 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with truncation" in {
-    Grid(DefaultFormatting)
-      .row(Column(overflowHandling = Truncate), Column(overflowHandling = Truncate), Column(overflowHandling = Truncate))
+    val truncator = mock[Truncator]
+    mockCalls(truncator.apply _,
+      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> "A...",
+      ("ABCDEFGHIJKLMN", 4) -> "A...",
+      ("AB", 2) -> "AB",
+
+      ("ABC", 3) -> "ABC",
+      ("ABCDEFGHIJKLMNOPQRS", 3) -> "...",
+      ("ABCD", 4) -> "ABCD",
+
+      ("ABCDEFGHIJKLMNOP", 3) -> "...",
+      ("ABC", 3) -> "ABC",
+      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> "A..."
+    )
+
+    Grid(mockedFormatter(truncator = Some(truncator)))
+      .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "AB")
-      .row(Column(overflowHandling = Truncate), Column(overflowHandling = Truncate), Column(overflowHandling = Truncate))
+      .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABC", "ABCDEFGHIJKLMNOPQRS", "ABCD")
       .content("ABCDEFGHIJKLMNOP", "ABC", "ABCDEFGHIJKLMNOPQRSTUVXYZ")
       .toString shouldBe
@@ -641,10 +765,25 @@ class GridSpec extends FlatSpec with Matchers {
   }
 
   it should "render correctly with truncation and ansi colors" in {
-    Grid(DefaultFormatting)
-      .row(Column(overflowHandling = Truncate), Column(overflowHandling = Truncate), Column(overflowHandling = Truncate))
+    val truncator = mock[Truncator]
+    mockCalls(truncator.apply _,
+      ("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) -> "\u001b[31mA\u001b[0m...",
+      ("ABCDEFGHIJKLMN", 4) -> "A...",
+      ("\u001b[32mAB\u001b[0m", 2) -> "\u001b[32mAB\u001b[0m",
+
+      ("ABC", 3) -> "ABC",
+      ("\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", 3) -> "...",
+      ("\u001b[34mABCD\u001b[0m", 4) -> "\u001b[34mABCD\u001b[0m",
+
+      ("ABCDEFGHIJKLMNOP", 3) -> "...",
+      ("ABC", 3) -> "ABC",
+      ("\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) -> "\u001b[35mA\u001b[0m..."
+    )
+
+    Grid(mockedFormatter(truncator = Some(truncator)))
+      .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", "ABCDEFGHIJKLMN", "\u001b[32mAB\u001b[0m")
-      .row(Column(overflowHandling = Truncate), Column(overflowHandling = Truncate), Column(overflowHandling = Truncate))
+      .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABC", "\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", "\u001b[34mABCD\u001b[0m")
       .content("ABCDEFGHIJKLMNOP", "ABC", "\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m")
       .toString should matchWithAnsi(
@@ -658,21 +797,21 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "throw when given content with improper dimension" in {
     intercept[IllegalArgumentException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row()
         .content("A", "B")
 
     }.getMessage should include("2 != 1")
 
     intercept[IllegalArgumentException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row(Column, Column, Column)
         .content("A", "B")
 
     }.getMessage should include("2 != 3")
 
     intercept[IllegalArgumentException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row(Column, Column, Column)
         .contents(List(("A", "B"), ("C", "D")))
 
@@ -681,7 +820,7 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "throw when line doesn't fit in column with OverflowHandling.Except" in {
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row(Column(overflowHandling = Except))
         .content("ABCDEFGHIJKLMNOPQRSTUVXYZ")
         .content("ABC")
@@ -692,44 +831,44 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "throw when columns cannot fit in the row" in {
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row(Column(width = Fixed(25)))
+      Grid(mockedFormatter()).row(Column(width = Fixed(25)))
 
     }.getMessage should include("29 > 20")
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row(Column(width = Percentage(0.9)), Column, Column)
+      Grid(mockedFormatter()).row(Column(width = Percentage(0.9)), Column, Column)
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row(Column(width = Percentage(0.9)), Column(width = Fixed(3)))
+      Grid(mockedFormatter()).row(Column(width = Percentage(0.9)), Column(width = Fixed(3)))
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row(Column, Column, Column, Column, Column)
+      Grid(mockedFormatter()).row(Column, Column, Column, Column, Column)
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row(Column(width = Fixed(5)), Column(width = Fixed(5)), Column)
+      Grid(mockedFormatter()).row(Column(width = Fixed(5)), Column(width = Fixed(5)), Column)
 
     }.getMessage should include("21 > 20")
   }
 
   it should "throw when adding a header once a rows been added" in {
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting).row().header("Header")
+      Grid(mockedFormatter()).row().header("Header")
     }
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .content("ABC")
         .header("Header")
     }
 
     intercept[IllegalStateException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row(Column, Column, Column, Column)
         .content("", "ABC", "", "")
         .row()
@@ -742,14 +881,14 @@ class GridSpec extends FlatSpec with Matchers {
 
   it should "throw when given contents other than a tuple" in {
     intercept[IllegalArgumentException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .contents(List(Nil))
 
     }.getMessage should include("Nil")
 
     // Column is a case class and there for implements Product
     intercept[IllegalArgumentException] {
-      Grid(DefaultFormatting)
+      Grid(mockedFormatter())
         .row(3)
         .contents(List(("1", "2", "3"), ("4", "5", "6"), Column))
 
@@ -811,58 +950,6 @@ class GridSpec extends FlatSpec with Matchers {
   it should "throw when given an invalid width" in {
     intercept[IllegalArgumentException] { Left("ABC", 0) }.getMessage should include("0")
     intercept[IllegalArgumentException] { Left("ABC", -25) }.getMessage should include("-25")
-  }
-
-
-  behavior of "Overflow handling"
-
-
-  it should "truncate regular text" in {
-    val text = "ABCDEFGHIJKLMNO" // 15 chars long
-    Truncate(text, 1).head shouldBe "."
-    Truncate(text, 2).head shouldBe ".."
-    Truncate(text, 3).head shouldBe "..."
-    Truncate(text, 4).head shouldBe "A..."
-    Truncate(text, 5).head shouldBe "AB..."
-    Truncate(text, 10).head shouldBe "ABCDEFG..."
-    Truncate(text, 14).head shouldBe "ABCDEFGHIJK..."
-    Truncate(text, 15).head shouldBe "ABCDEFGHIJKLMNO"
-    Truncate(text, 16).head shouldBe "ABCDEFGHIJKLMNO"
-  }
-
-  it should "truncate ansi colored text" in {
-    val text = "\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m" // 15 real chars long
-    Truncate(text, 1).head should matchWithAnsi(".")
-    Truncate(text, 2).head should matchWithAnsi("..")
-    Truncate(text, 3).head should matchWithAnsi("...")
-    Truncate(text, 4).head should matchWithAnsi("\u001b[32mA\u001b[0m...")
-    Truncate(text, 5).head should matchWithAnsi("\u001b[32mAB\u001b[0m...")
-    Truncate(text, 10).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mG\u001b[0m...")
-    Truncate(text, 14).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJK\u001b[0m...")
-    Truncate(text, 15).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m")
-    Truncate(text, 15).head should be theSameInstanceAs text
-    Truncate(text, 16).head should matchWithAnsi("\u001b[32mABC\u001b[33mDEF\u001b[34mGHI\u001b[35mJKL\u001b[36mMNO\u001b[0m")
-    Truncate(text, 16).head should be theSameInstanceAs text
-
-    Truncate("ABCDEF\u001b[32mGHIJ\u001b[0m", 9).head should matchWithAnsi("ABCDEF...")
-    Truncate("ABCDEF\u001b[32mGHIJK\u001b[0m", 10).head should matchWithAnsi("ABCDEF\u001b[32mG\u001b[0m...")
-    Truncate("\u001b[31mABCDEF\u001b[32mGHIJ\u001b[0m", 9).head should matchWithAnsi("\u001b[31mABCDEF\u001b[0m...")
-    Truncate("\u001b[31mABCDEF\u001b[0mGHIJ", 9).head should matchWithAnsi("\u001b[31mABCDEF\u001b[0m...")
-    Truncate("\u001b[31mABC\u001b[0mDEFGHIJ", 9).head should matchWithAnsi("\u001b[31mABC\u001b[0mDEF...")
-  }
-
-  it should "throw when given an invalid width" in {
-    intercept[IllegalArgumentException] { Except("ABC", 0) }.getMessage should include("0")
-    intercept[IllegalArgumentException] { Wrap("ABC", -25) }.getMessage should include("-25")
-    intercept[IllegalArgumentException] { Truncate("ABC", -1) }.getMessage should include("-1")
-  }
-
-  it should "throw when line doesn't fit with Except" in {
-    intercept[IllegalStateException] {
-      Except("ABCDEFGHIJKLMNOPQRSTUVXYZ", 20)
-
-    }.getMessage should (include("25 > 20") and include("ABCDEFGHIJKLMNOPQRSTUVXYZ"))
-
   }
 
 }

@@ -7,7 +7,7 @@ import tlang.utils.Positioned
 trait ImportErrors extends ErrorHandling {
 
 
-  def report(error: Error): Unit = ctx.reporter.report(error)
+  def report(error: Error): Unit = reporter.report(error)
 
   val ErrorLetters = "I"
 
@@ -28,7 +28,7 @@ trait ImportErrors extends ErrorHandling {
   }
 
   case class CantResolveExtensionsImport(imp: ExtensionImport, override val pos: Positioned) extends ImportError(2, pos) {
-    lazy val message = err"Cannot resolve extension import ${imp.writtenName}"
+    lazy val message = err"Cannot resolve extension import ${ imp.writtenName }"
   }
 
   case class DefaultImportDoesntExist(ignoredImport: String, override val pos: Positioned) extends ImportError(3, pos) {

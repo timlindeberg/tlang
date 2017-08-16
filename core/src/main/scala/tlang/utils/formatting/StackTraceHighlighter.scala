@@ -4,26 +4,14 @@ import java.io.{PrintWriter, StringWriter}
 
 import scala.util.parsing.combinator.RegexParsers
 
-case class StackTraceHighlighter(formatting: Formatting) extends RegexParsers {
-
-  import formatting._
-
-  private val TextColor = Bold
-  private val FileColor = Cyan + Bold
-  private val IdColor   = Red + Bold
-  private val MsgColor  = Yellow
-  private val Indent    = "   "
+case class StackTraceHighlighter(formatting: Formatting) {
 
   def apply(throwable: Throwable): String = apply(getStackTrace(throwable))
   def apply(stackTrace: String): String = {
     if (!formatting.useColor)
       return stackTrace
 
-    parseAll(StackTraceParser(), stackTrace) match {
-      case Success(res, _)      => res
-      case NoSuccess(msg, next) => parseError(msg, next)
-      case Failure(msg, next)   => parseError(msg, next)
-    }
+    StackTraceParser.parse(stackTrace)
   }
 
   private def getStackTrace(throwable: Throwable): String = {
@@ -33,36 +21,54 @@ case class StackTraceHighlighter(formatting: Formatting) extends RegexParsers {
     sw.toString
   }
 
-  private def parseError(msg: String, nxt: StackTraceHighlighter.this.Input) = {
-    val s = nxt.source
-    val offset = nxt.offset
 
-    throw new RuntimeException(
-      s"""
-         |Failed to parse stack trace.
-         |Message: $msg
-         |
+  // Having this inside an object let's us mock the StackTraceHighlighter class
+  object StackTraceParser extends RegexParsers {
+
+    import formatting._
+
+    private val TextColor = Bold
+    private val FileColor = Cyan + Bold
+    private val IdColor   = Red + Bold
+    private val MsgColor  = Yellow
+    private val Indent    = "   "
+
+    def parse(stackTrace: String) = {
+      parseAll(parser(), stackTrace) match {
+        case Success(res, _)      => res
+        case NoSuccess(msg, next) => parseError(msg, next)
+        case Failure(msg, next)   => parseError(msg, next)
+      }
+    }
+
+    private def parseError(msg: String, nxt: Input) = {
+      val s = nxt.source
+      val offset = nxt.offset
+
+      throw new RuntimeException(
+        s"""
+           |Failed to parse stack trace.
+           |Message: $msg
+           |
          |Parsed ($offset chars):
-         |------------------------------------------------------------
-         |${ s.subSequence(0, offset) }
-         |------------------------------------------------------------
-         |Remaining input:
-         |------------------------------------------------------------
-         |${ s.subSequence(offset, s.length) }
-         |------------------------------------------------------------
+           |------------------------------------------------------------
+           |${ s.subSequence(0, offset) }
+           |------------------------------------------------------------
+           |Remaining input:
+           |------------------------------------------------------------
+           |${ s.subSequence(offset, s.length) }
+           |------------------------------------------------------------
      """.stripMargin.trim)
-  }
+    }
 
-  object StackTraceParser {
-
-    def apply(): Parser[String] =
+    def parser(): Parser[String] =
       description ~ stackTraceLine.+ ~ suppressed.? ~
-      ("Caused by:" ~> description ~ stackTraceLine.+ ~ suppressed.?).* ^^ {
+        ("Caused by:" ~> description ~ stackTraceLine.+ ~ suppressed.?).* ^^ {
         case desc ~ stackPoses ~ more ~ rest =>
           formatStack(desc, stackPoses, more) +
-          rest.map { case desc ~ stackPoses ~ more =>
-            "\n" + TextColor("Caused by") + SymbolColor(":") + " " + formatStack(desc, stackPoses, more)
-          }.mkString
+            rest.map { case desc ~ stackPoses ~ more =>
+              "\n" + TextColor("Caused by") + SymbolColor(":") + " " + formatStack(desc, stackPoses, more)
+            }.mkString
       }
 
     // A description starts the stack trace eg.
@@ -113,8 +119,8 @@ case class StackTraceHighlighter(formatting: Formatting) extends RegexParsers {
 
     private def formatStack(desc: String, stackPoses: List[String], more: Option[String]) = {
       desc + "\n" +
-      stackPoses.map(Indent + _).mkString("\n") +
-      more.map(m => "\n" + Indent + m).getOrElse("")
+        stackPoses.map(Indent + _).mkString("\n") +
+        more.map(m => "\n" + Indent + m).getOrElse("")
     }
   }
 

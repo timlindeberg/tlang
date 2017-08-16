@@ -1,8 +1,8 @@
 package tlang.utils
 
-import org.scalatest.{FlatSpec, Matchers}
+import tlang.testutils.UnitSpec
 
-class MemoizeSpec extends FlatSpec with Matchers {
+class MemoizeSpec extends UnitSpec {
 
   it should "save the calculated value" in {
     val sleepTime = 10L

@@ -5,6 +5,7 @@ import tlang.Context
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
@@ -32,12 +33,12 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def description(formatting: Formatting): String =
     "Performs type checking and attaches types to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
-      val typeChecker = new TypeChecker(ctx, cu.imports, new MethodSymbol("", classDecl.getSymbol, None, Set()))
+      val typeChecker = TypeChecker(ctx.reporter, ctx.formatting, cu.imports, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
     }
 
@@ -46,12 +47,12 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
         methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
-      new TypeChecker(ctx, cu.imports, methodSymbol).tcMethod()
+      TypeChecker(ctx.reporter, ctx.formatting, cu.imports, methodSymbol).tcMethod()
     }
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
-    val typeChecker = new TypeChecker(ctx, cu.imports, emptyMethSym)
+    val typeChecker = TypeChecker(ctx.reporter, ctx.formatting, cu.imports, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
     typeChecker.checkTraitsAreImplemented(cu)
@@ -59,7 +60,9 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
-class TypeChecker(override val ctx: Context,
+case class TypeChecker(
+  override val reporter: Reporter,
+  override val formatting: Formatting,
   imports: Imports,
   currentMethodSymbol: MethodSymbol,
   methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
@@ -578,7 +581,7 @@ class TypeChecker(override val ctx: Context,
 
   private def inferTypeOfMethod(methodSymbol: MethodSymbol): Type = {
     if (methodSymbol.getType == TUntyped)
-      new TypeChecker(ctx, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+      TypeChecker(reporter, formatting, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
     methodSymbol.getType
   }
 

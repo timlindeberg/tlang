@@ -19,6 +19,8 @@ object Colors {
     "underlined" -> UNDERLINED
   )
 
+  val NoColor = Color("", isActive = false)
+
   val ColorNames: List[String] = ColorNameMap.keys.toList
 
   def getColor(color: String): Option[String] = {

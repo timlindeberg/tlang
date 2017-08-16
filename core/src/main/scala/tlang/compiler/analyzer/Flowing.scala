@@ -5,6 +5,7 @@ import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
@@ -16,7 +17,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     cus foreach { cu =>
       cu.classes foreach { clazz =>
-        val flowAnalyser = new FlowAnalyser(ctx, cu.imports)
+        val flowAnalyser = FlowAnalyser(ctx.reporter, ctx.formatting, cu.imports)
         flowAnalyser(clazz)
       }
     }
@@ -27,13 +28,16 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
     "Performs flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
 
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
 
 }
 
-class FlowAnalyser(override val ctx: Context, val imports: Imports) extends FlowAnalysisErrors {
+case class FlowAnalyser(
+  override val reporter: Reporter,
+  override val formatting: Formatting,
+  val imports: Imports) extends FlowAnalysisErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 

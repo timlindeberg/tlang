@@ -7,10 +7,10 @@ import tlang.utils.formatting.Formatting
 abstract class CompilerPhase[F, T] {
   self =>
 
-  val name: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  val phaseName: String = getClass.getSimpleName.toLowerCase
 
   def description(formatting: Formatting): String
-  def printDebugOutput(output: List[T], formatting: Formatting): Unit
+  def printDebugOutput(output: List[T], debugOutputFormatter: DebugOutputFormatter): Unit
   protected def run(ctx: Context)(v: List[F]): List[T]
 
   def andThen[G](thenn: CompilerPhase[T, G]): CompilerPhase[F, G] = new CompilerPhase[F, G] {
@@ -21,7 +21,7 @@ abstract class CompilerPhase[F, T] {
     }
 
     override def description(formatting: Formatting): String = ""
-    override def printDebugOutput(output: List[G], formatting: Formatting): Unit = {}
+    override def printDebugOutput(output: List[G], debugOutputFormatter: DebugOutputFormatter): Unit = {}
 
   }
 
@@ -32,8 +32,8 @@ abstract class CompilerPhase[F, T] {
       if (!ctx.executionTimes.contains(this))
         ctx.executionTimes += this -> time
 
-      if (name in ctx.printCodePhase)
-        printDebugOutput(output, ctx.formatting)
+      if (phaseName in ctx.printCodePhase)
+        printDebugOutput(output, ctx.debugOutputFormatter)
 
     }
     ctx.reporter.terminateIfErrors()

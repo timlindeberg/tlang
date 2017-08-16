@@ -9,7 +9,7 @@ import tlang.utils.Positioned
 trait NameAnalysisErrors extends ErrorHandling {
 
   def report(error: Error): Symbol = {
-    ctx.reporter.report(error)
+    reporter.report(error)
 
     error.pos match {
       case id: ClassID    => id.setSymbol(new ClassSymbol(ErrorMessage.ErrorName))

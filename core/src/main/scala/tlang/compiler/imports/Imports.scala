@@ -15,6 +15,9 @@ case class Imports(ctx: Context,
   classes: List[ClassDeclTree] = Nil
 ) extends ImportErrors {
 
+  override val reporter   = ctx.reporter
+  override val formatting = ctx.formatting
+
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
   private val shortToFull        = mutable.Map[String, String]()

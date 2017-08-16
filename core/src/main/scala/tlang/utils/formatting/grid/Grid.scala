@@ -3,16 +3,17 @@ package tlang.utils.formatting.grid
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting._
+import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ListBuffer
 
 
-case class Grid(var formatting: Formatting) {
+case class Grid(var formatter: Formatter) {
 
   private val rows: ListBuffer[Row] = ListBuffer()
   private var indent                = 1
-  private var borderColor           = formatting.NoColor
+  private var borderColor           = Colors.NoColor
   private var shouldTrim            = true
 
   private var _currentRow: Option[Row] = None
@@ -29,8 +30,8 @@ case class Grid(var formatting: Formatting) {
     _currentRow = None
   }
 
-  def formatting(formatting: Formatting): Grid = {
-    this.formatting = formatting
+  def formatter(formatter: Formatter): Grid = {
+    this.formatter = formatter
     this
   }
 
@@ -69,10 +70,10 @@ case class Grid(var formatting: Formatting) {
   def row(column: Column, moreColumns: Column*): Grid = {
     // This allows us to pass the Column object to receive a column with default values
     // That way we can write .row(Column, Column) instead of .row(Column(), Column())
-    val columns = (column :: moreColumns.toList) map {
-      case Column => Column.copy()
-      case c      => c
-    }
+    // Also, if we pass the same column multiple types. eg
+    // val rightColumn = Column(alignment = Right) and pass that multiple times.
+    // You also should not be able to pass a column with preexisting state.
+    val columns = (column :: moreColumns.toList) map { _.copy() use { _.lines.clear() } }
     row(columns)
   }
 
@@ -140,7 +141,7 @@ case class Grid(var formatting: Formatting) {
 
   def print(): Unit = println(toString)
 
-  override def toString: String = GridRenderer(formatting).render()
+  override def toString: String = GridRenderer(formatter).render()
 
   private def addTuple(tuple: Product): Grid = {
     val className = tuple.getClass.getName
@@ -168,7 +169,7 @@ case class Grid(var formatting: Formatting) {
   private def verifyRowWidth(row: Row) = {
     val columns = row.columns
 
-    val lineWidth = formatting.lineWidth
+    val lineWidth = formatter.formatting.lineWidth
     val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
 
     val neededWidth = indentAndBorderSize + columns
@@ -198,7 +199,7 @@ case class Grid(var formatting: Formatting) {
 
     private def spaceForContent(): Int = {
       val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
-      formatting.lineWidth - indentAndBorderSize
+      formatter.formatting.lineWidth - indentAndBorderSize
     }
 
     private val calculateColumnWidths: Memoized[Seq[Int]] = Memoize {
@@ -270,7 +271,9 @@ case class Grid(var formatting: Formatting) {
 
   }
 
-  case class GridRenderer(formatting: Formatting) {
+  case class GridRenderer(formatter: Formatter) {
+
+    private val formatting = formatter.formatting
 
     import formatting.boxStyle._
 
@@ -380,7 +383,9 @@ case class Grid(var formatting: Formatting) {
         .map { lines =>
           // Word wrap each line in each column
           val wrappedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
-            columns(columnIndex).overflowHandling(line, columnWidths(columnIndex))
+            val width = columnWidths(columnIndex)
+            val method = columns(columnIndex).overflowHandling
+            handleOverflow(line, width, method)
           }
           val maxNumLines = wrappedLines.map(_.length).max
 
@@ -405,6 +410,19 @@ case class Grid(var formatting: Formatting) {
         .mkString("\n")
       sb ++= "\n"
     }
+
+    private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling) = {
+      overflowHandling match {
+        case Except   =>
+          val lineWidth = line.charCount
+          if (lineWidth > width)
+            throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
+          line :: Nil
+        case Wrap     => formatter.wordWrapper(line, width)
+        case Truncate => formatter.truncator(line, width) :: Nil
+      }
+    }
+
 
     private def trimRight(s: String) = if (shouldTrim) s.rightTrimWhiteSpaces else s
   }

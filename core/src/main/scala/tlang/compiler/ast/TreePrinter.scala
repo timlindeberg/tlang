@@ -15,21 +15,22 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
   import formatting._
   import formatting.boxStyle._
 
-  private val Indent       = List.fill(spacing)(' ')
-  private val Whitespace   = ' ' :: Indent
-  private val Continuation = │.head :: Indent
-  private val Missing      = Red(Bold(Cross))
 
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
   def apply(t: Tree): List[(String, String, String)] = {
+    val Indent = List.fill(spacing)(' ')
+    val Continuation = │.head :: Indent
+    val Whitespace = ' ' :: Indent
+
     symbolId = 0
     symbolMap = new java.util.IdentityHashMap[Symbol, (Int, Color)].asScala
 
     var first = true
     val lines: ListBuffer[(String, String, String)] = ListBuffer()
     val sb = new StringBuilder
+
 
     def printTree(tree: Tree, stack: List[Char]): Unit = {
       def addLine() = {
@@ -83,6 +84,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     Bold(t.getClass.getSimpleName) + (if (content.nonEmpty) Bold("(") + content + Bold(")") else "")
   }
 
+
   private def typeContent(t: Tree): String = t match {
     case typed: Typed if typed.getType != TUntyped =>
       val tpe = typed.getType
@@ -92,7 +94,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
         .replaceAll("\\$ERROR", "Error")
 
       color(s)
-    case _: Typed                                  => Missing
+    case _: Typed                                  => Red(Bold(Cross))
     case _                                         => ""
   }
 
@@ -107,7 +109,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
       }
       val symbolLetter = getSymbolLetter(symbol)
       fullColor(symbolLetter + id)
-    case _: Symbolic[_]                              => Missing
+    case _: Symbolic[_]                              => Red(Bold(Cross))
     case _                                           => ""
   }
 

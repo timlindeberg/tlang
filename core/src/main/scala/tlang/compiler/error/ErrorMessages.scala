@@ -3,14 +3,15 @@ package tlang.compiler.error
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.Formatting
 import tlang.utils.formatting.grid.Grid
 
 import scala.collection.mutable
 
-case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: Int) {
+case class ErrorMessages(errorFormatter: ErrorFormatter, maxErrors: Int) {
 
-  import formatting._
+  val formatter = errorFormatter.formatter
+
+  import formatter.formatting._
 
   private var hitMaxWarnings = false
   private var hitMaxErrors   = false
@@ -60,21 +61,21 @@ case class ErrorMessages(formatting: Formatting, maxErrors: Int, errorContext: I
   }
 
   def formattedWarnings: String = {
-    val grid = Grid(formatting).header(warningHeader)
+    val grid = Grid(formatter).header(warningHeader)
 
     warnings.foreach { addToGrid(grid, _) }
     grid.toString
   }
 
   def formattedErrors: String = {
-    val grid = Grid(formatting).header(errorHeader)
+    val grid = Grid(formatter).header(errorHeader)
 
     errors.foreach { addToGrid(grid, _) }
     grid.toString
   }
 
   private def addToGrid(grid: Grid, error: ErrorMessage): Unit = {
-    val errorFormatter = ErrorFormatter(error, formatting, errorContext)
+    errorFormatter.setError(error)
 
     grid.row()
 

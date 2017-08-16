@@ -13,7 +13,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
   private val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val TestContext = Tester.getTestContext()
   private val TestImports = Imports(TestContext)
-  private val TypeChecker = new TypeChecker(TestContext, TestImports, MainMethod)
+  private val TypeChecker = new TypeChecker(TestContext.reporter, TestContext.formatting, TestImports, MainMethod)
 
 
   private val int    = new TypeConstructor(Int)
@@ -334,7 +334,7 @@ class OperatorTypeSpec extends FunSuite with Matchers {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         if (reporter.hasErrors) {
-          TestContext.reporter.messages.printErrors()
+          TestContext.reporter.printErrors()
         }
         assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }

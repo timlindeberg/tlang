@@ -3,7 +3,6 @@ package tlang.utils.formatting
 import java.io.File
 
 import tlang.Constants
-import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.options.Flags.LineWidth
 import tlang.utils.formatting.BoxStyles.BoxStyle
 import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
@@ -62,14 +61,6 @@ case class Formatting(
   val CommentColor     = Color(colorScheme.Comment, useColor)
   val SymbolColor      = Color(colorScheme.Symbol, useColor)
   val FileColor: Color = Bold + Magenta
-
-  /*------------------------------- Utilities -------------------------------*/
-
-  val wordWrapper           = WordWrapper()
-  val syntaxHighlighter     = SyntaxHighlighter(this)
-  val stackTraceHighlighter = StackTraceHighlighter(this)
-  val prettyPrinter         = PrettyPrinter(this)
-  val treePrinter           = TreePrinter(this)
 
   /*----------------------------- ASCII Variants ----------------------------*/
 

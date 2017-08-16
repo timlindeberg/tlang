@@ -4,20 +4,20 @@ import cafebabe.CodegenerationStackTrace
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.Formatter
 import tlang.utils.formatting.grid.Alignment.Center
 import tlang.utils.formatting.grid.OverflowHandling.Truncate
 import tlang.utils.formatting.grid.{Column, Grid}
 
-case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
+case class DebugOutputFormatter(formatter: Formatter) {
 
-  import formatting._
+  import formatter.formatting._
 
   private val TabWidth    = 2
   private val HeaderColor = Bold + Blue
 
-  def printStackTraces(stackTraces: List[CodegenerationStackTrace]): Unit = {
-    val grid = makeGrid()
+  def printStackTraces(phaseName: String, stackTraces: List[CodegenerationStackTrace]): Unit = {
+    val grid = makeGrid(phaseName)
     stackTraces.foreach { stackTrace =>
       grid
         .row(alignment = Center)
@@ -30,10 +30,8 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
     grid.print()
   }
 
-  def printTokens(allTokens: List[List[Token]]): Unit = {
-    import formatting._
-
-    val grid = makeGrid()
+  def printTokens(phaseName: String, allTokens: List[List[Token]]): Unit = {
+    val grid = makeGrid(phaseName)
 
     allTokens.foreach { tokens =>
       val source = tokens.head.source
@@ -53,21 +51,23 @@ case class DebugOutputFormatter(phaseName: String, formatting: Formatting) {
     grid.print()
   }
 
-  def printASTs(cus: List[CompilationUnit]): Unit = {
-    val grid = makeGrid()
+  def printASTs(phaseName: String, cus: List[CompilationUnit]): Unit = {
+    val grid = makeGrid(phaseName)
     cus.foreach { cu =>
       grid
         .row(alignment = Center)
         .content(formatFileName(cu.source.mainName))
         .row()
-        .content(prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
+        .content(formatter.prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(Column(overflowHandling = Truncate), Column, Column)
         .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
-        .contents(treePrinter(cu))
+        .contents(formatter.treePrinter(cu))
     }
     grid.print()
   }
 
-  private def makeGrid() = Grid(formatting).header(Bold("Output after ") + Blue(phaseName.capitalize))
+  private def makeGrid(phaseName: String) =
+    Grid(formatter)
+      .header(Bold("Output after ") + Blue(phaseName.capitalize))
 }

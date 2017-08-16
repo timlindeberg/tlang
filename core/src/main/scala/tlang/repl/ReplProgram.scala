@@ -43,9 +43,12 @@ object ReplProgram {
 
 class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
-
   import ReplProgram._
-  import ctx.formatting._
+
+  private val formatter  = ctx.formatter
+  private val formatting = formatter.formatting
+
+  import formatting._
 
   private val ClassName        = "REPL"
   private val ReplOutputMarker = "__ReplRes__"
@@ -98,9 +101,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
             case e: CompilationException      => Renderer.DrawCompileError(e.messages.getErrors)
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
-            case e: InvocationTargetException => Renderer.DrawFailure(stackTraceHighlighter(e.getCause), truncate = true)
+            case e: InvocationTargetException => Renderer.DrawFailure(formatter.stackTraceHighlighter(e.getCause), truncate = true)
             case e                            =>
-              val err = FailureColor("Internal compiler error: \n") + stackTraceHighlighter(e)
+              val err = FailureColor("Internal compiler error: \n") + formatter.stackTraceHighlighter(e)
               println(err)
               println("Internal state:")
               println(prettyPrinted)
@@ -139,7 +142,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     sb.toString.trimWhiteSpaces
   }
 
-  private def prettyPrinted: String = prettyPrinter(generateCompilationUnit() :: Nil).trimWhiteSpaces
+  private def prettyPrinted: String = formatter.prettyPrinter(generateCompilationUnit() :: Nil).trimWhiteSpaces
 
   private def prettyPrint(): Unit = {
     newStatements = Nil
@@ -156,7 +159,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     if (s.startsWith("val res") && s.contains("=")) {
       val split = s.split("=")
       if (split.length == 2)
-        return syntaxHighlighter(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
+        return formatter.syntaxHighlighter(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
     }
     Bold(Green(s.trim))
   }
@@ -194,8 +197,8 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
           case None             => (mainClass.methods, None)
         }
         extractClasses(classes) ++
-        extractMethods(methods) ++
-        extractStatements(stats)
+          extractMethods(methods) ++
+          extractStatements(stats)
 
       case None => extractClasses(parsedInput.classes)
     })
@@ -204,20 +207,20 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     classes ++= newClasses.map(clazz => clazz.tpe.toString -> clazz)
     newClasses map { clazz =>
-      Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
+      Bold("Defined ") + KeywordColor("class ") + formatter.syntaxHighlighter(clazz.tpe.toString)
     }
   }
 
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     methods ++= newMethods.map(meth => meth.signature -> meth)
     newMethods map { meth =>
-      Bold("Defined ") + KeywordColor("method ") + syntaxHighlighter(meth.signature)
+      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlighter(meth.signature)
     }
   }
 
   private def extractImports(imports: Imports): List[String] = {
     this.imports ++= imports
-    imports.imports map { imp => Bold("Imported ") + syntaxHighlighter(imp.name) }
+    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlighter(imp.name) }
   }
 
   private def extractStatements(stat: Option[StatTree]): List[String] = {
@@ -231,7 +234,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
     newStatements = stats
     stats.filterInstance[VarDecl] map { variable =>
-      Bold("Defined ") + KeywordColor("variable ") + syntaxHighlighter(variable.id.name)
+      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlighter(variable.id.name)
     }
   }
 
@@ -244,11 +247,11 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
       case block@Block(stats) if stats.nonEmpty =>
         stats.last match {
           case Block(newStats) if newStats.length > 2 &&
-                                  newStats.head == PrintMarker &&
-                                  newStats.last == PrintMarker =>
+            newStats.head == PrintMarker &&
+            newStats.last == PrintMarker =>
             newStatements = newStats.flatMap(convert)
             Block(stats.dropRight(1) ++ newStatements)
-          case _                                               => block
+          case _                         => block
         }
       case _                                    => super._transform(t)
     }

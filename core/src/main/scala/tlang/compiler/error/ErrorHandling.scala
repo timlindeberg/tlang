@@ -1,27 +1,28 @@
 package tlang.compiler.error
 
-import tlang.Context
 import tlang.utils.Positioned
+import tlang.utils.formatting.Formatting
 
 trait ErrorHandling {
 
-  def ctx: Context
+  def reporter: Reporter
+  def formatting: Formatting
   def replaceNames(str: String): String = str
 
   val nameSuggestor = new NameSuggestor
 
-  def report(warning: Warning): Unit = ctx.reporter.report(warning)
+  def report(warning: Warning): Unit = reporter.report(warning)
   def report(fatal: Fatal): Nothing = {
-    ctx.reporter.report(fatal)
+    reporter.report(fatal)
     // Reporter will throw an exception but this is here so the type can be Nothing
     throw new Exception
   }
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
-    private val formatting = ctx.formatting
+    private val _formatting = formatting
 
-    import formatting._
+    import _formatting._
 
     def err(args: Any*): String = {
       val strings = sc.parts.iterator

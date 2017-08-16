@@ -11,7 +11,7 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.compiler.options.{Flags, Options}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting._
 import tlang.utils.formatting.grid.Alignment.Center
 import tlang.utils.formatting.grid.Width.Percentage
 import tlang.utils.formatting.grid.{Column, Grid}
@@ -41,12 +41,15 @@ object Main extends MainErrors {
   def main(args: Array[String]) {
     val options = Options(args)
 
+    val formatting = options.formatting
+    val formatter = Formatter(formatting)
+
     if (args.isEmpty) {
-      print(printHelpInfo(options.formatting))
+      print(printHelpInfo(formatter))
       sys.exit(1)
     }
 
-    printHelp(options)
+    printHelp(formatter, options)
 
     if (!isValidTHomeDirectory(TDirectory))
       FatalInvalidTHomeDirectory(TDirectory, THome)
@@ -54,7 +57,8 @@ object Main extends MainErrors {
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
-    val ctx = createContext(options)
+
+    val ctx = createContext(options, formatter)
 
     if (options(Verbose)) printFilesToCompile(ctx)
 
@@ -62,13 +66,13 @@ object Main extends MainErrors {
 
     CodeGeneration.execute(ctx)(CUs)
 
-    ctx.reporter.messages.printWarnings()
+    ctx.reporter.printWarnings()
 
     if (options(Verbose))
       printExecutionTimes(ctx)
 
     if (options(Exec))
-      executeProgram(ctx, CUs)
+      executePrograms(ctx, CUs)
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -83,33 +87,35 @@ object Main extends MainErrors {
     }
   }
 
-  private def createContext(options: Options): Context = {
-    val formatting = options.formatting
+  private def createContext(options: Options, formatter: Formatter): Context = {
+
+    val errorFormatter = ErrorFormatter(formatter, options(ErrorContext))
+    val messages = ErrorMessages(errorFormatter, maxErrors = options(MaxErrors))
+    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(
         suppressWarnings = options(SuppressWarnings),
         warningIsError = options(WarningIsError),
-        formatting = formatting,
-        maxErrors = options(MaxErrors),
-        errorContext = options(ErrorContext)
+        messages = messages,
+        formatting = formatter.formatting
       ),
-      errorContext = options(ErrorContext),
+      formatter = formatter,
+      debugOutputFormatter = debugOutputFormatter,
       files = options.files,
       classPath = ClassPath.Default ++ options.classPaths,
       outDirs = options.outDirectories,
       printCodePhase = options(PrintOutput),
-      printInfo = options(Verbose),
-      ignoredImports = options(IgnoreDefaultImports),
-      formatting = formatting
+      ignoredImports = options(IgnoreDefaultImports)
     )
   }
 
   private def printFilesToCompile(ctx: Context) = {
-    val formatting = ctx.formatting
+    val formatting = ctx.formatter.formatting
     import formatting._
+
     val numFiles = ctx.files.size
     val end = if (numFiles > 1) "files" else "file"
-    val grid = Grid(formatting)
+    val grid = Grid(ctx.formatter)
       .header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
     val fileNames = ctx.files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
@@ -138,42 +144,42 @@ object Main extends MainErrors {
   }
 
   private def printExecutionTimes(ctx: Context) = {
-    import ctx.formatting._
+    val formatting = ctx.formatter.formatting
+    import formatting._
+
     val totalTime = ctx.executionTimes.values.sum
 
-    Grid(ctx.formatting)
+    Grid(ctx.formatter)
       .header(f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset")
       .row(2)
       .mapContent(CompilerPhases) { phase =>
         val time = ctx.executionTimes(phase)
-        (Blue(phase.name.capitalize), Green(f"$time%.2f$Reset") + " s")
+        (Blue(phase.phaseName.capitalize), Green(f"$time%.2f$Reset") + " s")
       }
       .print()
   }
 
   private def versionInfo = s"T-Compiler $VersionNumber"
 
-  private def printHelp(options: Options) = {
-    val formatting = options.formatting
-
+  private def printHelp(formatter: Formatter, options: Options) = {
     if (options(Version)) {
       print(versionInfo)
       sys.exit()
     }
 
     if (options(Phases)) {
-      print(phaseInfo(options.formatting))
+      print(phaseInfo(formatter))
       sys.exit()
     }
 
     val args = options(Help)
     if (args.contains("")) {
-      printHelpInfo(formatting)
+      printHelpInfo(formatter)
       sys.exit()
     }
 
     args.foreach(Flag.get(_) ifDefined { flag =>
-      printFlagInfo(flag, formatting)
+      printFlagInfo(flag, formatter)
     })
 
     if (args.nonEmpty) {
@@ -181,15 +187,17 @@ object Main extends MainErrors {
     }
   }
 
-  private def printFlagInfo(flag: Flag, formatting: Formatting) = {
-    Grid(formatting)
+  private def printFlagInfo(flag: Flag, formatter: Formatter) = {
+    val formatting = formatter.formatting
+    Grid(formatter)
       .header(flag.flagName(formatting))
       .row()
-      .content(flag.extendedDescription(formatting))
+      .content(flag.extendedDescription(formatter))
       .print()
   }
 
-  private def printHelpInfo(formatting: Formatting) = {
+  private def printHelpInfo(formatter: Formatter) = {
+    val formatting = formatter.formatting
     import formatting._
 
     val tcomp = Green("tcomp")
@@ -197,19 +205,21 @@ object Main extends MainErrors {
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))
 
-    Grid(formatting)
+    Grid(formatter)
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
-      .mapContent(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatting)) }
+      .mapContent(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatter)) }
       .toString
   }
 
-  private def phaseInfo(formatting: Formatting) = {
+  private def phaseInfo(formatter: Formatter) = {
+    val formatting = formatter.formatting
     import formatting._
-    Grid(formatting)
+
+    Grid(formatter)
       .header(Bold(s"Phases of the T-Compiler"))
       .row(2)
-      .mapContent(CompilerPhases) { phase => (Magenta(phase.name.capitalize), phase.description(formatting)) }
+      .mapContent(CompilerPhases) { phase => (Magenta(phase.phaseName.capitalize), phase.description(formatting)) }
       .toString
   }
 
@@ -243,8 +253,9 @@ object Main extends MainErrors {
 
   }
 
-  private def executeProgram(ctx: Context, cus: List[CompilationUnit]): Unit = {
-    import ctx.formatting._
+  private def executePrograms(ctx: Context, cus: List[CompilationUnit]): Unit = {
+    val formatting = ctx.formatter.formatting
+    import formatting._
 
     val mainMethods = cus.flatMap(_.classes.flatMap(_.methods.filter(_.isMain)))
     if (mainMethods.isEmpty) {
@@ -252,13 +263,13 @@ object Main extends MainErrors {
       return
     }
 
-    val grid = Grid(ctx.formatting)
+    val grid = Grid(ctx.formatter)
       .header(Bold(if (mainMethods.size > 1) "Executing programs" else "Executing program"))
 
     val programExecutor = ProgramExecutor()
     cus.foreach { cu =>
       val file = cu.source.asInstanceOf[FileSource].file
-      val output = syntaxHighlighter(programExecutor(ctx, file))
+      val output = ctx.formatter.syntaxHighlighter(programExecutor(ctx, file))
       grid
         .row(alignment = Center)
         .content(formatFileName(file))

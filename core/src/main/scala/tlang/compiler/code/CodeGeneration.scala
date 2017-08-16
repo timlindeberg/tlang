@@ -36,8 +36,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   override def description(formatting: Formatting): String =
     "Generates bytecode that can run on the JVM."
 
-  override def printDebugOutput(output: List[CodegenerationStackTrace], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printStackTraces(output)
+  override def printDebugOutput(output: List[CodegenerationStackTrace], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printStackTraces(phaseName, output)
 
   case class GenerateClassResult(files: Set[String], stackTraces: List[CodegenerationStackTrace])
 

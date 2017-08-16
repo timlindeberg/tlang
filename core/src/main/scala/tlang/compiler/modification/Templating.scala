@@ -4,6 +4,7 @@ package modification
 import tlang.Context
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Formatting
@@ -23,8 +24,8 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def description(formatting: Formatting): String =
     "Imports template classes and instantiates templates from generic classes."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
 }
 
@@ -43,7 +44,7 @@ case class TemplateModifier(ctx: Context) {
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
     cus foreach { cu =>
-      val templateClassGenerator = TemplateClassGenerator(ctx, cu, classSymbolLocator)
+      val templateClassGenerator = TemplateClassGenerator(ctx.reporter, ctx.formatting, cu, classSymbolLocator)
       templateClassGenerator()
     }
 
@@ -91,7 +92,11 @@ case class TemplateModifier(ctx: Context) {
     templateName -> s"$prefix::$templateName"
   }
 
-  case class TemplateClassGenerator(override val ctx: Context, cu: CompilationUnit, classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
+  case class TemplateClassGenerator(
+    override val reporter: Reporter,
+    override val formatting: Formatting,
+    cu: CompilationUnit,
+    classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
 
     override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
@@ -221,7 +226,7 @@ case class TemplateModifier(ctx: Context) {
           case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated)
-              TemplateClassGenerator(ctx, templateCU, classSymbolLocator).generateClass(newId)
+              TemplateClassGenerator(reporter, formatting, templateCU, classSymbolLocator).generateClass(newId)
 
             templateMap.get(newId) match {
               case Some(replacement) => replacement.copyAttributes(classId)

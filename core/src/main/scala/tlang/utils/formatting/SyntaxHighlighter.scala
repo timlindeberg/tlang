@@ -1,29 +1,24 @@
 package tlang.utils.formatting
 
-import tlang.Context
-import tlang.compiler.error.VoidReporter
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.lexer.{Token, Lexer}
+import tlang.compiler.lexer.{Lexer, Token}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.Colors._
 import tlang.utils.{Position, Positioned, StringSource}
 
 case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
 
-case class SyntaxHighlighter(formatting: Formatting) {
+case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
 
   import formatting._
 
-  val context = Context(VoidReporter(), Set())
 
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
     if (code.isEmpty || !formatting.useColor)
       return code
 
-    val source = StringSource(code, "")
-    val tokenizer = new Lexer(context, source)
-    val tokens = tokenizer()
+    val tokens = lexer(StringSource(code, ""))
 
     var line = 1
     var col = 1

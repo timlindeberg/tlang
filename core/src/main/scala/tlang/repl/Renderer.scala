@@ -3,7 +3,7 @@ package tlang.repl
 import akka.actor.{Actor, Props}
 import tlang.compiler.error._
 import tlang.repl.input.InputBuffer
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.Formatter
 import tlang.utils.formatting.grid.Grid
 
 object Renderer {
@@ -19,12 +19,14 @@ object Renderer {
   case class DrawSuccess(output: String, truncate: Boolean) extends RendererMessage
   case class DrawFailure(output: String, truncate: Boolean) extends RendererMessage
 
-  def props(formatting: Formatting, maxOutputLines: Int, terminal: ReplTerminal) =
-    Props(new Renderer(formatting, maxOutputLines, terminal))
+  def props(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLines: Int, terminal: ReplTerminal) =
+    Props(new Renderer(formatter, errorFormatter, maxOutputLines, terminal))
   val name = "renderer"
 }
 
-class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTerminal) extends Actor {
+class Renderer(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLines: Int, terminal: ReplTerminal) extends Actor {
+
+  private val formatting = formatter.formatting
 
   import Renderer._
   import formatting._
@@ -61,12 +63,12 @@ class Renderer(formatting: Formatting, maxOutputLines: Int, terminal: ReplTermin
       inputBox.render()
   }
 
-  private def newInputBox = new InputBox(formatting, maxOutputLines, terminal)
+  private def newInputBox = new InputBox(formatter, errorFormatter, maxOutputLines, terminal)
 
   private def drawWelcomeBox(): Unit = {
     val commands = List("help", "quit", "print").map(command => Magenta(s":$command"))
     val commandList = formatting.makeList(commands)
-    val grid = Grid(formatting)
+    val grid = Grid(formatter)
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
       .row()
       .content(

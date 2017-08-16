@@ -2,12 +2,15 @@ package tlang.compiler.error
 
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
-import tlang.compiler.options.Flags
 import tlang.utils.formatting.{Formatting, SimpleFormatting}
 
 trait Reporter {
 
-  def messages: ErrorMessages
+  def printWarnings(): Unit
+  def printErrors(): Unit
+  def getWarnings: List[ErrorMessage]
+  def getErrors: List[ErrorMessage]
+
   def report(error: ErrorMessage): Unit
   def clear(): Unit
   def terminateIfErrors(): Unit
@@ -18,12 +21,16 @@ trait Reporter {
 
 case class VoidReporter() extends Reporter {
 
-  override val messages     = ErrorMessages(SimpleFormatting, -1, 2)
-  private  var _hasErrors   = false
-  private  var _hasWarnings = false
+  private var _hasErrors   = false
+  private var _hasWarnings = false
+
+  override def printWarnings(): Unit = {}
+  override def printErrors(): Unit = {}
+  override def getWarnings: List[ErrorMessage] = Nil
+  override def getErrors: List[ErrorMessage] = Nil
 
   override def report(error: ErrorMessage): Unit = error match {
-    case _: Fatal   => throw new CompilationException(messages)
+    case _: Fatal   => throw new CompilationException(null)
     case _: Warning => _hasWarnings = true
     case _          => _hasErrors = true
   }
@@ -36,18 +43,16 @@ case class VoidReporter() extends Reporter {
 
   override def hasErrors: Boolean = _hasErrors
   override def hasWarnings: Boolean = _hasWarnings
+
 }
 
 
 case class DefaultReporter(
-  suppressWarnings: Boolean = false,
-  warningIsError: Boolean = false,
+  messages: ErrorMessages,
   formatting: Formatting = SimpleFormatting,
-  maxErrors: Int = Flags.MaxErrors.defaultValue,
-  errorContext: Int = Flags.ErrorContext.defaultValue
+  suppressWarnings: Boolean = false,
+  warningIsError: Boolean = false
 ) extends Reporter {
-
-  var messages: ErrorMessages = ErrorMessages(formatting, maxErrors, errorContext)
 
   def report(error: ErrorMessage): Unit = {
     error match {
@@ -55,7 +60,9 @@ case class DefaultReporter(
         messages += error
         throwException()
       case w: Warning =>
-        if (warningIsError) messages.errors += w else messages.warnings += w
+        if (!suppressWarnings) {
+          if (warningIsError) messages.errors += w else messages.warnings += w
+        }
       case _          =>
     }
 
@@ -65,7 +72,7 @@ case class DefaultReporter(
     messages += error
   }
 
-  def clear(): Unit = messages = ErrorMessages(formatting, maxErrors, errorContext)
+  def clear(): Unit = messages.clear()
 
   def terminateIfErrors(): Unit =
     if (hasErrors)
@@ -73,6 +80,11 @@ case class DefaultReporter(
 
   def hasErrors: Boolean = messages.errors.nonEmpty
   def hasWarnings: Boolean = messages.warnings.nonEmpty
+
+  override def printWarnings(): Unit = messages.printWarnings()
+  override def printErrors(): Unit = messages.printErrors()
+  override def getWarnings: List[ErrorMessage] = messages.getWarnings
+  override def getErrors: List[ErrorMessage] = messages.getErrors
 
   private def throwException() = {
     val exception = new CompilationException(messages)

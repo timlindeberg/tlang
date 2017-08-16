@@ -34,10 +34,10 @@ trait ErrorTester extends Tester {
       fail("Test failed: No errors or warnings!")
 
     if (PrintErrors)
-      reporter.messages.printWarnings()
+      reporter.printWarnings()
 
     val expectedWarnings = parseSolutions(file)
-    val warningCodes = getErrorCodes(reporter.messages.getWarnings)
+    val warningCodes = getErrorCodes(reporter.getWarnings)
     assertCorrect(warningCodes, expectedWarnings)
   }
 

@@ -10,7 +10,7 @@ trait TemplateErrors extends ErrorHandling {
   //---------------------------------------------------------------------------------------
 
 
-  def report(error: Error): Unit = ctx.reporter.report(error)
+  def report(error: Error): Unit = reporter.report(error)
 
   abstract class TemplateError(code: Int, pos: Positioned) extends Error("G", code, pos)
 

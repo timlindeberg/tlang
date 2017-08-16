@@ -9,7 +9,7 @@ trait ParserErrors extends ErrorHandling {
 
   protected def lastToken: Token
 
-  protected def report(error: Error): Unit = ctx.reporter.report(error)
+  protected def report(error: Error): Unit = reporter.report(error)
 
   val ErrorLetters = "P"
   abstract class ParserFatal(code: Int, pos: Positioned) extends Fatal(ErrorLetters, code, pos)
@@ -32,7 +32,7 @@ trait ParserErrors extends ErrorHandling {
 
   case class InvalidArrayDimension(size: Int, override val pos: Positioned) extends ParserError(2, pos) {
     lazy val message: String = {
-      val maxArraySize = ASTBuilder.MaximumArraySize
+      val maxArraySize = Parser.MaximumArraySize
       err"Invalid array dimension: $size, $maxArraySize is the maximum dimension of an array."
     }
   }

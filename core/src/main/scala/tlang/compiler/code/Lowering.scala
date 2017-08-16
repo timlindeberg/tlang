@@ -22,8 +22,8 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def description(formatting: Formatting): String =
     "Lowers the tree to simpler components. Performs desugaring."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
 }
 

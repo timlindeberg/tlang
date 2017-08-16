@@ -5,6 +5,7 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
@@ -19,7 +20,7 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
     // Add all symbols first so each program instance can access
     // all symbols in binding
     val analyzers = cus map { cu =>
-      val nameAnalyzer = new NameAnalyser(ctx, cu, globalScope)
+      val nameAnalyzer = NameAnalyser(ctx.reporter, ctx.formatting, cu, globalScope)
       nameAnalyzer.addSymbols()
       nameAnalyzer
     }
@@ -38,12 +39,16 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def description(formatting: Formatting): String =
     "Resolves names and attaches symbols to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], formatting: Formatting): Unit =
-    DebugOutputFormatter(name, formatting).printASTs(output)
+  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
+    debugOutputFormatter.printASTs(phaseName, output)
 
 }
 
-class NameAnalyser(override val ctx: Context, cu: CompilationUnit, val globalScope: GlobalScope) extends NameAnalysisErrors {
+case class NameAnalyser(
+  override val reporter: Reporter,
+  override val formatting: Formatting,
+  cu: CompilationUnit,
+  globalScope: GlobalScope) extends NameAnalysisErrors {
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 

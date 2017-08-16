@@ -3,12 +3,18 @@ package tlang.repl
 import tlang.compiler.error.{ErrorFormatter, ErrorMessage}
 import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.formatting.Colors.Color
+import tlang.utils.formatting._
 import tlang.utils.formatting.grid.Grid
-import tlang.utils.formatting.{Formatting, Marking}
 
 import scala.concurrent.duration.FiniteDuration
 
-class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTerminal) {
+class InputBox(
+  formatter: Formatter,
+  errorFormatter: ErrorFormatter,
+  maxOutputLines: Int,
+  terminal: ReplTerminal) {
+
+  private val formatting = formatter.formatting
 
   import formatting._
 
@@ -48,7 +54,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     cursor = inputBuffer.mainCursor
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    inputText = syntaxHighlighter(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
+    inputText = formatter.syntaxHighlighter(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
       .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()
@@ -73,10 +79,10 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
     header = ErrorColor("Error")
 
     val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
-    inputText = syntaxHighlighter(inputText, markings).replaceAll("\t", TabReplacement)
+    inputText = formatter.syntaxHighlighter(inputText, markings).replaceAll("\t", TabReplacement)
 
     val errorLines = errors.map { error =>
-      val errorFormatter = ErrorFormatter(error, formatting, errorContextSize = 0)
+      errorFormatter.setError(error)
       (errorFormatter.position, errorFormatter.errorPrefix + error.message)
     }
 
@@ -87,7 +93,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   }
 
   def render(): Unit = {
-    val grid = Grid(formatting)
+    val grid = Grid(formatter)
       .header(header)
       .row()
       .content(inputText)
@@ -155,7 +161,7 @@ class InputBox(formatting: Formatting, maxOutputLines: Int, val terminal: ReplTe
   }
 
   private def truncate(output: String, color: Color): String = {
-    val wordWrapped = wordWrapper(output, formatting.lineWidth)
+    val wordWrapped = formatter.wordWrapper(output, formatting.lineWidth)
 
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)

@@ -1,9 +1,9 @@
 package tlang.utils.formatting
 
-import org.scalatest.{FlatSpec, Matchers}
 import tlang.testutils.AnsiMatchers._
+import tlang.testutils.UnitSpec
 
-class WordWrapperSpec extends FlatSpec with Matchers {
+class WordWrapperSpec extends UnitSpec {
 
 
   val wordWrapper = WordWrapper()

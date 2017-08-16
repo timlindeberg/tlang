@@ -3,13 +3,13 @@ package tlang.compiler.options
 import java.io.File
 import java.nio.file.{InvalidPathException, Paths}
 
+import tlang.Constants
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
 import tlang.utils.Extensions._
 import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle}
 import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
-import tlang.utils.formatting.{BoxStyles, Colors, Formatting}
-import tlang.{Constants, utils}
+import tlang.utils.formatting._
 
 import scala.collection.mutable
 import scala.tools.jline.TerminalFactory
@@ -122,11 +122,11 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   val boxStyle: BoxStyle = {
-    val formattings = flagArgs(Flags.Formatting)
+    val formattings = flagArgs(Flags.FormattingStyle)
     val boxNames = BoxStyles.All.map(_.styleName.toLowerCase)
     formattings.foreach { formatting =>
       if (!(formatting in boxNames))
-        FatalInvalidArgToFlag(Flags.Formatting, formatting, boxNames)
+        FatalInvalidArgToFlag(Flags.FormattingStyle, formatting, boxNames)
     }
     formattings.headOption
       .flatMap(formatting => BoxStyles.All.find(_.styleName.toLowerCase == formatting))
@@ -159,15 +159,14 @@ case class Options(arguments: Array[String]) extends MainErrors {
       TerminalFactory.create().getWidth
   }
 
-  val formatting: Formatting =
-    utils.formatting.Formatting(
-      boxStyle, lineWidth, colorScheme,
-      useColor = !apply(Flags.NoColor),
-      asciiOnly = boxStyle == Ascii
-    )
+  val formatting: Formatting = Formatting(
+    boxStyle, lineWidth, colorScheme,
+    useColor = !apply(Flags.NoColor),
+    asciiOnly = boxStyle == Ascii
+  )
 
   private def verifyOutputPhases(phases: mutable.Set[String]): Unit = {
-    val validPhases = Main.CompilerPhases.map(_.name)
+    val validPhases = Main.CompilerPhases.map(_.phaseName)
     phases.foreach { phase =>
       if (!(phase in validPhases))
         FatalInvalidArgToFlag(PrintOutput, phase, validPhases)

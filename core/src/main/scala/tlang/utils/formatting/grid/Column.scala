@@ -1,7 +1,6 @@
 package tlang.utils.formatting.grid
 
 import tlang.utils.Extensions._
-import tlang.utils.formatting.WordWrapper
 
 import scala.collection.mutable.ListBuffer
 
@@ -12,6 +11,9 @@ object ColumnDefaults {
 }
 
 object Column extends Column(ColumnDefaults.width, ColumnDefaults.alignment, ColumnDefaults.overflowHandling)
+object CenteredColumn extends Column(ColumnDefaults.width, Alignment.Center, ColumnDefaults.overflowHandling)
+object TruncatedColumn extends Column(ColumnDefaults.width, ColumnDefaults.alignment, OverflowHandling.Truncate)
+
 case class Column(
   width: Width = ColumnDefaults.width,
   alignment: Alignment = ColumnDefaults.alignment,
@@ -84,71 +86,10 @@ object Alignment {
   }
 }
 
-trait OverflowHandling {
-  def apply(line: String, width: Int): List[String] = {
-    if (width < 1)
-      throw new IllegalArgumentException(s"Cannot handle overflow of text within a space smaller than 1: $width")
-    handle(line, width)
-  }
-
-  def handle(line: String, width: Int): List[String]
-
-}
+trait OverflowHandling
 object OverflowHandling {
 
-  case object Except extends OverflowHandling {
-    def handle(line: String, width: Int): List[String] = {
-      val lineWidth = line.charCount
-      if (lineWidth > width)
-        throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
-      List(line)
-    }
-  }
-
-  case object Wrap extends OverflowHandling {
-    private val wordWrapper = WordWrapper()
-    def handle(line: String, width: Int): List[String] = wordWrapper(line, width)
-  }
-
-  case object Truncate extends OverflowHandling {
-
-    private val TruncationChar : Char   = '.'
-    private val TruncationWidth: Int    = 3
-    private val Truncation     : String = s"$TruncationChar" * TruncationWidth
-
-    def handle(line: String, width: Int): List[String] = List(truncate(line, width))
-
-    private def truncate(line: String, width: Int): String = {
-      val lineWidth = line.charCount
-      if (lineWidth <= width)
-        return line
-
-      if (width <= TruncationWidth)
-        return s"$TruncationChar" * width
-
-      var resetAnsi = false
-      var i = 0
-      var len = 0
-      while (i < line.length) {
-        if (len == width - TruncationWidth) {
-          val truncated = line.substring(0, i)
-          if (resetAnsi)
-            return truncated + Console.RESET + Truncation
-          return truncated + Truncation
-        }
-
-        line(i) match {
-          case '\u001b' if line(i + 1) == '[' =>
-            val endOfAnsi = line.indexOf('m', i + 1)
-            val ansi = line.substring(i, endOfAnsi + 1)
-            resetAnsi = ansi != Console.RESET
-            i = endOfAnsi
-          case _                              =>
-            len += 1
-        }
-        i += 1
-      }
-      line
-    }
-  }
+  case object Except extends OverflowHandling
+  case object Wrap extends OverflowHandling
+  case object Truncate extends OverflowHandling
 }

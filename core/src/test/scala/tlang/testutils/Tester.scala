@@ -2,15 +2,16 @@ package tlang.testutils
 
 import java.io.File
 
-import org.scalatest.{FunSuite, Matchers, ParallelTestExecution}
-import tlang.compiler.CompilerPhase
+import org.scalatest.{FunSuite, Matchers, ParallelTestExecution, Tag}
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
+import tlang.compiler.options.Flags.{ErrorContext, MaxErrors}
+import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
 import tlang.utils.Source
 import tlang.utils.formatting.BoxStyles.Unicode
-import tlang.utils.formatting.{Formatting, SimpleFormatting}
+import tlang.utils.formatting.{Formatter, Formatting, SimpleFormatting}
 import tlang.{Constants, Context}
 
 import scala.concurrent.duration.Duration
@@ -44,17 +45,24 @@ object Tester {
       else
         Formatting(Unicode, 80, useColor = UseColors)
 
+    val formatter = Formatter(formatting)
+    val errorFormatter = ErrorFormatter(formatter, ErrorContext.defaultValue)
+    val errorMessages = ErrorMessages(errorFormatter, MaxErrors.defaultValue)
+    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
-      reporter = DefaultReporter(formatting = formatting),
+      reporter = DefaultReporter(errorMessages, formatting = formatting),
+      debugOutputFormatter = debugOutputFormatter,
       files = files,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,
       printCodePhase = PrintCodePhases,
-      formatting = formatting
+      formatter = formatter
     )
   }
 
 }
+
+object CompilerTestTag extends Tag("compilertest")
 
 trait Tester extends FunSuite with Matchers with ParallelTestExecution {
 
@@ -90,7 +98,7 @@ trait Tester extends FunSuite with Matchers with ParallelTestExecution {
       .replaceAll(Path + "/", "")
       .replaceAll("\\" + Constants.FileEnding, "")
 
-    val execute = if (shouldBeIgnored(file)) ignore(path)(_) else test(path)(_)
+    val execute = if (shouldBeIgnored(file)) ignore(path, CompilerTestTag)(_) else test(path, CompilerTestTag)(_)
     execute { testFile(file) }
   }
 

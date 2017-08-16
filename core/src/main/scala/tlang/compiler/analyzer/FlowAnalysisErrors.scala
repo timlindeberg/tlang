@@ -7,8 +7,7 @@ import tlang.utils.Positioned
 trait FlowAnalysisErrors extends ErrorHandling {
 
 
-  def report(error: Error): Unit =
-    ctx.reporter.report(error)
+  def report(error: Error): Unit = reporter.report(error)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

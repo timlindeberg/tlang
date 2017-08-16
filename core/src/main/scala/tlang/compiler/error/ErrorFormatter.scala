@@ -3,14 +3,21 @@ package tlang.compiler.error
 import java.io.File
 
 import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.{Formatting, Marking}
+import tlang.utils.formatting.{Formatter, Marking}
 import tlang.utils.{FileSource, Positioned}
 
-case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorContextSize: Int, tabWidth: Int = 2) {
+case class ErrorFormatter(
+  formatter: Formatter,
+  errorContextSize: Int,
+  tabWidth: Int = 2) {
 
-  import formatting._
+  import formatter.formatting._
 
-  val ErrorColor: Color = {
+  var error: ErrorMessage = _
+
+  def setError(error: ErrorMessage): Unit = this.error = error
+
+  def ErrorColor: Color = {
     val color = error match {
       case _: Warning => Yellow
       case _          => Red
@@ -18,8 +25,8 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
     color + Bold
   }
 
-  val pos  : Positioned         = error.pos
-  val lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
+  def pos: Positioned = error.pos
+  def lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
 
   def errorPrefix: String = {
     val pre = error match {
@@ -35,7 +42,7 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
     Style(pos.line) + ":" + Style(pos.col)
   }
 
-  def sourceDescription = {
+  def sourceDescription: String = {
     val file = error.pos.source.asInstanceOf[FileSource].file
     val fileNameStyle = Bold + NumColor
     val fileName = fileNameStyle(file.getName)
@@ -48,10 +55,10 @@ case class ErrorFormatter(error: ErrorMessage, formatting: Formatting, errorCont
     val indent = getMinimumIndent(ctxLines)
 
     val lines =
-      if (formatting.useColor)
+      if (formatter.formatting.useColor)
         ctxLines.map { case (lineNum, line) =>
           val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
-          val coloredLine = syntaxHighlighter(line, marking)
+          val coloredLine = formatter.syntaxHighlighter(line, marking)
           (lineNum.toString, replaceTabs(coloredLine))
         }
       else

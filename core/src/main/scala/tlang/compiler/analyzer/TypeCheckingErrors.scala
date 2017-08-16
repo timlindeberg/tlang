@@ -10,7 +10,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
 
   def report(error: Error): Type = {
-    ctx.reporter.report(error)
+    reporter.report(error)
     TError
   }
 
@@ -200,7 +200,7 @@ trait TypeCheckingErrors extends ErrorHandling {
   case class UnimplementedMethodFromTrait(clazz: IDClassDeclTree, unimplementedMethods: List[(MethodSymbol, ClassSymbol)])
     extends TypeCheckingError(25, clazz.id) {
     lazy val message: String = {
-      val methods = ctx.formatting.makeList(unimplementedMethods.map { case (meth, from) =>
+      val methods = formatting.makeList(unimplementedMethods.map { case (meth, from) =>
         val methSignature = meth.signature
         err"$methSignature from trait $from"
       })
