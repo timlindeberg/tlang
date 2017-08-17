@@ -7,7 +7,7 @@ import tlang.utils.formatting.Formatting
 abstract class CompilerPhase[F, T] {
   self =>
 
-  val phaseName: String = getClass.getSimpleName.toLowerCase
+  val phaseName: String = getClass.getSimpleName.dropRight(1).toLowerCase
 
   def description(formatting: Formatting): String
   def printDebugOutput(output: List[T], debugOutputFormatter: DebugOutputFormatter): Unit

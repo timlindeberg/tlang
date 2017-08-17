@@ -51,7 +51,8 @@ case class MessageFormatter(
         }
       else
         ctxLines.flatMap { case (lineNum, line) =>
-          indicatorLines(lineNum, replaceTabs(line), indent)
+          indicatorLines(lineNum, line, indent)
+            .map { case (lineNum, line) => (lineNum, replaceTabs(line)) }
         }
 
     lines.map { case (lineNum, line) =>
@@ -95,7 +96,11 @@ case class MessageFormatter(
 
     val start = pos.col - 1
     val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
-    val whitespaces = " " * (start - indent)
+    var i = -1
+    val whitespaces = line.takeWhile { c =>
+      i += 1
+      i < start && c.isWhitespace
+    }
     val indicator = UnderlineCharacter * (end - start)
     lines :+ ("", whitespaces + indicator)
   }

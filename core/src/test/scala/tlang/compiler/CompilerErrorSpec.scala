@@ -60,7 +60,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
           e.messages.print(MessageType.Error)
         val errorCodes = getErrorCodes(e.messages(MessageType.Error))
         val expectedErrors = parseSolutions(file)
-        assertCorrect(errorCodes, expectedErrors)
+        assertResultsEqualsSolutions(errorCodes, expectedErrors)
         return
     }
 
@@ -74,7 +74,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
 
     val expectedWarnings = parseSolutions(file)
     val warningCodes = getErrorCodes(reporter.getWarnings)
-    assertCorrect(warningCodes, expectedWarnings)
+    assertResultsEqualsSolutions(warningCodes, expectedWarnings)
   }
 
 
@@ -87,7 +87,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
     }.toList
 
 
-  private def assertCorrect(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
+  private def assertResultsEqualsSolutions(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
       val num = s"$lineNumber:"
       f"$num%-4s $msg"
@@ -97,15 +97,15 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
 
     def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + "\n"
 
-    val resMap = mutable.HashMap[Int, ArrayBuffer[String]]()
+    val resultMap = mutable.HashMap[Int, ArrayBuffer[String]]()
     results foreach { case (line, res) =>
-      val l = resMap.getOrElse(line, ArrayBuffer[String]())
+      val l = resultMap.getOrElse(line, ArrayBuffer[String]())
       l += res.trim
-      resMap += line -> l
+      resultMap += line -> l
     }
 
     solutions.zipWithIndex foreach { case ((line, sol), i) =>
-      resMap.get(line) match {
+      resultMap.get(line) match {
         case Some(res) =>
           val solTrimmed = sol.trim
           if (!res.contains(solTrimmed))
@@ -116,7 +116,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
       }
     }
 
-    resMap foreach { case (line, res) =>
+    resultMap foreach { case (line, res) =>
       if (res.nonEmpty)
         failTest(s"Unexpected '${ res.mkString(", ") }' was found on line $line", extraInfo(-1))
     }
@@ -124,7 +124,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
   }
 
   private def failTest(msg: String, extraInfo: String): Nothing = {
-    System.err.println(s"$msg $extraInfo")
+    System.err.println(s"$msg\n$extraInfo")
     fail(msg)
   }
 

@@ -29,7 +29,7 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
   val PrintCodePhases    : Set[String]    = sys.env.get("printoutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
   val TestPattern        : Option[String] = sys.env.get("pattern")
 
-  val TestFormatting = Formatting(if (UseSimpleFormatting) Ascii else Unicode, 80, useColor = UseColors)
+  val TestFormatting = Formatting(if (UseSimpleFormatting) Ascii else Unicode, 80, useColor = UseColors, asciiOnly = UseSimpleFormatting)
   val TestFormatter  = Formatter(TestFormatting)
 
   def testContext(file: Option[File] = None): Context = {
@@ -87,8 +87,11 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
       .row(3)
       .content("", "Result", "Solution")
       .mapContent(result.zipAll(solution, "", "").zipWithIndex) { case ((res, sol), i) =>
-        val index = if (i == failedTest) s"$i <<<<<" else i
-        (index, res, sol)
+        val n = i + 1
+        var num = s"$n"
+        if (n == failedTest)
+          num += " " + TestFormatting.LeftArrow
+        (num, res, sol)
       }
       .render()
   }

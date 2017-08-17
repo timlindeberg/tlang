@@ -66,7 +66,8 @@ case class Formatting(
 
   def ListMarker: String = ascii("*", "•")
   def Cross: String = ascii("x", "×")
-  def RightArrow: String = ascii("-", "→")
+  def RightArrow: String = ascii("->", "→")
+  def LeftArrow: String = ascii("<-", "←")
   def UnderlineCharacter: String = ascii("~", "‾")
 
   def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
