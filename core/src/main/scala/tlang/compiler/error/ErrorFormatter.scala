@@ -2,25 +2,26 @@ package tlang.compiler.error
 
 import java.io.File
 
+import tlang.compiler.options.Flags.ErrorContext
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.{Formatter, Marking}
 import tlang.utils.{FileSource, Positioned}
 
 case class ErrorFormatter(
   formatter: Formatter,
-  errorContextSize: Int,
+  errorContextSize: Int = ErrorContext.defaultValue,
   tabWidth: Int = 2) {
 
   import formatter.formatting._
 
-  var error: ErrorMessage = _
+  var error: CompilerMessage = _
 
-  def setError(error: ErrorMessage): Unit = this.error = error
+  def setError(error: CompilerMessage): Unit = this.error = error
 
   def ErrorColor: Color = {
     val color = error match {
-      case _: Warning => Yellow
-      case _          => Red
+      case _: WarningMessage => Yellow
+      case _                 => Red
     }
     color + Bold
   }
@@ -30,9 +31,9 @@ case class ErrorFormatter(
 
   def errorPrefix: String = {
     val pre = error match {
-      case _: Warning => "Warning"
-      case _: Error   => "Error"
-      case _: Fatal   => "Fatal"
+      case _: WarningMessage => "Warning"
+      case _: ErrorMessage   => "Error"
+      case _: FatalMessage   => "Fatal"
     }
     ErrorColor(pre + " " + error.code) + " "
   }

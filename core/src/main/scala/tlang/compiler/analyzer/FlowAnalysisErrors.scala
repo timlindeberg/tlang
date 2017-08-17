@@ -1,21 +1,21 @@
 package tlang.compiler.analyzer
 
 import tlang.compiler.ast.Trees.ExprTree
-import tlang.compiler.error.{Error, ErrorHandling, Warning}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait FlowAnalysisErrors extends ErrorHandling {
 
 
-  def report(error: Error): Unit = reporter.report(error)
+  def report(error: ErrorMessage): Unit = reporter.report(error)
 
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
 
   val ErrorLetters = "F"
-  abstract class FlowAnalysisError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
-  abstract class FlowAnalysisWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
+  abstract class FlowAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class FlowAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   case class AccessMightBeNull(v: ExprTree, override val pos: Positioned) extends FlowAnalysisError(0, pos) {
     lazy val message = err"Cannot use nullable variable $v without first checking if it is null."

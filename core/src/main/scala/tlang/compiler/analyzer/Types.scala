@@ -3,7 +3,7 @@ package analyzer
 
 import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
-import tlang.compiler.error.ErrorMessage
+import tlang.compiler.error.CompilerMessage
 import tlang.compiler.imports.{ClassPath, ClassSymbolLocator}
 
 object Types {
@@ -84,7 +84,7 @@ object Types {
     override val getNullable   : TError.type = this
     override val getNonNullable: TError.type = this
     override def isSubTypeOf(tpe: Type): Boolean = true
-    override val name = ErrorMessage.ErrorName
+    override val name = CompilerMessage.ErrorName
   }
 
   case object TUntyped extends Type {

@@ -1,6 +1,6 @@
 package tlang.compiler.lexer
 
-import tlang.compiler.error.{Error, ErrorHandling}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage}
 import tlang.compiler.lexer.Tokens.BAD
 import tlang.utils.{Positioned, Source}
 
@@ -10,7 +10,7 @@ trait LexerErrors extends ErrorHandling {
   protected var line  : Int
   protected var column: Int
 
-  def report(error: Error): Unit = reporter.report(error)
+  def report(error: ErrorMessage): Unit = reporter.report(error)
 
   private def pos(colOffset: Int) = {
     new Token(BAD).setPos(source, line, column, line, column + colOffset)
@@ -26,7 +26,7 @@ trait LexerErrors extends ErrorHandling {
 
   // Missing 0
 
-  abstract class LexerError(code: Int, pos: Positioned) extends Error("L", code, pos)
+  abstract class LexerError(code: Int, pos: Positioned) extends ErrorMessage("L", code, pos)
 
   case class InvalidIdentifier(c: Char, length: Int) extends LexerError(1, pos(length)) {
     lazy val message = err"Invalid character in identifier: $c."

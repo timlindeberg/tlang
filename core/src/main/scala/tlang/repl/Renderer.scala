@@ -15,7 +15,7 @@ object Renderer {
 
   case object DrawLoading extends RendererMessage
   case class DrawNewInput(inputBuffer: InputBuffer) extends RendererMessage
-  case class DrawCompileError(errors: List[ErrorMessage]) extends RendererMessage
+  case class DrawCompileError(errors: Seq[CompilerMessage]) extends RendererMessage
   case class DrawSuccess(output: String, truncate: Boolean) extends RendererMessage
   case class DrawFailure(output: String, truncate: Boolean) extends RendererMessage
 
@@ -79,7 +79,7 @@ class Renderer(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLi
             |Press ${ Blue("CTRL") }+${ Blue("Space") } to evaluate the input.
           """.stripMargin.trim
       )
-    terminal.put(grid.toString + "\n")
+    terminal.put(grid.render() + "\n")
   }
 
 

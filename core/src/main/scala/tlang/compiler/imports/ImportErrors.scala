@@ -1,19 +1,19 @@
 package tlang.compiler.imports
 
 import tlang.compiler.ast.Trees.ExtensionImport
-import tlang.compiler.error.{Error, ErrorHandling, Warning}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait ImportErrors extends ErrorHandling {
 
 
-  def report(error: Error): Unit = reporter.report(error)
+  def report(error: ErrorMessage): Unit = reporter.report(error)
 
   val ErrorLetters = "I"
 
-  abstract class ImportError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+  abstract class ImportError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
 
-  abstract class ImportWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
+  abstract class ImportWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

@@ -5,7 +5,7 @@ import tlang.testutils.UnitSpec
 class MemoizeSpec extends UnitSpec {
 
   it should "save the calculated value" in {
-    val sleepTime = 10L
+    val sleepTime = 5L
 
     val memoized = Memoize {
       Thread.sleep(sleepTime)

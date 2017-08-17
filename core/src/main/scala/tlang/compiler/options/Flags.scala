@@ -35,7 +35,9 @@ object Flags {
   }
 
 
-  sealed abstract class BooleanFlag extends Flag
+  sealed abstract class BooleanFlag extends Flag {
+    def defaultValue: Boolean = false
+  }
 
   sealed abstract class ArgumentFlag extends Flag {
 
@@ -252,7 +254,7 @@ object Flags {
             .content(lorumIpsum)
             .row(3)
             .content(list, column, lorumIpsum)
-            .toString
+            .render()
         }
         .mkString("\n\n")
     }

@@ -14,7 +14,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
   def apply(text: String, maxWidth: Int): List[String] = {
     val lineBuffer: ListBuffer[String] = ListBuffer()
 
-    text.replaceAll("\r\n", "\n").split("\n", -1) foreach { wrap(_, maxWidth, lineBuffer) }
+    text.split("\r?\n", -1) foreach { wrap(_, maxWidth, lineBuffer) }
 
     val lines = lineBuffer.toList
     if (wrapAnsiColors) wrapAnsiFormatting(lineBuffer.toList) else lines
@@ -229,7 +229,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       }
     }
 
-    lines.map { line =>
+    lines map { line =>
       var sb = new StringBuilder
       if (line.startsWith("\u001b[")) {
         // Make sure we don't repeat the previous ansi if it is immediately updated

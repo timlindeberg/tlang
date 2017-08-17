@@ -1,6 +1,15 @@
 package tlang.compiler.error
 
-case class Suggestion(suggestion: Option[String]) {
+object Suggestion {
+  def apply(suggestion: Option[String]) = new Suggestion(suggestion)
+
+  def unapply(arg: Suggestion): Option[String] = arg.suggestion match {
+    case x: Some[String] => x
+    case _               => None
+  }
+}
+
+class Suggestion(val suggestion: Option[String]) {
   override def toString: String = suggestion match {
     case Some(v) => s" Did you mean $v?"
     case None    => ""

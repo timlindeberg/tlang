@@ -5,7 +5,7 @@ import java.io.File
 import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.CompilationException
+import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
 import tlang.testutils.{Pos, Tester}
 import tlang.utils.FileSource
@@ -26,7 +26,7 @@ class ParsingPositionSpec extends FunSuite with Matchers {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        e.messages.printErrors()
+        e.messages.print(MessageType.Error)
         Empty()
     }
   }

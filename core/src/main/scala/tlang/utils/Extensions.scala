@@ -83,8 +83,11 @@ object Extensions {
     def ansiDebugString: String = {
       str.toList
         .map {
-          case '\u001b' => '�'
-          case c        => c
+          case '\u001b' => "�"
+          case '\n'     => "\\n"
+          case '\r'     => "\\r"
+          case '\t'     => "\\t"
+          case c        => s"$c"
         }
         .map("'" + _ + "'")
         .mkString(" ")

@@ -11,7 +11,7 @@ import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parsing, Trees}
 import tlang.compiler.code.{CodeGeneration, Lowering, TreeBuilder}
-import tlang.compiler.error.CompilationException
+import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
@@ -98,7 +98,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
         case Success(res) => Renderer.DrawSuccess(res, truncate = true)
         case Failure(e)   =>
           e match {
-            case e: CompilationException      => Renderer.DrawCompileError(e.messages.getErrors)
+            case e: CompilationException      => Renderer.DrawCompileError(e.messages(MessageType.Error))
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => Renderer.DrawFailure(formatter.stackTraceHighlighter(e.getCause), truncate = true)

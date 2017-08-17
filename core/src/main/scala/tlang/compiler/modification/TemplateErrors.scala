@@ -1,6 +1,6 @@
 package tlang.compiler.modification
 
-import tlang.compiler.error.{Error, ErrorHandling}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage}
 import tlang.utils.Positioned
 
 trait TemplateErrors extends ErrorHandling {
@@ -10,9 +10,9 @@ trait TemplateErrors extends ErrorHandling {
   //---------------------------------------------------------------------------------------
 
 
-  def report(error: Error): Unit = reporter.report(error)
+  def report(error: ErrorMessage): Unit = reporter.report(error)
 
-  abstract class TemplateError(code: Int, pos: Positioned) extends Error("G", code, pos)
+  abstract class TemplateError(code: Int, pos: Positioned) extends ErrorMessage("G", code, pos)
 
   case class WrongNumGenerics(expected: Int, found: Int, override val pos: Positioned) extends TemplateError(0, pos) {
     lazy val message = err"Wrong number of template parameters, expected $expected, found $found."

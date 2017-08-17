@@ -6,7 +6,6 @@ import org.scalatest.{FunSuite, Matchers, ParallelTestExecution, Tag}
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.options.Flags.{ErrorContext, MaxErrors}
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
 import tlang.utils.Source
@@ -46,11 +45,11 @@ object Tester {
         Formatting(Unicode, 80, useColor = UseColors)
 
     val formatter = Formatter(formatting)
-    val errorFormatter = ErrorFormatter(formatter, ErrorContext.defaultValue)
-    val errorMessages = ErrorMessages(errorFormatter, MaxErrors.defaultValue)
+    val errorFormatter = ErrorFormatter(formatter)
+    val errorMessages = CompilerMessages(errorFormatter)
     val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
-      reporter = DefaultReporter(errorMessages, formatting = formatting),
+      reporter = DefaultReporter(errorMessages),
       debugOutputFormatter = debugOutputFormatter,
       files = files,
       outDirs = Set(outDir),

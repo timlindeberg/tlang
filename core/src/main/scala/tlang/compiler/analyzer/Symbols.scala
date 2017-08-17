@@ -3,7 +3,7 @@ package analyzer
 
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.ErrorMessage
+import tlang.compiler.error.CompilerMessage
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
@@ -72,8 +72,8 @@ object Symbols {
 
     def implicitConstructors: List[MethodSymbol] = methods.filter { method =>
       method.name == "new" &&
-      method.modifiers.contains(Implicit()) &&
-      method.argList.size == 1
+        method.modifiers.contains(Implicit()) &&
+        method.argList.size == 1
     }
 
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
@@ -263,6 +263,6 @@ object Symbols {
     override val modifiers: Set[Modifier] = Set(),
     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol {val name = ErrorMessage.ErrorName }
+  case object ErrorSymbol extends Symbol {val name = CompilerMessage.ErrorName }
 
 }

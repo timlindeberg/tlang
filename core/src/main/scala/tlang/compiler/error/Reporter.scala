@@ -1,22 +1,45 @@
 package tlang.compiler.error
 
-import tlang.compiler.analyzer.Symbols.Symbolic
-import tlang.compiler.analyzer.Types.Typed
-import tlang.utils.formatting.{Formatting, SimpleFormatting}
-
 trait Reporter {
 
   def printWarnings(): Unit
   def printErrors(): Unit
-  def getWarnings: List[ErrorMessage]
-  def getErrors: List[ErrorMessage]
+  def getWarnings: List[CompilerMessage]
+  def getErrors: List[CompilerMessage]
 
-  def report(error: ErrorMessage): Unit
+  def report(error: CompilerMessage): Unit
   def clear(): Unit
   def terminateIfErrors(): Unit
 
   def hasErrors: Boolean
   def hasWarnings: Boolean
+}
+
+case class DefaultReporter(messages: CompilerMessages) extends Reporter {
+
+  def report(error: CompilerMessage): Unit = {
+    messages += error
+
+    if (error.messageType == MessageType.Fatal)
+      throwException()
+  }
+
+  def clear(): Unit = messages.clear()
+
+  def terminateIfErrors(): Unit =
+    if (hasErrors)
+      throwException()
+
+  def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
+  def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
+
+  override def printWarnings(): Unit = messages.print(MessageType.Warning)
+  override def printErrors(): Unit = messages.print(MessageType.Error)
+  override def getWarnings: List[CompilerMessage] = messages(MessageType.Warning)
+  override def getErrors: List[CompilerMessage] = messages(MessageType.Error)
+
+  private def throwException() = throw new CompilationException(messages)
+
 }
 
 case class VoidReporter() extends Reporter {
@@ -26,13 +49,13 @@ case class VoidReporter() extends Reporter {
 
   override def printWarnings(): Unit = {}
   override def printErrors(): Unit = {}
-  override def getWarnings: List[ErrorMessage] = Nil
-  override def getErrors: List[ErrorMessage] = Nil
+  override def getWarnings: List[CompilerMessage] = Nil
+  override def getErrors: List[CompilerMessage] = Nil
 
-  override def report(error: ErrorMessage): Unit = error match {
-    case _: Fatal   => throw new CompilationException(null)
-    case _: Warning => _hasWarnings = true
-    case _          => _hasErrors = true
+  override def report(message: CompilerMessage): Unit = message match {
+    case _: FatalMessage   => throw new CompilationException(null)
+    case _: WarningMessage => _hasWarnings = true
+    case _                 => _hasErrors = true
   }
 
   override def clear(): Unit = {
@@ -45,59 +68,3 @@ case class VoidReporter() extends Reporter {
   override def hasWarnings: Boolean = _hasWarnings
 
 }
-
-
-case class DefaultReporter(
-  messages: ErrorMessages,
-  formatting: Formatting = SimpleFormatting,
-  suppressWarnings: Boolean = false,
-  warningIsError: Boolean = false
-) extends Reporter {
-
-  def report(error: ErrorMessage): Unit = {
-    error match {
-      case _: Fatal   =>
-        messages += error
-        throwException()
-      case w: Warning =>
-        if (!suppressWarnings) {
-          if (warningIsError) messages.errors += w else messages.warnings += w
-        }
-      case _          =>
-    }
-
-    if (!isValidError(error))
-      return
-
-    messages += error
-  }
-
-  def clear(): Unit = messages.clear()
-
-  def terminateIfErrors(): Unit =
-    if (hasErrors)
-      throwException()
-
-  def hasErrors: Boolean = messages.errors.nonEmpty
-  def hasWarnings: Boolean = messages.warnings.nonEmpty
-
-  override def printWarnings(): Unit = messages.printWarnings()
-  override def printErrors(): Unit = messages.printErrors()
-  override def getWarnings: List[ErrorMessage] = messages.getWarnings
-  override def getErrors: List[ErrorMessage] = messages.getErrors
-
-  private def throwException() = {
-    val exception = new CompilationException(messages)
-    clear()
-    throw exception
-  }
-
-  private def isValidError(error: ErrorMessage): Boolean =
-    error.pos match {
-      case t: Typed if t.getType.name == ErrorMessage.ErrorName                        => false
-      case s: Symbolic[_] if s.hasSymbol && s.getSymbol.name == ErrorMessage.ErrorName => false
-      case _                                                                           => true
-    }
-
-}
-

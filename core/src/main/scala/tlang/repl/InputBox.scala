@@ -1,6 +1,6 @@
 package tlang.repl
 
-import tlang.compiler.error.{ErrorFormatter, ErrorMessage}
+import tlang.compiler.error.{CompilerMessage, ErrorFormatter}
 import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting._
@@ -30,7 +30,7 @@ class InputBox(
   private val spinner           = formatting.spinner
 
   private var inputText           = ""
-  private var result              = List[List[String]]()
+  private var result              = Seq[Seq[String]]()
   private var cursor              = Cursor()
   private var boxStartingPosition = terminal.getCursorPosition
   private var previousBoxHeight   = 0
@@ -71,7 +71,7 @@ class InputBox(
 
   def success(output: String, truncate: Boolean): Unit = setResult(output, truncate, SuccessColor, "Result")
   def failure(output: String, truncate: Boolean): Unit = setResult(output, truncate, ErrorColor, "Error")
-  def compileError(errors: List[ErrorMessage]): Unit = {
+  def compileError(errors: Seq[CompilerMessage]): Unit = {
     if (isFinished)
       return
 
@@ -143,7 +143,7 @@ class InputBox(
     result = List(List(text))
   }
 
-  private def setResult(content: List[(String, String)]) = {
+  private def setResult(content: Seq[(String, String)]) = {
     val unzipped = content.unzip
     result = List(unzipped._1, unzipped._2)
   }
@@ -155,7 +155,7 @@ class InputBox(
 
   private def putGrid(grid: Grid): Int = {
     terminal.setCursorPosition(boxStartingPosition)
-    val linesPut = terminal.put(grid.toString + "\n")
+    val linesPut = terminal.put(grid.render + "\n")
     boxStartingPosition = terminal.getCursorPosition
     linesPut
   }

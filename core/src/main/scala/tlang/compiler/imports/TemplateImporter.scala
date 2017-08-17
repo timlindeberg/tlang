@@ -39,8 +39,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        e.messages.printWarnings()
-        e.messages.printErrors()
+        e.messages.print()
         None
     }
   }

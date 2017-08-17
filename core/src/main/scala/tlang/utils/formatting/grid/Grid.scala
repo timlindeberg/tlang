@@ -139,9 +139,9 @@ case class Grid(var formatter: Formatter) {
 
   def columnWidths: Seq[Int] = currentRow.columnWidths
 
-  def print(): Unit = println(toString)
+  def print(): Unit = println(render)
 
-  override def toString: String = GridRenderer(formatter).render()
+  def render(): String = GridRenderer(formatter).render()
 
   private def addTuple(tuple: Product): Grid = {
     val className = tuple.getClass.getName
@@ -286,14 +286,14 @@ case class Grid(var formatter: Formatter) {
       var i = 0
 
       sb ++= drawTopLine(rows.head)
-      sb ++= "\n"
+      sb ++= System.lineSeparator
       while (i < rows.size) {
         val row = rows(i)
         drawContent(row)
 
         if (i < rows.size - 1) {
           sb ++= drawMiddleLine(row, rows(i + 1))
-          sb ++= "\n"
+          sb ++= System.lineSeparator
         }
         i += 1
       }
@@ -407,8 +407,8 @@ case class Grid(var formatter: Formatter) {
           val columnBreak = borderColor(│)
           trimRight(columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak)
         }
-        .mkString("\n")
-      sb ++= "\n"
+        .mkString(System.lineSeparator)
+      sb ++= System.lineSeparator
     }
 
     private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling) = {

@@ -1,6 +1,6 @@
 package tlang.compiler.ast
 
-import tlang.compiler.error.{Error, ErrorHandling, Fatal}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage, FatalMessage}
 import tlang.compiler.lexer.Tokens.{DEDENT, INDENT}
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Positioned
@@ -9,11 +9,11 @@ trait ParserErrors extends ErrorHandling {
 
   protected def lastToken: Token
 
-  protected def report(error: Error): Unit = reporter.report(error)
+  protected def report(error: ErrorMessage): Unit = reporter.report(error)
 
   val ErrorLetters = "P"
-  abstract class ParserFatal(code: Int, pos: Positioned) extends Fatal(ErrorLetters, code, pos)
-  abstract class ParserError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
+  abstract class ParserFatal(code: Int, pos: Positioned) extends FatalMessage(ErrorLetters, code, pos)
+  abstract class ParserError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

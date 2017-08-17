@@ -2,20 +2,20 @@ package tlang.compiler.ast
 
 import java.io.File
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 import tlang.Context
-import tlang.compiler.error.CompilationException
+import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
 import tlang.testutils.Tester
 import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, StringSource}
 
-class PrettyPrinterSpec extends FunSuite with Matchers {
+class PrettyPrinterSpec extends FlatSpec with Matchers {
 
   private val TestFile   : File    = new File(Tester.Resources + "positions/ParserPositions.t")
   private val TestContext: Context = Tester.getTestContext(Some(TestFile))
 
-  test("Tree is the same after being pretty printed and reparsed") {
+  it should "produce the same tree after being pretty printed and reparsed" in {
     val file = FileSource(TestFile) :: Nil
 
     val parser = (Lexing andThen Parsing).execute(TestContext) _
@@ -25,7 +25,7 @@ class PrettyPrinterSpec extends FunSuite with Matchers {
       parser(file).head
     } catch {
       case e: CompilationException =>
-        fail(s"Could not parse file ${ TestFile.getName }: \n" + e.messages.formattedErrors)
+        fail(s"Could not parse file ${ TestFile.getName }: \n" + e.messages.formatMessages(MessageType.Error))
     }
 
     val printedCU = prettyPrinter(CU)
@@ -36,7 +36,7 @@ class PrettyPrinterSpec extends FunSuite with Matchers {
         fail(
           s"""
              |Could not reparse output from file ${ TestFile.getName }:
-             |${ e.messages.formattedErrors }
+             |${ e.messages.formatMessages(MessageType.Error) }
              |
              |Printed output:
              |$printedCU

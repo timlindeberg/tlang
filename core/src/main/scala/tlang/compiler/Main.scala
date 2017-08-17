@@ -81,8 +81,7 @@ object Main extends MainErrors {
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        e.messages.printWarnings()
-        e.messages.printErrors()
+        e.messages.print()
         sys.exit(1)
     }
   }
@@ -90,15 +89,15 @@ object Main extends MainErrors {
   private def createContext(options: Options, formatter: Formatter): Context = {
 
     val errorFormatter = ErrorFormatter(formatter, options(ErrorContext))
-    val messages = ErrorMessages(errorFormatter, maxErrors = options(MaxErrors))
+    val messages = CompilerMessages(
+      errorFormatter,
+      maxErrors = options(MaxErrors),
+      warningIsError = options(WarningIsError),
+      suppressWarnings = options(SuppressWarnings)
+    )
     val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
-      reporter = DefaultReporter(
-        suppressWarnings = options(SuppressWarnings),
-        warningIsError = options(WarningIsError),
-        messages = messages,
-        formatting = formatter.formatting
-      ),
+      reporter = DefaultReporter(messages = messages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
       files = options.files,
@@ -109,7 +108,7 @@ object Main extends MainErrors {
     )
   }
 
-  private def printFilesToCompile(ctx: Context) = {
+  private def printFilesToCompile(ctx: Context): Unit = {
     val formatting = ctx.formatter.formatting
     import formatting._
 
@@ -209,7 +208,7 @@ object Main extends MainErrors {
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
       .mapContent(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatter)) }
-      .toString
+      .render()
   }
 
   private def phaseInfo(formatter: Formatter) = {
@@ -220,7 +219,7 @@ object Main extends MainErrors {
       .header(Bold(s"Phases of the T-Compiler"))
       .row(2)
       .mapContent(CompilerPhases) { phase => (Magenta(phase.phaseName.capitalize), phase.description(formatting)) }
-      .toString
+      .render()
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {

@@ -3,13 +3,13 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, VariableSymbol}
 import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
 import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
-import tlang.compiler.error.{Error, ErrorHandling, Warning}
+import tlang.compiler.error._
 import tlang.utils.Positioned
 
 trait TypeCheckingErrors extends ErrorHandling {
 
 
-  def report(error: Error): Type = {
+  def report(error: CompilerMessage): Type = {
     reporter.report(error)
     TError
   }
@@ -18,9 +18,11 @@ trait TypeCheckingErrors extends ErrorHandling {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  val ErrorLetters = "T"
-  abstract class TypeCheckingError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
-  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
+  private val ErrorLetters = "T"
+  abstract class TypeCheckingError(code: Int, pos: Positioned)
+    extends CompilerMessage(MessageType.Error, ErrorLetters, code, pos)
+  abstract class TypeCheckingWarning(code: Int, pos: Positioned)
+    extends CompilerMessage(MessageType.Warning, ErrorLetters, code, pos)
 
   object WrongType {
     def apply(expected: Type, found: Type, pos: Positioned): WrongType = WrongType(err"$expected", err"$found", pos)

@@ -8,7 +8,7 @@ import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.code.{CodeGeneration, Lowering}
-import tlang.compiler.error.CompilationException
+import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.utils.{FileSource, ProgramExecutor, Source}
@@ -31,7 +31,7 @@ trait ValidTester extends Tester {
       val sources = FileSource(file) :: Nil
       val cus = Pipeline.execute(ctx)(sources)
 
-      ctx.reporter.hasErrors should be(false)
+      ctx.reporter.hasErrors shouldBe false
 
       val compilation = Lowering andThen CodeGeneration
       compilation.execute(ctx)(cus)
@@ -41,7 +41,7 @@ trait ValidTester extends Tester {
       assertCorrect(resLines, sol)
     } catch {
       case e: CompilationException  =>
-        e.messages.printErrors()
+        e.messages.print(MessageType.Error)
         fail("Compilation failed")
       case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.getPath }")
     }

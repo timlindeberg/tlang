@@ -198,7 +198,7 @@ class GridSpec extends UnitSpec {
     grid.clear()
 
     grid should have size 0
-    grid.toString shouldBe ""
+    grid.render() shouldBe ""
 
     grid
       .row()
@@ -383,47 +383,47 @@ class GridSpec extends UnitSpec {
     Grid(mockedFormatter())
       .row()
       .content("ABC")
-      .toString shouldBe
+      .render() shouldBe
       """|┌──────────────────┐
          |│ ABC              │
-         |└──────────────────┘""".stripMargin.trim
+         |└──────────────────┘""".stripMargin
   }
 
   it should "render correctly with a centered text" in {
     Grid(mockedFormatter())
       .row(Column(alignment = Center))
       .content("ABC")
-      .toString shouldBe
+      .render() shouldBe
       """|┌──────────────────┐
          |│       ABC        │
-         |└──────────────────┘""".stripMargin.trim
+         |└──────────────────┘""".stripMargin
   }
 
   it should "render correctly with a right aligned text" in {
     Grid(mockedFormatter())
       .row(Column(alignment = Right))
       .content("ABC")
-      .toString shouldBe
+      .render() shouldBe
       """|┌──────────────────┐
          |│              ABC │
-         |└──────────────────┘""".stripMargin.trim
+         |└──────────────────┘""".stripMargin
   }
 
   it should "render correctly with two columns" in {
     Grid(mockedFormatter())
       .row(Column, Column)
       .content("ABC", "DEF")
-      .toString shouldBe
+      .render() shouldBe
       """|┌─────┬────────────┐
          |│ ABC │ DEF        │
-         |└─────┴────────────┘""".stripMargin.trim
+         |└─────┴────────────┘""".stripMargin
   }
 
   it should "render correctly with two columns and fixed width and centered text" in {
     Grid(mockedFormatter())
       .row(Column(Width.Fixed(3)), Column(alignment = Alignment.Center))
       .content("ABC", "DEF")
-      .toString shouldBe
+      .render() shouldBe
       """|┌─────┬────────────┐
          |│ ABC │    DEF     │
          |└─────┴────────────┘""".stripMargin
@@ -435,7 +435,7 @@ class GridSpec extends UnitSpec {
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
       .content("ABC", "1234", "DEF")
-      .toString shouldBe
+      .render() shouldBe
       """|┌────┬───────┬─────┐
          |│ AB │ 12345 │ CDE │
          |├────┴┬──────┼─────┤
@@ -447,7 +447,7 @@ class GridSpec extends UnitSpec {
       .content("ABC", "DEF")
       .row(Column, Column)
       .content("ABC", "DEF")
-      .toString shouldBe
+      .render() shouldBe
       """|┌─────┬────────────┐
          |│ ABC │ DEF        │
          |├─────┼────────────┤
@@ -456,20 +456,32 @@ class GridSpec extends UnitSpec {
   }
 
   it should "render correctly with fixed and auto column widths" in {
-    Grid(mockedFormatter())
+    val wordWrapper = mock[WordWrapper]
+    mockCalls(wordWrapper.apply _,
+      ("ABCDEFG", 4) -> List("ABCD", "EFG"),
+      ("12345", 2) -> List("12", "34", "5"),
+      ("HIJKMLN", 4) -> List("HIJK", "LMN"),
+
+      ("ABC", 3) -> List("ABC"),
+      ("12345678", 5) -> List("12345", "678"),
+      ("DEFGH", 2) -> List("DE", "FG", "H")
+    )
+
+    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
       .row(Column, Column(width = Fixed(2)), Column)
       .content("ABCDEFG", "12345", "HIJKMLN")
       .row(Column, Column, Column(width = Fixed(2)))
       .content("ABC", "12345678", "DEFGH")
-    """|┌──────┬────┬──────┐
-       |│ ABCD │ 12 │ HIJK │
-       |│ EFG  │ 34 │ LMN  │
-       |│      │ 5  │      │
-       |├─────┬┴────┴─┬────┤
-       |│ ABC │ 12345 │ DE │
-       |│     │ 678   │ FG │
-       |│     │       │ H  │
-       |└─────┴───────┴────┘""".stripMargin
+      .render() shouldBe
+      """|┌──────┬────┬──────┐
+         |│ ABCD │ 12 │ HIJK │
+         |│ EFG  │ 34 │ LMN  │
+         |│      │ 5  │      │
+         |├─────┬┴────┴─┬────┤
+         |│ ABC │ 12345 │ DE │
+         |│     │ 678   │ FG │
+         |│     │       │ H  │
+         |└─────┴───────┴────┘""".stripMargin
   }
 
   it should "render correctly with different indentation" in {
@@ -479,7 +491,7 @@ class GridSpec extends UnitSpec {
       .content("ABC", "DEF")
       .row(Column, Column)
       .content("ABC", "DEF")
-      .toString shouldBe
+      .render() shouldBe
       """|┌─────────────┬──────────────┐
          |│     ABC     │     DEF      │
          |├─────────────┼──────────────┤
@@ -492,7 +504,7 @@ class GridSpec extends UnitSpec {
       .header("Header")
       .row(Column, Column, Column)
       .content("ABC", "DEFG", "HIJ")
-      .toString shouldBe
+      .render() shouldBe
       """|╒══════════════════╕
          |│      Header      │
          |╞═════╤══════╤═════╡
@@ -509,7 +521,7 @@ class GridSpec extends UnitSpec {
       .row(Column, Column)
       .content("ABC", "DEF")
 
-    grid.toString shouldBe
+    grid.render() shouldBe
       """|╒══════════════════╕
          |│      Header      │
          |╞═════╤════════════╡
@@ -518,7 +530,7 @@ class GridSpec extends UnitSpec {
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
 
-    grid.formatter(mockedFormatter(boxStyle = NoLines)).toString shouldBe
+    grid.formatter(mockedFormatter(boxStyle = NoLines)).render() shouldBe
       """|
          |       Header
          |
@@ -527,7 +539,7 @@ class GridSpec extends UnitSpec {
          |  ABC   DEF
          |""".stripMargin
 
-    grid.formatter(mockedFormatter(boxStyle = Ascii)).toString shouldBe
+    grid.formatter(mockedFormatter(boxStyle = Ascii)).render() shouldBe
       """| ==================
          ||      Header      |
          ||==================|
@@ -544,7 +556,7 @@ class GridSpec extends UnitSpec {
       .content("\u001b[31mABC\u001b[0m", "\u001b[32mDEF\u001b[0m")
       .row(Column, Column)
       .content("A\u001b[1mB\u001b[0mC", "\u001b[4mD\u001b[0mEF")
-      .toString should matchWithAnsi(
+      .render() should matchWithAnsi(
       s"""|┌─────┬────────────┐
           |│ \u001b[31mABC\u001b[0m │ \u001b[32mDEF\u001b[0m        │
           |├─────┼────────────┤
@@ -561,7 +573,7 @@ class GridSpec extends UnitSpec {
     Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
       .row()
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m")
-      .toString should matchWithAnsi(
+      .render() should matchWithAnsi(
       s"""|┌──────────────────┐
           |│ \u001b[31mABCDEFGHIJKLMNOP\u001b[0m │
           |│ \u001b[31mQRSTUVXYZ\u001b[0m        │
@@ -576,7 +588,7 @@ class GridSpec extends UnitSpec {
       .content("ABC", "DEF")
       .row(Column, Column)
       .content("ABC", "DEF")
-      .toString should matchWithAnsi(
+      .render() should matchWithAnsi(
       """|\u001b[31m┌─────┬────────────┐\u001b[0m
          |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
          |\u001b[31m├─────┼────────────┤\u001b[0m
@@ -607,7 +619,7 @@ class GridSpec extends UnitSpec {
       .row(Column, Column, Column)
       .content("ABCDEFGHIJ", "ABCDEFGHIJKLMNOPQRS", "ABCD")
       .content("ABCDEFGHIJKLMNOP", "ABCDEFG", "ABCDEFGHIJKLMNOPQRSTUVXYZ")
-      .toString shouldBe
+      .render() shouldBe
       """|┌──────┬─────┬─────┐
          |│ ABCD │ ABC │ ABC │
          |│ EFGH │ DEF │ DEF │
@@ -645,7 +657,7 @@ class GridSpec extends UnitSpec {
     Grid(mockedFormatter(width = 21, wordWrapper = Some(wordWrapper)))
       .row(Column, Column, Column, Column, Column)
       .content("ABCDEFGHIJKL", "ABCDEFGHI", "ABCDEF", "ABC", "A")
-      .toString shouldBe
+      .render() shouldBe
       """|┌───┬───┬───┬───┬───┐
          |│ A │ A │ A │ A │ A │
          |│ B │ B │ B │ B │   │
@@ -666,7 +678,7 @@ class GridSpec extends UnitSpec {
     Grid(mockedFormatter())
       .row(Column, Column)
       .content("", "ABC")
-      .toString shouldBe
+      .render() shouldBe
       """|┌───┬──────────────┐
          |│   │ ABC          │
          |└───┴──────────────┘""".stripMargin.trim
@@ -678,7 +690,7 @@ class GridSpec extends UnitSpec {
       .row(Column, Column)
       .content("", "")
       .row(Column, Column, Column, Column)
-      .toString shouldBe
+      .render() shouldBe
       """|┌───┬─────┬───┬────┐
          |│   │ ABC │   │    │
          |├───┴─────┴───┴────┤
@@ -721,7 +733,7 @@ class GridSpec extends UnitSpec {
         "\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m",
         "AB\u001b[31mCDE\u001b[0mF"
       )
-      .toString should matchWithAnsi(
+      .render() should matchWithAnsi(
       s"""|┌──────┬─────┬─────┐
           |│ \u001b[31mABCD\u001b[0m │ \u001b[31mABC\u001b[0m │ AB\u001b[31mC\u001b[0m │
           |│ \u001b[32mEFGH\u001b[0m │ \u001b[31mD\u001b[32mEF\u001b[0m │ \u001b[31mDE\u001b[0mF │
@@ -755,7 +767,7 @@ class GridSpec extends UnitSpec {
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABC", "ABCDEFGHIJKLMNOPQRS", "ABCD")
       .content("ABCDEFGHIJKLMNOP", "ABC", "ABCDEFGHIJKLMNOPQRSTUVXYZ")
-      .toString shouldBe
+      .render() shouldBe
       """|┌──────┬──────┬────┐
          |│ A... │ A... │ AB │
          |├─────┬┴────┬─┴────┤
@@ -786,7 +798,7 @@ class GridSpec extends UnitSpec {
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABC", "\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", "\u001b[34mABCD\u001b[0m")
       .content("ABCDEFGHIJKLMNOP", "ABC", "\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m")
-      .toString should matchWithAnsi(
+      .render() should matchWithAnsi(
       s"""|┌──────┬──────┬────┐
           |│ \u001b[31mA\u001b[0m... │ A... │ \u001b[32mAB\u001b[0m │
           |├─────┬┴────┬─┴────┤
@@ -824,7 +836,7 @@ class GridSpec extends UnitSpec {
         .row(Column(overflowHandling = Except))
         .content("ABCDEFGHIJKLMNOPQRSTUVXYZ")
         .content("ABC")
-        .toString
+        .render()
 
     }.getMessage should (include("25 > 16") and include("ABCDEFGHIJKLMNOPQRSTUVXYZ"))
   }

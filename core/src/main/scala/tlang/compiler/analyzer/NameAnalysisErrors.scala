@@ -3,17 +3,17 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees.{Break, Tree, _}
-import tlang.compiler.error.{Error, ErrorHandling, ErrorMessage, Warning}
+import tlang.compiler.error.{CompilerMessage, ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait NameAnalysisErrors extends ErrorHandling {
 
-  def report(error: Error): Symbol = {
+  def report(error: ErrorMessage): Symbol = {
     reporter.report(error)
 
     error.pos match {
-      case id: ClassID    => id.setSymbol(new ClassSymbol(ErrorMessage.ErrorName))
-      case id: VariableID => id.setSymbol(new VariableSymbol(ErrorMessage.ErrorName))
+      case id: ClassID    => id.setSymbol(new ClassSymbol(CompilerMessage.ErrorName))
+      case id: VariableID => id.setSymbol(new VariableSymbol(CompilerMessage.ErrorName))
       case _              =>
     }
 
@@ -21,8 +21,8 @@ trait NameAnalysisErrors extends ErrorHandling {
   }
 
   val ErrorLetters = "N"
-  abstract class NameAnalysisError(code: Int, pos: Positioned) extends Error(ErrorLetters, code, pos)
-  abstract class NameAnalysisWarning(code: Int, pos: Positioned) extends Warning(ErrorLetters, code, pos)
+  abstract class NameAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class NameAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   //---------------------------------------------------------------------------------------
   //  Error messages

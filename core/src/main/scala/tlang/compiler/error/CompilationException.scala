@@ -1,3 +1,3 @@
 package tlang.compiler.error
 
-class CompilationException(val messages: ErrorMessages) extends Exception()
+class CompilationException(val messages: CompilerMessages) extends Exception()

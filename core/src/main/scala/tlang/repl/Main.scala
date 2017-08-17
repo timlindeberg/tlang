@@ -6,7 +6,7 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
-import tlang.compiler.error.{DefaultReporter, ErrorFormatter, ErrorMessages}
+import tlang.compiler.error.{CompilerMessages, DefaultReporter, ErrorFormatter}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
@@ -63,15 +63,14 @@ object Main {
     val formatting = formatter.formatting
     val default = ClassPath.Default
     val classPath = default ++ (options.classPaths + tempDir.getAbsolutePath)
-    val errorMessages = ErrorMessages(errorFormatter, options(MaxErrors))
+    val errorMessages = CompilerMessages(
+      errorFormatter,
+      maxErrors = options(MaxErrors),
+      suppressWarnings = options(SuppressWarnings),
+      warningIsError = options(WarningIsError))
     val debugOutputFormatter = DebugOutputFormatter(errorFormatter.formatter)
     Context(
-      reporter = DefaultReporter(
-        suppressWarnings = options(SuppressWarnings),
-        warningIsError = options(WarningIsError),
-        formatting = formatting,
-        messages = errorMessages
-      ),
+      reporter = DefaultReporter(errorMessages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
       classPath = classPath,
