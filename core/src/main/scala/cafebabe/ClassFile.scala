@@ -1,9 +1,9 @@
 package cafebabe
 
-/** A <code>ClassFile</code> object is an abstract representation of all the
-  * information that will be written to a <code>.class</code> file.  In the Java
+/** A <validtests.code>ClassFile</validtests.code> object is an abstract representation of all the
+  * information that will be written to a <validtests.code>.class</validtests.code> file.  In the Java
   * model, that generally corresponds to one class (or interface) as declared in
-  * source code, however this is by no means a restriction of the platform. */
+  * source validtests.code, however this is by no means a restriction of the platform. */
 class ClassFile(val className: String, parentName: Option[String] = None) extends Streamable {
 
   import ClassFileTypes._
@@ -52,7 +52,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   }
 
   /** Sets the access flags for the class. */
-  def setFlags(flags: U2): Unit = {accessFlags = flags}
+  def setFlags(flags: U2): Unit = { accessFlags = flags }
 
   /** Returns the currently set flags. */
   def getFlags: U2 = accessFlags
@@ -105,8 +105,8 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
 
   /** Adds a default constructor. */
   def addDefaultConstructor: MethodHandler = {
-    import ByteCodes._
     import AbstractByteCodes._
+    import ByteCodes._
 
     val mh = addConstructor("", "new()")
     mh.codeHandler << ALOAD_0

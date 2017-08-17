@@ -4,12 +4,12 @@ import tlang.utils.formatting.{FancyFormatting, Formatting, SimpleFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
-/** A code handler contains methods to help the generation of method bodies.
-  * The general usage is to generate abstract byte codes, then freeze the code,
+/** A validtests.code handler contains methods to help the generation of method bodies.
+  * The general usage is to generate abstract byte codes, then freeze the validtests.code,
   * which as a consequence generates the proper bytes in the CodeAttributeInfo.
   * Information is added to the constant pool during the ABS generation already.
-  * <code>CodeHandler</code>s should not be created manually, but rather obtained
-  * from the corresponding <code>MethodHandler</code>. */
+  * <validtests.code>CodeHandler</validtests.code>s should not be created manually, but rather obtained
+  * from the corresponding <validtests.code>MethodHandler</validtests.code>. */
 class CodeHandler private[cafebabe](
   c: CodeAttributeInfo,
   cp: ConstantPool,
@@ -100,7 +100,7 @@ class CodeHandler private[cafebabe](
     name
   }
 
-  /** "Freezes" the code: maxLocals is computed, abstract byte codes are turned
+  /** "Freezes" the validtests.code: maxLocals is computed, abstract byte codes are turned
     * into concrete ones. This includes computation of the label offsets. */
   def freeze: Unit = {
     if (frozen)
@@ -155,7 +155,7 @@ class CodeHandler private[cafebabe](
     // we now compute the maximum stack height.
     code.maxStack = computeMaxStack(abcList)
 
-    // finally, we dump the code.
+    // finally, we dump the validtests.code.
     abcList.foreach(code.code << _)
   }
 

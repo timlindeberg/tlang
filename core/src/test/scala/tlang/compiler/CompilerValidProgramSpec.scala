@@ -1,40 +1,42 @@
-package tlang.testutils
+package tlang.compiler
 
 import java.io.{File, FileNotFoundException}
 
+import org.scalatest.ParallelTestExecution
 import tlang.Constants
-import tlang.compiler.CompilerPhase
-import tlang.compiler.analyzer.{Flowing, Naming, Typing}
-import tlang.compiler.ast.Parsing
-import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.error.{CompilationException, MessageType}
-import tlang.compiler.lexer.Lexing
-import tlang.compiler.modification.Templating
+import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration.Duration
 
-trait ValidTester extends Tester {
+class CompilerValidProgramSpec extends CompilerTestSpec with ParallelTestExecution {
 
-  import Tester._
+  private val programExecutor = ProgramExecutor(Duration(5, "sec"))
 
-  val programExecutor = ProgramExecutor(Duration(5, "sec"))
+  val ValidResources = s"$Resources/validtests"
 
-  override def Pipeline: CompilerPhase[Source, CompilationUnit] =
-    Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
 
-  def testFile(file: File): Unit = {
-    val ctx = getTestContext(Some(file))
+  "Valid programs" - {
+    testCorrectOutputOfPrograms(s"$ValidResources/programs")
+  }
+
+  "STD Lib" - {
+    testCorrectOutputOfPrograms(s"$ValidResources/stdlib")
+  }
+
+  def testCorrectOutputOfPrograms(path: String): Unit = testFiles(path, testValidProgram)
+
+  def testValidProgram(file: File): Unit = {
+    val ctx = testContext(Some(file))
 
     try {
       val sources = FileSource(file) :: Nil
-      val cus = Pipeline.execute(ctx)(sources)
+      val cus = Main.FrontEnd.execute(ctx)(sources)
 
       ctx.reporter.hasErrors shouldBe false
 
-      val compilation = Lowering andThen CodeGeneration
-      compilation.execute(ctx)(cus)
+      Main.GenerateCode.execute(ctx)(cus)
       val res = programExecutor(ctx.outDirs.map(_.getAbsolutePath) + Constants.TDirectory, file)
       val resLines = lines(res)
       val sol = parseSolutions(file)

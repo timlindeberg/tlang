@@ -6,7 +6,7 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
-import tlang.compiler.error.{CompilerMessages, DefaultReporter, ErrorFormatter}
+import tlang.compiler.error.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
@@ -40,7 +40,7 @@ object Main {
 
     val formatting = options.formatting
     val formatter = Formatter(formatting)
-    val errorFormatter = ErrorFormatter(formatter, options(ErrorContext))
+    val errorFormatter = MessageFormatter(formatter, options(MessageContext))
 
     val context = createContext(options, errorFormatter, tempDir)
 
@@ -58,7 +58,7 @@ object Main {
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, errorFormatter: ErrorFormatter, tempDir: File): Context = {
+  private def createContext(options: Options, errorFormatter: MessageFormatter, tempDir: File): Context = {
     val formatter = errorFormatter.formatter
     val formatting = formatter.formatting
     val default = ClassPath.Default

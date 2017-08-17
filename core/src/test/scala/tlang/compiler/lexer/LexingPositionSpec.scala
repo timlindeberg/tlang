@@ -2,17 +2,16 @@ package tlang.compiler.lexer
 
 import java.io.File
 
-import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
 import tlang.compiler.lexer.Tokens._
-import tlang.testutils.{Pos, Tester}
+import tlang.testutils.{CompilerTestSpec, Pos}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
-class LexingPositionSpec extends FunSuite with Matchers {
+class LexingPositionSpec extends CompilerTestSpec {
 
-  val TestFile   : String  = Tester.Resources + "positions/LexerPositions.t"
-  val TestContext: Context = Tester.getTestContext()
+  val TestFile   : String  = s"$Resources/positions/LexerPositions.t"
+  val TestContext: Context = testContext()
 
   lazy val Tokens: List[Token] = {
     val file = FileSource(new File(TestFile)) :: Nil
@@ -30,7 +29,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
   }
 
   // @formatter:off
-  test("Basic Tokens") {
+  "Basic Tokens" in {
     testPositions(_.kind.str.length > 0,
       ";"         -> Pos(1, 1, 1, 2),
       "."         -> Pos(1, 3, 1, 4),
@@ -117,7 +116,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("Identifiers") {
+  "Identifiers" in {
      testPositions(_.kind == IDKIND,
        "identifier" -> Pos(33, 1, 33, 11),
        "x"          -> Pos(33, 12, 33, 13),
@@ -133,7 +132,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
      )
   }
 
-  test("Number literals") {
+  "Number literals" in {
     testPositions(_.kind in List(INTLITKIND, LONGLITKIND, FLOATLITKIND, DOUBLELITKIND),
       "0"           -> Pos(38, 6, 38, 7),
       "123456789"   -> Pos(39, 6, 39, 15),
@@ -153,7 +152,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("Char Literals") {
+  "Char Literals" in {
     testPositions(_.kind == CHARLITKIND,
       "'a'"       -> Pos(55, 6, 55, 9),
       "'\\n'"     -> Pos(56, 6, 56, 10),
@@ -161,7 +160,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("String literals") {
+  "String literals" in {
     testPositions(_.kind == STRLITKIND,
       "\"\""                            -> Pos(59, 6, 59, 8),
       "\"string\""                      -> Pos(60, 6, 60, 14),
@@ -170,7 +169,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("Comment literals") {
+  "Comment literals" in {
     testPositions(_.kind == COMMENTLITKIND,
       "/**/"                  -> Pos(29, 1, 29, 5),
       "/*  */"                -> Pos(29, 12, 29, 18),
@@ -181,7 +180,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("Indents") {
+  "Indents" in {
     testPositions(_.kind == INDENT,
       "a->b"     -> Pos(68, 1, 68, 2),
       "b->->c"   -> Pos(69, 1, 69, 3),
@@ -189,7 +188,7 @@ class LexingPositionSpec extends FunSuite with Matchers {
     )
   }
 
-  test("Dedents") {
+  "Dedents" in {
     testPositions(_.kind == DEDENT,
       "d<-<-e"   -> Pos(71, 1, 71, 3),
       "e<-<-EOF" -> Pos(71, 4, 71, 4),

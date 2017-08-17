@@ -2,24 +2,22 @@ package tlang.compiler.ast
 
 import java.io.File
 
-import org.scalatest.{FunSuite, Matchers}
 import tlang.Context
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
-import tlang.testutils.{Pos, Tester}
+import tlang.testutils.{CompilerTestSpec, Pos}
 import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}
 
-class ParsingPositionSpec extends FunSuite with Matchers {
+class ParsingPositionSpec extends CompilerTestSpec {
 
-  private val File                 = "ParserPositions.t"
   private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
-  private val TestFile   : String  = Tester.Resources + "positions/" + File
-  private val TestContext: Context = Tester.getTestContext()
+  private val TestFile   : String  = s"$Resources/positions/ParserPositions.t"
+  private val TestContext: Context = testContext()
 
-  // We make Tree lazy so the parsing time counts towards the test execution time
+  // We make Tree lazy so the errortests.parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
     val file = FileSource(new File(TestFile)) :: Nil
     try {
@@ -36,9 +34,9 @@ class ParsingPositionSpec extends FunSuite with Matchers {
   private def testPositions[T <: Tree : ClassTag](positions: Pos*): Unit = {
     val clazz = classTag[T].runtimeClass
     val className = clazz.getSimpleName
-    test(className) {
+    className in {
       if (Tree == Empty())
-        fail(s"Failed to parse $File")
+        fail(s"Failed to parse $TestFile")
 
       val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))

@@ -9,7 +9,7 @@ The T-tlang.compiler is written in Scala.
 * C++-style generics with templates. This enables for example lists of int where the integers does not have to be boxed which can increase performance.
 * Operator overloading.
 * Extension methods (currently only for classes).
-* Can interface with Java code.
+* Can interface with Java validtests.code.
 * Elimination of null pointer exceptions through nullable types and mandatory null checks. Accessing a nullable type without a null check is a compilation error.
 * Beautiful error messages.
 * Pretty printing with syntax highlighting.
@@ -19,7 +19,7 @@ The T-tlang.compiler is written in Scala.
 * Extension methods for types (e.g extension methods for Int[]? (nullable Int array)).
 * Templated extension methods.
 * Templated methods.
-* Simplification of typechecker and code generation by using extension methods for primitive types.
+* Simplification of typechecker and validtests.code generation by using extension methods for primitive types.
 * Annotations.
 * Optimization through inlining.
 * First-class functions.
@@ -441,4 +441,4 @@ class MatrixRow<T> =
 
 ```
 
-More code examples can be found in the folder 'stdlib'.
+More validtests.code examples can be found in the folder 'stdlib'.

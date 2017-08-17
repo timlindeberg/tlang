@@ -1,23 +1,59 @@
-package tlang.testutils
+package tlang.compiler
 
 import java.io.File
 
+import org.scalatest.{FreeSpec, ParallelTestExecution}
+import tlang.compiler.analyzer.{Flowing, Naming, Typing}
+import tlang.compiler.ast.Parsing
 import tlang.compiler.error.{CompilationException, CompilerMessage, MessageType}
+import tlang.compiler.lexer.Lexing
+import tlang.compiler.modification.Templating
+import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-trait ErrorTester extends Tester {
+class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTestExecution {
 
-  import Tester._
+  val ErrorResources = s"$Resources/errortests"
 
-  def testFile(file: File): Unit = {
-    val ctx = Tester.getTestContext(Some(file))
+
+  "Lexing" - {
+    testFileForErrors(s"$ErrorResources/lexing", Lexing)
+  }
+
+  "Parsing" - {
+    testFileForErrors(s"$ErrorResources/parsing", Lexing andThen Parsing)
+  }
+
+  "Templating" - {
+    testFileForErrors(s"$ErrorResources/templating", Lexing andThen Parsing andThen Templating)
+  }
+
+  "Naming" - {
+    testFileForErrors(s"$ErrorResources/naming", Lexing andThen Parsing andThen Templating andThen Naming)
+  }
+
+  "Typing" - {
+    testFileForErrors(s"$ErrorResources/typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
+  }
+
+  "Flowing" - {
+    testFileForErrors(s"$ErrorResources/flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
+  }
+
+
+  private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = {
+    testFiles(path, testFileForErrors(pipeLine, _))
+  }
+
+  private def testFileForErrors[T](pipeLine: CompilerPhase[Source, T], file: File): Unit = {
+    val ctx = testContext(Some(file))
     val sources = FileSource(file) :: Nil
 
     try {
-      Pipeline.execute(ctx)(sources)
+      pipeLine.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
         if (PrintErrors)
@@ -40,6 +76,7 @@ trait ErrorTester extends Tester {
     val warningCodes = getErrorCodes(reporter.getWarnings)
     assertCorrect(warningCodes, expectedWarnings)
   }
+
 
   private def getErrorCodes(errors: List[CompilerMessage]) = errors.map { error => (error.pos.line, error.code) }
 

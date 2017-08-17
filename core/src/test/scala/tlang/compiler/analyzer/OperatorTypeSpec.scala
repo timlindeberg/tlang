@@ -1,17 +1,16 @@
 package tlang.compiler.analyzer
 
-import org.scalatest._
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.testutils.Tester
+import tlang.testutils.CompilerTestSpec
 
-class OperatorTypeSpec extends FunSuite with Matchers {
+class OperatorTypeSpec extends CompilerTestSpec {
 
   private val ClassSymbol = new ClassSymbol("obj")
   private val MainMethod  = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
-  private val TestContext = Tester.getTestContext()
+  private val TestContext = testContext()
   private val TestImports = Imports(TestContext)
   private val TypeChecker = new TypeChecker(TestContext.reporter, TestContext.formatting, TestImports, MainMethod)
 
@@ -36,43 +35,43 @@ class OperatorTypeSpec extends FunSuite with Matchers {
     def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
   }
 
-  test("Plus") { arithmeticOperator(Plus) }
-  test("Minus") { arithmeticOperator(Minus) }
-  test("Times") { arithmeticOperator(Times) }
-  test("Div") { arithmeticOperator(Div) }
-  test("Modulo") { arithmeticOperator(Modulo) }
 
-  test("LogicAnd") { logicOperator(LogicAnd) }
-  test("LogicOr") { logicOperator(LogicOr) }
-  test("LogicXor") { logicOperator(LogicXor) }
+  "Plus" in { arithmeticOperator(Plus) }
+  "Minus" in { arithmeticOperator(Minus) }
+  "Times" in { arithmeticOperator(Times) }
+  "Div" in { arithmeticOperator(Div) }
+  "Modulo" in { arithmeticOperator(Modulo) }
 
-  test("LeftShift") { shiftOperator(LeftShift) }
-  test("RightShift") { shiftOperator(RightShift) }
+  "LogicAnd" in { logicOperator(LogicAnd) }
+  "LogicOr" in { logicOperator(LogicOr) }
+  "LogicXor" in { logicOperator(LogicXor) }
 
-  test("Assign") { assignOperator() }
-  test("ArrayAssign") { arrayAssignOperator() }
+  "LeftShift" in { shiftOperator(LeftShift) }
+  "RightShift" in { shiftOperator(RightShift) }
 
-  test("LessThan") { comparisonOperator(LessThan) }
-  test("LessThanEquals") { comparisonOperator(LessThanEquals) }
-  test("GreaterThan") { comparisonOperator(GreaterThan) }
-  test("GreaterThanEquals") { comparisonOperator(GreaterThanEquals) }
+  "Assign" in { assignOperator() }
+  "ArrayAssign" in { arrayAssignOperator() }
+
+  "LessThan" in { comparisonOperator(LessThan) }
+  "LessThanEquals" in { comparisonOperator(LessThanEquals) }
+  "GreaterThan" in { comparisonOperator(GreaterThan) }
+  "GreaterThanEquals" in { comparisonOperator(GreaterThanEquals) }
 
 
-  test("Equals") { equalsOperator(Equals) }
-  test("NotEquals") { equalsOperator(NotEquals) }
+  "Equals" in { equalsOperator(Equals) }
+  "NotEquals" in { equalsOperator(NotEquals) }
 
-  test("And") { andOr(And) }
-  test("Or") { andOr(Or) }
-  test("Not") { not(Not) }
+  "And" in { andOr(And) }
+  "Or" in { andOr(Or) }
+  "Not" in { not(Not) }
 
-  test("Negation") { negation(Negation) }
-  test("LogicalNot") { logicalNot(LogicNot) }
+  "Negation" in { negation(Negation) }
+  "LogicalNot" in { logicalNot(LogicNot) }
 
-  test("PreIncrement") { incrementDecrement(PreIncrement) }
-  test("PostIncrement") { incrementDecrement(PostIncrement) }
-  test("PreDecrement") { incrementDecrement(PreDecrement) }
-  test("PostDecrement") { incrementDecrement(PostDecrement) }
-
+  "PreIncrement" in { incrementDecrement(PreIncrement) }
+  "PostIncrement" in { incrementDecrement(PostIncrement) }
+  "PreDecrement" in { incrementDecrement(PreDecrement) }
+  "PostDecrement" in { incrementDecrement(PostDecrement) }
 
   private def arithmeticOperator(expressionType: (VariableID, VariableID) => BinaryOperatorTree) =
     BinaryExpressionAsserter.valid(expressionType,

@@ -11,7 +11,7 @@ object FancyFormatting extends Formatting(
   BoxStyles.Unicode, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
 )
 object SimpleFormatting extends Formatting(
-  BoxStyles.Ascii, LineWidth.DefaultWidth, useColor = false, asciiOnly = true
+  BoxStyles.Ascii, 80, useColor = false, asciiOnly = true
 )
 
 case class Formatting(

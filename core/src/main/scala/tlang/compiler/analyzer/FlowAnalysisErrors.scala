@@ -68,6 +68,6 @@ trait FlowAnalysisErrors extends ErrorHandling {
   }
 
   case class UnnecessaryElse(override val pos: Positioned) extends FlowAnalysisWarning(2, pos) {
-    lazy val message = err"Else is unnecessary since code flow ends in then branch."
+    lazy val message = err"Else is unnecessary since validtests.code flow ends in then branch."
   }
 }

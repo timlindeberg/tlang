@@ -1,5 +1,6 @@
 package tlang.compiler
 
+import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
@@ -24,7 +25,10 @@ object Main extends MainErrors {
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
     Lexing andThen Parsing andThen Templating andThen
-      Naming andThen Typing andThen Flowing andThen Lowering
+      Naming andThen Typing andThen Flowing
+
+  val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
+    Lowering andThen CodeGeneration
 
 
   val CompilerPhases = List(
@@ -64,7 +68,7 @@ object Main extends MainErrors {
 
     val CUs = runFrontend(ctx)
 
-    CodeGeneration.execute(ctx)(CUs)
+    GenerateCode.execute(ctx)(CUs)
 
     ctx.reporter.printWarnings()
 
@@ -88,7 +92,7 @@ object Main extends MainErrors {
 
   private def createContext(options: Options, formatter: Formatter): Context = {
 
-    val errorFormatter = ErrorFormatter(formatter, options(ErrorContext))
+    val errorFormatter = MessageFormatter(formatter, options(MessageContext))
     val messages = CompilerMessages(
       errorFormatter,
       maxErrors = options(MaxErrors),

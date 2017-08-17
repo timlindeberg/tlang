@@ -1,6 +1,6 @@
 package tlang.repl
 
-import tlang.compiler.error.{CompilerMessage, ErrorFormatter}
+import tlang.compiler.error.{CompilerMessage, MessageFormatter}
 import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting._
@@ -10,7 +10,7 @@ import scala.concurrent.duration.FiniteDuration
 
 class InputBox(
   formatter: Formatter,
-  errorFormatter: ErrorFormatter,
+  errorFormatter: MessageFormatter,
   maxOutputLines: Int,
   terminal: ReplTerminal) {
 
@@ -83,7 +83,7 @@ class InputBox(
 
     val errorLines = errors.map { error =>
       errorFormatter.setError(error)
-      (errorFormatter.position, errorFormatter.errorPrefix + error.message)
+      (errorFormatter.position, errorFormatter.prefix + error.message)
     }
 
     val diff = errorLines.size - maxOutputLines

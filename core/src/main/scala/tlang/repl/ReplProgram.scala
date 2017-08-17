@@ -242,7 +242,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   // expressions
   private class NewStatementTransformer extends Trees.Transformer {
 
-    // This could potentially transform other code as well
+    // This could potentially transform other validtests.code as well
     override protected def _transform(t: Tree): Tree = t match {
       case block@Block(stats) if stats.nonEmpty =>
         stats.last match {

@@ -10,7 +10,7 @@ import tlang.utils.formatting.grid.Grid
 import scala.collection.mutable
 
 case class CompilerMessages(
-  errorFormatter: ErrorFormatter,
+  errorFormatter: MessageFormatter,
   maxErrors: Int = MaxErrors.defaultValue,
   warningIsError: Boolean = false,
   suppressWarnings: Boolean = false) {
@@ -94,7 +94,7 @@ case class CompilerMessages(
     if (validPosition && error.pos.source.isInstanceOf[FileSource])
       grid.content(errorFormatter.sourceDescription)
 
-    grid.content(errorFormatter.errorPrefix + error.message)
+    grid.content(errorFormatter.prefix + error.message)
 
     if (validPosition) {
       grid.row(2)

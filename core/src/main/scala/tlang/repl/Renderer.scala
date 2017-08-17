@@ -19,12 +19,12 @@ object Renderer {
   case class DrawSuccess(output: String, truncate: Boolean) extends RendererMessage
   case class DrawFailure(output: String, truncate: Boolean) extends RendererMessage
 
-  def props(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLines: Int, terminal: ReplTerminal) =
+  def props(formatter: Formatter, errorFormatter: MessageFormatter, maxOutputLines: Int, terminal: ReplTerminal) =
     Props(new Renderer(formatter, errorFormatter, maxOutputLines, terminal))
   val name = "renderer"
 }
 
-class Renderer(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLines: Int, terminal: ReplTerminal) extends Actor {
+class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutputLines: Int, terminal: ReplTerminal) extends Actor {
 
   private val formatting = formatter.formatting
 
@@ -72,7 +72,7 @@ class Renderer(formatter: Formatter, errorFormatter: ErrorFormatter, maxOutputLi
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
       .row()
       .content(
-        s"""|Type in code to have it evaluated or type one of the following commands:
+        s"""|Type in validtests.code to have it evaluated or type one of the following commands:
             |
             |$commandList
             |

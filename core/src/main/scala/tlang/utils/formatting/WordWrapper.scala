@@ -193,7 +193,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
     }
 
     // Updates the current state of ANSI colors by looking at the ANSI escape
-    // code at line(index)
+    // validtests.code at line(index)
     def updateFrom(line: String, startIndex: Int): Int = {
       var i = startIndex
       while (i < line.length && line(i) == '\u001b' && line(i + 1) == '[') {

@@ -3,7 +3,7 @@ package tlang.repl
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.Context
-import tlang.compiler.error.ErrorFormatter
+import tlang.compiler.error.MessageFormatter
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
 import tlang.repl.input.InputHistory
@@ -23,7 +23,7 @@ object Repl {
   case object StopRepl
   case class SetState(state: State)
 
-  def props(ctx: Context, errorFormatter: ErrorFormatter, replTerminal: ReplTerminal, inputHistory: InputHistory) =
+  def props(ctx: Context, errorFormatter: MessageFormatter, replTerminal: ReplTerminal, inputHistory: InputHistory) =
     Props(new Repl(ctx, errorFormatter, replTerminal, inputHistory))
 
   val name = "repl"
@@ -36,7 +36,7 @@ sealed abstract class Command() extends Product with Serializable {
   def order: Int
 }
 
-class Repl(ctx: Context, errorFormatter: ErrorFormatter, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
+class Repl(ctx: Context, errorFormatter: MessageFormatter, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
 
   import Repl._
   import ctx.formatter.formatting._

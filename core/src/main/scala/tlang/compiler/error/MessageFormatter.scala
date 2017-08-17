@@ -2,14 +2,14 @@ package tlang.compiler.error
 
 import java.io.File
 
-import tlang.compiler.options.Flags.ErrorContext
+import tlang.compiler.options.Flags.MessageContext
 import tlang.utils.formatting.Colors.Color
 import tlang.utils.formatting.{Formatter, Marking}
 import tlang.utils.{FileSource, Positioned}
 
-case class ErrorFormatter(
+case class MessageFormatter(
   formatter: Formatter,
-  errorContextSize: Int = ErrorContext.defaultValue,
+  messageContextSize: Int = MessageContext.defaultValue,
   tabWidth: Int = 2) {
 
   import formatter.formatting._
@@ -18,25 +18,12 @@ case class ErrorFormatter(
 
   def setError(error: CompilerMessage): Unit = this.error = error
 
-  def ErrorColor: Color = {
-    val color = error match {
-      case _: WarningMessage => Yellow
-      case _                 => Red
-    }
-    color + Bold
-  }
+  def color: Color = error.messageType.color(formatter.formatting) + Bold
 
   def pos: Positioned = error.pos
   def lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
 
-  def errorPrefix: String = {
-    val pre = error match {
-      case _: WarningMessage => "Warning"
-      case _: ErrorMessage   => "Error"
-      case _: FatalMessage   => "Fatal"
-    }
-    ErrorColor(pre + " " + error.code) + " "
-  }
+  def prefix: String = color(error.messageType.name + " " + error.code) + " "
 
   def position: String = {
     val Style = Bold + NumColor
@@ -58,7 +45,7 @@ case class ErrorFormatter(
     val lines =
       if (formatter.formatting.useColor)
         ctxLines.map { case (lineNum, line) =>
-          val marking = Marking(pos, Bold + Underline + ErrorColor, lineNum)
+          val marking = Marking(pos, Bold + Underline + color, lineNum)
           val coloredLine = formatter.syntaxHighlighter(line, marking)
           (lineNum.toString, replaceTabs(coloredLine))
         }
@@ -94,8 +81,8 @@ case class ErrorFormatter(
   }
 
   def contextLines: List[(Int, String)] = {
-    val start = clamp(pos.line - errorContextSize, 1, lines.size)
-    val end = clamp(pos.line + errorContextSize, 1, lines.size)
+    val start = clamp(pos.line - messageContextSize, 1, lines.size)
+    val end = clamp(pos.line + messageContextSize, 1, lines.size)
     (start to end)
       .map(i => (i, lines(i - 1)))
       .toList
