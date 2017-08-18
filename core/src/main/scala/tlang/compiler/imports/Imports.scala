@@ -3,20 +3,22 @@ package tlang.compiler.imports
 import tlang.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.Reporter
 import tlang.utils.Extensions._
 import tlang.utils.NoPosition
+import tlang.utils.formatting.ErrorStringContext
 
 import scala.collection.mutable
 
 
 case class Imports(ctx: Context,
+  override val errorStringContext: ErrorStringContext,
   imports: List[Import] = Nil,
   pack: Package = Package(Nil),
   classes: List[ClassDeclTree] = Nil
 ) extends ImportErrors {
 
-  override val reporter   = ctx.reporter
-  override val formatting = ctx.formatting
+  override val reporter: Reporter = ctx.reporter
 
   var extensionSymbols: List[ExtensionClassSymbol] = Nil
 

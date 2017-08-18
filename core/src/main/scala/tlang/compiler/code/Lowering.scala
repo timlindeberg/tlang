@@ -484,14 +484,14 @@ class Lowerer(imports: Imports) {
     * --------------------------------------------------------------------------------
     *
     * for(<varDecl> in <array>)
-    *   <validtests.code>
+    *   <code>
     *
     * becomes:
     *
     * val $container = <array>
     * for(var $i = 0; $i < $container.Size(); i++){
     *   <varDecl> = $container[$i]
-    *   <validtests.code>
+    *   <code>
     * }
     *
     * --------------------------------------------------------------------------------
@@ -531,14 +531,14 @@ class Lowerer(imports: Imports) {
     * --------------------------------------------------------------------------------
     *
     * for(<varDecl> in <container>)
-    *   <validtests.code>
+    *   <code>
     *
     * becomes:
     *
     * val $it = <container>.Iterator()
     * while($it.HasNext()) {
     *   <varDecl> = $it.Iterator()
-    *   <validtests.code>
+    *   <code>
     * }
     *
     * --------------------------------------------------------------------------------

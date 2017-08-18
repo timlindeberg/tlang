@@ -86,6 +86,7 @@ case class Formatting(
   def makeList(items: String*): String = makeList(items)
   def makeList(items: Traversable[String]): String = items.map(item => s"  $ListMarker $item").mkString("\n")
 
+
   private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
 
 }

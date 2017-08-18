@@ -5,15 +5,19 @@ import tlang.compiler.lexer.Tokens.{DEDENT, INDENT}
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Positioned
 
-trait ParserErrors extends ErrorHandling {
+trait ParsingErrors extends ErrorHandling {
 
   protected def lastToken: Token
 
   protected def report(error: ErrorMessage): Unit = reporter.report(error)
 
+
+  import errorStringContext._
+
   val ErrorLetters = "P"
   abstract class ParserFatal(code: Int, pos: Positioned) extends FatalMessage(ErrorLetters, code, pos)
   abstract class ParserError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+
 
   //---------------------------------------------------------------------------------------
   //  Error messages

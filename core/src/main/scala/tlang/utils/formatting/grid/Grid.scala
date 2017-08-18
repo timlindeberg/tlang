@@ -418,8 +418,8 @@ case class Grid(var formatter: Formatter) {
           if (lineWidth > width)
             throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
           line :: Nil
-        case Wrap     => formatter.wordWrapper(line, width)
-        case Truncate => formatter.truncator(line, width) :: Nil
+        case Wrap     => formatter.wrap(line, width)
+        case Truncate => formatter.truncate(line, width) :: Nil
       }
     }
 

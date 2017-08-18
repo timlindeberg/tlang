@@ -9,6 +9,8 @@ trait TemplateErrors extends ErrorHandling {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
+  import errorStringContext._
+
 
   def report(error: ErrorMessage): Unit = reporter.report(error)
 

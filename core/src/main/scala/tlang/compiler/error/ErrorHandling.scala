@@ -2,50 +2,21 @@ package tlang.compiler.error
 
 import tlang.utils.Positioned
 import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 trait ErrorHandling {
 
-  def reporter: Reporter
-  def formatting: Formatting
-  def replaceNames(str: String): String = str
+  // This is a val since we need a stable identifier in order to import the string context
+  val errorStringContext: ErrorStringContext
 
-  val nameSuggestor = new NameSuggestor
+  def reporter: Reporter
+  def replaceNames(str: String): String = str
 
   def report(warning: WarningMessage): Unit = reporter.report(warning)
   def report(fatal: FatalMessage): Nothing = {
     reporter.report(fatal)
     // Reporter will throw an exception but this is here so the type can be Nothing
     throw new Exception
-  }
-
-  implicit class ErrorStringContext(val sc: StringContext) {
-
-    private val _formatting = formatting
-
-    import _formatting._
-
-    def err(args: Any*): String = {
-      val strings = sc.parts.iterator
-      val expressions = args.iterator
-      val sb = new StringBuilder(Bold + strings.next)
-      while (strings.hasNext) {
-        sb ++= evaluate(expressions.next)
-        sb ++= Reset + Bold + strings.next
-      }
-      sb ++= Reset
-      sb.toString
-    }
-
-    private def evaluate(any: Any) = any match {
-      case Suggestion(suggestion) => err" Did you mean $suggestion?"
-      case any                    =>
-        var str = any.toString
-        str = TemplateNameParser.parseTemplateName(str)
-        str = replaceNames(str)
-
-        if (formatting.useColor) s"$Reset$Magenta$str" else s"'$str'"
-    }
   }
 
 }

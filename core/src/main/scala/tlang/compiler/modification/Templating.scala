@@ -7,7 +7,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.error.Reporter
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.collection.mutable
 
@@ -44,7 +44,8 @@ case class TemplateModifier(ctx: Context) {
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
     cus foreach { cu =>
-      val templateClassGenerator = TemplateClassGenerator(ctx.reporter, ctx.formatting, cu, classSymbolLocator)
+      val errorStringContext = ErrorStringContext(ctx.formatting, replaceNames = cu.imports.replaceNames)
+      val templateClassGenerator = TemplateClassGenerator(ctx.reporter, errorStringContext, cu, classSymbolLocator)
       templateClassGenerator()
     }
 
@@ -94,11 +95,9 @@ case class TemplateModifier(ctx: Context) {
 
   case class TemplateClassGenerator(
     override val reporter: Reporter,
-    override val formatting: Formatting,
+    override val errorStringContext: ErrorStringContext,
     cu: CompilationUnit,
     classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
-
-    override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
     /**
       * Has the side effect of filling the programs in the template program map with
@@ -225,8 +224,10 @@ case class TemplateModifier(ctx: Context) {
             cons(transform(parents), transform(fields), transform(methods))
           case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
-            if (classId.isTemplated)
-              TemplateClassGenerator(reporter, formatting, templateCU, classSymbolLocator).generateClass(newId)
+            if (classId.isTemplated) {
+              val e = ErrorStringContext(errorStringContext.formatting, replaceNames = templateCU.imports.replaceNames)
+              TemplateClassGenerator(reporter, e, templateCU, classSymbolLocator).generateClass(newId)
+            }
 
             templateMap.get(newId) match {
               case Some(replacement) => replacement.copyAttributes(classId)

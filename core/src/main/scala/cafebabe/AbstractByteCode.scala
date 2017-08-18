@@ -7,7 +7,7 @@ object AbstractByteCodes {
 
   trait AbstractByteCode extends Streamable {
     def size: Int
-    def toStream(bs: ByteStream): ByteStream = sys.error("Abstract byte validtests.code cannot produce its own validtests.code. " + this)
+    def toStream(bs: ByteStream): ByteStream = sys.error("Abstract byte code cannot produce its own code. " + this)
   }
 
   /** Line numbers take no space in the actual bytecode. They are
@@ -84,7 +84,7 @@ object AbstractByteCodes {
 
   type AbstractByteCodeGenerator = (CodeHandler => CodeHandler)
 
-  /** Generates validtests.code to load constants, using the appropriate method depending on the values. */
+  /** Generates code to load constants, using the appropriate method depending on the values. */
   object Ldc {
 
     def apply(a: Any): AbstractByteCodeGenerator = a match {
@@ -370,7 +370,7 @@ object AbstractByteCodes {
     )
   }
 
-  // So that we can annotate our generated validtests.code before freezing
+  // So that we can annotate our generated code before freezing
   case class Comment(comment: String) extends AbstractByteCode {
     override val size: Int = 0
     override def toStream(bs: ByteStream): ByteStream = bs

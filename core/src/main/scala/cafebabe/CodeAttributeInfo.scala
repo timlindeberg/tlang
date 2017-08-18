@@ -11,8 +11,8 @@ object CodeAttributeInfo {
 }
 
 class CodeAttributeInfo(val codeNameIndex: U2) extends AttributeInfo(codeNameIndex, Nil) {
-  var maxStack: U2 = 0 // gets set when the validtests.code handler 'freezes'
-  var maxLocals: U2 = 0 // gets set when the validtests.code handler 'freezes'
+  var maxStack: U2 = 0 // gets set when the code handler 'freezes'
+  var maxLocals: U2 = 0 // gets set when the code handler 'freezes'
   var code: ByteStream = new ByteStream
 
   case class ExceptionTableEntry(startPC: U2, endPC: U2, handlerPC: U2, catchType: U2) extends Streamable {

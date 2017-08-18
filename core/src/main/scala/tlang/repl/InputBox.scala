@@ -54,7 +54,7 @@ class InputBox(
     cursor = inputBuffer.mainCursor
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    inputText = formatter.syntaxHighlighter(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
+    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
       .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()
@@ -79,7 +79,7 @@ class InputBox(
     header = ErrorColor("Error")
 
     val markings = errors.map { error => Marking(error.pos, Bold + Underline + Red) }
-    inputText = formatter.syntaxHighlighter(inputText, markings).replaceAll("\t", TabReplacement)
+    inputText = formatter.syntaxHighlight(inputText, markings).replaceAll("\t", TabReplacement)
 
     val errorLines = errors.map { error =>
       errorFormatter.setError(error)
@@ -161,7 +161,7 @@ class InputBox(
   }
 
   private def truncate(output: String, color: Color): String = {
-    val wordWrapped = formatter.wordWrapper(output, formatting.lineWidth)
+    val wordWrapped = formatter.wrap(output, formatting.lineWidth)
 
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)

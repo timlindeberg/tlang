@@ -9,7 +9,7 @@ import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -38,7 +38,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
     cu.classes.foreach { classDecl =>
-      val typeChecker = TypeChecker(ctx.reporter, ctx.formatting, cu.imports, new MethodSymbol("", classDecl.getSymbol, None, Set()))
+      val typeChecker = TypeChecker(ctx, cu, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
     }
 
@@ -47,12 +47,12 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
         methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
-      TypeChecker(ctx.reporter, ctx.formatting, cu.imports, methodSymbol).tcMethod()
+      TypeChecker(ctx, cu, methodSymbol).tcMethod()
     }
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
-    val typeChecker = TypeChecker(ctx.reporter, ctx.formatting, cu.imports, emptyMethSym)
+    val typeChecker = TypeChecker(ctx, cu, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
     typeChecker.checkTraitsAreImplemented(cu)
@@ -60,9 +60,19 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
+
+object TypeChecker {
+  def apply(ctx: Context, cu: CompilationUnit, methodSymbol: MethodSymbol): TypeChecker = TypeChecker(
+    ctx.reporter,
+    ErrorStringContext(ctx, cu),
+    cu.imports,
+    methodSymbol,
+    List()
+  )
+}
 case class TypeChecker(
   override val reporter: Reporter,
-  override val formatting: Formatting,
+  override val errorStringContext: ErrorStringContext,
   imports: Imports,
   currentMethodSymbol: MethodSymbol,
   methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
@@ -581,7 +591,7 @@ case class TypeChecker(
 
   private def inferTypeOfMethod(methodSymbol: MethodSymbol): Type = {
     if (methodSymbol.getType == TUntyped)
-      TypeChecker(reporter, formatting, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+      TypeChecker(reporter, errorStringContext, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
     methodSymbol.getType
   }
 

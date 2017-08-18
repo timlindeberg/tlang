@@ -9,7 +9,7 @@ import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 import tlang.{Constants, Context}
 
 object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
@@ -20,7 +20,7 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
     // Add all symbols first so each program instance can access
     // all symbols in binding
     val analyzers = cus map { cu =>
-      val nameAnalyzer = NameAnalyser(ctx.reporter, ctx.formatting, cu, globalScope)
+      val nameAnalyzer = NameAnalyser(ctx.reporter, ErrorStringContext(ctx, cu), cu, globalScope)
       nameAnalyzer.addSymbols()
       nameAnalyzer
     }
@@ -46,9 +46,9 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 case class NameAnalyser(
   override val reporter: Reporter,
-  override val formatting: Formatting,
+  override val errorStringContext: ErrorStringContext,
   cu: CompilationUnit,
-  globalScope: GlobalScope) extends NameAnalysisErrors {
+  globalScope: GlobalScope) extends NamingErrors {
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 

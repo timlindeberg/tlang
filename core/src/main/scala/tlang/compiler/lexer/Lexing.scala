@@ -8,7 +8,7 @@ import tlang.compiler.error.Reporter
 import tlang.compiler.lexer.Tokens._
 import tlang.utils.Extensions._
 import tlang.utils.Source
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.annotation.tailrec
 
@@ -17,7 +17,8 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
-      val lexer = Lexer(ctx.reporter, ctx.formatting)
+      val errorStringContext = ErrorStringContext(ctx.formatting)
+      val lexer = Lexer(ctx.reporter, errorStringContext)
       lexer(source)
     }
   }
@@ -30,13 +31,14 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
 }
 
-case class Lexer(override val reporter: Reporter, override val formatting: Formatting) extends LexerErrors {
+case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexerErrors {
 
-  protected override var line   = 1
-  protected override var column = 1
-  protected          var indent = 0
+  protected override var line           = 1
+  protected override var column         = 1
+  protected override var source: Source = _
 
-  override var source: Source = _
+  protected var indent = 0
+
 
   def apply(source: Source): List[Token] = {
 

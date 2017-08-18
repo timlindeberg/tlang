@@ -58,11 +58,11 @@ case class DebugOutputFormatter(formatter: Formatter) {
         .row(alignment = Center)
         .content(formatFileName(cu.source.mainName))
         .row()
-        .content(formatter.prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
+        .content(formatter.prettyPrint(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(Column(overflowHandling = Truncate), Column, Column)
         .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
-        .contents(formatter.treePrinter(cu))
+        .contents(formatter.formatTree(cu))
     }
     grid.print()
   }

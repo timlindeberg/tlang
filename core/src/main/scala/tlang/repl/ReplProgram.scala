@@ -17,6 +17,7 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
+import tlang.utils.formatting.ErrorStringContext
 import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}
 
 import scala.collection.mutable
@@ -70,7 +71,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val classes      = mutable.Map[String, ClassDeclTree]()
   private val methods      = mutable.Map[String, MethodDeclTree]()
   private val history      = ListBuffer[StatTree]()
-  private val imports      = Imports(ctx)
+  private val imports      = Imports(ctx, ErrorStringContext(formatting))
   private val FailureColor = Bold + Red
 
   private var newStatements = List[StatTree]()
@@ -101,9 +102,9 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
             case e: CompilationException      => Renderer.DrawCompileError(e.messages(MessageType.Error))
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
-            case e: InvocationTargetException => Renderer.DrawFailure(formatter.stackTraceHighlighter(e.getCause), truncate = true)
+            case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause), truncate = true)
             case e                            =>
-              val err = FailureColor("Internal compiler error: \n") + formatter.stackTraceHighlighter(e)
+              val err = FailureColor("Internal compiler error: \n") + formatter.highlightStackTrace(e)
               println(err)
               println("Internal state:")
               println(prettyPrinted)
@@ -142,7 +143,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     sb.toString.trimWhiteSpaces
   }
 
-  private def prettyPrinted: String = formatter.prettyPrinter(generateCompilationUnit() :: Nil).trimWhiteSpaces
+  private def prettyPrinted: String = formatter.prettyPrint(generateCompilationUnit() :: Nil).trimWhiteSpaces
 
   private def prettyPrint(): Unit = {
     newStatements = Nil
@@ -159,7 +160,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     if (s.startsWith("val res") && s.contains("=")) {
       val split = s.split("=")
       if (split.length == 2)
-        return formatter.syntaxHighlighter(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
+        return formatter.syntaxHighlight(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
     }
     Bold(Green(s.trim))
   }
@@ -207,20 +208,20 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     classes ++= newClasses.map(clazz => clazz.tpe.toString -> clazz)
     newClasses map { clazz =>
-      Bold("Defined ") + KeywordColor("class ") + formatter.syntaxHighlighter(clazz.tpe.toString)
+      Bold("Defined ") + KeywordColor("class ") + formatter.syntaxHighlight(clazz.tpe.toString)
     }
   }
 
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     methods ++= newMethods.map(meth => meth.signature -> meth)
     newMethods map { meth =>
-      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlighter(meth.signature)
+      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlight(meth.signature)
     }
   }
 
   private def extractImports(imports: Imports): List[String] = {
     this.imports ++= imports
-    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlighter(imp.name) }
+    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlight(imp.name) }
   }
 
   private def extractStatements(stat: Option[StatTree]): List[String] = {
@@ -234,7 +235,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
     newStatements = stats
     stats.filterInstance[VarDecl] map { variable =>
-      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlighter(variable.id.name)
+      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlight(variable.id.name)
     }
   }
 
@@ -242,7 +243,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   // expressions
   private class NewStatementTransformer extends Trees.Transformer {
 
-    // This could potentially transform other validtests.code as well
+    // This could potentially transform other code as well
     override protected def _transform(t: Tree): Tree = t match {
       case block@Block(stats) if stats.nonEmpty =>
         stats.last match {

@@ -272,7 +272,7 @@ object Main extends MainErrors {
     val programExecutor = ProgramExecutor()
     cus.foreach { cu =>
       val file = cu.source.asInstanceOf[FileSource].file
-      val output = ctx.formatter.syntaxHighlighter(programExecutor(ctx, file))
+      val output = ctx.formatter.syntaxHighlight(programExecutor(ctx, file))
       grid
         .row(alignment = Center)
         .content(formatFileName(file))

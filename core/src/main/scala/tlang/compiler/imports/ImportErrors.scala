@@ -11,6 +11,9 @@ trait ImportErrors extends ErrorHandling {
 
   val ErrorLetters = "I"
 
+  import errorStringContext._
+
+
   abstract class ImportError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
 
   abstract class ImportWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)

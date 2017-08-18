@@ -13,6 +13,8 @@ trait FlowAnalysisErrors extends ErrorHandling {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
+  import errorStringContext._
+
   val ErrorLetters = "F"
   abstract class FlowAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
   abstract class FlowAnalysisWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
@@ -68,6 +70,6 @@ trait FlowAnalysisErrors extends ErrorHandling {
   }
 
   case class UnnecessaryElse(override val pos: Positioned) extends FlowAnalysisWarning(2, pos) {
-    lazy val message = err"Else is unnecessary since validtests.code flow ends in then branch."
+    lazy val message = err"Else is unnecessary since code flow ends in then branch."
   }
 }

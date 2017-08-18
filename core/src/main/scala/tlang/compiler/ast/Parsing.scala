@@ -10,7 +10,7 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -18,7 +18,8 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
-      val astBuilder = Parser(ctx, tokens.toArray)
+      val errorStringContext = ErrorStringContext(ctx.formatting)
+      val astBuilder = Parser(ctx, errorStringContext, tokens.toArray)
       astBuilder.compilationUnit
     }
 
@@ -56,11 +57,9 @@ object Parser {
   )
 }
 
-case class Parser(val ctx: Context, var tokens: Array[Token]) extends ParserErrors {
+case class Parser(ctx: Context, override val errorStringContext: ErrorStringContext, var tokens: Array[Token]) extends ParsingErrors {
 
-  override val reporter  : Reporter   = ctx.reporter
-  override val formatting: Formatting = ctx.formatting
-
+  override val reporter: Reporter = ctx.reporter
 
   import Parser._
 
@@ -111,7 +110,7 @@ case class Parser(val ctx: Context, var tokens: Array[Token]) extends ParserErro
 
     val classes = createMainClass(code)
 
-    val imports = Imports(ctx, imp, pack, classes)
+    val imports = Imports(ctx, errorStringContext, imp, pack, classes)
     CompilationUnit(pack, classes, imports)
   }
 

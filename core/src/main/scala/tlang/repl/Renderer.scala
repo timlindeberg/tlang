@@ -72,7 +72,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
       .row()
       .content(
-        s"""|Type in validtests.code to have it evaluated or type one of the following commands:
+        s"""|Type in code to have it evaluated or type one of the following commands:
             |
             |$commandList
             |

@@ -10,14 +10,15 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.Formatting
+import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     cus foreach { cu =>
       cu.classes foreach { clazz =>
-        val flowAnalyser = FlowAnalyser(ctx.reporter, ctx.formatting, cu.imports)
+        val errorStringContext = ErrorStringContext(ctx, cu)
+        val flowAnalyser = FlowAnalyser(ctx.reporter, errorStringContext, cu.imports)
         flowAnalyser(clazz)
       }
     }
@@ -36,8 +37,8 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 case class FlowAnalyser(
   override val reporter: Reporter,
-  override val formatting: Formatting,
-  val imports: Imports) extends FlowAnalysisErrors {
+  override val errorStringContext: ErrorStringContext,
+  imports: Imports) extends FlowAnalysisErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 

@@ -107,7 +107,8 @@ case class CompilerMessages(
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
     val name = messageType.name + appendix
-    val num = messageType.color(formatter.formatting)
+    val color = messageType.color(formatter.formatting)
+    val num = color(n)
     if (hitMax(messageType))
       s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
     else

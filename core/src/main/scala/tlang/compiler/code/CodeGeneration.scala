@@ -26,7 +26,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
     val classes = cus.flatMap(_.classes)
 
-    // output validtests.code in parallell?
+    // output code in parallell?
     val genResults = classes.map(generateClassFile(_, ctx))
 
     genResults.foreach(_.files.foreach(generateStackMapFrames))
@@ -134,7 +134,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
     val args = overriden.argList.map(arg => VariableID(arg.name).setSymbol(arg))
 
-    // The validtests.code to generate in the bridge method
+    // The code to generate in the bridge method
     val methType = meth.getType
     val methodID = MethodID(meth.name).setSymbol(meth)
     val methodCall = MethodCall(methodID, args).setType(methType)

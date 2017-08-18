@@ -15,7 +15,8 @@ class Suggestion(val suggestion: Option[String]) {
     case None    => ""
   }
 }
-class NameSuggestor {
+
+case class NameSuggestor() {
 
   private val AcceptableDistance = 3
   private val MinLength          = 3

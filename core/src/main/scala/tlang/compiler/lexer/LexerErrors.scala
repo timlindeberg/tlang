@@ -26,6 +26,8 @@ trait LexerErrors extends ErrorHandling {
 
   // Missing 0
 
+  import errorStringContext._
+
   abstract class LexerError(code: Int, pos: Positioned) extends ErrorMessage("L", code, pos)
 
   case class InvalidIdentifier(c: Char, length: Int) extends LexerError(1, pos(length)) {

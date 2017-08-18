@@ -623,7 +623,7 @@ object Trees {
 
   /*------------------------- Misc expression Trees -------------------------*/
 
-  // Used to generate validtests.code which doesn't fit the tree structure but
+  // Used to generate code which doesn't fit the tree structure but
   // which fits when generating bytecode. Can be used to transform an expression
   // in to multiple statements etc.
   // Generated when desugaring.

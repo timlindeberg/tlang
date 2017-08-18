@@ -18,6 +18,9 @@ trait TypeCheckingErrors extends ErrorHandling {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
+  import errorStringContext._
+
+
   private val ErrorLetters = "T"
   abstract class TypeCheckingError(code: Int, pos: Positioned)
     extends CompilerMessage(MessageType.Error, ErrorLetters, code, pos)
@@ -43,7 +46,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   case class ClassDoesntHaveMethod(className: String, methSignature: String, methName: String, alternatives: List[String], override val pos: Positioned)
     extends TypeCheckingError(1, pos) {
-    lazy val message = err"Class $className does not contain a method $methSignature.${ nameSuggestor(methName, alternatives) }"
+    lazy val message = err"Class $className does not contain a method $methSignature.${ suggestions(methName, alternatives) }"
   }
 
   case class MethodOnWrongType(method: String, tpe: String, override val pos: Positioned)
@@ -53,7 +56,7 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   case class ClassDoesntHaveField(className: String, fieldName: String, alternatives: List[String], override val pos: Positioned)
     extends TypeCheckingError(3, pos) {
-    lazy val message = err"Class $className does not contain a field $fieldName.${ nameSuggestor(fieldName, alternatives) }"
+    lazy val message = err"Class $className does not contain a field $fieldName.${ suggestions(fieldName, alternatives) }"
   }
 
   case class FieldOnWrongType(tpe: String, override val pos: Positioned)

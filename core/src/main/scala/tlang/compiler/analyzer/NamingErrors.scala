@@ -6,7 +6,7 @@ import tlang.compiler.ast.Trees.{Break, Tree, _}
 import tlang.compiler.error.{CompilerMessage, ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
-trait NameAnalysisErrors extends ErrorHandling {
+trait NamingErrors extends ErrorHandling {
 
   def report(error: ErrorMessage): Symbol = {
     reporter.report(error)
@@ -19,6 +19,9 @@ trait NameAnalysisErrors extends ErrorHandling {
 
     ErrorSymbol
   }
+
+  import errorStringContext._
+
 
   val ErrorLetters = "N"
   abstract class NameAnalysisError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
@@ -68,7 +71,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class UnknownType(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(6, pos) {
-    lazy val message = err"Unknown type: $name.${ nameSuggestor(name, alternatives) }"
+    lazy val message = err"Unknown type: $name.${ suggestions(name, alternatives) }"
   }
 
   case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
@@ -85,7 +88,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(10, pos) {
-    lazy val message = err"Could not resolve symbol $name.${ nameSuggestor(name, alternatives) }"
+    lazy val message = err"Could not resolve symbol $name.${ suggestions(name, alternatives) }"
   }
 
   case class AccessNonStaticFromStatic(name: String, override val pos: Positioned)
@@ -95,7 +98,7 @@ trait NameAnalysisErrors extends ErrorHandling {
 
   case class ParentNotDeclared(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(12, pos) {
-    lazy val message = err"Could not resolve parent symbol $name.${ nameSuggestor(name, alternatives) }"
+    lazy val message = err"Could not resolve parent symbol $name.${ suggestions(name, alternatives) }"
   }
 
   case class ThisInStaticContext(override val pos: Positioned)

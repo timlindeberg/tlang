@@ -14,6 +14,7 @@ case class MessageFormatter(
 
   import formatter.formatting._
 
+  val TabSpaces              = " " * tabWidth
   var error: CompilerMessage = _
 
   def setError(error: CompilerMessage): Unit = this.error = error
@@ -46,13 +47,13 @@ case class MessageFormatter(
       if (formatter.formatting.useColor)
         ctxLines.map { case (lineNum, line) =>
           val marking = Marking(pos, Bold + Underline + color, lineNum)
-          val coloredLine = formatter.syntaxHighlighter(line, marking)
+          val coloredLine = formatter.syntaxHighlight(line, marking)
           (lineNum.toString, replaceTabs(coloredLine))
         }
       else
         ctxLines.flatMap { case (lineNum, line) =>
-          indicatorLines(lineNum, line, indent)
-            .map { case (lineNum, line) => (lineNum, replaceTabs(line)) }
+          indicatorLines(lineNum, line)
+
         }
 
     lines.map { case (lineNum, line) =>
@@ -61,7 +62,7 @@ case class MessageFormatter(
     }
   }
 
-  def replaceTabs(s: String): String = s.replaceAll("\t", " " * tabWidth)
+  def replaceTabs(s: String): String = s.replaceAll("\t", TabSpaces)
 
   def getMinimumIndent(ctxLines: List[(Int, String)]): Int =
     ctxLines
@@ -89,20 +90,27 @@ case class MessageFormatter(
       .toList
   }
 
-  def indicatorLines(lineNum: Int, line: String, indent: Int): List[(String, String)] = {
-    val lines = List((lineNum.toString, line))
+  def indicatorLines(lineNum: Int, line: String): List[(String, String)] = {
+    val lines = List((lineNum.toString, replaceTabs(line)))
     if (lineNum != pos.line)
       return lines
 
     val start = pos.col - 1
     val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
-    var i = -1
-    val whitespaces = line.takeWhile { c =>
-      i += 1
-      i < start && c.isWhitespace
-    }
+
+
     val indicator = UnderlineCharacter * (end - start)
-    lines :+ ("", whitespaces + indicator)
+    lines :+ ("", indentationOfIndicator(line, start) + indicator)
+  }
+
+  private def indentationOfIndicator(line: String, start: Int): String = {
+    val whitespaces = new StringBuilder
+    var i = 0
+    while (i < start) {
+      whitespaces ++= (if (line(i) == '\t') TabSpaces else " ")
+      i += 1
+    }
+    whitespaces.toString
   }
 
   private def clamp(x: Int, min: Int, max: Int): Int = Math.min(Math.max(x, min), max)

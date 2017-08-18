@@ -1,9 +1,9 @@
 package cafebabe
 
-/** A <validtests.code>ClassFile</validtests.code> object is an abstract representation of all the
-  * information that will be written to a <validtests.code>.class</validtests.code> file.  In the Java
+/** A <code>ClassFile</code> object is an abstract representation of all the
+  * information that will be written to a <code>.class</code> file.  In the Java
   * model, that generally corresponds to one class (or interface) as declared in
-  * source validtests.code, however this is by no means a restriction of the platform. */
+  * source code, however this is by no means a restriction of the platform. */
 class ClassFile(val className: String, parentName: Option[String] = None) extends Streamable {
 
   import ClassFileTypes._
