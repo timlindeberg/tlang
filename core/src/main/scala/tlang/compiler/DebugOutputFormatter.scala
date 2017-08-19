@@ -3,11 +3,10 @@ package tlang.compiler
 import cafebabe.CodegenerationStackTrace
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
+import tlang.formatting.Formatter
+import tlang.formatting.grid.Alignment.Center
+import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatter
-import tlang.utils.formatting.grid.Alignment.Center
-import tlang.utils.formatting.grid.OverflowHandling.Truncate
-import tlang.utils.formatting.grid.{Column, Grid}
 
 case class DebugOutputFormatter(formatter: Formatter) {
 
@@ -34,11 +33,10 @@ case class DebugOutputFormatter(formatter: Formatter) {
     val grid = makeGrid(phaseName)
 
     allTokens.foreach { tokens =>
-      val source = tokens.head.source
       grid
         .row(alignment = Center)
-        .content(formatFileName(source.mainName))
-        .row(Column(overflowHandling = Truncate), Column, Column)
+        .content(formatFileName(tokens.head.sourceName))
+        .row(TruncatedColumn, Column, Column)
         .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Position"))
         .content()
         .mapContent(tokens) { token =>
@@ -56,10 +54,10 @@ case class DebugOutputFormatter(formatter: Formatter) {
     cus.foreach { cu =>
       grid
         .row(alignment = Center)
-        .content(formatFileName(cu.source.mainName))
+        .content(formatFileName(cu.sourceName))
         .row()
         .content(formatter.prettyPrint(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
-        .row(Column(overflowHandling = Truncate), Column, Column)
+        .row(TruncatedColumn, Column, Column)
         .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
         .contents(formatter.formatTree(cu))

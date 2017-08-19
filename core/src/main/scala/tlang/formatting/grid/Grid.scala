@@ -1,9 +1,9 @@
-package tlang.utils.formatting.grid
+package tlang.formatting.grid
 
+import tlang.formatting.Colors.Color
+import tlang.formatting._
+import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting._
-import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ListBuffer

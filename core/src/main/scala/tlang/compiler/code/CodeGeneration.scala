@@ -13,8 +13,8 @@ import tlang.Context
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
 import tlang.utils.{FileSource, StringSource}
 
 import scala.collection.mutable
@@ -183,10 +183,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classFile = new ClassFile(className, parent)
     traits.foreach(t => classFile.addInterface(t.JVMName))
 
-    classDecl.source match {
+    classDecl.source ifDefined {
       case FileSource(file)            => classFile.setSourceFile(file.getName)
       case StringSource(str, mainName) => classFile.setSourceFile(mainName)
-      case _                           =>
     }
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags

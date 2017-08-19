@@ -6,8 +6,8 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
 import tlang.{Constants, Context}
 
 import scala.collection.mutable.ListBuffer

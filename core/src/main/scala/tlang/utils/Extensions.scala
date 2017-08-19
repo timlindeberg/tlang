@@ -1,6 +1,6 @@
 package tlang.utils
 
-import tlang.utils.formatting.{ColoredString, Formatting}
+import tlang.formatting.{ColoredString, Formatting}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -162,8 +162,11 @@ object Extensions {
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
+    def notIn(seq: TraversableOnce[T]): Boolean = !t.in(seq)
     def in(set: Set[T]): Boolean = set.contains(t)
+    def notIn(set: Set[T]): Boolean = !t.in(set)
     def in(range: Range): Boolean = range.contains(t)
+    def notIn(range: Range): Boolean = !t.in(range)
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {

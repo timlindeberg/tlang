@@ -1,9 +1,9 @@
-package tlang.utils.formatting
+package tlang.formatting
 
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Lexer, Token}
+import tlang.formatting.Colors._
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Colors._
 import tlang.utils.{Position, Positioned, StringSource}
 
 case class Marking(pos: Positioned, style: Color, lineOffset: Int = 1)
@@ -13,6 +13,7 @@ case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
   import formatting._
 
 
+  def apply(code: String): String = apply(code, Seq())
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
     if (code.isEmpty || !formatting.useColor)
@@ -61,7 +62,7 @@ case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
     markings
       .find { case Marking(markedPos, _, offset) =>
         val offsetPos = Position(pos.line + offset - 1, pos.col, pos.endLine + offset - 1, pos.endCol)
-        offsetPos.isWithin(markedPos)
+        offsetPos isWithin markedPos
       }
       .map(_.style)
 }

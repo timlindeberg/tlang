@@ -8,9 +8,9 @@ import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
+import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -120,7 +120,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val stats = code collect { case x: StatTree => x }
 
     if (stats.nonEmpty || methods.nonEmpty) {
-      val mainName = currentToken.source.mainName
+      val mainName = currentToken.source.map(_.mainName).getOrElse("MissingSource")
       val mainClass = classes.filterInstance[IDClassDeclTree].find(_.id.name == mainName) match {
         case Some(c) => c
         case None    =>

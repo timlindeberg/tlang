@@ -11,11 +11,11 @@ import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.compiler.options.{Flags, Options}
+import tlang.formatting._
+import tlang.formatting.grid.Alignment.Center
+import tlang.formatting.grid.Width.Percentage
+import tlang.formatting.grid.{Column, Grid}
 import tlang.utils.Extensions._
-import tlang.utils.formatting._
-import tlang.utils.formatting.grid.Alignment.Center
-import tlang.utils.formatting.grid.Width.Percentage
-import tlang.utils.formatting.grid.{Column, Grid}
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 import tlang.{Constants, Context}
 
@@ -271,7 +271,8 @@ object Main extends MainErrors {
 
     val programExecutor = ProgramExecutor()
     cus.foreach { cu =>
-      val file = cu.source.asInstanceOf[FileSource].file
+      // Gauranteed to have a file source
+      val file = cu.source.get.asInstanceOf[FileSource].file
       val output = ctx.formatter.syntaxHighlight(programExecutor(ctx, file))
       grid
         .row(alignment = Center)

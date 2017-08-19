@@ -15,9 +15,9 @@ import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
+import tlang.formatting.ErrorStringContext
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
-import tlang.utils.formatting.ErrorStringContext
 import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}
 
 import scala.collection.mutable

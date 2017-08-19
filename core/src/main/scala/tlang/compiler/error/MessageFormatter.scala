@@ -1,116 +1,140 @@
 package tlang.compiler.error
 
-import java.io.File
-
 import tlang.compiler.options.Flags.MessageContext
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.{Formatter, Marking}
-import tlang.utils.{FileSource, Positioned}
+import tlang.formatting.Colors.Color
+import tlang.formatting.{Formatter, Marking}
+import tlang.utils.Extensions._
+import tlang.utils.{Position, Positioned}
 
 case class MessageFormatter(
   formatter: Formatter,
   messageContextSize: Int = MessageContext.defaultValue,
   tabWidth: Int = 2) {
 
-  import formatter.formatting._
+  val formatting = formatter.formatting
 
-  val TabSpaces              = " " * tabWidth
-  var error: CompilerMessage = _
+  import formatting._
 
-  def setError(error: CompilerMessage): Unit = this.error = error
+  val TabSpaces                   = " " * tabWidth
+  var message: CompilerMessage    = _
+  var lines  : IndexedSeq[String] = IndexedSeq()
 
-  def color: Color = error.messageType.color(formatter.formatting) + Bold
+  def setMessage(message: CompilerMessage): Unit = {
+    this.message = message
+    lines = message.pos.source match {
+      case Some(source) => source.lines
+      case None         => IndexedSeq()
+    }
+  }
 
-  def pos: Positioned = error.pos
-  def lines: IndexedSeq[String] = if (pos.hasSource) pos.source.text.lines.toIndexedSeq else IndexedSeq()
+  def color: Color = message.messageType.color(formatting) + Bold
 
-  def prefix: String = color(error.messageType.name + " " + error.code) + " "
+  def position: Positioned = message.pos
 
-  def position: String = {
+  def prefix: String = color(message.messageType.name + " " + message.code)
+
+  def positionDescription: String = {
     val Style = Bold + NumColor
-    Style(pos.line) + ":" + Style(pos.col)
+    Style(position.line) + ":" + Style(position.col)
   }
 
   def sourceDescription: String = {
-    val file = error.pos.source.asInstanceOf[FileSource].file
-    val fileNameStyle = Bold + NumColor
-    val fileName = fileNameStyle(file.getName)
-    val fileDescription = file.getParent + File.separator + fileName
-    position + " " + fileDescription
-  }
-
-  def locationInFile: List[(String, String)] = {
-    val ctxLines = contextLines
-    val indent = getMinimumIndent(ctxLines)
-
-    val lines =
-      if (formatter.formatting.useColor)
-        ctxLines.map { case (lineNum, line) =>
-          val marking = Marking(pos, Bold + Underline + color, lineNum)
-          val coloredLine = formatter.syntaxHighlight(line, marking)
-          (lineNum.toString, replaceTabs(coloredLine))
-        }
-      else
-        ctxLines.flatMap { case (lineNum, line) =>
-          indicatorLines(lineNum, line)
-
-        }
-
-    lines.map { case (lineNum, line) =>
-      val trimmedLine = if (line.isEmpty) line else line.substring(indent)
-      (NumColor(lineNum), trimmedLine)
+    val sourceDescription = position.source match {
+      case Some(source) => source.description(formatting)
+      case _            => ""
     }
+    positionDescription + " " + sourceDescription
   }
 
-  def replaceTabs(s: String): String = s.replaceAll("\t", TabSpaces)
+  def locationInSource: List[(String, String)] = {
 
-  def getMinimumIndent(ctxLines: List[(Int, String)]): Int =
-    ctxLines
-      .filter { case (_, line) => line.nonEmpty }
-      .map { case (_, line) => indent(line) }.min
+    val (trimmedLines, trimmedPos) = trimIndent(contextLines)
+    val (lines, adjustedPos) = replaceTabs(trimmedLines, trimmedPos)
 
-  def indent(line: String): Int = {
-    var i = 0
-    var indent = 0
-    while (i < line.length && line(i).isWhitespace) {
-      if (line(i) == '\t')
-        indent += tabWidth
-      else
-        indent += 1
-      i += 1
-    }
-    indent
+    if (formatting.useColor)
+      lines.map { case (lineNum, line) => coloredIndicatorLine(lineNum, line, adjustedPos) }
+    else
+      lines.flatMap { case (lineNum, line) => indicatorLines(lineNum, line, adjustedPos) }
   }
 
-  def contextLines: List[(Int, String)] = {
-    val start = clamp(pos.line - messageContextSize, 1, lines.size)
-    val end = clamp(pos.line + messageContextSize, 1, lines.size)
+
+  private def contextLines: List[(Int, String)] = {
+    val start = clamp(position.line - messageContextSize, 1, lines.size)
+    val end = clamp(position.line + messageContextSize, 1, lines.size)
     (start to end)
       .map(i => (i, lines(i - 1)))
       .toList
   }
 
-  def indicatorLines(lineNum: Int, line: String): List[(String, String)] = {
-    val lines = List((lineNum.toString, replaceTabs(line)))
-    if (lineNum != pos.line)
-      return lines
+  private def trimIndent(lines: List[(Int, String)]): (List[(Int, String)], Position) = {
+    val indent = getMinimumIndent(lines)
 
-    val start = pos.col - 1
-    val end = if (pos.endLine == pos.line) pos.endCol - 1 else line.length
+    val trimmedLines = lines.map { case (lineNum, line) =>
+      val trimmedLine = if (line.nonEmpty) line.substring(indent) else ""
+      (lineNum, trimmedLine)
+    }
+    val start = math.max(1, position.col - indent)
+    val end = math.max(1, position.endCol - indent)
+    val adjustedPos = Position(position.line, start, position.endLine, end)
+    (trimmedLines, adjustedPos)
+  }
+
+
+  private def replaceTabs(lines: List[(Int, String)], pos: Position): (List[(Int, String)], Position) = {
+    var start = pos.col
+    var end = pos.endCol
+    val tabReplacedLines = lines map { case (lineNum, line) =>
+      var sb = new StringBuilder
+      for (i <- 0 until line.length) {
+        val c = line(i)
+        c match {
+          case '\t' =>
+            if (lineNum == pos.line && start - 1 > i) start += tabWidth - 1
+            if (lineNum == pos.endLine && end - 1 >= i) end += tabWidth - 1
+            sb.appendTimes(' ', tabWidth)
+          case _    =>
+            sb += c
+        }
+      }
+      (lineNum, sb.toString)
+    }
+    val adjustedPos = Position(pos.line, start, pos.endLine, end)
+    (tabReplacedLines, adjustedPos)
+  }
+
+  private def getMinimumIndent(lines: List[(Int, String)]): Int =
+    lines
+      .filter { case (_, line) => line.nonEmpty }
+      .map { case (_, line) => indent(line) }.min
+
+  private def indent(line: String): Int = {
+    var i = 0
+    var indent = 0
+    while (i < line.length && line(i).isWhitespace) {
+      indent += 1
+      i += 1
+    }
+    indent
+  }
+
+  private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
+    val marking = Marking(pos, Underline + color, lineNum)
+    val coloredLine = formatter.syntaxHighlight(line, marking)
+    (NumColor(lineNum), coloredLine)
+  }
+
+  private def indicatorLines(lineNum: Int, line: String, pos: Positioned): List[(String, String)] = {
+    val firstLine = (lineNum.toString, line)
+    if (lineNum notIn (pos.line to pos.endLine))
+      return firstLine :: Nil
+
+    val start = if (lineNum == pos.line) pos.col - 1 else 0
+    val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
 
 
     val indicator = UnderlineCharacter * (end - start)
-    lines :+ ("", indentationOfIndicator(line, start) + indicator)
-  }
-
-  private def indentationOfIndicator(line: String, start: Int): String = {
-    val whitespaces = new StringBuilder
-    var i = 0
-    while (i < start) {
-      whitespaces ++= (if (line(i) == '\t') TabSpaces else " ")
-      i += 1
-    }
-    whitespaces.toString
+    val indentation = " " * start
+    firstLine :: ("", indentation + indicator) :: Nil
   }
 
   private def clamp(x: Int, min: Int, max: Int): Int = Math.min(Math.max(x, min), max)

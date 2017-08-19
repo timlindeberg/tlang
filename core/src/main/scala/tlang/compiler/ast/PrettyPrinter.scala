@@ -5,8 +5,8 @@ import java.util.regex.Matcher
 
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.Formatting
+import tlang.formatting.Colors.Color
+import tlang.formatting.Formatting
 
 
 case class PrettyPrinter(formatting: Formatting) {

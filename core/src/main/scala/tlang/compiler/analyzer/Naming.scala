@@ -7,9 +7,9 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassSymbolLocator
+import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.{ErrorStringContext, Formatting}
 import tlang.{Constants, Context}
 
 object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {

@@ -6,10 +6,10 @@ import java.nio.file.{InvalidPathException, Paths}
 import tlang.Constants
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
+import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
+import tlang.formatting.Colors.{ColorScheme, DefaultColorScheme}
+import tlang.formatting._
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle}
-import tlang.utils.formatting.Colors.{ColorScheme, DefaultColorScheme}
-import tlang.utils.formatting._
 
 import scala.collection.mutable
 import scala.tools.jline.TerminalFactory
@@ -174,7 +174,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   }
 
   private def getColorScheme(json: Map[String, String]): ColorScheme = {
-    import tlang.utils.formatting.Colors.ColorScheme._
+    import tlang.formatting.Colors.ColorScheme._
     json.keys
       .find { key => !(key in ColorSchemeNames) }
       .foreach { FatalInvalidColorSchemeKey(_, ColorSchemeNames) }
@@ -183,20 +183,20 @@ case class Options(arguments: Array[String]) extends MainErrors {
       val color = json.get(name) match {
         case Some(color) =>
           Colors.getColor(color).getOrElse(FatalInvalidColorSchemeArg(color, Colors.ColorNames))
-        case None        => ""
+        case None        => -1
       }
       name -> color
     }.toMap
 
     new ColorScheme {
-      override val Keyword : String = colors(KeywordName)
-      override val Variable: String = colors(VariableName)
-      override val Class   : String = colors(ClassName)
-      override val Method  : String = colors(MethodName)
-      override val String  : String = colors(StringName)
-      override val Number  : String = colors(NumberName)
-      override val Comment : String = colors(CommentName)
-      override val Symbol  : String = colors(SymbolName)
+      override val Keyword : Int = colors(KeywordName)
+      override val Variable: Int = colors(VariableName)
+      override val Class   : Int = colors(ClassName)
+      override val Method  : Int = colors(MethodName)
+      override val String  : Int = colors(StringName)
+      override val Number  : Int = colors(NumberName)
+      override val Comment : Int = colors(CommentName)
+      override val Symbol  : Int = colors(SymbolName)
     }
   }
 

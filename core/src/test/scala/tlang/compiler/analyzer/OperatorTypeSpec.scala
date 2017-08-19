@@ -4,8 +4,8 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbo
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.formatting.ErrorStringContext
 import tlang.testutils.CompilerTestSpec
-import tlang.utils.formatting.ErrorStringContext
 
 class OperatorTypeSpec extends CompilerTestSpec {
 

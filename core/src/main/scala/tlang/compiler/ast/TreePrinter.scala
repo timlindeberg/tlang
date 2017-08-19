@@ -3,8 +3,8 @@ package tlang.compiler.ast
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.Formatting
+import tlang.formatting.Colors.Color
+import tlang.formatting.Formatting
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -70,7 +70,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
   private def formatTree(t: Tree): String = {
     val content = t match {
-      case c: CompilationUnit  => formatFileName(c.source.mainName)
+      case c: CompilationUnit  => formatFileName(c.sourceName)
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
       case v: VariableID       => VarColor(v.name)

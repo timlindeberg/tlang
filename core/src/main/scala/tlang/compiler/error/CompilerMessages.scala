@@ -3,9 +3,8 @@ package tlang.compiler.error
 import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
 import tlang.compiler.options.Flags.MaxErrors
+import tlang.formatting.grid.Grid
 import tlang.utils.Extensions._
-import tlang.utils.FileSource
-import tlang.utils.formatting.grid.Grid
 
 import scala.collection.mutable
 
@@ -84,21 +83,21 @@ case class CompilerMessages(
     }
 
   private def addToGrid(grid: Grid, error: CompilerMessage): Unit = {
-    errorFormatter.setError(error)
+    errorFormatter.setMessage(error)
 
     grid.row()
 
     val pos = error.pos
-    val validPosition = error.pos.hasSource && (pos.line in (1 to errorFormatter.lines.size))
+    val validPosition = error.pos.source.nonEmpty && (pos.line in (1 to errorFormatter.lines.size))
 
-    if (validPosition && error.pos.source.isInstanceOf[FileSource])
+    if (validPosition)
       grid.content(errorFormatter.sourceDescription)
 
-    grid.content(errorFormatter.prefix + error.message)
+    grid.content(errorFormatter.prefix + " " + error.message)
 
     if (validPosition) {
       grid.row(2)
-      grid.contents(errorFormatter.locationInFile)
+      grid.contents(errorFormatter.locationInSource)
     }
   }
 
@@ -106,7 +105,7 @@ case class CompilerMessages(
     val n = messages(messageType).size
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
-    val name = messageType.name + appendix
+    val name = messageType.name.toLowerCase + appendix
     val color = messageType.color(formatter.formatting)
     val num = color(n)
     if (hitMax(messageType))

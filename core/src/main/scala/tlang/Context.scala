@@ -5,7 +5,7 @@ import java.io.File
 import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
-import tlang.utils.formatting.{Formatter, Formatting}
+import tlang.formatting.{Formatter, Formatting}
 
 import scala.collection.mutable
 

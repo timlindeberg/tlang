@@ -1,11 +1,11 @@
-package tlang.utils.formatting
+package tlang.formatting
 
 import java.io.File
 
 import tlang.Constants
 import tlang.compiler.options.Flags.LineWidth
-import tlang.utils.formatting.BoxStyles.BoxStyle
-import tlang.utils.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
+import tlang.formatting.BoxStyles.BoxStyle
+import tlang.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
 
 object FancyFormatting extends Formatting(
   BoxStyles.Unicode, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
@@ -21,32 +21,31 @@ case class Formatting(
   useColor: Boolean = true,
   asciiOnly: Boolean = false) {
 
-  import Console._
-
   /*--------------------------------- Colors --------------------------------*/
 
-  val NoColor   = Color("", isActive = false)
-  val Reset     = Color(RESET, useColor)
-  val Bold      = Color(BOLD, useColor)
-  val Underline = Color(UNDERLINED, useColor)
+  val NoColor  : Color = Colors.NoColor
+  val Reset    : Color = Colors.Reset(useColor)
+  val Bold     : Color = Colors.Bold(useColor)
+  val Underline: Color = Colors.Underlined(useColor)
+  val Inverse  : Color = Colors.Inverse(useColor)
 
-  val Black   = Color(BLACK, useColor)
-  val Red     = Color(RED, useColor)
-  val Green   = Color(GREEN, useColor)
-  val Yellow  = Color(YELLOW, useColor)
-  val Blue    = Color(BLUE, useColor)
-  val Magenta = Color(MAGENTA, useColor)
-  val Cyan    = Color(CYAN, useColor)
-  val White   = Color(WHITE, useColor)
+  val Black  : Color = Colors.Black(useColor)
+  val Red    : Color = Colors.Red(useColor)
+  val Green  : Color = Colors.Green(useColor)
+  val Yellow : Color = Colors.Yellow(useColor)
+  val Blue   : Color = Colors.Blue(useColor)
+  val Magenta: Color = Colors.Magenta(useColor)
+  val Cyan   : Color = Colors.Cyan(useColor)
+  val White  : Color = Colors.White(useColor)
 
-  val BlackBG   = Color(BLACK_B, useColor)
-  val RedBG     = Color(RED_B, useColor)
-  val GreenBG   = Color(GREEN_B, useColor)
-  val YellowBG  = Color(YELLOW_B, useColor)
-  val BlueBG    = Color(BLUE_B, useColor)
-  val MagentaBG = Color(MAGENTA_B, useColor)
-  val CyanBG    = Color(CYAN_B, useColor)
-  val WhiteBG   = Color(WHITE_B, useColor)
+  val BlackBG  : Color = Colors.BlackBG(useColor)
+  val RedBG    : Color = Colors.RedBG(useColor)
+  val GreenBG  : Color = Colors.GreenBG(useColor)
+  val YellowBG : Color = Colors.YellowBG(useColor)
+  val BlueBG   : Color = Colors.BlueBG(useColor)
+  val MagentaBG: Color = Colors.MagentaBG(useColor)
+  val CyanBG   : Color = Colors.CyanBG(useColor)
+  val WhiteBG  : Color = Colors.WhiteBG(useColor)
 
   val AllColors: Array[Color] = Array(Black, Red, Green, White, Yellow, Blue, Magenta, Cyan, White)
 

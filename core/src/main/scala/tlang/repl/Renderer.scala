@@ -2,9 +2,9 @@ package tlang.repl
 
 import akka.actor.{Actor, Props}
 import tlang.compiler.error._
+import tlang.formatting.Formatter
+import tlang.formatting.grid.Grid
 import tlang.repl.input.InputBuffer
-import tlang.utils.formatting.Formatter
-import tlang.utils.formatting.grid.Grid
 
 object Renderer {
 

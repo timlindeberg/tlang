@@ -1,13 +1,12 @@
-package tlang.utils.formatting.grid
+package tlang.formatting.grid
 
-import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
+import tlang.formatting.BoxStyles.{Ascii, BoxStyle, NoLines, Unicode}
+import tlang.formatting._
+import tlang.formatting.grid.Alignment.{Center, Left, Right}
+import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
+import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle, NoLines, Unicode}
-import tlang.utils.formatting._
-import tlang.utils.formatting.grid.Alignment.{Center, Left, Right}
-import tlang.utils.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
-import tlang.utils.formatting.grid.Width.{Auto, Fixed, Percentage}
 
 class GridSpec extends UnitSpec {
 
@@ -16,18 +15,10 @@ class GridSpec extends UnitSpec {
   def mockedFormatter(
     width: Int = DefaultMaxWidth,
     boxStyle: BoxStyle = Unicode,
-    wordWrapper: Option[WordWrapper] = None,
-    truncator: Option[Truncator] = None
+    wordWrapper: WordWrapper = defaultMockedWordWrapper,
+    truncator: Truncator = mock[Truncator]
   ): Formatter = {
-    Formatter(
-      formatting = Formatting(boxStyle, width),
-      wordWrapper = wordWrapper.getOrElse(defaultMockedWordWrapper),
-      truncator = truncator.getOrElse(mock[Truncator]),
-      prettyPrinter = mock[PrettyPrinter],
-      treePrinter = mock[TreePrinter],
-      syntaxHighlighter = mock[SyntaxHighlighter],
-      stackTraceHighlighter = mock[StackTraceHighlighter]
-    )
+    createMockFormatter(width = width, boxStyle = boxStyle, wordWrapper = wordWrapper, truncator = truncator)
   }
 
   // Default behaviour of the mocked word wrapper is to return the given line
@@ -467,7 +458,7 @@ class GridSpec extends UnitSpec {
       ("DEFGH", 2) -> List("DE", "FG", "H")
     )
 
-    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
+    Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column(width = Fixed(2)), Column)
       .content("ABCDEFG", "12345", "HIJKMLN")
       .row(Column, Column, Column(width = Fixed(2)))
@@ -570,7 +561,7 @@ class GridSpec extends UnitSpec {
         "\u001b[31mQRSTUVXYZ\u001b[0m"
       )
     )
-    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
+    Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row()
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m")
       .render() should matchWithAnsi(
@@ -581,9 +572,8 @@ class GridSpec extends UnitSpec {
   }
 
   it should "render correctly with colored borders" in {
-    val f = mockedFormatter()
-    Grid(f)
-      .borderColor(f.formatting.Red)
+    Grid(mockedFormatter())
+      .borderColor(Colors.Red)
       .row(Column, Column)
       .content("ABC", "DEF")
       .row(Column, Column)
@@ -613,7 +603,7 @@ class GridSpec extends UnitSpec {
       ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
     )
 
-    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
+    Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "ABCDEF")
       .row(Column, Column, Column)
@@ -654,7 +644,7 @@ class GridSpec extends UnitSpec {
       ("A", 1) -> List("A")
     )
 
-    Grid(mockedFormatter(width = 21, wordWrapper = Some(wordWrapper)))
+    Grid(mockedFormatter(width = 21, wordWrapper = wordWrapper))
       .row(Column, Column, Column, Column, Column)
       .content("ABCDEFGHIJKL", "ABCDEFGHI", "ABCDEF", "ABC", "A")
       .render() shouldBe
@@ -727,7 +717,7 @@ class GridSpec extends UnitSpec {
       )
     )
 
-    Grid(mockedFormatter(wordWrapper = Some(wordWrapper)))
+    Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
       .content("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m",
         "\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m",
@@ -761,7 +751,7 @@ class GridSpec extends UnitSpec {
       ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> "A..."
     )
 
-    Grid(mockedFormatter(truncator = Some(truncator)))
+    Grid(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "AB")
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
@@ -792,7 +782,7 @@ class GridSpec extends UnitSpec {
       ("\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) -> "\u001b[35mA\u001b[0m..."
     )
 
-    Grid(mockedFormatter(truncator = Some(truncator)))
+    Grid(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", "ABCDEFGHIJKLMN", "\u001b[32mAB\u001b[0m")
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)

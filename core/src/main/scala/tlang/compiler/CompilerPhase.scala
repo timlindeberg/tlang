@@ -1,8 +1,8 @@
 package tlang.compiler
 
 import tlang.Context
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Formatting
 
 abstract class CompilerPhase[F, T] {
   self =>

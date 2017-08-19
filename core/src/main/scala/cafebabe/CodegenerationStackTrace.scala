@@ -2,8 +2,8 @@ package cafebabe
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting.Formatting
+import tlang.formatting.Colors.Color
+import tlang.formatting.Formatting
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

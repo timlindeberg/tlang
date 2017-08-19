@@ -4,9 +4,9 @@ import tlang.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.Reporter
+import tlang.formatting.ErrorStringContext
 import tlang.utils.Extensions._
 import tlang.utils.NoPosition
-import tlang.utils.formatting.ErrorStringContext
 
 import scala.collection.mutable
 

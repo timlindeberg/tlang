@@ -3,6 +3,9 @@ package tlang.testutils
 import org.scalamock.function._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
+import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
+import tlang.formatting.BoxStyles.{BoxStyle, Unicode}
+import tlang.formatting._
 
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory {
 
@@ -34,5 +37,30 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
     calls.foreach { case ((t1, t2, t3, t4, t5, t6, t7, t8), r) => f.expects(t1, t2, t3, t4, t5, t6, t7, t8).returning(r) }
 
   // Add more if needed
+
+
+  def createMockFormatter(
+    width: Int = 80,
+    boxStyle: BoxStyle = Unicode,
+    useColor: Boolean = true,
+    formatting: Option[Formatting] = None,
+    wordWrapper: WordWrapper = mock[WordWrapper],
+    truncator: Truncator = mock[Truncator],
+    prettyPrinter: PrettyPrinter = mock[PrettyPrinter],
+    treePrinter: TreePrinter = mock[TreePrinter],
+    syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
+    stackTraceHighlighter: StackTraceHighlighter = mock[StackTraceHighlighter]
+  ): Formatter = {
+
+    Formatter(
+      formatting = formatting.getOrElse(Formatting(boxStyle, width, useColor = useColor)),
+      wordWrapper,
+      truncator,
+      prettyPrinter,
+      treePrinter,
+      syntaxHighlighter,
+      stackTraceHighlighter
+    )
+  }
 
 }

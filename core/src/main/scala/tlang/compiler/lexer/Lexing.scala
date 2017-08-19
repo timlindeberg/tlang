@@ -6,9 +6,9 @@ import java.math.BigInteger
 import tlang.Context
 import tlang.compiler.error.Reporter
 import tlang.compiler.lexer.Tokens._
+import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Source
-import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.annotation.tailrec
 

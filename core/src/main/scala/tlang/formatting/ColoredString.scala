@@ -1,7 +1,7 @@
-package tlang.utils.formatting
+package tlang.formatting
 
+import tlang.formatting.Colors.Color
 import tlang.utils.Extensions._
-import tlang.utils.formatting.Colors.Color
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.ArrayBuffer

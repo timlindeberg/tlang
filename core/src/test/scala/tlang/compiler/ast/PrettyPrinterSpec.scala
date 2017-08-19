@@ -5,8 +5,8 @@ import java.io.File
 import tlang.Context
 import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
+import tlang.formatting.SimpleFormatting
 import tlang.testutils.CompilerTestSpec
-import tlang.utils.formatting.SimpleFormatting
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerTestSpec {

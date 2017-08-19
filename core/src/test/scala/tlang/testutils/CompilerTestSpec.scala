@@ -6,22 +6,27 @@ import org.scalatest._
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.error.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.imports.ClassPath
+import tlang.formatting.BoxStyles.{Ascii, Unicode}
+import tlang.formatting.grid.Grid
+import tlang.formatting.{Formatter, Formatting}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{Ascii, Unicode}
-import tlang.utils.formatting.grid.Grid
-import tlang.utils.formatting.{Formatter, Formatting}
 import tlang.{Constants, Context}
 
 import scala.concurrent.duration.Duration
 import scala.util.matching.Regex
 
 object CompilerTestTag extends Tag("compilertest")
+
+object CompilerTestSpec {
+  val Resources = "core/src/test/resources"
+}
+
 trait CompilerTestSpec extends FreeSpec with Matchers {
 
   val Timeout            : Duration       = Duration(2, "sec")
   val SolutionRegex      : Regex          = """.*// *[R|r]es:(.*)""".r
   val IgnoreRegex        : Regex          = """.*// *[I|i]gnore.*""".r
-  val Resources          : String         = "core/src/test/resources"
+  val Resources          : String         = CompilerTestSpec.Resources
   val TestOutputDirectory: String         = "gen"
   val UseSimpleFormatting: Boolean        = sys.env.get("simple").contains("true")
   val UseColors          : Boolean        = sys.env.get("colors").contains("true")

@@ -1,11 +1,11 @@
 package tlang.utils
 
 trait Positioned {
-  private var _source   : Source = _
-  private var _lineStart: Int    = 0
-  private var _colStart : Int    = 0
-  private var _lineEnd  : Int    = 0
-  private var _colEnd   : Int    = 0
+  private var _source   : Option[Source] = None
+  private var _lineStart: Int            = 0
+  private var _colStart : Int            = 0
+  private var _lineEnd  : Int            = 0
+  private var _colEnd   : Int            = 0
 
   def setPos(source: Source, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     _lineStart = lineStart
@@ -13,7 +13,7 @@ trait Positioned {
 
     _lineEnd = lineEnd
     _colEnd = colEnd
-    _source = source
+    _source = Some(source)
 
     this
   }
@@ -52,9 +52,7 @@ trait Positioned {
     this
   }
 
-  def hasSource: Boolean = _source != null
-
-  def source: Source = _source
+  def source: Option[Source] = _source
   def line: Int = _lineStart
   def col: Int = _colStart
   def endLine: Int = _lineEnd
@@ -72,6 +70,8 @@ trait Positioned {
 
   def isWithin(position: Positioned): Boolean =
     encodedStartPos >= position.encodedStartPos && encodedEndPos <= position.encodedEndPos
+
+  def sourceName: String = source.map(_.mainName).getOrElse("Missing Source")
 
 
 }

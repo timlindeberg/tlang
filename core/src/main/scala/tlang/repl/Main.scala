@@ -10,9 +10,9 @@ import tlang.compiler.error.{CompilerMessages, DefaultReporter, MessageFormatter
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.options.Flags._
 import tlang.compiler.options.Options
+import tlang.formatting._
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.InputHistory
-import tlang.utils.formatting._
 
 object Main {
 

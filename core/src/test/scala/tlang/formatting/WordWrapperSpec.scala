@@ -1,6 +1,5 @@
-package tlang.utils.formatting
+package tlang.formatting
 
-import tlang.testutils.AnsiMatchers._
 import tlang.testutils.UnitSpec
 
 class WordWrapperSpec extends UnitSpec {

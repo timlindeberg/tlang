@@ -6,8 +6,8 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
+import tlang.formatting.{FancyFormatting, SimpleFormatting}
 import tlang.utils.Extensions._
-import tlang.utils.formatting.{FancyFormatting, SimpleFormatting}
 import tlang.utils.{GenerateTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}

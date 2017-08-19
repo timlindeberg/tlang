@@ -7,9 +7,9 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.Reporter
 import tlang.compiler.imports.Imports
+import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
-import tlang.utils.formatting.{ErrorStringContext, Formatting}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

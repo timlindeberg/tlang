@@ -49,10 +49,10 @@ Def BothPaths2() =
 			return // res: F1002
 			println(a)  // res: F1000
 	else
-		 if(a == 4) // res: F1002
+		if(a == 4) // res: F1002
 			return
 			println(a)  // res: F1000
-		 else
+		else
 			return // res: F1002
 			println(a)  // res: F1000
 	println(a) // res: F1000

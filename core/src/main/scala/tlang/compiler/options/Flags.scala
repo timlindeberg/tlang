@@ -2,11 +2,11 @@ package tlang.compiler.options
 
 import tlang.compiler.Main
 import tlang.compiler.code.Lowering
+import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
+import tlang.formatting.grid.Grid
+import tlang.formatting.{BoxStyles, Colors, Formatter, Formatting}
 import tlang.utils.Enumeration
 import tlang.utils.Extensions._
-import tlang.utils.formatting.BoxStyles.{Ascii, BoxStyle}
-import tlang.utils.formatting.grid.Grid
-import tlang.utils.formatting.{BoxStyles, Colors, Formatter, Formatting}
 
 object Flags {
 
@@ -353,7 +353,7 @@ object Flags {
 
     override def extendedDescription(formatter: Formatter): String = {
       import formatter.formatting._
-      import tlang.utils.formatting.Colors.ColorScheme._
+      import tlang.formatting.Colors.ColorScheme._
 
       val validKeys = ColorSchemeNames.map("   " + Blue(_)).mkString("\n")
       val validColors = Colors.ColorNames.map("   " + Magenta(_)).mkString("\n")
@@ -369,7 +369,7 @@ object Flags {
          |Example:
          |--${ Magenta(flag) } {
          |  \\"$KeywordName\\":  \\"red\\",
-         |  \\"$VariableName\\": \\"\\u001b[1;4;32m\\",
+         |  \\"$VariableName\\": \\"1\\",
          |  \\"$ClassName\\":    \\"\\",
          |  \\"$MethodName\\":   \\"magenta\\",
          |  \\"$StringName\\":   \\"green\\",

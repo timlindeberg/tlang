@@ -1,6 +1,6 @@
 package cafebabe
 
-import tlang.utils.formatting.{FancyFormatting, Formatting, SimpleFormatting}
+import tlang.formatting.{FancyFormatting, Formatting, SimpleFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 

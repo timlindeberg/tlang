@@ -29,3 +29,4 @@ trait TemplateErrors extends ErrorHandling {
   }
 
 }
+ 

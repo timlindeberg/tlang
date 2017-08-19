@@ -1,10 +1,10 @@
 package tlang.repl
 
 import tlang.compiler.error.{CompilerMessage, MessageFormatter}
+import tlang.formatting.Colors.Color
+import tlang.formatting._
+import tlang.formatting.grid.Grid
 import tlang.repl.input.{Cursor, InputBuffer}
-import tlang.utils.formatting.Colors.Color
-import tlang.utils.formatting._
-import tlang.utils.formatting.grid.Grid
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -82,8 +82,8 @@ class InputBox(
     inputText = formatter.syntaxHighlight(inputText, markings).replaceAll("\t", TabReplacement)
 
     val errorLines = errors.map { error =>
-      errorFormatter.setError(error)
-      (errorFormatter.position, errorFormatter.prefix + error.message)
+      errorFormatter.setMessage(error)
+      (errorFormatter.positionDescription, errorFormatter.prefix + " " + error.message)
     }
 
     val diff = errorLines.size - maxOutputLines

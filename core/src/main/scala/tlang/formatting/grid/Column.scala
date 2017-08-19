@@ -1,4 +1,4 @@
-package tlang.utils.formatting.grid
+package tlang.formatting.grid
 
 import tlang.utils.Extensions._
 
