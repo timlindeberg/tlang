@@ -24,7 +24,7 @@ case class Column(
 
   def maxWidth: Int = _maxWidth
   def addLine(newLine: String): Unit = {
-    _maxWidth = Math.max(_maxWidth, newLine.charCount)
+    _maxWidth = Math.max(_maxWidth, newLine.visibleCharacters)
     lines += newLine
   }
 
@@ -54,7 +54,7 @@ trait Alignment {
     if (width < 1)
       throw new IllegalArgumentException(s"Cannot align text within a space smaller than 1: $width")
 
-    val textWidth = text.charCount
+    val textWidth = text.visibleCharacters
     if (textWidth > width) {
       throw new IllegalArgumentException(s"Cannot align text '$text' in the given space: $textWidth > $width")
     }

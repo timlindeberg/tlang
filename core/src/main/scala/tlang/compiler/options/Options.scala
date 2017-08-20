@@ -7,7 +7,7 @@ import tlang.Constants
 import tlang.compiler.options.Flags._
 import tlang.compiler.{Main, MainErrors}
 import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
-import tlang.formatting.Colors.{ColorScheme, DefaultColorScheme}
+import tlang.formatting.Colors.ColorScheme
 import tlang.formatting._
 import tlang.utils.Extensions._
 
@@ -136,7 +136,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
   val colorScheme: ColorScheme = {
     val jsons = flagArgs(Flags.ColorScheme)
     if (jsons.isEmpty) {
-      DefaultColorScheme
+      ColorScheme.DefaultColorScheme
     } else {
       val json = jsons.head
       JSON.parseFull(jsons.head) match {
@@ -180,12 +180,12 @@ case class Options(arguments: Array[String]) extends MainErrors {
       .foreach { FatalInvalidColorSchemeKey(_, ColorSchemeNames) }
 
     val colors = ColorSchemeNames.map { name =>
-      val color = json.get(name) match {
-        case Some(color) =>
-          Colors.getColor(color).getOrElse(FatalInvalidColorSchemeArg(color, Colors.ColorNames))
-        case None        => -1
+      val colorValue = json.get(name) match {
+        case Some(colorName) =>
+          Colors.getColorValue(colorName).getOrElse(FatalInvalidColorSchemeArg(colorName, Colors.ColorNames))
+        case None            => -1
       }
-      name -> color
+      name -> colorValue
     }.toMap
 
     new ColorScheme {

@@ -1,5 +1,7 @@
 package tlang.compiler
 
+import java.io.File
+
 import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
@@ -48,6 +50,7 @@ object Main extends MainErrors {
     val formatting = options.formatting
     val formatter = Formatter(formatting)
 
+
     if (args.isEmpty) {
       print(printHelpInfo(formatter))
       sys.exit(1)
@@ -61,11 +64,11 @@ object Main extends MainErrors {
     if (options.files.isEmpty)
       FatalNoFilesGiven()
 
+    if (options(Verbose))
+      printFilesToCompile(formatter, options.files)
+
 
     val ctx = createContext(options, formatter)
-
-    if (options(Verbose)) printFilesToCompile(ctx)
-
     val CUs = runFrontend(ctx)
 
     GenerateCode.execute(ctx)(CUs)
@@ -92,9 +95,9 @@ object Main extends MainErrors {
 
   private def createContext(options: Options, formatter: Formatter): Context = {
 
-    val errorFormatter = MessageFormatter(formatter, options(MessageContext))
+    val messageFormatter = MessageFormatter(formatter, options(MessageContext))
     val messages = CompilerMessages(
-      errorFormatter,
+      messageFormatter,
       maxErrors = options(MaxErrors),
       warningIsError = options(WarningIsError),
       suppressWarnings = options(SuppressWarnings)
@@ -112,16 +115,16 @@ object Main extends MainErrors {
     )
   }
 
-  private def printFilesToCompile(ctx: Context): Unit = {
-    val formatting = ctx.formatter.formatting
+  private def printFilesToCompile(formatter: Formatter, files: Set[File]): Unit = {
+    val formatting = formatter.formatting
     import formatting._
 
-    val numFiles = ctx.files.size
+    val numFiles = files.size
     val end = if (numFiles > 1) "files" else "file"
-    val grid = Grid(ctx.formatter)
+    val grid = Grid(formatter)
       .header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
-    val fileNames = ctx.files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
+    val fileNames = files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
     formatting.lineWidth match {
       case x if x in (0 to 59)  =>
         grid.row().allContent(List(fileNames))
@@ -146,7 +149,7 @@ object Main extends MainErrors {
     grid.print()
   }
 
-  private def printExecutionTimes(ctx: Context) = {
+  private def printExecutionTimes(ctx: Context): Unit = {
     val formatting = ctx.formatter.formatting
     import formatting._
 
@@ -164,7 +167,7 @@ object Main extends MainErrors {
 
   private def versionInfo = s"T-Compiler $VersionNumber"
 
-  private def printHelp(formatter: Formatter, options: Options) = {
+  private def printHelp(formatter: Formatter, options: Options): Unit = {
     if (options(Version)) {
       print(versionInfo)
       sys.exit()
@@ -190,7 +193,7 @@ object Main extends MainErrors {
     }
   }
 
-  private def printFlagInfo(flag: Flag, formatter: Formatter) = {
+  private def printFlagInfo(flag: Flag, formatter: Formatter): Unit = {
     val formatting = formatter.formatting
     Grid(formatter)
       .header(flag.flagName(formatting))

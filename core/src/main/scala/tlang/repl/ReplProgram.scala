@@ -11,11 +11,10 @@ import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parsing, Trees}
 import tlang.compiler.code.{CodeGeneration, Lowering, TreeBuilder}
-import tlang.compiler.error.{CompilationException, MessageType}
+import tlang.compiler.error.{CompilationException, ErrorStringContext, MessageType}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.formatting.ErrorStringContext
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
 import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}

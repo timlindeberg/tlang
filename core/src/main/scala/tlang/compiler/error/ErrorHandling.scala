@@ -1,7 +1,7 @@
 package tlang.compiler.error
 
 import tlang.formatting.Colors.Color
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.Formatting
 import tlang.utils.Positioned
 
 trait ErrorHandling {

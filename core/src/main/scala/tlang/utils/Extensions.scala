@@ -1,7 +1,5 @@
 package tlang.utils
 
-import tlang.formatting.{ColoredString, Formatting}
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -73,17 +71,17 @@ object Extensions {
   }
 
   implicit class StringExtensions(val str: String) extends AnyVal {
-    def isAnsi: Boolean = AnsiRegex.matches(str)
-    def clearAnsi: String = AnsiRegex.replaceAllIn(str, "")
-    def charCount: Int = {
-      val str = clearAnsi
+    def containsAnsi: Boolean = AnsiRegex.matches(str)
+    def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")
+    def visibleCharacters: Int = {
+      val str = stripAnsi
       str.codePointCount(0, str.length)
     }
 
     def ansiDebugString: String = {
-      str.toList
+      str
         .map {
-          case '\u001b' => "�"
+          case '\u001b' => "▯"
           case '\n'     => "\\n"
           case '\r'     => "\\r"
           case '\t'     => "\\t"
@@ -91,16 +89,6 @@ object Extensions {
         }
         .map("'" + _ + "'")
         .mkString(" ")
-    }
-
-    def takeChars(num: Int): String = {
-      var i = 0
-      var s = ""
-      while (s.charCount < num) {
-        s += str(i)
-        i += 1
-      }
-      s
     }
 
     def trimWhiteSpaces: String = str.leftTrimWhiteSpaces.rightTrimWhiteSpaces
@@ -136,8 +124,6 @@ object Extensions {
       }
       buf.toList
     }
-
-    def toColoredString(formatting: Formatting) = ColoredString(formatting, str)
 
   }
 

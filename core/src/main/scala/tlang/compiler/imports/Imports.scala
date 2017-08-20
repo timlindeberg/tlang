@@ -3,8 +3,7 @@ package tlang.compiler.imports
 import tlang.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.Reporter
-import tlang.formatting.ErrorStringContext
+import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
 import tlang.utils.NoPosition
 

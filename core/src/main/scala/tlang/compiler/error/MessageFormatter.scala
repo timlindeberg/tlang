@@ -2,7 +2,7 @@ package tlang.compiler.error
 
 import tlang.compiler.options.Flags.MessageContext
 import tlang.formatting.Colors.Color
-import tlang.formatting.{Formatter, Marking}
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
@@ -11,13 +11,14 @@ case class MessageFormatter(
   messageContextSize: Int = MessageContext.defaultValue,
   tabWidth: Int = 2) {
 
-  val formatting = formatter.formatting
+  var lines: IndexedSeq[String] = IndexedSeq()
+
+  private val formatting               = formatter.formatting
+  private val TabSpaces                = " " * tabWidth
+  private var message: CompilerMessage = _
 
   import formatting._
 
-  val TabSpaces                   = " " * tabWidth
-  var message: CompilerMessage    = _
-  var lines  : IndexedSeq[String] = IndexedSeq()
 
   def setMessage(message: CompilerMessage): Unit = {
     this.message = message
@@ -118,8 +119,18 @@ case class MessageFormatter(
   }
 
   private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
-    val marking = Marking(pos, Underline + color, lineNum)
-    val coloredLine = formatter.syntaxHighlight(line, marking)
+    val MarkColor = Underline + color
+    val markedLine =
+      if (lineNum in (pos.line to pos.endLine)) {
+        val (start, end) = startAndEnd(line, lineNum, pos)
+        line.substring(0, start) +
+          MarkColor(line.substring(start, end)) +
+          line.substring(end, line.length)
+      } else {
+        line
+      }
+
+    val coloredLine = formatter.syntaxHighlight(markedLine)
     (NumColor(lineNum), coloredLine)
   }
 
@@ -128,13 +139,17 @@ case class MessageFormatter(
     if (lineNum notIn (pos.line to pos.endLine))
       return firstLine :: Nil
 
-    val start = if (lineNum == pos.line) pos.col - 1 else 0
-    val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
-
-
+    val (start, end) = startAndEnd(line, lineNum, pos)
     val indicator = UnderlineCharacter * (end - start)
     val indentation = " " * start
     firstLine :: ("", indentation + indicator) :: Nil
+  }
+
+  private def startAndEnd(line: String, lineNum: Int, pos: Positioned): (Int, Int) = {
+    val startOfText = line.indexWhere(!_.isWhitespace)
+    val start = if (lineNum == pos.line) pos.col - 1 else 0
+    val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
+    (Math.max(startOfText, start), Math.min(end, line.length))
   }
 
   private def clamp(x: Int, min: Int, max: Int): Int = Math.min(Math.max(x, min), max)

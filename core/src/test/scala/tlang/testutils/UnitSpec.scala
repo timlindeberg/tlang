@@ -5,6 +5,8 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.formatting.BoxStyles.{BoxStyle, Unicode}
+import tlang.formatting.Colors.ColorScheme
+import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting._
 
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory {
@@ -39,6 +41,17 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
   // Add more if needed
 
 
+  // For scoping and readability
+  def test[U](description: String = "")(f: => U) = f
+
+  def createMockFormatting(
+    width: Int = 80,
+    boxStyle: BoxStyle = Unicode,
+    useColor: Boolean = true,
+    colorScheme: ColorScheme = DefaultColorScheme): Formatting = {
+    Formatting(boxStyle, width, useColor = useColor, colorScheme = colorScheme)
+  }
+
   def createMockFormatter(
     width: Int = 80,
     boxStyle: BoxStyle = Unicode,
@@ -53,7 +66,7 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
   ): Formatter = {
 
     Formatter(
-      formatting = formatting.getOrElse(Formatting(boxStyle, width, useColor = useColor)),
+      formatting = formatting.getOrElse(createMockFormatting(width, boxStyle, useColor = useColor)),
       wordWrapper,
       truncator,
       prettyPrinter,

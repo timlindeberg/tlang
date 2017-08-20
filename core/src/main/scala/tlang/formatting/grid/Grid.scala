@@ -1,8 +1,8 @@
 package tlang.formatting.grid
 
 import tlang.formatting.Colors.Color
-import tlang.formatting._
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
+import tlang.formatting.{Colors, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
@@ -11,10 +11,10 @@ import scala.collection.mutable.ListBuffer
 
 case class Grid(var formatter: Formatter) {
 
-  private val rows: ListBuffer[Row] = ListBuffer()
-  private var indent                = 1
-  private var borderColor           = Colors.NoColor
-  private var shouldTrim            = true
+  private val rows       : ListBuffer[Row] = ListBuffer()
+  private var indent     : Int             = 1
+  private var borderColor: Color           = Colors.NoColor
+  private var shouldTrim : Boolean         = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
@@ -414,7 +414,7 @@ case class Grid(var formatter: Formatter) {
     private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling) = {
       overflowHandling match {
         case Except   =>
-          val lineWidth = line.charCount
+          val lineWidth = line.visibleCharacters
           if (lineWidth > width)
             throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
           line :: Nil

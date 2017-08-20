@@ -4,9 +4,9 @@ package modification
 import tlang.Context
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.Reporter
+import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -44,7 +44,8 @@ case class TemplateModifier(ctx: Context) {
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
     cus foreach { cu =>
-      val errorStringContext = ErrorStringContext(ctx.formatting, replaceNames = cu.imports.replaceNames)
+      val transforms = List[String => String](cu.imports.replaceNames)
+      val errorStringContext = ErrorStringContext(ctx.formatting, transforms = transforms)
       val templateClassGenerator = TemplateClassGenerator(ctx.reporter, errorStringContext, cu, classSymbolLocator)
       templateClassGenerator()
     }
@@ -225,7 +226,8 @@ case class TemplateModifier(ctx: Context) {
           case classId@ClassID(name, tTypes)                 =>
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated) {
-              val e = ErrorStringContext(errorStringContext.formatting, replaceNames = templateCU.imports.replaceNames)
+              val transforms = List[String => String](templateCU.imports.replaceNames)
+              val e = ErrorStringContext(errorStringContext.formatting, transforms = transforms)
               TemplateClassGenerator(reporter, e, templateCU, classSymbolLocator).generateClass(newId)
             }
 

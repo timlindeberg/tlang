@@ -5,10 +5,10 @@ import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.Reporter
+import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 

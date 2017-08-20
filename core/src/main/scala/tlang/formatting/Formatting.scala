@@ -5,7 +5,8 @@ import java.io.File
 import tlang.Constants
 import tlang.compiler.options.Flags.LineWidth
 import tlang.formatting.BoxStyles.BoxStyle
-import tlang.formatting.Colors.{Color, ColorScheme, DefaultColorScheme}
+import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
+import tlang.formatting.Colors.{Color, ColorScheme}
 
 object FancyFormatting extends Formatting(
   BoxStyles.Unicode, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
@@ -24,41 +25,42 @@ case class Formatting(
   /*--------------------------------- Colors --------------------------------*/
 
   val NoColor  : Color = Colors.NoColor
-  val Reset    : Color = Colors.Reset(useColor)
-  val Bold     : Color = Colors.Bold(useColor)
-  val Underline: Color = Colors.Underlined(useColor)
-  val Inverse  : Color = Colors.Inverse(useColor)
+  val Reset    : Color = color(Colors.Reset, useColor)
+  val Bold     : Color = color(Colors.Bold, useColor)
+  val Underline: Color = color(Colors.Underlined, useColor)
+  val Inverse  : Color = color(Colors.Inverse, useColor)
 
-  val Black  : Color = Colors.Black(useColor)
-  val Red    : Color = Colors.Red(useColor)
-  val Green  : Color = Colors.Green(useColor)
-  val Yellow : Color = Colors.Yellow(useColor)
-  val Blue   : Color = Colors.Blue(useColor)
-  val Magenta: Color = Colors.Magenta(useColor)
-  val Cyan   : Color = Colors.Cyan(useColor)
-  val White  : Color = Colors.White(useColor)
+  val Black  : Color = color(Colors.Black, useColor)
+  val Red    : Color = color(Colors.Red, useColor)
+  val Green  : Color = color(Colors.Green, useColor)
+  val Yellow : Color = color(Colors.Yellow, useColor)
+  val Blue   : Color = color(Colors.Blue, useColor)
+  val Magenta: Color = color(Colors.Magenta, useColor)
+  val Cyan   : Color = color(Colors.Cyan, useColor)
+  val White  : Color = color(Colors.White, useColor)
 
-  val BlackBG  : Color = Colors.BlackBG(useColor)
-  val RedBG    : Color = Colors.RedBG(useColor)
-  val GreenBG  : Color = Colors.GreenBG(useColor)
-  val YellowBG : Color = Colors.YellowBG(useColor)
-  val BlueBG   : Color = Colors.BlueBG(useColor)
-  val MagentaBG: Color = Colors.MagentaBG(useColor)
-  val CyanBG   : Color = Colors.CyanBG(useColor)
-  val WhiteBG  : Color = Colors.WhiteBG(useColor)
+  val BlackBG  : Color = color(Colors.BlackBG, useColor)
+  val RedBG    : Color = color(Colors.RedBG, useColor)
+  val GreenBG  : Color = color(Colors.GreenBG, useColor)
+  val YellowBG : Color = color(Colors.YellowBG, useColor)
+  val BlueBG   : Color = color(Colors.BlueBG, useColor)
+  val MagentaBG: Color = color(Colors.MagentaBG, useColor)
+  val CyanBG   : Color = color(Colors.CyanBG, useColor)
+  val WhiteBG  : Color = color(Colors.WhiteBG, useColor)
 
-  val AllColors: Array[Color] = Array(Black, Red, Green, White, Yellow, Blue, Magenta, Cyan, White)
+  val AllColors: List[Color] = List(Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
 
   /*------------------------------ Color Scheme -----------------------------*/
 
-  val KeywordColor     = Color(colorScheme.Keyword, useColor)
-  val VarColor         = Color(colorScheme.Variable, useColor)
-  val ClassColor       = Color(colorScheme.Class, useColor)
-  val MethodColor      = Color(colorScheme.Method, useColor)
-  val StringColor      = Color(colorScheme.String, useColor)
-  val NumColor         = Color(colorScheme.Number, useColor)
-  val CommentColor     = Color(colorScheme.Comment, useColor)
-  val SymbolColor      = Color(colorScheme.Symbol, useColor)
+  val KeywordColor = color(Color(colorScheme.Keyword), useColor)
+  val VarColor     = color(Color(colorScheme.Variable), useColor)
+  val ClassColor   = color(Color(colorScheme.Class), useColor)
+  val MethodColor  = color(Color(colorScheme.Method), useColor)
+  val StringColor  = color(Color(colorScheme.String), useColor)
+  val NumColor     = color(Color(colorScheme.Number), useColor)
+  val CommentColor = color(Color(colorScheme.Comment), useColor)
+  val SymbolColor  = color(Color(colorScheme.Symbol), useColor)
+
   val FileColor: Color = Bold + Magenta
 
   /*----------------------------- ASCII Variants ----------------------------*/
@@ -87,5 +89,6 @@ case class Formatting(
 
 
   private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
+  private def color(color: Color, isActive: Boolean) = if (isActive) color else Colors.NoColor
 
 }

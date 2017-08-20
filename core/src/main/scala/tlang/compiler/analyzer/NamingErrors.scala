@@ -71,7 +71,7 @@ trait NamingErrors extends ErrorHandling {
 
   case class UnknownType(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(6, pos) {
-    lazy val message = err"Unknown type: $name.${ suggestions(name, alternatives) }"
+    lazy val message = err"Unknown type: $name.${ suggestion(name, alternatives) }"
   }
 
   case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
@@ -88,7 +88,7 @@ trait NamingErrors extends ErrorHandling {
 
   case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(10, pos) {
-    lazy val message = err"Could not resolve symbol $name.${ suggestions(name, alternatives) }"
+    lazy val message = err"Could not resolve symbol $name.${ suggestion(name, alternatives) }"
   }
 
   case class AccessNonStaticFromStatic(name: String, override val pos: Positioned)
@@ -98,7 +98,7 @@ trait NamingErrors extends ErrorHandling {
 
   case class ParentNotDeclared(name: String, alternatives: List[String], override val pos: Positioned)
     extends NameAnalysisError(12, pos) {
-    lazy val message = err"Could not resolve parent symbol $name.${ suggestions(name, alternatives) }"
+    lazy val message = err"Could not resolve parent symbol $name.${ suggestion(name, alternatives) }"
   }
 
   case class ThisInStaticContext(override val pos: Positioned)

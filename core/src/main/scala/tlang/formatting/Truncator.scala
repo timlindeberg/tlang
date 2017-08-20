@@ -12,7 +12,7 @@ case class Truncator() {
     if (width < 0)
       throw new IllegalArgumentException(s"Width can not be 0 or smaller: $width")
 
-    val lineWidth = line.charCount
+    val lineWidth = line.visibleCharacters
     if (lineWidth <= width)
       return line
 

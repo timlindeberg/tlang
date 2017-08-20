@@ -1,11 +1,11 @@
 package tlang.compiler
 
-import tlang.compiler.error.NameSuggestor
+import tlang.compiler.error.AlternativeSuggestor
 import tlang.compiler.options.Flags.Flag
 
 trait MainErrors {
 
-  val nameSuggestor = new NameSuggestor
+  val nameSuggestor = new AlternativeSuggestor
 
   private def fatal(message: String) = {
     println(message)

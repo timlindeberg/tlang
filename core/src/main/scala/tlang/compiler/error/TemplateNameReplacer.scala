@@ -2,11 +2,12 @@ package tlang.compiler.error
 
 import scala.util.parsing.combinator.RegexParsers
 
-object TemplateNameParser extends RegexParsers {
+// Can only replace one template string per string which is fine for it's use case
+object TemplateNameReplacer extends RegexParsers {
 
   import tlang.compiler.modification.Templating._
 
-  def parseTemplateName(s: String): String = {
+  def apply(s: String): String = {
     val first = s.indexOf('-')
     if (first == -1)
       return s

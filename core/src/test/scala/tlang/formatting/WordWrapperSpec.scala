@@ -7,7 +7,9 @@ class WordWrapperSpec extends UnitSpec {
 
   val wordWrapper = WordWrapper()
 
+
   behavior of "A word wrapper"
+
 
   it should "wrap words" in {
     wordWrapper("ABC DEFG", 10) shouldBe Seq("ABC DEFG")
@@ -20,6 +22,7 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("A BCDEFGHIJKLMNOPQRSTUVXYZ", 25) shouldBe Seq("A", "BCDEFGHIJKLMNOPQRSTUVXYZ")
   }
 
+
   it should "put the word on the next line if it fits" in {
     wordWrapper("ABC DEFGHI", 6) shouldBe Seq("ABC", "DEFGHI")
     wordWrapper("ABC   DEFGHI", 6) shouldBe Seq("ABC", "DEFGHI")
@@ -27,12 +30,14 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("ABC DEFGHI JKL MNOPQR", 6) shouldBe Seq("ABC", "DEFGHI", "JKL", "MNOPQR")
   }
 
+
   it should "fit as much as possible of the next on the current line if it can't fit on its own line" in {
     wordWrapper("ABC DEFGHIJ", 6) shouldBe Seq("ABC DE", "FGHIJ")
     wordWrapper("ABC   DEFGHIJ", 6) shouldBe Seq("ABC DE", "FGHIJ")
 
     wordWrapper("A BCDEFGHIJ KL MNOPQRST", 6) shouldBe Seq("A BCDE", "FGHIJ", "KL MNO", "PQRST")
   }
+
 
   it should "handle newline characters" in {
     wordWrapper("A\nB\nC\nD\nE\nF\nG", 100) shouldBe Seq("A", "B", "C", "D", "E", "F", "G")
@@ -43,6 +48,7 @@ class WordWrapperSpec extends UnitSpec {
 
     wordWrapper("ABC\n\n\nB\n\nCDEF\n", 3) shouldBe Seq("ABC", "", "", "B", "", "CDE", "F", "")
   }
+
 
   it should "keep indentation if possible" in {
     wordWrapper("    ABC DEFG", 7) shouldBe Seq("    ABC", "DEFG")
@@ -55,16 +61,27 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("    ABC\n    DEF\n  F", 3) shouldBe Seq("ABC", "DEF", "  F")
   }
 
+
+  it should "keep ansi characters before indentation" in {
+    wordWrapper("\u001b[31m    ABC DEFG\u001b[0m", 7) should allMatchWithAnsi(
+      "\u001b[31m    ABC\u001b[0m",
+      "\u001b[31mDEFG\u001b[0m"
+    )
+  }
+
+
   it should "replace tabs with spaces" in {
     wordWrapper("ABC\tDEF\tGHI\t  JKL", 100) shouldBe Seq("ABC  DEF  GHI    JKL")
     wordWrapper.copy(tabSize = 5)("ABC\tDEF\tGHI\t  JKL", 100) shouldBe Seq("ABC     DEF     GHI       JKL")
   }
+
 
   it should "wrap with width 1" in {
     wordWrapper("ABC DEFG HI.J/K-L MnoPqrSTUV", 1) shouldBe Seq(
       "A", "B", "C", "D", "E", "F", "G", "H", "I", ".", "J", "/", "K", "-", "L", "M", "n", "o", "P", "q", "r", "S", "T", "U", "V"
     )
   }
+
 
   it should "handle larger input" in {
     wordWrapper(
@@ -101,6 +118,7 @@ class WordWrapperSpec extends UnitSpec {
       )
   }
 
+
   it should "split words at special characters" in {
     wordWrapper("ABC-DEFG", 7) shouldBe Seq("ABC-", "DEFG")
     wordWrapper("ABC/DEFG", 7) shouldBe Seq("ABC/", "DEFG")
@@ -118,11 +136,13 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("ABC}DEFG", 7) shouldBe Seq("ABC}", "DEFG")
   }
 
+
   it should "split words at camel cases" in {
     wordWrapper("AbcDefghi", 7) shouldBe Seq("Abc", "Defghi")
     wordWrapper("AbcdeFghi", 7) shouldBe Seq("Abcde", "Fghi")
     wordWrapper("AbcdeFGHI", 7) shouldBe Seq("Abcde", "FGHI")
   }
+
 
   it should "split at the last special case" in {
     wordWrapper("ABC.-/DEFG", 7) shouldBe Seq("ABC.-/", "DEFG")
@@ -132,10 +152,12 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("ABC.DefGhi", 8) shouldBe Seq("ABC.Def", "Ghi")
   }
 
+
   it should "put the first part of the next word on the same line if can split on special characters" in {
     wordWrapper("ABC D.EFGHIJKL", 6) shouldBe Seq("ABC D.", "EFGHIJ", "KL")
     wordWrapper("A B-CDE-FGH IJK MNOP-QRS", 6) shouldBe Seq("A B-", "CDE-", "FGH", "IJK MN", "OP-QRS")
   }
+
 
   it should "take as much as possible of a word when splitting words" in {
     wordWrapper("ABCDEFG", 5) shouldBe Seq("ABCDE", "FG")
@@ -143,6 +165,7 @@ class WordWrapperSpec extends UnitSpec {
     wordWrapper("ABCDEFGHIJKLMNOPQRSTUVXYZ", 10) shouldBe Seq("ABCDEFGHIJ", "KLMNOPQRST", "UVXYZ")
     wordWrapper("ABCDE ABCDEFGHIJKLMNOPQRSTUVXYZ FGHI", 10) shouldBe Seq("ABCDE ABCD", "EFGHIJKLMN", "OPQRSTUVXY", "Z FGHI")
   }
+
 
   it should "never keep spaces at the end of a line" in {
     wordWrapper("ABCDE      FGHIJKL  ", 5) shouldBe Seq("ABCDE", "FGHIJ", "KL")
@@ -198,6 +221,7 @@ class WordWrapperSpec extends UnitSpec {
       )
   }
 
+
   it should "handle disabling ansi wrapping" in {
     val wordWrapperWithoutAnsi = WordWrapper(wrapAnsiColors = false)
     wordWrapperWithoutAnsi("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m", 3) should
@@ -210,21 +234,24 @@ class WordWrapperSpec extends UnitSpec {
       )
   }
 
+
   it should "wrap multi-ansi escape codes correctly" in {
-    wordWrapper("\u001b[1;3;31;42mABCD DEFGHIJ KLMNOP QRSTU\u001b[0m", 5) should
+    wordWrapper("\u001b[1;4;31;42mABCD DEFGHIJ KLMNOP QRSTU\u001b[0m", 5) should
       allMatchWithAnsi(
-        "\u001b[1;3;31;42mABCD\u001b[0m",
-        "\u001b[1;3;31;42mDEFGH\u001b[0m",
-        "\u001b[1;3;31;42mIJ KL\u001b[0m",
-        "\u001b[1;3;31;42mMNOP\u001b[0m",
-        "\u001b[1;3;31;42mQRSTU\u001b[0m"
+        "\u001b[1;4;31;42mABCD\u001b[0m",
+        "\u001b[1;4;31;42mDEFGH\u001b[0m",
+        "\u001b[1;4;31;42mIJ KL\u001b[0m",
+        "\u001b[1;4;31;42mMNOP\u001b[0m",
+        "\u001b[1;4;31;42mQRSTU\u001b[0m"
       )
   }
 
+
   it should "simplify ansi escape sequences at the start of a line" in {
-    wordWrapper("\u001b[1m\u001b[3m\u001b[42m\u001b[33m\u001b[31mABCD\u001b[0m", 16) should
-      allMatchWithAnsi("\u001b[1;3;31;42mABCD\u001b[0m")
+    wordWrapper("\u001b[1m\u001b[4m\u001b[42m\u001b[33m\u001b[31mABCD\u001b[0m", 16) should
+      allMatchWithAnsi("\u001b[1;4;31;42mABCD\u001b[0m")
   }
+
 
   it should "wrap multiple ansi escape codes correctly" in {
     wordWrapper("\u001b[1m\u001b[31mABCD\u001b[41m\u001b[32mEFGH\u001b[4m\u001b[33mIJKL\u001b[34mMNOP\u001b[0m", 4) should
@@ -243,6 +270,7 @@ class WordWrapperSpec extends UnitSpec {
         "\u001b[1;4;34;41mMNOP\u001b[0m"
       )
   }
+
 
   it should "handle real life test cases" in {
     wordWrapper("\u001b[32mLjava/io/PrintStream;\u001b[0m", 3) should

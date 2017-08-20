@@ -4,9 +4,9 @@ package lexer
 import java.math.BigInteger
 
 import tlang.Context
-import tlang.compiler.error.Reporter
+import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.lexer.Tokens._
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.Source
 
@@ -456,7 +456,12 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
           (createToken(BAD, parsed), Nil)
         case c :: r if endAt(c) =>
           error(parsed)
-          (createToken(BAD, parsed), r)
+          val res = (createToken(BAD, parsed), r)
+          if (c == '\n') {
+            line += 1
+            column = 1
+          }
+          res
         case _ :: r             =>
           toEnd(r, parsed + 1)
       }

@@ -1,22 +1,6 @@
 package tlang.compiler.error
 
-object Suggestion {
-  def apply(suggestion: Option[String]) = new Suggestion(suggestion)
-
-  def unapply(arg: Suggestion): Option[String] = arg.suggestion match {
-    case x: Some[String] => x
-    case _               => None
-  }
-}
-
-class Suggestion(val suggestion: Option[String]) {
-  override def toString: String = suggestion match {
-    case Some(v) => s" Did you mean $v?"
-    case None    => ""
-  }
-}
-
-case class NameSuggestor() {
+case class AlternativeSuggestor() {
 
   private val AcceptableDistance = 3
   private val MinLength          = 3
@@ -62,4 +46,22 @@ case class NameSuggestor() {
     private def min(values: Int*) = values.min
   }
 
+}
+
+object Suggestion {
+
+  def apply(suggestion: String): Suggestion = apply(Some(suggestion))
+  def apply(suggestion: Option[String]): Suggestion = new Suggestion(suggestion)
+
+  def unapply(arg: Suggestion): Option[String] = arg.suggestion match {
+    case x: Some[String] => x
+    case _               => None
+  }
+}
+
+class Suggestion(val suggestion: Option[String]) {
+  override def toString: String = suggestion match {
+    case Some(v) => s" Did you mean $v?"
+    case None    => ""
+  }
 }

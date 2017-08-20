@@ -1,8 +1,8 @@
 package tlang.formatting
 
+import tlang.formatting.Colors.{Color, NoColor, Reset}
 import tlang.utils.Extensions._
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
@@ -43,7 +43,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       lineLen = 0
     }
 
-    def addWordToLine(word: String, len: Int) = {
+    def addWordToLine(word: String, len: Int): Unit = {
       currentLine ++= word
       lineLen += len
       wordLen = 0
@@ -67,8 +67,15 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
     // whether we add the word to the current line, put it on the next line or
     // split the word up
     def endOfWord(endIndex: Int): Unit = {
-      if (wordLen == 0)
+      if (wordLen == 0) {
+        if (endIndex > 0 && currentLine.isEmpty) {
+          // We're at the start of a line, the word is empty but the
+          // the end index is larger than 0. That must mean that we
+          // had ansi characters at the start of the word
+          currentLine ++= line.substring(0, endIndex)
+        }
         return
+      }
 
       // The word including potential ansi formatting
       var word = line.substring(wordStart, endIndex)
@@ -181,16 +188,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
 
 
   private def wrapAnsiFormatting(lines: List[String]): List[String] = {
-    var SGRs = mutable.Set[Int]()
-    var color = -1
-    var BGColor = -1
-    var ansi = ""
-
-    def clearAnsi(): Unit = {
-      color = -1
-      BGColor = -1
-      SGRs.clear()
-    }
+    var color: Color = Colors.NoColor
 
     // Updates the current state of ANSI colors by looking at the ANSI escape
     // code at line(index)
@@ -198,21 +196,8 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       var i = startIndex
       while (i < line.length && line(i) == '\u001b' && line(i + 1) == '[') {
         val endOfAnsi = line.indexOf('m', i + 1)
-
-        val ansiValues = line.substring(i + 2, endOfAnsi).split(";").map(_.toInt)
-        ansiValues.foreach {
-          case 0                       => clearAnsi()
-          case v if v in (1 until 10)  => SGRs += v
-          case v if v in (30 until 40) => color = v
-          case v if v in (40 until 50) => BGColor = v
-          case _                       =>
-        }
-        // Guarantees the same order each time
-        val escapes = (color :: BGColor :: SGRs.toList)
-          .filter(_ != -1)
-          .sorted
-
-        ansi = if (escapes.isEmpty) "" else escapes.mkString("\u001b[", ";", "m")
+        val ansiEscapeSequence = line.substring(i + 2, endOfAnsi)
+        color += Color(ansiEscapeSequence)
         i = endOfAnsi + 1
       }
       i
@@ -234,15 +219,15 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       if (line.startsWith("\u001b[")) {
         // Make sure we don't repeat the previous ansi if it is immediately updated
         val endOfAnsi = updateFrom(line, 0)
-        sb ++= ansi
+        sb ++= color
         sb ++= line.substring(endOfAnsi)
       } else {
-        sb ++= ansi
+        sb ++= color
         sb ++= line
       }
       updateAnsi(line)
-      if (ansi.nonEmpty && !line.endsWith(Console.RESET))
-        sb ++= Console.RESET
+      if (color != NoColor && !line.endsWith(Reset))
+        sb ++= Reset
       sb.toString
     }
   }

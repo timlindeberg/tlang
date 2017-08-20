@@ -73,7 +73,6 @@ trait Positioned {
 
   def sourceName: String = source.map(_.mainName).getOrElse("Missing Source")
 
-
 }
 
 case object NoPosition extends Positioned

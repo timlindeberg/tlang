@@ -12,23 +12,9 @@ class GridSpec extends UnitSpec {
 
   val DefaultMaxWidth = 20
 
-  def mockedFormatter(
-    width: Int = DefaultMaxWidth,
-    boxStyle: BoxStyle = Unicode,
-    wordWrapper: WordWrapper = defaultMockedWordWrapper,
-    truncator: Truncator = mock[Truncator]
-  ): Formatter = {
-    createMockFormatter(width = width, boxStyle = boxStyle, wordWrapper = wordWrapper, truncator = truncator)
-  }
-
-  // Default behaviour of the mocked word wrapper is to return the given line
-  private def defaultMockedWordWrapper =
-    mock[WordWrapper] use { wordWrapper =>
-      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
-    }
-
 
   behavior of "A Grid"
+
 
   it should "have correct grid size and attributes" in {
     val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))
@@ -108,6 +94,7 @@ class GridSpec extends UnitSpec {
     grid(8)(2).overflowHandling shouldBe Wrap
   }
 
+
   it should "be initialized with a default row" in {
     val grid = Grid(mockedFormatter()).content("ABC")
     grid should have size 1
@@ -116,6 +103,7 @@ class GridSpec extends UnitSpec {
     grid(0)(0).width shouldBe Width.Auto
     grid(0)(0).alignment shouldBe Alignment.Left
   }
+
 
   it should "have correct content" in {
 
@@ -174,6 +162,7 @@ class GridSpec extends UnitSpec {
     grid(5)(2).content shouldBe "G\nH\nI"
   }
 
+
   it should "be reset when calling clear" in {
     val grid = Grid(mockedFormatter(width = 10000))
       .row()
@@ -201,6 +190,7 @@ class GridSpec extends UnitSpec {
     grid(1) should have size 2
     grid(1)(0).content shouldBe "A"
   }
+
 
   it should "have correct column widths" in {
     // ┌──────────────────┐
@@ -339,6 +329,7 @@ class GridSpec extends UnitSpec {
     grid(1).columnWidths should contain theSameElementsInOrderAs Seq(3, 4, 3)
   }
 
+
   it should "should be able to accept the same column multiple times" in {
     var grid = Grid(mockedFormatter())
       .row(Column, Column)
@@ -370,6 +361,7 @@ class GridSpec extends UnitSpec {
     grid(0)(1).overflowHandling shouldBe Truncate
   }
 
+
   it should "render correctly with a single row" in {
     Grid(mockedFormatter())
       .row()
@@ -379,6 +371,7 @@ class GridSpec extends UnitSpec {
          |│ ABC              │
          |└──────────────────┘""".stripMargin
   }
+
 
   it should "render correctly with a centered text" in {
     Grid(mockedFormatter())
@@ -390,6 +383,7 @@ class GridSpec extends UnitSpec {
          |└──────────────────┘""".stripMargin
   }
 
+
   it should "render correctly with a right aligned text" in {
     Grid(mockedFormatter())
       .row(Column(alignment = Right))
@@ -399,6 +393,7 @@ class GridSpec extends UnitSpec {
          |│              ABC │
          |└──────────────────┘""".stripMargin
   }
+
 
   it should "render correctly with two columns" in {
     Grid(mockedFormatter())
@@ -410,6 +405,7 @@ class GridSpec extends UnitSpec {
          |└─────┴────────────┘""".stripMargin
   }
 
+
   it should "render correctly with two columns and fixed width and centered text" in {
     Grid(mockedFormatter())
       .row(Column(Width.Fixed(3)), Column(alignment = Alignment.Center))
@@ -419,6 +415,7 @@ class GridSpec extends UnitSpec {
          |│ ABC │    DEF     │
          |└─────┴────────────┘""".stripMargin
   }
+
 
   it should "render correctly with multiple rows and columns" in {
     Grid(mockedFormatter())
@@ -445,6 +442,7 @@ class GridSpec extends UnitSpec {
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
   }
+
 
   it should "render correctly with fixed and auto column widths" in {
     val wordWrapper = mock[WordWrapper]
@@ -475,6 +473,7 @@ class GridSpec extends UnitSpec {
          |└─────┴───────┴────┘""".stripMargin
   }
 
+
   it should "render correctly with different indentation" in {
     Grid(mockedFormatter(width = 30))
       .indent(5)
@@ -490,6 +489,7 @@ class GridSpec extends UnitSpec {
          |└─────────────┴──────────────┘""".stripMargin
   }
 
+
   it should "render correctly with a header" in {
     Grid(mockedFormatter())
       .header("Header")
@@ -503,6 +503,7 @@ class GridSpec extends UnitSpec {
          |└─────┴──────┴─────┘""".stripMargin
 
   }
+
 
   it should "render correctly with different box styles" in {
     val grid = Grid(mockedFormatter())
@@ -571,6 +572,7 @@ class GridSpec extends UnitSpec {
           |└──────────────────┘""".stripMargin)
   }
 
+
   it should "render correctly with colored borders" in {
     Grid(mockedFormatter())
       .borderColor(Colors.Red)
@@ -585,6 +587,7 @@ class GridSpec extends UnitSpec {
          |\u001b[31m│\u001b[0m ABC \u001b[31m│\u001b[0m DEF        \u001b[31m│\u001b[0m
          |\u001b[31m└─────┴────────────┘\u001b[0m""".stripMargin)
   }
+
 
   it should "render correctly with line wrapping" in {
 
@@ -664,6 +667,7 @@ class GridSpec extends UnitSpec {
          |└───┴───┴───┴───┴───┘""".stripMargin
   }
 
+
   it should "render correctly with empty columns" in {
     Grid(mockedFormatter())
       .row(Column, Column)
@@ -691,6 +695,7 @@ class GridSpec extends UnitSpec {
          |│   │   │   │      │
          |└───┴───┴───┴──────┘""".stripMargin.trim
   }
+
 
   it should "render correctly with line wrapping and ansi colors" in {
     val wordWrapper = mock[WordWrapper]
@@ -735,6 +740,7 @@ class GridSpec extends UnitSpec {
           |└──────┴─────┴─────┘""".stripMargin)
   }
 
+
   it should "render correctly with truncation" in {
     val truncator = mock[Truncator]
     mockCalls(truncator.apply _,
@@ -765,6 +771,7 @@ class GridSpec extends UnitSpec {
          |│ ... │ ABC │ A... │
          |└─────┴─────┴──────┘""".stripMargin
   }
+
 
   it should "render correctly with truncation and ansi colors" in {
     val truncator = mock[Truncator]
@@ -797,6 +804,7 @@ class GridSpec extends UnitSpec {
           |└─────┴─────┴──────┘""".stripMargin)
   }
 
+
   it should "throw when given content with improper dimension" in {
     intercept[IllegalArgumentException] {
       Grid(mockedFormatter())
@@ -820,6 +828,7 @@ class GridSpec extends UnitSpec {
     }.getMessage should include("2 != 3")
   }
 
+
   it should "throw when line doesn't fit in column with OverflowHandling.Except" in {
     intercept[IllegalStateException] {
       Grid(mockedFormatter())
@@ -830,6 +839,7 @@ class GridSpec extends UnitSpec {
 
     }.getMessage should (include("25 > 16") and include("ABCDEFGHIJKLMNOPQRSTUVXYZ"))
   }
+
 
   it should "throw when columns cannot fit in the row" in {
     intercept[IllegalStateException] {
@@ -858,6 +868,7 @@ class GridSpec extends UnitSpec {
     }.getMessage should include("21 > 20")
   }
 
+
   it should "throw when adding a header once a rows been added" in {
     intercept[IllegalStateException] {
       Grid(mockedFormatter()).row().header("Header")
@@ -880,6 +891,7 @@ class GridSpec extends UnitSpec {
         .row(Column, Column, Column, Column)
     }
   }
+
 
   it should "throw when given contents other than a tuple" in {
     intercept[IllegalArgumentException] {
@@ -911,6 +923,7 @@ class GridSpec extends UnitSpec {
     Left("ABC", 10, '-') shouldBe "ABC-------"
   }
 
+
   it should "center correctly" in {
     Center("", 10) shouldBe "          "
     Center("AB", 10) shouldBe "    AB    "
@@ -925,6 +938,7 @@ class GridSpec extends UnitSpec {
     Center("ABC", 10, '-') shouldBe "---ABC----"
   }
 
+
   it should "right align correctly" in {
     Right("", 10) shouldBe "          "
     Right("ABC", 10) shouldBe "       ABC"
@@ -936,6 +950,7 @@ class GridSpec extends UnitSpec {
     Right("ABC", 10, '-') shouldBe "-------ABC"
   }
 
+
   it should "align correctly with ansi colors" in {
     val str = "A\u001b[31mB\u001b[0mC"
     Left(str, 10) should matchWithAnsi("A\u001b[31mB\u001b[0mC       ")
@@ -943,15 +958,34 @@ class GridSpec extends UnitSpec {
     Right(str, 10) should matchWithAnsi("       A\u001b[31mB\u001b[0mC")
   }
 
+
   it should "throw when size is larger then width" in {
     intercept[IllegalArgumentException] { Left("ABC", 2) }.getMessage should include("3 > 2")
     intercept[IllegalArgumentException] { Center("ABCDE", 1) }.getMessage should include("5 > 1")
     intercept[IllegalArgumentException] { Right("ABCDEFGH", 7) }.getMessage should include("8 > 7")
   }
 
+
   it should "throw when given an invalid width" in {
     intercept[IllegalArgumentException] { Left("ABC", 0) }.getMessage should include("0")
     intercept[IllegalArgumentException] { Left("ABC", -25) }.getMessage should include("-25")
   }
+
+
+  private def mockedFormatter(
+    width: Int = DefaultMaxWidth,
+    boxStyle: BoxStyle = Unicode,
+    wordWrapper: WordWrapper = defaultMockedWordWrapper,
+    truncator: Truncator = mock[Truncator]
+  ): Formatter = {
+    createMockFormatter(width = width, boxStyle = boxStyle, wordWrapper = wordWrapper, truncator = truncator)
+  }
+
+  // Default behaviour of the mocked word wrapper is to return the given line
+  private def defaultMockedWordWrapper =
+    mock[WordWrapper] use { wordWrapper =>
+      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
+    }
+
 
 }

@@ -9,30 +9,70 @@ import tlang.utils.Extensions._
 object AnsiMatchers extends AnsiMatchers
 trait AnsiMatchers {
 
-  private def format(found: String, expected: String): String =
-    s"""
-       |${ formatLine(expected, "Expected") }
-       |${ formatLine(found, "  Actual") }""".stripMargin
+  private def format(found: String, expected: String): String = {
+    val sbFound = new StringBuilder("  Actual:")
+    val sbExpected = new StringBuilder("Expected:")
+    val sbDifference = new StringBuilder("         ")
+    var i = 0
+    while (i < found.length || i < expected.length) {
+      var f = if (i < found.length) replaceChar(found(i)) else ""
+      var e = if (i < expected.length) replaceChar(expected(i)) else ""
 
+      // Since \r and \n is two characters we need to add a space to keep alignment
+      (f.length, e.length) match {
+        case (2, 1) => e += " "
+        case (1, 2) => f += " "
+        case _      =>
+      }
 
-  private def formatLine(line: String, name: String, seperator: String = ": "): String = {
-    val lines = line.split("\n").map(l => if (l.isEmpty) "<empty>" else l.ansiDebugString)
-    val prefix = s"$name$seperator"
-    val first = prefix + lines.head
-    if (lines.length == 1)
-      return first
+      if (f.nonEmpty) sbFound ++= " '" + f + "'"
+      if (e.nonEmpty) sbExpected ++= " '" + e + "'"
 
-    val indent = " " * prefix.length
-    first + "\n" + lines.tail.map(indent + _).mkString("\n")
+      val diffChar = if (f != e) "‾" else " "
+      sbDifference ++= " " + diffChar * (2 + math.max(f.length, e.length))
+      i += 1
+    }
+    sbFound.toString + "\n" + sbExpected.toString + "\n" + sbDifference.toString
   }
 
+  private def replaceChar(c: Char): String = c match {
+    case '\u001b' => "▯"
+    case '\n'     => "\\n"
+    case '\r'     => "\\r"
+    case '\t'     => "\\t"
+    case c        => s"$c"
+  }
+
+  private def formatLine(line: String, name: String, seperator: String = ": "): String = {
+    val l = if (line.isEmpty) "<empty" else line.ansiDebugString
+    s"$name$seperator$l"
+  }
+
+  private def differenceIndicator(indent: Int, found: String, expected: String): String = {
+    val sb = new StringBuilder(found.length)
+    sb ++= " " * indent
+    found.zip(expected).foreach { case (a, b) =>
+      sb ++= "  "
+
+      if (a == b)
+        if (a == '\r' || a == '\n')
+          sb ++= "  "
+        else
+          sb += ' '
+      else
+        sb += '‾'
+
+      sb += ' '
+    }
+    sb.toString
+  }
 
   class AnsiStringMatcher(expected: String) extends Matcher[String] {
 
     def apply(found: String): MatchResult = {
       MatchResult(
         found == expected,
-        s"The strings did not match:${ format(found, expected) }",
+        s"The strings did not match:\n${ format(found, expected) }",
         s"The strings matched."
       )
     }
@@ -73,7 +113,7 @@ trait AnsiMatchers {
         .zip(expectedStrings)
         .zipWithIndex
         .find { case ((actual, expected), _) => actual != expected }
-        .map { case ((actual, expected), i) => (false, s"String number ${ i + 1 } did not match:${ format(actual, expected) }") }
+        .map { case ((actual, expected), i) => (false, s"String number ${ i + 1 } did not match:\n${ format(actual, expected) }") }
         .getOrElse((true, s""))
       MatchResult(matches, failMessage, Matched)
     }

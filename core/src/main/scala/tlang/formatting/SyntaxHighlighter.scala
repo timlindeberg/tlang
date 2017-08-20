@@ -12,50 +12,91 @@ case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
 
   import formatting._
 
-
   def apply(code: String): String = apply(code, Seq())
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
     if (code.isEmpty || !formatting.useColor)
       return code
 
-    val tokens = lexer(StringSource(code, ""))
+    val (codeWithoutColors, colors) = splitStringAndColors(code)
 
+    val tokens = lexer(StringSource(codeWithoutColors, ""))
+
+    calculateColors(colors, codeWithoutColors, tokens.iterator, markings)
+    constructColoredString(codeWithoutColors, colors)
+  }
+
+  // Updates the color values in the colors array with syntax highlighting and markings
+  private def calculateColors(colors: Array[Color], code: String, tokens: Iterator[Token], markings: Seq[Marking]): Unit = {
     var line = 1
     var col = 1
 
-    def updatePos(char: Char) = char match {
-      case '\n' =>
-        line += 1
-        col = 1
-      case _    => col += 1
-    }
+    var token = tokens.next()
+    var tokenColor = getColor(token)
+    var nextToken: Option[Token] = if (tokens.hasNext) Some(tokens.next) else None
 
-    val highlighted = code.toColoredString(formatting) map { case cc@ColoredCharacter(color, char) =>
+    for (i <- 0 until code.length) {
       val pos = Position(line, col, line, col + 1)
+      val encodedStart = pos.encodedStartPos
+      while (nextToken.isDefined && encodedStart >= nextToken.get.encodedStartPos) {
+        token = nextToken.get
+        tokenColor = getColor(token)
+        nextToken = if (tokens.hasNext) Some(tokens.next) else None
+      }
 
-      updatePos(char)
+      code(i) match {
+        case '\n' =>
+          line += 1
+          col = 1
+        case _    => col += 1
+      }
 
-      findMatchingMarking(pos, markings) match {
-        case Some(style)              => ColoredCharacter(style, char)
-        case None if color == NoColor => ColoredCharacter(getColor(pos, tokens.find(pos.isWithin(_))), char)
-        case _                        => cc
+      // Markings has the highest precedence, then comes the color that was already
+      // in the string, after that the corresponding token color
+      val existingColor = colors(i)
+      colors(i) = findMatchingMarking(pos, markings) match {
+        case Some(markingColor)               => markingColor
+        case None if existingColor != NoColor => existingColor
+        case _                                => tokenColor
       }
     }
-    highlighted.toAnsiString
   }
 
-  private def getColor(pos: Position, token: Option[Token]): Color = token match {
-    case Some(x) => x.kind match {
-      case NEWLINE                                                 => NoColor
-      case COMMENTLITKIND                                          => CommentColor
-      case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
-      case CHARLITKIND | STRLITKIND                                => StringColor
-      case IDKIND                                                  => VarColor
-      case x if x in Keywords                                      => KeywordColor
-      case _                                                       => SymbolColor
+  private def constructColoredString(code: String, colors: IndexedSeq[Color]) = {
+    val sb = new StringBuilder(code.length)
+    var previousColor: Color = NoColor
+    var i = 0
+    while (i < code.length) {
+      code(i) match {
+        case '\r' if i + 1 < code.length && code(i + 1) == '\n' =>
+          sb += '\r'
+          i += 1
+        case '\n'                                               =>
+        case _                                                  =>
+          val color = colors(i)
+          if (color != previousColor) {
+            if (previousColor needsResetBefore color)
+              sb ++= Reset
+            sb ++= color
+            previousColor = color
+          }
+      }
+      sb += code(i)
+      i += 1
     }
-    case None    => NoColor
+    if (previousColor != NoColor)
+      sb ++= Reset
+    sb.toString()
+  }
+
+  private def getColor(token: Token): Color = token.kind match {
+    case NEWLINE | INDENT | DEDENT | BAD                         => NoColor
+    case COMMENTLITKIND                                          => CommentColor
+    case INTLITKIND | LONGLITKIND | FLOATLITKIND | DOUBLELITKIND => NumColor
+    case CHARLITKIND | STRLITKIND                                => StringColor
+    case IDKIND                                                  => VarColor
+    case x if x in Keywords                                      => KeywordColor
+    case _                                                       => SymbolColor
   }
 
   private def findMatchingMarking(pos: Position, markings: Seq[Marking]): Option[Color] =

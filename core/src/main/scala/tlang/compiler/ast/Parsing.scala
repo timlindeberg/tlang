@@ -4,11 +4,11 @@ package ast
 import tlang.Context
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.Reporter
+import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 

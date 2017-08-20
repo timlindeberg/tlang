@@ -3,8 +3,8 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
+import tlang.compiler.error.ErrorStringContext
 import tlang.compiler.imports.Imports
-import tlang.formatting.ErrorStringContext
 import tlang.testutils.CompilerTestSpec
 
 class OperatorTypeSpec extends CompilerTestSpec {
