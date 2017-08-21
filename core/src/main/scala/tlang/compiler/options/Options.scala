@@ -200,7 +200,7 @@ case class Options(arguments: Array[String]) extends MainErrors {
     }
   }
 
-  private def splitArgs(arg: String): List[String] = arg.split(",").map(_.trim).filter(_.nonEmpty).toList
+  private def splitArgs(arg: String): List[String] = arg.split(", *").map(_.trim).filter(_.nonEmpty).toList
 
   private def getNum(flag: NumberFlag): Int = {
     val validNums = flagArgs(flag).map { num =>

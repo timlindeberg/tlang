@@ -97,6 +97,7 @@ object Main extends MainErrors {
 
     val messageFormatter = MessageFormatter(formatter, options(MessageContext))
     val messages = CompilerMessages(
+      formatter,
       messageFormatter,
       maxErrors = options(MaxErrors),
       warningIsError = options(WarningIsError),

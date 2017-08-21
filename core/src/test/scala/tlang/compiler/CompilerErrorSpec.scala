@@ -64,7 +64,7 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
         return
     }
 
-    // If we got here there were no errors, check for warnings instaed
+    // If we got here there were no errors, check for warnings instead
     val reporter = ctx.reporter
     if (!reporter.hasWarnings)
       fail("Test failed: No errors or warnings!")

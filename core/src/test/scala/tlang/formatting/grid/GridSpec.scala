@@ -6,7 +6,6 @@ import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
 
 class GridSpec extends UnitSpec {
 
@@ -975,17 +974,11 @@ class GridSpec extends UnitSpec {
   private def mockedFormatter(
     width: Int = DefaultMaxWidth,
     boxStyle: BoxStyle = Unicode,
-    wordWrapper: WordWrapper = defaultMockedWordWrapper,
+    wordWrapper: WordWrapper = mockedWordWrapperReturningSameLine,
     truncator: Truncator = mock[Truncator]
   ): Formatter = {
     createMockFormatter(width = width, boxStyle = boxStyle, wordWrapper = wordWrapper, truncator = truncator)
   }
-
-  // Default behaviour of the mocked word wrapper is to return the given line
-  private def defaultMockedWordWrapper =
-    mock[WordWrapper] use { wordWrapper =>
-      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
-    }
 
 
 }

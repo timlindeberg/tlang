@@ -64,6 +64,7 @@ object Main {
     val default = ClassPath.Default
     val classPath = default ++ (options.classPaths + tempDir.getAbsolutePath)
     val errorMessages = CompilerMessages(
+      formatter,
       errorFormatter,
       maxErrors = options(MaxErrors),
       suppressWarnings = options(SuppressWarnings),

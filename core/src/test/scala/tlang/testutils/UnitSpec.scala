@@ -8,6 +8,7 @@ import tlang.formatting.BoxStyles.{BoxStyle, Unicode}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting._
+import tlang.utils.Extensions._
 
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory {
 
@@ -50,6 +51,12 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
     useColor: Boolean = true,
     colorScheme: ColorScheme = DefaultColorScheme): Formatting = {
     Formatting(boxStyle, width, useColor = useColor, colorScheme = colorScheme)
+  }
+
+  def mockedWordWrapperReturningSameLine: WordWrapper = {
+    mock[WordWrapper] use { wordWrapper =>
+      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
+    }
   }
 
   def createMockFormatter(

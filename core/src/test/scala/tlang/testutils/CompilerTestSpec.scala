@@ -48,7 +48,7 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
     }
 
     val errorFormatter = MessageFormatter(TestFormatter)
-    val errorMessages = CompilerMessages(errorFormatter)
+    val errorMessages = CompilerMessages(TestFormatter, errorFormatter)
     val debugOutputFormatter = DebugOutputFormatter(TestFormatter)
     Context(
       reporter = DefaultReporter(errorMessages),

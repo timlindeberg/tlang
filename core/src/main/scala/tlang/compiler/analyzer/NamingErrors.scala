@@ -3,21 +3,19 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees.{Break, Tree, _}
-import tlang.compiler.error.{CompilerMessage, ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait NamingErrors extends ErrorHandling {
 
-  def report(error: ErrorMessage): Symbol = {
+  def report(error: ErrorMessage): Unit = {
     reporter.report(error)
 
     error.pos match {
-      case id: ClassID    => id.setSymbol(new ClassSymbol(CompilerMessage.ErrorName))
-      case id: VariableID => id.setSymbol(new VariableSymbol(CompilerMessage.ErrorName))
+      case id: ClassID    => id.setSymbol(ClassErrorSymbol)
+      case id: VariableID => id.setSymbol(VariableErrorSymbol)
       case _              =>
     }
-
-    ErrorSymbol
   }
 
   import errorStringContext._

@@ -48,6 +48,8 @@ object Symbols {
 
   }
 
+
+  object ClassErrorSymbol extends ClassSymbol(CompilerMessage.ErrorName)
   class ClassSymbol(override val name: String) extends Symbol {
 
     protected var _parents   : List[ClassSymbol]        = Nil
@@ -254,6 +256,7 @@ object Symbols {
 
   }
 
+  object VariableErrorSymbol extends VariableSymbol(CompilerMessage.ErrorName)
   class VariableSymbol(val name: String,
     val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
     override def toString: String = name

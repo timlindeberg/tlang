@@ -1,20 +1,19 @@
 package tlang.compiler.error
 
-import tlang.compiler.analyzer.Symbols.Symbolic
-import tlang.compiler.analyzer.Types.Typed
+import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErrorSymbol}
+import tlang.compiler.analyzer.Types.{TError, Typed}
 import tlang.compiler.options.Flags.MaxErrors
+import tlang.formatting.Formatter
 import tlang.formatting.grid.Grid
-import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
 case class CompilerMessages(
-  errorFormatter: MessageFormatter,
+  formatter: Formatter,
+  messageFormatter: MessageFormatter,
   maxErrors: Int = MaxErrors.defaultValue,
   warningIsError: Boolean = false,
   suppressWarnings: Boolean = false) {
-
-  private val formatter = errorFormatter.formatter
 
   import formatter.formatting._
 
@@ -74,35 +73,11 @@ case class CompilerMessages(
     grid.render()
   }
 
-
-  private def isValidError(error: CompilerMessage): Boolean =
-    error.pos match {
-      case t: Typed if t.getType.name == CompilerMessage.ErrorName                        => false
-      case s: Symbolic[_] if s.hasSymbol && s.getSymbol.name == CompilerMessage.ErrorName => false
-      case _                                                                              => true
-    }
-
-  private def addToGrid(grid: Grid, error: CompilerMessage): Unit = {
-    errorFormatter.setMessage(error)
-
-    grid.row()
-
-    val pos = error.pos
-    val validPosition = error.pos.source.nonEmpty && (pos.line in (1 to errorFormatter.lines.size))
-
-    if (validPosition)
-      grid.content(errorFormatter.sourceDescription)
-
-    grid.content(errorFormatter.prefix + " " + error.message)
-
-    if (validPosition) {
-      grid.row(2)
-      grid.contents(errorFormatter.locationInSource)
-    }
-  }
-
-  private def header(messageType: MessageType): String = {
+  def header(messageType: MessageType): String = {
     val n = messages(messageType).size
+    if (n == 0)
+      return ""
+
     val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
     val name = messageType.name.toLowerCase + appendix
@@ -113,4 +88,32 @@ case class CompilerMessages(
     else
       s"${ Bold }There $was $num$Bold $name.$Reset"
   }
+
+  private def isValidError(error: CompilerMessage): Boolean =
+    error.pos match {
+      case t: Typed if t.getType == TError => false
+      case s: Symbolic[_] if s.hasSymbol   =>
+        val sym = s.getSymbol
+        sym != ClassErrorSymbol && sym != VariableErrorSymbol
+      case _                               => true
+    }
+
+  private def addToGrid(grid: Grid, error: CompilerMessage): Unit = {
+    messageFormatter.setMessage(error)
+
+    grid.row()
+
+    val hasValidPosition = messageFormatter.hasValidPosition
+    if (hasValidPosition)
+      grid.content(messageFormatter.sourceDescription)
+
+    grid.content(messageFormatter.prefix + " " + error.message)
+
+    if (hasValidPosition) {
+      grid.row(2)
+      grid.contents(messageFormatter.locationInSource)
+    }
+  }
+
+
 }

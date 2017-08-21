@@ -13,11 +13,10 @@ case class MessageFormatter(
 
   var lines: IndexedSeq[String] = IndexedSeq()
 
-  private val formatting               = formatter.formatting
-  private val TabSpaces                = " " * tabWidth
-  private var message: CompilerMessage = _
-
-  import formatting._
+  // This is lazy so that the class can be mocked
+  private lazy val formatting               = formatter.formatting
+  private      val TabSpaces                = " " * tabWidth
+  private      var message: CompilerMessage = _
 
 
   def setMessage(message: CompilerMessage): Unit = {
@@ -28,13 +27,16 @@ case class MessageFormatter(
     }
   }
 
-  def color: Color = message.messageType.color(formatting) + Bold
+  def hasValidPosition: Boolean = position.source.nonEmpty && (position.line in (1 to lines.size))
+
+  def color: Color = message.messageType.color(formatting) + formatting.Bold
 
   def position: Positioned = message.pos
 
   def prefix: String = color(message.messageType.name + " " + message.code)
 
   def positionDescription: String = {
+    import formatting._
     val Style = Bold + NumColor
     Style(position.line) + ":" + Style(position.col)
   }
@@ -119,6 +121,8 @@ case class MessageFormatter(
   }
 
   private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
+    import formatting._
+
     val MarkColor = Underline + color
     val markedLine =
       if (lineNum in (pos.line to pos.endLine)) {
@@ -140,7 +144,7 @@ case class MessageFormatter(
       return firstLine :: Nil
 
     val (start, end) = startAndEnd(line, lineNum, pos)
-    val indicator = UnderlineCharacter * (end - start)
+    val indicator = formatting.UnderlineCharacter * (end - start)
     val indentation = " " * start
     firstLine :: ("", indentation + indicator) :: Nil
   }
