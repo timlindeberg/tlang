@@ -9,7 +9,7 @@ import tlang.utils.Positioned
 trait TypeCheckingErrors extends ErrorHandling {
 
 
-  def report(error: CompilerMessage): Type = {
+  def report(error: ErrorMessage): Type = {
     reporter.report(error)
     TError
   }
@@ -22,10 +22,8 @@ trait TypeCheckingErrors extends ErrorHandling {
 
 
   private val ErrorLetters = "T"
-  abstract class TypeCheckingError(code: Int, pos: Positioned)
-    extends CompilerMessage(MessageType.Error, ErrorLetters, code, pos)
-  abstract class TypeCheckingWarning(code: Int, pos: Positioned)
-    extends CompilerMessage(MessageType.Warning, ErrorLetters, code, pos)
+  abstract class TypeCheckingError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   object WrongType {
     def apply(expected: Type, found: Type, pos: Positioned): WrongType = WrongType(err"$expected", err"$found", pos)

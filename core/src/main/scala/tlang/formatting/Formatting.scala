@@ -3,21 +3,30 @@ package tlang.formatting
 import java.io.File
 
 import tlang.Constants
-import tlang.compiler.options.Flags.LineWidth
-import tlang.formatting.BoxStyles.BoxStyle
+import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
+import tlang.options.Arguments.{ColorSchemeFlag, FormattingStyleFlag, LineWidthFlag, NoColorFlag}
+import tlang.options.Options
 
 object FancyFormatting extends Formatting(
-  BoxStyles.Unicode, LineWidth.DefaultWidth, useColor = true, asciiOnly = false
+  BoxStyles.Unicode, LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false
 )
 object SimpleFormatting extends Formatting(
   BoxStyles.Ascii, 80, useColor = false, asciiOnly = true
 )
 
+object Formatting {
+
+  def apply(options: Options): Formatting = {
+    val boxStyle = options(FormattingStyleFlag)
+    Formatting(boxStyle, options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag), boxStyle == Ascii)
+  }
+}
+
 case class Formatting(
   boxStyle: BoxStyle = BoxStyles.Unicode,
-  lineWidth: Int = LineWidth.DefaultWidth,
+  lineWidth: Int = LineWidthFlag.DefaultWidth,
   colorScheme: ColorScheme = DefaultColorScheme,
   useColor: Boolean = true,
   asciiOnly: Boolean = false) {

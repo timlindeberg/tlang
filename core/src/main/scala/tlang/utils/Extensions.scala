@@ -1,5 +1,8 @@
 package tlang.utils
 
+import java.io.File
+import java.nio.file.{InvalidPathException, Paths}
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -76,6 +79,16 @@ object Extensions {
     def visibleCharacters: Int = {
       val str = stripAnsi
       str.codePointCount(0, str.length)
+    }
+
+    def isValidPath: Boolean = {
+      try {
+        Paths.get(str)
+      } catch {
+        case _: InvalidPathException =>
+          return false
+      }
+      !new File(str).isFile
     }
 
     def ansiDebugString: String = {

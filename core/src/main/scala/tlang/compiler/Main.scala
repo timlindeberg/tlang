@@ -12,18 +12,18 @@ import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.compiler.options.{Flags, Options}
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.Width.Percentage
 import tlang.formatting.grid.{Column, Grid}
+import tlang.options.{Arguments, Options}
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 import tlang.{Constants, Context}
 
 object Main extends MainErrors {
 
-  import Flags._
+  import Arguments._
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
     Lexing andThen Parsing andThen Templating andThen
@@ -44,12 +44,32 @@ object Main extends MainErrors {
     CodeGeneration
   )
 
+  val CompilerFlags: List[Arguments.FlagArgument[_]] = List(
+    ExecFlag,
+    SuppressWarningsFlag,
+    PrintOutputFlag,
+    VerboseFlag,
+    HelpFlag,
+    DirectoryFlag,
+    VersionFlag,
+    WarningIsErrorFlag,
+    NoColorFlag,
+    FormattingStyleFlag,
+    ClassPathFlag,
+    MaxErrorsFlag,
+    IgnoreDefaultImportsFlag,
+    MessageContextFlag,
+    LineWidthFlag,
+    ColorSchemeFlag,
+    PhasesFlag
+  )
+
   def main(args: Array[String]) {
-    val options = Options(args)
 
-    val formatting = options.formatting
+    val options = Options(CompilerFlags, Some(FilesArgument), args)
+
+    val formatting = Formatting(options)
     val formatter = Formatter(formatting)
-
 
     if (args.isEmpty) {
       print(printHelpInfo(formatter))
@@ -61,24 +81,26 @@ object Main extends MainErrors {
     if (!isValidTHomeDirectory(TDirectory))
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
-    if (options.files.isEmpty)
+    val filesToCompile = options(FilesArgument)
+
+    if (filesToCompile.isEmpty)
       FatalNoFilesGiven()
 
-    if (options(Verbose))
-      printFilesToCompile(formatter, options.files)
+    if (options(VerboseFlag))
+      printFilesToCompile(formatter, filesToCompile)
 
 
-    val ctx = createContext(options, formatter)
+    val ctx = createContext(options, filesToCompile, formatter)
     val CUs = runFrontend(ctx)
 
     GenerateCode.execute(ctx)(CUs)
 
     ctx.reporter.printWarnings()
 
-    if (options(Verbose))
+    if (options(VerboseFlag))
       printExecutionTimes(ctx)
 
-    if (options(Exec))
+    if (options(ExecFlag))
       executePrograms(ctx, CUs)
   }
 
@@ -93,26 +115,26 @@ object Main extends MainErrors {
     }
   }
 
-  private def createContext(options: Options, formatter: Formatter): Context = {
+  private def createContext(options: Options, filesToCompile: Set[File], formatter: Formatter): Context = {
 
-    val messageFormatter = MessageFormatter(formatter, options(MessageContext))
+    val messageFormatter = MessageFormatter(formatter, options(MessageContextFlag))
     val messages = CompilerMessages(
       formatter,
       messageFormatter,
-      maxErrors = options(MaxErrors),
-      warningIsError = options(WarningIsError),
-      suppressWarnings = options(SuppressWarnings)
+      maxErrors = options(MaxErrorsFlag),
+      warningIsError = options(WarningIsErrorFlag),
+      suppressWarnings = options(SuppressWarningsFlag)
     )
     val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
-      files = options.files,
-      classPath = ClassPath.Default ++ options.classPaths,
-      outDirs = options.outDirectories,
-      printCodePhase = options(PrintOutput),
-      ignoredImports = options(IgnoreDefaultImports)
+      files = filesToCompile,
+      classPath = ClassPath.Default ++ options(ClassPathFlag),
+      outDirs = options(DirectoryFlag),
+      printCodePhase = options(PrintOutputFlag),
+      ignoredImports = options(IgnoreDefaultImportsFlag)
     )
   }
 
@@ -169,23 +191,23 @@ object Main extends MainErrors {
   private def versionInfo = s"T-Compiler $VersionNumber"
 
   private def printHelp(formatter: Formatter, options: Options): Unit = {
-    if (options(Version)) {
+    if (options(VersionFlag)) {
       print(versionInfo)
       sys.exit()
     }
 
-    if (options(Phases)) {
-      print(phaseInfo(formatter))
+    if (options(PhasesFlag)) {
+      printPhaseInfo(formatter)
       sys.exit()
     }
 
-    val args = options(Help)
-    if (args.contains("")) {
+    val args = options(HelpFlag)
+    if (args.contains("all")) {
       printHelpInfo(formatter)
       sys.exit()
     }
 
-    args.foreach(Flag.get(_) ifDefined { flag =>
+    args.foreach(arg => CompilerFlags.find(_.matchesString(arg)) ifDefined { flag =>
       printFlagInfo(flag, formatter)
     })
 
@@ -194,7 +216,7 @@ object Main extends MainErrors {
     }
   }
 
-  private def printFlagInfo(flag: Flag, formatter: Formatter): Unit = {
+  private def printFlagInfo(flag: FlagArgument[_], formatter: Formatter): Unit = {
     val formatting = formatter.formatting
     Grid(formatter)
       .header(flag.flagName(formatting))
@@ -203,7 +225,7 @@ object Main extends MainErrors {
       .print()
   }
 
-  private def printHelpInfo(formatter: Formatter) = {
+  private def printHelpInfo(formatter: Formatter): Unit = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -215,11 +237,11 @@ object Main extends MainErrors {
     Grid(formatter)
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
-      .mapContent(Flag.All) { flag => (flag.flagName(formatting), flag.description(formatter)) }
-      .render()
+      .mapContent(CompilerFlags.sortBy(_.flag)) { flag => (flag.flagName(formatting), flag.description(formatter)) }
+      .print()
   }
 
-  private def phaseInfo(formatter: Formatter) = {
+  private def printPhaseInfo(formatter: Formatter): Unit = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -227,7 +249,7 @@ object Main extends MainErrors {
       .header(Bold(s"Phases of the T-Compiler"))
       .row(2)
       .mapContent(CompilerPhases) { phase => (Magenta(phase.phaseName.capitalize), phase.description(formatting)) }
-      .render()
+      .print()
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {
@@ -278,11 +300,12 @@ object Main extends MainErrors {
       // Gauranteed to have a file source
       val file = cu.source.get.asInstanceOf[FileSource].file
       val output = ctx.formatter.syntaxHighlight(programExecutor(ctx, file))
+      val lines = output.split("\r?\n").toList
       grid
         .row(alignment = Center)
         .content(formatFileName(file))
         .row(2)
-        .mapContent(output.split("\n").zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
+        .mapContent(lines.zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
     }
     grid.print()
   }

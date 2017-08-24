@@ -1,14 +1,14 @@
 package tlang.compiler.error
 
-import tlang.compiler.options.Flags.MessageContext
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
+import tlang.options.Arguments.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
 case class MessageFormatter(
   formatter: Formatter,
-  messageContextSize: Int = MessageContext.defaultValue,
+  messageContextSize: Int = MessageContextFlag.defaultValue,
   tabWidth: Int = 2) {
 
   var lines: IndexedSeq[String] = IndexedSeq()
@@ -123,19 +123,13 @@ case class MessageFormatter(
   private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
     import formatting._
 
-    val MarkColor = Underline + color
-    val markedLine =
-      if (lineNum in (pos.line to pos.endLine)) {
-        val (start, end) = startAndEnd(line, lineNum, pos)
-        line.substring(0, start) +
-          MarkColor(line.substring(start, end)) +
-          line.substring(end, line.length)
-      } else {
-        line
-      }
+    if (lineNum notIn (pos.line to pos.endLine))
+      return (NumColor(lineNum), formatter.syntaxHighlight(line))
 
-    val coloredLine = formatter.syntaxHighlight(markedLine)
-    (NumColor(lineNum), coloredLine)
+    val MarkColor = Underline + color
+    val (start, end) = startAndEnd(line, lineNum, pos)
+    val markedLined = line.substring(0, start) + MarkColor(line.substring(start, end)) + line.substring(end, line.length)
+    (color(lineNum), formatter.syntaxHighlight(markedLined))
   }
 
   private def indicatorLines(lineNum: Int, line: String, pos: Positioned): List[(String, String)] = {

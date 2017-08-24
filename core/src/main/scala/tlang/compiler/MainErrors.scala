@@ -1,7 +1,7 @@
 package tlang.compiler
 
 import tlang.compiler.error.AlternativeSuggestor
-import tlang.compiler.options.Flags.Flag
+import tlang.options.Arguments.FlagArgument
 
 trait MainErrors {
 
@@ -15,9 +15,6 @@ trait MainErrors {
   //---------------------------------------------------------------------------------------
   // Errors
   //---------------------------------------------------------------------------------------
-
-  protected def FatalWrongNumFilesGiven(numFiles: Int): Nothing =
-    fatal(s"Exactly one file expected, '$numFiles' file(s) given.")
 
   protected def FatalCannotFindFile(fileName: String): Nothing =
     fatal(s"Cannot find file '$fileName'.")
@@ -43,7 +40,7 @@ trait MainErrors {
   protected def FatalInvalidFlag(flag: String, alternatives: List[String]): Nothing =
     fatal(s"'$flag' is not a valid flag.${ nameSuggestor(flag, alternatives) } Type --help to see a list of valid commands.")
 
-  protected def FatalInvalidJsonArgument(flag: Flag, rest: String): Nothing =
+  protected def FatalInvalidJsonArgument(flag: FlagArgument[_], rest: String): Nothing =
     fatal(s"Input following JSON flag '${ flag.flag }' is not valid JSON: '$rest'.")
 
   protected def FatalGivenFileIsNotTFile(path: String): Nothing =
@@ -55,7 +52,10 @@ trait MainErrors {
   protected def FatalInvalidColorSchemeArg(arg: String, alternatives: List[String]): Nothing =
     fatal(s"'$arg' is not a valid color.${ nameSuggestor(arg, alternatives) }")
 
-  protected def FatalInvalidArgToFlag(flag: Flag, arg: String, alternatives: List[String]): Nothing =
+  protected def FatalInvalidArgToFlag(flag: FlagArgument[_], arg: String, alternatives: List[String]): Nothing =
     fatal(s"'$arg' is not a valid argument to flag '--${ flag.flag }'.${ nameSuggestor(arg, alternatives) }")
+
+  protected def FatalUnrecognizedArgument(arg: String): Nothing =
+    fatal(s"'$arg' is not a valid argument.")
 
 }

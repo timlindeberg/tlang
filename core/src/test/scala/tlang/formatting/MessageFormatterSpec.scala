@@ -110,7 +110,7 @@ class MessageFormatterSpec extends UnitSpec {
     lines should have size 1
 
     val (num, line) = lines(0)
-    num should matchWithAnsi("\u001b[35m1\u001b[0m")
+    num should matchWithAnsi("\u001b[1;31m1\u001b[0m")
     line should matchWithAnsi("for(var i = x; \u001b[1;4;31mi < 5\u001b[0m; i++)")
   }
 
@@ -171,7 +171,7 @@ class MessageFormatterSpec extends UnitSpec {
         val messageFormatterColored = getMessageFormatter(contextSize = 0, useColor = true, message = Some(message))
         val (nums, lines) = messageFormatterColored.locationInSource.unzip
         nums should allMatchWithAnsi(
-          "\u001b[35m6\u001b[0m"
+          "\u001b[1;31m6\u001b[0m"
         )
         lines should allMatchWithAnsi(
           "for(var i = x; \u001b[1;4;31mi < 5\u001b[0m; i++)"
@@ -197,7 +197,7 @@ class MessageFormatterSpec extends UnitSpec {
         val (nums, lines) = messageFormatter.locationInSource.unzip
         nums should allMatchWithAnsi(
           "\u001b[35m5\u001b[0m",
-          "\u001b[35m6\u001b[0m",
+          "\u001b[1;31m6\u001b[0m",
           "\u001b[35m7\u001b[0m"
         )
         lines should allMatchWithAnsi(
@@ -228,7 +228,7 @@ class MessageFormatterSpec extends UnitSpec {
         nums should allMatchWithAnsi(
           "\u001b[35m4\u001b[0m",
           "\u001b[35m5\u001b[0m",
-          "\u001b[35m6\u001b[0m",
+          "\u001b[1;31m6\u001b[0m",
           "\u001b[35m7\u001b[0m",
           "\u001b[35m8\u001b[0m"
         )
@@ -272,7 +272,7 @@ class MessageFormatterSpec extends UnitSpec {
           "\u001b[35m3\u001b[0m",
           "\u001b[35m4\u001b[0m",
           "\u001b[35m5\u001b[0m",
-          "\u001b[35m6\u001b[0m",
+          "\u001b[1;31m6\u001b[0m",
           "\u001b[35m7\u001b[0m",
           "\u001b[35m8\u001b[0m",
           "\u001b[35m9\u001b[0m",
@@ -325,7 +325,7 @@ class MessageFormatterSpec extends UnitSpec {
           "\u001b[35m3\u001b[0m",
           "\u001b[35m4\u001b[0m",
           "\u001b[35m5\u001b[0m",
-          "\u001b[35m6\u001b[0m",
+          "\u001b[1;31m6\u001b[0m",
           "\u001b[35m7\u001b[0m",
           "\u001b[35m8\u001b[0m",
           "\u001b[35m9\u001b[0m",
@@ -368,7 +368,7 @@ class MessageFormatterSpec extends UnitSpec {
         val (nums, lines) = messageFormatter.locationInSource.unzip
 
         nums should allMatchWithAnsi(
-          "\u001b[35m1\u001b[0m",
+          "\u001b[1;31m1\u001b[0m",
           "\u001b[35m2\u001b[0m",
           "\u001b[35m3\u001b[0m"
         )
@@ -402,7 +402,7 @@ class MessageFormatterSpec extends UnitSpec {
 
         nums should allMatchWithAnsi(
           "\u001b[35m1\u001b[0m",
-          "\u001b[35m2\u001b[0m",
+          "\u001b[1;31m2\u001b[0m",
           "\u001b[35m3\u001b[0m",
           "\u001b[35m4\u001b[0m"
         )
@@ -439,7 +439,7 @@ class MessageFormatterSpec extends UnitSpec {
         nums should allMatchWithAnsi(
           "\u001b[35m9\u001b[0m",
           "\u001b[35m10\u001b[0m",
-          "\u001b[35m11\u001b[0m"
+          "\u001b[1;31m11\u001b[0m"
         )
         lines shouldBe List(
           "c++",
@@ -481,7 +481,7 @@ class MessageFormatterSpec extends UnitSpec {
       val (nums, lines) = messageFormatter.locationInSource.unzip
       nums should allMatchWithAnsi(
         "\u001b[35m1\u001b[0m",
-        "\u001b[35m2\u001b[0m",
+        "\u001b[1;33m2\u001b[0m",
         "\u001b[35m3\u001b[0m"
       )
       lines should allMatchWithAnsi(
@@ -523,7 +523,7 @@ class MessageFormatterSpec extends UnitSpec {
         val (nums, lines) = messageFormatter.locationInSource.unzip
         nums should allMatchWithAnsi(
           "\u001b[35m1\u001b[0m",
-          "\u001b[35m2\u001b[0m",
+          "\u001b[1;33m2\u001b[0m",
           "\u001b[35m3\u001b[0m"
         )
         lines should allMatchWithAnsi(
@@ -552,7 +552,7 @@ class MessageFormatterSpec extends UnitSpec {
         val (nums, lines) = messageFormatter.locationInSource.unzip
         nums should allMatchWithAnsi(
           "\u001b[35m1\u001b[0m",
-          "\u001b[35m2\u001b[0m",
+          "\u001b[1;33m2\u001b[0m",
           "\u001b[35m3\u001b[0m"
         )
         lines should allMatchWithAnsi(
@@ -585,7 +585,7 @@ class MessageFormatterSpec extends UnitSpec {
         nums should allMatchWithAnsi(
           "\u001b[35m1\u001b[0m",
           "\u001b[35m2\u001b[0m",
-          "\u001b[35m3\u001b[0m"
+          "\u001b[1;33m3\u001b[0m"
         )
         lines should allMatchWithAnsi(
           "            var a = 0",
@@ -649,8 +649,8 @@ class MessageFormatterSpec extends UnitSpec {
     val (nums, texts) = lines.unzip
     nums should allMatchWithAnsi(
       "\u001b[35m1\u001b[0m",
-      "\u001b[35m2\u001b[0m",
-      "\u001b[35m3\u001b[0m"
+      "\u001b[1;33m2\u001b[0m",
+      "\u001b[1;33m3\u001b[0m"
     )
     texts should allMatchWithAnsi(
       "else",
@@ -682,7 +682,7 @@ class MessageFormatterSpec extends UnitSpec {
     pos: Positioned = Position.NoPos,
     mess: String = "ABC"
   ): CompilerMessage = {
-    new CompilerMessage(messageType, errorLetters, codeNum, pos) {override def message = mess }
+    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {override def message = mess }
   }
 
   // This mocked syntax highlighter just returns the input again

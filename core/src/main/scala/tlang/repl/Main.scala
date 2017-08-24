@@ -8,9 +8,9 @@ import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.error.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.options.Flags._
-import tlang.compiler.options.Options
 import tlang.formatting._
+import tlang.options.Arguments._
+import tlang.options.{Arguments, Options}
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.InputHistory
 
@@ -20,17 +20,27 @@ object Main {
   val MaxRedoSize   = 500
   val TabSize       = 4
 
+  val ReplFlags: List[Arguments.FlagArgument[_]] = List(
+    LineWidthFlag,
+    FormattingStyleFlag,
+    ClassPathFlag,
+    VersionFlag,
+    HelpFlag,
+    MessageContextFlag
+  )
 
   def main(args: Array[String]): Unit = {
 
-    val options = Options(args)
-    if (options(Version)) {
+    val options = Options(ReplFlags, None, args)
+    val formatting = Formatting(options)
+
+    if (options(VersionFlag)) {
       printVersion()
       sys.exit()
     }
 
-    if (options(Help).nonEmpty) {
-      printHelp(options.formatting, options(Help))
+    if (options(HelpFlag).nonEmpty) {
+      printHelp(formatting, options(HelpFlag))
       sys.exit()
     }
 
@@ -38,9 +48,8 @@ object Main {
     tempDir.deleteOnExit()
 
 
-    val formatting = options.formatting
     val formatter = Formatter(formatting)
-    val errorFormatter = MessageFormatter(formatter, options(MessageContext))
+    val errorFormatter = MessageFormatter(formatter, options(MessageContextFlag))
 
     val context = createContext(options, errorFormatter, tempDir)
 
@@ -61,14 +70,9 @@ object Main {
   private def createContext(options: Options, errorFormatter: MessageFormatter, tempDir: File): Context = {
     val formatter = errorFormatter.formatter
     val formatting = formatter.formatting
-    val default = ClassPath.Default
-    val classPath = default ++ (options.classPaths + tempDir.getAbsolutePath)
-    val errorMessages = CompilerMessages(
-      formatter,
-      errorFormatter,
-      maxErrors = options(MaxErrors),
-      suppressWarnings = options(SuppressWarnings),
-      warningIsError = options(WarningIsError))
+    val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.getAbsolutePath)
+
+    val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)
     val debugOutputFormatter = DebugOutputFormatter(errorFormatter.formatter)
     Context(
       reporter = DefaultReporter(errorMessages),

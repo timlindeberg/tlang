@@ -2,16 +2,16 @@ package tlang.compiler.error
 
 import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.{TError, Typed}
-import tlang.compiler.options.Flags.MaxErrors
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Grid
+import tlang.options.Arguments.MaxErrorsFlag
 
 import scala.collection.mutable
 
 case class CompilerMessages(
   formatter: Formatter,
   messageFormatter: MessageFormatter,
-  maxErrors: Int = MaxErrors.defaultValue,
+  maxErrors: Int = MaxErrorsFlag.defaultValue,
   warningIsError: Boolean = false,
   suppressWarnings: Boolean = false) {
 
@@ -23,16 +23,17 @@ case class CompilerMessages(
     MessageType.Warning -> mutable.LinkedHashSet[CompilerMessage]()
   )
 
-  def +=(error: CompilerMessage): CompilerMessages = {
-    if (!isValidError(error))
+  def +=(message: CompilerMessage): CompilerMessages = {
+    if (!isValidError(message))
       return this
 
-    var messageType = error.messageType
+    var messageType = message.messageType
     if (messageType == MessageType.Warning) {
       if (suppressWarnings)
         return this
+
       if (warningIsError)
-        messageType = MessageType.Error
+        return this += message.copy(messageType = MessageType.Error)
     }
     // The CompilerMessages class treats fatal as error
     if (messageType == MessageType.Fatal)
@@ -42,7 +43,7 @@ case class CompilerMessages(
       hitMax += messageType
       return this
     }
-    messages(messageType) += error
+    messages(messageType) += message
     this
   }
 

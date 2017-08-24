@@ -54,15 +54,19 @@ class CompilerMessageSpec extends UnitSpec {
 
   it should "treat warnings as error" in {
     val compilerMessages = createCompilerMessages(warningIsError = true)
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "A")
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "B")
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "C")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "A", codeNum = 1, pos = Position.NoPos, message = "WARNING1")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "B", codeNum = 2, pos = Position.NoPos, message = "WARNING2")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "C", codeNum = 3, pos = Position.NoPos, message = "WARNING3")
 
     val warnings = compilerMessages(MessageType.Warning)
     warnings should be(empty)
 
     val errors = compilerMessages(MessageType.Error)
     errors should have size 3
+
+    errors(0).code shouldBe "A1001"
+    errors(1).code shouldBe "B1002"
+    errors(2).code shouldBe "C1003"
   }
 
   it should "not hold more than the maximum amount of errors" in {
@@ -263,7 +267,7 @@ class CompilerMessageSpec extends UnitSpec {
     message: String = "ABC"
   ): CompilerMessage = {
     val mess = message
-    new CompilerMessage(messageType, errorLetters, codeNum, pos) {override def message = mess }
+    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {override def message = mess }
   }
 
 }
