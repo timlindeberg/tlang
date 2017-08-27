@@ -40,4 +40,6 @@ object BoxStyles {
   // @formatter:on
 
   lazy val All: List[BoxStyle] = Enumeration.instancesOf[BoxStyle]
+
+  lazy val Names: List[String] = All.map(_.styleName)
 }

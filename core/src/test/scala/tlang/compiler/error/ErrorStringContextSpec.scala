@@ -24,9 +24,9 @@ class ErrorStringContextSpec extends UnitSpec {
     err"" should matchWithAnsi("")
 
     err"$x" should matchWithAnsi("\u001b[1;35mx\u001b[0m")
-    err"$x$y$z" should matchWithAnsi("\u001b[1;35mx\u001b[0m\u001b[1;35my\u001b[0m\u001b[1;35mz\u001b[0m")
+    err"$x$y$z" should matchWithAnsi("\u001b[1;35mxyz\u001b[0m")
 
-    err"$x ABC $y DEF $z" should matchWithAnsi("\u001b[1;35mx\u001b[0m\u001b[1m ABC \u001b[0m\u001b[1;35my\u001b[0m\u001b[1m DEF \u001b[0m\u001b[1;35mz\u001b[0m")
+    err"$x ABC $y DEF $z" should matchWithAnsi("\u001b[1;35mx\u001b[0m\u001b[1m ABC \u001b[35my\u001b[0m\u001b[1m DEF \u001b[35mz\u001b[0m")
   }
 
 
@@ -82,21 +82,110 @@ class ErrorStringContextSpec extends UnitSpec {
 
   it should "suggest corrections" in {
     val alternatives = List("ABC", "DEF", "GHI")
-    val alternativeSuggestor = mock[AlternativeSuggestor]
-    (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion("ABC"))
 
-    test("Colored suggestion") {
-      val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
-      import errorStringContext._
+    test("No suggestion") {
+      val alternativeSuggestor = mock[AlternativeSuggestor]
+      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(Nil))
 
-      err"ABCD DEF.${ suggestion("ABCD", alternatives) }" should matchWithAnsi("\u001b[1mABCD DEF.\u001b[0m\u001b[1m Did you mean \u001b[0m\u001b[1;35mABC\u001b[0m\u001b[1m?\u001b[0m")
+      test("With color") {
+        val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
+          "\u001b[1mSome text. More text.\u001b[0m"
+        )
+      }
+
+      test("Without color") {
+        val errorStringContext = makeErrorStringContext(useColor = false, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi("Some text. More text.")
+      }
     }
 
-    test("Non colored suggestion") {
+    test("One suggestion") {
+      val alternativeSuggestor = mock[AlternativeSuggestor]
+      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(List("ABC")))
+
+      test("With color") {
+        val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
+          "\u001b[1mSome text. Did you mean \u001b[35mABC\u001b[0m\u001b[1m? More text.\u001b[0m"
+        )
+      }
+
+      test("Without color") {
+        val errorStringContext = makeErrorStringContext(useColor = false, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi("Some text. Did you mean 'ABC'? More text.")
+      }
+    }
+
+    test("Multiple suggestions") {
+      val alternatives = List("ABC", "DEF", "GHI")
+      val alternativeSuggestor = mock[AlternativeSuggestor]
+      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(List("ABC", "DEF", "GHI")))
+
+      test("With color") {
+        val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
+          s"""|\u001b[1mSome text. Did you mean?
+              |   • \u001b[35mABC
+              |\u001b[0m\u001b[1m   • \u001b[35mDEF
+              |\u001b[0m\u001b[1m   • \u001b[35mGHI
+              |\u001b[0m\u001b[1mMore text.\u001b[0m""".stripMargin
+        )
+      }
+
+      test("Without color") {
+        val errorStringContext = makeErrorStringContext(useColor = false, alternativeSuggestor = alternativeSuggestor)
+        import errorStringContext._
+
+        err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
+          s"""|Some text. Did you mean?
+              |   • ABC
+              |   • DEF
+              |   • GHI
+              |More text.""".stripMargin
+        )
+      }
+    }
+
+    test("Without followup text.") {
+      val alternatives = List("ABC", "DEF", "GHI")
+      val alternativeSuggestor = mock[AlternativeSuggestor]
+      (alternativeSuggestor.apply _).expects("A", alternatives).twice().returning(Suggestion(Nil))
+      (alternativeSuggestor.apply _).expects("AB", alternatives).twice().returning(Suggestion(List("ABC")))
+      (alternativeSuggestor.apply _).expects("ABC", alternatives).twice().returning(Suggestion(List("ABC", "DEF", "GHI")))
+
       val errorStringContext = makeErrorStringContext(useColor = false, alternativeSuggestor = alternativeSuggestor)
       import errorStringContext._
 
-      err"ABCD DEF.${ suggestion("ABCD", alternatives) }" should matchWithAnsi("ABCD DEF. Did you mean 'ABC'?")
+      err"Some text.${ suggestion("A", alternatives) }" should matchWithAnsi("Some text.")
+      err"Some text.${ suggestion("AB", alternatives) }" should matchWithAnsi("Some text. Did you mean 'ABC'?")
+      err"Some text.${ suggestion("ABC", alternatives) }" should matchWithAnsi(
+        s"""|Some text. Did you mean?
+            |   • ABC
+            |   • DEF
+            |   • GHI""".stripMargin
+      )
+
+      val x = "x"
+      err"Some text.${ suggestion("A", alternatives) }$x" should matchWithAnsi("Some text. 'x'")
+      err"Some text.${ suggestion("AB", alternatives) }$x" should matchWithAnsi("Some text. Did you mean 'ABC'? 'x'")
+      err"Some text.${ suggestion("ABC", alternatives) }$x" should matchWithAnsi(
+        s"""|Some text. Did you mean?
+            |   • ABC
+            |   • DEF
+            |   • GHI
+            |'x'""".stripMargin
+      )
     }
 
   }

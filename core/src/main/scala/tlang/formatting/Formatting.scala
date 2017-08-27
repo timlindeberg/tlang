@@ -6,8 +6,8 @@ import tlang.Constants
 import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
-import tlang.options.Arguments.{ColorSchemeFlag, FormattingStyleFlag, LineWidthFlag, NoColorFlag}
 import tlang.options.Options
+import tlang.options.arguments.{ColorSchemeFlag, FormattingStyleFlag, LineWidthFlag, NoColorFlag}
 
 object FancyFormatting extends Formatting(
   BoxStyles.Unicode, LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false
@@ -94,7 +94,10 @@ case class Formatting(
   def formatFileName(name: String): String = FileColor(name + Constants.FileEnding)
 
   def makeList(items: String*): String = makeList(items)
-  def makeList(items: Traversable[String]): String = items.map(item => s"  $ListMarker $item").mkString("\n")
+  def makeList(items: Traversable[String]): String =
+    items
+      .map(item => s"  ${ Bold(ListMarker) } $item")
+      .mkString(System.lineSeparator)
 
 
   private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii

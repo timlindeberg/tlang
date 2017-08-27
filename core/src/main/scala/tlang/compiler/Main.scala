@@ -16,18 +16,17 @@ import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.Width.Percentage
 import tlang.formatting.grid.{Column, Grid}
-import tlang.options.{Arguments, Options}
+import tlang.options.arguments._
+import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 import tlang.{Constants, Context}
 
 object Main extends MainErrors {
 
-  import Arguments._
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
-    Lexing andThen Parsing andThen Templating andThen
-      Naming andThen Typing andThen Flowing
+    Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
 
   val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
     Lowering andThen CodeGeneration
@@ -44,7 +43,7 @@ object Main extends MainErrors {
     CodeGeneration
   )
 
-  val CompilerFlags: List[Arguments.FlagArgument[_]] = List(
+  val CompilerFlags: List[FlagArgument[_]] = List(
     ExecFlag,
     SuppressWarningsFlag,
     PrintOutputFlag,
@@ -66,8 +65,7 @@ object Main extends MainErrors {
 
   def main(args: Array[String]) {
 
-    val options = Options(CompilerFlags, Some(FilesArgument), args)
-
+    val options = parseOptions(args)
     val formatting = Formatting(options)
     val formatter = Formatter(formatting)
 
@@ -81,10 +79,10 @@ object Main extends MainErrors {
     if (!isValidTHomeDirectory(TDirectory))
       FatalInvalidTHomeDirectory(TDirectory, THome)
 
-    val filesToCompile = options(FilesArgument)
+    val filesToCompile = options(TFilesArgument)
 
     if (filesToCompile.isEmpty)
-      FatalNoFilesGiven()
+      ErrorNoFilesGiven()
 
     if (options(VerboseFlag))
       printFilesToCompile(formatter, filesToCompile)
@@ -102,6 +100,13 @@ object Main extends MainErrors {
 
     if (options(ExecFlag))
       executePrograms(ctx, CUs)
+  }
+
+  private def parseOptions(args: Array[String]): Options = {
+    val formatting = Formatting(BoxStyles.Ascii, useColor = false, asciiOnly = true)
+
+    val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
+    Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -125,11 +130,10 @@ object Main extends MainErrors {
       warningIsError = options(WarningIsErrorFlag),
       suppressWarnings = options(SuppressWarningsFlag)
     )
-    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
-      debugOutputFormatter = debugOutputFormatter,
+      debugOutputFormatter = DebugOutputFormatter(formatter),
       files = filesToCompile,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       outDirs = options(DirectoryFlag),
@@ -207,7 +211,7 @@ object Main extends MainErrors {
       sys.exit()
     }
 
-    args.foreach(arg => CompilerFlags.find(_.matchesString(arg)) ifDefined { flag =>
+    args.foreach(arg => CompilerFlags.find(_.name == arg) ifDefined { flag =>
       printFlagInfo(flag, formatter)
     })
 
@@ -237,7 +241,7 @@ object Main extends MainErrors {
     Grid(formatter)
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
-      .mapContent(CompilerFlags.sortBy(_.flag)) { flag => (flag.flagName(formatting), flag.description(formatter)) }
+      .mapContent(CompilerFlags.sortBy(_.name)) { flag => (flag.flagName(formatting), flag.description(formatter)) }
       .print()
   }
 

@@ -2,6 +2,7 @@ package tlang.compiler.error
 
 import tlang.Context
 import tlang.compiler.ast.Trees.CompilationUnit
+import tlang.formatting.Colors.Color
 import tlang.formatting.Formatting
 
 
@@ -26,30 +27,105 @@ case class ErrorStringContext(
 
   def suggestion(name: String, alternatives: List[String]) = alternativeSuggestor(name, alternatives)
 
-  val TextColor  = Bold
-  val ValueColor = Bold + NumColor
+  val ValueColor = NumColor
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
+    var currentColor: Color            = NoColor
+    val sb          : StringBuilder    = new StringBuilder
+    val strings     : Iterator[String] = sc.parts.iterator
+    var nextString  : String           = strings.next
+    var expressions : Iterator[Any]    = _
+
     def err(args: Any*): String = {
 
-      val strings = sc.parts.iterator
-      val expressions = args.iterator
-      val sb = new StringBuilder(TextColor(strings.next))
-      while (strings.hasNext) {
-        sb ++= evaluate(expressions.next)
-        val s = strings.next
-        if (s.nonEmpty)
-          sb ++= TextColor(s)
+      expressions = args.iterator
+
+      if (nextString.isEmpty && !expressions.hasNext)
+        return ""
+
+      if (nextString.nonEmpty) {
+        sb ++= Bold + nextString
+        currentColor = Bold
       }
+
+      while (strings.hasNext) {
+        nextString = strings.next
+
+        expressions.next match {
+          case Suggestion(suggestions) => evaluateSuggestion(suggestions)
+          case any                     => evaluateAny(any)
+
+        }
+        if (nextString.nonEmpty) {
+          if (currentColor != Bold) {
+            if (currentColor == ValueColor) {
+              sb ++= Reset
+            }
+            sb ++= Bold
+            currentColor = Bold
+          }
+          sb ++= nextString
+        }
+      }
+      if (currentColor != NoColor)
+        sb ++= Reset
       sb.toString
     }
 
-    private def evaluate(any: Any) = any match {
-      case Suggestion(suggestion) => err" Did you mean $suggestion?"
-      case any                    =>
-        val str = Function.chain(transforms)(any.toString)
-        if (formatting.useColor) ValueColor(str) else s"'$str'"
+    private def evaluateSuggestion(suggestions: List[String]): Unit = {
+      val hasMore = nextString.nonEmpty || expressions.hasNext
+      if (suggestions.isEmpty) {
+        if (hasMore)
+          sb ++= " "
+        return
+      }
+
+      if (currentColor != Bold) {
+        if (currentColor == ValueColor)
+          sb ++= Reset
+        sb ++= Bold
+        currentColor = Bold
+      }
+
+      suggestions match {
+        case suggestion :: Nil =>
+          val v = if (formatting.useColor) ValueColor(suggestion) else s"'$suggestion'"
+          sb ++= " Did you mean " + v + Bold + "?"
+          currentColor = Bold
+          if (hasMore)
+            sb ++= " "
+        case suggestions       =>
+          sb ++= " Did you mean?" + System.lineSeparator
+          sb ++= suggestions
+            .map { suggestion =>
+              val sb = new StringBuilder
+              if (currentColor != Bold) {
+                sb ++= Reset
+                sb ++= Bold
+              }
+              sb ++= s"   $ListMarker " + ValueColor + suggestion
+              currentColor = ValueColor
+              sb.toString
+            }
+            .mkString(System.lineSeparator)
+          if (hasMore)
+            sb ++= System.lineSeparator
+      }
+    }
+
+
+    private def evaluateAny(any: Any): Unit = {
+      val str = Function.chain(transforms)(any.toString)
+      if (!formatting.useColor) {
+        sb ++= s"'$str'"
+        return
+      }
+      if (currentColor != ValueColor) {
+        sb ++= (if (currentColor == Bold) ValueColor else Bold + ValueColor)
+        currentColor = ValueColor
+      }
+      sb ++= str
     }
   }
 

@@ -34,11 +34,6 @@ trait ImportErrors extends ErrorHandling {
     lazy val message = err"Cannot resolve extension import ${ imp.writtenName }"
   }
 
-  case class DefaultImportDoesntExist(ignoredImport: String, override val pos: Positioned) extends ImportError(3, pos) {
-    lazy val message = err"There is no default import called $ignoredImport."
-  }
-
-
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------

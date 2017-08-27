@@ -1,13 +1,14 @@
 package tlang.utils
 
 import java.io.File
-import java.nio.file.{InvalidPathException, Paths}
+import java.nio.file.Paths
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.reflect.{ClassTag, _}
+import scala.util.Try
 import scala.util.matching.Regex
 
 object Extensions {
@@ -74,6 +75,10 @@ object Extensions {
   }
 
   implicit class StringExtensions(val str: String) extends AnyVal {
+
+
+    def isNumber: Boolean = Try(str.toInt).isSuccess
+
     def containsAnsi: Boolean = AnsiRegex.matches(str)
     def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")
     def visibleCharacters: Int = {
@@ -82,13 +87,10 @@ object Extensions {
     }
 
     def isValidPath: Boolean = {
-      try {
-        Paths.get(str)
-      } catch {
-        case _: InvalidPathException =>
-          return false
-      }
-      !new File(str).isFile
+      if (!Try(Paths.get(str)).isSuccess)
+        return false
+
+      new File(str).exists
     }
 
     def ansiDebugString: String = {

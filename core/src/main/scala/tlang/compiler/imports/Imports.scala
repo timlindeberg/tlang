@@ -5,26 +5,10 @@ import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.NoPosition
 
 import scala.collection.mutable
 
-
-case class Imports(ctx: Context,
-  override val errorStringContext: ErrorStringContext,
-  imports: List[Import] = Nil,
-  pack: Package = Package(Nil),
-  classes: List[ClassDeclTree] = Nil
-) extends ImportErrors {
-
-  override val reporter: Reporter = ctx.reporter
-
-  var extensionSymbols: List[ExtensionClassSymbol] = Nil
-
-  private val shortToFull        = mutable.Map[String, String]()
-  private val fullToShort        = mutable.Map[String, String]()
-  private val classPath          = ctx.classPath
-  private val classSymbolLocator = ClassSymbolLocator(classPath)
+object Imports {
 
   private val javaObject = List("java", "lang", "Object")
   private val javaString = List("java", "lang", "String")
@@ -36,7 +20,7 @@ case class Imports(ctx: Context,
   private val TBool      = List("T", "lang", "Bool")
   private val TLang      = List("T", "lang")
 
-  private val DefaultImports = List[Import](
+  val DefaultImports = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
     RegularImport(TInt),
@@ -54,15 +38,31 @@ case class Imports(ctx: Context,
     ExtensionImport(TLang, TChar)
   )
 
+  val DefaultImportNames: List[String] = DefaultImports.map(_.writtenName)
+}
+
+case class Imports(ctx: Context,
+  override val errorStringContext: ErrorStringContext,
+  imports: List[Import] = Nil,
+  pack: Package = Package(Nil),
+  classes: List[ClassDeclTree] = Nil
+) extends ImportErrors {
+
+  import Imports._
+
+  override val reporter: Reporter = ctx.reporter
+
+  var extensionSymbols: List[ExtensionClassSymbol] = Nil
+
+  private val shortToFull        = mutable.Map[String, String]()
+  private val fullToShort        = mutable.Map[String, String]()
+  private val classPath          = ctx.classPath
+  private val classSymbolLocator = ClassSymbolLocator(classPath)
+
+
   // Initialize
   {
-    val ignoredImports = ctx.ignoredImports
-    val defaultImportNames = DefaultImports.map(_.writtenName)
-    ignoredImports
-      .filter(!defaultImportNames.contains(_))
-      .foreach(imp => report(DefaultImportDoesntExist(imp, NoPosition)))
-
-    val defaultImports = DefaultImports.filter(imp => !ctx.ignoredImports.contains(imp.writtenName))
+    val defaultImports = DefaultImports.filter(_.writtenName notIn ctx.ignoredImports)
     defaultImports ++ imports foreach { this += _ }
 
     val packName = pack.name

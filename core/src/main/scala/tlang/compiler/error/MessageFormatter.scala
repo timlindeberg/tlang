@@ -2,7 +2,7 @@ package tlang.compiler.error
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.options.Arguments.MessageContextFlag
+import tlang.options.arguments.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
@@ -122,14 +122,15 @@ case class MessageFormatter(
 
   private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
     import formatting._
+    val highlightedLine = if (lineNum in (pos.line to pos.endLine)) {
+      val MarkColor = Underline + color
+      val (start, end) = startAndEnd(line, lineNum, pos)
+      line.substring(0, start) + MarkColor(line.substring(start, end)) + line.substring(end, line.length)
+    } else {
+      line
+    }
 
-    if (lineNum notIn (pos.line to pos.endLine))
-      return (NumColor(lineNum), formatter.syntaxHighlight(line))
-
-    val MarkColor = Underline + color
-    val (start, end) = startAndEnd(line, lineNum, pos)
-    val markedLined = line.substring(0, start) + MarkColor(line.substring(start, end)) + line.substring(end, line.length)
-    (color(lineNum), formatter.syntaxHighlight(markedLined))
+    (NumColor(lineNum), formatter.syntaxHighlight(highlightedLine))
   }
 
   private def indicatorLines(lineNum: Int, line: String, pos: Positioned): List[(String, String)] = {

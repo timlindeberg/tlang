@@ -6,11 +6,12 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
-import tlang.compiler.error.{CompilerMessages, DefaultReporter, MessageFormatter}
+import tlang.compiler.Main.CompilerFlags
+import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
 import tlang.formatting._
-import tlang.options.Arguments._
-import tlang.options.{Arguments, Options}
+import tlang.options.arguments._
+import tlang.options.{FlagArgument, Options}
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.InputHistory
 
@@ -20,7 +21,7 @@ object Main {
   val MaxRedoSize   = 500
   val TabSize       = 4
 
-  val ReplFlags: List[Arguments.FlagArgument[_]] = List(
+  val ReplFlags: List[FlagArgument[_]] = List(
     LineWidthFlag,
     FormattingStyleFlag,
     ClassPathFlag,
@@ -31,7 +32,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-    val options = Options(ReplFlags, None, args)
+    val options = parseOptions(args)
     val formatting = Formatting(options)
 
     if (options(VersionFlag)) {
@@ -63,6 +64,14 @@ object Main {
     replTerminal onClose { repl ! StopRepl }
 
     repl ! StartRepl
+  }
+
+
+  private def parseOptions(args: Array[String]): Options = {
+    val formatting = Formatting(BoxStyles.Ascii, useColor = false, asciiOnly = true)
+
+    val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
+    Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")

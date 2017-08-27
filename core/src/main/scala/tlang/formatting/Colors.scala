@@ -101,19 +101,20 @@ object Colors {
     def +(c: Color): String = s.toString + c.ansi
   }
 
+
   implicit def ColorToString(c: Color): String = c.ansi
 
+  implicit def ColorToFunction(c: Color): String => String = s => c(s)
 
-  trait ColorType {
-    def range: Range
-  }
+
+  trait ColorType
   object ColorType {
-    case object NoColor extends ColorType {val range = -1 to -1 }
-    case object Reset extends ColorType {val range = 0 to 0 }
-    case object Foreground extends ColorType {val range = 30 to 39 }
-    case object Background extends ColorType {val range = 40 to 49 }
-    case object Modifier extends ColorType {val range = 1 to 9 }
-    case object Mixed extends ColorType {val range = -1 to -1 }
+    case object NoColor extends ColorType
+    case object Reset extends ColorType
+    case object Foreground extends ColorType
+    case object Background extends ColorType
+    case object Modifier extends ColorType
+    case object Mixed extends ColorType
   }
 
   trait Color {
@@ -268,7 +269,7 @@ object Colors {
     val CommentName  = "comment"
     val SymbolName   = "symbol"
 
-    val ColorSchemeNames: List[String] = List(
+    val Keys: List[String] = List(
       KeywordName,
       VariableName,
       ClassName,
@@ -280,14 +281,14 @@ object Colors {
     )
 
     case object NoColors extends ColorScheme {
-      val Keyword : Int = -1
-      val Variable: Int = -1
-      val Class   : Int = -1
-      val Method  : Int = -1
-      val String  : Int = -1
-      val Number  : Int = -1
-      val Comment : Int = -1
-      val Symbol  : Int = -1
+      val Keyword : Int = NO_COLOR
+      val Variable: Int = NO_COLOR
+      val Class   : Int = NO_COLOR
+      val Method  : Int = NO_COLOR
+      val String  : Int = NO_COLOR
+      val Number  : Int = NO_COLOR
+      val Comment : Int = NO_COLOR
+      val Symbol  : Int = NO_COLOR
     }
 
     case object DefaultColorScheme extends ColorScheme {
@@ -343,14 +344,5 @@ object Colors {
     (color, i)
   }
 
-  def getColorValue(color: String): Option[Int] = {
-    if (color.isEmpty)
-      return Some(NO_COLOR)
-
-    if (color forall Character.isDigit)
-      return Some(color.toInt)
-
-    ColorNameMap.get(color)
-  }
 }
 

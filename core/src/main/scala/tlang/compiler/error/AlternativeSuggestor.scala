@@ -8,7 +8,7 @@ case class AlternativeSuggestor() {
 
   def apply(name: String, alternatives: List[String]): Suggestion = {
     if (name.length < MinLength)
-      return Suggestion(None)
+      return Suggestion(Nil)
 
     val alts = alternatives
       .filter(_.length >= MinLength)
@@ -16,8 +16,7 @@ case class AlternativeSuggestor() {
       .filter(_.isAcceptable)
       .sortBy(_.distance)
 
-    val res = if (alts.isEmpty) None else Some(alts.head.alternative)
-    Suggestion(res)
+    Suggestion(alts.map(_.alternative))
   }
 
 
@@ -48,20 +47,4 @@ case class AlternativeSuggestor() {
 
 }
 
-object Suggestion {
-
-  def apply(suggestion: String): Suggestion = apply(Some(suggestion))
-  def apply(suggestion: Option[String]): Suggestion = new Suggestion(suggestion)
-
-  def unapply(arg: Suggestion): Option[String] = arg.suggestion match {
-    case x: Some[String] => x
-    case _               => None
-  }
-}
-
-class Suggestion(val suggestion: Option[String]) {
-  override def toString: String = suggestion match {
-    case Some(v) => s" Did you mean $v?"
-    case None    => ""
-  }
-}
+case class Suggestion(suggestions: List[String])

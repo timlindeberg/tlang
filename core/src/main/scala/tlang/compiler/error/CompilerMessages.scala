@@ -4,7 +4,7 @@ import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErro
 import tlang.compiler.analyzer.Types.{TError, Typed}
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Grid
-import tlang.options.Arguments.MaxErrorsFlag
+import tlang.options.arguments.MaxErrorsFlag
 
 import scala.collection.mutable
 
@@ -32,6 +32,7 @@ case class CompilerMessages(
       if (suppressWarnings)
         return this
 
+      // Copy the existing values such as code type etc., only change should be the message type
       if (warningIsError)
         return this += message.copy(messageType = MessageType.Error)
     }
@@ -39,7 +40,7 @@ case class CompilerMessages(
     if (messageType == MessageType.Fatal)
       messageType = MessageType.Error
 
-    if (maxErrors != -1 && messages(messageType).size >= maxErrors) {
+    if (maxErrors >= 0 && messages(messageType).size >= maxErrors) {
       hitMax += messageType
       return this
     }

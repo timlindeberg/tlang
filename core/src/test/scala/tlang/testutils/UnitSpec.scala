@@ -43,7 +43,7 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
 
 
   // For scoping and readability
-  def test[U](description: String = "")(f: => U) = f
+  def test[U](description: String = "")(f: => U): U = f
 
   def createMockFormatting(
     width: Int = 80,

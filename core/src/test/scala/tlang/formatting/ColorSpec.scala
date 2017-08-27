@@ -145,16 +145,6 @@ class ColorSpec extends UnitSpec {
   }
 
 
-  it should "get color from name" in {
-    Colors.getColorValue("") shouldBe Some(NO_COLOR)
-    Colors.getColorValue("31") shouldBe Some(RED)
-    Colors.getColorValue("red") shouldBe Some(RED)
-    Colors.getColorValue("green") shouldBe Some(GREEN)
-    Colors.getColorValue("black") shouldBe Some(BLACK)
-    Colors.getColorValue("nonExistantColor") shouldBe None
-  }
-
-
   it should "produce correct string with colors" in {
     val BoldGreen = Bold + Green
 
@@ -176,23 +166,23 @@ class ColorSpec extends UnitSpec {
       )
       str shouldBe "abcdef   ghi  def"
       colors shouldBe Array(
-        NoColor, // 'a'
-        NoColor, // 'b'
-        NoColor, // 'c'
-        Red, // 'd'
-        Red, // 'e'
-        Red, // 'f'
-        Red, // ''
-        Red, // ''
-        Red, // ''
-        Red, // 'g'
-        Red, // 'h'
-        Red, // 'i'
-        Red, // ''
+        NoColor, //   'a'
+        NoColor, //   'b'
+        NoColor, //   'c'
+        Red, //       'd'
+        Red, //       'e'
+        Red, //       'f'
+        Red, //       ''
+        Red, //       ''
+        Red, //       ''
+        Red, //       'g'
+        Red, //       'h'
+        Red, //       'i'
+        Red, //       ''
         BoldGreen, // ''
         BoldGreen, // 'd'
         BoldGreen, // 'e'
-        BoldGreen // 'f'
+        BoldGreen //  'f'
       )
     }
 
@@ -202,23 +192,23 @@ class ColorSpec extends UnitSpec {
       )
       str shouldBe "abcdef   ghi  def"
       colors shouldBe Array(
-        Green, // 'a'
-        Green, // 'b'
-        Green, // 'c'
-        Red, // 'd'
-        Red, // 'e'
-        Red, // 'f'
-        NoColor, // ''
-        NoColor, // ''
-        NoColor, // ''
-        Bold, // 'g'
-        Bold, // 'h'
-        Bold, // 'i'
-        NoColor, // ''
+        Green, //     'a'
+        Green, //     'b'
+        Green, //     'c'
+        Red, //       'd'
+        Red, //       'e'
+        Red, //       'f'
+        NoColor, //   ''
+        NoColor, //   ''
+        NoColor, //   ''
+        Bold, //      'g'
+        Bold, //      'h'
+        Bold, //      'i'
+        NoColor, //   ''
         BoldGreen, // ''
         BoldGreen, // 'd'
         BoldGreen, // 'e'
-        BoldGreen // 'f'
+        BoldGreen //  'f'
       )
     }
 
