@@ -3,33 +3,28 @@ package tlang.formatting
 import java.io.File
 
 import tlang.Constants
-import tlang.formatting.BoxStyles.{Ascii, BoxStyle}
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.options.Options
 import tlang.options.arguments.{ColorSchemeFlag, FormattingStyleFlag, LineWidthFlag, NoColorFlag}
 
-object FancyFormatting extends Formatting(
-  BoxStyles.Unicode, LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false
-)
-object SimpleFormatting extends Formatting(
-  BoxStyles.Ascii, 80, useColor = false, asciiOnly = true
-)
+object FancyFormatting extends Formatting(FormattingStyles.Unicode, LineWidthFlag.DefaultWidth, useColor = true)
+object SimpleFormatting extends Formatting(FormattingStyles.Ascii, 80, useColor = false)
 
 object Formatting {
 
   def apply(options: Options): Formatting = {
-    val boxStyle = options(FormattingStyleFlag)
-    Formatting(boxStyle, options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag), boxStyle == Ascii)
+    val formattingStyle = options(FormattingStyleFlag)
+    Formatting(formattingStyle, options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag))
   }
+
 }
 
 case class Formatting(
-  boxStyle: BoxStyle = BoxStyles.Unicode,
+  formattingStyle: FormattingStyle = FormattingStyles.Unicode,
   lineWidth: Int = LineWidthFlag.DefaultWidth,
   colorScheme: ColorScheme = DefaultColorScheme,
-  useColor: Boolean = true,
-  asciiOnly: Boolean = false) {
+  useColor: Boolean = true) {
 
   /*--------------------------------- Colors --------------------------------*/
 
@@ -61,14 +56,14 @@ case class Formatting(
 
   /*------------------------------ Color Scheme -----------------------------*/
 
-  val KeywordColor = color(Color(colorScheme.Keyword), useColor)
-  val VarColor     = color(Color(colorScheme.Variable), useColor)
-  val ClassColor   = color(Color(colorScheme.Class), useColor)
-  val MethodColor  = color(Color(colorScheme.Method), useColor)
-  val StringColor  = color(Color(colorScheme.String), useColor)
-  val NumColor     = color(Color(colorScheme.Number), useColor)
-  val CommentColor = color(Color(colorScheme.Comment), useColor)
-  val SymbolColor  = color(Color(colorScheme.Symbol), useColor)
+  val KeywordColor: Color = color(Color(colorScheme.Keyword), useColor)
+  val VarColor    : Color = color(Color(colorScheme.Variable), useColor)
+  val ClassColor  : Color = color(Color(colorScheme.Class), useColor)
+  val MethodColor : Color = color(Color(colorScheme.Method), useColor)
+  val StringColor : Color = color(Color(colorScheme.String), useColor)
+  val NumColor    : Color = color(Color(colorScheme.Number), useColor)
+  val CommentColor: Color = color(Color(colorScheme.Comment), useColor)
+  val SymbolColor : Color = color(Color(colorScheme.Symbol), useColor)
 
   val FileColor: Color = Bold + Magenta
 
@@ -100,7 +95,7 @@ case class Formatting(
       .mkString(System.lineSeparator)
 
 
-  private def ascii[T](ascii: T, nonAscii: T): T = if (asciiOnly) ascii else nonAscii
+  private def ascii[T](ascii: => T, nonAscii: => T): T = if (formattingStyle.asciiOnly) ascii else nonAscii
   private def color(color: Color, isActive: Boolean) = if (isActive) color else Colors.NoColor
 
 }

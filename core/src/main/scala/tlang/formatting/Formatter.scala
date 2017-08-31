@@ -2,8 +2,10 @@ package tlang.formatting
 
 import tlang.compiler.ast.Trees.Tree
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
-import tlang.compiler.error.{ErrorStringContext, VoidReporter}
 import tlang.compiler.lexer.Lexer
+import tlang.formatting.grid.Grid
+import tlang.formatting.textformatters._
+import tlang.messages.{ErrorStringContext, VoidReporter}
 
 object Formatter {
   def apply(formatting: Formatting): Formatter = {
@@ -28,6 +30,8 @@ case class Formatter(
   private val syntaxHighlighter: SyntaxHighlighter,
   private val stackTraceHighlighter: StackTraceHighlighter
 ) {
+
+  def grid: Grid = Grid(this)
 
   def useColor: Boolean = formatting.useColor
 

@@ -25,6 +25,7 @@ object Source {
 object FileSource {
   def apply(path: String): FileSource = apply(new File(path))
 }
+
 case class FileSource(file: File) extends Source {
 
   override def mainName: String = file.getName.dropRight(Constants.FileEnding.length)

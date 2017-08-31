@@ -3,9 +3,9 @@ package tlang.options
 import java.io.File
 
 import tlang.compiler.Main
-import tlang.compiler.error.{AlternativeSuggestor, ErrorStringContext, Suggestion}
 import tlang.compiler.imports.Imports
-import tlang.formatting.{BoxStyles, Colors, SimpleFormatting}
+import tlang.formatting._
+import tlang.messages.{AlternativeSuggestor, ErrorStringContext, Suggestion}
 import tlang.options.arguments._
 import tlang.testutils.UnitSpec
 
@@ -114,18 +114,18 @@ class CompilerOptionsSpec extends UnitSpec {
   it should "use formatting flag" in {
     test("No arguments should result in Unicode") {
       val options = createOptions("")
-      options(FormattingStyleFlag) shouldBe BoxStyles.Unicode
+      options(FormattingStyleFlag) shouldBe FormattingStyles.Unicode
     }
 
     test("Ascii argument") {
       val options = createOptions("--formatting Ascii")
-      options(FormattingStyleFlag) shouldBe BoxStyles.Ascii
+      options(FormattingStyleFlag) shouldBe FormattingStyles.Ascii
     }
 
     test("Invalid argument") {
       val suggestor = mock[AlternativeSuggestor]
       (suggestor.apply _)
-        .expects("Dunicode", BoxStyles.Names)
+        .expects("Dunicode", FormattingStyles.Names)
         .returning(Suggestion(List("Did you mean 'Unicode'?")))
 
       val error = intercept[IllegalArgumentException] { createOptions("--formatting Dunicode", suggestor) }
@@ -138,22 +138,22 @@ class CompilerOptionsSpec extends UnitSpec {
   it should "use help flag" in {
     test("No arguments should be empty") {
       val options = createOptions("")
-      options(HelpFlag) shouldBe Set()
+      options(CompilerHelpFlag) shouldBe Set()
     }
 
     test("Default argument") {
       val options = createOptions("--help")
-      options(HelpFlag) shouldBe Set("all")
+      options(CompilerHelpFlag) shouldBe Set("all")
     }
 
     test("With arguments") {
       val options = createOptions("--help phases,colorscheme --help exec")
-      options(HelpFlag) shouldBe Set("phases", "colorscheme", "exec")
+      options(CompilerHelpFlag) shouldBe Set("phases", "colorscheme", "exec")
     }
 
     test("Invalid argument should result in default argument") {
       val options = createOptions("--help --phases")
-      options(HelpFlag) shouldBe Set("all")
+      options(CompilerHelpFlag) shouldBe Set("all")
       options(PhasesFlag) shouldBe true
     }
   }

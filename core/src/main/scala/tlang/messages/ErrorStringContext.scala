@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.messages
 
 import tlang.Context
 import tlang.compiler.ast.Trees.CompilationUnit

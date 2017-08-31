@@ -79,6 +79,9 @@ object Extensions {
 
     def isNumber: Boolean = Try(str.toInt).isSuccess
 
+    def escapeAnsi: String = str.replaceAll("\u001b", "\\\\u001b")
+
+
     def containsAnsi: Boolean = AnsiRegex.matches(str)
     def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")
     def visibleCharacters: Int = {

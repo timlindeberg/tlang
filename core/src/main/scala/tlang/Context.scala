@@ -2,10 +2,10 @@ package tlang
 
 import java.io.File
 
-import tlang.compiler.error.Reporter
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.formatting.{Formatter, Formatting}
+import tlang.messages.Reporter
 
 import scala.collection.mutable
 
@@ -14,7 +14,7 @@ case class Context(
   formatter: Formatter,
   debugOutputFormatter: DebugOutputFormatter,
   files: Set[File] = Set(),
-  classPath: ClassPath = ClassPath(),
+  classPath: ClassPath = ClassPath.Empty,
   outDirs: Set[File] = Set(new File(".")),
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()

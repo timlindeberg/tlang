@@ -1,6 +1,6 @@
 package tlang.compiler.modification
 
-import tlang.compiler.error.{ErrorHandling, ErrorMessage}
+import tlang.messages.{ErrorHandling, ErrorMessage}
 import tlang.utils.Positioned
 
 trait TemplateErrors extends ErrorHandling {

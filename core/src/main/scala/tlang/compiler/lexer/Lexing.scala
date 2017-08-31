@@ -4,9 +4,9 @@ package lexer
 import java.math.BigInteger
 
 import tlang.Context
-import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.lexer.Tokens._
 import tlang.formatting.Formatting
+import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
 import tlang.utils.Source
 
@@ -14,6 +14,8 @@ import scala.annotation.tailrec
 
 
 object Lexing extends CompilerPhase[Source, List[Token]] {
+
+  val MaximumStringSize = 65535
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
@@ -266,7 +268,12 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     def endAt(c: Char) = c == '"'
 
     @tailrec def getStringLiteral(chars: List[Char], s: StringBuilder, parsed: Int): (Token, List[Char]) = chars match {
-      case '"' :: r  => (createToken(s.toString, parsed + 1), r)
+      case '"' :: r  =>
+        val literal = s.toString
+        if (literal.length > Lexing.MaximumStringSize) {
+          report(StringLiteralTooLarge(literal, parsed + 1))
+        }
+        (createToken(s.toString, parsed + 1), r)
       case '\n' :: _ =>
         report(UnclosedStringLiteral(parsed))
         (startPos, chars)

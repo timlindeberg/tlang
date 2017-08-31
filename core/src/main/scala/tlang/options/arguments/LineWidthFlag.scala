@@ -1,7 +1,7 @@
 package tlang.options.arguments
 
-import tlang.compiler.error.ErrorStringContext
 import tlang.formatting.Formatter
+import tlang.messages.ErrorStringContext
 import tlang.options.NumberFlag
 
 import scala.tools.jline.TerminalFactory
@@ -9,7 +9,7 @@ import scala.tools.jline.TerminalFactory
 case object LineWidthFlag extends NumberFlag {
   override val defaultValue: Int = -1
 
-  val DefaultWidth = 120
+  val DefaultWidth = 80
 
   override val name = "linewidth"
 

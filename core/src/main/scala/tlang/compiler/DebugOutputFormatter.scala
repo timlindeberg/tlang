@@ -5,7 +5,7 @@ import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.lexer.Token
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
-import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
+import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions._
 
 case class DebugOutputFormatter(formatter: Formatter) {
@@ -66,6 +66,5 @@ case class DebugOutputFormatter(formatter: Formatter) {
   }
 
   private def makeGrid(phaseName: String) =
-    Grid(formatter)
-      .header(Bold("Output after ") + Blue(phaseName.capitalize))
+    formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
 }

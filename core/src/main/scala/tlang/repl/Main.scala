@@ -7,9 +7,9 @@ import akka.actor.ActorSystem
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
-import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
 import tlang.formatting._
+import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.repl.Repl.{StartRepl, StopRepl}
@@ -26,7 +26,7 @@ object Main {
     FormattingStyleFlag,
     ClassPathFlag,
     VersionFlag,
-    HelpFlag,
+    ReplHelpFlag,
     MessageContextFlag
   )
 
@@ -40,8 +40,8 @@ object Main {
       sys.exit()
     }
 
-    if (options(HelpFlag).nonEmpty) {
-      printHelp(formatting, options(HelpFlag))
+    if (options(ReplHelpFlag).nonEmpty) {
+      printHelp(formatting, options(ReplHelpFlag))
       sys.exit()
     }
 
@@ -68,7 +68,7 @@ object Main {
 
 
   private def parseOptions(args: Array[String]): Options = {
-    val formatting = Formatting(BoxStyles.Ascii, useColor = false, asciiOnly = true)
+    val formatting = Formatting(FormattingStyles.Ascii, useColor = false)
 
     val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
     Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)

@@ -28,7 +28,7 @@ object CapturedOutput {
   }
 
 
-  class CapturingOutputStream(originalOut: OutputStream) extends PrintStream(originalOut) {
+  private class CapturingOutputStream(originalOut: OutputStream) extends PrintStream(originalOut) {
 
     override def write(b: Array[Byte]): Unit = stream.write(b)
     override def write(b: Int): Unit = stream.write(b)

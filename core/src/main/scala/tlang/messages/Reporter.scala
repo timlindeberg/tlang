@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.messages
 
 trait Reporter {
 

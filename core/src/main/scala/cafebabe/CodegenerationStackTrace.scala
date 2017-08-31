@@ -71,7 +71,7 @@ case class CodegenerationStackTrace(
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          import formatting.boxStyle.─
+          import formatting.formattingStyle.─
           val color = getLabelColor(name)
           // Reasonable estimates for the sizes of the columns (mostly based on the width of the header)
           val line = (color(─ * 4), color(─ * 3), color(─ * 6), color(─ * 13), color(─ * 2 + "> " + name))

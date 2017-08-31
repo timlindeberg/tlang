@@ -1,7 +1,7 @@
 package tlang.compiler.imports
 
 import tlang.compiler.ast.Trees.ExtensionImport
-import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait ImportErrors extends ErrorHandling {

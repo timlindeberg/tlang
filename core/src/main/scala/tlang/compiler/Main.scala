@@ -8,14 +8,14 @@ import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
-import tlang.compiler.error._
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
+import tlang.formatting.grid.Column
 import tlang.formatting.grid.Width.Percentage
-import tlang.formatting.grid.{Column, Grid}
+import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
@@ -48,7 +48,7 @@ object Main extends MainErrors {
     SuppressWarningsFlag,
     PrintOutputFlag,
     VerboseFlag,
-    HelpFlag,
+    CompilerHelpFlag,
     DirectoryFlag,
     VersionFlag,
     WarningIsErrorFlag,
@@ -89,11 +89,7 @@ object Main extends MainErrors {
 
 
     val ctx = createContext(options, filesToCompile, formatter)
-    val CUs = runFrontend(ctx)
-
-    GenerateCode.execute(ctx)(CUs)
-
-    ctx.reporter.printWarnings()
+    val CUs = runCompiler(ctx)
 
     if (options(VerboseFlag))
       printExecutionTimes(ctx)
@@ -103,10 +99,27 @@ object Main extends MainErrors {
   }
 
   private def parseOptions(args: Array[String]): Options = {
-    val formatting = Formatting(BoxStyles.Ascii, useColor = false, asciiOnly = true)
+    val formatting = Formatting(FormattingStyles.Ascii, useColor = false)
 
     val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
-    Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
+    try {
+      Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
+    } catch {
+      case e: IllegalArgumentException =>
+        println(e.getMessage)
+        sys.exit(1)
+    }
+  }
+
+  private def runCompiler(ctx: Context): Seq[CompilationUnit] = {
+    try {
+      val CUs = runFrontend(ctx)
+      GenerateCode.execute(ctx)(CUs)
+      ctx.reporter.printWarnings()
+      CUs
+    } catch {
+      case e: Throwable => unknownError(ctx.formatter, e)
+    }
   }
 
   private def runFrontend(ctx: Context): List[CompilationUnit] = {
@@ -118,6 +131,20 @@ object Main extends MainErrors {
         e.messages.print()
         sys.exit(1)
     }
+  }
+
+  // Top level error handling for any unknown exception
+  private def unknownError(formatter: Formatter, error: Throwable): Nothing = {
+    import formatter.formatting._
+
+    formatter
+      .grid
+      .header(s"${ Bold }Compilation ${ Red("failed") }${ Bold(" with an unknown error") }")
+      .row()
+      .content(formatter.highlightStackTrace(error))
+      .print()
+
+    sys.exit(1)
   }
 
   private def createContext(options: Options, filesToCompile: Set[File], formatter: Formatter): Context = {
@@ -148,8 +175,8 @@ object Main extends MainErrors {
 
     val numFiles = files.size
     val end = if (numFiles > 1) "files" else "file"
-    val grid = Grid(formatter)
-      .header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
+
+    val grid = formatter.grid.header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
     val fileNames = files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
     formatting.lineWidth match {
@@ -182,7 +209,8 @@ object Main extends MainErrors {
 
     val totalTime = ctx.executionTimes.values.sum
 
-    Grid(ctx.formatter)
+    ctx.formatter
+      .grid
       .header(f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset")
       .row(2)
       .mapContent(CompilerPhases) { phase =>
@@ -205,7 +233,7 @@ object Main extends MainErrors {
       sys.exit()
     }
 
-    val args = options(HelpFlag)
+    val args = options(CompilerHelpFlag)
     if (args.contains("all")) {
       printHelpInfo(formatter)
       sys.exit()
@@ -222,7 +250,8 @@ object Main extends MainErrors {
 
   private def printFlagInfo(flag: FlagArgument[_], formatter: Formatter): Unit = {
     val formatting = formatter.formatting
-    Grid(formatter)
+    formatter
+      .grid
       .header(flag.flagName(formatting))
       .row()
       .content(flag.extendedDescription(formatter))
@@ -238,7 +267,8 @@ object Main extends MainErrors {
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))
 
-    Grid(formatter)
+    formatter
+      .grid
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
       .mapContent(CompilerFlags.sortBy(_.name)) { flag => (flag.flagName(formatting), flag.description(formatter)) }
@@ -249,7 +279,8 @@ object Main extends MainErrors {
     val formatting = formatter.formatting
     import formatting._
 
-    Grid(formatter)
+    formatter
+      .grid
       .header(Bold(s"Phases of the T-Compiler"))
       .row(2)
       .mapContent(CompilerPhases) { phase => (Magenta(phase.phaseName.capitalize), phase.description(formatting)) }
@@ -286,7 +317,7 @@ object Main extends MainErrors {
 
   }
 
-  private def executePrograms(ctx: Context, cus: List[CompilationUnit]): Unit = {
+  private def executePrograms(ctx: Context, cus: Seq[CompilationUnit]): Unit = {
     val formatting = ctx.formatter.formatting
     import formatting._
 
@@ -296,14 +327,15 @@ object Main extends MainErrors {
       return
     }
 
-    val grid = Grid(ctx.formatter)
+    val grid = ctx.formatter
+      .grid
       .header(Bold(if (mainMethods.size > 1) "Executing programs" else "Executing program"))
 
-    val programExecutor = ProgramExecutor()
+    val programExecutor = ProgramExecutor(ctx)
     cus.foreach { cu =>
       // Gauranteed to have a file source
       val file = cu.source.get.asInstanceOf[FileSource].file
-      val output = ctx.formatter.syntaxHighlight(programExecutor(ctx, file))
+      val output = ctx.formatter.syntaxHighlight(programExecutor(file))
       val lines = output.split("\r?\n").toList
       grid
         .row(alignment = Center)

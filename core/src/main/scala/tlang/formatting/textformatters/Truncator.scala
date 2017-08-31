@@ -1,4 +1,4 @@
-package tlang.formatting
+package tlang.formatting.textformatters
 
 import tlang.utils.Extensions._
 

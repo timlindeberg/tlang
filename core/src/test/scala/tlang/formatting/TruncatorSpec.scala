@@ -1,5 +1,6 @@
 package tlang.formatting
 
+import tlang.formatting.textformatters.Truncator
 import tlang.testutils.UnitSpec
 
 class TruncatorSpec extends UnitSpec {

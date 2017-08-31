@@ -1,9 +1,10 @@
 package tlang.repl
 
-import tlang.compiler.error.{CompilerMessage, MessageFormatter}
 import tlang.formatting.Colors.Color
+import tlang.formatting.Formatter
 import tlang.formatting.grid.Grid
-import tlang.formatting.{Formatter, Marking}
+import tlang.formatting.textformatters.Marking
+import tlang.messages.{CompilerMessage, MessageFormatter}
 import tlang.repl.input.{Cursor, InputBuffer}
 
 import scala.concurrent.duration.FiniteDuration
@@ -93,7 +94,8 @@ class InputBox(
   }
 
   def render(): Unit = {
-    val grid = Grid(formatter)
+    val grid = formatter
+      .grid
       .header(header)
       .row()
       .content(inputText)

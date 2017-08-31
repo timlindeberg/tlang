@@ -97,14 +97,14 @@ object Colors {
 
   val ColorNames: List[String] = ColorNameMap.keys.toList
 
-  implicit class ColorString(val s: Any) extends AnyVal {
+  implicit class ColorableAny(val s: Any) extends AnyVal {
     def +(c: Color): String = s.toString + c.ansi
   }
 
 
-  implicit def ColorToString(c: Color): String = c.ansi
+  implicit def ColorToString(color: Color): String = color.ansi
 
-  implicit def ColorToFunction(c: Color): String => String = s => c(s)
+  implicit def ColorToFunction(color: Color): String => String = color(_)
 
 
   trait ColorType

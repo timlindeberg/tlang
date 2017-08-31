@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.messages
 
 import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.{TError, Typed}
@@ -70,7 +70,7 @@ case class CompilerMessages(
   def formatMessages(messageType: MessageType): String = {
     if (messages(messageType).isEmpty)
       return ""
-    val grid = Grid(formatter).header(header(messageType))
+    val grid = formatter.grid.header(header(messageType))
     messages(messageType).foreach { addToGrid(grid, _) }
     grid.render()
   }

@@ -3,8 +3,8 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.ErrorStringContext
 import tlang.compiler.imports.Imports
+import tlang.messages.ErrorStringContext
 import tlang.testutils.CompilerTestSpec
 
 class OperatorTypeSpec extends CompilerTestSpec {
@@ -75,7 +75,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
   "PreDecrement" in { incrementDecrement(PreDecrement) }
   "PostDecrement" in { incrementDecrement(PostDecrement) }
 
-  private def arithmeticOperator(expressionType: (VariableID, VariableID) => BinaryOperatorTree) =
+  private def arithmeticOperator(expressionType: (VariableID, VariableID) => BinaryOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Int),
 
@@ -98,7 +98,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (double, char, Double)
     )
 
-  private def logicOperator(expressionType: (VariableID, VariableID) => LogicalOperatorTree) =
+  private def logicOperator(expressionType: (VariableID, VariableID) => LogicalOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, Int),
       (int, long, Long),
@@ -111,7 +111,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (bool, bool, Bool)
     )
 
-  private def shiftOperator(expressionType: (VariableID, VariableID) => ShiftOperatorTree) =
+  private def shiftOperator(expressionType: (VariableID, VariableID) => ShiftOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (int, int, Int),
       (int, long, Long),
@@ -123,7 +123,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (long, char, Long)
     )
 
-  private def assignOperator() =
+  private def assignOperator(): Unit =
     new AssignmentAsserter(Assign).valid(
       (bool, bool, Bool),
 
@@ -160,7 +160,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
     )
 
 
-  private def arrayAssignOperator() =
+  private def arrayAssignOperator(): Unit =
     new ArrayAssignmentAsserter().valid(
       (char, char, Char),
       (char, int, Char),
@@ -198,7 +198,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
 
     )
 
-  private def comparisonOperator(expressionType: (VariableID, VariableID) => ComparisonOperatorTree) =
+  private def comparisonOperator(expressionType: (VariableID, VariableID) => ComparisonOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Bool),
 
@@ -221,7 +221,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (double, char, Bool)
     )
 
-  private def equalsOperator(expressionType: (VariableID, VariableID) => EqualsOperatorTree) =
+  private def equalsOperator(expressionType: (VariableID, VariableID) => EqualsOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (char, char, Bool),
 
@@ -256,17 +256,17 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (bool, bool, Bool)
     )
 
-  private def andOr(expressionType: (VariableID, VariableID) => BinaryOperatorTree) =
+  private def andOr(expressionType: (VariableID, VariableID) => BinaryOperatorTree): Unit =
     BinaryExpressionAsserter.valid(expressionType,
       (bool, bool, Bool)
     )
 
-  private def not(expressionType: VariableID => UnaryOperatorTree) =
+  private def not(expressionType: VariableID => UnaryOperatorTree): Unit =
     UnaryExpressionAsserter.valid(expressionType,
       (bool, Bool)
     )
 
-  private def negation(expressionType: VariableID => UnaryOperatorTree) =
+  private def negation(expressionType: VariableID => UnaryOperatorTree): Unit =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Int),
@@ -275,14 +275,14 @@ class OperatorTypeSpec extends CompilerTestSpec {
       (double, Double)
     )
 
-  private def logicalNot(expressionType: VariableID => UnaryOperatorTree) =
+  private def logicalNot(expressionType: VariableID => UnaryOperatorTree): Unit =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Int),
       (long, Long)
     )
 
-  private def incrementDecrement(expressionType: VariableID => UnaryOperatorTree) =
+  private def incrementDecrement(expressionType: VariableID => UnaryOperatorTree): Unit =
     UnaryExpressionAsserter.valid(expressionType,
       (int, Int),
       (char, Char),

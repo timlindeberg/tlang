@@ -32,7 +32,7 @@ trait AnsiMatchers {
       sbDifference ++= " " + diffChar * (2 + math.max(f.length, e.length))
       i += 1
     }
-    sbFound.toString + "\n" + sbExpected.toString + "\n" + sbDifference.toString
+    sbFound.toString + System.lineSeparator + sbExpected.toString + System.lineSeparator + sbDifference.toString
   }
 
   private def replaceChar(c: Char): String = c match {
@@ -96,10 +96,10 @@ trait AnsiMatchers {
         .map { case ((actual, expected), i) =>
           val c = if (actual == expected) "✓" else "×  "
           val num = i + 1
-          formatLine(actual, s"  Actual $num: $c  ", " ") + "\n" +
+          formatLine(actual, s"  Actual $num: $c  ", " ") + System.lineSeparator +
             formatLine(expected, s"Expected $num: $c  ", " ")
         }
-        .mkString("\n")
+        .mkString(System.lineSeparator)
     }
 
     def apply(actualStrings: Iterable[String]): MatchResult = {

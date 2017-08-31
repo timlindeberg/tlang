@@ -3,7 +3,7 @@ package tlang.repl
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.Context
-import tlang.compiler.error.MessageFormatter
+import tlang.messages.MessageFormatter
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
 import tlang.repl.input.InputHistory
@@ -325,7 +325,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, terminal: ReplTermina
 
     private def largeMovement(keyStroke: KeyStroke): Boolean = keyStroke.isAltDown
 
-    protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.order)
+    override protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.order)
   }
 
 }

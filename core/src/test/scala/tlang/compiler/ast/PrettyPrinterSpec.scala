@@ -3,9 +3,9 @@ package tlang.compiler.ast
 import java.io.File
 
 import tlang.Context
-import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
 import tlang.formatting.SimpleFormatting
+import tlang.messages.{CompilationException, MessageType}
 import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, StringSource}
 
@@ -20,12 +20,12 @@ class PrettyPrinterSpec extends CompilerTestSpec {
 
       val parser = (Lexing andThen Parsing).execute(TestContext) _
       val prettyPrinter = PrettyPrinter(SimpleFormatting)
-
+      
       val CU = try {
         parser(file).head
       } catch {
         case e: CompilationException =>
-          fail(s"Could not parse file ${ TestFile.getName }: \n" + e.messages.formatMessages(MessageType.Error))
+          fail(s"Could not parse file ${ TestFile.getName }:" + System.lineSeparator + e.messages.formatMessages(MessageType.Error))
       }
 
       val printedCU = prettyPrinter(CU)

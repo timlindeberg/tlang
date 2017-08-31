@@ -57,7 +57,7 @@ case class InputHistory(maxRedoSize: Int, tabSize: Int) {
 
     dirty = false
     using(new FileWriter(historyFile)) { writer =>
-      val seperator = "\n" + HistorySeperator + "\n"
+      val seperator = System.lineSeparator + HistorySeperator + System.lineSeparator
       originalCommands.foreach { command =>
         writer.write(command)
         writer.write(seperator)
@@ -84,7 +84,7 @@ case class InputHistory(maxRedoSize: Int, tabSize: Int) {
     using(io.Source.fromFile(historyFile)) {
       _.getLines().foreach { line =>
         if (line == HistorySeperator && lines.nonEmpty) {
-          val str = lines.mkString("\n")
+          val str = lines.mkString(System.lineSeparator)
           originalCommands += str
           commands += InputBuffer(maxRedoSize, tabSize, Cord.empty :+ str)
           lines.clear()

@@ -1,45 +1,9 @@
-package tlang.compiler.error
+package tlang.messages
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatting
 import tlang.utils.Positioned
 
-trait ErrorHandling {
-
-  // This is a val since we need a stable identifier in order to import the string context
-  val errorStringContext: ErrorStringContext
-
-  def reporter: Reporter
-  def replaceNames(str: String): String = str
-
-  def report(warning: WarningMessage): Unit = reporter.report(warning)
-  def report(fatal: FatalMessage): Nothing = {
-    reporter.report(fatal)
-    // Reporter will throw an exception but this is here so the type can be Nothing
-    throw new Exception
-  }
-
-}
-
-trait MessageType {
-  def color(formatting: Formatting): Color
-  def name: String = getClass.getSimpleName.dropRight(1)
-  def typeCode: Int
-}
-object MessageType {
-  case object Warning extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Yellow
-    override def typeCode: Int = 1
-  }
-  case object Error extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Red
-    override def typeCode: Int = 2
-  }
-  case object Fatal extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Red
-    override def typeCode: Int = 3
-  }
-}
 
 object CompilerMessage {val ErrorName = "$ERROR" }
 abstract class CompilerMessage(val messageType: MessageType, val errorLetters: String, val typeCode: Int, val codeNum: Int, val pos: Positioned) {
@@ -88,3 +52,24 @@ abstract class ErrorMessage(override val errorLetters: String, override val code
 
 abstract class FatalMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
   extends CompilerMessage(MessageType.Fatal, errorLetters, MessageType.Fatal.typeCode, codeNum, pos)
+
+
+trait MessageType {
+  def color(formatting: Formatting): Color
+  def name: String = getClass.getSimpleName.dropRight(1)
+  def typeCode: Int
+}
+object MessageType {
+  case object Warning extends MessageType {
+    override def color(formatting: Formatting): Color = formatting.Yellow
+    override def typeCode: Int = 1
+  }
+  case object Error extends MessageType {
+    override def color(formatting: Formatting): Color = formatting.Red
+    override def typeCode: Int = 2
+  }
+  case object Fatal extends MessageType {
+    override def color(formatting: Formatting): Color = formatting.Red
+    override def typeCode: Int = 3
+  }
+}

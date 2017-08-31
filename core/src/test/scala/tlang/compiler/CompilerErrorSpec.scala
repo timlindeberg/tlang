@@ -5,9 +5,9 @@ import java.io.File
 import org.scalatest.{FreeSpec, ParallelTestExecution}
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
-import tlang.compiler.error.{CompilationException, CompilerMessage, MessageType}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
+import tlang.messages.{CompilationException, CompilerMessage, MessageType}
 import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, Source}
 
@@ -19,30 +19,12 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
   val ErrorResources = s"$Resources/errortests"
 
 
-  "Lexing" - {
-    testFileForErrors(s"$ErrorResources/lexing", Lexing)
-  }
-
-  "Parsing" - {
-    testFileForErrors(s"$ErrorResources/parsing", Lexing andThen Parsing)
-  }
-
-  "Templating" - {
-    testFileForErrors(s"$ErrorResources/templating", Lexing andThen Parsing andThen Templating)
-  }
-
-  "Naming" - {
-    testFileForErrors(s"$ErrorResources/naming", Lexing andThen Parsing andThen Templating andThen Naming)
-  }
-
-  "Typing" - {
-    testFileForErrors(s"$ErrorResources/typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
-  }
-
-  "Flowing" - {
-    testFileForErrors(s"$ErrorResources/flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
-  }
-
+  testFileForErrors(s"$ErrorResources/Lexing", Lexing)
+  testFileForErrors(s"$ErrorResources/Parsing", Lexing andThen Parsing)
+  testFileForErrors(s"$ErrorResources/Templating", Lexing andThen Parsing andThen Templating)
+  testFileForErrors(s"$ErrorResources/Naming", Lexing andThen Parsing andThen Templating andThen Naming)
+  testFileForErrors(s"$ErrorResources/Typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
+  testFileForErrors(s"$ErrorResources/Flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
 
   private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = {
     testFiles(path, testFileForErrors(pipeLine, _))

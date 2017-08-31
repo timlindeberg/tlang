@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.messages
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter

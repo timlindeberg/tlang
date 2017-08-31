@@ -2,8 +2,8 @@ package tlang.options.arguments
 
 import java.io.File
 
-import tlang.compiler.error.ErrorStringContext
 import tlang.formatting.Formatter
+import tlang.messages.ErrorStringContext
 import tlang.options.ArgumentFlag
 import tlang.utils.Extensions._
 

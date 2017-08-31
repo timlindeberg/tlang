@@ -1,5 +1,6 @@
-package tlang.formatting
+package tlang.formatting.textformatters
 
+import tlang.formatting.Colors
 import tlang.formatting.Colors.{Color, NoColor, Reset}
 import tlang.utils.Extensions._
 

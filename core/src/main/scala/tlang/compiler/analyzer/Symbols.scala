@@ -3,8 +3,8 @@ package analyzer
 
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.CompilerMessage
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
+import tlang.messages.CompilerMessage
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 

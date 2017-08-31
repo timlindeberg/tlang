@@ -4,10 +4,11 @@ import org.scalamock.function._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
-import tlang.formatting.BoxStyles.{BoxStyle, Unicode}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
+import tlang.formatting.FormattingStyles.Unicode
 import tlang.formatting._
+import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter, Truncator, WordWrapper}
 import tlang.utils.Extensions._
 
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory {
@@ -45,14 +46,6 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
   // For scoping and readability
   def test[U](description: String = "")(f: => U): U = f
 
-  def createMockFormatting(
-    width: Int = 80,
-    boxStyle: BoxStyle = Unicode,
-    useColor: Boolean = true,
-    colorScheme: ColorScheme = DefaultColorScheme): Formatting = {
-    Formatting(boxStyle, width, useColor = useColor, colorScheme = colorScheme)
-  }
-
   def mockedWordWrapperReturningSameLine: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>
       (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
@@ -61,8 +54,9 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
 
   def createMockFormatter(
     width: Int = 80,
-    boxStyle: BoxStyle = Unicode,
+    formattingStyle: FormattingStyle = Unicode,
     useColor: Boolean = true,
+    colorScheme: ColorScheme = DefaultColorScheme,
     formatting: Option[Formatting] = None,
     wordWrapper: WordWrapper = mock[WordWrapper],
     truncator: Truncator = mock[Truncator],
@@ -73,7 +67,7 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
   ): Formatter = {
 
     Formatter(
-      formatting = formatting.getOrElse(createMockFormatting(width, boxStyle, useColor = useColor)),
+      formatting = formatting.getOrElse(Formatting(formattingStyle, width, colorScheme, useColor)),
       wordWrapper,
       truncator,
       prettyPrinter,

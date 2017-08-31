@@ -1,6 +1,6 @@
 package tlang.compiler
 
-import tlang.compiler.error.AlternativeSuggestor
+import tlang.messages.AlternativeSuggestor
 
 trait MainErrors {
 

@@ -1,4 +1,4 @@
-package tlang.compiler.error
+package tlang.messages
 
 import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.TError

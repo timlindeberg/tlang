@@ -5,9 +5,9 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.{ErrorStringContext, Reporter}
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.formatting.Formatting
+import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 import tlang.{Constants, Context}

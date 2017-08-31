@@ -1,6 +1,7 @@
 package tlang.formatting
 
-import tlang.compiler.error._
+import tlang.formatting.textformatters.SyntaxHighlighter
+import tlang.messages._
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 import tlang.utils._

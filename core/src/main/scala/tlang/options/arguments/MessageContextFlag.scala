@@ -1,7 +1,7 @@
 package tlang.options.arguments
 
-import tlang.compiler.error.ErrorStringContext
 import tlang.formatting.Formatter
+import tlang.messages.ErrorStringContext
 import tlang.options.NumberFlag
 
 case object MessageContextFlag extends NumberFlag {

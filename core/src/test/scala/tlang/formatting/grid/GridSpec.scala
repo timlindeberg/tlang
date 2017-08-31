@@ -1,10 +1,11 @@
 package tlang.formatting.grid
 
-import tlang.formatting.BoxStyles.{Ascii, BoxStyle, NoLines, Unicode}
+import tlang.formatting.FormattingStyles.{Ascii, NoLines, Unicode}
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
+import tlang.formatting.textformatters.{Truncator, WordWrapper}
 import tlang.testutils.UnitSpec
 
 class GridSpec extends UnitSpec {
@@ -521,7 +522,7 @@ class GridSpec extends UnitSpec {
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
 
-    grid.formatter(mockedFormatter(boxStyle = NoLines)).render() shouldBe
+    grid.formatter(mockedFormatter(formattingStyle = NoLines)).render() shouldBe
       """|
          |       Header
          |
@@ -530,7 +531,7 @@ class GridSpec extends UnitSpec {
          |  ABC   DEF
          |""".stripMargin
 
-    grid.formatter(mockedFormatter(boxStyle = Ascii)).render() shouldBe
+    grid.formatter(mockedFormatter(formattingStyle = Ascii)).render() shouldBe
       """| ==================
          ||      Header      |
          ||==================|
@@ -973,11 +974,11 @@ class GridSpec extends UnitSpec {
 
   private def mockedFormatter(
     width: Int = DefaultMaxWidth,
-    boxStyle: BoxStyle = Unicode,
+    formattingStyle: FormattingStyle = Unicode,
     wordWrapper: WordWrapper = mockedWordWrapperReturningSameLine,
     truncator: Truncator = mock[Truncator]
   ): Formatter = {
-    createMockFormatter(width = width, boxStyle = boxStyle, wordWrapper = wordWrapper, truncator = truncator)
+    createMockFormatter(width = width, formattingStyle = formattingStyle, wordWrapper = wordWrapper, truncator = truncator)
   }
 
 

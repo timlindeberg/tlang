@@ -21,7 +21,7 @@ case object PrintOutputFlag extends OptionalArgumentFlag[Set[String]] {
     s"""
        |Prints the output after a given compiler phase.
        |If no argument is given the code is printed as it looks before the final code is generated (after the lowering phase).
-       |Type --${ Magenta(HelpFlag.name) } ${ Magenta(name) } for more information.
+       |Type --${ Magenta(CompilerHelpFlag.name) } ${ Magenta(name) } for more information.
       """.stripMargin.trim
   }
 

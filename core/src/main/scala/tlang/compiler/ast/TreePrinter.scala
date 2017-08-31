@@ -13,7 +13,7 @@ import scala.collection.mutable.ListBuffer
 case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
   import formatting._
-  import formatting.boxStyle._
+  import formatting.formattingStyle._
 
 
   private var symbolId                                     = -1

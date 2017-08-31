@@ -3,7 +3,7 @@ package tlang.options.arguments
 import java.io.File
 
 import tlang.Constants
-import tlang.compiler.error.ErrorStringContext
+import tlang.messages.ErrorStringContext
 import tlang.options.PositionalArgument
 
 case object TFilesArgument extends PositionalArgument[Set[File]] {

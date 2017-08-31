@@ -377,10 +377,10 @@ object Knowledge {
     override def toString: String = {
       val vars = varKnowledge.map { case (expr, knowledge) =>
         s"$expr -> { ${ knowledge.mkString(", ") } }"
-      }.mkString("\n")
+      }.mkString(System.lineSeparator)
 
       val flow = flowEnded match {
-        case Some(ended) => s"\nFlow ended at ${ ended.line }: $ended"
+        case Some(ended) => System.lineSeparator + s"Flow ended at ${ ended.line }: $ended"
         case None        => ""
       }
       vars + flow

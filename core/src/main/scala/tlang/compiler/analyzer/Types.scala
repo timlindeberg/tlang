@@ -3,8 +3,8 @@ package analyzer
 
 import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
-import tlang.compiler.error.CompilerMessage
 import tlang.compiler.imports.{ClassPath, ClassSymbolLocator}
+import tlang.messages.CompilerMessage
 
 object Types {
 

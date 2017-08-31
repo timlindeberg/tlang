@@ -1,10 +1,11 @@
 package tlang.formatting
 
-import tlang.compiler.error.{ErrorStringContext, VoidReporter}
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Lexer, Token, TokenKind}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
+import tlang.formatting.textformatters.{Marking, SyntaxHighlighter}
+import tlang.messages.{ErrorStringContext, VoidReporter}
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Source, StringSource}
@@ -103,7 +104,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
 
   it should "not highlight code when colors are disabled" in {
-    val formatting = createMockFormatting(useColor = false)
+    val formatting = Formatting(useColor = false)
     val lexer = mock[Lexer]
     (lexer.apply _).expects(*).never()
     val syntaxHighlighter = SyntaxHighlighter(lexer, formatting)
@@ -249,7 +250,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
   }
 
   private def makeSyntaxHighlighter(lexer: Lexer, colorScheme: ColorScheme = DefaultColorScheme): SyntaxHighlighter = {
-    val formatting = createMockFormatting(colorScheme = colorScheme)
+    val formatting = Formatting(colorScheme = colorScheme)
     SyntaxHighlighter(lexer, formatting)
   }
 
@@ -279,7 +280,10 @@ class SyntaxHighlighterSpec extends UnitSpec {
   private def printTokens(code: String) = {
     val lexer = Lexer(VoidReporter(), ErrorStringContext(createMockFormatter().formatting))
     val tokens = lexer(StringSource(code.stripAnsi, ""))
-    tokens.map(t => (t.kind.getClass.getSimpleName.dropRight(1), t.line, t.col, t.endLine, t.endCol)).mkString(",\n").print
+    tokens
+      .map(t => (t.kind.getClass.getSimpleName.dropRight(1), t.line, t.col, t.endLine, t.endCol))
+      .mkString("," + System.lineSeparator)
+      .print
 
   }
 }

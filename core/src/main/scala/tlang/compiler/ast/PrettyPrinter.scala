@@ -16,7 +16,10 @@ case class PrettyPrinter(formatting: Formatting) {
 
   private var currentIndent: Int = 0
 
-  private val seperator = "\n\n/* ----------------------------------------------------------------- */\n\n"
+  private val seperator =
+    System.lineSeparator * 2 +
+      "/* ----------------------------------------------------------------- */" +
+      System.lineSeparator * 2
 
   private val charEscapeChars   = Map('\t' -> 't', '\b' -> 'b', '\n' -> 'n', '\r' -> 'r', '\f' -> 'f', '\\' -> '\\')
   private val stringEscapeChars = charEscapeChars ++ Map(''' -> ''', '"' -> '"')

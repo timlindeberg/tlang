@@ -44,7 +44,7 @@ object CodeGenerator {
 
   object NonPrimitive {
     def unapply(tpe: Type): Option[TObject] = tpe match {
-      case t: TObject if !(t in Primitives) => Some(t)
+      case t: TObject if t notIn Primitives => Some(t)
       case _                                => None
     }
   }
@@ -428,7 +428,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << cafebabe.AbstractByteCodes.New(className) << DUP
         compileExpr(expr)
         ch << InvokeSpecial(className, ConstructorName, "(" + expr.getType.byteCodeName + ")V") <<
-        InvokeVirtual(className, "hashCode", "()I")
+          InvokeVirtual(className, "hashCode", "()I")
       case "LogicNot" =>
         compileExpr(expr)
         ch << Ldc(-1)

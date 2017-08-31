@@ -4,8 +4,8 @@ import java.io.File
 
 import tlang.Context
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.{CompilationException, MessageType}
 import tlang.compiler.lexer.Lexing
+import tlang.messages.{CompilationException, MessageType}
 import tlang.testutils.{CompilerTestSpec, Pos}
 import tlang.utils.FileSource
 

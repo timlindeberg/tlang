@@ -3,8 +3,8 @@ package tlang.compiler.imports
 import tlang.Context
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.CompilationException
 import tlang.compiler.lexer.Lexing
+import tlang.messages.CompilationException
 import tlang.utils.FileSource
 
 import scala.collection.mutable

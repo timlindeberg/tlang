@@ -3,7 +3,7 @@ package tlang.compiler.imports
 import tlang.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
-import tlang.compiler.error.{ErrorStringContext, Reporter}
+import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -126,7 +126,7 @@ case class Imports(ctx: Context,
   def entries: Iterator[(String, String)] = shortToFull.iterator
 
   override def toString: String = {
-    shortToFull.map { case (short, full) => s"$short -> $full" }.mkString("\n")
+    shortToFull.map { case (short, full) => s"$short -> $full" }.mkString(System.lineSeparator)
   }
 
 

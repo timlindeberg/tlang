@@ -1,7 +1,7 @@
 package tlang.options
 
-import tlang.compiler.error.ErrorStringContext
 import tlang.formatting.{Formatter, Formatting}
+import tlang.messages.ErrorStringContext
 import tlang.utils.Extensions._
 
 import scala.collection.mutable

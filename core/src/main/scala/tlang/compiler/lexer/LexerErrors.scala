@@ -1,7 +1,7 @@
 package tlang.compiler.lexer
 
-import tlang.compiler.error.{ErrorHandling, ErrorMessage}
 import tlang.compiler.lexer.Tokens.BAD
+import tlang.messages.{ErrorHandling, ErrorMessage}
 import tlang.utils.{Positioned, Source}
 
 trait LexerErrors extends ErrorHandling {
@@ -24,11 +24,13 @@ trait LexerErrors extends ErrorHandling {
   //  Error messages
   //---------------------------------------------------------------------------------------
 
-  // Missing 0
-
   import errorStringContext._
 
   abstract class LexerError(code: Int, pos: Positioned) extends ErrorMessage("L", code, pos)
+
+  case class StringLiteralTooLarge(s: String, length: Int) extends LexerError(0, pos(length)) {
+    lazy val message = err"String literals cannot be larger ${ Lexing.MaximumStringSize } characters."
+  }
 
   case class InvalidIdentifier(c: Char, length: Int) extends LexerError(1, pos(length)) {
     lazy val message = err"Invalid character in identifier: $c."
@@ -92,8 +94,8 @@ trait LexerErrors extends ErrorHandling {
 
   case class IndentationTooLong(originalIndent: Int, newIndent: Int, length: Int) extends LexerError(16, pos(length)) {
     lazy val message =
-      err"""Indentation is too large. Indentation level went from $originalIndent to $newIndent.
-           |Indentation should only increase one level at a time.""".stripMargin
+      err"""|Indentation is too large. Indentation level went from $originalIndent to $newIndent.
+            |Indentation should only increase one level at a time.""".stripMargin
   }
 
   case class TabsNonIndentation(length: Int) extends LexerError(17, pos(length)) {

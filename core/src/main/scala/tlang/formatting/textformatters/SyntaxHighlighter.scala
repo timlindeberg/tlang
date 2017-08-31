@@ -1,8 +1,9 @@
-package tlang.formatting
+package tlang.formatting.textformatters
 
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Lexer, Token}
 import tlang.formatting.Colors._
+import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned, StringSource}
 

@@ -1,7 +1,7 @@
 package tlang.options
 
-import tlang.compiler.error.ErrorStringContext
 import tlang.formatting.{Formatter, SimpleFormatting}
+import tlang.messages.ErrorStringContext
 import tlang.testutils.UnitSpec
 
 class OptionsSpec extends UnitSpec {

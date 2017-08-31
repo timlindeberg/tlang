@@ -1,7 +1,7 @@
 package tlang.compiler.analyzer
 
 import tlang.compiler.ast.Trees.ExprTree
-import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait FlowAnalysisErrors extends ErrorHandling {

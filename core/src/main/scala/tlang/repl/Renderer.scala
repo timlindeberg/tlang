@@ -1,9 +1,8 @@
 package tlang.repl
 
 import akka.actor.{Actor, Props}
-import tlang.compiler.error._
 import tlang.formatting.Formatter
-import tlang.formatting.grid.Grid
+import tlang.messages._
 import tlang.repl.input.InputBuffer
 
 object Renderer {
@@ -68,7 +67,8 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
   private def drawWelcomeBox(): Unit = {
     val commands = List("help", "quit", "print").map(command => Magenta(s":$command"))
     val commandList = formatting.makeList(commands)
-    val grid = Grid(formatter)
+    val grid = formatter
+      .grid
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
       .row()
       .content(

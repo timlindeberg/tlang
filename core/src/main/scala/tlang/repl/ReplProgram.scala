@@ -11,10 +11,10 @@ import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{Parsing, Trees}
 import tlang.compiler.code.{CodeGeneration, Lowering, TreeBuilder}
-import tlang.compiler.error.{CompilationException, ErrorStringContext, MessageType}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
+import tlang.messages.{CompilationException, ErrorStringContext, MessageType}
 import tlang.repl.Repl.SetState
 import tlang.utils.Extensions._
 import tlang.utils.{CancellableFuture, ProgramExecutor, StringSource}
@@ -59,7 +59,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
 
   private val ReplClassID             = ClassID(ClassName)
   private val ReplClassSymbol         = new ClassSymbol(ClassName)
-  private val programExecutor         = ProgramExecutor()
+  private val programExecutor         = ProgramExecutor(ctx)
   private val treeBuilder             = TreeBuilder()
   private val newStatementTransformer = new NewStatementTransformer()
 
@@ -103,7 +103,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause), truncate = true)
             case e                            =>
-              val err = FailureColor("Internal compiler error: \n") + formatter.highlightStackTrace(e)
+              val err = FailureColor("Internal compiler error:" + System.lineSeparator) + formatter.highlightStackTrace(e)
               println(err)
               println("Internal state:")
               println(prettyPrinted)
@@ -131,14 +131,14 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     val transformed: CompilationUnit = newStatementTransformer(replCU)
     compile.execute(ctx)(transformed :: rest)
 
-    val res = programExecutor(ctx, ClassFile)
+    val res = programExecutor(ClassFile)
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
 
     val executionMessages = getOutput(res).lines.map(colorOutput)
 
     val sb = new StringBuilder
-    definitionMessages.foreach(sb ++= _ + "\n")
-    executionMessages.foreach(sb ++= _ + "\n")
+    definitionMessages.foreach(sb ++= _ + System.lineSeparator)
+    executionMessages.foreach(sb ++= _ + System.lineSeparator)
     sb.toString.trimWhiteSpaces
   }
 

@@ -1,5 +1,6 @@
 package tlang.formatting
 
+import tlang.formatting.textformatters.WordWrapper
 import tlang.testutils.UnitSpec
 
 class WordWrapperSpec extends UnitSpec {

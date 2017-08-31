@@ -139,7 +139,7 @@ case class Grid(var formatter: Formatter) {
 
   def columnWidths: Seq[Int] = currentRow.columnWidths
 
-  def print(): Unit = println(render)
+  def print(): Unit = println(render())
 
   def render(): String = GridRenderer(formatter).render()
 
@@ -157,7 +157,7 @@ case class Grid(var formatter: Formatter) {
     this
   }
 
-  private def verifyNumValues(contentLength: Int) = {
+  private def verifyNumValues(contentLength: Int): Unit = {
     val columnLength = currentRow.columns.length
     if (contentLength != columnLength) {
       throw new IllegalArgumentException(
@@ -166,7 +166,7 @@ case class Grid(var formatter: Formatter) {
     }
   }
 
-  private def verifyRowWidth(row: Row) = {
+  private def verifyRowWidth(row: Row): Unit = {
     val columns = row.columns
 
     val lineWidth = formatter.formatting.lineWidth
@@ -275,7 +275,7 @@ case class Grid(var formatter: Formatter) {
 
     private val formatting = formatter.formatting
 
-    import formatting.boxStyle._
+    import formatting.formattingStyle._
 
     val sb = new StringBuilder()
 

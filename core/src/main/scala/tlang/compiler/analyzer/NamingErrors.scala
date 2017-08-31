@@ -3,7 +3,7 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees.{Break, Tree, _}
-import tlang.compiler.error.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait NamingErrors extends ErrorHandling {
