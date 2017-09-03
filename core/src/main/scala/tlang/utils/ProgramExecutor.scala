@@ -1,16 +1,16 @@
 package tlang.utils
 
-import java.io._
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.{URL, URLClassLoader}
 
+import better.files.File
 import tlang.Context
 
 import scala.concurrent.duration.Duration
 
 object ProgramExecutor {
   def apply(context: Context, timeout: Duration = Duration(0, "sec")): ProgramExecutor = {
-    new ProgramExecutor(context.outDirs.map(_.getAbsolutePath) ++ context.classPath.paths, timeout)
+    new ProgramExecutor(context.outDirs.map(_.pathAsString) ++ context.classPath.paths, timeout)
   }
 }
 
@@ -18,7 +18,7 @@ case class ProgramExecutor(classPaths: Set[String], timeout: Duration) {
 
   private val URLs = classPaths.map(classPath => new URL(s"file:$classPath/")).toArray
 
-  def apply(classFile: File): String = apply(classFile.getName.replaceAll("\\..*", ""))
+  def apply(classFile: File): String = apply(classFile.name.replaceAll("\\..*", ""))
 
   def apply(className: String): String = execute(className)
 

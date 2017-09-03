@@ -1,7 +1,6 @@
 package tlang.compiler.lexer
 
-import java.io.File
-
+import better.files.File
 import tlang.Context
 import tlang.compiler.lexer.Tokens._
 import tlang.testutils.{CompilerTestSpec, Pos}
@@ -10,11 +9,11 @@ import tlang.utils.FileSource
 
 class LexingPositionSpec extends CompilerTestSpec {
 
-  val TestFile   : String  = s"$Resources/positions/LexerPositions.t"
+  val TestFile   : File    = File(s"$Resources/positions/LexerPositions.t")
   val TestContext: Context = testContext()
 
   lazy val Tokens: List[Token] = {
-    val file = FileSource(new File(TestFile)) :: Nil
+    val file = FileSource(TestFile) :: Nil
     Lexing.execute(TestContext)(file).head
   }
 

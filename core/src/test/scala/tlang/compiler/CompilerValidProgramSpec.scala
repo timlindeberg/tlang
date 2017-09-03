@@ -1,7 +1,8 @@
 package tlang.compiler
 
-import java.io.{File, FileNotFoundException}
+import java.io.FileNotFoundException
 
+import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.messages.{CompilationException, MessageType}
 import tlang.testutils.CompilerTestSpec
@@ -40,7 +41,7 @@ class CompilerValidProgramSpec extends CompilerTestSpec with ParallelTestExecuti
       case e: CompilationException  =>
         e.messages.print(MessageType.Error)
         fail("Compilation failed")
-      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.getPath }")
+      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.path }")
     }
   }
 

@@ -1,13 +1,11 @@
 package tlang.testutils
 
-import java.io.File
-
+import better.files.File
 import org.scalatest._
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.imports.ClassPath
 import tlang.formatting.{Formatter, Formatting}
 import tlang.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
-import tlang.utils.Extensions._
 import tlang.{Constants, Context}
 
 import scala.collection.mutable
@@ -49,11 +47,11 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
   def testContext(file: Option[File] = None): Context = {
     val (files, outDir) = file match {
       case Some(f) =>
-        val mainName = f.getName.stripSuffix(Constants.FileEnding)
-        val outDir = new File(s"$TestOutputDirectory/$mainName/")
-        outDir.mkdirs()
+        val mainName = f.nameWithoutExtension
+        val outDir = File(s"$TestOutputDirectory/$mainName/")
+        outDir.createDirectories()
         (Set(f), outDir)
-      case None    => (Set[File](), new File("."))
+      case None    => (Set[File](), File("."))
     }
 
     val errorFormatter = MessageFormatter(TestFormatter)
@@ -75,7 +73,7 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
       path match {
         case TestDirectory(name, children) => name - { children foreach testPath }
         case TestFile(file)                =>
-          val testName = file.getName.stripSuffix(Constants.FileEnding)
+          val testName = file.nameWithoutExtension
           val test = testName taggedAs CompilerTestTag
           if (shouldBeIgnored(file)) test ignore {} else test in { executeTest(file) }
         case Empty                         =>
@@ -103,19 +101,19 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
   private def getTestPath(path: String): TestPath = {
     CompilerTestSpec.TestPaths.getOrElseUpdate(path, {
       def testPaths(file: File): TestPath = {
-        if (!matchesTestPattern(file.getPath))
+        if (!matchesTestPattern(file.pathAsString))
           return Empty
 
         if (file.isDirectory)
-          return TestDirectory(file.getName, file.listFiles.map(testPaths).filter(_ != Empty))
+          return TestDirectory(file.name, file.listRecursively.map(testPaths).filter(_ != Empty).toArray)
 
-        if (!file.getName.endsWith(Constants.FileEnding))
+        if (!file.extension.contains(Constants.FileEnding))
           return Empty
 
         TestFile(file)
       }
 
-      testPaths(new File(path))
+      testPaths(File(path))
     })
   }
 
@@ -132,7 +130,7 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
   // Cached so we don't have to read the value multiple times
   private def shouldBeIgnored(file: File): Boolean =
     CompilerTestSpec.IgnoredFiles.getOrElseUpdate(file, {
-      val firstLine = using(io.Source.fromFile(file)) { _.getLines().take(1).toList.headOption }
+      val firstLine = file.lineIterator.take(1).toList.headOption
       // Ignore empty files
       firstLine.isEmpty || IgnoreRegex.findFirstIn(firstLine.get).isDefined
     })

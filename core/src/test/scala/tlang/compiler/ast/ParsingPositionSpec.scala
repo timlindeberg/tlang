@@ -1,7 +1,6 @@
 package tlang.compiler.ast
 
-import java.io.File
-
+import better.files.File
 import tlang.Context
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
@@ -14,12 +13,12 @@ import scala.reflect.{ClassTag, classTag}
 class ParsingPositionSpec extends CompilerTestSpec {
 
   private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
-  private val TestFile   : String  = s"$Resources/positions/ParserPositions.t"
+  private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext()
 
   // We make Tree lazy so the errortests.parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
-    val file = FileSource(new File(TestFile)) :: Nil
+    val file = FileSource(TestFile) :: Nil
     try {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {

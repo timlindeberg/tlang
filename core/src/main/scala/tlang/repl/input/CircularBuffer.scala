@@ -6,16 +6,15 @@ import scala.collection.mutable.ArrayBuffer
 
 object CircularBuffer {
   def apply[T](ts: T*): CircularBuffer[T] =
-    new CircularBuffer[T]().use { buffer => ts.foreach(buffer += _) }
+    CircularBuffer[T]().use { buffer => ts.foreach(buffer += _) }
 }
 
-class CircularBuffer[T] extends ArrayBuffer[T] {
+case class CircularBuffer[T]() extends ArrayBuffer[T] {
 
   def index: Int = _index
   private var _index = 0
 
-  def +=(i: Int): this.type = { _index = mod(_index + i, size); this }
-  def -=(i: Int): this.type = { _index = mod(_index - i, size); this }
+  def advance(i: Int): this.type = { _index = mod(_index + i, size); this }
 
   def current: T = apply(_index)
 

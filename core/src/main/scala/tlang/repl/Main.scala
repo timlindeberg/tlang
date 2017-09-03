@@ -1,9 +1,9 @@
 package tlang.repl
 
-import java.io.File
-import java.nio.file.Files
+import java.nio.file.Paths
 
 import akka.actor.ActorSystem
+import better.files._
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
@@ -21,6 +21,9 @@ object Main {
   val VersionNumber = "0.0.1"
   val MaxRedoSize   = 500
   val TabSize       = 4
+
+  val HistoryFileName   = "repl_history"
+  val SettingsDirectory = Paths.get(System.getProperty("user.home"), ".tlang")
 
   val ReplFlags: List[FlagArgument[_]] = List(
     LineWidthFlag,
@@ -46,19 +49,21 @@ object Main {
       sys.exit()
     }
 
-    val tempDir = Files.createTempDirectory("repl").toFile
-    tempDir.deleteOnExit()
-
 
     val formatter = Formatter(formatting)
     val errorFormatter = MessageFormatter(formatter, options(MessageContextFlag))
+
+    val tempDir = File.newTemporaryDirectory("repl")
 
     val context = createContext(options, errorFormatter, tempDir)
 
     val actorSystem = ActorSystem("tRepl")
 
     val replTerminal = ReplTerminal()
-    val inputHistory = InputHistory(MaxRedoSize, TabSize)
+
+    val historyFile = File(SettingsDirectory, HistoryFileName)
+
+    val inputHistory = InputHistory(historyFile, MaxRedoSize, TabSize)
     val prettyPrinter = PrettyPrinter(formatting)
     val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, prettyPrinter, replTerminal, inputHistory), Repl.name)
 
@@ -81,7 +86,7 @@ object Main {
   private def createContext(options: Options, errorFormatter: MessageFormatter, tempDir: File): Context = {
     val formatter = errorFormatter.formatter
     val formatting = formatter.formatting
-    val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.getAbsolutePath)
+    val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.pathAsString)
 
     val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)
     val debugOutputFormatter = DebugOutputFormatter(formatter)

@@ -1,7 +1,6 @@
 package tlang.compiler
 
-import java.io.File
-
+import better.files.File
 import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
 import tlang.Context

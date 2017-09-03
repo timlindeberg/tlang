@@ -1,8 +1,9 @@
 package tlang.compiler
 package code
 
-import java.io.{BufferedInputStream, File, FileInputStream, FileOutputStream}
+import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
 
+import better.files.File
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.ClassFileTypes._
@@ -184,7 +185,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     traits.foreach(t => classFile.addInterface(t.JVMName))
 
     classDecl.source ifDefined {
-      case FileSource(file)            => classFile.setSourceFile(file.getName)
+      case FileSource(file)            => classFile.setSourceFile(file.name)
       case StringSource(str, mainName) => classFile.setSourceFile(mainName)
     }
 
@@ -317,7 +318,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def getFilePath(outDir: File, className: String): String = {
-    var prefix = outDir.getAbsolutePath.replaceAll("\\\\", "/")
+    var prefix = outDir.pathAsString.replaceAll("\\\\", "/")
 
     // Weird Windows behaviour
     if (prefix.endsWith("."))
@@ -327,10 +328,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val split = className.split("/")
     val packageDir = split.dropRight(1).mkString("/")
     val filePath = prefix + packageDir
-    val f = new File(filePath)
-    if (!f.getAbsoluteFile.exists() && !f.mkdirs())
-      sys.error(s"Could not create output directory '${ f.getAbsolutePath }'.")
-
+    val f = File(filePath)
+    f.createIfNotExists()
 
     prefix + className + ".class"
   }

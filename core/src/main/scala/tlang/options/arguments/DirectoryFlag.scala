@@ -1,7 +1,7 @@
 package tlang.options.arguments
 
-import java.io.File
 
+import better.files.File
 import tlang.formatting.Formatter
 import tlang.messages.ErrorStringContext
 import tlang.options.ArgumentFlag
@@ -26,9 +26,9 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
 
   override def parseValue(args: Set[String]): Set[File] = {
     if (args.isEmpty)
-      return Set(new File("."))
+      return Set(File("."))
 
-    args.map(new File(_))
+    args.map(File(_))
   }
 
 

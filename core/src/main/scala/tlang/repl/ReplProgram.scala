@@ -1,9 +1,9 @@
 package tlang.repl
 
-import java.io.File
 import java.lang.reflect.InvocationTargetException
 
 import akka.actor.{Actor, Props}
+import better.files.File
 import tlang.Context
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
@@ -53,7 +53,7 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
   private val ClassName        = "REPL"
   private val ReplOutputMarker = "__ReplRes__"
   private val PrintMarker      = Print(StringLit(ReplOutputMarker))
-  private val ClassFile        = new File(ctx.outDirs.head, ClassName + ".class")
+  private val ClassFile        = File(ctx.outDirs.head, ClassName + ".class")
 
   private val WarmupProgram = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
 

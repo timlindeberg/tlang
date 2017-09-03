@@ -57,7 +57,8 @@ lazy val core = project
       "com.googlecode.lanterna" % "lanterna" % "3.0.0-beta3",
       "org.scala-lang" % "jline" % "2.9.0-1",
       "org.scalaz" %% "scalaz-core" % "7.2.9",
-      "com.typesafe.akka" %% "akka-actor" % "2.4.17"
+      "com.typesafe.akka" %% "akka-actor" % "2.4.17",
+      "com.github.pathikrit" %% "better-files" % "3.1.0"
     ),
     parallelExecution in Test := true,
     logBuffered in Test := false

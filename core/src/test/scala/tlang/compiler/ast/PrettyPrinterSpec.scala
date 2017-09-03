@@ -1,7 +1,6 @@
 package tlang.compiler.ast
 
-import java.io.File
-
+import better.files.File
 import tlang.Context
 import tlang.compiler.lexer.Lexing
 import tlang.formatting.SimpleFormatting
@@ -11,7 +10,7 @@ import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerTestSpec {
 
-  private val TestFile   : File    = new File(s"$Resources/positions/ParserPositions.t")
+  private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext(Some(TestFile))
 
   "A pretty printer should " - {
@@ -20,12 +19,12 @@ class PrettyPrinterSpec extends CompilerTestSpec {
 
       val parser = (Lexing andThen Parsing).execute(TestContext) _
       val prettyPrinter = PrettyPrinter(SimpleFormatting)
-      
+
       val CU = try {
         parser(file).head
       } catch {
         case e: CompilationException =>
-          fail(s"Could not parse file ${ TestFile.getName }:" + System.lineSeparator + e.messages.formatMessages(MessageType.Error))
+          fail(s"Could not parse file $TestFile:" + System.lineSeparator + e.messages.formatMessages(MessageType.Error))
       }
 
       val printedCU = prettyPrinter(CU)
@@ -35,7 +34,7 @@ class PrettyPrinterSpec extends CompilerTestSpec {
         case e: CompilationException =>
           fail(
             s"""
-               |Could not reparse output from file ${ TestFile.getName }:
+               |Could not reparse output from file $TestFile:
                |${ e.messages.formatMessages(MessageType.Error) }
                |
                |Printed output:

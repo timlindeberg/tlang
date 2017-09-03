@@ -1,7 +1,7 @@
 package tlang
 
-import java.io.File
 
+import better.files.File
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.formatting.{Formatter, Formatting}
@@ -15,7 +15,7 @@ case class Context(
   debugOutputFormatter: DebugOutputFormatter,
   files: Set[File] = Set(),
   classPath: ClassPath = ClassPath.Empty,
-  outDirs: Set[File] = Set(new File(".")),
+  outDirs: Set[File] = Set(File(".")),
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()
 ) {

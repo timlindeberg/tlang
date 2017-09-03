@@ -1,7 +1,7 @@
 package tlang.compiler
 
-import java.io.File
 
+import better.files.File
 import org.scalatest.{FreeSpec, ParallelTestExecution}
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing

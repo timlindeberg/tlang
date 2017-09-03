@@ -1,7 +1,6 @@
 package tlang.options
 
-import java.io.File
-
+import better.files.File
 import tlang.compiler.Main
 import tlang.compiler.imports.Imports
 import tlang.formatting._
@@ -93,12 +92,12 @@ class CompilerOptionsSpec extends UnitSpec {
   it should "use directory flag" in {
     test("No arguments should return PWD") {
       val options = createOptions("")
-      options(DirectoryFlag) shouldBe Set(new File("."))
+      options(DirectoryFlag) shouldBe Set(File("."))
     }
 
     test("With arguments") {
       val options = createOptions("--directory core,macros -d stdlib")
-      options(DirectoryFlag) shouldBe Set(new File("core"), new File("macros"), new File("stdlib"))
+      options(DirectoryFlag) shouldBe Set(File("core"), File("macros"), File("stdlib"))
     }
 
     test("Invalid directory") {
@@ -256,8 +255,8 @@ class CompilerOptionsSpec extends UnitSpec {
         "core/src/test/resources/positions/LexerPositions.t core/src/test/resources/errortests/flowing/DeadCode.t"
       )
       options(TFilesArgument) shouldBe Set(
-        new File("core/src/test/resources/positions/LexerPositions.t"),
-        new File("core/src/test/resources/errortests/flowing/DeadCode.t")
+        File("core/src/test/resources/positions/LexerPositions.t"),
+        File("core/src/test/resources/errortests/flowing/DeadCode.t")
       )
     }
 
@@ -266,11 +265,11 @@ class CompilerOptionsSpec extends UnitSpec {
         "core/src/test/resources/positions core/src/test/resources/errortests/templating"
       )
       options(TFilesArgument) shouldBe Set(
-        new File("core/src/test/resources/positions/LexerPositions.t"),
-        new File("core/src/test/resources/positions/ParserPositions.t"),
-        new File("core/src/test/resources/errortests/templating/GenericParameterDuplicate.t"),
-        new File("core/src/test/resources/errortests/templating/NoSuchClass.t"),
-        new File("core/src/test/resources/errortests/templating/WrongNumParams.t")
+        File("core/src/test/resources/positions/LexerPositions.t"),
+        File("core/src/test/resources/positions/ParserPositions.t"),
+        File("core/src/test/resources/errortests/templating/GenericParameterDuplicate.t"),
+        File("core/src/test/resources/errortests/templating/NoSuchClass.t"),
+        File("core/src/test/resources/errortests/templating/WrongNumParams.t")
       )
     }
 

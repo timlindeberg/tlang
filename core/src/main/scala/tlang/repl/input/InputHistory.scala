@@ -1,18 +1,16 @@
 package tlang.repl.input
 
-import java.io.{File, FileWriter}
 
-import tlang.utils.Extensions._
+import better.files._
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scalaz.Cord
 
-case class InputHistory(maxRedoSize: Int, tabSize: Int) {
+case class InputHistory(historyFile: File, maxRedoSize: Int, tabSize: Int) {
 
-  private val HistorySeperator  = "★"
-  private val HistoryFileName   = "repl_history"
-  private val SettingsDirectory = System.getProperty("user.home") + File.separator + ".tlang"
-  private val historyFile       = new File(SettingsDirectory, HistoryFileName)
+  private val HistorySeperator = "★"
+  private val Seperator        = System.lineSeparator + HistorySeperator + System.lineSeparator
+
 
   private val commands = CircularBuffer[InputBuffer](InputBuffer(maxRedoSize, tabSize))
 
@@ -23,8 +21,8 @@ case class InputHistory(maxRedoSize: Int, tabSize: Int) {
 
   def current: InputBuffer = commands.current
 
-  def goToNext(): Unit = commands += 1
-  def goToPrevious(): Unit = commands -= 1
+  def goToNext(): Unit = commands advance 1
+  def goToPrevious(): Unit = commands advance -1
 
   def saveCurrent(): Unit = {
     val command = current.currentCord
@@ -56,20 +54,17 @@ case class InputHistory(maxRedoSize: Int, tabSize: Int) {
       return
 
     dirty = false
-    using(new FileWriter(historyFile)) { writer =>
-      val seperator = System.lineSeparator + HistorySeperator + System.lineSeparator
-      originalCommands.foreach { command =>
-        writer.write(command)
-        writer.write(seperator)
-      }
-    }
+    val content = originalCommands.mkString(Seperator) + Seperator
+    historyFile.write(content)
   }
 
   private def equalCords(c1: Cord, c2: Cord): Boolean = {
     if (c1.length != c2.length)
       return false
+
     val it1 = c1.self.iterator.flatMap(_.iterator)
     val it2 = c2.self.iterator.flatMap(_.iterator)
+
     while (it1.hasNext)
       if (it1.next != it2.next)
         return false
@@ -77,20 +72,20 @@ case class InputHistory(maxRedoSize: Int, tabSize: Int) {
   }
 
   private def loadFromFile(): Unit = {
-    if (historyFile.getParentFile.mkdirs() || historyFile.createNewFile())
+    if (!historyFile.exists) {
+      historyFile.createIfNotExists(createParents = true)
       return
+    }
 
     val lines = new ListBuffer[String]()
-    using(io.Source.fromFile(historyFile)) {
-      _.getLines().foreach { line =>
-        if (line == HistorySeperator && lines.nonEmpty) {
-          val str = lines.mkString(System.lineSeparator)
-          originalCommands += str
-          commands += InputBuffer(maxRedoSize, tabSize, Cord.empty :+ str)
-          lines.clear()
-        } else {
-          lines += line
-        }
+    historyFile.lines.foreach { line =>
+      if (line == HistorySeperator && lines.nonEmpty) {
+        val str = lines.mkString(System.lineSeparator)
+        originalCommands += str
+        commands += InputBuffer(maxRedoSize, tabSize, Cord.empty :+ str)
+        lines.clear()
+      } else {
+        lines += line
       }
     }
   }

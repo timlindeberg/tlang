@@ -1,7 +1,7 @@
 package tlang.formatting
 
-import java.io.File
 
+import better.files.File
 import tlang.Constants
 import tlang.compiler.lexer.Lexer
 import tlang.formatting.grid.Grid
@@ -48,7 +48,7 @@ case class Formatter(
   def highlightStackTrace(throwable: Throwable): String = stackTraceHighlighter(throwable)
   def highlightStackTrace(stackTrace: String): String = stackTraceHighlighter(stackTrace)
 
-  def fileName(file: File): String = fileName(file.getName.replaceAll("\\..*$", ""))
+  def fileName(file: File): String = fileName(file.name.replaceAll("\\..*$", ""))
 
   def fileName(name: String): String = {
     val color = Bold + Magenta
