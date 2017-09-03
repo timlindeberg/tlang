@@ -136,9 +136,9 @@ class ErrorStringContextSpec extends UnitSpec {
 
         err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
           s"""|\u001b[1mSome text. Did you mean?
-              |   • \u001b[35mABC
-              |\u001b[0m\u001b[1m   • \u001b[35mDEF
-              |\u001b[0m\u001b[1m   • \u001b[35mGHI
+              |   * \u001b[35mABC
+              |\u001b[0m\u001b[1m   * \u001b[35mDEF
+              |\u001b[0m\u001b[1m   * \u001b[35mGHI
               |\u001b[0m\u001b[1mMore text.\u001b[0m""".stripMargin
         )
       }
@@ -149,9 +149,9 @@ class ErrorStringContextSpec extends UnitSpec {
 
         err"Some text.${ suggestion("ABCD", alternatives) }More text." should matchWithAnsi(
           s"""|Some text. Did you mean?
-              |   • ABC
-              |   • DEF
-              |   • GHI
+              |   * ABC
+              |   * DEF
+              |   * GHI
               |More text.""".stripMargin
         )
       }
@@ -171,9 +171,9 @@ class ErrorStringContextSpec extends UnitSpec {
       err"Some text.${ suggestion("AB", alternatives) }" should matchWithAnsi("Some text. Did you mean 'ABC'?")
       err"Some text.${ suggestion("ABC", alternatives) }" should matchWithAnsi(
         s"""|Some text. Did you mean?
-            |   • ABC
-            |   • DEF
-            |   • GHI""".stripMargin
+            |   * ABC
+            |   * DEF
+            |   * GHI""".stripMargin
       )
 
       val x = "x"
@@ -181,9 +181,9 @@ class ErrorStringContextSpec extends UnitSpec {
       err"Some text.${ suggestion("AB", alternatives) }$x" should matchWithAnsi("Some text. Did you mean 'ABC'? 'x'")
       err"Some text.${ suggestion("ABC", alternatives) }$x" should matchWithAnsi(
         s"""|Some text. Did you mean?
-            |   • ABC
-            |   • DEF
-            |   • GHI
+            |   * ABC
+            |   * DEF
+            |   * GHI
             |'x'""".stripMargin
       )
     }
@@ -196,7 +196,7 @@ class ErrorStringContextSpec extends UnitSpec {
     transforms: List[String => String] = Nil
   ): ErrorStringContext = {
     val formatter = createMockFormatter(useColor = useColor)
-    ErrorStringContext(formatter.formatting, alternativeSuggestor = alternativeSuggestor, transforms = transforms)
+    ErrorStringContext(formatter, alternativeSuggestor = alternativeSuggestor, transforms = transforms)
   }
 
 

@@ -66,7 +66,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
 
   private def drawWelcomeBox(): Unit = {
     val commands = List("help", "quit", "print").map(command => Magenta(s":$command"))
-    val commandList = formatting.makeList(commands)
+    val commandList = formatter.list(commands)
     val grid = formatter
       .grid
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))

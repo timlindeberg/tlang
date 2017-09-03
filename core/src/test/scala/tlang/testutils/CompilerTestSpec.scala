@@ -5,7 +5,6 @@ import java.io.File
 import org.scalatest._
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.imports.ClassPath
-import tlang.formatting.FormattingStyles.{Ascii, Unicode}
 import tlang.formatting.{Formatter, Formatting}
 import tlang.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.utils.Extensions._
@@ -38,13 +37,13 @@ trait CompilerTestSpec extends FreeSpec with Matchers {
   val IgnoreRegex        : Regex          = """// *[I|i]gnore""".r
   val Resources          : String         = CompilerTestSpec.Resources
   val TestOutputDirectory: String         = "gen"
-  val UseSimpleFormatting: Boolean        = sys.env.get("simple").contains("true")
+  val AsciiOnly          : Boolean        = sys.env.get("ascii").contains("true")
   val UseColors          : Boolean        = sys.env.get("colors").contains("true")
   val PrintErrors        : Boolean        = sys.env.get("printerrors").contains("true")
   val PrintCodePhases    : Set[String]    = sys.env.get("printoutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
   val TestPattern        : Option[String] = sys.env.get("pattern").map(_.toLowerCase)
 
-  val TestFormatting = Formatting(if (UseSimpleFormatting) Ascii else Unicode, 80, useColor = UseColors)
+  val TestFormatting = Formatting(80, useColor = UseColors, asciiOnly = AsciiOnly)
   val TestFormatter  = Formatter(TestFormatting)
 
   def testContext(file: Option[File] = None): Context = {

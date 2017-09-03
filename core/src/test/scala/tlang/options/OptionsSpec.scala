@@ -1,12 +1,12 @@
 package tlang.options
 
-import tlang.formatting.{Formatter, SimpleFormatting}
+import tlang.formatting.Formatter
 import tlang.messages.ErrorStringContext
 import tlang.testutils.UnitSpec
 
 class OptionsSpec extends UnitSpec {
 
-  implicit val errorContext: ErrorStringContext = ErrorStringContext(SimpleFormatting)
+  implicit val errorContext: ErrorStringContext = ErrorStringContext()
 
 
   behavior of "An option parser"

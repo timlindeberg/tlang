@@ -167,7 +167,7 @@ class CompilerMessageSpec extends UnitSpec {
       (messageFormatter.prefix _).expects().returning("Error A2123")
       (messageFormatter.locationInSource _).expects().returning(List(
         ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
-        ("", "  ‾‾‾‾‾"),
+        ("", "  ~~~~~"),
         ("2", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
         ("3", "ABCDEFFGHIJKLMNOPQRSTUVXYZ")
       ))
@@ -187,7 +187,7 @@ class CompilerMessageSpec extends UnitSpec {
       (messageFormatter.locationInSource _).expects().returning(List(
         ("53", "Line 1Line 1Line 1"),
         ("54", "Line 2Line 2Line 2"),
-        ("", "‾‾‾‾"),
+        ("", "~~~~"),
         ("55", "Line 3Line 3Line 3")
       ))
 
@@ -195,25 +195,25 @@ class CompilerMessageSpec extends UnitSpec {
       compilerMessages += error1
       compilerMessages += error2
       compilerMessages.formatMessages(MessageType.Error) shouldBe
-        """|╒══════════════════════════════════════╕
-           |│         There were 2 errors.         │
-           |╞══════════════════════════════════════╡
-           |│ 1:3 from/a/very/cool/File.t          │
-           |│ Error A2123 There was an error!!!    │
-           |├───┬──────────────────────────────────┤
-           |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
-           |│   │   ‾‾‾‾‾                          │
-           |│ 2 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
-           |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
-           |├───┴──────────────────────────────────┤
-           |│ 54:1 from/another/cool/File.t        │
-           |│ Error B2321 Moar errors!!!           │
-           |├────┬─────────────────────────────────┤
-           |│ 53 │ Line 1Line 1Line 1              │
-           |│ 54 │ Line 2Line 2Line 2              │
-           |│    │ ‾‾‾‾                            │
-           |│ 55 │ Line 3Line 3Line 3              │
-           |└────┴─────────────────────────────────┘""".stripMargin
+        """| ====================================== 
+           ||         There were 2 errors.         |
+           ||======================================|
+           || 1:3 from/a/very/cool/File.t          |
+           || Error A2123 There was an error!!!    |
+           ||--------------------------------------|
+           || 1 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
+           ||   |   ~~~~~                          |
+           || 2 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
+           || 3 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
+           ||--------------------------------------|
+           || 54:1 from/another/cool/File.t        |
+           || Error B2321 Moar errors!!!           |
+           ||--------------------------------------|
+           || 53 | Line 1Line 1Line 1              |
+           || 54 | Line 2Line 2Line 2              |
+           ||    | ~~~~                            |
+           || 55 | Line 3Line 3Line 3              |
+           | -------------------------------------- """.stripMargin
     }
 
     test("one warning with a non valid position") {
@@ -236,11 +236,11 @@ class CompilerMessageSpec extends UnitSpec {
       val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
       compilerMessages += warning
       compilerMessages.formatMessages(MessageType.Warning) shouldBe
-        """|╒══════════════════════════════════════╕
-           |│         There was 1 warning.         │
-           |╞══════════════════════════════════════╡
-           |│ Warning C1001 Here be a warning!!!   │
-           |└──────────────────────────────────────┘""".stripMargin
+        """| ====================================== 
+           ||         There was 1 warning.         |
+           ||======================================|
+           || Warning C1001 Here be a warning!!!   |
+           | -------------------------------------- """.stripMargin
     }
 
   }

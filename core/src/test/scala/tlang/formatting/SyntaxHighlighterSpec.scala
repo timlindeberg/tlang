@@ -278,7 +278,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
   // This function was used to generate the tokens in the above tests
   private def printTokens(code: String) = {
-    val lexer = Lexer(VoidReporter(), ErrorStringContext(createMockFormatter().formatting))
+    val lexer = Lexer(VoidReporter(), ErrorStringContext())
     val tokens = lexer(StringSource(code.stripAnsi, ""))
     tokens
       .map(t => (t.kind.getClass.getSimpleName.dropRight(1), t.line, t.col, t.endLine, t.endCol))

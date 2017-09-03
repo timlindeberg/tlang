@@ -4,6 +4,7 @@ import java.io.File
 
 import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
+import tlang.Context
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
@@ -20,7 +21,6 @@ import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
-import tlang.{Constants, Context}
 
 object Main extends MainErrors {
 
@@ -53,7 +53,7 @@ object Main extends MainErrors {
     VersionFlag,
     WarningIsErrorFlag,
     NoColorFlag,
-    FormattingStyleFlag,
+    AsciiFlag,
     ClassPathFlag,
     MaxErrorsFlag,
     IgnoreDefaultImportsFlag,
@@ -99,9 +99,7 @@ object Main extends MainErrors {
   }
 
   private def parseOptions(args: Array[String]): Options = {
-    val formatting = Formatting(FormattingStyles.Ascii, useColor = false)
-
-    val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
+    val errorContext = ErrorStringContext()
     try {
       Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
     } catch {
@@ -157,10 +155,11 @@ object Main extends MainErrors {
       warningIsError = options(WarningIsErrorFlag),
       suppressWarnings = options(SuppressWarningsFlag)
     )
+    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
-      debugOutputFormatter = DebugOutputFormatter(formatter),
+      debugOutputFormatter = debugOutputFormatter,
       files = filesToCompile,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       outDirs = options(DirectoryFlag),
@@ -178,7 +177,7 @@ object Main extends MainErrors {
 
     val grid = formatter.grid.header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
-    val fileNames = files.toList.map(f => formatFileName(f).stripSuffix(Constants.FileEnding))
+    val fileNames = files.toList.map(formatter.fileName)
     formatting.lineWidth match {
       case x if x in (0 to 59)  =>
         grid.row().allContent(List(fileNames))
@@ -318,8 +317,8 @@ object Main extends MainErrors {
   }
 
   private def executePrograms(ctx: Context, cus: Seq[CompilationUnit]): Unit = {
-    val formatting = ctx.formatter.formatting
-    import formatting._
+    val formatter = ctx.formatter
+    import formatter.formatting._
 
     val mainMethods = cus.flatMap(_.classes.flatMap(_.methods.filter(_.isMain)))
     if (mainMethods.isEmpty) {
@@ -339,7 +338,7 @@ object Main extends MainErrors {
       val lines = output.split("\r?\n").toList
       grid
         .row(alignment = Center)
-        .content(formatFileName(file))
+        .content(formatter.fileName(file))
         .row(2)
         .mapContent(lines.zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
     }

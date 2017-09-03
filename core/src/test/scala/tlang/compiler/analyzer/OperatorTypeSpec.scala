@@ -12,7 +12,7 @@ class OperatorTypeSpec extends CompilerTestSpec {
   private val ClassSymbol  = new ClassSymbol("obj")
   private val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val TestContext  = testContext()
-  private val ErrorContext = ErrorStringContext(TestContext.formatting)
+  private val ErrorContext = ErrorStringContext(TestContext.formatter)
   private val TestImports  = Imports(TestContext, ErrorContext)
   private val TypeChecker  = new TypeChecker(TestContext.reporter, ErrorContext, TestImports, MainMethod)
 

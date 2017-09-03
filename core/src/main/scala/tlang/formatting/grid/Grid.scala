@@ -6,15 +6,15 @@ import tlang.formatting.{Colors, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 
 case class Grid(var formatter: Formatter) {
 
-  private val rows       : ListBuffer[Row] = ListBuffer()
-  private var indent     : Int             = 1
-  private var borderColor: Color           = Colors.NoColor
-  private var shouldTrim : Boolean         = true
+  private val rows       : ArrayBuffer[Row] = ArrayBuffer()
+  private var indent     : Int              = 1
+  private var borderColor: Color            = Colors.NoColor
+  private var shouldTrim : Boolean          = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
@@ -275,19 +275,24 @@ case class Grid(var formatter: Formatter) {
 
     private val formatting = formatter.formatting
 
-    import formatting.formattingStyle._
+    import formatting._
 
-    val sb = new StringBuilder()
+    // An approximation of the number of characters needed. Doesn't take in to account eventual
+    // linewrapping or ansi escape characters. Therefor we use double the approximated size
+    val approximateSize = rows
+      .map { row => (row.columns.map { column => column.lines.length }.max + 1) * (formatting.lineWidth + 1) }
+      .sum
+    
+    val sb = new StringBuilder(2 * approximateSize)
 
     def render(): String = {
       if (rows.isEmpty)
         return ""
 
-      var i = 0
 
       sb ++= drawTopLine(rows.head)
       sb ++= System.lineSeparator
-      while (i < rows.size) {
+      for (i <- rows.indices) {
         val row = rows(i)
         drawContent(row)
 
@@ -295,7 +300,6 @@ case class Grid(var formatter: Formatter) {
           sb ++= drawMiddleLine(row, rows(i + 1))
           sb ++= System.lineSeparator
         }
-        i += 1
       }
       sb ++= drawBottomLine(rows.last)
       sb.toString
@@ -303,16 +307,16 @@ case class Grid(var formatter: Formatter) {
 
     private def drawTopLine(row: Row) = {
       if (row.isHeader)
-        drawTopOrBottom(╒, ═, ╤, ╕, row)
+        drawTopOrBottom(TopLeftThick, HorizontalThick, HorizontalDownThick, TopRightThick, row)
       else
-        drawTopOrBottom(┌, ─, ┬, ┐, row)
+        drawTopOrBottom(TopLeft, Horizontal, HorizontalDown, TopRight, row)
     }
 
     private def drawBottomLine(row: Row) = {
       if (row.isHeader)
-        drawTopOrBottom(╘, ═, ╧, ╛, row)
+        drawTopOrBottom(BottomLeftThick, HorizontalThick, HorizontalUpThick, BottomRightThick, row)
       else
-        drawTopOrBottom(└, ─, ┴, ┘, row)
+        drawTopOrBottom(BottomLeft, Horizontal, HorizontalUp, BottomRight, row)
 
     }
 
@@ -327,7 +331,7 @@ case class Grid(var formatter: Formatter) {
       }
 
       sb ++= right
-      formatLine(sb.toString)
+      borderColor(sb.toString)
     }
 
     private def drawMiddleLine(before: Row, after: Row) = {
@@ -342,7 +346,7 @@ case class Grid(var formatter: Formatter) {
       val sb = new StringBuilder
       val maxWidth = formatting.lineWidth
 
-      sb ++= ifHeader(╞, ├)
+      sb ++= ifHeader(VerticalRightThick, VerticalRight)
 
       val upPositions = getBreakPositions(before)
       val downPositions = getBreakPositions(after)
@@ -352,10 +356,10 @@ case class Grid(var formatter: Formatter) {
       while (x < maxWidth - 2) {
         val X = x // X is a stable identifier, we cant use x since it's a var
         sb ++= ((up, down) match {
-          case (X, X) => ifHeader(╪, ┼)
-          case (X, _) => ifHeader(╧, ┴)
-          case (_, X) => ifHeader(╤, ┬)
-          case _      => ifHeader(═, ─)
+          case (X, X) => ifHeader(HorizontalVerticalThick, HorizontalVertical)
+          case (X, _) => ifHeader(HorizontalUpThick, HorizontalUp)
+          case (_, X) => ifHeader(HorizontalDownThick, HorizontalDown)
+          case _      => ifHeader(HorizontalThick, Horizontal)
         })
 
         if (upPositions.hasNext && x >= up)
@@ -365,49 +369,49 @@ case class Grid(var formatter: Formatter) {
 
         x += 1
       }
-      sb ++= ifHeader(╡, ┤)
-      formatLine(sb.toString)
+      sb ++= ifHeader(VerticalLeftThick, VerticalLeft)
+      borderColor(sb.toString)
     }
-
-    private def formatLine(line: String) = borderColor(trimRight(line))
 
     private def drawContent(row: Row): Unit = {
       val columns = row.columns
       val columnWidths = row.columnWidths
 
 
-      sb ++= columns
+      val rowContent = columns
         .map(column => if (column.lines.nonEmpty) column.lines else List(""))
         // Transpose to get the corresponding line in each column together
         .transpose
         .map { lines =>
-          // Word wrap each line in each column
-          val wrappedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
+          // Handle overflow in each line
+          val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
             val width = columnWidths(columnIndex)
             val method = columns(columnIndex).overflowHandling
             handleOverflow(line, width, method)
           }
-          val maxNumLines = wrappedLines.map(_.length).max
+          val maxNumLines = overFlowedLines.map(_.length).max
 
 
           // Fill out the columns with empty lines so that each column has the same
           // number of lines after word wrapping
-          wrappedLines.map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
+          overFlowedLines.map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
         }
         .transpose // Transpose back so that we have a list of list of lines for each column
         .map(_.flatten) // Flatten the list so we just have one list of lines for each column
         // Transpose to get the lists of each line to draw
         .transpose
-        .map { lines =>
+        .map { columnsInLine =>
           // Draw each line
-          val content = lines.zipWithIndex.map { case (line, columnIndex) =>
+          val content = columnsInLine.zipWithIndex.map { case (line, columnIndex) =>
             columns(columnIndex).alignment(line, columnWidths(columnIndex))
           }
           val fill = " " * indent
-          val columnBreak = borderColor(│)
-          trimRight(columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak)
+          val columnBreak = borderColor(Vertical)
+          val line = columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak
+          line
         }
         .mkString(System.lineSeparator)
+      sb ++= rowContent
       sb ++= System.lineSeparator
     }
 
@@ -423,8 +427,6 @@ case class Grid(var formatter: Formatter) {
       }
     }
 
-
-    private def trimRight(s: String) = if (shouldTrim) s.rightTrimWhiteSpaces else s
   }
 
 }

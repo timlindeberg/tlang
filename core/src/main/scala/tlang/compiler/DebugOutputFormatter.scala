@@ -2,13 +2,23 @@ package tlang.compiler
 
 import cafebabe.CodegenerationStackTrace
 import tlang.compiler.ast.Trees.CompilationUnit
+import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.lexer.Token
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions._
 
-case class DebugOutputFormatter(formatter: Formatter) {
+object DebugOutputFormatter {
+
+  def apply(formatter: Formatter): DebugOutputFormatter = apply(
+    formatter,
+    TreePrinter(formatter),
+    PrettyPrinter(formatter.formatting)
+  )
+
+}
+case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, prettyPrinter: PrettyPrinter) {
 
   import formatter.formatting._
 
@@ -35,7 +45,7 @@ case class DebugOutputFormatter(formatter: Formatter) {
     allTokens.foreach { tokens =>
       grid
         .row(alignment = Center)
-        .content(formatFileName(tokens.head.sourceName))
+        .content(formatter.fileName(tokens.head.sourceName))
         .row(TruncatedColumn, Column, Column)
         .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Position"))
         .content()
@@ -54,13 +64,13 @@ case class DebugOutputFormatter(formatter: Formatter) {
     cus.foreach { cu =>
       grid
         .row(alignment = Center)
-        .content(formatFileName(cu.sourceName))
+        .content(formatter.fileName(cu.sourceName))
         .row()
-        .content(formatter.prettyPrint(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
+        .content(prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(TruncatedColumn, Column, Column)
         .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
-        .contents(formatter.formatTree(cu))
+        .contents(treePrinter(cu))
     }
     grid.print()
   }

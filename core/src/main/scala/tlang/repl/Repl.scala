@@ -3,6 +3,7 @@ package tlang.repl
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.Context
+import tlang.compiler.ast.PrettyPrinter
 import tlang.messages.MessageFormatter
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
@@ -23,8 +24,8 @@ object Repl {
   case object StopRepl
   case class SetState(state: State)
 
-  def props(ctx: Context, errorFormatter: MessageFormatter, replTerminal: ReplTerminal, inputHistory: InputHistory) =
-    Props(new Repl(ctx, errorFormatter, replTerminal, inputHistory))
+  def props(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, replTerminal: ReplTerminal, inputHistory: InputHistory) =
+    Props(new Repl(ctx, errorFormatter, prettyPrinter, replTerminal, inputHistory))
 
   val name = "repl"
 }
@@ -36,7 +37,7 @@ sealed abstract class Command() extends Product with Serializable {
   def order: Int
 }
 
-class Repl(ctx: Context, errorFormatter: MessageFormatter, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
+class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
 
   import Repl._
   import ctx.formatter.formatting._
@@ -45,7 +46,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, terminal: ReplTermina
   private val LoadingInterval = ctx.formatting.spinner.frameTime.length
 
   private val renderer    = context.actorOf(Renderer.props(ctx.formatter, errorFormatter, MaxOutputLines, terminal), Renderer.name)
-  private val replProgram = context.actorOf(ReplProgram.props(ctx, MaxOutputLines), ReplProgram.name)
+  private val replProgram = context.actorOf(ReplProgram.props(ctx, prettyPrinter, MaxOutputLines), ReplProgram.name)
 
   private def currentInput = inputHistory.current
 

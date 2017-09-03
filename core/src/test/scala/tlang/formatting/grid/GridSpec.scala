@@ -1,6 +1,5 @@
 package tlang.formatting.grid
 
-import tlang.formatting.FormattingStyles.{Ascii, NoLines, Unicode}
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
@@ -505,7 +504,7 @@ class GridSpec extends UnitSpec {
   }
 
 
-  it should "render correctly with different box styles" in {
+  it should "render correctly with and without unicode characters" in {
     val grid = Grid(mockedFormatter())
       .header("Header")
       .row(Column, Column)
@@ -522,23 +521,14 @@ class GridSpec extends UnitSpec {
          |│ ABC │ DEF        │
          |└─────┴────────────┘""".stripMargin
 
-    grid.formatter(mockedFormatter(formattingStyle = NoLines)).render() shouldBe
-      """|
-         |       Header
-         |
-         |  ABC   DEF
-         |
-         |  ABC   DEF
-         |""".stripMargin
-
-    grid.formatter(mockedFormatter(formattingStyle = Ascii)).render() shouldBe
-      """| ==================
-         ||      Header      |
-         ||==================|
-         || ABC | DEF        |
-         ||-----+------------|
-         || ABC | DEF        |
-         | ------------------""".stripMargin
+    grid.formatter(mockedFormatter(asciiOnly = true)).render() shouldBe
+      " ================== " + System.lineSeparator + // So intellij wont trim the whitespace at the end of the line
+        """||      Header      |
+           ||==================|
+           || ABC | DEF        |
+           ||-----+------------|
+           || ABC | DEF        |
+           | ------------------ """.stripMargin
   }
 
 
@@ -974,11 +964,11 @@ class GridSpec extends UnitSpec {
 
   private def mockedFormatter(
     width: Int = DefaultMaxWidth,
-    formattingStyle: FormattingStyle = Unicode,
+    asciiOnly: Boolean = false,
     wordWrapper: WordWrapper = mockedWordWrapperReturningSameLine,
     truncator: Truncator = mock[Truncator]
   ): Formatter = {
-    createMockFormatter(width = width, formattingStyle = formattingStyle, wordWrapper = wordWrapper, truncator = truncator)
+    createMockFormatter(width = width, asciiOnly = asciiOnly, wordWrapper = wordWrapper, truncator = truncator)
   }
 
 

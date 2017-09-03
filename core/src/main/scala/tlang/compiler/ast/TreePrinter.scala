@@ -4,24 +4,22 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, Field
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
+case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
 
-  import formatting._
-  import formatting.formattingStyle._
-
+  import formatter.formatting._
 
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
   def apply(t: Tree): List[(String, String, String)] = {
     val Indent = List.fill(spacing)(' ')
-    val Continuation = │.head :: Indent
+    val Continuation = Vertical.head :: Indent
     val Whitespace = ' ' :: Indent
 
     symbolId = 0
@@ -33,7 +31,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
 
     def printTree(tree: Tree, stack: List[Char]): Unit = {
-      def addLine() = {
+      def addLine(): Unit = {
         val line = (sb.toString, symbolContent(tree), typeContent(tree))
         lines += line
         sb.clear()
@@ -41,7 +39,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
       val children = tree.children
       if (children.isEmpty) {
-        sb ++= ─ + " " + formatTree(tree)
+        sb ++= Horizontal + " " + formatTree(tree)
         addLine()
         return
       }
@@ -49,14 +47,14 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
       if (first)
         first = false
       else
-        sb ++= ┬ + " "
+        sb ++= HorizontalDown + " "
 
       sb ++= formatTree(tree)
       addLine()
       children.zipWithIndex foreach { case (child, i) =>
         val last = i == children.size - 1
         sb ++= stack.mkString("")
-        sb ++= (if (last) └ else ├) + (─ * spacing)
+        sb ++= (if (last) BottomLeft else VerticalRight) + (Horizontal * spacing)
 
         val c = if (last) Whitespace else Continuation
 
@@ -70,7 +68,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
 
   private def formatTree(t: Tree): String = {
     val content = t match {
-      case c: CompilationUnit  => formatFileName(c.sourceName)
+      case c: CompilationUnit  => formatter.fileName(c.sourceName)
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
       case v: VariableID       => VarColor(v.name)
@@ -125,7 +123,7 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     case TUntyped                    => Red
   }
 
-  private def getSymbolLetter(symbol: Symbol) = symbol match {
+  private def getSymbolLetter(symbol: Symbol): String = symbol match {
     case _: ExtensionClassSymbol        => "E"
     case c: ClassSymbol if c.isAbstract => "T"
     case _: ClassSymbol                 => "C"
@@ -135,11 +133,11 @@ case class TreePrinter(formatting: Formatting, spacing: Int = 1) {
     case _: VariableSymbol              => "V"
   }
 
-  private def newSymbolFormatting = {
+  private def newSymbolFormatting: (Int, Color) = {
     val id = symbolId
-    val colorIndex = id % AllColors.length
+    val colorIndex = id % FGColors.length
     symbolId += 1
-    (id, AllColors(colorIndex))
+    (id, FGColors(colorIndex))
   }
 
 

@@ -18,7 +18,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     tokenList.map { tokens =>
-      val errorStringContext = ErrorStringContext(ctx.formatting)
+      val errorStringContext = ErrorStringContext(ctx.formatter)
       val astBuilder = Parser(ctx, errorStringContext, tokens.toArray)
       astBuilder.compilationUnit
     }

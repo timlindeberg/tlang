@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
+import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.imports.ClassPath
 import tlang.formatting._
 import tlang.messages._
@@ -23,7 +24,7 @@ object Main {
 
   val ReplFlags: List[FlagArgument[_]] = List(
     LineWidthFlag,
-    FormattingStyleFlag,
+    AsciiFlag,
     ClassPathFlag,
     VersionFlag,
     ReplHelpFlag,
@@ -56,9 +57,10 @@ object Main {
 
     val actorSystem = ActorSystem("tRepl")
 
-    val replTerminal = new ReplTerminal
+    val replTerminal = ReplTerminal()
     val inputHistory = InputHistory(MaxRedoSize, TabSize)
-    val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, replTerminal, inputHistory), Repl.name)
+    val prettyPrinter = PrettyPrinter(formatting)
+    val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, prettyPrinter, replTerminal, inputHistory), Repl.name)
 
     // In case were using a Swing terminal
     replTerminal onClose { repl ! StopRepl }
@@ -68,9 +70,9 @@ object Main {
 
 
   private def parseOptions(args: Array[String]): Options = {
-    val formatting = Formatting(FormattingStyles.Ascii, useColor = false)
+    val formatter = Formatter(SimpleFormatting)
 
-    val errorContext = ErrorStringContext(formatting, AlternativeSuggestor())
+    val errorContext = ErrorStringContext(formatter)
     Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
@@ -82,7 +84,7 @@ object Main {
     val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.getAbsolutePath)
 
     val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)
-    val debugOutputFormatter = DebugOutputFormatter(errorFormatter.formatter)
+    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(errorMessages),
       formatter = formatter,

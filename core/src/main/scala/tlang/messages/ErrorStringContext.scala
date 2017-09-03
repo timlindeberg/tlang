@@ -3,14 +3,16 @@ package tlang.messages
 import tlang.Context
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatting
+import tlang.formatting.{Formatter, SimpleFormatting}
 
 
 object ErrorStringContext {
 
+  def apply(): ErrorStringContext = ErrorStringContext(Formatter(SimpleFormatting))
+
   def apply(context: Context, cu: CompilationUnit): ErrorStringContext = {
     apply(
-      context.formatting,
+      context.formatter,
       AlternativeSuggestor(),
       List[String => String](TemplateNameReplacer.apply, cu.imports.replaceNames)
     )
@@ -18,18 +20,21 @@ object ErrorStringContext {
 }
 
 case class ErrorStringContext(
-  formatting: Formatting,
+  formatter: Formatter,
   private val alternativeSuggestor: AlternativeSuggestor = AlternativeSuggestor(),
   private val transforms: List[String => String] = Nil
 ) {
 
-  import formatting._
 
   def suggestion(name: String, alternatives: List[String]) = alternativeSuggestor(name, alternatives)
 
-  val ValueColor = NumColor
 
   implicit class ErrorStringContext(val sc: StringContext) {
+
+    import formatter.formatting._
+
+
+    val ValueColor = NumColor
 
     var currentColor: Color            = NoColor
     val sb          : StringBuilder    = new StringBuilder
@@ -90,7 +95,7 @@ case class ErrorStringContext(
 
       suggestions match {
         case suggestion :: Nil =>
-          val v = if (formatting.useColor) ValueColor(suggestion) else s"'$suggestion'"
+          val v = if (formatter.useColor) ValueColor(suggestion) else s"'$suggestion'"
           sb ++= " Did you mean " + v + Bold + "?"
           currentColor = Bold
           if (hasMore)
@@ -117,7 +122,7 @@ case class ErrorStringContext(
 
     private def evaluateAny(any: Any): Unit = {
       val str = Function.chain(transforms)(any.toString)
-      if (!formatting.useColor) {
+      if (!formatter.useColor) {
         sb ++= s"'$str'"
         return
       }

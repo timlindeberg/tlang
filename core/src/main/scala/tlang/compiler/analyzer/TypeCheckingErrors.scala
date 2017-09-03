@@ -203,7 +203,7 @@ trait TypeCheckingErrors extends ErrorHandling {
   case class UnimplementedMethodFromTrait(clazz: IDClassDeclTree, unimplementedMethods: List[(MethodSymbol, ClassSymbol)])
     extends TypeCheckingError(25, clazz.id) {
     lazy val message: String = {
-      val methods = formatting.makeList(unimplementedMethods.map { case (meth, from) =>
+      val methods = formatter.list(unimplementedMethods.map { case (meth, from) =>
         val methSignature = meth.signature
         err"$methSignature from trait $from"
       })

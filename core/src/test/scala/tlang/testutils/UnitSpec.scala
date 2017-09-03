@@ -3,10 +3,8 @@ package tlang.testutils
 import org.scalamock.function._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
-import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
-import tlang.formatting.FormattingStyles.Unicode
 import tlang.formatting._
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter, Truncator, WordWrapper}
 import tlang.utils.Extensions._
@@ -54,24 +52,20 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
 
   def createMockFormatter(
     width: Int = 80,
-    formattingStyle: FormattingStyle = Unicode,
     useColor: Boolean = true,
+    asciiOnly: Boolean = true,
     colorScheme: ColorScheme = DefaultColorScheme,
     formatting: Option[Formatting] = None,
     wordWrapper: WordWrapper = mock[WordWrapper],
     truncator: Truncator = mock[Truncator],
-    prettyPrinter: PrettyPrinter = mock[PrettyPrinter],
-    treePrinter: TreePrinter = mock[TreePrinter],
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
     stackTraceHighlighter: StackTraceHighlighter = mock[StackTraceHighlighter]
   ): Formatter = {
 
     Formatter(
-      formatting = formatting.getOrElse(Formatting(formattingStyle, width, colorScheme, useColor)),
+      formatting = formatting.getOrElse(Formatting(width, colorScheme, useColor, asciiOnly)),
       wordWrapper,
       truncator,
-      prettyPrinter,
-      treePrinter,
       syntaxHighlighter,
       stackTraceHighlighter
     )

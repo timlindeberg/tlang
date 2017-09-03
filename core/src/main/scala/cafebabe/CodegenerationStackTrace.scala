@@ -38,8 +38,8 @@ case class CodegenerationStackTrace(
 
   private def getLabelColor(label: String) = {
     colorMap.getOrElseUpdate(label, {
-      colorIndex = (colorIndex + 1) % AllColors.length
-      AllColors(colorIndex)
+      colorIndex = (colorIndex + 1) % FGColors.length
+      FGColors(colorIndex)
     })
   }
 
@@ -71,10 +71,10 @@ case class CodegenerationStackTrace(
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          import formatting.formattingStyle.─
+          import formatting.Horizontal
           val color = getLabelColor(name)
           // Reasonable estimates for the sizes of the columns (mostly based on the width of the header)
-          val line = (color(─ * 4), color(─ * 3), color(─ * 6), color(─ * 13), color(─ * 2 + "> " + name))
+          val line = (color(Horizontal * 4), color(Horizontal * 3), color(Horizontal * 6), color(Horizontal * 13), color(Horizontal * 2 + "> " + name))
           lines += line
         case LineNumber(line)                           =>
           currentLineNumber = line

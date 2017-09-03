@@ -1,101 +1,101 @@
 package tlang.formatting
 
-import java.io.File
-
-import tlang.Constants
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.options.Options
-import tlang.options.arguments.{ColorSchemeFlag, FormattingStyleFlag, LineWidthFlag, NoColorFlag}
+import tlang.options.arguments.{AsciiFlag, ColorSchemeFlag, LineWidthFlag, NoColorFlag}
 
-object FancyFormatting extends Formatting(FormattingStyles.Unicode, LineWidthFlag.DefaultWidth, useColor = true)
-object SimpleFormatting extends Formatting(FormattingStyles.Ascii, 80, useColor = false)
+object DefaultFormatting extends Formatting(LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false)
+object SimpleFormatting extends Formatting(80, useColor = false, asciiOnly = true)
 
 object Formatting {
 
   def apply(options: Options): Formatting = {
-    val formattingStyle = options(FormattingStyleFlag)
-    Formatting(formattingStyle, options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag))
+    Formatting(options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag), options(AsciiFlag))
   }
 
 }
 
 case class Formatting(
-  formattingStyle: FormattingStyle = FormattingStyles.Unicode,
   lineWidth: Int = LineWidthFlag.DefaultWidth,
   colorScheme: ColorScheme = DefaultColorScheme,
-  useColor: Boolean = true) {
+  useColor: Boolean = true,
+  asciiOnly: Boolean = false) {
 
   /*--------------------------------- Colors --------------------------------*/
 
   val NoColor  : Color = Colors.NoColor
-  val Reset    : Color = color(Colors.Reset, useColor)
-  val Bold     : Color = color(Colors.Bold, useColor)
-  val Underline: Color = color(Colors.Underlined, useColor)
-  val Inverse  : Color = color(Colors.Inverse, useColor)
+  val Reset    : Color = color(Colors.Reset)
+  val Bold     : Color = color(Colors.Bold)
+  val Underline: Color = color(Colors.Underlined)
+  val Inverse  : Color = color(Colors.Inverse)
 
-  val Black  : Color = color(Colors.Black, useColor)
-  val Red    : Color = color(Colors.Red, useColor)
-  val Green  : Color = color(Colors.Green, useColor)
-  val Yellow : Color = color(Colors.Yellow, useColor)
-  val Blue   : Color = color(Colors.Blue, useColor)
-  val Magenta: Color = color(Colors.Magenta, useColor)
-  val Cyan   : Color = color(Colors.Cyan, useColor)
-  val White  : Color = color(Colors.White, useColor)
+  val Black  : Color = color(Colors.Black)
+  val Red    : Color = color(Colors.Red)
+  val Green  : Color = color(Colors.Green)
+  val Yellow : Color = color(Colors.Yellow)
+  val Blue   : Color = color(Colors.Blue)
+  val Magenta: Color = color(Colors.Magenta)
+  val Cyan   : Color = color(Colors.Cyan)
+  val White  : Color = color(Colors.White)
 
-  val BlackBG  : Color = color(Colors.BlackBG, useColor)
-  val RedBG    : Color = color(Colors.RedBG, useColor)
-  val GreenBG  : Color = color(Colors.GreenBG, useColor)
-  val YellowBG : Color = color(Colors.YellowBG, useColor)
-  val BlueBG   : Color = color(Colors.BlueBG, useColor)
-  val MagentaBG: Color = color(Colors.MagentaBG, useColor)
-  val CyanBG   : Color = color(Colors.CyanBG, useColor)
-  val WhiteBG  : Color = color(Colors.WhiteBG, useColor)
+  val BlackBG  : Color = color(Colors.BlackBG)
+  val RedBG    : Color = color(Colors.RedBG)
+  val GreenBG  : Color = color(Colors.GreenBG)
+  val YellowBG : Color = color(Colors.YellowBG)
+  val BlueBG   : Color = color(Colors.BlueBG)
+  val MagentaBG: Color = color(Colors.MagentaBG)
+  val CyanBG   : Color = color(Colors.CyanBG)
+  val WhiteBG  : Color = color(Colors.WhiteBG)
 
-  val AllColors: List[Color] = List(Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
+  val FGColors: List[Color] = List(Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
 
   /*------------------------------ Color Scheme -----------------------------*/
 
-  val KeywordColor: Color = color(Color(colorScheme.Keyword), useColor)
-  val VarColor    : Color = color(Color(colorScheme.Variable), useColor)
-  val ClassColor  : Color = color(Color(colorScheme.Class), useColor)
-  val MethodColor : Color = color(Color(colorScheme.Method), useColor)
-  val StringColor : Color = color(Color(colorScheme.String), useColor)
-  val NumColor    : Color = color(Color(colorScheme.Number), useColor)
-  val CommentColor: Color = color(Color(colorScheme.Comment), useColor)
-  val SymbolColor : Color = color(Color(colorScheme.Symbol), useColor)
+  val KeywordColor: Color = color(Color(colorScheme.Keyword))
+  val VarColor    : Color = color(Color(colorScheme.Variable))
+  val ClassColor  : Color = color(Color(colorScheme.Class))
+  val MethodColor : Color = color(Color(colorScheme.Method))
+  val StringColor : Color = color(Color(colorScheme.String))
+  val NumColor    : Color = color(Color(colorScheme.Number))
+  val CommentColor: Color = color(Color(colorScheme.Comment))
+  val SymbolColor : Color = color(Color(colorScheme.Symbol))
 
-  val FileColor: Color = Bold + Magenta
 
   /*----------------------------- ASCII Variants ----------------------------*/
 
-  def ListMarker: String = ascii("*", "•")
-  def Cross: String = ascii("x", "×")
-  def RightArrow: String = ascii("->", "→")
-  def LeftArrow: String = ascii("<-", "←")
-  def UnderlineCharacter: String = ascii("~", "‾")
-
   def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
 
-  def formatFileName(file: Option[File]): String = {
-    file match {
-      case Some(f) => formatFileName(f)
-      case None    => FileColor("No file")
-    }
-  }
+  val Horizontal             : String = ascii("-", "─")
+  val Vertical               : String = ascii("|", "│")
+  val TopLeft                : String = ascii(" ", "┌")
+  val TopRight               : String = ascii(" ", "┐")
+  val BottomRight            : String = ascii(" ", "┘")
+  val BottomLeft             : String = ascii(" ", "└")
+  val HorizontalDown         : String = ascii("-", "┬")
+  val HorizontalUp           : String = ascii("-", "┴")
+  val VerticalRight          : String = ascii("|", "├")
+  val VerticalLeft           : String = ascii("|", "┤")
+  val HorizontalVertical     : String = ascii("+", "┼")
+  val HorizontalThick        : String = ascii("=", "═")
+  val TopLeftThick           : String = ascii(" ", "╒")
+  val TopRightThick          : String = ascii(" ", "╕")
+  val BottomLeftThick        : String = ascii(" ", "╘")
+  val BottomRightThick       : String = ascii(" ", "╛")
+  val VerticalRightThick     : String = ascii("|", "╞")
+  val VerticalLeftThick      : String = ascii("|", "╡")
+  val HorizontalDownThick    : String = ascii("=", "╤")
+  val HorizontalUpThick      : String = ascii("=", "╧")
+  val HorizontalVerticalThick: String = ascii("+", "╪")
 
-  def formatFileName(file: File): String = formatFileName(file.getName.replaceAll("\\..*$", ""))
-
-  def formatFileName(name: String): String = FileColor(name + Constants.FileEnding)
-
-  def makeList(items: String*): String = makeList(items)
-  def makeList(items: Traversable[String]): String =
-    items
-      .map(item => s"  ${ Bold(ListMarker) } $item")
-      .mkString(System.lineSeparator)
+  val ListMarker        : String = ascii("*", "•")
+  val Cross             : String = ascii("x", "×")
+  val RightArrow        : String = ascii("->", "→")
+  val LeftArrow         : String = ascii("<-", "←")
+  val UnderlineCharacter: String = ascii("~", "‾")
 
 
-  private def ascii[T](ascii: => T, nonAscii: => T): T = if (formattingStyle.asciiOnly) ascii else nonAscii
-  private def color(color: Color, isActive: Boolean) = if (isActive) color else Colors.NoColor
+  private def ascii[T](ascii: => T, nonAscii: => T): T = if (asciiOnly) ascii else nonAscii
+  private def color(color: Color): Color = if (useColor) color else Colors.NoColor
 
 }

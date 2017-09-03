@@ -111,30 +111,6 @@ class CompilerOptionsSpec extends UnitSpec {
   }
 
 
-  it should "use formatting flag" in {
-    test("No arguments should result in Unicode") {
-      val options = createOptions("")
-      options(FormattingStyleFlag) shouldBe FormattingStyles.Unicode
-    }
-
-    test("Ascii argument") {
-      val options = createOptions("--formatting Ascii")
-      options(FormattingStyleFlag) shouldBe FormattingStyles.Ascii
-    }
-
-    test("Invalid argument") {
-      val suggestor = mock[AlternativeSuggestor]
-      (suggestor.apply _)
-        .expects("Dunicode", FormattingStyles.Names)
-        .returning(Suggestion(List("Did you mean 'Unicode'?")))
-
-      val error = intercept[IllegalArgumentException] { createOptions("--formatting Dunicode", suggestor) }
-      error.getMessage should include("Dunicode")
-      error.getMessage should include("Did you mean 'Unicode'?")
-    }
-  }
-
-
   it should "use help flag" in {
     test("No arguments should be empty") {
       val options = createOptions("")
@@ -319,7 +295,7 @@ class CompilerOptionsSpec extends UnitSpec {
 
 
   private def createOptions(args: String, suggestor: AlternativeSuggestor = mock[AlternativeSuggestor]) = {
-    val errorContext = ErrorStringContext(SimpleFormatting, suggestor)
+    val errorContext = ErrorStringContext(Formatter(SimpleFormatting), suggestor)
     Options(Main.CompilerFlags, Some(TFilesArgument), args.split(" "))(errorContext)
   }
 

@@ -135,7 +135,7 @@ class MessageFormatterSpec extends UnitSpec {
 
     val (num2, line2) = lines(1)
     num2 should matchWithAnsi("")
-    line2 should matchWithAnsi("               ‾‾‾‾‾")
+    line2 should matchWithAnsi("               ~~~~~")
   }
 
 
@@ -164,7 +164,7 @@ class MessageFormatterSpec extends UnitSpec {
         val lines = messageFormatter.locationInSource
         lines shouldBe List(
           ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾")
+          ("", "               ~~~~~")
         )
       }
 
@@ -188,7 +188,7 @@ class MessageFormatterSpec extends UnitSpec {
         lines shouldBe List(
           ("5", "var e = 0"),
           ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("7", "    a++")
         )
       }
@@ -217,7 +217,7 @@ class MessageFormatterSpec extends UnitSpec {
           ("4", "var d = 0"),
           ("5", "var e = 0"),
           ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("7", "    a++"),
           ("8", "    b++")
         )
@@ -255,7 +255,7 @@ class MessageFormatterSpec extends UnitSpec {
           ("4", "var d = 0"),
           ("5", "var e = 0"),
           ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("7", "    a++"),
           ("8", "    b++"),
           ("9", "    c++"),
@@ -308,7 +308,7 @@ class MessageFormatterSpec extends UnitSpec {
           ("4", "var d = 0"),
           ("5", "var e = 0"),
           ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("7", "    a++"),
           ("8", "    b++"),
           ("9", "    c++"),
@@ -358,7 +358,7 @@ class MessageFormatterSpec extends UnitSpec {
         lines should have size 4
         lines shouldBe List(
           ("1", "var a = 0"),
-          ("", "    ‾"),
+          ("", "    ~"),
           ("2", "var b = 0"),
           ("3", "var c = 0")
         )
@@ -391,7 +391,7 @@ class MessageFormatterSpec extends UnitSpec {
         lines shouldBe List(
           ("1", "var a = 0"),
           ("2", "var b = 0"),
-          ("", "    ‾"),
+          ("", "    ~"),
           ("3", "var c = 0"),
           ("4", "var d = 0")
         )
@@ -429,7 +429,7 @@ class MessageFormatterSpec extends UnitSpec {
           ("9", "c++"),
           ("10", "d++"),
           ("11", "e++"),
-          ("", "‾")
+          ("", "~")
         )
       }
 
@@ -472,7 +472,7 @@ class MessageFormatterSpec extends UnitSpec {
       lines shouldBe List(
         ("1", "var a = 0"),
         ("2", "for(var i = x; i < 5; i++)"),
-        ("", "               ‾‾‾‾‾"),
+        ("", "               ~~~~~"),
         ("3", "  a++")
       )
     }
@@ -514,7 +514,7 @@ class MessageFormatterSpec extends UnitSpec {
         lines shouldBe List(
           ("1", "    var a = 0"),
           ("2", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("3", "    a++")
         )
       }
@@ -543,7 +543,7 @@ class MessageFormatterSpec extends UnitSpec {
         lines shouldBe List(
           ("1", "            var a = 0"),
           ("2", "for(var i = x; i < 5; i++)"),
-          ("", "               ‾‾‾‾‾"),
+          ("", "               ~~~~~"),
           ("3", "            a++")
         )
       }
@@ -576,7 +576,7 @@ class MessageFormatterSpec extends UnitSpec {
           ("1", "            var a = 0"),
           ("2", "for(var i = x; i < 5; i++)"),
           ("3", "            a++"),
-          ("", "            ‾‾‾")
+          ("", "            ~~~")
         )
       }
 
@@ -618,9 +618,9 @@ class MessageFormatterSpec extends UnitSpec {
     lines shouldBe List(
       ("1", "for(var i = x; i < 5; i++)"),
       ("2", "    a++ // abcdef"), // error indicator should continue over the whole line
-      ("", "    ‾‾‾‾‾‾‾‾‾‾‾‾‾"),
+      ("", "    ~~~~~~~~~~~~~"),
       ("3", "    b++"),
-      ("", "    ‾‾‾")
+      ("", "    ~~~")
     )
 
     source = mock[Source]
@@ -638,9 +638,9 @@ class MessageFormatterSpec extends UnitSpec {
     lines shouldBe List(
       ("1", "else"),
       ("2", "  return // res: F1002"), // error indicator should continue over the whole line
-      ("", "  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾"),
+      ("", "  ~~~~~~~~~~~~~~~~~~~~"),
       ("3", "  println(a) // res: F1000"),
-      ("", "  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
+      ("", "  ~~~~~~~~~~~~~~~~~~~~~~~~")
     )
 
     // try last case with colors as well

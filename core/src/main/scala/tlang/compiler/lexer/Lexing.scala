@@ -19,7 +19,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs.map { source =>
-      val errorStringContext = ErrorStringContext(ctx.formatting)
+      val errorStringContext = ErrorStringContext(ctx.formatter)
       val lexer = Lexer(ctx.reporter, errorStringContext)
       lexer(source)
     }

@@ -22,12 +22,11 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
 
   override def extendedDescription(formatter: Formatter): String = {
-    val formatting = formatter.formatting
-    import formatting._
+    import formatter.formatting._
     import tlang.formatting.Colors.ColorScheme._
 
-    val validKeys = formatting.makeList(Keys.map(Blue))
-    val validColors = formatting.makeList(Colors.ColorNames.map(Magenta))
+    val validKeys = formatter.list(Keys.map(Blue))
+    val validColors = formatter.list(Colors.ColorNames.map(Magenta))
     s"""
        |The --${ Magenta(name) } flag accepts key-value-pairs as it's argument. The following types can be set:
        |

@@ -9,7 +9,7 @@ import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.ast.{Parsing, Trees}
+import tlang.compiler.ast.{Parsing, PrettyPrinter, Trees}
 import tlang.compiler.code.{CodeGeneration, Lowering, TreeBuilder}
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Lexing
@@ -35,13 +35,13 @@ object ReplProgram {
   case object PrettyPrint extends ReplProgramMessage
   case object StopExecution extends ReplProgramMessage
 
-  def props(ctx: Context, maxOutputLines: Int) =
-    Props(new ReplProgram(ctx, maxOutputLines))
+  def props(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: Int) =
+    Props(new ReplProgram(ctx, prettyPrinter, maxOutputLines))
 
   val name = "replProgram"
 }
 
-class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
+class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: Int) extends Actor {
 
   import ReplProgram._
 
@@ -70,7 +70,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
   private val classes      = mutable.Map[String, ClassDeclTree]()
   private val methods      = mutable.Map[String, MethodDeclTree]()
   private val history      = ListBuffer[StatTree]()
-  private val imports      = Imports(ctx, ErrorStringContext(formatting))
+  private val imports      = Imports(ctx, ErrorStringContext(formatter))
   private val FailureColor = Bold + Red
 
   private var newStatements = List[StatTree]()
@@ -142,7 +142,7 @@ class ReplProgram(ctx: Context, maxOutputLines: Int) extends Actor {
     sb.toString.trimWhiteSpaces
   }
 
-  private def prettyPrinted: String = formatter.prettyPrint(generateCompilationUnit() :: Nil).trimWhiteSpaces
+  private def prettyPrinted: String = prettyPrinter(generateCompilationUnit() :: Nil).trimWhiteSpaces
 
   private def prettyPrint(): Unit = {
     newStatements = Nil

@@ -45,7 +45,7 @@ case class TemplateModifier(ctx: Context) {
     // Generate all needed classes
     cus foreach { cu =>
       val transforms = List[String => String](cu.imports.replaceNames)
-      val errorStringContext = ErrorStringContext(ctx.formatting, transforms = transforms)
+      val errorStringContext = ErrorStringContext(ctx.formatter, transforms = transforms)
       val templateClassGenerator = TemplateClassGenerator(ctx.reporter, errorStringContext, cu, classSymbolLocator)
       templateClassGenerator()
     }
@@ -227,7 +227,7 @@ case class TemplateModifier(ctx: Context) {
             val newId = treeCopy.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated) {
               val transforms = List[String => String](templateCU.imports.replaceNames)
-              val e = ErrorStringContext(errorStringContext.formatting, transforms = transforms)
+              val e = ErrorStringContext(errorStringContext.formatter, transforms = transforms)
               TemplateClassGenerator(reporter, e, templateCU, classSymbolLocator).generateClass(newId)
             }
 

@@ -17,7 +17,7 @@ import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
 
-class ReplTerminal {
+case class ReplTerminal() {
 
   private val term = createTerminal()
 
