@@ -21,7 +21,7 @@ import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
-object Main extends MainErrors {
+object Main {
 
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
@@ -76,7 +76,7 @@ object Main extends MainErrors {
     printHelp(formatter, options)
 
     if (!isValidTHomeDirectory(TDirectory))
-      FatalInvalidTHomeDirectory(TDirectory, THome)
+      ErrorInvalidTHomeDirectory(TDirectory, THome)
 
     val filesToCompile = options(TFilesArgument)
 
@@ -87,8 +87,8 @@ object Main extends MainErrors {
       printFilesToCompile(formatter, filesToCompile)
 
 
-    val ctx = createContext(options, filesToCompile, formatter)
-    val CUs = runCompiler(ctx)
+    val ctx = createContext(options, formatter)
+    val CUs = runCompiler(filesToCompile, ctx)
 
     if (options(VerboseFlag))
       printExecutionTimes(ctx)
@@ -108,9 +108,9 @@ object Main extends MainErrors {
     }
   }
 
-  private def runCompiler(ctx: Context): Seq[CompilationUnit] = {
+  private def runCompiler(filesToCompile: Set[File], ctx: Context): Seq[CompilationUnit] = {
     try {
-      val CUs = runFrontend(ctx)
+      val CUs = runFrontend(filesToCompile, ctx)
       GenerateCode.execute(ctx)(CUs)
       ctx.reporter.printWarnings()
       CUs
@@ -119,9 +119,9 @@ object Main extends MainErrors {
     }
   }
 
-  private def runFrontend(ctx: Context): List[CompilationUnit] = {
+  private def runFrontend(filesToCompile: Set[File], ctx: Context): List[CompilationUnit] = {
     try {
-      val sources = ctx.files.toList.map(FileSource(_))
+      val sources = filesToCompile.toList.map(FileSource(_))
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
@@ -144,7 +144,7 @@ object Main extends MainErrors {
     sys.exit(1)
   }
 
-  private def createContext(options: Options, filesToCompile: Set[File], formatter: Formatter): Context = {
+  private def createContext(options: Options, formatter: Formatter): Context = {
 
     val messageFormatter = MessageFormatter(formatter, options(MessageContextFlag))
     val messages = CompilerMessages(
@@ -159,7 +159,6 @@ object Main extends MainErrors {
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
-      files = filesToCompile,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       outDirs = options(DirectoryFlag),
       printCodePhase = options(PrintOutputFlag),
@@ -343,5 +342,18 @@ object Main extends MainErrors {
     }
     grid.print()
   }
+
+
+  private def error(message: String) = {
+    println(message)
+    sys.exit(1)
+  }
+
+  private def ErrorNoFilesGiven(): Nothing =
+    error(s"No files given.")
+
+  private def ErrorInvalidTHomeDirectory(path: String, tHome: String): Nothing =
+    error(s"'$path' is not a valid $tHome directory.")
+
 
 }

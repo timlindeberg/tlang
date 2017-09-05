@@ -13,7 +13,6 @@ case class Context(
   reporter: Reporter,
   formatter: Formatter,
   debugOutputFormatter: DebugOutputFormatter,
-  files: Set[File] = Set(),
   classPath: ClassPath = ClassPath.Empty,
   outDirs: Set[File] = Set(File(".")),
   printCodePhase: Set[String] = Set(),

@@ -2,13 +2,15 @@ package tlang.compiler.ast
 
 import better.files.File
 import tlang.Context
+import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.lexer.Lexing
 import tlang.formatting.SimpleFormatting
 import tlang.messages.{CompilationException, MessageType}
-import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, StringSource}
 
-class PrettyPrinterSpec extends CompilerTestSpec {
+class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
+
+  import tlang.testsuites.CompilerIntegrationTests._
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext(Some(TestFile))

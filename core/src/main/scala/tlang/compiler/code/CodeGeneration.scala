@@ -3,7 +3,7 @@ package code
 
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
 
-import better.files.File
+import better.files._
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import cafebabe.ClassFileTypes._
@@ -28,10 +28,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classes = cus.flatMap(_.classes)
 
     // output code in parallell?
-    val genResults = classes.map(generateClassFile(_, ctx))
+    val genResults = classes.par.map(generateClassFile(_, ctx))
 
     genResults.foreach(_.files.foreach(generateStackMapFrames))
-    genResults.flatMap(_.stackTraces)
+    genResults.toList.flatMap(_.stackTraces)
   }
 
   override def description(formatting: Formatting): String =
@@ -59,7 +59,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
     val className = classDecl.getSymbol.JVMName
-    val files = ctx.outDirs.map(getFilePath(_, className))
+    val files = ctx.outDirs.map(getClassFilePath(_, className))
     files.foreach(classFile.writeToFile)
     GenerateClassResult(files, stackTraces)
   }
@@ -104,7 +104,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     }
   }
 
-  private def generateObjectInterfaceBridgeMethods() = {
+  private def generateObjectInterfaceBridgeMethods(): Unit = {
     // TODO: Generate methods so that toString etc. can be defined in an interface
     /*
     if(!classSymbol.isAbstract){
@@ -150,7 +150,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     ch.use(_.freeze)
   }
 
-  private def generateStackMapFrames(file: String) = {
+  private def generateStackMapFrames(file: String): Unit = {
     // Use ASM library to generate the stack map frames
     // since Cafebabe does not support this.
     val classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
@@ -263,7 +263,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     ch.freeze
   }
 
-  private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler) = {
+  private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler): Unit = {
     val nonStaticFields = classDecl.fields.filter(v => v.initation.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     nonStaticFields foreach {
@@ -317,21 +317,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     flags
   }
 
-  private def getFilePath(outDir: File, className: String): String = {
-    var prefix = outDir.pathAsString.replaceAll("\\\\", "/")
-
-    // Weird Windows behaviour
-    if (prefix.endsWith("."))
-      prefix = prefix.dropRight(1)
-
-    prefix += "/"
-    val split = className.split("/")
-    val packageDir = split.dropRight(1).mkString("/")
-    val filePath = prefix + packageDir
-    val f = File(filePath)
-    f.createIfNotExists()
-
-    prefix + className + ".class"
+  private def getClassFilePath(outDir: File, className: String): String = {
+    val file = outDir.pathAsString / (className + ".class")
+    file.parent.createDirectories()
+    file.pathAsString
   }
 
   private def addReturnValueAndStatement(ch: CodeHandler, tpe: Type) = tpe match {

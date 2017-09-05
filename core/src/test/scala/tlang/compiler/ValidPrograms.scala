@@ -1,23 +1,21 @@
 package tlang.compiler
 
-import java.io.FileNotFoundException
-
 import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.messages.{CompilationException, MessageType}
-import tlang.testutils.CompilerTestSpec
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration.Duration
 
-class CompilerValidProgramSpec extends CompilerTestSpec with ParallelTestExecution {
+class ValidPrograms extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
+  import tlang.testsuites.CompilerIntegrationTests._
 
   val TimeOut        = Duration(5, "sec")
   val ValidResources = s"$Resources/validtests"
 
 
-  testCorrectOutputOfPrograms(s"$ValidResources/Valid Programs")
+  testCorrectOutputOfPrograms(s"$ValidResources/Programs")
   testCorrectOutputOfPrograms(s"$ValidResources/STD Lib")
 
   def testCorrectOutputOfPrograms(path: String): Unit = testFiles(path, testValidProgram)
@@ -26,23 +24,22 @@ class CompilerValidProgramSpec extends CompilerTestSpec with ParallelTestExecuti
     val ctx = testContext(Some(file))
     val programExecutor = ProgramExecutor(ctx, TimeOut)
 
-    try {
-      val sources = FileSource(file) :: Nil
-      val cus = Main.FrontEnd.execute(ctx)(sources)
-
-      ctx.reporter.hasErrors shouldBe false
-
-      Main.GenerateCode.execute(ctx)(cus)
-      val res = programExecutor(file)
-      val resLines = lines(res)
-      val sol = parseSolutions(file)
-      assertCorrect(resLines, sol)
+    val sources = FileSource(file) :: Nil
+    val cus = try {
+      Main.FrontEnd.execute(ctx)(sources)
     } catch {
-      case e: CompilationException  =>
+      case e: CompilationException =>
         e.messages.print(MessageType.Error)
         fail("Compilation failed")
-      case _: FileNotFoundException => fail(s"Invalid test, file not found: ${ file.path }")
     }
+
+    ctx.reporter.hasErrors shouldBe false
+
+    Main.GenerateCode.execute(ctx)(cus)
+    val res = programExecutor(file)
+    val resLines = lines(res)
+    val sol = parseSolutions(file)
+    assertCorrect(resLines, sol)
   }
 
   private def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList

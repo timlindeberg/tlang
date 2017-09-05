@@ -2,12 +2,15 @@ package tlang.compiler.lexer
 
 import better.files.File
 import tlang.Context
+import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.lexer.Tokens._
-import tlang.testutils.{CompilerTestSpec, Pos}
+import tlang.testutils.Pos
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
-class LexingPositionSpec extends CompilerTestSpec {
+class LexingPositionSpec extends CompilerIntegrationTestSpec {
+
+  import tlang.testsuites.CompilerIntegrationTests._
 
   val TestFile   : File    = File(s"$Resources/positions/LexerPositions.t")
   val TestContext: Context = testContext()

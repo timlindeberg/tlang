@@ -2,15 +2,18 @@ package tlang.compiler.ast
 
 import better.files.File
 import tlang.Context
+import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.messages.{CompilationException, MessageType}
-import tlang.testutils.{CompilerTestSpec, Pos}
+import tlang.testutils.Pos
 import tlang.utils.FileSource
 
 import scala.reflect.{ClassTag, classTag}
 
-class ParsingPositionSpec extends CompilerTestSpec {
+class ParsingPositionSpec extends CompilerIntegrationTestSpec {
+
+  import tlang.testsuites.CompilerIntegrationTests._
 
   private val NoPos      : Pos     = Pos(-1, -1, -1, -1)
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")

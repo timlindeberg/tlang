@@ -1,11 +1,12 @@
 package tlang.formatting.grid
 
-import tlang.formatting._
 import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.formatting.textformatters.{Truncator, WordWrapper}
+import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.UnitSpec
+
 
 class GridSpec extends UnitSpec {
 
@@ -13,7 +14,6 @@ class GridSpec extends UnitSpec {
 
 
   behavior of "A Grid"
-
 
   it should "have correct grid size and attributes" in {
     val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))

@@ -1,20 +1,21 @@
 package tlang.compiler
 
-
 import better.files.File
-import org.scalatest.{FreeSpec, ParallelTestExecution}
+import org.scalatest.ParallelTestExecution
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.messages.{CompilationException, CompilerMessage, MessageType}
-import tlang.testutils.CompilerTestSpec
+import tlang.testsuites.CompilerIntegrationTests
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTestExecution {
+class CompilerErrors extends CompilerIntegrationTestSpec with ParallelTestExecution {
+
+  import CompilerIntegrationTests._
 
   val ErrorResources = s"$Resources/errortests"
 
@@ -26,9 +27,8 @@ class CompilerErrorSpec extends FreeSpec with CompilerTestSpec with ParallelTest
   testFileForErrors(s"$ErrorResources/Typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
   testFileForErrors(s"$ErrorResources/Flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
 
-  private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = {
-    testFiles(path, testFileForErrors(pipeLine, _))
-  }
+
+  private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = testFiles(path, testFileForErrors(pipeLine, _))
 
   private def testFileForErrors[T](pipeLine: CompilerPhase[Source, T], file: File): Unit = {
     val ctx = testContext(Some(file))

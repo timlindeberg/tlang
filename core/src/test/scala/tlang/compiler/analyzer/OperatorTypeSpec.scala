@@ -1,13 +1,13 @@
 package tlang.compiler.analyzer
 
+import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.messages.ErrorStringContext
-import tlang.testutils.CompilerTestSpec
 
-class OperatorTypeSpec extends CompilerTestSpec {
+class OperatorTypeSpec extends CompilerIntegrationTestSpec {
 
   private val ClassSymbol  = new ClassSymbol("obj")
   private val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
