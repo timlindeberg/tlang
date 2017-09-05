@@ -48,7 +48,8 @@ lazy val core = project
     name := "T-Compiler",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.0.1" % Test,
-      "org.scalamock" %% "scalamock-scalatest-support" % "3.6.0" % Test,
+      "org.mockito" % "mockito-core" % "2.9.0" % Test,
+      "org.markushauck" %% "mockitoscala" % "0.3.0" % Test,
       "com.google.code.findbugs" % "bcel-findbugs" % "6.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.ow2.asm" % "asm-all" % "5.1",

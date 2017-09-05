@@ -67,9 +67,7 @@ class CompilerOptionsSpec extends UnitSpec {
 
     test("Invalid color key") {
       val suggestor = mock[AlternativeSuggestor]
-      (suggestor.apply _)
-        .expects("beyword", ColorScheme.Keys)
-        .returning(Suggestion(List("Did you mean 'keyword'?")))
+      suggestor.apply("beyword", ColorScheme.Keys) returns Suggestion(List("Did you mean 'keyword'?"))
 
       val error = intercept[IllegalArgumentException] { createOptions("--colorscheme beyword=red", suggestor) }
       error.getMessage should include("beyword")
@@ -78,9 +76,7 @@ class CompilerOptionsSpec extends UnitSpec {
 
     test("Invalid color") {
       val suggestor = mock[AlternativeSuggestor]
-      (suggestor.apply _)
-        .expects("screen", Colors.ColorNames)
-        .returning(Suggestion(List("Did you mean 'green'?")))
+      suggestor.apply("screen", Colors.ColorNames) returns Suggestion(List("Did you mean 'green'?"))
 
       val error = intercept[IllegalArgumentException] { createOptions("--colorscheme keyword=screen", suggestor) }
       error.getMessage should include("screen")
@@ -147,9 +143,7 @@ class CompilerOptionsSpec extends UnitSpec {
 
     test("Invalid arguments") {
       val suggestor = mock[AlternativeSuggestor]
-      (suggestor.apply _)
-        .expects("java::Lang::obdect", Imports.DefaultImportNames)
-        .returning(Suggestion(List("Did you mean 'java::lang::Object'?")))
+      suggestor.apply("java::Lang::obdect", Imports.DefaultImportNames) returns Suggestion(List("Did you mean 'java::lang::Object'?"))
 
       val error = intercept[IllegalArgumentException] { createOptions("--ignoreimport java::Lang::obdect", suggestor) }
       error.getMessage should include("java::Lang::obdect")

@@ -1,7 +1,6 @@
 package tlang.testutils
 
-import org.scalamock.function._
-import org.scalamock.scalatest.MockFactory
+import org.markushauck.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
@@ -9,36 +8,7 @@ import tlang.formatting._
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter, Truncator, WordWrapper}
 import tlang.utils.Extensions._
 
-trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory {
-
-  def mockCalls[R](f: MockFunction0[R], calls: R*) =
-    calls.foreach { r => f.expects().returning(r) }
-
-  def mockCalls[T1, R](f: MockFunction1[T1, R], calls: (T1, R)*) =
-    calls.foreach { case (t1, r) => f.expects(t1).returning(r) }
-
-  def mockCalls[T1, T2, R](f: MockFunction2[T1, T2, R], calls: ((T1, T2), R)*) =
-    calls.foreach { case ((t1, t2), r) => f.expects(t1, t2).returning(r) }
-
-  def mockCalls[T1, T2, T3, R](f: MockFunction3[T1, T2, T3, R], calls: ((T1, T2, T3), R)*) =
-    calls.foreach { case ((t1, t2, t3), r) => f.expects(t1, t2, t3).returning(r) }
-
-  def mockCalls[T1, T2, T3, T4, R](f: MockFunction4[T1, T2, T3, T4, R], calls: ((T1, T2, T3, T4), R)*) =
-    calls.foreach { case ((t1, t2, t3, t4), r) => f.expects(t1, t2, t3, t4).returning(r) }
-
-  def mockCalls[T1, T2, T3, T4, T5, R](f: MockFunction5[T1, T2, T3, T4, T5, R], calls: ((T1, T2, T3, T4, T5), R)*) =
-    calls.foreach { case ((t1, t2, t3, t4, t5), r) => f.expects(t1, t2, t3, t4, t5).returning(r) }
-
-  def mockCalls[T1, T2, T3, T4, T5, T6, R](f: MockFunction6[T1, T2, T3, T4, T5, T6, R], calls: ((T1, T2, T3, T4, T5, T6), R)*) =
-    calls.foreach { case ((t1, t2, t3, t4, t5, t6), r) => f.expects(t1, t2, t3, t4, t5, t6).returning(r) }
-
-  def mockCalls[T1, T2, T3, T4, T5, T6, T7, R](f: MockFunction7[T1, T2, T3, T4, T5, T6, T7, R], calls: ((T1, T2, T3, T4, T5, T6, T7), R)*) =
-    calls.foreach { case ((t1, t2, t3, t4, t5, t6, t7), r) => f.expects(t1, t2, t3, t4, t5, t6, t7).returning(r) }
-
-  def mockCalls[T1, T2, T3, T4, T5, T6, T7, T8, R](f: MockFunction8[T1, T2, T3, T4, T5, T6, T7, T8, R], calls: ((T1, T2, T3, T4, T5, T6, T7, T8), R)*) =
-    calls.foreach { case ((t1, t2, t3, t4, t5, t6, t7, t8), r) => f.expects(t1, t2, t3, t4, t5, t6, t7, t8).returning(r) }
-
-  // Add more if needed
+trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSugar {
 
 
   // For scoping and readability
@@ -46,9 +16,11 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockFactory
 
   def mockedWordWrapperReturningSameLine: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>
-      (wordWrapper.apply _).expects(*, *).onCall { (line, _) => List(line) }.anyNumberOfTimes()
+      wordWrapper.apply(*, *) answers { _.getArgument[String](0) :: Nil }
     }
   }
+
+  def *[T]: T = org.mockito.ArgumentMatchers.any[T]()
 
   def createMockFormatter(
     width: Int = 80,

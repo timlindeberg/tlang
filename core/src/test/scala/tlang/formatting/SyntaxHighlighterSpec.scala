@@ -29,7 +29,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |""".stripMargin
 
     val lexer = mock[Lexer]
-    (lexer.apply _).expects(StringSource(code, "")).atLeastOnce().returning(tokenList(
+    lexer.apply(StringSource(code, "")) returns tokenList(
       (PRIVVAL, 1, 1, 1, 4),
       (IDKIND, 1, 5, 1, 6),
       (EQSIGN, 1, 7, 1, 8),
@@ -55,7 +55,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (DOUBLELITKIND, 8, 9, 8, 12),
       (NEWLINE, 8, 12, 9, 1),
       (EOF, 9, 1, 9, 1)
-    ))
+    )
 
     test("With default color scheme") {
       val syntaxHighlighter = makeSyntaxHighlighter(lexer)
@@ -106,8 +106,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
   it should "not highlight code when colors are disabled" in {
     val formatting = Formatting(useColor = false)
     val lexer = mock[Lexer]
-    (lexer.apply _).expects(*).never()
     val syntaxHighlighter = SyntaxHighlighter(lexer, formatting)
+    there.were.zeroInteractions(lexer)
 
     syntaxHighlighter("ABC DEF") shouldBe theSameInstanceAs("ABC DEF")
   }
@@ -120,7 +120,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |""".stripMargin
 
     val lexer = mock[Lexer]
-    (lexer.apply _).expects(StringSource(code, "")).returning(tokenList(
+    lexer.apply(StringSource(code, "")) returns tokenList(
       (PRIVVAL, 1, 1, 1, 4),
       (IDKIND, 1, 5, 1, 6),
       (EQSIGN, 1, 7, 1, 8),
@@ -131,7 +131,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (STRLITKIND, 2, 9, 2, 14),
       (NEWLINE, 2, 14, 3, 1),
       (EOF, 3, 1, 3, 1)
-    ))
+    )
 
     val syntaxHighlighter = makeSyntaxHighlighter(lexer)
 
@@ -155,7 +155,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |""".stripMargin
 
     val lexer = mock[Lexer]
-    (lexer.apply _).expects(StringSource(code.stripAnsi, "")).returning(tokenList(
+    lexer.apply(StringSource(code.stripAnsi, "")) returns tokenList(
       (PRIVVAL, 1, 1, 1, 4),
       (IDKIND, 1, 5, 1, 6),
       (EQSIGN, 1, 7, 1, 8),
@@ -176,7 +176,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (COMMENTLITKIND, 5, 1, 7, 11),
       (NEWLINE, 7, 11, 8, 1),
       (EOF, 8, 1, 8, 1)
-    ))
+    )
 
     val syntaxHighlighter = makeSyntaxHighlighter(lexer)
 
@@ -205,7 +205,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |""".stripMargin
 
     val lexer = mock[Lexer]
-    (lexer.apply _).expects(StringSource(code.stripAnsi, "")).returning(tokenList(
+    lexer.apply(StringSource(code.stripAnsi, "")) returns tokenList(
       (PRIVVAL, 1, 1, 1, 4),
       (IDKIND, 1, 5, 1, 6),
       (EQSIGN, 1, 7, 1, 8),
@@ -226,7 +226,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (COMMENTLITKIND, 5, 1, 7, 11),
       (NEWLINE, 7, 11, 8, 1),
       (EOF, 8, 1, 8, 1)
-    ))
+    )
 
 
     import Colors._

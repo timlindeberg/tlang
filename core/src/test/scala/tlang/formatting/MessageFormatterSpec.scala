@@ -71,14 +71,11 @@ class MessageFormatterSpec extends UnitSpec {
     val formattingWithoutColor = Formatting(useColor = false)
 
     val source = mock[Source]
-    (source.lines _).expects().twice().returning(IndexedSeq())
-    (source.description _)
-      .expects(formattingWithColor)
-      .returning(s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m")
+    source.lines returns IndexedSeq()
+    source.description(formattingWithColor) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
 
-    (source.description _)
-      .expects(formattingWithoutColor)
-      .returning(s"core/src/test/resources/positions/ParserPositions.t")
+    source.description(formattingWithoutColor) returns s"core/src/test/resources/positions/ParserPositions.t"
+
 
     var messageFormatter = getMessageFormatter(useColor = true, formatting = Some(formattingWithColor))
 
@@ -98,7 +95,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "show the location with color" in {
     val source = mock[Source]
-    (source.lines _).expects().returning(IndexedSeq("for(var i = x; i < 5; i++)"))
+    source.lines returns IndexedSeq("for(var i = x; i < 5; i++)")
 
     // the error is in "i < 5"
     val errorPos = Position(1, 16, 1, 21, source = Some(source))
@@ -118,7 +115,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "show the location in the file without colors" in {
     val source = mock[Source]
-    (source.lines _).expects().returning(IndexedSeq("for(var i = x; i < 5; i++)"))
+    source.lines returns IndexedSeq("for(var i = x; i < 5; i++)")
     // the error is in "i < 5"
     val errorPos = Position(1, 16, 1, 21, source = Some(source))
 
@@ -141,7 +138,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "handle different context sizes" in {
     val source = mock[Source]
-    (source.lines _).expects().atLeastOnce().returning(IndexedSeq(
+    source.lines returns IndexedSeq(
       "var a = 0",
       "var b = 0",
       "var c = 0",
@@ -153,7 +150,7 @@ class MessageFormatterSpec extends UnitSpec {
       "\t\tc++",
       "\t\td++",
       "\t\te++"
-    ))
+    )
     // the error is in "i < 5"
     val message = createMessage(pos = Position(6, 16, 6, 21, source = Some(source)))
 
@@ -455,11 +452,11 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "trim indentation of location" in {
     val source = mock[Source]
-    (source.lines _).expects().atLeastOnce().returning(IndexedSeq(
+    source.lines returns IndexedSeq(
       "\t\t\tvar a = 0",
       "\t\t\tfor(var i = x; i < 5; i++)",
       "\t\t\t\ta++"
-    ))
+    )
 
     // the error is in "i < 5"
     val errorPos = Position(2, 19, 2, 24, source = Some(source))
@@ -496,11 +493,11 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "replace tabs in location" in {
     val source = mock[Source]
-    (source.lines _).expects().atLeastOnce().returning(IndexedSeq(
+    source.lines returns IndexedSeq(
       "\t\tvar a = 0",
       "for(var i = x; i < 5; i++)",
       "\t\ta++"
-    ))
+    )
 
     // the error is in "i < 5"
     var message = createMessage(messageType = MessageType.Warning, pos = Position(2, 16, 2, 21, source = Some(source)))
@@ -602,11 +599,11 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "mark errors over multiple lines" in {
     var source = mock[Source]
-    (source.lines _).expects().atLeastOnce().returning(IndexedSeq(
+    source.lines returns IndexedSeq(
       "for(var i = x; i < 5; i++)",
       "\t\ta++ // abcdef",
       "\t\tb++"
-    ))
+    )
 
     // the error is from "a" all the way to the end
     var errorPos = Position(2, 3, 3, 6, source = Some(source))
@@ -624,11 +621,11 @@ class MessageFormatterSpec extends UnitSpec {
     )
 
     source = mock[Source]
-    (source.lines _).expects().atLeastOnce().returning(IndexedSeq(
+    source.lines returns IndexedSeq(
       "\t\telse",
       "\t\t\treturn // res: F1002",
       "\t\t\tprintln(a) // res: F1000"
-    ))
+    )
     errorPos = Position(2, 1, 3, 28, source = Some(source))
     message = createMessage(messageType = MessageType.Warning, pos = errorPos)
 
@@ -688,9 +685,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   // This mocked syntax highlighter just returns the input again
   private def mockedSyntaxHighlighter: SyntaxHighlighter =
-    mock[SyntaxHighlighter] use { syntaxHighlighter =>
-      (syntaxHighlighter.apply(_: String)).expects(*).onCall { s: String => s }.anyNumberOfTimes()
-    }
+    mock[SyntaxHighlighter] use { syntaxHighlighter => syntaxHighlighter.apply(*).forwardsArg(0) }
 
 
 }

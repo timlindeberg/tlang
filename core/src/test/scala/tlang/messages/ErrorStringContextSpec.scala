@@ -85,7 +85,7 @@ class ErrorStringContextSpec extends UnitSpec {
 
     test("No suggestion") {
       val alternativeSuggestor = mock[AlternativeSuggestor]
-      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(Nil))
+      alternativeSuggestor.apply("ABCD", alternatives) returns Suggestion(Nil)
 
       test("With color") {
         val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
@@ -106,7 +106,7 @@ class ErrorStringContextSpec extends UnitSpec {
 
     test("One suggestion") {
       val alternativeSuggestor = mock[AlternativeSuggestor]
-      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(List("ABC")))
+      alternativeSuggestor.apply("ABCD", alternatives) returns Suggestion(List("ABC"))
 
       test("With color") {
         val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
@@ -128,7 +128,7 @@ class ErrorStringContextSpec extends UnitSpec {
     test("Multiple suggestions") {
       val alternatives = List("ABC", "DEF", "GHI")
       val alternativeSuggestor = mock[AlternativeSuggestor]
-      (alternativeSuggestor.apply _).expects("ABCD", alternatives).twice().returning(Suggestion(List("ABC", "DEF", "GHI")))
+      alternativeSuggestor.apply("ABCD", alternatives) returns Suggestion(List("ABC", "DEF", "GHI"))
 
       test("With color") {
         val errorStringContext = makeErrorStringContext(useColor = true, alternativeSuggestor = alternativeSuggestor)
@@ -160,9 +160,9 @@ class ErrorStringContextSpec extends UnitSpec {
     test("Without followup text.") {
       val alternatives = List("ABC", "DEF", "GHI")
       val alternativeSuggestor = mock[AlternativeSuggestor]
-      (alternativeSuggestor.apply _).expects("A", alternatives).twice().returning(Suggestion(Nil))
-      (alternativeSuggestor.apply _).expects("AB", alternatives).twice().returning(Suggestion(List("ABC")))
-      (alternativeSuggestor.apply _).expects("ABC", alternatives).twice().returning(Suggestion(List("ABC", "DEF", "GHI")))
+      alternativeSuggestor.apply("A", alternatives) returns Suggestion(Nil)
+      alternativeSuggestor.apply("AB", alternatives) returns Suggestion(List("ABC"))
+      alternativeSuggestor.apply("ABC", alternatives) returns Suggestion(List("ABC", "DEF", "GHI"))
 
       val errorStringContext = makeErrorStringContext(useColor = false, alternativeSuggestor = alternativeSuggestor)
       import errorStringContext._

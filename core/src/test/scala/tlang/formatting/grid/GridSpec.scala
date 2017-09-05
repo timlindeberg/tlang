@@ -445,15 +445,13 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with fixed and auto column widths" in {
     val wordWrapper = mock[WordWrapper]
-    mockCalls(wordWrapper.apply _,
-      ("ABCDEFG", 4) -> List("ABCD", "EFG"),
-      ("12345", 2) -> List("12", "34", "5"),
-      ("HIJKMLN", 4) -> List("HIJK", "LMN"),
+    wordWrapper.apply("ABCDEFG", 4) returns List("ABCD", "EFG")
+    wordWrapper.apply("12345", 2) returns List("12", "34", "5")
+    wordWrapper.apply("HIJKMLN", 4) returns List("HIJK", "LMN")
 
-      ("ABC", 3) -> List("ABC"),
-      ("12345678", 5) -> List("12345", "678"),
-      ("DEFGH", 2) -> List("DE", "FG", "H")
-    )
+    wordWrapper.apply("ABC", 3) returns List("ABC")
+    wordWrapper.apply("12345678", 5) returns List("12345", "678")
+    wordWrapper.apply("DEFGH", 2) returns List("DE", "FG", "H")
 
     Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column(width = Fixed(2)), Column)
@@ -546,11 +544,9 @@ class GridSpec extends UnitSpec {
           |└─────┴────────────┘""".stripMargin
     )
     val wordWrapper = mock[WordWrapper]
-    mockCalls(wordWrapper.apply _,
-      ("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 16) -> List(
-        "\u001b[31mABCDEFGHIJKLMNOP\u001b[0m",
-        "\u001b[31mQRSTUVXYZ\u001b[0m"
-      )
+    wordWrapper.apply("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 16) returns List(
+      "\u001b[31mABCDEFGHIJKLMNOP\u001b[0m",
+      "\u001b[31mQRSTUVXYZ\u001b[0m"
     )
     Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row()
@@ -582,19 +578,17 @@ class GridSpec extends UnitSpec {
   it should "render correctly with line wrapping" in {
 
     var wordWrapper = mock[WordWrapper]
-    mockCalls(wordWrapper.apply _,
-      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z"),
-      ("ABCDEFGHIJKLMN", 3) -> List("ABC", "DEF", "GHI", "JKL", "MN"),
-      ("ABCDEF", 3) -> List("ABC", "DEF"),
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
+    wordWrapper.apply("ABCDEFGHIJKLMN", 3) returns List("ABC", "DEF", "GHI", "JKL", "MN")
+    wordWrapper.apply("ABCDEF", 3) returns List("ABC", "DEF")
 
-      ("ABCDEFGHIJ", 3) -> List("ABC", "DEF", "GHI", "J"),
-      ("ABCDEFGHIJKLMNOPQRS", 3) -> List("ABC", "DEF", "GHI", "JKL", "MNO", "PQR", "S"),
-      ("ABCD", 4) -> List("ABCD"),
+    wordWrapper.apply("ABCDEFGHIJ", 3) returns List("ABC", "DEF", "GHI", "J")
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRS", 3) returns List("ABC", "DEF", "GHI", "JKL", "MNO", "PQR", "S")
+    wordWrapper.apply("ABCD", 4) returns List("ABCD")
 
-      ("ABCDEFGHIJKLMNOP", 3) -> List("ABC", "DEF", "GHI", "JKL", "MNO", "P"),
-      ("ABCDEFG", 3) -> List("ABC", "DEF", "G"),
-      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
-    )
+    wordWrapper.apply("ABCDEFGHIJKLMNOP", 3) returns List("ABC", "DEF", "GHI", "JKL", "MNO", "P")
+    wordWrapper.apply("ABCDEFG", 3) returns List("ABC", "DEF", "G")
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
 
     Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
@@ -629,13 +623,11 @@ class GridSpec extends UnitSpec {
          |└─────┴─────┴──────┘""".stripMargin
 
     wordWrapper = mock[WordWrapper]
-    mockCalls(wordWrapper.apply _,
-      ("ABCDEFGHIJKL", 1) -> List("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"),
-      ("ABCDEFGHI", 1) -> List("A", "B", "C", "D", "E", "F", "G", "H", "I"),
-      ("ABCDEF", 1) -> List("A", "B", "C", "D", "E", "F"),
-      ("ABC", 1) -> List("A", "B", "C"),
-      ("A", 1) -> List("A")
-    )
+    wordWrapper.apply("ABCDEFGHIJKL", 1) returns List("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L")
+    wordWrapper.apply("ABCDEFGHI", 1) returns List("A", "B", "C", "D", "E", "F", "G", "H", "I")
+    wordWrapper.apply("ABCDEF", 1) returns List("A", "B", "C", "D", "E", "F")
+    wordWrapper.apply("ABC", 1) returns List("A", "B", "C")
+    wordWrapper.apply("A", 1) returns List("A")
 
     Grid(mockedFormatter(width = 21, wordWrapper = wordWrapper))
       .row(Column, Column, Column, Column, Column)
@@ -689,27 +681,25 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with line wrapping and ansi colors" in {
     val wordWrapper = mock[WordWrapper]
-    mockCalls(wordWrapper.apply _,
-      ("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m", 4) -> List(
-        "\u001b[31mABCD\u001b[0m",
-        "\u001b[32mEFGH\u001b[0m",
-        "\u001b[33mIJKL\u001b[0m",
-        "\u001b[34mMNOP\u001b[0m",
-        "\u001b[35mQRST\u001b[0m",
-        "\u001b[36mUVXY\u001b[0m",
-        "\u001b[37mZ\u001b[0m"
-      ),
-      ("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m", 3) -> List(
-        "\u001b[31mABC\u001b[0m",
-        "\u001b[31mD\u001b[32mEF\u001b[0m",
-        "\u001b[32mGH\u001b[33mI\u001b[0m",
-        "\u001b[33mJKL\u001b[0m",
-        "\u001b[34mMN\u001b[0m"
-      ),
-      ("AB\u001b[31mCDE\u001b[0mF", 3) -> List(
-        "AB\u001b[31mC\u001b[0m",
-        "\u001b[31mDE\u001b[0mF"
-      )
+    wordWrapper.apply("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m", 4) returns List(
+      "\u001b[31mABCD\u001b[0m",
+      "\u001b[32mEFGH\u001b[0m",
+      "\u001b[33mIJKL\u001b[0m",
+      "\u001b[34mMNOP\u001b[0m",
+      "\u001b[35mQRST\u001b[0m",
+      "\u001b[36mUVXY\u001b[0m",
+      "\u001b[37mZ\u001b[0m"
+    )
+    wordWrapper.apply("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m", 3) returns List(
+      "\u001b[31mABC\u001b[0m",
+      "\u001b[31mD\u001b[32mEF\u001b[0m",
+      "\u001b[32mGH\u001b[33mI\u001b[0m",
+      "\u001b[33mJKL\u001b[0m",
+      "\u001b[34mMN\u001b[0m"
+    )
+    wordWrapper.apply("AB\u001b[31mCDE\u001b[0mF", 3) returns List(
+      "AB\u001b[31mC\u001b[0m",
+      "\u001b[31mDE\u001b[0mF"
     )
 
     Grid(mockedFormatter(wordWrapper = wordWrapper))
@@ -733,19 +723,17 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with truncation" in {
     val truncator = mock[Truncator]
-    mockCalls(truncator.apply _,
-      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> "A...",
-      ("ABCDEFGHIJKLMN", 4) -> "A...",
-      ("AB", 2) -> "AB",
+    truncator.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns "A..."
+    truncator.apply("ABCDEFGHIJKLMN", 4) returns "A..."
+    truncator.apply("AB", 2) returns "AB"
 
-      ("ABC", 3) -> "ABC",
-      ("ABCDEFGHIJKLMNOPQRS", 3) -> "...",
-      ("ABCD", 4) -> "ABCD",
+    truncator.apply("ABC", 3) returns "ABC"
+    truncator.apply("ABCDEFGHIJKLMNOPQRS", 3) returns "..."
+    truncator.apply("ABCD", 4) returns "ABCD"
 
-      ("ABCDEFGHIJKLMNOP", 3) -> "...",
-      ("ABC", 3) -> "ABC",
-      ("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) -> "A..."
-    )
+    truncator.apply("ABCDEFGHIJKLMNOP", 3) returns "..."
+    truncator.apply("ABC", 3) returns "ABC"
+    truncator.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns "A..."
 
     Grid(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
@@ -765,19 +753,17 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with truncation and ansi colors" in {
     val truncator = mock[Truncator]
-    mockCalls(truncator.apply _,
-      ("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) -> "\u001b[31mA\u001b[0m...",
-      ("ABCDEFGHIJKLMN", 4) -> "A...",
-      ("\u001b[32mAB\u001b[0m", 2) -> "\u001b[32mAB\u001b[0m",
+    truncator.apply("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) returns "\u001b[31mA\u001b[0m..."
+    truncator.apply("ABCDEFGHIJKLMN", 4) returns "A..."
+    truncator.apply("\u001b[32mAB\u001b[0m", 2) returns "\u001b[32mAB\u001b[0m"
 
-      ("ABC", 3) -> "ABC",
-      ("\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", 3) -> "...",
-      ("\u001b[34mABCD\u001b[0m", 4) -> "\u001b[34mABCD\u001b[0m",
+    truncator.apply("ABC", 3) returns "ABC"
+    truncator.apply("\u001b[33mABCDEFGHIJKLMNOPQRS\u001b[0m", 3) returns "..."
+    truncator.apply("\u001b[34mABCD\u001b[0m", 4) returns "\u001b[34mABCD\u001b[0m"
 
-      ("ABCDEFGHIJKLMNOP", 3) -> "...",
-      ("ABC", 3) -> "ABC",
-      ("\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) -> "\u001b[35mA\u001b[0m..."
-    )
+    truncator.apply("ABCDEFGHIJKLMNOP", 3) returns "..."
+    truncator.apply("ABC", 3) returns "ABC"
+    truncator.apply("\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) returns "\u001b[35mA\u001b[0m..."
 
     Grid(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)

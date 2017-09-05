@@ -153,47 +153,47 @@ class CompilerMessageSpec extends UnitSpec {
     test("two errors with valid positions") {
       val messageFormatter = mock[MessageFormatter]
 
-      val error1: CompilerMessage = createMessage(
+      messageFormatter.hasValidPosition returns true
+      messageFormatter.sourceDescription returnsMulti Seq(
+        "1:3 from/a/very/cool/File.t",
+        "54:1 from/another/cool/File.t"
+      )
+
+      messageFormatter.prefix returnsMulti Seq(
+        "Error A2123",
+        "Error B2321"
+      )
+      messageFormatter.locationInSource returnsMulti Seq(
+        List(
+          ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
+          ("", "  ~~~~~"),
+          ("2", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
+          ("3", "ABCDEFFGHIJKLMNOPQRSTUVXYZ")
+        ),
+        List(
+          ("53", "Line 1Line 1Line 1"),
+          ("54", "Line 2Line 2Line 2"),
+          ("", "~~~~"),
+          ("55", "Line 3Line 3Line 3")
+        )
+      )
+
+      val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
+
+      compilerMessages += createMessage(
         MessageType.Error,
         errorLetters = "A",
         codeNum = 123,
         pos = Position(1, 3, 1, 8),
         message = "There was an error!!!"
       )
-
-      (messageFormatter.setMessage _).expects(error1)
-      (messageFormatter.hasValidPosition _).expects().returning(true)
-      (messageFormatter.sourceDescription _).expects().returning("1:3 from/a/very/cool/File.t")
-      (messageFormatter.prefix _).expects().returning("Error A2123")
-      (messageFormatter.locationInSource _).expects().returning(List(
-        ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
-        ("", "  ~~~~~"),
-        ("2", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
-        ("3", "ABCDEFFGHIJKLMNOPQRSTUVXYZ")
-      ))
-
-      val error2: CompilerMessage = createMessage(
+      compilerMessages += createMessage(
         MessageType.Error,
         errorLetters = "B",
         codeNum = 321,
         pos = Position(54, 1, 54, 4),
         message = "Moar errors!!!"
       )
-
-      (messageFormatter.setMessage _).expects(error2)
-      (messageFormatter.hasValidPosition _).expects().returning(true)
-      (messageFormatter.sourceDescription _).expects().returning("54:1 from/another/cool/File.t")
-      (messageFormatter.prefix _).expects().returning("Error B2321")
-      (messageFormatter.locationInSource _).expects().returning(List(
-        ("53", "Line 1Line 1Line 1"),
-        ("54", "Line 2Line 2Line 2"),
-        ("", "~~~~"),
-        ("55", "Line 3Line 3Line 3")
-      ))
-
-      val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
-      compilerMessages += error1
-      compilerMessages += error2
       compilerMessages.formatMessages(MessageType.Error) shouldBe
         """| ====================================== 
            ||         There were 2 errors.         |
@@ -227,11 +227,8 @@ class CompilerMessageSpec extends UnitSpec {
         message = "Here be a warning!!!"
       )
 
-      (messageFormatter.setMessage _).expects(warning)
-      (messageFormatter.hasValidPosition _).expects().returning(false)
-      (messageFormatter.sourceDescription _).expects().never()
-      (messageFormatter.prefix _).expects().returning("Warning C1001")
-      (messageFormatter.locationInSource _).expects().never()
+      messageFormatter.hasValidPosition returns false
+      messageFormatter.prefix returns "Warning C1001"
 
       val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
       compilerMessages += warning
