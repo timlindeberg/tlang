@@ -5,8 +5,7 @@ import tlang.utils.Extensions._
 import scala.collection.mutable.ArrayBuffer
 
 object CircularBuffer {
-  def apply[T](ts: T*): CircularBuffer[T] =
-    CircularBuffer[T]().use { buffer => ts.foreach(buffer += _) }
+  def apply[T](ts: T*): CircularBuffer[T] = CircularBuffer[T]().use { _ ++= ts }
 }
 
 case class CircularBuffer[T]() extends ArrayBuffer[T] {

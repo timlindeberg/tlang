@@ -10,14 +10,26 @@ import tlang.utils.Position
 import scalaz.Cord
 
 
-case class InputState(cord: Cord, linePositions: List[Int], position: Int)
+case object InputState {
+
+  val Empty = InputState(Cord.empty, List(0), 0)
+
+}
+case class InputState(cord: Cord, linePositions: List[Int], position: Int) {
+  override def toString: String = {
+    val text = '"' + cord.toString.escape + '"'
+    val pos = position
+    s"($text, $pos)"
+  }
+}
+
 
 case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord = Cord.empty) {
 
   private val systemClipboard: Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
 
 
-  private val history = UndoHistory(maxHistorySize)
+  private val history = History[InputState](maxHistorySize)
 
   private var linePositions: List[Int] = _
   private var upDownX      : Int       = _
@@ -33,7 +45,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   }
 
   def height: Int = linePositions.length
-  def currentCord: Cord = history.current.cord
+  def currentCord: Cord = history.current.map(_.cord).getOrElse(Cord.empty)
   def lines: Int = linePositions.size
 
   def ++=(str: String): Unit = {
@@ -120,7 +132,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
   def moveCursorRight(steps: Int): Unit = {
     upDownX = 0
 
-    val position = math.min(mainCursor.position + steps, history.current.cord.size)
+    val position = math.min(mainCursor.position + steps, currentCord.size)
     setPos(mainCursor, position)
   }
 
@@ -314,7 +326,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
 
   private def linePosition(line: Int): (Int, Int) = {
     val start = linePositions(line)
-    val end = if (line == 0) history.current.cord.length else linePositions(line - 1) - 1
+    val end = if (line == 0) currentCord.length else linePositions(line - 1) - 1
     (start, end)
   }
 
@@ -325,7 +337,7 @@ case class InputBuffer(maxHistorySize: Int, tabSize: Int, private val cord: Cord
       return false
 
     upDownX = 0
-    val newState = history.current
+    val newState = history.current.getOrElse(InputState.Empty)
     setPos(mainCursor, newState.position)
     linePositions = newState.linePositions
     true

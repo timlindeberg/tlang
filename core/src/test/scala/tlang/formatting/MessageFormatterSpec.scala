@@ -677,7 +677,7 @@ class MessageFormatterSpec extends UnitSpec {
     messageType: MessageType = MessageType.Error,
     errorLetters: String = "ABC",
     codeNum: Int = 0,
-    pos: Positioned = Position.NoPos,
+    pos: Positioned = NoPosition,
     mess: String = "ABC"
   ): CompilerMessage = {
     new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {override def message = mess }

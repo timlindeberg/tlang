@@ -1,6 +1,6 @@
 package tlang.testutils
 
-import org.markushauck.mockito.MockitoSugar
+import org.markushauck.mockito.Mocked
 import org.scalatest.{FlatSpec, Matchers}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
@@ -9,7 +9,6 @@ import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter
 import tlang.utils.Extensions._
 
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSugar {
-
 
   // For scoping and readability
   def test[U](description: String = "")(f: => U): U = f
@@ -20,7 +19,7 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSuga
     }
   }
 
-  def *[T]: T = org.mockito.ArgumentMatchers.any[T]()
+  val formatter: Mocked[Formatter] = mock[Formatter]
 
   def createMockFormatter(
     width: Int = 80,

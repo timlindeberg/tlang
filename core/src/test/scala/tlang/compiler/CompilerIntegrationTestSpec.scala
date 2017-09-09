@@ -24,7 +24,7 @@ object CompilerIntegrationTestSpec {
 trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
 
   import CompilerIntegrationTestSpec._
-  import tlang.testsuites.CompilerIntegrationTests._
+  import tlang.testsuites.CompilerIntegrationTestSuite._
 
   def testContext(file: Option[File] = None): Context = {
     val outDir = file match {

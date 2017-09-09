@@ -5,7 +5,7 @@ import tlang.compiler.analyzer.Types.TError
 import tlang.compiler.ast.Trees.{ClassID, Empty, VariableID}
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
-import tlang.utils.{Position, Positioned}
+import tlang.utils.{NoPosition, Position, Positioned}
 
 class CompilerMessageSpec extends UnitSpec {
 
@@ -54,9 +54,9 @@ class CompilerMessageSpec extends UnitSpec {
 
   it should "treat warnings as error" in {
     val compilerMessages = createCompilerMessages(warningIsError = true)
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "A", codeNum = 1, pos = Position.NoPos, message = "WARNING1")
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "B", codeNum = 2, pos = Position.NoPos, message = "WARNING2")
-    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "C", codeNum = 3, pos = Position.NoPos, message = "WARNING3")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "A", codeNum = 1, pos = NoPosition, message = "WARNING1")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "B", codeNum = 2, pos = NoPosition, message = "WARNING2")
+    compilerMessages += createMessage(messageType = MessageType.Warning, errorLetters = "C", codeNum = 3, pos = NoPosition, message = "WARNING3")
 
     val warnings = compilerMessages(MessageType.Warning)
     warnings should be(empty)
@@ -154,16 +154,16 @@ class CompilerMessageSpec extends UnitSpec {
       val messageFormatter = mock[MessageFormatter]
 
       messageFormatter.hasValidPosition returns true
-      messageFormatter.sourceDescription returnsMulti Seq(
+      messageFormatter.sourceDescription returns(
         "1:3 from/a/very/cool/File.t",
         "54:1 from/another/cool/File.t"
       )
 
-      messageFormatter.prefix returnsMulti Seq(
+      messageFormatter.prefix returns(
         "Error A2123",
         "Error B2321"
       )
-      messageFormatter.locationInSource returnsMulti Seq(
+      messageFormatter.locationInSource returns(
         List(
           ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
           ("", "  ~~~~~"),
@@ -260,7 +260,7 @@ class CompilerMessageSpec extends UnitSpec {
     messageType: MessageType = MessageType.Error,
     errorLetters: String = "ABC",
     codeNum: Int = 0,
-    pos: Positioned = Position.NoPos,
+    pos: Positioned = NoPosition,
     message: String = "ABC"
   ): CompilerMessage = {
     val mess = message

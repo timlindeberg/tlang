@@ -2,10 +2,10 @@ package tlang.utils
 
 trait Positioned {
   private var _source   : Option[Source] = None
-  private var _lineStart: Int            = 0
-  private var _colStart : Int            = 0
-  private var _lineEnd  : Int            = 0
-  private var _colEnd   : Int            = 0
+  private var _lineStart: Int            = -1
+  private var _colStart : Int            = -1
+  private var _lineEnd  : Int            = -1
+  private var _colEnd   : Int            = -1
 
   def setPos(source: Source, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     _lineStart = lineStart
@@ -59,11 +59,10 @@ trait Positioned {
   def endCol: Int = _colEnd
 
   def equalPos(other: Positioned): Boolean =
-    _source == other._source &&
-      _lineStart == other._lineStart &&
-      _colStart == other._colStart &&
-      _lineEnd == other._lineEnd &&
-      _colEnd == other._colEnd
+    line == other.line &&
+      col == other.col &&
+      endLine == other.endLine &&
+      endCol == other.endCol
 
   def encodedStartPos: Int = (line << 16) + col
   def encodedEndPos: Int = (endLine << 16) + endCol
@@ -76,11 +75,6 @@ trait Positioned {
 }
 
 case object NoPosition extends Positioned
-
-object Position {
-  val NoPos = Position(-1, -1, -1, -1)
-}
-
 case class Position(
   override val line: Int,
   override val col: Int,

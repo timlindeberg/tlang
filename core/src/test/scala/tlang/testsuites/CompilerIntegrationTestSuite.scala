@@ -3,13 +3,13 @@ package tlang.testsuites
 import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites, Tag}
 import tlang.compiler.ast.PrettyPrinterSpec
-import tlang.compiler.{CompilerErrors, Positions, ValidPrograms}
+import tlang.compiler.{CompilerErrors, PositionSuite, ValidPrograms}
 import tlang.formatting.Formatter
 
 import scala.util.Try
 import scala.util.matching.Regex
 
-object CompilerIntegrationTests {
+object CompilerIntegrationTestSuite {
 
   val Resources          : String = "core/src/test/resources"
   val TestOutputDirectory: String = "integrationTestFiles"
@@ -32,14 +32,14 @@ object CompilerIntegrationTests {
 
 }
 
-class CompilerIntegrationTests extends Suites(
+class CompilerIntegrationTestSuite extends Suites(
   new CompilerErrors,
   new ValidPrograms,
-  new Positions,
+  new PositionSuite,
   new PrettyPrinterSpec
-)                                      with BeforeAndAfterAll {
+)                                          with BeforeAndAfterAll {
 
-  import CompilerIntegrationTests._
+  import CompilerIntegrationTestSuite._
 
   override def beforeAll: Unit = {
     val outDir = File(TestOutputDirectory)
@@ -49,4 +49,5 @@ class CompilerIntegrationTests extends Suites(
 
   override def afterAll: Unit = if (!KeepFilesOnExit) File(TestOutputDirectory).delete()
 
+  override val suiteName: String = "Compiler Integration Tests"
 }

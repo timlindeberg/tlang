@@ -7,6 +7,7 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatting
+import tlang.utils.Extensions._
 
 
 case class PrettyPrinter(formatting: Formatting) {
@@ -21,8 +22,6 @@ case class PrettyPrinter(formatting: Formatting) {
       "/* ----------------------------------------------------------------- */" +
       System.lineSeparator * 2
 
-  private val charEscapeChars   = Map('\t' -> 't', '\b' -> 'b', '\n' -> 'n', '\r' -> 'r', '\f' -> 'f', '\\' -> '\\')
-  private val stringEscapeChars = charEscapeChars ++ Map(''' -> ''', '"' -> '"')
 
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
@@ -124,21 +123,9 @@ case class PrettyPrinter(formatting: Formatting) {
     case PutValue(expr)                    => s"<PutValue(${ pp"$expr" })>"
   }
 
-  private def escapeChar(str: String) = _escape(str, charEscapeChars)
-  private def escapeString(str: String) = _escape(str, stringEscapeChars)
-
-  private def _escape(str: String, escapeChars: Map[Char, Char]) = {
-    val sb = new StringBuilder
-    str.foreach { c =>
-      escapeChars.get(c) match {
-        case Some(x) =>
-          sb += '\\'
-          sb += x
-        case None    => sb += c
-      }
-    }
-    sb.toString
-  }
+  private val charEscapeChars = Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\")
+  private def escapeChar(str: String) = str.escape(charEscapeChars)
+  private def escapeString(str: String) = str.escape
 
   private def access(obj: ExprTree, application: ExprTree, dotNotation: String) = obj match {
     case Empty() => pp"$application"

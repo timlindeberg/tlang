@@ -6,19 +6,25 @@ import better.files._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scalaz.Cord
 
-case class InputHistory(historyFile: File, maxRedoSize: Int, tabSize: Int) {
+object InputHistory {
 
-  private val HistorySeperator = "★"
-  private val Seperator        = System.lineSeparator + HistorySeperator + System.lineSeparator
+  val HistorySeperator = "<--INPUT_HISTORY-->"
+  val Seperator        = System.lineSeparator + HistorySeperator + System.lineSeparator
 
+}
 
-  private val commands = CircularBuffer[InputBuffer](InputBuffer(maxRedoSize, tabSize))
+case class InputHistory(historyFile: File, maxHistorySize: Int, tabSize: Int) {
 
-  private val originalCommands = ArrayBuffer[String]()
-  private var dirty            = false
+  import InputHistory._
+
+  private val commands = CircularBuffer[InputBuffer](InputBuffer(maxHistorySize, tabSize))
+
+  private val unmodifiedCommands = ArrayBuffer[String]()
+  private var dirty              = false
 
   loadFromFile()
 
+  def size: Int = commands.size
   def current: InputBuffer = commands.current
 
   def goToNext(): Unit = commands advance 1
@@ -29,24 +35,25 @@ case class InputHistory(historyFile: File, maxRedoSize: Int, tabSize: Int) {
     if (command.isEmpty)
       return
 
-    // Reset the used buffer
+    dirty = true
+
+    // Reset the used buffer back to it's original state
     commands.index match {
       case 0 => current.reset()
-      case i => current.reset(originalCommands(i - 1))
+      case i => current.reset(unmodifiedCommands(i - 1))
     }
     commands.setPosition(0)
 
-    // Remove previous if it already existed
+    // Remove earlier duplicate command if it exists
     commands.indexWhere(c => equalCords(c.currentCord, command)) match {
       case -1    =>
       case index =>
         commands.remove(index)
-        originalCommands.remove(index - 1)
+        unmodifiedCommands.remove(index - 1)
     }
 
-    dirty = true
-    commands += InputBuffer(maxRedoSize, tabSize, command)
-    originalCommands += command.toString
+    commands += InputBuffer(maxHistorySize, tabSize, command)
+    unmodifiedCommands += command.toString
   }
 
   def saveToFile(): Unit = {
@@ -54,7 +61,7 @@ case class InputHistory(historyFile: File, maxRedoSize: Int, tabSize: Int) {
       return
 
     dirty = false
-    val content = originalCommands.mkString(Seperator) + Seperator
+    val content = unmodifiedCommands.mkString(Seperator) + Seperator
     historyFile.write(content)
   }
 
@@ -78,11 +85,11 @@ case class InputHistory(historyFile: File, maxRedoSize: Int, tabSize: Int) {
     }
 
     val lines = new ListBuffer[String]()
-    historyFile.lines.foreach { line =>
+    historyFile.lineIterator.foreach { line =>
       if (line == HistorySeperator && lines.nonEmpty) {
         val str = lines.mkString(System.lineSeparator)
-        originalCommands += str
-        commands += InputBuffer(maxRedoSize, tabSize, Cord.empty :+ str)
+        unmodifiedCommands += str
+        commands += InputBuffer(maxHistorySize, tabSize, Cord.empty :+ str)
         lines.clear()
       } else {
         lines += line

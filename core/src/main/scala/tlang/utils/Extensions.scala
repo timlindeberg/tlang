@@ -15,6 +15,9 @@ object Extensions {
 
   private val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
+  implicit val EscapeChars: Map[Char, String] =
+    Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", ''' -> "'", '"' -> "\"", '\u001b' -> "\\u001b")
+
   def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
     try {
       block(resource)
@@ -79,8 +82,20 @@ object Extensions {
 
     def isNumber: Boolean = Try(str.toInt).isSuccess
 
-    def escapeAnsi: String = str.replaceAll("\u001b", "\\\\u001b")
+    def escapeAnsi: String = str.escape(Map('\u001b' -> "\\u001b"))
 
+    def escape(implicit escapeCharacters: Map[Char, String]): String = {
+      val sb = new StringBuilder
+      str.foreach { c =>
+        escapeCharacters.get(c) match {
+          case Some(x) =>
+            sb += '\\'
+            sb ++= x
+          case None    => sb += c
+        }
+      }
+      sb.toString
+    }
 
     def containsAnsi: Boolean = AnsiRegex.matches(str)
     def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")

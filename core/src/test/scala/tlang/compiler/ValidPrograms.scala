@@ -9,7 +9,7 @@ import scala.concurrent.duration.Duration
 
 class ValidPrograms extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
-  import tlang.testsuites.CompilerIntegrationTests._
+  import tlang.testsuites.CompilerIntegrationTestSuite._
 
   val TimeOut        = Duration(5, "sec")
   val ValidResources = s"$Resources/validtests"

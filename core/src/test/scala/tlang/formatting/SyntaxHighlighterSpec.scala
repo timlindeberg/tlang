@@ -107,7 +107,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
     val formatting = Formatting(useColor = false)
     val lexer = mock[Lexer]
     val syntaxHighlighter = SyntaxHighlighter(lexer, formatting)
-    there.were.zeroInteractions(lexer)
+    there were zeroInteractions(lexer)
 
     syntaxHighlighter("ABC DEF") shouldBe theSameInstanceAs("ABC DEF")
   }

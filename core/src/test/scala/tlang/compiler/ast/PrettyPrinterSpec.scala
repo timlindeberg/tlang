@@ -10,7 +10,7 @@ import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
 
-  import tlang.testsuites.CompilerIntegrationTests._
+  import tlang.testsuites.CompilerIntegrationTestSuite._
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext(Some(TestFile))
