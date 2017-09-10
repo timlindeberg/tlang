@@ -21,7 +21,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
 
   import Input._
 
-  private val commands = CircularBuffer[InputBuffer](InputBuffer())
+  private val commands = CircularBuffer(newHistory())
 
   private val unmodifiedCommands = ArrayBuffer[String]()
   private var dirty              = false
@@ -30,36 +30,33 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
 
   def size: Int = commands.size
 
-  def current: InputBuffer = commands.current
+  def currentHistory: History[InputBuffer] = commands.current
+  def currentCommand: InputBuffer = currentHistory.current.get
 
-  def changeToNextCommand(): Unit = commands advance 1
-  def changeToPreviousCommand(): Unit = commands advance -1
+  def changeCommand(steps: Int): this.type = { commands advance steps; this }
 
-  def undo(): Boolean = true
-  def redo(): Boolean = true
+  def undo(): Boolean = currentHistory.undo()
+  def redo(): Boolean = currentHistory.redo()
 
   // Forward operations to the underlying buffer
-  def +=(char: Char): this.type = setCurrent(current + char)
-  def ++=(chars: String): this.type = setCurrent(current ++ chars)
-  def backspace(): this.type = setCurrent(current.removeOne())
+  def +=(char: Char): this.type = setCurrent(currentCommand + char, saveHistory = true)
+  def ++=(chars: String): this.type = setCurrent(currentCommand ++ chars, saveHistory = true)
+  def removeSelected(): this.type = setCurrent(currentCommand.removeSelected(), saveHistory = true)
 
-  def paste(): this.type = setCurrent(current.paste(clipboard))
-  def copySelected(): this.type = { current.copySelected(clipboard); this }
-  def cutSelected(): this.type = setCurrent(current.cutSelected(clipboard))
-  def removeToLeftWord(): this.type = setCurrent(current.removeToLeftWord())
-  def moveSecondaryCursor(): this.type = setCurrent(current.moveSecondaryCursor())
+  def paste(): this.type = setCurrent(currentCommand.paste(clipboard), saveHistory = true)
+  def copySelected(): this.type = setCurrent(currentCommand.copySelected(clipboard), saveHistory = false)
+  def cutSelected(): this.type = setCurrent(currentCommand.cutSelected(clipboard), saveHistory = true)
+  def removeToLeftWord(): this.type = setCurrent(currentCommand.removeToLeftWord(), saveHistory = true)
 
-  def left(): this.type = setCurrent(current.moveCursorLeft(1))
-  def right(): this.type = setCurrent(current.moveCursorRight(1))
+  def left(shiftDown: Boolean): this.type = setCurrent(currentCommand.moveCursorHorizontal(-1, !shiftDown), saveHistory = false)
+  def right(shiftDown: Boolean): this.type = setCurrent(currentCommand.moveCursorHorizontal(1, !shiftDown), saveHistory = false)
+  def goToLeftWord(shiftDown: Boolean): this.type = setCurrent(currentCommand.moveCursorToLeftWord(!shiftDown), saveHistory = false)
+  def goToRightWord(shiftDown: Boolean): this.type = setCurrent(currentCommand.moveCursorToRightWord(!shiftDown), saveHistory = false)
+  def up(shiftDown: Boolean): this.type = upOrDown(1, shiftDown)
+  def down(shiftDown: Boolean): this.type = upOrDown(-1, shiftDown)
 
-  def up(): Boolean = upOrDown(current.moveCursorUp())
-  def down(): Boolean = upOrDown(current.moveCursorDown())
-
-  def goToLeftWord(): this.type = setCurrent(current.goToLeftWord())
-  def goToRightWord(): this.type = setCurrent(current.goToRightWord())
-
-  def saveCurrent(): Unit = {
-    val command = current
+  def saveCurrentCommand(): Unit = {
+    val command = currentCommand
     if (command.isEmpty)
       return
 
@@ -67,20 +64,20 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
 
     // Reset the used buffer back to it's original state
     commands.index match {
-      case 0 => setCurrent(InputBuffer())
-      case i => setCurrent(InputBuffer(cord = unmodifiedCommands(i - 1)))
+      case 0 => setCurrent(InputBuffer.Empty, saveHistory = false)
+      case i => setCurrent(InputBuffer(unmodifiedCommands(i - 1)), saveHistory = false)
     }
     commands.setPosition(0)
 
     // Remove earlier duplicate command if it exists
-    commands.indexWhere(c => c.cord equalCord command.cord) match {
+    commands.indexWhere(c => c.current.get.cord equalCord command.cord) match {
       case -1    =>
       case index =>
         commands.remove(index)
         unmodifiedCommands.remove(index - 1)
     }
 
-    commands += command
+    commands += newHistory(command)
     unmodifiedCommands += command.toString
   }
 
@@ -93,14 +90,22 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
     historyFile.write(content)
   }
 
-  private def upOrDown(newBuffer: => InputBuffer): Boolean = {
-    if (newBuffer eq current)
-      return false
-    setCurrent(newBuffer)
-    true
+  private def upOrDown(direction: Int, shiftDown: Boolean): this.type = {
+    val newBuffer = currentCommand.moveCursorVertical(direction, !shiftDown)
+    if (newBuffer eq currentCommand)
+      commands advance -direction
+    else
+      setCurrent(newBuffer, saveHistory = false)
+    this
   }
 
-  private def setCurrent(buffer: InputBuffer): this.type = { commands.setCurrent(buffer); this }
+  private def setCurrent(buffer: InputBuffer, saveHistory: Boolean): this.type = {
+    if (saveHistory)
+      currentHistory += buffer
+    else
+      currentHistory.replaceCurrent(buffer)
+    this
+  }
 
   private def loadFromFile(): Unit = {
     if (!historyFile.exists) {
@@ -113,12 +118,14 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
       if (line == HistorySeperator && lines.nonEmpty) {
         val str = lines.mkString(System.lineSeparator)
         unmodifiedCommands += str
-        commands += InputBuffer(Cord.empty :+ str)
+        commands += newHistory(InputBuffer(Cord.empty :+ str))
         lines.clear()
       } else {
         lines += line
       }
     }
   }
+
+  private def newHistory(buffer: InputBuffer = InputBuffer.Empty) = History(maxHistorySize, buffer)
 
 }

@@ -15,6 +15,7 @@ case class Cursor(position: Int, x: Int, y: Int) extends Ordered[Cursor] {
   def withRelativePos(deltaX: Int, deltaY: Int): Cursor = Cursor(x + deltaX, y + deltaY)
   def withRelativeX(deltaX: Int): Cursor = Cursor(x + deltaX, y)
   def withRelativeY(deltaY: Int): Cursor = Cursor(x, y + deltaY)
+
   override def compare(that: Cursor): Int = position - that.position
   override def equals(any: Any): Boolean = any match {
     case Cursor(pos, _, _) => pos == position

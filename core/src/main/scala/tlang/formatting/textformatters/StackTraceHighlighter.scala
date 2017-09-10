@@ -34,7 +34,7 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     import formatting._
 
     private val TextColor   = Bold
-    private val FileColor   = Cyan + Bold
+    private val FileColor   = Cyan + Bold + Underline
     private val IdColor     = Red + Bold
     private val MethodColor = Blue + Bold
     private val MsgColor    = Yellow

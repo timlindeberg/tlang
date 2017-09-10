@@ -101,7 +101,7 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
             case e: CompilationException      => Renderer.DrawCompileError(e.messages(MessageType.Error))
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
-            case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause), truncate = true)
+            case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause).print, truncate = true)
             case e                            =>
               val err = FailureColor("Internal compiler error:" + System.lineSeparator) + formatter.highlightStackTrace(e)
               println(err)

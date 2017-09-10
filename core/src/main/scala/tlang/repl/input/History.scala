@@ -3,7 +3,14 @@ package tlang.repl.input
 import tlang.formatting.Colors
 import tlang.utils.Extensions._
 
-case class History[T](maxSize: Int = Int.MaxValue) extends Seq[T] {
+object History {
+
+  def apply[T](): History[T] = History[T](Int.MaxValue)
+  def apply[T](maxSize: Int, initial: T): History[T] = History[T](maxSize) use { _ += initial }
+  def apply[T](maxSize: Int, initial: Traversable[T]): History[T] = History[T](maxSize) use { _ ++= initial }
+
+}
+case class History[T](maxSize: Int) extends Seq[T] {
 
   private case class Node(var elem: T, var prev: Option[Node], var next: Option[Node])
 
@@ -11,12 +18,19 @@ case class History[T](maxSize: Int = Int.MaxValue) extends Seq[T] {
   private var _last : Option[Node] = None
   private var _size : Int          = 0
 
-
   def apply(idx: Int): T = iterator.drop(idx).next()
 
   def current: Option[T] = _last.map(_.elem)
+  def replaceCurrent(elem: T): this.type = {
+    _last match {
+      case Some(node) => node.elem = elem
+      case None       => this += elem
+    }
+    this
+  }
 
   override def length: Int = _size
+  override def isEmpty: Boolean = _size == 0
 
   override def iterator: Iterator[T] = new Iterator[T] {
     private var current: Option[Node] = _first
@@ -25,12 +39,11 @@ case class History[T](maxSize: Int = Int.MaxValue) extends Seq[T] {
     override def next: T = current.get.use(node => current = node.next).elem
   }
 
-  def ++=(elems: Traversable[T]): Unit = elems foreach { this += _ }
-  def +=(elem: T): Unit = {
+  def ++=(elems: Traversable[T]): this.type = { elems foreach { this += _ }; this }
+  def +=(elem: T): this.type = {
     val atLastPos = _last.flatMap(_.next).isEmpty
     if (_size >= maxSize && atLastPos)
       removeFirst()
-
 
     if (atLastPos) {
       _size += 1
@@ -45,12 +58,13 @@ case class History[T](maxSize: Int = Int.MaxValue) extends Seq[T] {
     if (_first.isEmpty) {
       _first = node
       _last = node
-      return
+      return this
     }
 
     node.get.prev = _last
     _last.get.next = node
     _last = node
+    this
   }
 
   def clear(): Unit = {

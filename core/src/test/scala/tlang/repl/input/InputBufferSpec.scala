@@ -130,7 +130,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   private def createInputBuffer() = {
-    InputBuffer()
+    InputBuffer.Empty
   }
 
 }

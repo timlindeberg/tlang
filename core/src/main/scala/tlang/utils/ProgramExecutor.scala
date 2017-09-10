@@ -1,6 +1,6 @@
 package tlang.utils
 
-import java.lang.reflect.{InvocationTargetException, Method}
+import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
 import better.files.File
@@ -30,13 +30,7 @@ case class ProgramExecutor(classPaths: Set[String], timeout: Duration) {
     // will be redirected to the original Sysout (at the time of redirection). It uses the a thread
     // local byte stream to redirect output to which enables multiple threads to use different output
     // streams. At the end of the block the threads output is redirected back to the original system out.
-    try {
-      CapturedOutput { method.invoke(null, Array[String]()) }
-    } catch {
-      case e: InvocationTargetException =>
-        // We're rethrowing the cause since the wrapping InvocationTargetException is not very interesting
-        throw e.getCause
-    }
+    CapturedOutput { method.invoke(null, Array[String]()) }
   }
 
 

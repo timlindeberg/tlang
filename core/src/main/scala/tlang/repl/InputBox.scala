@@ -54,7 +54,7 @@ class InputBox(
     cursor = inputBuffer.mainCursor
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.getMarkedPosition, Inverse))
+    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.selectedPosition, Inverse))
       .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()

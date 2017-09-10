@@ -39,18 +39,18 @@ class InputSpec extends UnitSpec {
 
 
     input ++= "ABC"
-    input.saveCurrent()
+    input.saveCurrentCommand()
     input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }"
 
 
     input ++= "DEF"
-    input.saveCurrent()
+    input.saveCurrentCommand()
     input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }DEF${ Seperator }"
 
     input ++= "GHI"
-    input.saveCurrent()
+    input.saveCurrentCommand()
     input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }DEF${ Seperator }GHI${ Seperator }"
   }
@@ -65,7 +65,7 @@ class InputSpec extends UnitSpec {
 
 
     input ++= "ABC"
-    input.saveCurrent()
+    input.saveCurrentCommand()
 
     input.saveToFile()
     input.saveToFile()
@@ -105,26 +105,26 @@ class InputSpec extends UnitSpec {
 
     input.size shouldBe 4
 
-    input.current.toString shouldBe ""
+    input.currentCommand.toString shouldBe ""
 
-    input.changeToNextCommand()
-    input.current.toString shouldBe "ABCDEFGH"
+    input.changeCommand(1)
+    input.currentCommand.toString shouldBe "ABCDEFGH"
 
-    input.changeToNextCommand()
-    input.current.toString shouldBe
+    input.changeCommand(1)
+    input.currentCommand.toString shouldBe
       """|A
          |B
          |C
          |D""".stripMargin
 
-    input.changeToNextCommand()
-    input.current.toString shouldBe
+    input.changeCommand(1)
+    input.currentCommand.toString shouldBe
       """|ABCDEF
          |GHIJKL""".stripMargin
 
 
-    input.changeToNextCommand()
-    input.current.toString shouldBe ""
+    input.changeCommand(1)
+    input.currentCommand.toString shouldBe ""
   }
 
 
@@ -139,14 +139,14 @@ class InputSpec extends UnitSpec {
 
     val input = createInput(file)
 
-    input.changeToNextCommand()
+    input.changeCommand(1)
     input ++= "ABC"
-    input.changeToNextCommand()
+    input.changeCommand(1)
     input ++= "ABC"
-    input.changeToNextCommand()
+    input.changeCommand(1)
     input ++= "ABC"
 
-    input.saveCurrent()
+    input.saveCurrentCommand()
 
     input.saveToFile()
 
@@ -172,9 +172,9 @@ class InputSpec extends UnitSpec {
 
     val input = createInput(file)
 
-    input.changeToNextCommand()
+    input.changeCommand(1)
     input ++= "123" // Cursor is at the start of the line so the result should be 123ABCD
-    input.saveCurrent()
+    input.saveCurrentCommand()
 
     input.saveToFile()
 
@@ -200,7 +200,7 @@ class InputSpec extends UnitSpec {
     val input = createInput(file)
 
     input ++= "ABCD" // Cursor is at the start of the line so the result should be 123ABCD
-    input.saveCurrent()
+    input.saveCurrentCommand()
 
     input.saveToFile()
 

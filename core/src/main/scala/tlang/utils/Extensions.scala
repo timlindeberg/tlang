@@ -67,6 +67,7 @@ object Extensions {
 
   implicit class IntExtensions(val i: Int) extends AnyVal {
     def times[U](f: => U): Unit = (1 to i) foreach { _ => f }
+    def clamp(min: Int, max: Int): Int = Math.min(Math.max(i, min), max)
   }
 
   implicit class LongExtensions(val i: Long) extends AnyVal {
@@ -82,7 +83,7 @@ object Extensions {
 
     def isNumber: Boolean = Try(str.toInt).isSuccess
 
-    def escapeAnsi: String = str.escape(Map('\u001b' -> "\\u001b"))
+    def escapeAnsi: String = str.escape(Map('\u001b' -> "u001b"))
 
     def escape(implicit escapeCharacters: Map[Char, String]): String = {
       val sb = new StringBuilder

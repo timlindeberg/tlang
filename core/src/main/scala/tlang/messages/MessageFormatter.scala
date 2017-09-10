@@ -62,8 +62,8 @@ case class MessageFormatter(
 
 
   private def contextLines: List[(Int, String)] = {
-    val start = clamp(position.line - messageContextSize, 1, lines.size)
-    val end = clamp(position.line + messageContextSize, 1, lines.size)
+    val start = (position.line - messageContextSize).clamp(1, lines.size)
+    val end = (position.line + messageContextSize).clamp(1, lines.size)
     (start to end)
       .map(i => (i, lines(i - 1)))
       .toList
@@ -150,8 +150,6 @@ case class MessageFormatter(
     val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
     (Math.max(startOfText, start), Math.min(end, line.length))
   }
-
-  private def clamp(x: Int, min: Int, max: Int): Int = Math.min(Math.max(x, min), max)
 
 
 }

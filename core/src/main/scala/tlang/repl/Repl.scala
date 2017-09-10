@@ -35,7 +35,7 @@ object Repl {
 sealed abstract class Command() extends Product with Serializable {
   def unapply(keyStroke: KeyStroke): Boolean
   def apply(keyStroke: KeyStroke): Boolean
-  def order: Int
+  def priority: Int
 }
 
 class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, input: Input) extends Actor {
@@ -76,12 +76,8 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           case None          => false
         }
 
-        if (shouldUpdateRenderer) {
-          if (!keyStroke.isShiftDown)
-            input.moveSecondaryCursor()
-
-          renderer ! Renderer.DrawNewInput(input.current)
-        }
+        if (shouldUpdateRenderer)
+          renderer ! Renderer.DrawNewInput(input.currentCommand)
 
         awaitInput()
     }
@@ -103,20 +99,18 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
   object Commands extends Enumerable[Command] {
 
-    // These are matched against in the order that their defined
-
     case object Evaluate extends Command {
 
-      override val order = 1
+      override val priority = 1
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
           keyStroke.isCtrlDown &&
           (keyStroke.getCharacter == ' ' || keyStroke.getCharacter == 128)
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        val command = input.toString
+        val command = input.currentCommand.toString
         if (command.nonEmpty && !command.forall(_.isWhitespace)) {
-          input.saveCurrent()
+          input.saveCurrentCommand()
           evaluate(command)
         }
         false
@@ -140,7 +134,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Undo extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -152,7 +146,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Redo extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -165,21 +159,21 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Remove extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
           keyStroke.getKeyType == KeyType.Backspace
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) input.removeToLeftWord() else input.backspace()
+        if (largeMovement(keyStroke)) input.removeToLeftWord() else input.removeSelected()
         true
       }
     }
 
     case object GoLeft extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -187,7 +181,8 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) input.goToLeftWord() else input.left()
+        val isShiftDown = keyStroke.isShiftDown
+        if (largeMovement(keyStroke)) input.goToLeftWord(isShiftDown) else input.left(isShiftDown)
         true
       }
 
@@ -195,7 +190,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object GoRight extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -203,7 +198,8 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) input.goToRightWord() else input.right()
+        val isShiftDown = keyStroke.isShiftDown
+        if (largeMovement(keyStroke)) input.goToRightWord(isShiftDown) else input.right(isShiftDown)
         true
       }
 
@@ -211,15 +207,14 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object GoUp extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
           keyStroke.getKeyType == KeyType.ArrowUp
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!input.up())
-          input.changeToPreviousCommand()
+        input.up(keyStroke.isShiftDown)
         true
       }
 
@@ -227,15 +222,14 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object GoDown extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
           keyStroke.getKeyType == KeyType.ArrowDown
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!input.down())
-          input.changeToNextCommand()
+        input.down(keyStroke.isShiftDown)
         true
       }
 
@@ -243,7 +237,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Copy extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -259,7 +253,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Paste extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -275,7 +269,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Cut extends Command {
 
-      override val order = 1
+      override val priority = 1
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -292,7 +286,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object CancelExec extends Command {
 
-      override val order = 2
+      override val priority = 2
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         keyStroke.isCtrlDown &&
@@ -311,7 +305,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object NewCharacter extends Command {
 
-      override val order = 3
+      override val priority = 3
 
       override def unapply(keyStroke: KeyStroke): Boolean =
         state == Normal &&
@@ -325,7 +319,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     private def largeMovement(keyStroke: KeyStroke): Boolean = keyStroke.isAltDown
 
-    override protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.order)
+    override protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.priority)
   }
 
 }
