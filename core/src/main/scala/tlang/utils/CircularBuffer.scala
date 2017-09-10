@@ -1,4 +1,4 @@
-package tlang.repl.input
+package tlang.utils
 
 import tlang.utils.Extensions._
 
@@ -16,6 +16,7 @@ case class CircularBuffer[T]() extends ArrayBuffer[T] {
   def advance(i: Int): this.type = { _index = mod(_index + i, size); this }
 
   def current: T = apply(_index)
+  def setCurrent(elem: T): this.type = { update(_index, elem); this }
 
   def setPosition(i: Int): Unit = _index = i
 

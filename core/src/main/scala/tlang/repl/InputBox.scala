@@ -21,7 +21,6 @@ class InputBox(
 
   private val SuccessColor      = Bold + Green
   private val ErrorColor        = Bold + Red
-  private val MarkedColor       = WhiteBG + Black
   private val InputColor        = Bold + Magenta
   private val YIndent           = 3
   private val XIndent           = 2
@@ -55,7 +54,7 @@ class InputBox(
     cursor = inputBuffer.mainCursor
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.getMarkedPosition, MarkedColor))
+    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.getMarkedPosition, Inverse))
       .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()
@@ -141,11 +140,11 @@ class InputBox(
     }
   }
 
-  private def setResult(text: String) = {
+  private def setResult(text: String): Unit = {
     result = List(List(text))
   }
 
-  private def setResult(content: Seq[(String, String)]) = {
+  private def setResult(content: Seq[(String, String)]): Unit = {
     val unzipped = content.unzip
     result = List(unzipped._1, unzipped._2)
   }

@@ -180,7 +180,7 @@ object Extensions {
     def use(f: T => Unit): T = { val x = t; f(t); x }
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }
-    def print[U](prefix: String): T = { println(prefix + ": " + t); t }
+    def print[U](prefix: String): T = { println(s"$prefix: '$t'"); t }
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
     def notIn(seq: TraversableOnce[T]): Boolean = !t.in(seq)
     def in(set: Set[T]): Boolean = set.contains(t)

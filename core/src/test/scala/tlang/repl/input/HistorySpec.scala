@@ -46,7 +46,7 @@ class HistorySpec extends UnitSpec {
     history.current shouldBe None
   }
 
-  it should "be able to undo and redo history" in {
+  it should "be handle undo and redo" in {
     val history = History[Int]()
 
     history += 1

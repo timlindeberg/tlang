@@ -11,6 +11,19 @@ object CordExtensions {
       val (a, b) = cord.split(start)
       b.split(end - a.length)._1
     }
+
+    def equalCord(other: Cord): Boolean = {
+      if (cord.length != other.length)
+        return false
+
+      val it1 = cord.self.iterator.flatMap(_.iterator)
+      val it2 = other.self.iterator.flatMap(_.iterator)
+
+      while (it1.hasNext)
+        if (it1.next != it2.next)
+          return false
+      true
+    }
   }
 
 }

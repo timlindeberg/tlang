@@ -1,17 +1,19 @@
 package tlang.repl.input
 
+import java.awt.datatransfer.Clipboard
+
 import better.files.File
 import tlang.testutils.UnitSpec
 
 // When testing the InputHistory class we should maybe mock more of it's dependencies
 // such as CircularBuffer and InputBuffer but it makes writing the tests really difficult
-class InputHistorySpec extends UnitSpec {
+class InputSpec extends UnitSpec {
 
-  import InputHistory._
+  import Input._
 
 
   val DefaultMaxHistory = 25
-  val TabSize           = 2
+  val DefaultTabSize    = 2
 
 
   behavior of "Input history"
@@ -21,7 +23,7 @@ class InputHistorySpec extends UnitSpec {
     val historyFile = mock[File]
     historyFile.exists returns false
 
-    InputHistory(historyFile, 1, 1)
+    createInput(historyFile)
 
     there was one(historyFile).createIfNotExists()
   }
@@ -30,26 +32,26 @@ class InputHistorySpec extends UnitSpec {
     val (fileContents, file) = memoryFile()
 
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
-    inputHistory.saveToFile()
+    input.saveToFile()
     fileContents.toString shouldBe ""
 
 
-    inputHistory.current ++= "ABC"
-    inputHistory.saveCurrent()
-    inputHistory.saveToFile()
+    input ++= "ABC"
+    input.saveCurrent()
+    input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }"
 
 
-    inputHistory.current ++= "DEF"
-    inputHistory.saveCurrent()
-    inputHistory.saveToFile()
+    input ++= "DEF"
+    input.saveCurrent()
+    input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }DEF${ Seperator }"
 
-    inputHistory.current ++= "GHI"
-    inputHistory.saveCurrent()
-    inputHistory.saveToFile()
+    input ++= "GHI"
+    input.saveCurrent()
+    input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }DEF${ Seperator }GHI${ Seperator }"
   }
 
@@ -57,18 +59,31 @@ class InputHistorySpec extends UnitSpec {
     val (fileContents, file) = memoryFile()
 
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
     fileContents.toString shouldBe ""
 
 
-    inputHistory.current ++= "ABC"
-    inputHistory.saveCurrent()
+    input ++= "ABC"
+    input.saveCurrent()
 
-    inputHistory.saveToFile()
-    inputHistory.saveToFile()
+    input.saveToFile()
+    input.saveToFile()
 
     there was one(file).write(*)(*, *)
+  }
+
+
+  it should "not write to file unless changes have been saved" in {
+    val (fileContents, file) = memoryFile()
+
+
+    val input = createInput(file)
+
+    input ++= "ABC"
+    input.saveToFile()
+
+    there was no(file).write(*)(*, *)
   }
 
   it should "load input history from file" in {
@@ -86,30 +101,30 @@ class InputHistorySpec extends UnitSpec {
       """.stripMargin
     )
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
-    inputHistory.size shouldBe 4
+    input.size shouldBe 4
 
-    inputHistory.current.toString shouldBe ""
+    input.current.toString shouldBe ""
 
-    inputHistory.goToNext()
-    inputHistory.current.toString shouldBe "ABCDEFGH"
+    input.changeToNextCommand()
+    input.current.toString shouldBe "ABCDEFGH"
 
-    inputHistory.goToNext()
-    inputHistory.current.toString shouldBe
+    input.changeToNextCommand()
+    input.current.toString shouldBe
       """|A
          |B
          |C
          |D""".stripMargin
 
-    inputHistory.goToNext()
-    inputHistory.current.toString shouldBe
+    input.changeToNextCommand()
+    input.current.toString shouldBe
       """|ABCDEF
          |GHIJKL""".stripMargin
 
 
-    inputHistory.goToNext()
-    inputHistory.current.toString shouldBe ""
+    input.changeToNextCommand()
+    input.current.toString shouldBe ""
   }
 
 
@@ -122,18 +137,18 @@ class InputHistorySpec extends UnitSpec {
           |""".stripMargin
     )
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
-    inputHistory.goToNext()
-    inputHistory.current ++= "ABC"
-    inputHistory.goToNext()
-    inputHistory.current ++= "ABC"
-    inputHistory.goToNext()
-    inputHistory.current ++= "ABC"
+    input.changeToNextCommand()
+    input ++= "ABC"
+    input.changeToNextCommand()
+    input ++= "ABC"
+    input.changeToNextCommand()
+    input ++= "ABC"
 
-    inputHistory.saveCurrent()
+    input.saveCurrent()
 
-    inputHistory.saveToFile()
+    input.saveToFile()
 
     contents.toString shouldBe
       s"""|ABCD
@@ -155,13 +170,13 @@ class InputHistorySpec extends UnitSpec {
           |""".stripMargin
     )
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
-    inputHistory.goToNext()
-    inputHistory.current ++= "123" // Cursor is at the start of the line so the result should be 123ABCD
-    inputHistory.saveCurrent()
+    input.changeToNextCommand()
+    input ++= "123" // Cursor is at the start of the line so the result should be 123ABCD
+    input.saveCurrent()
 
-    inputHistory.saveToFile()
+    input.saveToFile()
 
     contents.toString shouldBe
       s"""|ABCD
@@ -182,12 +197,12 @@ class InputHistorySpec extends UnitSpec {
           |""".stripMargin
     )
 
-    val inputHistory = InputHistory(file, DefaultMaxHistory, TabSize)
+    val input = createInput(file)
 
-    inputHistory.current ++= "ABCD" // Cursor is at the start of the line so the result should be 123ABCD
-    inputHistory.saveCurrent()
+    input ++= "ABCD" // Cursor is at the start of the line so the result should be 123ABCD
+    input.saveCurrent()
 
-    inputHistory.saveToFile()
+    input.saveToFile()
 
     contents.toString shouldBe
       s"""|EFGH
@@ -211,6 +226,10 @@ class InputHistorySpec extends UnitSpec {
     file.lineIterator returns content.lines
 
     (buffer, file)
+  }
+
+  private def createInput(file: File, maxHistorySize: Int = DefaultMaxHistory, tabSize: Int = DefaultTabSize) = {
+    Input(file, mock[Clipboard], maxHistorySize, tabSize)
   }
 
 }

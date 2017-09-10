@@ -1,5 +1,6 @@
 package tlang.repl
 
+
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import tlang.Context
@@ -7,7 +8,7 @@ import tlang.compiler.ast.PrettyPrinter
 import tlang.messages.MessageFormatter
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
-import tlang.repl.input.InputHistory
+import tlang.repl.input.Input
 import tlang.utils.{Enumerable, Enumeration}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,8 +25,8 @@ object Repl {
   case object StopRepl
   case class SetState(state: State)
 
-  def props(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, replTerminal: ReplTerminal, inputHistory: InputHistory) =
-    Props(new Repl(ctx, errorFormatter, prettyPrinter, replTerminal, inputHistory))
+  def props(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, inputHistory: Input) =
+    Props(new Repl(ctx, errorFormatter, prettyPrinter, terminal, inputHistory))
 
   val name = "repl"
 }
@@ -37,7 +38,7 @@ sealed abstract class Command() extends Product with Serializable {
   def order: Int
 }
 
-class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, inputHistory: InputHistory) extends Actor {
+class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, input: Input) extends Actor {
 
   import Repl._
   import ctx.formatter.formatting._
@@ -47,8 +48,6 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
   private val renderer    = context.actorOf(Renderer.props(ctx.formatter, errorFormatter, MaxOutputLines, terminal), Renderer.name)
   private val replProgram = context.actorOf(ReplProgram.props(ctx, prettyPrinter, MaxOutputLines), ReplProgram.name)
-
-  private def currentInput = inputHistory.current
 
   private var state: State = Normal
 
@@ -62,7 +61,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case StopRepl                =>
       renderer ! Renderer.StopRepl
       terminal.close()
-      inputHistory.saveToFile()
+      input.saveToFile()
       context.system.terminate()
     case msg: RendererMessage    => renderer forward msg
     case msg: ReplProgramMessage => replProgram forward msg
@@ -79,9 +78,9 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
         if (shouldUpdateRenderer) {
           if (!keyStroke.isShiftDown)
-            currentInput.setMark()
+            input.moveSecondaryCursor()
 
-          renderer ! Renderer.DrawNewInput(inputHistory.current)
+          renderer ! Renderer.DrawNewInput(input.current)
         }
 
         awaitInput()
@@ -115,9 +114,9 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           (keyStroke.getCharacter == ' ' || keyStroke.getCharacter == 128)
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        val command = currentInput.toString
+        val command = input.toString
         if (command.nonEmpty && !command.forall(_.isWhitespace)) {
-          inputHistory.saveCurrent()
+          input.saveCurrent()
           evaluate(command)
         }
         false
@@ -148,7 +147,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.isCtrlDown &&
           keyStroke.getCharacter == 'z'
 
-      override def apply(keyStroke: KeyStroke): Boolean = currentInput.undo()
+      override def apply(keyStroke: KeyStroke): Boolean = input.undo()
     }
 
     case object Redo extends Command {
@@ -161,7 +160,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.isAltDown &&
           keyStroke.getCharacter == 'z'
 
-      override def apply(keyStroke: KeyStroke): Boolean = currentInput.redo()
+      override def apply(keyStroke: KeyStroke): Boolean = input.redo()
     }
 
     case object Remove extends Command {
@@ -173,7 +172,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getKeyType == KeyType.Backspace
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.removeToLeftWord() else currentInput.removeOne()
+        if (largeMovement(keyStroke)) input.removeToLeftWord() else input.backspace()
         true
       }
     }
@@ -188,7 +187,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.goToLeftWord() else currentInput.moveCursorLeft(1)
+        if (largeMovement(keyStroke)) input.goToLeftWord() else input.left()
         true
       }
 
@@ -204,7 +203,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (largeMovement(keyStroke)) currentInput.goToRightWord() else currentInput.moveCursorRight(1)
+        if (largeMovement(keyStroke)) input.goToRightWord() else input.right()
         true
       }
 
@@ -219,8 +218,8 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getKeyType == KeyType.ArrowUp
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!currentInput.moveCursorUp())
-          inputHistory.goToPrevious()
+        if (!input.up())
+          input.changeToPreviousCommand()
         true
       }
 
@@ -235,8 +234,8 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getKeyType == KeyType.ArrowDown
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        if (!currentInput.moveCursorDown())
-          inputHistory.goToNext()
+        if (!input.down())
+          input.changeToNextCommand()
         true
       }
 
@@ -253,7 +252,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getCharacter == 'c'
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        currentInput.copy()
+        input.copySelected()
         false
       }
     }
@@ -269,7 +268,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getCharacter == 'v'
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        currentInput.paste()
+        input.paste()
         true
       }
     }
@@ -286,7 +285,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        currentInput.cut()
+        input.cutSelected()
         true
       }
     }
@@ -319,7 +318,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
           keyStroke.getCharacter != null
 
       override def apply(keyStroke: KeyStroke): Boolean = {
-        currentInput += keyStroke.getCharacter
+        input += keyStroke.getCharacter
         true
       }
     }
