@@ -6,6 +6,7 @@ import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.formatting.textformatters.{Truncator, WordWrapper}
 import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.UnitSpec
+import tlang.utils.Extensions._
 
 
 class GridSpec extends UnitSpec {
@@ -520,7 +521,7 @@ class GridSpec extends UnitSpec {
          |└─────┴────────────┘""".stripMargin
 
     grid.formatter(mockedFormatter(asciiOnly = true)).render() shouldBe
-      " ================== " + System.lineSeparator + // So intellij wont trim the whitespace at the end of the line
+      " ================== " + NL + // So intellij wont trim the whitespace at the end of the line
         """||      Header      |
            ||==================|
            || ABC | DEF        |
@@ -778,6 +779,56 @@ class GridSpec extends UnitSpec {
           |│ ABC │ ... │ \u001b[34mABCD\u001b[0m │
           |│ ... │ ABC │ \u001b[35mA\u001b[0m... │
           |└─────┴─────┴──────┘""".stripMargin)
+  }
+
+
+  it should "render correctly with newlines in content" in {
+    Grid(mockedFormatter())
+      .row()
+      .content(s"ABC${ NL }DEF${ NL }GHI")
+      .render() shouldBe
+      """|┌──────────────────┐
+         |│ ABC              │
+         |│ DEF              │
+         |│ GHI              │
+         |└──────────────────┘""".stripMargin
+
+    Grid(mockedFormatter())
+      .row()
+      .content(s"${ NL }ABC${ NL }${ NL }DEF${ NL }${ NL }GHI${ NL }")
+      .render() shouldBe
+      """|┌──────────────────┐
+         |│                  │
+         |│ ABC              │
+         |│                  │
+         |│ DEF              │
+         |│                  │
+         |│ GHI              │
+         |│                  │
+         |└──────────────────┘""".stripMargin
+
+    Grid(mockedFormatter())
+      .header("ABC")
+      .row()
+      .content(s"1+1\n")
+      .render() shouldBe
+      """|╒══════════════════╕
+         |│       ABC        │
+         |╞══════════════════╡
+         |│ 1+1              │
+         |│                  │
+         |└──────────────────┘""".stripMargin
+
+    Grid(mockedFormatter())
+      .row()
+      .content(s"\u001b[31m1+1\u001b[0m${ NL }\u001b[31m")
+      .render() should matchWithAnsi(
+      s"""|┌──────────────────┐
+          |│ \u001b[31m1+1\u001b[0m              │
+          |│ \u001b[31m                 │
+          |└──────────────────┘""".stripMargin
+    )
+
   }
 
 

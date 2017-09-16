@@ -1,5 +1,7 @@
 package tlang.compiler
 
+import java.lang.reflect.InvocationTargetException
+
 import better.files.File
 import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
@@ -13,8 +15,8 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
-import tlang.formatting.grid.Column
 import tlang.formatting.grid.Width.Percentage
+import tlang.formatting.grid.{Column, Grid}
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
@@ -329,20 +331,47 @@ object Main {
       .header(Bold(if (mainMethods.size > 1) "Executing programs" else "Executing program"))
 
     val programExecutor = ProgramExecutor(ctx)
-    cus.foreach { cu =>
-      // Gauranteed to have a file source
-      val file = cu.source.get.asInstanceOf[FileSource].file
-      val output = ctx.formatter.syntaxHighlight(programExecutor(file))
-      val lines = output.split("\r?\n").toList
-      grid
-        .row(alignment = Center)
-        .content(formatter.fileName(file))
-        .row(2)
-        .mapContent(lines.zipWithIndex) { case (line, i) => (Magenta(i + 1), line) }
-    }
+    cus.foreach { executeProgram(_, formatter, programExecutor, grid) }
     grid.print()
   }
 
+  private def executeProgram(cu: CompilationUnit, formatter: Formatter, programExecutor: ProgramExecutor, grid: Grid): Unit = {
+    // Guaranteed to have a file source
+    val file = cu.source.get.asInstanceOf[FileSource].file
+
+    val output = try {
+      programExecutor(file)
+    } catch {
+      case exception: InvocationTargetException =>
+        addExceptionOfProgram(grid, formatter, file.name, exception.getCause)
+        return
+    }
+    addOutputOfProgram(grid, formatter, file, output)
+  }
+
+  private def addOutputOfProgram(grid: Grid, formatter: Formatter, file: File, output: String) = {
+    import formatter.formatting._
+    val lines = formatter.syntaxHighlight(output)
+      .split("\r?\n")
+      .zipWithIndex
+      .map { case (line, i) => (Magenta(i + 1), line) }
+
+    grid
+      .row(alignment = Center)
+      .content(formatter.fileName(file))
+      .row(2)
+      .contents(lines)
+  }
+
+  private def addExceptionOfProgram(grid: Grid, formatter: Formatter, header: String, exception: Throwable) = {
+    import formatter.formatting._
+    val errorColor = Red + Bold
+    grid
+      .row(alignment = Center)
+      .content(errorColor(header))
+      .row()
+      .content(formatter.highlightStackTrace(exception))
+  }
 
   private def error(message: String) = {
     println(message)

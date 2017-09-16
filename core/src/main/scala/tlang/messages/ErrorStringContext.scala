@@ -4,6 +4,7 @@ import tlang.Context
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.formatting.Colors.Color
 import tlang.formatting.{Formatter, SimpleFormatting}
+import tlang.utils.Extensions._
 
 
 object ErrorStringContext {
@@ -101,7 +102,7 @@ case class ErrorStringContext(
           if (hasMore)
             sb ++= " "
         case suggestions       =>
-          sb ++= " Did you mean?" + System.lineSeparator
+          sb ++= " Did you mean?" + NL
           sb ++= suggestions
             .map { suggestion =>
               val sb = new StringBuilder
@@ -113,9 +114,9 @@ case class ErrorStringContext(
               currentColor = ValueColor
               sb.toString
             }
-            .mkString(System.lineSeparator)
+            .mkString(NL)
           if (hasMore)
-            sb ++= System.lineSeparator
+            sb ++= NL
       }
     }
 

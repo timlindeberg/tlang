@@ -83,7 +83,7 @@ class InputBox(
 
     val errorLines = errors.map { error =>
       errorFormatter.setMessage(error)
-      (errorFormatter.positionDescription, errorFormatter.prefix + " " + error.message)
+      (NumColor(error.pos.line), errorFormatter.prefix + " " + error.message)
     }
 
     val diff = errorLines.size - maxOutputLines
@@ -98,6 +98,7 @@ class InputBox(
       .header(header)
       .row()
       .content(inputText)
+
 
     if (result.nonEmpty)
       grid.row(result.size).allContent(result)
@@ -133,10 +134,11 @@ class InputBox(
 
     isFinished = true
     val text = if (shouldTruncate) truncate(output, color) else output
+    val colored = formatter.syntaxHighlight(text)
 
-    if (text.nonEmpty) {
+    if (colored.nonEmpty) {
       header = color(headerText)
-      setResult(text)
+      setResult(colored)
     }
   }
 

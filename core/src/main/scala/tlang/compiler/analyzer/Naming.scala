@@ -323,7 +323,9 @@ case class NameAnalyser(
             .collect { case Trees.UselessStatement(expr) => expr }
             .foreach { expr => report(UselessStatement(expr)) }
 
-          stats.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue))
+          stats.foldLeft(localVars) { (currentLocalVars, nextStatement) =>
+            bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue)
+          }
           localVars
         case varDecl@VarDecl(typeTree, id, init, modifiers) =>
           val newSymbol = new VariableSymbol(id.name, modifiers).setPos(varDecl)
@@ -347,7 +349,9 @@ case class NameAnalyser(
 
           localVars + (id.name -> new VariableData(newSymbol, scopeLevel))
         case For(init, condition, post, stat)               =>
-          val newVars = init.foldLeft(localVars)((currentLocalVars, nextStatement) => bind(nextStatement, currentLocalVars, scopeLevel + 1))
+          val newVars = init.foldLeft(localVars) { (currentLocalVars, nextStatement) =>
+            bind(nextStatement, currentLocalVars, scopeLevel + 1)
+          }
           bind(condition, newVars, scopeLevel)
           post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
@@ -532,7 +536,7 @@ case class NameAnalyser(
       def lookupArgument(methodSymbol: MethodSymbol) = methodSymbol.lookupArgument(name)
       def lookupField(methodSymbol: MethodSymbol) = {
         val m = methodSymbol.lookupField(name)
-        m map { sym =>
+        m foreach { sym =>
           if (isStaticContext && !sym.isStatic)
             report(AccessNonStaticFromStatic(id.name, id))
         }

@@ -18,14 +18,9 @@ trait MockitoSugar extends MockingSyntax
 
 trait StubbingSyntax {
   implicit class StubbingOps[A](mockee: => A) {
-    def returns(r: A): OngoingStubbing[A] = {
-      Mockito.when(mockee).thenReturn(r)
-    }
 
     @inline def returns(r: A, rs: A*): OngoingStubbing[A] = {
-      rs.foldLeft(Mockito.when(mockee).thenReturn(r)) { case (stub, next) =>
-        stub.thenReturn(next)
-      }
+      rs.foldLeft(Mockito.when(mockee).thenReturn(r)) { (stub, next) => stub thenReturn next }
     }
 
     def returnsDefault(implicit default: MockDefault[A]): OngoingStubbing[A] = {

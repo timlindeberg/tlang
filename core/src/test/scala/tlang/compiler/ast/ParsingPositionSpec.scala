@@ -42,9 +42,12 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
         .filter { pos => !(pos equalPos NoPos) }
+        .map(Position(_))
 
       treePositions.zip(positions.zipWithIndex) foreach { case (foundPos, (expectedPos, index)) =>
-        assert(foundPos equalPos expectedPos, s" for $className number ${ index + 1 }.")
+        withClue(s" for $className number ${ index + 1 }.") {
+          foundPos shouldBe expectedPos
+        }
       }
     }
   }

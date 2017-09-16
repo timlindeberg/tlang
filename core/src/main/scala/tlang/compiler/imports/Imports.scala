@@ -126,7 +126,7 @@ case class Imports(ctx: Context,
   def entries: Iterator[(String, String)] = shortToFull.iterator
 
   override def toString: String = {
-    shortToFull.map { case (short, full) => s"$short -> $full" }.mkString(System.lineSeparator)
+    shortToFull.map { case (short, full) => s"$short -> $full" }.mkString(NL)
   }
 
 

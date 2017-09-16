@@ -94,8 +94,7 @@ trait LexerErrors extends ErrorHandling {
 
   case class IndentationTooLong(originalIndent: Int, newIndent: Int, length: Int) extends LexerError(16, pos(length)) {
     lazy val message =
-      err"""|Indentation is too large. Indentation level went from $originalIndent to $newIndent.
-            |Indentation should only increase one level at a time.""".stripMargin
+      err"Indentation is too large. Indentation level went from $originalIndent to $newIndent. Indentation should only increase one level at a time."
   }
 
   case class TabsNonIndentation(length: Int) extends LexerError(17, pos(length)) {

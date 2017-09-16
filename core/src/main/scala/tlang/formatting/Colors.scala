@@ -166,7 +166,7 @@ object Colors {
         case _: NumberFormatException => throw new IllegalArgumentException(s"Not a valid ansi sequence: $ansiSequence")
       }
 
-      ansiValues.foldLeft(NoColor: Color) { case (color, value) => color + Color(value) }
+      ansiValues.foldLeft(NoColor: Color) { (color, value) => color + Color(value) }
     }
   }
 

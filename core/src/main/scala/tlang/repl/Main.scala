@@ -1,6 +1,5 @@
 package tlang.repl
 
-import java.awt.Toolkit
 import java.nio.file.Paths
 
 import akka.actor.ActorSystem
@@ -15,7 +14,7 @@ import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.repl.Repl.{StartRepl, StopRepl}
-import tlang.repl.input.Input
+import tlang.repl.input.{Clipboard, Input}
 
 object Main {
 
@@ -63,8 +62,7 @@ object Main {
     val replTerminal = ReplTerminal()
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
-
-    val input = Input(historyFile, Toolkit.getDefaultToolkit.getSystemClipboard, MaxRedoSize, TabSize)
+    val input = Input(historyFile, Clipboard(), MaxRedoSize)
     val prettyPrinter = PrettyPrinter(formatting)
     val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, prettyPrinter, replTerminal, input), Repl.name)
 

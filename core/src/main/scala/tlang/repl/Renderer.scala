@@ -76,7 +76,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
             |
             |$commandList
             |
-            |Press ${ Blue("CTRL") }+${ Blue("Space") } to evaluate the input.
+            |Press ${ Blue("CTRL") } + ${ Blue("Space") } to evaluate the input.
           """.stripMargin.trim
       )
     terminal.put(grid.render() + "\n")

@@ -75,7 +75,18 @@ trait Positioned {
 }
 
 case object NoPosition extends Positioned
+
+object Position {
+  def apply(pos: Positioned): Position = Position(pos.line, pos.col, pos.endLine, pos.endCol)
+}
 case class Position(
+  override val line: Int,
+  override val col: Int,
+  override val endLine: Int,
+  override val endCol: Int)
+  extends Positioned
+
+case class PositionWithSource(
   override val line: Int,
   override val col: Int,
   override val endLine: Int,

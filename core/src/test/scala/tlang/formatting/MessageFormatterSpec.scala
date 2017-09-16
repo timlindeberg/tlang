@@ -56,7 +56,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   it should "show position correctly" in {
     var messageFormatter = getMessageFormatter(useColor = true)
-    val message = createMessage(pos = Position(1, 10, 100, 1000))
+    val message = createMessage(pos = PositionWithSource(1, 10, 100, 1000))
     messageFormatter setMessage message
     messageFormatter.positionDescription should matchWithAnsi("\u001b[1;35m1\u001b[0m:\u001b[1;35m10\u001b[0m")
 
@@ -79,7 +79,7 @@ class MessageFormatterSpec extends UnitSpec {
 
     var messageFormatter = getMessageFormatter(useColor = true, formatting = Some(formattingWithColor))
 
-    val posWithFile = Position(1, 10, 100, 1000, source = Some(source))
+    val posWithFile = PositionWithSource(1, 10, 100, 1000, source = Some(source))
     messageFormatter setMessage createMessage(pos = posWithFile)
 
     messageFormatter.sourceDescription should matchWithAnsi(
@@ -98,7 +98,7 @@ class MessageFormatterSpec extends UnitSpec {
     source.lines returns IndexedSeq("for(var i = x; i < 5; i++)")
 
     // the error is in "i < 5"
-    val errorPos = Position(1, 16, 1, 21, source = Some(source))
+    val errorPos = PositionWithSource(1, 16, 1, 21, source = Some(source))
 
     val messageFormatter = getMessageFormatter(useColor = true, contextSize = 0)
 
@@ -117,7 +117,7 @@ class MessageFormatterSpec extends UnitSpec {
     val source = mock[Source]
     source.lines returns IndexedSeq("for(var i = x; i < 5; i++)")
     // the error is in "i < 5"
-    val errorPos = Position(1, 16, 1, 21, source = Some(source))
+    val errorPos = PositionWithSource(1, 16, 1, 21, source = Some(source))
 
     val messageFormatter = getMessageFormatter(contextSize = 1, useColor = false)
 
@@ -152,7 +152,7 @@ class MessageFormatterSpec extends UnitSpec {
       "\t\te++"
     )
     // the error is in "i < 5"
-    val message = createMessage(pos = Position(6, 16, 6, 21, source = Some(source)))
+    val message = createMessage(pos = PositionWithSource(6, 16, 6, 21, source = Some(source)))
 
     test("No context lines") {
 
@@ -347,7 +347,7 @@ class MessageFormatterSpec extends UnitSpec {
     }
 
     test("Error at first line, should only have context lines below") {
-      val message = createMessage(pos = Position(1, 5, 1, 6, source = Some(source)))
+      val message = createMessage(pos = PositionWithSource(1, 5, 1, 6, source = Some(source)))
 
       test("Without color") {
         val messageFormatter = getMessageFormatter(contextSize = 2, useColor = false, message = Some(message))
@@ -379,7 +379,7 @@ class MessageFormatterSpec extends UnitSpec {
     }
 
     test("Error at second line, should only have one context line above") {
-      val message = createMessage(pos = Position(2, 5, 2, 6, source = Some(source)))
+      val message = createMessage(pos = PositionWithSource(2, 5, 2, 6, source = Some(source)))
 
       test("Without color") {
         val messageFormatter = getMessageFormatter(contextSize = 2, useColor = false, message = Some(message))
@@ -416,7 +416,7 @@ class MessageFormatterSpec extends UnitSpec {
     test("Error at last line, should only have context lines above") {
       // Indentation should also be trimmed for these lines
 
-      val message = createMessage(pos = Position(11, 3, 11, 4, source = Some(source)))
+      val message = createMessage(pos = PositionWithSource(11, 3, 11, 4, source = Some(source)))
 
       test("Without color") {
         val messageFormatter = getMessageFormatter(contextSize = 2, useColor = false, message = Some(message))
@@ -459,7 +459,7 @@ class MessageFormatterSpec extends UnitSpec {
     )
 
     // the error is in "i < 5"
-    val errorPos = Position(2, 19, 2, 24, source = Some(source))
+    val errorPos = PositionWithSource(2, 19, 2, 24, source = Some(source))
     val message = createMessage(messageType = MessageType.Warning, pos = errorPos)
 
     test("Without color") {
@@ -500,7 +500,7 @@ class MessageFormatterSpec extends UnitSpec {
     )
 
     // the error is in "i < 5"
-    var message = createMessage(messageType = MessageType.Warning, pos = Position(2, 16, 2, 21, source = Some(source)))
+    var message = createMessage(messageType = MessageType.Warning, pos = PositionWithSource(2, 16, 2, 21, source = Some(source)))
 
     test("Normal tab width") {
 
@@ -563,7 +563,7 @@ class MessageFormatterSpec extends UnitSpec {
 
     test("Error where tabs get replaced") {
       // error in a++
-      val message = createMessage(messageType = MessageType.Warning, pos = Position(3, 3, 3, 6, source = Some(source)))
+      val message = createMessage(messageType = MessageType.Warning, pos = PositionWithSource(3, 3, 3, 6, source = Some(source)))
 
       test("Without color") {
         val messageFormatter = getMessageFormatter(useColor = false, tabWidth = 6, message = Some(message))
@@ -606,7 +606,7 @@ class MessageFormatterSpec extends UnitSpec {
     )
 
     // the error is from "a" all the way to the end
-    var errorPos = Position(2, 3, 3, 6, source = Some(source))
+    var errorPos = PositionWithSource(2, 3, 3, 6, source = Some(source))
     var message = createMessage(messageType = MessageType.Warning, pos = errorPos)
 
     var messageFormatter = getMessageFormatter(useColor = false, message = Some(message))
@@ -626,7 +626,7 @@ class MessageFormatterSpec extends UnitSpec {
       "\t\t\treturn // res: F1002",
       "\t\t\tprintln(a) // res: F1000"
     )
-    errorPos = Position(2, 1, 3, 28, source = Some(source))
+    errorPos = PositionWithSource(2, 1, 3, 28, source = Some(source))
     message = createMessage(messageType = MessageType.Warning, pos = errorPos)
 
     messageFormatter = getMessageFormatter(useColor = false, message = Some(message))

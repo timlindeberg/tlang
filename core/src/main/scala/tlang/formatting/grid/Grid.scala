@@ -279,11 +279,11 @@ case class Grid(var formatter: Formatter) {
 
     // An approximation of the number of characters needed. Doesn't take in to account eventual
     // linewrapping or ansi escape characters. Therefor we use double the approximated size
-    val approximateSize = rows
+    private val approximateSize: Int = rows
       .map { row => (row.columns.map { column => column.lines.length }.max + 1) * (formatting.lineWidth + 1) }
       .sum
-    
-    val sb = new StringBuilder(2 * approximateSize)
+
+    private val sb = new StringBuilder(2 * approximateSize)
 
     def render(): String = {
       if (rows.isEmpty)
@@ -291,14 +291,14 @@ case class Grid(var formatter: Formatter) {
 
 
       sb ++= drawTopLine(rows.head)
-      sb ++= System.lineSeparator
+      sb ++= NL
       for (i <- rows.indices) {
         val row = rows(i)
         drawContent(row)
 
         if (i < rows.size - 1) {
           sb ++= drawMiddleLine(row, rows(i + 1))
-          sb ++= System.lineSeparator
+          sb ++= NL
         }
       }
       sb ++= drawBottomLine(rows.last)
@@ -341,6 +341,7 @@ case class Grid(var formatter: Formatter) {
         var acc = 2 * indent + widths.head
         widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
       }
+
       def ifHeader(a: String, b: String) = if (before.isHeader) a else b
 
       val sb = new StringBuilder
@@ -377,7 +378,6 @@ case class Grid(var formatter: Formatter) {
       val columns = row.columns
       val columnWidths = row.columnWidths
 
-
       val rowContent = columns
         .map(column => if (column.lines.nonEmpty) column.lines else List(""))
         // Transpose to get the corresponding line in each column together
@@ -394,7 +394,7 @@ case class Grid(var formatter: Formatter) {
 
           // Fill out the columns with empty lines so that each column has the same
           // number of lines after word wrapping
-          overFlowedLines.map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
+          overFlowedLines map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
         }
         .transpose // Transpose back so that we have a list of list of lines for each column
         .map(_.flatten) // Flatten the list so we just have one list of lines for each column
@@ -410,20 +410,24 @@ case class Grid(var formatter: Formatter) {
           val line = columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak
           line
         }
-        .mkString(System.lineSeparator)
+        .mkString(NL)
       sb ++= rowContent
-      sb ++= System.lineSeparator
+      sb ++= NL
     }
 
-    private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling) = {
+    private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling): List[String] = {
+      if (line.isEmpty)
+        return List("")
+
+      val lines = line.split("\r?\n", -1).toList
       overflowHandling match {
         case Except   =>
           val lineWidth = line.visibleCharacters
           if (lineWidth > width)
             throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
-          line :: Nil
-        case Wrap     => formatter.wrap(line, width)
-        case Truncate => formatter.truncate(line, width) :: Nil
+          lines
+        case Wrap     => lines flatMap { formatter.wrap(_, width) }
+        case Truncate => lines map { formatter.truncate(_, width) }
       }
     }
 

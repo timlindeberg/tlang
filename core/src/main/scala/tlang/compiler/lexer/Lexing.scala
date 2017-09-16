@@ -115,7 +115,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   }
 
   private def stripReturnCarriage(text: String) = {
-    if (System.lineSeparator().contains('\r')) text.replaceAll("\r", "")
+    if (NL.contains('\r')) text.replaceAll("\r", "")
     else text
   }
 
@@ -124,6 +124,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
       case `char` :: rest => numCharacters(rest, numChars + 1)
       case _              => (numChars, chars)
     }
+
     numCharacters(chars, 0)
   }
 
@@ -163,6 +164,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         (currentIndent, parsedChars, chars)
       case _            => (currentIndent, parsedChars, chars)
     }
+
     indent(chars, 0, 0) use { case (_, parsedChars, _) =>
       if (mixedTabsAndSpaces)
         report(IndentationMixesTabsAndSpaces(parsedChars))
@@ -538,7 +540,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
   private def areHexDigits(chars: Char*) = chars forall isHexDigit
 
-  private def isHexDigit(c: Char) = c.isDigit || "abcdef".contains(c.toLower)
+  private def isHexDigit(c: Char) = c.isDigit || (c.toLower in "abcdef")
 
   private def createToken(int: Int, tokenLength: Int): Token = createToken(new INTLIT(int), tokenLength)
 

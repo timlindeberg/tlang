@@ -16,11 +16,7 @@ case class PrettyPrinter(formatting: Formatting) {
   import formatting._
 
   private var currentIndent: Int = 0
-
-  private val seperator =
-    System.lineSeparator * 2 +
-      "/* ----------------------------------------------------------------- */" +
-      System.lineSeparator * 2
+  private val seperator          = NL * 2 + "/* ----------------------------------------------------------------- */" + NL * 2
 
 
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)

@@ -7,6 +7,7 @@ import tlang.compiler.lexer.Lexer
 import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters._
 import tlang.messages.{ErrorStringContext, VoidReporter}
+import tlang.utils.Extensions._
 
 object Formatter {
   def apply(formatting: Formatting): Formatter = {
@@ -48,7 +49,7 @@ case class Formatter(
   def highlightStackTrace(throwable: Throwable): String = stackTraceHighlighter(throwable)
   def highlightStackTrace(stackTrace: String): String = stackTraceHighlighter(stackTrace)
 
-  def fileName(file: File): String = fileName(file.name.replaceAll("\\..*$", ""))
+  def fileName(file: File): String = fileName(file.nameWithoutExtension)
 
   def fileName(name: String): String = {
     val color = Bold + Magenta
@@ -59,7 +60,7 @@ case class Formatter(
   def list(items: Traversable[String]): String =
     items
       .map(item => s"  ${ Bold(ListMarker) } $item")
-      .mkString(System.lineSeparator)
+      .mkString(NL)
 
 
 }

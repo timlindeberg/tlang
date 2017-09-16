@@ -420,7 +420,7 @@ case class TypeChecker(
         Object
       } else {
         val s = uniqueTpes.head.getSuperTypes
-        val commonTypes = uniqueTpes.drop(1).foldLeft(s)((common, tpe) => common.intersect(tpe.getSuperTypes))
+        val commonTypes = uniqueTpes.drop(1).foldLeft(s) { (common, tpe) => common.intersect(tpe.getSuperTypes) }
         commonTypes.head
       }
 

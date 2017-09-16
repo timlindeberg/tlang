@@ -15,8 +15,13 @@ object Extensions {
 
   private val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
-  implicit val EscapeChars: Map[Char, String] =
-    Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", ''' -> "'", '"' -> "\"", '\u001b' -> "\\u001b")
+  val NL: String = System.lineSeparator
+
+  val EscapeCharsNormal: Map[Char, String] =
+    Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", ''' -> "'", '"' -> "\"")
+
+  implicit val EscapeCharsAll: Map[Char, String] =
+    EscapeCharsNormal + ('\u001b' -> "\\u001b")
 
   def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
     try {
@@ -85,6 +90,24 @@ object Extensions {
 
     def escapeAnsi: String = str.escape(Map('\u001b' -> "u001b"))
 
+    def withUnixLineEndings: String = str.replaceAll("\r\n", "\n")
+    def withSystemLineEndings: String = {
+      if (NL == "\n")
+        return str
+
+      val sb = new mutable.StringBuilder()
+      for (i <- str.indices) {
+        if (i > 0 && str(i) == '\n' && str(i - 1) != '\r')
+          sb ++= NL
+        else
+          sb += str(i)
+      }
+      sb.toString
+    }
+
+    def insert(s: String, i: Int): String = str.substring(0, i) + s + str.substring(i, str.length)
+
+
     def escape(implicit escapeCharacters: Map[Char, String]): String = {
       val sb = new StringBuilder
       str.foreach { c =>
@@ -101,8 +124,10 @@ object Extensions {
     def containsAnsi: Boolean = AnsiRegex.matches(str)
     def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")
     def visibleCharacters: Int = {
-      val str = stripAnsi
-      str.codePointCount(0, str.length)
+      if (str.isEmpty)
+        return 0
+      val s = stripAnsi
+      s.codePointCount(0, s.length)
     }
 
     def isValidPath: Boolean = {
@@ -159,6 +184,16 @@ object Extensions {
       buf.toList
     }
 
+  }
+
+  implicit class Tuple2Extensions[T](val t: (T, T)) extends AnyVal {
+    def map[A](f: T => A): (A, A) = (f(t._1), f(t._2))
+  }
+  implicit class Tuple3Extensions[T](val t: (T, T, T)) extends AnyVal {
+    def map[A](f: T => A): (A, A, A) = (f(t._1), f(t._2), f(t._3))
+  }
+  implicit class Tuple4Extensions[T](val t: (T, T, T, T)) extends AnyVal {
+    def map[A](f: T => A): (A, A, A, A) = (f(t._1), f(t._2), f(t._3), f(t._4))
   }
 
   implicit class StringBuilderExtensions(val sb: scala.collection.mutable.StringBuilder) extends AnyVal {

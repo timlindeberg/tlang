@@ -6,6 +6,7 @@ import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.lexer.Lexing
 import tlang.formatting.SimpleFormatting
 import tlang.messages.{CompilationException, MessageType}
+import tlang.utils.Extensions._
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
@@ -26,7 +27,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
         parser(file).head
       } catch {
         case e: CompilationException =>
-          fail(s"Could not parse file $TestFile:" + System.lineSeparator + e.messages.formatMessages(MessageType.Error))
+          fail(s"Could not parse file $TestFile:" + NL + e.messages.formatMessages(MessageType.Error))
       }
 
       val printedCU = prettyPrinter(CU)

@@ -70,7 +70,7 @@ case class FlowAnalyser(
     //println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
-        val endKnowledge = stats.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
+        val endKnowledge = stats.foldLeft(knowledge){ (currentKnowledge, next) => analyze(next, currentKnowledge) }
         endKnowledge.flowEnded match {
           case Some(stat) if stat != stats.last =>
             val index = stats.indexOf(stat)
@@ -90,11 +90,11 @@ case class FlowAnalyser(
           case None    => knowledge.assignment(varId, None)
         }
       case For(init, condition, post, stat)  =>
-        val afterInit = init.foldLeft(knowledge)((currentKnowledge, next) => analyze(next, currentKnowledge))
+        val afterInit = init.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
         val afterCondition = analyzeCondition(condition, afterInit)
         val afterStat = analyze(stat, afterCondition)
 
-        val afterPost = post.foldLeft(afterStat)((knowledge, p) => analyze(p, knowledge))
+        val afterPost = post.foldLeft(afterStat) { (knowledge, p) => analyze(p, knowledge) }
         knowledge.filterReassignedVariables(tree, afterPost)
       case Foreach(varDecl, container, stat) =>
         analyzeExpr(container, knowledge)

@@ -5,7 +5,7 @@ import cafebabe.ClassFileTypes._
 class StackMapTableAttribute(val nameIndex : U2, stackMapFrames: List[StackMapFrame]) extends AttributeInfo(nameIndex, Nil) {
 
   override def toStream(stream : ByteStream) : ByteStream = {
-    val stackMapSize: U4 = 2 +stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
+    val stackMapSize: U4 = 2 + stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
     val ne: U2 = stackMapFrames.size
 
     stream << nameIndex << stackMapSize << ne

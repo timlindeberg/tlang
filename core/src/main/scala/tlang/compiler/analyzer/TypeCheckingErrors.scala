@@ -4,6 +4,7 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, 
 import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
 import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
 import tlang.messages._
+import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
 trait TypeCheckingErrors extends ErrorHandling {
@@ -208,7 +209,7 @@ trait TypeCheckingErrors extends ErrorHandling {
         err"$methSignature from trait $from"
       })
       val className = clazz.id.name
-      err"Class $className does not implement the following methods:" + System.lineSeparator + methods
+      err"Class $className does not implement the following methods:" + NL + methods
     }
   }
 

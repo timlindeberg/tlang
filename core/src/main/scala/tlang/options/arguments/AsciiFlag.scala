@@ -2,6 +2,7 @@ package tlang.options.arguments
 
 import tlang.formatting.{Formatter, Formatting}
 import tlang.options.BooleanFlag
+import tlang.utils.Extensions._
 
 case object AsciiFlag extends BooleanFlag {
   override val name = "ascii"
@@ -22,7 +23,7 @@ case object AsciiFlag extends BooleanFlag {
           |This is what the output would look like:
           |""".stripMargin.trim
 
-    desc + System.lineSeparator * 2 + formatBoxes(formatter)
+    desc + NL * 2 + formatBoxes(formatter)
   }
 
   private def formatBoxes(formatter: Formatter): String = {
@@ -40,7 +41,7 @@ case object AsciiFlag extends BooleanFlag {
 
     List(true, false)
       .map { asciiOnly =>
-        val list = s"A ${ Cyan("list") }" + System.lineSeparator + s"${ formatter.list(Red("A"), Green("B"), Blue("C")) }"
+        val list = s"A ${ Cyan("list") }" + NL + s"${ formatter.list(Red("A"), Green("B"), Blue("C")) }"
         val column = s"A ${ Yellow("column") }."
         val boxFormatter = formatter.copy(formatting = Formatting(asciiOnly = asciiOnly))
         val header = if (asciiOnly) "ASCII" else "Unicode"
@@ -54,7 +55,7 @@ case object AsciiFlag extends BooleanFlag {
           .content(list, column, lorumIpsum)
           .render()
       }
-      .mkString(System.lineSeparator * 2)
+      .mkString(NL * 2)
   }
 
 

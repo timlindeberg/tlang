@@ -103,7 +103,7 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause).print, truncate = true)
             case e                            =>
-              val err = FailureColor("Internal compiler error:" + System.lineSeparator) + formatter.highlightStackTrace(e)
+              val err = FailureColor("Internal compiler error:" + NL) + formatter.highlightStackTrace(e)
               println(err)
               println("Internal state:")
               println(prettyPrinted)
@@ -134,11 +134,11 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
     val res = programExecutor(ClassFile)
     history ++= newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
 
-    val executionMessages = getOutput(res).lines.map(colorOutput)
+    val executionMessages = getOutput(res).lines
 
     val sb = new StringBuilder
-    definitionMessages.foreach(sb ++= _ + System.lineSeparator)
-    executionMessages.foreach(sb ++= _ + System.lineSeparator)
+    definitionMessages.foreach(sb ++= _ + NL)
+    executionMessages.foreach(sb ++= _ + NL)
     sb.toString.trimWhiteSpaces
   }
 
@@ -155,14 +155,6 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
     if (start != -1 && end != -1) s.slice(start + ReplOutputMarker.length, end) else ""
   }
 
-  private def colorOutput(s: String): String = {
-    if (s.startsWith("val res") && s.contains("=")) {
-      val split = s.split("=")
-      if (split.length == 2)
-        return formatter.syntaxHighlight(split(0)) + "=" + Bold(Green(split(1).rightTrimWhiteSpaces))
-    }
-    Bold(Green(s.trim))
-  }
 
   private def generateCompilationUnit(): CompilationUnit = {
     var stats = history.toList
@@ -268,8 +260,9 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
       resultCounter += 1
 
       val varDecl = treeBuilder.createValDecl(varName, e, prefix = "")
+      val tpe = imports.replaceNames(e.getType.toString)
 
-      val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName = "), varDecl.id)
+      val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName: $tpe = "), varDecl.id)
       varDecl :: Println(varDeclMessage) :: Nil
     }
 

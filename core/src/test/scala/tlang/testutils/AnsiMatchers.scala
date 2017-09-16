@@ -38,10 +38,10 @@ trait AnsiMatchers {
         .map { case ((actual, expected), i) =>
           val c = if (actual == expected) "✓" else "×  "
           val num = i + 1
-          formatLine(actual, s"  Actual $num: $c  ", " ") + System.lineSeparator +
+          formatLine(actual, s"  Actual $num: $c  ", " ") + NL +
             formatLine(expected, s"Expected $num: $c  ", " ")
         }
-        .mkString(System.lineSeparator)
+        .mkString(NL)
     }
 
     def apply(actualStrings: Iterable[String]): MatchResult = {
@@ -89,7 +89,7 @@ trait AnsiMatchers {
       sbDifference ++= " " + diffChar * (2 + math.max(f.length, e.length))
       i += 1
     }
-    sbFound.toString + System.lineSeparator + sbExpected.toString + System.lineSeparator + sbDifference.toString
+    sbFound.toString + NL + sbExpected.toString + NL + sbDifference.toString
   }
 
   private def replaceChar(c: Char): String = c match {
@@ -105,23 +105,5 @@ trait AnsiMatchers {
     s"$name$seperator$l"
   }
 
-  private def differenceIndicator(indent: Int, found: String, expected: String): String = {
-    val sb = new StringBuilder(found.length)
-    sb ++= " " * indent
-    found.zip(expected).foreach { case (a, b) =>
-      sb ++= "  "
-
-      if (a == b)
-        if (a == '\r' || a == '\n')
-          sb ++= "  "
-        else
-          sb += ' '
-      else
-        sb += '‾'
-
-      sb += ' '
-    }
-    sb.toString
-  }
 
 }

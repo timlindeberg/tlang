@@ -22,7 +22,7 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
   }
 
   private def wrap(line: String, maxWidth: Int, lines: ListBuffer[String]): Unit = {
-    if (line.isEmpty) {
+    if (line.visibleCharacters == 0) {
       lines += ""
       return
     }

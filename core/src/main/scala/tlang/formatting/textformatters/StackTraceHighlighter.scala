@@ -3,6 +3,7 @@ package tlang.formatting.textformatters
 import java.io.{PrintWriter, StringWriter}
 
 import tlang.formatting.Formatting
+import tlang.utils.Extensions._
 
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
@@ -26,10 +27,8 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
   }
 
 
-  // Having this inside an object let's us mock the StackTraceHighlighter class
   object StackTraceParser extends RegexParsers {
 
-    import System.lineSeparator
 
     import formatting._
 
@@ -54,14 +53,14 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
 
     def parser(): Parser[String] =
       exception ~ ("Caused by:" ~> exception).* ^^ { case exc ~ more =>
-        exc + lineSeparator + more.map(exc => TextColor("Caused by: ") + exc).mkString(lineSeparator)
+        exc + NL + more.map(exc => TextColor("Caused by: ") + exc).mkString(NL)
       }
 
     private def exception = {
       description ~ stackTraceLine.+ ~ suppressed.? ^^ { case desc ~ stackLines ~ more =>
         desc +
-          stackLines.mkString(lineSeparator) +
-          more.map(lineSeparator + Indent + _).getOrElse("")
+          stackLines.mkString(NL) +
+          more.map(NL + Indent + _).getOrElse("")
       }
     }
 
@@ -69,7 +68,7 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     // A description starts the stack trace eg.
     // "javax.servlet.ServletException: Something bad happened"
     private def description = {
-      exceptionInThread.? ~ clazz ~ ((":" ~> descriptionMessage) | lineSeparator) ^^ { case exception ~ clazz ~ msg =>
+      exceptionInThread.? ~ clazz ~ ((":" ~> descriptionMessage) | NL) ^^ { case exception ~ clazz ~ msg =>
         exception.getOrElse("") + clazz + msg
       }
     }
@@ -77,9 +76,9 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
 
     // The description of the message. Multiple lines of any character not starting with at
     private def descriptionMessage = {
-      (not("at") ~> ".*".r <~ lineSeparator).+ ^^ { lines =>
-        val desc = lines.mkString(lineSeparator)
-        SymbolColor(":") + " " + MsgColor(desc) + lineSeparator
+      (not("at") ~> ".*".r <~ NL).+ ^^ { lines =>
+        val desc = lines.mkString(NL)
+        SymbolColor(":") + " " + MsgColor(desc) + NL
       }
     }
 
@@ -96,7 +95,7 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     // A line in the stacktrace eg.
     // "at org.mortbay.jetty.Server.handle(Server.java:326)"
     private def stackTraceLine = {
-      "at" ~> methodCall ~ source <~ lineSeparator ^^ { case clazz ~ source =>
+      "at" ~> methodCall ~ source <~ NL ^^ { case clazz ~ source =>
         Indent + TextColor("at") + " " + clazz + source
       }
     }
@@ -106,7 +105,7 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     // "... 27 more"
     // "... 365 common frames omitted"
     private def suppressed = {
-      "..." ~> num <~ (("more" | "common frames omitted") ~ lineSeparator) ^^ { num =>
+      "..." ~> num <~ (("more" | "common frames omitted") ~ NL) ^^ { num =>
         SymbolColor("...") + " " + NumColor(num) + " " + TextColor("more")
       }
     }
@@ -141,9 +140,9 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     // "(MyServlet.java:169)" or
     // "(MyClass.java:431) [struts-1.2.9.jar:1.2.9]"
     private def source =
-    ("(" ~> ("Unknown Source" | "Native Method" | file) <~ ")") ~ jar.? ^^ { case file ~ jar =>
-      SymbolColor("(") + file + SymbolColor(")") + (if (jar.isDefined) " " + jar.get else "")
-    }
+      ("(" ~> ("Unknown Source" | "Native Method" | file) <~ ")") ~ jar.? ^^ { case file ~ jar =>
+        SymbolColor("(") + file + SymbolColor(")") + (if (jar.isDefined) " " + jar.get else "")
+      }
 
 
     // A file name eg.

@@ -273,6 +273,11 @@ class WordWrapperSpec extends UnitSpec {
   }
 
 
+  it should "return an empty line when line only contains ansi characters" in {
+    wordWrapper("\u001b[31m\n\u001b[0m", 3) should allMatchWithAnsi("", "")
+  }
+
+
   it should "handle real life test cases" in {
     wordWrapper("\u001b[32mLjava/io/PrintStream;\u001b[0m", 3) should
       allMatchWithAnsi(
