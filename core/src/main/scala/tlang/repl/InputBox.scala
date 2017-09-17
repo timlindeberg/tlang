@@ -32,11 +32,14 @@ class InputBox(
   private val TabWidth          = 3
   private val TabReplacement    = " " * TabWidth
   private val ShowCtrlCReminder = FiniteDuration(2, "sec")
+  private val BoxSpace          = formatting.lineWidth - 2 * XIndent
   private val spinner           = formatting.spinner
 
   private var input               = ""
   private var renderedText        = ""
   private var tabsBeforeCursor    = 0
+  private var lineLength          = 0
+
   private var result              = Seq[Seq[String]]()
   private var cursor              = Cursor()
   private var boxStartingPosition = terminal.getCursorPosition
@@ -60,7 +63,9 @@ class InputBox(
 
 
     cursor = inputBuffer.mainCursor
-    tabsBeforeCursor = inputBuffer.currentLine.take(cursor.x).count(_ == '\t')
+    val currentLine = inputBuffer.currentLine
+    tabsBeforeCursor = currentLine.take(cursor.x).count(_ == '\t')
+    lineLength = currentLine.length
 
     input = inputBuffer.toString
 
@@ -138,8 +143,9 @@ class InputBox(
         .withRelativeColumn(XIndent + cursor.x + (TabWidth - 1) * tabsBeforeCursor)
       terminal.setCursorPosition(newPos)
     }
-    val isCursorInsideBox = cursor.x <= formatter.formatting.lineWidth - 2 * XIndent
-    println("ShowCursor: " + (isCursorInsideBox && isCursorVisible))
+    // To make room for truncation
+    val end = if(lineLength > BoxSpace) BoxSpace - 3 else BoxSpace
+    val isCursorInsideBox = cursor.x <= end
     terminal.setCursorVisible(isCursorInsideBox && isCursorVisible)
   }
 

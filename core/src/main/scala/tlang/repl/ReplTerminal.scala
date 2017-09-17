@@ -4,7 +4,9 @@ import java.awt.KeyboardFocusManager
 import java.awt.event._
 import java.nio.charset.Charset
 import java.util
+import scala.collection.JavaConverters._
 
+import better.files.File
 import com.googlecode.lanterna.TextColor.ANSI
 import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input.{CharacterPattern, KeyDecodingProfile, KeyStroke, KeyType}
@@ -183,20 +185,25 @@ case class ReplTerminal() {
     }
   }
 
-  // Translates '[f' to Alt-Right and '[b' to Alt-Left
+  // Translates '[f' to Alt-Right and '[b' to Alt-Left and
   object ForwardBackwardCharacterPattern extends CharacterPattern {
     override def `match`(seq: util.List[Character]): Matching = {
       val size = seq.size
-      if (size > 2 || seq.get(0) != KeyDecodingProfile.ESC_CODE)
+
+      if(seq.get(0) != KeyDecodingProfile.ESC_CODE)
         return null
 
-      if (size == 1)
-        return Matching.NOT_YET
-
-      seq.get(1).charValue() match {
-        case 'f' => new Matching(new KeyStroke(KeyType.ArrowRight, false, true, false))
-        case 'b' => new Matching(new KeyStroke(KeyType.ArrowLeft, false, true, false))
-        case _   => null
+      size match {
+        case 1 => Matching.NOT_YET
+        case 2 =>
+          seq.get(1).charValue() match {
+            case 102 => new Matching(new KeyStroke(KeyType.ArrowRight, false, true, false))
+            case 98  => new Matching(new KeyStroke(KeyType.ArrowLeft, false, true, false))
+            case 8   => new Matching(new KeyStroke(KeyType.Backspace, false, true, false))
+            case _   => null
+          }
+        case _ =>
+          null
       }
     }
   }
