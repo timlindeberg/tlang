@@ -89,7 +89,7 @@ class WordWrapperSpec extends UnitSpec {
       """|Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse bibendum tempor mi, ut ullamcorper lacus lobortis a. Maecenas nisi nisl, pretium eu sagittis quis, elementum vitae ante. Morbi nec augue efficitur, vestibulum diam non, suscipit ipsum. Vivamus dapibus turpis ac placerat tempus. Nam ultricies tincidunt felis. Aenean fermentum, nisi sodales euismod condimentum, nibh nibh rutrum mi, nec eleifend eros lectus dapibus diam. Praesent rhoncus est sit amet pharetra malesuada. Phasellus vitae interdum leo. Nam viverra, mi non accumsan luctus, diam ex sodales urna, quis mollis metus mauris et quam. Maecenas varius, ligula vitae egestas convallis, felis urna ullamcorper leo, eget maximus leo dui quis magna. Nunc elit nisl, vulputate at faucibus et, molestie in arcu.
          |
          |Quisque quis nibh in velit iaculis pellentesque ornare ut purus. Cras vel rhoncus metus. Praesent eget commodo justo. Ut et rutrum libero. Fusce suscipit malesuada sem. Suspendisse potenti. Praesent scelerisque lectus mi, eu elementum nulla vulputate non. Sed cursus libero sed turpis sollicitudin venenatis. Curabitur eu feugiat ex.
-      """.stripMargin, 50) shouldBe
+      """.stripMargin.trim, 50) shouldBe
       Seq(
         "Lorem ipsum dolor sit amet, consectetur adipiscing",
         "elit. Suspendisse bibendum tempor mi, ut",
@@ -275,6 +275,11 @@ class WordWrapperSpec extends UnitSpec {
 
   it should "return an empty line when line only contains ansi characters" in {
     wordWrapper("\u001b[31m\n\u001b[0m", 3) should allMatchWithAnsi("", "")
+  }
+
+
+  it should "return a line when line only contains whitespaces" in {
+    wordWrapper("\t\t  \n    \t\n", 3) should allMatchWithAnsi("      ", "      ", "")
   }
 
 

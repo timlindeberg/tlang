@@ -151,6 +151,9 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
     endOfWord(i)
     if (lineLen > 0)
       addLine()
+
+    if (!hasWrapped)
+      lines += " " * spaceLen
   }
 
   // Locates a place to break the word up. If there exists any special characters in the string,

@@ -78,7 +78,7 @@ case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
     var previousColor: Color = NoColor
     var i = 0
 
-    def addColor(color: Color) = {
+    def addColor(color: Color): Unit = {
       if (color != previousColor) {
         if (previousColor needsResetBefore color)
           sb ++= Reset

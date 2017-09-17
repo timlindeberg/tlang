@@ -1,7 +1,7 @@
 package tlang.compiler.lexer
 
 import tlang.compiler.lexer.Tokens.BAD
-import tlang.messages.{ErrorHandling, ErrorMessage}
+import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.{Positioned, Source}
 
 trait LexerErrors extends ErrorHandling {
@@ -26,7 +26,9 @@ trait LexerErrors extends ErrorHandling {
 
   import errorStringContext._
 
-  abstract class LexerError(code: Int, pos: Positioned) extends ErrorMessage("L", code, pos)
+  private val ErrorLetters = "L"
+  abstract class LexerError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
+  abstract class LexerWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
 
   case class StringLiteralTooLarge(s: String, length: Int) extends LexerError(0, pos(length)) {
     lazy val message = err"String literals cannot be larger ${ Lexing.MaximumStringSize } characters."
@@ -101,7 +103,11 @@ trait LexerErrors extends ErrorHandling {
     lazy val message = err"Tabs should only be used for indentation. Use spaces for alignment."
   }
 
-  case class UnnecessaryWhitespaceOnBlankLine(length: Int) extends LexerError(18, pos(length)) {
+  //---------------------------------------------------------------------------------------
+  //  Warnings
+  //---------------------------------------------------------------------------------------
+
+  case class UnnecessaryWhitespaceOnBlankLine(length: Int) extends LexerWarning(0, pos(length)) {
     lazy val message = err"Unnecessary whitespaces on blank line."
   }
 

@@ -149,9 +149,8 @@ case class ReplTerminal() {
 
   private def applyColor(color: Color): Unit = {
     term.resetColorAndSGR()
-    if (color == NoColor) {
+    if (color == NoColor)
       return
-    }
 
     color.modifiers.foreach { mod => term.enableSGR(toSGR(mod)) }
     if (color.foreground != -1)
@@ -169,18 +168,19 @@ case class ReplTerminal() {
     case _                 => ???
   }
 
-  private def toLanternaColor(color: Int): ANSI = color match {
-    case Colors.BLACK      => ANSI.BLACK
-    case Colors.RED        => ANSI.RED
-    case Colors.GREEN      => ANSI.GREEN
-    case Colors.YELLOW     => ANSI.YELLOW
-    case Colors.BLUE       => ANSI.BLUE
-    case Colors.MAGENTA    => ANSI.MAGENTA
-    case Colors.CYAN       => ANSI.CYAN
-    case Colors.WHITE      => ANSI.WHITE
-    case Colors.DEFAULT_FG => ANSI.DEFAULT
-    case Colors.DEFAULT_BG => ANSI.DEFAULT
-    case _                 => ???
+  private def toLanternaColor(color: Int): ANSI = {
+    import Colors._
+    color match {
+      case (BLACK | BLACK_BG)        => ANSI.BLACK
+      case (RED | RED_BG)            => ANSI.RED
+      case (GREEN | GREEN_BG)        => ANSI.GREEN
+      case (YELLOW | YELLOW_BG)      => ANSI.YELLOW
+      case (BLUE | BLUE_BG)          => ANSI.BLUE
+      case (MAGENTA | MAGENTA_BG)    => ANSI.MAGENTA
+      case (CYAN | CYAN_BG)          => ANSI.CYAN
+      case (WHITE | WHITE_BG)        => ANSI.WHITE
+      case (DEFAULT_FG | DEFAULT_BG) => ANSI.DEFAULT
+    }
   }
 
   // Translates '[f' to Alt-Right and '[b' to Alt-Left
