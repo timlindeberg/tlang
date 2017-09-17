@@ -74,10 +74,8 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     setCurrent(moved.removeSelected(), saveHistory = true)
   }
 
-  def left(shiftDown: Boolean = false): this.type = setCurrent(currentBuffer.moveCursorHorizontal(-1, !shiftDown), saveHistory = false)
-  def right(shiftDown: Boolean = false): this.type = setCurrent(currentBuffer.moveCursorHorizontal(1, !shiftDown), saveHistory = false)
-  def goToLeftWord(shiftDown: Boolean = false): this.type = setCurrent(currentBuffer.moveCursorToLeftWord(!shiftDown), saveHistory = false)
-  def goToRightWord(shiftDown: Boolean = false): this.type = setCurrent(currentBuffer.moveCursorToRightWord(!shiftDown), saveHistory = false)
+  def left(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(-1, altDown, !shiftDown)
+  def right(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(1, altDown, !shiftDown)
   def up(shiftDown: Boolean = false): this.type = upOrDown(1, shiftDown)
   def down(shiftDown: Boolean = false): this.type = upOrDown(-1, shiftDown)
 
@@ -127,6 +125,17 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     else
       setCurrent(newBuffer, saveHistory = false)
     this
+  }
+
+  private def leftOrRight(direction: Int, altDown: Boolean, moveSecondary: Boolean): this.type = {
+    val newBuffer = if (altDown)
+      if (direction == 1)
+        currentBuffer.moveCursorToRightWord(moveSecondary)
+      else
+        currentBuffer.moveCursorToLeftWord(moveSecondary)
+    else
+      currentBuffer.moveCursorHorizontal(direction, moveSecondary)
+    setCurrent(newBuffer, saveHistory = false)
   }
 
   private def setCurrent(buffer: InputBuffer, saveHistory: Boolean): this.type = {

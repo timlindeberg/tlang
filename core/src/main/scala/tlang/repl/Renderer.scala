@@ -67,6 +67,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
   private def drawWelcomeBox(): Unit = {
     val commands = List("help", "quit", "print").map(command => Magenta(s":$command"))
     val commandList = formatter.list(commands)
+    val keyColor = Bold + Blue
     val grid = formatter
       .grid
       .header(Bold("Welcome to the ") + SuccessColor("T-REPL") + Bold("!"))
@@ -76,7 +77,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
             |
             |$commandList
             |
-            |Press ${ Blue("CTRL") } + ${ Blue("Space") } to evaluate the input.
+            |Press ${ keyColor("CTRL") } + ${ keyColor("Space") } to evaluate the input.
           """.stripMargin.trim
       )
     terminal.put(grid.render() + "\n")

@@ -6,7 +6,7 @@ import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.messages.{CompilationException, MessageType}
-import tlang.utils.{FileSource, Position}
+import tlang.utils.{FileSource, NoPosition, Position}
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -14,9 +14,8 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
   import tlang.testsuites.CompilerIntegrationTestSuite._
 
-  private val NoPos      : Position = Position(-1, -1, -1, -1)
-  private val TestFile   : File     = File(s"$Resources/positions/ParserPositions.t")
-  private val TestContext: Context  = testContext()
+  private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
+  private val TestContext: Context = testContext()
 
   // We make Tree lazy so the errortests.parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
@@ -41,8 +40,8 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
       val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
-        .filter { pos => !(pos equalPos NoPos) }
         .map(Position(_))
+        .filter { pos => pos != NoPosition }
 
       treePositions.zip(positions.zipWithIndex) foreach { case (foundPos, (expectedPos, index)) =>
         withClue(s" for $className number ${ index + 1 }.") {

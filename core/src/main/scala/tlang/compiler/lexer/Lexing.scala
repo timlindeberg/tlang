@@ -18,7 +18,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
   val MaximumStringSize = 65535
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
-    inputs.map { source =>
+    inputs map { source =>
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val lexer = Lexer(ctx.reporter, errorStringContext)
       lexer(source)
@@ -106,17 +106,12 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     }
 
     this.source = source
-    val characters = stripReturnCarriage(source.text).toList
+    val characters = source.text.withUnixLineEndings.toList
     val res = readTokens(characters, Nil).reverse
 
     line = 1
     column = 1
     res
-  }
-
-  private def stripReturnCarriage(text: String) = {
-    if (NL.contains('\r')) text.replaceAll("\r", "")
-    else text
   }
 
   private def parseCharacters(chars: List[Char], char: Char): (Int, List[Char]) = {

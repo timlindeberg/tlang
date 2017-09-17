@@ -37,23 +37,23 @@ object Colors {
   val Underlined: Color = RegularColor(modifiers = Set(UNDERLINED))
   val Inverse   : Color = RegularColor(modifiers = Set(INVERSE))
 
-  val Black  : Color = RegularColor(foreground = BLACK)
-  val Red    : Color = RegularColor(foreground = RED)
-  val Green  : Color = RegularColor(foreground = GREEN)
-  val Yellow : Color = RegularColor(foreground = YELLOW)
-  val Blue   : Color = RegularColor(foreground = BLUE)
-  val Magenta: Color = RegularColor(foreground = MAGENTA)
-  val Cyan   : Color = RegularColor(foreground = CYAN)
-  val White  : Color = RegularColor(foreground = WHITE)
+  val Black  : Color = RegularColor(fgColor = BLACK)
+  val Red    : Color = RegularColor(fgColor = RED)
+  val Green  : Color = RegularColor(fgColor = GREEN)
+  val Yellow : Color = RegularColor(fgColor = YELLOW)
+  val Blue   : Color = RegularColor(fgColor = BLUE)
+  val Magenta: Color = RegularColor(fgColor = MAGENTA)
+  val Cyan   : Color = RegularColor(fgColor = CYAN)
+  val White  : Color = RegularColor(fgColor = WHITE)
 
-  val BlackBG  : Color = RegularColor(background = BLACK_BG)
-  val RedBG    : Color = RegularColor(background = RED_BG)
-  val GreenBG  : Color = RegularColor(background = GREEN_BG)
-  val YellowBG : Color = RegularColor(background = YELLOW_BG)
-  val BlueBG   : Color = RegularColor(background = BLUE_BG)
-  val MagentaBG: Color = RegularColor(background = MAGENTA_BG)
-  val CyanBG   : Color = RegularColor(background = CYAN_BG)
-  val WhiteBG  : Color = RegularColor(background = WHITE_BG)
+  val BlackBG  : Color = RegularColor(bgColor = BLACK_BG)
+  val RedBG    : Color = RegularColor(bgColor = RED_BG)
+  val GreenBG  : Color = RegularColor(bgColor = GREEN_BG)
+  val YellowBG : Color = RegularColor(bgColor = YELLOW_BG)
+  val BlueBG   : Color = RegularColor(bgColor = BLUE_BG)
+  val MagentaBG: Color = RegularColor(bgColor = MAGENTA_BG)
+  val CyanBG   : Color = RegularColor(bgColor = CYAN_BG)
+  val WhiteBG  : Color = RegularColor(bgColor = WHITE_BG)
 
   val ColorMap: Map[Int, Color] = Map(
     NO_COLOR -> NoColor,
@@ -127,6 +127,10 @@ object Colors {
     def apply(any: Any): String
     override def toString: String = ansi
     def needsResetBefore(nextColor: Color): Boolean
+
+    def fgColor: Int
+    def bgColor: Int
+    def modifiers: Set[Int]
   }
 
   case object NoColor extends Color {
@@ -137,6 +141,10 @@ object Colors {
     override def +(any: Any): String = any.toString
     override def apply(any: Any): String = any.toString
     override def needsResetBefore(nextColor: Color) = false
+
+    override val fgColor  : Int      = -1
+    override val bgColor  : Int      = -1
+    override val modifiers: Set[Int] = Set()
   }
 
   case object Reset extends Color {
@@ -147,6 +155,11 @@ object Colors {
     override def +(any: Any): String = ansi + any.toString
     override def apply(any: Any): String = any.toString + ansi
     override def needsResetBefore(nextColor: Color) = false
+
+    override val fgColor  : Int      = -1
+    override val bgColor  : Int      = -1
+    override val modifiers: Set[Int] = Set()
+
   }
 
   case object Color {
@@ -170,17 +183,17 @@ object Colors {
     }
   }
 
-  private case class RegularColor(foreground: Int = -1, background: Int = -1, modifiers: Set[Int] = Set()) extends Color {
+  private case class RegularColor(override val fgColor: Int = -1, override val bgColor: Int = -1, override val modifiers: Set[Int] = Set()) extends Color {
 
     private val colors: List[Int] =
-      (foreground :: background :: modifiers.toList)
+      (fgColor :: bgColor :: modifiers.toList)
         .filter(_ != -1)
         .sorted
 
     val ansi: String = colors.mkString("\u001b[", ";", "m")
 
     val colorType: ColorType = {
-      (foreground, background, modifiers.size) match {
+      (fgColor, bgColor, modifiers.size) match {
         case (x, -1, 0) if x != -1      => Foreground
         case (-1, x, 0) if x != -1      => Background
         case (-1, -1, mods) if mods > 0 => Modifier
@@ -192,8 +205,8 @@ object Colors {
       case NoColor                                         => NoColor
       case Reset                                           => NoColor
       case RegularColor(foreground, background, modifiers) =>
-        val fg = if (foreground != -1) foreground else this.foreground
-        val bg = if (background != -1) background else this.background
+        val fg = if (foreground != -1) foreground else this.fgColor
+        val bg = if (background != -1) background else this.bgColor
         val mods = modifiers ++ this.modifiers
         RegularColor(fg, bg, mods)
     }
@@ -216,13 +229,12 @@ object Colors {
           case (Modifier, Modifier)     => !modifiers.subsetOf(nextModifiers)
           case (Modifier, Mixed)        => !modifiers.subsetOf(nextModifiers)
           case (Mixed, Mixed)           =>
-            (foreground != -1 && nextFG == -1) ||
-              (background != -1 && nextBG == -1) ||
+            (fgColor != -1 && nextFG == -1) ||
+              (bgColor != -1 && nextBG == -1) ||
               (!modifiers.subsetOf(nextModifiers))
           case _                        => true
         }
     }
-
 
   }
 
@@ -308,25 +320,9 @@ object Colors {
   // an array of the color each character.
   def splitStringAndColors(str: String): (String, Array[Color]) = {
     val colors = new ArrayBuffer[Color] {override val initialSize: Int = str.length }
-    var color: Color = Colors.NoColor
-
     val sb = new StringBuilder(str.length)
 
-    var i = 0
-    while (i < str.length) {
-      str(i) match {
-        case '\u001b' if str(i + 1) == '[' =>
-          val (newColor, endOfColor) = extractColorFrom(str, i)
-          color = newColor
-          i = endOfColor
-        case _                             =>
-      }
-      if (i < str.length) {
-        sb += str(i)
-        colors += color
-      }
-      i += 1
-    }
+    foreachWithColor(str) { (c, color) => sb += c; colors += color }
     (sb.toString, colors.toArray)
   }
 
@@ -342,6 +338,25 @@ object Colors {
       i = endOfAnsi + 1
     }
     (color, i)
+  }
+
+  def foreachWithColor[U](str: String)(f: (Char, Color) => U): Unit = {
+    var color: Color = NoColor
+
+    var i = 0
+    while (i < str.length) {
+      str(i) match {
+        case '\u001b' if str(i + 1) == '[' =>
+          val (newColor, endOfColor) = extractColorFrom(str, i)
+          color += newColor
+          i = endOfColor
+        case _                             =>
+      }
+      if (i < str.length)
+        f(str(i), color)
+
+      i += 1
+    }
   }
 
 }

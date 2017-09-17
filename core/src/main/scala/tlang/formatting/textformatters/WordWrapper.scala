@@ -1,7 +1,7 @@
 package tlang.formatting.textformatters
 
 import tlang.formatting.Colors
-import tlang.formatting.Colors.{Color, NoColor, Reset}
+import tlang.formatting.Colors.{Color, NoColor, Reset, extractColorFrom}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
@@ -191,24 +191,14 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
   private def wrapAnsiFormatting(lines: List[String]): List[String] = {
     var color: Color = Colors.NoColor
 
-    // Updates the current state of ANSI colors by looking at the ANSI escape
-    // code at line(index)
-    def updateFrom(line: String, startIndex: Int): Int = {
-      var i = startIndex
-      while (i < line.length && line(i) == '\u001b' && line(i + 1) == '[') {
-        val endOfAnsi = line.indexOf('m', i + 1)
-        val ansiEscapeSequence = line.substring(i + 2, endOfAnsi)
-        color += Color(ansiEscapeSequence)
-        i = endOfAnsi + 1
-      }
-      i
-    }
-
     def updateAnsi(line: String): Unit = {
       var i = 0
       while (i < line.length) {
         line(i) match {
-          case '\u001b' if line(i + 1) == '[' => i = updateFrom(line, i)
+          case '\u001b' if line(i + 1) == '[' =>
+            val (newColor, endOfColor) = extractColorFrom(line, i)
+            color += newColor
+            i = endOfColor
           case _                              =>
         }
         i += 1
@@ -219,9 +209,10 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       var sb = new StringBuilder
       if (line.startsWith("\u001b[")) {
         // Make sure we don't repeat the previous ansi if it is immediately updated
-        val endOfAnsi = updateFrom(line, 0)
+        val (newColor, endOfColor) = extractColorFrom(line, 0)
+        color += newColor
         sb ++= color
-        sb ++= line.substring(endOfAnsi)
+        sb ++= line.substring(endOfColor)
       } else {
         sb ++= color
         sb ++= line

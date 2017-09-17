@@ -90,12 +90,18 @@ object Extensions {
 
     def escapeAnsi: String = str.escape(Map('\u001b' -> "u001b"))
 
-    def withUnixLineEndings: String = str.replaceAll("\r\n", "\n")
+    def withUnixLineEndings: String = {
+      if (NL == "\n")
+        return str
+
+      str.replaceAll("\r\n", "\n")
+    }
+
     def withSystemLineEndings: String = {
       if (NL == "\n")
         return str
 
-      val sb = new mutable.StringBuilder()
+      val sb = new StringBuilder()
       for (i <- str.indices) {
         if (i > 0 && str(i) == '\n' && str(i - 1) != '\r')
           sb ++= NL
@@ -112,9 +118,7 @@ object Extensions {
       val sb = new StringBuilder
       str.foreach { c =>
         escapeCharacters.get(c) match {
-          case Some(x) =>
-            sb += '\\'
-            sb ++= x
+          case Some(x) => sb ++= s"\\$x"
           case None    => sb += c
         }
       }

@@ -13,9 +13,52 @@ import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguratio
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize}
+import tlang.formatting.Colors
+import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
 import tlang.utils.Extensions._
 
-import scala.collection.mutable.ListBuffer
+
+case class CtrlDown(yes: Boolean)
+case class AltDown(yes: Boolean)
+case class ShiftDown(yes: Boolean)
+
+trait Key {
+
+  def ctrlDown: CtrlDown
+  def altDown: AltDown
+  def shiftDown: ShiftDown
+
+  def isCtrlDown: Boolean = ctrlDown.yes
+  def isAltDown: Boolean = altDown.yes
+  def isShiftDown: Boolean = shiftDown.yes
+}
+
+case class CharacterKey(
+  char: Char,
+  override val ctrlDown: CtrlDown,
+  override val altDown: AltDown,
+  override val shiftDown: ShiftDown) extends Key
+
+trait Direction
+object Direction {
+  case object Up extends Direction
+  case object Down extends Direction
+  case object Left extends Direction
+  case object Right extends Direction
+}
+
+case class ArrowKey(
+  direction: Direction,
+  override val ctrlDown: CtrlDown,
+  override val altDown: AltDown,
+  override val shiftDown: ShiftDown) extends Key
+
+case class OtherKey(
+  keyType: KeyType,
+  override val ctrlDown: CtrlDown,
+  override val altDown: AltDown,
+  override val shiftDown: ShiftDown) extends Key
+
 
 case class ReplTerminal() {
 
@@ -48,62 +91,47 @@ case class ReplTerminal() {
     }
   }
 
-  def put(chars: IndexedSeq[Char]): Int = {
-    var currentColor = ANSI.DEFAULT
-    var currentBGColor = ANSI.DEFAULT
-    var SGRs = ListBuffer[SGR]()
+  def put(str: String): Int = {
+    var color: Color = Colors.NoColor
+    var (i, y) = (0, 0)
 
-    def applyColors() = {
-      SGRs.foreach(term.enableSGR)
-      term.setForegroundColor(currentColor)
-      term.setBackgroundColor(currentBGColor)
-    }
-
-    var i = 0
-    var x = 0
-    var y = 0
-    while (i < chars.size) {
-      chars(i) match {
-        case '\u001b' if chars(i + 1) == '[' =>
-          val endOfAnsi = chars.indexOf('m', i + 1)
-          val ansi = chars.subSequence(i + 2, endOfAnsi).toString
-          ansi.split(":").map(_.toList).foreach {
-            case '0' :: Nil                           =>
-              currentBGColor = ANSI.DEFAULT
-              currentColor = ANSI.DEFAULT
-              SGRs.clear()
-              term.resetColorAndSGR()
-            case '1' :: Nil                           => SGRs += SGR.BOLD
-            case '4' :: Nil                           => SGRs += SGR.UNDERLINE
-            case '3' :: c :: Nil if c in ('1' to '7') => currentColor = getColor(c)
-            case '4' :: c :: Nil if c in ('1' to '7') => currentBGColor = getColor(c)
-            case _                                    =>
-          }
-          applyColors()
-          i = endOfAnsi
-        case '\n'                            =>
+    while (i < str.length) {
+      str(i) match {
+        case '\u001b' if str(i + 1) == '[' =>
+          val (newColor, endOfColor) = extractColorFrom(str, i)
+          color += newColor
+          i = endOfColor - 1
+          applyColor(color)
+        case '\n'                          =>
           y += 1
-          x = 0
           term.putCharacter('\n')
-        case c                               =>
-          x += 1
+        case c                             =>
           term.putCharacter(c)
       }
       i += 1
     }
+
     term.flush()
     y
   }
 
-  def readInput(): KeyStroke = {
-    val k = term.readInput()
-    if (k.getKeyType != KeyType.Character) {
-      val shift = isShiftDown || k.isShiftDown
-      val alt = isAltDown || k.isAltDown
-      val ctrl = isCtrlDown || k.isCtrlDown
-      new KeyStroke(k.getKeyType, ctrl, alt, shift)
-    } else {
-      k
+
+  def readInput(): Key = {
+    val key = term.readInput()
+
+    val ctrl = CtrlDown(isCtrlDown || key.isCtrlDown)
+    val alt = AltDown(isAltDown || key.isAltDown)
+    val shift = ShiftDown(isShiftDown || key.isShiftDown)
+
+    key.getKeyType match {
+      case KeyType.Character  => CharacterKey(key.getCharacter, ctrl, alt, shift)
+      case KeyType.Enter      => CharacterKey('\n', ctrl, alt, shift)
+      case KeyType.Tab        => CharacterKey('\t', ctrl, alt, shift)
+      case KeyType.ArrowUp    => ArrowKey(Direction.Up, ctrl, alt, shift)
+      case KeyType.ArrowDown  => ArrowKey(Direction.Down, ctrl, alt, shift)
+      case KeyType.ArrowLeft  => ArrowKey(Direction.Left, ctrl, alt, shift)
+      case KeyType.ArrowRight => ArrowKey(Direction.Right, ctrl, alt, shift)
+      case _                  => OtherKey(key.getKeyType, ctrl, alt, shift)
     }
   }
 
@@ -118,18 +146,40 @@ case class ReplTerminal() {
 
   def isCursorVisible: Boolean = _isCursorVisible
 
-  private def getColor(char: Char) = char match {
-    case '0' => ANSI.BLACK
-    case '1' => ANSI.RED
-    case '2' => ANSI.GREEN
-    case '3' => ANSI.YELLOW
-    case '4' => ANSI.BLUE
-    case '5' => ANSI.MAGENTA
-    case '6' => ANSI.CYAN
-    case '7' => ANSI.WHITE
-    case _   => ???
+
+  private def applyColor(color: Color): Unit = {
+    term.resetColorAndSGR()
+    if (color == NoColor) {
+      return
+    }
+
+    color.modifiers.foreach { mod => term.enableSGR(toSGR(mod)) }
+    if (color.fgColor != -1)
+      term.setForegroundColor(toLanternaColor(color.fgColor))
+    if (color.bgColor != -1)
+      term.setForegroundColor(toLanternaColor(color.bgColor))
   }
 
+
+  private def toSGR(color: Int) = color match {
+    case Colors.BOLD       => SGR.BOLD
+    case Colors.UNDERLINED => SGR.UNDERLINE
+    case Colors.BLINK      => SGR.BLINK
+    case Colors.INVERSE    => SGR.REVERSE
+    case _                 => ???
+  }
+
+  private def toLanternaColor(color: Int): ANSI = color match {
+    case Colors.BLACK   => ANSI.BLACK
+    case Colors.RED     => ANSI.RED
+    case Colors.GREEN   => ANSI.GREEN
+    case Colors.YELLOW  => ANSI.YELLOW
+    case Colors.BLUE    => ANSI.BLUE
+    case Colors.MAGENTA => ANSI.MAGENTA
+    case Colors.CYAN    => ANSI.CYAN
+    case Colors.WHITE   => ANSI.WHITE
+    case _              => ???
+  }
 
   // Translates '[f' to Alt-Right and '[b' to Alt-Left
   object ForwardBackwardCharacterPattern extends CharacterPattern {

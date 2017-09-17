@@ -312,8 +312,8 @@ class InputSpec extends UnitSpec {
       .cutSelected() //          can be undone
       .removeToLeftWord() //     can be undone
       .right() //                can NOT be undone
-      .goToLeftWord() //         can NOT be undone
-      .goToRightWord() //        can NOT be undone
+      .left(altDown = true) //   can NOT be undone
+      .right(altDown = true) //  can NOT be undone
       .up() //                   can NOT be undone
       .down() //                 can NOT be undone
 
