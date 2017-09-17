@@ -15,14 +15,15 @@ object Colors {
   val INVERSE    = 7
   val CONCEALED  = 8
 
-  val BLACK   = 30
-  val RED     = 31
-  val GREEN   = 32
-  val YELLOW  = 33
-  val BLUE    = 34
-  val MAGENTA = 35
-  val CYAN    = 36
-  val WHITE   = 37
+  val BLACK      = 30
+  val RED        = 31
+  val GREEN      = 32
+  val YELLOW     = 33
+  val BLUE       = 34
+  val MAGENTA    = 35
+  val CYAN       = 36
+  val WHITE      = 37
+  val DEFAULT_FG = 39
 
   val BLACK_BG   = 40
   val RED_BG     = 41
@@ -32,28 +33,32 @@ object Colors {
   val MAGENTA_BG = 45
   val CYAN_BG    = 46
   val WHITE_BG   = 47
+  val DEFAULT_BG = 49
 
   val Bold      : Color = RegularColor(modifiers = Set(BOLD))
   val Underlined: Color = RegularColor(modifiers = Set(UNDERLINED))
   val Inverse   : Color = RegularColor(modifiers = Set(INVERSE))
 
-  val Black  : Color = RegularColor(fgColor = BLACK)
-  val Red    : Color = RegularColor(fgColor = RED)
-  val Green  : Color = RegularColor(fgColor = GREEN)
-  val Yellow : Color = RegularColor(fgColor = YELLOW)
-  val Blue   : Color = RegularColor(fgColor = BLUE)
-  val Magenta: Color = RegularColor(fgColor = MAGENTA)
-  val Cyan   : Color = RegularColor(fgColor = CYAN)
-  val White  : Color = RegularColor(fgColor = WHITE)
+  val Black    : Color = RegularColor(foreground = BLACK)
+  val Red      : Color = RegularColor(foreground = RED)
+  val Green    : Color = RegularColor(foreground = GREEN)
+  val Yellow   : Color = RegularColor(foreground = YELLOW)
+  val Blue     : Color = RegularColor(foreground = BLUE)
+  val Magenta  : Color = RegularColor(foreground = MAGENTA)
+  val Cyan     : Color = RegularColor(foreground = CYAN)
+  val White    : Color = RegularColor(foreground = WHITE)
+  val DefaultFG: Color = RegularColor(foreground = DEFAULT_FG)
 
-  val BlackBG  : Color = RegularColor(bgColor = BLACK_BG)
-  val RedBG    : Color = RegularColor(bgColor = RED_BG)
-  val GreenBG  : Color = RegularColor(bgColor = GREEN_BG)
-  val YellowBG : Color = RegularColor(bgColor = YELLOW_BG)
-  val BlueBG   : Color = RegularColor(bgColor = BLUE_BG)
-  val MagentaBG: Color = RegularColor(bgColor = MAGENTA_BG)
-  val CyanBG   : Color = RegularColor(bgColor = CYAN_BG)
-  val WhiteBG  : Color = RegularColor(bgColor = WHITE_BG)
+  val BlackBG  : Color = RegularColor(background = BLACK_BG)
+  val RedBG    : Color = RegularColor(background = RED_BG)
+  val GreenBG  : Color = RegularColor(background = GREEN_BG)
+  val YellowBG : Color = RegularColor(background = YELLOW_BG)
+  val BlueBG   : Color = RegularColor(background = BLUE_BG)
+  val MagentaBG: Color = RegularColor(background = MAGENTA_BG)
+  val CyanBG   : Color = RegularColor(background = CYAN_BG)
+  val WhiteBG  : Color = RegularColor(background = WHITE_BG)
+  val DefaultBG: Color = RegularColor(foreground = DEFAULT_BG)
+
 
   val ColorMap: Map[Int, Color] = Map(
     NO_COLOR -> NoColor,
@@ -70,6 +75,7 @@ object Colors {
     MAGENTA -> Magenta,
     CYAN -> Cyan,
     WHITE -> White,
+    DEFAULT_FG -> DefaultFG,
 
     BLACK_BG -> BlackBG,
     RED_BG -> RedBG,
@@ -78,7 +84,8 @@ object Colors {
     BLUE_BG -> BlueBG,
     MAGENTA_BG -> MagentaBG,
     CYAN_BG -> CyanBG,
-    WHITE_BG -> WhiteBG
+    WHITE_BG -> WhiteBG,
+    DEFAULT_BG -> DefaultBG
   )
 
   val ColorNameMap: Map[String, Int] = Map(
@@ -128,8 +135,8 @@ object Colors {
     override def toString: String = ansi
     def needsResetBefore(nextColor: Color): Boolean
 
-    def fgColor: Int
-    def bgColor: Int
+    def foreground: Int
+    def background: Int
     def modifiers: Set[Int]
   }
 
@@ -142,9 +149,9 @@ object Colors {
     override def apply(any: Any): String = any.toString
     override def needsResetBefore(nextColor: Color) = false
 
-    override val fgColor  : Int      = -1
-    override val bgColor  : Int      = -1
-    override val modifiers: Set[Int] = Set()
+    override val foreground: Int      = -1
+    override val background: Int      = -1
+    override val modifiers : Set[Int] = Set()
   }
 
   case object Reset extends Color {
@@ -156,9 +163,9 @@ object Colors {
     override def apply(any: Any): String = any.toString + ansi
     override def needsResetBefore(nextColor: Color) = false
 
-    override val fgColor  : Int      = -1
-    override val bgColor  : Int      = -1
-    override val modifiers: Set[Int] = Set()
+    override val foreground: Int      = -1
+    override val background: Int      = -1
+    override val modifiers : Set[Int] = Set()
 
   }
 
@@ -183,17 +190,17 @@ object Colors {
     }
   }
 
-  private case class RegularColor(override val fgColor: Int = -1, override val bgColor: Int = -1, override val modifiers: Set[Int] = Set()) extends Color {
+  private case class RegularColor(override val foreground: Int = -1, override val background: Int = -1, override val modifiers: Set[Int] = Set()) extends Color {
 
     private val colors: List[Int] =
-      (fgColor :: bgColor :: modifiers.toList)
+      (foreground :: background :: modifiers.toList)
         .filter(_ != -1)
         .sorted
 
     val ansi: String = colors.mkString("\u001b[", ";", "m")
 
     val colorType: ColorType = {
-      (fgColor, bgColor, modifiers.size) match {
+      (foreground, background, modifiers.size) match {
         case (x, -1, 0) if x != -1      => Foreground
         case (-1, x, 0) if x != -1      => Background
         case (-1, -1, mods) if mods > 0 => Modifier
@@ -205,8 +212,8 @@ object Colors {
       case NoColor                                         => NoColor
       case Reset                                           => NoColor
       case RegularColor(foreground, background, modifiers) =>
-        val fg = if (foreground != -1) foreground else this.fgColor
-        val bg = if (background != -1) background else this.bgColor
+        val fg = if (foreground != -1) foreground else this.foreground
+        val bg = if (background != -1) background else this.background
         val mods = modifiers ++ this.modifiers
         RegularColor(fg, bg, mods)
     }
@@ -229,8 +236,8 @@ object Colors {
           case (Modifier, Modifier)     => !modifiers.subsetOf(nextModifiers)
           case (Modifier, Mixed)        => !modifiers.subsetOf(nextModifiers)
           case (Mixed, Mixed)           =>
-            (fgColor != -1 && nextFG == -1) ||
-              (bgColor != -1 && nextBG == -1) ||
+            (foreground != -1 && nextFG == -1) ||
+              (background != -1 && nextBG == -1) ||
               (!modifiers.subsetOf(nextModifiers))
           case _                        => true
         }

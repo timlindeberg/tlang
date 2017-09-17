@@ -6,6 +6,7 @@ import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters.Marking
 import tlang.messages.{CompilerMessage, MessageFormatter}
 import tlang.repl.input.{Cursor, InputBuffer}
+import tlang.utils.Extensions._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -54,7 +55,7 @@ class InputBox(
     cursor = inputBuffer.mainCursor
     val input = inputBuffer.toString
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.selectedPosition, Inverse))
+    inputText = formatter.syntaxHighlight(text, Marking(inputBuffer.selectedPosition, Inverse, isAdditive = true))
       .replaceAll("\t", TabReplacement)
     boxHeight = inputBuffer.height
     render()
@@ -98,6 +99,9 @@ class InputBox(
       .header(header)
       .row()
       .content(inputText)
+
+    println(inputText)
+    println(inputText.ansiDebugString)
 
 
     if (result.nonEmpty)

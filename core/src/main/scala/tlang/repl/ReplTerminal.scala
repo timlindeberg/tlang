@@ -154,14 +154,14 @@ case class ReplTerminal() {
     }
 
     color.modifiers.foreach { mod => term.enableSGR(toSGR(mod)) }
-    if (color.fgColor != -1)
-      term.setForegroundColor(toLanternaColor(color.fgColor))
-    if (color.bgColor != -1)
-      term.setForegroundColor(toLanternaColor(color.bgColor))
+    if (color.foreground != -1)
+      term.setForegroundColor(toLanternaColor(color.foreground))
+    if (color.background != -1)
+      term.setForegroundColor(toLanternaColor(color.background))
   }
 
 
-  private def toSGR(color: Int) = color match {
+  private def toSGR(color: Int): SGR = color match {
     case Colors.BOLD       => SGR.BOLD
     case Colors.UNDERLINED => SGR.UNDERLINE
     case Colors.BLINK      => SGR.BLINK
@@ -170,15 +170,17 @@ case class ReplTerminal() {
   }
 
   private def toLanternaColor(color: Int): ANSI = color match {
-    case Colors.BLACK   => ANSI.BLACK
-    case Colors.RED     => ANSI.RED
-    case Colors.GREEN   => ANSI.GREEN
-    case Colors.YELLOW  => ANSI.YELLOW
-    case Colors.BLUE    => ANSI.BLUE
-    case Colors.MAGENTA => ANSI.MAGENTA
-    case Colors.CYAN    => ANSI.CYAN
-    case Colors.WHITE   => ANSI.WHITE
-    case _              => ???
+    case Colors.BLACK      => ANSI.BLACK
+    case Colors.RED        => ANSI.RED
+    case Colors.GREEN      => ANSI.GREEN
+    case Colors.YELLOW     => ANSI.YELLOW
+    case Colors.BLUE       => ANSI.BLUE
+    case Colors.MAGENTA    => ANSI.MAGENTA
+    case Colors.CYAN       => ANSI.CYAN
+    case Colors.WHITE      => ANSI.WHITE
+    case Colors.DEFAULT_FG => ANSI.DEFAULT
+    case Colors.DEFAULT_BG => ANSI.DEFAULT
+    case _                 => ???
   }
 
   // Translates '[f' to Alt-Right and '[b' to Alt-Left
