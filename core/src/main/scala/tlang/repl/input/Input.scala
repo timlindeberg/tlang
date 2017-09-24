@@ -74,13 +74,22 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     setCurrent(moved.removeSelected(), saveHistory = true)
   }
 
-  def left(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(-1, altDown, !shiftDown)
-  def right(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(1, altDown, !shiftDown)
+  def left(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(-1, altDown, shiftDown)
+  def right(altDown: Boolean = false, shiftDown: Boolean = false): this.type = leftOrRight(1, altDown, shiftDown)
   def up(shiftDown: Boolean = false): this.type = upOrDown(1, shiftDown)
   def down(shiftDown: Boolean = false): this.type = upOrDown(-1, shiftDown)
 
+  def moveCursorToStartOfLine(shiftDown: Boolean = false): this.type = startOrEndOfLine(-1, shiftDown)
+  def moveCursorToEndOfLine(shiftDown: Boolean = false): this.type = startOrEndOfLine(1, shiftDown)
+
   def moveCursorTo(x: Int, y: Int, moveSecondary: Boolean): this.type = {
     setCurrent(currentBuffer.moveCursor(x, y, moveSecondary), saveHistory = false)
+  }
+
+  def removeToStartOfLine(): this.type = {
+    val (start, _) = currentBuffer.currentLinePosition
+    val moved = currentBuffer.moveCursor(start, moveSecondary = false)
+    setCurrent(moved.removeSelected(), saveHistory = true)
   }
 
   def saveCurrentCommand(): this.type = {
@@ -131,7 +140,8 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     this
   }
 
-  private def leftOrRight(direction: Int, altDown: Boolean, moveSecondary: Boolean): this.type = {
+  private def leftOrRight(direction: Int, altDown: Boolean, shiftDown: Boolean): this.type = {
+    val moveSecondary = !shiftDown
     val newBuffer = if (altDown)
       if (direction == 1)
         currentBuffer.moveCursorToRightWord(moveSecondary)
@@ -140,6 +150,12 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     else
       currentBuffer.moveCursorHorizontal(direction, moveSecondary)
     setCurrent(newBuffer, saveHistory = false)
+  }
+
+  private def startOrEndOfLine(direction: Int, shiftDown: Boolean): this.type = {
+    val (start, end) = currentBuffer.currentLinePosition
+    val pos = if(direction == 1) end else start
+    setCurrent(currentBuffer.moveCursor(pos, moveSecondary = !shiftDown), saveHistory = false)
   }
 
   private def setCurrent(buffer: InputBuffer, saveHistory: Boolean): this.type = {

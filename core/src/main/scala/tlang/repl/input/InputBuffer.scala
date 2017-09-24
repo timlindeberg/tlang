@@ -111,6 +111,7 @@ case class InputBuffer(
     cord.slice(selection).toString.withSystemLineEndings
   }
 
+  def currentLinePosition: (Int, Int) = linePosition(currentLineIndex)
   def currentLine: String = cord.slice(currentLinePosition).toString
 
   def selectedPosition: Position = {
@@ -191,6 +192,8 @@ case class InputBuffer(
     )
   }
 
+
+
   private def leftPosition: Int = {
     val position = mainCursor.position
 
@@ -239,7 +242,6 @@ case class InputBuffer(
     Cursor(pos, x, y)
   }
 
-  private def currentLinePosition: (Int, Int) = linePosition(currentLineIndex)
 
   private def linePosition(line: Int): (Int, Int) = {
     val start = linePositions(line)

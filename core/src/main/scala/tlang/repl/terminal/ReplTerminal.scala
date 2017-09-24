@@ -24,28 +24,7 @@ object ReplTerminal {
 
   def apply(width: Int): ReplTerminal = ReplTerminal(createTerminal(), width)
 
-  // Translates '[f' to Alt-Right and '[b' to Alt-Left and '^H' to Alt-Backspace
-  object ForwardBackwardCharacterPattern extends CharacterPattern {
-    override def `match`(seq: util.List[Character]): Matching = {
-      val size = seq.size
 
-      if (seq.get(0) != KeyDecodingProfile.ESC_CODE)
-        return null
-
-      size match {
-        case 1 => Matching.NOT_YET
-        case 2 =>
-          seq.get(1).charValue() match {
-            case 102 => new Matching(new KeyStroke(KeyType.ArrowRight, false, true, false))
-            case 98  => new Matching(new KeyStroke(KeyType.ArrowLeft, false, true, false))
-            case 8   => new Matching(new KeyStroke(KeyType.Backspace, false, true, false))
-            case _   => null
-          }
-        case _ =>
-          null
-      }
-    }
-  }
 
   private def createTerminal(): Terminal = {
     if (sys.env.get("useTerminalEmulator").contains("true"))
@@ -53,7 +32,7 @@ object ReplTerminal {
 
     val charset = Charset.forName(System.getProperty("file.encoding"))
     new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
-      term.getInputDecoder.addProfile(() => util.Arrays.asList(ForwardBackwardCharacterPattern))
+      term.getInputDecoder.addProfile(CustomCharacterPatterns)
       term.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
     }
   }

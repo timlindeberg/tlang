@@ -136,22 +136,13 @@ class Repl(
       }
     }
 
-    case object Undo extends Command(Normal, 1) {
+    case object UndoRedo extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('z', Ctrl(true), _, _) => true
+        case CharacterKey('_', Ctrl(true), _, _) => true
       }
 
-      override def apply(keyStroke: Key): Boolean = input.undo()
-    }
-
-    case object Redo extends Command(Normal, 1) {
-
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('z', Ctrl(true), Alt(true), _) => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = input.redo()
+      override def apply(keyStroke: Key): Boolean = if(keyStroke.isShiftDown) input.redo() else input.undo()
     }
 
     case object Remove extends Command(Normal, 1) {
@@ -198,6 +189,34 @@ class Repl(
           case MouseDrag(x, y) => input.moveCursorTo(x, y, moveSecondary = false)
           case MouseUp(_, _)   => // Do nothing for release
         }
+        true
+      }
+
+    }
+
+    case object MoveToStartOrEndOfLine extends Command(Normal, 1) {
+      override def matchesKey: PartialFunction[Key, Boolean] = {
+        case CharacterKey('a' | 'e', Ctrl(true), _, _) => true
+      }
+
+      override def apply(keyStroke: Key): Boolean = {
+        val c = keyStroke.asInstanceOf[CharacterKey].char
+        if(c == 'a')
+          input.moveCursorToStartOfLine(keyStroke.isShiftDown)
+        else
+          input.moveCursorToEndOfLine(keyStroke.isShiftDown)
+        true
+      }
+
+    }
+
+    case object RemoveToStartOfLine extends Command(Normal, 1) {
+      override def matchesKey: PartialFunction[Key, Boolean] = {
+        case CharacterKey('u', Ctrl(true), _, _) => true
+      }
+
+      override def apply(keyStroke: Key): Boolean = {
+        input.removeToStartOfLine()
         true
       }
 

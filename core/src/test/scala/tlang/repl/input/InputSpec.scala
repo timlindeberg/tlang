@@ -5,7 +5,7 @@ import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 
 // When testing the InputHistory class we should maybe mock more of it's dependencies
-// such as CircularBuffer and InputBuffer but it makes writing the tests really difficult
+// such as CircularBuffer and InputBuffer but it makes writing meaningful tests really difficult
 class InputSpec extends UnitSpec {
 
   import Input._
@@ -14,7 +14,7 @@ class InputSpec extends UnitSpec {
   val DefaultMaxHistory = 25
 
 
-  behavior of "Input history"
+  behavior of "Input"
 
 
   it should "create a new history file if it does not exist" in {
@@ -501,6 +501,59 @@ class InputSpec extends UnitSpec {
     there was one(clipboard).setContent(s"ABC${ NL }")
   }
 
+  it should "move the cursor to the start or end of the current line" in {
+    createInput()
+      .add(
+        """|ABC
+           |D
+           |EFGHIJK
+           |LMN""".stripMargin
+      )
+      .up()
+      .moveCursorToEndOfLine()
+      .add('1')
+      .left()
+      .moveCursorToStartOfLine(shiftDown = true)
+      .removeSelected()
+      .up()
+      .moveCursorToEndOfLine()
+      .add('2')
+      .up()
+      .moveCursorToStartOfLine()
+      .add('3')
+      .toString shouldBe
+        """|3ABC
+           |D2
+           |1
+           |LMN""".stripMargin
+  }
+
+  it should "remove to the start of the current line" in {
+    createInput()
+      .add(
+        """|ABC
+           |D
+           |EFGHIJK
+           |LMN""".stripMargin
+      )
+      .up()
+      .removeToStartOfLine()
+      .add('1')
+      .right()
+      .right()
+      .removeToStartOfLine()
+      .up()
+      .up()
+      .right()
+      .right()
+      .right()
+      .removeToStartOfLine()
+      .toString shouldBe
+      """|
+         |D
+         |JK
+         |LMN""".stripMargin
+  }
 
   private def memoryFile(content: String = ""): (StringBuilder, File) = {
     val buffer = new StringBuilder
