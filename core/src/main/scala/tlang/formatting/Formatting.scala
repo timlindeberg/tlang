@@ -17,7 +17,7 @@ object Formatting {
 }
 
 case class Formatting(
-  lineWidth: Int = LineWidthFlag.DefaultWidth,
+  var lineWidth: Int = LineWidthFlag.DefaultWidth,
   colorScheme: ColorScheme = DefaultColorScheme,
   useColor: Boolean = true,
   asciiOnly: Boolean = false) {

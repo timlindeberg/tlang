@@ -12,6 +12,7 @@ object Renderer {
 
   case object StartRepl extends RendererMessage
   case object StopRepl extends RendererMessage
+  case object Redraw extends RendererMessage
 
   case object DrawLoading extends RendererMessage
   case class DrawNewInput(inputBuffer: InputBuffer) extends RendererMessage
@@ -50,6 +51,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
         case DrawNewInput(input) =>
           terminal.isCursorVisible = true
           inputBox.newInput(input)
+        case Redraw              =>
         case msg                 =>
           msg match {
             case DrawCompileError(errors)            => inputBox.compileError(errors)

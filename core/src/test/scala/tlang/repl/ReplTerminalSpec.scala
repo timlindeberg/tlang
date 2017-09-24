@@ -11,6 +11,7 @@ class ReplTerminalSpec extends UnitSpec {
 
   behavior of "A terminal"
 
+
   it should "output boxes" in {
     val underlyingTerminal = mock[Terminal]
     underlyingTerminal.getCursorPosition returns(
@@ -19,7 +20,7 @@ class ReplTerminalSpec extends UnitSpec {
       new TerminalPosition(0, 12)
     )
 
-    val terminal = ReplTerminal(underlyingTerminal, 20)
+    val terminal = ReplTerminal(underlyingTerminal, createMockFormatter(width = 20).formatting)
     val grid = mock[Grid]
     grid.render() returns
       """|╒══════════════════╕
@@ -48,7 +49,7 @@ class ReplTerminalSpec extends UnitSpec {
       test("size 20") {
         val underlyingTerminal = mock[Terminal]
         underlyingTerminal.getCursorPosition returns new TerminalPosition(0, 8)
-        val terminal = ReplTerminal(underlyingTerminal, 20)
+        val terminal = ReplTerminal(underlyingTerminal, createMockFormatter(width = 20).formatting)
         val grid = mock[Grid]
         grid.render() returns
           """|╒══════════════════╕
@@ -77,7 +78,7 @@ class ReplTerminalSpec extends UnitSpec {
         val underlyingTerminal = mock[Terminal]
         underlyingTerminal.getCursorPosition returns new TerminalPosition(0, 10)
 
-        val terminal = ReplTerminal(underlyingTerminal, 25)
+        val terminal = ReplTerminal(underlyingTerminal, createMockFormatter(width = 25).formatting)
         val grid = mock[Grid]
         grid.render() returns
           """|╒═══════════════════════╕
