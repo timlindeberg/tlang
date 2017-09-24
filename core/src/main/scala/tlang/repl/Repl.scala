@@ -9,6 +9,7 @@ import tlang.messages.MessageFormatter
 import tlang.repl.Renderer._
 import tlang.repl.ReplProgram._
 import tlang.repl.input.Input
+import tlang.repl.terminal._
 import tlang.utils.{Enumerable, Enumeration}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,7 +39,12 @@ sealed abstract class Command(state: State, val priority: Int) extends Product w
   def apply(keyStroke: Key): Boolean
 }
 
-class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, input: Input) extends Actor {
+class Repl(
+  ctx: Context,
+  errorFormatter: MessageFormatter,
+  prettyPrinter: PrettyPrinter,
+  terminal: ReplTerminal,
+  input: Input) extends Actor {
 
   import Repl._
   import ctx.formatter.formatting._
@@ -70,7 +76,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
   private def awaitInput(): Unit = {
     Future { terminal.readInput() } foreach {
       case OtherKey(KeyType.EOF, _, _, _) => self ! StopRepl
-      case keyStroke: Key                 =>
+      case keyStroke                      =>
         val shouldUpdateRenderer = Commands.find(_.matches(state, keyStroke)) match {
           case Some(command) => command(keyStroke)
           case None          => false
@@ -84,7 +90,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
   }
 
   private def setAwaitExecution(): Unit = {
-    terminal.setCursorVisible(false)
+    terminal.isCursorVisible = false
     state = AwaitingExecution
     Future {
       //noinspection LoopVariableNotUpdated
@@ -101,7 +107,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
 
     case object Evaluate extends Command(Normal, 1) {
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey((' ' | 128), CtrlDown(true), _, _) => true
+        case CharacterKey((' ' | 128), Ctrl(true), _, _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {
@@ -132,7 +138,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object Undo extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('z', CtrlDown(true), _, _) => true
+        case CharacterKey('z', Ctrl(true), _, _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = input.undo()
@@ -141,7 +147,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object Redo extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('z', CtrlDown(true), AltDown(true), _) => true
+        case CharacterKey('z', Ctrl(true), Alt(true), _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = input.redo()
@@ -159,7 +165,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
       }
     }
 
-    case object MoveCursor extends Command(Normal, 1) {
+    case object MoveCursorWithArrows extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
         case _: ArrowKey => true
@@ -180,10 +186,26 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
       }
     }
 
+    case object MouseMovement extends Command(Normal, 1) {
+      override def matchesKey: PartialFunction[Key, Boolean] = {
+        case _: MouseEvent => true
+      }
+
+      override def apply(keyStroke: Key): Boolean = {
+        keyStroke match {
+          case MouseClickDown(x, y) => input.moveCursorTo(x, y, moveSecondary = true)
+          case MouseDrag(x, y)      => input.moveCursorTo(x, y, moveSecondary = false)
+          case _                    => ???
+        }
+        true
+      }
+
+    }
+
     case object Copy extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', CtrlDown(true), AltDown(true), _) => true
+        case CharacterKey('c', Ctrl(true), Alt(true), _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {
@@ -195,7 +217,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object Paste extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('v', CtrlDown(true), AltDown(true), _) => true
+        case CharacterKey('v', Ctrl(true), Alt(true), _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {
@@ -207,7 +229,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object Cut extends Command(Normal, 1) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('x', CtrlDown(true), AltDown(true), _) => true
+        case CharacterKey('x', Ctrl(true), Alt(true), _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {
@@ -219,7 +241,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object ExitProgram extends Command(Normal, 2) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', CtrlDown(true), _, _) => true
+        case CharacterKey('c', Ctrl(true), _, _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {
@@ -232,7 +254,7 @@ class Repl(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: Pretty
     case object CancelExecution extends Command(AwaitingExecution, 2) {
 
       override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', CtrlDown(true), _, _) => true
+        case CharacterKey('c', Ctrl(true), _, _) => true
       }
 
       override def apply(keyStroke: Key): Boolean = {

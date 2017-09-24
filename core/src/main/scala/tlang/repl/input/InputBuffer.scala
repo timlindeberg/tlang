@@ -168,7 +168,18 @@ case class InputBuffer(
     InputBuffer(newCord, newMainCursor, newMainCursor, newLinePositions)
   }
 
-  private def moveCursor(position: Int, moveSecondary: Boolean, upDownX: Int = 0): InputBuffer = {
+  def moveCursor(x: Int, y: Int): InputBuffer = moveCursor(x, y, moveSecondary = true, 0)
+  def moveCursor(x: Int, y: Int, moveSecondary: Boolean): InputBuffer = moveCursor(x, y, moveSecondary, 0)
+  def moveCursor(x: Int, y: Int, moveSecondary: Boolean, upDownX: Int): InputBuffer = {
+    val (lineStart, lineEnd) = linePosition(linePositions.length - y - 1) // Since linePositions have reversed order
+    val width = lineEnd - lineStart
+    val pos = lineStart + Math.min(x, width)
+    moveCursor(pos, moveSecondary, upDownX)
+  }
+
+  def moveCursor(position: Int): InputBuffer = moveCursor(position, moveSecondary = true, 0)
+  def moveCursor(position: Int, moveSecondary: Boolean): InputBuffer = moveCursor(position, moveSecondary, 0)
+  def moveCursor(position: Int, moveSecondary: Boolean, upDownX: Int): InputBuffer = {
     if (position == mainCursor.position && (!moveSecondary || secondaryCursor == mainCursor))
       return this
 

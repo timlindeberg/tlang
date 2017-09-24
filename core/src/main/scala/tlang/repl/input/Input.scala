@@ -79,6 +79,10 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
   def up(shiftDown: Boolean = false): this.type = upOrDown(1, shiftDown)
   def down(shiftDown: Boolean = false): this.type = upOrDown(-1, shiftDown)
 
+  def moveCursorTo(x: Int, y: Int, moveSecondary: Boolean): this.type = {
+    setCurrent(currentBuffer.moveCursor(x, y, moveSecondary), saveHistory = false)
+  }
+
   def saveCurrentCommand(): this.type = {
     val command = currentBuffer
     if (command.isEmpty)

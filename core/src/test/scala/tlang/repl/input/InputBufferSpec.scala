@@ -305,5 +305,26 @@ class InputBufferSpec extends UnitSpec {
          |LMN""".stripMargin
   }
 
+  it should "handle moving the cursor to absolute positions" in {
+    InputBuffer(
+      """|ABC
+         |D
+         |EFGHIJK
+         |LMN""".stripMargin
+    )
+      .moveCursor(6).print(_.debugString)
+      .add('1').print(_.debugString)
+      .moveCursor(5, 2).print(_.debugString)
+      .add('2').print(_.debugString)
+      .moveCursor(2, 3, moveSecondary = false).print(_.debugString)
+      .removeSelected().print(_.debugString)
+      .moveCursor(5, 1).print(_.debugString)
+      .add('3')
+      .toString shouldBe
+      """|ABC
+         |D3
+         |1EFGH2N""".stripMargin
+  }
+
 
 }

@@ -15,6 +15,7 @@ import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.{Clipboard, Input}
+import tlang.repl.terminal.ReplTerminal
 
 object Main {
 
@@ -59,7 +60,8 @@ object Main {
 
     val actorSystem = ActorSystem("tRepl")
 
-    val replTerminal = ReplTerminal()
+    val replTerminal = ReplTerminal(formatting.lineWidth)
+    replTerminal.enableMouseReporting()
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize)

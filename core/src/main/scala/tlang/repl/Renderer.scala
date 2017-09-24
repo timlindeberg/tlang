@@ -4,6 +4,7 @@ import akka.actor.{Actor, Props}
 import tlang.formatting.Formatter
 import tlang.messages._
 import tlang.repl.input.InputBuffer
+import tlang.repl.terminal.ReplTerminal
 
 object Renderer {
 
@@ -43,11 +44,11 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
           drawWelcomeBox()
           inputBox = newInputBox
         case DrawLoading         =>
-          terminal.setCursorVisible(false)
+          terminal.isCursorVisible = false
           inputBox.nextLoadingState()
         case StopRepl            => inputBox.exit()
         case DrawNewInput(input) =>
-          terminal.setCursorVisible(true)
+          terminal.isCursorVisible = true
           inputBox.newInput(input)
         case msg                 =>
           msg match {
@@ -80,7 +81,7 @@ class Renderer(formatter: Formatter, errorFormatter: MessageFormatter, maxOutput
             |Press ${ keyColor("CTRL") } + ${ keyColor("Space") } to evaluate the input.
           """.stripMargin.trim
       )
-    terminal.put(grid.render() + "\n")
+    terminal.putBox(grid, resetStartPosition = false)
   }
 
 

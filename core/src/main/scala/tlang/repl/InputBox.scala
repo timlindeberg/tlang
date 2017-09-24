@@ -2,14 +2,23 @@ package tlang.repl
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.formatting.grid.{Grid, TruncatedColumn}
+import tlang.formatting.grid.TruncatedColumn
 import tlang.formatting.textformatters.Marking
 import tlang.messages.{CompilerMessage, MessageFormatter}
 import tlang.repl.input.{Cursor, InputBuffer}
+import tlang.repl.terminal.ReplTerminal
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
 import scala.concurrent.duration.FiniteDuration
+
+object InputBox {
+
+  val YIndent  = 3
+  val XIndent  = 2
+  val TabWidth = 3
+
+}
 
 class InputBox(
   formatter: Formatter,
@@ -17,8 +26,10 @@ class InputBox(
   maxOutputLines: Int,
   terminal: ReplTerminal) {
 
+
   private val formatting = formatter.formatting
 
+  import InputBox._
   import formatting._
 
   private val SuccessColor = Bold + Green
@@ -26,27 +37,24 @@ class InputBox(
   private val InputColor   = Bold + Magenta
 
   // Using inverse could be cool but it seems Lanterna doesn't handle it properly
-  private val MarkColor         = WhiteBG + Black
-  private val YIndent           = 3
-  private val XIndent           = 2
-  private val TabWidth          = 3
+  private val MarkColor = WhiteBG + Black
+
   private val TabReplacement    = " " * TabWidth
   private val ShowCtrlCReminder = FiniteDuration(2, "sec")
   private val BoxSpace          = formatting.lineWidth - 2 * XIndent
   private val spinner           = formatting.spinner
 
-  private var input               = ""
-  private var renderedText        = ""
-  private var tabsBeforeCursor    = 0
-  private var lineLength          = 0
+  private var input            = ""
+  private var renderedText     = ""
+  private var tabsBeforeCursor = 0
+  private var lineLength       = 0
 
-  private var result              = Seq[Seq[String]]()
-  private var cursor              = Cursor()
-  private var boxStartingPosition = terminal.getCursorPosition
-  private var previousBoxHeight   = 0
-  private var boxHeight           = 0
-  private var header              = InputColor("Input")
-  private var isFinished          = false
+  private var result            = Seq[Seq[String]]()
+  private var cursor            = Cursor()
+  private var previousBoxHeight = 0
+  private var boxHeight         = 0
+  private var header            = InputColor("Input")
+  private var isFinished        = false
 
 
   def nextLoadingState(): Unit = {
@@ -123,8 +131,8 @@ class InputBox(
 
     val isCursorVisible = terminal.isCursorVisible
 
-    terminal.setCursorVisible(false)
-    var linesPut = putGrid(grid)
+    terminal.isCursorVisible = false
+    var linesPut = terminal.putBox(grid, resetStartPosition = !isFinished)
 
     val heightDifference = previousBoxHeight - boxHeight
     if (heightDifference > 0) {
@@ -137,16 +145,16 @@ class InputBox(
 
     if (!isFinished) {
       // Reset position to beginning of box
-      boxStartingPosition = terminal.getCursorPosition.withRelativeRow(-linesPut).withColumn(0)
-      val newPos = boxStartingPosition
+      val newPos = terminal.boxStartPosition
         .withRelativeRow(YIndent + cursor.y)
         .withRelativeColumn(XIndent + cursor.x + (TabWidth - 1) * tabsBeforeCursor)
       terminal.setCursorPosition(newPos)
     }
+
     // To make room for truncation
-    val end = if(lineLength > BoxSpace) BoxSpace - 3 else BoxSpace
+    val end = if (lineLength > BoxSpace) BoxSpace - 3 else BoxSpace
     val isCursorInsideBox = cursor.x <= end
-    terminal.setCursorVisible(isCursorInsideBox && isCursorVisible)
+    terminal.isCursorVisible = isCursorInsideBox && isCursorVisible
   }
 
   private def setResult(output: String, shouldTruncate: Boolean, color: Color, headerText: String): Unit = {
@@ -173,15 +181,8 @@ class InputBox(
   }
 
   private def clearLines(num: Int): Unit = {
-    val clearLine = (" " * formatting.lineWidth) + "\n"
+    val clearLine = (" " * formatting.lineWidth) + NL
     terminal.put(clearLine * num)
-  }
-
-  private def putGrid(grid: Grid): Int = {
-    terminal.setCursorPosition(boxStartingPosition)
-    val linesPut = terminal.put(grid.render + "\n")
-    boxStartingPosition = terminal.getCursorPosition
-    linesPut
   }
 
   private def truncate(output: String, color: Color): String = {
