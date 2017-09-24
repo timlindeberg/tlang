@@ -131,13 +131,11 @@ class InputBox(
     val isCursorVisible = terminal.isCursorVisible
 
     terminal.isCursorVisible = false
-    var linesPut = terminal.putBox(grid, resetStartPosition = !isFinished)
+    terminal.putBox(grid, resetStartPosition = !isFinished)
 
     val heightDifference = previousBoxHeight - boxHeight
-    if (heightDifference > 0) {
-      clearLines(heightDifference)
-      linesPut += heightDifference
-    }
+    if (heightDifference > 0)
+      terminal.clearScreenFromCursorPosition()
 
     previousBoxHeight = boxHeight
 

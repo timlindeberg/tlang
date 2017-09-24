@@ -88,8 +88,8 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
 
   def removeToStartOfLine(): this.type = {
     val (start, _) = currentBuffer.currentLinePosition
-    val moved = currentBuffer.moveCursor(start, moveSecondary = false)
-    setCurrent(moved.removeSelected(), saveHistory = true)
+    val movedBuffer = currentBuffer.moveCursor(start, moveSecondary = false)
+    setCurrent(movedBuffer.removeSelected(), saveHistory = true)
   }
 
   def saveCurrentCommand(): this.type = {

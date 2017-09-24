@@ -1,7 +1,5 @@
 package tlang.formatting.textformatters
 
-import java.io.{PrintWriter, StringWriter}
-
 import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 
@@ -10,7 +8,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = false) {
 
-  def apply(throwable: Throwable): String = apply(getStackTrace(throwable))
+  def apply(throwable: Throwable): String = apply(throwable.stackTrace)
   def apply(stackTrace: String): String = {
     if (!formatting.useColor)
       return stackTrace
@@ -19,12 +17,6 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     if (stackTrace.trim.isEmpty) "" else StackTraceParser.parse(stackTrace)
   }
 
-  private def getStackTrace(throwable: Throwable): String = {
-    val sw = new StringWriter()
-    val pw = new PrintWriter(sw)
-    throwable.printStackTrace(pw)
-    sw.toString
-  }
 
 
   object StackTraceParser extends RegexParsers {
@@ -46,7 +38,8 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     def parse(stackTrace: String): String = {
       parseAll(parser(), stackTrace) match {
         case Success(res, _)      => res
-        case NoSuccess(msg, next) => if (failOnError) parseError(msg, next) else stackTrace
+        case NoSuccess(msg, next) =>
+          if (failOnError) sys.error(parseError(msg, next)) else stackTrace
       }
     }
 
@@ -149,8 +142,8 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     // "MyServlet.java:169"
     // "Main.scala"
     private def file = {
-      (id <~ ".") ~ id ~ (":" ~> num).? ^^ { case name ~ ending ~ num =>
-        FileColor(name + "." + ending) + num.map { SymbolColor(":") + NumColor(_) }.getOrElse("")
+      """[0-9A-Za-z$_\-/:\.]+""".r ~ (":" ~> num).? ^^ { case name ~ num =>
+        FileColor(name) + num.map { SymbolColor(":") + NumColor(_) }.getOrElse("")
       }
     }
 
@@ -169,22 +162,20 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
     private val id  = """[0-9A-Za-z$_\-/<>]+""".r
 
 
-    private def parseError(msg: String, nxt: Input) = {
+    private def parseError(msg: String, nxt: Input): String = {
       val s = nxt.source
       val offset = nxt.offset
-      sys.error(
-        s"""|Failed to parse stack trace.
-            |Message:
-            |--------------------------------------------------------------------------------
-            |${ msg.replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n") }
-            |--------------------------------------------------------------------------------
-            |
-            |Parsed ($offset / ${ s.length } chars):
-            |--------------------------------------------------------------------------------
-            |>>>>>${ s.subSequence(0, offset) }<<<<<${ s.subSequence(offset, s.length) }
-            |--------------------------------------------------------------------------------
-            |""".stripMargin.trim
-      )
+      s"""|Failed to parse stack trace.
+          |Message:
+          |--------------------------------------------------------------------------------
+          |${ msg.replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n") }
+          |--------------------------------------------------------------------------------
+          |
+          |Parsed ($offset / ${ s.length } chars):
+          |--------------------------------------------------------------------------------
+          |>>>>>${ s.subSequence(0, offset) }<<<<<${ s.subSequence(offset, s.length) }
+          |--------------------------------------------------------------------------------
+          |""".stripMargin.trim
     }
 
   }

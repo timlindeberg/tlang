@@ -1,7 +1,6 @@
 package tlang.repl
 
 import java.nio.charset.Charset
-import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import better.files._
@@ -10,7 +9,7 @@ import com.googlecode.lanterna.TextColor.ANSI
 import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
-import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, MouseCaptureMode, Terminal}
+import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
@@ -20,7 +19,7 @@ import tlang.formatting._
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
-import tlang.repl.Renderer.Redraw
+import tlang.repl.Renderer.Resize
 import tlang.repl.Repl.{StartRepl, StopRepl}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{CustomCharacterPatterns, ReplTerminal}
@@ -32,8 +31,8 @@ object Main {
   val MaxRedoSize   = 500
   val TabSize       = 4
 
-  val HistoryFileName   = "repl_history"
-  val SettingsDirectory = Paths.get(System.getProperty("user.home"), ".tlang")
+  val HistoryFileName  : String = "repl_history"
+  val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
 
   val ReplFlags: List[FlagArgument[_]] = List(
     LineWidthFlag,
@@ -79,9 +78,11 @@ object Main {
     val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, prettyPrinter, replTerminal, input), Repl.name)
 
     terminal.addResizeListener((_, newSize) => {
+      debug(s"NewSize: $newSize")
       if (formatting.lineWidth != newSize.getColumns) {
+        val oldWidth = formatting.lineWidth
         formatting.lineWidth = newSize.getColumns
-        repl ! Redraw
+        repl ! Resize(oldWidth, newSize.getColumns)
       }
     })
 
@@ -129,8 +130,6 @@ object Main {
     val charset = Charset.forName(System.getProperty("file.encoding"))
     new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
       term.getInputDecoder.addProfile(CustomCharacterPatterns)
-      term.enterPrivateMode()
-      term.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
     }
   }
 
@@ -140,20 +139,19 @@ object Main {
       .setTerminalEmulatorFontConfiguration(emulatorFont)
       .setInitialTerminalSize(new TerminalSize(80, 50))
       .setTerminalEmulatorDeviceConfiguration(deviceConfiguration)
-      .setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
       .createTerminal()
 
-  private val emulatorFont =
+  private lazy val emulatorFont =
     new SwingTerminalFontConfiguration(
       true,
       AWTTerminalFontConfiguration.BoldMode.EVERYTHING,
       new java.awt.Font("Meslo LG S", 0, 14)
     )
 
-  private val deviceConfiguration =
+  private lazy val deviceConfiguration =
     new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
 
-  private val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
+  private lazy val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
     new java.awt.Color(177, 204, 217), // defaultColor
     new java.awt.Color(177, 204, 217), // defaultBrightColor
     new java.awt.Color(50, 65, 72), //    defaultBackgroundColor

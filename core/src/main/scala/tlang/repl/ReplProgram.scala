@@ -50,7 +50,7 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
 
   import formatting._
 
-  private val ClassName        = "REPL"
+  private val ClassName        = "ReplExecution"
   private val ReplOutputMarker = "__ReplRes__"
   private val PrintMarker      = Print(StringLit(ReplOutputMarker))
   private val ClassFile        = File(ctx.outDirs.head, ClassName + ".class")
@@ -101,12 +101,9 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
             case e: CompilationException      => Renderer.DrawCompileError(e.messages(MessageType.Error))
             case _: TimeoutException          => Renderer.DrawFailure(FailureColor("Execution timed out."), truncate = true)
             case _: CancellationException     => Renderer.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
-            case e: InvocationTargetException => Renderer.DrawFailure(formatter.highlightStackTrace(e.getCause).print, truncate = true)
+            case e: InvocationTargetException => Renderer.DrawFailure(formatStackTrace(e), truncate = true)
             case e                            =>
               val err = FailureColor("Internal compiler error:" + NL) + formatter.highlightStackTrace(e)
-              println(err)
-              println("Internal state:")
-              println(prettyPrinted)
               Renderer.DrawFailure(err, truncate = true)
           }
       }
@@ -114,6 +111,13 @@ class ReplProgram(ctx: Context, prettyPrinter: PrettyPrinter, maxOutputLines: In
       parent ! SetState(Normal)
       parent ! renderMessage
     }
+  }
+
+  private def formatStackTrace(e: Throwable) = {
+    val stackTrace = e.getCause.stackTrace
+    // Remove internal parts of the stacktrace
+    val trimmed = stackTrace.split("at " + ClassName).head + s"at $ClassName.main(Unknown Source)$NL"
+    formatter.highlightStackTrace(trimmed).rightTrimWhiteSpaces
   }
 
 

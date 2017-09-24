@@ -1,9 +1,9 @@
 package tlang.utils
 
-import java.io.File
+import java.io.{File, PrintWriter, StringWriter}
 import java.nio.file.Paths
 
-import better.files.{File => BFile }
+import better.files.{File => BFile}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -86,6 +86,15 @@ object Extensions {
 
   implicit class RegexExtensions(r: Regex) {
     def matches(s: String): Boolean = r.pattern.matcher(s).matches
+  }
+
+  implicit class ThrowableExtensions(t: Throwable) {
+    def stackTrace: String = {
+      val sw = new StringWriter()
+      val pw = new PrintWriter(sw)
+      t.printStackTrace(pw)
+      sw.toString
+    }
   }
 
   implicit class StringExtensions(val str: String) extends AnyVal {

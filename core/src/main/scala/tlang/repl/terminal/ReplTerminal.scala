@@ -21,10 +21,13 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
   var boxHeight       : Int              = 0
 
 
-  def close(): Unit =
+  def close(): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
     }
+    term.close()
+  }
+
 
   def onClose(f: => Unit): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] {
@@ -34,32 +37,28 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
     }
   }
 
-  def putBox(grid: Grid, resetStartPosition: Boolean): Int = {
+  def putBox(grid: Grid, resetStartPosition: Boolean): Unit = {
     term.setCursorPosition(boxStartPosition)
 
     boxHeight = put(grid.render() + NL)
 
     val newCursorPosition = term.getCursorPosition
 
-    boxStartPosition = if (resetStartPosition) {
+    boxStartPosition = if (resetStartPosition)
       newCursorPosition.withRelativeRow(-boxHeight).withColumn(0)
-    } else {
+    else
       newCursorPosition
-    }
-
-    boxHeight
   }
 
 
   def put(str: String): Int = {
-    var color: Color = Colors.NoColor
     var y = 0
     var i = 0
+
     while (i < str.length) {
       str(i) match {
         case '\u001b' if str(i + 1) == '[' =>
-          val (newColor, endOfColor) = extractColorFrom(str, i, extractMultiple = false)
-          color += newColor
+          val (color, endOfColor) = extractColorFrom(str, i, extractMultiple = false)
           i = endOfColor - 1
           applyColor(color)
         case c                             =>
@@ -74,6 +73,12 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
     y
   }
 
+  def clearScreenFromCursorPosition(): Unit = println("\u001b[0J")
+
+  def clearPreviousDrawing(): Unit = {
+    setCursorPosition(boxStartPosition.withRelativeRow(-boxHeight))
+    clearScreenFromCursorPosition()
+  }
 
   def readInput(): Key = {
     var key: Option[Key] = None
