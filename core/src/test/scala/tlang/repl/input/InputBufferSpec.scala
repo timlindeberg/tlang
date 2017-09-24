@@ -312,13 +312,13 @@ class InputBufferSpec extends UnitSpec {
          |EFGHIJK
          |LMN""".stripMargin
     )
-      .moveCursor(6).print(_.debugString)
-      .add('1').print(_.debugString)
-      .moveCursor(5, 2).print(_.debugString)
-      .add('2').print(_.debugString)
-      .moveCursor(2, 3, moveSecondary = false).print(_.debugString)
-      .removeSelected().print(_.debugString)
-      .moveCursor(5, 1).print(_.debugString)
+      .moveCursor(6)
+      .add('1')
+      .moveCursor(5, 2)
+      .add('2')
+      .moveCursor(2, 3, moveSecondary = false)
+      .removeSelected()
+      .moveCursor(5, 1)
       .add('3')
       .toString shouldBe
       """|ABC

@@ -446,6 +446,7 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with fixed and auto column widths" in {
     val wordWrapper = mock[WordWrapper]
+    wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
     wordWrapper.apply("ABCDEFG", 4) returns List("ABCD", "EFG")
     wordWrapper.apply("12345", 2) returns List("12", "34", "5")
     wordWrapper.apply("HIJKMLN", 4) returns List("HIJK", "LMN")
@@ -545,6 +546,8 @@ class GridSpec extends UnitSpec {
           |└─────┴────────────┘""".stripMargin
     )
     val wordWrapper = mock[WordWrapper]
+    wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
+
     wordWrapper.apply("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", 16) returns List(
       "\u001b[31mABCDEFGHIJKLMNOP\u001b[0m",
       "\u001b[31mQRSTUVXYZ\u001b[0m"
@@ -579,6 +582,9 @@ class GridSpec extends UnitSpec {
   it should "render correctly with line wrapping" in {
 
     var wordWrapper = mock[WordWrapper]
+    wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
+
+
     wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
     wordWrapper.apply("ABCDEFGHIJKLMN", 3) returns List("ABC", "DEF", "GHI", "JKL", "MN")
     wordWrapper.apply("ABCDEF", 3) returns List("ABC", "DEF")
@@ -682,6 +688,7 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with line wrapping and ansi colors" in {
     val wordWrapper = mock[WordWrapper]
+
     wordWrapper.apply("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m", 4) returns List(
       "\u001b[31mABCD\u001b[0m",
       "\u001b[32mEFGH\u001b[0m",
@@ -702,6 +709,7 @@ class GridSpec extends UnitSpec {
       "AB\u001b[31mC\u001b[0m",
       "\u001b[31mDE\u001b[0mF"
     )
+    wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
 
     Grid(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
@@ -1002,7 +1010,7 @@ class GridSpec extends UnitSpec {
   private def mockedFormatter(
     width: Int = DefaultMaxWidth,
     asciiOnly: Boolean = false,
-    wordWrapper: WordWrapper = mockedWordWrapperReturningSameLine,
+    wordWrapper: WordWrapper = mockedWordWrapperReturningSplitLines,
     truncator: Truncator = mock[Truncator]
   ): Formatter = {
     createMockFormatter(width = width, asciiOnly = asciiOnly, wordWrapper = wordWrapper, truncator = truncator)

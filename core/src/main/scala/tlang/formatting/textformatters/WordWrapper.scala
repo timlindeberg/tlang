@@ -21,6 +21,42 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
     if (wrapAnsiColors) wrapAnsiFormatting(lineBuffer.toList) else lines
   }
 
+  def wrapAnsiFormatting(lines: List[String]): List[String] = {
+    var color: Color = Colors.NoColor
+
+    def updateAnsi(line: String): Unit = {
+      var i = 0
+      while (i < line.length) {
+        line(i) match {
+          case '\u001b' if line(i + 1) == '[' =>
+            val (newColor, endOfColor) = extractColorFrom(line, i, color)
+            color = newColor
+            i = endOfColor
+          case _                              =>
+        }
+        i += 1
+      }
+    }
+
+    lines map { line =>
+      var sb = new StringBuilder
+      if (line.startsWith("\u001b[")) {
+        // Make sure we don't repeat the previous ansi if it is immediately updated
+        val (newColor, endOfColor) = extractColorFrom(line, 0, color)
+        color = newColor
+        sb ++= color
+        sb ++= line.substring(endOfColor)
+      } else {
+        sb ++= color
+        sb ++= line
+      }
+      updateAnsi(line)
+      if (color != NoColor && !line.endsWith(Reset))
+        sb ++= Reset
+      sb.toString
+    }
+  }
+
   private def wrap(line: String, maxWidth: Int, lines: ListBuffer[String]): Unit = {
     if (line.visibleCharacters == 0) {
       lines += ""
@@ -188,43 +224,6 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
       i += 1
     }
     (breakPoint, 0)
-  }
-
-
-  private def wrapAnsiFormatting(lines: List[String]): List[String] = {
-    var color: Color = Colors.NoColor
-
-    def updateAnsi(line: String): Unit = {
-      var i = 0
-      while (i < line.length) {
-        line(i) match {
-          case '\u001b' if line(i + 1) == '[' =>
-            val (newColor, endOfColor) = extractColorFrom(line, i)
-            color += newColor
-            i = endOfColor
-          case _                              =>
-        }
-        i += 1
-      }
-    }
-
-    lines map { line =>
-      var sb = new StringBuilder
-      if (line.startsWith("\u001b[")) {
-        // Make sure we don't repeat the previous ansi if it is immediately updated
-        val (newColor, endOfColor) = extractColorFrom(line, 0)
-        color += newColor
-        sb ++= color
-        sb ++= line.substring(endOfColor)
-      } else {
-        sb ++= color
-        sb ++= line
-      }
-      updateAnsi(line)
-      if (color != NoColor && !line.endsWith(Reset))
-        sb ++= Reset
-      sb.toString
-    }
   }
 
 }

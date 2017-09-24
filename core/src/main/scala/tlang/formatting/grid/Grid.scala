@@ -419,15 +419,16 @@ case class Grid(var formatter: Formatter) {
       if (line.isEmpty)
         return List("")
 
-      val lines = line.split("\r?\n", -1).toList
       overflowHandling match {
         case Except   =>
           val lineWidth = line.visibleCharacters
           if (lineWidth > width)
             throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
-          lines
-        case Wrap     => lines flatMap { formatter.wrap(_, width) }
-        case Truncate => lines map { formatter.truncate(_, width) }
+          formatter.splitWithColors(line)
+        case Wrap     => formatter.wrap(line, width)
+        case Truncate =>
+          val lines = formatter.splitWithColors(line)
+          lines map { formatter.truncate(_, width) }
       }
     }
 

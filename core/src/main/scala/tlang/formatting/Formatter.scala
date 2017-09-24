@@ -39,6 +39,10 @@ case class Formatter(
   def useColor: Boolean = formatting.useColor
 
   def wrap(text: String, width: Int): List[String] = wordWrapper(text, width)
+  def splitWithColors(str: String): List[String] = {
+    val lines = str.split("\r?\n", -1).toList
+    wordWrapper.wrapAnsiFormatting(lines)
+  }
 
   def truncate(line: String, width: Int): String = truncator(line, width)
 

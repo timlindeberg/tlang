@@ -37,7 +37,7 @@ class InputBox(
   private val InputColor   = Bold + Magenta
 
   // Using inverse could be cool but it seems Lanterna doesn't handle it properly
-  private val MarkColor = WhiteBG + Black
+  private val MarkColor = Inverse
 
   private val TabReplacement    = " " * TabWidth
   private val ShowCtrlCReminder = FiniteDuration(2, "sec")
@@ -80,7 +80,7 @@ class InputBox(
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
     val (replacedTabs, adjustedPos) = replaceTabs(text, inputBuffer.selectedPosition)
 
-    renderedText = formatter.syntaxHighlight(replacedTabs, Marking(adjustedPos, MarkColor))
+    renderedText = formatter.syntaxHighlight(replacedTabs, Marking(adjustedPos, MarkColor, isAdditive = true))
     boxHeight = inputBuffer.height
   }
 

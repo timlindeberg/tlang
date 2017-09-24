@@ -13,9 +13,10 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSuga
   // For scoping and readability
   def test[U](description: String = "")(f: => U): U = f
 
-  def mockedWordWrapperReturningSameLine: WordWrapper = {
+  def mockedWordWrapperReturningSplitLines: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>
-      wordWrapper.apply(*, *) answers { _.getArgument[String](0) :: Nil }
+      wordWrapper.apply(*, *) answers { _.getArgument[String](0).split("\r?\n", -1).toList }
+      wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
     }
   }
 

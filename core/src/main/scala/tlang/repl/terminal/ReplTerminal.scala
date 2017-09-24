@@ -1,12 +1,9 @@
 package tlang.repl.terminal
 
-import java.awt.KeyboardFocusManager
 import java.awt.event._
 import java.nio.charset.Charset
-import java.util
 
 import com.googlecode.lanterna.TextColor.ANSI
-import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input._
 import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
@@ -22,40 +19,65 @@ import tlang.utils.Extensions._
 
 object ReplTerminal {
 
-  def apply(width: Int): ReplTerminal = ReplTerminal(createTerminal(), width)
+  def apply(width: Int): ReplTerminal = ReplTerminal(underlyingTerminal(), width)
 
 
-
-  private def createTerminal(): Terminal = {
+  private def underlyingTerminal(): Terminal = {
     if (sys.env.get("useTerminalEmulator").contains("true"))
       return createTerminalEmulator()
 
     val charset = Charset.forName(System.getProperty("file.encoding"))
     new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
       term.getInputDecoder.addProfile(CustomCharacterPatterns)
+      term.enterPrivateMode()
       term.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
     }
   }
 
   private def createTerminalEmulator() =
     new DefaultTerminalFactory()
-      .setTerminalEmulatorColorConfiguration(
-        TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.GNOME_TERMINAL))
-      .setTerminalEmulatorFontConfiguration(
-        new SwingTerminalFontConfiguration(true, AWTTerminalFontConfiguration.BoldMode.EVERYTHING, new java.awt.Font("Meslo LG S", 0, 14))
-      )
-      .setInitialTerminalSize(new TerminalSize(120, 500))
-      .setTerminalEmulatorDeviceConfiguration(
-        new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true))
+      .setTerminalEmulatorColorConfiguration(emulatorColors)
+      .setTerminalEmulatorFontConfiguration(emulatorFont)
+      .setInitialTerminalSize(new TerminalSize(80, 50))
+      .setTerminalEmulatorDeviceConfiguration(deviceConfiguration)
       .setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
       .createTerminal()
+
+  private val emulatorFont =
+    new SwingTerminalFontConfiguration(
+      true,
+      AWTTerminalFontConfiguration.BoldMode.EVERYTHING,
+      new java.awt.Font("Meslo LG S", 0, 14)
+    )
+
+  private val deviceConfiguration =
+    new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
+
+  private val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
+    new java.awt.Color(177, 204, 217), // defaultColor
+    new java.awt.Color(177, 204, 217), // defaultBrightColor
+    new java.awt.Color(50, 65, 72), //    defaultBackgroundColor
+    new java.awt.Color(65, 87, 98), //    normalBlack
+    new java.awt.Color(100, 133, 146), // brightBlack
+    new java.awt.Color(247, 140, 108), // normalRed
+    new java.awt.Color(255, 83, 112), //  brightRed
+    new java.awt.Color(195, 232, 141), // normalGreen
+    new java.awt.Color(204, 247, 175), // brightGreen
+    new java.awt.Color(255, 203, 107), // normalYellow
+    new java.awt.Color(255, 203, 67), //  brightYellow
+    new java.awt.Color(130, 170, 255), // normalBlue
+    new java.awt.Color(137, 221, 255), // brightBlue
+    new java.awt.Color(199, 146, 234), // normalMagenta
+    new java.awt.Color(207, 160, 237), // brightMagenta
+    new java.awt.Color(147, 233, 217), // normalCyan
+    new java.awt.Color(0, 185, 204), //   brightCyan
+    new java.awt.Color(247, 247, 247), // normalWhite
+    new java.awt.Color(255, 255, 255) //  brightWhite
+  ))
 }
 
 case class ReplTerminal(term: Terminal, width: Int) {
 
-  private var isShiftDown      = false
-  private var isCtrlDown       = false
-  private var isAltDown        = false
   private var _isCursorVisible = true
 
   var boxStartPosition: TerminalPosition = term.getCursorPosition
@@ -81,15 +103,12 @@ case class ReplTerminal(term: Terminal, width: Int) {
     boxHeight = put(grid.render() + NL)
 
     val newCursorPosition = term.getCursorPosition
-    debug(s"newCursorPosition: $newCursorPosition")
 
     boxStartPosition = if (resetStartPosition) {
       newCursorPosition.withRelativeRow(-boxHeight).withColumn(0)
     } else {
       newCursorPosition
     }
-    debug(s"StartPosition: $boxStartPosition")
-    debug(s"Height: $boxHeight")
 
     boxHeight
   }
@@ -102,12 +121,12 @@ case class ReplTerminal(term: Terminal, width: Int) {
     while (i < str.length) {
       str(i) match {
         case '\u001b' if str(i + 1) == '[' =>
-          val (newColor, endOfColor) = extractColorFrom(str, i)
+          val (newColor, endOfColor) = extractColorFrom(str, i, extractMultiple = false)
           color += newColor
           i = endOfColor - 1
           applyColor(color)
         case c                             =>
-          if(c == '\n')
+          if (c == '\n')
             y += 1
           term.putCharacter(c)
       }
@@ -123,9 +142,7 @@ case class ReplTerminal(term: Terminal, width: Int) {
     while (true) {
       val key = term.readInput()
       convertKey(key) match {
-        case Some(key) =>
-          debug(s"Key: $key")
-          return key
+        case Some(key) => return key
         case None      =>
       }
     }
@@ -153,9 +170,9 @@ case class ReplTerminal(term: Terminal, width: Int) {
       return convertMouseEvent(mouseAction)
     }
 
-    val ctrl = Ctrl(isCtrlDown || key.isCtrlDown)
-    val alt = Alt(isAltDown || key.isAltDown)
-    val shift = Shift(isShiftDown || key.isShiftDown)
+    val ctrl = Ctrl(key.isCtrlDown)
+    val alt = Alt(key.isAltDown)
+    val shift = Shift(key.isShiftDown)
 
     val k = key.getKeyType match {
       case KeyType.Character  => CharacterKey(key.getCharacter, ctrl, alt, shift)
@@ -188,7 +205,7 @@ case class ReplTerminal(term: Terminal, width: Int) {
       .withRelativeRow(InputBox.YIndent)
       .withRelativeColumn(InputBox.XIndent)
 
-    val width = this.width - InputBox.XIndent * 2 + 1
+    val width = 1 + this.width - InputBox.XIndent * 2
     val height = boxHeight - (InputBox.YIndent + 1)
 
     val x = pos.getColumn - startOfBuffer.getColumn
@@ -200,19 +217,20 @@ case class ReplTerminal(term: Terminal, width: Int) {
       return None
 
     val e = mouseAction.getActionType match {
-      case MouseActionType.CLICK_DOWN    => MouseDown(x, y)
-      case MouseActionType.DRAG          => MouseDrag(x, y)
-      case _                             => ???
+      case MouseActionType.CLICK_DOWN => MouseDown(x, y)
+      case MouseActionType.DRAG       => MouseDrag(x, y)
+      case _                          => ???
     }
     Some(e)
   }
 
   private def applyColor(color: Color): Unit = {
-    term.resetColorAndSGR()
-    if (color == NoColor)
+    if (color == NoColor) {
+      term.resetColorAndSGR()
       return
+    }
 
-    color.modifiers.foreach { mod => term.enableSGR(toSGR(mod)) }
+    color.modifiers.map(toSGR).foreach(term.enableSGR)
     if (color.foreground != -1)
       term.setForegroundColor(toLanternaColor(color.foreground))
     if (color.background != -1)

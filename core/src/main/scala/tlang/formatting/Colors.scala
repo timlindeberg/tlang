@@ -335,14 +335,16 @@ object Colors {
 
   // Parses the ansi sequence starting at startIndex and returns the color
   // and the index where the ansi sequence ended
-  def extractColorFrom(str: String, startIndex: Int): (Color, Int) = {
-    var color: Color = NoColor
+  def extractColorFrom(str: String, startIndex: Int, initialColor: Color = NoColor, extractMultiple: Boolean = true): (Color, Int) = {
+    var color: Color = initialColor
     var i = startIndex
     while (i < str.length && str(i) == '\u001b' && str(i + 1) == '[') {
       val endOfAnsi = str.indexOf('m', i + 1)
       val ansiEscapeSequence = str.substring(i + 2, endOfAnsi)
       color += Color(ansiEscapeSequence)
       i = endOfAnsi + 1
+      if (!extractMultiple)
+        return (color, i)
     }
     (color, i)
   }

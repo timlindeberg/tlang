@@ -34,9 +34,10 @@ object Repl {
 
 sealed abstract class Command(state: State, val priority: Int) extends Product with Serializable {
 
-  def matches(currentState: State, keyStroke: Key): Boolean = currentState == state && matchesKey.isDefinedAt(keyStroke)
-  def matchesKey: PartialFunction[Key, Boolean]
-  def apply(keyStroke: Key): Boolean
+  def keyAction: PartialFunction[Key, Boolean]
+
+  def matches(currentState: State, keyStroke: Key): Boolean = currentState == state && keyAction.isDefinedAt(keyStroke)
+  def apply(keyStroke: Key): Boolean = keyAction.apply(keyStroke)
 }
 
 class Repl(
@@ -107,17 +108,14 @@ class Repl(
   object Commands extends Enumerable[Command] {
 
     case object Evaluate extends Command(Normal, 1) {
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey((' ' | 128), Ctrl(true), _, _) => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = {
-        val command = input.toString
-        if (command.nonEmpty && !command.forall(_.isWhitespace)) {
-          input.saveCurrentCommand()
-          evaluate(command)
-        }
-        false
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey((' ' | 128), Ctrl(true), _, _) =>
+          val command = input.toString
+          if (command.nonEmpty && !command.forall(_.isWhitespace)) {
+            input.saveCurrentCommand()
+            evaluate(command)
+          }
+          false
       }
 
       private def evaluate(command: String): Unit = {
@@ -138,162 +136,117 @@ class Repl(
 
     case object UndoRedo extends Command(Normal, 1) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('_', Ctrl(true), _, _) => true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('_', Ctrl(true), _, Shift(true))  => input.redo()
+        case CharacterKey('_', Ctrl(true), _, Shift(false)) => input.undo()
       }
-
-      override def apply(keyStroke: Key): Boolean = if(keyStroke.isShiftDown) input.redo() else input.undo()
     }
 
     case object Remove extends Command(Normal, 1) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case OtherKey(KeyType.Backspace, _, _, _) => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = {
-        if (keyStroke.isAltDown) input.removeToLeftWord() else input.removeSelected()
-        true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case OtherKey(KeyType.Backspace, _, Alt(isAltDown), _) =>
+          if (isAltDown) input.removeToLeftWord() else input.removeSelected()
+          true
       }
     }
 
     case object MoveCursorWithArrows extends Command(Normal, 1) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case _: ArrowKey => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = {
-        val key = keyStroke.asInstanceOf[ArrowKey]
-        val isShiftDown = keyStroke.isShiftDown
-        val isAltDown = keyStroke.isAltDown
-
-        key.direction match {
-          case Direction.Left  => input.left(isAltDown, isShiftDown)
-          case Direction.Right => input.right(isAltDown, isShiftDown)
-          case Direction.Up    => input.up(isShiftDown)
-          case Direction.Down  => input.down(isShiftDown)
-        }
-        true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case ArrowKey(direction, _, Alt(isAltDown), Shift(isShiftDown)) =>
+          direction match {
+            case Direction.Left  => input.left(isAltDown, isShiftDown)
+            case Direction.Right => input.right(isAltDown, isShiftDown)
+            case Direction.Up    => input.up(isShiftDown)
+            case Direction.Down  => input.down(isShiftDown)
+          }
+          true
       }
     }
 
     case object MouseMovement extends Command(Normal, 1) {
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case _: MouseEvent => true
-      }
 
-      override def apply(keyStroke: Key): Boolean = {
-        keyStroke match {
-          case MouseDown(x, y) => input.moveCursorTo(x, y, moveSecondary = true)
-          case MouseDrag(x, y) => input.moveCursorTo(x, y, moveSecondary = false)
-          case MouseUp(_, _)   => // Do nothing for release
-        }
-        true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case MouseDown(x, y) =>
+          input.moveCursorTo(x, y, moveSecondary = true)
+          true
+        case MouseDrag(x, y) =>
+          input.moveCursorTo(x, y, moveSecondary = false)
+          true
       }
 
     }
 
     case object MoveToStartOrEndOfLine extends Command(Normal, 1) {
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('a' | 'e', Ctrl(true), _, _) => true
-      }
 
-      override def apply(keyStroke: Key): Boolean = {
-        val c = keyStroke.asInstanceOf[CharacterKey].char
-        if(c == 'a')
-          input.moveCursorToStartOfLine(keyStroke.isShiftDown)
-        else
-          input.moveCursorToEndOfLine(keyStroke.isShiftDown)
-        true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('a', Ctrl(true), _, Shift(isShiftDown)) =>
+          input.moveCursorToStartOfLine(isShiftDown)
+          true
+        case CharacterKey('e', Ctrl(true), _, Shift(isShiftDown)) =>
+          input.moveCursorToEndOfLine(isShiftDown)
+          true
       }
 
     }
 
     case object RemoveToStartOfLine extends Command(Normal, 1) {
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('u', Ctrl(true), _, _) => true
-      }
 
-      override def apply(keyStroke: Key): Boolean = {
-        input.removeToStartOfLine()
-        true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('u', Ctrl(true), _, _) =>
+          input.removeToStartOfLine()
+          true
       }
 
     }
 
-    case object Copy extends Command(Normal, 1) {
+    case object CopyPasteCut extends Command(Normal, 1) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', Ctrl(true), Alt(true), _) => true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('c', Ctrl(true), Alt(true), _) =>
+          input.copySelected()
+          true
+        case CharacterKey('v', Ctrl(true), Alt(true), _) =>
+          input.paste()
+          true
+        case CharacterKey('x', Ctrl(true), Alt(true), _) =>
+          input.cutSelected()
+          true
       }
 
-      override def apply(keyStroke: Key): Boolean = {
-        input.copySelected()
-        true
-      }
-    }
-
-    case object Paste extends Command(Normal, 1) {
-
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('v', Ctrl(true), Alt(true), _) => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = {
-        input.paste()
-        true
-      }
-    }
-
-    case object Cut extends Command(Normal, 1) {
-
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('x', Ctrl(true), Alt(true), _) => true
-      }
-
-      override def apply(keyStroke: Key): Boolean = {
-        input.cutSelected()
-        true
-      }
     }
 
     case object ExitProgram extends Command(Normal, 2) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', Ctrl(true), _, _) => true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('c', Ctrl(true), _, _) =>
+          self ! StopRepl
+          false
       }
 
-      override def apply(keyStroke: Key): Boolean = {
-        self ! StopRepl
-        false
-      }
     }
 
 
     case object CancelExecution extends Command(AwaitingExecution, 2) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey('c', Ctrl(true), _, _) => true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey('c', Ctrl(true), _, _) =>
+          replProgram ! StopExecution
+          state = Normal
+          false
       }
 
-      override def apply(keyStroke: Key): Boolean = {
-        replProgram ! StopExecution
-        state = Normal
-        false
-      }
     }
 
     case object NewCharacter extends Command(Normal, 3) {
 
-      override def matchesKey: PartialFunction[Key, Boolean] = {
-        case CharacterKey(_, _, _, _) => true
+      override def keyAction: PartialFunction[Key, Boolean] = {
+        case CharacterKey(char, _, _, _) =>
+          input += char
+          true
       }
 
-      override def apply(keyStroke: Key): Boolean = {
-        input += keyStroke.asInstanceOf[CharacterKey].char
-        true
-      }
     }
 
     override protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.priority)
