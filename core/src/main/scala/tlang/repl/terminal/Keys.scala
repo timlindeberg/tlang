@@ -53,6 +53,6 @@ trait MouseEvent extends Key {
   override val shift: Shift = Shift(false)
 }
 
-case class MouseClickDown(override val x: Int, override val y: Int) extends MouseEvent
-case class MouseClickUp(override val x: Int, override val y: Int) extends MouseEvent
+case class MouseDown(override val x: Int, override val y: Int) extends MouseEvent
+case class MouseUp(override val x: Int, override val y: Int) extends MouseEvent
 case class MouseDrag(override val x: Int, override val y: Int) extends MouseEvent

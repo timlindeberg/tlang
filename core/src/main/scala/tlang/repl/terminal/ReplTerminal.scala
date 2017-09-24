@@ -74,22 +74,13 @@ object ReplTerminal {
 
 case class ReplTerminal(term: Terminal, width: Int) {
 
-
   private var isShiftDown      = false
   private var isCtrlDown       = false
   private var isAltDown        = false
   private var _isCursorVisible = true
 
-  var boxStartPosition: TerminalPosition = TerminalPosition.TOP_LEFT_CORNER
+  var boxStartPosition: TerminalPosition = term.getCursorPosition
   var boxHeight       : Int              = 0
-
-
-  KeyboardFocusManager.getCurrentKeyboardFocusManager.addKeyEventDispatcher { e =>
-    isShiftDown = e.isShiftDown
-    isCtrlDown = e.isControlDown
-    isAltDown = e.isAltDown
-    false
-  }
 
 
   def close(): Unit =
@@ -106,25 +97,28 @@ case class ReplTerminal(term: Terminal, width: Int) {
   }
 
   def putBox(grid: Grid, resetStartPosition: Boolean): Int = {
-    val y = boxStartPosition.getRow
     term.setCursorPosition(boxStartPosition)
 
-    put(grid.render() + NL)
+    boxHeight = put(grid.render() + NL)
 
     val newCursorPosition = term.getCursorPosition
-    boxHeight = newCursorPosition.getRow - y
+    debug(s"newCursorPosition: $newCursorPosition")
+
     boxStartPosition = if (resetStartPosition) {
       newCursorPosition.withRelativeRow(-boxHeight).withColumn(0)
     } else {
       newCursorPosition
     }
+    debug(s"StartPosition: $boxStartPosition")
+    debug(s"Height: $boxHeight")
 
     boxHeight
   }
 
 
-  def put(str: String): Unit = {
+  def put(str: String): Int = {
     var color: Color = Colors.NoColor
+    var y = 0
     var i = 0
     while (i < str.length) {
       str(i) match {
@@ -134,12 +128,15 @@ case class ReplTerminal(term: Terminal, width: Int) {
           i = endOfColor - 1
           applyColor(color)
         case c                             =>
+          if(c == '\n')
+            y += 1
           term.putCharacter(c)
       }
       i += 1
     }
 
     term.flush()
+    y
   }
 
 
@@ -147,7 +144,9 @@ case class ReplTerminal(term: Terminal, width: Int) {
     while (true) {
       val key = term.readInput()
       convertKey(key) match {
-        case Some(key) => return key
+        case Some(key) =>
+          debug(s"Key: $key")
+          return key
         case None      =>
       }
     }
@@ -195,8 +194,8 @@ case class ReplTerminal(term: Terminal, width: Int) {
   private def convertMouseEvent(mouseAction: MouseAction): Option[MouseEvent] = {
     val actionType = mouseAction.getActionType
 
-    // We only care about these events
-    if (mouseAction.getActionType notIn Seq(MouseActionType.CLICK_DOWN, MouseActionType.CLICK_RELEASE, MouseActionType.DRAG))
+    // We only care about the click and drag event for now
+    if (mouseAction.getActionType notIn Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG))
       return None
 
     // Only support left click. CLICK_RELEASE always has button == 0.
@@ -210,20 +209,19 @@ case class ReplTerminal(term: Terminal, width: Int) {
       .withRelativeRow(InputBox.YIndent)
       .withRelativeColumn(InputBox.XIndent)
 
-    val width = this.width - InputBox.XIndent * 2
+    val width = this.width - InputBox.XIndent * 2 + 1
     val height = boxHeight - (InputBox.YIndent + 1)
 
     val x = pos.getColumn - startOfBuffer.getColumn
-    if (x notIn (0 to width))
+    if (x notIn (0 until width))
       return None
 
     val y = pos.getRow - startOfBuffer.getRow
-    if (y notIn (0 to height))
+    if (y notIn (0 until height))
       return None
 
     val e = mouseAction.getActionType match {
-      case MouseActionType.CLICK_DOWN    => MouseClickDown(x, y)
-      case MouseActionType.CLICK_RELEASE => MouseClickUp(x, y)
+      case MouseActionType.CLICK_DOWN    => MouseDown(x, y)
       case MouseActionType.DRAG          => MouseDrag(x, y)
       case _                             => ???
     }
@@ -239,7 +237,7 @@ case class ReplTerminal(term: Terminal, width: Int) {
     if (color.foreground != -1)
       term.setForegroundColor(toLanternaColor(color.foreground))
     if (color.background != -1)
-      term.setForegroundColor(toLanternaColor(color.background))
+      term.setBackgroundColor(toLanternaColor(color.background))
   }
 
 

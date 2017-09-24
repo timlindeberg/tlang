@@ -3,6 +3,8 @@ package tlang.utils
 import java.io.File
 import java.nio.file.Paths
 
+import better.files.{File => BFile }
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -22,6 +24,9 @@ object Extensions {
 
   implicit val EscapeCharsAll: Map[Char, String] =
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
+
+  def debug(s: String): Unit = BFile("output.txt").write(s + NL)
+
 
   def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
     try {

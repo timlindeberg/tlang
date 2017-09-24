@@ -68,6 +68,7 @@ class Repl(
       renderer ! Renderer.StopRepl
       terminal.close()
       input.saveToFile()
+      terminal.disableMouseReporting()
       context.system.terminate()
     case msg: RendererMessage    => renderer forward msg
     case msg: ReplProgramMessage => replProgram forward msg
@@ -193,9 +194,9 @@ class Repl(
 
       override def apply(keyStroke: Key): Boolean = {
         keyStroke match {
-          case MouseClickDown(x, y) => input.moveCursorTo(x, y, moveSecondary = true)
-          case MouseDrag(x, y)      => input.moveCursorTo(x, y, moveSecondary = false)
-          case _                    => ???
+          case MouseDown(x, y) => input.moveCursorTo(x, y, moveSecondary = true)
+          case MouseDrag(x, y) => input.moveCursorTo(x, y, moveSecondary = false)
+          case MouseUp(_, _)   => // Do nothing for release
         }
         true
       }

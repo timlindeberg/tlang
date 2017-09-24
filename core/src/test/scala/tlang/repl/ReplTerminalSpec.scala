@@ -4,7 +4,7 @@ import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{MouseAction, MouseActionType}
 import com.googlecode.lanterna.terminal.Terminal
 import tlang.formatting.grid.Grid
-import tlang.repl.terminal.{MouseClickDown, ReplTerminal}
+import tlang.repl.terminal.{MouseDown, ReplTerminal}
 import tlang.testutils.UnitSpec
 
 class ReplTerminalSpec extends UnitSpec {
@@ -14,6 +14,7 @@ class ReplTerminalSpec extends UnitSpec {
   it should "output boxes" in {
     val underlyingTerminal = mock[Terminal]
     underlyingTerminal.getCursorPosition returns(
+      new TerminalPosition(0, 0),
       new TerminalPosition(0, 6),
       new TerminalPosition(0, 12)
     )
@@ -67,8 +68,8 @@ class ReplTerminalSpec extends UnitSpec {
           mouseClick(11, 5)
         )
 
-        terminal.readInput() shouldBe MouseClickDown(0, 0)
-        terminal.readInput() shouldBe MouseClickDown(9, 2)
+        terminal.readInput() shouldBe MouseDown(0, 0)
+        terminal.readInput() shouldBe MouseDown(9, 2)
 
       }
 
@@ -97,13 +98,14 @@ class ReplTerminalSpec extends UnitSpec {
           mouseClick(0, 0), // outside the buffer
           mouseClick(23, 3),
           mouseClick(3, 2), // outside the buffer
+          mouseClick(7, 9), // outside the buffer
           mouseClick(18, 7),
           mouseClick(23, 8)
         )
 
-        terminal.readInput() shouldBe MouseClickDown(21, 0)
-        terminal.readInput() shouldBe MouseClickDown(16, 4)
-        terminal.readInput() shouldBe MouseClickDown(21, 5)
+        terminal.readInput() shouldBe MouseDown(21, 0)
+        terminal.readInput() shouldBe MouseDown(16, 4)
+        terminal.readInput() shouldBe MouseDown(21, 5)
 
       }
 
