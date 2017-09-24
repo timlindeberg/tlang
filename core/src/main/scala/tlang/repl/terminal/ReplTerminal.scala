@@ -29,8 +29,6 @@ object ReplTerminal {
     val charset = Charset.forName(System.getProperty("file.encoding"))
     new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
       term.getInputDecoder.addProfile(CustomCharacterPatterns)
-      term.enterPrivateMode()
-      term.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
     }
   }
 
@@ -43,17 +41,17 @@ object ReplTerminal {
       .setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG)
       .createTerminal()
 
-  private val emulatorFont =
+  private lazy val emulatorFont =
     new SwingTerminalFontConfiguration(
       true,
       AWTTerminalFontConfiguration.BoldMode.EVERYTHING,
       new java.awt.Font("Meslo LG S", 0, 14)
     )
 
-  private val deviceConfiguration =
+  private lazy val deviceConfiguration =
     new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
 
-  private val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
+  private lazy val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
     new java.awt.Color(177, 204, 217), // defaultColor
     new java.awt.Color(177, 204, 217), // defaultBrightColor
     new java.awt.Color(50, 65, 72), //    defaultBackgroundColor
@@ -139,14 +137,11 @@ case class ReplTerminal(term: Terminal, width: Int) {
 
 
   def readInput(): Key = {
-    while (true) {
-      val key = term.readInput()
-      convertKey(key) match {
-        case Some(key) => return key
-        case None      =>
-      }
-    }
-    null // Never happens
+    var key: Option[Key] = None
+    while (key.isEmpty)
+      key = convertKey(term.readInput())
+
+    key.get
   }
 
   def getCursorPosition: TerminalPosition = term.getCursorPosition
@@ -187,8 +182,14 @@ case class ReplTerminal(term: Terminal, width: Int) {
     Some(k)
   }
 
-  private def convertMouseEvent(mouseAction: MouseAction): Option[MouseEvent] = {
+  private def convertMouseEvent(mouseAction: MouseAction): Option[Key] = {
     val actionType = mouseAction.getActionType
+
+    if(actionType == MouseActionType.SCROLL_DOWN)
+      return Some(ArrowKey(Direction.Down, Ctrl(false), Alt(false), Shift(false)))
+
+    if(actionType == MouseActionType.SCROLL_UP)
+      return Some(ArrowKey(Direction.Up, Ctrl(false), Alt(false), Shift(false)))
 
     // We only care about the click and drag event for now
     if (mouseAction.getActionType notIn Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG))
@@ -199,7 +200,6 @@ case class ReplTerminal(term: Terminal, width: Int) {
     if ((actionType in Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG)) && button != 1)
       return None
 
-    val pos = mouseAction.getPosition
 
     val startOfBuffer = boxStartPosition
       .withRelativeRow(InputBox.YIndent)
@@ -208,20 +208,20 @@ case class ReplTerminal(term: Terminal, width: Int) {
     val width = 1 + this.width - InputBox.XIndent * 2
     val height = boxHeight - (InputBox.YIndent + 1)
 
-    val x = pos.getColumn - startOfBuffer.getColumn
-    if (x notIn (0 until width))
-      return None
+    val mousePos = mouseAction.getPosition
+    val x = mousePos.getColumn - startOfBuffer.getColumn
+    val y = mousePos.getRow - startOfBuffer.getRow
 
-    val y = pos.getRow - startOfBuffer.getRow
-    if (y notIn (0 until height))
-      return None
+    mouseAction.getActionType match {
+      case MouseActionType.CLICK_DOWN =>
+        if ((x notIn (0 until width)) || (y notIn (0 until height)))
+          return None
 
-    val e = mouseAction.getActionType match {
-      case MouseActionType.CLICK_DOWN => MouseDown(x, y)
-      case MouseActionType.DRAG       => MouseDrag(x, y)
+        Some(MouseDown(x, y))
+      case MouseActionType.DRAG       =>
+        Some(MouseDrag(x.clamp(0, width - 1), y.clamp(0, height - 1)))
       case _                          => ???
     }
-    Some(e)
   }
 
   private def applyColor(color: Color): Unit = {

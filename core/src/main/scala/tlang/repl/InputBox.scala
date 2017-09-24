@@ -36,7 +36,6 @@ class InputBox(
   private val ErrorColor   = Bold + Red
   private val InputColor   = Bold + Magenta
 
-  // Using inverse could be cool but it seems Lanterna doesn't handle it properly
   private val MarkColor = Inverse
 
   private val TabReplacement    = " " * TabWidth
