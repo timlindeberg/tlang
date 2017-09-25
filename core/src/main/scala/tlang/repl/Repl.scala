@@ -67,7 +67,6 @@ class Repl(
       awaitInput()
     case StopRepl                =>
       renderer ! Renderer.StopRepl
-      terminal.disableMouseReporting()
       terminal.close()
       input.saveToFile()
       context.system.terminate()

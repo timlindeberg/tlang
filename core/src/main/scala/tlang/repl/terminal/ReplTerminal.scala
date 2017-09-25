@@ -13,10 +13,20 @@ import tlang.formatting.{Colors, Formatting}
 import tlang.repl._
 import tlang.utils.Extensions._
 
+object ReplTerminal {
+
+  val MouseReportingDragClick = "\u001b[?1002"
+  val MouseReportingDecimals = "\u001b[?1005"
+
+}
+
 case class ReplTerminal(term: Terminal, formatting: Formatting) {
+
+  import ReplTerminal._
 
   private var _isCursorVisible = true
 
+  private var _enableMouseReporting              = false
   var boxStartPosition: TerminalPosition = term.getCursorPosition
   var boxHeight       : Int              = 0
 
@@ -25,6 +35,7 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
     }
+    enableMouseReporting(false)
     term.close()
   }
 
@@ -100,8 +111,16 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
 
   def isCursorVisible: Boolean = _isCursorVisible
 
-  def enableMouseReporting(): Unit = println("\u001b[?1002h")
-  def disableMouseReporting(): Unit = println("\u001b[?1002l")
+  def enableMouseReporting(enable: Boolean): Unit = {
+    if(_enableMouseReporting == enable)
+      return
+
+    val c = if(enable) "h" else "l"
+    print(MouseReportingDragClick + c)
+    print(MouseReportingDecimals + c)
+
+    _enableMouseReporting = enable
+  }
 
 
   private def convertKey(key: KeyStroke): Option[Key] = {

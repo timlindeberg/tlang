@@ -70,7 +70,7 @@ object Main {
 
     val terminal = createUnderlyingTerminal()
     val replTerminal = ReplTerminal(terminal, formatting)
-    replTerminal.enableMouseReporting()
+    replTerminal.enableMouseReporting(true)
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize)
