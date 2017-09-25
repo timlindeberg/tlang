@@ -117,7 +117,7 @@ object Extensions {
 
       val sb = new StringBuilder()
       for (i <- str.indices) {
-        if (i > 0 && str(i) == '\n' && str(i - 1) != '\r')
+        if (str(i) == '\n' && (i == 0 || str(i - 1) != '\r'))
           sb ++= NL
         else
           sb += str(i)

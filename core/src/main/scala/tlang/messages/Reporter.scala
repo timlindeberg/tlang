@@ -38,7 +38,11 @@ case class DefaultReporter(messages: CompilerMessages) extends Reporter {
   override def getWarnings: List[CompilerMessage] = messages(MessageType.Warning)
   override def getErrors: List[CompilerMessage] = messages(MessageType.Error)
 
-  private def throwException() = throw new CompilationException(messages)
+  private def throwException(): Nothing = {
+    val e = new CompilationException(messages.clone())
+    clear()
+    throw e
+  }
 
 }
 

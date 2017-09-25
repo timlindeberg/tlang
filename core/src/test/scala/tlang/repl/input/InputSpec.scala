@@ -522,10 +522,10 @@ class InputSpec extends UnitSpec {
       .moveCursorToStartOfLine()
       .add('3')
       .toString shouldBe
-        """|3ABC
-           |D2
-           |1
-           |LMN""".stripMargin
+      """|3ABC
+         |D2
+         |1
+         |LMN""".stripMargin
   }
 
   it should "remove to the start of the current line" in {

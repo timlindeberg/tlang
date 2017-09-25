@@ -16,7 +16,7 @@ import tlang.utils.Extensions._
 object ReplTerminal {
 
   val MouseReportingDragClick = "\u001b[?1002"
-  val MouseReportingDecimals = "\u001b[?1005"
+  val MouseReportingDecimals  = "\u001b[?1005"
 
 }
 
@@ -26,7 +26,7 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
 
   private var _isCursorVisible = true
 
-  private var _enableMouseReporting              = false
+  private var _enableMouseReporting = false
   var boxStartPosition: TerminalPosition = term.getCursorPosition
   var boxHeight       : Int              = 0
 
@@ -112,10 +112,10 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
   def isCursorVisible: Boolean = _isCursorVisible
 
   def enableMouseReporting(enable: Boolean): Unit = {
-    if(_enableMouseReporting == enable)
+    if (_enableMouseReporting == enable)
       return
 
-    val c = if(enable) "h" else "l"
+    val c = if (enable) "h" else "l"
     print(MouseReportingDragClick + c)
     print(MouseReportingDecimals + c)
 
@@ -148,15 +148,15 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
   private def convertMouseEvent(mouseAction: MouseAction): Option[Key] = {
     val actionType = mouseAction.getActionType
 
+    // We don't care about the move and release events for now
+    if (mouseAction.getActionType in Seq(MouseActionType.MOVE, MouseActionType.CLICK_RELEASE))
+      return None
+
     if (actionType == MouseActionType.SCROLL_DOWN)
       return Some(ArrowKey(Direction.Down, Ctrl(false), Alt(false), Shift(false)))
 
     if (actionType == MouseActionType.SCROLL_UP)
       return Some(ArrowKey(Direction.Up, Ctrl(false), Alt(false), Shift(false)))
-
-    // We only care about the click and drag event for now
-    if (mouseAction.getActionType notIn Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG))
-      return None
 
     // Only support left click. CLICK_RELEASE always has button == 0.
     val button = mouseAction.getButton

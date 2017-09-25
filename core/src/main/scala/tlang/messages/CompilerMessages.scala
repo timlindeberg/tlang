@@ -8,20 +8,26 @@ import tlang.options.arguments.MaxErrorsFlag
 
 import scala.collection.mutable
 
+object CompilerMessages {
+  def createMessages(): mutable.Map[MessageType, mutable.Set[CompilerMessage]] = mutable.Map(
+    MessageType.Error -> mutable.LinkedHashSet[CompilerMessage](),
+    MessageType.Warning -> mutable.LinkedHashSet[CompilerMessage]()
+  )
+}
+
 case class CompilerMessages(
   formatter: Formatter,
   messageFormatter: MessageFormatter,
   maxErrors: Int = MaxErrorsFlag.defaultValue,
   warningIsError: Boolean = false,
-  suppressWarnings: Boolean = false) {
+  suppressWarnings: Boolean = false,
+  private var messages: mutable.Map[MessageType, mutable.Set[CompilerMessage]] = CompilerMessages.createMessages()) {
 
   import formatter.formatting._
 
-  private val hitMax                                                           = mutable.Set[MessageType]()
-  private val messages: mutable.Map[MessageType, mutable.Set[CompilerMessage]] = mutable.Map(
-    MessageType.Error -> mutable.LinkedHashSet[CompilerMessage](),
-    MessageType.Warning -> mutable.LinkedHashSet[CompilerMessage]()
-  )
+  private val hitMax = mutable.Set[MessageType]()
+
+  override def clone(): CompilerMessages = copy(messages = mutable.Map() ++ messages.toMap)
 
   def +=(message: CompilerMessage): CompilerMessages = {
     if (!isValidError(message))
@@ -51,7 +57,7 @@ case class CompilerMessages(
   def apply(messageType: MessageType): List[CompilerMessage] = messages(messageType).toList
 
   def clear(): Unit = {
-    messages.values.foreach(_.clear)
+    messages = CompilerMessages.createMessages()
     hitMax.clear()
   }
 

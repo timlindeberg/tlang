@@ -285,10 +285,10 @@ class StackTraceHighlighterSpec extends UnitSpec {
       s"""|\u001b[1mException in thread \u001b[34m"main"\u001b[0m \u001b[0m\u001b[1;31mjava\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mRuntimeException\u001b[0m\u001b[37m:\u001b[0m \u001b[33mCompilation Failed with an unknown error
           |ABCDEFG
           |\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala\u001b[0m\u001b[37m:\u001b[0m\u001b[35m27\u001b[0m\u001b[37m)\u001b[0m
+          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala:27\u001b[0m\u001b[37m)\u001b[0m
           |   \u001b[1mat\u001b[0m \u001b[1;31mtlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mcompiler\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mMain\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34mmain\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mMain.scala\u001b[0m\u001b[37m)\u001b[0m
           |\u001b[1mCaused by: \u001b[0m\u001b[1;31mjava\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mRuntimeException\u001b[0m\u001b[37m:\u001b[0m \u001b[33manother error\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala\u001b[0m\u001b[37m:\u001b[0m\u001b[35m27\u001b[0m\u001b[37m)\u001b[0m
+          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala:27\u001b[0m\u001b[37m)\u001b[0m
           |   \u001b[1mat\u001b[0m \u001b[1;31mtlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mcompiler\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mMain\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34mmain\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mMain.scala\u001b[0m\u001b[37m)\u001b[0m
           |""".stripMargin.trim
     )
