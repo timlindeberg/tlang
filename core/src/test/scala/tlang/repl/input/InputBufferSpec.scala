@@ -326,5 +326,86 @@ class InputBufferSpec extends UnitSpec {
          |1EFGH2N""".stripMargin
   }
 
+  it should "select the current line" in {
+    InputBuffer(
+      """|AB CDE FG
+         |HIJKL MNOPQR
+         |STU""".stripMargin
+    )
+      .selectCurrentLine()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 1, 2, 1)
+        buffer.selected shouldBe s"AB CDE FG$NL"
+      }
+      .moveCursorVertical(-1)
+      .selectCurrentLine()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(2, 1, 3, 1)
+        buffer.selected shouldBe s"HIJKL MNOPQR$NL"
+      }
+      .moveCursorVertical(-1)
+      .selectCurrentLine()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(3, 1, 3, 4)
+        buffer.selected shouldBe "STU"
+      }
+  }
+
+  it should "select the current word" in {
+    InputBuffer(
+      """|AB CDE FG
+         |HIJ   MNOPQR
+         |STU(abc)""".stripMargin
+    )
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 1, 1, 3)
+        buffer.selected shouldBe s"AB"
+      }
+      .moveCursorHorizontal(3)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
+        buffer.selected shouldBe s"CDE"
+      }
+      .moveCursorHorizontal(1)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
+        buffer.selected shouldBe s"CDE"
+      }
+      .moveCursorHorizontal(2)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
+        buffer.selected shouldBe s"CDE"
+      }
+      .moveCursorHorizontal(3)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
+        buffer.selected shouldBe s"CDE"
+      }
+      .moveCursorHorizontal(3)
+      .moveCursorVertical(-1)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(2, 7, 2, 13)
+        buffer.selected shouldBe "MNOPQR"
+      }
+      .moveCursorHorizontal(-2)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(2, 5, 2, 5)
+        buffer.selected shouldBe ""
+      }
+      .moveCursorVertical(-1)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selectedPosition shouldBe Position(3, 5, 3, 8)
+        buffer.selected shouldBe "abc"
+      }
+
+  }
 
 }

@@ -167,10 +167,14 @@ class Repl(
     case object MouseMovement extends Command(Normal, 1) {
 
       override def keyAction: PartialFunction[Key, Boolean] = {
-        case MouseDown(x, y) =>
-          input.moveCursorTo(x, y, moveSecondary = true)
+        case MouseClick(x, y, numClicks) =>
+          numClicks match {
+            case 1 => input.moveCursorTo(x, y, moveSecondary = true)
+            case 2 => input.selectWord(x, y)
+            case _ => input.selectLine(x, y)
+          }
           true
-        case MouseDrag(x, y) =>
+        case MouseDrag(x, y)             =>
           input.moveCursorTo(x, y, moveSecondary = false)
           true
       }

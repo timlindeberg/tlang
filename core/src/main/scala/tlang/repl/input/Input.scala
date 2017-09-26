@@ -10,10 +10,11 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Input {
 
-  val HistorySeperator = "<--COMMAND-->"
-  val Seperator        = NL + HistorySeperator + NL
+  val HistorySeperator  = "<--COMMAND-->"
+  val Seperator: String = NL + HistorySeperator + NL
 
 }
+
 
 case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
 
@@ -56,7 +57,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
   def copySelected(): this.type = {
     currentBuffer.selected match {
       case ""        =>
-        val buffer = currentBuffer.selectCurrentLine
+        val buffer = currentBuffer.selectCurrentLine()
         clipboard.setContent(buffer.selected)
         setCurrent(buffer, saveHistory = false)
       case selection =>
@@ -90,6 +91,16 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     val (start, _) = currentBuffer.currentLinePosition
     val movedBuffer = currentBuffer.moveCursor(start, moveSecondary = false)
     setCurrent(movedBuffer.removeSelected(), saveHistory = true)
+  }
+
+  def selectLine(x: Int, y: Int): this.type = {
+    val moved = currentBuffer.moveCursor(x, y)
+    setCurrent(moved.selectCurrentLine(), saveHistory = false)
+  }
+
+  def selectWord(x: Int, y: Int): this.type = {
+    val moved = currentBuffer.moveCursor(x, y)
+    setCurrent(moved.selectCurrentWord(), saveHistory = false)
   }
 
   def saveCurrentCommand(): this.type = {
@@ -154,7 +165,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
 
   private def startOrEndOfLine(direction: Int, shiftDown: Boolean): this.type = {
     val (start, end) = currentBuffer.currentLinePosition
-    val pos = if(direction == 1) end else start
+    val pos = if (direction == 1) end else start
     setCurrent(currentBuffer.moveCursor(pos, moveSecondary = !shiftDown), saveHistory = false)
   }
 

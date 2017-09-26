@@ -4,7 +4,6 @@ import java.util
 
 import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input.{CharacterPattern, KeyDecodingProfile, KeyStroke, KeyType}
-import tlang.utils.Extensions._
 
 
 object CustomCharacterPatterns extends KeyDecodingProfile {
@@ -41,10 +40,10 @@ object CustomCharacterPatterns extends KeyDecodingProfile {
       if (seq.get(0) != 18)
         return null
 
-      if(size < 2)
+      if (size < 2)
         return Matching.NOT_YET
 
-      if(seq.get(1) != 31)
+      if (seq.get(1) != 31)
         return null
 
       new Matching(new KeyStroke('_', true, false, true))
@@ -68,7 +67,6 @@ trait Key {
   def isAltDown: Boolean = alt.isDown
   def isShiftDown: Boolean = shift.isDown
 }
-
 
 
 case class CharacterKey(
@@ -106,6 +104,5 @@ trait MouseEvent extends Key {
   override val shift: Shift = Shift(false)
 }
 
-case class MouseDown(override val x: Int, override val y: Int) extends MouseEvent
-case class MouseUp(override val x: Int, override val y: Int) extends MouseEvent
+case class MouseClick(override val x: Int, override val y: Int, numClicks: Int) extends MouseEvent
 case class MouseDrag(override val x: Int, override val y: Int) extends MouseEvent

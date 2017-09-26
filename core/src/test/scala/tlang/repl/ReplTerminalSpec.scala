@@ -4,7 +4,7 @@ import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{MouseAction, MouseActionType}
 import com.googlecode.lanterna.terminal.Terminal
 import tlang.formatting.grid.Grid
-import tlang.repl.terminal.{MouseDown, ReplTerminal}
+import tlang.repl.terminal.{MouseClick, ReplTerminal}
 import tlang.testutils.UnitSpec
 
 class ReplTerminalSpec extends UnitSpec {
@@ -69,8 +69,8 @@ class ReplTerminalSpec extends UnitSpec {
           mouseClick(11, 5)
         )
 
-        terminal.readInput() shouldBe MouseDown(0, 0)
-        terminal.readInput() shouldBe MouseDown(9, 2)
+        terminal.readInput() shouldBe MouseClick(0, 0)
+        terminal.readInput() shouldBe MouseClick(9, 2)
 
       }
 
@@ -104,9 +104,9 @@ class ReplTerminalSpec extends UnitSpec {
           mouseClick(23, 8)
         )
 
-        terminal.readInput() shouldBe MouseDown(21, 0)
-        terminal.readInput() shouldBe MouseDown(16, 4)
-        terminal.readInput() shouldBe MouseDown(21, 5)
+        terminal.readInput() shouldBe MouseClick(21, 0)
+        terminal.readInput() shouldBe MouseClick(16, 4)
+        terminal.readInput() shouldBe MouseClick(21, 5)
 
       }
 

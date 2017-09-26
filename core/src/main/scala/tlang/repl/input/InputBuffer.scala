@@ -92,16 +92,32 @@ case class InputBuffer(
     moveCursor(nextStart + math.min(newUpDownX, nextEnd - nextStart), moveSecondary, newUpDownX)
   }
 
-  def moveCursorToLeftWord(moveSecondary: Boolean = true): InputBuffer = moveCursor(leftPosition, moveSecondary)
-  def moveCursorToRightWord(moveSecondary: Boolean = true): InputBuffer = moveCursor(rightPosition, moveSecondary)
+  def moveCursorToLeftWord(moveSecondary: Boolean = true): InputBuffer = {
+    val pos = math.max(0, mainCursor.position - 1)
+    val isWhitespace = cord(pos).isWhitespace
+    moveCursor(leftWhere { _.isWhitespace != isWhitespace }, moveSecondary)
+  }
 
-  def selectCurrentLine: InputBuffer = {
+  def moveCursorToRightWord(moveSecondary: Boolean = true): InputBuffer = {
+    val pos = math.min(cord.length - 1, mainCursor.position)
+    val isWhitespace = cord(pos).isWhitespace
+    moveCursor(rightWhere { _.isWhitespace != isWhitespace }, moveSecondary)
+  }
+
+  def selectCurrentLine(): InputBuffer = {
     val (start, end) = currentLinePosition
     copy(
       mainCursor = getCursor(start),
       // We want to include the newline at the end of the line if it exists
       secondaryCursor = getCursor(math.min(end + 1, cord.length))
     )
+  }
+
+  def selectCurrentWord(): InputBuffer = {
+    val stop: Char => Boolean = c => c in " \t\n=().,_-"
+    val start = leftWhere(stop)
+    val end = rightWhere(stop)
+    copy(mainCursor = getCursor(start), secondaryCursor = getCursor(end))
   }
 
   def selected: String = {
@@ -192,47 +208,41 @@ case class InputBuffer(
     )
   }
 
-
-
-  private def leftPosition: Int = {
+  private def leftWhere(stop: Char => Boolean): Int = {
     val position = mainCursor.position
 
     if (isEmpty || position == 0)
       return position
 
     val leftOf = cord.split(position)._1
-    charsUntilStop(leftOf.reverseIterator, position - 1) match {
-      case Some(numChars) => position - numChars
-      case None           => 0
+    charsUntilStop(leftOf.reverseIterator, position - 1, stop) match {
+      case -1       => 0
+      case numChars => position - numChars
     }
   }
 
-  private def rightPosition: Int = {
+  private def rightWhere(stop: Char => Boolean): Int = {
     val position = mainCursor.position
 
     if (isEmpty || position == cord.length)
       return position
 
     val rightOf = cord.split(position)._2
-    charsUntilStop(rightOf.iterator, position) match {
-      case Some(numChars) => position + numChars
-      case None           => cord.length
+    charsUntilStop(rightOf.iterator, position, stop) match {
+      case -1       => cord.length
+      case numChars => position + numChars
     }
   }
 
-  private def charsUntilStop(it: Iterator[Char], pos: Int): Option[Int] = {
-    if (!it.hasNext)
-      return None
-
-    val currentIsWhiteSpace = it.next().isWhitespace
-    var i = 1
+  private def charsUntilStop(it: Iterator[Char], pos: Int, stop: Char => Boolean): Int = {
+    var i = 0
     while (it.hasNext) {
       val c = it.next()
-      if (currentIsWhiteSpace != c.isWhitespace)
-        return Some(i)
+      if (stop(c))
+        return i
       i += 1
     }
-    None
+    -1
   }
 
   private def getCursor(pos: Int, linePositions: List[Int] = linePositions): Cursor = {

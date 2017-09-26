@@ -18,6 +18,8 @@ object ReplTerminal {
   val MouseReportingDragClick = "\u001b[?1002"
   val MouseReportingDecimals  = "\u001b[?1005"
 
+  val DoubleClickTime = 500L
+
 }
 
 case class ReplTerminal(term: Terminal, formatting: Formatting) {
@@ -27,9 +29,10 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
   private var _isCursorVisible = true
 
   private var _enableMouseReporting = false
-  var boxStartPosition: TerminalPosition = term.getCursorPosition
-  var boxHeight       : Int              = 0
-
+  var boxStartPosition  : TerminalPosition = term.getCursorPosition
+  var boxHeight         : Int              = 0
+  var lastMouseClickTime: Long             = 0
+  var numClicks         : Int              = 1
 
   def close(): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
@@ -180,7 +183,15 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
         if ((x notIn (0 until width)) || (y notIn (0 until height)))
           return None
 
-        Some(MouseDown(x, y))
+        val time = System.currentTimeMillis()
+
+        if (time - lastMouseClickTime < DoubleClickTime)
+          numClicks += 1
+        else
+          numClicks = 1
+
+        lastMouseClickTime = time
+        Some(MouseClick(x, y, numClicks))
       case MouseActionType.DRAG       =>
         Some(MouseDrag(x.clamp(0, width - 1), y.clamp(0, height - 1)))
       case _                          => ???
