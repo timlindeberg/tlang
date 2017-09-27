@@ -27,9 +27,11 @@ import tlang.utils.Extensions._
 
 object Main {
 
-  val VersionNumber = "0.0.1"
-  val MaxRedoSize   = 500
-  val TabSize       = 4
+  val VersionNumber   = "0.0.1"
+  val MaxRedoSize     = 500
+  val TabSize         = 4
+  val DoubleClickTime = 500L
+
 
   val HistoryFileName  : String = "repl_history"
   val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
@@ -69,7 +71,7 @@ object Main {
     val actorSystem = ActorSystem("tRepl")
 
     val terminal = createUnderlyingTerminal()
-    val replTerminal = ReplTerminal(terminal, formatting)
+    val replTerminal = ReplTerminal(terminal, 500L, formatting)
     replTerminal.enableMouseReporting(true)
 
     val historyFile = File(SettingsDirectory, HistoryFileName)

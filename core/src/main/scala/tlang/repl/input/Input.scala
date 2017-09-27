@@ -54,10 +54,11 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
   def removeSelected(): this.type = setCurrent(currentBuffer.removeSelected(), saveHistory = true)
 
   def paste(): this.type = setCurrent(currentBuffer ++ clipboard.content, saveHistory = true)
+
   def copySelected(): this.type = {
     currentBuffer.selected match {
       case ""        =>
-        val buffer = currentBuffer.selectCurrentLine()
+        val buffer = currentBuffer.selectCurrentLine(selectNewLine = true)
         clipboard.setContent(buffer.selected)
         setCurrent(buffer, saveHistory = false)
       case selection =>
@@ -65,6 +66,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     }
     this
   }
+
   def cutSelected(): this.type = {
     copySelected()
     setCurrent(currentBuffer.removeSelected(), saveHistory = true)

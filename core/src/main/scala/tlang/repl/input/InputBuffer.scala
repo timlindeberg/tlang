@@ -93,31 +93,36 @@ case class InputBuffer(
   }
 
   def moveCursorToLeftWord(moveSecondary: Boolean = true): InputBuffer = {
+    if (cord.isEmpty)
+      return this
+
     val pos = math.max(0, mainCursor.position - 1)
-    val isWhitespace = cord(pos).isWhitespace
-    moveCursor(leftWhere { _.isWhitespace != isWhitespace }, moveSecondary)
+    val isWhitespaceAtNextChar = cord(pos).isWhitespace
+    moveCursor(leftWhere { _.isWhitespace != isWhitespaceAtNextChar }, moveSecondary)
   }
 
   def moveCursorToRightWord(moveSecondary: Boolean = true): InputBuffer = {
+    if (cord.isEmpty)
+      return this
+
     val pos = math.min(cord.length - 1, mainCursor.position)
-    val isWhitespace = cord(pos).isWhitespace
-    moveCursor(rightWhere { _.isWhitespace != isWhitespace }, moveSecondary)
+    val isWhitespaceAtNextChar = cord(pos).isWhitespace
+    moveCursor(rightWhere { _.isWhitespace != isWhitespaceAtNextChar }, moveSecondary)
   }
 
-  def selectCurrentLine(): InputBuffer = {
+  def selectCurrentLine(selectNewLine: Boolean = false): InputBuffer = {
     val (start, end) = currentLinePosition
-    copy(
-      mainCursor = getCursor(start),
-      // We want to include the newline at the end of the line if it exists
-      secondaryCursor = getCursor(math.min(end + 1, cord.length))
-    )
+    val secondary = getCursor(start)
+    val main = getCursor(if (selectNewLine) math.min(end + 1, cord.length) else end)
+
+    copy(mainCursor = main, secondaryCursor = secondary)
   }
 
   def selectCurrentWord(): InputBuffer = {
     val stop: Char => Boolean = c => c in " \t\n=().,_-"
     val start = leftWhere(stop)
     val end = rightWhere(stop)
-    copy(mainCursor = getCursor(start), secondaryCursor = getCursor(end))
+    copy(mainCursor = getCursor(end), secondaryCursor = getCursor(start))
   }
 
   def selected: String = {
@@ -138,12 +143,16 @@ case class InputBuffer(
   override def toString: String = cord.toString.withSystemLineEndings
 
   def debugString: String = {
-    val (first, last) = orderedCursors
     val s = cord.toString
-    val text = if (first == last)
-      s.insert(Colors.Red("|"), mainCursor.position)
+    val mainMarker = Colors.Red("|")
+    val secondaryMarker = Colors.Blue("|")
+
+    val text = if (mainCursor == secondaryCursor)
+      s.insert(mainMarker, mainCursor.position)
+    else if (mainCursor.position > secondaryCursor.position)
+      s.insert(mainMarker, mainCursor.position).insert(secondaryMarker, secondaryCursor.position)
     else
-      s.insert(Colors.Red("|"), last.position).insert(Colors.Red("|"), first.position)
+      s.insert(secondaryMarker, secondaryCursor.position).insert(mainMarker, mainCursor.position)
 
     text.escape(EscapeCharsNormal) +
       "\n   Lines:   " + linePositions +

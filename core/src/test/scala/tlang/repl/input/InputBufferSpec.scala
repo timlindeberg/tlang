@@ -334,20 +334,31 @@ class InputBufferSpec extends UnitSpec {
     )
       .selectCurrentLine()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 1, 2, 1)
-        buffer.selected shouldBe s"AB CDE FG$NL"
+        buffer.selected shouldBe s"AB CDE FG"
+
+        buffer.secondaryCursor.x shouldBe 0
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 9
+        buffer.mainCursor.y shouldBe 0
       }
       .moveCursorVertical(-1)
-      .selectCurrentLine()
+      .selectCurrentLine(selectNewLine = true)
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(2, 1, 3, 1)
         buffer.selected shouldBe s"HIJKL MNOPQR$NL"
+
+        buffer.secondaryCursor.x shouldBe 0
+        buffer.secondaryCursor.y shouldBe 1
+        buffer.mainCursor.x shouldBe 0
+        buffer.mainCursor.y shouldBe 2
       }
-      .moveCursorVertical(-1)
       .selectCurrentLine()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(3, 1, 3, 4)
         buffer.selected shouldBe "STU"
+
+        buffer.secondaryCursor.x shouldBe 0
+        buffer.secondaryCursor.y shouldBe 2
+        buffer.mainCursor.x shouldBe 3
+        buffer.mainCursor.y shouldBe 2
       }
   }
 
@@ -359,51 +370,81 @@ class InputBufferSpec extends UnitSpec {
     )
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 1, 1, 3)
         buffer.selected shouldBe s"AB"
-      }
-      .moveCursorHorizontal(3)
-      .selectCurrentWord()
-      .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
-        buffer.selected shouldBe s"CDE"
+
+        buffer.secondaryCursor.x shouldBe 0
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 2
+        buffer.mainCursor.y shouldBe 0
       }
       .moveCursorHorizontal(1)
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
         buffer.selected shouldBe s"CDE"
+
+        buffer.secondaryCursor.x shouldBe 3
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 6
+        buffer.mainCursor.y shouldBe 0
       }
-      .moveCursorHorizontal(2)
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
         buffer.selected shouldBe s"CDE"
+
+        buffer.secondaryCursor.x shouldBe 3
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 6
+        buffer.mainCursor.y shouldBe 0
       }
-      .moveCursorHorizontal(3)
+      .moveCursorHorizontal(-1)
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(1, 4, 1, 7)
         buffer.selected shouldBe s"CDE"
-      }
-      .moveCursorHorizontal(3)
-      .moveCursorVertical(-1)
-      .selectCurrentWord()
-      .use { buffer =>
-        buffer.selectedPosition shouldBe Position(2, 7, 2, 13)
-        buffer.selected shouldBe "MNOPQR"
+
+        buffer.secondaryCursor.x shouldBe 3
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 6
+        buffer.mainCursor.y shouldBe 0
       }
       .moveCursorHorizontal(-2)
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(2, 5, 2, 5)
-        buffer.selected shouldBe ""
+        buffer.selected shouldBe s"CDE"
+
+        buffer.secondaryCursor.x shouldBe 3
+        buffer.secondaryCursor.y shouldBe 0
+        buffer.mainCursor.x shouldBe 6
+        buffer.mainCursor.y shouldBe 0
       }
       .moveCursorVertical(-1)
       .selectCurrentWord()
       .use { buffer =>
-        buffer.selectedPosition shouldBe Position(3, 5, 3, 8)
+        buffer.selected shouldBe "MNOPQR"
+
+        buffer.secondaryCursor.x shouldBe 6
+        buffer.secondaryCursor.y shouldBe 1
+        buffer.mainCursor.x shouldBe 12
+        buffer.mainCursor.y shouldBe 1
+      }
+      .moveCursorHorizontal(-8)
+      .selectCurrentWord()
+      .use { buffer =>
+        buffer.selected shouldBe ""
+
+        buffer.secondaryCursor.x shouldBe 4
+        buffer.secondaryCursor.y shouldBe 1
+        buffer.mainCursor.x shouldBe 4
+        buffer.mainCursor.y shouldBe 1
+      }
+      .moveCursorVertical(-1)
+      .selectCurrentWord()
+      .use { buffer =>
         buffer.selected shouldBe "abc"
+
+        buffer.secondaryCursor.x shouldBe 4
+        buffer.secondaryCursor.y shouldBe 2
+        buffer.mainCursor.x shouldBe 7
+        buffer.mainCursor.y shouldBe 2
       }
 
   }

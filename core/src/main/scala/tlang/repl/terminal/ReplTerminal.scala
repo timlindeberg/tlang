@@ -18,11 +18,9 @@ object ReplTerminal {
   val MouseReportingDragClick = "\u001b[?1002"
   val MouseReportingDecimals  = "\u001b[?1005"
 
-  val DoubleClickTime = 500L
-
 }
 
-case class ReplTerminal(term: Terminal, formatting: Formatting) {
+case class ReplTerminal(term: Terminal, doubleClickTime: Long, formatting: Formatting) {
 
   import ReplTerminal._
 
@@ -185,7 +183,7 @@ case class ReplTerminal(term: Terminal, formatting: Formatting) {
 
         val time = System.currentTimeMillis()
 
-        if (time - lastMouseClickTime < DoubleClickTime)
+        if (time - lastMouseClickTime < doubleClickTime)
           numClicks += 1
         else
           numClicks = 1

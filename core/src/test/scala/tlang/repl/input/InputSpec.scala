@@ -493,11 +493,13 @@ class InputSpec extends UnitSpec {
       )
       .up()
       .copySelected()
-      .left().left()
-      .up()
+      .up().up()
+      .copySelected()
+      .up().up()
       .copySelected()
 
     there was one(clipboard).setContent(s"EFGHIJK${ NL }")
+    there was one(clipboard).setContent(s"D${ NL }")
     there was one(clipboard).setContent(s"ABC${ NL }")
   }
 
