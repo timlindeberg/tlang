@@ -135,7 +135,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       if (stats.nonEmpty) {
         val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
-        val mainMethod = MethodDecl(modifiers, MethodID("main").setNoPos(), args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, lastVisibleToken)
+        val mainMethod = MethodDecl(MethodID("main").setNoPos(), modifiers, args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, lastVisibleToken)
         mainClass.methods ::= mainMethod
       }
     }
@@ -289,7 +289,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val id = varIdentifier
     val typ = optional(tpe, COLON)
     val init = optional(expression, EQSIGN)
-    VarDecl(typ, id, init, modifiers)
+    VarDecl(id, typ, init, modifiers)
   }
 
   /**
@@ -361,7 +361,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val retType = optional(returnType, COLON)
 
     val methBody = methodBody
-    MethodDecl(modifiers, id, args, retType, methBody)
+    MethodDecl(id, modifiers, args, retType, methBody)
   }
 
   /**
@@ -376,7 +376,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(RPAREN)
     val retType = Some(UnitType().setType(TUnit).setNoPos())
     val methBody = methodBody
-    ConstructorDecl(modifiers, methId, args, retType, methBody)
+    ConstructorDecl(methId, modifiers, args, retType, methBody)
   }
 
 
@@ -481,7 +481,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val methBody = methodBody
 
 
-    OperatorDecl(newModifiers, operatorType.setNoPos(), args, retType, methBody)
+    OperatorDecl(operatorType.setNoPos(), newModifiers, args, retType, methBody)
   }
 
 
@@ -1388,6 +1388,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   private def nonEmptyList[T](parse: => T, delimiters: TokenKind*): List[T] = {
     val arrBuff = new ArrayBuffer[T]()
     arrBuff += parse
+
     def matches = (0 until delimiters.size).forall(i => tokens(currentIndex + i).kind == delimiters(i))
 
     while (matches) {

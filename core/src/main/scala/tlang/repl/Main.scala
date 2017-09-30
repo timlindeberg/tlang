@@ -15,10 +15,9 @@ import tlang.options.{FlagArgument, Options}
 import tlang.repl.actors.RenderingActor.Resize
 import tlang.repl.actors.ReplActor
 import tlang.repl.actors.ReplActor.{StartRepl, StopRepl}
-import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, StatementTransformer}
+import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{ReplTerminal, TerminalFactory}
-import tlang.utils.Extensions._
 import tlang.utils.ProgramExecutor
 
 
@@ -74,7 +73,7 @@ object Main {
 
     val extractor = Extractor(formatter, replState)
     val programExecutor = ProgramExecutor(context)
-    val statementTransformer = StatementTransformer(TreeBuilder(), replState)
+    val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
     val evaluator = Evaluator(context, extractor, programExecutor, statementTransformer, replState)
 
     val messageFormatter = MessageFormatter(formatter)
@@ -93,7 +92,6 @@ object Main {
       ReplActor.name)
 
     terminal.addResizeListener((_, newSize) => {
-      debug(s"NewSize: $newSize")
       if (formatting.lineWidth != newSize.getColumns) {
         val oldWidth = formatting.lineWidth
         formatting.lineWidth = newSize.getColumns

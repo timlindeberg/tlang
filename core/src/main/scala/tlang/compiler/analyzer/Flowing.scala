@@ -70,7 +70,7 @@ case class FlowAnalyser(
     //println("----------------------------------------")
     tree match {
       case Block(stats)                      =>
-        val endKnowledge = stats.foldLeft(knowledge){ (currentKnowledge, next) => analyze(next, currentKnowledge) }
+        val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
         endKnowledge.flowEnded match {
           case Some(stat) if stat != stats.last =>
             val index = stats.indexOf(stat)
@@ -81,7 +81,7 @@ case class FlowAnalyser(
           case _                                =>
         }
         endKnowledge
-      case VarDecl(_, id, init, _)           =>
+      case VarDecl(id, _, init, _)           =>
         val varId = VarIdentifier(id.getSymbol)
         init match {
           case Some(i) =>

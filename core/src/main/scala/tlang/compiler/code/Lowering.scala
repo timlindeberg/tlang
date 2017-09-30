@@ -176,7 +176,7 @@ class Lowerer(imports: Imports) {
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }
-        MethodDecl(modifiers, meth.id, thisArg :: meth.args, meth.retType, newStat).setSymbol(newMethSym)
+        MethodDecl(meth.id, modifiers, thisArg :: meth.args, meth.retType, newStat).setSymbol(newMethSym)
       }
     }
 
@@ -309,7 +309,7 @@ class Lowerer(imports: Imports) {
     val methodID = MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
     val methDecl =
       if (op.isAbstract)
-        MethodDecl(op.modifiers, methodID, op.args, op.retType, op.stat)
+        MethodDecl(methodID, op.modifiers, op.args, op.retType, op.stat)
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
           // Convert array assignment so the value is returned in order to be consistent with other
@@ -329,9 +329,9 @@ class Lowerer(imports: Imports) {
             case stat: StatTree  => List(stat, ret)
           }
           opSymbol.setType(valueId.getType)
-          MethodDecl(op.modifiers, methodID, op.args, Some(retType), Some(Block(stats)))
+          MethodDecl(methodID, op.modifiers, op.args, Some(retType), Some(Block(stats)))
         case _                          =>
-          MethodDecl(op.modifiers, methodID, op.args, op.retType, op.stat)
+          MethodDecl(methodID, op.modifiers, op.args, op.retType, op.stat)
       }
     methDecl.setSymbol(opSymbol).setPos(op)
   }
@@ -555,7 +555,7 @@ class Lowerer(imports: Imports) {
     val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", imports, List())
     val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", imports, List())
 
-    val valInit = VarDecl(varDecl.tpe, varDecl.id, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
+    val valInit = VarDecl(varDecl.id, varDecl.tpe, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)
     val stats = stat match {
       case Block(s) => Block(valInit :: s)

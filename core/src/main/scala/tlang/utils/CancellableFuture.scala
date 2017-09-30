@@ -7,10 +7,10 @@ import scala.concurrent.{CancellationException, ExecutionContext, Future, Promis
 object CancellableFuture {
 
   def apply[T](fun: => T)(implicit ex: ExecutionContext): (Future[T], () => Boolean) = {
-    val p = Promise[T]()
-    val f = p.future
+    val promise = Promise[T]()
+    val future = promise.future
     val aref = new AtomicReference[Thread](null)
-    p tryCompleteWith Future {
+    promise tryCompleteWith Future {
       val thread = Thread.currentThread
       aref.synchronized { aref.set(thread) }
       try fun finally {
@@ -19,9 +19,9 @@ object CancellableFuture {
       }
     }
 
-    (f, () => {
+    (future, () => {
       aref.synchronized { Option(aref getAndSet null) foreach { _.stop() } }
-      p.tryFailure(new CancellationException)
+      promise.tryFailure(new CancellationException)
     })
   }
 

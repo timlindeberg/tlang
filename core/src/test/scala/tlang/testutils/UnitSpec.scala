@@ -1,6 +1,5 @@
 package tlang.testutils
 
-import org.markushauck.mockito.Mocked
 import org.scalatest.{FlatSpec, Matchers}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
@@ -20,7 +19,6 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSuga
     }
   }
 
-  val formatter: Mocked[Formatter] = mock[Formatter]
 
   def createMockFormatter(
     width: Int = 80,

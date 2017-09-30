@@ -5,9 +5,27 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.TreeBuilder
 
-// Adds a variable declaration and print statement for each of the entered
-// expressions
-case class StatementTransformer(treeBuilder: TreeBuilder, state: ReplState) extends Trees.Transformer {
+/**
+  * Adds a variable declaration and print statement for each of the entered
+  * expressions.
+  *
+  * Example:
+  * Input:
+  *
+  * <PrintMarker>
+  * 1 + 1
+  * 2 + 2
+  * <PrintMarker>
+  *
+  * Output:
+  * <PrintMarker>
+  * val res0: Int = 1 + 1
+  * println("val res0: Int = " + res0)
+  * val res1: Int = 2 + 2
+  * println("val res1: Int = " + res1)
+  * <PrintMarker>
+  */
+case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) extends Trees.Transformer {
 
   import Evaluator.PrintMarker
 
@@ -20,16 +38,16 @@ case class StatementTransformer(treeBuilder: TreeBuilder, state: ReplState) exte
         case Block(newStats) if newStats.length > 2 &&
           newStats.head == PrintMarker &&
           newStats.last == PrintMarker =>
-          val newStatements = newStats.flatMap(convert)
-          state.setNewStatements(newStatements)
-          Block(stats.dropRight(1) ++ newStatements)
+          val statementsWithSaveAndPrint = newStats flatMap addSaveAndPrint
+          state.setNewStatements(statementsWithSaveAndPrint)
+          Block(stats.dropRight(1) ++ statementsWithSaveAndPrint)
         case _                         => block
       }
     case _                                    => super._transform(t)
   }
 
-  private def convert(statTree: StatTree): List[StatTree] = statTree match {
-    case Block(stats)                 => Block(stats flatMap convert) :: Nil
+  private def addSaveAndPrint(statTree: StatTree): List[StatTree] = statTree match {
+    case Block(stats)                 => Block(stats flatMap addSaveAndPrint) :: Nil
     case acc@Access(_, _: MethodCall) => if (acc.getType == TUnit) acc :: Nil else saveAndPrint(acc)
     case UselessStatement(e)          => saveAndPrint(e)
     case _                            => statTree :: Nil
@@ -39,11 +57,11 @@ case class StatementTransformer(treeBuilder: TreeBuilder, state: ReplState) exte
     val varName = "res" + resultCounter
     resultCounter += 1
 
-    val varDecl = treeBuilder.createValDecl(varName, e, prefix = "")
+    val valDecl = treeBuilder.createValDecl(varName, e, prefix = "")
     val tpe = state.imports.replaceNames(e.getType.toString)
 
-    val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName: $tpe = "), varDecl.id)
-    varDecl :: Println(varDeclMessage) :: Nil
+    val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName: $tpe = "), valDecl.id)
+    valDecl :: Println(varDeclMessage) :: Nil
   }
 
 }

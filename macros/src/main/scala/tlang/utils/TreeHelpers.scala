@@ -1,8 +1,11 @@
 package tlang.utils
 
 import java.io.PrintWriter
+import java.nio.charset.Charset
+import java.nio.file.{Files, Paths}
 
 import scala.annotation.StaticAnnotation
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.meta._
 
@@ -20,10 +23,13 @@ class GenerateTreeHelpers extends StaticAnnotation {
       case q"object Trees { ..$stats }" =>
         val asts = getASTs(stats)
         val newStats = stats :+
-                       createCopier(asts) :+
-                       createLazyCopier(asts) :+
-                       createTransformer(asts) :+
-                       createTraverser(asts)
+          createCopier(asts) :+
+          createLazyCopier(asts) :+
+          createTransformer(asts) :+
+          createTraverser(asts)
+        val file = Paths.get("C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\tree.txt")
+
+        Files.write(file, newStats.map(_.syntax).asJava, Charset.forName("UTF-8"))
         q"object Trees { ..$newStats }"
       case _                            =>
         abort("@GenerateTreeHelpers must annotate Trees object.")
@@ -99,9 +105,27 @@ object GenerateTreeHelpers {
             ..case $cases
          }
 
-         final protected def _transform[T <: Tree](list: List[T]): List[Tree]   = list map _transform
-         final protected def _transform[T <: Tree](set: Set[T]): Set[Tree]      = set map _transform
-         final protected def _transform[T <: Tree](op: Option[T]): Option[Tree] = op map _transform
+         final protected def _transform[T <: Tree](list: List[T]): List[Tree] = smartMap(list).asInstanceOf[List[Tree]]
+         final protected def _transform[T <: Tree](set: Set[T]): Set[Tree] = smartMap(set).asInstanceOf[Set[Tree]]
+         final protected def _transform[T <: Tree](op: Option[T]): Option[Tree] = op match {
+            case Some(t) =>
+              val x = _transform(t)
+              if(x eq t) op else Some(x)
+            case None    => None
+         }
+
+         // This is used so we don't create new lists and sets when there is no change
+         // to an element. This allows us to reuse larger parts of the tree
+         private def smartMap[T <: Tree](traversable: Traversable[T]): Traversable[Tree] = {
+           var anyDifferent = false
+           val newSet = traversable map { t =>
+             val x = _transform(t)
+             if (!(t eq x))
+               anyDifferent = true
+             x
+           }
+           if (anyDifferent) newSet else traversable
+         }
       }
     """
   }
@@ -159,6 +183,7 @@ object GenerateTreeHelpers {
       val tpe = param.decltpe.map(_.syntax).getOrElse("")
       if (Primitives.contains(tpe)) q"($a == $a0)" else q"($a eq $a0)"
     }
+
     if (params.isEmpty) None else Some(_equality(params))
   }
 }

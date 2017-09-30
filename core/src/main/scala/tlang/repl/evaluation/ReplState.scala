@@ -20,7 +20,6 @@ case class ReplState(prettyPrinter: PrettyPrinter, private val _imports: Imports
   private val _methods = mutable.Map[String, MethodDeclTree]()
 
   def history: List[StatTree] = _history.toList
-  def newStatements: List[StatTree] = _newStatements
   def classes: List[ClassDeclTree] = _classes.values.toList
   def methods: List[MethodDeclTree] = _methods.values.toList
   def imports: Imports = _imports
@@ -60,12 +59,13 @@ case class ReplState(prettyPrinter: PrettyPrinter, private val _imports: Imports
   }
 
   def addImports(newImports: Imports): this.type = {
-    imports ++= newImports
+    _imports ++= newImports
     this
   }
 
   def addStatementsToHistory(): this.type = {
     _history ++= _newStatements.filter(stat => !(stat.isInstanceOf[Print] || stat.isInstanceOf[Println]))
+    _newStatements = Nil
     this
   }
 

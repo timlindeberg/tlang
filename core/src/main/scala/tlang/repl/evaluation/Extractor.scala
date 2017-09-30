@@ -12,8 +12,8 @@ case class Extractor(formatter: Formatter, state: ReplState) {
 
   // Updates the repl state and returns messages for all new definitions
   def apply(cu: CompilationUnit): List[String] = {
-    val mainClass = cu.classes.find { _.tpe == ReplClassID }
-    extractImports(cu.imports) ++ (mainClass match {
+    val replClass = cu.classes.find { _.tpe == ReplClassID }
+    extractImports(cu.imports) ++ (replClass match {
       case Some(mainClass) =>
         val classes = cu.classes.remove(mainClass)
         val (methods, stats) = mainClass.methods.find(_.isMain) match {
@@ -38,20 +38,21 @@ case class Extractor(formatter: Formatter, state: ReplState) {
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     state.addMethods(newMethods)
     newMethods map { meth =>
-      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlight(meth.signature)
+      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlight(meth.fullSignature)
     }
   }
 
   private def extractImports(imports: Imports): List[String] = {
     state.addImports(imports)
-    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlight(imp.name) }
+    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlight(imp.writtenName) }
   }
 
   private def extractStatements(stat: Option[StatTree]): List[String] = {
     val stats = getStatements(stat)
     state.setNewStatements(stats)
     stats.filterInstance[VarDecl] map { variable =>
-      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlight(variable.id.name)
+      val tpe = variable.tpe.map(t => ": " + t.name).getOrElse("")
+      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlight(variable.id.name + tpe)
     }
   }
 

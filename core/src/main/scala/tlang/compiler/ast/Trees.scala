@@ -15,6 +15,7 @@ import scala.collection.{TraversableLike, mutable}
 @GenerateTreeHelpers
 object Trees {
 
+
   private val noColorPrinter = PrettyPrinter(SimpleFormatting)
   private val colorPrinter   = PrettyPrinter(DefaultFormatting)
 
@@ -115,7 +116,7 @@ object Trees {
 
   /*------------------------ Package and Import Trees -----------------------*/
 
-  case class Package(address: List[String]) extends Tree with Leaf {
+  case class Package(address: List[String] = Nil) extends Tree with Leaf {
     override val isEmpty = address.isEmpty
     val name: String = address.mkString("::")
   }
@@ -137,10 +138,14 @@ object Trees {
   case object RegularImport {
     def apply(fullName: String) = new RegularImport(fullName)
   }
+
   case class RegularImport(address: List[String]) extends Import {
     def this(fullName: String) = this(fullName.split("::").toList)
   }
-  case class WildCardImport(address: List[String]) extends Import
+
+  case class WildCardImport(address: List[String]) extends Import {
+    override def writtenName: String = super.name + "::*"
+  }
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 
     override def name: String = ((address :+ ExtensionDecl.seperator) ::: className).mkString("::")
@@ -177,17 +182,17 @@ object Trees {
 
 
   case class ClassDecl(id: ClassID,
-    var parents: List[ClassID],
-    fields: List[VarDecl],
-    var methods: List[MethodDeclTree]) extends IDClassDeclTree {
+    var parents: List[ClassID] = Nil,
+    fields: List[VarDecl] = Nil,
+    var methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree {
 
     val isAbstract = false
   }
 
   case class TraitDecl(id: ClassID,
-    var parents: List[ClassID],
-    fields: List[VarDecl],
-    var methods: List[MethodDeclTree]) extends IDClassDeclTree {
+    var parents: List[ClassID] = Nil,
+    fields: List[VarDecl] = Nil,
+    var methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree {
     val isAbstract = true
   }
 
@@ -196,7 +201,7 @@ object Trees {
     val seperator = "$EX"
   }
 
-  case class ExtensionDecl(tpe: TypeTree, var methods: List[MethodDeclTree]) extends ClassDeclTree {
+  case class ExtensionDecl(tpe: TypeTree, var methods: List[MethodDeclTree] = Nil) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
     var parents: List[ClassID] = List[ClassID]()
@@ -229,17 +234,19 @@ object Trees {
 
 
   object MethodDeclTree {
-    def unapply(f: MethodDeclTree) = Some(f.modifiers, f.id, f.args, f.retType, f.stat)
+    def unapply(f: MethodDeclTree) = Some(f.id, f.modifiers, f.args, f.retType, f.stat)
 
-    def mainMethod(stat: Option[StatTree]): MethodDecl = _mainMethod(stat, None)
-    def mainMethod(stat: Option[StatTree], classSym: ClassSymbol): MethodDecl = _mainMethod(stat, Some(classSym))
+    def mainMethod(stat: StatTree): MethodDecl = mainMethod(List(stat))
+    def mainMethod(stats: List[StatTree]): MethodDecl = mainMethod(Some(Block(stats)))
+    def mainMethod(stat: Option[StatTree]): MethodDecl = mainMethod(stat, None)
+    def mainMethod(stat: Option[StatTree], classSym: ClassSymbol): MethodDecl = mainMethod(stat, Some(classSym))
 
-    private def _mainMethod(stat: Option[StatTree], classSym: Option[ClassSymbol]): MethodDecl = {
+    private def mainMethod(stat: Option[StatTree], classSym: Option[ClassSymbol]): MethodDecl = {
       val modifiers: Set[Modifier] = Set(Public(), Static())
       val id = MethodID("main")
       val args = Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")) :: Nil
       val retType = Some(UnitType())
-      val meth = MethodDecl(modifiers, id, args, retType, stat)
+      val meth = MethodDecl(id, modifiers, args, retType, stat)
       if (classSym.isDefined) {
         val mainSym = new MethodSymbol("main", classSym.get, stat, modifiers).setType(TUnit)
         val argsSym = new VariableSymbol("args").setType(TArray(String))
@@ -261,23 +268,37 @@ object Trees {
 
     def isAbstract: Boolean = stat.isEmpty
 
+    // Does not contain return type. Can be used to compare methods.
     def signature: String = id.name + args.map(_.tpe.name).mkString("(", ", ", ")")
+
+    // This can used for displaying the method and contains the return type as well
+    def fullSignature: String = signature + retType.map(t => ": " + t.name).getOrElse("")
 
   }
 
   case class MethodDecl(
-    modifiers: Set[Modifier],
     id: MethodID,
-    args: List[Formal],
-    retType: Option[TypeTree],
-    stat: Option[StatTree]) extends MethodDeclTree
+    modifiers: Set[Modifier] = Set(),
+    args: List[Formal] = Nil,
+    retType: Option[TypeTree] = None,
+    stat: Option[StatTree] = None
+  ) extends MethodDeclTree
+
   case class ConstructorDecl(
-    modifiers: Set[Modifier],
     id: MethodID,
-    args: List[Formal],
-    retType: Option[TypeTree],
-    stat: Option[StatTree]) extends MethodDeclTree
-  case class OperatorDecl(modifiers: Set[Modifier], operatorType: OperatorTree, args: List[Formal], retType: Option[TypeTree], stat: Option[StatTree]) extends MethodDeclTree {
+    modifiers: Set[Modifier] = Set(),
+    args: List[Formal] = Nil,
+    retType: Option[TypeTree] = None,
+    stat: Option[StatTree] = None
+  ) extends MethodDeclTree
+
+  case class OperatorDecl(
+    operatorType: OperatorTree,
+    modifiers: Set[Modifier] = Set(),
+    args: List[Formal] = Nil,
+    retType: Option[TypeTree] = None,
+    stat: Option[StatTree] = None)
+    extends MethodDeclTree {
     val id: MethodID = MethodID("")
   }
 
@@ -295,7 +316,13 @@ object Trees {
   }
 
 
-  case class VarDecl(tpe: Option[TypeTree], id: VariableID, initation: Option[ExprTree], modifiers: Set[Modifier]) extends StatTree with Symbolic[VariableSymbol] with Modifiable
+  case class VarDecl(
+    id: VariableID,
+    tpe: Option[TypeTree] = None,
+    initation: Option[ExprTree] = None,
+    modifiers: Set[Modifier] = Set())
+    extends StatTree with Symbolic[VariableSymbol] with Modifiable
+
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
   case class While(condition: ExprTree, stat: StatTree) extends StatTree

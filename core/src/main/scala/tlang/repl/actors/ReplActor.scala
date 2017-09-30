@@ -15,15 +15,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 
 
-trait State
-case object AwaitingExecution extends State
-case object Normal extends State
+trait ExecutionState
+case object AwaitingExecution extends ExecutionState
+case object Normal extends ExecutionState
 
 
 object ReplActor {
   case object StartRepl
   case object StopRepl
-  case class SetState(state: State)
+  case class SetState(state: ExecutionState)
 
   def props(replState: ReplState,
     evaluator: Evaluator,
@@ -36,11 +36,11 @@ object ReplActor {
   val name = "repl"
 }
 
-sealed abstract class Command(state: State, val priority: Int) extends Product with Serializable {
+sealed abstract class Command(state: ExecutionState, val priority: Int) extends Product with Serializable {
 
   def keyAction: PartialFunction[Key, Boolean]
 
-  def matches(currentState: State, keyStroke: Key): Boolean = currentState == state && keyAction.isDefinedAt(keyStroke)
+  def matches(currentState: ExecutionState, keyStroke: Key): Boolean = currentState == state && keyAction.isDefinedAt(keyStroke)
   def apply(keyStroke: Key): Boolean = keyAction.apply(keyStroke)
 }
 
@@ -63,7 +63,7 @@ class ReplActor(
   private val replProgram =
     context.actorOf(EvaluationActor.props(replState, evaluator, formatter), EvaluationActor.name)
 
-  private var state: State = Normal
+  private var state: ExecutionState = Normal
 
   override def receive: Receive = {
     case SetState(state)        =>

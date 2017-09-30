@@ -54,6 +54,7 @@ case class TreeBuilder() {
       case x :: rest => Plus(x, concat(rest)).setType(String)
       case _         => ???
     }
+
     concat(exprTree :: rest.toList)
   }
 
@@ -71,7 +72,7 @@ case class TreeBuilder() {
     initExpression.setType(tpe)
     val name = s"$prefix$idName"
     val id = VariableID(name)
-    val varDecl = VarDecl(None, id, Some(initExpression), modifiers)
+    val varDecl = VarDecl(id, None, Some(initExpression), modifiers)
     val symbol = new VariableSymbol(idName)
     symbol.setType(tpe)
     varDecl.setSymbol(symbol)

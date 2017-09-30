@@ -62,6 +62,7 @@ case class NameAnalyser(
   def checkInheritanceCycles(): Unit = {
 
     var classesFoundInCycle = Set[ClassSymbol]()
+
     def checkInheritanceCycles(classSymbol: ClassSymbol, set: Set[ClassSymbol]): Unit = {
       if (classesFoundInCycle.contains(classSymbol))
         return
@@ -160,7 +161,7 @@ case class NameAnalyser(
     val id = funcTree.id
     val name = id.name
     val sym = funcTree match {
-      case methDecl@MethodDecl(modifiers, _, _, retType, stat)      =>
+      case methDecl@MethodDecl(_, modifiers, _, retType, stat)      =>
         if (!classSymbol.isAbstract && stat.isEmpty)
           report(ClassUnimplementedMethod(methDecl))
 
@@ -168,7 +169,7 @@ case class NameAnalyser(
           report(UnimplementedMethodNoReturnType(methDecl.signature, methDecl))
 
         new MethodSymbol(name, classSymbol, stat, modifiers)
-      case conDecl@ConstructorDecl(modifiers, _, _, _, stat)        =>
+      case conDecl@ConstructorDecl(_, modifiers, _, _, stat)        =>
         if (stat.isEmpty)
           report(AbstractConstructor(conDecl))
 
@@ -176,7 +177,7 @@ case class NameAnalyser(
         if (modifiers.contains(Implicit()))
           methSym.annotations = Constants.ImplicitConstructorAnnotation :: Nil
         methSym
-      case opDecl@OperatorDecl(modifiers, operatorType, _, _, stat) =>
+      case opDecl@OperatorDecl(operatorType, modifiers, _, _, stat) =>
         if (stat.isEmpty)
           report(AbstractOperator(opDecl))
 
@@ -253,7 +254,7 @@ case class NameAnalyser(
 
       val conSym = constructorDecl.getSymbol
       stat ifDefined { new StatementBinder(conSym, false).bindStatement(_) }
-    case operatorDecl@OperatorDecl(_, operatorType, args, retType, stat) =>
+    case operatorDecl@OperatorDecl(operatorType, _, args, retType, stat) =>
       val opSym = operatorDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -298,7 +299,7 @@ case class NameAnalyser(
     }
 
   private def bindFields(classDecl: ClassDeclTree) =
-    classDecl.fields.foreach { case varDecl@VarDecl(typeTree, varId, init, _) =>
+    classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _) =>
       typeTree ifDefined { t =>
         val tpe = setType(t)
         varId.setType(tpe)
@@ -327,7 +328,7 @@ case class NameAnalyser(
             bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue)
           }
           localVars
-        case varDecl@VarDecl(typeTree, id, init, modifiers) =>
+        case varDecl@VarDecl(id, typeTree, init, modifiers) =>
           val newSymbol = new VariableSymbol(id.name, modifiers).setPos(varDecl)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
@@ -515,7 +516,9 @@ case class NameAnalyser(
     private def variableAlternatives(localVars: Map[String, VariableData]): List[String] = {
 
       def getLocalVars = localVars.keys.toList
+
       def getArguments(methodSymbol: MethodSymbol) = methodSymbol.argList.map(_.name)
+
       def getFields(classSymbol: ClassSymbol) = classSymbol.fields.filter { case (_, sym) =>
         !isStaticContext || sym.isStatic
       }.keys.toList
@@ -533,7 +536,9 @@ case class NameAnalyser(
       val name = id.name
 
       def lookupLocalVar() = localVars.get(name).map(_.symbol)
+
       def lookupArgument(methodSymbol: MethodSymbol) = methodSymbol.lookupArgument(name)
+
       def lookupField(methodSymbol: MethodSymbol) = {
         val m = methodSymbol.lookupField(name)
         m foreach { sym =>
@@ -542,6 +547,7 @@ case class NameAnalyser(
         }
         m
       }
+
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
           lookupLocalVar().orElse(lookupArgument(methodSymbol).orElse(lookupField(methodSymbol)))

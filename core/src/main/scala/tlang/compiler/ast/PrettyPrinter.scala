@@ -34,10 +34,10 @@ case class PrettyPrinter(formatting: Formatting) {
     case ClassDecl(id, parents, fields, methods)                    => pp"${ N }class ${ restOfClassDecl(id, parents, fields, methods) }"
     case TraitDecl(id, parents, fields, methods)                    => pp"${ N }trait ${ restOfClassDecl(id, parents, fields, methods) }"
     case ExtensionDecl(tpe, methods)                                => pp"${ N }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
-    case VarDecl(tpe, id, expr, modifiers)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe)(t => pp": $t") }${ optional(expr)(t => pp" = $t") }"
-    case MethodDecl(modifiers, id, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") }${ optional(stat)(s => pp" = $s") }"
-    case ConstructorDecl(modifiers, _, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args, ", ") }) = $stat"
-    case OperatorDecl(modifiers, operatorType, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") } = $stat"
+    case VarDecl(id, tpe, expr, modifiers)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe)(t => pp": $t") }${ optional(expr)(t => pp" = $t") }"
+    case MethodDecl(id, modifiers, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") }${ optional(stat)(s => pp" = $s") }"
+    case ConstructorDecl(_, modifiers, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args, ", ") }) = $stat"
+    case OperatorDecl(operatorType, modifiers, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") } = $stat"
     case Formal(tpe, id)                                            => pp"$id: $tpe"
     case Private()                                                  => pp"private"
     case Public()                                                   => pp"public"
@@ -179,10 +179,13 @@ case class PrettyPrinter(formatting: Formatting) {
   private def templateList(id: ClassID) = if (id.isTemplated) pp"<${ Separated(id.templateTypes, ", ") }>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {
-    val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private()   => pp"def"
-      case Public()    => pp"Def"
-      case Protected() => pp"def protected"
+    val decl = modifiers.find(_.isInstanceOf[Accessability]) match {
+      case Some(access) => access match {
+        case Private()   => pp"def"
+        case Public()    => pp"Def"
+        case Protected() => pp"def protected"
+      }
+      case None         => "<MISSING ACCESSABILITY>"
     }
 
     decl + mods(modifiers)
@@ -190,13 +193,16 @@ case class PrettyPrinter(formatting: Formatting) {
 
   private def varDecl(modifiers: Set[Modifier]) = {
     val isFinal = modifiers.contains(Final())
-    val decl = modifiers.find(_.isInstanceOf[Accessability]).get match {
-      case Private() if isFinal   => pp"val"
-      case Private()              => pp"var"
-      case Public() if isFinal    => pp"Val"
-      case Public()               => pp"Var"
-      case Protected() if isFinal => pp"val protected"
-      case Protected()            => pp"var protected"
+    val decl = modifiers.find(_.isInstanceOf[Accessability]) match {
+      case Some(access) => access match {
+        case Private() if isFinal   => pp"val"
+        case Private()              => pp"var"
+        case Public() if isFinal    => pp"Val"
+        case Public()               => pp"Var"
+        case Protected() if isFinal => pp"val protected"
+        case Protected()            => pp"var protected"
+      }
+      case None         => "<MISSING ACCESSABILITY>"
     }
 
     decl + mods(modifiers)
@@ -278,6 +284,7 @@ case class PrettyPrinter(formatting: Formatting) {
       case None          => ""
       case l: List[_]    => mkString(l.asInstanceOf[List[Tree]]) // Only lists of trees should be used
       case s: String     => s
+      case null          => "null" // This can happen when mocking
       case x             => x.toString
     }
 

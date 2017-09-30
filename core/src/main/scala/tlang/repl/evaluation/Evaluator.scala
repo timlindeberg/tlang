@@ -11,27 +11,51 @@ import tlang.compiler.modification.Templating
 import tlang.utils.Extensions._
 import tlang.utils.{ProgramExecutor, StringSource}
 
+
 object Evaluator {
+
 
   val ClassName        = "ReplExecution"
   val ReplOutputMarker = "__ReplRes__"
   val PrintMarker      = Print(StringLit(ReplOutputMarker))
   val ReplClassID      = ClassID(ClassName)
 
+
+  def apply(ctx: Context,
+    extractor: Extractor,
+    programExecutor: ProgramExecutor,
+    saveAndPrintTransformer: SaveAndPrintTransformer,
+    state: ReplState): Evaluator = {
+    val parser = Lexing andThen Parsing
+    val analyzer = Templating andThen Naming andThen Typing andThen Flowing
+    val compiler = Lowering andThen CodeGeneration
+
+    val classFile = File(ctx.outDirs.head, Evaluator.ClassName + ".class")
+    Evaluator(
+      classFile,
+      extractor,
+      programExecutor,
+      saveAndPrintTransformer,
+      state,
+      parse = input => parser.execute(ctx)(input),
+      analyze = cus => analyzer.execute(ctx)(cus),
+      compile = cus => compiler.execute(ctx)(cus)
+    )
+  }
 }
 
 case class Evaluator(
-  ctx: Context,
+  classFile: File,
   extractor: Extractor,
   programExecutor: ProgramExecutor,
-  replStatementTransformer: StatementTransformer,
-  state: ReplState) {
+  saveAndPrintTransformer: SaveAndPrintTransformer,
+  state: ReplState,
+  parse: List[StringSource] => List[CompilationUnit],
+  analyze: List[CompilationUnit] => List[CompilationUnit],
+  compile: List[CompilationUnit] => Unit
+) {
 
   import Evaluator._
-
-  private val parse    = Lexing andThen Parsing
-  private val frontEnd = Templating andThen Naming andThen Typing andThen Flowing
-  private val compile  = Lowering andThen CodeGeneration
 
 
   def apply(command: String): String = {
@@ -43,22 +67,26 @@ case class Evaluator(
     resultMessage(definitionMessages, executionMessages)
   }
 
+  private def parseInput(command: String): CompilationUnit = {
+    val input = StringSource(command, ClassName) :: Nil
+    parse(input).head
+  }
+
   private def compile(CU: CompilationUnit): List[CompilationUnit] = {
-    val allCUs = frontEnd.execute(ctx)(CU :: Nil)
+    val allCUs = analyze(CU :: Nil)
 
     // Templating can generate additional CU's. We extract the one with REPL-class
     // and transform that one.
     val replCU = allCUs.find { _.classes.exists(_.tpe == ReplClassID) }.get
     val rest = allCUs.remove(replCU)
 
-    val transformed: CompilationUnit = replStatementTransformer(replCU)
+    val transformed: CompilationUnit = saveAndPrintTransformer(replCU)
     transformed :: rest
   }
 
   private def execute(cus: List[CompilationUnit]): Iterator[String] = {
-    compile.execute(ctx)(cus)
+    compile(cus)
 
-    val classFile = File(ctx.outDirs.head, Evaluator.ClassName + ".class")
     val res = programExecutor(classFile)
     state.addStatementsToHistory()
 
@@ -77,12 +105,6 @@ case class Evaluator(
     val start = s.indexOf(ReplOutputMarker)
     val end = s.lastIndexOf(ReplOutputMarker)
     if (start != -1 && end != -1) s.slice(start + ReplOutputMarker.length, end) else ""
-  }
-
-
-  private def parseInput(command: String): CompilationUnit = {
-    val input = StringSource(command, ClassName) :: Nil
-    parse.execute(ctx)(input).head
   }
 
 

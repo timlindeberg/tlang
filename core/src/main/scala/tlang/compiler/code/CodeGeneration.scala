@@ -256,7 +256,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     lazy val ch: CodeHandler = classFile.addClassInitializer.codeHandler
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     staticFields.foreach {
-      case VarDecl(_, id, Some(expr), _) => compileField(expr, id, classDecl, ch, codeGenerator)
+      case VarDecl(id, _, Some(expr), _) => compileField(expr, id, classDecl, ch, codeGenerator)
       case _                             =>
     }
     ch << RETURN
@@ -267,7 +267,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val nonStaticFields = classDecl.fields.filter(v => v.initation.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
     nonStaticFields foreach {
-      case VarDecl(_, id, Some(expr), _) =>
+      case VarDecl(id, _, Some(expr), _) =>
         ch << ArgLoad(0) // put this-reference on stack
         compileField(expr, id, classDecl, ch, codeGenerator)
       case _                             =>
