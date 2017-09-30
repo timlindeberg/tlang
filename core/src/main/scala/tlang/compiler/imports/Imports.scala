@@ -20,7 +20,7 @@ object Imports {
   private val TBool      = List("T", "lang", "Bool")
   private val TLang      = List("T", "lang")
 
-  val DefaultImports = List[Import](
+  val DefaultImports: List[Import] = List[Import](
     RegularImport(javaObject),
     RegularImport(javaString),
     RegularImport(TInt),

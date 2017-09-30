@@ -12,7 +12,7 @@ import tlang.utils.{Position, Positioned}
 
 import scala.concurrent.duration.FiniteDuration
 
-object InputBox {
+object OutputBox {
 
   val YIndent  = 3
   val XIndent  = 2
@@ -20,16 +20,16 @@ object InputBox {
 
 }
 
-class InputBox(
+class OutputBox(
   formatter: Formatter,
   errorFormatter: MessageFormatter,
-  maxOutputLines: Int,
-  terminal: ReplTerminal) {
+  terminal: ReplTerminal,
+  maxOutputLines: Int) {
 
 
   private val formatting = formatter.formatting
 
-  import InputBox._
+  import OutputBox._
   import formatting._
 
   private val SuccessColor = Bold + Green
@@ -40,7 +40,6 @@ class InputBox(
 
   private val TabReplacement    = " " * TabWidth
   private val ShowCtrlCReminder = FiniteDuration(2, "sec")
-  private val BoxSpace          = formatting.lineWidth - 2 * XIndent
   private val spinner           = formatting.spinner
 
   private var input            = ""
@@ -149,7 +148,8 @@ class InputBox(
     }
 
     // To make room for truncation
-    val end = if (lineLength > BoxSpace) BoxSpace - 3 else BoxSpace
+    val boxSpace = formatting.lineWidth - 2 * XIndent
+    val end = if (lineLength > boxSpace) boxSpace - 3 else boxSpace
     val isCursorInsideBox = cursor.x <= end
     terminal.isCursorVisible = isCursorInsideBox && isCursorVisible
   }

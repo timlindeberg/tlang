@@ -1,13 +1,12 @@
-package tlang.repl
-
+package tlang.repl.actors
 
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.KeyType
-import tlang.Context
-import tlang.compiler.ast.PrettyPrinter
+import tlang.formatting.Formatter
 import tlang.messages.MessageFormatter
-import tlang.repl.Renderer._
-import tlang.repl.ReplProgram._
+import tlang.repl.actors.EvaluationActor._
+import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, RenderingMessage}
+import tlang.repl.evaluation.{Evaluator, ReplState}
 import tlang.repl.input.Input
 import tlang.repl.terminal._
 import tlang.utils.{Enumerable, Enumeration}
@@ -21,13 +20,18 @@ case object AwaitingExecution extends State
 case object Normal extends State
 
 
-object Repl {
+object ReplActor {
   case object StartRepl
   case object StopRepl
   case class SetState(state: State)
 
-  def props(ctx: Context, errorFormatter: MessageFormatter, prettyPrinter: PrettyPrinter, terminal: ReplTerminal, inputHistory: Input) =
-    Props(new Repl(ctx, errorFormatter, prettyPrinter, terminal, inputHistory))
+  def props(replState: ReplState,
+    evaluator: Evaluator,
+    formatter: Formatter,
+    errorFormatter: MessageFormatter,
+    terminal: ReplTerminal,
+    input: Input) =
+    Props(new ReplActor(replState, evaluator, formatter, errorFormatter, terminal, input))
 
   val name = "repl"
 }
@@ -40,38 +44,41 @@ sealed abstract class Command(state: State, val priority: Int) extends Product w
   def apply(keyStroke: Key): Boolean = keyAction.apply(keyStroke)
 }
 
-class Repl(
-  ctx: Context,
+class ReplActor(
+  replState: ReplState,
+  evaluator: Evaluator,
+  formatter: Formatter,
   errorFormatter: MessageFormatter,
-  prettyPrinter: PrettyPrinter,
   terminal: ReplTerminal,
   input: Input) extends Actor {
 
-  import Repl._
-  import ctx.formatter.formatting._
+  import ReplActor._
+  import formatter.formatting._
 
   private val MaxOutputLines  = 10
-  private val LoadingInterval = ctx.formatting.spinner.frameTime.length
+  private val LoadingInterval = formatter.formatting.spinner.frameTime.length
 
-  private val renderer    = context.actorOf(Renderer.props(ctx.formatter, errorFormatter, MaxOutputLines, terminal), Renderer.name)
-  private val replProgram = context.actorOf(ReplProgram.props(ctx, prettyPrinter, MaxOutputLines), ReplProgram.name)
+  private val renderer    =
+    context.actorOf(RenderingActor.props(formatter, errorFormatter, terminal, MaxOutputLines), RenderingActor.name)
+  private val replProgram =
+    context.actorOf(EvaluationActor.props(replState, evaluator, formatter), EvaluationActor.name)
 
   private var state: State = Normal
 
   override def receive: Receive = {
-    case SetState(state)         =>
+    case SetState(state)        =>
       this.state = state
-    case StartRepl               =>
+    case StartRepl              =>
       replProgram ! Warmup
-      renderer ! Renderer.StartRepl
+      renderer ! RenderingActor.StartRepl
       awaitInput()
-    case StopRepl                =>
-      renderer ! Renderer.StopRepl
+    case StopRepl               =>
+      renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()
       context.system.terminate()
-    case msg: RendererMessage    => renderer forward msg
-    case msg: ReplProgramMessage => replProgram forward msg
+    case msg: RenderingMessage  => renderer forward msg
+    case msg: EvaluationMessage => replProgram forward msg
   }
 
   private def awaitInput(): Unit = {
@@ -84,7 +91,7 @@ class Repl(
         }
 
         if (shouldUpdateRenderer)
-          renderer ! Renderer.DrawNewInput(input.currentBuffer)
+          renderer ! RenderingActor.DrawNewInput(input.currentBuffer)
 
         awaitInput()
     }
@@ -121,7 +128,7 @@ class Repl(
         val cmd = command.trim
         if (!cmd.startsWith(":")) {
           setAwaitExecution()
-          replProgram ! Execute(command)
+          replProgram ! EvaluationActor.Evaluate(command)
           return
         }
         cmd.drop(1).toLowerCase match {

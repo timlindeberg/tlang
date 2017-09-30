@@ -332,6 +332,7 @@ class InputBufferSpec extends UnitSpec {
          |HIJKL MNOPQR
          |STU""".stripMargin
     )
+
       .selectCurrentLine()
       .use { buffer =>
         buffer.selected shouldBe s"AB CDE FG"

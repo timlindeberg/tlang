@@ -35,13 +35,13 @@ case class ErrorStringContext(
     import formatter.formatting._
 
 
-    val ValueColor = NumColor
+    private val ValueColor: Color = NumColor
 
-    var currentColor: Color            = NoColor
-    val sb          : StringBuilder    = new StringBuilder
-    val strings     : Iterator[String] = sc.parts.iterator
-    var nextString  : String           = strings.next
-    var expressions : Iterator[Any]    = _
+    private var currentColor: Color            = NoColor
+    private val sb          : StringBuilder    = new StringBuilder
+    private val strings     : Iterator[String] = sc.parts.iterator
+    private var nextString  : String           = strings.next
+    private var expressions : Iterator[Any]    = _
 
     def err(args: Any*): String = {
 

@@ -166,11 +166,11 @@ case class ReplTerminal(term: Terminal, doubleClickTime: Long, formatting: Forma
 
 
     val startOfBuffer = boxStartPosition
-      .withRelativeRow(InputBox.YIndent)
-      .withRelativeColumn(InputBox.XIndent)
+      .withRelativeRow(OutputBox.YIndent)
+      .withRelativeColumn(OutputBox.XIndent)
 
-    val width = 1 + formatting.lineWidth - InputBox.XIndent * 2
-    val height = boxHeight - (InputBox.YIndent + 1)
+    val width = 1 + formatting.lineWidth - OutputBox.XIndent * 2
+    val height = boxHeight - (OutputBox.YIndent + 1)
 
     val mousePos = mouseAction.getPosition
     val x = mousePos.getColumn - startOfBuffer.getColumn

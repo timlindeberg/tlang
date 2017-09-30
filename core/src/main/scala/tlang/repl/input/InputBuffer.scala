@@ -13,7 +13,7 @@ object InputBuffer {
   def calculateLinePositions(string: String): List[Int] = {
     val lines = ListBuffer[Int]()
     var i = 1
-    string.foreach { c =>
+    string foreach { c =>
       if (c == '\n') lines += i
       i += 1
     }

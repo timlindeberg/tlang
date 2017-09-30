@@ -1,29 +1,26 @@
 package tlang.repl
 
-import java.nio.charset.Charset
-
 import akka.actor.ActorSystem
 import better.files._
-import com.googlecode.lanterna.TerminalSize
-import com.googlecode.lanterna.TextColor.ANSI
-import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
-import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
-import com.googlecode.lanterna.terminal.swing._
-import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.imports.ClassPath
+import tlang.compiler.code.TreeBuilder
+import tlang.compiler.imports.{ClassPath, Imports}
 import tlang.formatting._
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
-import tlang.repl.Renderer.Resize
-import tlang.repl.Repl.{StartRepl, StopRepl}
+import tlang.repl.actors.RenderingActor.Resize
+import tlang.repl.actors.ReplActor
+import tlang.repl.actors.ReplActor.{StartRepl, StopRepl}
+import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, StatementTransformer}
 import tlang.repl.input.{Clipboard, Input}
-import tlang.repl.terminal.{CustomCharacterPatterns, ReplTerminal}
+import tlang.repl.terminal.{ReplTerminal, TerminalFactory}
 import tlang.utils.Extensions._
+import tlang.utils.ProgramExecutor
+
 
 object Main {
 
@@ -68,16 +65,32 @@ object Main {
 
     val context = createContext(options, errorFormatter, tempDir)
 
-    val actorSystem = ActorSystem("tRepl")
 
-    val terminal = createUnderlyingTerminal()
+    val prettyPrinter = PrettyPrinter(formatting)
+    val errorStringContext = ErrorStringContext(formatter)
+
+    val replState = ReplState(prettyPrinter, Imports(context, errorStringContext))
+
+
+    val extractor = Extractor(formatter, replState)
+    val programExecutor = ProgramExecutor(context)
+    val statementTransformer = StatementTransformer(TreeBuilder(), replState)
+    val evaluator = Evaluator(context, extractor, programExecutor, statementTransformer, replState)
+
+    val messageFormatter = MessageFormatter(formatter)
+
+    val terminal = TerminalFactory.createTerminal()
     val replTerminal = ReplTerminal(terminal, 500L, formatting)
     replTerminal.enableMouseReporting(true)
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize)
-    val prettyPrinter = PrettyPrinter(formatting)
-    val repl = actorSystem.actorOf(Repl.props(context, errorFormatter, prettyPrinter, replTerminal, input), Repl.name)
+
+
+    val actorSystem = ActorSystem("tRepl")
+    val repl = actorSystem.actorOf(
+      ReplActor.props(replState, evaluator, formatter, messageFormatter, replTerminal, input),
+      ReplActor.name)
 
     terminal.addResizeListener((_, newSize) => {
       debug(s"NewSize: $newSize")
@@ -124,55 +137,5 @@ object Main {
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
     // TODO
   }
-
-  private def createUnderlyingTerminal(): Terminal = {
-    if (sys.env.get("useTerminalEmulator").contains("true"))
-      return createTerminalEmulator()
-
-    val charset = Charset.forName(System.getProperty("file.encoding"))
-    new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
-      term.getInputDecoder.addProfile(CustomCharacterPatterns)
-    }
-  }
-
-  private def createTerminalEmulator() =
-    new DefaultTerminalFactory()
-      .setTerminalEmulatorColorConfiguration(emulatorColors)
-      .setTerminalEmulatorFontConfiguration(emulatorFont)
-      .setInitialTerminalSize(new TerminalSize(80, 50))
-      .setTerminalEmulatorDeviceConfiguration(deviceConfiguration)
-      .createTerminal()
-
-  private lazy val emulatorFont =
-    new SwingTerminalFontConfiguration(
-      true,
-      AWTTerminalFontConfiguration.BoldMode.EVERYTHING,
-      new java.awt.Font("Meslo LG S", 0, 14)
-    )
-
-  private lazy val deviceConfiguration =
-    new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
-
-  private lazy val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
-    new java.awt.Color(177, 204, 217), // defaultColor
-    new java.awt.Color(177, 204, 217), // defaultBrightColor
-    new java.awt.Color(50, 65, 72), //    defaultBackgroundColor
-    new java.awt.Color(65, 87, 98), //    normalBlack
-    new java.awt.Color(100, 133, 146), // brightBlack
-    new java.awt.Color(247, 140, 108), // normalRed
-    new java.awt.Color(255, 83, 112), //  brightRed
-    new java.awt.Color(195, 232, 141), // normalGreen
-    new java.awt.Color(204, 247, 175), // brightGreen
-    new java.awt.Color(255, 203, 107), // normalYellow
-    new java.awt.Color(255, 203, 67), //  brightYellow
-    new java.awt.Color(130, 170, 255), // normalBlue
-    new java.awt.Color(137, 221, 255), // brightBlue
-    new java.awt.Color(199, 146, 234), // normalMagenta
-    new java.awt.Color(207, 160, 237), // brightMagenta
-    new java.awt.Color(147, 233, 217), // normalCyan
-    new java.awt.Color(0, 185, 204), //   brightCyan
-    new java.awt.Color(247, 247, 247), // normalWhite
-    new java.awt.Color(255, 255, 255) //  brightWhite
-  ))
 
 }

@@ -6,7 +6,6 @@ import java.nio.file.Paths
 import better.files.{File => BFile}
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.reflect.{ClassTag, _}
@@ -188,20 +187,6 @@ object Extensions {
       str.replaceAll("\\s+$", "")
     }
 
-    def allIndexesOf(pattern: String): List[Int] = {
-      val buf = ListBuffer[Int]()
-
-      var index = str.indexOf(pattern)
-      if (index != -1)
-        buf += index
-      while (index >= 0) {
-        index = str.indexOf(pattern, index + 1)
-        if (index != -1)
-          buf += index
-      }
-      buf.toList
-    }
-
   }
 
   implicit class Tuple2Extensions[T](val t: (T, T)) extends AnyVal {
@@ -231,21 +216,29 @@ object Extensions {
   }
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
+
     def use(f: T => Unit): T = { val x = t; f(t); x }
+
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }
     def print[U](prefix: String): T = { println(s"$prefix: '$t'"); t }
+
     def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
     def notIn(seq: TraversableOnce[T]): Boolean = !t.in(seq)
     def in(set: Set[T]): Boolean = set.contains(t)
     def notIn(set: Set[T]): Boolean = !t.in(set)
     def in(range: Range): Boolean = range.contains(t)
     def notIn(range: Range): Boolean = !t.in(range)
+
+    def |>[A](f: T => A) = f(t)
+
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {
+
     def filterInstance[A <: T : ClassTag]: Collection[A] = collection.filter(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[A]]
     def filterNotInstance[A <: T : ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
+
     def findInstance[A <: T : ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
     def findDefined[A](f: T => Option[A]): Option[A] = {
       for (v <- collection) {
@@ -254,6 +247,7 @@ object Extensions {
       }
       None
     }
+
     def partitionInstance[A <: T : ClassTag]: (Collection[A], Collection[T]) = {
       val (a, b) = collection.partition(classTag[A].runtimeClass.isInstance(_))
       (a.asInstanceOf[Collection[A]], b.asInstanceOf[Collection[T]])
