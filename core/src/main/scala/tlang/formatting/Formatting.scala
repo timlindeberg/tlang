@@ -48,7 +48,18 @@ case class Formatting(
   val CyanBG   : Color = color(Colors.CyanBG)
   val WhiteBG  : Color = color(Colors.WhiteBG)
 
-  val FGColors: List[Color] = List(Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
+  val FGColors : List[Color] = List(Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
+  val BGColors : List[Color] = List(
+    BlackBG + White,
+    RedBG + Black,
+    GreenBG + Black,
+    YellowBG + Black,
+    BlueBG + Black,
+    MagentaBG + Black,
+    CyanBG + Black,
+    WhiteBG + Black
+  )
+  val AllColors: List[Color] = FGColors ++ BGColors
 
   /*------------------------------ Color Scheme -----------------------------*/
 

@@ -1,7 +1,7 @@
 package tlang.compiler
 
 import cafebabe.CodegenerationStackTrace
-import tlang.compiler.ast.Trees.CompilationUnit
+import tlang.compiler.ast.Trees.Tree
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.lexer.Token
 import tlang.formatting.Formatter
@@ -59,18 +59,18 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
     grid.print()
   }
 
-  def printASTs(phaseName: String, cus: List[CompilationUnit]): Unit = {
+  def printASTs(phaseName: String, trees: List[Tree]): Unit = {
     val grid = makeGrid(phaseName)
-    cus.foreach { cu =>
+    trees.foreach { tree =>
       grid
         .row(alignment = Center)
-        .content(formatter.fileName(cu.sourceName))
+        .content(formatter.fileName(tree.sourceName))
         .row()
-        .content(prettyPrinter(cu).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
-        .row(TruncatedColumn, Column, Column)
-        .content(HeaderColor("Tree"), HeaderColor("Symbol"), HeaderColor("Type"))
+        .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
+        .row(TruncatedColumn, Column, Column, Column)
+        .content(HeaderColor("Tree"), HeaderColor("Reference"), HeaderColor("Symbol"), HeaderColor("Type"))
         .content()
-        .contents(treePrinter(cu))
+        .contents(treePrinter(tree))
     }
     grid.print()
   }

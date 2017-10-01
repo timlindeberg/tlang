@@ -77,7 +77,7 @@ case class TemplateModifier(ctx: Context) {
             val entry = getImportEntry(cu.imports, tpe)
             cu.imports += entry
           }
-          treeCopy.ClassID(tpe, tpe.templatedClassName)
+          copier.ClassID(tpe, tpe.templatedClassName)
       }
     }
 
@@ -208,21 +208,21 @@ case class TemplateModifier(ctx: Context) {
       val transformTemplate = new Trees.Transformer {
 
         // Uses a strict copier so we receive a deep copy of the tree
-        override val treeCopy = new Trees.Copier
+        override val copier = new Trees.Copier
 
         def transformation: TreeTransformation = {
           case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
-            val newId = treeCopy.ClassID(id, templateName, Nil)
+            val newId = copier.ClassID(id, templateName, Nil)
             val cons: (List[ClassID], List[VarDecl], List[MethodDeclTree]) => ClassDeclTree = c match {
-              case _: ClassDecl => treeCopy.ClassDecl(c, newId, _, _, _)
-              case _: TraitDecl => treeCopy.TraitDecl(c, newId, _, _, _)
+              case _: ClassDecl => copier.ClassDecl(c, newId, _, _, _)
+              case _: TraitDecl => copier.TraitDecl(c, newId, _, _, _)
               case _            => ???
             }
             cons(transform(parents), transform(fields), transform(methods))
           case classId@ClassID(name, tTypes)                 =>
-            val newId = treeCopy.ClassID(classId, name, transform(tTypes))
+            val newId = copier.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated) {
               val transforms = List[String => String](templateCU.imports.replaceNames)
               val e = ErrorStringContext(errorStringContext.formatter, transforms = transforms)

@@ -92,7 +92,7 @@ object FillTreeHelpers {
           if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${ Type.Name(tpe) }]"
         }
 
-        p"case $name(..${ ast.patTerms }) => treeCopy.$name(t, ..$transforms)"
+        p"case $name(..${ ast.patTerms }) => copier.$name(t, ..$transforms)"
       }
       q"""
          final def transformChildren(t: Tree): Tree = t match {

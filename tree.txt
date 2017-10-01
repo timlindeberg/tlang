@@ -1,3 +1,4 @@
+private val debugOutputFormatter = DebugOutputFormatter(Formatter(DefaultFormatting))
 private val noColorPrinter = PrettyPrinter(SimpleFormatting)
 private val colorPrinter = PrettyPrinter(DefaultFormatting)
 trait Tree extends Positioned() with Product() with TraversableLike[Tree, List[Tree]]() {
@@ -57,13 +58,17 @@ trait Tree extends Positioned() with Product() with TraversableLike[Tree, List[T
         ???
     }
   }
+  def debugPrint(header: String = "Debug"): this.type = {
+    debugOutputFormatter.printASTs(header, this :: Nil)
+    this
+  }
   def prettyPrint: this.type = {
     println(colorPrinter(this))
     this
   }
   override def clone: this.type = {
     val cloner = new Trees.Transformer() {
-      override val treeCopy = new Trees.Copier()
+      override val copier = new Trees.Copier()
       def transformation: PartialFunction[Tree, Tree] = Map.empty
     }
     cloner(this)
@@ -394,7 +399,10 @@ case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree()
 case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree()
 case class GeneratedExpr(stats: List[StatTree]) extends ExprTree()
 case class PutValue(exprTree: ExprTree) extends ExprTree() { override def getType: Type = exprTree.getType }
-case class Empty() extends ExprTree() with Leaf() { override def toString = "<EMPTY>" }
+case class Empty() extends ExprTree() with Leaf() {
+  override def toString = "<EMPTY>"
+  override def getType: Type = TUnit
+}
 object UselessStatement {
   def unapply(e: StatTree): Option[ExprTree] = e match {
     case Access(_, MethodCall(_, _)) =>
@@ -415,191 +423,191 @@ object UselessStatement {
 }
 type TreeTransformation = PartialFunction[Tree, Tree]
 trait Transformer {
-  val treeCopy: Copier = new LazyCopier()
+  val copier: Copier = new LazyCopier()
   def transformation: TreeTransformation
   final def transformChildren(t: Tree): Tree = t match {
     case CompilationUnit(pack, classes, imports) =>
-      treeCopy.CompilationUnit(t, _transform(pack).asInstanceOf[Package], _transform(classes).asInstanceOf[List[ClassDeclTree]], imports)
+      copier.CompilationUnit(t, _transform(pack).asInstanceOf[Package], _transform(classes).asInstanceOf[List[ClassDeclTree]], imports)
     case Annotation() =>
-      treeCopy.Annotation(t)
+      copier.Annotation(t)
     case Package(address) =>
-      treeCopy.Package(t, address)
+      copier.Package(t, address)
     case RegularImport(address) =>
-      treeCopy.RegularImport(t, address)
+      copier.RegularImport(t, address)
     case WildCardImport(address) =>
-      treeCopy.WildCardImport(t, address)
+      copier.WildCardImport(t, address)
     case ExtensionImport(address, className) =>
-      treeCopy.ExtensionImport(t, address, className)
+      copier.ExtensionImport(t, address, className)
     case ClassDecl(id, parents, fields, methods) =>
-      treeCopy.ClassDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+      copier.ClassDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
     case TraitDecl(id, parents, fields, methods) =>
-      treeCopy.TraitDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+      copier.TraitDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
     case ExtensionDecl(tpe, methods) =>
-      treeCopy.ExtensionDecl(t, _transform(tpe).asInstanceOf[TypeTree], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+      copier.ExtensionDecl(t, _transform(tpe).asInstanceOf[TypeTree], _transform(methods).asInstanceOf[List[MethodDeclTree]])
     case Public() =>
-      treeCopy.Public(t)
+      copier.Public(t)
     case Private() =>
-      treeCopy.Private(t)
+      copier.Private(t)
     case Protected() =>
-      treeCopy.Protected(t)
+      copier.Protected(t)
     case Static() =>
-      treeCopy.Static(t)
+      copier.Static(t)
     case Implicit() =>
-      treeCopy.Implicit(t)
+      copier.Implicit(t)
     case Final() =>
-      treeCopy.Final(t)
+      copier.Final(t)
     case MethodDecl(id, modifiers, args, retType, stat) =>
-      treeCopy.MethodDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+      copier.MethodDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
     case ConstructorDecl(id, modifiers, args, retType, stat) =>
-      treeCopy.ConstructorDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+      copier.ConstructorDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
     case OperatorDecl(operatorType, modifiers, args, retType, stat) =>
-      treeCopy.OperatorDecl(t, _transform(operatorType).asInstanceOf[OperatorTree], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+      copier.OperatorDecl(t, _transform(operatorType).asInstanceOf[OperatorTree], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
     case Formal(tpe, id) =>
-      treeCopy.Formal(t, _transform(tpe).asInstanceOf[TypeTree], _transform(id).asInstanceOf[VariableID])
+      copier.Formal(t, _transform(tpe).asInstanceOf[TypeTree], _transform(id).asInstanceOf[VariableID])
     case VarDecl(id, tpe, initiation, modifiers) =>
-      treeCopy.VarDecl(t, _transform(id).asInstanceOf[VariableID], _transform(tpe).asInstanceOf[Option[TypeTree]], _transform(initiation).asInstanceOf[Option[ExprTree]], _transform(modifiers).asInstanceOf[Set[Modifier]])
+      copier.VarDecl(t, _transform(id).asInstanceOf[VariableID], _transform(tpe).asInstanceOf[Option[TypeTree]], _transform(initiation).asInstanceOf[Option[ExprTree]], _transform(modifiers).asInstanceOf[Set[Modifier]])
     case Block(stats) =>
-      treeCopy.Block(t, _transform(stats).asInstanceOf[List[StatTree]])
+      copier.Block(t, _transform(stats).asInstanceOf[List[StatTree]])
     case If(condition, thn, els) =>
-      treeCopy.If(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[StatTree], _transform(els).asInstanceOf[Option[StatTree]])
+      copier.If(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[StatTree], _transform(els).asInstanceOf[Option[StatTree]])
     case While(condition, stat) =>
-      treeCopy.While(t, _transform(condition).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
+      copier.While(t, _transform(condition).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
     case For(initiation, condition, post, stat) =>
-      treeCopy.For(t, _transform(initiation).asInstanceOf[List[StatTree]], _transform(condition).asInstanceOf[ExprTree], _transform(post).asInstanceOf[List[StatTree]], _transform(stat).asInstanceOf[StatTree])
+      copier.For(t, _transform(initiation).asInstanceOf[List[StatTree]], _transform(condition).asInstanceOf[ExprTree], _transform(post).asInstanceOf[List[StatTree]], _transform(stat).asInstanceOf[StatTree])
     case Foreach(varDecl, container, stat) =>
-      treeCopy.Foreach(t, _transform(varDecl).asInstanceOf[VarDecl], _transform(container).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
+      copier.Foreach(t, _transform(varDecl).asInstanceOf[VarDecl], _transform(container).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
     case Error(expr) =>
-      treeCopy.Error(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Error(t, _transform(expr).asInstanceOf[ExprTree])
     case Return(expr) =>
-      treeCopy.Return(t, _transform(expr).asInstanceOf[Option[ExprTree]])
+      copier.Return(t, _transform(expr).asInstanceOf[Option[ExprTree]])
     case Break() =>
-      treeCopy.Break(t)
+      copier.Break(t)
     case Continue() =>
-      treeCopy.Continue(t)
+      copier.Continue(t)
     case Print(expr) =>
-      treeCopy.Print(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Print(t, _transform(expr).asInstanceOf[ExprTree])
     case Println(expr) =>
-      treeCopy.Println(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Println(t, _transform(expr).asInstanceOf[ExprTree])
     case ArrayType(tpe) =>
-      treeCopy.ArrayType(t, _transform(tpe).asInstanceOf[TypeTree])
+      copier.ArrayType(t, _transform(tpe).asInstanceOf[TypeTree])
     case NullableType(tpe) =>
-      treeCopy.NullableType(t, _transform(tpe).asInstanceOf[TypeTree])
+      copier.NullableType(t, _transform(tpe).asInstanceOf[TypeTree])
     case UnitType() =>
-      treeCopy.UnitType(t)
+      copier.UnitType(t)
     case Plus(lhs, rhs) =>
-      treeCopy.Plus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Plus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Minus(lhs, rhs) =>
-      treeCopy.Minus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Minus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Times(lhs, rhs) =>
-      treeCopy.Times(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Times(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Div(lhs, rhs) =>
-      treeCopy.Div(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Div(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Modulo(lhs, rhs) =>
-      treeCopy.Modulo(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Modulo(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LogicAnd(lhs, rhs) =>
-      treeCopy.LogicAnd(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LogicAnd(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LogicOr(lhs, rhs) =>
-      treeCopy.LogicOr(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LogicOr(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LogicXor(lhs, rhs) =>
-      treeCopy.LogicXor(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LogicXor(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LeftShift(lhs, rhs) =>
-      treeCopy.LeftShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LeftShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case RightShift(lhs, rhs) =>
-      treeCopy.RightShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.RightShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LessThan(lhs, rhs) =>
-      treeCopy.LessThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LessThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case LessThanEquals(lhs, rhs) =>
-      treeCopy.LessThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.LessThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case GreaterThan(lhs, rhs) =>
-      treeCopy.GreaterThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.GreaterThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case GreaterThanEquals(lhs, rhs) =>
-      treeCopy.GreaterThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.GreaterThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Equals(lhs, rhs) =>
-      treeCopy.Equals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Equals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case NotEquals(lhs, rhs) =>
-      treeCopy.NotEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.NotEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case And(lhs, rhs) =>
-      treeCopy.And(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.And(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Or(lhs, rhs) =>
-      treeCopy.Or(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+      copier.Or(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
     case Not(expr) =>
-      treeCopy.Not(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Not(t, _transform(expr).asInstanceOf[ExprTree])
     case Hash(expr) =>
-      treeCopy.Hash(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Hash(t, _transform(expr).asInstanceOf[ExprTree])
     case Negation(expr) =>
-      treeCopy.Negation(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.Negation(t, _transform(expr).asInstanceOf[ExprTree])
     case LogicNot(expr) =>
-      treeCopy.LogicNot(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.LogicNot(t, _transform(expr).asInstanceOf[ExprTree])
     case ExtractNullable(expr) =>
-      treeCopy.ExtractNullable(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.ExtractNullable(t, _transform(expr).asInstanceOf[ExprTree])
     case PreIncrement(expr) =>
-      treeCopy.PreIncrement(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.PreIncrement(t, _transform(expr).asInstanceOf[ExprTree])
     case PreDecrement(expr) =>
-      treeCopy.PreDecrement(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.PreDecrement(t, _transform(expr).asInstanceOf[ExprTree])
     case PostIncrement(expr) =>
-      treeCopy.PostIncrement(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.PostIncrement(t, _transform(expr).asInstanceOf[ExprTree])
     case PostDecrement(expr) =>
-      treeCopy.PostDecrement(t, _transform(expr).asInstanceOf[ExprTree])
+      copier.PostDecrement(t, _transform(expr).asInstanceOf[ExprTree])
     case ArrayRead(arr, index) =>
-      treeCopy.ArrayRead(t, _transform(arr).asInstanceOf[ExprTree], _transform(index).asInstanceOf[ExprTree])
+      copier.ArrayRead(t, _transform(arr).asInstanceOf[ExprTree], _transform(index).asInstanceOf[ExprTree])
     case ArraySlice(arr, start, end, step) =>
-      treeCopy.ArraySlice(t, _transform(arr).asInstanceOf[ExprTree], _transform(start).asInstanceOf[Option[ExprTree]], _transform(end).asInstanceOf[Option[ExprTree]], _transform(step).asInstanceOf[Option[ExprTree]])
+      copier.ArraySlice(t, _transform(arr).asInstanceOf[ExprTree], _transform(start).asInstanceOf[Option[ExprTree]], _transform(end).asInstanceOf[Option[ExprTree]], _transform(step).asInstanceOf[Option[ExprTree]])
     case IntLit(value) =>
-      treeCopy.IntLit(t, value)
+      copier.IntLit(t, value)
     case LongLit(value) =>
-      treeCopy.LongLit(t, value)
+      copier.LongLit(t, value)
     case FloatLit(value) =>
-      treeCopy.FloatLit(t, value)
+      copier.FloatLit(t, value)
     case DoubleLit(value) =>
-      treeCopy.DoubleLit(t, value)
+      copier.DoubleLit(t, value)
     case CharLit(value) =>
-      treeCopy.CharLit(t, value)
+      copier.CharLit(t, value)
     case StringLit(value) =>
-      treeCopy.StringLit(t, value)
+      copier.StringLit(t, value)
     case TrueLit() =>
-      treeCopy.TrueLit(t)
+      copier.TrueLit(t)
     case FalseLit() =>
-      treeCopy.FalseLit(t)
+      copier.FalseLit(t)
     case NullLit() =>
-      treeCopy.NullLit(t)
+      copier.NullLit(t)
     case ArrayLit(value) =>
-      treeCopy.ArrayLit(t, _transform(value).asInstanceOf[List[ExprTree]])
+      copier.ArrayLit(t, _transform(value).asInstanceOf[List[ExprTree]])
     case ClassID(name, templateTypes) =>
-      treeCopy.ClassID(t, name, _transform(templateTypes).asInstanceOf[List[TypeTree]])
+      copier.ClassID(t, name, _transform(templateTypes).asInstanceOf[List[TypeTree]])
     case VariableID(name) =>
-      treeCopy.VariableID(t, name)
+      copier.VariableID(t, name)
     case MethodID(name) =>
-      treeCopy.MethodID(t, name)
+      copier.MethodID(t, name)
     case NormalAccess(obj, application) =>
-      treeCopy.NormalAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
+      copier.NormalAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
     case SafeAccess(obj, application) =>
-      treeCopy.SafeAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
+      copier.SafeAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
     case Assign(to, from) =>
-      treeCopy.Assign(t, _transform(to).asInstanceOf[Assignable], _transform(from).asInstanceOf[ExprTree])
+      copier.Assign(t, _transform(to).asInstanceOf[Assignable], _transform(from).asInstanceOf[ExprTree])
     case MethodCall(meth, args) =>
-      treeCopy.MethodCall(t, _transform(meth).asInstanceOf[MethodID], _transform(args).asInstanceOf[List[ExprTree]])
+      copier.MethodCall(t, _transform(meth).asInstanceOf[MethodID], _transform(args).asInstanceOf[List[ExprTree]])
     case This() =>
-      treeCopy.This(t)
+      copier.This(t)
     case Super(specifier) =>
-      treeCopy.Super(t, _transform(specifier).asInstanceOf[Option[ClassID]])
+      copier.Super(t, _transform(specifier).asInstanceOf[Option[ClassID]])
     case NewArray(tpe, sizes) =>
-      treeCopy.NewArray(t, _transform(tpe).asInstanceOf[TypeTree], _transform(sizes).asInstanceOf[List[ExprTree]])
+      copier.NewArray(t, _transform(tpe).asInstanceOf[TypeTree], _transform(sizes).asInstanceOf[List[ExprTree]])
     case New(tpe, args) =>
-      treeCopy.New(t, _transform(tpe).asInstanceOf[TypeTree], _transform(args).asInstanceOf[List[ExprTree]])
+      copier.New(t, _transform(tpe).asInstanceOf[TypeTree], _transform(args).asInstanceOf[List[ExprTree]])
     case Ternary(condition, thn, els) =>
-      treeCopy.Ternary(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[ExprTree], _transform(els).asInstanceOf[ExprTree])
+      copier.Ternary(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[ExprTree], _transform(els).asInstanceOf[ExprTree])
     case Elvis(nullableValue, ifNull) =>
-      treeCopy.Elvis(t, _transform(nullableValue).asInstanceOf[ExprTree], _transform(ifNull).asInstanceOf[ExprTree])
+      copier.Elvis(t, _transform(nullableValue).asInstanceOf[ExprTree], _transform(ifNull).asInstanceOf[ExprTree])
     case Is(expr, tpe) =>
-      treeCopy.Is(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
+      copier.Is(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
     case As(expr, tpe) =>
-      treeCopy.As(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
+      copier.As(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
     case GeneratedExpr(stats) =>
-      treeCopy.GeneratedExpr(t, _transform(stats).asInstanceOf[List[StatTree]])
+      copier.GeneratedExpr(t, _transform(stats).asInstanceOf[List[StatTree]])
     case PutValue(exprTree) =>
-      treeCopy.PutValue(t, _transform(exprTree).asInstanceOf[ExprTree])
+      copier.PutValue(t, _transform(exprTree).asInstanceOf[ExprTree])
     case Empty() =>
-      treeCopy.Empty(t)
+      copier.Empty(t)
   }
   final def apply[T <: Tree](t: T): T = _transform(t).asInstanceOf[T]
   final def transform[T <: Tree](list: List[T]): List[T] = _transform(list).asInstanceOf[List[T]]

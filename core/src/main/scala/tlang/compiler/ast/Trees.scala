@@ -6,7 +6,7 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
-import tlang.formatting.{DefaultFormatting, SimpleFormatting}
+import tlang.formatting.{DefaultFormatting, Formatter, SimpleFormatting}
 import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
 
@@ -16,8 +16,9 @@ import scala.collection.{TraversableLike, mutable}
 object Trees {
 
 
-  private val noColorPrinter = PrettyPrinter(SimpleFormatting)
-  private val colorPrinter   = PrettyPrinter(DefaultFormatting)
+  private val debugOutputFormatter = DebugOutputFormatter(Formatter(DefaultFormatting))
+  private val noColorPrinter       = PrettyPrinter(SimpleFormatting)
+  private val colorPrinter         = PrettyPrinter(DefaultFormatting)
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -76,11 +77,16 @@ object Trees {
       }
     }
 
+    def debugPrint(header: String = "Debug"): this.type = {
+      debugOutputFormatter.printASTs(header, this :: Nil)
+      this
+    }
+
     def prettyPrint: this.type = { println(colorPrinter(this)); this }
 
     override def clone: this.type = {
       val cloner = new Trees.Transformer {
-        override val treeCopy = new Trees.Copier
+        override val copier = new Trees.Copier
         def transformation: PartialFunction[Tree, Tree] = Map.empty
       }
       cloner(this)
@@ -664,7 +670,10 @@ object Trees {
   }
 
   // Used as a placeholder
-  case class Empty() extends ExprTree with Leaf {override def toString = "<EMPTY>" }
+  case class Empty() extends ExprTree with Leaf {
+    override def toString = "<EMPTY>"
+    override def getType: Type = TUnit
+  }
 
   // Statements that have no effect on their own.
   object UselessStatement {
@@ -685,7 +694,7 @@ object Trees {
 
   trait Transformer {
 
-    val treeCopy: Copier = new LazyCopier()
+    val copier: Copier = new LazyCopier()
 
     def transformation: TreeTransformation
 

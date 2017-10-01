@@ -2,13 +2,14 @@ package tlang.messages
 
 import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.TError
-import tlang.compiler.ast.Trees.{ClassID, Empty, VariableID}
+import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
 import tlang.utils.{NoPosition, Position, Positioned}
 
 class CompilerMessageSpec extends UnitSpec {
 
+  behavior of "Compiler messages"
 
   it should "hold error messages and warnings" in {
     val compilerMessages = createCompilerMessages()
@@ -125,7 +126,7 @@ class CompilerMessageSpec extends UnitSpec {
   it should "not add invalid messages" in {
     val compilerMessages = createCompilerMessages()
 
-    compilerMessages += createMessage(messageType = MessageType.Error, pos = Empty().setType(TError))
+    compilerMessages += createMessage(messageType = MessageType.Error, pos = Plus(IntLit(1), IntLit(1)).setType(TError))
     compilerMessages += createMessage(messageType = MessageType.Error, pos = VariableID("Id").setSymbol(VariableErrorSymbol))
     compilerMessages += createMessage(messageType = MessageType.Error, pos = ClassID("Id").setSymbol(ClassErrorSymbol))
 

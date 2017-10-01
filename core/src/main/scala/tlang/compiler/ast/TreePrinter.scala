@@ -1,5 +1,7 @@
 package tlang.compiler.ast
 
+import java.lang.System.identityHashCode
+
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -17,7 +19,7 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
-  def apply(t: Tree): List[(String, String, String)] = {
+  def apply(t: Tree): List[(String, String, String, String)] = {
     val Indent = List.fill(spacing)(' ')
     val Continuation = Vertical.head :: Indent
     val Whitespace = ' ' :: Indent
@@ -26,13 +28,14 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
     symbolMap = new java.util.IdentityHashMap[Symbol, (Int, Color)].asScala
 
     var first = true
-    val lines: ListBuffer[(String, String, String)] = ListBuffer()
+    val lines: ListBuffer[(String, String, String, String)] = ListBuffer()
     val sb = new StringBuilder
 
 
     def printTree(tree: Tree, stack: List[Char]): Unit = {
       def addLine(): Unit = {
-        val line = (sb.toString, symbolContent(tree), typeContent(tree))
+
+        val line = (sb.toString, reference(tree), symbolContent(tree), typeContent(tree))
         lines += line
         sb.clear()
       }
@@ -66,8 +69,8 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
     lines.toList
   }
 
-  private def formatTree(t: Tree): String = {
-    val content = t match {
+  private def formatTree(tree: Tree): String = {
+    val content = tree match {
       case c: CompilationUnit  => formatter.fileName(c.sourceName)
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
@@ -79,11 +82,16 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
       case n: NumberLiteral[_] => NumColor(n.value)
       case _                   => ""
     }
-    Bold(t.getClass.getSimpleName) + (if (content.nonEmpty) Bold("(") + content + Bold(")") else "")
+    Bold(tree.getClass.getSimpleName) + (if (content.nonEmpty) Bold("(") + content + Bold(")") else "")
   }
 
+  private def reference(tree: Tree): String = {
+    val id = identityHashCode(tree)
+    val color = AllColors(id % AllColors.length)
+    color(id.toHexString.padTo(8, ' '))
+  }
 
-  private def typeContent(t: Tree): String = t match {
+  private def typeContent(tree: Tree): String = tree match {
     case typed: Typed if typed.getType != TUntyped =>
       val tpe = typed.getType
       val color = typeColor(tpe)
@@ -97,11 +105,11 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
   }
 
 
-  private def symbolContent(t: Tree): String = t match {
+  private def symbolContent(tree: Tree): String = tree match {
     case symbolic: Symbolic[_] if symbolic.hasSymbol =>
       val symbol = symbolic.getSymbol
       val (id, color) = symbolMap.getOrElseUpdate(symbol, newSymbolFormatting)
-      val fullColor = t match {
+      val fullColor = tree match {
         case _: MethodDeclTree | _: ClassDeclTree | _: VarDecl => Underline + color
         case _                                                 => color
       }

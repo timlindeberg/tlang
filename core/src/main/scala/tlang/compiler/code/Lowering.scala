@@ -75,7 +75,7 @@ class Lowerer(imports: Imports) {
           to match {
             case ArrayRead(arr, _) if arr.getType.isInstanceOf[TObject] =>
               val expr = super.apply(assign.from)
-              val newAssign = treeCopy.Assign(assign, to, expr)
+              val newAssign = copier.Assign(assign, to, expr)
               // Transform again to replace external method calls etc.
               apply(replaceOperatorCall(newAssign))
             case _                                                      => transformChildren(assign)
@@ -138,13 +138,13 @@ class Lowerer(imports: Imports) {
         def transformation: TreeTransformation = {
           case This()                                                      =>
             thisId
-          case Access(obj, app)                                            =>
+          case acc@Access(obj, app)                                        =>
             // Don't replace VariableIDs in app since that would replace e.g A.i with A.$this.i
             val a = app match {
               case _: VariableID => app
               case _             => apply(app)
             }
-            treeCopy.NormalAccess(t, apply(obj), a)
+            copier.NormalAccess(acc, apply(obj), a)
           case v@VariableID(name) if v.getSymbol.isInstanceOf[FieldSymbol] =>
             NormalAccess(thisId, v).setType(v)
         }
@@ -166,7 +166,7 @@ class Lowerer(imports: Imports) {
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
         newMethSym.annotations = Constants.ExtensionAnnotation :: methSym.annotations
-        val thisArg = Formal(extensionDecl.tpe, thisId)
+        val thisArg = Formal(extensionDecl.tpe, thisId).setSymbol(thisSym)
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }
