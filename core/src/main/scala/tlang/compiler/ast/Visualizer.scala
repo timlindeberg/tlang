@@ -93,50 +93,48 @@ object Visualizer {
     private var id    = 0
     private val idMap = new java.util.IdentityHashMap[Tree, String]()
 
-    override def _traverse(tree: Tree): Unit = {
-      tree match {
-        case CompilationUnit(_, classes, _) =>
-          _traverse(classes)
-        case ClassDecl(_, _, _, methods)    =>
-          val nodeName = addNode(tree)
-          methods.foreach { m =>
-            val methodName = getId(m)
-            graph.addEdge(nodeName + methodName, nodeName, methodName)
-            Unit
-          }
-          _traverse(methods)
-        case MethodDecl(_, _, _, _, stat)   =>
-          val nodeName = addNode(tree)
-          stat.ifDefined { s =>
-            val statName = getId(s)
-            graph.addEdge(nodeName + statName, nodeName, statName)
-            _traverse(s)
-          }
-        case _: Modifier                    =>
-        case t                              =>
-          val nodeName = addNode(tree)
-          val r = currentMirror.reflect(t)
-          val fields = r.symbol.typeSignature.members.toStream.collect {
-            case s if !s.isMethod => r.reflectField(s.asInstanceOf[TermSymbol])
-          }
+    def traversal: TreeTraversal = {
+      case CompilationUnit(_, classes, _)    =>
+        traverse(classes)
+      case tree@ClassDecl(_, _, _, methods)  =>
+        val nodeName = addNode(tree)
+        methods.foreach { m =>
+          val methodName = getId(m)
+          graph.addEdge(nodeName + methodName, nodeName, methodName)
+          Unit
+        }
+        traverse(methods)
+      case tree@MethodDecl(_, _, _, _, stat) =>
+        val nodeName = addNode(tree)
+        stat.ifDefined { s =>
+          val statName = getId(s)
+          graph.addEdge(nodeName + statName, nodeName, statName)
+          traverse(s)
+        }
+      case _: Modifier                       =>
+      case t                                 =>
+        val nodeName = addNode(t)
+        val r = currentMirror.reflect(t)
+        val fields = r.symbol.typeSignature.members.toStream.collect {
+          case s if !s.isMethod => r.reflectField(s.asInstanceOf[TermSymbol])
+        }
 
-          fields.foreach { f =>
-            val fieldName = f.symbol.name.toString
-            f.get match {
-              case l: List[_] => l.zipWithIndex.foreach {
-                case (t: Tree, i) =>
-                  val e = addEdge(nodeName, t, s"$fieldName${ i + 1 }")
-                  val p = new java.lang.Double(i / l.size.asInstanceOf[Double])
-                  e.addAttribute("ui.class", "Numbered")
-                  e.setAttribute("ui.color", p)
-                case _            =>
-              }
-              case t: Tree    => addEdge(nodeName, t, fieldName)
-              case _          =>
+        fields.foreach { f =>
+          val fieldName = f.symbol.name.toString
+          f.get match {
+            case l: List[_] => l.zipWithIndex.foreach {
+              case (t: Tree, i) =>
+                val e = addEdge(nodeName, t, s"$fieldName${ i + 1 }")
+                val p = new java.lang.Double(i / l.size.asInstanceOf[Double])
+                e.addAttribute("ui.class", "Numbered")
+                e.setAttribute("ui.color", p)
+              case _            =>
             }
+            case t: Tree    => addEdge(nodeName, t, fieldName)
+            case _          =>
           }
-          super._traverse(t)
-      }
+        }
+        traverseChildren(t)
     }
 
     private def getId(t: Tree): String = {

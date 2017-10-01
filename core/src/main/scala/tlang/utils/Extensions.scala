@@ -211,10 +211,6 @@ object Extensions {
     }
   }
 
-  implicit class AnyExtensions(val a: Any) extends AnyVal {
-    def ifInstanceOf[T: ClassTag](f: T => Unit): Unit = if (classTag[T].runtimeClass.isInstance(a)) f(a.asInstanceOf[T])
-  }
-
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
     def use(f: T => Unit): T = { val x = t; f(t); x }
@@ -231,6 +227,12 @@ object Extensions {
     def notIn(range: Range): Boolean = !t.in(range)
 
     def |>[A](f: T => A) = f(t)
+
+    def ifInstanceOf[A: ClassTag](f: A => Unit): Unit = if (classTag[A].runtimeClass.isInstance(t)) f(t.asInstanceOf[A])
+    def ifMatches[U](partialFunction: PartialFunction[T, U]): Unit = {
+      if (partialFunction.isDefinedAt(t))
+        partialFunction.apply(t)
+    }
 
   }
 

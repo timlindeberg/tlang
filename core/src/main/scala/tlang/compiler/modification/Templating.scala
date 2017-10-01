@@ -106,15 +106,14 @@ case class TemplateModifier(ctx: Context) {
       cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
 
       val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree): Unit = t match {
+        def traversal: TreeTraversal = {
           case ClassDeclTree(_, parents, fields, methods) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
-            _traverse(parents)
-            _traverse(fields)
-            _traverse(methods)
+            traverse(parents)
+            traverse(fields)
+            traverse(methods)
           case c: ClassID if c.isTemplated                => generateClass(c)
-          case _                                          => super._traverse(t)
         }
       }
       traverser.traverse(cu)

@@ -27,23 +27,23 @@ object Trees {
 
     override def foreach[U](f: Tree => U): Unit = {
       val traverser = new Trees.Traverser {
-        override def _traverse(t: Tree): Unit = {
-          f(t)
-          super._traverse(t)
+        def traversal: TreeTraversal = {
+          case t =>
+            f(t)
+            traverseChildren(t)
         }
       }
       traverser.traverse(this)
     }
 
-    def copyAttributes(t: Tree): this.type = {
-      setPos(t)
-      copySymbolTrees(this, t)
+    def copyAttributes(from: Tree): this.type = {
+      setPos(from)
+      (this, from) ifMatches {
+        case (to: Symbolic[_], from: Symbolic[_]) => copySymbolTrees(to, from)
+      }
 
-      this match {
-        case typed: Typed if t.isInstanceOf[Typed] =>
-          val tpe = t.asInstanceOf[Typed]
-          typed.setType(tpe.getType)
-        case _                                     =>
+      (this, from) ifMatches {
+        case (to: Typed, from: Typed) => to.setType(from.getType)
       }
       this
 
@@ -52,29 +52,12 @@ object Trees {
     // For easier debugging
     override def toString: String = noColorPrinter(this)
 
-    private def copySymbolTrees[T <: Symbol, U <: Symbol](to: Tree, from: Tree): Unit = {
-      if (to.getClass != from.getClass)
+    private def copySymbolTrees[T <: Symbol](to: Symbolic[T], from: Symbolic[_]): Unit = {
+      if (to.getClass != from.getClass || !from.hasSymbol)
         return
 
-      if (!from.isInstanceOf[Symbolic[_]] || !from.asInstanceOf[Symbolic[_]].hasSymbol)
-        return
-
-      // This is not very elegant but is one way to get around type erasure
-      from match {
-        case x: ClassDecl      => to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
-        case x: TraitDecl      => to.asInstanceOf[TraitDecl].setSymbol(x.getSymbol)
-        case x: ExtensionDecl  => to.asInstanceOf[ExtensionDecl].setSymbol(x.getSymbol)
-        case x: ClassID        => to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
-        case x: VariableID     => to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
-        case x: MethodID       => to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
-        case x: MethodDeclTree => to.asInstanceOf[MethodDeclTree].setSymbol(x.getSymbol)
-        case x: Formal         => to.asInstanceOf[Formal].setSymbol(x.getSymbol)
-        case x: VarDecl        => to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
-        case x: This           => to.asInstanceOf[This].setSymbol(x.getSymbol)
-        case x: Super          => to.asInstanceOf[Super].setSymbol(x.getSymbol)
-        case x: New            => to.asInstanceOf[New].setSymbol(x.getSymbol)
-        case _                 => ???
-      }
+      // This cast is safe since we know that to and from is the same type
+      to.setSymbol(from.getSymbol.asInstanceOf[T])
     }
 
     def debugPrint(header: String = "Debug"): this.type = {
@@ -690,6 +673,7 @@ object Trees {
 
 
   type TreeTransformation = PartialFunction[Tree, Tree]
+  type TreeTraversal = PartialFunction[Tree, Unit]
 
 
   trait Transformer {
@@ -731,18 +715,19 @@ object Trees {
     }
   }
 
-  class Copier // Filled by FillTreeHelpers macro
+  class Copier
+  // Filled by FillTreeHelpers macro
   class LazyCopier extends Copier // Filled by FillTreeHelpers macro
 
   trait Traverser {
 
-    protected def _traverse(t: Tree): Unit = ??? // Filled by FillTreeHelpers macro
+    def traversal: TreeTraversal
 
-    final def traverse(t: Tree): Unit = _traverse(t)
-    final def traverse(trees: Traversable[Tree]): Unit = _traverse(trees)
+    final def traverse(t: Tree): Unit = traversal.applyOrElse(t, traverseChildren)
+    final def traverse(op: Option[Tree]): Unit = op foreach traverse
+    final def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse
 
-    final protected def _traverse(op: Option[Tree]): Unit = op foreach _traverse
-    final protected def _traverse(trees: Traversable[Tree]): Unit = trees foreach _traverse
+    final def traverseChildren(t: Tree): Unit = ??? // Filled by FillTreeHelpers macro
   }
 
 

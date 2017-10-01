@@ -74,7 +74,7 @@ class Lowerer(imports: Imports) {
           val to = assign.to
           to match {
             case ArrayRead(arr, _) if arr.getType.isInstanceOf[TObject] =>
-              val expr = super.apply(assign.from)
+              val expr = apply(assign.from)
               val newAssign = copier.Assign(assign, to, expr)
               // Transform again to replace external method calls etc.
               apply(replaceOperatorCall(newAssign))

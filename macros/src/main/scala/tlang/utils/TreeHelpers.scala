@@ -103,7 +103,7 @@ object FillTreeHelpers {
   }
 
   def fillTraverser(traverserStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = traverserStats map {
-    case q"protected def _traverse(t: Tree): Unit = ???" =>
+    case q"final def traverseChildren(t: Tree): Unit = ???" =>
       val cases = asts
         .map { case ast@AST(_, params) =>
           val traverses = params
@@ -111,18 +111,18 @@ object FillTreeHelpers {
               val tpe = p.decltpe.map(_.syntax).getOrElse("")
               !IgnoredTypes.contains(tpe)
             }
-            .map { p => q"_traverse(${ Term.Name(p.name.value) })" }
+            .map { p => q"traverse(${ Term.Name(p.name.value) })" }
           (ast, traverses)
         }
         .filter { case (_, traverses) => traverses.nonEmpty }
         .map { case (ast@AST(name, _), traverses) => p"case $name(..${ ast.patTerms }) => { ..$traverses }" }
       q"""
-          protected def _traverse(t: Tree): Unit = t match {
+          final def traverseChildren(t: Tree): Unit = t match {
              case _: Leaf =>
            ..case $cases
           }
        """
-    case s                                               => s
+    case s                                                  => s
   }
 
   // Used to log trees to file during compilation

@@ -223,7 +223,7 @@ case class FlowAnalyser(
   def analyzeExpr(tree: ExprTree, topKnowledge: Knowledge): Knowledge = {
     var knowledge = topKnowledge
     val traverser = new Trees.Traverser {
-      override def _traverse(t: Tree): Unit = t match {
+      def traversal: TreeTraversal = {
         case Ternary(condition, thn, els)       =>
           val afterCondition = analyzeCondition(condition, knowledge)
           val conditionKnowledge = afterCondition - knowledge
@@ -231,19 +231,19 @@ case class FlowAnalyser(
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
         case acc@Access(obj, _)                 =>
-          super._traverse(acc)
+          traverseChildren(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
-          super._traverse(t)
+          traverseChildren(assign)
 
           knowledge.getIdentifier(obj) ifDefined { varId =>
             // Reset knowledge
-            checkReassignment(varId, t)
+            checkReassignment(varId, assign)
             knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
           }
         case binOp@BinaryOperatorTree(lhs, rhs) =>
-          _traverse(lhs)
-          _traverse(rhs)
+          traverse(lhs)
+          traverse(rhs)
           binOp ifInstanceOf[Div] { _ =>
             knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) report(DivideByZero(rhs, binOp)) }
           }
@@ -255,21 +255,21 @@ case class FlowAnalyser(
               checkValidUse(rhs, knowledge)
           }
         case ExtractNullable(expr)              =>
-          _traverse(expr)
+          traverse(expr)
         case op@UnaryOperatorTree(expr)         =>
-          _traverse(expr)
+          traverse(expr)
           checkValidUse(expr, knowledge)
-          op.ifInstanceOf[IncrementDecrementTree]({ incDec =>
+          op.ifInstanceOf[IncrementDecrementTree] { incDec =>
             knowledge.getIdentifier(expr) ifDefined { varId =>
-              checkReassignment(varId, t)
+              checkReassignment(varId, op)
               val v = if (incDec.isIncrement) 1 else -1
               knowledge = knowledge.addToNumericValue(varId, v)
             }
-          })
-        case ArrayOperatorTree(arr)             =>
-          _traverse(arr)
+          }
+        case arrOp@ArrayOperatorTree(arr)       =>
+          traverse(arr)
 
-          t match {
+          arrOp match {
             case arrRead@ArrayRead(_, index) =>
               knowledge.getNumericValue(index) ifDefined { value =>
                 if (value < 0)
@@ -283,8 +283,6 @@ case class FlowAnalyser(
             case _                           =>
           }
           checkValidUse(arr, knowledge)
-        case _                                  =>
-          super._traverse(t)
       }
     }
     traverser.traverse(tree)

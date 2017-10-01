@@ -396,7 +396,7 @@ case class NameAnalyser(
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
       val traverser = new Trees.Traverser {
 
-        override def _traverse(t: Tree): Unit = t match {
+        def traversal: TreeTraversal = {
           case acc@Access(obj, application) =>
             obj match {
               case _: Empty            =>
@@ -433,22 +433,22 @@ case class NameAnalyser(
                     acc.obj = ClassID(name).setPos(id).setSymbol(sym)
                 }
               case _                   =>
-                _traverse(obj)
+                traverse(obj)
             }
             application match {
               case _: VariableID =>
               // This is a field. Since we don't know what class it belongs to we do nothing
-              case _ => _traverse(application)
+              case _ => traverse(application)
             }
           case Assign(to, expr)             =>
-            _traverse(to)
-            _traverse(expr)
+            traverse(to)
+            traverse(expr)
             to ifInstanceOf[VariableID] { id =>
               setVariableUsed(id)
               setVariableReassigned(id)
             }
           case IncrementDecrementTree(expr) =>
-            _traverse(expr)
+            traverse(expr)
             expr ifInstanceOf[VariableID] { id =>
               setVariableUsed(id)
               setVariableReassigned(id)
@@ -492,7 +492,6 @@ case class NameAnalyser(
             }
           case tpe: TypeTree                => setType(tpe)
           case id: VariableID               => setVarIdentifierSymbol(id, localVars)
-          case _                            => super._traverse(t)
         }
       }
       traverser.traverse(startingTree)
