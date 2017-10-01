@@ -3,7 +3,7 @@ package tlang.testsuites
 import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites, Tag}
 import tlang.compiler.ast.PrettyPrinterSpec
-import tlang.compiler.{CompilerErrors, PositionSuite, ValidPrograms}
+import tlang.compiler.{CompilerErrorsSuite, PositionSuite, ValidProgramsSuite}
 import tlang.formatting.Formatter
 
 import scala.util.Try
@@ -33,11 +33,11 @@ object CompilerIntegrationTestSuite {
 }
 
 class CompilerIntegrationTestSuite extends Suites(
-  new CompilerErrors,
-  new ValidPrograms,
+  new CompilerErrorsSuite,
+  new ValidProgramsSuite,
   new PositionSuite,
   new PrettyPrinterSpec
-)                                          with BeforeAndAfterAll {
+) with BeforeAndAfterAll {
 
   import CompilerIntegrationTestSuite._
 

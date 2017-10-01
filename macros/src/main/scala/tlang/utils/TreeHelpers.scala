@@ -14,30 +14,38 @@ case class AST(name: Term.Name, params: Seq[Term.Param]) {
   def patTerms: Seq[Pat.Var.Term] = args.map(a => Pat.Var.Term(a))
 }
 
-class GenerateTreeHelpers extends StaticAnnotation {
+class FillTreeHelpers extends StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
-    import GenerateTreeHelpers._
+    import FillTreeHelpers._
 
     defn match {
       case q"object Trees { ..$stats }" =>
         val asts = getASTs(stats)
-        val newStats = stats :+
-          createCopier(asts) :+
-          createLazyCopier(asts) :+
-          createTransformer(asts) :+
-          createTraverser(asts)
         val file = Paths.get("C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\tree.txt")
 
-        Files.write(file, newStats.map(_.syntax).asJava, Charset.forName("UTF-8"))
-        q"object Trees { ..$newStats }"
+        val filledTrees = stats.map {
+          case q"class Copier"                              =>
+            q"class Copier { ..${ fillCopier(asts) } }"
+          case q"class LazyCopier extends $_"               =>
+            q"class LazyCopier extends Copier { ..${ fillLazyCopier(asts) } }"
+          case q"trait Transformer { ..$transformerStats }" =>
+            q"trait Transformer { ..${ fillTransformer(transformerStats, asts) } }"
+          case q"trait Traverser { ..$traverserStats }"     =>
+            q"trait Traverser { ..${ fillTraverser(traverserStats, asts) } }"
+          case s                                            => s
+        }
+
+        Files.write(file, filledTrees.map(_.syntax).toList.asJava, Charset.forName("UTF-8"))
+
+        q"object Trees { ..$filledTrees }"
       case _                            =>
         abort("@GenerateTreeHelpers must annotate Trees object.")
     }
   }
 }
 
-object GenerateTreeHelpers {
+object FillTreeHelpers {
 
   private val Primitives   = List("Int", "Long", "Float", "Double", "Char")
   private val IgnoredTypes = Primitives ::: List("String", "List[String]", "Imports")
@@ -49,16 +57,14 @@ object GenerateTreeHelpers {
       AST(name, params)
   }
 
-  def createCopier(asts: Seq[AST]): Defn.Class = {
-    val copyFunctions = asts map { case ast@AST(name, params) =>
+  def fillCopier(asts: Seq[AST]): Seq[Defn.Def] =
+    asts map { case ast@AST(name, params) =>
       val ctor = Ctor.Ref.Name(name.value)
       q"def $name(t: Tree, ..$params) = new $ctor(..${ ast.args }).copyAttributes(t)"
     }
-    q"class Copier { ..$copyFunctions }"
-  }
 
-  def createLazyCopier(asts: Seq[AST]): Defn.Class = {
-    val copyFunctions = asts map { case ast@AST(name, params) =>
+  def fillLazyCopier(asts: Seq[AST]): Seq[Defn.Def] =
+    asts map { case ast@AST(name, params) =>
       val args = ast.args
       val patTerms = args.map(a => Pat.Var.Term(a.copy(a.value + "0")))
       val equals = equality(params.toList)
@@ -76,88 +82,47 @@ object GenerateTreeHelpers {
        }
       """
     }
-    q"class LazyCopier extends Copier { ..$copyFunctions }"
-  }
 
-  def createTransformer(asts: Seq[AST]): Defn.Class = {
-    val cases = asts map { case ast@AST(name, params) =>
-      val transforms = params.map { param =>
-        val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
-        val name = Term.Name(param.name.value)
-        if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${ Type.Name(tpe) }]"
+  def fillTransformer(transformerStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = transformerStats map {
+    case q"final def transformChildren(t: Tree): Tree = ???" =>
+      val cases = asts map { case ast@AST(name, params) =>
+        val transforms = params.map { param =>
+          val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
+          val name = Term.Name(param.name.value)
+          if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${ Type.Name(tpe) }]"
+        }
+
+        p"case $name(..${ ast.patTerms }) => treeCopy.$name(t, ..$transforms)"
       }
-
-      p"case $name(..${ ast.patTerms }) => treeCopy.$name(t, ..$transforms)"
-    }
-
-    q"""
-      class Transformer {
-         val treeCopy: Copier = new LazyCopier()
-
-         final def apply[T <: Tree](t: T): T = _transform(t).asInstanceOf[T]
-
-         final def transform[T <: Tree](t: T): T                  = _transform(t).asInstanceOf[T]
-         final def transform[T <: Tree](list: List[T]): List[T]   = _transform(list).asInstanceOf[List[T]]
-         final def transform[T <: Tree](set: Set[T]): Set[T]      = _transform(set).asInstanceOf[Set[T]]
-         final def transform[T <: Tree](op: Option[T]): Option[T] = _transform(op).asInstanceOf[Option[T]]
-
-         protected def _transform(t: Tree): Tree = t match {
+      q"""
+         final def transformChildren(t: Tree): Tree = t match {
             ..case $cases
          }
-
-         final protected def _transform[T <: Tree](list: List[T]): List[Tree] = smartMap(list).asInstanceOf[List[Tree]]
-         final protected def _transform[T <: Tree](set: Set[T]): Set[Tree] = smartMap(set).asInstanceOf[Set[Tree]]
-         final protected def _transform[T <: Tree](op: Option[T]): Option[Tree] = op match {
-            case Some(t) =>
-              val x = _transform(t)
-              if(x eq t) op else Some(x)
-            case None    => None
-         }
-
-         // This is used so we don't create new lists and sets when there is no change
-         // to an element. This allows us to reuse larger parts of the tree
-         private def smartMap[T <: Tree](traversable: Traversable[T]): Traversable[Tree] = {
-           var anyDifferent = false
-           val newSet = traversable map { t =>
-             val x = _transform(t)
-             if (!(t eq x))
-               anyDifferent = true
-             x
-           }
-           if (anyDifferent) newSet else traversable
-         }
-      }
-    """
+       """
+    case s                                                   => s
   }
 
-  def createTraverser(asts: Seq[AST]): Defn.Class = {
-    val cases = asts
-      .map { case ast@AST(_, params) =>
-        val traverses = params
-          .filter { p =>
-            val tpe = p.decltpe.map(_.syntax).getOrElse("")
-            !IgnoredTypes.contains(tpe)
+  def fillTraverser(traverserStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = traverserStats map {
+    case q"protected def _traverse(t: Tree): Unit = ???" =>
+      val cases = asts
+        .map { case ast@AST(_, params) =>
+          val traverses = params
+            .filter { p =>
+              val tpe = p.decltpe.map(_.syntax).getOrElse("")
+              !IgnoredTypes.contains(tpe)
+            }
+            .map { p => q"_traverse(${ Term.Name(p.name.value) })" }
+          (ast, traverses)
+        }
+        .filter { case (_, traverses) => traverses.nonEmpty }
+        .map { case (ast@AST(name, _), traverses) => p"case $name(..${ ast.patTerms }) => { ..$traverses }" }
+      q"""
+          protected def _traverse(t: Tree): Unit = t match {
+             case _: Leaf =>
+           ..case $cases
           }
-          .map { p => q"_traverse(${ Term.Name(p.name.value) })" }
-        (ast, traverses)
-      }
-      .filter { case (_, traverses) => traverses.nonEmpty }
-      .map { case (ast@AST(name, _), traverses) => p"case $name(..${ ast.patTerms }) => { ..$traverses }" }
-
-    q"""
-      class Traverser {
-         final def traverse(t: Tree): Unit                  = _traverse(t)
-         final def traverse(trees: Traversable[Tree]): Unit = _traverse(trees)
-
-         protected def _traverse(t: Tree): Unit = t match {
-            case _: Leaf =>
-            ..case $cases
-         }
-
-         final protected def _traverse(op: Option[Tree]): Unit         = op foreach _traverse
-         final protected def _traverse(trees: Traversable[Tree]): Unit = trees foreach _traverse
-      }
-     """
+       """
+    case s                                               => s
   }
 
   // Used to log trees to file during compilation

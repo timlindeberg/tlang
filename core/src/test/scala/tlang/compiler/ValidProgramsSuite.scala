@@ -7,7 +7,7 @@ import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration.Duration
 
-class ValidPrograms extends CompilerIntegrationTestSpec with ParallelTestExecution {
+class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
   import tlang.testsuites.CompilerIntegrationTestSuite._
 
@@ -54,6 +54,7 @@ class ValidPrograms extends CompilerIntegrationTestSpec with ParallelTestExecuti
 
   private def assertCorrect(results: List[String], solutions: List[(Int, String)]): Unit = {
     def extraInfo(i: Int) = formatTestFailedMessage(i + 1, results, solutions.map(_._2))
+
     results.zip(solutions).zipWithIndex.foreach {
       case ((res, (line, sol)), i) =>
         if (res != sol)

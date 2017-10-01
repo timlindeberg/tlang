@@ -394,7 +394,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
             compileExpr(expr)
           case stat           => compileStat(stat, compileUseless = true)
         }
-      case _                                            => ???
     }
   }
 

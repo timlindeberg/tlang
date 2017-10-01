@@ -659,7 +659,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     nextTokenKind match {
       case PRIVVAR | PRIVVAL =>
         val varDecl = localVarDeclaration
-        if (varDecl.initation.isDefined) {
+        if (varDecl.initiation.isDefined) {
           if (nextTokenKind == COMMA)
             eat(COMMA)
           regularForLoop(Some(varDecl))

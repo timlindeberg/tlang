@@ -25,26 +25,33 @@ import tlang.compiler.code.TreeBuilder
   * println("val res1: Int = " + res1)
   * <PrintMarker>
   */
-case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) extends Trees.Transformer {
+case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) {
 
   import Evaluator.PrintMarker
 
   private var resultCounter = 0
 
-  // This could potentially transform other code as well
-  override protected def _transform(t: Tree): Tree = t match {
-    case block@Block(stats) if stats.nonEmpty =>
-      stats.last match {
-        case Block(newStats) if newStats.length > 2 &&
-          newStats.head == PrintMarker &&
-          newStats.last == PrintMarker =>
-          val statementsWithSaveAndPrint = newStats flatMap addSaveAndPrint
-          state.setNewStatements(statementsWithSaveAndPrint)
-          Block(stats.dropRight(1) ++ statementsWithSaveAndPrint)
-        case _                         => block
-      }
-    case _                                    => super._transform(t)
+  def apply[T <: Tree](t: T) = transformer(t)
+
+  // We use a variable instead of making the class extend from transformer
+  // since it seems Mockito has trouble mocking classes which are expanded
+  // using macros.
+  private val transformer = new Trees.Transformer {
+    override def transformation: TreeTransformation = {
+      case block@Block(stats) if stats.nonEmpty =>
+        // This could potentially transform other code as well
+        stats.last match {
+          case Block(newStats) if newStats.length > 2 &&
+            newStats.head == PrintMarker &&
+            newStats.last == PrintMarker =>
+            val statementsWithSaveAndPrint = newStats flatMap addSaveAndPrint
+            state.setNewStatements(statementsWithSaveAndPrint)
+            Block(stats.dropRight(1) ++ statementsWithSaveAndPrint)
+          case _                         => block
+        }
+    }
   }
+
 
   private def addSaveAndPrint(statTree: StatTree): List[StatTree] = statTree match {
     case Block(stats)                 => Block(stats flatMap addSaveAndPrint) :: Nil

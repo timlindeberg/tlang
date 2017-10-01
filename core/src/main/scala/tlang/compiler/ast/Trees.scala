@@ -8,11 +8,11 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.formatting.{DefaultFormatting, SimpleFormatting}
 import tlang.utils.Extensions._
-import tlang.utils.{GenerateTreeHelpers, Positioned}
+import tlang.utils.{FillTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}
 
-@GenerateTreeHelpers
+@FillTreeHelpers
 object Trees {
 
 
@@ -79,10 +79,11 @@ object Trees {
     def prettyPrint: this.type = { println(colorPrinter(this)); this }
 
     override def clone: this.type = {
-      val transformer = new Trees.Transformer {
+      val cloner = new Trees.Transformer {
         override val treeCopy = new Trees.Copier
+        def transformation: PartialFunction[Tree, Tree] = Map.empty
       }
-      transformer.transform(this)
+      cloner(this)
     }
 
     def children: List[Tree] = {
@@ -117,7 +118,7 @@ object Trees {
   /*------------------------ Package and Import Trees -----------------------*/
 
   case class Package(address: List[String] = Nil) extends Tree with Leaf {
-    override val isEmpty = address.isEmpty
+    override val isEmpty: Boolean = address.isEmpty
     val name: String = address.mkString("::")
   }
 
@@ -319,7 +320,7 @@ object Trees {
   case class VarDecl(
     id: VariableID,
     tpe: Option[TypeTree] = None,
-    initation: Option[ExprTree] = None,
+    initiation: Option[ExprTree] = None,
     modifiers: Set[Modifier] = Set())
     extends StatTree with Symbolic[VariableSymbol] with Modifiable
 
@@ -527,23 +528,23 @@ object Trees {
   }
 
 
-  case class IntLit(value: Int) extends NumberLiteral[Int] {override def getType = Types.Int }
-  case class LongLit(value: Long) extends NumberLiteral[Long] {override def getType = Types.Long }
-  case class FloatLit(value: Float) extends NumberLiteral[Float] {override def getType = Types.Float }
-  case class DoubleLit(value: Double) extends NumberLiteral[Double] {override def getType = Types.Double }
-  case class CharLit(value: Char) extends Literal[Char] {override def getType = Types.Char }
-  case class StringLit(value: String) extends Literal[String] {override def getType = Types.String }
+  case class IntLit(value: Int) extends NumberLiteral[Int] {override def getType: TObject = Types.Int }
+  case class LongLit(value: Long) extends NumberLiteral[Long] {override def getType: TObject = Types.Long }
+  case class FloatLit(value: Float) extends NumberLiteral[Float] {override def getType: TObject = Types.Float }
+  case class DoubleLit(value: Double) extends NumberLiteral[Double] {override def getType: TObject = Types.Double }
+  case class CharLit(value: Char) extends Literal[Char] {override def getType: TObject = Types.Char }
+  case class StringLit(value: String) extends Literal[String] {override def getType: TObject = Types.String }
   case class TrueLit() extends Literal[Boolean] with Leaf {
     val value = true
-    override def getType = Types.Bool
+    override def getType: TObject = Types.Bool
   }
   case class FalseLit() extends Literal[Boolean] with Leaf {
     val value = false
-    override def getType = Types.Bool
+    override def getType: TObject = Types.Bool
   }
   case class NullLit() extends Literal[Null] with Leaf {
-    val value = null
-    override def getType = TNull
+    val value: Null = null
+    override def getType: Types.TNull.type = TNull
   }
 
   case class ArrayLit(value: List[ExprTree]) extends ExprTree
@@ -677,5 +678,63 @@ object Trees {
       case _                           => None
     }
   }
+
+
+  type TreeTransformation = PartialFunction[Tree, Tree]
+
+
+  trait Transformer {
+
+    val treeCopy: Copier = new LazyCopier()
+
+    def transformation: TreeTransformation
+
+    final def transformChildren(t: Tree): Tree = ??? // Filled by FillTreeHelpers macro
+
+    final def apply[T <: Tree](t: T): T = _transform(t).asInstanceOf[T]
+
+
+    final def transform[T <: Tree](list: List[T]): List[T] = _transform(list).asInstanceOf[List[T]]
+    final def transform[T <: Tree](set: Set[T]): Set[T] = _transform(set).asInstanceOf[Set[T]]
+    final def transform[T <: Tree](op: Option[T]): Option[T] = _transform(op).asInstanceOf[Option[T]]
+
+    final private def _transform(t: Tree): Tree = transformation.applyOrElse(t, transformChildren)
+    final private def _transform[T <: Tree](list: List[T]): List[Tree] = smartMap(list).asInstanceOf[List[Tree]]
+    final private def _transform[T <: Tree](set: Set[T]): Set[Tree] = smartMap(set).asInstanceOf[Set[Tree]]
+    final private def _transform[T <: Tree](op: Option[T]): Option[Tree] = op match {
+      case Some(t) =>
+        val x = _transform(t)
+        if (x eq t) op else Some(x)
+      case None    => None
+    }
+
+    // This is used so we don't create new lists and sets when there is no change
+    // to an element. This allows us to reuse larger parts of the tree and reduce allocation.
+    private def smartMap[T <: Tree](traversable: Traversable[T]): Traversable[Tree] = {
+      var anyDifferent = false
+      val newSet = traversable map { t =>
+        val x = _transform(t)
+        if (!(t eq x))
+          anyDifferent = true
+        x
+      }
+      if (anyDifferent) newSet else traversable
+    }
+  }
+
+  class Copier // Filled by FillTreeHelpers macro
+  class LazyCopier extends Copier // Filled by FillTreeHelpers macro
+
+  trait Traverser {
+
+    protected def _traverse(t: Tree): Unit = ??? // Filled by FillTreeHelpers macro
+
+    final def traverse(t: Tree): Unit = _traverse(t)
+    final def traverse(trees: Traversable[Tree]): Unit = _traverse(trees)
+
+    final protected def _traverse(op: Option[Tree]): Unit = op foreach _traverse
+    final protected def _traverse(trees: Traversable[Tree]): Unit = trees foreach _traverse
+  }
+
 
 }

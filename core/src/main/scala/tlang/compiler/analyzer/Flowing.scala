@@ -48,7 +48,7 @@ case class FlowAnalyser(
       val sym = field.getSymbol
       val varId = VarIdentifier(sym)
       if (sym.modifiers.contains(Final()))
-        knowledge.assignment(varId, field.initation, Initialized)
+        knowledge.assignment(varId, field.initiation, Initialized)
       else
         knowledge.add(varId, Initialized)
     }

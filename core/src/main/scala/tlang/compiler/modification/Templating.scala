@@ -70,7 +70,7 @@ case class TemplateModifier(ctx: Context) {
     // Replace types with their templated class names, eg.
     // replace Map<Int, String> with -Map$Int$String-.
     val replace = new Trees.Transformer {
-      override def _transform(t: Tree): Tree = t match {
+      def transformation: TreeTransformation = {
         case tpe: ClassID if tpe.isTemplated =>
           val shortName = tpe.name.split("::").last
           if (cu.imports.contains(shortName)) {
@@ -78,9 +78,7 @@ case class TemplateModifier(ctx: Context) {
             cu.imports += entry
           }
           treeCopy.ClassID(tpe, tpe.templatedClassName)
-        case _                               => super._transform(t)
       }
-
     }
 
     replace(cu)
@@ -208,11 +206,11 @@ case class TemplateModifier(ctx: Context) {
       val templateMap = constructTemplateMapping(typeId, template.id.templateTypes, templateTypes)
 
       val transformTemplate = new Trees.Transformer {
-        // uses a strict copier so we recieve an actual copy of the tree
-        // TODO: this might not actually be needed if immutability is enforced
+
+        // Uses a strict copier so we receive a deep copy of the tree
         override val treeCopy = new Trees.Copier
 
-        override def _transform(t: Tree): Tree = t match {
+        def transformation: TreeTransformation = {
           case c@ClassDeclTree(id, parents, fields, methods) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
@@ -235,7 +233,6 @@ case class TemplateModifier(ctx: Context) {
               case Some(replacement) => replacement.copyAttributes(classId)
               case None              => newId
             }
-          case _                                             => super._transform(t)
         }
       }
       transformTemplate(template)

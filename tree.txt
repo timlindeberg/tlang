@@ -1,0 +1,1470 @@
+private val noColorPrinter = PrettyPrinter(SimpleFormatting)
+private val colorPrinter = PrettyPrinter(DefaultFormatting)
+trait Tree extends Positioned() with Product() with TraversableLike[Tree, List[Tree]]() {
+  protected[this] override def newBuilder: mutable.Builder[Tree, List[Tree]] = new mutable.ListBuffer()
+  override def seq: TraversableOnce[Tree] = this
+  override def foreach[U](f: Tree => U): Unit = {
+    val traverser = new Trees.Traverser() {
+      override def _traverse(t: Tree): Unit = {
+        f(t)
+        super._traverse(t)
+      }
+    }
+    traverser.traverse(this)
+  }
+  def copyAttributes(t: Tree): this.type = {
+    setPos(t)
+    copySymbolTrees(this, t)
+    this match {
+      case typed: Typed if t.isInstanceOf[Typed] =>
+        val tpe = t.asInstanceOf[Typed]
+        typed.setType(tpe.getType)
+      case _ =>
+        ()
+    }
+    this
+  }
+  override def toString: String = noColorPrinter(this)
+  private def copySymbolTrees[T <: Symbol, U <: Symbol](to: Tree, from: Tree): Unit = {
+    if (to.getClass != from.getClass) return
+    if (from.isInstanceOf[Symbolic[_$1] forSome { type _$1 }].unary_! || from.asInstanceOf[Symbolic[_$2] forSome { type _$2 }].hasSymbol.unary_!) return
+    from match {
+      case x: ClassDecl =>
+        to.asInstanceOf[ClassDecl].setSymbol(x.getSymbol)
+      case x: TraitDecl =>
+        to.asInstanceOf[TraitDecl].setSymbol(x.getSymbol)
+      case x: ExtensionDecl =>
+        to.asInstanceOf[ExtensionDecl].setSymbol(x.getSymbol)
+      case x: ClassID =>
+        to.asInstanceOf[ClassID].setSymbol(x.getSymbol)
+      case x: VariableID =>
+        to.asInstanceOf[VariableID].setSymbol(x.getSymbol)
+      case x: MethodID =>
+        to.asInstanceOf[MethodID].setSymbol(x.getSymbol)
+      case x: MethodDeclTree =>
+        to.asInstanceOf[MethodDeclTree].setSymbol(x.getSymbol)
+      case x: Formal =>
+        to.asInstanceOf[Formal].setSymbol(x.getSymbol)
+      case x: VarDecl =>
+        to.asInstanceOf[VarDecl].setSymbol(x.getSymbol)
+      case x: This =>
+        to.asInstanceOf[This].setSymbol(x.getSymbol)
+      case x: Super =>
+        to.asInstanceOf[Super].setSymbol(x.getSymbol)
+      case x: New =>
+        to.asInstanceOf[New].setSymbol(x.getSymbol)
+      case _ =>
+        ???
+    }
+  }
+  def prettyPrint: this.type = {
+    println(colorPrinter(this))
+    this
+  }
+  override def clone: this.type = {
+    val cloner = new Trees.Transformer() {
+      override val treeCopy = new Trees.Copier()
+      def transformation: PartialFunction[Tree, Tree] = Map.empty
+    }
+    cloner(this)
+  }
+  def children: List[Tree] = {
+    val x = productIterator.flatMap({
+      case l: Traversable[_] if l.nonEmpty && l.head.isInstanceOf[Tree] =>
+        l.asInstanceOf[Traversable[Tree]]
+      case o: Option[_] if o.nonEmpty && o.get.isInstanceOf[Tree] =>
+        o.get.asInstanceOf[Tree] :: Nil
+      case t: Tree =>
+        t :: Nil
+      case _ =>
+        Nil
+    })
+    x.toList
+  }
+}
+trait Leaf
+case class CompilationUnit(pack: Package, var classes: List[ClassDeclTree], imports: Imports) extends Tree() {
+  def packageName: String = pack.address.mkString("::")
+  override def children: List[Tree] = imports.imports ::: classes
+}
+case class Annotation() extends Tree()
+case class Package(address: List[String] = Nil) extends Tree() with Leaf() {
+  override val isEmpty: Boolean = address.isEmpty
+  val name: String = address.mkString("::")
+}
+object Import { def unapply(i: Import) = Some(i.address) }
+trait Import extends Tree() with Leaf() {
+  val address: List[String]
+  def name: String = address.mkString("::")
+  def writtenName: String = name
+  def shortName: String = address.last
+}
+case object RegularImport { def apply(fullName: String) = new RegularImport(fullName) }
+case class RegularImport(address: List[String]) extends Import() { def this(fullName: String) = this(fullName.split("::").toList) }
+case class WildCardImport(address: List[String]) extends Import() { override def writtenName: String = super.name + "::*" }
+case class ExtensionImport(address: List[String], className: List[String]) extends Import() {
+  override def name: String = ((address :+ ExtensionDecl.seperator) ::: className).mkString("::")
+  override def writtenName: String = ((address :+ "extension") ::: className).mkString("::")
+}
+object ClassDeclTree { def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods) }
+object IDClassDeclTree { def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods) }
+trait ClassDeclTree extends Tree() with Symbolic[ClassSymbol]() {
+  val tpe: TypeTree
+  var parents: List[ClassID]
+  val fields: List[VarDecl]
+  var methods: List[MethodDeclTree]
+  def isAbstract: Boolean
+  def traits: List[ClassID] = parents.filter(_.getSymbol.isAbstract)
+}
+trait IDClassDeclTree extends ClassDeclTree() {
+  val id: ClassID
+  override val tpe: ClassID = id
+}
+case class ClassDecl(id: ClassID, var parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, var methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree() { val isAbstract = false }
+case class TraitDecl(id: ClassID, var parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, var methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree() { val isAbstract = true }
+object ExtensionDecl {
+  def stripExtension(fullName: String): String = fullName.replaceAll(".*\\$EX::", "")
+  val seperator = "$EX"
+}
+case class ExtensionDecl(tpe: TypeTree, var methods: List[MethodDeclTree] = Nil) extends ClassDeclTree() {
+  var parents: List[ClassID] = List[ClassID]()
+  val fields: List[VarDecl] = List[VarDecl]()
+  val isAbstract = false
+}
+trait Modifier extends Tree() with Leaf()
+trait Accessability extends Modifier()
+case class Public() extends Accessability()
+case class Private() extends Accessability()
+case class Protected() extends Accessability()
+case class Static() extends Modifier()
+case class Implicit() extends Modifier()
+case class Final() extends Modifier()
+trait Modifiable {
+  val modifiers: Set[Modifier]
+  val isStatic: Boolean = modifiers.contains(Static())
+  val isFinal: Boolean = modifiers.contains(Final())
+  val accessability: Accessability = modifiers.findInstance[Accessability].getOrElse(Private())
+}
+object MethodDeclTree {
+  def unapply(f: MethodDeclTree) = Some(f.id, f.modifiers, f.args, f.retType, f.stat)
+  def mainMethod(stat: StatTree): MethodDecl = mainMethod(List(stat))
+  def mainMethod(stats: List[StatTree]): MethodDecl = mainMethod(Some(Block(stats)))
+  def mainMethod(stat: Option[StatTree]): MethodDecl = mainMethod(stat, None)
+  def mainMethod(stat: Option[StatTree], classSym: ClassSymbol): MethodDecl = mainMethod(stat, Some(classSym))
+  private def mainMethod(stat: Option[StatTree], classSym: Option[ClassSymbol]): MethodDecl = {
+    val modifiers: Set[Modifier] = Set(Public(), Static())
+    val id = MethodID("main")
+    val args = Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")) :: Nil
+    val retType = Some(UnitType())
+    val meth = MethodDecl(id, modifiers, args, retType, stat)
+    if (classSym.isDefined) {
+      val mainSym = new MethodSymbol("main", classSym.get, stat, modifiers).setType(TUnit)
+      val argsSym = new VariableSymbol("args").setType(TArray(String))
+      mainSym.addArgument(argsSym)
+      meth.setSymbol(mainSym)
+    }
+    meth
+  }
+}
+trait MethodDeclTree extends Tree() with Symbolic[MethodSymbol]() with Modifiable() {
+  val id: MethodID
+  val args: List[Formal]
+  val retType: Option[TypeTree]
+  val stat: Option[StatTree]
+  val modifiers: Set[Modifier]
+  def isMain: Boolean = this == MethodDeclTree.mainMethod(stat)
+  def isAbstract: Boolean = stat.isEmpty
+  def signature: String = id.name + args.map(_.tpe.name).mkString("(", ", ", ")")
+  def fullSignature: String = signature + retType.map(t => ": " + t.name).getOrElse("")
+}
+case class MethodDecl(id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) extends MethodDeclTree()
+case class ConstructorDecl(id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) extends MethodDeclTree()
+case class OperatorDecl(operatorType: OperatorTree, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) extends MethodDeclTree() { val id: MethodID = MethodID("") }
+case class Formal(tpe: TypeTree, id: VariableID) extends Tree() with Symbolic[VariableSymbol]()
+trait StatTree extends Tree()
+trait PrintStatTree extends StatTree() { val expr: ExprTree }
+object PrintStatTree { def unapply(e: PrintStatTree) = Some(e.expr) }
+case class VarDecl(id: VariableID, tpe: Option[TypeTree] = None, initiation: Option[ExprTree] = None, modifiers: Set[Modifier] = Set()) extends StatTree() with Symbolic[VariableSymbol]() with Modifiable()
+case class Block(stats: List[StatTree]) extends StatTree()
+case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree()
+case class While(condition: ExprTree, stat: StatTree) extends StatTree()
+case class For(initiation: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) extends StatTree()
+case class Foreach(varDecl: VarDecl, container: ExprTree, stat: StatTree) extends StatTree()
+case class Error(expr: ExprTree) extends StatTree()
+case class Return(expr: Option[ExprTree]) extends StatTree() with Typed()
+case class Break() extends StatTree() with Leaf()
+case class Continue() extends StatTree() with Leaf()
+case class Print(expr: ExprTree) extends PrintStatTree()
+case class Println(expr: ExprTree) extends PrintStatTree()
+trait ExprTree extends StatTree() with Typed()
+trait TypeTree extends Tree() with Typed() { val name: String }
+trait PrimitiveTypeTree extends TypeTree() with Leaf()
+case class ArrayType(tpe: TypeTree) extends TypeTree() { val name: String = tpe.name + "[]" }
+case class NullableType(tpe: TypeTree) extends TypeTree() { val name: String = tpe.name + "?" }
+case class UnitType() extends PrimitiveTypeTree() { val name = "Unit" }
+trait OperatorTree extends ExprTree() {
+  val opSign: String
+  def signature(args: List[Any]): String
+  def lookupOperator(arg: Type, imports: Imports): Option[OperatorSymbol] = lookupOperator(List(arg), imports)
+  def lookupOperator(args: (Type, Type), imports: Imports): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2), imports)
+  def lookupOperator(args: List[Type], imports: Imports): Option[OperatorSymbol] = {
+    args.foreach(arg => lookupOperator(arg, args, imports) match {
+      case Some(op) =>
+        return Some(op)
+      case None =>
+        ()
+    })
+    None
+  }
+  def lookupOperator(classType: Type, args: List[Type], imports: Imports): Option[OperatorSymbol] = classType match {
+    case TObject(classSymbol) =>
+      classSymbol.lookupOperator(this, args, imports)
+    case _ =>
+      None
+  }
+}
+trait BinaryOperatorTree extends OperatorTree() {
+  val lhs: ExprTree
+  val rhs: ExprTree
+  def signature(args: List[Any]): String = s"${args(0)} $opSign ${args(1)}"
+}
+object BinaryOperatorTree { def unapply(e: BinaryOperatorTree) = Some(e.lhs, e.rhs) }
+trait ArithmeticOperatorTree extends BinaryOperatorTree()
+object ArithmeticOperatorTree { def unapply(e: ArithmeticOperatorTree) = Some(e.lhs, e.rhs) }
+trait ShiftOperatorTree extends BinaryOperatorTree()
+object ShiftOperatorTree { def unapply(e: ShiftOperatorTree) = Some(e.lhs, e.rhs) }
+trait LogicalOperatorTree extends BinaryOperatorTree()
+object LogicalOperatorTree { def unapply(e: LogicalOperatorTree) = Some(e.lhs, e.rhs) }
+case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree() { val opSign = "+" }
+case class Minus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree() { val opSign = "-" }
+case class Times(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree() { val opSign = "*" }
+case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree() { val opSign = "/" }
+case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree() { val opSign = "%" }
+case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree() { val opSign = "&" }
+case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree() { val opSign = "|" }
+case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree() { val opSign = "^" }
+case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree() { val opSign = "<<" }
+case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree() { val opSign = ">>" }
+trait BranchingOperatorTree extends OperatorTree()
+trait ComparisonOperatorTree extends BranchingOperatorTree() with BinaryOperatorTree()
+object ComparisonOperatorTree { def unapply(e: ComparisonOperatorTree) = Some(e.lhs, e.rhs) }
+trait EqualsOperatorTree extends BranchingOperatorTree() with BinaryOperatorTree()
+object EqualsOperatorTree { def unapply(e: EqualsOperatorTree) = Some(e.lhs, e.rhs) }
+case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree() { val opSign = "<" }
+case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree() { val opSign = "<=" }
+case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree() { val opSign = ">" }
+case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree() { val opSign = ">=" }
+case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree() { val opSign = "==" }
+case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree() { val opSign = "!=" }
+case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree() with BinaryOperatorTree() { val opSign = "&&" }
+case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree() with BinaryOperatorTree() { val opSign = "||" }
+trait UnaryOperatorTree extends OperatorTree() {
+  val expr: ExprTree
+  def signature(args: List[Any]): String = opSign + args.head
+}
+object UnaryOperatorTree { def unapply(e: UnaryOperatorTree) = Some(e.expr) }
+trait IncrementDecrementTree extends UnaryOperatorTree() { val isPre, isIncrement: Boolean }
+object IncrementDecrementTree { def unapply(e: IncrementDecrementTree) = Some(e.expr) }
+case class Not(expr: ExprTree) extends BranchingOperatorTree() with UnaryOperatorTree() { val opSign = "!" }
+case class Hash(expr: ExprTree) extends UnaryOperatorTree() { val opSign = "#" }
+case class Negation(expr: ExprTree) extends UnaryOperatorTree() { val opSign = "-" }
+case class LogicNot(expr: ExprTree) extends UnaryOperatorTree() { val opSign = "~" }
+case class ExtractNullable(expr: ExprTree) extends UnaryOperatorTree() { val opSign = "!!" }
+case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree() {
+  val opSign = "++"
+  val isPre = true
+  val isIncrement = true
+}
+case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree() {
+  val opSign = "--"
+  val isPre = true
+  val isIncrement = false
+}
+case class PostIncrement(expr: ExprTree) extends IncrementDecrementTree() {
+  val opSign = "++"
+  val isPre = false
+  val isIncrement = true
+  override def signature(args: List[Any]): String = args.head + opSign
+}
+case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree() {
+  val opSign = "--"
+  val isPre = false
+  val isIncrement = false
+  override def signature(args: List[Any]): String = args.head + opSign
+}
+trait ArrayOperatorTree extends OperatorTree() {
+  val arr: ExprTree
+  def operatorString(args: List[Any], className: String): String = className + signature(args)
+}
+object ArrayOperatorTree { def unapply(e: ArrayOperatorTree) = Some(e.arr) }
+case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree() with Assignable() {
+  override val opSign: String = "[]"
+  override def signature(args: List[Any]): String = s"[${args(0)}]"
+}
+case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) extends ArrayOperatorTree() {
+  override val opSign: String = "[::]"
+  override def signature(args: List[Any]): String = s"[${args(0)}:${args(1)}]"
+}
+trait Literal[T] extends ExprTree() with Leaf() { val value: T }
+trait NumberLiteral[T] extends Literal[T]()
+object Literal { def unapply(e: Literal[_$3] forSome { type _$3 }): Option[Any] = Some(e.value) }
+case class IntLit(value: Int) extends NumberLiteral[Int]() { override def getType: TObject = Types.Int }
+case class LongLit(value: Long) extends NumberLiteral[Long]() { override def getType: TObject = Types.Long }
+case class FloatLit(value: Float) extends NumberLiteral[Float]() { override def getType: TObject = Types.Float }
+case class DoubleLit(value: Double) extends NumberLiteral[Double]() { override def getType: TObject = Types.Double }
+case class CharLit(value: Char) extends Literal[Char]() { override def getType: TObject = Types.Char }
+case class StringLit(value: String) extends Literal[String]() { override def getType: TObject = Types.String }
+case class TrueLit() extends Literal[Boolean]() with Leaf() {
+  val value = true
+  override def getType: TObject = Types.Bool
+}
+case class FalseLit() extends Literal[Boolean]() with Leaf() {
+  val value = false
+  override def getType: TObject = Types.Bool
+}
+case class NullLit() extends Literal[Null]() with Leaf() {
+  val value: Null = null
+  override def getType: Types.TNull.type = TNull
+}
+case class ArrayLit(value: List[ExprTree]) extends ExprTree()
+trait Identifier[T <: Symbol] extends ExprTree() with Symbolic[T]() {
+  val name: String
+  override def getType: Type = {
+    if (hasSymbol.unary_!) return TUntyped
+    getSymbol.getType
+  }
+  override def setType(tpe: Type): Identifier.this.type = {
+    if (hasSymbol) getSymbol.setType(tpe)
+    this
+  }
+}
+object Identifier { def unapply[T <: Symbol](e: Identifier[T]) = Some(e.name) }
+case class ClassID(name: String, templateTypes: List[TypeTree] = List()) extends Identifier[ClassSymbol]() with TypeTree() {
+  import tlang.compiler.modification.Templating._
+  override def getType: Type = if (hasSymbol) getSymbol.getType else TUntyped
+  override def setType(tpe: Type): ClassID.this.type = this
+  def isTemplated: Boolean = templateTypes.nonEmpty
+  def templatedClassName: String = templatedClassName(templateTypes)
+  def templatedClassName(templateTypes: List[TypeTree]): String = {
+    val tTypes = templateTypes.map({
+      case x: ClassID if x.isTemplated =>
+        x.templatedClassName
+      case x =>
+        x.name
+    })
+    val s = name.split("::")
+    val prefix = if (s.size == 1) "" else s.dropRight(1).mkString("::") + "::"
+    prefix + StartEnd + s.last + (if (isTemplated) Seperator + tTypes.mkString(Seperator)) + StartEnd
+  }
+}
+case class VariableID(name: String) extends Identifier[VariableSymbol]() with Leaf() with Assignable()
+case class MethodID(name: String) extends Identifier[MethodSymbol]() with Leaf()
+trait Access extends Assignable() {
+  var obj: ExprTree
+  val application: ExprTree
+  def isStatic: Boolean = {
+    if (obj.isInstanceOf[ClassID]) return true
+    application match {
+      case id: VariableID if id.hasSymbol =>
+        id.getSymbol.isStatic
+      case MethodCall(meth, _) if meth.hasSymbol =>
+        meth.getSymbol.isStatic
+      case _ =>
+        false
+    }
+  }
+}
+object Access { def unapply(e: Access) = Some(e.obj, e.application) }
+case class NormalAccess(var obj: ExprTree, application: ExprTree) extends Access()
+case class SafeAccess(var obj: ExprTree, application: ExprTree) extends Access()
+trait Assignable extends ExprTree()
+case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree() {
+  override val arr: ExprTree = to
+  override val opSign: String = "[]="
+  override def signature(args: List[Any]): String = s"[${args(0)}] = ${args(1)}"
+}
+case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree()
+case class This() extends ExprTree() with Symbolic[ClassSymbol]() with Leaf()
+case class Super(specifier: Option[ClassID]) extends ExprTree() with Symbolic[ClassSymbol]()
+case class NewArray(tpe: TypeTree, sizes: List[ExprTree]) extends ExprTree() { def dimension: Int = sizes.size }
+case class New(tpe: TypeTree, args: List[ExprTree]) extends ExprTree() with Symbolic[MethodSymbol]()
+case class Ternary(condition: ExprTree, thn: ExprTree, els: ExprTree) extends ExprTree()
+case class Elvis(nullableValue: ExprTree, ifNull: ExprTree) extends ExprTree()
+case class Is(expr: ExprTree, tpe: TypeTree) extends ExprTree()
+case class As(expr: ExprTree, tpe: TypeTree) extends ExprTree()
+case class GeneratedExpr(stats: List[StatTree]) extends ExprTree()
+case class PutValue(exprTree: ExprTree) extends ExprTree() { override def getType: Type = exprTree.getType }
+case class Empty() extends ExprTree() with Leaf() { override def toString = "<EMPTY>" }
+object UselessStatement {
+  def unapply(e: StatTree): Option[ExprTree] = e match {
+    case Access(_, MethodCall(_, _)) =>
+      None
+    case IncrementDecrementTree(_) =>
+      None
+    case _: Assign =>
+      None
+    case _: GeneratedExpr =>
+      None
+    case _: PutValue =>
+      None
+    case expr: ExprTree =>
+      Some(expr)
+    case _ =>
+      None
+  }
+}
+type TreeTransformation = PartialFunction[Tree, Tree]
+trait Transformer {
+  val treeCopy: Copier = new LazyCopier()
+  def transformation: TreeTransformation
+  final def transformChildren(t: Tree): Tree = t match {
+    case CompilationUnit(pack, classes, imports) =>
+      treeCopy.CompilationUnit(t, _transform(pack).asInstanceOf[Package], _transform(classes).asInstanceOf[List[ClassDeclTree]], imports)
+    case Annotation() =>
+      treeCopy.Annotation(t)
+    case Package(address) =>
+      treeCopy.Package(t, address)
+    case RegularImport(address) =>
+      treeCopy.RegularImport(t, address)
+    case WildCardImport(address) =>
+      treeCopy.WildCardImport(t, address)
+    case ExtensionImport(address, className) =>
+      treeCopy.ExtensionImport(t, address, className)
+    case ClassDecl(id, parents, fields, methods) =>
+      treeCopy.ClassDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+    case TraitDecl(id, parents, fields, methods) =>
+      treeCopy.TraitDecl(t, _transform(id).asInstanceOf[ClassID], _transform(parents).asInstanceOf[List[ClassID]], _transform(fields).asInstanceOf[List[VarDecl]], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+    case ExtensionDecl(tpe, methods) =>
+      treeCopy.ExtensionDecl(t, _transform(tpe).asInstanceOf[TypeTree], _transform(methods).asInstanceOf[List[MethodDeclTree]])
+    case Public() =>
+      treeCopy.Public(t)
+    case Private() =>
+      treeCopy.Private(t)
+    case Protected() =>
+      treeCopy.Protected(t)
+    case Static() =>
+      treeCopy.Static(t)
+    case Implicit() =>
+      treeCopy.Implicit(t)
+    case Final() =>
+      treeCopy.Final(t)
+    case MethodDecl(id, modifiers, args, retType, stat) =>
+      treeCopy.MethodDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+    case ConstructorDecl(id, modifiers, args, retType, stat) =>
+      treeCopy.ConstructorDecl(t, _transform(id).asInstanceOf[MethodID], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+    case OperatorDecl(operatorType, modifiers, args, retType, stat) =>
+      treeCopy.OperatorDecl(t, _transform(operatorType).asInstanceOf[OperatorTree], _transform(modifiers).asInstanceOf[Set[Modifier]], _transform(args).asInstanceOf[List[Formal]], _transform(retType).asInstanceOf[Option[TypeTree]], _transform(stat).asInstanceOf[Option[StatTree]])
+    case Formal(tpe, id) =>
+      treeCopy.Formal(t, _transform(tpe).asInstanceOf[TypeTree], _transform(id).asInstanceOf[VariableID])
+    case VarDecl(id, tpe, initiation, modifiers) =>
+      treeCopy.VarDecl(t, _transform(id).asInstanceOf[VariableID], _transform(tpe).asInstanceOf[Option[TypeTree]], _transform(initiation).asInstanceOf[Option[ExprTree]], _transform(modifiers).asInstanceOf[Set[Modifier]])
+    case Block(stats) =>
+      treeCopy.Block(t, _transform(stats).asInstanceOf[List[StatTree]])
+    case If(condition, thn, els) =>
+      treeCopy.If(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[StatTree], _transform(els).asInstanceOf[Option[StatTree]])
+    case While(condition, stat) =>
+      treeCopy.While(t, _transform(condition).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
+    case For(initiation, condition, post, stat) =>
+      treeCopy.For(t, _transform(initiation).asInstanceOf[List[StatTree]], _transform(condition).asInstanceOf[ExprTree], _transform(post).asInstanceOf[List[StatTree]], _transform(stat).asInstanceOf[StatTree])
+    case Foreach(varDecl, container, stat) =>
+      treeCopy.Foreach(t, _transform(varDecl).asInstanceOf[VarDecl], _transform(container).asInstanceOf[ExprTree], _transform(stat).asInstanceOf[StatTree])
+    case Error(expr) =>
+      treeCopy.Error(t, _transform(expr).asInstanceOf[ExprTree])
+    case Return(expr) =>
+      treeCopy.Return(t, _transform(expr).asInstanceOf[Option[ExprTree]])
+    case Break() =>
+      treeCopy.Break(t)
+    case Continue() =>
+      treeCopy.Continue(t)
+    case Print(expr) =>
+      treeCopy.Print(t, _transform(expr).asInstanceOf[ExprTree])
+    case Println(expr) =>
+      treeCopy.Println(t, _transform(expr).asInstanceOf[ExprTree])
+    case ArrayType(tpe) =>
+      treeCopy.ArrayType(t, _transform(tpe).asInstanceOf[TypeTree])
+    case NullableType(tpe) =>
+      treeCopy.NullableType(t, _transform(tpe).asInstanceOf[TypeTree])
+    case UnitType() =>
+      treeCopy.UnitType(t)
+    case Plus(lhs, rhs) =>
+      treeCopy.Plus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Minus(lhs, rhs) =>
+      treeCopy.Minus(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Times(lhs, rhs) =>
+      treeCopy.Times(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Div(lhs, rhs) =>
+      treeCopy.Div(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Modulo(lhs, rhs) =>
+      treeCopy.Modulo(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LogicAnd(lhs, rhs) =>
+      treeCopy.LogicAnd(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LogicOr(lhs, rhs) =>
+      treeCopy.LogicOr(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LogicXor(lhs, rhs) =>
+      treeCopy.LogicXor(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LeftShift(lhs, rhs) =>
+      treeCopy.LeftShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case RightShift(lhs, rhs) =>
+      treeCopy.RightShift(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LessThan(lhs, rhs) =>
+      treeCopy.LessThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case LessThanEquals(lhs, rhs) =>
+      treeCopy.LessThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case GreaterThan(lhs, rhs) =>
+      treeCopy.GreaterThan(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case GreaterThanEquals(lhs, rhs) =>
+      treeCopy.GreaterThanEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Equals(lhs, rhs) =>
+      treeCopy.Equals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case NotEquals(lhs, rhs) =>
+      treeCopy.NotEquals(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case And(lhs, rhs) =>
+      treeCopy.And(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Or(lhs, rhs) =>
+      treeCopy.Or(t, _transform(lhs).asInstanceOf[ExprTree], _transform(rhs).asInstanceOf[ExprTree])
+    case Not(expr) =>
+      treeCopy.Not(t, _transform(expr).asInstanceOf[ExprTree])
+    case Hash(expr) =>
+      treeCopy.Hash(t, _transform(expr).asInstanceOf[ExprTree])
+    case Negation(expr) =>
+      treeCopy.Negation(t, _transform(expr).asInstanceOf[ExprTree])
+    case LogicNot(expr) =>
+      treeCopy.LogicNot(t, _transform(expr).asInstanceOf[ExprTree])
+    case ExtractNullable(expr) =>
+      treeCopy.ExtractNullable(t, _transform(expr).asInstanceOf[ExprTree])
+    case PreIncrement(expr) =>
+      treeCopy.PreIncrement(t, _transform(expr).asInstanceOf[ExprTree])
+    case PreDecrement(expr) =>
+      treeCopy.PreDecrement(t, _transform(expr).asInstanceOf[ExprTree])
+    case PostIncrement(expr) =>
+      treeCopy.PostIncrement(t, _transform(expr).asInstanceOf[ExprTree])
+    case PostDecrement(expr) =>
+      treeCopy.PostDecrement(t, _transform(expr).asInstanceOf[ExprTree])
+    case ArrayRead(arr, index) =>
+      treeCopy.ArrayRead(t, _transform(arr).asInstanceOf[ExprTree], _transform(index).asInstanceOf[ExprTree])
+    case ArraySlice(arr, start, end, step) =>
+      treeCopy.ArraySlice(t, _transform(arr).asInstanceOf[ExprTree], _transform(start).asInstanceOf[Option[ExprTree]], _transform(end).asInstanceOf[Option[ExprTree]], _transform(step).asInstanceOf[Option[ExprTree]])
+    case IntLit(value) =>
+      treeCopy.IntLit(t, value)
+    case LongLit(value) =>
+      treeCopy.LongLit(t, value)
+    case FloatLit(value) =>
+      treeCopy.FloatLit(t, value)
+    case DoubleLit(value) =>
+      treeCopy.DoubleLit(t, value)
+    case CharLit(value) =>
+      treeCopy.CharLit(t, value)
+    case StringLit(value) =>
+      treeCopy.StringLit(t, value)
+    case TrueLit() =>
+      treeCopy.TrueLit(t)
+    case FalseLit() =>
+      treeCopy.FalseLit(t)
+    case NullLit() =>
+      treeCopy.NullLit(t)
+    case ArrayLit(value) =>
+      treeCopy.ArrayLit(t, _transform(value).asInstanceOf[List[ExprTree]])
+    case ClassID(name, templateTypes) =>
+      treeCopy.ClassID(t, name, _transform(templateTypes).asInstanceOf[List[TypeTree]])
+    case VariableID(name) =>
+      treeCopy.VariableID(t, name)
+    case MethodID(name) =>
+      treeCopy.MethodID(t, name)
+    case NormalAccess(obj, application) =>
+      treeCopy.NormalAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
+    case SafeAccess(obj, application) =>
+      treeCopy.SafeAccess(t, _transform(obj).asInstanceOf[ExprTree], _transform(application).asInstanceOf[ExprTree])
+    case Assign(to, from) =>
+      treeCopy.Assign(t, _transform(to).asInstanceOf[Assignable], _transform(from).asInstanceOf[ExprTree])
+    case MethodCall(meth, args) =>
+      treeCopy.MethodCall(t, _transform(meth).asInstanceOf[MethodID], _transform(args).asInstanceOf[List[ExprTree]])
+    case This() =>
+      treeCopy.This(t)
+    case Super(specifier) =>
+      treeCopy.Super(t, _transform(specifier).asInstanceOf[Option[ClassID]])
+    case NewArray(tpe, sizes) =>
+      treeCopy.NewArray(t, _transform(tpe).asInstanceOf[TypeTree], _transform(sizes).asInstanceOf[List[ExprTree]])
+    case New(tpe, args) =>
+      treeCopy.New(t, _transform(tpe).asInstanceOf[TypeTree], _transform(args).asInstanceOf[List[ExprTree]])
+    case Ternary(condition, thn, els) =>
+      treeCopy.Ternary(t, _transform(condition).asInstanceOf[ExprTree], _transform(thn).asInstanceOf[ExprTree], _transform(els).asInstanceOf[ExprTree])
+    case Elvis(nullableValue, ifNull) =>
+      treeCopy.Elvis(t, _transform(nullableValue).asInstanceOf[ExprTree], _transform(ifNull).asInstanceOf[ExprTree])
+    case Is(expr, tpe) =>
+      treeCopy.Is(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
+    case As(expr, tpe) =>
+      treeCopy.As(t, _transform(expr).asInstanceOf[ExprTree], _transform(tpe).asInstanceOf[TypeTree])
+    case GeneratedExpr(stats) =>
+      treeCopy.GeneratedExpr(t, _transform(stats).asInstanceOf[List[StatTree]])
+    case PutValue(exprTree) =>
+      treeCopy.PutValue(t, _transform(exprTree).asInstanceOf[ExprTree])
+    case Empty() =>
+      treeCopy.Empty(t)
+  }
+  final def apply[T <: Tree](t: T): T = _transform(t).asInstanceOf[T]
+  final def transform[T <: Tree](list: List[T]): List[T] = _transform(list).asInstanceOf[List[T]]
+  final def transform[T <: Tree](set: Set[T]): Set[T] = _transform(set).asInstanceOf[Set[T]]
+  final def transform[T <: Tree](op: Option[T]): Option[T] = _transform(op).asInstanceOf[Option[T]]
+  private final def _transform(t: Tree): Tree = transformation.applyOrElse(t, transformChildren)
+  private final def _transform[T <: Tree](list: List[T]): List[Tree] = smartMap(list).asInstanceOf[List[Tree]]
+  private final def _transform[T <: Tree](set: Set[T]): Set[Tree] = smartMap(set).asInstanceOf[Set[Tree]]
+  private final def _transform[T <: Tree](op: Option[T]): Option[Tree] = op match {
+    case Some(t) =>
+      val x = _transform(t)
+      if (x eq t) op else Some(x)
+    case None =>
+      None
+  }
+  private def smartMap[T <: Tree](traversable: Traversable[T]): Traversable[Tree] = {
+    var anyDifferent = false
+    val newSet = traversable.map(t => {
+      val x = _transform(t)
+      if ((t eq x).unary_!) anyDifferent = true
+      x
+    })
+    if (anyDifferent) newSet else traversable
+  }
+}
+class Copier {
+  def CompilationUnit(t: Tree, pack: Package, classes: List[ClassDeclTree], imports: Imports) = new CompilationUnit(pack, classes, imports).copyAttributes(t)
+  def Annotation(t: Tree) = new Annotation().copyAttributes(t)
+  def Package(t: Tree, address: List[String] = Nil) = new Package(address).copyAttributes(t)
+  def RegularImport(t: Tree, address: List[String]) = new RegularImport(address).copyAttributes(t)
+  def WildCardImport(t: Tree, address: List[String]) = new WildCardImport(address).copyAttributes(t)
+  def ExtensionImport(t: Tree, address: List[String], className: List[String]) = new ExtensionImport(address, className).copyAttributes(t)
+  def ClassDecl(t: Tree, id: ClassID, parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, methods: List[MethodDeclTree] = Nil) = new ClassDecl(id, parents, fields, methods).copyAttributes(t)
+  def TraitDecl(t: Tree, id: ClassID, parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, methods: List[MethodDeclTree] = Nil) = new TraitDecl(id, parents, fields, methods).copyAttributes(t)
+  def ExtensionDecl(t: Tree, tpe: TypeTree, methods: List[MethodDeclTree] = Nil) = new ExtensionDecl(tpe, methods).copyAttributes(t)
+  def Public(t: Tree) = new Public().copyAttributes(t)
+  def Private(t: Tree) = new Private().copyAttributes(t)
+  def Protected(t: Tree) = new Protected().copyAttributes(t)
+  def Static(t: Tree) = new Static().copyAttributes(t)
+  def Implicit(t: Tree) = new Implicit().copyAttributes(t)
+  def Final(t: Tree) = new Final().copyAttributes(t)
+  def MethodDecl(t: Tree, id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = new MethodDecl(id, modifiers, args, retType, stat).copyAttributes(t)
+  def ConstructorDecl(t: Tree, id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = new ConstructorDecl(id, modifiers, args, retType, stat).copyAttributes(t)
+  def OperatorDecl(t: Tree, operatorType: OperatorTree, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = new OperatorDecl(operatorType, modifiers, args, retType, stat).copyAttributes(t)
+  def Formal(t: Tree, tpe: TypeTree, id: VariableID) = new Formal(tpe, id).copyAttributes(t)
+  def VarDecl(t: Tree, id: VariableID, tpe: Option[TypeTree] = None, initiation: Option[ExprTree] = None, modifiers: Set[Modifier] = Set()) = new VarDecl(id, tpe, initiation, modifiers).copyAttributes(t)
+  def Block(t: Tree, stats: List[StatTree]) = new Block(stats).copyAttributes(t)
+  def If(t: Tree, condition: ExprTree, thn: StatTree, els: Option[StatTree]) = new If(condition, thn, els).copyAttributes(t)
+  def While(t: Tree, condition: ExprTree, stat: StatTree) = new While(condition, stat).copyAttributes(t)
+  def For(t: Tree, initiation: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) = new For(initiation, condition, post, stat).copyAttributes(t)
+  def Foreach(t: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree) = new Foreach(varDecl, container, stat).copyAttributes(t)
+  def Error(t: Tree, expr: ExprTree) = new Error(expr).copyAttributes(t)
+  def Return(t: Tree, expr: Option[ExprTree]) = new Return(expr).copyAttributes(t)
+  def Break(t: Tree) = new Break().copyAttributes(t)
+  def Continue(t: Tree) = new Continue().copyAttributes(t)
+  def Print(t: Tree, expr: ExprTree) = new Print(expr).copyAttributes(t)
+  def Println(t: Tree, expr: ExprTree) = new Println(expr).copyAttributes(t)
+  def ArrayType(t: Tree, tpe: TypeTree) = new ArrayType(tpe).copyAttributes(t)
+  def NullableType(t: Tree, tpe: TypeTree) = new NullableType(tpe).copyAttributes(t)
+  def UnitType(t: Tree) = new UnitType().copyAttributes(t)
+  def Plus(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Plus(lhs, rhs).copyAttributes(t)
+  def Minus(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Minus(lhs, rhs).copyAttributes(t)
+  def Times(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Times(lhs, rhs).copyAttributes(t)
+  def Div(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Div(lhs, rhs).copyAttributes(t)
+  def Modulo(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Modulo(lhs, rhs).copyAttributes(t)
+  def LogicAnd(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LogicAnd(lhs, rhs).copyAttributes(t)
+  def LogicOr(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LogicOr(lhs, rhs).copyAttributes(t)
+  def LogicXor(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LogicXor(lhs, rhs).copyAttributes(t)
+  def LeftShift(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LeftShift(lhs, rhs).copyAttributes(t)
+  def RightShift(t: Tree, lhs: ExprTree, rhs: ExprTree) = new RightShift(lhs, rhs).copyAttributes(t)
+  def LessThan(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LessThan(lhs, rhs).copyAttributes(t)
+  def LessThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) = new LessThanEquals(lhs, rhs).copyAttributes(t)
+  def GreaterThan(t: Tree, lhs: ExprTree, rhs: ExprTree) = new GreaterThan(lhs, rhs).copyAttributes(t)
+  def GreaterThanEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) = new GreaterThanEquals(lhs, rhs).copyAttributes(t)
+  def Equals(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Equals(lhs, rhs).copyAttributes(t)
+  def NotEquals(t: Tree, lhs: ExprTree, rhs: ExprTree) = new NotEquals(lhs, rhs).copyAttributes(t)
+  def And(t: Tree, lhs: ExprTree, rhs: ExprTree) = new And(lhs, rhs).copyAttributes(t)
+  def Or(t: Tree, lhs: ExprTree, rhs: ExprTree) = new Or(lhs, rhs).copyAttributes(t)
+  def Not(t: Tree, expr: ExprTree) = new Not(expr).copyAttributes(t)
+  def Hash(t: Tree, expr: ExprTree) = new Hash(expr).copyAttributes(t)
+  def Negation(t: Tree, expr: ExprTree) = new Negation(expr).copyAttributes(t)
+  def LogicNot(t: Tree, expr: ExprTree) = new LogicNot(expr).copyAttributes(t)
+  def ExtractNullable(t: Tree, expr: ExprTree) = new ExtractNullable(expr).copyAttributes(t)
+  def PreIncrement(t: Tree, expr: ExprTree) = new PreIncrement(expr).copyAttributes(t)
+  def PreDecrement(t: Tree, expr: ExprTree) = new PreDecrement(expr).copyAttributes(t)
+  def PostIncrement(t: Tree, expr: ExprTree) = new PostIncrement(expr).copyAttributes(t)
+  def PostDecrement(t: Tree, expr: ExprTree) = new PostDecrement(expr).copyAttributes(t)
+  def ArrayRead(t: Tree, arr: ExprTree, index: ExprTree) = new ArrayRead(arr, index).copyAttributes(t)
+  def ArraySlice(t: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) = new ArraySlice(arr, start, end, step).copyAttributes(t)
+  def IntLit(t: Tree, value: Int) = new IntLit(value).copyAttributes(t)
+  def LongLit(t: Tree, value: Long) = new LongLit(value).copyAttributes(t)
+  def FloatLit(t: Tree, value: Float) = new FloatLit(value).copyAttributes(t)
+  def DoubleLit(t: Tree, value: Double) = new DoubleLit(value).copyAttributes(t)
+  def CharLit(t: Tree, value: Char) = new CharLit(value).copyAttributes(t)
+  def StringLit(t: Tree, value: String) = new StringLit(value).copyAttributes(t)
+  def TrueLit(t: Tree) = new TrueLit().copyAttributes(t)
+  def FalseLit(t: Tree) = new FalseLit().copyAttributes(t)
+  def NullLit(t: Tree) = new NullLit().copyAttributes(t)
+  def ArrayLit(t: Tree, value: List[ExprTree]) = new ArrayLit(value).copyAttributes(t)
+  def ClassID(t: Tree, name: String, templateTypes: List[TypeTree] = List()) = new ClassID(name, templateTypes).copyAttributes(t)
+  def VariableID(t: Tree, name: String) = new VariableID(name).copyAttributes(t)
+  def MethodID(t: Tree, name: String) = new MethodID(name).copyAttributes(t)
+  def NormalAccess(t: Tree, obj: ExprTree, application: ExprTree) = new NormalAccess(obj, application).copyAttributes(t)
+  def SafeAccess(t: Tree, obj: ExprTree, application: ExprTree) = new SafeAccess(obj, application).copyAttributes(t)
+  def Assign(t: Tree, to: Assignable, from: ExprTree) = new Assign(to, from).copyAttributes(t)
+  def MethodCall(t: Tree, meth: MethodID, args: List[ExprTree]) = new MethodCall(meth, args).copyAttributes(t)
+  def This(t: Tree) = new This().copyAttributes(t)
+  def Super(t: Tree, specifier: Option[ClassID]) = new Super(specifier).copyAttributes(t)
+  def NewArray(t: Tree, tpe: TypeTree, sizes: List[ExprTree]) = new NewArray(tpe, sizes).copyAttributes(t)
+  def New(t: Tree, tpe: TypeTree, args: List[ExprTree]) = new New(tpe, args).copyAttributes(t)
+  def Ternary(t: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree) = new Ternary(condition, thn, els).copyAttributes(t)
+  def Elvis(t: Tree, nullableValue: ExprTree, ifNull: ExprTree) = new Elvis(nullableValue, ifNull).copyAttributes(t)
+  def Is(t: Tree, expr: ExprTree, tpe: TypeTree) = new Is(expr, tpe).copyAttributes(t)
+  def As(t: Tree, expr: ExprTree, tpe: TypeTree) = new As(expr, tpe).copyAttributes(t)
+  def GeneratedExpr(t: Tree, stats: List[StatTree]) = new GeneratedExpr(stats).copyAttributes(t)
+  def PutValue(t: Tree, exprTree: ExprTree) = new PutValue(exprTree).copyAttributes(t)
+  def Empty(t: Tree) = new Empty().copyAttributes(t)
+}
+class LazyCopier extends Copier {
+  override def CompilationUnit(tree: Tree, pack: Package, classes: List[ClassDeclTree], imports: Imports) = tree match {
+    case t @ CompilationUnit(pack0, classes0, imports0) if (pack eq pack0) && ((classes eq classes0) && (imports eq imports0)) =>
+      t
+    case _ =>
+      super.CompilationUnit(tree, pack, classes, imports)
+  }
+  override def Annotation(tree: Tree) = tree match {
+    case t @ Annotation() =>
+      t
+    case _ =>
+      super.Annotation(tree)
+  }
+  override def Package(tree: Tree, address: List[String] = Nil) = tree match {
+    case t @ Package(address0) if address eq address0 =>
+      t
+    case _ =>
+      super.Package(tree, address)
+  }
+  override def RegularImport(tree: Tree, address: List[String]) = tree match {
+    case t @ RegularImport(address0) if address eq address0 =>
+      t
+    case _ =>
+      super.RegularImport(tree, address)
+  }
+  override def WildCardImport(tree: Tree, address: List[String]) = tree match {
+    case t @ WildCardImport(address0) if address eq address0 =>
+      t
+    case _ =>
+      super.WildCardImport(tree, address)
+  }
+  override def ExtensionImport(tree: Tree, address: List[String], className: List[String]) = tree match {
+    case t @ ExtensionImport(address0, className0) if (address eq address0) && (className eq className0) =>
+      t
+    case _ =>
+      super.ExtensionImport(tree, address, className)
+  }
+  override def ClassDecl(tree: Tree, id: ClassID, parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, methods: List[MethodDeclTree] = Nil) = tree match {
+    case t @ ClassDecl(id0, parents0, fields0, methods0) if (id eq id0) && ((parents eq parents0) && ((fields eq fields0) && (methods eq methods0))) =>
+      t
+    case _ =>
+      super.ClassDecl(tree, id, parents, fields, methods)
+  }
+  override def TraitDecl(tree: Tree, id: ClassID, parents: List[ClassID] = Nil, fields: List[VarDecl] = Nil, methods: List[MethodDeclTree] = Nil) = tree match {
+    case t @ TraitDecl(id0, parents0, fields0, methods0) if (id eq id0) && ((parents eq parents0) && ((fields eq fields0) && (methods eq methods0))) =>
+      t
+    case _ =>
+      super.TraitDecl(tree, id, parents, fields, methods)
+  }
+  override def ExtensionDecl(tree: Tree, tpe: TypeTree, methods: List[MethodDeclTree] = Nil) = tree match {
+    case t @ ExtensionDecl(tpe0, methods0) if (tpe eq tpe0) && (methods eq methods0) =>
+      t
+    case _ =>
+      super.ExtensionDecl(tree, tpe, methods)
+  }
+  override def Public(tree: Tree) = tree match {
+    case t @ Public() =>
+      t
+    case _ =>
+      super.Public(tree)
+  }
+  override def Private(tree: Tree) = tree match {
+    case t @ Private() =>
+      t
+    case _ =>
+      super.Private(tree)
+  }
+  override def Protected(tree: Tree) = tree match {
+    case t @ Protected() =>
+      t
+    case _ =>
+      super.Protected(tree)
+  }
+  override def Static(tree: Tree) = tree match {
+    case t @ Static() =>
+      t
+    case _ =>
+      super.Static(tree)
+  }
+  override def Implicit(tree: Tree) = tree match {
+    case t @ Implicit() =>
+      t
+    case _ =>
+      super.Implicit(tree)
+  }
+  override def Final(tree: Tree) = tree match {
+    case t @ Final() =>
+      t
+    case _ =>
+      super.Final(tree)
+  }
+  override def MethodDecl(tree: Tree, id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = tree match {
+    case t @ MethodDecl(id0, modifiers0, args0, retType0, stat0) if (id eq id0) && ((modifiers eq modifiers0) && ((args eq args0) && ((retType eq retType0) && (stat eq stat0)))) =>
+      t
+    case _ =>
+      super.MethodDecl(tree, id, modifiers, args, retType, stat)
+  }
+  override def ConstructorDecl(tree: Tree, id: MethodID, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = tree match {
+    case t @ ConstructorDecl(id0, modifiers0, args0, retType0, stat0) if (id eq id0) && ((modifiers eq modifiers0) && ((args eq args0) && ((retType eq retType0) && (stat eq stat0)))) =>
+      t
+    case _ =>
+      super.ConstructorDecl(tree, id, modifiers, args, retType, stat)
+  }
+  override def OperatorDecl(tree: Tree, operatorType: OperatorTree, modifiers: Set[Modifier] = Set(), args: List[Formal] = Nil, retType: Option[TypeTree] = None, stat: Option[StatTree] = None) = tree match {
+    case t @ OperatorDecl(operatorType0, modifiers0, args0, retType0, stat0) if (operatorType eq operatorType0) && ((modifiers eq modifiers0) && ((args eq args0) && ((retType eq retType0) && (stat eq stat0)))) =>
+      t
+    case _ =>
+      super.OperatorDecl(tree, operatorType, modifiers, args, retType, stat)
+  }
+  override def Formal(tree: Tree, tpe: TypeTree, id: VariableID) = tree match {
+    case t @ Formal(tpe0, id0) if (tpe eq tpe0) && (id eq id0) =>
+      t
+    case _ =>
+      super.Formal(tree, tpe, id)
+  }
+  override def VarDecl(tree: Tree, id: VariableID, tpe: Option[TypeTree] = None, initiation: Option[ExprTree] = None, modifiers: Set[Modifier] = Set()) = tree match {
+    case t @ VarDecl(id0, tpe0, initiation0, modifiers0) if (id eq id0) && ((tpe eq tpe0) && ((initiation eq initiation0) && (modifiers eq modifiers0))) =>
+      t
+    case _ =>
+      super.VarDecl(tree, id, tpe, initiation, modifiers)
+  }
+  override def Block(tree: Tree, stats: List[StatTree]) = tree match {
+    case t @ Block(stats0) if stats eq stats0 =>
+      t
+    case _ =>
+      super.Block(tree, stats)
+  }
+  override def If(tree: Tree, condition: ExprTree, thn: StatTree, els: Option[StatTree]) = tree match {
+    case t @ If(condition0, thn0, els0) if (condition eq condition0) && ((thn eq thn0) && (els eq els0)) =>
+      t
+    case _ =>
+      super.If(tree, condition, thn, els)
+  }
+  override def While(tree: Tree, condition: ExprTree, stat: StatTree) = tree match {
+    case t @ While(condition0, stat0) if (condition eq condition0) && (stat eq stat0) =>
+      t
+    case _ =>
+      super.While(tree, condition, stat)
+  }
+  override def For(tree: Tree, initiation: List[StatTree], condition: ExprTree, post: List[StatTree], stat: StatTree) = tree match {
+    case t @ For(initiation0, condition0, post0, stat0) if (initiation eq initiation0) && ((condition eq condition0) && ((post eq post0) && (stat eq stat0))) =>
+      t
+    case _ =>
+      super.For(tree, initiation, condition, post, stat)
+  }
+  override def Foreach(tree: Tree, varDecl: VarDecl, container: ExprTree, stat: StatTree) = tree match {
+    case t @ Foreach(varDecl0, container0, stat0) if (varDecl eq varDecl0) && ((container eq container0) && (stat eq stat0)) =>
+      t
+    case _ =>
+      super.Foreach(tree, varDecl, container, stat)
+  }
+  override def Error(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Error(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Error(tree, expr)
+  }
+  override def Return(tree: Tree, expr: Option[ExprTree]) = tree match {
+    case t @ Return(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Return(tree, expr)
+  }
+  override def Break(tree: Tree) = tree match {
+    case t @ Break() =>
+      t
+    case _ =>
+      super.Break(tree)
+  }
+  override def Continue(tree: Tree) = tree match {
+    case t @ Continue() =>
+      t
+    case _ =>
+      super.Continue(tree)
+  }
+  override def Print(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Print(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Print(tree, expr)
+  }
+  override def Println(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Println(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Println(tree, expr)
+  }
+  override def ArrayType(tree: Tree, tpe: TypeTree) = tree match {
+    case t @ ArrayType(tpe0) if tpe eq tpe0 =>
+      t
+    case _ =>
+      super.ArrayType(tree, tpe)
+  }
+  override def NullableType(tree: Tree, tpe: TypeTree) = tree match {
+    case t @ NullableType(tpe0) if tpe eq tpe0 =>
+      t
+    case _ =>
+      super.NullableType(tree, tpe)
+  }
+  override def UnitType(tree: Tree) = tree match {
+    case t @ UnitType() =>
+      t
+    case _ =>
+      super.UnitType(tree)
+  }
+  override def Plus(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Plus(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Plus(tree, lhs, rhs)
+  }
+  override def Minus(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Minus(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Minus(tree, lhs, rhs)
+  }
+  override def Times(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Times(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Times(tree, lhs, rhs)
+  }
+  override def Div(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Div(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Div(tree, lhs, rhs)
+  }
+  override def Modulo(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Modulo(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Modulo(tree, lhs, rhs)
+  }
+  override def LogicAnd(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LogicAnd(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LogicAnd(tree, lhs, rhs)
+  }
+  override def LogicOr(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LogicOr(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LogicOr(tree, lhs, rhs)
+  }
+  override def LogicXor(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LogicXor(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LogicXor(tree, lhs, rhs)
+  }
+  override def LeftShift(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LeftShift(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LeftShift(tree, lhs, rhs)
+  }
+  override def RightShift(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ RightShift(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.RightShift(tree, lhs, rhs)
+  }
+  override def LessThan(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LessThan(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LessThan(tree, lhs, rhs)
+  }
+  override def LessThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ LessThanEquals(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.LessThanEquals(tree, lhs, rhs)
+  }
+  override def GreaterThan(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ GreaterThan(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.GreaterThan(tree, lhs, rhs)
+  }
+  override def GreaterThanEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ GreaterThanEquals(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.GreaterThanEquals(tree, lhs, rhs)
+  }
+  override def Equals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Equals(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Equals(tree, lhs, rhs)
+  }
+  override def NotEquals(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ NotEquals(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.NotEquals(tree, lhs, rhs)
+  }
+  override def And(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ And(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.And(tree, lhs, rhs)
+  }
+  override def Or(tree: Tree, lhs: ExprTree, rhs: ExprTree) = tree match {
+    case t @ Or(lhs0, rhs0) if (lhs eq lhs0) && (rhs eq rhs0) =>
+      t
+    case _ =>
+      super.Or(tree, lhs, rhs)
+  }
+  override def Not(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Not(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Not(tree, expr)
+  }
+  override def Hash(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Hash(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Hash(tree, expr)
+  }
+  override def Negation(tree: Tree, expr: ExprTree) = tree match {
+    case t @ Negation(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.Negation(tree, expr)
+  }
+  override def LogicNot(tree: Tree, expr: ExprTree) = tree match {
+    case t @ LogicNot(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.LogicNot(tree, expr)
+  }
+  override def ExtractNullable(tree: Tree, expr: ExprTree) = tree match {
+    case t @ ExtractNullable(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.ExtractNullable(tree, expr)
+  }
+  override def PreIncrement(tree: Tree, expr: ExprTree) = tree match {
+    case t @ PreIncrement(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.PreIncrement(tree, expr)
+  }
+  override def PreDecrement(tree: Tree, expr: ExprTree) = tree match {
+    case t @ PreDecrement(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.PreDecrement(tree, expr)
+  }
+  override def PostIncrement(tree: Tree, expr: ExprTree) = tree match {
+    case t @ PostIncrement(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.PostIncrement(tree, expr)
+  }
+  override def PostDecrement(tree: Tree, expr: ExprTree) = tree match {
+    case t @ PostDecrement(expr0) if expr eq expr0 =>
+      t
+    case _ =>
+      super.PostDecrement(tree, expr)
+  }
+  override def ArrayRead(tree: Tree, arr: ExprTree, index: ExprTree) = tree match {
+    case t @ ArrayRead(arr0, index0) if (arr eq arr0) && (index eq index0) =>
+      t
+    case _ =>
+      super.ArrayRead(tree, arr, index)
+  }
+  override def ArraySlice(tree: Tree, arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) = tree match {
+    case t @ ArraySlice(arr0, start0, end0, step0) if (arr eq arr0) && ((start eq start0) && ((end eq end0) && (step eq step0))) =>
+      t
+    case _ =>
+      super.ArraySlice(tree, arr, start, end, step)
+  }
+  override def IntLit(tree: Tree, value: Int) = tree match {
+    case t @ IntLit(value0) if value == value0 =>
+      t
+    case _ =>
+      super.IntLit(tree, value)
+  }
+  override def LongLit(tree: Tree, value: Long) = tree match {
+    case t @ LongLit(value0) if value == value0 =>
+      t
+    case _ =>
+      super.LongLit(tree, value)
+  }
+  override def FloatLit(tree: Tree, value: Float) = tree match {
+    case t @ FloatLit(value0) if value == value0 =>
+      t
+    case _ =>
+      super.FloatLit(tree, value)
+  }
+  override def DoubleLit(tree: Tree, value: Double) = tree match {
+    case t @ DoubleLit(value0) if value == value0 =>
+      t
+    case _ =>
+      super.DoubleLit(tree, value)
+  }
+  override def CharLit(tree: Tree, value: Char) = tree match {
+    case t @ CharLit(value0) if value == value0 =>
+      t
+    case _ =>
+      super.CharLit(tree, value)
+  }
+  override def StringLit(tree: Tree, value: String) = tree match {
+    case t @ StringLit(value0) if value eq value0 =>
+      t
+    case _ =>
+      super.StringLit(tree, value)
+  }
+  override def TrueLit(tree: Tree) = tree match {
+    case t @ TrueLit() =>
+      t
+    case _ =>
+      super.TrueLit(tree)
+  }
+  override def FalseLit(tree: Tree) = tree match {
+    case t @ FalseLit() =>
+      t
+    case _ =>
+      super.FalseLit(tree)
+  }
+  override def NullLit(tree: Tree) = tree match {
+    case t @ NullLit() =>
+      t
+    case _ =>
+      super.NullLit(tree)
+  }
+  override def ArrayLit(tree: Tree, value: List[ExprTree]) = tree match {
+    case t @ ArrayLit(value0) if value eq value0 =>
+      t
+    case _ =>
+      super.ArrayLit(tree, value)
+  }
+  override def ClassID(tree: Tree, name: String, templateTypes: List[TypeTree] = List()) = tree match {
+    case t @ ClassID(name0, templateTypes0) if (name eq name0) && (templateTypes eq templateTypes0) =>
+      t
+    case _ =>
+      super.ClassID(tree, name, templateTypes)
+  }
+  override def VariableID(tree: Tree, name: String) = tree match {
+    case t @ VariableID(name0) if name eq name0 =>
+      t
+    case _ =>
+      super.VariableID(tree, name)
+  }
+  override def MethodID(tree: Tree, name: String) = tree match {
+    case t @ MethodID(name0) if name eq name0 =>
+      t
+    case _ =>
+      super.MethodID(tree, name)
+  }
+  override def NormalAccess(tree: Tree, obj: ExprTree, application: ExprTree) = tree match {
+    case t @ NormalAccess(obj0, application0) if (obj eq obj0) && (application eq application0) =>
+      t
+    case _ =>
+      super.NormalAccess(tree, obj, application)
+  }
+  override def SafeAccess(tree: Tree, obj: ExprTree, application: ExprTree) = tree match {
+    case t @ SafeAccess(obj0, application0) if (obj eq obj0) && (application eq application0) =>
+      t
+    case _ =>
+      super.SafeAccess(tree, obj, application)
+  }
+  override def Assign(tree: Tree, to: Assignable, from: ExprTree) = tree match {
+    case t @ Assign(to0, from0) if (to eq to0) && (from eq from0) =>
+      t
+    case _ =>
+      super.Assign(tree, to, from)
+  }
+  override def MethodCall(tree: Tree, meth: MethodID, args: List[ExprTree]) = tree match {
+    case t @ MethodCall(meth0, args0) if (meth eq meth0) && (args eq args0) =>
+      t
+    case _ =>
+      super.MethodCall(tree, meth, args)
+  }
+  override def This(tree: Tree) = tree match {
+    case t @ This() =>
+      t
+    case _ =>
+      super.This(tree)
+  }
+  override def Super(tree: Tree, specifier: Option[ClassID]) = tree match {
+    case t @ Super(specifier0) if specifier eq specifier0 =>
+      t
+    case _ =>
+      super.Super(tree, specifier)
+  }
+  override def NewArray(tree: Tree, tpe: TypeTree, sizes: List[ExprTree]) = tree match {
+    case t @ NewArray(tpe0, sizes0) if (tpe eq tpe0) && (sizes eq sizes0) =>
+      t
+    case _ =>
+      super.NewArray(tree, tpe, sizes)
+  }
+  override def New(tree: Tree, tpe: TypeTree, args: List[ExprTree]) = tree match {
+    case t @ New(tpe0, args0) if (tpe eq tpe0) && (args eq args0) =>
+      t
+    case _ =>
+      super.New(tree, tpe, args)
+  }
+  override def Ternary(tree: Tree, condition: ExprTree, thn: ExprTree, els: ExprTree) = tree match {
+    case t @ Ternary(condition0, thn0, els0) if (condition eq condition0) && ((thn eq thn0) && (els eq els0)) =>
+      t
+    case _ =>
+      super.Ternary(tree, condition, thn, els)
+  }
+  override def Elvis(tree: Tree, nullableValue: ExprTree, ifNull: ExprTree) = tree match {
+    case t @ Elvis(nullableValue0, ifNull0) if (nullableValue eq nullableValue0) && (ifNull eq ifNull0) =>
+      t
+    case _ =>
+      super.Elvis(tree, nullableValue, ifNull)
+  }
+  override def Is(tree: Tree, expr: ExprTree, tpe: TypeTree) = tree match {
+    case t @ Is(expr0, tpe0) if (expr eq expr0) && (tpe eq tpe0) =>
+      t
+    case _ =>
+      super.Is(tree, expr, tpe)
+  }
+  override def As(tree: Tree, expr: ExprTree, tpe: TypeTree) = tree match {
+    case t @ As(expr0, tpe0) if (expr eq expr0) && (tpe eq tpe0) =>
+      t
+    case _ =>
+      super.As(tree, expr, tpe)
+  }
+  override def GeneratedExpr(tree: Tree, stats: List[StatTree]) = tree match {
+    case t @ GeneratedExpr(stats0) if stats eq stats0 =>
+      t
+    case _ =>
+      super.GeneratedExpr(tree, stats)
+  }
+  override def PutValue(tree: Tree, exprTree: ExprTree) = tree match {
+    case t @ PutValue(exprTree0) if exprTree eq exprTree0 =>
+      t
+    case _ =>
+      super.PutValue(tree, exprTree)
+  }
+  override def Empty(tree: Tree) = tree match {
+    case t @ Empty() =>
+      t
+    case _ =>
+      super.Empty(tree)
+  }
+}
+trait Traverser {
+  protected def _traverse(t: Tree): Unit = t match {
+    case _: Leaf =>
+    case CompilationUnit(pack, classes, imports) =>
+      _traverse(pack)
+      _traverse(classes)
+    case ClassDecl(id, parents, fields, methods) =>
+      _traverse(id)
+      _traverse(parents)
+      _traverse(fields)
+      _traverse(methods)
+    case TraitDecl(id, parents, fields, methods) =>
+      _traverse(id)
+      _traverse(parents)
+      _traverse(fields)
+      _traverse(methods)
+    case ExtensionDecl(tpe, methods) =>
+      _traverse(tpe)
+      _traverse(methods)
+    case MethodDecl(id, modifiers, args, retType, stat) =>
+      _traverse(id)
+      _traverse(modifiers)
+      _traverse(args)
+      _traverse(retType)
+      _traverse(stat)
+    case ConstructorDecl(id, modifiers, args, retType, stat) =>
+      _traverse(id)
+      _traverse(modifiers)
+      _traverse(args)
+      _traverse(retType)
+      _traverse(stat)
+    case OperatorDecl(operatorType, modifiers, args, retType, stat) =>
+      _traverse(operatorType)
+      _traverse(modifiers)
+      _traverse(args)
+      _traverse(retType)
+      _traverse(stat)
+    case Formal(tpe, id) =>
+      _traverse(tpe)
+      _traverse(id)
+    case VarDecl(id, tpe, initiation, modifiers) =>
+      _traverse(id)
+      _traverse(tpe)
+      _traverse(initiation)
+      _traverse(modifiers)
+    case Block(stats) =>
+      _traverse(stats)
+    case If(condition, thn, els) =>
+      _traverse(condition)
+      _traverse(thn)
+      _traverse(els)
+    case While(condition, stat) =>
+      _traverse(condition)
+      _traverse(stat)
+    case For(initiation, condition, post, stat) =>
+      _traverse(initiation)
+      _traverse(condition)
+      _traverse(post)
+      _traverse(stat)
+    case Foreach(varDecl, container, stat) =>
+      _traverse(varDecl)
+      _traverse(container)
+      _traverse(stat)
+    case Error(expr) =>
+      _traverse(expr)
+    case Return(expr) =>
+      _traverse(expr)
+    case Print(expr) =>
+      _traverse(expr)
+    case Println(expr) =>
+      _traverse(expr)
+    case ArrayType(tpe) =>
+      _traverse(tpe)
+    case NullableType(tpe) =>
+      _traverse(tpe)
+    case Plus(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Minus(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Times(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Div(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Modulo(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LogicAnd(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LogicOr(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LogicXor(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LeftShift(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case RightShift(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LessThan(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case LessThanEquals(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case GreaterThan(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case GreaterThanEquals(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Equals(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case NotEquals(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case And(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Or(lhs, rhs) =>
+      _traverse(lhs)
+      _traverse(rhs)
+    case Not(expr) =>
+      _traverse(expr)
+    case Hash(expr) =>
+      _traverse(expr)
+    case Negation(expr) =>
+      _traverse(expr)
+    case LogicNot(expr) =>
+      _traverse(expr)
+    case ExtractNullable(expr) =>
+      _traverse(expr)
+    case PreIncrement(expr) =>
+      _traverse(expr)
+    case PreDecrement(expr) =>
+      _traverse(expr)
+    case PostIncrement(expr) =>
+      _traverse(expr)
+    case PostDecrement(expr) =>
+      _traverse(expr)
+    case ArrayRead(arr, index) =>
+      _traverse(arr)
+      _traverse(index)
+    case ArraySlice(arr, start, end, step) =>
+      _traverse(arr)
+      _traverse(start)
+      _traverse(end)
+      _traverse(step)
+    case ArrayLit(value) =>
+      _traverse(value)
+    case ClassID(name, templateTypes) =>
+      _traverse(templateTypes)
+    case NormalAccess(obj, application) =>
+      _traverse(obj)
+      _traverse(application)
+    case SafeAccess(obj, application) =>
+      _traverse(obj)
+      _traverse(application)
+    case Assign(to, from) =>
+      _traverse(to)
+      _traverse(from)
+    case MethodCall(meth, args) =>
+      _traverse(meth)
+      _traverse(args)
+    case Super(specifier) =>
+      _traverse(specifier)
+    case NewArray(tpe, sizes) =>
+      _traverse(tpe)
+      _traverse(sizes)
+    case New(tpe, args) =>
+      _traverse(tpe)
+      _traverse(args)
+    case Ternary(condition, thn, els) =>
+      _traverse(condition)
+      _traverse(thn)
+      _traverse(els)
+    case Elvis(nullableValue, ifNull) =>
+      _traverse(nullableValue)
+      _traverse(ifNull)
+    case Is(expr, tpe) =>
+      _traverse(expr)
+      _traverse(tpe)
+    case As(expr, tpe) =>
+      _traverse(expr)
+      _traverse(tpe)
+    case GeneratedExpr(stats) =>
+      _traverse(stats)
+    case PutValue(exprTree) =>
+      _traverse(exprTree)
+  }
+  final def traverse(t: Tree): Unit = _traverse(t)
+  final def traverse(trees: Traversable[Tree]): Unit = _traverse(trees)
+  protected final def _traverse(op: Option[Tree]): Unit = op.foreach(_traverse)
+  protected final def _traverse(trees: Traversable[Tree]): Unit = trees.foreach(_traverse)
+}

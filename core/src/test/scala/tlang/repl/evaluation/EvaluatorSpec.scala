@@ -136,7 +136,7 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     )
 
     val saveAndPrintTransformer = mock[SaveAndPrintTransformer]
-    saveAndPrintTransformer.apply(adjustedCompilationUnit) returns saveAndPrintTransformed
+    saveAndPrintTransformer(adjustedCompilationUnit) returns saveAndPrintTransformed
 
     val compile = mock[(List[CompilationUnit]) => Unit]
 

@@ -13,11 +13,13 @@ import tlang.utils.{FileSource, Source}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class CompilerErrors extends CompilerIntegrationTestSpec with ParallelTestExecution {
+class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
   import CompilerIntegrationTestSuite._
 
   val ErrorResources = s"$Resources/errortests"
+
+  override def suiteName: String = "Compiler Errors"
 
 
   testFileForErrors(s"$ErrorResources/Lexing", Lexing)
@@ -74,6 +76,7 @@ class CompilerErrors extends CompilerIntegrationTestSpec with ParallelTestExecut
       val num = s"$lineNumber:"
       f"$num%-4s $msg"
     }
+
     val resStrings = asString(results)
     val solStrings = asString(solutions)
 

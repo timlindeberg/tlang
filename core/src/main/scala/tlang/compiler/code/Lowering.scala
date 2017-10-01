@@ -40,15 +40,12 @@ class Lowerer(imports: Imports) {
   private def firstPass(cu: CompilationUnit): CompilationUnit = {
     val transformer = new Trees.Transformer {
 
-      override protected def _transform(t: Tree): Tree = {
-        t match {
-          case opDecl: OperatorDecl         =>
-            replaceOperatorDecl(opDecl)
-          case extensionDecl: ExtensionDecl =>
-            desugarExtensionDecl(super._transform(extensionDecl))
-          case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
-          case _                            => super._transform(t)
-        }
+      def transformation: TreeTransformation = {
+        case opDecl: OperatorDecl         =>
+          replaceOperatorDecl(opDecl)
+        case extensionDecl: ExtensionDecl =>
+          desugarExtensionDecl(transformChildren(extensionDecl))
+        case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
       }
 
     }
@@ -58,16 +55,16 @@ class Lowerer(imports: Imports) {
   private def secondPass(cu: CompilationUnit): CompilationUnit = {
     val transformer = new Trees.Transformer {
 
-      override protected def _transform(t: Tree): Tree = t match {
+      def transformation: TreeTransformation = {
         case slice: ArraySlice if !isObject(slice)                          =>
-          super._transform(desugarArraySlice(super._transform(slice)))
+          transformChildren(desugarArraySlice(transformChildren(slice)))
         case incDec: IncrementDecrementTree if incDec.getType in Primitives =>
-          super._transform(desugarIncrementDecrement(incDec))
+          transformChildren(desugarIncrementDecrement(incDec))
         case safeAccess: SafeAccess                                         =>
           // Recurse again to replace all calls in the desugared version
-          super._transform(desugarSafeAccess(safeAccess))
+          transformChildren(desugarSafeAccess(safeAccess))
         case acc@NormalAccess(_, MethodCall(meth, _))                       =>
-          val newAcc = super._transform(acc)
+          val newAcc = transformChildren(acc)
           val classSymbol = meth.getSymbol.classSymbol
           classSymbol match {
             case _: ExtensionClassSymbol => replaceExtensionCall(newAcc)
@@ -80,17 +77,16 @@ class Lowerer(imports: Imports) {
               val expr = super.apply(assign.from)
               val newAssign = treeCopy.Assign(assign, to, expr)
               // Transform again to replace external method calls etc.
-              _transform(replaceOperatorCall(newAssign))
-            case _                                                      => super._transform(assign)
+              apply(replaceOperatorCall(newAssign))
+            case _                                                      => transformChildren(assign)
           }
         case op: OperatorTree                                               =>
-          replaceOperatorCall(super._transform(op)) match {
+          replaceOperatorCall(transformChildren(op)) match {
             case op: OperatorTree => op // Finished transform
-            case tree             => _transform(tree) // Transform again to replace external method calls etc.
+            case tree             => apply(tree) // Transform again to replace external method calls etc.
           }
-        case foreach: Foreach                                               => _transform(desugarForeach(foreach))
-        case elvis: Elvis                                                   => _transform(desugarElvisOp(elvis))
-        case _                                                              => super._transform(t)
+        case foreach: Foreach                                               => apply(desugarForeach(foreach))
+        case elvis: Elvis                                                   => apply(desugarElvisOp(elvis))
       }
     }
     transformer(cu)
@@ -139,7 +135,7 @@ class Lowerer(imports: Imports) {
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
-        override protected def _transform(t: Tree): Tree = t match {
+        def transformation: TreeTransformation = {
           case This()                                                      =>
             thisId
           case Access(obj, app)                                            =>
@@ -151,8 +147,6 @@ class Lowerer(imports: Imports) {
             treeCopy.NormalAccess(t, apply(obj), a)
           case v@VariableID(name) if v.getSymbol.isInstanceOf[FieldSymbol] =>
             NormalAccess(thisId, v).setType(v)
-          case _                                                           =>
-            super._transform(t)
         }
       }
       transformThis(stat)
@@ -511,7 +505,7 @@ class Lowerer(imports: Imports) {
 
     val arrReadType = containerId.getType.asInstanceOf[TArray].tpe
     val init = Some(ArrayRead(containerId, index).setType(arrReadType).setPos(varDecl))
-    val valInit = varDecl.copy(initation = init).setPos(stat)
+    val valInit = varDecl.copy(initiation = init).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol).setPos(varDecl)
     val stats = stat match {
       case Block(s) => Block(valInit :: s)
