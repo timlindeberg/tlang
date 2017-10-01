@@ -16,8 +16,9 @@ case object Empty extends TestPath
 
 object CompilerIntegrationTestSpec {
 
-  val IgnoredFiles: mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
-  val TestPaths   : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
+  val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
+  val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
+  val RootDirectory: String                        = File(".").pathAsString
 
 }
 
@@ -77,7 +78,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
   }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as
-  // much of the calculation as possible (at the time of writing around 600 times).
+  // much of the calculation as possible.
   private def getTestPath(path: String): TestPath = {
     TestPaths.getOrElseUpdate(path, {
       def testPaths(file: File): TestPath = {
@@ -85,7 +86,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
           return Empty
 
         if (file.isDirectory)
-          return TestDirectory(file.name, file.listRecursively.map(testPaths).filter(_ != Empty).toArray)
+          return TestDirectory(file.name, file.children.map(testPaths).filter(_ != Empty).toArray)
 
         if (!file.extension.contains(Constants.FileEnding))
           return Empty
@@ -101,7 +102,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
   // since it seems IntelliJs test runner cannot handle regex matches
   private def matchesTestPattern(path: String) = TestPattern match {
     case Some(pattern) =>
-      val formattedPath = path.dropWhile(!_.isUpper).replaceAll("\\\\", "/").toLowerCase
+      val formattedPath = path.stripPrefix(RootDirectory).dropWhile(!_.isUpper).replaceAll("\\\\", "/").toLowerCase
       val (longest, shortest) = if (pattern.length > formattedPath.length) (pattern, formattedPath) else (formattedPath, pattern)
       longest startsWith shortest
     case None          => true
