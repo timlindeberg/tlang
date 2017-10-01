@@ -681,53 +681,49 @@ object Trees {
     val copier: Copier = new LazyCopier()
 
     def transformation: TreeTransformation
-
     final def transformChildren(t: Tree): Tree = ??? // Filled by FillTreeHelpers macro
 
-    final def apply[T <: Tree](t: T): T = _transform(t).asInstanceOf[T]
+    final def apply[T <: Tree](t: T): T = transform(t)
 
-
-    final def transform[T <: Tree](list: List[T]): List[T] = _transform(list).asInstanceOf[List[T]]
-    final def transform[T <: Tree](set: Set[T]): Set[T] = _transform(set).asInstanceOf[Set[T]]
-    final def transform[T <: Tree](op: Option[T]): Option[T] = _transform(op).asInstanceOf[Option[T]]
-
-    final private def _transform(t: Tree): Tree = transformation.applyOrElse(t, transformChildren)
-    final private def _transform[T <: Tree](list: List[T]): List[Tree] = smartMap(list).asInstanceOf[List[Tree]]
-    final private def _transform[T <: Tree](set: Set[T]): Set[Tree] = smartMap(set).asInstanceOf[Set[Tree]]
-    final private def _transform[T <: Tree](op: Option[T]): Option[Tree] = op match {
-      case Some(t) =>
-        val x = _transform(t)
-        if (x eq t) op else Some(x)
-      case None    => None
-    }
+    final def transform[T <: Tree](t: T): T = transformation.applyOrElse(t, transformChildren).asInstanceOf[T]
+    final def transform[T <: Tree](list: List[T]): List[T] = lazyMap(list).asInstanceOf[List[T]]
+    final def transform[T <: Tree](set: Set[T]): Set[T] = lazyMap(set).asInstanceOf[Set[T]]
+    final def transform[T <: Tree](op: Option[T]): Option[T] = lazyMap(op).asInstanceOf[Option[T]]
 
     // This is used so we don't create new lists and sets when there is no change
     // to an element. This allows us to reuse larger parts of the tree and reduce allocation.
-    private def smartMap[T <: Tree](traversable: Traversable[T]): Traversable[Tree] = {
+    private def lazyMap(traversable: Traversable[Tree]): Traversable[Tree] = {
       var anyDifferent = false
       val newSet = traversable map { t =>
-        val x = _transform(t)
+        val x = transform(t)
         if (!(t eq x))
           anyDifferent = true
         x
       }
       if (anyDifferent) newSet else traversable
     }
+
+    private def lazyMap(op: Option[Tree]): Option[Tree] = op match {
+      case Some(t) =>
+        val x = transform(t)
+        if (x eq t) op else Some(x)
+      case None    => None
+    }
   }
 
-  class Copier
-  // Filled by FillTreeHelpers macro
+
+  class Copier // Filled by FillTreeHelpers macro
   class LazyCopier extends Copier // Filled by FillTreeHelpers macro
 
   trait Traverser {
 
     def traversal: TreeTraversal
+    final def traverseChildren(t: Tree): Unit = ??? // Filled by FillTreeHelpers macro
 
+    final def apply(tree: Tree): Unit = traverse(tree)
     final def traverse(t: Tree): Unit = traversal.applyOrElse(t, traverseChildren)
     final def traverse(op: Option[Tree]): Unit = op foreach traverse
     final def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse
-
-    final def traverseChildren(t: Tree): Unit = ??? // Filled by FillTreeHelpers macro
   }
 
 

@@ -1,18 +1,19 @@
 package tlang.utils
 
 import java.io.PrintWriter
-import java.nio.charset.Charset
-import java.nio.file.{Files, Paths}
 
 import scala.annotation.StaticAnnotation
-import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.meta._
 
 case class AST(name: Term.Name, params: Seq[Term.Param]) {
   def args: Seq[Term.Name] = params.map(p => Term.Name(p.name.value))
   def patTerms: Seq[Pat.Var.Term] = args.map(a => Pat.Var.Term(a))
+
+  val commonness: Int = -FillTreeHelpers.TreeStatistics.getOrElse(name.syntax, 0)
+
 }
+
 
 class FillTreeHelpers extends StaticAnnotation {
 
@@ -22,7 +23,6 @@ class FillTreeHelpers extends StaticAnnotation {
     defn match {
       case q"object Trees { ..$stats }" =>
         val asts = getASTs(stats)
-        val file = Paths.get("C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\tree.txt")
 
         val filledTrees = stats.map {
           case q"class Copier"                              =>
@@ -36,7 +36,8 @@ class FillTreeHelpers extends StaticAnnotation {
           case s                                            => s
         }
 
-        Files.write(file, filledTrees.map(_.syntax).toList.asJava, Charset.forName("UTF-8"))
+        //val file = Paths.get("C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\tree.txt")
+        //Files.write(file, filledTrees.map(_.syntax).toList.asJava, Charset.forName("UTF-8"))
 
         q"object Trees { ..$filledTrees }"
       case _                            =>
@@ -46,6 +47,99 @@ class FillTreeHelpers extends StaticAnnotation {
 }
 
 object FillTreeHelpers {
+
+  // Statistics taken from the test suite 2017-09-31
+  // Calculated by writing the name of the class to a file
+  // every time that class is selected in the traverser or transformer.
+  val TreeStatistics: Map[String, Int] = Map(
+    "VariableID" -> 20933,
+    "MethodCall" -> 11923,
+    "NormalAccess" -> 11542,
+    "MethodID" -> 8910,
+    "ClassID" -> 8230,
+    "IntLit" -> 4858,
+    "VarDecl" -> 3534,
+    "Println" -> 3153,
+    "Block" -> 3052,
+    "Assign" -> 2848,
+    "Private" -> 2677,
+    "Public" -> 2538,
+    "MethodDecl" -> 2529,
+    "Formal" -> 2452,
+    "ArrayRead" -> 2096,
+    "Return" -> 2051,
+    "Plus" -> 1969,
+    "StringLit" -> 1629,
+    "New" -> 1498,
+    "Empty" -> 1158,
+    "Final" -> 1073,
+    "Static" -> 950,
+    "If" -> 932,
+    "ArrayType" -> 830,
+    "Equals" -> 784,
+    "ClassDecl" -> 733,
+    "LessThan" -> 652,
+    "UnitType" -> 590,
+    "NotEquals" -> 528,
+    "CompilationUnit" -> 525,
+    "This" -> 517,
+    "Not" -> 495,
+    "ArrayLit" -> 425,
+    "NullableType" -> 409,
+    "Minus" -> 407,
+    "And" -> 400,
+    "Package" -> 378,
+    "Times" -> 357,
+    "For" -> 335,
+    "NullLit" -> 329,
+    "PutValue" -> 311,
+    "OperatorDecl" -> 293,
+    "GeneratedExpr" -> 285,
+    "Div" -> 283,
+    "PostIncrement" -> 273,
+    "NewArray" -> 260,
+    "Error" -> 254,
+    "ConstructorDecl" -> 236,
+    "While" -> 223,
+    "Foreach" -> 222,
+    "Ternary" -> 194,
+    "Hash" -> 187,
+    "GreaterThan" -> 184,
+    "GreaterThanEquals" -> 184,
+    "TrueLit" -> 180,
+    "Print" -> 173,
+    "FalseLit" -> 172,
+    "CharLit" -> 160,
+    "As" -> 159,
+    "LogicXor" -> 157,
+    "ArraySlice" -> 149,
+    "TraitDecl" -> 142,
+    "LessThanEquals" -> 124,
+    "Is" -> 123,
+    "RightShift" -> 117,
+    "LongLit" -> 107,
+    "Or" -> 106,
+    "ExtractNullable" -> 102,
+    "Modulo" -> 97,
+    "Elvis" -> 83,
+    "LeftShift" -> 80,
+    "SafeAccess" -> 70,
+    "FloatLit" -> 70,
+    "Super" -> 69,
+    "LogicAnd" -> 69,
+    "LogicOr" -> 59,
+    "DoubleLit" -> 54,
+    "PostDecrement" -> 50,
+    "Negation" -> 49,
+    "PreIncrement" -> 39,
+    "Continue" -> 37,
+    "Implicit" -> 37,
+    "PreDecrement" -> 30,
+    "Break" -> 27,
+    "Protected" -> 20,
+    "LogicNot" -> 17,
+    "ExtensionDecl" -> 9
+  )
 
   private val Primitives   = List("Int", "Long", "Float", "Double", "Char")
   private val IgnoredTypes = Primitives ::: List("String", "List[String]", "Imports")
@@ -85,15 +179,17 @@ object FillTreeHelpers {
 
   def fillTransformer(transformerStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = transformerStats map {
     case q"final def transformChildren(t: Tree): Tree = ???" =>
-      val cases = asts map { case ast@AST(name, params) =>
-        val transforms = params.map { param =>
-          val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
-          val name = Term.Name(param.name.value)
-          if (IgnoredTypes.contains(tpe)) name else q"_transform($name).asInstanceOf[${ Type.Name(tpe) }]"
+      val cases = asts
+        .sortBy(_.commonness)
+        .map { case ast@AST(name, params) =>
+          val transforms = params.map { param =>
+            val tpe = param.decltpe.map(_.syntax).getOrElse("Any")
+            val name = Term.Name(param.name.value)
+            if (IgnoredTypes.contains(tpe)) name else q"transform($name)"
+          }
+          p"case $name(..${ ast.patTerms }) => copier.$name(t, ..$transforms)"
         }
 
-        p"case $name(..${ ast.patTerms }) => copier.$name(t, ..$transforms)"
-      }
       q"""
          final def transformChildren(t: Tree): Tree = t match {
             ..case $cases
@@ -105,17 +201,16 @@ object FillTreeHelpers {
   def fillTraverser(traverserStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = traverserStats map {
     case q"final def traverseChildren(t: Tree): Unit = ???" =>
       val cases = asts
+        .sortBy(_.commonness)
         .map { case ast@AST(_, params) =>
           val traverses = params
-            .filter { p =>
-              val tpe = p.decltpe.map(_.syntax).getOrElse("")
-              !IgnoredTypes.contains(tpe)
-            }
-            .map { p => q"traverse(${ Term.Name(p.name.value) })" }
+            .filter { param => !IgnoredTypes.contains(param.decltpe.map(_.syntax).getOrElse("")) }
+            .map { param => q"traverse(${ Term.Name(param.name.value) })" }
           (ast, traverses)
         }
         .filter { case (_, traverses) => traverses.nonEmpty }
         .map { case (ast@AST(name, _), traverses) => p"case $name(..${ ast.patTerms }) => { ..$traverses }" }
+
       q"""
           final def traverseChildren(t: Tree): Unit = t match {
              case _: Leaf =>

@@ -41,10 +41,8 @@ class Lowerer(imports: Imports) {
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
-        case opDecl: OperatorDecl         =>
-          replaceOperatorDecl(opDecl)
-        case extensionDecl: ExtensionDecl =>
-          desugarExtensionDecl(transformChildren(extensionDecl))
+        case opDecl: OperatorDecl         => replaceOperatorDecl(opDecl)
+        case extensionDecl: ExtensionDecl => desugarExtensionDecl(transformChildren(extensionDecl))
         case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
       }
 
