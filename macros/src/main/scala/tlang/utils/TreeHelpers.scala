@@ -7,10 +7,10 @@ import scala.collection.immutable.Seq
 import scala.meta._
 
 case class AST(name: Term.Name, params: Seq[Term.Param]) {
-  def args: Seq[Term.Name] = params.map(p => Term.Name(p.name.value))
-  def patTerms: Seq[Pat.Var.Term] = args.map(a => Pat.Var.Term(a))
 
-  val commonness: Int = -FillTreeHelpers.TreeStatistics.getOrElse(name.syntax, 0)
+  val args      : Seq[Term.Name]    = params.map(p => Term.Name(p.name.value))
+  val patTerms  : Seq[Pat.Var.Term] = args.map(a => Pat.Var.Term(a))
+  val commonness: Int               = -FillTreeHelpers.TreeStatistics.getOrElse(name.syntax, 0)
 
 }
 

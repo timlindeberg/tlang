@@ -17,7 +17,7 @@ import tlang.repl.actors.ReplActor
 import tlang.repl.actors.ReplActor.{StartRepl, StopRepl}
 import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
-import tlang.repl.terminal.{ReplTerminal, TerminalFactory}
+import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
 import tlang.utils.ProgramExecutor
 
 
@@ -79,8 +79,9 @@ object Main {
     val messageFormatter = MessageFormatter(formatter)
 
     val terminal = TerminalFactory.createTerminal()
-    val replTerminal = ReplTerminal(terminal, 500L, formatting)
-    replTerminal.enableMouseReporting(true)
+    val keyConverter = KeyConverter(500L)
+    val replTerminal = ReplTerminal(terminal, keyConverter, formatting)
+    replTerminal.enableMouseReporting = true
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize)
@@ -92,10 +93,10 @@ object Main {
       ReplActor.name)
 
     terminal.addResizeListener((_, newSize) => {
-      if (formatting.lineWidth != newSize.getColumns) {
-        val oldWidth = formatting.lineWidth
-        formatting.lineWidth = newSize.getColumns
-        repl ! Resize(oldWidth, newSize.getColumns)
+      val width = newSize.getColumns
+      if (formatting.lineWidth != width) {
+        formatting.lineWidth = width
+        repl ! Resize(width)
       }
     })
 

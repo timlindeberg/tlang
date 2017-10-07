@@ -46,7 +46,6 @@ object Trees {
         case (to: Typed, from: Typed) => to.setType(from.getType)
       }
       this
-
     }
 
     // For easier debugging
@@ -549,7 +548,7 @@ object Trees {
     }
 
     // The type of the identifier depends on the type of the symbol
-    override def setType(tpe: Type): Identifier.this.type = {
+    override def setType(tpe: Type): this.type = {
       if (hasSymbol)
         getSymbol.setType(tpe)
       this

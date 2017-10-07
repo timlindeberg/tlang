@@ -147,7 +147,6 @@ object Main {
   }
 
   private def createContext(options: Options, formatter: Formatter): Context = {
-
     val messageFormatter = MessageFormatter(formatter, options(MessageContextFlag))
     val messages = CompilerMessages(
       formatter,

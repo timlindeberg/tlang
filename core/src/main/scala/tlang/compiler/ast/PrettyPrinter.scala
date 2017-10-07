@@ -185,7 +185,7 @@ case class PrettyPrinter(formatting: Formatting) {
         case Public()    => pp"Def"
         case Protected() => pp"def protected"
       }
-      case None         => "<MISSING ACCESSABILITY>"
+      case None         => "<def>"
     }
 
     decl + mods(modifiers)
@@ -202,7 +202,7 @@ case class PrettyPrinter(formatting: Formatting) {
         case Protected() if isFinal => pp"val protected"
         case Protected()            => pp"var protected"
       }
-      case None         => "<MISSING ACCESSABILITY>"
+      case None         => "<def>"
     }
 
     decl + mods(modifiers)

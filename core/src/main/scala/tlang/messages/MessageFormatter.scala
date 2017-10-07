@@ -13,10 +13,9 @@ case class MessageFormatter(
 
   var lines: IndexedSeq[String] = IndexedSeq()
 
-  // This is lazy so that the class can be mocked
-  private lazy val formatting               = formatter.formatting
-  private      val TabSpaces                = " " * tabWidth
-  private      var message: CompilerMessage = _
+  private val formatting               = formatter.formatting
+  private val TabSpaces                = " " * tabWidth
+  private var message: CompilerMessage = _
 
 
   def setMessage(message: CompilerMessage): Unit = {
@@ -30,7 +29,6 @@ case class MessageFormatter(
   def hasValidPosition: Boolean = position.source.nonEmpty && (position.line in (1 to lines.size))
 
   def color: Color = message.messageType.color(formatting) + formatting.Bold
-
   def position: Positioned = message.pos
 
   def prefix: String = color(message.messageType.name + " " + message.code)

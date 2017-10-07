@@ -8,10 +8,12 @@ import com.googlecode.lanterna.terminal.Terminal
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.{SGR, TerminalPosition}
 import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
-import tlang.formatting.grid.Grid
 import tlang.formatting.{Colors, Formatting}
+import tlang.repl.OutputBox.{TabWidth, XIndent, YIndent}
 import tlang.repl._
+import tlang.repl.input.InputBuffer
 import tlang.utils.Extensions._
+
 
 object ReplTerminal {
 
@@ -20,23 +22,24 @@ object ReplTerminal {
 
 }
 
-case class ReplTerminal(term: Terminal, doubleClickTime: Long, formatting: Formatting) {
+case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: Formatting) {
 
   import ReplTerminal._
 
-  private var _isCursorVisible = true
-
+  private var _isCursorVisible      = true
   private var _enableMouseReporting = false
-  var boxStartPosition  : TerminalPosition = term.getCursorPosition
-  var boxHeight         : Int              = 0
-  var lastMouseClickTime: Long             = 0
-  var numClicks         : Int              = 1
+  private var _width: Int           = formatting.lineWidth
+
+  var boxStartPosition : TerminalPosition = cursorPosition
+  var boxHeight        : Int              = 0
+  var previousBoxHeight: Int              = 0
+
 
   def close(): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
     }
-    enableMouseReporting(false)
+    enableMouseReporting = false
     term.close()
   }
 
@@ -49,21 +52,97 @@ case class ReplTerminal(term: Terminal, doubleClickTime: Long, formatting: Forma
     }
   }
 
-  def putBox(grid: Grid, resetStartPosition: Boolean): Unit = {
-    term.setCursorPosition(boxStartPosition)
+  def newBox(outputBox: OutputBox): Unit = {
+    putBox(outputBox)
+    boxStartPosition = cursorPosition
+    cursorPosition = getCursorsPositionWithinBox()
+  }
 
-    boxHeight = put(grid.render() + NL)
+  def updateBox(outputBox: OutputBox): Unit = {
+    val cursorPos = cursorPosition
+    putBox(outputBox)
+    cursorPosition = cursorPos
+  }
 
-    val newCursorPosition = term.getCursorPosition
+  def updateCursor(inputBuffer: InputBuffer): Unit = {
+    val cursor = inputBuffer.mainCursor
+    val currentLine = inputBuffer.currentLine
+    val tabsBeforeCursor = currentLine.take(cursor.x).count(_ == '\t')
+    val lineLength = currentLine.length
 
-    boxStartPosition = if (resetStartPosition)
-      newCursorPosition.withRelativeRow(-boxHeight).withColumn(0)
-    else
-      newCursorPosition
+    val xOffset = cursor.x + (TabWidth - 1) * tabsBeforeCursor
+    val yOffset = cursor.y
+    cursorPosition = getCursorsPositionWithinBox(xOffset, yOffset)
+
+    // To make room for truncation
+    val boxSpace = formatting.lineWidth - 2 * XIndent
+    val end = if (lineLength > boxSpace) boxSpace - 3 else boxSpace
+    val isCursorInsideBox = cursor.x <= end
+    isCursorVisible = isCursorInsideBox
+  }
+
+  def width: Int = _width
+  def width_=(newWidth: Int): Unit = {
+    if (_width > newWidth) {
+      cursorPosition = boxStartPosition.withRelativeRow(-boxHeight)
+      clearScreenFromCursorPosition()
+    }
+    _width = newWidth
+  }
+
+  def clearScreenFromCursorPosition(): Unit = {
+    print("\u001b[0J")
+    System.out.flush()
+  }
+
+  def readInput(): Key = {
+    var key: Option[Key] = None
+    while (key.isEmpty) {
+      key = term.readInput() match {
+        case m: MouseAction => keyConverter.convertMouseEvent(m, boxStartPosition, formatting.lineWidth, boxHeight)
+        case key            => keyConverter.convertKey(key)
+      }
+    }
+    key.get
+  }
+
+  def cursorPosition: TerminalPosition = term.getCursorPosition
+  def cursorPosition_=(pos: TerminalPosition): Unit = term.setCursorPosition(pos)
+
+  def isCursorVisible: Boolean = _isCursorVisible
+  def isCursorVisible_=(visible: Boolean): Unit = {
+    if (visible == _isCursorVisible)
+      return
+
+    _isCursorVisible = visible
+    term.setCursorVisible(visible)
   }
 
 
-  def put(str: String): Int = {
+  def enableMouseReporting: Boolean = _enableMouseReporting
+  def enableMouseReporting_=(enable: Boolean): Unit = {
+    if (_enableMouseReporting == enable)
+      return
+
+    val c = if (enable) "h" else "l"
+    print(MouseReportingDragClick + c)
+    print(MouseReportingDecimals + c)
+
+    _enableMouseReporting = enable
+  }
+
+  private def putBox(outputBox: OutputBox): Unit = {
+    cursorPosition = boxStartPosition
+
+    boxHeight = put(outputBox.render())
+
+    if (previousBoxHeight - boxHeight > 0)
+      clearScreenFromCursorPosition()
+
+    previousBoxHeight = boxHeight
+  }
+
+  private def put(str: String): Int = {
     var y = 0
     var i = 0
 
@@ -85,116 +164,12 @@ case class ReplTerminal(term: Terminal, doubleClickTime: Long, formatting: Forma
     y
   }
 
-  def clearScreenFromCursorPosition(): Unit = println("\u001b[0J")
-
-  def clearPreviousDrawing(): Unit = {
-    setCursorPosition(boxStartPosition.withRelativeRow(-boxHeight))
-    clearScreenFromCursorPosition()
+  private def getCursorsPositionWithinBox(xOffset: Int = 0, yOffset: Int = 0) = {
+    boxStartPosition
+      .withRelativeColumn(XIndent + xOffset)
+      .withRelativeRow(YIndent + yOffset)
   }
 
-  def readInput(): Key = {
-    var key: Option[Key] = None
-    while (key.isEmpty)
-      key = convertKey(term.readInput())
-
-    key.get
-  }
-
-  def getCursorPosition: TerminalPosition = term.getCursorPosition
-  def setCursorPosition(pos: TerminalPosition): Unit = term.setCursorPosition(pos)
-  def isCursorVisible_=(visible: Boolean): Unit = {
-    if (visible == _isCursorVisible)
-      return
-
-    _isCursorVisible = visible
-    term.setCursorVisible(visible)
-  }
-
-  def isCursorVisible: Boolean = _isCursorVisible
-
-  def enableMouseReporting(enable: Boolean): Unit = {
-    if (_enableMouseReporting == enable)
-      return
-
-    val c = if (enable) "h" else "l"
-    print(MouseReportingDragClick + c)
-    print(MouseReportingDecimals + c)
-
-    _enableMouseReporting = enable
-  }
-
-
-  private def convertKey(key: KeyStroke): Option[Key] = {
-    key ifInstanceOf[MouseAction] { mouseAction =>
-      return convertMouseEvent(mouseAction)
-    }
-
-    val ctrl = Ctrl(key.isCtrlDown)
-    val alt = Alt(key.isAltDown)
-    val shift = Shift(key.isShiftDown)
-
-    val k = key.getKeyType match {
-      case KeyType.Character  => CharacterKey(key.getCharacter, ctrl, alt, shift)
-      case KeyType.Enter      => CharacterKey('\n', ctrl, alt, shift)
-      case KeyType.Tab        => CharacterKey('\t', ctrl, alt, shift)
-      case KeyType.ArrowUp    => ArrowKey(Direction.Up, ctrl, alt, shift)
-      case KeyType.ArrowDown  => ArrowKey(Direction.Down, ctrl, alt, shift)
-      case KeyType.ArrowLeft  => ArrowKey(Direction.Left, ctrl, alt, shift)
-      case KeyType.ArrowRight => ArrowKey(Direction.Right, ctrl, alt, shift)
-      case _                  => OtherKey(key.getKeyType, ctrl, alt, shift)
-    }
-    Some(k)
-  }
-
-  private def convertMouseEvent(mouseAction: MouseAction): Option[Key] = {
-    val actionType = mouseAction.getActionType
-
-    // We don't care about the move and release events for now
-    if (mouseAction.getActionType in Seq(MouseActionType.MOVE, MouseActionType.CLICK_RELEASE))
-      return None
-
-    if (actionType == MouseActionType.SCROLL_DOWN)
-      return Some(ArrowKey(Direction.Down, Ctrl(false), Alt(false), Shift(false)))
-
-    if (actionType == MouseActionType.SCROLL_UP)
-      return Some(ArrowKey(Direction.Up, Ctrl(false), Alt(false), Shift(false)))
-
-    // Only support left click. CLICK_RELEASE always has button == 0.
-    val button = mouseAction.getButton
-    if ((actionType in Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG)) && button != 1)
-      return None
-
-
-    val startOfBuffer = boxStartPosition
-      .withRelativeRow(OutputBox.YIndent)
-      .withRelativeColumn(OutputBox.XIndent)
-
-    val width = 1 + formatting.lineWidth - OutputBox.XIndent * 2
-    val height = boxHeight - (OutputBox.YIndent + 1)
-
-    val mousePos = mouseAction.getPosition
-    val x = mousePos.getColumn - startOfBuffer.getColumn
-    val y = mousePos.getRow - startOfBuffer.getRow
-
-    mouseAction.getActionType match {
-      case MouseActionType.CLICK_DOWN =>
-        if ((x notIn (0 until width)) || (y notIn (0 until height)))
-          return None
-
-        val time = System.currentTimeMillis()
-
-        if (time - lastMouseClickTime < doubleClickTime)
-          numClicks += 1
-        else
-          numClicks = 1
-
-        lastMouseClickTime = time
-        Some(MouseClick(x, y, numClicks))
-      case MouseActionType.DRAG       =>
-        Some(MouseDrag(x.clamp(0, width - 1), y.clamp(0, height - 1)))
-      case _                          => ???
-    }
-  }
 
   private def applyColor(color: Color): Unit = {
     if (color == NoColor) {

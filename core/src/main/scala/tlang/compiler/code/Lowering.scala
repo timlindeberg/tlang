@@ -206,7 +206,7 @@ class Lowerer(imports: Imports) {
       } else {
         val modifiers = methSym.modifiers + Static()
         val newMethSymbol = new MethodSymbol(methSym.name, classSym, None, modifiers).setType(methSym)
-        val originalClass = extSymbol.extendedType.get
+        val originalClass = extSymbol.getExtendedType
         val newArg = new VariableSymbol(ThisName).setType(originalClass)
         newMethSymbol.argList = newArg :: methSym.argList
         val methId = MethodID(meth.name).setSymbol(newMethSymbol)

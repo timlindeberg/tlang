@@ -4,6 +4,7 @@ import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.KeyType
 import tlang.formatting.Formatter
 import tlang.messages.MessageFormatter
+import tlang.repl.OutputBox
 import tlang.repl.actors.EvaluationActor._
 import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, RenderingMessage}
 import tlang.repl.evaluation.{Evaluator, ReplState}
@@ -59,9 +60,15 @@ class ReplActor(
   private val LoadingInterval = formatter.formatting.spinner.frameTime.length
 
   private val renderer    =
-    context.actorOf(RenderingActor.props(formatter, errorFormatter, terminal, MaxOutputLines), RenderingActor.name)
+    context.actorOf(
+      RenderingActor.props(formatter, terminal, OutputBox(formatter, errorFormatter, MaxOutputLines)),
+      RenderingActor.name
+    )
   private val replProgram =
-    context.actorOf(EvaluationActor.props(replState, evaluator, formatter), EvaluationActor.name)
+    context.actorOf(
+      EvaluationActor.props(replState, evaluator, formatter),
+      EvaluationActor.name
+    )
 
   private var state: ExecutionState = Normal
 

@@ -176,10 +176,10 @@ object Symbols {
   }
 
   class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name) {
-    var extendedType: Option[Type] = None
+    private var _extendedType: Option[Type] = None
 
-    def setExtendedType(tpe: Type): Unit = extendedType = Some(tpe)
-    def getExtendedType: Type = extendedType.get
+    def setExtendedType(tpe: Type): Unit = _extendedType = Some(tpe)
+    def getExtendedType: Type = _extendedType.get
 
     override def lookupField(name: String): Option[FieldSymbol] = {
       classSymbol.flatMap(_.lookupField(name))
@@ -193,9 +193,8 @@ object Symbols {
       super.lookupOperator(operatorType, args, imports, exactTypes).
         orElse(classSymbol.flatMap(_.lookupOperator(operatorType, args, imports, exactTypes)))
 
-    private def classSymbol: Option[ClassSymbol] = extendedType flatMap {
-      case TObject(classSymbol) => Some(classSymbol)
-      case _                    => None
+    private def classSymbol: Option[ClassSymbol] = _extendedType collect {
+      case TObject(classSymbol) => classSymbol
     }
 
   }
