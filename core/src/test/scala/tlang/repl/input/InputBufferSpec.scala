@@ -7,10 +7,12 @@ import tlang.utils.Position
 class InputBufferSpec extends UnitSpec {
 
 
+  val TabWidth = 4
+
   behavior of "An inputbuffer"
 
   it should "add one character" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add('A')
       .add('B')
       .add('C')
@@ -23,7 +25,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "add multiple characters" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add("ABCD")
       .add(NL)
       .add("EFGH")
@@ -36,7 +38,7 @@ class InputBufferSpec extends UnitSpec {
       """|ABC
          |D
          |EFGHIJK
-         |LMN""".stripMargin)
+         |LMN""".stripMargin, TabWidth)
       .add('1')
       .toString shouldBe
       """|1ABC
@@ -46,7 +48,7 @@ class InputBufferSpec extends UnitSpec {
   }
 
   it should "handle moving the cursor left and right" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add("ABCDE")
       .moveCursorHorizontal(-1)
       .add('1')
@@ -79,7 +81,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "handle moving the cursor up and down" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add(
         """|ABC
            |D
@@ -128,7 +130,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "handle cursor navigation with large movements" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add("abc \tdefgh    ijk lmn")
       .moveCursorToRightWord() // Shouldn't move the cursor
       .moveCursorToLeftWord()
@@ -169,7 +171,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "handle secondary cursor navigation" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add(
         """|ABC
            |D
@@ -219,7 +221,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "remove the selected text when adding a character" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add(
         """|ABC
            |D
@@ -236,7 +238,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "handle adding a character to the end, start and middle of a buffer" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add(
         """|ABC
            |D
@@ -258,7 +260,7 @@ class InputBufferSpec extends UnitSpec {
 
 
   it should "handle removing a character at the cursor position" in {
-    InputBuffer.Empty
+    InputBuffer(TabWidth)
       .add(
         """|ABC
            |D
@@ -289,8 +291,7 @@ class InputBufferSpec extends UnitSpec {
       """|ABC
          |D
          |EFGHIJK
-         |LMN""".stripMargin
-    )
+         |LMN""".stripMargin, TabWidth)
       .moveCursorHorizontal(1, moveSecondary = false)
       .removeSelected()
       .moveCursorVertical(-2, moveSecondary = false)
@@ -310,8 +311,7 @@ class InputBufferSpec extends UnitSpec {
       """|ABC
          |D
          |EFGHIJK
-         |LMN""".stripMargin
-    )
+         |LMN""".stripMargin, TabWidth)
       .moveCursor(6)
       .add('1')
       .moveCursor(5, 2)
@@ -330,36 +330,28 @@ class InputBufferSpec extends UnitSpec {
     InputBuffer(
       """|AB CDE FG
          |HIJKL MNOPQR
-         |STU""".stripMargin
-    )
-
+         |STU""".stripMargin, TabWidth)
       .selectCurrentLine()
       .use { buffer =>
         buffer.selected shouldBe s"AB CDE FG"
 
-        buffer.secondaryCursor.x shouldBe 0
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 9
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(0, 0)
+        buffer.mainCursor.xy shouldBe(9, 0)
       }
       .moveCursorVertical(-1)
       .selectCurrentLine(selectNewLine = true)
       .use { buffer =>
         buffer.selected shouldBe s"HIJKL MNOPQR$NL"
 
-        buffer.secondaryCursor.x shouldBe 0
-        buffer.secondaryCursor.y shouldBe 1
-        buffer.mainCursor.x shouldBe 0
-        buffer.mainCursor.y shouldBe 2
+        buffer.secondaryCursor.xy shouldBe(0, 1)
+        buffer.mainCursor.xy shouldBe(0, 2)
       }
       .selectCurrentLine()
       .use { buffer =>
         buffer.selected shouldBe "STU"
 
-        buffer.secondaryCursor.x shouldBe 0
-        buffer.secondaryCursor.y shouldBe 2
-        buffer.mainCursor.x shouldBe 3
-        buffer.mainCursor.y shouldBe 2
+        buffer.secondaryCursor.xy shouldBe(0, 2)
+        buffer.mainCursor.xy shouldBe(3, 2)
       }
   }
 
@@ -367,87 +359,250 @@ class InputBufferSpec extends UnitSpec {
     InputBuffer(
       """|AB CDE FG
          |HIJ   MNOPQR
-         |STU(abc)""".stripMargin
-    )
+         |STU(abc)""".stripMargin, TabWidth)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe s"AB"
 
-        buffer.secondaryCursor.x shouldBe 0
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 2
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(0, 0)
+        buffer.mainCursor.xy shouldBe(2, 0)
       }
       .moveCursorHorizontal(1)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe s"CDE"
 
-        buffer.secondaryCursor.x shouldBe 3
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 6
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(3, 0)
+        buffer.mainCursor.xy shouldBe(6, 0)
       }
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe s"CDE"
 
-        buffer.secondaryCursor.x shouldBe 3
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 6
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(3, 0)
+        buffer.mainCursor.xy shouldBe(6, 0)
       }
       .moveCursorHorizontal(-1)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe s"CDE"
 
-        buffer.secondaryCursor.x shouldBe 3
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 6
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(3, 0)
+        buffer.mainCursor.xy shouldBe(6, 0)
       }
       .moveCursorHorizontal(-2)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe s"CDE"
 
-        buffer.secondaryCursor.x shouldBe 3
-        buffer.secondaryCursor.y shouldBe 0
-        buffer.mainCursor.x shouldBe 6
-        buffer.mainCursor.y shouldBe 0
+        buffer.secondaryCursor.xy shouldBe(3, 0)
+        buffer.mainCursor.xy shouldBe(6, 0)
       }
       .moveCursorVertical(-1)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe "MNOPQR"
 
-        buffer.secondaryCursor.x shouldBe 6
-        buffer.secondaryCursor.y shouldBe 1
-        buffer.mainCursor.x shouldBe 12
-        buffer.mainCursor.y shouldBe 1
+        buffer.secondaryCursor.xy shouldBe(6, 1)
+        buffer.mainCursor.xy shouldBe(12, 1)
       }
       .moveCursorHorizontal(-8)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe ""
 
-        buffer.secondaryCursor.x shouldBe 4
-        buffer.secondaryCursor.y shouldBe 1
-        buffer.mainCursor.x shouldBe 4
-        buffer.mainCursor.y shouldBe 1
+        buffer.secondaryCursor.xy shouldBe(4, 1)
+        buffer.mainCursor.xy shouldBe(4, 1)
       }
       .moveCursorVertical(-1)
       .selectCurrentWord()
       .use { buffer =>
         buffer.selected shouldBe "abc"
 
-        buffer.secondaryCursor.x shouldBe 4
-        buffer.secondaryCursor.y shouldBe 2
-        buffer.mainCursor.x shouldBe 7
-        buffer.mainCursor.y shouldBe 2
+        buffer.secondaryCursor.xy shouldBe(4, 2)
+        buffer.mainCursor.xy shouldBe(7, 2)
       }
 
+  }
+
+  it should "compensate for tab characters" in {
+    test("Tab width 4") {
+      InputBuffer(
+        s"""|\tABCDEFGHIJ
+            |\t\t\tKL""".stripMargin, TabWidth)
+
+        // Cursor before tab
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(0, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(0, 0) }
+
+        // Cursor before A
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(4, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(4, 0) }
+
+        // Cursor before B
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(4, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(5, 0) }
+
+        // Cursor before C
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(8, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(6, 0) }
+
+        // Cursor before D
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(8, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(7, 0) }
+
+        // Cursor before E
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(8, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(8, 0) }
+
+        // Cursor before F
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(8, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(9, 0) }
+
+        // Cursor before G
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(12, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(10, 0) }
+
+        // Cursor before H
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(12, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(11, 0) }
+
+        // Cursor before I
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(12, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(12, 0) }
+
+        // Cursor before J
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(13, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(13, 0) }
+
+        // Cursor after J
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(14, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(14, 0) }
+    }
+
+    test("Tab width 3") {
+      InputBuffer(
+        s"""|\tABCDEFGHIJ
+            |\t\t\tKL""".stripMargin, tabWidth = 3)
+
+        // Cursor before tab
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(0, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(0, 0) }
+
+        // Cursor before A
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(3, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(3, 0) }
+
+        // Cursor before B
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(3, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(4, 0) }
+
+        // Cursor before C
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(6, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(5, 0) }
+
+        // Cursor before D
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(6, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(6, 0) }
+
+        // Cursor before E
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(6, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(7, 0) }
+
+        // Cursor before F
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(9, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(8, 0) }
+
+        // Cursor before G
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(9, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(9, 0) }
+
+        // Cursor before H
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(10, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(10, 0) }
+
+        // Cursor before I
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(11, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(11, 0) }
+
+        // Cursor before J
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(11, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(12, 0) }
+
+        // Cursor after J
+        .moveCursorHorizontal(1)
+        .moveCursorVertical(-1)
+        .use { _.mainCursor.xy shouldBe(11, 1) }
+        .moveCursorVertical(1)
+        .use { _.mainCursor.xy shouldBe(13, 0) }
+    }
   }
 
 }

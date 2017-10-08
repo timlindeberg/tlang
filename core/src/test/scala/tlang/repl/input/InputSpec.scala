@@ -574,7 +574,7 @@ class InputSpec extends UnitSpec {
   }
 
   private def createInput(file: File = memoryFile()._2, clipboard: Clipboard = mock[Clipboard], maxHistorySize: Int = DefaultMaxHistory) = {
-    Input(file, clipboard, maxHistorySize)
+    Input(file, clipboard, maxHistorySize, 4)
   }
 
 }

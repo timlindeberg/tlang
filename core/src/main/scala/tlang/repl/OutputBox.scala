@@ -2,32 +2,31 @@ package tlang.repl
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.grid.TruncatedColumn
-import tlang.formatting.textformatters.Marking
+import tlang.formatting.textformatters.{Marking, TabReplacer}
 import tlang.formatting.{Formatter, Spinner}
 import tlang.messages.{CompilerMessage, MessageFormatter}
 import tlang.repl.input.InputBuffer
 import tlang.utils.Extensions._
-import tlang.utils.{Position, Positioned}
 
 import scala.concurrent.duration.FiniteDuration
 
 
 case class RenderState(
   input: String = "",
-  renderedText: String = "",
+  highlightedInput: String = "",
   header: String = "",
   content: Seq[Seq[String]] = Seq()
-)
+) {
+  def contentAsString: String = content.flatMap(_.mkString).mkString
+}
 
 object OutputBox {
 
   val YIndent           = 3
   val XIndent           = 2
-  val TabWidth          = 3
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
-  private val TabReplacement = " " * TabWidth
 
-  def apply(formatter: Formatter, errorFormatter: MessageFormatter, maxOutputLines: Int): OutputBox = {
+  def apply(formatter: Formatter, tabReplacer: TabReplacer, errorFormatter: MessageFormatter, maxOutputLines: Int): OutputBox = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -37,6 +36,7 @@ object OutputBox {
     new OutputBox(
       formatter,
       errorFormatter,
+      tabReplacer,
       maxOutputLines,
       renderState,
       formatting.spinner
@@ -48,6 +48,7 @@ object OutputBox {
 case class OutputBox private(
   formatter: Formatter,
   errorFormatter: MessageFormatter,
+  tabReplacer: TabReplacer,
   maxOutputLines: Int,
   renderState: RenderState,
   spinner: Spinner
@@ -105,11 +106,13 @@ case class OutputBox private(
     val input = inputBuffer.toString
 
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
-    val (replacedTabs, adjustedPos) = replaceTabs(text, inputBuffer.selectedPosition)
+    // Selected position is already adjusted for tabs so we can just replace it like normal.
+    val replacedTabs = text.replaceAll("\t", " " * tabReplacer.tabWidth)
 
-    val renderedText = formatter.syntaxHighlight(replacedTabs, Marking(adjustedPos, MarkColor, isAdditive = true))
+    val selectionMarking = Marking(inputBuffer.selectedPosition, MarkColor, isAdditive = true)
+    val highlightedInput = formatter.syntaxHighlight(replacedTabs, selectionMarking)
     copy(
-      renderState = renderState.copy(input = input, renderedText = renderedText)
+      renderState = renderState.copy(input = input, highlightedInput = highlightedInput)
     )
   }
 
@@ -120,10 +123,10 @@ case class OutputBox private(
     val header = ErrorColor("Error")
 
     val errorPositions = errors.map(_.pos)
-    val (replacedTabs, adjustedPositions) = replaceTabs(renderState.input, errorPositions)
+    val (replacedTabs, adjustedPositions) = tabReplacer(renderState.input, errorPositions)
 
     val markings = adjustedPositions.map { pos => Marking(pos, Bold + Underline + Red) }
-    val renderedText = formatter.syntaxHighlight(replacedTabs, markings)
+    val highlightedInput = formatter.syntaxHighlight(replacedTabs, markings)
 
     val errorLines = errors.map { error =>
       errorFormatter.setMessage(error)
@@ -135,7 +138,7 @@ case class OutputBox private(
     val truncated = if (diff <= 0) lines else lines :+ ("", ErrorColor(s"... $diff more"))
     val unzipped = truncated.unzip
     val content = List(unzipped._1, unzipped._2)
-    copy(renderState = renderState.copy(renderedText = renderedText, header = header, content = content))
+    copy(renderState = renderState.copy(highlightedInput = highlightedInput, header = header, content = content))
   }
 
   def render(): String = {
@@ -143,7 +146,7 @@ case class OutputBox private(
       .grid
       .header(renderState.header)
       .row(TruncatedColumn)
-      .content(renderState.renderedText)
+      .content(renderState.highlightedInput)
 
     val result = renderState.content
     if (result.nonEmpty)
@@ -167,42 +170,6 @@ case class OutputBox private(
     val lines = wordWrapped.take(maxOutputLines)
     val truncated = if (diff <= 0) lines else lines :+ color(s"... $diff more")
     truncated.mkString("\n")
-  }
-
-
-  private def replaceTabs(text: String, pos: Positioned): (String, Positioned) = {
-    val (t, p) = replaceTabs(text, Seq(pos))
-    (t, p.head)
-  }
-
-  private def replaceTabs(text: String, positionsToAlter: Seq[Positioned]): (String, Seq[Positioned]) = {
-    var positions = positionsToAlter
-    val lines = text.split(NL, -1)
-    var sb = new StringBuilder
-
-    lines.zipWithIndex foreach { case (line, lineNum) =>
-      if (lineNum > 0)
-        sb ++= NL
-
-      for (i <- 0 until line.length) {
-        val c = line(i)
-        c match {
-          case '\t' =>
-            positions = positions.map { pos =>
-              var start = pos.col
-              var end = pos.endCol
-              if (lineNum + 1 == pos.line && start - 1 > i) start += TabWidth - 1
-              if (lineNum + 1 == pos.endLine && end - 1 >= i) end += TabWidth - 1
-              Position(pos.line, start, pos.endLine, end)
-            }
-
-            sb ++= TabReplacement
-          case _    =>
-            sb += c
-        }
-      }
-    }
-    (sb.toString, positions)
   }
 
 }

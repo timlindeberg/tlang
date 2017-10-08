@@ -72,7 +72,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
               RenderingActor.DrawFailure(err, truncate = true)
           }
       }
-      // In case we got an exception and lalala
+      // In case we got an exception
       state.clearStatements()
       parent ! SetState(Normal)
       parent ! renderMessage

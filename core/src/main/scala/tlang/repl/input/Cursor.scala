@@ -10,7 +10,7 @@ case class Selection(main: Cursor, mark: Cursor)
 
 case class Cursor(position: Int, x: Int, y: Int) extends Ordered[Cursor] {
 
-  def getPosition: (Int, Int) = (x, y)
+  def xy: (Int, Int) = (x, y)
 
   def withX(x: Int): Cursor = Cursor(x, y)
   def withY(y: Int): Cursor = Cursor(x, y)

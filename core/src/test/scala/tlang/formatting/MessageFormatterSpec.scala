@@ -1,6 +1,6 @@
 package tlang.formatting
 
-import tlang.formatting.textformatters.SyntaxHighlighter
+import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.messages._
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
@@ -500,7 +500,7 @@ class MessageFormatterSpec extends UnitSpec {
     )
 
     // the error is in "i < 5"
-    var message = createMessage(messageType = MessageType.Warning, pos = PositionWithSource(2, 16, 2, 21, source = Some(source)))
+    val message = createMessage(messageType = MessageType.Warning, pos = PositionWithSource(2, 16, 2, 21, source = Some(source)))
 
     test("Normal tab width") {
 
@@ -508,7 +508,7 @@ class MessageFormatterSpec extends UnitSpec {
         val messageFormatter = getMessageFormatter(useColor = false, tabWidth = 2, message = Some(message))
         val lines = messageFormatter.locationInSource
         lines should have size 4
-        lines shouldBe List(
+        lines.print(_.map(_._2).mkString(NL)) shouldBe List(
           ("1", "    var a = 0"),
           ("2", "for(var i = x; i < 5; i++)"),
           ("", "               ~~~~~"),
@@ -667,7 +667,7 @@ class MessageFormatterSpec extends UnitSpec {
     formatting: Option[Formatting] = None
   ): MessageFormatter = {
     val formatter = createMockFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting)
-    MessageFormatter(formatter, contextSize, tabWidth) use { messageFormatter =>
+    MessageFormatter(formatter, TabReplacer(tabWidth), contextSize) use { messageFormatter =>
       message ifDefined { messageFormatter.setMessage }
     }
   }

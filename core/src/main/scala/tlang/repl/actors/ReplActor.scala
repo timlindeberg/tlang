@@ -3,7 +3,6 @@ package tlang.repl.actors
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.KeyType
 import tlang.formatting.Formatter
-import tlang.messages.MessageFormatter
 import tlang.repl.OutputBox
 import tlang.repl.actors.EvaluationActor._
 import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, RenderingMessage}
@@ -29,10 +28,10 @@ object ReplActor {
   def props(replState: ReplState,
     evaluator: Evaluator,
     formatter: Formatter,
-    errorFormatter: MessageFormatter,
+    outputBox: OutputBox,
     terminal: ReplTerminal,
     input: Input) =
-    Props(new ReplActor(replState, evaluator, formatter, errorFormatter, terminal, input))
+    Props(new ReplActor(replState, evaluator, formatter, outputBox, terminal, input))
 
   val name = "repl"
 }
@@ -49,7 +48,7 @@ class ReplActor(
   replState: ReplState,
   evaluator: Evaluator,
   formatter: Formatter,
-  errorFormatter: MessageFormatter,
+  outputBox: OutputBox,
   terminal: ReplTerminal,
   input: Input) extends Actor {
 
@@ -59,16 +58,8 @@ class ReplActor(
   private val MaxOutputLines  = 10
   private val LoadingInterval = formatter.formatting.spinner.frameTime.length
 
-  private val renderer    =
-    context.actorOf(
-      RenderingActor.props(formatter, terminal, OutputBox(formatter, errorFormatter, MaxOutputLines)),
-      RenderingActor.name
-    )
-  private val replProgram =
-    context.actorOf(
-      EvaluationActor.props(replState, evaluator, formatter),
-      EvaluationActor.name
-    )
+  private val renderer    = context.actorOf(RenderingActor.props(formatter, terminal, outputBox), RenderingActor.name)
+  private val replProgram = context.actorOf(EvaluationActor.props(replState, evaluator, formatter), EvaluationActor.name)
 
   private var state: ExecutionState = Normal
 

@@ -16,7 +16,7 @@ object Input {
 }
 
 
-case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
+case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, tabWidth: Int) {
 
   import Input._
 
@@ -114,8 +114,8 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
 
     // Reset the used buffer back to it's original state
     commands.index match {
-      case 0 => setCurrent(InputBuffer.Empty, saveHistory = false)
-      case i => setCurrent(InputBuffer(unmodifiedCommands(i - 1)), saveHistory = false)
+      case 0 => setCurrent(InputBuffer(tabWidth), saveHistory = false)
+      case i => setCurrent(InputBuffer(unmodifiedCommands(i - 1), tabWidth), saveHistory = false)
     }
     commands.setPosition(0)
 
@@ -190,7 +190,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
       if (line == HistorySeperator && lines.nonEmpty) {
         val str = lines.mkString(NL)
         unmodifiedCommands += str
-        commands += newHistory(InputBuffer(str))
+        commands += newHistory(InputBuffer(str, tabWidth))
         lines.clear()
       } else {
         lines += line
@@ -198,6 +198,6 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int) {
     }
   }
 
-  private def newHistory(buffer: InputBuffer = InputBuffer.Empty) = History(maxHistorySize, buffer)
+  private def newHistory(buffer: InputBuffer = InputBuffer(tabWidth)) = History(maxHistorySize, buffer)
 
 }

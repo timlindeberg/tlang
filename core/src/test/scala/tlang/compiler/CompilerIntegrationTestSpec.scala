@@ -3,6 +3,7 @@ package tlang.compiler
 import better.files.File
 import org.scalatest._
 import tlang.compiler.imports.ClassPath
+import tlang.formatting.textformatters.TabReplacer
 import tlang.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.{Constants, Context}
 
@@ -36,7 +37,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
       case None    => File(".")
     }
 
-    val errorFormatter = MessageFormatter(TestFormatter)
+    val errorFormatter = MessageFormatter(TestFormatter, TabReplacer(2))
     val errorMessages = CompilerMessages(TestFormatter, errorFormatter)
     val debugOutputFormatter = DebugOutputFormatter(TestFormatter)
     Context(

@@ -66,7 +66,10 @@ trait AnsiMatchers {
   def allMatchWithAnsi(expectedString: String, moreStrings: String*) = new MultipleAnsiStringMatcher(expectedString :: moreStrings.toList)
 
 
-  private def format(found: String, expected: String): String = {
+  private def format(f: String, e: String): String = {
+    val found = if (f == null) "null" else f
+    val expected = if (e == null) "null" else e
+
     val sbFound = new StringBuilder("  Actual:")
     val sbExpected = new StringBuilder("Expected:")
     val sbDifference = new StringBuilder("         ")

@@ -9,6 +9,7 @@ import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.code.TreeBuilder
 import tlang.compiler.imports.{ClassPath, Imports}
 import tlang.formatting._
+import tlang.formatting.textformatters.TabReplacer
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
@@ -25,7 +26,7 @@ object Main {
 
   val VersionNumber   = "0.0.1"
   val MaxRedoSize     = 500
-  val TabSize         = 4
+  val TabWidth        = 3
   val DoubleClickTime = 500L
 
 
@@ -58,7 +59,7 @@ object Main {
 
 
     val formatter = Formatter(formatting)
-    val errorFormatter = MessageFormatter(formatter, options(MessageContextFlag))
+    val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
 
     val tempDir = File.newTemporaryDirectory("repl")
 
@@ -76,21 +77,24 @@ object Main {
     val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
     val evaluator = Evaluator(context, extractor, programExecutor, statementTransformer, replState)
 
-    val messageFormatter = MessageFormatter(formatter)
+    val tabReplacer = TabReplacer(TabWidth)
+    val messageFormatter = MessageFormatter(formatter, tabReplacer)
 
     val terminal = TerminalFactory.createTerminal()
     val keyConverter = KeyConverter(500L)
-    val replTerminal = ReplTerminal(terminal, keyConverter, formatting)
+    val replTerminal = ReplTerminal(terminal, keyConverter, formatting, TabWidth)
     replTerminal.enableMouseReporting = true
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
-    val input = Input(historyFile, Clipboard(), MaxRedoSize)
+    val input = Input(historyFile, Clipboard(), MaxRedoSize, TabWidth)
 
 
     val actorSystem = ActorSystem("tRepl")
+    val outputBox = OutputBox(formatter, tabReplacer, errorFormatter, maxOutputLines = 5)
     val repl = actorSystem.actorOf(
-      ReplActor.props(replState, evaluator, formatter, messageFormatter, replTerminal, input),
-      ReplActor.name)
+      ReplActor.props(replState, evaluator, formatter, outputBox, replTerminal, input),
+      ReplActor.name
+    )
 
     terminal.addResizeListener((_, newSize) => {
       val width = newSize.getColumns

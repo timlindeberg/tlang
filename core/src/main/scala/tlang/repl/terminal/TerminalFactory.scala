@@ -38,7 +38,7 @@ object TerminalFactory {
     )
 
   private lazy val deviceConfiguration =
-    new TerminalEmulatorDeviceConfiguration(0, 500, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
+    new TerminalEmulatorDeviceConfiguration(0, 200, CursorStyle.VERTICAL_BAR, ANSI.RED, true)
 
   private lazy val emulatorColors = TerminalEmulatorColorConfiguration.newInstance(new TerminalEmulatorPalette(
     new java.awt.Color(177, 204, 217), // defaultColor

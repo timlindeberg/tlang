@@ -9,7 +9,7 @@ import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.{SGR, TerminalPosition}
 import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
 import tlang.formatting.{Colors, Formatting}
-import tlang.repl.OutputBox.{TabWidth, XIndent, YIndent}
+import tlang.repl.OutputBox.{XIndent, YIndent}
 import tlang.repl._
 import tlang.repl.input.InputBuffer
 import tlang.utils.Extensions._
@@ -22,7 +22,7 @@ object ReplTerminal {
 
 }
 
-case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: Formatting) {
+case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: Formatting, tabWidth: Int) {
 
   import ReplTerminal._
 
@@ -67,12 +67,9 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
   def updateCursor(inputBuffer: InputBuffer): Unit = {
     val cursor = inputBuffer.mainCursor
     val currentLine = inputBuffer.currentLine
-    val tabsBeforeCursor = currentLine.take(cursor.x).count(_ == '\t')
     val lineLength = currentLine.length
 
-    val xOffset = cursor.x + (TabWidth - 1) * tabsBeforeCursor
-    val yOffset = cursor.y
-    cursorPosition = getCursorsPositionWithinBox(xOffset, yOffset)
+    cursorPosition = getCursorsPositionWithinBox(cursor.x, cursor.y)
 
     // To make room for truncation
     val boxSpace = formatting.lineWidth - 2 * XIndent

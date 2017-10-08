@@ -33,10 +33,15 @@ class RenderingActor(
 
   import RenderingActor._
 
+  var previousBox: OutputBox = _
+
   override def receive: Receive = {
     case msg: RenderingMessage =>
       msg match {
-        case StartRepl           => terminal.newBox(outputBox.welcome())
+        case StartRepl           =>
+          previousBox = outputBox.welcome()
+          terminal.newBox(previousBox)
+          outputBox = outputBox.clear()
         case Resize(newWidth)    => terminal.width = newWidth
         case DrawLoading         =>
           terminal.isCursorVisible = false
@@ -55,7 +60,9 @@ class RenderingActor(
           outputBox = outputBox.clear()
 
       }
-      terminal.updateBox(outputBox)
+      if (previousBox != outputBox)
+        terminal.updateBox(outputBox)
+      previousBox = outputBox
   }
 
 

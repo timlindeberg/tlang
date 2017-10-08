@@ -22,17 +22,20 @@ object InputBuffer {
   }
 
 
-  def apply(str: String): InputBuffer = {
-    val s = str.withUnixLineEndings
-    val linePositions = (0 :: calculateLinePositions(s)).reverse
-    apply(Cord.empty :+ s, Cursor(), Cursor(), linePositions)
+  def apply(tabWidth: Int): InputBuffer = {
+    InputBuffer(tabWidth, Cord.empty :+ "", Cursor(), Cursor(), 0 :: Nil)
   }
 
-  def Empty = InputBuffer(Cord.empty :+ "", Cursor(), Cursor(), 0 :: Nil)
+  def apply(str: String, tabWidth: Int): InputBuffer = {
+    val s = str.withUnixLineEndings
+    val linePositions = (0 :: calculateLinePositions(s)).reverse
+    InputBuffer(tabWidth, Cord.empty :+ s, Cursor(), Cursor(), linePositions)
+  }
 }
 
 
 case class InputBuffer(
+  tabWidth: Int,
   cord: Cord,
   mainCursor: Cursor,
   secondaryCursor: Cursor,
@@ -75,7 +78,7 @@ case class InputBuffer(
     newLinePositions = newLinePositions.map { pos => if (pos > start) pos - charsRemoved else pos }
 
     val newCursor = getCursor(newCursorPos.clamp(0, cord.length), newLinePositions)
-    InputBuffer(newCord, newCursor, newCursor, newLinePositions)
+    InputBuffer(tabWidth, newCord, newCursor, newCursor, newLinePositions)
   }
 
   def moveCursorHorizontal(steps: Int, moveSecondary: Boolean = true): InputBuffer = {
@@ -83,13 +86,14 @@ case class InputBuffer(
   }
 
   def moveCursorVertical(steps: Int, moveSecondary: Boolean = true): InputBuffer = {
-    val line = (currentLineIndex + steps).clamp(0, linePositions.length - 1)
-    if (line == currentLineIndex)
+    val lineIndex = currentLineIndex
+    val nextLine = (lineIndex + steps).clamp(0, linePositions.length - 1)
+    if (nextLine == lineIndex)
       return this
 
-    val newUpDownX = if (upDownX == 0) mainCursor.x else upDownX
-    val (nextStart, nextEnd) = linePosition(line)
-    moveCursor(nextStart + math.min(newUpDownX, nextEnd - nextStart), moveSecondary, newUpDownX)
+    val x = if (upDownX == 0) mainCursor.x else upDownX
+    val y = linePositions.length - nextLine - 1
+    moveCursor(x, y, moveSecondary, x)
   }
 
   def moveCursorToLeftWord(moveSecondary: Boolean = true): InputBuffer = {
@@ -190,17 +194,15 @@ case class InputBuffer(
 
     val newCord = cord.addAtIndex(position, str)
 
-    val newMainCursor = getCursor(position + str.length, newLinePositions)
-    InputBuffer(newCord, newMainCursor, newMainCursor, newLinePositions)
+    val buffer = copy(cord = newCord)
+    val newMainCursor = buffer.getCursor(position + str.length, newLinePositions)
+    InputBuffer(tabWidth, newCord, newMainCursor, newMainCursor, newLinePositions)
   }
 
   def moveCursor(x: Int, y: Int): InputBuffer = moveCursor(x, y, moveSecondary = true, 0)
   def moveCursor(x: Int, y: Int, moveSecondary: Boolean): InputBuffer = moveCursor(x, y, moveSecondary, 0)
   def moveCursor(x: Int, y: Int, moveSecondary: Boolean, upDownX: Int): InputBuffer = {
-    val (lineStart, lineEnd) = linePosition(linePositions.length - y - 1) // Since linePositions have reversed order
-    val width = lineEnd - lineStart
-    val pos = lineStart + Math.min(x, width)
-    moveCursor(pos, moveSecondary, upDownX)
+    moveCursor(innerRepresentation(x, y), moveSecondary, upDownX)
   }
 
   def moveCursor(position: Int): InputBuffer = moveCursor(position, moveSecondary = true, 0)
@@ -215,6 +217,45 @@ case class InputBuffer(
       secondaryCursor = if (moveSecondary) newMainCursor else secondaryCursor,
       upDownX = upDownX
     )
+  }
+
+  private def outerRepresentation(pos: Int, linePositions: List[Int] = linePositions): (Int, Int) = {
+    val index = lineIndex(pos, linePositions)
+    val lineStart = linePositions(index)
+    val x = pos - lineStart
+    val y = linePositions.length - index - 1
+
+    val offset = tabOffset(lineStart, pos)
+    (x + offset, y)
+  }
+
+  private def innerRepresentation(x: Int, y: Int): Int = {
+    val (lineStart, lineEnd) = linePosition(linePositions.length - y - 1)
+    lineStart + adjustXPosition(x, lineStart, lineEnd)
+  }
+
+  private def adjustXPosition(x: Int, lineStart: Int, lineEnd: Int): Int = {
+    val slice = cord.slice(lineStart, lineEnd)
+
+    var chars = 0
+    var tabOffset = 0
+    for (c <- slice.iterator) {
+      if (c == '\t')
+        tabOffset += tabWidth - 1
+      if (chars + tabOffset >= x) {
+        // If x is closer to the end of the tab than the start, add 1
+        val xPercentageOfTab = (x % tabWidth).asInstanceOf[Double] / tabWidth
+        return if (c == '\t' && math.round(xPercentageOfTab) == 1) chars + 1 else chars
+      }
+
+      chars += 1
+    }
+    chars
+  }
+
+  private def tabOffset(start: Int, end: Int): Int = {
+    val slice = cord.slice(start, end)
+    slice.iterator.count(_ == '\t') * (tabWidth - 1)
   }
 
   private def leftWhere(stop: Char => Boolean): Int = {
@@ -255,9 +296,7 @@ case class InputBuffer(
   }
 
   private def getCursor(pos: Int, linePositions: List[Int] = linePositions): Cursor = {
-    val index = lineIndex(pos, linePositions)
-    val x = pos - linePositions(index)
-    val y = linePositions.length - index - 1
+    val (x, y) = outerRepresentation(pos, linePositions)
     Cursor(pos, x, y)
   }
 

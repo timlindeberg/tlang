@@ -17,6 +17,7 @@ import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.Width.Percentage
 import tlang.formatting.grid.{Column, Grid}
+import tlang.formatting.textformatters.TabReplacer
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
@@ -147,7 +148,7 @@ object Main {
   }
 
   private def createContext(options: Options, formatter: Formatter): Context = {
-    val messageFormatter = MessageFormatter(formatter, options(MessageContextFlag))
+    val messageFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
     val messages = CompilerMessages(
       formatter,
       messageFormatter,

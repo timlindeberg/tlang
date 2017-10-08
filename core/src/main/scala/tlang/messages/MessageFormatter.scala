@@ -2,19 +2,19 @@ package tlang.messages
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
+import tlang.formatting.textformatters.TabReplacer
 import tlang.options.arguments.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
 case class MessageFormatter(
   formatter: Formatter,
-  messageContextSize: Int = MessageContextFlag.defaultValue,
-  tabWidth: Int = 2) {
+  tabReplacer: TabReplacer,
+  messageContextSize: Int = MessageContextFlag.defaultValue) {
 
   var lines: IndexedSeq[String] = IndexedSeq()
 
   private val formatting               = formatter.formatting
-  private val TabSpaces                = " " * tabWidth
   private var message: CompilerMessage = _
 
 
@@ -47,32 +47,32 @@ case class MessageFormatter(
     positionDescription + " " + sourceDescription
   }
 
-  def locationInSource: List[(String, String)] = {
+  def locationInSource: Seq[(String, String)] = {
 
     val (trimmedLines, trimmedPos) = trimIndent(contextLines)
-    val (lines, adjustedPos) = replaceTabs(trimmedLines, trimmedPos)
+    val (lines, adjustedPos) = tabReplacer(trimmedLines, trimmedPos)
 
     if (formatting.useColor)
-      lines.map { case (lineNum, line) => coloredIndicatorLine(lineNum, line, adjustedPos) }
+      lines.map { case (line, lineNum) => coloredIndicatorLine(lineNum, line, adjustedPos) }
     else
-      lines.flatMap { case (lineNum, line) => indicatorLines(lineNum, line, adjustedPos) }
+      lines.flatMap { case (line, lineNum) => indicatorLines(lineNum, line, adjustedPos) }
   }
 
 
-  private def contextLines: List[(Int, String)] = {
+  private def contextLines: Seq[(String, Int)] = {
     val start = (position.line - messageContextSize).clamp(1, lines.size)
     val end = (position.line + messageContextSize).clamp(1, lines.size)
     (start to end)
-      .map(i => (i, lines(i - 1)))
+      .map(i => (lines(i - 1), i))
       .toList
   }
 
-  private def trimIndent(lines: List[(Int, String)]): (List[(Int, String)], Position) = {
+  private def trimIndent(lines: Seq[(String, Int)]): (Seq[(String, Int)], Position) = {
     val indent = getMinimumIndent(lines)
 
-    val trimmedLines = lines.map { case (lineNum, line) =>
+    val trimmedLines = lines.map { case (line, lineNum) =>
       val trimmedLine = if (line.nonEmpty) line.substring(indent) else ""
-      (lineNum, trimmedLine)
+      (trimmedLine, lineNum)
     }
     val start = math.max(1, position.col - indent)
     val end = math.max(1, position.endCol - indent)
@@ -80,33 +80,10 @@ case class MessageFormatter(
     (trimmedLines, adjustedPos)
   }
 
-
-  private def replaceTabs(lines: List[(Int, String)], pos: Position): (List[(Int, String)], Position) = {
-    var start = pos.col
-    var end = pos.endCol
-    val tabReplacedLines = lines map { case (lineNum, line) =>
-      var sb = new StringBuilder
-      for (i <- 0 until line.length) {
-        val c = line(i)
-        c match {
-          case '\t' =>
-            if (lineNum == pos.line && start - 1 > i) start += tabWidth - 1
-            if (lineNum == pos.endLine && end - 1 >= i) end += tabWidth - 1
-            sb.appendTimes(' ', tabWidth)
-          case _    =>
-            sb += c
-        }
-      }
-      (lineNum, sb.toString)
-    }
-    val adjustedPos = Position(pos.line, start, pos.endLine, end)
-    (tabReplacedLines, adjustedPos)
-  }
-
-  private def getMinimumIndent(lines: List[(Int, String)]): Int =
+  private def getMinimumIndent(lines: Seq[(String, Int)]): Int =
     lines
-      .filter { case (_, line) => line.nonEmpty }
-      .map { case (_, line) => indent(line) }.min
+      .filter { case (line, _) => line.nonEmpty }
+      .map { case (line, _) => indent(line) }.min
 
   private def indent(line: String): Int = {
     var i = 0

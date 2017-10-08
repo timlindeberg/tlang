@@ -10,7 +10,7 @@ import tlang.utils.Extensions._
 trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSugar {
 
   // For scoping and readability
-  def test[U](description: String = "")(f: => U): U = f
+  def test[U](description: String)(f: => U): U = f
 
   def mockedWordWrapperReturningSplitLines: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>
