@@ -11,7 +11,7 @@ import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
 import tlang.formatting.{Colors, Formatting}
 import tlang.repl.OutputBox.{XIndent, YIndent}
 import tlang.repl._
-import tlang.repl.input.InputBuffer
+import tlang.repl.input.{Cursor, InputBuffer}
 import tlang.utils.Extensions._
 
 
@@ -30,15 +30,17 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
   private var _enableMouseReporting = false
   private var _width: Int           = formatting.lineWidth
 
-  var boxStartPosition : TerminalPosition = cursorPosition
-  var boxHeight        : Int              = 0
-  var previousBoxHeight: Int              = 0
+  private var boxStartPosition : TerminalPosition = cursorPosition
+  private var boxHeight        : Int              = 0
+  private var previousBoxHeight: Int              = 0
+  private var cursor           : Cursor           = Cursor()
 
 
   def close(): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
     }
+    isCursorVisible = true
     enableMouseReporting = false
     term.close()
   }
@@ -52,20 +54,21 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
     }
   }
 
-  def newBox(outputBox: OutputBox): Unit = {
+  def endBox(outputBox: OutputBox): Unit = {
     putBox(outputBox)
     boxStartPosition = cursorPosition
-    cursorPosition = getCursorsPositionWithinBox()
+    isCursorVisible = true
+    cursor = Cursor()
   }
 
   def updateBox(outputBox: OutputBox): Unit = {
-    val cursorPos = cursorPosition
     putBox(outputBox)
-    cursorPosition = cursorPos
+    boxStartPosition = cursorPosition.withColumn(0).withRelativeRow(-boxHeight)
+    cursorPosition = getCursorsPositionWithinBox(cursor.x, cursor.y)
   }
 
   def updateCursor(inputBuffer: InputBuffer): Unit = {
-    val cursor = inputBuffer.mainCursor
+    cursor = inputBuffer.mainCursor
     val currentLine = inputBuffer.currentLine
     val lineLength = currentLine.length
 
@@ -96,7 +99,7 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
     var key: Option[Key] = None
     while (key.isEmpty) {
       key = term.readInput() match {
-        case m: MouseAction => keyConverter.convertMouseEvent(m, boxStartPosition, formatting.lineWidth, boxHeight)
+        case m: MouseAction => keyConverter.convertMouseAction(m, boxStartPosition, formatting.lineWidth, boxHeight)
         case key            => keyConverter.convertKey(key)
       }
     }
@@ -133,7 +136,7 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
 
     boxHeight = put(outputBox.render())
 
-    if (previousBoxHeight - boxHeight > 0)
+    if (previousBoxHeight > boxHeight)
       clearScreenFromCursorPosition()
 
     previousBoxHeight = boxHeight
@@ -161,10 +164,10 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
     y
   }
 
-  private def getCursorsPositionWithinBox(xOffset: Int = 0, yOffset: Int = 0) = {
+  private def getCursorsPositionWithinBox(x: Int, y: Int) = {
     boxStartPosition
-      .withRelativeColumn(XIndent + xOffset)
-      .withRelativeRow(YIndent + yOffset)
+      .withRelativeColumn(XIndent + x)
+      .withRelativeRow(YIndent + y)
   }
 
 

@@ -28,7 +28,7 @@ case class KeyConverter(doubleClickTime: Long) {
     Some(k)
   }
 
-  def convertMouseEvent(mouseAction: MouseAction, boxStartPosition: TerminalPosition, boxWidth: Int, boxHeight: Int): Option[Key] = {
+  def convertMouseAction(mouseAction: MouseAction, boxStartPosition: TerminalPosition, boxWidth: Int, boxHeight: Int): Option[Key] = {
     val actionType = mouseAction.getActionType
 
     // We don't care about the move and release events for now

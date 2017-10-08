@@ -130,7 +130,9 @@ case class OutputBox private(
 
     val errorLines = errors.map { error =>
       errorFormatter.setMessage(error)
-      (NumColor(error.pos.line), errorFormatter.prefix + " " + error.message)
+      val pos = error.pos
+      val locationIndicator = NumColor(pos.line) + ":" + NumColor(pos.col)
+      (locationIndicator, errorFormatter.prefix + " " + error.message)
     }
 
     val diff = errorLines.size - maxOutputLines

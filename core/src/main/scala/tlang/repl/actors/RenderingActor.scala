@@ -40,13 +40,18 @@ class RenderingActor(
       msg match {
         case StartRepl           =>
           previousBox = outputBox.welcome()
-          terminal.newBox(previousBox)
+          terminal.endBox(previousBox)
           outputBox = outputBox.clear()
-        case Resize(newWidth)    => terminal.width = newWidth
+        case Resize(newWidth)    =>
+          terminal.width = newWidth
+          terminal.updateBox(outputBox)
         case DrawLoading         =>
           terminal.isCursorVisible = false
           outputBox = outputBox.nextLoadingState()
-        case StopRepl            => outputBox = outputBox.exit()
+        case StopRepl            =>
+          previousBox = outputBox.exit()
+          terminal.endBox(previousBox)
+          outputBox = previousBox
         case DrawNewInput(input) =>
           outputBox = outputBox.newInput(input)
           terminal.updateCursor(input)
@@ -56,13 +61,14 @@ class RenderingActor(
             case DrawSuccess(output, shouldTruncate) => outputBox.success(output, shouldTruncate)
             case DrawFailure(output, shouldTruncate) => outputBox.failure(output, shouldTruncate)
           }
-          terminal.newBox(outputBox)
+          terminal.endBox(outputBox)
           outputBox = outputBox.clear()
 
       }
-      if (previousBox != outputBox)
+      if (previousBox != outputBox) {
         terminal.updateBox(outputBox)
-      previousBox = outputBox
+        previousBox = outputBox
+      }
   }
 
 

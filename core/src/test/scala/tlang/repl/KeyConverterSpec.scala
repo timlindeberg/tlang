@@ -28,9 +28,9 @@ class KeyConverterSpec extends UnitSpec {
       // │                  │
       // └──────────────────┘
 
-      keyConverter.convertMouseEvent(mouseClick(19, 0), start, w, h) shouldBe empty
-      keyConverter.convertMouseEvent(mouseClick(2, 3), start, w, h) should contain(MouseClick(0, 0, 1))
-      keyConverter.convertMouseEvent(mouseClick(11, 5), start, w, h) should contain(MouseClick(9, 2, 1))
+      keyConverter.convertMouseAction(mouseClick(19, 0), start, w, h) shouldBe empty
+      keyConverter.convertMouseAction(mouseClick(2, 3), start, w, h) should contain(MouseClick(0, 0, 1))
+      keyConverter.convertMouseAction(mouseClick(11, 5), start, w, h) should contain(MouseClick(9, 2, 1))
     }
 
     test("size 25x10") {
@@ -50,12 +50,12 @@ class KeyConverterSpec extends UnitSpec {
       // │                     5 │
       // └─────6─────────────────┘
 
-      converter.convertMouseEvent(mouseClick(0, 0), start, w, h) shouldBe empty
-      converter.convertMouseEvent(mouseClick(3, 2), start, w, h) shouldBe empty
-      converter.convertMouseEvent(mouseClick(23, 3), start, w, h) should contain(MouseClick(21, 0, 1))
-      converter.convertMouseEvent(mouseClick(18, 7), start, w, h) should contain(MouseClick(16, 4, 1))
-      converter.convertMouseEvent(mouseClick(23, 8), start, w, h) should contain(MouseClick(21, 5, 1))
-      converter.convertMouseEvent(mouseClick(7, 9), start, w, h) shouldBe empty
+      converter.convertMouseAction(mouseClick(0, 0), start, w, h) shouldBe empty
+      converter.convertMouseAction(mouseClick(3, 2), start, w, h) shouldBe empty
+      converter.convertMouseAction(mouseClick(23, 3), start, w, h) should contain(MouseClick(21, 0, 1))
+      converter.convertMouseAction(mouseClick(18, 7), start, w, h) should contain(MouseClick(16, 4, 1))
+      converter.convertMouseAction(mouseClick(23, 8), start, w, h) should contain(MouseClick(21, 5, 1))
+      converter.convertMouseAction(mouseClick(7, 9), start, w, h) shouldBe empty
 
     }
 
@@ -80,13 +80,13 @@ class KeyConverterSpec extends UnitSpec {
       // │        7         │
       // └──────────────────┘
 
-      keyConverter.convertMouseEvent(mouseClick(11, 3), start, w, h) shouldBe empty
-      keyConverter.convertMouseEvent(mouseClick(16, 4), start, w, h) shouldBe empty
-      keyConverter.convertMouseEvent(mouseClick(7, 6), start, w, h) shouldBe empty
-      keyConverter.convertMouseEvent(mouseClick(19, 7), start, w, h) shouldBe empty
-      keyConverter.convertMouseEvent(mouseClick(2, 9), start, w, h) should contain(MouseClick(0, 0, 1))
-      keyConverter.convertMouseEvent(mouseClick(8, 10), start, w, h) should contain(MouseClick(6, 1, 1))
-      keyConverter.convertMouseEvent(mouseClick(9, 12), start, w, h) should contain(MouseClick(7, 3, 1))
+      keyConverter.convertMouseAction(mouseClick(11, 3), start, w, h) shouldBe empty
+      keyConverter.convertMouseAction(mouseClick(16, 4), start, w, h) shouldBe empty
+      keyConverter.convertMouseAction(mouseClick(7, 6), start, w, h) shouldBe empty
+      keyConverter.convertMouseAction(mouseClick(19, 7), start, w, h) shouldBe empty
+      keyConverter.convertMouseAction(mouseClick(2, 9), start, w, h) should contain(MouseClick(0, 0, 1))
+      keyConverter.convertMouseAction(mouseClick(8, 10), start, w, h) should contain(MouseClick(6, 1, 1))
+      keyConverter.convertMouseAction(mouseClick(9, 12), start, w, h) should contain(MouseClick(7, 3, 1))
     }
 
   }
@@ -109,18 +109,18 @@ class KeyConverterSpec extends UnitSpec {
 
     val click = mouseClick(2, 3)
 
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 1))
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 2))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 2))
 
     Thread.sleep(doubleClickTime)
 
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 1))
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 2))
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 3))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 2))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 3))
 
     Thread.sleep(doubleClickTime)
 
-    keyConverter.convertMouseEvent(click, start, w, h) should contain(MouseClick(0, 0, 1))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
   }
 
 
@@ -140,14 +140,14 @@ class KeyConverterSpec extends UnitSpec {
     // │                     3 │
     // └───────────────────────┘
 
-    keyConverter.convertMouseEvent(mouseDrag(0, 0), start, w, h) should contain(MouseDrag(0, 0))
-    keyConverter.convertMouseEvent(mouseDrag(23, 3), start, w, h) should contain(MouseDrag(21, 0))
-    keyConverter.convertMouseEvent(mouseDrag(3, 2), start, w, h) should contain(MouseDrag(1, 0))
-    keyConverter.convertMouseEvent(mouseDrag(7, 9), start, w, h) should contain(MouseDrag(5, 5))
-    keyConverter.convertMouseEvent(mouseDrag(18, 7), start, w, h) should contain(MouseDrag(16, 4))
-    keyConverter.convertMouseEvent(mouseDrag(23, 8), start, w, h) should contain(MouseDrag(21, 5))
-    keyConverter.convertMouseEvent(mouseDrag(26, 6), start, w, h) should contain(MouseDrag(21, 3))
-    keyConverter.convertMouseEvent(mouseDrag(100, 100), start, w, h) should contain(MouseDrag(21, 5))
+    keyConverter.convertMouseAction(mouseDrag(0, 0), start, w, h) should contain(MouseDrag(0, 0))
+    keyConverter.convertMouseAction(mouseDrag(23, 3), start, w, h) should contain(MouseDrag(21, 0))
+    keyConverter.convertMouseAction(mouseDrag(3, 2), start, w, h) should contain(MouseDrag(1, 0))
+    keyConverter.convertMouseAction(mouseDrag(7, 9), start, w, h) should contain(MouseDrag(5, 5))
+    keyConverter.convertMouseAction(mouseDrag(18, 7), start, w, h) should contain(MouseDrag(16, 4))
+    keyConverter.convertMouseAction(mouseDrag(23, 8), start, w, h) should contain(MouseDrag(21, 5))
+    keyConverter.convertMouseAction(mouseDrag(26, 6), start, w, h) should contain(MouseDrag(21, 3))
+    keyConverter.convertMouseAction(mouseDrag(100, 100), start, w, h) should contain(MouseDrag(21, 5))
   }
 
   it should "convert key events" in {
