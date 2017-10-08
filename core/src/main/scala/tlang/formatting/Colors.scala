@@ -131,6 +131,7 @@ object Colors {
     def colorType: ColorType
     def +(c: Color): Color
     def +(any: Any): String
+    def -(c: Color): Color
     def apply(any: Any): String
     override def toString: String = ansi
     def needsResetBefore(nextColor: Color): Boolean
@@ -146,6 +147,7 @@ object Colors {
     override val colorType: ColorType = ColorType.NoColor
     override def +(c: Color): Color = if (c == Reset) NoColor else c
     override def +(any: Any): String = any.toString
+    override def -(c: Color): Color = NoColor
     override def apply(any: Any): String = any.toString
     override def needsResetBefore(nextColor: Color) = false
 
@@ -160,6 +162,7 @@ object Colors {
     override val colorType: ColorType = ColorType.Reset
     override def +(c: Color): Color = NoColor
     override def +(any: Any): String = ansi + any.toString
+    override def -(c: Color): Color = Reset
     override def apply(any: Any): String = any.toString + ansi
     override def needsResetBefore(nextColor: Color) = false
 
@@ -219,6 +222,17 @@ object Colors {
     }
 
     def +(any: Any): String = ansi + any.toString
+
+    def -(c: Color): Color = c match {
+      case NoColor                                         => this
+      case Reset                                           => this
+      case RegularColor(foreground, background, modifiers) =>
+        val fg = if (foreground == this.foreground) -1 else this.foreground
+        val bg = if (background == this.background) -1 else this.background
+        val mods = modifiers -- this.modifiers
+        if (fg == -1 && bg == -1 && mods.isEmpty) NoColor else RegularColor(fg, bg, mods)
+    }
+
     def apply(any: Any): String = {
       val s = any.toString
       if (s.isEmpty) s else ansi + any.toString + "\u001b[0m"

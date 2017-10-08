@@ -7,6 +7,10 @@ import tlang.utils.Extensions._
 import scala.collection.mutable
 
 
+object Options {
+  def Empty = Options(Nil, None, Array())(ErrorStringContext())
+}
+
 case class Options(
   flags: List[FlagArgument[_]],
   positionalArgument: Option[PositionalArgument[_]],

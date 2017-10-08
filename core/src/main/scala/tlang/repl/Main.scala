@@ -1,7 +1,8 @@
 package tlang.repl
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import better.files._
+import com.googlecode.lanterna.terminal.Terminal
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
@@ -15,7 +16,7 @@ import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.repl.actors.RenderingActor.Resize
 import tlang.repl.actors.ReplActor
-import tlang.repl.actors.ReplActor.{StartRepl, StopRepl}
+import tlang.repl.actors.ReplActor.{Start, Stop}
 import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
@@ -57,6 +58,13 @@ object Main {
       sys.exit()
     }
 
+    val terminal = TerminalFactory.createTerminal()
+    val repl = createRepl(terminal, options, formatting)
+    repl ! Start
+  }
+
+  def createRepl(terminal: Terminal, options: Options, formatting: Formatting): ActorRef = {
+    // Create all dependencies
 
     val formatter = Formatter(formatting)
     val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
@@ -80,8 +88,8 @@ object Main {
     val tabReplacer = TabReplacer(TabWidth)
     val messageFormatter = MessageFormatter(formatter, tabReplacer)
 
-    val terminal = TerminalFactory.createTerminal()
-    val keyConverter = KeyConverter(500L)
+
+    val keyConverter = KeyConverter(DoubleClickTime)
     val replTerminal = ReplTerminal(terminal, keyConverter, formatting, TabWidth)
     replTerminal.enableMouseReporting = true
 
@@ -105,9 +113,8 @@ object Main {
     })
 
     // In case were using a Swing terminal
-    replTerminal onClose { repl ! StopRepl }
-
-    repl ! StartRepl
+    replTerminal onClose { repl ! Stop }
+    repl
   }
 
 
@@ -122,7 +129,6 @@ object Main {
 
   private def createContext(options: Options, errorFormatter: MessageFormatter, tempDir: File): Context = {
     val formatter = errorFormatter.formatter
-    val formatting = formatter.formatting
     val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.pathAsString)
 
     val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)

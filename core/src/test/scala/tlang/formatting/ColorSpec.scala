@@ -87,6 +87,17 @@ class ColorSpec extends UnitSpec {
     Bold + Bold shouldBe Bold
   }
 
+  it should "be removed from an other color" in {
+    val color = Red + Underlined + Bold + GreenBG
+    color - Red shouldBe Underlined + Bold + GreenBG
+    color - (Red + Underlined) shouldBe Bold + GreenBG
+    color - (Red + Underlined + Bold) shouldBe GreenBG
+    color - (Red + Underlined + Bold + GreenBG) shouldBe NoColor
+
+    NoColor - Red shouldBe NoColor
+    Red - NoColor shouldBe Red
+  }
+
 
   it should "use the last foreground or background color added" in {
     val color = Red + RedBG + Underlined + Bold + Green + GreenBG + Yellow + YellowBG

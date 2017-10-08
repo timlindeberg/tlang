@@ -21,8 +21,9 @@ case object Normal extends ExecutionState
 
 
 object ReplActor {
-  case object StartRepl
-  case object StopRepl
+  case object Start
+  case object Stop
+  case object FinishedRendering
   case class SetState(state: ExecutionState)
 
   def props(replState: ReplState,
@@ -66,11 +67,11 @@ class ReplActor(
   override def receive: Receive = {
     case SetState(state)        =>
       this.state = state
-    case StartRepl              =>
+    case Start                  =>
       replProgram ! Warmup
       renderer ! RenderingActor.StartRepl
       awaitInput()
-    case StopRepl               =>
+    case Stop                   =>
       renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()
@@ -81,7 +82,7 @@ class ReplActor(
 
   private def awaitInput(): Unit = {
     Future { terminal.readInput() } foreach {
-      case OtherKey(KeyType.EOF, _, _, _) => self ! StopRepl
+      case OtherKey(KeyType.EOF, _, _, _) => self ! Stop
       case keyStroke                      =>
         val shouldUpdateRenderer = Commands.find(_.matches(state, keyStroke)) match {
           case Some(command) => command(keyStroke)
@@ -90,7 +91,6 @@ class ReplActor(
 
         if (shouldUpdateRenderer)
           renderer ! RenderingActor.DrawNewInput(input.currentBuffer)
-
         awaitInput()
     }
   }
@@ -131,7 +131,7 @@ class ReplActor(
         }
         cmd.drop(1).toLowerCase match {
           case "help"          => renderer ! DrawSuccess("Help message", truncate = false)
-          case "quit" | "exit" => self ! StopRepl
+          case "quit" | "exit" => self ! Stop
           case "print"         => replProgram ! PrettyPrint
           case _               => renderer ! DrawFailure(Bold("Command not supported: ") + Red(command), truncate = false)
         }
@@ -229,7 +229,7 @@ class ReplActor(
 
       override def keyAction: PartialFunction[Key, Boolean] = {
         case CharacterKey('c', Ctrl(true), _, _) =>
-          self ! StopRepl
+          self ! Stop
           false
       }
 

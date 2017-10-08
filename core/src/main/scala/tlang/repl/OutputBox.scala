@@ -130,8 +130,7 @@ case class OutputBox private(
 
     val errorLines = errors.map { error =>
       errorFormatter.setMessage(error)
-      val pos = error.pos
-      val locationIndicator = NumColor(pos.line) + ":" + NumColor(pos.col)
+      val locationIndicator = NumColor(error.pos.line) + ":" + NumColor(error.pos.col)
       (locationIndicator, errorFormatter.prefix + " " + error.message)
     }
 
@@ -171,7 +170,7 @@ case class OutputBox private(
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)
     val truncated = if (diff <= 0) lines else lines :+ color(s"... $diff more")
-    truncated.mkString("\n")
+    truncated.mkString(NL)
   }
 
 }
