@@ -508,7 +508,7 @@ class MessageFormatterSpec extends UnitSpec {
         val messageFormatter = getMessageFormatter(useColor = false, tabWidth = 2, message = Some(message))
         val lines = messageFormatter.locationInSource
         lines should have size 4
-        lines.print(_.map(_._2).mkString(NL)) shouldBe List(
+        lines shouldBe List(
           ("1", "    var a = 0"),
           ("2", "for(var i = x; i < 5; i++)"),
           ("", "               ~~~~~"),

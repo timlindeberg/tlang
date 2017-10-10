@@ -229,7 +229,7 @@ object Colors {
       case RegularColor(foreground, background, modifiers) =>
         val fg = if (foreground == this.foreground) -1 else this.foreground
         val bg = if (background == this.background) -1 else this.background
-        val mods = modifiers -- this.modifiers
+        val mods = this.modifiers -- modifiers
         if (fg == -1 && bg == -1 && mods.isEmpty) NoColor else RegularColor(fg, bg, mods)
     }
 
