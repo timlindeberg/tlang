@@ -134,7 +134,10 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: 
   private def putBox(outputBox: OutputBox): Unit = {
     cursorPosition = boxStartPosition
 
+    val visible = isCursorVisible
+    isCursorVisible = false
     boxHeight = put(outputBox.render())
+    isCursorVisible = visible
 
     if (previousBoxHeight > boxHeight)
       clearScreenFromCursorPosition()

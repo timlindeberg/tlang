@@ -93,7 +93,7 @@ class KeyConverterSpec extends UnitSpec {
 
 
   it should "create correct mouse double and triple click events" in {
-    val doubleClickTime = 5
+    val doubleClickTime = 50
     val keyConverter = KeyConverter(doubleClickTime)
     val start = new TerminalPosition(0, 0)
     val w = 20
@@ -120,6 +120,10 @@ class KeyConverterSpec extends UnitSpec {
 
     Thread.sleep(doubleClickTime)
 
+    // Clicking somewhere else should interrupt the incrementation
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
+    keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 2))
+    keyConverter.convertMouseAction(mouseClick(2, 4), start, w, h) should contain(MouseClick(0, 1, 1))
     keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
   }
 

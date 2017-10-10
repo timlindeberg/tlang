@@ -7,8 +7,8 @@ import tlang.utils.Extensions._
 
 case class KeyConverter(doubleClickTime: Long) {
 
-  private var lastMouseClickTime: Long = 0
-  private var numClicks         : Int  = 1
+  private var lastMouseClick: (Int, Int, Long) = (0, 0, 0L)
+  private var numClicks     : Int              = 1
 
   def convertKey(key: KeyStroke): Option[Key] = {
     val ctrl = Ctrl(key.isCtrlDown)
@@ -63,14 +63,14 @@ case class KeyConverter(doubleClickTime: Long) {
         if ((x notIn (0 until width)) || (y notIn (0 until height)))
           return None
 
-        val time = System.currentTimeMillis()
+        val time = System.currentTimeMillis
 
-        if (time - lastMouseClickTime < doubleClickTime)
-          numClicks += 1
-        else
-          numClicks = 1
+        lastMouseClick match {
+          case (`x`, `y`, lastTime) if time - lastTime < doubleClickTime => numClicks += 1
+          case _                                                         => numClicks = 1
+        }
 
-        lastMouseClickTime = time
+        lastMouseClick = (x, y, time)
         Some(MouseClick(x, y, numClicks))
       case MouseActionType.DRAG       =>
         Some(MouseDrag(x.clamp(0, width - 1), y.clamp(0, height - 1)))
