@@ -3,6 +3,7 @@ package tlang.repl
 import akka.actor.{ActorRef, ActorSystem}
 import better.files._
 import com.googlecode.lanterna.terminal.Terminal
+import com.typesafe.config.ConfigFactory
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
 import tlang.compiler.Main.CompilerFlags
@@ -96,8 +97,10 @@ object Main {
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize, TabWidth)
 
-
-    val actorSystem = ActorSystem("tRepl")
+    val singleMessageMailboxConfig = ConfigFactory.parseString(
+      """rendererMailbox.mailbox-type = "tlang.repl.actors.SingleMessageMailbox""""
+    )
+    val actorSystem = ActorSystem("tRepl", singleMessageMailboxConfig)
     val outputBox = OutputBox(formatter, tabReplacer, errorFormatter, maxOutputLines = 5)
     val repl = actorSystem.actorOf(
       ReplActor.props(replState, evaluator, formatter, outputBox, replTerminal, input),

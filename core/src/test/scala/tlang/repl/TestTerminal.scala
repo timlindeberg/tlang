@@ -172,10 +172,11 @@ class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
 
 class TestTerminalExecution(timeout: Long) extends Matchers with AnsiMatchers {
 
-  private implicit val ec    : ExecutionContextExecutor  = ExecutionContext.global
-  private          var stopAt: Option[String => Boolean] = None
-  private          val promise                           = Promise[String]()
-  private          var lastBox                           = ""
+  private implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+
+  private var stopAt: Option[String => Boolean] = None
+  private val promise                           = Promise[String]()
+  private var lastBox                           = ""
 
   def finished: Boolean = promise.isCompleted
 

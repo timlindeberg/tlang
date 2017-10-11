@@ -59,8 +59,15 @@ class ReplActor(
   private val MaxOutputLines  = 10
   private val LoadingInterval = formatter.formatting.spinner.frameTime.length
 
-  private val renderer    = context.actorOf(RenderingActor.props(formatter, terminal, outputBox), RenderingActor.name)
-  private val replProgram = context.actorOf(EvaluationActor.props(replState, evaluator, formatter), EvaluationActor.name)
+  private val renderer = context.actorOf(
+    RenderingActor.props(formatter, terminal, outputBox).withMailbox("rendererMailbox"),
+    RenderingActor.name
+  )
+
+  private val replProgram = context.actorOf(
+    EvaluationActor.props(replState, evaluator, formatter),
+    EvaluationActor.name
+  )
 
   private var state: ExecutionState = Normal
 
