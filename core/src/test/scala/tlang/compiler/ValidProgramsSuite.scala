@@ -3,13 +3,12 @@ package tlang.compiler
 import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.messages.{CompilationException, MessageType}
+import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, ProgramExecutor, Source}
 
 import scala.concurrent.duration.Duration
 
 class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
-
-  import tlang.testsuites.CompilerIntegrationTestSuite._
 
   val TimeOut        = Duration(5, "sec")
   val ValidResources = s"$Resources/validtests"

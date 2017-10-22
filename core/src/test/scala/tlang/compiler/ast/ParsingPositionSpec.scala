@@ -6,18 +6,17 @@ import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.messages.{CompilationException, MessageType}
+import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, NoPosition, Position}
 
 import scala.reflect.{ClassTag, classTag}
 
 class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
-  import tlang.testsuites.CompilerIntegrationTestSuite._
-
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext()
 
-  // We make Tree lazy so the errortests.parsing time counts towards the test execution time
+  // We make Tree lazy so the parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
     val file = FileSource(TestFile) :: Nil
     try {

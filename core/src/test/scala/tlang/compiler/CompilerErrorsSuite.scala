@@ -7,7 +7,7 @@ import tlang.compiler.ast.Parsing
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.messages.{CompilationException, CompilerMessage, MessageType}
-import tlang.testsuites.CompilerIntegrationTestSuite
+import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
@@ -15,7 +15,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
-  import CompilerIntegrationTestSuite._
 
   val ErrorResources = s"$Resources/errortests"
 

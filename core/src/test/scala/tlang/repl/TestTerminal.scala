@@ -7,10 +7,9 @@ import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
-import org.scalatest.{Assertion, Matchers}
+import org.scalatest.Matchers
 import tlang.formatting.Colors.Color
 import tlang.formatting.{Colors, DefaultFormatting}
-import tlang.repl.ReplIntegrationTestSpec.CaptureScreens
 import tlang.testutils.AnsiMatchers
 import tlang.utils.Extensions._
 
@@ -112,15 +111,15 @@ class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
   override def setCursorPosition(position: TerminalPosition): Unit = cursor = position
 
   override def getTerminalSize: TerminalSize = terminalSize
-  override def pollInput(): KeyStroke = {
-    if (input.isEmpty) null else input.dequeue()
-  }
+  override def pollInput(): KeyStroke = if (input.isEmpty) null else input.dequeue()
   override def readInput(): KeyStroke = {
+
     var input = pollInput()
     while (input == null) {
       Thread.sleep(10)
       input = pollInput()
     }
+
     input
   }
 
@@ -185,32 +184,25 @@ class TestTerminalExecution(timeout: Long) extends Matchers with AnsiMatchers {
     this
   }
 
-  def shouldDisplay(box: String)(implicit currentTestName: String): Future[Assertion] = {
+  def display: Future[String] = {
     if (stopAt.isEmpty)
-      throw new IllegalStateException("Cannot call should match without calling stopWhen")
+      throw new IllegalStateException("Cannot call 'display' without calling stopWhen")
 
 
     Future {
       Thread.sleep(timeout)
       if (!promise.isCompleted) {
-        promise.failure(new TimeoutException(s"Test timed out. Screen at time of timeout:\n${ lastBox.stripAnsi }"))
+        promise.failure(new TimeoutException(
+          s"""|Test timed out. Screen at time of timeout:
+              |${ "-" * 80 }
+              |${ lastBox.stripAnsi }
+              |${ "-" * 80 }
+           """.stripMargin
+        ))
       }
     }
 
-    promise.future.map { foundBox =>
-      if (CaptureScreens)
-        println(s"Screen '$currentTestName':$NL$foundBox$NL$NL${ foundBox.escapeAnsi }")
-
-      if (foundBox != box) {
-        println("Screens differed:")
-        println("Found:")
-        println(foundBox)
-        println("Expected:")
-        println(box)
-      }
-
-      foundBox should matchWithAnsi(box)
-    }
+    promise.future
   }
 
   def verifyBox(box: String): Unit = {

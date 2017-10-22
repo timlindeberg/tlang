@@ -5,6 +5,7 @@ import org.scalatest._
 import tlang.compiler.imports.ClassPath
 import tlang.formatting.textformatters.TabReplacer
 import tlang.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
+import tlang.testutils.TestConstants
 import tlang.{Constants, Context}
 
 import scala.collection.mutable
@@ -20,13 +21,14 @@ object CompilerIntegrationTestSpec {
   val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
+  val TestPattern  : Option[String]                = sys.env.get("pattern").map(_.toLowerCase)
 
 }
 
 trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
 
   import CompilerIntegrationTestSpec._
-  import tlang.testsuites.CompilerIntegrationTestSuite._
+  import TestConstants._
 
   def testContext(file: Option[File] = None): Context = {
     val outDir = file match {

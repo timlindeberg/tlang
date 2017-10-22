@@ -48,13 +48,20 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
 
 
   override def receive: Receive = {
-    case Warmup            => evaluator(WarmupProgram)
-    case Evaluate(command) => execute(command)
-    case StopExecution     => cancelExecution()
-    case PrettyPrint       => prettyPrint()
+    case msg: EvaluationMessage => evaluate(msg)
   }
 
-  private def execute(command: String): Unit = {
+  private def evaluate(msg: EvaluationMessage): Unit = {
+    println("Evaluating " + msg)
+    msg match {
+      case Warmup            => evaluator(WarmupProgram)
+      case Evaluate(command) => evaluate(command)
+      case StopExecution     => cancelExecution()
+      case PrettyPrint       => prettyPrint()
+    }
+  }
+
+  private def evaluate(command: String): Unit = {
     val (f, cancel) = CancellableFuture { evaluator(command) }
     cancelExecution = cancel
     f onComplete { res =>
@@ -83,7 +90,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
   private def prettyPrint(): Unit = parent ! RenderingActor.DrawSuccess(state.prettyPrinted, truncate = false)
 
 
-  private def formatStackTrace(e: Throwable) = {
+  private def formatStackTrace(e: Throwable): String = {
     val stackTrace = e.getCause.stackTrace
     // Remove internal parts of the stacktrace
     val trimmed = stackTrace.split("at " + ClassName).head + s"at $ClassName.main(Unknown Source)$NL"

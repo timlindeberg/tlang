@@ -24,7 +24,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
     }
 
   override def description(formatting: Formatting): String =
-    "Parses the tokens produced by the errortests.lexing phase and generates an AST."
+    "Parses the tokens produced by the lexing phase and generates an AST."
 
   override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
     debugOutputFormatter.printASTs(phaseName, output)
@@ -388,7 +388,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       report(ImplicitMethodOrOperator(impl))
     }
 
-    // TODO: Find better way of errortests.parsing operators than hard coding how many
+    // TODO: Find better way of parsing operators than hard coding how many
     // arguments they should have. This is done since minus can have both
     // one or two operands.
 
@@ -1447,14 +1447,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * Continues errortests.parsing until one of the given token kinds are encountered.
+    * Continues parsing until one of the given token kinds are encountered.
     */
   private def until[T](parse: => T, kinds: TokenKind*): List[T] = {
     until(!kinds.contains(nextTokenKind), parse)
   }
 
   /**
-    * Continues errortests.parsing until a token different from the given tokens is encountered.
+    * Continues parsing until a token different from the given tokens is encountered.
     */
   private def untilNot[T](parse: => T, kinds: TokenKind*): List[T] = {
     until(kinds.contains(nextTokenKind), parse)

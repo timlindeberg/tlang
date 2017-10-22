@@ -6,12 +6,12 @@ import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.lexer.Lexing
 import tlang.formatting.SimpleFormatting
 import tlang.messages.{CompilationException, MessageType}
+import tlang.testutils.TestConstants._
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
 
-  import tlang.testsuites.CompilerIntegrationTestSuite._
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TestContext: Context = testContext(Some(TestFile))

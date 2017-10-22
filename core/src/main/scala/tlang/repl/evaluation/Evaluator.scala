@@ -1,5 +1,6 @@
 package tlang.repl.evaluation
 
+import tlang.utils.Extensions._
 import better.files.File
 import tlang.Context
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
@@ -8,11 +9,13 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.utils.Extensions._
 import tlang.utils.{ProgramExecutor, StringSource}
 
 
 object Evaluator {
+
+
+
 
 
   val ClassName        = "ReplExecution"
@@ -64,15 +67,19 @@ case class Evaluator(
     val definitionMessages = extractor(parsedInput)
     val cus = compile(state.compilationUnit)
     val executionMessages = execute(cus)
+    println("Finished evaluating")
+
     resultMessage(definitionMessages, executionMessages)
   }
 
   private def parseInput(command: String): CompilationUnit = {
+    println("Parsing input")
     val input = StringSource(command, ClassName) :: Nil
     parse(input).head
   }
 
   private def compile(CU: CompilationUnit): List[CompilationUnit] = {
+    println("Analyzing etc")
     val allCUs = analyze(CU :: Nil)
 
     // Templating can generate additional CU's. We extract the one with REPL-class
@@ -85,11 +92,15 @@ case class Evaluator(
   }
 
   private def execute(cus: List[CompilationUnit]): Iterator[String] = {
+    println("Compiling")
+
     compile(cus)
 
+    println("Executing program")
     val res = programExecutor(classFile)
     state.addStatementsToHistory()
 
+    println("Getting output")
     getOutput(res).lines
   }
 

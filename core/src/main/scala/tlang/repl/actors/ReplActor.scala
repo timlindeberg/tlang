@@ -73,12 +73,15 @@ class ReplActor(
 
   override def receive: Receive = {
     case SetState(state)        =>
+      println("Setting state " + state)
       this.state = state
     case Start                  =>
+      println("Starting")
       replProgram ! Warmup
       renderer ! RenderingActor.StartRepl
       awaitInput()
     case Stop                   =>
+      println("Stopping")
       renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()

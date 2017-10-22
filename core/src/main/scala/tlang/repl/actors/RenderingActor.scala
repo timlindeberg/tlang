@@ -36,39 +36,43 @@ class RenderingActor(
   var previousBox: OutputBox = _
 
   override def receive: Receive = {
-    case msg: RenderingMessage =>
-      msg match {
-        case StartRepl           =>
-          previousBox = outputBox.welcome()
-          terminal.endBox(previousBox)
-          outputBox = outputBox.clear()
-        case Resize(newWidth)    =>
-          terminal.width = newWidth
-          terminal.updateBox(outputBox)
-        case DrawLoading         =>
-          terminal.isCursorVisible = false
-          outputBox = outputBox.nextLoadingState()
-        case StopRepl            =>
-          previousBox = outputBox.exit()
-          terminal.endBox(previousBox)
-          outputBox = previousBox
-        case DrawNewInput(input) =>
-          outputBox = outputBox.newInput(input)
-          terminal.updateCursor(input)
-        case msg                 =>
-          outputBox = msg match {
-            case DrawCompileError(errors)            => outputBox.compileError(errors)
-            case DrawSuccess(output, shouldTruncate) => outputBox.success(output, shouldTruncate)
-            case DrawFailure(output, shouldTruncate) => outputBox.failure(output, shouldTruncate)
-          }
-          terminal.endBox(outputBox)
-          outputBox = outputBox.clear()
+    case msg: RenderingMessage => renderMessage(msg)
+  }
 
-      }
-      if (previousBox != outputBox) {
+  private def renderMessage(msg: RenderingMessage): Unit = {
+    println("Rendering " + msg)
+    msg match {
+      case StartRepl           =>
+        previousBox = outputBox.welcome()
+        terminal.endBox(previousBox)
+        outputBox = outputBox.clear()
+      case Resize(newWidth)    =>
+        terminal.width = newWidth
         terminal.updateBox(outputBox)
-        previousBox = outputBox
-      }
+      case DrawLoading         =>
+        terminal.isCursorVisible = false
+        outputBox = outputBox.nextLoadingState()
+      case StopRepl            =>
+        previousBox = outputBox.exit()
+        terminal.endBox(previousBox)
+        outputBox = previousBox
+      case DrawNewInput(input) =>
+        outputBox = outputBox.newInput(input)
+        terminal.updateCursor(input)
+      case msg                 =>
+        outputBox = msg match {
+          case DrawCompileError(errors)            => outputBox.compileError(errors)
+          case DrawSuccess(output, shouldTruncate) => outputBox.success(output, shouldTruncate)
+          case DrawFailure(output, shouldTruncate) => outputBox.failure(output, shouldTruncate)
+        }
+        terminal.endBox(outputBox)
+        outputBox = outputBox.clear()
+
+    }
+    if (previousBox != outputBox) {
+      terminal.updateBox(outputBox)
+      previousBox = outputBox
+    }
   }
 
 
