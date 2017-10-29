@@ -8,11 +8,7 @@ class StackTraceHighlighterSpec extends UnitSpec {
   val stackTraceHighlighter = StackTraceHighlighter(Formatting(), failOnError = true)
 
 
-  it should "successfully parse stacktraces" in {
-    // These tests just make sure the parser works with no errors.
-    // The colors are ignored since it would be quite a pain to test the actual colors
-    // for such large stack traces.
-
+  it should "highlight stacktraces" in {
     stackTraceHighlighter(
       """|Exception in thread "main" java.lang.RuntimeException: Compilation Failed with an unknown error
          |The error continued over multiple lines
@@ -24,7 +20,8 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |	at tlang.compiler.Main$.runCompiler(Main.scala:121)
          |	at tlang.compiler.Main$.main(Main.scala:92)
          |	at tlang.compiler.Main.main(Main.scala)
-      """.stripMargin)
+      """.stripMargin
+    ) should matchSnapshot
 
 
     stackTraceHighlighter(
@@ -71,7 +68,7 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |    at org.hibernate.event.def.DefaultSaveOrUpdateEventListener.saveWithGeneratedOrRequestedId(DefaultSaveOrUpdateEventListener.java:210)
          |    at org.hibernate.event.def.DefaultSaveEventListener.saveWithGeneratedOrRequestedId(DefaultSaveEventListener.java:56)
          |    at org.hibernate.event.def.DefaultSaveOrUpdateEventListener.entityIsTransient(DefaultSaveOrUpdateEventListener.java:195)
-         |    at org.hibernate.event.def.DefaultSaveEventListener.performSaveOrUpdate(DefaultSaveEventListener.java:50)
+         |    at org.hibernate.event.def.DefaultSaveEventListefner.performSaveOrUpdate(DefaultSaveEventListener.java:50)
          |    at org.hibernate.event.def.DefaultSaveOrUpdateEventListener.onSaveOrUpdate(DefaultSaveOrUpdateEventListener.java:93)
          |    at org.hibernate.impl.SessionImpl.fireSave(SessionImpl.java:705)
          |    at org.hibernate.impl.SessionImpl.save(SessionImpl.java:693)
@@ -91,7 +88,7 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |    at org.hibernate.id.insert.AbstractSelectingDelegate.performInsert(AbstractSelectingDelegate.java:57)
          |    ... 54 more
       """.stripMargin
-    )
+    ) should matchSnapshot
 
     stackTraceHighlighter(
       """|org.springframework.context.ApplicationContextException: Unable to start embedded container; nested exception is org.springframework.boot.context.embedded.EmbeddedServletContainerException: Unable to start embedded Tomcat
@@ -264,34 +261,7 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl$4.perform(EntityManagerFactoryBuilderImpl.java:857) ~[hibernate-entitymanager-4.3.10.Final.jar:4.3.10.Final]
          |	... 113 common frames omitted
       """.stripMargin
-    )
-  }
-
-  it should "highlight stacktraces" in {
-    val stackTrace = stackTraceHighlighter(
-      """|Exception in thread "main" java.lang.RuntimeException: Compilation Failed with an unknown error
-         |ABCDEFG
-         |
-         |	at scala.sys.package$.error(package.scala:27)
-         |	at tlang.compiler.Main.main(Main.scala)
-         |Caused by: java.lang.RuntimeException: another error
-         |  at scala.sys.package$.error(package.scala:27)
-         |	at tlang.compiler.Main.main(Main.scala)
-      """.stripMargin
-    )
-
-
-    stackTrace.trim should matchWithAnsi(
-      s"""|\u001b[1mException in thread \u001b[34m"main"\u001b[0m \u001b[0m\u001b[1;31mjava\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mRuntimeException\u001b[0m\u001b[37m:\u001b[0m \u001b[33mCompilation Failed with an unknown error
-          |ABCDEFG
-          |\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala:27\u001b[0m\u001b[37m)\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mtlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mcompiler\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mMain\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34mmain\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mMain.scala\u001b[0m\u001b[37m)\u001b[0m
-          |\u001b[1mCaused by: \u001b[0m\u001b[1;31mjava\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mRuntimeException\u001b[0m\u001b[37m:\u001b[0m \u001b[33manother error\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mscala\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31msys\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mpackage$$\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34merror\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mpackage.scala:27\u001b[0m\u001b[37m)\u001b[0m
-          |   \u001b[1mat\u001b[0m \u001b[1;31mtlang\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mcompiler\u001b[0m\u001b[37m.\u001b[0m\u001b[1;31mMain\u001b[0m\u001b[37m.\u001b[0m\u001b[1;34mmain\u001b[0m\u001b[37m(\u001b[0m\u001b[1;4;36mMain.scala\u001b[0m\u001b[37m)\u001b[0m
-          |""".stripMargin.trim
-    )
+    ) should matchSnapshot
   }
 
 }

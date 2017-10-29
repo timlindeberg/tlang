@@ -34,7 +34,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
   it should "execute simple commands" in {
     testTerminal
       .executeCommand("4 + 4")
-      .stopWhen { box => box.contains("esult") }
+      .stopWhen { display => display.contains("Result") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -43,7 +43,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
   it should "use existing variables" in {
     testTerminal
       .executeCommand("5 * res0")
-      .stopWhen { box => box.contains("Result") }
+      .stopWhen { display => display.contains("Result") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -62,7 +62,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
         KeyType.Backspace,
         "new A().Times(10)"
       )
-      .stopWhen { box => box.contains("Result") }
+      .stopWhen { display => display.contains("Result") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -76,7 +76,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
             |Fun(5, "ABC")
             |""".stripMargin
       )
-      .stopWhen { box => box.contains("Result") }
+      .stopWhen { display => display.contains("Result") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -90,7 +90,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
             |new Date(0)
             |""".stripMargin
       )
-      .stopWhen { box => box.contains("Result") }
+      .stopWhen { display => display.contains("Result") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -99,7 +99,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
   it should "show compilation errors" in {
     testTerminal
       .executeCommand(""""ABC" + a + res0 + b + "ABC"""")
-      .stopWhen { box => box.contains("Error") }
+      .stopWhen { display => display.contains("Error") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -108,7 +108,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
   it should "show stack traces on errors" in {
     testTerminal
       .executeCommand("""error("ABC")""")
-      .stopWhen { box => box.contains("Error") }
+      .stopWhen { display => display.contains("Error") }
       .display
       .map { _ should matchSnapshot }
   }
@@ -117,7 +117,7 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
   it should "exit when pressing CTRL+C" in {
     testTerminal
       .executeCommand(new KeyStroke('c', true, false))
-      .stopWhen { box => box.contains("Thanks") }
+      .stopWhen { display => display.contains("Thanks") }
       .display
       .map { _ should matchSnapshot }
   }

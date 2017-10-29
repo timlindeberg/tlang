@@ -9,7 +9,7 @@ import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, 
 import tlang.repl.evaluation.{Evaluator, ReplState}
 import tlang.repl.input.Input
 import tlang.repl.terminal._
-import tlang.utils.{Enumerable, Enumeration}
+import tlang.utils.{Enumerable, Enumeration, Logging}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
@@ -51,7 +51,7 @@ class ReplActor(
   formatter: Formatter,
   outputBox: OutputBox,
   terminal: ReplTerminal,
-  input: Input) extends Actor {
+  input: Input) extends Actor with Logging {
 
   import ReplActor._
   import formatter.formatting._
@@ -73,15 +73,15 @@ class ReplActor(
 
   override def receive: Receive = {
     case SetState(state)        =>
-      println("Setting state " + state)
+      debug"Setting state $state"
       this.state = state
     case Start                  =>
-      println("Starting")
-      replProgram ! Warmup
+      debug"Starting"
+      // replProgram ! Warmup
       renderer ! RenderingActor.StartRepl
       awaitInput()
     case Stop                   =>
-      println("Stopping")
+      debug"Stopping"
       renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()
@@ -94,6 +94,7 @@ class ReplActor(
     Future { terminal.readInput() } foreach {
       case OtherKey(KeyType.EOF, _, _, _) => self ! Stop
       case keyStroke                      =>
+        debug"Got input $keyStroke"
         val shouldUpdateRenderer = Commands.find(_.matches(state, keyStroke)) match {
           case Some(command) => command(keyStroke)
           case None          => false
@@ -108,9 +109,11 @@ class ReplActor(
   private def setAwaitExecution(): Unit = {
     terminal.isCursorVisible = false
     state = AwaitingExecution
+    debug"Setting state $AwaitingExecution"
     Future {
       //noinspection LoopVariableNotUpdated
       while (state == AwaitingExecution) {
+        debug"Still awaiting execution"
         Thread.sleep(LoadingInterval)
         if (state == AwaitingExecution) {
           renderer ! DrawLoading

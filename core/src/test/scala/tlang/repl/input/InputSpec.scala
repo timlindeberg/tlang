@@ -557,22 +557,6 @@ class InputSpec extends UnitSpec {
          |LMN""".stripMargin
   }
 
-  private def memoryFile(content: String = ""): (StringBuilder, File) = {
-    val buffer = new StringBuilder
-    val file = mock[File]
-    // Save the data to a local stringBuilder instead
-    file.write(*)(*, *) answers { invocation =>
-      buffer.clear
-      buffer ++= invocation.getArgument(0)
-      file
-    }
-
-    file.exists returns true
-    file.lineIterator returns content.lines
-
-    (buffer, file)
-  }
-
   private def createInput(file: File = memoryFile()._2, clipboard: Clipboard = mock[Clipboard], maxHistorySize: Int = DefaultMaxHistory) = {
     Input(file, clipboard, maxHistorySize, 4)
   }

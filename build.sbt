@@ -50,6 +50,7 @@ lazy val core = project
       "org.scalatest" %% "scalatest" % "3.0.1" % Test,
       "org.mockito" % "mockito-core" % "2.9.0" % Test,
       "org.markushauck" %% "mockitoscala" % "0.3.0" % Test,
+
       "com.google.code.findbugs" % "bcel-findbugs" % "6.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.ow2.asm" % "asm-all" % "5.1",
@@ -59,6 +60,7 @@ lazy val core = project
       "org.scala-lang" % "jline" % "2.9.0-1",
       "org.scalaz" %% "scalaz-core" % "7.2.9",
       "com.typesafe.akka" %% "akka-actor" % "2.4.17",
+      "com.lihaoyi" %% "sourcecode" % "0.1.4",
       "com.github.pathikrit" %% "better-files" % "3.1.0"
     ),
     parallelExecution in Test := true,

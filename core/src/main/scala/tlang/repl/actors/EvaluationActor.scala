@@ -7,8 +7,8 @@ import tlang.formatting.Formatter
 import tlang.messages.{CompilationException, MessageType}
 import tlang.repl.actors.ReplActor.SetState
 import tlang.repl.evaluation.{Evaluator, ReplState}
-import tlang.utils.CancellableFuture
 import tlang.utils.Extensions._
+import tlang.utils.{CancellableFuture, Logging}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{CancellationException, TimeoutException}
@@ -30,7 +30,7 @@ object EvaluationActor {
   val name = "replProgram"
 }
 
-class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatter) extends Actor {
+class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatter) extends Actor with Logging {
 
   import EvaluationActor._
   import Evaluator.ClassName
@@ -52,7 +52,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
   }
 
   private def evaluate(msg: EvaluationMessage): Unit = {
-    println("Evaluating " + msg)
+    info"Evaluating $msg"
     msg match {
       case Warmup            => evaluator(WarmupProgram)
       case Evaluate(command) => evaluate(command)
@@ -75,6 +75,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
             case _: CancellationException     => RenderingActor.DrawFailure(FailureColor("Execution cancelled."), truncate = true)
             case e: InvocationTargetException => RenderingActor.DrawFailure(formatStackTrace(e), truncate = true)
             case e                            =>
+              error"Internal compiler error: $e"
               val err = FailureColor("Internal compiler error:" + NL) + formatter.highlightStackTrace(e)
               RenderingActor.DrawFailure(err, truncate = true)
           }

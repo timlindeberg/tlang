@@ -16,6 +16,11 @@ object Extensions {
 
   private val AnsiRegex: Regex = """\x1b[^m]*m""".r
 
+  def debugPrint(values: sourcecode.Text[_]*): Unit = {
+    val maxNameWidth = values.map(_.source.length).max
+    values.foreach(value => printf(s"[%-${ maxNameWidth }s]: %s$NL", value.source, value.value.toString))
+  }
+
   val NL: String = System.lineSeparator
 
   val EscapeCharsNormal: Map[Char, String] =
@@ -25,7 +30,6 @@ object Extensions {
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
 
   def debug(s: String): Unit = BFile("output.txt").write(s + NL)
-
 
   def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
     try {

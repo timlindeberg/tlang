@@ -1,0 +1,8 @@
+INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    '1'ABC'2'DEF'3'
+INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    <'1', '2', '3'>
+INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC: 
+┌─────┘ 
+│ A
+│ multiline
+│ string!
+└─────┐ 

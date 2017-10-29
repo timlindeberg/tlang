@@ -1,0 +1,10 @@
+[1mException in thread [34m"main"[0m [0m[1;31mjava[0m[37m.[0m[1;31mlang[0m[37m.[0m[1;31mRuntimeException[0m[37m:[0m [33mCompilation Failed with an unknown error
+The error continued over multiple lines
+ABCDEFG
+
+[0m
+   [1mat[0m [1;31mscala[0m[37m.[0m[1;31msys[0m[37m.[0m[1;31mpackage$[0m[37m.[0m[1;34merror[0m[37m([0m[1;4;36mpackage.scala:27[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34munknownError[0m[37m([0m[1;4;36mMain.scala:148[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34mrunCompiler[0m[37m([0m[1;4;36mMain.scala:121[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34mmain[0m[37m([0m[1;4;36mMain.scala:92[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain[0m[37m.[0m[1;34mmain[0m[37m([0m[1;4;36mMain.scala[0m[37m)[0m

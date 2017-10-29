@@ -6,6 +6,7 @@ import tlang.messages._
 import tlang.repl.OutputBox
 import tlang.repl.input.InputBuffer
 import tlang.repl.terminal.ReplTerminal
+import tlang.utils.Logging
 
 object RenderingActor {
 
@@ -29,7 +30,7 @@ object RenderingActor {
 class RenderingActor(
   formatter: Formatter,
   terminal: ReplTerminal,
-  var outputBox: OutputBox) extends Actor {
+  var outputBox: OutputBox) extends Actor with Logging {
 
   import RenderingActor._
 
@@ -40,7 +41,7 @@ class RenderingActor(
   }
 
   private def renderMessage(msg: RenderingMessage): Unit = {
-    println("Rendering " + msg)
+    debug"Rendering $msg"
     msg match {
       case StartRepl           =>
         previousBox = outputBox.welcome()
