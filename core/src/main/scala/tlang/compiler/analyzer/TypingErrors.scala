@@ -1,13 +1,13 @@
 package tlang.compiler.analyzer
 
-import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, VariableSymbol}
+import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, Symbol}
 import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
-import tlang.compiler.ast.Trees.{PostDecrement, PostIncrement, PreDecrement, PreIncrement, _}
+import tlang.compiler.ast.Trees._
 import tlang.messages._
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
-trait TypeCheckingErrors extends ErrorHandling {
+trait TypingErrors extends ErrorHandling {
 
 
   def report(error: ErrorMessage): Type = {
@@ -106,46 +106,36 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   // Missing 10, 11, 12
 
-  case class IndexingOperatorNotFound(expr: ArrayOperatorTree, args: List[Type], className: String, override val pos: Positioned)
+  case class IndexingOperatorNotFound(operator: String, className: String, override val pos: Positioned)
     extends TypeCheckingError(13, pos) {
-    lazy val message: String = {
-      val operatorName = expr.operatorString(args, className)
-      err"The class $className does not define an operator $operatorName."
-    }
+    lazy val message: String = err"The class $className does not define an operator $operator."
   }
 
-  case class OperatorNotFound(op: OperatorTree, args: List[Type], override val pos: Positioned)
+  case class OperatorNotFound(operatorSignature: String, args: List[Type], override val pos: Positioned)
     extends TypeCheckingError(13, pos) {
     lazy val message: String = {
       val classesString = overloadedOperatorClassesString(args)
-      val operatorName = op.signature(args)
-      classesString + err" define an operator $operatorName."
+      classesString + err" define an operator $operatorSignature."
     }
 
     private def overloadedOperatorClassesString(args: List[Type]) =
-      if (args.size != 2 || args(0) == args(1))
-        err"The class ${
-          args.head
-        } does not"
+      if (args.isEmpty)
+        ""
+      else if (args.size != 2 || args(0) == args(1))
+        err"The class ${ args.head } does not"
       else if (!args(0).isInstanceOf[TObject])
-        err"The class ${
-          args(1)
-        } does not"
+        err"The class ${ args(1) } does not"
       else if (!args(1).isInstanceOf[TObject])
-        err"The class ${
-          args(0)
-        } does not"
+        err"The class ${ args(0) } does not"
       else
         err"None of the classes " + args.map(arg => err"$arg").mkString(err" or ")
 
   }
 
-  case class OperatorWrongReturnType(op: OperatorSymbol, expected: Type, found: Type)
-    extends TypeCheckingError(14, op) {
-    lazy val message = {
-      val opSignature = op.signature
-      err"Operator $opSignature has wrong return type: expected $expected, found $found."
-    }
+  case class OperatorWrongReturnType(operatorSignature: String, expected: Type, found: Type, override val pos: Positioned)
+    extends TypeCheckingError(14, pos) {
+    lazy val message = err"Operator $operatorSignature has wrong return type: expected $expected, found $found."
+
   }
 
   case class WrongReturnType(tpe: Type, override val pos: Positioned)
@@ -160,20 +150,15 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   // Missing 17
 
-  case class NoTypeNoInitializer(variable: VariableSymbol)
-    extends TypeCheckingError(18, variable) {
-    lazy val message = {
-      val name = variable.name
-      err"Variable $name declared with no type or initialization."
-    }
+  case class NoTypeNoInitializer(variableName: String, override val pos: Positioned)
+    extends TypeCheckingError(18, pos) {
+    lazy val message = err"Variable $variableName declared with no type or initialization."
   }
 
-  case class ValueMustBeInitialized(variable: VariableSymbol)
-    extends TypeCheckingError(19, variable) {
-    lazy val message = {
-      val name = variable.name
-      err"Value $name is not initialized."
-    }
+  case class ValueMustBeInitialized(variableName: String, override val pos: Positioned)
+    extends TypeCheckingError(19, pos) {
+    lazy val message = err"Value $variableName is not initialized."
+
   }
 
   case class NotOnNonNullable(override val pos: Positioned)
@@ -186,12 +171,9 @@ trait TypeCheckingErrors extends ErrorHandling {
     lazy val message = err"Cannot infer type of recursive method."
   }
 
-  case class InvalidIncrementDecrementExpr(expr: ExprTree)
-    extends TypeCheckingError(22, expr) {
-    lazy val message: String = expr match {
-      case _: PreIncrement | _: PostIncrement => err"Invalid increment expression."
-      case _: PreDecrement | _: PostDecrement => err"Invalid decrement expression."
-    }
+  case class InvalidIncrementDecrementExpr(override val pos: Positioned)
+    extends TypeCheckingError(22, pos) {
+    lazy val message: String = err"Invalid increment/decrement expression."
   }
 
   // Missing 23
@@ -201,14 +183,13 @@ trait TypeCheckingErrors extends ErrorHandling {
     lazy val message = err"Cannot instantiate trait $treit."
   }
 
-  case class UnimplementedMethodFromTrait(clazz: IDClassDeclTree, unimplementedMethods: List[(MethodSymbol, ClassSymbol)])
-    extends TypeCheckingError(25, clazz.id) {
+  case class UnimplementedMethodFromTrait(className: String, unimplementedMethods: List[(MethodSymbol, ClassSymbol)], override val pos: Positioned)
+    extends TypeCheckingError(25, pos) {
     lazy val message: String = {
       val methods = formatter.list(unimplementedMethods.map { case (meth, from) =>
         val methSignature = meth.signature
         err"$methSignature from trait $from"
       })
-      val className = clazz.id.name
       err"Class $className does not implement the following methods:" + NL + methods
     }
   }
@@ -247,12 +228,9 @@ trait TypeCheckingErrors extends ErrorHandling {
 
   // Missing 31
 
-  case class ForeachNotIterable(container: ExprTree)
-    extends TypeCheckingError(32, container) {
-    lazy val message = {
-      val tpe = container.getType
-      err"Type $tpe is not iterable."
-    }
+  case class ForeachNotIterable(tpe: Type, override val pos: Positioned)
+    extends TypeCheckingError(32, pos) {
+    lazy val message = err"Type $tpe is not iterable."
   }
 
   case class AssignNullToNonNullable(tpe: Type, override val pos: Positioned)

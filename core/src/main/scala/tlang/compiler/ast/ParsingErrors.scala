@@ -7,8 +7,6 @@ import tlang.utils.Positioned
 
 trait ParsingErrors extends ErrorHandling {
 
-  protected def lastToken: Token
-
   protected def report(error: ErrorMessage): Unit = reporter.report(error)
 
 
@@ -50,8 +48,8 @@ trait ParsingErrors extends ErrorHandling {
     lazy val message = err"Expected identifier or array access on left side of assignment."
   }
 
-  case class WrongToken(currentToken: Token, kind: TokenKind, more: TokenKind*)
-    extends ParserFatal(2, restOf(currentToken)) {
+  case class WrongToken(currentToken: Token, lastToken: Token, kind: TokenKind, more: TokenKind*)
+    extends ParserFatal(2, restOf(currentToken, lastToken)) {
 
     lazy val message: String = {
       val expected = kind :: more.toList
@@ -74,11 +72,12 @@ trait ParsingErrors extends ErrorHandling {
   }
 
 
-  case class UnexpectedToken(currentToken: Token) extends ParserFatal(3, restOf(currentToken)) {
+  case class UnexpectedToken(currentToken: Token, lastToken: Token)
+    extends ParserFatal(3, restOf(currentToken, lastToken)) {
     lazy val message = err"Unexpected token: $currentToken"
   }
 
-  private def restOf(currentToken: Token) = new Positioned {setPos(currentToken, lastToken) }
+  private def restOf(currentToken: Token, lastToken: Token) = new Positioned {setPos(currentToken, lastToken) }
 
 
 }

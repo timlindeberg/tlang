@@ -69,9 +69,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE)
   }.map(_._1)
 
-  protected override val lastToken    = tokens.last
-  private            var currentIndex = 0
-  private            var currentToken = tokens(currentIndex)
+  protected val lastToken    = tokens.last
+  private   var currentIndex = 0
+  private   var currentToken = tokens(currentIndex)
 
   private def lastVisibleToken: Token = {
     if (currentIndex == 0)
@@ -329,7 +329,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case PRIVDEF =>
         eat(PRIVDEF)
         Set(protectedOrPrivate.setPos(startPos, lastVisibleToken))
-      case _       => report(WrongToken(nextToken, PUBDEF, PRIVDEF))
+      case _       => report(WrongToken(nextToken, lastToken, PUBDEF, PRIVDEF))
     }
 
     while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
@@ -455,12 +455,12 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
               case EQSIGN =>
                 eat(EQSIGN, LPAREN)
                 (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
-              case _      => report(WrongToken(nextToken, EQSIGN, LPAREN))
+              case _      => report(WrongToken(nextToken, lastToken, EQSIGN, LPAREN))
             }
           case COLON    =>
             eat(COLON, COLON, RBRACKET, LPAREN)
             (3, ArraySlice(Empty(), None, None, None))
-          case _        => report(WrongToken(nextToken, RBRACKET, COLON))
+          case _        => report(WrongToken(nextToken, lastToken, RBRACKET, COLON))
         }
         modifiers.findInstance[Static].ifDefined { static =>
           report(StaticIndexingOperator(static))
@@ -468,11 +468,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
         val args = commaList(formal)
         if (args.size != numArgs)
-          report(UnexpectedToken(currentToken))
+          report(UnexpectedToken(currentToken, lastToken))
 
         (operatorType, args, modifiers)
       case _             =>
-        report(WrongToken(nextToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
+        report(WrongToken(nextToken, lastToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
           RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
           LOGICNOT, LBRACKET))
     }
@@ -517,7 +517,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case PRIVVAL =>
         eat(PRIVVAL)
         Set(protectedOrPrivate.setPos(startPos, lastVisibleToken), Final().setPos(startPos, lastVisibleToken))
-      case _       => report(WrongToken(nextToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
+      case _       => report(WrongToken(nextToken, lastToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
     }
 
     val pos = nextToken
@@ -727,7 +727,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
                  LEFTSHIFTEQ | RIGHTSHIFTEQ =>
               assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, lastVisibleToken)
             case _                          =>
-              report(WrongToken(nextToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ,
+              report(WrongToken(nextToken, lastToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ,
                 ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ))
           }
       }
@@ -742,7 +742,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
         readToken()
     case EOF | RBRACE        =>
-    case _                   => report(WrongToken(nextToken, SEMICOLON, NEWLINE))
+    case _                   => report(WrongToken(nextToken, lastToken, SEMICOLON, NEWLINE))
   }
 
   /**
@@ -950,7 +950,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         access(sup)
       case NEW           => newExpression
       case _             =>
-        report(UnexpectedToken(currentToken))
+        report(UnexpectedToken(currentToken, lastToken))
     }
   }
 
@@ -1006,7 +1006,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case DOT        =>
         eat(DOT)
         NormalAccess
-      case _          => report(WrongToken(nextToken, DOT, QUESTIONMARK))
+      case _          => report(WrongToken(nextToken, lastToken, DOT, QUESTIONMARK))
     }
 
     val application = positioned {
@@ -1086,7 +1086,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           _nullableBracket()
 
         NewArray(e, sizes.toList)
-      case _                       => report(WrongToken(nextToken, LPAREN, LBRACKET))
+      case _                       => report(WrongToken(nextToken, lastToken, LPAREN, LBRACKET))
     }
   }
 
@@ -1139,7 +1139,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case Some(e1) :: None :: None :: Some(e2) :: Nil             => ArraySlice(arr, Some(e1), None, Some(e2))     // [e::e]
       case None :: Some(e1) :: None :: Some(e2) :: Nil             => ArraySlice(arr, None, Some(e1), Some(e2))     // [:e:e]
       case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
-      case _                                                       => report(UnexpectedToken(nextToken))
+      case _                                                       => report(UnexpectedToken(nextToken, lastToken))
     }
     // @formatter:on
   }
@@ -1208,7 +1208,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       if (nextTokenKind == k) {
         readToken()
       } else {
-        report(WrongToken(nextToken, k))
+        report(WrongToken(nextToken, lastToken, k))
       }
     }
   }
@@ -1245,7 +1245,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           case _        => List()
         }
         ClassID(id.value, tIds)
-      case _      => report(WrongToken(nextToken, IDKIND))
+      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
     }
   }
 
@@ -1279,7 +1279,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     case id: ID =>
       eat(IDKIND)
       id.value
-    case _      => report(WrongToken(nextToken, IDKIND))
+    case _      => report(WrongToken(nextToken, lastToken, IDKIND))
   }
 
   /**
@@ -1290,7 +1290,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case id: ID =>
         eat(IDKIND)
         VariableID(id.value)
-      case _      => report(WrongToken(nextToken, IDKIND))
+      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
     }
   }
 
@@ -1302,7 +1302,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case id: ID =>
         eat(IDKIND)
         MethodID(id.value)
-      case _      => report(WrongToken(nextToken, IDKIND))
+      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
     }
   }
 
@@ -1314,7 +1314,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case strlit: STRLIT =>
         eat(STRLITKIND)
         StringLit(strlit.value)
-      case _              => report(WrongToken(nextToken, STRLITKIND))
+      case _              => report(WrongToken(nextToken, lastToken, STRLITKIND))
     }
   }
 
@@ -1326,7 +1326,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case intLit: INTLIT =>
         eat(INTLITKIND)
         IntLit(intLit.value)
-      case _              => report(WrongToken(nextToken, INTLITKIND))
+      case _              => report(WrongToken(nextToken, lastToken, INTLITKIND))
     }
   }
 
@@ -1339,7 +1339,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case longLit: LONGLIT =>
         eat(LONGLITKIND)
         LongLit(longLit.value)
-      case _                => report(WrongToken(nextToken, LONGLITKIND))
+      case _                => report(WrongToken(nextToken, lastToken, LONGLITKIND))
     }
   }
 
@@ -1351,7 +1351,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case floatLit: FLOATLIT =>
         eat(FLOATLITKIND)
         FloatLit(floatLit.value)
-      case _                  => report(WrongToken(nextToken, FLOATLITKIND))
+      case _                  => report(WrongToken(nextToken, lastToken, FLOATLITKIND))
     }
   }
 
@@ -1364,7 +1364,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case doubleLit: DOUBLELIT =>
         eat(DOUBLELITKIND)
         DoubleLit(doubleLit.value)
-      case _                    => report(WrongToken(nextToken, DOUBLELITKIND))
+      case _                    => report(WrongToken(nextToken, lastToken, DOUBLELITKIND))
     }
   }
 
@@ -1376,7 +1376,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case charLit: CHARLIT =>
         eat(CHARLITKIND)
         CharLit(charLit.value)
-      case _                => report(WrongToken(nextToken, CHARLITKIND))
+      case _                => report(WrongToken(nextToken, lastToken, CHARLITKIND))
     }
   }
 
@@ -1442,7 +1442,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case `second` =>
         eat(second)
         false
-      case _        => report(WrongToken(currentToken, first, second))
+      case _        => report(WrongToken(currentToken, lastToken, first, second))
     }
   }
 

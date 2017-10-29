@@ -75,7 +75,7 @@ case class TypeChecker(
   override val errorStringContext: ErrorStringContext,
   imports: Imports,
   currentMethodSymbol: MethodSymbol,
-  methodStack: List[MethodSymbol] = List()) extends TypeCheckingErrors {
+  methodStack: List[MethodSymbol] = List()) extends TypingErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
@@ -126,7 +126,7 @@ case class TypeChecker(
         case _                          => return
       }
       if (tpe != correctOperatorType)
-        report(OperatorWrongReturnType(op, correctOperatorType, tpe))
+        report(OperatorWrongReturnType(op.signature, correctOperatorType, tpe, op))
     case _                  =>
   }
 
@@ -136,13 +136,13 @@ case class TypeChecker(
     case VarDecl(id, tpe, init, _)         =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
-        report(ValueMustBeInitialized(varSym))
+        report(ValueMustBeInitialized(varSym.name, varSym))
 
       (tpe, init) match {
         case (Some(tpe), Some(expr)) => tcExpr(expr, tpe.getType)
         case (None, Some(expr))      => id.setType(tcExpr(expr))
         case (Some(_), None)         => // Abstract
-        case (None, None)            => report(NoTypeNoInitializer(varSym))
+        case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
       }
     case If(condition, thn, els)           =>
       tcExpr(condition, Bool)
@@ -162,8 +162,8 @@ case class TypeChecker(
         case TArray(arrTpe)       =>
           arrTpe
         case TObject(classSymbol) =>
-          getIteratorType(classSymbol) getOrElse report(ForeachNotIterable(container))
-        case _                    => report(ForeachNotIterable(container))
+          getIteratorType(classSymbol) getOrElse report(ForeachNotIterable(container.getType, container))
+        case _                    => report(ForeachNotIterable(container.getType, container))
       }
       varDecl.id.getType match {
         case TUntyped                      => varDecl.id.setType(expectedVarType)
@@ -506,18 +506,18 @@ case class TypeChecker(
     val argList = List(arg1, arg2)
     typeCheckOperator(arg1, operator, argList)
       .orElse(typeCheckOperator(arg2, operator, argList))
-      .getOrElse(report(OperatorNotFound(operator, argList, operator)))
+      .getOrElse(report(OperatorNotFound(operator.signature(argList), argList, operator)))
   }
 
   def tcUnaryOperator(expr: OperatorTree, arg: Type): Type = {
     val argList = List(arg)
     typeCheckOperator(arg, expr, argList)
-      .getOrElse(report(OperatorNotFound(expr, argList, expr)))
+      .getOrElse(report(OperatorNotFound(expr.signature(argList), argList, expr)))
   }
 
   def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
     typeCheckOperator(classTpe, opType, argList)
-      .getOrElse(report(IndexingOperatorNotFound(opType, argList, arrTpe.toString, pos)))
+      .getOrElse(report(IndexingOperatorNotFound(opType.operatorString(argList, arrTpe.toString), arrTpe.toString, pos)))
   }
 
   def checkMethodUsage(): Unit = {
@@ -562,7 +562,7 @@ case class TypeChecker(
       .filter { case (method, _) => !classSymbol.implementsMethod(method) }
 
     if (unimplementedMethods.nonEmpty)
-      report(UnimplementedMethodFromTrait(classDecl, unimplementedMethods))
+      report(UnimplementedMethodFromTrait(classDecl.id.name, unimplementedMethods, classDecl))
   }
 
 

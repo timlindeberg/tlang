@@ -1,8 +1,7 @@
 package tlang.compiler.analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
-import tlang.compiler.analyzer.Types.Type
-import tlang.compiler.ast.Trees.{Break, Tree, _}
+import tlang.compiler.ast.Trees._
 import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
@@ -104,23 +103,20 @@ trait NamingErrors extends ErrorHandling {
     lazy val message = err"${ "this" } can not be used in a static context."
   }
 
-  case class OperatorWrongTypes(operatorType: OperatorTree, argTypes: List[Type], classSymbol: ClassSymbol, className: String,
-    override val pos: Positioned)
+  case class OperatorWrongTypes(operatorSignature: String, classSymbol: ClassSymbol, className: String, override val pos: Positioned)
     extends NameAnalysisError(14, pos) {
     lazy val message: String = {
-      val op = operatorType.signature(argTypes)
       val classString = classSymbol match {
         case _: ExtensionClassSymbol => err"extension class of $className"
         case _                       => err"class $className"
       }
-      err"Operator $op defined in " + classString + err" needs to have $className as an argument."
+      err"Operator $operatorSignature defined in " + classString + err" needs to have $className as an argument."
     }
   }
 
-  case class BreakContinueOutsideLoop(stat: Tree, override val pos: Positioned)
+  case class BreakContinueOutsideLoop(breakOrContinue: String, override val pos: Positioned)
     extends NameAnalysisError(15, pos) {
     lazy val message: String = {
-      val breakOrContinue = if (stat.isInstanceOf[Break]) "break" else "continue"
       err"Can not use $breakOrContinue statement outside of a loop."
     }
   }

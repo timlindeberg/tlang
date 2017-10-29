@@ -96,7 +96,7 @@ case class TemplateModifier(ctx: Context) {
     override val reporter: Reporter,
     override val errorStringContext: ErrorStringContext,
     cu: CompilationUnit,
-    classSymbolLocator: ClassSymbolLocator) extends TemplateErrors {
+    classSymbolLocator: ClassSymbolLocator) extends TemplatingErrors {
 
     /**
       * Has the side effect of filling the programs in the template program map with

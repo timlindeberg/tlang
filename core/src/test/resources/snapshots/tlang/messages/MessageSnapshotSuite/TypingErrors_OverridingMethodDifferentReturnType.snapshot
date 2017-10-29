@@ -1,0 +1,1 @@
+T2027: [1mOverriding method [35mABC()[0m[1m in class [35mABC[0m[1m has return type [35m[untyped][0m[1m while the method in parent [35mABC[0m[1m has return type [35m[untyped][0m[1m.[0m

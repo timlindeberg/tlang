@@ -38,7 +38,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 case class FlowAnalyser(
   override val reporter: Reporter,
   override val errorStringContext: ErrorStringContext,
-  imports: Imports) extends FlowAnalysisErrors {
+  imports: Imports) extends FlowingErrors {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
@@ -245,7 +245,7 @@ case class FlowAnalyser(
           traverse(lhs)
           traverse(rhs)
           binOp ifInstanceOf[Div] { _ =>
-            knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) report(DivideByZero(rhs, binOp)) }
+            knowledge.getNumericValue(rhs) ifDefined { v => if (v == 0) report(DivideByZero(rhs.toString, binOp)) }
           }
           binOp match {
             case _: EqualsOperatorTree | _: And | _: Or =>
@@ -273,11 +273,11 @@ case class FlowAnalyser(
             case arrRead@ArrayRead(_, index) =>
               knowledge.getNumericValue(index) ifDefined { value =>
                 if (value < 0)
-                  report(OutOfBounds(index, value, 0, arrRead))
+                  report(OutOfBounds(index.toString, value, 0, arrRead))
                 else
                   getArraySize(arr, knowledge) ifDefined { size =>
                     if (value >= size)
-                      report(OutOfBounds(index, value, size - 1, arrRead))
+                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
                   }
               }
             case _                           =>
@@ -289,7 +289,7 @@ case class FlowAnalyser(
     knowledge
   }
 
-  private def checkReassignment(varId: Identifier, pos: Positioned) =
+  private def checkReassignment(varId: Identifier, pos: Positioned): Unit =
     varId.symbol ifDefined { sym =>
       if (sym.modifiers.contains(Final()))
         report(ReassignmentToVal(sym.name, pos))
@@ -306,7 +306,7 @@ case class FlowAnalyser(
       case Some(varId) =>
         knowledge.get[IsNull](varId) match {
           case Some(IsNull(knownNull)) =>
-            report(UnnecessaryCheck(obj, knownNull, t))
+            report(UnnecessaryCheck(obj.toString, knownNull, t))
             knowledge
           case None                    => knowledge.add(varId, IsNull(isNull))
         }
@@ -327,13 +327,13 @@ case class FlowAnalyser(
           case Some(varId) =>
             if (objTpe.isNullable)
               knowledge.get[IsNull](varId) match {
-                case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj, obj))
-                case None                           => report(AccessMightBeNull(obj, obj))
+                case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj.toString, obj))
+                case None                           => report(AccessMightBeNull(obj.toString, obj))
                 case _                              =>
               }
             varId.symbol ifDefined { varSym =>
               if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-                report(VariableNotInitialized(obj, obj))
+                report(VariableNotInitialized(obj.toString, obj))
             }
           case _           =>
         }

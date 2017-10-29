@@ -4,11 +4,13 @@ import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites}
 import tlang.compiler.ast.PrettyPrinterSpec
 import tlang.compiler.{CompilerErrorsSuite, PositionSuite, ValidProgramsSuite}
+import tlang.messages.MessageSnapshotSuite
 
 
-class CompilerIntegrationTestSuite extends Suites(
+class IntegrationTestSuite extends Suites(
   new CompilerErrorsSuite,
   new ValidProgramsSuite,
+  new MessageSnapshotSuite,
   new PositionSuite,
   new PrettyPrinterSpec
 ) with BeforeAndAfterAll {
@@ -23,5 +25,5 @@ class CompilerIntegrationTestSuite extends Suites(
 
   override def afterAll: Unit = if (!KeepFilesOnExit) File(TestOutputDirectory).delete()
 
-  override val suiteName: String = "Compiler Integration Tests"
+  override val suiteName: String = "Integration Tests"
 }

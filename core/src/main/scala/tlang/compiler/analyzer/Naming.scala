@@ -285,7 +285,7 @@ case class NameAnalyser(
         }
 
         if (!argTypes.contains(tpe))
-          report(OperatorWrongTypes(operatorType, argTypes, classSymbol, tpe.name, operatorDecl))
+          report(OperatorWrongTypes(operatorType.signature(argTypes), classSymbol, tpe.name, operatorDecl))
       }
 
       stat ifDefined { new StatementBinder(opSym, isStaticOperator).bindStatement(_) }
@@ -381,8 +381,10 @@ case class NameAnalyser(
           expr ifDefined { expr => bind(expr, localVars, scopeLevel) }
           localVars
         case _: Break | _: Continue                         =>
-          if (!canBreakContinue)
-            report(BreakContinueOutsideLoop(statement, statement))
+          if (!canBreakContinue) {
+            val breakOrContinue = if (statement.isInstanceOf[Break]) "break" else "continue"
+            report(BreakContinueOutsideLoop(breakOrContinue, statement))
+          }
           localVars
         case expr: ExprTree                                 =>
           bindExpr(expr, localVars, scopeLevel)

@@ -33,7 +33,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
 }
 
-case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexerErrors {
+case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexingErrors {
 
   protected override var line           = 1
   protected override var column         = 1

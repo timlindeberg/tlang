@@ -105,7 +105,7 @@ case class Imports(ctx: Context,
       case extensionImport: ExtensionImport =>
         classSymbolLocator.findExtensionSymbol(extensionImport.name) match {
           case Some(e) => addExtensionClass(e)
-          case None    => report(CantResolveExtensionsImport(extensionImport, extensionImport))
+          case None    => report(CantResolveExtensionsImport(extensionImport.writtenName, extensionImport))
         }
       case wildCardImport: WildCardImport   =>
         classPath.getClassesInPackage(wildCardImport.name) foreach { name => this += RegularImport(name) }

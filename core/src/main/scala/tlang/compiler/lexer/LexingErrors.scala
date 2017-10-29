@@ -4,7 +4,7 @@ import tlang.compiler.lexer.Tokens.BAD
 import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.{Positioned, Source}
 
-trait LexerErrors extends ErrorHandling {
+trait LexingErrors extends ErrorHandling {
 
   protected var source: Source
   protected var line  : Int

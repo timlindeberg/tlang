@@ -1,6 +1,5 @@
 package tlang.compiler.imports
 
-import tlang.compiler.ast.Trees.ExtensionImport
 import tlang.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
@@ -30,8 +29,8 @@ trait ImportErrors extends ErrorHandling {
     lazy val message = err"Imports $imp1 and $imp2 are conflicting."
   }
 
-  case class CantResolveExtensionsImport(imp: ExtensionImport, override val pos: Positioned) extends ImportError(2, pos) {
-    lazy val message = err"Cannot resolve extension import ${ imp.writtenName }"
+  case class CantResolveExtensionsImport(importName: String, override val pos: Positioned) extends ImportError(2, pos) {
+    lazy val message = err"Cannot resolve extension import $importName"
   }
 
   //---------------------------------------------------------------------------------------
