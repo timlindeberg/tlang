@@ -39,15 +39,20 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
     Snapshots(file)
   }
 
-  private val _currentTestName: ThreadLocal[String] = new ThreadLocal[String]()
-  private val _localTestName  : ThreadLocal[String] = new ThreadLocal[String]()
+  private val _currentTestName: ThreadLocal[String]       = new ThreadLocal[String]()
+  private val _localTestNames : ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
 
   // For readability mostly. Appends the description to the snapshot name if
   // a snapshot test is executed within the block
   def test[U](description: String)(f: => U): U = {
-    _localTestName.set(description)
+    var list = _localTestNames.get()
+    if (list == null)
+      list = Nil
+    list = description :: list
+
+    _localTestNames.set(list)
     val u = f
-    _localTestName.set(null)
+    _localTestNames.set(list.tail)
     u
   }
 
@@ -75,9 +80,9 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
 
 
   private def getTestName = {
-    var localTestName = _localTestName.get()
-    localTestName = if (localTestName == null) "" else s" $localTestName"
-    _currentTestName.get() + localTestName
+    val localTestNames = _localTestNames.get()
+    val localName = if (localTestNames == null || localTestNames.isEmpty) "" else " " + localTestNames.reverse.mkString(" ")
+    _currentTestName.get() + localName
   }
 
 
