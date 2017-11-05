@@ -20,14 +20,18 @@ object ClassLocator {
       .getResources(packageName.replace('.', '/'))
       .asScala
       .map(File(_))
-      .flatMap { dir => dir.glob("**/*.class", includePath = false).map(getClass(packageName, _)) }
+      .flatMap { dir => dir.glob("**/*.class", includePath = false).flatMap(getClass(packageName, _)) }
       .toIndexedSeq
   }
 
-  private def getClass(packageName: String, file: File): Class[_] = {
+  private def getClass(packageName: String, file: File): Option[Class[_]] = {
     val dirPath = file.pathAsString.replace(java.io.File.separatorChar, '.')
     val className = dirPath.substring(dirPath.indexOf(packageName)).stripSuffix(".class")
-    Class.forName(className)
+    try {
+      Some(Class.forName(className))
+    } catch {
+      case _: NoClassDefFoundError => None
+    }
   }
 
 }

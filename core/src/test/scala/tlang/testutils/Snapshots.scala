@@ -10,24 +10,46 @@ object Snapshots {
   val SnapshotNamePrefix: String = "========================================= "
 }
 
+case class Snapshot(value: String, used: Boolean)
+
 case class Snapshots(file: File) {
 
   import Snapshots._
 
-  private      var isDirty  : Boolean                     = false
-  private lazy val snapshots: mutable.Map[String, String] = parse
+  private      var isDirty  : Boolean                       = false
+  private lazy val snapshots: mutable.Map[String, Snapshot] = parse
 
   def +=(keyValue: (String, String)): Unit = keyValue match {
     case (name, newSnapshot) =>
       snapshots.get(name) match {
-        case Some(snapshot) if snapshot == newSnapshot => // Do nothing if the snapshot is the same
-        case _                                         =>
-          isDirty = true
-          snapshots += keyValue
+        case Some(snapshot) if snapshot.value == newSnapshot =>
+        case _                                               => isDirty = true
       }
+      snapshots += name -> Snapshot(newSnapshot, used = true)
   }
 
-  def apply(name: String): Option[String] = snapshots.get(name)
+  def -=(key: String): Unit = {
+    if (!snapshots.contains(key))
+      return
+
+    isDirty = true
+    snapshots -= key
+  }
+
+  def apply(name: String): Option[String] = {
+    snapshots.get(name) match {
+      case Some(Snapshot(value, _)) =>
+        snapshots += name -> Snapshot(value, used = true)
+        Some(value)
+      case _                        => None
+    }
+  }
+
+  def unused(snapshot: String): List[String] = {
+    snapshots.toList
+      .filter { case (name, Snapshot(_, used)) => !used && name.startsWith(snapshot) }
+      .map { case (name, _) => name }
+  }
 
   def save(): Unit = {
     if (!isDirty)
@@ -36,15 +58,15 @@ case class Snapshots(file: File) {
     val content = snapshots
       .toSeq
       .sortBy { case (name, _) => name }
-      .map { case (name, value) => SnapshotNamePrefix + name + NL + value }
+      .map { case (name, Snapshot(value, _)) => SnapshotNamePrefix + name + NL + value }
       .mkString(NL + NL) + NL
 
     file.parent.createDirectories()
     file.write(content)
   }
 
-  private def parse: mutable.Map[String, String] = {
-    val map = mutable.Map[String, String]()
+  private def parse: mutable.Map[String, Snapshot] = {
+    val map = mutable.Map[String, Snapshot]()
 
     if (!file.exists)
       return map
@@ -54,7 +76,7 @@ case class Snapshots(file: File) {
 
     def addSnapshot(): Unit = {
       if (name.nonEmpty)
-        map += name -> lines.dropRight(1).mkString(NL)
+        map += name -> Snapshot(lines.dropRight(1).mkString(NL), used = false)
       lines.clear()
     }
 

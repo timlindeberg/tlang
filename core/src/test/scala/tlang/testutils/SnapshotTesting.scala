@@ -1,8 +1,8 @@
 package tlang.testutils
 
 import better.files._
+import org.scalatest._
 import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{BeforeAndAfterAll, Status, Suite}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 import tlang.utils.Extensions._
@@ -12,16 +12,21 @@ import scala.util.matching.Regex
 
 object SnapshotTesting {
 
-  val UpdateSnapshotsKey: String                   = "updateSnapshots"
-  val UpdateSnapshots   : String                   = sys.env.getOrElse(UpdateSnapshotsKey, "")
-  val UpdateRegex       : Regex                    = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
-  val SnapshotIndex     : mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
-  val Directory         : String                   = TestConstants.Resources + "/snapshots"
-  val Extension         : String                   = ".snap"
+  val UpdateSnapshotsKey   : String                   = "updateSnapshots"
+  val RemoveSnapshotsKey   : String                   = "removeUnusedSnapshots"
+  val UpdateSnapshots      : String                   = sys.env.getOrElse(UpdateSnapshotsKey, "")
+  val RemoveUnusedSnapshots: Boolean                  = sys.env.get(RemoveSnapshotsKey).contains("true")
+  val UpdateRegex          : Regex                    = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
+  val SnapshotIndex        : mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
+  val Directory            : String                   = TestConstants.Resources + "/snapshots"
+  val Extension            : String                   = ".snap"
+
+  private val HighlightColor: Color = Colors.Magenta
+  private val FailColor     : Color = Colors.Red + Colors.Bold
 
 }
 
-trait SnapshotTesting extends Suite with BeforeAndAfterAll {
+trait SnapshotTesting extends TestSuite with BeforeAndAfterAll {
 
   import SnapshotTesting._
 
@@ -45,19 +50,13 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
   // For readability mostly. Appends the description to the snapshot name if
   // a snapshot test is executed within the block
   def test[U](description: String)(f: => U): U = {
-    var list = _localTestNames.get()
-    if (list == null)
-      list = Nil
-    list = description :: list
-
-    _localTestNames.set(list)
-    val u = f
-    _localTestNames.set(list.tail)
-    u
+    val testNames = description :: Option(_localTestNames.get()).getOrElse(Nil)
+    _localTestNames.set(testNames)
+    try { f } finally { _localTestNames.set(testNames.tail) }
   }
 
   def snapshotName: String = {
-    val testName = getTestName
+    val testName = fullTestName
     val index = SnapshotIndex(testName)
 
     val postfix = if (index == 1) "" else s" $index"
@@ -66,32 +65,62 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
   }
 
   def matchSnapshot: SnapshotMatcher = {
-    SnapshotIndex(getTestName) += 1
+    SnapshotIndex(fullTestName) += 1
     new SnapshotMatcher(snapshotName)
   }
 
-
-  protected override def runTest(testName: String, args: org.scalatest.Args): Status = {
-    _currentTestName.set(testName)
-    val status = super.runTest(testName, args)
-    _currentTestName.set(null)
-    status
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    _currentTestName.set(test.name)
+    try {
+      handleUnusedSnapshots(super.withFixture(test))
+    }
+    finally {
+      _currentTestName.set(null)
+    }
   }
 
-
-  private def getTestName = {
+  private def fullTestName = {
     val localTestNames = _localTestNames.get()
     val localName = if (localTestNames == null || localTestNames.isEmpty) "" else " " + localTestNames.reverse.mkString(" ")
     _currentTestName.get() + localName
+  }
+
+  private def handleUnusedSnapshots(outcome: Outcome): Outcome = {
+    val unusedSnapshots = snapshots.unused(_currentTestName.get())
+    if (unusedSnapshots.isEmpty)
+      return outcome
+
+    def formatUnusedSnapshots = unusedSnapshots.map(HighlightColor(_)).mkString(NL)
+
+    val className = getClass.getName
+    if (RemoveUnusedSnapshots) {
+      println(
+        s"""|Removing unused snapshots from ${ HighlightColor(className) }:
+            |
+            |$formatUnusedSnapshots
+         """.stripMargin
+      )
+      unusedSnapshots.foreach(snapshots -= _)
+      return outcome
+    }
+
+    val msg =
+      s"""|${ FailColor(className) } contains unused snapshots:
+          |
+          |$formatUnusedSnapshots
+          |
+          |Rerun with environment variable
+          |   $RemoveSnapshotsKey=${ HighlightColor("true") }
+          |to remove all unused snapshots.
+       """.stripMargin
+    println(msg)
+    Failed(msg.stripAnsi)
   }
 
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 
     private case class Result(isSuccess: Boolean, message: String)
-
-    private val testColor: Color    = Colors.Magenta
-    private val coloredSnapshotName = "'" + testColor(snapshotName) + "'"
 
     def apply(newSnapshot: String): MatchResult = {
       val Result(isSuccess, message) = matchSnapshot(newSnapshot)
@@ -107,7 +136,7 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
       case None                                                                                       =>
         snapshots += snapshotName -> newSnapshot
         Result(isSuccess = true,
-          s"""|No existing snapshot for test $coloredSnapshotName, creating a new one.
+          s"""|No existing snapshot for test ${ HighlightColor(snapshotName) }, creating a new one:
               |---------------------------------------------------------------------------------------------------------
               |$newSnapshot
               |---------------------------------------------------------------------------------------------------------
@@ -120,7 +149,7 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
         val matches = if (UpdateSnapshots == snapshotName)
           s"Updating existing snapshot."
         else
-          s"$coloredSnapshotName matches '${ testColor(UpdateSnapshots) }', updating existing snapshot."
+          s"${ HighlightColor(snapshotName) } matches '${ HighlightColor(UpdateSnapshots) }', updating existing snapshot."
         Result(isSuccess = true,
           s"""|$matches
               |Old snapshot:
@@ -134,9 +163,9 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
               |---------------------------------------------------------------------------------------------------------
            """.stripMargin)
       case Some(snapshot)                                                                             =>
-        var failure = s"$coloredSnapshotName failed, the new snapshot did not match the existing snapshot."
+        var failure = s"${ FailColor(snapshotName) } failed, the new snapshot did not match the existing snapshot."
         if (UpdateSnapshots.nonEmpty)
-          failure += s"\nTest name did not match '${ testColor(UpdateSnapshots) }'."
+          failure += s"\nTest name did not match '${ HighlightColor(UpdateSnapshots) }'."
         Result(isSuccess = false,
           s"""|$failure
               |Existing snapshot:
@@ -150,10 +179,10 @@ trait SnapshotTesting extends Suite with BeforeAndAfterAll {
               |---------------------------------------------------------------------------------------------------------
               |
               |If the new display is correct rerun the test with environment variable
-              |   $UpdateSnapshotsKey=${ testColor(snapshotName) }
+              |   $UpdateSnapshotsKey=${ HighlightColor(snapshotName) }
               |You can also use regexes to match any number of snapshots:
-              |   $UpdateSnapshotsKey=${ testColor(".*") }
-              |   $UpdateSnapshotsKey=${ testColor("MySpec/.*") }
+              |   $UpdateSnapshotsKey=${ HighlightColor(".*") }
+              |   $UpdateSnapshotsKey=${ HighlightColor("MySpec/.*") }
               |This will update the matching snapshots in the executed tests.
             """.stripMargin
         )
