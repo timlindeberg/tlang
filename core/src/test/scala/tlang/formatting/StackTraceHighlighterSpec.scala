@@ -5,10 +5,13 @@ import tlang.testutils.UnitSpec
 
 class StackTraceHighlighterSpec extends UnitSpec {
 
-  val stackTraceHighlighter = StackTraceHighlighter(Formatting(), failOnError = true)
+
+  behavior of "A stack trace highlighter"
 
 
   it should "highlight stacktraces" in {
+    val stackTraceHighlighter = StackTraceHighlighter(Formatting(), failOnError = true)
+
     stackTraceHighlighter(
       """|Exception in thread "main" java.lang.RuntimeException: Compilation Failed with an unknown error
          |The error continued over multiple lines

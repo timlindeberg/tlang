@@ -124,7 +124,8 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
     } catch {
       case e: Throwable =>
         val argumentDescription =
-          constructor.paramLists.flatten
+          constructor.paramLists
+            .flatten
             .zip(args)
             .map { case (expected, found) => s"${ expected.typeSignature } -> $found" }
 

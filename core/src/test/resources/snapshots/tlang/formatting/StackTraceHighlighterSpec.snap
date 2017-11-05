@@ -1,3 +1,81 @@
+========================================= A stack trace highlighter should highlight stacktraces
+[1mException in thread [34m"main"[0m [0m[1;31mjava[0m[37m.[0m[1;31mlang[0m[37m.[0m[1;31mRuntimeException[0m[37m:[0m [33mCompilation Failed with an unknown error
+The error continued over multiple lines
+ABCDEFG
+
+[0m
+   [1mat[0m [1;31mscala[0m[37m.[0m[1;31msys[0m[37m.[0m[1;31mpackage$[0m[37m.[0m[1;34merror[0m[37m([0m[1;4;36mpackage.scala:27[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34munknownError[0m[37m([0m[1;4;36mMain.scala:148[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34mrunCompiler[0m[37m([0m[1;4;36mMain.scala:121[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain$[0m[37m.[0m[1;34mmain[0m[37m([0m[1;4;36mMain.scala:92[0m[37m)[0m
+   [1mat[0m [1;31mtlang[0m[37m.[0m[1;31mcompiler[0m[37m.[0m[1;31mMain[0m[37m.[0m[1;34mmain[0m[37m([0m[1;4;36mMain.scala[0m[37m)[0m
+
+
+========================================= A stack trace highlighter should highlight stacktraces 2
+[1;31mjavax[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletException[0m[37m:[0m [33mSomething bad happened[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mOpenSessionInViewFilter[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mOpenSessionInViewFilter.java:60[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHandler$CachedChain[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mServletHandler.java:1157[0m[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mExceptionHandlerFilter[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mExceptionHandlerFilter.java:28[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHandler$CachedChain[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mServletHandler.java:1157[0m[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mOutputBufferFilter[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mOutputBufferFilter.java:33[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHandler$CachedChain[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mServletHandler.java:1157[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHandler[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mServletHandler.java:388[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31msecurity[0m[37m.[0m[1;31mSecurityHandler[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mSecurityHandler.java:216[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mSessionHandler[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mSessionHandler.java:182[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mhandler[0m[37m.[0m[1;31mContextHandler[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mContextHandler.java:765[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mwebapp[0m[37m.[0m[1;31mWebAppContext[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mWebAppContext.java:418[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mhandler[0m[37m.[0m[1;31mHandlerWrapper[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mHandlerWrapper.java:152[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mServer[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mServer.java:326[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mHttpConnection[0m[37m.[0m[1;34mhandleRequest[0m[37m([0m[1;4;36mHttpConnection.java:542[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mHttpConnection$RequestHandler[0m[37m.[0m[1;34mcontent[0m[37m([0m[1;4;36mHttpConnection.java:943[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mHttpParser[0m[37m.[0m[1;34mparseNext[0m[37m([0m[1;4;36mHttpParser.java:756[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mHttpParser[0m[37m.[0m[1;34mparseAvailable[0m[37m([0m[1;4;36mHttpParser.java:218[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mHttpConnection[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mHttpConnection.java:404[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mbio[0m[37m.[0m[1;31mSocketConnector$Connection[0m[37m.[0m[1;34mrun[0m[37m([0m[1;4;36mSocketConnector.java:228[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mthread[0m[37m.[0m[1;31mQueuedThreadPool$PoolThread[0m[37m.[0m[1;34mrun[0m[37m([0m[1;4;36mQueuedThreadPool.java:582[0m[37m)[0m
+[1mCaused by: [0m[1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mMyProjectServletException[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mMyServlet[0m[37m.[0m[1;34mdoPost[0m[37m([0m[1;4;36mMyServlet.java:169[0m[37m)[0m
+   [1mat[0m [1;31mjavax[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mhttp[0m[37m.[0m[1;31mHttpServlet[0m[37m.[0m[1;34mservice[0m[37m([0m[1;4;36mHttpServlet.java:727[0m[37m)[0m
+   [1mat[0m [1;31mjavax[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mhttp[0m[37m.[0m[1;31mHttpServlet[0m[37m.[0m[1;34mservice[0m[37m([0m[1;4;36mHttpServlet.java:820[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHolder[0m[37m.[0m[1;34mhandle[0m[37m([0m[1;4;36mServletHolder.java:511[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mmortbay[0m[37m.[0m[1;31mjetty[0m[37m.[0m[1;31mservlet[0m[37m.[0m[1;31mServletHandler$CachedChain[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mServletHandler.java:1166[0m[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mOpenSessionInViewFilter[0m[37m.[0m[1;34mdoFilter[0m[37m([0m[1;4;36mOpenSessionInViewFilter.java:30[0m[37m)[0m
+   [37m...[0m [35m27[0m [1mmore[0m
+[1mCaused by: [0m[1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mexception[0m[37m.[0m[1;31mConstraintViolationException[0m[37m:[0m [33mcould not insert: [com.example.myproject.MyEntity][0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mexception[0m[37m.[0m[1;31mSQLStateConverter[0m[37m.[0m[1;34mconvert[0m[37m([0m[1;4;36mSQLStateConverter.java:96[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mexception[0m[37m.[0m[1;31mJDBCExceptionHelper[0m[37m.[0m[1;34mconvert[0m[37m([0m[1;4;36mJDBCExceptionHelper.java:66[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mid[0m[37m.[0m[1;31minsert[0m[37m.[0m[1;31mAbstractSelectingDelegate[0m[37m.[0m[1;34mperformInsert[0m[37m([0m[1;4;36mAbstractSelectingDelegate.java:64[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mpersister[0m[37m.[0m[1;31mentity[0m[37m.[0m[1;31mAbstractEntityPersister[0m[37m.[0m[1;34minsert[0m[37m([0m[1;4;36mAbstractEntityPersister.java:2329[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mpersister[0m[37m.[0m[1;31mentity[0m[37m.[0m[1;31mAbstractEntityPersister[0m[37m.[0m[1;34minsert[0m[37m([0m[1;4;36mAbstractEntityPersister.java:2822[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31maction[0m[37m.[0m[1;31mEntityIdentityInsertAction[0m[37m.[0m[1;34mexecute[0m[37m([0m[1;4;36mEntityIdentityInsertAction.java:71[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mengine[0m[37m.[0m[1;31mActionQueue[0m[37m.[0m[1;34mexecute[0m[37m([0m[1;4;36mActionQueue.java:268[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mAbstractSaveEventListener[0m[37m.[0m[1;34mperformSaveOrReplicate[0m[37m([0m[1;4;36mAbstractSaveEventListener.java:321[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mAbstractSaveEventListener[0m[37m.[0m[1;34mperformSave[0m[37m([0m[1;4;36mAbstractSaveEventListener.java:204[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mAbstractSaveEventListener[0m[37m.[0m[1;34msaveWithGeneratedId[0m[37m([0m[1;4;36mAbstractSaveEventListener.java:130[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mDefaultSaveOrUpdateEventListener[0m[37m.[0m[1;34msaveWithGeneratedOrRequestedId[0m[37m([0m[1;4;36mDefaultSaveOrUpdateEventListener.java:210[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mDefaultSaveEventListener[0m[37m.[0m[1;34msaveWithGeneratedOrRequestedId[0m[37m([0m[1;4;36mDefaultSaveEventListener.java:56[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mDefaultSaveOrUpdateEventListener[0m[37m.[0m[1;34mentityIsTransient[0m[37m([0m[1;4;36mDefaultSaveOrUpdateEventListener.java:195[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mDefaultSaveEventListefner[0m[37m.[0m[1;34mperformSaveOrUpdate[0m[37m([0m[1;4;36mDefaultSaveEventListener.java:50[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mevent[0m[37m.[0m[1;31mdef[0m[37m.[0m[1;31mDefaultSaveOrUpdateEventListener[0m[37m.[0m[1;34monSaveOrUpdate[0m[37m([0m[1;4;36mDefaultSaveOrUpdateEventListener.java:93[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mimpl[0m[37m.[0m[1;31mSessionImpl[0m[37m.[0m[1;34mfireSave[0m[37m([0m[1;4;36mSessionImpl.java:705[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mimpl[0m[37m.[0m[1;31mSessionImpl[0m[37m.[0m[1;34msave[0m[37m([0m[1;4;36mSessionImpl.java:693[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mimpl[0m[37m.[0m[1;31mSessionImpl[0m[37m.[0m[1;34msave[0m[37m([0m[1;4;36mSessionImpl.java:689[0m[37m)[0m
+   [1mat[0m [1;31msun[0m[37m.[0m[1;31mreflect[0m[37m.[0m[1;31mGeneratedMethodAccessor5[0m[37m.[0m[1;34minvoke[0m[37m([0mUnknown Source[37m)[0m
+   [1mat[0m [1;31msun[0m[37m.[0m[1;31mreflect[0m[37m.[0m[1;31mDelegatingMethodAccessorImpl[0m[37m.[0m[1;34minvoke[0m[37m([0m[1;4;36mDelegatingMethodAccessorImpl.java:25[0m[37m)[0m
+   [1mat[0m [1;31mjava[0m[37m.[0m[1;31mlang[0m[37m.[0m[1;31mreflect[0m[37m.[0m[1;31mMethod[0m[37m.[0m[1;34minvoke[0m[37m([0m[1;4;36mMethod.java:597[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mcontext[0m[37m.[0m[1;31mThreadLocalSessionContext$TransactionProtectionWrapper[0m[37m.[0m[1;34minvoke[0m[37m([0m[1;4;36mThreadLocalSessionContext.java:344[0m[37m)[0m
+   [1mat[0m [1;31m$Proxy19[0m[37m.[0m[1;34msave[0m[37m([0mUnknown Source[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mMyEntityService[0m[37m.[0m[1;34msave[0m[37m([0m[1;4;36mMyEntityService.java:59[0m[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mexample[0m[37m.[0m[1;31mmyproject[0m[37m.[0m[1;31mMyServlet[0m[37m.[0m[1;34mdoPost[0m[37m([0m[1;4;36mMyServlet.java:164[0m[37m)[0m
+   [37m...[0m [35m32[0m [1mmore[0m
+[1mCaused by: [0m[1;31mjava[0m[37m.[0m[1;31msql[0m[37m.[0m[1;31mSQLException[0m[37m:[0m [33mViolation of unique constraint MY_ENTITY_UK_1: duplicate value(s) for column(s) MY_COLUMN in statement [...][0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhsqldb[0m[37m.[0m[1;31mjdbc[0m[37m.[0m[1;31mUtil[0m[37m.[0m[1;34mthrowError[0m[37m([0mUnknown Source[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhsqldb[0m[37m.[0m[1;31mjdbc[0m[37m.[0m[1;31mjdbcPreparedStatement[0m[37m.[0m[1;34mexecuteUpdate[0m[37m([0mUnknown Source[37m)[0m
+   [1mat[0m [1;31mcom[0m[37m.[0m[1;31mmchange[0m[37m.[0m[1;31mv2[0m[37m.[0m[1;31mc3p0[0m[37m.[0m[1;31mimpl[0m[37m.[0m[1;31mNewProxyPreparedStatement[0m[37m.[0m[1;34mexecuteUpdate[0m[37m([0m[1;4;36mNewProxyPreparedStatement.java:105[0m[37m)[0m
+   [1mat[0m [1;31morg[0m[37m.[0m[1;31mhibernate[0m[37m.[0m[1;31mid[0m[37m.[0m[1;31minsert[0m[37m.[0m[1;31mAbstractSelectingDelegate[0m[37m.[0m[1;34mperformInsert[0m[37m([0m[1;4;36mAbstractSelectingDelegate.java:57[0m[37m)[0m
+   [37m...[0m [35m54[0m [1mmore[0m
+
+========================================= A stack trace highlighter should highlight stacktraces 3
 [1;31morg[0m[37m.[0m[1;31mspringframework[0m[37m.[0m[1;31mcontext[0m[37m.[0m[1;31mApplicationContextException[0m[37m:[0m [33mUnable to start embedded container; nested exception is org.springframework.boot.context.embedded.EmbeddedServletContainerException: Unable to start embedded Tomcat[0m
    [1mat[0m [1;31morg[0m[37m.[0m[1;31mspringframework[0m[37m.[0m[1;31mboot[0m[37m.[0m[1;31mcontext[0m[37m.[0m[1;31membedded[0m[37m.[0m[1;31mEmbeddedWebApplicationContext[0m[37m.[0m[1;34monRefresh[0m[37m([0m[1;4;36mEmbeddedWebApplicationContext.java:133[0m[37m)[0m [37m[[0m[1;34mspring-boot-1.2.4.RELEASE.jar:1.2.4.RELEASE[0m[37m][0m
    [1mat[0m [1;31morg[0m[37m.[0m[1;31mspringframework[0m[37m.[0m[1;31mcontext[0m[37m.[0m[1;31msupport[0m[37m.[0m[1;31mAbstractApplicationContext[0m[37m.[0m[1;34mrefresh[0m[37m([0m[1;4;36mAbstractApplicationContext.java:474[0m[37m)[0m [37m[[0m[1;34mspring-context-4.1.6.RELEASE.jar:4.1.6.RELEASE[0m[37m][0m

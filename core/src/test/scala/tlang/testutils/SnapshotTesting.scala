@@ -2,7 +2,7 @@ package tlang.testutils
 
 import better.files._
 import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{Status, Suite}
+import org.scalatest.{BeforeAndAfterAll, Status, Suite}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 import tlang.utils.Extensions._
@@ -12,19 +12,32 @@ import scala.util.matching.Regex
 
 object SnapshotTesting {
 
-  val Directory         : String = TestConstants.Resources + "/snapshots"
-  val Extension         : String = ".snapshot"
-  val UpdateSnapshotsKey: String = "updateSnapshots"
-  val UpdateSnapshots   : String = sys.env.getOrElse(UpdateSnapshotsKey, "")
-  val UpdateRegex       : Regex  = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
-
-  val SnapshotIndex: mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
+  val UpdateSnapshotsKey: String                   = "updateSnapshots"
+  val UpdateSnapshots   : String                   = sys.env.getOrElse(UpdateSnapshotsKey, "")
+  val UpdateRegex       : Regex                    = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
+  val SnapshotIndex     : mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
+  val Directory         : String                   = TestConstants.Resources + "/snapshots"
+  val Extension         : String                   = ".snap"
 
 }
 
-trait SnapshotTesting extends Suite {
+trait SnapshotTesting extends Suite with BeforeAndAfterAll {
 
   import SnapshotTesting._
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    snapshots.save()
+  }
+
+  private val snapshots: Snapshots = {
+    val parts = getClass.getName.split("\\.")
+    val dir = parts.dropRight(1).mkString("/")
+    val fileName = parts.last
+
+    val file = Directory / dir / (fileName + Extension)
+    Snapshots(file)
+  }
 
   private val _currentTestName: ThreadLocal[String] = new ThreadLocal[String]()
   private val _localTestName  : ThreadLocal[String] = new ThreadLocal[String]()
@@ -44,8 +57,7 @@ trait SnapshotTesting extends Suite {
 
     val postfix = if (index == 1) "" else s" $index"
 
-    val name = testName + postfix
-    name.replaceAll(" ", "_")
+    testName + postfix
   }
 
   def matchSnapshot: SnapshotMatcher = {
@@ -65,21 +77,16 @@ trait SnapshotTesting extends Suite {
   private def getTestName = {
     var localTestName = _localTestName.get()
     localTestName = if (localTestName == null) "" else s" $localTestName"
-    getClass.getName.replaceAll("\\.", "/") + '/' + _currentTestName.get() + localTestName
+    _currentTestName.get() + localTestName
   }
 
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 
-
     private case class Result(isSuccess: Boolean, message: String)
 
     private val testColor: Color    = Colors.Magenta
     private val coloredSnapshotName = "'" + testColor(snapshotName) + "'"
-
-    private val snapshotFile: File = (Directory / (snapshotName + Extension)) use {
-      _.parent.createIfNotExists(asDirectory = true, createParents = true)
-    }
 
     def apply(newSnapshot: String): MatchResult = {
       val Result(isSuccess, message) = matchSnapshot(newSnapshot)
@@ -91,9 +98,9 @@ trait SnapshotTesting extends Suite {
       MatchResult(matches = isSuccess, failureMessage, successMessage)
     }
 
-    private def matchSnapshot(newSnapshot: String): Result = readSnapshot match {
+    private def matchSnapshot(newSnapshot: String): Result = snapshots(snapshotName) match {
       case None                                                                                       =>
-        saveSnapshot(newSnapshot)
+        snapshots += snapshotName -> newSnapshot
         Result(isSuccess = true,
           s"""|No existing snapshot for test $coloredSnapshotName, creating a new one.
               |---------------------------------------------------------------------------------------------------------
@@ -103,7 +110,8 @@ trait SnapshotTesting extends Suite {
       case Some(oldSnapshot) if newSnapshot == oldSnapshot                                            =>
         Result(isSuccess = true, "")
       case Some(oldSnapshot) if UpdateSnapshots == snapshotName || (UpdateRegex matches snapshotName) =>
-        saveSnapshot(newSnapshot)
+        snapshots += snapshotName -> newSnapshot
+
         val matches = if (UpdateSnapshots == snapshotName)
           s"Updating existing snapshot."
         else
@@ -145,13 +153,6 @@ trait SnapshotTesting extends Suite {
             """.stripMargin
         )
     }
-
-    private def readSnapshot: Option[String] = {
-      val file = snapshotFile
-      if (file.exists) Some(file.contentAsString) else None
-    }
-    private def saveSnapshot(snapshot: String): Unit = snapshotFile.write(snapshot)
-
   }
 
 

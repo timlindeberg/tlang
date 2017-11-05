@@ -190,9 +190,9 @@ class Logger(implicit protected val loggingSettings: LoggingSettings) {
       return lines.head
 
     val indent = color(Vertical + " ")
-    NL + color(TopLeft + Horizontal * logLevelWidth + BottomRight + " ") +
+    NL + color(TopLeft + Horizontal * logLevelWidth + BottomRight) +
       NL + lines.map(indent + _).mkString(NL) +
-      NL + color(BottomLeft + Horizontal * logLevelWidth + TopRight + " ")
+      NL + color(BottomLeft + Horizontal * logLevelWidth + TopRight)
   }
 
   private def extraLines(extra: Any): Seq[String] = extra match {
