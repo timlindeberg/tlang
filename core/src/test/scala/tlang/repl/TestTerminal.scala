@@ -14,7 +14,8 @@ import tlang.testutils.AnsiMatchers
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 
 /**
@@ -25,7 +26,6 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Pro
   * calling executeCommand().stopWhen().shouldMatch(<OUTPUT>)
   */
 class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
-
 
   private val ExecuteKey  : KeyStroke                   = new KeyStroke(' ', true, false)
   private val terminalSize: TerminalSize                = new TerminalSize(height, width)
@@ -171,7 +171,6 @@ class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
 
 class TestTerminalExecution(timeout: Long) extends Matchers with AnsiMatchers {
 
-  private implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
   private var stopAt: Option[String => Boolean] = None
   private val promise                           = Promise[String]()

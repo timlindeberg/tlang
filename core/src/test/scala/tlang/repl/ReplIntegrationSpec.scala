@@ -6,13 +6,14 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import tlang.formatting.DefaultFormatting
 import tlang.options.Options
 import tlang.repl.actors.ReplActor.{Start, Stop}
-import tlang.testutils.{AnsiMatchers, SnapshotTesting}
+import tlang.testutils.AnsiMatchers
+import tlang.testutils.snapshot.AsyncSnapshotTesting
 
-class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers with AnsiMatchers with BeforeAndAfterAll {
+class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with Matchers with AnsiMatchers with BeforeAndAfterAll {
 
   def Width = 80
   def Height = 300
-  def TimeoutMilliseconds = 5000
+  def TimeoutMilliseconds = 1000
 
   val testTerminal: TestTerminal = new TestTerminal(Width, Height, TimeoutMilliseconds)
   var repl        : ActorRef     = _
@@ -29,7 +30,11 @@ class ReplSnapshotSpec extends AsyncFlatSpec with SnapshotTesting with Matchers 
     repl ! Stop
   }
 
-  // These tests are executed in order and depend on the previous tests.
+  // These tests are executed in order and can depend on the previous tests.
+  // For instance the use existing variables test uses the calculation from
+  // the test before
+
+  behavior of "A repl"
 
   it should "execute simple commands" in {
     testTerminal

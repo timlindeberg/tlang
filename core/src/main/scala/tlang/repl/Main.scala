@@ -77,7 +77,7 @@ object Main {
 
     val prettyPrinter = PrettyPrinter(formatting)
     val errorStringContext = ErrorStringContext(formatter)
-
+    scala.concurrent.ExecutionContext.Implicits.global
     val replState = ReplState(prettyPrinter, Imports(context, errorStringContext))
 
 

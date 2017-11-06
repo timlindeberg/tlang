@@ -89,7 +89,8 @@ class LoggerSpec extends UnitSpec {
     val logSettings = LoggingSettings(
       printToStdout = false,
       printToFile = List(memFile),
-      formatter = Formatter(SimpleFormatting)
+      formatter = Formatter(SimpleFormatting),
+      logLevel = LogLevel.Info
     )
 
     var testEnclosing: String = ""

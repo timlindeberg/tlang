@@ -10,7 +10,6 @@ import tlang.repl.evaluation.{Evaluator, ReplState}
 import tlang.utils.Extensions._
 import tlang.utils.{CancellableFuture, Logging}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{CancellationException, TimeoutException}
 import scala.util.{Failure, Success}
 
@@ -34,6 +33,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
 
   import EvaluationActor._
   import Evaluator.ClassName
+  import context.dispatcher
 
   private val formatting = formatter.formatting
 
@@ -43,6 +43,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatt
   private val FailureColor    = Bold + Red
   private val NoCancel        = () => false
   private var cancelExecution = NoCancel
+
 
   private def parent = context.parent
 

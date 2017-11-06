@@ -1,4 +1,6 @@
-package tlang.testutils
+package tlang.testutils.snapshot
+
+import java.nio.charset.Charset
 
 import better.files.File
 import tlang.utils.Extensions._
@@ -16,6 +18,9 @@ case class Snapshots(file: File) {
 
   import Snapshots._
 
+  // Without this here the file is not parsed correctly. Seems like a bug in betterfiles
+  private implicit val encoding: Charset = Charset.defaultCharset()
+
   private      var isDirty  : Boolean                       = false
   private lazy val snapshots: mutable.Map[String, Snapshot] = parse
 
@@ -25,7 +30,7 @@ case class Snapshots(file: File) {
         case Some(snapshot) if snapshot.value == newSnapshot =>
         case _                                               => isDirty = true
       }
-      snapshots += name -> Snapshot(newSnapshot, used = true)
+      snapshots(name) = Snapshot(newSnapshot, used = true)
   }
 
   def -=(key: String): Unit = {
@@ -39,15 +44,15 @@ case class Snapshots(file: File) {
   def apply(name: String): Option[String] = {
     snapshots.get(name) match {
       case Some(Snapshot(value, _)) =>
-        snapshots += name -> Snapshot(value, used = true)
+        snapshots(name) = Snapshot(value, used = true)
         Some(value)
       case _                        => None
     }
   }
 
-  def unused(snapshot: String): List[String] = {
+  def unused(matchingName: Option[String]): List[String] = {
     snapshots.toList
-      .filter { case (name, Snapshot(_, used)) => !used && name.startsWith(snapshot) }
+      .filter { case (name, Snapshot(_, used)) => !used && (matchingName.isEmpty || name.startsWith(matchingName.get)) }
       .map { case (name, _) => name }
   }
 
@@ -64,6 +69,9 @@ case class Snapshots(file: File) {
     file.parent.createDirectories()
     file.write(content)
   }
+
+  override def toString: String = snapshots.toString().replace("Map", "Snapshots")
+
 
   private def parse: mutable.Map[String, Snapshot] = {
     val map = mutable.Map[String, Snapshot]()

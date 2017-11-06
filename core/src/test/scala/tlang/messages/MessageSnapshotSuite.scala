@@ -9,8 +9,8 @@ import tlang.compiler.lexer.Tokens.{INTLIT, INTLITKIND}
 import tlang.compiler.lexer.{LexingErrors, Token, TokenKind}
 import tlang.compiler.modification.TemplatingErrors
 import tlang.formatting.{DefaultFormatting, Formatter}
-import tlang.testutils.SnapshotTesting
 import tlang.testutils.TestConstants.CompilerIntegrationTestTag
+import tlang.testutils.snapshot.SnapshotTesting
 import tlang.utils.Extensions._
 import tlang.utils._
 

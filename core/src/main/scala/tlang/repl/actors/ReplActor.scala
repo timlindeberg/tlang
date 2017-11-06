@@ -11,7 +11,6 @@ import tlang.repl.input.Input
 import tlang.repl.terminal._
 import tlang.utils.{Enumerable, Enumeration, Logging}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 
 
@@ -54,6 +53,7 @@ class ReplActor(
   input: Input) extends Actor with Logging {
 
   import ReplActor._
+  import context.dispatcher
   import formatter.formatting._
 
   private val MaxOutputLines  = 10

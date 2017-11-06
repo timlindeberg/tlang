@@ -1,16 +1,17 @@
-package tlang.testutils
+package tlang.testutils.snapshot
 
 import better.files._
 import org.scalatest._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
+import tlang.testutils.TestConstants
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
 import scala.util.matching.Regex
 
-object SnapshotTesting {
+object SnapshotTestingLike {
 
   val UpdateSnapshotsKey   : String                   = "updateSnapshots"
   val RemoveSnapshotsKey   : String                   = "removeUnusedSnapshots"
@@ -26,14 +27,11 @@ object SnapshotTesting {
 
 }
 
-trait SnapshotTesting extends TestSuite with BeforeAndAfterAll {
+class UnusedSnapshotsException(msg: String) extends Throwable(msg)
 
-  import SnapshotTesting._
+trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
-  override def afterAll(): Unit = {
-    super.afterAll()
-    snapshots.save()
-  }
+  import SnapshotTestingLike._
 
   private val snapshots: Snapshots = {
     val parts = getClass.getName.split("\\.")
@@ -47,12 +45,17 @@ trait SnapshotTesting extends TestSuite with BeforeAndAfterAll {
   private val _currentTestName: ThreadLocal[String]       = new ThreadLocal[String]()
   private val _localTestNames : ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
 
+  def matchSnapshot: SnapshotMatcher = {
+    SnapshotIndex(fullTestName) += 1
+    new SnapshotMatcher(snapshotName)
+  }
+
   // For readability mostly. Appends the description to the snapshot name if
   // a snapshot test is executed within the block
   def test[U](description: String)(f: => U): U = {
-    val testNames = description :: Option(_localTestNames.get()).getOrElse(Nil)
-    _localTestNames.set(testNames)
-    try { f } finally { _localTestNames.set(testNames.tail) }
+    val testNames = description :: localTestNames
+    localTestNames = testNames
+    try { f } finally { localTestNames = testNames.tail }
   }
 
   def snapshotName: String = {
@@ -64,48 +67,46 @@ trait SnapshotTesting extends TestSuite with BeforeAndAfterAll {
     testName + postfix
   }
 
-  def matchSnapshot: SnapshotMatcher = {
-    SnapshotIndex(fullTestName) += 1
-    new SnapshotMatcher(snapshotName)
-  }
 
-  override protected def withFixture(test: NoArgTest): Outcome = {
-    _currentTestName.set(test.name)
-    try {
-      handleUnusedSnapshots(super.withFixture(test))
-    }
-    finally {
-      _currentTestName.set(null)
+  override def afterAll(): Unit = {
+    super.afterAll()
+    val outcome = checkForUnusedSnapshots()
+    outcome match {
+      case Failed(exception) => throw exception
+      case _                 => snapshots.save()
     }
   }
 
-  private def fullTestName = {
-    val localTestNames = _localTestNames.get()
-    val localName = if (localTestNames == null || localTestNames.isEmpty) "" else " " + localTestNames.reverse.mkString(" ")
-    _currentTestName.get() + localName
-  }
+  protected def currentTestName: String = _currentTestName.get()
+  protected def currentTestName_=(name: Option[String]): Unit = _currentTestName.set(name.orNull)
 
-  private def handleUnusedSnapshots(outcome: Outcome): Outcome = {
-    val unusedSnapshots = snapshots.unused(_currentTestName.get())
+  protected def localTestNames: List[String] = Option(_localTestNames.get()).getOrElse(Nil)
+  protected def localTestNames_=(names: List[String]): Unit = _localTestNames.set(names)
+
+  // Will return a failure outcome instead of the given outcome if the test
+  // contained unused snapshots
+  protected def checkForUnusedSnapshots(): Outcome = checkForUnusedSnapshots(None)
+  protected def checkForUnusedSnapshots(testName: String): Outcome = checkForUnusedSnapshots(Some(testName))
+  protected def checkForUnusedSnapshots(testName: Option[String]): Outcome = {
+    val unusedSnapshots = snapshots.unused(testName)
     if (unusedSnapshots.isEmpty)
-      return outcome
+      return Succeeded
 
     def formatUnusedSnapshots = unusedSnapshots.map(HighlightColor(_)).mkString(NL)
 
-    val className = getClass.getName
     if (RemoveUnusedSnapshots) {
       println(
-        s"""|Removing unused snapshots from ${ HighlightColor(className) }:
+        s"""|Removing unused snapshots from ${ HighlightColor(getClass.getName) }:
             |
             |$formatUnusedSnapshots
-         """.stripMargin
+       """.stripMargin
       )
       unusedSnapshots.foreach(snapshots -= _)
-      return outcome
+      return Succeeded
     }
 
     val msg =
-      s"""|${ FailColor(className) } contains unused snapshots:
+      s"""|${ FailColor(getClass.getName) } contains unused snapshots:
           |
           |$formatUnusedSnapshots
           |
@@ -117,6 +118,12 @@ trait SnapshotTesting extends TestSuite with BeforeAndAfterAll {
     Failed(msg.stripAnsi)
   }
 
+
+  private def fullTestName: String = {
+    val local = localTestNames
+    val localName = if (local == null || local.isEmpty) "" else " " + local.reverse.mkString(" ")
+    currentTestName + localName
+  }
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 
