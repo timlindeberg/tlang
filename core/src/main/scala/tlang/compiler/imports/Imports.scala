@@ -5,6 +5,7 @@ import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
+import tlang.utils.Logging
 
 import scala.collection.mutable
 
@@ -46,7 +47,7 @@ case class Imports(ctx: Context,
   imports: List[Import] = Nil,
   pack: Package = Package(Nil),
   classes: List[ClassDeclTree] = Nil
-) extends ImportErrors {
+) extends ImportErrors with Logging {
 
   import Imports._
 
@@ -90,6 +91,7 @@ case class Imports(ctx: Context,
   }
 
   def +=(imp: Import): this.type = {
+    debug"Adding import ${ imp.writtenName }"
     imp match {
       case regImp: RegularImport            =>
         val fullName = regImp.name

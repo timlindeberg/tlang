@@ -10,14 +10,15 @@ import tlang.compiler.lexer._
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.Positioned
+import tlang.utils.{Logging, Positioned}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-object Parsing extends CompilerPhase[List[Token], CompilationUnit] {
+object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
-    tokenList.map { tokens =>
+    tokenList map { tokens =>
+      info"Parsing tokens of ${ tokens.head.sourceName }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val astBuilder = Parser(ctx, errorStringContext, tokens.toArray)
       astBuilder.compilationUnit

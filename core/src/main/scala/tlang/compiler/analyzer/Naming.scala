@@ -9,10 +9,10 @@ import tlang.compiler.imports.ClassSymbolLocator
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.Positioned
+import tlang.utils.{Logging, Positioned}
 import tlang.{Constants, Context}
 
-object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] {
+object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     val globalScope = new GlobalScope(ClassSymbolLocator(ctx.classPath))
@@ -48,16 +48,22 @@ case class NameAnalyser(
   override val reporter: Reporter,
   override val errorStringContext: ErrorStringContext,
   cu: CompilationUnit,
-  globalScope: GlobalScope) extends NamingErrors {
+  globalScope: GlobalScope) extends NamingErrors with Logging {
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
   private var variableUsage        = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
-  def addSymbols(): Unit = cu.classes foreach addSymbols
+  def addSymbols(): Unit = {
+    info"Adding symbols to ${ cu.sourceName }"
+    cu.classes foreach addSymbols
+  }
 
-  def bindIdentifiers(): Unit = cu.classes.foreach(bind)
+  def bindIdentifiers(): Unit = {
+    info"Binding identifiers in ${ cu.sourceName }"
+    cu.classes.foreach(bind)
+  }
 
   def checkInheritanceCycles(): Unit = {
 
@@ -131,6 +137,7 @@ case class NameAnalyser(
         }
     }
 
+    debug"Adding symbol to ${ classDecl.name }"
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
     classDecl.fields foreach { addSymbols(_, sym) }
@@ -154,6 +161,7 @@ case class NameAnalyser(
       case _         => variableUsage += newSymbol -> true
     }
 
+    debug"Adding field to ${ classSymbol.name }"
     classSymbol.addField(newSymbol)
   }
 
@@ -184,6 +192,8 @@ case class NameAnalyser(
         new OperatorSymbol(operatorType, classSymbol, stat, modifiers)
     }
 
+    debug"Adding symbol to ${ funcTree.signature }"
+
     sym.setPos(funcTree)
     id.setSymbol(sym)
     funcTree.setSymbol(sym)
@@ -195,6 +205,9 @@ case class NameAnalyser(
     val modifiers: Set[Modifier] = Set(Private(), Final())
     val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
     ensureIdentifierNotDefined(methSymbol.args, id.name, id)
+
+    debug"Adding symbol to argument ${ id.name } in ${ methSymbol.name }"
+
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
@@ -292,13 +305,13 @@ case class NameAnalyser(
   }
 
 
-  private def bindArguments(args: List[Formal]) =
+  private def bindArguments(args: List[Formal]): Unit =
     for (Formal(typeTree, id) <- args) {
       val tpe = setType(typeTree)
       id.setType(tpe)
     }
 
-  private def bindFields(classDecl: ClassDeclTree) =
+  private def bindFields(classDecl: ClassDeclTree): Unit =
     classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _) =>
       typeTree ifDefined { t =>
         val tpe = setType(t)
@@ -499,8 +512,8 @@ case class NameAnalyser(
       traverser.traverse(startingTree)
     }
 
-    private def setVariableUsed(id: VariableID) = variableUsage += id.getSymbol -> true
-    private def setVariableReassigned(id: VariableID) = variableReassignment += id.getSymbol -> true
+    private def setVariableUsed(id: VariableID): Unit = variableUsage += id.getSymbol -> true
+    private def setVariableReassigned(id: VariableID): Unit = variableReassignment += id.getSymbol -> true
 
     private def setVarIdentifierSymbol(id: VariableID, localVars: Map[String, VariableData]): Unit = {
       lookupVariableSymbol(id, localVars) match {
@@ -509,7 +522,8 @@ case class NameAnalyser(
       }
     }
 
-    private def setVarIdentifierSymbol(id: VariableID, symbol: VariableSymbol) = {
+    private def setVarIdentifierSymbol(id: VariableID, symbol: VariableSymbol): Unit = {
+      debug"Binding id ${ id.name } to symbol ${ symbol.repr }"
       id.setSymbol(symbol)
       variableUsage += symbol -> true
     }

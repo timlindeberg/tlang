@@ -89,7 +89,8 @@ class LoggerSpec extends UnitSpec {
     val logSettings = LoggingSettings(
       printToStdout = false,
       formatter = Formatter(SimpleFormatting),
-      logLevel = LogLevel.Info
+      logLevel = LogLevel.Info,
+      logThreads = true
     )
     logSettings.printToFile = List(memFile)
 
@@ -218,7 +219,8 @@ class LoggerSpec extends UnitSpec {
     val logSettings = LoggingSettings(
       logLevel = logLevel,
       printToStdout = false,
-      formatter = formatter
+      formatter = formatter,
+      logThreads = true
     )
     logSettings.printToFile = List(memFile)
 

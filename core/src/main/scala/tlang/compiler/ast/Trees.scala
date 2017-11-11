@@ -162,11 +162,13 @@ object Trees {
     def isAbstract: Boolean
 
     def traits: List[ClassID] = parents.filter(_.getSymbol.isAbstract)
+    def name: String
   }
 
   trait IDClassDeclTree extends ClassDeclTree {
     val id: ClassID
     override val tpe: ClassID = id
+    override def name: String = id.name
   }
 
 
@@ -196,6 +198,7 @@ object Trees {
     var parents: List[ClassID] = List[ClassID]()
     val fields : List[VarDecl] = List[VarDecl]()
     val isAbstract             = false
+    override def name: String = tpe.name
   }
 
   /*----------------------------- Modifier Trees ----------------------------*/
@@ -346,6 +349,8 @@ object Trees {
   trait OperatorTree extends ExprTree {
     val opSign: String
 
+    def orEmpty(args: List[Any], idx: Int) = if (idx < args.length) args(0) else "<EMPTY>"
+
     def signature(args: List[Any]): String
 
     def lookupOperator(arg: Type, imports: Imports): Option[OperatorSymbol] = lookupOperator(List(arg), imports)
@@ -375,7 +380,7 @@ object Trees {
     val lhs: ExprTree
     val rhs: ExprTree
 
-    def signature(args: List[Any]): String = s"${ args(0) } $opSign ${ args(1) }"
+    def signature(args: List[Any]): String = s"${ orEmpty(args, 0) } $opSign ${ orEmpty(args, 1) }"
   }
 
   object BinaryOperatorTree {
@@ -440,7 +445,7 @@ object Trees {
   trait UnaryOperatorTree extends OperatorTree {
     val expr: ExprTree
 
-    def signature(args: List[Any]): String = opSign + args.head
+    def signature(args: List[Any]): String = opSign + orEmpty(args, 0)
   }
 
   object UnaryOperatorTree {
@@ -474,13 +479,13 @@ object Trees {
     val opSign      = "++"
     val isPre       = false
     val isIncrement = true
-    override def signature(args: List[Any]): String = args.head + opSign
+    override def signature(args: List[Any]): String = orEmpty(args, 0) + opSign
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
     val opSign      = "--"
     val isPre       = false
     val isIncrement = false
-    override def signature(args: List[Any]): String = args.head + opSign
+    override def signature(args: List[Any]): String = orEmpty(args, 0) + opSign
   }
 
   /*-------------------------- Array Operator Trees -------------------------*/
@@ -496,11 +501,11 @@ object Trees {
 
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
     override val opSign: String = "[]"
-    override def signature(args: List[Any]): String = s"[${ args(0) }]"
+    override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }]"
   }
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) extends ArrayOperatorTree {
     override val opSign: String = "[::]"
-    override def signature(args: List[Any]): String = s"[${ args(0) }:${ args(1) }]"
+    override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }:${ orEmpty(args, 1) }]"
   }
 
   /*---------------------- Literal and Identifier Trees ---------------------*/
@@ -622,7 +627,7 @@ object Trees {
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
     override val arr   : ExprTree = to
     override val opSign: String   = "[]="
-    override def signature(args: List[Any]): String = s"[${ args(0) }] = ${ args(1) }"
+    override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }] = ${ orEmpty(args, 1) }"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree
 

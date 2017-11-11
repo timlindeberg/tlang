@@ -10,7 +10,7 @@ import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.Positioned
+import tlang.utils.{LogLevel, Logging, Positioned}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
@@ -38,12 +38,12 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 case class FlowAnalyser(
   override val reporter: Reporter,
   override val errorStringContext: ErrorStringContext,
-  imports: Imports) extends FlowingErrors {
+  imports: Imports) extends FlowingErrors with Logging {
 
   override def replaceNames(str: String): String = imports.replaceNames(str)
 
   def apply(clazz: ClassDeclTree): Unit = {
-
+    info"Performing flow analysis on ${ clazz.name }"
     val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { (knowledge, field) =>
       val sym = field.getSymbol
       val varId = VarIdentifier(sym)
@@ -55,8 +55,7 @@ case class FlowAnalyser(
 
     clazz.methods.filter(_.stat.isDefined) foreach { meth =>
       val args = meth.getSymbol.argList
-      val argMap: Map[Identifier, Set[VarKnowledge]] =
-        args.map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
+      val argMap: Map[Identifier, Set[VarKnowledge]] = args.map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
       val argKnowledge = new Knowledge(argMap)
       val knowledge: Knowledge = fieldKnowledge + argKnowledge
       analyze(meth.stat.get, knowledge)
@@ -65,9 +64,8 @@ case class FlowAnalyser(
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    //println(s"${tree.line}: $tree")
-    //println(knowledge)
-    //println("----------------------------------------")
+    if (logger.isEnabled(LogLevel.Debug))
+      debug"Analyzing ${ tree.toString.stripNewlines } at line ${ tree.line } with knowledge: $knowledge"
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }

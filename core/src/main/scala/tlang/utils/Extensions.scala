@@ -149,6 +149,7 @@ object Extensions {
 
     def containsAnsi: Boolean = AnsiRegex.matches(str)
     def stripAnsi: String = AnsiRegex.replaceAllIn(str, "")
+    def stripNewlines: String = str.replaceAll("\r?\n", "")
     def visibleCharacters: Int = {
       if (str.isEmpty)
         return 0

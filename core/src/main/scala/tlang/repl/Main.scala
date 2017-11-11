@@ -23,7 +23,7 @@ import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
 import tlang.utils.{Logging, ProgramExecutor}
 
 
-object Main {
+object Main extends Logging {
 
   import tlang.Constants._
 
@@ -72,6 +72,8 @@ object Main {
   }
 
   def createRepl(terminal: Terminal, options: Options, formatter: Formatter): ActorRef = {
+    info"Creating Repl with options: $options"
+
     // Inject dependencies
     val formatting = formatter.formatting
     val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
@@ -103,10 +105,12 @@ object Main {
     val historyFile = File(SettingsDirectory, HistoryFileName)
     val input = Input(historyFile, Clipboard(), MaxRedoSize, TabWidth)
 
-    val singleMessageMailboxConfig = ConfigFactory.parseString(
-      """rendererMailbox.mailbox-type = "tlang.repl.actors.SingleMessageMailbox""""
+    val akkaConfig = ConfigFactory.parseString(
+      """|rendererMailbox.mailbox-type = "tlang.repl.actors.SingleMessageMailbox"
+         |loglevel = "OFF"
+      """.stripMargin
     )
-    val actorSystem = ActorSystem("tRepl", singleMessageMailboxConfig)
+    val actorSystem = ActorSystem("tRepl", akkaConfig)
     val outputBox = OutputBox(formatter, tabReplacer, errorFormatter, maxOutputLines = 5)
     val repl = actorSystem.actorOf(
       ReplActor.props(replState, evaluator, formatter, outputBox, replTerminal, input),

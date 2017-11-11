@@ -35,7 +35,7 @@ case class LoggingSettings(
   var threadWidth: Int = 15,
   var locationWidth: Int = 45,
   var logLevelWidth: Int = 5,
-  var logThreads: Boolean = true,
+  var logThreads: Boolean = false,
   var printToStdout: Boolean = true,
   var formatter: Formatter = Formatter(DefaultFormatting),
   var logLevel: LogLevel = LogLevel.Debug

@@ -16,6 +16,7 @@ object Symbols {
   trait Symbolic[S <: Symbol] {
     private var _sym: Option[S] = None
 
+
     def hasSymbol: Boolean = _sym.isDefined
 
     def setSymbol(sym: S): this.type = {
@@ -32,6 +33,7 @@ object Symbols {
 
   sealed abstract class Symbol extends Positioned with Typed {
     def name: String
+    def repr: String = System.identityHashCode(this).toHexString
   }
 
   class GlobalScope(classSymbolLocator: ClassSymbolLocator) {

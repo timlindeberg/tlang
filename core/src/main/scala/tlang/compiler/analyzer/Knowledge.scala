@@ -374,16 +374,25 @@ object Knowledge {
       case _: RightShift => _ >> _
     }
 
-    override def toString: String = {
-      val vars = varKnowledge.map { case (expr, knowledge) =>
-        s"$expr -> { ${ knowledge.mkString(", ") } }"
-      }.mkString(NL)
+    override def toString: String = varKnowledgeDescription + flowKnowledgeDescription
 
-      val flow = flowEnded match {
+    private def varKnowledgeDescription: String = {
+      if (varKnowledge.isEmpty)
+        return ""
+
+      val knowledge = varKnowledge.map { case (expr, knowledge) => (expr.toString, knowledge) }
+      val maxSize = knowledge.map(_._1.length).max
+
+      knowledge.map { case (expr, knowledge) =>
+        java.lang.String.format(s"%-${ maxSize }s -> { %s }", expr, knowledge.mkString(", "))
+      }.mkString(NL)
+    }
+
+    private def flowKnowledgeDescription: String = {
+      flowEnded match {
         case Some(ended) => NL + s"Flow ended at ${ ended.line }: $ended"
         case None        => ""
       }
-      vars + flow
     }
   }
 

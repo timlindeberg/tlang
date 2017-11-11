@@ -9,12 +9,12 @@ import tlang.compiler.imports.Imports
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.Positioned
+import tlang.utils.{Logging, Positioned}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
+object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
   var methodUsage       : Map[MethodSymbol, Boolean] = Map()
@@ -36,13 +36,17 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
     debugOutputFormatter.printASTs(phaseName, output)
 
-  private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit =
+  private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {
+    info"Typechecking fields of ${ cu.sourceName }"
     cu.classes.foreach { classDecl =>
       val typeChecker = TypeChecker(ctx, cu, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
     }
+  }
+
 
   private def typecheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
+    info"Typechecking methods of ${ cu.sourceName }"
     cu.classes.flatMap(_.methods).foreach { method =>
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
@@ -52,6 +56,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
+    info"Verifying types of ${ cu.sourceName }"
     val typeChecker = TypeChecker(ctx, cu, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
@@ -86,6 +91,8 @@ case class TypeChecker(
   def tcMethod(): Unit = {
     if (Typing.hasBeenTypechecked(currentMethodSymbol))
       return
+
+    info"Typechecking method $currentMethodSymbol"
 
     if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
       report(CantInferTypeRecursiveMethod(currentMethodSymbol))
@@ -303,6 +310,7 @@ case class TypeChecker(
     else
       foundType
 
+    debug"Setting type of $expression to $res"
     expression.setType(res)
     res
   }

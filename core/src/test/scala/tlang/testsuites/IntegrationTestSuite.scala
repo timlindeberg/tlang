@@ -28,7 +28,7 @@ class IntegrationTestSuite extends Suites(
 
   override def afterAll: Unit = {
     super.afterAll()
-    if (!KeepFilesOnExit) File(TestOutputDirectory).delete()
+    if (!KeepFilesOnExit) File(TestOutputDirectory).delete(swallowIOExceptions = true)
   }
 
   override val suiteName: String = "Integration Tests"

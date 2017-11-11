@@ -8,17 +8,24 @@ import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters._
 import tlang.messages.{ErrorStringContext, VoidReporter}
 import tlang.utils.Extensions._
+import tlang.utils.{LogLevel, Logger, LoggingSettings}
 
 object Formatter {
   def apply(formatting: Formatting): Formatter = {
     // The lexer doesn't really need an ErrorStringContext until error messages are generated
     // and the syntax highlighter doesn't generate any errors so we can use null here
     val errorStringContext = ErrorStringContext(null)
+
+    // This lexer should not do any logging
+    val lexer = new Lexer(VoidReporter(), errorStringContext) {
+      override lazy val logger: Logger = new Logger()(LoggingSettings(logLevel = LogLevel.Off))
+    }
+
     apply(
       formatting,
       WordWrapper(wrapAnsiColors = formatting.useColor),
       Truncator(),
-      SyntaxHighlighter(Lexer(VoidReporter(), errorStringContext), formatting),
+      SyntaxHighlighter(lexer, formatting),
       StackTraceHighlighter(formatting)
     )
   }

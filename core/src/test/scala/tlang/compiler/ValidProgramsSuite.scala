@@ -4,11 +4,11 @@ import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.messages.{CompilationException, MessageType}
 import tlang.testutils.TestConstants._
-import tlang.utils.{FileSource, ProgramExecutor, Source}
+import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
 
 import scala.concurrent.duration.Duration
 
-class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
+class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution with Logging {
 
   override val suiteName: String = "Valid Programs"
 
@@ -33,6 +33,9 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
       case e: CompilationException =>
         e.messages.print(MessageType.Error)
         fail("Compilation failed")
+      case e: Throwable            =>
+        error"Unknown execution error: $e"
+        throw e
     }
 
     ctx.reporter.hasErrors shouldBe false

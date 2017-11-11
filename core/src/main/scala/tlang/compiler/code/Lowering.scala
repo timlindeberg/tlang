@@ -8,11 +8,12 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.formatting.Formatting
 import tlang.utils.Extensions._
+import tlang.utils.Logging
 import tlang.{Constants, Context}
 
 import scala.collection.mutable.ListBuffer
 
-object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
+object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map { cu =>
     val lowerer = new Lowerer(cu.imports)
@@ -27,7 +28,7 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
-class Lowerer(imports: Imports) {
+class Lowerer(imports: Imports) extends Logging {
 
   private val ThisName = "$this"
 
@@ -38,6 +39,7 @@ class Lowerer(imports: Imports) {
   }
 
   private def firstPass(cu: CompilationUnit): CompilationUnit = {
+    debug"Executing first pass of lowering phase for ${ cu.sourceName }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
@@ -51,6 +53,7 @@ class Lowerer(imports: Imports) {
   }
 
   private def secondPass(cu: CompilationUnit): CompilationUnit = {
+    debug"Executing second pass of lowering phase for ${ cu.sourceName }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {

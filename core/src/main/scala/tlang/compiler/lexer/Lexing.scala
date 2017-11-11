@@ -8,17 +8,18 @@ import tlang.compiler.lexer.Tokens._
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
-import tlang.utils.Source
+import tlang.utils.{Logging, Source}
 
 import scala.annotation.tailrec
 
 
-object Lexing extends CompilerPhase[Source, List[Token]] {
+object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
 
   val MaximumStringSize = 65535
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
     inputs map { source =>
+      info"Lexing ${ source.mainName }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val lexer = Lexer(ctx.reporter, errorStringContext)
       lexer(source)
@@ -33,7 +34,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] {
 
 }
 
-case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexingErrors {
+case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexingErrors with Logging {
 
   protected override var line           = 1
   protected override var column         = 1
@@ -556,7 +557,9 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   private def createToken(string: String, tokenLength: Int): Token = createToken(new STRLIT(string), tokenLength)
 
   private def createToken(token: Token, tokenLength: Int): Token = {
-    token.setPos(source, line, column, line, column + tokenLength)
+    val endCol = column + tokenLength
+    token.setPos(source, line, column, line, endCol)
+    debug"Creating new token $token with position ($line, $column, $line, $endCol)"
     column += tokenLength
     token
   }

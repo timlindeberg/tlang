@@ -11,6 +11,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.utils.Extensions._
+import tlang.utils.Logging
 
 import scala.collection.mutable
 
@@ -123,7 +124,7 @@ object CodeGenerator {
   }
 }
 
-class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbol, Int]) {
+class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbol, Int]) extends Logging {
 
   import CodeGenerator._
 

@@ -8,15 +8,17 @@ import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
+import tlang.utils.Logging
 
 import scala.collection.mutable
 
-object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] {
+object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   val StartEnd  = "-"
   val Seperator = "$"
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
+    info"Generating templates"
     val templateClassGenerator = TemplateModifier(ctx)
     templateClassGenerator.generateTemplates(cus)
   }
@@ -29,7 +31,7 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
 }
 
-case class TemplateModifier(ctx: Context) {
+case class TemplateModifier(ctx: Context) extends Logging {
 
   private val templateCus         = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
@@ -67,6 +69,7 @@ case class TemplateModifier(ctx: Context) {
   }
 
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
+    debug"Replacing template types in ${ cu.sourceName }"
     // Replace types with their templated class names, eg.
     // replace Map<Int, String> with -Map$Int$String-.
     val replace = new Trees.Transformer {
@@ -96,7 +99,7 @@ case class TemplateModifier(ctx: Context) {
     override val reporter: Reporter,
     override val errorStringContext: ErrorStringContext,
     cu: CompilationUnit,
-    classSymbolLocator: ClassSymbolLocator) extends TemplatingErrors {
+    classSymbolLocator: ClassSymbolLocator) extends TemplatingErrors with Logging {
 
     /**
       * Has the side effect of filling the programs in the template program map with
@@ -126,6 +129,8 @@ case class TemplateModifier(ctx: Context) {
       if (generatedClassNames(shortName) || classSymbolLocator.classExists(name))
         return
 
+      debug"Generating template for $shortName"
+
       generatedClassNames += shortName
 
       // Update import map to include the newly generated class
@@ -150,7 +155,7 @@ case class TemplateModifier(ctx: Context) {
       }
     }
 
-    private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree) = {
+    private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree): Unit = {
       var seen = Set[TypeTree]()
       var reportedFor = Set[TypeTree]()
       val templateTypes = templateClass.id.templateTypes

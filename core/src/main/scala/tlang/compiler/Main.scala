@@ -24,7 +24,7 @@ import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
 
-object Main {
+object Main extends Logging {
 
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
@@ -34,7 +34,7 @@ object Main {
     Lowering andThen CodeGeneration
 
 
-  val CompilerPhases = List(
+  val CompilerPhases: Seq[CompilerPhase[_, _]] = List(
     Lexing,
     Parsing,
     Templating,
@@ -72,6 +72,9 @@ object Main {
     val formatting = Formatting(options)
     val formatter = Formatter(formatting)
 
+    Logging.DefaultLogSettings.formatter = formatter
+    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
+
     if (args.isEmpty) {
       print(printHelpInfo(formatter))
       sys.exit(1)
@@ -87,12 +90,10 @@ object Main {
     if (filesToCompile.isEmpty)
       ErrorNoFilesGiven()
 
+    info"Compiling ${ filesToCompile.size } files: $filesToCompile"
+
     if (options(VerboseFlag))
       printFilesToCompile(formatter, filesToCompile)
-
-    Logging.DefaultLogSettings.formatter = formatter
-    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
-    Logging.DefaultLogSettings.logThreads = false
 
     val ctx = createContext(options, formatter)
     val CUs = runCompiler(filesToCompile, ctx)
@@ -141,17 +142,22 @@ object Main {
   private def unknownError(formatter: Formatter, error: Throwable): Nothing = {
     import formatter.formatting._
 
+    val stackTrace = formatter.highlightStackTrace(error)
+    error"Unknown execution error occurred: $stackTrace"
+
     formatter
       .grid
       .header(s"${ Bold }Compilation ${ Red("failed") }${ Bold(" with an unknown error") }")
       .row()
-      .content(formatter.highlightStackTrace(error))
+      .content(stackTrace)
       .print()
 
     sys.exit(1)
   }
 
   private def createContext(options: Options, formatter: Formatter): Context = {
+    info"Created context with options $options"
+
     val messageFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
     val messages = CompilerMessages(
       formatter,
