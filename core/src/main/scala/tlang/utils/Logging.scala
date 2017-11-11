@@ -10,20 +10,24 @@ import tlang.formatting._
 import tlang.utils.Extensions._
 import tlang.utils.Logging._
 
-object LogLevel {
+
+sealed abstract class LogLevel(val value: Int) extends Ordered[LogLevel] {
+
+  override def compare(that: LogLevel): Int = value - that.value
+
+}
+
+object LogLevel extends Enumerable[LogLevel] {
   case object Trace extends LogLevel(0)
   case object Debug extends LogLevel(1)
   case object Info extends LogLevel(2)
   case object Warn extends LogLevel(3)
   case object Error extends LogLevel(4)
   case object Off extends LogLevel(5)
+
+  override lazy val All: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.value)
 }
 
-abstract class LogLevel(val value: Int) extends Ordered[LogLevel] {
-
-  override def compare(that: LogLevel): Int = value - that.value
-
-}
 
 case class LoggingSettings(
   var timeFormat: DateFormat = new SimpleDateFormat("HH:mm:ss:SSS"),
@@ -221,6 +225,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings) {
     case LogLevel.Info  => formatting.Green
     case LogLevel.Warn  => formatting.Yellow
     case LogLevel.Error => formatting.Red
+    case LogLevel.Off   => ???
   }
 
 

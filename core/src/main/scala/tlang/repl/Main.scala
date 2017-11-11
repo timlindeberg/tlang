@@ -21,7 +21,7 @@ import tlang.repl.actors.ReplActor.{Start, Stop}
 import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
-import tlang.utils.ProgramExecutor
+import tlang.utils.{Logging, ProgramExecutor}
 
 
 object Main {
@@ -41,7 +41,8 @@ object Main {
     ClassPathFlag,
     VersionFlag,
     ReplHelpFlag,
-    MessageContextFlag
+    MessageContextFlag//,
+   // LogLevelFlag
   )
 
   def main(args: Array[String]): Unit = {
@@ -65,10 +66,12 @@ object Main {
   }
 
   def createRepl(terminal: Terminal, options: Options, formatting: Formatting): ActorRef = {
-    // Create all dependencies
+    // Inject dependencies
 
     val formatter = Formatter(formatting)
     val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
+
+    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
 
     val tempDir = File.newTemporaryDirectory("repl")
 
@@ -77,7 +80,6 @@ object Main {
 
     val prettyPrinter = PrettyPrinter(formatting)
     val errorStringContext = ErrorStringContext(formatter)
-    scala.concurrent.ExecutionContext.Implicits.global
     val replState = ReplState(prettyPrinter, Imports(context, errorStringContext))
 
 
@@ -147,7 +149,8 @@ object Main {
 
 
   private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
-    // TODO
+    println("TODO")
+    sys.exit(0)
   }
 
 }
