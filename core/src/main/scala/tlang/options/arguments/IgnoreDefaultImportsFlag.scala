@@ -10,7 +10,7 @@ case object IgnoreDefaultImportsFlag extends ArgumentFlag[Set[String]] {
   override val name           = "ignoreimport"
   override val argDescription = "import"
 
-  override protected def verifyArgument(ignoredImport: String)(implicit errorContext: ErrorStringContext): Unit = {
+  override protected def verify(ignoredImport: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 
     if (ignoredImport.toLowerCase notIn Imports.DefaultImportNames.map(_.toLowerCase)) {

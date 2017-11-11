@@ -22,7 +22,7 @@ import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
-import tlang.utils.{FileSource, ProgramExecutor, Source}
+import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
 
 object Main {
 
@@ -45,24 +45,25 @@ object Main {
     CodeGeneration
   )
 
-  val CompilerFlags: List[FlagArgument[_]] = List(
-    ExecFlag,
-    SuppressWarningsFlag,
-    PrintOutputFlag,
-    VerboseFlag,
-    CompilerHelpFlag,
-    DirectoryFlag,
-    VersionFlag,
-    WarningIsErrorFlag,
-    NoColorFlag,
+  val CompilerFlags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
-    MaxErrorsFlag,
-    IgnoreDefaultImportsFlag,
-    MessageContextFlag,
-    LineWidthFlag,
     ColorSchemeFlag,
-    PhasesFlag
+    CompilerHelpFlag,
+    DirectoryFlag,
+    ExecFlag,
+    IgnoreDefaultImportsFlag,
+    LineWidthFlag,
+    LogLevelFlag,
+    MaxErrorsFlag,
+    MessageContextFlag,
+    NoColorFlag,
+    PhasesFlag,
+    PrintOutputFlag,
+    SuppressWarningsFlag,
+    VerboseFlag,
+    VersionFlag,
+    WarningIsErrorFlag
   )
 
   def main(args: Array[String]) {
@@ -89,6 +90,9 @@ object Main {
     if (options(VerboseFlag))
       printFilesToCompile(formatter, filesToCompile)
 
+    Logging.DefaultLogSettings.formatter = formatter
+    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
+    Logging.DefaultLogSettings.logThreads = false
 
     val ctx = createContext(options, formatter)
     val CUs = runCompiler(filesToCompile, ctx)
@@ -265,12 +269,16 @@ object Main {
     val options = Blue("options")
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))
+    val flags = CompilerFlags
+      .toList
+      .sortBy(_.name)
+      .map { flag => (flag.flagName(formatting), flag.description(formatter)) }
 
     formatter
       .grid
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
       .row(2)
-      .mapContent(CompilerFlags.sortBy(_.name)) { flag => (flag.flagName(formatting), flag.description(formatter)) }
+      .contents(flags)
       .print()
   }
 

@@ -8,11 +8,11 @@ import scala.collection.mutable
 
 
 object Options {
-  def Empty = Options(Nil, None, Array())(ErrorStringContext())
+  def Empty: Options = Options(Set(), None, Array())(ErrorStringContext())
 }
 
 case class Options(
-  flags: List[FlagArgument[_]],
+  flags: Set[FlagArgument[_]],
   positionalArgument: Option[PositionalArgument[_]],
   arguments: Array[String])
   (implicit errorContext: ErrorStringContext) {
@@ -29,7 +29,7 @@ case class Options(
     if (args == Nil)
       return
 
-    val rest = flags.findDefined { flag =>
+    val rest = flags findDefined { flag =>
       flag.matches(args) collect { case (argsForFlag, rest) =>
         addArgs(flag, argsForFlag)
         rest
@@ -69,7 +69,7 @@ case class Options(
 
   private def ErrorInvalidFlag(arg: String) = {
     import errorContext.ErrorStringContext
-    val suggestion = errorContext.suggestion(arg, flags.flatMap(_.names))
+    val suggestion = errorContext.suggestion(arg, flags.flatMap(_.names).toList)
     throw new IllegalArgumentException(
       err"$arg is not a valid flag.$suggestion Type '--help' to see a list of valid commands."
     )
@@ -146,11 +146,11 @@ trait ArgumentFlag[T] extends FlagArgument[T] {
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
-      .use { args => args foreach verifyArgument }
+      .use { args => args foreach verify }
       .toSet
 
 
-  protected def verifyArgument(arg: String)(implicit errorContext: ErrorStringContext): Unit = {}
+  protected def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {}
 
 }
 
@@ -179,20 +179,19 @@ trait DictionaryFlag[T] extends ArgumentFlag[T] {
   def parseValue(args: Map[String, String]): T
 
   override def parseValue(args: Set[String]): T = {
-    val map = mutable.Map[String, String]()
-    args.foreach { keyValue =>
+    val map = args.map { keyValue =>
       val Array(key, value) = keyValue.split("=")
-      map += key.toLowerCase -> value
-    }
+      key.toLowerCase -> value
+    }.toMap
 
-    parseValue(map.toMap)
+    parseValue(map)
   }
 
   private val KeyValueRegex = """.+=.+""".r
 
   protected def verifyArg(key: String, value: String)(implicit errorContext: ErrorStringContext): Unit = {}
 
-  protected override def verifyArgument(keyValue: String)(implicit errorContext: ErrorStringContext): Unit = {
+  protected override def verify(keyValue: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 
     if (!KeyValueRegex.matches(keyValue))
@@ -218,7 +217,7 @@ trait NumberFlag extends ArgumentFlag[Int] {
     args.map { _.toInt }.max
   }
 
-  protected override def verifyArgument(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
+  protected override def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 
     if (!arg.isNumber)

@@ -18,7 +18,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "ABC DEF GHI".split(" ")
-    val options = Options(Nil, Some(positionalArgument), args)
+    val options = Options(Set(), Some(positionalArgument), args)
     options(positionalArgument) shouldBe Set("ABC", "DEF", "GHI")
   }
 
@@ -38,7 +38,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--a --b".split(" ")
-    val options = Options(List(a, b, c), None, args)
+    val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe true
     options(b) shouldBe true
@@ -67,7 +67,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--a abc --b abc --a def,ghi,jkl,,".split(" ")
-    val options = Options(List(a, b, c), None, args)
+    val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe Set("abc", "def", "ghi", "jkl")
     options(b) shouldBe Set("abc")
@@ -104,7 +104,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--a abc --b --a abcdef".split(" ")
-    val options = Options(List(a, b, c), None, args)
+    val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe Set("abc", "abcdef")
     options(b) shouldBe Set("DEF")
@@ -131,7 +131,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--a 1 --b 1 --a 1337".split(" ")
-    val options = Options(List(a, b, c), None, args)
+    val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe 1337
     options(b) shouldBe 1
@@ -160,7 +160,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--a abc=a --b abc=b,def=b --a def=a".split(" ")
-    val options = Options(List(a, b, c), None, args)
+    val options = Options(Set(a, b, c), None, args)
     options(a) shouldBe Map(
       "abc" -> "a",
       "def" -> "a"
@@ -207,7 +207,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--arg ABC ABC --opt DEF GHI --opt abc JKL --bool --dict a=b,b=c MNO --dict c=d --arg GHI".split(" ")
-    val options = Options(List(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), Some(positionalArgument), args)
+    val options = Options(Set(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), Some(positionalArgument), args)
 
     options(positionalArgument) shouldBe Set("ABC", "DEF", "GHI", "JKL", "MNO")
     options(argFlag) shouldBe Set("ABC", "GHI")
@@ -250,7 +250,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--ArG abC --oPt aBc --booL --DiCt A=b,b=C --dICt A=d".split(" ")
-    val options = Options(List(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), None, args)
+    val options = Options(Set(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), None, args)
 
     options(argFlag) shouldBe Set("abC")
     options(booleanFlag) shouldBe true
@@ -272,7 +272,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--arg ABC -a DEF".split(" ")
-    val options = Options(List(argFlag), None, args)
+    val options = Options(Set(argFlag), None, args)
 
     options(argFlag) shouldBe Set("ABC", "DEF")
   }
@@ -291,7 +291,7 @@ class OptionsSpec extends UnitSpec {
     }
 
     val args = "--arg ABC --arg ABC ABC ABC ABC".split(" ")
-    val options = Options(List(argFlag), Some(positionalArgument), args)
+    val options = Options(Set(argFlag), Some(positionalArgument), args)
 
     options(argFlag) shouldBe Set("ABC")
     options(positionalArgument) shouldBe Set("ABC")
@@ -312,14 +312,14 @@ class OptionsSpec extends UnitSpec {
       override def description(formatter: Formatter): Nothing = ???
     }
     val args = "--a --b --d".split(" ")
-    intercept[IllegalArgumentException] { Options(List(a, b, c), None, args) }
+    intercept[IllegalArgumentException] { Options(Set(a, b, c), None, args) }
       .getMessage should include("--d")
 
   }
 
 
   it should "throw when given an invalid argument to a dictionary flag" in {
-    val flags = List(
+    val flags: Set[FlagArgument[_]] = Set(
       new DictionaryFlag[Map[String, String]] {
         override def name = "a"
         override def parseValue(args: Map[String, String]): Map[String, String] = args
@@ -339,7 +339,7 @@ class OptionsSpec extends UnitSpec {
   }
 
   it should "throw when given an invalid argument to a number flag" in {
-    val flags = List(
+    val flags: Set[FlagArgument[_]] = Set(
       new NumberFlag {
         override def name = "a"
         override def description(formatter: Formatter): Nothing = ???

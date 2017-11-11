@@ -88,10 +88,10 @@ class LoggerSpec extends UnitSpec {
     val (sb, memFile) = memoryFile()
     val logSettings = LoggingSettings(
       printToStdout = false,
-      printToFile = List(memFile),
       formatter = Formatter(SimpleFormatting),
       logLevel = LogLevel.Info
     )
+    logSettings.printToFile = List(memFile)
 
     var testEnclosing: String = ""
     var testFile: String = ""
@@ -211,16 +211,16 @@ class LoggerSpec extends UnitSpec {
 
 
   private def getLogger(logLevel: LogLevel = LogLevel.Trace, useColor: Boolean = false): (Logger, StringBuilder) = {
-    val (sb, file) = memoryFile()
+    val (sb, memFile) = memoryFile()
 
     val formatter = Formatter(Formatting(useColor = useColor))
 
     val logSettings = LoggingSettings(
       logLevel = logLevel,
       printToStdout = false,
-      printToFile = List(file),
       formatter = formatter
     )
+    logSettings.printToFile = List(memFile)
 
     var _threadId = 0
     val logger = new Logger()(logSettings) {

@@ -1,5 +1,7 @@
 package tlang
 
+import better.files.{File, _}
+
 object Constants {
 
   val FileEnding                    = ".t"
@@ -25,6 +27,7 @@ object Constants {
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
   lazy val TDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
+  val SettingsDirectory: File = System.getProperty("user.home") / ".tlang"
 
   private def FatalCantFindTHome: Nothing = {
     println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")

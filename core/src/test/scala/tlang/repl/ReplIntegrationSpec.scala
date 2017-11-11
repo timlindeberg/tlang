@@ -3,7 +3,7 @@ package tlang.repl
 import akka.actor.ActorRef
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
-import tlang.formatting.DefaultFormatting
+import tlang.formatting.{DefaultFormatting, Formatter}
 import tlang.options.Options
 import tlang.repl.actors.ReplActor.{Start, Stop}
 import tlang.testutils.AnsiMatchers
@@ -20,8 +20,8 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val formatting = DefaultFormatting.copy(lineWidth = Width)
-    repl = Main.createRepl(testTerminal, Options.Empty, formatting)
+    val formatter = Formatter(DefaultFormatting.copy(lineWidth = Width))
+    repl = Main.createRepl(testTerminal, Options.Empty, formatter)
     repl ! Start
   }
 

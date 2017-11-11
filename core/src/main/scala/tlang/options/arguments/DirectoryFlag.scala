@@ -16,7 +16,7 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
     "Specify a path where generated classes are placed."
   }
 
-  override def verifyArgument(outDir: String)(implicit errorContext: ErrorStringContext): Unit = {
+  override def verify(outDir: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 
     if (!outDir.isValidPath)

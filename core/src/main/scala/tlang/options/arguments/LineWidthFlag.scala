@@ -22,8 +22,8 @@ case object LineWidthFlag extends NumberFlag {
       """.stripMargin.trim
   }
 
-  protected override def verifyArgument(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
-    super.verifyArgument(arg)
+  protected override def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
+    super.verify(arg)
     import errorContext.ErrorStringContext
     val num = arg.toInt
     if (num < -1) {

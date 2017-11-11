@@ -1,17 +1,17 @@
 package tlang.options
 
 import better.files.File
-import tlang.compiler.Main
 import tlang.compiler.imports.Imports
 import tlang.formatting._
 import tlang.messages.{AlternativeSuggestor, ErrorStringContext, Suggestion}
 import tlang.options.arguments._
 import tlang.testutils.UnitSpec
+import tlang.utils.LogLevel
 
-class CompilerOptionsSpec extends UnitSpec {
+class CompilerArgumentsSpec extends UnitSpec {
 
 
-  behavior of "Compiler options"
+  behavior of "Compiler arguments"
 
 
   it should "use class path flag" in {
@@ -286,10 +286,32 @@ class CompilerOptionsSpec extends UnitSpec {
 
   }
 
+  it should "use loglevel argument" in {
+    test("No arguments should result in loglevel off") {
+      val options = createOptions("")
+      options(LogLevelFlag) shouldBe LogLevel.Off
+    }
+
+    test("Valid log levels") {
+      createOptions("--loglevel Off")(LogLevelFlag) shouldBe LogLevel.Off
+      createOptions("--loglevel tRaCe")(LogLevelFlag) shouldBe LogLevel.Trace
+      createOptions("--loglevel debug")(LogLevelFlag) shouldBe LogLevel.Debug
+      createOptions("--loglevel info")(LogLevelFlag) shouldBe LogLevel.Info
+      createOptions("--loglevel WARN")(LogLevelFlag) shouldBe LogLevel.Warn
+      createOptions("--loglevel error")(LogLevelFlag) shouldBe LogLevel.Error
+    }
+
+    test("Invalid log levels") {
+      intercept[IllegalArgumentException] { createOptions("--loglevel abc") }
+        .getMessage should include("abc")
+    }
+  }
+
 
   private def createOptions(args: String, suggestor: AlternativeSuggestor = mock[AlternativeSuggestor]) = {
     val errorContext = ErrorStringContext(Formatter(SimpleFormatting), suggestor)
-    Options(Main.CompilerFlags, Some(TFilesArgument), args.split(" "))(errorContext)
+    val flags = tlang.compiler.Main.CompilerFlags
+    Options(flags, Some(TFilesArgument), args.split(" "))(errorContext)
   }
 
 }

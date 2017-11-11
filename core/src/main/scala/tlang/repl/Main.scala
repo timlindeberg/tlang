@@ -6,7 +6,6 @@ import com.googlecode.lanterna.terminal.Terminal
 import com.typesafe.config.ConfigFactory
 import tlang.Context
 import tlang.compiler.DebugOutputFormatter
-import tlang.compiler.Main.CompilerFlags
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.code.TreeBuilder
 import tlang.compiler.imports.{ClassPath, Imports}
@@ -26,29 +25,35 @@ import tlang.utils.{Logging, ProgramExecutor}
 
 object Main {
 
+  import tlang.Constants._
+
   val VersionNumber   = "0.0.1"
   val MaxRedoSize     = 500
   val TabWidth        = 3
   val DoubleClickTime = 500L
 
 
-  val HistoryFileName  : String = "repl_history"
-  val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
+  val HistoryFileName: String = "repl_history"
 
-  val ReplFlags: List[FlagArgument[_]] = List(
-    LineWidthFlag,
+  val ReplFlags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
-    VersionFlag,
+    LineWidthFlag,
+    LogLevelFlag,
+    MessageContextFlag,
+    NoColorFlag,
     ReplHelpFlag,
-    MessageContextFlag//,
-   // LogLevelFlag
+    VersionFlag
   )
 
   def main(args: Array[String]): Unit = {
 
     val options = parseOptions(args)
     val formatting = Formatting(options)
+    val formatter = Formatter(formatting)
+    Logging.DefaultLogSettings.formatter = formatter
+    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
+    Logging.DefaultLogSettings.logThreads = true
 
     if (options(VersionFlag)) {
       printVersion()
@@ -60,18 +65,17 @@ object Main {
       sys.exit()
     }
 
+
     val terminal = TerminalFactory.createTerminal()
-    val repl = createRepl(terminal, options, formatting)
+    val repl = createRepl(terminal, options, formatter)
     repl ! Start
   }
 
-  def createRepl(terminal: Terminal, options: Options, formatting: Formatting): ActorRef = {
+  def createRepl(terminal: Terminal, options: Options, formatter: Formatter): ActorRef = {
     // Inject dependencies
-
-    val formatter = Formatter(formatting)
+    val formatting = formatter.formatting
     val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
 
-    Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
 
     val tempDir = File.newTemporaryDirectory("repl")
 
@@ -127,7 +131,7 @@ object Main {
     val formatter = Formatter(SimpleFormatting)
 
     val errorContext = ErrorStringContext(formatter)
-    Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
+    Options(flags = ReplFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")

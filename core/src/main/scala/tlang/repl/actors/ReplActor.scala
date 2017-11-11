@@ -270,7 +270,7 @@ class ReplActor(
 
     }
 
-    override protected lazy val All: List[Command] = Enumeration.instancesOf[Command].sortBy(_.priority)
+    override protected lazy val Values: List[Command] = Enumeration.instancesOf[Command].sortBy(_.priority)
   }
 
 }

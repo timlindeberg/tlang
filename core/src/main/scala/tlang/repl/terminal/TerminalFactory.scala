@@ -9,12 +9,19 @@ import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguratio
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
 import tlang.utils.Extensions._
+import tlang.utils.Logging
 
 object TerminalFactory {
 
   def createTerminal(): Terminal = {
-    if (sys.env.get("useTerminalEmulator").contains("true"))
+    if (sys.env.get("useTerminalEmulator").contains("true")) {
+      // we can print to stdout when using a terminal emulator
+      Logging.DefaultLogSettings.printToStdout = true
       return createTerminalEmulator()
+    }
+
+    Logging.DefaultLogSettings.printToStdout = false
+    Logging.DefaultLogSettings.printToFile ::= tlang.Constants.SettingsDirectory / "logs/repl.log"
 
     val charset = Charset.forName(System.getProperty("file.encoding"))
     new UnixTerminal(System.in, System.out, charset, UnixLikeTerminal.CtrlCBehaviour.TRAP) use { term =>
@@ -22,13 +29,15 @@ object TerminalFactory {
     }
   }
 
-  private def createTerminalEmulator() =
+  private def createTerminalEmulator() = {
     new DefaultTerminalFactory()
       .setTerminalEmulatorColorConfiguration(emulatorColors)
       .setTerminalEmulatorFontConfiguration(emulatorFont)
       .setInitialTerminalSize(new TerminalSize(80, 80))
       .setTerminalEmulatorDeviceConfiguration(deviceConfiguration)
       .createTerminal()
+  }
+
 
   private lazy val emulatorFont =
     new SwingTerminalFontConfiguration(

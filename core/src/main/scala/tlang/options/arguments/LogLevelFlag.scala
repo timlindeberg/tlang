@@ -3,8 +3,8 @@ package tlang.options.arguments
 import tlang.formatting.Formatter
 import tlang.messages.ErrorStringContext
 import tlang.options.ArgumentFlag
-import tlang.utils.LogLevel
 import tlang.utils.Extensions._
+import tlang.utils.LogLevel
 
 case object LogLevelFlag extends ArgumentFlag[LogLevel] {
   override val name           = "loglevel"
@@ -12,27 +12,27 @@ case object LogLevelFlag extends ArgumentFlag[LogLevel] {
 
   override def description(formatter: Formatter): String = {
     import formatter.formatting._
-    s"Specify log level to use when running the compiler. Default is ${Blue("Off")}."
+    s"Specifies the log level to use. Default is ${ Blue("Off") }."
   }
 
   override def extendedDescription(formatter: Formatter): String = {
     import formatter.formatting._
     val logLevels = LogLevel.map(Blue(_))
-    s"""|Specify log level to use when running the compiler. Default is ${Blue("Off")}.
+    s"""|Specifies the log level to use. Default is ${ Blue("Off") }.
         |
         |Valid levels are:
-        |${formatter.list(logLevels)}
-     """.stripMargin
+        |${ formatter.list(logLevels) }""".stripMargin
   }
 
   override def parseValue(args: Set[String]): LogLevel = {
-    LogLevel.find { _.getClass.getSimpleName.toLowerCase in args }.get
+    val argsLower = args.map(_.toLowerCase)
+    LogLevel.find { _.name in argsLower } getOrElse LogLevel.Off
   }
 
-  protected override def verifyArgument(logLevel: String)(implicit errorContext: ErrorStringContext): Unit = {
+  protected override def verify(logLevel: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
-    val logLevels = LogLevel.map { _.getClass.getSimpleName.toLowerCase }
-    if (logLevel notIn logLevels)
+    val logLevels = LogLevel.map { _.getClass.simpleObjectName.toLowerCase }
+    if (logLevel.toLowerCase notIn logLevels)
       error(err"Invalid log level: $logLevel.")
   }
 

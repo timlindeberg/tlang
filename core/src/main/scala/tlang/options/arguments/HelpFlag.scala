@@ -7,13 +7,13 @@ import tlang.utils.Extensions._
 // All flags is a function so we can pass the list of compiler flags to the help flag.
 // Otherwise we get a null pointer exception since the Help Flag is part of the compiler flags
 // list and gets initialized before the list exists.
-class HelpFlag(allFlags: => List[FlagArgument[_]]) extends OptionalArgumentFlag[Set[String]] {
+class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[Set[String]] {
   override val name           = "help"
   override val shortFlag      = Some("h")
   override val argDescription = "about"
   override val defaultArg     = "all"
 
-  private lazy val FlagNames = allFlags.map(_.name)
+  private lazy val FlagNames: Set[String] = allFlags.map(_.name)
 
   override def isValidArg(arg: String): Boolean = arg in FlagNames
 

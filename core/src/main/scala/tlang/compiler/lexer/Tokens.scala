@@ -175,7 +175,7 @@ object Tokens extends Enumerable[TokenKind] {
     override def toString: String = value
   }
 
-  override lazy val All          : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
+  override lazy val Values       : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
   lazy          val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+")).toSet
   lazy          val KeywordMap   : Map[String, TokenKind] = Keywords.map(t => t.str -> t).toMap
   lazy          val NonKeywords  : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !KeywordMap.contains(t.str)).map(t => t.str -> t).toMap

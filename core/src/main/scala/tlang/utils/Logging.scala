@@ -14,6 +14,7 @@ import tlang.utils.Logging._
 sealed abstract class LogLevel(val value: Int) extends Ordered[LogLevel] {
 
   override def compare(that: LogLevel): Int = value - that.value
+  def name: String = getClass.simpleObjectName.toLowerCase
 
 }
 
@@ -25,7 +26,7 @@ object LogLevel extends Enumerable[LogLevel] {
   case object Error extends LogLevel(4)
   case object Off extends LogLevel(5)
 
-  override lazy val All: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.value)
+  override lazy val Values: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.value)
 }
 
 
@@ -36,7 +37,6 @@ case class LoggingSettings(
   var logLevelWidth: Int = 5,
   var logThreads: Boolean = true,
   var printToStdout: Boolean = true,
-  var printToFile: List[File] = Nil,
   var formatter: Formatter = Formatter(DefaultFormatting),
   var logLevel: LogLevel = LogLevel.Debug
 ) {
@@ -47,11 +47,21 @@ case class LoggingSettings(
   def TimeColor: Color = formatting.Magenta
   def HighlightColor: Color = formatting.Cyan
 
+  var _printToFile: List[File] = Nil
+  def printToFile: List[File] = _printToFile
+  def printToFile_=(files: List[File]): Unit = {
+    files.foreach(_.createDirectories())
+    _printToFile = files
+  }
 }
 
 object Logging {
 
-  implicit val DefaultLogSettings: LoggingSettings = LoggingSettings()
+  implicit val DefaultLogSettings: LoggingSettings = LoggingSettings(logLevel = sys.env
+    .get("logLevel")
+    .flatMap(level => LogLevel.find(_.name == level.toLowerCase))
+    .getOrElse(LogLevel.Off)
+  )
 
 }
 
@@ -81,21 +91,18 @@ trait Logging {
 
 }
 
-class Logger(implicit protected val loggingSettings: LoggingSettings) {
+class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLogSettings) {
 
   import loggingSettings._
 
-  def logWithContext
-  (logLevel: LogLevel, sc: StringContext, values: Seq[Any])
-    (implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
-
-    if (logLevel < loggingSettings.logLevel)
+  def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
+    if (!isEnabled(logLevel))
       return
 
     val sb = new StringBuilder
     val expressions = values.iterator
     val strings = sc.parts.iterator
-    var last: Option[Any] = None
+    var last: Any = null
     var nextString: Option[String] = Some(strings.next)
 
     while (nextString.isDefined) {
@@ -104,13 +111,13 @@ class Logger(implicit protected val loggingSettings: LoggingSettings) {
       if (expressions.hasNext) {
         val expression = expressions.next
         if (!expressions.hasNext && nextString.exists(_.isEmpty))
-          last = Some(expression)
+          last = expression
         else
           sb ++= highlight(expression)
       }
     }
     val msg = sb.toString()
-    putLogStatement(logLevel, msg, last.orNull)
+    putLogStatement(logLevel, msg, last)
   }
 
   def trace(msg: String, extra: Any = null)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
@@ -124,8 +131,10 @@ class Logger(implicit protected val loggingSettings: LoggingSettings) {
   def error(msg: String, extra: Any = null)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
     putLogStatement(LogLevel.Error, msg, extra)
 
+  def isEnabled(logLevel: LogLevel): Boolean = logLevel >= loggingSettings.logLevel
+
   protected def putLogStatement(level: LogLevel, message: String, extra: Any)(implicit file: SourceFile, line: Line, enclosing: Enclosing): Unit = {
-    if (level < loggingSettings.logLevel)
+    if (!isEnabled(level))
       return
 
     val logLevelFormatted = logLevel(level)

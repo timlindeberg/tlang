@@ -74,6 +74,11 @@ object Extensions {
     block
   }
 
+  implicit class ClassExtensions[T](val o: Class[T]) extends AnyVal {
+    def objectName: String = o.getName.stripSuffix("$")
+    def simpleObjectName: String = o.getSimpleName.stripSuffix("$")
+  }
+
   implicit class OptionExtensions[T](val o: Option[T]) extends AnyVal {
     def ifDefined(f: T => Unit): Unit = if (o.isDefined) f(o.get)
   }

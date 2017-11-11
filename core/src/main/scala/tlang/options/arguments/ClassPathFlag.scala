@@ -17,7 +17,7 @@ case object ClassPathFlag extends ArgumentFlag[Set[String]] {
 
   override def parseValue(args: Set[String]): Set[String] = args
 
-  protected override def verifyArgument(classPath: String)(implicit errorContext: ErrorStringContext): Unit = {
+  protected override def verify(classPath: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
     if (!classPath.isValidPath)
       error(err"Invalid class path: $classPath.")
