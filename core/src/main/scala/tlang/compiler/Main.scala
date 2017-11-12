@@ -143,7 +143,7 @@ object Main extends Logging {
     import formatter.formatting._
 
     val stackTrace = formatter.highlightStackTrace(error)
-    error"Unknown execution error occurred: $stackTrace"
+    error"Execution error occurred: $stackTrace"
 
     formatter
       .grid

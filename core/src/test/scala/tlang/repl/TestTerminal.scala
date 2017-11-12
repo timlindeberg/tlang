@@ -22,8 +22,7 @@ import scala.concurrent.{Future, Promise}
   * Class used for doing integration tests on the REPL.
   * The Terminal is both the starting point and the end point of the REPL.
   * It starts with giving Key input (here given through the executeCommand
-  * function) and ends by producing an output which can be verified by
-  * calling executeCommand().stopWhen().shouldMatch(<OUTPUT>)
+  * function) and ends by producing an output which can be verified.
   */
 class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
 

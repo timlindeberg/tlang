@@ -7,6 +7,18 @@ import scala.util.matching.Regex
 
 sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString: String = kind.toString
+  override def equals(o: Any): Boolean = o match {
+    case t: Token if t.kind == kind => true
+    case _                          => false
+  }
+}
+
+sealed class TokenWithValue[T](override val kind: TokenKind, val value: T) extends Token(kind) {
+  override def toString: String = value.toString
+  override def equals(o: Any): Boolean = o match {
+    case t: TokenWithValue[T] if t.kind == kind && t.value == value => true
+    case _                                                          => false
+  }
 }
 
 sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
@@ -17,41 +29,17 @@ sealed abstract class TokenKind(val str: String) extends Ordered[TokenKind] {
 
 object Tokens extends Enumerable[TokenKind] {
 
-
-  object IDKIND extends TokenKind("") {
-    override def toString = "Identifier"
-  }
-
-  object INTLITKIND extends TokenKind("") {
-    override def toString = "Int literal"
-  }
-
-  object LONGLITKIND extends TokenKind("") {
-    override def toString = "Long literal"
-  }
-
-  object FLOATLITKIND extends TokenKind("") {
-    override def toString = "Float literal"
-  }
-
-  object DOUBLELITKIND extends TokenKind("") {
-    override def toString = "Double literal"
-  }
-
-  object CHARLITKIND extends TokenKind("") {
-    override def toString = "Char literal"
-  }
-
-  object STRLITKIND extends TokenKind("") {
-    override def toString = "String literal"
-  }
-
-  object COMMENTLITKIND extends TokenKind("") {
-    override def toString = "Comment literal"
-  }
-
-
   // @formatter:off
+
+  case object IDKIND         extends TokenKind("") { override def toString = "Identifier" }
+  case object INTLITKIND     extends TokenKind("") { override def toString = "Int literal" }
+  case object LONGLITKIND    extends TokenKind("") { override def toString = "Long literal" }
+  case object FLOATLITKIND   extends TokenKind("") { override def toString = "Float literal" }
+  case object DOUBLELITKIND  extends TokenKind("") { override def toString = "Double literal" }
+  case object CHARLITKIND    extends TokenKind("") { override def toString = "Char literal" }
+  case object STRLITKIND     extends TokenKind("") { override def toString = "String literal" }
+  case object COMMENTLITKIND extends TokenKind("") { override def toString = "Comment literal" }
+
   case object EOF             extends TokenKind("EOF")
   case object BAD             extends TokenKind("")
   case object SEMICOLON       extends TokenKind(";")
@@ -136,44 +124,26 @@ object Tokens extends Enumerable[TokenKind] {
   case object CONTINUE        extends TokenKind("continue")
   case object IN              extends TokenKind("in")
   case object NULL            extends TokenKind("null")
-  // @formatter:on
 
   case object NEWLINE extends TokenKind("\\n")
-  case object INDENT extends TokenKind("<indentation>")
-  case object DEDENT extends TokenKind("<dedentation>")
+  case object INDENT  extends TokenKind("<indentation>")
+  case object DEDENT  extends TokenKind("<dedentation>")
+  // @formatter:on
 
 
-  class ID(val value: String) extends Token(IDKIND) {
-    override def toString: String = value
-  }
-
-  class INTLIT(val value: Int) extends Token(INTLITKIND) {
-    override def toString: String = s"$value"
-  }
-
-  class LONGLIT(val value: Long) extends Token(LONGLITKIND) {
-    override def toString: String = s"$value"
-  }
-
-  class FLOATLIT(val value: Float) extends Token(FLOATLITKIND) {
-    override def toString: String = s"$value"
-  }
-
-  class DOUBLELIT(val value: Double) extends Token(DOUBLELITKIND) {
-    override def toString: String = s"$value"
-  }
-
-  class CHARLIT(val value: Char) extends Token(CHARLITKIND) {
+  case class ID(override val value: String) extends TokenWithValue[String](IDKIND, value)
+  case class INTLIT(override val value: Int) extends TokenWithValue[Int](INTLITKIND, value)
+  case class LONGLIT(override val value: Long) extends TokenWithValue[Long](LONGLITKIND, value)
+  case class FLOATLIT(override val value: Float) extends TokenWithValue[Float](FLOATLITKIND, value)
+  case class DOUBLELIT(override val value: Double) extends TokenWithValue[Double](DOUBLELITKIND, value)
+  case class COMMENTLIT(override val value: String) extends TokenWithValue[String](COMMENTLITKIND, value)
+  case class CHARLIT(override val value: Char) extends TokenWithValue[Char](CHARLITKIND, value) {
     override def toString: String = s"'$value'"
   }
-
-  class STRLIT(val value: String) extends Token(STRLITKIND) {
+  case class STRLIT(override val value: String) extends TokenWithValue[String](STRLITKIND, value) {
     override def toString: String = '"' + value + '"'
   }
 
-  class COMMENTLIT(val value: String) extends Token(COMMENTLITKIND) {
-    override def toString: String = value
-  }
 
   override lazy val Values       : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
   lazy          val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+")).toSet

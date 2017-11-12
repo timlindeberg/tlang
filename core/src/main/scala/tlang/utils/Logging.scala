@@ -65,6 +65,7 @@ object Logging {
 
 }
 
+
 trait Logging {
 
   lazy val logger: Logger = new Logger

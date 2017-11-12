@@ -53,7 +53,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
           val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
           val start = NumColor(token.line) + ":" + NumColor(token.col)
           val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
-          (token.toString, Bold(tokenName), s"$start - $end")
+          (token.toString.escape, Bold(tokenName), s"$start - $end")
         }
     }
     grid.print()

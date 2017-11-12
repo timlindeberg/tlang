@@ -20,7 +20,7 @@ class LexingPositionSpec extends CompilerIntegrationTestSpec {
 
   def testPositions(predicate: Token => Boolean, positions: Position*): Unit = {
     val tokens = Tokens
-      .filterNot(_.kind == NEWLINE)
+      .filter(_.kind != NEWLINE)
       .filter(predicate)
       .map(Position(_))
 

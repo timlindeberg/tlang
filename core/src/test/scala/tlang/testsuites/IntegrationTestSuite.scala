@@ -2,6 +2,7 @@ package tlang.testsuites
 
 import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites}
+import tlang.compiler.analyzer.OperatorTypeSpec
 import tlang.compiler.ast.PrettyPrinterSpec
 import tlang.compiler.{CompilerErrorsSuite, PositionSuite, ValidProgramsSuite}
 import tlang.messages.MessageSnapshotSuite
@@ -14,7 +15,8 @@ class IntegrationTestSuite extends Suites(
   new MessageSnapshotSuite,
   new PositionSuite,
   new PrettyPrinterSpec,
-  new ReplIntegrationSpec
+  new ReplIntegrationSpec,
+  new OperatorTypeSpec
 ) with BeforeAndAfterAll {
 
   import tlang.testutils.TestConstants._
