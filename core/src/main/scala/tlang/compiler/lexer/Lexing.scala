@@ -46,54 +46,49 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   def apply(source: Source): List[Token] = {
 
     @tailrec def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
-      case '\n' :: _                  =>
-        val (newlinesParsed, r) = parseCharacters(chars, '\n')
-        val newlineToken = new Token(NEWLINE).setPos(source, line, column, line + newlinesParsed, 1)
-        column = 1
-        line += newlinesParsed
-        val (indentToken, rest) = getIndentToken(r)
-        readTokens(rest, (indentToken :+ newlineToken) ::: tokens)
-      case '\t' :: _                  =>
+      case ('\r' :: '\n' :: _) | ('\n' :: _) =>
+        val (newTokens, rest) = parseNewline(chars)
+        readTokens(rest, newTokens ::: tokens)
+      case '\t' :: _                         =>
         val (tabsParsed, r) = parseCharacters(chars, '\t')
         report(TabsNonIndentation(tabsParsed))
         column += tabsParsed
         readTokens(r, tokens)
-      case (c :: r) if c.isWhitespace =>
+      case (c :: r) if c.isWhitespace        =>
         column += 1
         readTokens(r, tokens)
-      case '/' :: '/' :: r            =>
+      case '/' :: '/' :: r                   =>
         val (token, tail) = lineComment(r)
         readTokens(tail, token :: tokens)
-      case '/' :: '*' :: r            =>
+      case '/' :: '*' :: r                   =>
         val (token, tail) = blockComment(r)
         readTokens(tail, token :: tokens)
       // Prioritise longer tokens
       case c1 :: c2 :: c3 :: r if tokenExists(s"$c1$c2$c3") => readTokens(r, createToken(NonKeywords(s"$c1$c2$c3"), 3) :: tokens)
       case c1 :: c2 :: r if tokenExists(s"$c1$c2")          => readTokens(r, createToken(NonKeywords(s"$c1$c2"), 2) :: tokens)
       case c :: r if tokenExists(s"$c")                     => readTokens(r, createToken(NonKeywords(s"$c"), 1) :: tokens)
-
-      case c :: _ if c.isLetter || c == '_' =>
+      case c :: _ if c.isLetter || c == '_'                 =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
-      case '\'' :: r                        =>
+      case '\'' :: r                                        =>
         val (token, tail) = getCharLiteral(r)
         readTokens(tail, token :: tokens)
-      case '"' :: r                         =>
+      case '"' :: r                                         =>
         val (token, tail) = getStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case '`' :: r                         =>
+      case '`' :: r                                         =>
         val (token, tail) = getMultiLineStringLiteral(r)
         readTokens(tail, token :: tokens)
-      case '0' :: 'x' :: r                  =>
+      case '0' :: 'x' :: r                                  =>
         val (token, tail) = getHexadecimalLiteral(r)
         readTokens(tail, token :: tokens)
-      case '0' :: 'b' :: r                  =>
+      case '0' :: 'b' :: r                                  =>
         val (token, tail) = getBinaryLiteral(r)
         readTokens(tail, token :: tokens)
-      case c :: _ if c.isDigit              =>
+      case c :: _ if c.isDigit                              =>
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
-      case Nil                              =>
+      case Nil                                              =>
         val dedent = (0 until indent).map(_ => createToken(DEDENT, 0)).toList
         val eof = if (tokens.nonEmpty && tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
           createToken(EOF, 0) :: dedent ::: (createToken(NEWLINE, 0) :: Nil)
@@ -101,18 +96,37 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
           createToken(EOF, 0) :: dedent
 
         eof ::: tokens
-      case c :: _                           =>
+      case c :: _                                           =>
         val (token, tail) = endInvalidToken(chars, 0, isEndingChar, length => report(InvalidIdentifier(c, length)))
         readTokens(tail, token :: tokens)
     }
 
     this.source = source
-    val characters = source.text.withUnixLineEndings.toList
+    val characters = source.text.toList
     val res = readTokens(characters, Nil).reverse
 
     line = 1
     column = 1
     res
+  }
+
+  private def parseNewline(chars: List[Char]) = {
+    val (newlinesParsed, r) = parseNewlines(chars)
+    val newlineToken = new Token(NEWLINE).setPos(source, line, column, line + newlinesParsed, 1)
+    column = 1
+    line += newlinesParsed
+    val (indentToken, rest) = getIndentToken(r)
+    (indentToken :+ newlineToken, rest)
+  }
+
+  private def parseNewlines(chars: List[Char]): (Int, List[Char]) = {
+    @tailrec def numNewlines(chars: List[Char], numChars: Int): (Int, List[Char]) = chars match {
+      case '\r' :: '\n' :: rest => numNewlines(rest, numChars + 1)
+      case '\n' :: rest         => numNewlines(rest, numChars + 1)
+      case _                    => (numChars, chars)
+    }
+
+    numNewlines(chars, 0)
   }
 
   private def parseCharacters(chars: List[Char], char: Char): (Int, List[Char]) = {
@@ -148,17 +162,17 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     var mixedTabsAndSpaces = false
 
     @tailrec def indent(chars: List[Char], currentIndent: Int, parsedChars: Int): (Int, Int, List[Char]) = chars match {
-      case '\t' :: rest =>
+      case '\t' :: rest                      =>
         if (foundSpace)
           mixedTabsAndSpaces = true
         indent(rest, currentIndent + 1, parsedChars + 1)
-      case ' ' :: rest  =>
+      case ' ' :: rest                       =>
         foundSpace = true
         indent(rest, currentIndent, parsedChars + 1)
-      case '\n' :: _    =>
+      case ('\r' :: '\n' :: _) | ('\n' :: _) =>
         report(UnnecessaryWhitespaceOnBlankLine(parsedChars))
         (currentIndent, parsedChars, chars)
-      case _            => (currentIndent, parsedChars, chars)
+      case _                                 => (currentIndent, parsedChars, chars)
     }
 
     indent(chars, 0, 0) use { case (_, parsedChars, _) =>
@@ -266,16 +280,19 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     def endAt(c: Char) = c == '"'
 
     @tailrec def getStringLiteral(chars: List[Char], s: StringBuilder, parsed: Int): (Token, List[Char]) = chars match {
-      case '"' :: r  =>
+      case '"' :: r          =>
         val literal = s.toString
         if (literal.length > Lexing.MaximumStringSize) {
           report(StringLiteralTooLarge(literal, parsed + 1))
         }
         (createToken(s.toString, parsed + 1), r)
-      case '\n' :: _ =>
+      case '\r' :: '\n' :: _ =>
         report(UnclosedStringLiteral(parsed))
         (startPos, chars)
-      case '\\' :: r => r match {
+      case '\n' :: _         =>
+        report(UnclosedStringLiteral(parsed))
+        (startPos, chars)
+      case '\\' :: r         => r match {
         case 't' :: r  => getStringLiteral(r, s + '\t', parsed + 2)
         case 'b' :: r  => getStringLiteral(r, s + '\b', parsed + 2)
         case 'n' :: r  => getStringLiteral(r, s + '\n', parsed + 2)
@@ -295,8 +312,8 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case _         =>
           endInvalidToken(chars, parsed, endAt, len => report(InvalidEscapeSequence(len)))
       }
-      case c :: r    => getStringLiteral(r, s + c, parsed + 1)
-      case Nil       =>
+      case c :: r            => getStringLiteral(r, s + c, parsed + 1)
+      case Nil               =>
         report(UnclosedStringLiteral(parsed))
         (startPos, chars)
     }
@@ -308,19 +325,23 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     val startPos = getStartPos
 
     @tailrec def getStringIdentifier(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
-      case '`' :: r  =>
+      case '`' :: r          =>
         column += 1
-        val token = new STRLIT(s.toString)
+        val token = STRLIT(s.toString)
         token.setPos(source, startPos.line, startPos.col, line, column)
         (token, r)
-      case '\n' :: r =>
+      case '\r' :: '\n' :: r =>
+        line += 1
+        column = 1
+        getStringIdentifier(r, s + '\r' + '\n')
+      case '\n' :: r         =>
         line += 1
         column = 1
         getStringIdentifier(r, s + '\n')
-      case c :: r    =>
+      case c :: r            =>
         column += 1
         getStringIdentifier(r, s + c)
-      case Nil       =>
+      case Nil               =>
         report(UnclosedMultilineString(startPos))
         (startPos, chars)
     }
@@ -413,9 +434,10 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
   private def lineComment(chars: List[Char]): (Token, List[Char]) = {
     @tailrec def lineComment(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
-      case '\n' :: r => (createCommentToken(s.toString, s.length), '\n' :: r)
-      case c :: r    => lineComment(r, s + c)
-      case Nil       => (createCommentToken(s.toString, s.length), chars)
+      case '\r' :: '\n' :: r => (createCommentToken(s.toString, s.length), '\r' :: '\n' :: r)
+      case '\n' :: r         => (createCommentToken(s.toString, s.length), '\n' :: r)
+      case c :: r            => lineComment(r, s + c)
+      case Nil               => (createCommentToken(s.toString, s.length), chars)
     }
 
     lineComment(chars, new StringBuilder("//"))
@@ -426,20 +448,24 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     val startPos = getStartPos
 
     @tailrec def blockComment(chars: List[Char], s: StringBuilder): (Token, List[Char]) = chars match {
-      case '*' :: '/' :: r =>
+      case '*' :: '/' :: r   =>
         column += 2
-        val token = new COMMENTLIT(s.toString + "*/")
+        val token = COMMENTLIT(s.toString + "*/")
         token.setPos(source, startPos.line, startPos.col, line, column)
         (token, r)
-      case '\n' :: r       =>
+      case '\r' :: '\n' :: r =>
         line += 1
         column = 1
-        blockComment(r, s + '\\' + 'n')
-      case c :: r          =>
+        blockComment(r, s + '\r' + '\n')
+      case '\n' :: r         =>
+        line += 1
+        column = 1
+        blockComment(r, s + '\n')
+      case c :: r            =>
         column += 1
         blockComment(r, s + c)
-      case Nil             =>
-        val token = new COMMENTLIT(s.toString)
+      case Nil               =>
+        val token = COMMENTLIT(s.toString)
         token.setPos(source, startPos.line, startPos.col, line, column)
         (token, Nil)
     }
@@ -462,7 +488,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case c :: r if endAt(c) =>
           error(parsed)
           val res = (createToken(BAD, parsed), r)
-          if (c == '\n') {
+          if (c == '\r' || c == '\n') {
             line += 1
             column = 1
           }
@@ -538,23 +564,23 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
   private def isHexDigit(c: Char) = c.isDigit || (c.toLower in "abcdef")
 
-  private def createToken(int: Int, tokenLength: Int): Token = createToken(new INTLIT(int), tokenLength)
+  private def createToken(int: Int, tokenLength: Int): Token = createToken(INTLIT(int), tokenLength)
 
-  private def createToken(long: Long, tokenLength: Int): Token = createToken(new LONGLIT(long), tokenLength)
+  private def createToken(long: Long, tokenLength: Int): Token = createToken(LONGLIT(long), tokenLength)
 
-  private def createToken(float: Float, tokenLength: Int): Token = createToken(new FLOATLIT(float), tokenLength)
+  private def createToken(float: Float, tokenLength: Int): Token = createToken(FLOATLIT(float), tokenLength)
 
-  private def createToken(double: Double, tokenLength: Int): Token = createToken(new DOUBLELIT(double), tokenLength)
+  private def createToken(double: Double, tokenLength: Int): Token = createToken(DOUBLELIT(double), tokenLength)
 
   private def createToken(kind: TokenKind, tokenLength: Int): Token = createToken(new Token(kind), tokenLength)
 
-  private def createIdToken(string: String, tokenLength: Int): Token = createToken(new ID(string), tokenLength)
+  private def createIdToken(string: String, tokenLength: Int): Token = createToken(ID(string), tokenLength)
 
-  private def createCommentToken(str: String, tokenLength: Int): Token = createToken(new COMMENTLIT(str), tokenLength)
+  private def createCommentToken(str: String, tokenLength: Int): Token = createToken(COMMENTLIT(str), tokenLength)
 
-  private def createToken(char: Char, tokenLength: Int): Token = createToken(new CHARLIT(char), tokenLength)
+  private def createToken(char: Char, tokenLength: Int): Token = createToken(CHARLIT(char), tokenLength)
 
-  private def createToken(string: String, tokenLength: Int): Token = createToken(new STRLIT(string), tokenLength)
+  private def createToken(string: String, tokenLength: Int): Token = createToken(STRLIT(string), tokenLength)
 
   private def createToken(token: Token, tokenLength: Int): Token = {
     val endCol = column + tokenLength
