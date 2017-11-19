@@ -31,14 +31,6 @@ object Extensions {
 
   def debug(s: String): Unit = BFile("output.txt").write(s + NL)
 
-  def using[T <: {def close()}, R](resource: T)(block: T => R): R = {
-    try {
-      block(resource)
-    } finally {
-      if (resource != null) resource.close()
-    }
-  }
-
   def withTimeout[T](duration: Duration)(block: => T): T = {
     if (duration.toNanos == 0)
       return block

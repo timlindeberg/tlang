@@ -1,5 +1,4 @@
-package tlang.compiler
-package ast
+package tlang.compiler.ast
 
 import tlang.Context
 import tlang.compiler.analyzer.Types.TUnit
@@ -7,12 +6,13 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer._
+import tlang.compiler.{CompilerPhase, DebugOutputFormatter}
 import tlang.formatting.Formatting
 import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 
 object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging {
 
@@ -20,7 +20,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging 
     tokenList map { tokens =>
       info"Parsing tokens of ${ tokens.head.sourceName }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
-      val astBuilder = Parser(ctx, errorStringContext, tokens.toArray)
+      val astBuilder = Parser(ctx, errorStringContext, TokenStream(tokens))
       astBuilder.compilationUnit
     }
 
@@ -58,47 +58,21 @@ object Parser {
   )
 }
 
-case class Parser(ctx: Context, override val errorStringContext: ErrorStringContext, var tokens: Array[Token]) extends ParsingErrors {
+case class Parser(ctx: Context, override val errorStringContext: ErrorStringContext, tokens: TokenStream) extends ParsingErrors {
 
   override val reporter: Reporter = ctx.reporter
 
   import Parser._
-
-  // Remove comments and adjacant new line tokens
-  tokens = tokens.filter(!_.isInstanceOf[COMMENTLIT])
-  tokens = tokens.zipWithIndex.filter {
-    case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE)
-  }.map(_._1)
-
-  protected val lastToken    = tokens.last
-  private   var currentIndex = 0
-  private   var currentToken = tokens(currentIndex)
-
-  private def lastVisibleToken: Token = {
-    if (currentIndex == 0)
-      return currentToken
-
-    var i = currentIndex - 1
-    while (i > 0 && (tokens(i).kind in List(NEWLINE, INDENT, DEDENT)))
-      i -= 1
-
-    tokens(i)
-  }
-
-  private def nextToken = if (currentToken.kind == NEWLINE) tokens(currentIndex + 1) else currentToken
-
-  private def nextTokenKind = nextToken.kind
-
 
   /**
     * <goal> ::= [ <packageDeclaration> ] { <importDeclaration> } { (<classDeclaration> | <methodDeclaration> | <statement> } <EOF>
     */
   def compilationUnit: CompilationUnit = positioned {
     val pack = packageDeclaration
-    val imp = untilNot(importDeclaration, IMPORT)
+    val imp = untilNot(IMPORT)(importDeclaration)
 
-    val code = until({
-      nextTokenKind match {
+    val code = until(EOF) {
+      tokens.nextKind match {
         case CLASS | TRAIT | EXTENSION => classDeclaration
         case PUBDEF | PRIVDEF          =>
           positioned {
@@ -107,7 +81,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           }
         case _                         => statement
       }
-    }, EOF)
+    }
 
     val classes = createMainClass(code)
 
@@ -116,17 +90,17 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   private def createMainClass(code: List[Tree]) = {
-    var classes = code collect { case x: ClassDeclTree => x }
-    val methods = code collect { case x: MethodDeclTree => x }
-    val stats = code collect { case x: StatTree => x }
+    var classes = code.filterInstance[ClassDeclTree]
+    val methods = code.filterInstance[MethodDeclTree]
+    val stats = code.filterInstance[StatTree]
 
     if (stats.nonEmpty || methods.nonEmpty) {
-      val mainName = currentToken.source.map(_.mainName).getOrElse("MissingSource")
+      val mainName = tokens.current.source.map(_.mainName).getOrElse("MissingSource")
       val mainClass = classes.filterInstance[IDClassDeclTree].find(_.id.name == mainName) match {
         case Some(c) => c
         case None    =>
           val pos = if (stats.nonEmpty) stats.head else methods.head
-          val mainClass = ClassDecl(ClassID(mainName), List(), List(), List()).setPos(pos, lastVisibleToken)
+          val mainClass = ClassDecl(ClassID(mainName), List(), List(), List()).setPos(pos, tokens.lastVisible)
           classes ::= mainClass
           mainClass
       }
@@ -136,7 +110,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       if (stats.nonEmpty) {
         val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
         val modifiers: Set[Modifier] = Set(Public(), Static())
-        val mainMethod = MethodDecl(MethodID("main").setNoPos(), modifiers, args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, lastVisibleToken)
+        val mainMethod = MethodDecl(MethodID("main").setNoPos(), modifiers, args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, tokens.lastVisible)
         mainClass.methods ::= mainMethod
       }
     }
@@ -147,10 +121,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <packageDeclaration> ::= package <identifier> { . <identifier> }
     */
   def packageDeclaration: Package = positioned {
-    nextTokenKind match {
+    tokens.nextKind match {
       case PACKAGE =>
         eat(PACKAGE)
-        val address = nonEmptyList(identifierName, COLON, COLON)
+        val address = nonEmptyList(COLON, COLON)(identifierName)
         endStatement()
         Package(address)
       case _       => Package(Nil)
@@ -166,9 +140,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     address += identifierName
     var imp: Option[Import] = None
-    while (nextTokenKind == COLON) {
+    while (tokens.nextKind == COLON) {
       eat(COLON, COLON)
-      nextTokenKind match {
+      tokens.nextKind match {
         case TIMES     =>
           eat(TIMES)
           imp = Some(WildCardImport(address.toList))
@@ -188,7 +162,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(EXTENSION)
     val className = new ListBuffer[String]()
     className += identifierName
-    while (nextTokenKind == COLON) {
+    while (tokens.nextKind == COLON) {
       eat(COLON, COLON)
       className += identifierName
     }
@@ -202,7 +176,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * | <extensionDeclaration>
     */
   def classDeclaration: ClassDeclTree =
-    if (nextTokenKind == EXTENSION)
+    if (tokens.nextKind == EXTENSION)
       extensionDeclaration
     else
       classOrTraitDeclaration
@@ -212,18 +186,18 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * ( "=" <indent> { <varDeclaration> } { <methodDeclaration> } <dedent> | <endStatement> )
     */
   def classOrTraitDeclaration: ClassDeclTree = positioned {
-    val isClass = oneOf(CLASS, TRAIT)
+    val classOrTrait = oneOf(CLASS, TRAIT)
     val id = classTypeIdentifier
     val parents = parentsDeclaration
-    val (vars, methods) = if (nextTokenKind == EQSIGN) {
+    val (vars, methods) = if (tokens.nextKind == EQSIGN) {
       eat(EQSIGN)
       eat(INDENT)
-      val vars = untilNot({
+      val vars = untilNot(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL) {
         val v = fieldDeclaration
         endStatement()
         v
-      }, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL)
-      val methods = untilNot(methodDeclaration, PRIVDEF, PUBDEF)
+      }
+      val methods = untilNot(PRIVDEF, PUBDEF)(methodDeclaration)
       eat(DEDENT)
       (vars, methods)
     } else {
@@ -231,7 +205,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       (Nil, Nil)
     }
 
-    if (isClass)
+    if (classOrTrait == CLASS)
       ClassDecl(id, parents, vars, methods)
     else
       TraitDecl(id, parents, vars, methods)
@@ -243,10 +217,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def extensionDeclaration: ExtensionDecl = positioned {
     eat(EXTENSION)
     val id = tpe
-    val methods = if (nextTokenKind == EQSIGN) {
+    val methods = if (tokens.nextKind == EQSIGN) {
       eat(EQSIGN)
       eat(INDENT)
-      val methods = untilNot(methodDeclaration, PRIVDEF, PUBDEF)
+      val methods = untilNot(PRIVDEF, PUBDEF)(methodDeclaration)
       eat(DEDENT)
       methods
     } else {
@@ -260,10 +234,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /**
     * <parentsDeclaration> ::= [ : <classIdentifier> { "," <classIdentifier> } ]
     */
-  def parentsDeclaration: List[ClassID] = nextTokenKind match {
+  def parentsDeclaration: List[ClassID] = tokens.nextKind match {
     case COLON =>
       eat(COLON)
-      nonEmptyList(classIdentifier, COMMA)
+      nonEmptyList(COMMA)(classIdentifier)
     case _     => Nil
   }
 
@@ -275,21 +249,52 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * <localVarDeclaration> ::= (var | val) <variableEnd>
+    * <fieldModifiers> ::= ( Var | Val | (var | val [ protected ])) [ static ] [ implicit ]
+    */
+  def fieldModifiers: Set[Modifier] = {
+    val startPos = tokens.next
+    var modifiers: Set[Modifier] = tokens.nextKind match {
+      case PUBVAR  =>
+        eat(PUBVAR)
+        Set(Public().setPos(startPos, tokens.lastVisible))
+      case PRIVVAR =>
+        eat(PRIVVAR)
+        Set(protectedOrPrivate.setPos(startPos, tokens.lastVisible))
+      case PUBVAL  =>
+        eat(PUBVAL)
+        Set(Public().setPos(startPos, tokens.lastVisible), Final().setPos(startPos, tokens.lastVisible))
+      case PRIVVAL =>
+        eat(PRIVVAL)
+        Set(protectedOrPrivate.setPos(startPos, tokens.lastVisible), Final().setPos(startPos, tokens.lastVisible))
+      case _       => report(WrongToken(tokens.next, tokens.last, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
+    }
+
+    val pos = tokens.next
+    tokens.nextKind match {
+      case STATIC =>
+        eat(STATIC)
+        modifiers += Static().setPos(pos, tokens.lastVisible)
+      case _      =>
+    }
+    modifiers
+  }
+
+  /**
+    * <localVarDeclaration> ::= (var | val) <varDeclEnd>
     */
   def localVarDeclaration: VarDecl = positioned {
-    val isVar = oneOf(PRIVVAR, PRIVVAL)
-    val modifiers: Set[Modifier] = if (isVar) Set(Private()) else Set(Private(), Final())
+    val varOrVal = oneOf(PRIVVAR, PRIVVAL)
+    val modifiers: Set[Modifier] = if (varOrVal == PRIVVAR) Set(Private()) else Set(Private(), Final())
     varDeclEnd(modifiers)
   }
 
   /**
     * <varDeclEnd> ::= <identifier> [ ":" <tpe> ] [ "=" <expression> ]
     */
-  def varDeclEnd(modifiers: Set[Modifier]): VarDecl = {
+  private def varDeclEnd(modifiers: Set[Modifier]): VarDecl = {
     val id = varIdentifier
-    val typ = optional(tpe, COLON)
-    val init = optional(expression, EQSIGN)
+    val typ = optional(COLON)(tpe)
+    val init = optional(EQSIGN)(expression)
     VarDecl(id, typ, init, modifiers)
   }
 
@@ -308,7 +313,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def methodDeclaration: MethodDeclTree = positioned {
     val mods = methodModifiers
-    nextTokenKind match {
+    tokens.nextKind match {
       case IDKIND => method(mods)
       case NEW    => constructor(mods)
       case _      => operator(mods)
@@ -319,29 +324,29 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /**
     * <methodModifiers> ::= ( Def | def [ protected ])) [ static ] [ implicit ]
     */
-  def methodModifiers: Set[Modifier] = {
-    val startPos = nextToken
+  private def methodModifiers: Set[Modifier] = {
+    val startPos = tokens.next
 
 
-    var modifiers: Set[Modifier] = nextTokenKind match {
+    var modifiers: Set[Modifier] = tokens.nextKind match {
       case PUBDEF  =>
         eat(PUBDEF)
-        Set(Public().setPos(startPos, lastVisibleToken))
+        Set(Public().setPos(startPos, tokens.lastVisible))
       case PRIVDEF =>
         eat(PRIVDEF)
-        Set(protectedOrPrivate.setPos(startPos, lastVisibleToken))
-      case _       => report(WrongToken(nextToken, lastToken, PUBDEF, PRIVDEF))
+        Set(protectedOrPrivate.setPos(startPos, tokens.lastVisible))
+      case _       => report(WrongToken(tokens.next, tokens.last, PUBDEF, PRIVDEF))
     }
 
-    while (nextTokenKind == STATIC || nextTokenKind == IMPLICIT) {
-      val pos = nextToken
-      val modifier = nextTokenKind match {
+    while (tokens.nextKind == STATIC || tokens.nextKind == IMPLICIT) {
+      val pos = tokens.next
+      val modifier = tokens.nextKind match {
         case STATIC   =>
           eat(STATIC)
-          Static().setPos(pos, lastVisibleToken)
+          Static().setPos(pos, tokens.lastVisible)
         case IMPLICIT =>
           eat(IMPLICIT)
-          Implicit().setPos(pos, lastVisibleToken)
+          Implicit().setPos(pos, tokens.lastVisible)
         case _        => ???
       }
       modifiers += modifier
@@ -356,10 +361,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     modifiers.filterInstance[Implicit].foreach(mod => report(ImplicitMethodOrOperator(mod)))
 
     val id = methodIdentifier
-    eat(LPAREN)
-    val args = commaList(formal)
-    eat(RPAREN)
-    val retType = optional(returnType, COLON)
+    val args = commaList(LPAREN, RPAREN)(formal)
+    val retType = optional(COLON)(returnType)
 
     val methBody = methodBody
     MethodDecl(id, modifiers, args, retType, methBody)
@@ -369,12 +372,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <constructor> ::= new "(" [ <formal> { "," <formal> } ] ")" <methodBody>
     */
   def constructor(modifiers: Set[Modifier]): ConstructorDecl = {
-    val pos = nextToken
+    val pos = tokens.next
     eat(NEW)
-    val methId = MethodID("new").setPos(pos, lastVisibleToken)
-    eat(LPAREN)
-    val args = commaList(formal)
-    eat(RPAREN)
+    val methId = MethodID("new").setPos(pos, tokens.lastVisible)
+    val args = commaList(LPAREN, RPAREN)(formal)
     val retType = Some(UnitType().setType(TUnit).setNoPos())
     val methBody = methodBody
     ConstructorDecl(methId, modifiers, args, retType, methBody)
@@ -393,39 +394,79 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // arguments they should have. This is done since minus can have both
     // one or two operands.
 
+    def minusOperator: (OperatorTree, List[Formal], Set[Modifier]) = {
+      // Minus is a special case since it can be both a unary and a binary operator
+      eat(MINUS)
+      eat(LPAREN)
+      val f1 = formal
+      tokens.nextKind match {
+        case COMMA =>
+          eat(COMMA)
+          val f2 = formal
+          eat(RPAREN)
+          val operatorType = Minus(Empty(), Empty()).setType(TUnit)
+          (operatorType, List(f1, f2), modifiers + Static())
+        case _     =>
+          eat(RPAREN)
+          val operatorType = Negation(Empty()).setType(TUnit)
+          (operatorType, List(f1), modifiers + Static())
+      }
+    }
+
     def binaryOperator(constructor: (ExprTree, ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
-      eat(nextTokenKind)
+      eat(tokens.nextKind)
       val operatorType = constructor(Empty(), Empty()).setType(TUnit)
       eat(LPAREN)
       val f1 = formal
       eat(COMMA)
       val f2 = formal
+      eat(RPAREN)
       (operatorType, List(f1, f2), modifiers + Static())
     }
 
     def unaryOperator(constructor: (ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
-      eat(nextTokenKind)
+      eat(tokens.nextKind)
       val operatorType: OperatorTree = constructor(Empty()).setType(TUnit)
       eat(LPAREN)
-      (operatorType, List(formal), modifiers + Static())
+      val f = formal
+      eat(RPAREN)
+      (operatorType, List(f), modifiers + Static())
     }
 
-    val (operatorType, args, newModifiers) = nextTokenKind match {
+    def indexingOperator = {
+      eat(LBRACKET)
+
+      val (numArgs, operatorType) = tokens.nextKind match {
+        case RBRACKET =>
+          eat(RBRACKET)
+          tokens.nextKind match {
+            case LPAREN =>
+              (1, ArrayRead(Empty(), Empty()))
+            case EQSIGN =>
+              eat(EQSIGN)
+              (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
+            case _      => report(WrongToken(tokens.next, tokens.last, EQSIGN, LPAREN))
+          }
+        case COLON    =>
+          eat(COLON, COLON, RBRACKET)
+          (3, ArraySlice(Empty(), None, None, None))
+        case _        => report(WrongToken(tokens.next, tokens.last, RBRACKET, COLON))
+      }
+
+      modifiers.findInstance[Static].ifDefined { static =>
+        report(StaticIndexingOperator(static))
+      }
+
+      val args = commaList(LPAREN, RPAREN)(formal)
+      if (args.size != numArgs)
+        report(UnexpectedToken(tokens.current, tokens.last))
+
+      (operatorType, args, modifiers)
+    }
+
+    val (operatorType, args, newModifiers) = tokens.nextKind match {
+      case MINUS         => minusOperator
       case PLUS          => binaryOperator(Plus)
-      case MINUS         =>
-        eat(MINUS)
-        eat(LPAREN)
-        val f1 = formal
-        nextTokenKind match {
-          case COMMA =>
-            eat(COMMA)
-            val f2 = formal
-            val operatorType = Minus(Empty(), Empty()).setType(TUnit)
-            (operatorType, List(f1, f2), modifiers + Static())
-          case _     =>
-            val operatorType = Negation(Empty()).setType(TUnit)
-            (operatorType, List(f1), modifiers + Static())
-        }
       case TIMES         => binaryOperator(Times)
       case DIV           => binaryOperator(Div)
       case MODULO        => binaryOperator(Modulo)
@@ -444,43 +485,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case HASH          => unaryOperator(Hash)
       case INCREMENT     => unaryOperator(PreIncrement)
       case DECREMENT     => unaryOperator(PreDecrement)
-      case LBRACKET      =>
-        eat(LBRACKET)
-        val (numArgs, operatorType) = nextTokenKind match {
-          case RBRACKET =>
-            eat(RBRACKET)
-            nextTokenKind match {
-              case LPAREN =>
-                eat(LPAREN)
-                (1, ArrayRead(Empty(), Empty()))
-              case EQSIGN =>
-                eat(EQSIGN, LPAREN)
-                (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
-              case _      => report(WrongToken(nextToken, lastToken, EQSIGN, LPAREN))
-            }
-          case COLON    =>
-            eat(COLON, COLON, RBRACKET, LPAREN)
-            (3, ArraySlice(Empty(), None, None, None))
-          case _        => report(WrongToken(nextToken, lastToken, RBRACKET, COLON))
-        }
-        modifiers.findInstance[Static].ifDefined { static =>
-          report(StaticIndexingOperator(static))
-        }
-
-        val args = commaList(formal)
-        if (args.size != numArgs)
-          report(UnexpectedToken(currentToken, lastToken))
-
-        (operatorType, args, modifiers)
+      case LBRACKET      => indexingOperator
       case _             =>
-        report(WrongToken(nextToken, lastToken, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
+        report(WrongToken(tokens.next, tokens.last, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
           RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
           LOGICNOT, LBRACKET))
     }
-    eat(RPAREN)
-    val retType = optional(returnType, COLON)
-    val methBody = methodBody
 
+    val retType = optional(COLON)(returnType)
+    val methBody = methodBody
 
     OperatorDecl(operatorType.setNoPos(), newModifiers, args, retType, methBody)
   }
@@ -489,10 +502,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /**
     * [ "=" <statement> ]
     */
-  def methodBody: Option[StatTree] = optional(replaceExprWithReturnStat(statement), EQSIGN)
+  def methodBody: Option[StatTree] = optional(EQSIGN) { replaceExprWithReturnStat(statement) }
 
   private def protectedOrPrivate: Accessability = positioned {
-    nextTokenKind match {
+    tokens.nextKind match {
       case PROTECTED =>
         eat(PROTECTED)
         Protected()
@@ -501,46 +514,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * <fieldModifiers> ::= ( Var | Val | (var | val [ protected ])) [ static ] [ implicit ]
-    */
-  def fieldModifiers: Set[Modifier] = {
-    val startPos = nextToken
-    var modifiers: Set[Modifier] = nextTokenKind match {
-      case PUBVAR  =>
-        eat(PUBVAR)
-        Set(Public().setPos(startPos, lastVisibleToken))
-      case PRIVVAR =>
-        eat(PRIVVAR)
-        Set(protectedOrPrivate.setPos(startPos, lastVisibleToken))
-      case PUBVAL  =>
-        eat(PUBVAL)
-        Set(Public().setPos(startPos, lastVisibleToken), Final().setPos(startPos, lastVisibleToken))
-      case PRIVVAL =>
-        eat(PRIVVAL)
-        Set(protectedOrPrivate.setPos(startPos, lastVisibleToken), Final().setPos(startPos, lastVisibleToken))
-      case _       => report(WrongToken(nextToken, lastToken, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
-    }
-
-    val pos = nextToken
-    nextTokenKind match {
-      case STATIC =>
-        eat(STATIC)
-        modifiers += Static().setPos(pos, lastVisibleToken)
-      case _      =>
-    }
-    modifiers
-  }
-
-  /**
     * <tpe> ::= <classIdentifier> { "[]" | "?" }
     */
   def tpe: TypeTree = {
-    val startPos = nextToken
+    val startPos = tokens.next
     var e: TypeTree = classIdentifier
     var dimension = 0
 
-    while (nextTokenKind == QUESTIONMARK || nextTokenKind == LBRACKET) {
-      e = nextTokenKind match {
+    while (tokens.nextKind in List(QUESTIONMARK, LBRACKET)) {
+      e = tokens.nextKind match {
         case QUESTIONMARK =>
           eat(QUESTIONMARK)
           NullableType(e)
@@ -550,8 +532,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           ArrayType(e)
         case _            => ???
       }
-      e.setPos(startPos, lastVisibleToken)
+      e.setPos(startPos, tokens.lastVisible)
     }
+
     if (dimension > MaximumArraySize)
       report(InvalidArrayDimension(dimension, e))
 
@@ -574,7 +557,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * | <varDeclaration>
     * | if"(" <expression> ")" <statement> [ else <statement> ]
     * | while"(" <expression> ")" <statement>
-    * | <forloop> <endStatement>
+    * | <forLoop> <endStatement>
     * | (print|println|error)"(" [ <expression> ] ")" <endStatement>
     * | break
     * | continue
@@ -584,7 +567,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def statement: StatTree = positioned {
     // Variable needs custom end position in order to
     // only highlight expression up to equals sign
-    nextTokenKind match {
+    tokens.nextKind match {
       case PRIVVAR | PRIVVAL =>
         val variable = localVarDeclaration
         endStatement()
@@ -592,31 +575,31 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case _                 =>
     }
 
-    nextTokenKind match {
+    tokens.nextKind match {
       case INDENT                  =>
         eat(INDENT)
-        val stmts = until(statement, DEDENT)
+        val statements = until(DEDENT)(statement)
         eat(DEDENT)
-        Block(stmts)
+        Block(statements)
       case IF                      =>
         eat(IF, LPAREN)
         val condition = expression
         eat(RPAREN)
         val stmt = statement
-        val els = optional(statement, ELSE)
+        val els = optional(ELSE)(statement)
         If(condition, stmt, els)
-      case WHILE                   =>
-        eat(WHILE, LPAREN)
-        val condition = expression
-        eat(RPAREN)
-        While(condition, statement)
-      case FOR                     =>
-        forLoop
+      case RETURN                  =>
+
+        eat(RETURN)
+        val expr = if (tokens.current.kind != SEMICOLON && tokens.current.kind != NEWLINE) Some(expression) else None
+        endStatement()
+        Return(expr)
       case PRINT | PRINTLN | ERROR =>
-        val methType = nextTokenKind
+
+        val methType = tokens.nextKind
         eat(methType)
         eat(LPAREN)
-        val expr = nextTokenKind match {
+        val expr = tokens.nextKind match {
           case RPAREN => StringLit("")
           case _      => expression
         }
@@ -628,11 +611,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           case ERROR   => Error(expr)
           case _       => ???
         }
-      case RETURN                  =>
-        eat(RETURN)
-        val expr = if (currentToken.kind != SEMICOLON && currentToken.kind != NEWLINE) Some(expression) else None
-        endStatement()
-        Return(expr)
+      case FOR                     =>
+        forLoop
+      case WHILE                   =>
+        eat(WHILE, LPAREN)
+        val condition = expression
+        eat(RPAREN)
+        While(condition, statement)
       case BREAK                   =>
         eat(BREAK)
         endStatement()
@@ -652,24 +637,24 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * <forloop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
+    * <forLoop> ::= for "(" <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement>
     */
   def forLoop: StatTree = positioned {
     eat(FOR, LPAREN)
 
-    nextTokenKind match {
+    tokens.nextKind match {
       case PRIVVAR | PRIVVAL =>
         val varDecl = localVarDeclaration
         if (varDecl.initiation.isDefined) {
-          if (nextTokenKind == COMMA)
+          if (tokens.nextKind == COMMA)
             eat(COMMA)
           regularForLoop(Some(varDecl))
         } else {
-          nextTokenKind match {
+          tokens.nextKind match {
             case IN =>
               forEachLoop(varDecl)
             case _  =>
-              if (nextTokenKind == COMMA)
+              if (tokens.nextKind == COMMA)
                 eat(COMMA)
               regularForLoop(Some(varDecl))
           }
@@ -684,14 +669,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def regularForLoop(firstVarDecl: Option[VarDecl]): For = {
     val init = forInit
-    eat(SEMICOLON)
-    val condition = nextTokenKind match {
+    val condition = tokens.nextKind match {
       case SEMICOLON => TrueLit() // if condition is left out, use 'true'
       case _         => expression
     }
-    eat(SEMICOLON)
-    val post = commaList(expression)
-    eat(RPAREN)
+    val post = commaList(SEMICOLON, RPAREN)(expression)
     val vars = firstVarDecl match {
       case Some(v) => v :: init
       case None    => init
@@ -713,37 +695,33 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <forInit> ::= [ ( <assignment> | <varDeclaration> )  { "," ( <assignment> | <varDeclaration> ) }
     */
   def forInit: List[StatTree] =
-    commaList({
-      val startPos = nextToken
-      nextTokenKind match {
+    commaList(None, Some(SEMICOLON)) {
+      val startPos = tokens.next
+      tokens.nextKind match {
         case PRIVVAR =>
           localVarDeclaration
         case _       =>
           val id = varIdentifier
-          nextTokenKind match {
-            case EQSIGN | PLUSEQ |
-                 MINUSEQ | DIVEQ |
-                 MODEQ | ANDEQ |
-                 OREQ | XOREQ |
-                 LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, lastVisibleToken)
-            case _                          =>
-              report(WrongToken(nextToken, lastToken, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ,
+          tokens.nextKind match {
+            case EQSIGN | PLUSEQ | MINUSEQ | DIVEQ | MODEQ | ANDEQ | OREQ | XOREQ | LEFTSHIFTEQ | RIGHTSHIFTEQ =>
+              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, tokens.lastVisible)
+            case _                                                                                             =>
+              report(WrongToken(tokens.next, tokens.last, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ,
                 ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ))
           }
       }
-    }, SEMICOLON)
+    }
 
   /**
     * <endStatement> ::= ( ; | \n ) { ; | \n }
     */
-  def endStatement(): Unit = currentToken.kind match {
+  def endStatement(): Unit = tokens.current.kind match {
     case SEMICOLON | NEWLINE =>
-      readToken()
-      while (currentToken.kind == SEMICOLON || currentToken.kind == NEWLINE)
-        readToken()
+      tokens.readNext()
+      while (tokens.current.kind == SEMICOLON || tokens.current.kind == NEWLINE)
+        tokens.readNext()
     case EOF | RBRACE        =>
-    case _                   => report(WrongToken(nextToken, lastToken, SEMICOLON, NEWLINE))
+    case _                   => report(WrongToken(tokens.next, tokens.last, SEMICOLON, NEWLINE))
   }
 
   /**
@@ -756,14 +734,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * | <ternary> [ "[" <expression> "] = " <expression> ]
     **/
   def assignment(expr: Option[ExprTree] = None): ExprTree = positioned {
-    val startPos = nextToken
+    val startPos = tokens.next
     val e = expr.getOrElse(ternary)
 
     def assignment(constructor: Option[(ExprTree, ExprTree) => ExprTree]) = {
-      eat(nextTokenKind)
+      eat(tokens.nextKind)
 
       val assignmentExpr = constructor
-        .map(cons => cons(e, expression).setPos(startPos, lastVisibleToken))
+        .map(cons => cons(e, expression).setPos(startPos, tokens.lastVisible))
         .getOrElse(expression)
 
       e match {
@@ -772,7 +750,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       }
     }
 
-    nextTokenKind match {
+    tokens.nextKind match {
       case EQSIGN       => assignment(None)
       case PLUSEQ       => assignment(Some(Plus))
       case MINUSEQ      => assignment(Some(Minus))
@@ -792,7 +770,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <ternary> ::= <elvis> [ ? <elvis> : <elvis> ] */
   def ternary: ExprTree = positioned {
     val e = elvis
-    if (nextTokenKind == QUESTIONMARK) {
+    if (tokens.nextKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
       val thn = elvis
       eat(COLON)
@@ -806,7 +784,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <elvis> ::= <or> [ ?: <or> ] */
   def elvis: ExprTree = positioned {
     val e = or
-    if (nextTokenKind == ELVIS) {
+    if (tokens.nextKind == ELVIS) {
       eat(ELVIS)
       val ifNull = or
       Elvis(e, ifNull)
@@ -816,27 +794,27 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** <or> ::= <and> { || <and> } */
-  def or: ExprTree = leftAssociative(and, OR)
+  def or: ExprTree = leftAssociative(OR)(and)
 
   /** <and> ::= <logicOr> { && <logicOr> } */
-  def and: ExprTree = leftAssociative(logicOr, AND)
+  def and: ExprTree = leftAssociative(AND)(logicOr)
 
   /** <logicOr> ::= <logicXor> { | <logicXor> } */
-  def logicOr: ExprTree = leftAssociative(logicXor, LOGICOR)
+  def logicOr: ExprTree = leftAssociative(LOGICOR)(logicXor)
 
   /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
-  def logicXor: ExprTree = leftAssociative(logicAnd, LOGICXOR)
+  def logicXor: ExprTree = leftAssociative(LOGICXOR)(logicAnd)
 
   /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
-  def logicAnd: ExprTree = leftAssociative(eqNotEq, LOGICAND)
+  def logicAnd: ExprTree = leftAssociative(LOGICAND)(eqNotEq)
 
   /** <eqNotEq> ::= <is> { ( == | != ) <is> } */
-  def eqNotEq: ExprTree = leftAssociative(is, EQUALS, NOTEQUALS)
+  def eqNotEq: ExprTree = leftAssociative(EQUALS, NOTEQUALS)(is)
 
   /** <is> ::= <comparison> { inst <classIdentifier> } */
   def is: ExprTree = positioned {
     var e = comparison
-    while (nextTokenKind == IS) {
+    while (tokens.nextKind == IS) {
       eat(IS)
       e = Is(e, tpe)
     }
@@ -844,20 +822,18 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
-  def comparison: ExprTree = leftAssociative(bitShift, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ)
+  def comparison: ExprTree = leftAssociative(LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ)(bitShift)
 
   /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
-  def bitShift: ExprTree = leftAssociative(plusMinus, LEFTSHIFT, RIGHTSHIFT)
+  def bitShift: ExprTree = leftAssociative(LEFTSHIFT, RIGHTSHIFT)(plusMinus)
 
   /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
-  def plusMinus: ExprTree = leftAssociative(timesDivMod, PLUS, MINUS)
+  def plusMinus: ExprTree = leftAssociative(PLUS, MINUS)(timesDivMod)
 
   /** <timesDivMod> ::= <term> { ( * | / | % ) <term> } */
-  def timesDivMod: ExprTree = leftAssociative(term, TIMES, DIV, MODULO)
+  def timesDivMod: ExprTree = leftAssociative(TIMES, DIV, MODULO)(term)
 
-  /**
-    * <term> ::= <termFirst> { termRest }
-    */
+  /** <term> ::= <termFirst> { termRest } */
   def term: ExprTree = termRest(termFirst)
 
   /**
@@ -887,77 +863,76 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * | <newExpression>
     */
   def termFirst: ExprTree = positioned {
-    nextTokenKind match {
+    // These are sorted by commonness. For instance IDKIND and INTLIT are the by
+    // far most common terms, thats why they appear first.
+    tokens.nextKind match {
+      case IDKIND        =>
+        val methStartPos = tokens.next
+        val ids = nonEmptyList(COLON, COLON)(identifierName)
+        val name = ids.mkString("::")
+        tokens.nextKind match {
+          case LPAREN =>
+            val id = MethodID(name).setPos(methStartPos, tokens.lastVisible)
+            val exprs = commaList(LPAREN, RPAREN)(expression)
+            val meth = MethodCall(id, exprs).setPos(methStartPos, tokens.lastVisible)
+            NormalAccess(Empty(), meth)
+          case _      => VariableID(name)
+        }
+      case INTLITKIND    => literal(INTLITKIND, IntLit)
+      case STRLITKIND    => literal(STRLITKIND, StringLit)
+      case CHARLITKIND   => literal(CHARLITKIND, CharLit)
+      case LONGLITKIND   => literal(LONGLITKIND, LongLit)
+      case DOUBLELITKIND => literal(DOUBLELITKIND, DoubleLit)
+      case FLOATLITKIND  => literal(FLOATLITKIND, FloatLit)
+      case NEW           => newExpression
       case LPAREN        =>
         eat(LPAREN)
         val expr = expression
         eat(RPAREN)
         expr
       case LBRACKET      =>
-        eat(LBRACKET)
-        val expressions = commaList(expression, RBRACKET)
-        eat(RBRACKET)
+        val expressions = commaList(LBRACKET, RBRACKET)(expression)
         ArrayLit(expressions)
-      case BANG          =>
-        eat(BANG)
-        Not(term)
-      case MINUS         => negation
-      case LOGICNOT      =>
-        eat(LOGICNOT)
-        LogicNot(term)
-      case HASH          =>
-        eat(HASH)
-        Hash(term)
-      case DECREMENT     =>
-        eat(DECREMENT)
-        PreDecrement(term)
-      case INCREMENT     =>
-        eat(INCREMENT)
-        PreIncrement(term)
-      case INTLITKIND    => intLit
-      case LONGLITKIND   => longLit
-      case FLOATLITKIND  => floatLit
-      case DOUBLELITKIND => doubleLit
-      case CHARLITKIND   => charLit
-      case STRLITKIND    => stringLit
-      case IDKIND        =>
-        val methStartPos = nextToken
-        val ids = nonEmptyList(identifierName, COLON, COLON)
-        val name = ids.mkString("::")
-        nextTokenKind match {
-          case LPAREN =>
-            val id = MethodID(name).setPos(methStartPos, lastVisibleToken)
-            eat(LPAREN)
-            val exprs = commaList(expression)
-            eat(RPAREN)
-            val meth = MethodCall(id, exprs).setPos(methStartPos, lastVisibleToken)
-            NormalAccess(Empty(), meth)
-          case _      => VariableID(name)
-        }
+      case NULL          =>
+        eat(NULL)
+        NullLit()
+      case THIS          =>
+        eat(THIS)
+        This()
       case TRUE          =>
         eat(TRUE)
         TrueLit()
       case FALSE         =>
         eat(FALSE)
         FalseLit()
-      case THIS          =>
-        eat(THIS)
-        This()
-      case NULL          =>
-        eat(NULL)
-        NullLit()
+      case BANG          =>
+        eat(BANG)
+        Not(term)
+      case MINUS         =>
+        negation
+      case LOGICNOT      =>
+        eat(LOGICNOT)
+        LogicNot(term)
+      case HASH          =>
+        eat(HASH)
+        Hash(term)
+      case INCREMENT     =>
+        eat(INCREMENT)
+        PreIncrement(term)
+      case DECREMENT     =>
+        eat(DECREMENT)
+        PreDecrement(term)
       case SUPER         =>
         val sup = superCall
         access(sup)
-      case NEW           => newExpression
       case _             =>
-        report(UnexpectedToken(currentToken, lastToken))
+        report(UnexpectedToken(tokens.current, tokens.last))
     }
   }
 
+  private val restTokens = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
   /**
-    * <termRest> ::= .<identifier>
-    * | <access>
+    * <termRest> ::= <access>
     * | <arrayIndexing>
     * | as <tpe>
     * | ++
@@ -966,33 +941,29 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def termRest(termFirst: ExprTree): ExprTree = {
     var e = termFirst
-    val tokens = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
-
     // Uses current token since a newline should stop the iteration
-    while (tokens.contains(currentToken.kind)) {
-
-      e = currentToken.kind match {
+    while (tokens.current.kind in restTokens) {
+      e = tokens.current.kind match {
         case DOT | SAFEACCESS =>
           access(e)
-        case EXTRACTNULLABLE  =>
-          eat(EXTRACTNULLABLE)
-          ExtractNullable(e)
         case LBRACKET         =>
           arrayIndexing(e)
-        case AS               =>
-          eat(AS)
-          As(e, tpe)
         case INCREMENT        =>
           eat(INCREMENT)
           PostIncrement(e)
         case DECREMENT        =>
           eat(DECREMENT)
           PostDecrement(e)
+        case AS               =>
+          eat(AS)
+          As(e, tpe)
+        case EXTRACTNULLABLE  =>
+          eat(EXTRACTNULLABLE)
+          ExtractNullable(e)
         case _                => ???
       }
-      e.setPos(termFirst, lastVisibleToken)
+      e.setPos(termFirst, tokens.lastVisible)
     }
-
     e
   }
 
@@ -1000,23 +971,21 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <access> ::= (. | ?.) <methodCall> | <identifier>
     */
   def access(obj: ExprTree): Access = positioned {
-    val access = nextTokenKind match {
+    val access = tokens.nextKind match {
       case SAFEACCESS =>
         eat(SAFEACCESS)
         SafeAccess
       case DOT        =>
         eat(DOT)
         NormalAccess
-      case _          => report(WrongToken(nextToken, lastToken, DOT, QUESTIONMARK))
+      case _          => report(WrongToken(tokens.next, tokens.last, DOT, QUESTIONMARK))
     }
 
     val application = positioned {
       val id = varIdentifier
-      nextTokenKind match {
+      tokens.nextKind match {
         case LPAREN =>
-          eat(LPAREN)
-          val exprs = commaList(expression)
-          eat(RPAREN)
+          val exprs = commaList(LPAREN, RPAREN)(expression)
           val methId = MethodID(id.name).setPos(id)
           MethodCall(methId, exprs)
         case _      => id
@@ -1031,7 +1000,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def negation: ExprTree = positioned {
     eat(MINUS)
-    currentToken match {
+    tokens.current match {
       case x: INTLIT    =>
         eat(INTLITKIND)
         IntLit(-x.value)
@@ -1056,15 +1025,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <newExpression> ::= new <basicTpe> [ "?" <nullableBracket> ] { <nullableBracket }
     */
   def newExpression: ExprTree = {
-    val startPos = nextToken
+    val startPos = tokens.next
     eat(NEW)
     val tpe: TypeTree = classIdentifier
 
-    nextTokenKind match {
+    tokens.nextKind match {
       case LPAREN                  =>
-        eat(LPAREN)
-        val args = commaList(expression)
-        eat(RPAREN)
+        val args = commaList(LPAREN, RPAREN) { expression }
         New(tpe, args)
       case QUESTIONMARK | LBRACKET =>
         var e = tpe
@@ -1077,17 +1044,17 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         }
 
         // If it starts with question mark a bracket must follow
-        if (nextTokenKind == QUESTIONMARK) {
+        if (tokens.nextKind == QUESTIONMARK) {
           eat(QUESTIONMARK)
-          e = NullableType(e).setPos(startPos, lastVisibleToken)
+          e = NullableType(e).setPos(startPos, tokens.lastVisible)
           _nullableBracket()
         }
 
-        while (nextTokenKind == LBRACKET)
+        while (tokens.nextKind == LBRACKET)
           _nullableBracket()
 
         NewArray(e, sizes.toList)
-      case _                       => report(WrongToken(nextToken, lastToken, LPAREN, LBRACKET))
+      case _                       => report(WrongToken(tokens.next, tokens.last, LPAREN, LBRACKET))
     }
   }
 
@@ -1099,10 +1066,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(LBRACKET)
     val size = expression
     eat(RBRACKET)
-    e = ArrayType(e).setPos(startPos, lastVisibleToken)
-    if (nextTokenKind == QUESTIONMARK) {
+    e = ArrayType(e).setPos(startPos, tokens.lastVisible)
+    if (tokens.nextKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
-      e = NullableType(e).setPos(startPos, lastVisibleToken)
+      e = NullableType(e).setPos(startPos, tokens.lastVisible)
     }
     (e, size)
   }
@@ -1114,15 +1081,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def arrayIndexing(arr: ExprTree): ExprTree = positioned {
     eat(LBRACKET)
-    val exprs = until({
-      nextTokenKind match {
+    val exprs = until(RBRACKET) {
+      tokens.nextKind match {
         case COLON =>
           eat(COLON)
           None
         case _     =>
           Some(expression)
       }
-    }, RBRACKET)
+    }
     eat(RBRACKET)
 
     // @formatter:off
@@ -1140,7 +1107,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case Some(e1) :: None :: None :: Some(e2) :: Nil             => ArraySlice(arr, Some(e1), None, Some(e2))     // [e::e]
       case None :: Some(e1) :: None :: Some(e2) :: Nil             => ArraySlice(arr, None, Some(e1), Some(e2))     // [:e:e]
       case Some(e1) :: None :: Some(e2) :: None :: Some(e3) :: Nil => ArraySlice(arr, Some(e1), Some(e2), Some(e3)) // [e:e:e]
-      case _                                                       => report(UnexpectedToken(nextToken, lastToken))
+      case _                                                       => report(UnexpectedToken(tokens.next, tokens.last))
     }
     // @formatter:on
   }
@@ -1150,22 +1117,49 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def superCall: ExprTree = positioned {
     eat(SUPER)
-    val specifier = optional({
+    val specifier = optional(LESSTHAN) {
       val id = classIdentifier
       eat(GREATERTHAN)
       id
-    }, LESSTHAN)
+    }
     Super(specifier)
   }
 
+  /** Eats the expected tokens, or terminates with an error. */
+  private def eat(kind: TokenKind*): Unit = {
+    tokens.readNewLines()
+    for (k <- kind) tokens.nextKind match {
+      case `k` => tokens.readNext()
+      case _   => report(WrongToken(tokens.next, tokens.last, k))
+    }
+  }
+
+
+  /**
+    * Handles the conflict of generics having multiple ">" signs by
+    * treating RIGHTSHIFT (>>) as two ">".
+    */
+  private var usedOneGreaterThan = false
+  private def eatRightShiftOrGreaterThan(): Unit = {
+    if (tokens.nextKind != RIGHTSHIFT) {
+      eat(GREATERTHAN)
+      return
+    }
+    if (usedOneGreaterThan)
+      eat(RIGHTSHIFT)
+
+    usedOneGreaterThan = !usedOneGreaterThan
+  }
+
+
   private def replaceExprWithReturnStat(stat: StatTree): StatTree = {
     val s = stat match {
-      case Block(stmts) if stmts.nonEmpty =>
-        val replaced = replaceExprWithReturnStat(stmts.last)
-        Block(stmts.updated(stmts.size - 1, replaced))
-      case acc@Access(_, _: MethodCall)   => Return(Some(acc))
-      case UselessStatement(e)            => Return(Some(e))
-      case _                              => stat
+      case Block(statements) if statements.nonEmpty =>
+        val replaced = replaceExprWithReturnStat(statements.last)
+        Block(statements.updated(statements.size - 1, replaced))
+      case acc@Access(_, _: MethodCall)             => Return(Some(acc))
+      case UselessStatement(e)                      => Return(Some(e))
+      case _                                        => stat
     }
     s.setPos(stat)
   }
@@ -1175,78 +1169,38 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
     * Used to parse left associative expressions. *
     */
-  private def leftAssociative(next: => ExprTree, kinds: TokenKind*): ExprTree = {
-    val startPos = nextToken
+  private def leftAssociative(kinds: TokenKind*)(next: => ExprTree): ExprTree = {
+    val startPos = tokens.next
+
+    def matchingKind = kinds.find(_ == tokens.current.kind)
+
     var expr = next
-    while (kinds.contains(currentToken.kind)) {
-      kinds foreach { kind =>
-        if (currentToken.kind == kind) {
-          eat(kind)
-          expr = tokenToBinaryOperatorAST(kind)(expr, next).setPos(startPos, lastVisibleToken)
-        }
-      }
+    var kind = matchingKind
+    while (kind.isDefined) {
+      eat(kind.get)
+      expr = tokenToBinaryOperatorAST(kind.get)(expr, next).setPos(startPos, tokens.lastVisible)
+      kind = matchingKind
     }
     expr
   }
 
 
-  /** Store the current token, as read from the lexer. */
-
-  private def readToken(): Unit = {
-    currentIndex += 1
-    if (currentIndex < tokens.length)
-      currentToken = tokens(currentIndex)
-  }
-
-  private def eatNewLines(): Unit =
-    while (currentToken.kind == NEWLINE)
-      readToken()
-
-  /** ''Eats'' the expected token, or terminates with an error. */
-  private def eat(kind: TokenKind*): Unit = {
-    eatNewLines()
-    for (k <- kind) {
-      if (nextTokenKind == k) {
-        readToken()
-      } else {
-        report(WrongToken(nextToken, lastToken, k))
-      }
-    }
-  }
-
-  private var usedOneGreaterThan = false
-
-  /**
-    * Handles the conflict of generics having multiple ">" signs by
-    * treating RIGHTSHIFT (>>) as two ">".
-    */
-  private def eatRightShiftOrGreaterThan() =
-    if (nextTokenKind == RIGHTSHIFT) {
-      if (usedOneGreaterThan)
-        eat(RIGHTSHIFT)
-
-      usedOneGreaterThan = !usedOneGreaterThan
-    } else {
-      eat(GREATERTHAN)
-    }
-
   /**
     * <classTypeIdentifier> ::= <identifier> [ "<" <identifier> { "," <identifier> } ">" ]
     */
-  private def classTypeIdentifier: ClassID = positioned {
-    nextToken match {
+  def classTypeIdentifier: ClassID = positioned {
+    tokens.next match {
       case id: ID =>
         eat(IDKIND)
-        val tIds = nextTokenKind match {
+        val tIds = tokens.nextKind match {
           case LESSTHAN =>
-            eat(LESSTHAN)
-            val tmp = commaList(varIdentifier)
+            val tmp = commaList(Some(LESSTHAN), None)(varIdentifier)
             eatRightShiftOrGreaterThan()
             tmp.map(x => ClassID(x.name, List()).setPos(x))
           case _        => List()
         }
         ClassID(id.value, tIds)
-      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
+      case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
     }
   }
 
@@ -1254,7 +1208,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <classIdentifier> ::= <identifier> { :: <identifier> } <templateList>
     */
   private def classIdentifier: ClassID = positioned {
-    val ids = nonEmptyList(identifierName, COLON, COLON)
+    val ids = nonEmptyList(COLON, COLON)(identifierName)
     val id = ids.mkString("::")
     ClassID(id, templateList)
   }
@@ -1263,10 +1217,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <templateList> ::= [ "<" <type> { "," <type> } ">" ]
     */
   private def templateList: List[TypeTree] = {
-    nextTokenKind match {
+    tokens.nextKind match {
       case LESSTHAN =>
-        eat(LESSTHAN)
-        val tmp = commaList(tpe)
+        val tmp = commaList(Some(LESSTHAN), None)(tpe)
         eatRightShiftOrGreaterThan()
         tmp
       case _        => List()
@@ -1276,22 +1229,22 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /**
     * Fetches the name of the identifer without creating an identifier object.
     */
-  private def identifierName: String = nextToken match {
+  private def identifierName: String = tokens.next match {
     case id: ID =>
       eat(IDKIND)
       id.value
-    case _      => report(WrongToken(nextToken, lastToken, IDKIND))
+    case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
   }
 
   /**
     * <varIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
     */
   private def varIdentifier: VariableID = positioned {
-    nextToken match {
+    tokens.next match {
       case id: ID =>
         eat(IDKIND)
         VariableID(id.value)
-      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
+      case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
     }
   }
 
@@ -1299,85 +1252,28 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <methodIdentifier> ::= sequence of letters, digits and underscores, starting with a letter and which is not a keyword
     */
   private def methodIdentifier: MethodID = positioned {
-    nextToken match {
+    tokens.next match {
       case id: ID =>
         eat(IDKIND)
         MethodID(id.value)
-      case _      => report(WrongToken(nextToken, lastToken, IDKIND))
+      case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
     }
   }
 
   /**
-    * <stringLit> ::= sequence of arbitrary characters, except new lines and "
+    * Parses a literal of the given kind, producing the given literalType
+    * e.g. literal(STRLITKIND, StringLit)
+    *
+    * The kind has to be of a TokenWithValue kind.
     */
-  private def stringLit: StringLit = positioned {
-    nextToken match {
-      case strlit: STRLIT =>
-        eat(STRLITKIND)
-        StringLit(strlit.value)
-      case _              => report(WrongToken(nextToken, lastToken, STRLITKIND))
-    }
-  }
-
-  /**
-    * <intLit> ::= sequence of digits, with no leading zeros
-    */
-  private def intLit: IntLit = positioned {
-    nextToken match {
-      case intLit: INTLIT =>
-        eat(INTLITKIND)
-        IntLit(intLit.value)
-      case _              => report(WrongToken(nextToken, lastToken, INTLITKIND))
-    }
-  }
-
-
-  /**
-    * <longLit> ::= sequence of digits, with no leading zeros ending with an 'l'
-    */
-  private def longLit: LongLit = positioned {
-    nextToken match {
-      case longLit: LONGLIT =>
-        eat(LONGLITKIND)
-        LongLit(longLit.value)
-      case _                => report(WrongToken(nextToken, lastToken, LONGLITKIND))
-    }
-  }
-
-  /**
-    * <floatLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
-    */
-  private def floatLit: FloatLit = positioned {
-    nextToken match {
-      case floatLit: FLOATLIT =>
-        eat(FLOATLITKIND)
-        FloatLit(floatLit.value)
-      case _                  => report(WrongToken(nextToken, lastToken, FLOATLITKIND))
-    }
-  }
-
-
-  /**
-    * <doubleLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
-    */
-  private def doubleLit: DoubleLit = positioned {
-    nextToken match {
-      case doubleLit: DOUBLELIT =>
-        eat(DOUBLELITKIND)
-        DoubleLit(doubleLit.value)
-      case _                    => report(WrongToken(nextToken, lastToken, DOUBLELITKIND))
-    }
-  }
-
-  /**
-    * <charLit> ::= sequence of digits, optionally with a single '.' ending with an 'f'
-    */
-  private def charLit: CharLit = positioned {
-    nextToken match {
-      case charLit: CHARLIT =>
-        eat(CHARLITKIND)
-        CharLit(charLit.value)
-      case _                => report(WrongToken(nextToken, lastToken, CHARLITKIND))
+  private def literal[T, Lit <: Literal[T]](kind: TokenKind, literalType: T => Lit): Lit = positioned {
+    val next = tokens.next
+    if (kind.getClass.isInstance(next.kind)) {
+      eat(kind)
+      val tokenValue = next.asInstanceOf[TokenWithValue[T]].value
+      literalType(tokenValue)
+    } else {
+      report(WrongToken(next, tokens.last, kind))
     }
   }
 
@@ -1386,44 +1282,56 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * <nonEmptyList> ::= <parse> { <delimiter_0> ... <delimiter_n> <parse> }
     */
 
-  private def nonEmptyList[T](parse: => T, delimiters: TokenKind*): List[T] = {
-    val arrBuff = new ArrayBuffer[T]()
-    arrBuff += parse
+  private def nonEmptyList[T](delimiters: TokenKind*)(parse: => T): List[T] = {
+    val b = new ListBuffer[T]()
+    b += parse
 
-    def matches = (0 until delimiters.size).forall(i => tokens(currentIndex + i).kind == delimiters(i))
+    def matches = (0 until delimiters.size).forall(i => tokens.offset(i).kind == delimiters(i))
 
     while (matches) {
       delimiters.foreach(eat(_))
-      arrBuff += parse
+      b += parse
     }
-    arrBuff.toList
+    b.toList
   }
+
 
   /**
-    * Parses a commalist of the form
-    * <commaList> ::= [ <parse> { "," <parse> } ]
+    * Parses a comma separated list of items of the form
+    * <commaList> ::= <startToken> [ <parse> { "," <parse> } ] <endToken>
     */
-  private def commaList[T](parse: => T, stopSign: TokenKind = RPAREN): List[T] = {
-    if (nextTokenKind == stopSign)
-      return List()
+  private def commaList[T](startToken: Option[TokenKind], stopToken: Option[TokenKind])(parse: => T): List[T] = {
+    startToken.foreach(eat(_))
 
-    val arrBuff = new ArrayBuffer[T]()
-    arrBuff += parse
-    while (nextToken.kind == COMMA) {
-      eatNewLines()
-      readToken()
-      arrBuff += parse
+    if (stopToken contains tokens.nextKind) {
+      stopToken.foreach(eat(_))
+      return List()
     }
-    arrBuff.toList
+
+    val b = new ListBuffer[T]()
+    b += parse
+    while (tokens.next.kind == COMMA) {
+      tokens.readNewLines()
+      tokens.readNext()
+      b += parse
+    }
+    stopToken.foreach(eat(_))
+
+    b.toList
   }
+
+  private def commaList[T](startToken: TokenKind, stopToken: TokenKind)(parse: => T): List[T] = {
+    commaList(Some(startToken), Some(stopToken))(parse)
+  }
+
 
   /**
     * Parses an optional of the form
     * <optional> ::= [ parse ] and returns Option
     */
-  private def optional[T <: Positioned](parse: => T, kinds: TokenKind*): Option[T] = {
-    if (kinds.contains(nextTokenKind)) {
-      eat(nextTokenKind)
+  private def optional[T <: Positioned](kinds: TokenKind*)(parse: => T): Option[T] = {
+    if (kinds.contains(tokens.nextKind)) {
+      eat(tokens.nextKind)
       Some(parse)
     } else {
       None
@@ -1431,47 +1339,43 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * Parses on of the given tokens and returns true if the first token was parsed
-    * and false if the second token was parsed.
-    * <oneOf> ::= <first> | <second>
+    * Parses on of the given tokens and returns the matching tokenKind.
     */
-  private def oneOf(first: TokenKind, second: TokenKind): Boolean = {
-    nextTokenKind match {
-      case `first`  =>
-        eat(first)
-        true
-      case `second` =>
-        eat(second)
-        false
-      case _        => report(WrongToken(currentToken, lastToken, first, second))
-    }
+  private def oneOf(kinds: TokenKind*): TokenKind = {
+    val nextKind = tokens.nextKind
+    kinds
+      .find { _ == nextKind }
+      .map { kind =>
+        eat(kind)
+        kind
+      }
+      .getOrElse { report(WrongToken(tokens.current, tokens.last, kinds.head, kinds.tail: _*)) }
   }
 
   /**
     * Continues parsing until one of the given token kinds are encountered.
     */
-  private def until[T](parse: => T, kinds: TokenKind*): List[T] = {
-    until(!kinds.contains(nextTokenKind), parse)
+  private def until[T](kinds: TokenKind*)(parse: => T): List[T] = {
+    until(!kinds.contains(tokens.nextKind))(parse)
   }
 
   /**
     * Continues parsing until a token different from the given tokens is encountered.
     */
-  private def untilNot[T](parse: => T, kinds: TokenKind*): List[T] = {
-    until(kinds.contains(nextTokenKind), parse)
+  private def untilNot[T](kinds: TokenKind*)(parse: => T): List[T] = {
+    until(kinds.contains(tokens.nextKind))(parse)
   }
 
-  private def until[T](condition: => Boolean, parse: => T): List[T] = {
-    var arrBuff = new ArrayBuffer[T]()
-    while (condition) {
-      arrBuff += parse
-    }
-    arrBuff.toList
+  private def until[T](condition: => Boolean)(parse: => T): List[T] = {
+    var b = new ListBuffer[T]()
+    while (condition) b += parse
+    b.toList
   }
 
   private def positioned[T <: Positioned](f: => T): T = {
-    val startPos = nextToken
-    f.setPos(startPos, lastVisibleToken)
+    val startPos = tokens.next
+    val res = f
+    res.setPos(startPos, tokens.lastVisible)
   }
 
 }

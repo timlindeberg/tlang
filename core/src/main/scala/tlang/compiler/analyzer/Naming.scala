@@ -125,6 +125,8 @@ case class NameAnalyser(
         val id = clazz.id
         val fullName = (cu.pack.address :+ id.name).mkString("::")
 
+        // This is here for when we compile the primitive classes.
+        // Since they are already imported we'll get a conflict otherwise
         if (fullName in Constants.Primitives) {
           globalScope.classes(fullName)
         } else {

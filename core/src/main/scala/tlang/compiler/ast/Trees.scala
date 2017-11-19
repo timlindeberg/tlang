@@ -512,7 +512,7 @@ object Trees {
 
 
   trait Literal[T] extends ExprTree with Leaf {
-    val value: T
+    def value: T
   }
   trait NumberLiteral[T] extends Literal[T]
 
@@ -527,15 +527,15 @@ object Trees {
   case class DoubleLit(value: Double) extends NumberLiteral[Double] {override def getType: TObject = Types.Double }
   case class CharLit(value: Char) extends Literal[Char] {override def getType: TObject = Types.Char }
   case class StringLit(value: String) extends Literal[String] {override def getType: TObject = Types.String }
-  case class TrueLit() extends Literal[Boolean] with Leaf {
+  case class TrueLit() extends Literal[Boolean] {
     val value = true
     override def getType: TObject = Types.Bool
   }
-  case class FalseLit() extends Literal[Boolean] with Leaf {
+  case class FalseLit() extends Literal[Boolean] {
     val value = false
     override def getType: TObject = Types.Bool
   }
-  case class NullLit() extends Literal[Null] with Leaf {
+  case class NullLit() extends Literal[Null] {
     val value: Null = null
     override def getType: Types.TNull.type = TNull
   }
