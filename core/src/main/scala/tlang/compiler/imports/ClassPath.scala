@@ -13,9 +13,14 @@ object ClassPath {
   lazy val Default: ClassPath = {
     val javaLibDirectory = Paths.get(System.getProperty("java.home") + File.separator + "lib")
 
-    val javaLibJarFiles: Set[String] = Files.find(javaLibDirectory, 1000,
-      (path, attr) => attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
-    ).iterator().asScala.map(_.toString).toSet
+    val javaLibJarFiles: Set[String] = Files
+      .find(javaLibDirectory, 1000, (path, attr) =>
+        attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
+      )
+      .iterator
+      .asScala
+      .map(_.toString)
+      .toSet
 
     val javaClassPath = System.getProperty("java.class.path").split(File.pathSeparator).toSet
     ClassPath(javaClassPath ++ javaLibJarFiles + Constants.TDirectory)

@@ -46,14 +46,14 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
       grid
         .row(alignment = Center)
         .content(formatter.fileName(tokens.head.sourceName))
-        .row(TruncatedColumn, Column, Column)
-        .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Position"))
+        .row(TruncatedColumn, Column, Column, Column)
+        .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Start"), HeaderColor("End"))
         .content()
         .mapContent(tokens) { token =>
           val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
           val start = NumColor(token.line) + ":" + NumColor(token.col)
           val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
-          (token.toString.escape, Bold(tokenName), s"$start - $end")
+          (token.toString.replaceAll(NL, ""), Bold(tokenName), start, end)
         }
     }
     grid.print()

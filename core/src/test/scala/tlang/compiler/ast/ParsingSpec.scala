@@ -1,12 +1,18 @@
 package tlang.compiler.ast
 
+import tlang.Context
+import tlang.compiler.DebugOutputFormatter
+import tlang.compiler.ast.Trees._
+import tlang.compiler.lexer.Tokens._
+import tlang.compiler.lexer.{Token, TokenKind}
+import tlang.messages.{ErrorStringContext, Reporter}
 import tlang.testutils.UnitSpec
 
 class ParsingSpec extends UnitSpec {
 
   behavior of "A parser"
 
-  // -- Top level declarations
+  // -- Declarations
 
   it should "parse a compilation unit" in { pending }
   it should "create a main class" in { pending }
@@ -23,8 +29,70 @@ class ParsingSpec extends UnitSpec {
 
   // -- Statements
 
-  it should "parse blocks" in { pending }
-  it should "parse if statements" in { pending }
+  it should "parse blocks" in {
+    parser(
+      INDENT,
+      CONTINUE,
+      NEWLINE,
+      BREAK,
+      NEWLINE,
+      DEDENT
+    ).statement shouldBe Block(List(Continue(), Break()))
+  }
+
+  it should "parse if statements" in {
+    test("If only without else") {
+      parser(
+        IF,
+        LPAREN,
+        TRUE,
+        RPAREN,
+        CONTINUE
+      ).statement shouldBe If(TrueLit(), Continue(), None)
+    }
+
+    test("If else on four lines") {
+      parser(
+        IF,
+        LPAREN,
+        FALSE,
+        RPAREN,
+        NEWLINE,
+        CONTINUE,
+        NEWLINE,
+        ELSE,
+        NEWLINE,
+        BREAK
+      ).statement shouldBe If(FalseLit(), Continue(), Some(Break()))
+    }
+
+    test("If else on two lines") {
+      parser(
+        IF,
+        LPAREN,
+        FALSE,
+        RPAREN,
+        CONTINUE,
+        NEWLINE,
+        ELSE,
+        BREAK
+      ).statement shouldBe If(FalseLit(), Continue(), Some(Break()))
+    }
+
+    test("If else on one line") {
+      parser(
+        IF,
+        LPAREN,
+        FALSE,
+        RPAREN,
+        CONTINUE,
+        ELSE,
+        BREAK
+      ).statement shouldBe If(FalseLit(), Continue(), Some(Break()))
+    }
+
+
+  }
   it should "parse while loops" in { pending }
   it should "parse for loops" in { pending }
   it should "parse for each loops" in { pending }
@@ -82,5 +150,14 @@ class ParsingSpec extends UnitSpec {
   it should "replace the last expression with a return statement" in { pending }
   it should "parse class type identifiers with recursive template types" in { pending }
 
+  private def parser(tokens: Any*) = {
+    val tokenStream = TokenStream(tokens.map {
+      case t: Token        => t
+      case kind: TokenKind => new Token(kind)
+      case _               => ???
+    })
+    val ctx = Context(mock[Reporter], createMockFormatter(), mock[DebugOutputFormatter])
+    Parser(ctx, mock[ErrorStringContext], tokenStream)
+  }
 
 }

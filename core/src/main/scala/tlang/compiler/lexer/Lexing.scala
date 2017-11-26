@@ -3,6 +3,7 @@ package lexer
 
 import java.math.BigInteger
 
+import sourcecode.{Enclosing, Line}
 import tlang.Context
 import tlang.compiler.lexer.Tokens._
 import tlang.formatting.Formatting
@@ -64,9 +65,12 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         val (token, tail) = blockComment(r)
         readTokens(tail, token :: tokens)
       // Prioritise longer tokens
-      case c1 :: c2 :: c3 :: r if tokenExists(s"$c1$c2$c3") => readTokens(r, createToken(NonKeywords(s"$c1$c2$c3"), 3) :: tokens)
-      case c1 :: c2 :: r if tokenExists(s"$c1$c2")          => readTokens(r, createToken(NonKeywords(s"$c1$c2"), 2) :: tokens)
-      case c :: r if tokenExists(s"$c")                     => readTokens(r, createToken(NonKeywords(s"$c"), 1) :: tokens)
+      case c1 :: c2 :: c3 :: r if tokenExists(s"$c1$c2$c3") =>
+        readTokens(r, createToken(NonKeywords(s"$c1$c2$c3"), 3) :: tokens)
+      case c1 :: c2 :: r if tokenExists(s"$c1$c2")          =>
+        readTokens(r, createToken(NonKeywords(s"$c1$c2"), 2) :: tokens)
+      case c :: r if tokenExists(s"$c")                     =>
+        readTokens(r, createToken(NonKeywords(s"$c"), 1) :: tokens)
       case c :: _ if c.isLetter || c == '_'                 =>
         val (token, tail) = getIdentifierOrKeyword(chars)
         readTokens(tail, token :: tokens)
@@ -89,7 +93,9 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
       case Nil                                              =>
-        val dedent = (0 until indent).map(_ => createToken(DEDENT, 0)).toList
+        val dedents = List(createToken(NEWLINE, 0), createToken(DEDENT, 0))
+
+        val dedent = List.fill(indent)(dedents).flatten
         val eof = if (tokens.nonEmpty && tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
           createToken(EOF, 0) :: dedent ::: (createToken(NEWLINE, 0) :: Nil)
         else
@@ -115,7 +121,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     val newlineToken = new Token(NEWLINE).setPos(source, line, column, line + newlinesParsed, 1)
     column = 1
     line += newlinesParsed
-    val (indentToken, rest) = getIndentToken(r)
+    val (indentToken, rest) = getIndentToken(newlineToken, r)
     (indentToken :+ newlineToken, rest)
   }
 
@@ -138,20 +144,22 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     numCharacters(chars, 0)
   }
 
-  private def getIndentToken(chars: List[Char]): (List[Token], List[Char]) = {
+  private def getIndentToken(newlineToken: Token, chars: List[Char]): (List[Token], List[Char]) = {
     val (newIndent, parsedChars, rest) = indent(chars)
 
     val difference = newIndent - indent
     if (difference > 1)
       report(IndentationTooLong(indent, newIndent, parsedChars))
 
-    val tokens = if (difference == 1)
+    val tokens = if (difference == 1) {
       createToken(INDENT, newIndent) :: Nil
-    else if (difference < 0)
-      (0 until -difference).map(_ => createToken(DEDENT, newIndent)).toList
-    else {
+    } else if (difference < 0) {
+      val dedents = List(newlineToken, createToken(DEDENT, newIndent))
+      List.fill(-difference)(dedents).flatten
+    } else {
       Nil
     }
+
     column = 1 + parsedChars
     indent = newIndent
     (tokens, rest)
@@ -564,25 +572,34 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
   private def isHexDigit(c: Char) = c.isDigit || (c.toLower in "abcdef")
 
-  private def createToken(int: Int, tokenLength: Int): Token = createToken(INTLIT(int), tokenLength)
+  private def createToken(int: Int, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(INTLIT(int), tokenLength)
 
-  private def createToken(long: Long, tokenLength: Int): Token = createToken(LONGLIT(long), tokenLength)
+  private def createToken(long: Long, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(LONGLIT(long), tokenLength)
 
-  private def createToken(float: Float, tokenLength: Int): Token = createToken(FLOATLIT(float), tokenLength)
+  private def createToken(float: Float, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(FLOATLIT(float), tokenLength)
 
-  private def createToken(double: Double, tokenLength: Int): Token = createToken(DOUBLELIT(double), tokenLength)
+  private def createToken(double: Double, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(DOUBLELIT(double), tokenLength)
 
-  private def createToken(kind: TokenKind, tokenLength: Int): Token = createToken(new Token(kind), tokenLength)
+  private def createToken(kind: TokenKind, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(new Token(kind), tokenLength)
 
-  private def createIdToken(string: String, tokenLength: Int): Token = createToken(ID(string), tokenLength)
+  private def createIdToken(string: String, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(ID(string), tokenLength)
 
-  private def createCommentToken(str: String, tokenLength: Int): Token = createToken(COMMENTLIT(str), tokenLength)
+  private def createCommentToken(str: String, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(COMMENTLIT(str), tokenLength)
 
-  private def createToken(char: Char, tokenLength: Int): Token = createToken(CHARLIT(char), tokenLength)
+  private def createToken(char: Char, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(CHARLIT(char), tokenLength)
 
-  private def createToken(string: String, tokenLength: Int): Token = createToken(STRLIT(string), tokenLength)
+  private def createToken(string: String, tokenLength: Int)(implicit e: Enclosing, l: Line): Token =
+    createToken(STRLIT(string), tokenLength)
 
-  private def createToken(token: Token, tokenLength: Int): Token = {
+  private def createToken(token: Token, tokenLength: Int)(implicit e: Enclosing, l: Line): Token = {
     val endCol = column + tokenLength
     token.setPos(source, line, column, line, endCol)
     debug"Creating new token $token with position ($line, $column, $line, $endCol)"

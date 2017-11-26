@@ -213,9 +213,16 @@ object Extensions {
     }
   }
 
+  implicit class EnclosingExtensions(val enclosing: sourcecode.Enclosing) extends AnyVal {
+
+    def method: String = enclosing.value.split("#")(1)
+
+  }
+
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
     def use(f: T => Unit): T = { val x = t; f(t); x }
+    def after(f: => Unit): T = { f; t }
 
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }

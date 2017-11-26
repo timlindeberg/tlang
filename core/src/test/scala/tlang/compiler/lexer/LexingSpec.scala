@@ -64,7 +64,9 @@ class LexingSpec extends UnitSpec {
       new Token(INDENT),
       new Token(NEWLINE),
       new Token(DEDENT),
+      new Token(NEWLINE), // Newline tokens should be added between the indentation tokens
       new Token(DEDENT),
+      new Token(NEWLINE),
       new Token(EOF)
     )
   }

@@ -685,7 +685,7 @@ class MessageFormatterSpec extends UnitSpec {
 
   // This mocked syntax highlighter just returns the input again
   private def mockedSyntaxHighlighter: SyntaxHighlighter =
-    mock[SyntaxHighlighter] use { syntaxHighlighter => syntaxHighlighter.apply(*).forwardsArg(0) }
+    mock[SyntaxHighlighter] use { _.apply(*).forwardsArg(0) }
 
 
 }

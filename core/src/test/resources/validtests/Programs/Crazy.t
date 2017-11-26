@@ -44,7 +44,7 @@ class Test =
 			else
 				a=2;
 
-		if(expr1) if(expr2) a=1; else a=2;
+		if(expr1) if(expr2) a=1 else a=2;
 		if(expr1)
 			if(expr2)
 				a=1;

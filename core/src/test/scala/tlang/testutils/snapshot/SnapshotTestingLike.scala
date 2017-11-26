@@ -52,10 +52,13 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
   // For readability mostly. Appends the description to the snapshot name if
   // a snapshot test is executed within the block
-  def test[U](description: String)(f: => U): U = {
+  def test[U](description: String, ignore: Boolean = false)(testFun: => U): Unit = {
+    if (ignore)
+      return
+
     val testNames = description :: localTestNames
     localTestNames = testNames
-    try { f } finally { localTestNames = testNames.tail }
+    try { testFun } finally { localTestNames = testNames.tail }
   }
 
   def snapshotName: String = {

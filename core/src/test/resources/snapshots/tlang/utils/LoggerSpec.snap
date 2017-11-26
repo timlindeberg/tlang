@@ -1,5 +1,5 @@
 ========================================= A logger should apply colors and correct formatting
-[34mTRACE │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mTestThread0    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
+[36mTRACE │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mTestThread0    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
 [34mDEBUG │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mTestThread1    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    DEF
 [32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mTestThread2    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    GHI
 [33mWARN  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[33mTestThread3    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    JKL

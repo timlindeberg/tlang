@@ -43,11 +43,17 @@ case class TokenStream(tokenList: Traversable[Token]) {
       current = tokens(currentIndex)
   }
 
-  def readNewLines(): Unit =
-    while (current.kind == NEWLINE)
+  def readNewLines(): Int = {
+    var num = 0
+    while (current.kind == NEWLINE) {
       readNext()
+      num += 1
+    }
+    num
+  }
 
-  override def toString: String = tokens.drop(currentIndex).mkString(", ")
+
+  override def toString: String = tokens.drop(currentIndex).mkString(" ")
 
 
 }

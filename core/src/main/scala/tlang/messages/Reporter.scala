@@ -1,5 +1,7 @@
 package tlang.messages
 
+import tlang.utils.Logging
+
 trait Reporter {
 
   def printWarnings(): Unit
@@ -15,20 +17,26 @@ trait Reporter {
   def hasWarnings: Boolean
 }
 
-case class DefaultReporter(messages: CompilerMessages) extends Reporter {
+case class DefaultReporter(messages: CompilerMessages) extends Reporter with Logging {
 
-  def report(error: CompilerMessage): Unit = {
-    messages += error
+  def report(message: CompilerMessage): Unit = {
+    info"Reporting compiler message: $message"
 
-    if (error.messageType == MessageType.Fatal)
+    messages += message
+
+    if (message.messageType == MessageType.Fatal)
       throwException()
   }
 
   def clear(): Unit = messages.clear()
 
-  def terminateIfErrors(): Unit =
-    if (hasErrors)
+  def terminateIfErrors(): Unit = {
+    if (hasErrors) {
+      info"Terminating compilation since there were ${ messages(MessageType.Error).length } errors"
       throwException()
+    }
+  }
+
 
   def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
   def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty

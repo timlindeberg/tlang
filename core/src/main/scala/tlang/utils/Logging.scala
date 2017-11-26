@@ -205,7 +205,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLo
 
     val indent = color(Vertical + " ")
     NL + color(TopLeft + Horizontal * logLevelWidth + BottomRight) +
-      NL + lines.map(indent + _).mkString(NL) +
+      NL + lines.filter(_.nonEmpty).map(indent + _).mkString(NL) +
       NL + color(BottomLeft + Horizontal * logLevelWidth + TopRight)
   }
 
@@ -230,7 +230,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLo
   }
 
   private def logLevelColor(logLevel: LogLevel) = logLevel match {
-    case LogLevel.Trace => formatting.Blue
+    case LogLevel.Trace => formatting.Cyan
     case LogLevel.Debug => formatting.Blue
     case LogLevel.Info  => formatting.Green
     case LogLevel.Warn  => formatting.Yellow
@@ -242,7 +242,9 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLo
   private def shortenLocation(enclosing: String, file: String, lineNumber: Int): String = {
     val filePos = s"(${ fileName(file) }:$lineNumber)"
 
-    val enc = enclosing.split("[\\.#]")
+    var enc = enclosing.split("[\\.#]")
+    // Remove everything after the original method name like $anonFunc etc.
+    enc = enc.updated(enc.length - 1, enc.last.split(" ").head)
     var len = enc.map(_.length).sum + enc.length - 1 + filePos.length
 
     if (len < locationWidth)

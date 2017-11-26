@@ -339,7 +339,7 @@ case class Grid(var formatter: Formatter) {
       def getBreakPositions(row: Row): Iterator[Int] = {
         val widths = row.columnWidths
         var acc = 2 * indent + widths.head
-        widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
+        widths.tail.map { width => acc after { () => acc += width + 2 * indent + 1 } }.iterator
       }
 
       def ifHeader(a: String, b: String) = if (before.isHeader) a else b
