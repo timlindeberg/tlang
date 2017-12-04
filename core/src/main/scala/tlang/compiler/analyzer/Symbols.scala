@@ -10,7 +10,6 @@ import tlang.utils.Positioned
 
 import scala.collection.mutable
 
-
 object Symbols {
 
   trait Symbolic[S <: Symbol] {
@@ -77,7 +76,7 @@ object Symbols {
     def implicitConstructors: List[MethodSymbol] = methods.filter { method =>
       method.name == "new" &&
         method.modifiers.contains(Implicit()) &&
-        method.argList.size == 1
+        method.argList.lengthCompare(1) == 0
     }
 
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
@@ -154,7 +153,7 @@ object Symbols {
       imports.getExtensionClasses(name).findDefined(ext => ext.findOperator(operatorType, args, exactTypes))
 
     protected def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
-      if (args.size != symbol.argList.size)
+      if (args.lengthCompare(symbol.argList.size) != 0)
         return false
 
       args.zip(symbol.argTypes).forall {
@@ -231,7 +230,7 @@ object Symbols {
       if (name != "main")
         return false
 
-      if (argList.size != 1 || argList.head.name != "args")
+      if (argList.lengthCompare(1) != 0 || argList.head.name != "args")
         return false
 
       if (modifiers.size != 2 || !isStatic || accessability != Public())
@@ -249,7 +248,7 @@ object Symbols {
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]
-  ) extends MethodSymbol("$" + operatorType.getClass.getSimpleName, classSymbol, stat, modifiers) {
+  ) extends MethodSymbol(operatorType.operatorName, classSymbol, stat, modifiers) {
 
     override def signature: String = operatorType.signature(argList.map(_.getType))
 

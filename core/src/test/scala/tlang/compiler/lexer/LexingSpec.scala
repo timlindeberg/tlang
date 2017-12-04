@@ -31,7 +31,7 @@ class LexingSpec extends UnitSpec {
       new Token(PLUSEQ),
       new Token(DECREMENT),
       new Token(INCREMENT),
-      new Token(LEFTSHIFTEQ),
+      new Token(LSHIFTEQ),
       new Token(XOREQ),
       new Token(DOT),
       new Token(SEMICOLON),

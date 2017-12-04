@@ -84,6 +84,14 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
       .render()
   }
 
+  def printExecutionTimes(file: File, ctx: Context): Unit = {
+    import TestFormatter._
+    import TestFormatting._
+
+    grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
+    ctx.printExecutionTimes()
+  }
+
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as
   // much of the calculation as possible.
   private def getTestPath(path: String): TestPath = {
@@ -127,6 +135,5 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
       // Ignore empty files
       firstLine.isEmpty || IgnoreRegex.findFirstIn(firstLine.get).isDefined
     })
-
 
 }

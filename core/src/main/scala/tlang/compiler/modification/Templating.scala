@@ -244,7 +244,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
 
     private def constructTemplateMapping(typedId: ClassID, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
-      if (templateTypes.size != templateList.size) {
+      if (templateTypes.lengthCompare(templateList.size) != 0) {
         report(WrongNumGenerics(templateList.size, templateTypes.size, typedId))
         Map()
       } else {

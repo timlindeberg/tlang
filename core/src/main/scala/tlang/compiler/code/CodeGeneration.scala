@@ -25,13 +25,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   import CodeGenerator._
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
-    val classes = cus.flatMap(_.classes)
-
-    // output code in parallell?
-    val genResults = classes.par.map(generateClassFile(_, ctx))
-
-    genResults.foreach(_.files.foreach(generateStackMapFrames))
-    genResults.toList.flatMap(_.stackTraces)
+    cus
+      .flatMap(_.classes)
+      .flatMap { generateClassFile(_, ctx) }
+      .toList
   }
 
   override def description(formatting: Formatting): String =
@@ -40,10 +37,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   override def printDebugOutput(output: List[CodegenerationStackTrace], debugOutputFormatter: DebugOutputFormatter): Unit =
     debugOutputFormatter.printStackTraces(phaseName, output)
 
-  case class GenerateClassResult(files: Set[String], stackTraces: List[CodegenerationStackTrace])
-
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): GenerateClassResult = {
+  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): List[CodegenerationStackTrace] = {
     info"Generating .class file for class ${ classDecl.name }"
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
@@ -60,9 +55,13 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
     val className = classDecl.getSymbol.JVMName
-    val files = ctx.outDirs.map(getClassFilePath(_, className))
-    files.foreach(classFile.writeToFile)
-    GenerateClassResult(files, stackTraces)
+    ctx.outDirs
+      .map(classFilePath(_, className))
+      .foreach { file =>
+        classFile.writeToFile(file)
+        generateStackMapFrames(file)
+      }
+    stackTraces
   }
 
   private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[CodegenerationStackTrace] = {
@@ -75,8 +74,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
           val methDescriptor = methodDescriptor(methSymbol)
           classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, methDescriptor)
 
-        case con: ConstructorDecl =>
-          generateConstructor(Some(con), classFile, classDecl)
+        case con: ConstructorDecl => generateConstructor(Some(con), classFile, classDecl)
         case _                    => ???
       }
       val flags = getMethodFlags(methodDecl)
@@ -320,7 +318,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     flags
   }
 
-  private def getClassFilePath(outDir: File, className: String): String = {
+  private def classFilePath(outDir: File, className: String): String = {
     val file = outDir.pathAsString / (className + ".class")
     file.parent.createDirectories()
     file.pathAsString

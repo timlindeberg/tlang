@@ -14,8 +14,38 @@ import scala.collection.mutable
 object ClassSymbolLocator {
 
   // Used to make sure we never parse the same class file twice
-  private val symbolCache: mutable.Map[String, ClassSymbol] = mutable.Map()
+  private val SymbolCache: mutable.Map[String, ClassSymbol] = mutable.Map()
 
+  private val OperatorTypes: Map[String, OperatorTree] = {
+    val e = Empty()
+    Map(
+      "Plus" -> Plus(e, e),
+      "Minus" -> Minus(e, e),
+      "Times" -> Times(e, e),
+      "Div" -> Div(e, e),
+      "Modulo" -> Modulo(e, e),
+      "LogicAnd" -> LogicAnd(e, e),
+      "LogicOr" -> LogicOr(e, e),
+      "LogicXor" -> LogicXor(e, e),
+      "LeftShift" -> LeftShift(e, e),
+      "RightShift" -> RightShift(e, e),
+      "LessThan" -> LessThan(e, e),
+      "LessThanEquals" -> LessThanEquals(e, e),
+      "GreaterThan" -> GreaterThan(e, e),
+      "GreaterThanEquals" -> GreaterThanEquals(e, e),
+      "Equals" -> Equals(e, e),
+      "NotEquals" -> NotEquals(e, e),
+      "LogicNot" -> LogicNot(e),
+      "Not" -> Not(e),
+      "Hash" -> Hash(e),
+      "PreIncrement" -> PreIncrement(e),
+      "PreDecrement" -> PreDecrement(e),
+      "ArrayRead" -> ArrayRead(e, e),
+      "Assign" -> Assign(ArrayRead(e, e), e),
+      "ArraySlice" -> ArraySlice(e, None, None, None),
+      "Negation" -> Negation(e)
+    )
+  }
 }
 
 case class ClassSymbolLocator(classPath: ClassPath) {
@@ -24,7 +54,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   import ImportUtils._
 
   def findSymbol(className: String): Option[ClassSymbol] = {
-    symbolCache.getOrElseMaybeUpdate(className) {
+    SymbolCache.getOrElseMaybeUpdate(className) {
       _findSymbol(className) { clazz =>
         new ClassSymbol(toTName(clazz.getClassName)) use { _.isAbstract = clazz.isInterface }
       }
@@ -32,7 +62,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
-    symbolCache.getOrElseMaybeUpdate(className) {
+    SymbolCache.getOrElseMaybeUpdate(className) {
       _findSymbol(className) { clazz =>
         val extensionName = toTName(clazz.getClassName)
         val originalClassName = toTName(ExtensionDecl.stripExtension(extensionName))
@@ -47,8 +77,8 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     val name = classSymbol.name
     val clazz = findClass(name).get // It's an error if the class doesnt exist
 
-    if (!symbolCache.contains(name))
-      symbolCache += name -> classSymbol
+    if (!SymbolCache.contains(name))
+      SymbolCache += name -> classSymbol
     fillClassSymbol(classSymbol, clazz)
   }
 
@@ -182,44 +212,14 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
 
-  private def getOperatorType(name: String) = {
-    val e = Empty()
-    name.drop(1) match {
-      case "Plus"              => Plus(e, e)
-      case "Minus"             => Minus(e, e)
-      case "Times"             => Times(e, e)
-      case "Div"               => Div(e, e)
-      case "Modulo"            => Modulo(e, e)
-      case "LogicAnd"          => LogicAnd(e, e)
-      case "LogicOr"           => LogicOr(e, e)
-      case "LogicXor"          => LogicXor(e, e)
-      case "LeftShift"         => LeftShift(e, e)
-      case "RightShift"        => RightShift(e, e)
-      case "LessThan"          => LessThan(e, e)
-      case "LessThanEquals"    => LessThanEquals(e, e)
-      case "GreaterThan"       => GreaterThan(e, e)
-      case "GreaterThanEquals" => GreaterThanEquals(e, e)
-      case "Equals"            => Equals(e, e)
-      case "NotEquals"         => NotEquals(e, e)
-      case "LogicNot"          => LogicNot(e)
-      case "Not"               => Not(e)
-      case "Hash"              => Hash(e)
-      case "PreIncrement"      => PreIncrement(e)
-      case "PreDecrement"      => PreDecrement(e)
-      case "ArrayRead"         => ArrayRead(e, e)
-      case "Assign"            => Assign(ArrayRead(e, e), e)
-      case "ArraySlice"        => ArraySlice(e, None, None, None)
-      case "Negation"          => Negation(e)
-      case _                   => ???
-    }
-  }
+
+  private def getOperatorType(name: String) = OperatorTypes(name.drop(1))
 
   private def lazySymbol(name: String) = {
-    symbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
+    SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
   }
 
-  private class LazyClassSymbol(override val name: String)
-    extends ClassSymbol(name) {
+  private class LazyClassSymbol(override val name: String) extends ClassSymbol(name) {
 
     var loaded = false
 

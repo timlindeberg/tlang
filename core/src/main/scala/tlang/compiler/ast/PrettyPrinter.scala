@@ -149,7 +149,7 @@ case class PrettyPrinter(formatting: Formatting) {
   }
 
   private def genExpr(stats: List[StatTree]) = {
-    if (stats.size == 1) pp"<${ stats.head }>"
+    if (stats.lengthCompare(1) == 0) pp"<${ stats.head }>"
     else pp"<$L$stats$R>"
   }
 

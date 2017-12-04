@@ -13,8 +13,12 @@ trait Reporter {
   def clear(): Unit
   def terminateIfErrors(): Unit
 
+  def isEmpty: Boolean = !hasErrors && !hasWarnings
+
   def hasErrors: Boolean
   def hasWarnings: Boolean
+
+  def messages: CompilerMessages
 }
 
 case class DefaultReporter(messages: CompilerMessages) extends Reporter with Logging {
@@ -78,5 +82,7 @@ case class VoidReporter() extends Reporter {
 
   override def hasErrors: Boolean = _hasErrors
   override def hasWarnings: Boolean = _hasWarnings
+
+  override def messages: CompilerMessages = null
 
 }

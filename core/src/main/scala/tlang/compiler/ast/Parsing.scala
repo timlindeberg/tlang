@@ -38,7 +38,7 @@ object Parser {
 
   val MaximumArraySize = 255
 
-  private val tokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
+  private val TokenToBinaryOperatorAST: Map[TokenKind, (ExprTree, ExprTree) => ExprTree] = Map(
     OR -> Or,
     AND -> And,
     LESSTHAN -> LessThan,
@@ -52,12 +52,16 @@ object Parser {
     TIMES -> Times,
     DIV -> Div,
     MODULO -> Modulo,
-    LEFTSHIFT -> LeftShift,
-    RIGHTSHIFT -> RightShift,
+    LSHIFT -> LeftShift,
+    RSHIFT -> RightShift,
     LOGICAND -> LogicAnd,
     LOGICOR -> LogicOr,
     LOGICXOR -> LogicXor
   )
+
+  private val TermRestTokens   = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
+  private val AssignmentTokens = List(EQSIGN, PLUSEQ, MINUSEQ, DIVEQ, MODEQ, ANDEQ, OREQ, XOREQ, LSHIFTEQ, RSHIFTEQ)
+
 
 }
 
@@ -181,7 +185,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <classOrTraitDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration>
     * [ = <indent>
-    *    { <varDeclaration> <statementEnd> }
+    *    { <fieldDeclaration> <statementEnd> }
     *    { <methodDeclaration> <statementEnd> }
     *    <dedent>
     * ]
@@ -358,7 +362,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    **/
+    * */
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -432,7 +436,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       }
 
       val args = commaList(LPAREN, RPAREN)(formal)
-      if (args.size != numArgs)
+      if (args.lengthCompare(numArgs) != 0)
         report(UnexpectedToken(tokens.current, tokens.last))
 
       (operatorType, args, modifiers)
@@ -447,8 +451,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case LOGICAND      => binaryOperator(LogicAnd)
       case LOGICOR       => binaryOperator(LogicOr)
       case LOGICXOR      => binaryOperator(LogicXor)
-      case LEFTSHIFT     => binaryOperator(LeftShift)
-      case RIGHTSHIFT    => binaryOperator(RightShift)
+      case LSHIFT        => binaryOperator(LeftShift)
+      case RSHIFT        => binaryOperator(RightShift)
       case LESSTHAN      => binaryOperator(LessThan)
       case LESSTHANEQ    => binaryOperator(LessThanEquals)
       case GREATERTHAN   => binaryOperator(GreaterThan)
@@ -461,8 +465,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case DECREMENT     => unaryOperator(PreDecrement)
       case LBRACKET      => indexingOperator
       case _             =>
-        report(WrongToken(tokens.next, tokens.last, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LEFTSHIFT,
-          RIGHTSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
+        report(WrongToken(tokens.next, tokens.last, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LSHIFT,
+          RSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
           LOGICNOT, LBRACKET))
     }
 
@@ -554,8 +558,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <returnStatement> ::= return [ <expression> ] */
   def returnStatement: Return = positioned {
     eat(RETURN)
-    val expr = if (tokens.current.kind != SEMICOLON && tokens.current.kind != NEWLINE) Some(expression) else None
-    Return(expr)
+    tokens.current.kind match {
+      case SEMICOLON | NEWLINE | EOF => Return(None)
+      case _                         => Return(Some(expression))
+    }
   }
 
   /** <printStatement> ::= print"(" [ <expression> ] ")" */
@@ -637,13 +643,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           varDeclaration
         case _       =>
           val id = identifier(VariableID)
-          tokens.nextKind match {
-            case EQSIGN | PLUSEQ | MINUSEQ | DIVEQ | MODEQ | ANDEQ | OREQ | XOREQ | LEFTSHIFTEQ | RIGHTSHIFTEQ =>
-              assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, tokens.lastVisible)
-            case _                                                                                             =>
-              report(WrongToken(tokens.next, tokens.last, EQSIGN, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ,
-                ANDEQ, OREQ, XOREQ, LEFTSHIFTEQ, RIGHTSHIFTEQ))
-          }
+
+          if (tokens.nextKind in AssignmentTokens)
+            assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, tokens.lastVisible)
+          else
+            report(WrongToken(tokens.next, tokens.last, AssignmentTokens.head, AssignmentTokens.tail: _*))
       }
     }
 
@@ -690,7 +694,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def expression: ExprTree = assignment()
 
   /** <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ] **/
-  def assignment(expr: Option[ExprTree] = None): ExprTree = positioned {
+  def assignment(expr: Option[ExprTree] = None): ExprTree = {
     val startPos = tokens.next
     val e = expr getOrElse ternary
 
@@ -704,92 +708,94 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         .getOrElse(value)
 
       e match {
-        case a: Assignable => Assign(a, assignmentExpr)
+        case a: Assignable => Assign(a, assignmentExpr).setPos(startPos, tokens.lastVisible)
         case _             => report(ExpectedIdAssignment(e))
       }
     }
 
     tokens.nextKind match {
-      case EQSIGN       => assignment()
-      case PLUSEQ       => assignment(Plus)
-      case MINUSEQ      => assignment(Minus)
-      case MULEQ        => assignment(Times)
-      case DIVEQ        => assignment(Div)
-      case MODEQ        => assignment(Modulo)
-      case ANDEQ        => assignment(LogicAnd)
-      case OREQ         => assignment(LogicOr)
-      case XOREQ        => assignment(LogicXor)
-      case LEFTSHIFTEQ  => assignment(LeftShift)
-      case RIGHTSHIFTEQ => assignment(RightShift)
-      case _            => e
+      case EQSIGN   => assignment()
+      case PLUSEQ   => assignment(Plus)
+      case MINUSEQ  => assignment(Minus)
+      case MULEQ    => assignment(Times)
+      case DIVEQ    => assignment(Div)
+      case MODEQ    => assignment(Modulo)
+      case ANDEQ    => assignment(LogicAnd)
+      case OREQ     => assignment(LogicOr)
+      case XOREQ    => assignment(LogicXor)
+      case LSHIFTEQ => assignment(LeftShift)
+      case RSHIFTEQ => assignment(RightShift)
+      case _        => e
     }
   }
 
-  /** <ternary> ::= <elvis> [ ? <elvis> : <elvis> ] */
-  def ternary: ExprTree = positioned {
+  /** <ternary> ::= <elvis> [ ? <ternary> : <ternary> ] */
+  def ternary: ExprTree = {
+    val startPos = tokens.next
     val e = elvis
     if (tokens.nextKind == QUESTIONMARK) {
       eat(QUESTIONMARK)
-      val thn = elvis
+      val thn = ternary
       eat(COLON)
-      val els = elvis
-      Ternary(e, thn, els)
+      val els = ternary
+      Ternary(e, thn, els).setPos(startPos, tokens.lastVisible)
     } else {
       e
     }
   }
 
-  /** <elvis> ::= <or> [ ?: <or> ] */
-  def elvis: ExprTree = positioned {
+  /** <elvis> ::= <or> [ ?: <elvis> ] */
+  def elvis: ExprTree = {
+    val startPos = tokens.next
     val e = or
     if (tokens.nextKind == ELVIS) {
       eat(ELVIS)
-      val ifNull = or
-      Elvis(e, ifNull)
+      Elvis(e, elvis).setPos(startPos, tokens.lastVisible)
     } else {
       e
     }
   }
 
   /** <or> ::= <and> { || <and> } */
-  def or: ExprTree = leftAssociative(OR)(and)
+  def or: ExprTree = leftAssociativeOperator(OR)(and)
 
   /** <and> ::= <logicOr> { && <logicOr> } */
-  def and: ExprTree = leftAssociative(AND)(logicOr)
-
-  /** <logicOr> ::= <logicXor> { | <logicXor> } */
-  def logicOr: ExprTree = leftAssociative(LOGICOR)(logicXor)
-
-  /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
-  def logicXor: ExprTree = leftAssociative(LOGICXOR)(logicAnd)
-
-  /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
-  def logicAnd: ExprTree = leftAssociative(LOGICAND)(eqNotEq)
+  def and: ExprTree = leftAssociativeOperator(AND)(eqNotEq)
 
   /** <eqNotEq> ::= <is> { ( == | != ) <is> } */
-  def eqNotEq: ExprTree = leftAssociative(EQUALS, NOTEQUALS)(is)
+  def eqNotEq: ExprTree = leftAssociativeOperator(EQUALS, NOTEQUALS)(is)
 
-  /** <is> ::= <comparison> { inst <classIdentifier> } */
-  def is: ExprTree = positioned {
+  /** <is> ::= <comparison> { is <classIdentifier> } */
+  def is: ExprTree = {
+    val startPos = tokens.next
     var e = comparison
     while (tokens.nextKind == IS) {
       eat(IS)
-      e = Is(e, tpe)
+      e = Is(e, tpe).setPos(startPos, tokens.lastVisible)
     }
     e
   }
 
   /** <comparison> ::= <bitShift> { ( < | <= | > | >= | inst ) <bitShift> } */
-  def comparison: ExprTree = leftAssociative(LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ)(bitShift)
+  def comparison: ExprTree = leftAssociativeOperator(LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ)(logicOr)
+
+  /** <logicOr> ::= <logicXor> { | <logicXor> } */
+  def logicOr: ExprTree = leftAssociativeOperator(LOGICOR)(logicXor)
+
+  /** <logicXor> ::= <logicAnd> { ^ <logicAnd> } */
+  def logicXor: ExprTree = leftAssociativeOperator(LOGICXOR)(logicAnd)
+
+  /** <logicAnd> ::= <eqNotEq> { & <eqNotEq> } */
+  def logicAnd: ExprTree = leftAssociativeOperator(LOGICAND)(bitShift)
 
   /** <bitShift> ::= <plusMinus> { ( << | >> ) <plusMinus> } */
-  def bitShift: ExprTree = leftAssociative(LEFTSHIFT, RIGHTSHIFT)(plusMinus)
+  def bitShift: ExprTree = leftAssociativeOperator(LSHIFT, RSHIFT)(plusMinus)
 
   /** <plusMinus> ::= <timesDiv> { ( + | - ) <timesDiv> } */
-  def plusMinus: ExprTree = leftAssociative(PLUS, MINUS)(timesDivMod)
+  def plusMinus: ExprTree = leftAssociativeOperator(PLUS, MINUS)(timesDivMod)
 
   /** <timesDivMod> ::= <term> { ( * | / | % ) <term> } */
-  def timesDivMod: ExprTree = leftAssociative(TIMES, DIV, MODULO)(term)
+  def timesDivMod: ExprTree = leftAssociativeOperator(TIMES, DIV, MODULO)(term)
 
   /** <term> ::= <termFirst> <termRest> */
   def term: ExprTree = termRest(termFirst)
@@ -842,7 +848,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case DECREMENT     => preDecrement
       case MINUS         => negation
       case SUPER         => superCall
-      case _             => report(WrongToken(tokens.current, tokens.last, IDKIND, INTLITKIND, STRLITKIND, CHARLITKIND,
+      case _             => report(WrongToken(tokens.next, tokens.last, IDKIND, INTLITKIND, STRLITKIND, CHARLITKIND,
         LONGLITKIND, DOUBLELITKIND, FLOATLITKIND, NEW, LPAREN, LBRACKET, NULL, THIS, TRUE, FALSE, BANG, LOGICNOT, HASH,
         INCREMENT, DECREMENT, MINUS, SUPER))
     }
@@ -864,7 +870,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** <newExpression> ::= new <classIdentifier> [ "?" <nullableBracket> ] { <nullableBracket> } */
-  def newExpression: ExprTree = {
+  def newExpression: ExprTree = positioned {
     val startPos = tokens.next
     eat(NEW)
     val tpe: TypeTree = classIdentifier
@@ -977,9 +983,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-  /** <superCall> ::=  <superTerm> <access> */
+  /** <superCall> ::=  <superTerm> . <application> */
   def superCall: Access = positioned {
-    access(superTerm)
+    val term = superTerm
+    eat(DOT)
+    NormalAccess(term, application)
   }
 
   /** <superTerm> ::= super [ "<" <classIdentifier> "> ] */
@@ -1005,26 +1013,26 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case _          => report(WrongToken(tokens.next, tokens.last, DOT, QUESTIONMARK))
     }
 
-    val application = positioned {
-      val id = identifier(VariableID)
-      tokens.nextKind match {
-        case LPAREN =>
-          val exprs = commaList(LPAREN, RPAREN)(expression)
-          val methId = MethodID(id.name).setPos(id)
-          MethodCall(methId, exprs)
-        case _      => id
-      }
-    }
-
     access(obj, application)
   }
 
-  private val restTokens = List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, AS, INCREMENT, DECREMENT)
+  /** <application> ::= <identifier> [ "(" <expression> { , <expression> } ")" ] */
+  def application: ExprTree = positioned {
+    val id = identifier(VariableID)
+    tokens.nextKind match {
+      case LPAREN =>
+        val exprs = commaList(LPAREN, RPAREN)(expression)
+        val methId = MethodID(id.name).setPos(id)
+        MethodCall(methId, exprs)
+      case _      => id
+    }
+  }
+
   /** <termRest> ::=  { <access> | <arrayIndexing> | ++ | -- | as <tpe> | !! } */
   def termRest(termFirst: ExprTree): ExprTree = {
     var e = termFirst
     // Uses current token since a newline should stop the iteration
-    while (tokens.current.kind in restTokens) {
+    while (tokens.current.kind in TermRestTokens) {
       e = tokens.current.kind match {
         case DOT | SAFEACCESS =>
           access(e)
@@ -1238,21 +1246,18 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   private var usedOneGreaterThan = false
   private def eatRightShiftOrGreaterThan(): Unit = {
-    if (tokens.nextKind != RIGHTSHIFT) {
+    if (tokens.nextKind != RSHIFT) {
       eat(GREATERTHAN)
       return
     }
     if (usedOneGreaterThan)
-      eat(RIGHTSHIFT)
+      eat(RSHIFT)
 
     usedOneGreaterThan = !usedOneGreaterThan
   }
 
-  /** Parses expressions of type
-    * E ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> }.
-    * Used to parse left associative expressions. *
-    */
-  private def leftAssociative(kinds: TokenKind*)(next: => ExprTree): ExprTree = {
+  /** <leftAssociativeOperator> ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> } */
+  private def leftAssociativeOperator(kinds: TokenKind*)(next: => ExprTree): ExprTree = {
     val startPos = tokens.next
 
     def matchingKind = kinds.find(_ == tokens.current.kind)
@@ -1261,7 +1266,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     var kind = matchingKind
     while (kind.isDefined) {
       eat(kind.get)
-      expr = tokenToBinaryOperatorAST(kind.get)(expr, next).setPos(startPos, tokens.lastVisible)
+      expr = TokenToBinaryOperatorAST(kind.get)(expr, next).setPos(startPos, tokens.lastVisible)
       kind = matchingKind
     }
     expr
@@ -1317,25 +1322,26 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-  /** Continues parsing until one of the given token kinds are encountered */
+  // Continues parsing until one of the given token kinds are encountered
   private def until[T](kinds: TokenKind*)(parse: => T): List[T] = until(!kinds.contains(tokens.nextKind))(parse)
 
-  /** Continues parsing until a token different from the given tokens is encountered */
+  // Continues parsing until a token different from the given tokens is encountered
   private def untilNot[T](kinds: TokenKind*)(parse: => T): List[T] = until(kinds.contains(tokens.nextKind))(parse)
 
-  /** Continues parsing while the condition is met */
+  // Continues parsing while the condition is met
   private def until[T](condition: => Boolean)(parse: => T): List[T] = {
     var b = ListBuffer[T]()
     while (condition) b += parse
     b.toList
   }
 
-  private def positioned[T <: Positioned](f: => T)(implicit enclosing: Enclosing, line: Line): T = {
+  // Executes the given function and sets the start and end position on the resulting value
+  private def positioned[T <: Positioned](parse: => T)(implicit enclosing: Enclosing, line: Line): T = {
     if (logger isEnabled Debug) debug"${ indentation }Parsing ${ enclosing.method }"
 
     indent += 1
     val startPos = tokens.next
-    val res = f
+    val res = parse
     indent -= 1
     res.setPos(startPos, tokens.lastVisible)
   }

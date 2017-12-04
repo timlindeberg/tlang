@@ -121,7 +121,7 @@ trait TypingErrors extends ErrorHandling {
     private def overloadedOperatorClassesString(args: List[Type]) =
       if (args.isEmpty)
         ""
-      else if (args.size != 2 || args(0) == args(1))
+      else if (args.lengthCompare(2) != 0 || args(0) == args(1))
         err"The class ${ args.head } does not"
       else if (!args(0).isInstanceOf[TObject])
         err"The class ${ args(1) } does not"

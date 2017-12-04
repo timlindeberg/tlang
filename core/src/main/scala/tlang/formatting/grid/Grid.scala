@@ -342,12 +342,13 @@ case class Grid(var formatter: Formatter) {
         widths.tail.map { width => acc after { () => acc += width + 2 * indent + 1 } }.iterator
       }
 
-      def ifHeader(a: String, b: String) = if (before.isHeader) a else b
 
       val sb = new StringBuilder
       val maxWidth = formatting.lineWidth
 
-      sb ++= ifHeader(VerticalRightThick, VerticalRight)
+      val isHeader = before.isHeader
+
+      sb ++= (if (isHeader) VerticalRightThick else VerticalRight)
 
       val upPositions = getBreakPositions(before)
       val downPositions = getBreakPositions(after)
@@ -357,10 +358,10 @@ case class Grid(var formatter: Formatter) {
       while (x < maxWidth - 2) {
         val X = x // X is a stable identifier, we cant use x since it's a var
         sb ++= ((up, down) match {
-          case (X, X) => ifHeader(HorizontalVerticalThick, HorizontalVertical)
-          case (X, _) => ifHeader(HorizontalUpThick, HorizontalUp)
-          case (_, X) => ifHeader(HorizontalDownThick, HorizontalDown)
-          case _      => ifHeader(HorizontalThick, Horizontal)
+          case (X, X) => if (isHeader) HorizontalVerticalThick else HorizontalVertical
+          case (X, _) => if (isHeader) HorizontalUpThick else HorizontalUp
+          case (_, X) => if (isHeader) HorizontalDownThick else HorizontalDown
+          case _      => if (isHeader) HorizontalThick else Horizontal
         })
 
         if (upPositions.hasNext && x >= up)
@@ -370,7 +371,7 @@ case class Grid(var formatter: Formatter) {
 
         x += 1
       }
-      sb ++= ifHeader(VerticalLeftThick, VerticalLeft)
+      sb ++= (if (isHeader) VerticalLeftThick else VerticalLeft)
       borderColor(sb.toString)
     }
 

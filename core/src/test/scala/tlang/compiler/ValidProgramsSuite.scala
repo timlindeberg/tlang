@@ -24,6 +24,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
 
   def testValidProgram(file: File): Unit = {
     val ctx = testContext(Some(file))
+
     val programExecutor = ProgramExecutor(ctx, TimeOut)
 
     val sources = FileSource(file) :: Nil
@@ -41,6 +42,10 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
     ctx.reporter.hasErrors shouldBe false
 
     Main.GenerateCode.execute(ctx)(cus)
+
+    if (Verbose)
+      printExecutionTimes(file, ctx)
+
     val res = programExecutor(file)
     val resLines = lines(res)
     val sol = parseSolutions(file)
@@ -65,10 +70,9 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
         if (res != sol)
           fail(s"Expected '$sol' but found '$res' at line $line ${ extraInfo(i) }")
     }
-    if (results.length != solutions.length) {
+    if (results.lengthCompare(solutions.length) != 0) {
       fail(s"Expected ${ solutions.length } lines but ${ results.length } were output ${ extraInfo(-1) }")
     }
   }
-
 
 }

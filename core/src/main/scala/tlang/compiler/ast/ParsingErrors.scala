@@ -3,6 +3,7 @@ package tlang.compiler.ast
 import tlang.compiler.lexer.Tokens.{DEDENT, INDENT}
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.messages.{ErrorHandling, ErrorMessage, FatalMessage}
+import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
 trait ParsingErrors extends ErrorHandling {
@@ -64,7 +65,7 @@ trait ParsingErrors extends ErrorHandling {
     }
 
     private def indentWarning(expected: List[TokenKind]) =
-      if (expected.contains(INDENT) || expected.contains(DEDENT))
+      if (expected.exists(_ in List(INDENT, DEDENT)))
         " Make sure you're using tabs and not spaces for indentation."
       else
         ""

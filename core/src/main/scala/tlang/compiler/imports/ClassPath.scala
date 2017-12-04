@@ -35,7 +35,10 @@ object ClassPath {
   }
 }
 
-case class ClassPath private(pathToFile: Map[String, ClassFile], classes: Array[String], paths: Set[String]) {
+// This should be a regular class since we want equals to use reference comparison.
+// Making this a case class will use Scalas default hashCode implementation which will be
+// very slow for this class.
+class ClassPath private(val pathToFile: Map[String, ClassFile], val classes: Array[String], val paths: Set[String]) {
 
   def +(path: String): ClassPath = this ++ ClassPath(Set(path))
 

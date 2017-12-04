@@ -55,8 +55,8 @@ object Tokens extends Enumerable[TokenKind] {
   case object ANDEQ           extends TokenKind("&=")
   case object OREQ            extends TokenKind("|=")
   case object XOREQ           extends TokenKind("^=")
-  case object LEFTSHIFTEQ     extends TokenKind("<<=")
-  case object RIGHTSHIFTEQ    extends TokenKind(">>=")
+  case object LSHIFTEQ        extends TokenKind("<<=")
+  case object RSHIFTEQ        extends TokenKind(">>=")
   case object EQUALS          extends TokenKind("==")
   case object NOTEQUALS       extends TokenKind("!=")
   case object BANG            extends TokenKind("!")
@@ -79,8 +79,8 @@ object Tokens extends Enumerable[TokenKind] {
   case object LOGICOR         extends TokenKind("|")
   case object LOGICXOR        extends TokenKind("^")
   case object MODULO          extends TokenKind("%")
-  case object LEFTSHIFT       extends TokenKind("<<")
-  case object RIGHTSHIFT      extends TokenKind(">>")
+  case object LSHIFT          extends TokenKind("<<")
+  case object RSHIFT          extends TokenKind(">>")
   case object LESSTHAN        extends TokenKind("<")
   case object LESSTHANEQ      extends TokenKind("<=")
   case object GREATERTHAN     extends TokenKind(">")
@@ -146,7 +146,7 @@ object Tokens extends Enumerable[TokenKind] {
 
 
   override lazy val Values       : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
-  lazy          val Keywords     : Set[TokenKind]         = Tokens.filter(t => t.str.matches("[A-Za-z]+")).toSet
+  lazy          val Keywords     : Set[TokenKind]         = Tokens.filter(_.str.matches("[A-Za-z]+")).toSet
   lazy          val KeywordMap   : Map[String, TokenKind] = Keywords.map(t => t.str -> t).toMap
   lazy          val NonKeywords  : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !KeywordMap.contains(t.str)).map(t => t.str -> t).toMap
   lazy          val KeywordsRegex: Regex                  = s"(${ Keywords.toList.sortBy(-_.str.length).mkString("|") })".r

@@ -8,7 +8,7 @@ import tlang.utils.Logging
 abstract class CompilerPhase[F, T] extends Logging {
   self =>
 
-  val phaseName: String = getClass.getSimpleName.dropRight(1).toLowerCase
+  val phaseName: String = getClass.simpleObjectName.toLowerCase
 
   def description(formatting: Formatting): String
   def printDebugOutput(output: List[T], debugOutputFormatter: DebugOutputFormatter): Unit
@@ -32,8 +32,8 @@ abstract class CompilerPhase[F, T] extends Logging {
 
     val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerPhases.contains(this)) {
-      if (!ctx.executionTimes.contains(this))
-        ctx.executionTimes += this -> time
+      if (!ctx.executionTimes.contains(phaseName))
+        ctx.executionTimes += phaseName -> time
 
       if (phaseName in ctx.printCodePhase)
         printDebugOutput(output, ctx.debugOutputFormatter)

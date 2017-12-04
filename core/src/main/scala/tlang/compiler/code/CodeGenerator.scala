@@ -248,7 +248,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
         sizes foreach (compileExpr(_))
-        val dimension = newArray.dimension
+        val dimension = newArray.sizes.size
         val arrType = tpe.getType.asInstanceOf[TArray].tpe
         if (dimension == 1)
           arrType.codes.newArray(ch)
@@ -360,7 +360,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         tpe.getType match {
           case Primitive(primitiveType) =>
             // args size can only be 0 or 1 for primitive types
-            if (args.size == 1)
+            if (args.lengthCompare(1) == 0)
               compileAndConvert(args.head, primitiveType)
             else
               primitiveType.codes.defaultConstant(ch)

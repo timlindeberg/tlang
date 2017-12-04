@@ -96,10 +96,11 @@ object Main extends Logging {
       printFilesToCompile(formatter, filesToCompile)
 
     val ctx = createContext(options, formatter)
+
     val CUs = runCompiler(filesToCompile, ctx)
 
     if (options(VerboseFlag))
-      printExecutionTimes(ctx)
+      ctx.printExecutionTimes()
 
     if (options(ExecFlag))
       executePrograms(ctx, CUs)
@@ -210,23 +211,6 @@ object Main extends Logging {
           }
     }
     grid.print()
-  }
-
-  private def printExecutionTimes(ctx: Context): Unit = {
-    val formatting = ctx.formatter.formatting
-    import formatting._
-
-    val totalTime = ctx.executionTimes.values.sum
-
-    ctx.formatter
-      .grid
-      .header(f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset")
-      .row(2)
-      .mapContent(CompilerPhases) { phase =>
-        val time = ctx.executionTimes(phase)
-        (Blue(phase.phaseName.capitalize), Green(f"$time%.2f$Reset") + " s")
-      }
-      .print()
   }
 
   private def versionInfo = s"T-Compiler $VersionNumber"
@@ -342,7 +326,7 @@ object Main extends Logging {
 
     val grid = ctx.formatter
       .grid
-      .header(Bold(if (mainMethods.size > 1) "Executing programs" else "Executing program"))
+      .header(Bold(if (mainMethods.lengthCompare(1) > 0) "Executing programs" else "Executing program"))
 
     val programExecutor = ProgramExecutor(ctx)
     cus.foreach { executeProgram(_, formatter, programExecutor, grid) }

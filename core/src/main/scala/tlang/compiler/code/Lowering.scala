@@ -15,9 +15,11 @@ import scala.collection.mutable.ListBuffer
 
 object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
-  override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = cus map { cu =>
-    val lowerer = new Lowerer(cu.imports)
-    lowerer(cu)
+  override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
+    cus map { cu =>
+      val lowerer = new Lowerer(cu.imports)
+      lowerer(cu)
+    }
   }
 
   override def description(formatting: Formatting): String =
@@ -700,7 +702,7 @@ class Lowerer(imports: Imports) extends Logging {
       val app = apps.head
       val access = NormalAccess(obj, app).setType(app.getType.getNonNullable)
 
-      if (apps.size == 1) {
+      if (apps.lengthCompare(1) == 0) {
         val ternary = Ternary(condition, access, NullLit()).setType(app.getType.getNullable)
         return PutValue(ternary)
       }

@@ -2,11 +2,12 @@ package tlang.compiler
 
 import better.files.File
 import org.scalatest.ParallelTestExecution
+import tlang.Context
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.messages.{CompilationException, CompilerMessage, MessageType}
+import tlang.messages._
 import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, Source}
 
@@ -39,25 +40,27 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
       pipeLine.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        if (PrintErrors)
-          e.messages.print(MessageType.Error)
-        val errorCodes = getErrorCodes(e.messages(MessageType.Error))
-        val expectedErrors = parseSolutions(file)
-        assertResultsEqualsSolutions(errorCodes, expectedErrors)
+        verifyMessages(file, ctx, e.messages, MessageType.Error)
         return
     }
 
-    // If we got here there were no errors, check for warnings instead
     val reporter = ctx.reporter
-    if (!reporter.hasWarnings)
+    if (reporter.isEmpty)
       fail("Test failed: No errors or warnings!")
 
-    if (PrintErrors)
-      reporter.printWarnings()
+    verifyMessages(file, ctx, ctx.reporter.messages, MessageType.Warning)
+  }
 
-    val expectedWarnings = parseSolutions(file)
-    val warningCodes = getErrorCodes(reporter.getWarnings)
-    assertResultsEqualsSolutions(warningCodes, expectedWarnings)
+  private def verifyMessages(file: File, ctx: Context, messages: CompilerMessages, messageType: MessageType): Unit = {
+    if (Verbose)
+      printExecutionTimes(file, ctx)
+
+    if (PrintErrors)
+      messages.print(messageType)
+
+    val foundCodes = getErrorCodes(messages(messageType))
+    val expectedCodes = parseSolutions(file)
+    assertResultsEqualsSolutions(foundCodes, expectedCodes)
   }
 
 

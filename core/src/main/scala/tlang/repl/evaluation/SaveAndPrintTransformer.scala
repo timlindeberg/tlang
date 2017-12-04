@@ -41,7 +41,7 @@ case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) {
       case block@Block(stats) if stats.nonEmpty =>
         // This could potentially transform other code as well
         stats.last match {
-          case Block(newStats) if newStats.length > 2 &&
+          case Block(newStats) if newStats.lengthCompare(2) > 0 &&
             newStats.head == PrintMarker &&
             newStats.last == PrintMarker =>
             val statementsWithSaveAndPrint = newStats flatMap addSaveAndPrint

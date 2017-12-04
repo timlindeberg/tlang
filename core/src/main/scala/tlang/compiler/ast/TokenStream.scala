@@ -17,22 +17,12 @@ case class TokenStream(tokenList: Traversable[Token]) {
     .filter { case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE) }
     .map(_._1)
 
-  var current: Token = tokens(currentIndex)
-  val last   : Token = tokens.last
+  var current    : Token = tokens(currentIndex)
+  val last       : Token = tokens.last
+  var lastVisible: Token = current
 
   def next: Token = if (current.kind == NEWLINE) tokens(currentIndex + 1) else current
   def nextKind: TokenKind = next.kind
-
-  def lastVisible: Token = {
-    if (currentIndex == 0)
-      return current
-
-    var i = currentIndex - 1
-    while (i > 0 && (tokens(i).kind in InvisibleTokens))
-      i -= 1
-
-    tokens(i)
-  }
 
   def apply(i: Int) = tokens(i)
   def offset(i: Int) = tokens(currentIndex + i)
@@ -41,6 +31,7 @@ case class TokenStream(tokenList: Traversable[Token]) {
     currentIndex += 1
     if (currentIndex < tokens.length)
       current = tokens(currentIndex)
+    lastVisible = calculateLastVisible
   }
 
   def readNewLines(): Int = {
@@ -55,5 +46,16 @@ case class TokenStream(tokenList: Traversable[Token]) {
 
   override def toString: String = tokens.drop(currentIndex).mkString(" ")
 
+
+  private def calculateLastVisible: Token = {
+    if (currentIndex == 0)
+      return current
+
+    var i = currentIndex - 1
+    while (i > 0 && (tokens(i).kind in InvisibleTokens))
+      i -= 1
+
+    tokens(i)
+  }
 
 }

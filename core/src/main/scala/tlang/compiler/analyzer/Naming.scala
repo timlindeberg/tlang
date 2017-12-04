@@ -100,7 +100,7 @@ case class NameAnalyser(
   def checkValidParenting(): Unit =
     cu.classes.foreach { classDecl =>
       val nonTraits = classDecl.parents.filter(!_.getSymbol.isAbstract)
-      if (nonTraits.size > 1) {
+      if (nonTraits.lengthCompare(1) > 0) {
         report(ExtendMultipleClasses(nonTraits(1)))
         return
       }

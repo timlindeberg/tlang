@@ -265,6 +265,26 @@ object Extensions {
     }
 
     def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]
+
+  }
+
+  implicit class SeqExtensions[T](val seq: Seq[T]) extends AnyVal {
+
+    def cut(n: Int): Vector[Seq[T]] = {
+      val m = seq.length
+      val targets = (0 to n).map { x => math.round((x.toDouble * m) / n).toInt }
+
+      def snip(xs: Seq[T], ns: Seq[Int], got: Vector[Seq[T]]): Vector[Seq[T]] = {
+        if (ns.lengthCompare(2) < 0) got
+        else {
+          val (i, j) = (ns.head, ns.tail.head)
+          snip(xs.drop(j - i), ns.tail, got :+ xs.take(j - i))
+        }
+      }
+
+      snip(seq, targets, Vector.empty)
+    }
+
   }
 
   implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {
