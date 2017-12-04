@@ -89,7 +89,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     import TestFormatting._
 
     grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
-    ctx.printExecutionTimes()
+    ctx.printExecutionTimes(success = true)
   }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as

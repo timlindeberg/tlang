@@ -16,10 +16,7 @@ import scala.collection.mutable.ListBuffer
 object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus map { cu =>
-      val lowerer = new Lowerer(cu.imports)
-      lowerer(cu)
-    }
+    ctx.executor.map(cus) { cu => new Lowerer(cu.imports)(cu) }
   }
 
   override def description(formatting: Formatting): String =

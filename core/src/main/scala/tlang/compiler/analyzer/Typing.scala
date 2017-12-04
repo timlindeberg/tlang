@@ -23,9 +23,9 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus foreach { typecheckFields(ctx, _) }
-    cus foreach { typecheckMethods(ctx, _) }
-    cus foreach { verify(ctx, _) }
+    ctx.executor.foreach(cus) { typecheckFields(ctx, _) }
+    ctx.executor.foreach(cus) { typecheckMethods(ctx, _) }
+    ctx.executor.foreach(cus) { verify(ctx, _) }
 
     cus
   }

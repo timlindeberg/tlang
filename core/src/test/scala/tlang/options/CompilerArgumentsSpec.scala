@@ -6,7 +6,7 @@ import tlang.formatting._
 import tlang.messages.{AlternativeSuggestor, ErrorStringContext, Suggestion}
 import tlang.options.arguments._
 import tlang.testutils.UnitSpec
-import tlang.utils.LogLevel
+import tlang.utils.{LogLevel, ParallellExecutor, SingleThreadExecutor}
 
 class CompilerArgumentsSpec extends UnitSpec {
 
@@ -304,6 +304,28 @@ class CompilerArgumentsSpec extends UnitSpec {
     test("Invalid log levels") {
       intercept[IllegalArgumentException] { createOptions("--loglevel abc") }
         .getMessage should include("abc")
+    }
+  }
+
+  it should "use threads argument" in {
+    test("No arguments should result in a SingleThreadExecutor") {
+      val options = createOptions("")
+      options(ThreadsFlag) shouldBe SingleThreadExecutor
+    }
+
+    test("Valid number of threads") {
+      createOptions("--threads 0")(ThreadsFlag) shouldBe ParallellExecutor(Runtime.getRuntime.availableProcessors)
+      createOptions("--threads 1")(ThreadsFlag) shouldBe SingleThreadExecutor
+      createOptions("--threads 2")(ThreadsFlag) shouldBe ParallellExecutor(2)
+      createOptions("--threads 8")(ThreadsFlag) shouldBe ParallellExecutor(8)
+    }
+
+    test("Invalid arguments") {
+      intercept[IllegalArgumentException] { createOptions("--threads abc") }
+        .getMessage should include("abc")
+
+      intercept[IllegalArgumentException] { createOptions("--threads -1") }
+        .getMessage should include("-1")
     }
   }
 

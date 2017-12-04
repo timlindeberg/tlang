@@ -32,7 +32,7 @@ object LogLevel extends Enumerable[LogLevel] {
 
 case class LoggingSettings(
   var timeFormat: DateFormat = new SimpleDateFormat("HH:mm:ss:SSS"),
-  var threadWidth: Int = 15,
+  var threadWidth: Int = 10,
   var locationWidth: Int = 45,
   var logLevelWidth: Int = 5,
   var logThreads: Boolean = false,
@@ -169,7 +169,9 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLo
     if (!logThreads)
       return ""
 
-    var name = fit(threadName, threadWidth)
+    val s = threadName
+    var name = s.substring(math.max(s.length - threadWidth, 0), s.length)
+    name = fit(name, threadWidth)
 
     if (useColor) {
       val allColors = formatting.AllColors

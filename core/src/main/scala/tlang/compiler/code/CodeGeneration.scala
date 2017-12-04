@@ -25,10 +25,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   import CodeGenerator._
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
-    cus
-      .flatMap(_.classes)
-      .flatMap { generateClassFile(_, ctx) }
-      .toList
+    val classes = cus.flatMap(_.classes)
+    ctx.executor.flatMap(classes) { generateClassFile(_, ctx) }
   }
 
   override def description(formatting: Formatting): String =

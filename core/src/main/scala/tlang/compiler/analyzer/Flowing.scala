@@ -15,7 +15,7 @@ import tlang.utils.{LogLevel, Logging, Positioned}
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    cus foreach { cu =>
+    ctx.executor.foreach(cus) { cu =>
       cu.classes foreach { clazz =>
         val errorStringContext = ErrorStringContext(ctx, cu)
         val flowAnalyser = FlowAnalyser(ctx.reporter, errorStringContext, cu.imports)

@@ -9,6 +9,7 @@ import tlang.formatting.Colors.Color
 import tlang.formatting.{Formatter, Formatting}
 import tlang.messages.Reporter
 import tlang.utils.Extensions._
+import tlang.utils.{Executor, SingleThreadExecutor}
 
 import scala.collection.mutable
 
@@ -17,6 +18,7 @@ case class Context(
   formatter: Formatter,
   debugOutputFormatter: DebugOutputFormatter,
   classPath: ClassPath = ClassPath.Empty,
+  executor: Executor = SingleThreadExecutor,
   outDirs: Set[File] = Set(File(".")),
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()
@@ -26,7 +28,7 @@ case class Context(
 
   def formatting: Formatting = formatter.formatting
 
-  def printExecutionTimes(): Unit = {
+  def printExecutionTimes(success: Boolean): Unit = {
     if (executionTimes.isEmpty)
       return
 
@@ -47,9 +49,12 @@ case class Context(
         (Blue(phase.capitalize), color(f"$time%.2f"), color(f"$percentage%02d"))
       }
 
+    val (successOrFailure, color) = if (success) ("succeeded", Green) else ("failed", Red)
+    val header =
+      f"${ Bold }Compilation ${ color(successOrFailure) }$Bold after $color$totalTime%.2f$Reset ${ Bold }seconds.$Reset"
     formatter
       .grid
-      .header(f"${ Bold }Compilation executed ${ Green("successfully") }$Bold in $Green$totalTime%.2f$Reset ${ Bold }seconds.$Reset")
+      .header(header)
       .row(3)
       .content(Blue("Phase"), Blue("Time (s)"), Blue("Percentage"))
       .content()

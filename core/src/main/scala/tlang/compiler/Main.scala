@@ -16,13 +16,13 @@ import tlang.compiler.modification.Templating
 import tlang.formatting._
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.Width.Percentage
-import tlang.formatting.grid.{Column, Grid}
+import tlang.formatting.grid.{Column, Grid, Width}
 import tlang.formatting.textformatters.TabReplacer
 import tlang.messages._
 import tlang.options.arguments._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
-import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
+import tlang.utils._
 
 object Main extends Logging {
 
@@ -32,7 +32,6 @@ object Main extends Logging {
 
   val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
     Lowering andThen CodeGeneration
-
 
   val CompilerPhases: Seq[CompilerPhase[_, _]] = List(
     Lexing,
@@ -61,6 +60,7 @@ object Main extends Logging {
     PhasesFlag,
     PrintOutputFlag,
     SuppressWarningsFlag,
+    ThreadsFlag,
     VerboseFlag,
     VersionFlag,
     WarningIsErrorFlag
@@ -97,10 +97,10 @@ object Main extends Logging {
 
     val ctx = createContext(options, formatter)
 
-    val CUs = runCompiler(filesToCompile, ctx)
+    val CUs = runCompiler(filesToCompile, options, ctx)
 
     if (options(VerboseFlag))
-      ctx.printExecutionTimes()
+      ctx.printExecutionTimes(success = true)
 
     if (options(ExecFlag))
       executePrograms(ctx, CUs)
@@ -117,30 +117,33 @@ object Main extends Logging {
     }
   }
 
-  private def runCompiler(filesToCompile: Set[File], ctx: Context): Seq[CompilationUnit] = {
+  private def runCompiler(filesToCompile: Set[File], options: Options, ctx: Context): Seq[CompilationUnit] = {
     try {
-      val CUs = runFrontend(filesToCompile, ctx)
+      val CUs = runFrontend(filesToCompile, options, ctx)
       GenerateCode.execute(ctx)(CUs)
       ctx.reporter.printWarnings()
       CUs
     } catch {
-      case e: Throwable => unknownError(ctx.formatter, e)
+      case e: Throwable => unknownError(ctx, options, e)
     }
   }
 
-  private def runFrontend(filesToCompile: Set[File], ctx: Context): List[CompilationUnit] = {
+  private def runFrontend(filesToCompile: Set[File], options: Options, ctx: Context): List[CompilationUnit] = {
     try {
       val sources = filesToCompile.toList.map(FileSource(_))
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
         e.messages.print()
+        if (options(VerboseFlag))
+          ctx.printExecutionTimes(success = false)
         sys.exit(1)
     }
   }
 
   // Top level error handling for any unknown exception
-  private def unknownError(formatter: Formatter, error: Throwable): Nothing = {
+  private def unknownError(ctx: Context, options: Options, error: Throwable): Nothing = {
+    val formatter = ctx.formatter
     import formatter.formatting._
 
     val stackTrace = formatter.highlightStackTrace(error)
@@ -152,6 +155,9 @@ object Main extends Logging {
       .row()
       .content(stackTrace)
       .print()
+
+    if (options(VerboseFlag))
+      ctx.printExecutionTimes(success = false)
 
     sys.exit(1)
   }
@@ -168,11 +174,14 @@ object Main extends Logging {
       suppressWarnings = options(SuppressWarningsFlag)
     )
     val debugOutputFormatter = DebugOutputFormatter(formatter)
+    val executor = options(ThreadsFlag)
+    executor ifInstanceOf[ParallellExecutor] { _ => Logging.DefaultLogSettings.logThreads = true }
     Context(
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
+      executor = executor,
       outDirs = options(DirectoryFlag),
       printCodePhase = options(PrintOutputFlag),
       ignoredImports = options(IgnoreDefaultImportsFlag)
@@ -264,12 +273,18 @@ object Main extends Logging {
       .sortBy(_.name)
       .map { flag => (flag.flagName(formatting), flag.description(formatter)) }
 
-    formatter
+    val maxFlagWidth = flags.map(_._1.visibleCharacters).max
+
+    val grid = formatter
       .grid
       .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
-      .row(2)
-      .contents(flags)
-      .print()
+
+    flags.foreach { columns =>
+      grid.row(Column(width = Width.Fixed(maxFlagWidth)), Column)
+      grid.content(columns)
+    }
+
+    grid.print()
   }
 
   private def printPhaseInfo(formatter: Formatter): Unit = {

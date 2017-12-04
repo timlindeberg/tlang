@@ -19,13 +19,13 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
     // Add all symbols first so each program instance can access
     // all symbols in binding
-    val analyzers = cus map { cu =>
+    val analyzers = ctx.executor.map(cus) { cu =>
       val nameAnalyzer = NameAnalyser(ctx.reporter, ErrorStringContext(ctx, cu), cu, globalScope)
       nameAnalyzer.addSymbols()
       nameAnalyzer
     }
 
-    analyzers foreach { nameAnalyzer =>
+    analyzers.foreach { nameAnalyzer =>
       nameAnalyzer.bindIdentifiers()
       nameAnalyzer.checkInheritanceCycles()
       nameAnalyzer.checkVariableUsage()

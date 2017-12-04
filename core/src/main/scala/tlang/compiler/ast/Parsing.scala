@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging {
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
-    tokenList map { tokens =>
+    ctx.executor.map(tokenList) { tokens =>
       info"Parsing tokens of ${ tokens.head.sourceName }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val astBuilder = Parser(ctx, errorStringContext, TokenStream(tokens))

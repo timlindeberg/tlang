@@ -19,7 +19,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
   val MaximumStringSize = 65535
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
-    inputs map { source =>
+    ctx.executor.map(inputs) { source =>
       info"Lexing ${ source.mainName }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val lexer = Lexer(ctx.reporter, errorStringContext)

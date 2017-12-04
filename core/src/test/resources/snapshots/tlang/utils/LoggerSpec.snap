@@ -1,15 +1,15 @@
 ========================================= A logger should apply colors and correct formatting
-[36mTRACE │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mTestThread0    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
-[34mDEBUG │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mTestThread1    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    DEF
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mTestThread2    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    GHI
-[33mWARN  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[33mTestThread3    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    JKL
-[31mERROR │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[34mTestThread4    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    MNO
+[36mTRACE │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mestThread0[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
+[34mDEBUG │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mestThread1[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    DEF
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mestThread2[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    GHI
+[33mWARN  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[33mestThread3[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    JKL
+[31mERROR │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[34mestThread4[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    MNO
 
 
 ========================================= A logger should log with string context with colors
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mTestThread0    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [36m1[0m[1mABC[0m[36m2[0m[1mDEF[0m[36m3[0m
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mTestThread1    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [1m<[0m[36m1[0m[1m, [0m[36m2[0m[1m, [0m[36m3[0m[1m>[0m
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mTestThread2    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [1mABC: [0m
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mestThread0[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [36m1[0m[1mABC[0m[36m2[0m[1mDEF[0m[36m3[0m
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mestThread1[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [1m<[0m[36m1[0m[1m, [0m[36m2[0m[1m, [0m[36m3[0m[1m>[0m
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mestThread2[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    [1mABC: [0m
 [32m┌─────┘[0m
 [32m│ [0m[36mA[0m
 [32m│ [0m[36mmultiline[0m
@@ -18,9 +18,9 @@
 
 
 ========================================= A logger should log with string context without colors
-INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    '1'ABC'2'DEF'3'
-INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    <'1', '2', '3'>
-INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC: 
+INFO  │ 01:00:00:000 [estThread0] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    '1'ABC'2'DEF'3'
+INFO  │ 01:00:00:000 [estThread0] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    <'1', '2', '3'>
+INFO  │ 01:00:00:000 [estThread0] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC: 
 ┌─────┘
 │ A
 │ multiline
@@ -29,14 +29,14 @@ INFO  │ 01:00:00:000 [TestThread0    ] tlang.utils.LoggerSpec(LoggerSpec.scala
 
 
 ========================================= A logger should output extra info
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mTestThread0    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[30mestThread0[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    ABC
 [32m┌─────┘[0m
 [32m│ [0m[36mABC[0m
 [32m│ [0m[36mDEF[0m
 [32m│ [0m[36mGHI[0m
 [32m└─────┐[0m
-[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mTestThread1    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    DEF
-[31mERROR │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mTestThread2    [0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    GHI
+[32mINFO  │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[31mestThread1[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    DEF
+[31mERROR │[0m [35m01[0m:[35m00[0m:[35m00[0m:[35m000[0m [[32mestThread2[0m] tlang.utils.LoggerSpec(LoggerSpec.scala:0)    GHI
 [31m┌─────┘[0m
 [31m│ [0m[36mABC[0m
 [31m│ [0m[36mDEF[0m

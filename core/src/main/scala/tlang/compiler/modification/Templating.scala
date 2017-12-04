@@ -45,6 +45,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
+    // This can't be ran in parallell since there are dependencies between CUs
     cus foreach { cu =>
       val transforms = List[String => String](cu.imports.replaceNames)
       val errorStringContext = ErrorStringContext(ctx.formatter, transforms = transforms)
@@ -60,12 +61,10 @@ case class TemplateModifier(ctx: Context) extends Logging {
     allCus ++= templateCus.values
 
     // Remove all template classes and replace types in rest of the classes
-    val replaced = allCus map { cu =>
+    ctx.executor.map(allCus.toList) { cu =>
       cu.classes = cu.classes.filterInstance[IDClassDeclTree].filter(!_.id.isTemplated) ++ cu.classes.filterInstance[ExtensionDecl]
       replaceTypes(cu)
     }
-
-    replaced.toList
   }
 
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {

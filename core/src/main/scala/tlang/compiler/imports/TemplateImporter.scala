@@ -19,17 +19,17 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
 
     imported += importName
 
-    ctx.classPath(importName) collect {
-      case TemplateFile(path) => path
-    } flatMap {
-      parseTemplateFile
-    } map { importedCU =>
-      // Recursively import generics
-      importedCU :: (importedCU.imports.imports flatMap { recursiveImport =>
-        val templateImporter = new TemplateImporter(ctx, imported)
-        templateImporter.importCUs(recursiveImport.name)
-      })
-    } getOrElse Nil
+    ctx.classPath(importName)
+      .collect { case TemplateFile(path) => path }
+      .flatMap { parseTemplateFile }
+      .map { importedCU =>
+        // Recursively import generics
+        importedCU :: (importedCU.imports.imports flatMap { recursiveImport =>
+          val templateImporter = new TemplateImporter(ctx, imported)
+          templateImporter.importCUs(recursiveImport.name)
+        })
+      }
+      .getOrElse(Nil)
   }
 
   private def parseTemplateFile(path: String): Option[CompilationUnit] = {
