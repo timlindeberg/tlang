@@ -380,12 +380,9 @@ object Knowledge {
       if (varKnowledge.isEmpty)
         return ""
 
-      val knowledge = varKnowledge.map { case (expr, knowledge) => (expr.toString, knowledge) }
-      val maxSize = knowledge.map(_._1.length).max
-
-      knowledge.map { case (expr, knowledge) =>
-        java.lang.String.format(s"%-${ maxSize }s -> { %s }", expr, knowledge.mkString(", "))
-      }.mkString(NL)
+      varKnowledge
+        .map { case (expr, knowledge) => (expr.toString, s"{ ${ knowledge.mkString(", ") } }") }
+        .aligned
     }
 
     private def flowKnowledgeDescription: String = {

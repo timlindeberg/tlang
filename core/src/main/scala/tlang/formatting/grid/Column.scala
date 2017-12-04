@@ -5,19 +5,19 @@ import tlang.utils.Extensions._
 import scala.collection.mutable.ListBuffer
 
 object ColumnDefaults {
-  val width            = Width.Auto
-  val overflowHandling = OverflowHandling.Wrap
-  val alignment        = Alignment.Left
+  val Width            = tlang.formatting.grid.Width.Auto
+  val OverflowHandling = tlang.formatting.grid.OverflowHandling.Wrap
+  val Alignment        = tlang.formatting.grid.Alignment.Left
 }
 
-object Column extends Column(ColumnDefaults.width, ColumnDefaults.alignment, ColumnDefaults.overflowHandling)
-object CenteredColumn extends Column(ColumnDefaults.width, Alignment.Center, ColumnDefaults.overflowHandling)
-object TruncatedColumn extends Column(ColumnDefaults.width, ColumnDefaults.alignment, OverflowHandling.Truncate)
+object Column extends Column(ColumnDefaults.Width, ColumnDefaults.Alignment, ColumnDefaults.OverflowHandling)
+object CenteredColumn extends Column(ColumnDefaults.Width, Alignment.Center, ColumnDefaults.OverflowHandling)
+object TruncatedColumn extends Column(ColumnDefaults.Width, ColumnDefaults.Alignment, OverflowHandling.Truncate)
 
 case class Column(
-  width: Width = ColumnDefaults.width,
-  alignment: Alignment = ColumnDefaults.alignment,
-  overflowHandling: OverflowHandling = ColumnDefaults.overflowHandling) {
+  width: Width = ColumnDefaults.Width,
+  alignment: Alignment = ColumnDefaults.Alignment,
+  overflowHandling: OverflowHandling = ColumnDefaults.OverflowHandling) {
 
   private[grid] val lines: ListBuffer[String] = ListBuffer()
   private       var _maxWidth                 = 0
@@ -36,16 +36,17 @@ trait Width
 trait FixedWidth extends Width {
   def apply(maxWidth: Int): Int
 }
+
 object Width {
   case object Auto extends Width
   case class Fixed(width: Int) extends FixedWidth {
     def apply(maxWidth: Int): Int = width
   }
-  case class Percentage(width: Double) extends FixedWidth {
-    if (width < 0.0 || width > 1.0)
+  case class Percentage(widthPercentage: Double) extends FixedWidth {
+    if (widthPercentage < 0.0 || widthPercentage > 1.0)
       throw new IllegalArgumentException("Percentage width should be between 0 and 1")
 
-    def apply(maxWidth: Int): Int = (width * maxWidth).toInt
+    def apply(maxWidth: Int): Int = (widthPercentage * maxWidth).toInt
   }
 }
 
@@ -65,6 +66,7 @@ trait Alignment {
   protected def align(text: String, space: Int, fill: Char): String
 
 }
+
 object Alignment {
   case object Left extends Alignment {
     override def align(text: String, space: Int, fill: Char): String = {

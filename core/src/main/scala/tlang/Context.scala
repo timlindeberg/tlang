@@ -56,8 +56,7 @@ case class Context(
       .grid
       .header(header)
       .row(3)
-      .content(Blue("Phase"), Blue("Time (s)"), Blue("Percentage"))
-      .content()
+      .columnHeaders("Phase", "Time (s)", "Percentage")
       .contents(columns)
       .print()
   }

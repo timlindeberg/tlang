@@ -202,7 +202,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = DefaultLo
     val color = logLevelColor(logLevel)
 
     val lines = extraLines(extra.get)
-    if (lines.lengthCompare(1) == 0)
+    if (lines.lengthCompare(1) == 0 || lines.forall(_.isEmpty))
       return lines.head
 
     val indent = color(Vertical + " ")

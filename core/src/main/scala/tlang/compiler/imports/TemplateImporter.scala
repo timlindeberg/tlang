@@ -5,11 +5,11 @@ import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.messages.CompilationException
-import tlang.utils.FileSource
+import tlang.utils.{FileSource, Logging}
 
 import scala.collection.mutable
 
-class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set()) {
+class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set()) extends Logging {
 
   def classExists(importName: String): Boolean = ctx.classPath(importName).exists(_.isInstanceOf[TemplateFile])
 
@@ -33,6 +33,8 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
   }
 
   private def parseTemplateFile(path: String): Option[CompilationUnit] = {
+    info"Parsing template file $path"
+
     val sources = FileSource(path) :: Nil
     try {
       val parsedProgram = (Lexing andThen Parsing).execute(ctx)(sources).head

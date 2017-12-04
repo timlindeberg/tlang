@@ -44,7 +44,13 @@ case class TokenStream(tokenList: Traversable[Token]) {
   }
 
 
-  override def toString: String = tokens.drop(currentIndex).mkString(" ")
+  override def toString: String = {
+    val maxTokensToShow = 20
+    if (tokens.length - currentIndex <= maxTokensToShow)
+      tokens.drop(currentIndex).mkString(" ")
+    else
+      tokens.slice(currentIndex, currentIndex + maxTokensToShow).mkString(" ") + " ..."
+  }
 
 
   private def calculateLastVisible: Token = {

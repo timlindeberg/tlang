@@ -1,5 +1,7 @@
 package tlang
 
+import java.nio.file.{Path, Paths}
+
 import better.files.{File, _}
 
 object Constants {
@@ -28,6 +30,7 @@ object Constants {
 
   lazy val TDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
   val SettingsDirectory: File = System.getProperty("user.home") / ".tlang"
+  val Pwd              : Path = Paths.get("").toAbsolutePath
 
   private def FatalCantFindTHome: Nothing = {
     println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")

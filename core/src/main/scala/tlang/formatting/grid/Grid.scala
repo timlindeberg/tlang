@@ -1,8 +1,8 @@
 package tlang.formatting.grid
 
 import tlang.formatting.Colors.Color
+import tlang.formatting.Formatter
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
-import tlang.formatting.{Colors, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
@@ -11,10 +11,11 @@ import scala.collection.mutable.ArrayBuffer
 
 case class Grid(var formatter: Formatter) {
 
-  private val rows       : ArrayBuffer[Row] = ArrayBuffer()
-  private var indent     : Int              = 1
-  private var borderColor: Color            = Colors.NoColor
-  private var shouldTrim : Boolean          = true
+  private val rows             : ArrayBuffer[Row] = ArrayBuffer()
+  private var indent           : Int              = 1
+  private var borderColor      : Color            = formatter.formatting.NoColor
+  private var columnHeaderColor: Color            = formatter.formatting.Blue + formatter.formatting.Bold
+  private var shouldTrim       : Boolean          = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
@@ -37,6 +38,11 @@ case class Grid(var formatter: Formatter) {
 
   def indent(indent: Int): Grid = {
     this.indent = indent
+    this
+  }
+
+  def columnHeaderColor(color: Color): Grid = {
+    this.columnHeaderColor = color
     this
   }
 
@@ -79,39 +85,16 @@ case class Grid(var formatter: Formatter) {
 
   def row(columns: Iterable[Column]): Grid = addRow(columns, isHeader = false)
 
-  private def addRow(columns: Iterable[Column], isHeader: Boolean): Grid = {
-    val row = Row(rows.length + 1, isHeader, columns.toList)
-    verifyRowWidth(row)
-    _currentRow = Some(row)
-    rows += row
-    this
+  def columnHeaders(content: String, moreContent: String*): Grid = {
+    val allContent = content :: moreContent.toList
+    verifyNumValues(allContent.length)
+    addContent(allContent.map(columnHeaderColor(_)))
+    this.content()
   }
 
   def content(): Grid = allContent(List.fill(currentRow.size)(List("")))
 
-  // Yay!
-  def content(t: (String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-  def content(t: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String)): Grid = addTuple(t)
-
+  def content(t: Product): Grid = addTuple(t)
 
   def content(content: String, moreContent: String*): Grid = {
     val allContent = content :: moreContent.toList
@@ -142,6 +125,14 @@ case class Grid(var formatter: Formatter) {
   def print(): Unit = println(render())
 
   def render(): String = GridRenderer(formatter).render()
+
+  private def addRow(columns: Iterable[Column], isHeader: Boolean): Grid = {
+    val row = Row(rows.length + 1, isHeader, columns.toList)
+    verifyRowWidth(row)
+    _currentRow = Some(row)
+    rows += row
+    this
+  }
 
   private def addTuple(tuple: Product): Grid = {
     val className = tuple.getClass.getName
@@ -186,7 +177,6 @@ case class Grid(var formatter: Formatter) {
 
   case class Row private(rowNumber: Int, isHeader: Boolean, columns: Seq[Column]) {
 
-
     def columnWidths: Seq[Int] = calculateColumnWidths()
 
     def apply(i: Int): Column = columns(i)
@@ -216,10 +206,8 @@ case class Grid(var formatter: Formatter) {
       var remainingWidth = actualSpace
       columns.zipWithIndex.map { case (column, i) =>
         val fixedWidth = column.width.asInstanceOf[FixedWidth]
-        val width = if (i == columns.length - 1)
-          remainingWidth
-        else
-          fixedWidth(actualSpace)
+
+        val width = if (i == columns.length - 1) remainingWidth else fixedWidth(actualSpace)
 
         remainingWidth -= width
         width
@@ -339,16 +327,21 @@ case class Grid(var formatter: Formatter) {
       def getBreakPositions(row: Row): Iterator[Int] = {
         val widths = row.columnWidths
         var acc = 2 * indent + widths.head
-        widths.tail.map { width => acc after { () => acc += width + 2 * indent + 1 } }.iterator
+        widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
       }
+
+      val (horizontalVertical, horizontalUp, horizontalDown, horizontal, verticalRight, verticalLeft) =
+        if (before.isHeader)
+          (HorizontalVerticalThick, HorizontalUpThick, HorizontalDownThick, HorizontalThick, VerticalRightThick, VerticalLeftThick)
+        else
+          (HorizontalVertical, HorizontalUp, HorizontalDown, Horizontal, VerticalRight, VerticalLeft)
 
 
       val sb = new StringBuilder
       val maxWidth = formatting.lineWidth
 
-      val isHeader = before.isHeader
 
-      sb ++= (if (isHeader) VerticalRightThick else VerticalRight)
+      sb ++= verticalRight
 
       val upPositions = getBreakPositions(before)
       val downPositions = getBreakPositions(after)
@@ -358,10 +351,10 @@ case class Grid(var formatter: Formatter) {
       while (x < maxWidth - 2) {
         val X = x // X is a stable identifier, we cant use x since it's a var
         sb ++= ((up, down) match {
-          case (X, X) => if (isHeader) HorizontalVerticalThick else HorizontalVertical
-          case (X, _) => if (isHeader) HorizontalUpThick else HorizontalUp
-          case (_, X) => if (isHeader) HorizontalDownThick else HorizontalDown
-          case _      => if (isHeader) HorizontalThick else Horizontal
+          case (X, X) => horizontalVertical
+          case (X, _) => horizontalUp
+          case (_, X) => horizontalDown
+          case _      => horizontal
         })
 
         if (upPositions.hasNext && x >= up)
@@ -371,7 +364,7 @@ case class Grid(var formatter: Formatter) {
 
         x += 1
       }
-      sb ++= (if (isHeader) VerticalLeftThick else VerticalLeft)
+      sb ++= verticalLeft
       borderColor(sb.toString)
     }
 

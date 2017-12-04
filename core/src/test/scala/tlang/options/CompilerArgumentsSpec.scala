@@ -123,9 +123,9 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
 
     test("Invalid argument should result in default argument") {
-      val options = createOptions("--help --phases")
+      val options = createOptions("--help --exec")
       options(CompilerHelpFlag) shouldBe Set("all")
-      options(PhasesFlag) shouldBe true
+      options(ExecFlag) shouldBe true
     }
   }
 
@@ -133,12 +133,12 @@ class CompilerArgumentsSpec extends UnitSpec {
   it should "use ignore default imports flag" in {
     test("No arguments should be empty") {
       val options = createOptions("")
-      options(IgnoreDefaultImportsFlag) shouldBe Set()
+      options(IgnoredDefaultImportsFlag) shouldBe Set()
     }
 
     test("With arguments") {
       val options = createOptions("--ignoreimport java::lang::object,T::LaNG::Int --ignoreimport t::lang::bool")
-      options(IgnoreDefaultImportsFlag) shouldBe Set("java::lang::Object", "T::lang::Int", "T::lang::Bool")
+      options(IgnoredDefaultImportsFlag) shouldBe Set("java::lang::Object", "T::lang::Int", "T::lang::Bool")
     }
 
     test("Invalid arguments") {
@@ -231,9 +231,9 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
 
     test("Invalid argument should result in default argument") {
-      val options = createOptions("--printoutput --phases")
+      val options = createOptions("--printoutput --exec")
       options(PrintOutputFlag) shouldBe Set("lowering")
-      options(PhasesFlag) shouldBe true
+      options(ExecFlag) shouldBe true
     }
   }
 

@@ -75,6 +75,22 @@ case class Options(
     )
   }
 
+  override def toString: String = {
+    val args = flags ++ positionalArgument
+    args
+      .toList
+      .map { arg =>
+        val valuesForArgument = argumentValues.getOrElse(arg, Set())
+        val value = arg.parseValue(valuesForArgument) match {
+          case set: Set[_] => if (set.isEmpty) "Empty" else set.mkString(", ")
+          case v           => v.toString
+        }
+        (arg.toString.stripSuffix("Flag").stripSuffix("Argument"), value)
+      }
+      .sortBy(_._1)
+      .aligned
+  }
+
 }
 
 
@@ -116,7 +132,7 @@ trait FlagArgument[T] extends Argument[T] {
 
 trait BooleanFlag extends FlagArgument[Boolean] {
 
-  private val Active = "ACTIVE"
+  private val Active = "Active"
 
   override def parseValue(args: Set[String]): Boolean = args.contains(Active)
   override def matches(args: List[String])(implicit errorContext: ErrorStringContext): Option[(Set[String], List[String])] = args match {

@@ -64,8 +64,8 @@ case class FlowAnalyser(
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    if (logger.isEnabled(LogLevel.Debug))
-      debug"Analyzing ${ tree.toString.stripNewlines } at line ${ tree.line } with knowledge: $knowledge"
+    if (logger isEnabled LogLevel.Trace)
+      trace"Analyzing ${ tree.toString.stripNewlines.trim } at line ${ tree.line } with knowledge: ${ NL + knowledge.toString }"
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }

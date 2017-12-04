@@ -21,7 +21,6 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
 
     if (!outDir.isValidPath)
       error(err"Invalid output directory: $outDir.")
-
   }
 
   override def parseValue(args: Set[String]): Set[File] = {

@@ -51,13 +51,12 @@ object Main extends Logging {
     CompilerHelpFlag,
     DirectoryFlag,
     ExecFlag,
-    IgnoreDefaultImportsFlag,
+    IgnoredDefaultImportsFlag,
     LineWidthFlag,
     LogLevelFlag,
     MaxErrorsFlag,
     MessageContextFlag,
     NoColorFlag,
-    PhasesFlag,
     PrintOutputFlag,
     SuppressWarningsFlag,
     ThreadsFlag,
@@ -74,6 +73,7 @@ object Main extends Logging {
 
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
+    Logging.DefaultLogSettings.logThreads = options(ThreadsFlag).isInstanceOf[ParallellExecutor]
 
     if (args.isEmpty) {
       print(printHelpInfo(formatter))
@@ -90,7 +90,7 @@ object Main extends Logging {
     if (filesToCompile.isEmpty)
       ErrorNoFilesGiven()
 
-    info"Compiling ${ filesToCompile.size } files: $filesToCompile"
+    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map(f => '"' + f.toString + '"').mkString(NL) }"
 
     if (options(VerboseFlag))
       printFilesToCompile(formatter, filesToCompile)
@@ -163,7 +163,7 @@ object Main extends Logging {
   }
 
   private def createContext(options: Options, formatter: Formatter): Context = {
-    info"Created context with options $options"
+    info"Creating context with options $options"
 
     val messageFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
     val messages = CompilerMessages(
@@ -175,7 +175,6 @@ object Main extends Logging {
     )
     val debugOutputFormatter = DebugOutputFormatter(formatter)
     val executor = options(ThreadsFlag)
-    executor ifInstanceOf[ParallellExecutor] { _ => Logging.DefaultLogSettings.logThreads = true }
     Context(
       reporter = DefaultReporter(messages = messages),
       formatter = formatter,
@@ -184,7 +183,7 @@ object Main extends Logging {
       executor = executor,
       outDirs = options(DirectoryFlag),
       printCodePhase = options(PrintOutputFlag),
-      ignoredImports = options(IgnoreDefaultImportsFlag)
+      ignoredImports = options(IgnoredDefaultImportsFlag)
     )
   }
 
@@ -229,16 +228,15 @@ object Main extends Logging {
       print(versionInfo)
       sys.exit()
     }
-
-    if (options(PhasesFlag)) {
-      printPhaseInfo(formatter)
-      sys.exit()
-    }
-
     val args = options(CompilerHelpFlag)
+
     if (args.contains("all")) {
       printHelpInfo(formatter)
       sys.exit()
+    }
+
+    if (args.contains(CompilerHelpFlag.Phases)) {
+      printPhaseInfo(formatter)
     }
 
     args.foreach(arg => CompilerFlags.find(_.name == arg) ifDefined { flag =>

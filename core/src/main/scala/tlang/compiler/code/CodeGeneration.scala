@@ -37,7 +37,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): List[CodegenerationStackTrace] = {
-    info"Generating .class file for class ${ classDecl.name }"
+    info"Generating .class file for ${ classDecl.name }"
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol

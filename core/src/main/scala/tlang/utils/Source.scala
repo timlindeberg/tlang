@@ -1,6 +1,8 @@
 package tlang.utils
 
 
+import java.nio.file.Path
+
 import better.files.File
 import tlang.Constants
 import tlang.formatting.Formatting
@@ -34,7 +36,16 @@ case class FileSource(file: File) extends Source {
     import formatting._
     val style = Bold + NumColor
     val fileName = style(file.name)
-    file.parent + file.fileSystem.getSeparator + fileName
+    relativize(file.parent.path) + file.fileSystem.getSeparator + fileName
+  }
+
+
+  private def relativize(path: Path): Path = {
+    val absolute = path.toAbsolutePath
+    if (absolute.startsWith(Constants.Pwd))
+      Constants.Pwd.relativize(absolute)
+    else
+      absolute
   }
 }
 

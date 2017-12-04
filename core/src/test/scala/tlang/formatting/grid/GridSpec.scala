@@ -500,7 +500,6 @@ class GridSpec extends UnitSpec {
          |╞═════╤══════╤═════╡
          |│ ABC │ DEFG │ HIJ │
          |└─────┴──────┴─────┘""".stripMargin
-
   }
 
 
@@ -580,7 +579,6 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with line wrapping" in {
-
     var wordWrapper = mock[WordWrapper]
     wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
 
@@ -654,6 +652,37 @@ class GridSpec extends UnitSpec {
          |│ K │   │   │   │   │
          |│ L │   │   │   │   │
          |└───┴───┴───┴───┴───┘""".stripMargin
+  }
+
+
+  it should "render correctly with column headers" in {
+    Grid(mockedFormatter())
+      .row(Column, Column)
+      .columnHeaders("ABC", "DEF")
+      .content("ABC", "DEF")
+      .render() should matchWithAnsi(
+      s"""|┌─────┬────────────┐
+          |│ \u001b[1;34mABC\u001b[0m │ \u001b[1;34mDEF\u001b[0m        │
+          |│     │            │
+          |│ ABC │ DEF        │
+          |└─────┴────────────┘""".stripMargin.trim
+    )
+
+    val formatter = mockedFormatter()
+    Grid(formatter)
+      .columnHeaderColor(formatter.formatting.Red)
+      .row(Column, Column)
+      .columnHeaders("ABC", "DEF")
+      .content("ABC", "DEF")
+      .render() should matchWithAnsi(
+      s"""|┌─────┬────────────┐
+          |│ \u001b[31mABC\u001b[0m │ \u001b[31mDEF\u001b[0m        │
+          |│     │            │
+          |│ ABC │ DEF        │
+          |└─────┴────────────┘""".stripMargin.trim
+    )
+
+
   }
 
 

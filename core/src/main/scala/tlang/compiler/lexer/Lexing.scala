@@ -602,7 +602,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   private def createToken(token: Token, tokenLength: Int)(implicit e: Enclosing, l: Line): Token = {
     val endCol = column + tokenLength
     token.setPos(source, line, column, line, endCol)
-    debug"Creating new token $token with position ($line, $column, $line, $endCol)"
+    debug"Creating token $token with position ($line, $column, $line, $endCol)"
     column += tokenLength
     token
   }

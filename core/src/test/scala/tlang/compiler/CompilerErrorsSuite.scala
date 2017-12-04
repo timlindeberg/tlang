@@ -60,7 +60,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
 
     val foundCodes = getErrorCodes(messages(messageType))
     val expectedCodes = parseSolutions(file)
-    assertResultsEqualsSolutions(foundCodes, expectedCodes)
+    verifyResults(foundCodes, expectedCodes)
   }
 
 
@@ -73,7 +73,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
     }.toList
 
 
-  private def assertResultsEqualsSolutions(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
+  private def verifyResults(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
       val num = s"$lineNumber:"
       f"$num%-4s $msg"

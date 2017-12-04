@@ -22,8 +22,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
 
   import formatter.formatting._
 
-  private val TabWidth    = 2
-  private val HeaderColor = Bold + Blue
+  private val TabWidth = 2
 
   def printStackTraces(phaseName: String, stackTraces: List[CodegenerationStackTrace]): Unit = {
     val grid = makeGrid(phaseName)
@@ -32,8 +31,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .row(alignment = Center)
         .content(stackTrace.header)
         .row(5)
-        .content(HeaderColor("Line"), HeaderColor("PC"), HeaderColor("Height"), HeaderColor("ByteCode"), HeaderColor("Info"))
-        .content()
+        .columnHeaders("Line", "PC", "Height", "ByteCode", "Info")
         .contents(stackTrace.content)
     }
     grid.print()
@@ -47,8 +45,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .row(alignment = Center)
         .content(formatter.fileName(tokens.head.sourceName))
         .row(TruncatedColumn, Column, Column, Column)
-        .content(HeaderColor("Text"), HeaderColor("Token"), HeaderColor("Start"), HeaderColor("End"))
-        .content()
+        .columnHeaders("Text", "Token", "Start", "End")
         .mapContent(tokens) { token =>
           val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
           val start = NumColor(token.line) + ":" + NumColor(token.col)
@@ -68,8 +65,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .row()
         .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(TruncatedColumn, Column, Column, Column)
-        .content(HeaderColor("Tree"), HeaderColor("Reference"), HeaderColor("Symbol"), HeaderColor("Type"))
-        .content()
+        .columnHeaders("Tree", "Reference", "Symbol", "Type")
         .contents(treePrinter(tree))
     }
     grid.print()

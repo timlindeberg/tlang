@@ -13,13 +13,18 @@ class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[S
   override val argDescription = "about"
   override val defaultArg     = "all"
 
-  private lazy val FlagNames: Set[String] = allFlags.map(_.name)
+  val Phases: String = "phases"
 
-  override def isValidArg(arg: String): Boolean = arg in FlagNames
+  private lazy val FlagNames : Set[String] = allFlags.map(_.name)
+  private lazy val OtherNames: Set[String] = Set(Phases)
+  private lazy val ValidArguments          = FlagNames ++ OtherNames
+
+  override def isValidArg(arg: String): Boolean = arg in ValidArguments
 
   override def description(formatter: Formatter): String = {
     s"""
        |Prints help information and exits. Giving a flag as argument will give more information about that flag.
+       |--help phases prints information about the different phases of the T-Compiler.
       """.stripMargin.trim
   }
 

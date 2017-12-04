@@ -92,7 +92,7 @@ case class TypeChecker(
     if (Typing.hasBeenTypechecked(currentMethodSymbol))
       return
 
-    info"Typechecking method $currentMethodSymbol"
+    debug"Typechecking method $currentMethodSymbol"
 
     if (currentMethodSymbol.getType == TUntyped && methodStack.contains(currentMethodSymbol)) {
       report(CantInferTypeRecursiveMethod(currentMethodSymbol))
@@ -310,7 +310,7 @@ case class TypeChecker(
     else
       foundType
 
-    debug"Setting type of $expression to $res"
+    debug"Setting type of $expression at (${ expression.line }:${ expression.col }) to $res"
     expression.setType(res)
     res
   }

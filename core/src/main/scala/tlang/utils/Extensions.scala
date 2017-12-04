@@ -201,6 +201,15 @@ object Extensions {
     def map[A](f: T => A): (A, A, A, A) = (f(t._1), f(t._2), f(t._3), f(t._4))
   }
 
+  implicit class TupleCollectionExtensions[A, B](val tuples: Traversable[(A, B)]) extends AnyVal {
+    def aligned: String = {
+      val maxWidth = tuples.map(_._1.toString.length).max
+      tuples
+        .map { case (a, b) => java.lang.String.format(s"%-${ maxWidth }s -> %s", a.toString, b.toString) }
+        .mkString(NL)
+    }
+  }
+
   implicit class StringBuilderExtensions(val sb: scala.collection.mutable.StringBuilder) extends AnyVal {
 
     def appendTimes(char: Char, times: Int): mutable.StringBuilder = {
@@ -222,7 +231,7 @@ object Extensions {
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
     def use(f: T => Unit): T = { val x = t; f(t); x }
-    def after(f: => Unit): T = { f; t }
+    def after(f: => Unit): T = { val x = t; f; x }
 
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }

@@ -6,7 +6,7 @@ import tlang.messages.ErrorStringContext
 import tlang.options.ArgumentFlag
 import tlang.utils.Extensions._
 
-case object IgnoreDefaultImportsFlag extends ArgumentFlag[Set[String]] {
+case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
   override val name           = "ignoreimport"
   override val argDescription = "import"
 

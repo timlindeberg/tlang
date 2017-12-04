@@ -89,7 +89,7 @@ case class NameAnalyser(
 
   def checkVariableUsage(): Unit =
     variableUsage
-      .filter { case (_, used) => !used }
+      .filter { case (variable, used) => !used && !variable.name.startsWith("_") }
       .foreach { case (variable, _) => report(UnusedVar(variable)) }
 
   def checkVariableReassignments(): Unit =

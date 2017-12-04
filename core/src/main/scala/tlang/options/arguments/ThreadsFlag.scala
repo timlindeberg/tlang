@@ -20,10 +20,7 @@ case object ThreadsFlag extends ArgumentFlag[Executor] {
         |
         |Give ${ Blue("0") } to use the available number of processors.
         |
-        |Multiple threads will be used when possible. In general a compiler stage will execute
-        |in parallel for each given file except for when there are dependencies between compilation
-        |units.
-        |
+        |Multiple threads will be used when possible. In general a compiler stage will execute in parallel for each given file except for when there are dependencies between compilation units.
         |During code generation each class file is generated in parallell.""".stripMargin
   }
 
