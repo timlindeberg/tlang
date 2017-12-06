@@ -389,7 +389,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    **/
+    * */
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -409,6 +409,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(COMMA)
           val f2 = formal
           eat(RPAREN)
+          if (tokens.next.kind == COMMA)
+            eat(COMMA)
           val operatorType = Minus(Empty(), Empty()).setType(TUnit)
           (operatorType, List(f1, f2), modifiers + Static())
         case _     =>
@@ -425,6 +427,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       val f1 = formal
       eat(COMMA)
       val f2 = formal
+      if (tokens.next.kind == COMMA)
+        eat(COMMA)
       eat(RPAREN)
       (operatorType, List(f1, f2), modifiers + Static())
     }
@@ -650,6 +654,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <regularForLoop> ::= <forInit> ";" [ <expression> ] ";" <forIncrement> ")" <statement> */
   def regularForLoop(firstVarDecl: Option[VarDecl]): For = {
     val init = forInit
+    eat(SEMICOLON)
     val condition = tokens.next.kind match {
       case SEMICOLON => TrueLit() // if condition is left out, use 'true'
       case _         => expression
@@ -672,7 +677,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <forInit> ::= [ ( <assignment> | <varDeclaration> )  { "," ( <assignment> | <varDeclaration> ) } */
   def forInit: List[StatTree] =
-    commaList(None, Some(SEMICOLON)) {
+    commaList(_ == SEMICOLON) {
       val startPos = tokens.next
       tokens.next.kind match {
         case PRIVVAR =>
@@ -1209,10 +1214,28 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   private def templateList: List[TypeTree] = {
     tokens.next.kind match {
       case LESSTHAN =>
-        val tmp = commaList(Some(LESSTHAN), None)(tpe)
-        eatRightShiftOrGreaterThan()
-        tmp
+        eat(LESSTHAN)
+        commaList(stop = _ in List(GREATERTHAN, RSHIFT))(tpe) after endTemplateList
       case _        => List()
+    }
+  }
+
+  /**
+    * Handles the conflict of generics having multiple ">" signs by
+    * treating RSHIFT (>>) as two ">".
+    */
+  private var toSpare = 0
+  private def endTemplateList(): Unit = {
+    tokens.next.kind match {
+      case GREATERTHAN =>
+        eat(GREATERTHAN)
+      case RSHIFT      =>
+        eat(RSHIFT)
+        toSpare += 1
+      case _           =>
+        toSpare -= 1
+        if (toSpare < 0)
+          report(WrongToken(tokens.next, tokens.last, GREATERTHAN))
     }
   }
 
@@ -1270,22 +1293,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-  /**
-    * Handles the conflict of generics having multiple ">" signs by
-    * treating RIGHTSHIFT (>>) as two ">".
-    */
-  private var usedOneGreaterThan = false
-  private def eatRightShiftOrGreaterThan(): Unit = {
-    if (tokens.next.kind != RSHIFT) {
-      eat(GREATERTHAN)
-      return
-    }
-    if (usedOneGreaterThan)
-      eat(RSHIFT)
-
-    usedOneGreaterThan = !usedOneGreaterThan
-  }
-
   /** <leftAssociativeOperator> ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> } */
   private def leftAssociativeOperator(kinds: TokenKind*)(next: => ExprTree): ExprTree = {
     val startPos = tokens.next
@@ -1317,28 +1324,30 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** * <commaList> ::= <startToken> [ <parse> { "," <parse> } ] <endToken> */
-  private def commaList[T](startToken: Option[TokenKind], stopToken: Option[TokenKind])(parse: => T): List[T] = {
-    startToken.foreach(eat(_))
-
-    if (stopToken contains tokens.next.kind) {
-      stopToken.foreach(eat(_))
+  def commaList[T](stop: TokenKind => Boolean)(parse: => T): List[T] = {
+    if (stop(tokens.next.kind)) {
       return List()
     }
 
-    val b = ListBuffer[T]()
-    b += parse
+    val b = ListBuffer[T](parse)
     while (tokens.next.kind == COMMA) {
       eat(COMMA)
-      b += parse
+
+      // To allow for trailing commas
+      if (!stop(tokens.next.kind))
+        b += parse
     }
-    stopToken.foreach(eat(_))
 
     b.toList
   }
 
-  private def commaList[T](startToken: TokenKind, stopToken: TokenKind)(parse: => T): List[T] = {
-    commaList(Some(startToken), Some(stopToken))(parse)
+  def commaList[T](startToken: TokenKind, stopToken: TokenKind)(parse: => T): List[T] = {
+    eat(startToken)
+    val items = commaList(_ == stopToken)(parse)
+    eat(stopToken)
+    items
   }
+
 
   /** <optional> ::= [ <parse> ] */
   private def optional[T <: Positioned](kinds: TokenKind*)(parse: => T): Option[T] = {

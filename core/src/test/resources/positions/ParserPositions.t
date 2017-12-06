@@ -33,7 +33,7 @@ class Class<T> : T, B, C =
 		    10 | 5,
 		    5.6 ^ 'a',
 		    "hej" << true,
-		    false >> null
+		    false >> null,
 		]
 
 

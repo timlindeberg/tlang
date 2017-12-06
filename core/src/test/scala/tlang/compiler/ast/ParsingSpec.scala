@@ -124,10 +124,23 @@ class ParsingSpec extends UnitSpec {
     parser(CLASS, ID("A"), COLON, ID("B"), COMMA, ID("C"), COMMA, ID("D"))
       .classDeclaration shouldBe ClassDecl(ClassID("A"), List(ClassID("B"), ClassID("C"), ClassID("D")))
 
+    // class A : B,
+    //           C,
+    //           D =
+    //    var a
+    parser(
+      CLASS, ID("A"), COLON, ID("B"), COMMA, NEWLINE, ID("C"), COMMA, NEWLINE, ID("D"), EQSIGN, NEWLINE, INDENT, PRIVVAR,
+      ID("a"), NEWLINE, DEDENT
+    ).classDeclaration shouldBe ClassDecl(
+      ClassID("A"),
+      parents = List(ClassID("B"), ClassID("C"), ClassID("D")),
+      fields = List(VarDecl(VariableID("a"), modifiers = Set(Private())))
+    )
+
     // trait A =
     //  var a
     //  var b
-    parser(TRAIT, ID("A"), EQSIGN, INDENT, PRIVVAR, ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, DEDENT)
+    parser(TRAIT, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, DEDENT)
       .classDeclaration shouldBe TraitDecl(
       ClassID("A"),
       parents = Nil,
@@ -143,9 +156,9 @@ class ParsingSpec extends UnitSpec {
     //  def x()
     //  def y()
     parser(
-      CLASS, ID("A"), LESSTHAN, ID("B"), GREATERTHAN, COLON, ID("C"), COMMA, ID("D"), EQSIGN, INDENT, PRIVVAR, ID("a"),
-      NEWLINE, PRIVVAR, ID("b"), NEWLINE, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN, RPAREN,
-      NEWLINE, DEDENT
+      CLASS, ID("A"), LESSTHAN, ID("B"), GREATERTHAN, COLON, ID("C"), COMMA, ID("D"), EQSIGN, NEWLINE, INDENT, PRIVVAR,
+      ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
+      RPAREN, NEWLINE, DEDENT
     ).classDeclaration shouldBe ClassDecl(
       ClassID("A", List(ClassID("B"))),
       parents = List(ClassID("C"), ClassID("D")),
@@ -166,8 +179,8 @@ class ParsingSpec extends UnitSpec {
     //  def x()
     //  def y()
     parser(
-      EXTENSION, ID("A"), EQSIGN, INDENT, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN, RPAREN,
-      NEWLINE, DEDENT
+      EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
+      RPAREN, NEWLINE, DEDENT
     ).classDeclaration shouldBe ExtensionDecl(
       ClassID("A"),
       methods = List(
@@ -181,8 +194,9 @@ class ParsingSpec extends UnitSpec {
     parser(EXTENSION, ID("A"), COLON, ID("B")).classDeclaration shouldBe ExtensionDecl(ClassID("A"))
 
     // No fields
-    a[CompilationException] should be thrownBy parser(EXTENSION, ID("A"), EQSIGN, INDENT, PRIVVAR, ID("x"), NEWLINE, DEDENT)
-      .classDeclaration
+    a[CompilationException] should be thrownBy parser(
+      EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("x"), NEWLINE, DEDENT
+    ).classDeclaration
   }
 
   it should "parse a field declaration" in {
@@ -228,16 +242,19 @@ class ParsingSpec extends UnitSpec {
   }
 
   it should "parse a method declaration" in {
+    // def x()
     parser(PRIVDEF, ID("x"), LPAREN, RPAREN)
       .methodDeclaration shouldBe MethodDecl(
       MethodID("x"), modifiers = Set(Private()), retType = None, args = Nil, stat = None
     )
 
+    // Def x(): A
     parser(PUBDEF, ID("x"), LPAREN, RPAREN, COLON, ID("A"))
       .methodDeclaration shouldBe MethodDecl(
       MethodID("x"), modifiers = Set(Public()), retType = Some(ClassID("A")), args = Nil, stat = None
     )
 
+    // def static x(): A = 1
     parser(PRIVDEF, STATIC, ID("x"), LPAREN, RPAREN, COLON, ID("A"), EQSIGN, INTLIT(1))
       .methodDeclaration shouldBe MethodDecl(
       MethodID("x"),
@@ -247,6 +264,10 @@ class ParsingSpec extends UnitSpec {
       stat = Some(Return(Some(IntLit(1))))
     )
 
+    // def static x(): A =
+    //    1
+    //    2
+    //    3
     parser(
       PRIVDEF, STATIC, ID("x"), LPAREN, RPAREN, COLON, ID("A"), EQSIGN, NEWLINE, INDENT, INTLIT(1), NEWLINE, INTLIT(2),
       NEWLINE, INTLIT(3), NEWLINE, DEDENT
@@ -262,6 +283,7 @@ class ParsingSpec extends UnitSpec {
       )))
     )
 
+    // Def static x(a: A, b: B) = 1
     parser(PUBDEF, STATIC, ID("x"), LPAREN, ID("a"), COLON, ID("A"), RPAREN, EQSIGN, INTLIT(1))
       .methodDeclaration shouldBe MethodDecl(
       MethodID("x"),
@@ -271,6 +293,7 @@ class ParsingSpec extends UnitSpec {
       stat = Some(Return(Some(IntLit(1))))
     )
 
+    // Def x(a: A, b: B)
     parser(PUBDEF, ID("x"), LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"), RPAREN)
       .methodDeclaration shouldBe MethodDecl(
       MethodID("x"),
@@ -280,14 +303,23 @@ class ParsingSpec extends UnitSpec {
       stat = None
     )
 
+    // Def x(
+    //    a: A,
+    //    b: B,
+    //    c: C,
+    // )
     parser(
-      PUBDEF, ID("x"), LPAREN, NEWLINE, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), NEWLINE,
-      RPAREN
+      PUBDEF, ID("x"), LPAREN, NEWLINE, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE,
+      ID("c"), COLON, ID("C"), COMMA, NEWLINE, RPAREN
     ).methodDeclaration shouldBe MethodDecl(
       MethodID("x"),
       modifiers = Set(Public()),
       retType = None,
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
+      args = List(
+        Formal(ClassID("A"), VariableID("a")),
+        Formal(ClassID("B"), VariableID("b")),
+        Formal(ClassID("C"), VariableID("c"))
+      ),
       stat = None
     )
   }
@@ -301,6 +333,7 @@ class ParsingSpec extends UnitSpec {
       stat = None
     )
 
+    // def new(a: A, b: B)
     parser(PRIVDEF, NEW, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), RPAREN)
       .methodDeclaration shouldBe ConstructorDecl(
       MethodID("new"),
@@ -310,6 +343,10 @@ class ParsingSpec extends UnitSpec {
       stat = None
     )
 
+    // Def new() =
+    //    1
+    //    2
+    //    3
     parser(
       PUBDEF, NEW, LPAREN, RPAREN, EQSIGN, NEWLINE, INDENT, INTLIT(1), NEWLINE, INTLIT(2),
       NEWLINE, INTLIT(3), NEWLINE, DEDENT
@@ -325,22 +362,31 @@ class ParsingSpec extends UnitSpec {
       )))
     )
 
+    // Def new(
+    //    a: A,
+    //    b: B,
+    //    c: C,
+    // )
+    parser(
+      PUBDEF, NEW, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE, ID("c"),
+      COLON, ID("C"), COMMA, NEWLINE, RPAREN
+    ).methodDeclaration shouldBe ConstructorDecl(
+      MethodID("new"),
+      modifiers = Set(Public()),
+      retType = Some(UnitType()),
+      args = List(
+        Formal(ClassID("A"), VariableID("a")),
+        Formal(ClassID("B"), VariableID("b")),
+        Formal(ClassID("C"), VariableID("c"))
+      ),
+      stat = None
+    )
   }
 
   it should "parse operator declarations" in {
-    parser(
-      PUBDEF, PLUS, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), RPAREN, COLON,
-      ID("A"), EQSIGN, INTLIT(1)
-    ).methodDeclaration shouldBe OperatorDecl(
-      Plus(Empty(), Empty()),
-      modifiers = Set(Public(), Static()),
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
-      retType = Some(ClassID("A")),
-      stat = Some(Return(Some(IntLit(1))))
-    )
-
+    // Def <tokenKind>(a: A, b: B)
     def binaryOperator(tokenKind: TokenKind, operatorType: (ExprTree, ExprTree) => OperatorTree) = {
-      parser(PUBDEF, tokenKind, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), RPAREN)
+      parser(PUBDEF, tokenKind, LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"), RPAREN)
         .methodDeclaration shouldBe OperatorDecl(
         operatorType(Empty(), Empty()),
         modifiers = Set(Public(), Static()),
@@ -366,7 +412,7 @@ class ParsingSpec extends UnitSpec {
     binaryOperator(EQUALS, Equals)
     binaryOperator(NOTEQUALS, NotEquals)
 
-
+    // Def <tokenKind>(a: A)
     def unaryOperator(tokenKind: TokenKind, operatorType: (ExprTree) => OperatorTree) = {
       parser(PUBDEF, tokenKind, LPAREN, ID("a"), COLON, ID("A"), RPAREN)
         .methodDeclaration shouldBe OperatorDecl(
@@ -383,6 +429,7 @@ class ParsingSpec extends UnitSpec {
     unaryOperator(INCREMENT, PreIncrement)
     unaryOperator(DECREMENT, PreDecrement)
 
+    // Def [](a: A)
     parser(PUBDEF, LBRACKET, RBRACKET, LPAREN, ID("a"), COLON, ID("A"), RPAREN)
       .methodDeclaration shouldBe OperatorDecl(
       ArrayRead(Empty(), Empty()),
@@ -391,6 +438,7 @@ class ParsingSpec extends UnitSpec {
       stat = None
     )
 
+    // Def []=(a: A, b: B)
     parser(PUBDEF, LBRACKET, RBRACKET, EQSIGN, LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"), RPAREN)
       .methodDeclaration shouldBe OperatorDecl(
       Assign(ArrayRead(Empty(), Empty()), Empty()),
@@ -399,6 +447,7 @@ class ParsingSpec extends UnitSpec {
       stat = None
     )
 
+    // Def [::](a: A, b: B, c: C)
     parser(
       PUBDEF, LBRACKET, COLON, COLON, RBRACKET, LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"),
       COMMA, ID("c"), COLON, ID("C"), RPAREN
@@ -411,6 +460,21 @@ class ParsingSpec extends UnitSpec {
         Formal(ClassID("C"), VariableID("c"))
       ),
       stat = None
+    )
+
+    // Def +(
+    //    a: A,
+    //    b: B,
+    // ): A =
+    parser(
+      PUBDEF, PLUS, LPAREN, NEWLINE, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE,
+      RPAREN, COLON, ID("A"), EQSIGN, INTLIT(1)
+    ).methodDeclaration shouldBe OperatorDecl(
+      Plus(Empty(), Empty()),
+      modifiers = Set(Public(), Static()),
+      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
+      retType = Some(ClassID("A")),
+      stat = Some(Return(Some(IntLit(1))))
     )
 
   }
@@ -912,10 +976,17 @@ class ParsingSpec extends UnitSpec {
   it should "parse array literals" in {
     parser(LBRACKET, RBRACKET).expression shouldBe ArrayLit(Nil)
     parser(LBRACKET, INTLIT(1), RBRACKET).expression shouldBe ArrayLit(List(IntLit(1)))
+
+    // [1, 2, 3 ]
     parser(LBRACKET, INTLIT(1), COMMA, INTLIT(2), COMMA, INTLIT(3), RBRACKET)
       .expression shouldBe ArrayLit(List(IntLit(1), IntLit(2), IntLit(3)))
 
-    parser(LBRACKET, NEWLINE, INTLIT(1), COMMA, NEWLINE, INTLIT(2), COMMA, NEWLINE, INTLIT(3), NEWLINE, RBRACKET)
+    // [
+    //    1,
+    //    2,
+    //    3,
+    // ]
+    parser(LBRACKET, NEWLINE, INTLIT(1), COMMA, NEWLINE, INTLIT(2), COMMA, NEWLINE, INTLIT(3), COMMA, NEWLINE, RBRACKET)
       .expression shouldBe ArrayLit(List(IntLit(1), IntLit(2), IntLit(3)))
   }
 
@@ -985,12 +1056,14 @@ class ParsingSpec extends UnitSpec {
     parser(NEW, ID("A"), LPAREN, INTLIT(1), RPAREN).expression shouldBe New(ClassID("A"), List(IntLit(1)))
 
     // new A(
-    //  1,
-    //  2,
-    //  3
+    //    1,
+    //    2,
+    //    3,
     // )
-    parser(NEW, ID("A"), LPAREN, NEWLINE, INTLIT(1), COMMA, NEWLINE, INTLIT(2), COMMA, NEWLINE, INTLIT(3), NEWLINE, RPAREN)
-      .expression shouldBe New(ClassID("A"), List(IntLit(1), IntLit(2), IntLit(3)))
+    parser(
+      NEW, ID("A"), LPAREN, NEWLINE, INTLIT(1), COMMA, NEWLINE, INTLIT(2), COMMA, NEWLINE, INTLIT(3), COMMA, NEWLINE,
+      RPAREN
+    ).expression shouldBe New(ClassID("A"), List(IntLit(1), IntLit(2), IntLit(3)))
 
     // new A<T>()
     parser(NEW, ID("A"), LESSTHAN, ID("T"), GREATERTHAN, LPAREN, RPAREN)
@@ -1172,6 +1245,18 @@ class ParsingSpec extends UnitSpec {
         ))
       )
     )
+
+    // A<
+    //    B,
+    //    C,
+    //    D,
+    // >
+    parser(
+      ID("A"), LESSTHAN, NEWLINE, ID("B"), COMMA, NEWLINE, ID("C"), COMMA, NEWLINE, ID("D"), COMMA, NEWLINE, GREATERTHAN
+    ).classType shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
+
+    // A<B<C>
+    a[CompilationException] should be thrownBy parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("C"), GREATERTHAN).classType
   }
 
   it should "parse a formal" in {
@@ -1181,12 +1266,24 @@ class ParsingSpec extends UnitSpec {
   it should "parse class type identifiers" in {
     parser(ID("A")).classTypeIdentifier shouldBe ClassID("A")
 
+    // A<>
+    parser(ID("A"), LESSTHAN, GREATERTHAN).classTypeIdentifier shouldBe ClassID("A")
+
     // A<B>
     parser(ID("A"), LESSTHAN, ID("B"), GREATERTHAN).classTypeIdentifier shouldBe ClassID("A", List(ClassID("B")))
 
     // A<B, C, D>
     parser(ID("A"), LESSTHAN, ID("B"), COMMA, ID("C"), COMMA, ID("D"), GREATERTHAN)
       .classTypeIdentifier shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
+
+    // A<
+    //    B,
+    //    C,
+    //    D,
+    // >
+    parser(
+      ID("A"), LESSTHAN, NEWLINE, ID("B"), COMMA, NEWLINE, ID("C"), COMMA, NEWLINE, ID("D"), COMMA, NEWLINE, GREATERTHAN
+    ).classTypeIdentifier shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
   }
 
   private val formatter          = testFormatter(useColor = false)
