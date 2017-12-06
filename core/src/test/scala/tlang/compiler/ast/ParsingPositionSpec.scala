@@ -30,7 +30,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
   private lazy val Trees: Map[Class[_], List[Tree]] = Tree.groupBy(_.getClass)
 
-  private def testPositions[T <: Tree : ClassTag](positions: Position*): Unit = {
+  private def testPositions[T <: Tree : ClassTag](expectedPositions: Position*): Unit = {
     val clazz = classTag[T].runtimeClass
     val className = clazz.getSimpleName
     className in {
@@ -40,9 +40,9 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       val treePositions = Trees
         .getOrElse(clazz, fail(s"No trees of class $className"))
         .map(Position(_))
-        .filter { pos => pos != NoPosition }
+        .filter { _ != NoPosition }
 
-      treePositions.zip(positions.zipWithIndex) foreach { case (foundPos, (expectedPos, index)) =>
+      treePositions.zip(expectedPositions.zipWithIndex) foreach { case (foundPos, (expectedPos, index)) =>
         withClue(s" for $className number ${ index + 1 }.") {
           foundPos shouldBe expectedPos
         }

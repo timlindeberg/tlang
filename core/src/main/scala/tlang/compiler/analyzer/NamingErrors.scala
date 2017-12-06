@@ -136,11 +136,6 @@ trait NamingErrors extends ErrorHandling {
     lazy val message = err"Only traits can have unimplemented methods."
   }
 
-  case class UnimplementedMethodNoReturnType(method: String, override val pos: Positioned)
-    extends NameAnalysisError(19, pos) {
-    lazy val message = err"Unimplemented method $method needs a return type."
-  }
-
   case class AbstractConstructor(override val pos: Positioned)
     extends NameAnalysisError(19, pos) {
     lazy val message = err"Constructors cannot be abstract."
@@ -160,6 +155,12 @@ trait NamingErrors extends ErrorHandling {
     extends NameAnalysisError(22, pos) {
     lazy val message = err"Fields in traits need to be val static."
   }
+
+  case class UnimplementedMethodNoReturnType(method: String, override val pos: Positioned)
+    extends NameAnalysisError(23, pos) {
+    lazy val message = err"Unimplemented method $method needs a return type."
+  }
+
 
   //---------------------------------------------------------------------------------------
   //  Warnings

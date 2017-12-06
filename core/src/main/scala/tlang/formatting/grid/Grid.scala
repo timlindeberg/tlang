@@ -103,7 +103,7 @@ case class Grid(var formatter: Formatter) {
   }
 
   // Result of mapping function should be a Tuple
-  def mapContent[T](content: Iterable[T])(f: (T) => Product): Grid = {
+  def mapContent[T](content: Iterable[T])(f: T => Product): Grid = {
     content.map(f) foreach addTuple
     this
   }

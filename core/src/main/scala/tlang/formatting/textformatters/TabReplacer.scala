@@ -35,10 +35,10 @@ case class TabReplacer(tabWidth: Int) {
             val length = sb.size
             positions = positions.map { pos =>
               var start = pos.col
-              var end = pos.endCol
+              var end = pos.colEnd
               if (lineNum == pos.line && start - 1 > length) start += tabWidth - 1
-              if (lineNum == pos.endLine && end - 1 > length) end += tabWidth - 1
-              Position(pos.line, start, pos.endLine, end)
+              if (lineNum == pos.lineEnd && end - 1 > length) end += tabWidth - 1
+              Position(pos.line, start, pos.lineEnd, end)
             }
 
             sb ++= TabReplacement

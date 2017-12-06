@@ -1,8 +1,9 @@
 package tlang.compiler.ast
 
+import tlang.compiler.lexer.Token
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.utils.Extensions._
+import tlang.utils.Source
 
 case class TokenStream(tokenList: Traversable[Token]) {
 
@@ -17,32 +18,34 @@ case class TokenStream(tokenList: Traversable[Token]) {
     .filter { case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE) }
     .map(_._1)
 
-  var current    : Token = tokens(currentIndex)
+  var nextIncludingNewlines: Token = tokens(currentIndex)
+  var next                 : Token = calculateNext()
+
   val last       : Token = tokens.last
-  var lastVisible: Token = current
+  var lastVisible: Token = nextIncludingNewlines
 
-  def next: Token = if (current.kind == NEWLINE) tokens(currentIndex + 1) else current
-  def nextKind: TokenKind = next.kind
 
+  def source: Option[Source] = last.source
   def apply(i: Int) = tokens(i)
   def offset(i: Int) = tokens(currentIndex + i)
 
   def readNext(): Unit = {
     currentIndex += 1
     if (currentIndex < tokens.length)
-      current = tokens(currentIndex)
-    lastVisible = calculateLastVisible
+      nextIncludingNewlines = tokens(currentIndex)
+
+    lastVisible = calculateLastVisible()
+    next = calculateNext()
   }
 
   def readNewLines(): Int = {
     var num = 0
-    while (current.kind == NEWLINE) {
+    while (nextIncludingNewlines.kind == NEWLINE) {
       readNext()
       num += 1
     }
     num
   }
-
 
   override def toString: String = {
     val maxTokensToShow = 20
@@ -52,10 +55,9 @@ case class TokenStream(tokenList: Traversable[Token]) {
       tokens.slice(currentIndex, currentIndex + maxTokensToShow).mkString(" ") + " ..."
   }
 
-
-  private def calculateLastVisible: Token = {
+  private def calculateLastVisible(): Token = {
     if (currentIndex == 0)
-      return current
+      return nextIncludingNewlines
 
     var i = currentIndex - 1
     while (i > 0 && (tokens(i).kind in InvisibleTokens))
@@ -63,5 +65,7 @@ case class TokenStream(tokenList: Traversable[Token]) {
 
     tokens(i)
   }
+
+  private def calculateNext(): Token = if (nextIncludingNewlines.kind == NEWLINE) tokens(currentIndex + 1) else nextIncludingNewlines
 
 }

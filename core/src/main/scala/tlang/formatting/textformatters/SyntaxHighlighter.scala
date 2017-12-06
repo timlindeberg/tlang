@@ -116,7 +116,7 @@ case class SyntaxHighlighter(lexer: Lexer, formatting: Formatting) {
 
   private def findMatchingMarking(pos: Position, markings: Seq[Marking]): Option[Marking] =
     markings.find { case Marking(markedPos, _, _, offset) =>
-      val offsetPos = Position(pos.line + offset - 1, pos.col, pos.endLine + offset - 1, pos.endCol)
+      val offsetPos = Position(pos.line + offset - 1, pos.col, pos.lineEnd + offset - 1, pos.colEnd)
       offsetPos isWithin markedPos
     }
 }

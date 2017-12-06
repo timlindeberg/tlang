@@ -195,7 +195,7 @@ class ErrorStringContextSpec extends UnitSpec {
     alternativeSuggestor: AlternativeSuggestor = mock[AlternativeSuggestor],
     transforms: List[String => String] = Nil
   ): ErrorStringContext = {
-    val formatter = createMockFormatter(useColor = useColor)
+    val formatter = testFormatter(useColor = useColor)
     ErrorStringContext(formatter, alternativeSuggestor = alternativeSuggestor, transforms = transforms)
   }
 

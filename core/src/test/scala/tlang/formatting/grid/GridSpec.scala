@@ -1042,7 +1042,7 @@ class GridSpec extends UnitSpec {
     wordWrapper: WordWrapper = mockedWordWrapperReturningSplitLines,
     truncator: Truncator = mock[Truncator]
   ): Formatter = {
-    createMockFormatter(width = width, asciiOnly = asciiOnly, wordWrapper = wordWrapper, truncator = truncator)
+    testFormatter(width = width, asciiOnly = asciiOnly, wordWrapper = wordWrapper, truncator = truncator)
   }
 
 

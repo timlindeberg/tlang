@@ -59,8 +59,8 @@ class CopierSpec extends UnitSpec {
     copy.source shouldBe Some(source)
     copy.line shouldBe 1
     copy.col shouldBe 2
-    copy.endLine shouldBe 3
-    copy.endCol shouldBe 4
+    copy.lineEnd shouldBe 3
+    copy.colEnd shouldBe 4
   }
 
 

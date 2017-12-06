@@ -83,6 +83,9 @@ class ClassPath private(val pathToFile: Map[String, ClassFile], val classes: Arr
   def nonEmpty: Boolean = size != 0
 
   private def getStartPosition(path: String): Int = {
+    if (classes.isEmpty)
+      return -1
+
     var low = 0
     var high = classes.length - 1
 

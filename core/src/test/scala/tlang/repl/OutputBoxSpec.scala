@@ -42,7 +42,7 @@ class OutputBoxSpec extends UnitSpec {
     tabReplacer: TabReplacer = mock[TabReplacer]
   ) = {
     OutputBox(
-      createMockFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter),
+      testFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter),
       tabReplacer,
       messageFormatter,
       maxOutputLines

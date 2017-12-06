@@ -149,7 +149,7 @@ class CompilerMessageSpec extends UnitSpec {
 
   it should "format message correctly" in {
 
-    val formatter = createMockFormatter(width = 40, useColor = false, wordWrapper = mockedWordWrapperReturningSplitLines)
+    val formatter = testFormatter(width = 40, useColor = false, wordWrapper = mockedWordWrapperReturningSplitLines)
 
     test("two errors with valid positions") {
       val messageFormatter = mock[MessageFormatter]
@@ -252,7 +252,7 @@ class CompilerMessageSpec extends UnitSpec {
     suppressWarnings: Boolean = false,
     width: Int = 80
   ): CompilerMessages = {
-    val f = formatter.getOrElse(createMockFormatter(useColor = useColor, width = width))
+    val f = formatter.getOrElse(testFormatter(useColor = useColor, width = width))
     CompilerMessages(f, messageFormatter, maxErrors, warningIsError, suppressWarnings)
   }
 

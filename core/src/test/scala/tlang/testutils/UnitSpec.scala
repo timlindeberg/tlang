@@ -42,7 +42,7 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSuga
   }
 
 
-  def createMockFormatter(
+  def testFormatter(
     width: Int = 80,
     useColor: Boolean = true,
     asciiOnly: Boolean = true,

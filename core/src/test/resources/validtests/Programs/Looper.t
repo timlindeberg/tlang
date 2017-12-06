@@ -1,21 +1,20 @@
-println(new Looper().run(100)); // res: 20
+println(run(100)); // res: 20
 println(new Loopy().run(100));  // res: 100
 println(new Loopy2().run(100)); // res: 300
 println(new Loopy3().run(100)); // res: 0
 
-class Looper =
-	Def run(t: Int): Int =
-		var times = t
-		var value: Int;
-		value = 0;
-		while((true || (1/1 == 1)) && value < times)
-			value = value + 1;
-			times = times - 1;
+Def run(t: Int): Int =
+	var times = t
+	var value: Int;
+	value = 0;
+	while((true || (1/1 == 1)) && value < times)
+		value = value + 1;
+		times = times - 1;
 
-		while(value < times*2)
-			value = value + 1;
+	while(value < times*2)
+		value = value + 1;
 
-		return value / 5;
+	return value / 5;
 
 class Counter =
 	var count: Int;

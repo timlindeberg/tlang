@@ -49,7 +49,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .mapContent(tokens) { token =>
           val tokenName = token.kind.getClass.getSimpleName.dropRight(1).replaceAll("KIND", "")
           val start = NumColor(token.line) + ":" + NumColor(token.col)
-          val end = NumColor(token.endLine) + ":" + NumColor(token.endCol)
+          val end = NumColor(token.lineEnd) + ":" + NumColor(token.colEnd)
           (token.toString.replaceAll(NL, ""), Bold(tokenName), start, end)
         }
     }

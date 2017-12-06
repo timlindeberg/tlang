@@ -161,7 +161,7 @@ N2021: [1mSuper refers to class [35mABC[0m[1m which [35mABC[0m[1m does no
 N2013: [1;35mthis[0m[1m can not be used in a static context.[0m
 
 ========================================= NamingErrors UnimplementedMethodNoReturnType
-N2019: [1mUnimplemented method [35mABC[0m[1m needs a return type.[0m
+N2023: [1mUnimplemented method [35mABC[0m[1m needs a return type.[0m
 
 ========================================= NamingErrors UnknownType
 N2006: [1mUnknown type: [35mABC[0m[1m.[0m
@@ -178,11 +178,17 @@ N2004: [1mVariable named [35mABC[0m[1m is already defined at line [35m0[0m
 ========================================= ParsingErrors ExpectedIdAssignment
 P3001: [1mExpected identifier or array access on left side of assignment.[0m
 
+========================================= ParsingErrors FileClassAlreadyDefined
+P2004: [1mCannot have free statements or methods since a class with name [35mABC[0m[1m is already defined at line [35m-1[0m[1m. Consider moving the free statements in to [35mABC[0m[1m.[0m
+
 ========================================= ParsingErrors ImplicitMethodOrOperator
 P2000: [1mOnly constructors can be declared implicit.[0m
 
 ========================================= ParsingErrors InvalidArrayDimension
 P2002: [1mInvalid array dimension: [35m0[0m[1m, [35m255[0m[1m is the maximum dimension of an array.[0m
+
+========================================= ParsingErrors MainMethodAlreadyDefined
+P2003: [1mCannot have free statements since a main method is already defined at line [35m-1[0m[1m.[0m
 
 ========================================= ParsingErrors StaticIndexingOperator
 P2001: [1mIndexing operators cannot be declared static.[0m
@@ -234,9 +240,6 @@ T2004: [1mCannot access field on type [35mABC[0m[1m.[0m
 
 ========================================= TypingErrors ForeachNotIterable
 T2032: [1mType [35mT::lang::Int[0m[1m is not iterable.[0m
-
-========================================= TypingErrors IndexingOperatorNotFound
-T2013: [1mThe class [35mABC[0m[1m does not define an operator [35mABC[0m[1m.[0m
 
 ========================================= TypingErrors InstantiateTrait
 T2024: [1mCannot instantiate trait [35mABC[0m[1m.[0m

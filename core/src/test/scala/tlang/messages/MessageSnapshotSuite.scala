@@ -87,16 +87,28 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
     val typeMirror = runtimeMirror(enclosingClass.getClass.getClassLoader)
     val instanceMirror = typeMirror.reflect(enclosingClass)
 
-    val testName = errorMessageClass.name.toString taggedAs CompilerIntegrationTestTag
-    testName in {
-      compilerMessageClasses(errorMessageClass) foreach { messageClass =>
-        test(messageClass.name.toString) {
-          val message = createMessage(instanceMirror, messageClass)
+
+    val testName = errorMessageClass.name.toString
+    (testName taggedAs CompilerIntegrationTestTag) in {
+      val messages = compilerMessageClasses(errorMessageClass).map { createMessage(instanceMirror, _) }.toList
+
+      val duplicateCodes = findDuplicateCodes(messages)
+      if (duplicateCodes.nonEmpty)
+        fail(s"$testName contains duplicate message codes: ${ duplicateCodes.mkString(", ") }")
+
+      messages foreach { message =>
+        test(message.getClass.simpleObjectName) {
           s"${ message.code }: ${ message.message }" should matchSnapshot
         }
       }
     }
   }
+
+  private def findDuplicateCodes(messages: Seq[CompilerMessage]): Iterable[String] =
+    messages
+      .map { _.code }
+      .groupBy(identity)
+      .collect { case (x, occurrences) if occurrences.lengthCompare(1) > 0 => x }
 
   private def messageClass[T <: ErrorHandling : ClassTag : TypeTag](enclosingClass: T): universe.Symbol =
     typeOf[T]

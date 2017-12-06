@@ -208,14 +208,18 @@ case class PrettyPrinter(formatting: Formatting) {
     decl + mods(modifiers)
   }
 
-  private def mods(modifiers: Set[Modifier]) =
-    modifiers
-      .map {
+  private def mods(modifiers: Set[Modifier]): String = {
+    val mods = modifiers
+      .collect {
         case Static()   => pp"static"
         case Implicit() => pp"implicit"
-        case _          => ""
       }
-      .mkString(" ")
+    if (mods.isEmpty)
+      return ""
+
+    " " + mods.mkString(" ")
+  }
+
 
   private def optional[T](t: Option[T])(f: (T => String)) = if (t.isDefined) f(t.get) else ""
 

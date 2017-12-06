@@ -106,11 +106,6 @@ trait TypingErrors extends ErrorHandling {
 
   // Missing 10, 11, 12
 
-  case class IndexingOperatorNotFound(operator: String, className: String, override val pos: Positioned)
-    extends TypeCheckingError(13, pos) {
-    lazy val message: String = err"The class $className does not define an operator $operator."
-  }
-
   case class OperatorNotFound(operatorSignature: String, args: List[Type], override val pos: Positioned)
     extends TypeCheckingError(13, pos) {
     lazy val message: String = {
@@ -135,7 +130,6 @@ trait TypingErrors extends ErrorHandling {
   case class OperatorWrongReturnType(operatorSignature: String, expected: Type, found: Type, override val pos: Positioned)
     extends TypeCheckingError(14, pos) {
     lazy val message = err"Operator $operatorSignature has wrong return type: expected $expected, found $found."
-
   }
 
   case class WrongReturnType(tpe: Type, override val pos: Positioned)

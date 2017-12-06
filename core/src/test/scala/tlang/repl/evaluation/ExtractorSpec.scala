@@ -157,7 +157,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   private def formatter: Formatter = {
     val syntaxHighlighter = mock[SyntaxHighlighter]
     syntaxHighlighter.apply(*).forwardsArg(0)
-    createMockFormatter(useColor = false, syntaxHighlighter = syntaxHighlighter)
+    testFormatter(useColor = false, syntaxHighlighter = syntaxHighlighter)
   }
 
 }

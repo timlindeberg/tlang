@@ -1,3 +1,3 @@
 trait A =
 
-	Def Test() // res: N2019
+	Def Test() // res: N2023

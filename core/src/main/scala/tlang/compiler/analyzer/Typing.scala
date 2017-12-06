@@ -525,7 +525,7 @@ case class TypeChecker(
 
   def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
     typeCheckOperator(classTpe, opType, argList)
-      .getOrElse(report(IndexingOperatorNotFound(opType.operatorString(argList, arrTpe.toString), arrTpe.toString, pos)))
+      .getOrElse(report(OperatorNotFound(opType.operatorString(argList, arrTpe.toString), List(arrTpe), pos)))
   }
 
   def checkMethodUsage(): Unit = {

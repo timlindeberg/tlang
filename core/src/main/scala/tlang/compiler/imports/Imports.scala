@@ -42,12 +42,8 @@ object Imports {
   val DefaultImportNames: List[String] = DefaultImports.map(_.writtenName)
 }
 
-case class Imports(ctx: Context,
-  override val errorStringContext: ErrorStringContext,
-  imports: List[Import] = Nil,
-  pack: Package = Package(Nil),
-  classes: List[ClassDeclTree] = Nil
-) extends ImportErrors with Logging {
+case class Imports(ctx: Context, override val errorStringContext: ErrorStringContext, imports: List[Import] = Nil)
+  extends ImportErrors with Logging {
 
   import Imports._
 
@@ -65,14 +61,6 @@ case class Imports(ctx: Context,
   {
     val defaultImports = DefaultImports.filter(_.writtenName notIn ctx.ignoredImports)
     defaultImports ++ imports foreach { this += _ }
-
-    val packName = pack.name
-    if (packName.nonEmpty) {
-      classes.filterInstance[IDClassDeclTree] foreach { clazz =>
-        val className = clazz.id.name
-        this += (className, s"$packName::$className")
-      }
-    }
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =

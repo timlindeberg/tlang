@@ -75,8 +75,8 @@ case class MessageFormatter(
       (trimmedLine, lineNum)
     }
     val start = math.max(1, position.col - indent)
-    val end = math.max(1, position.endCol - indent)
-    val adjustedPos = Position(position.line, start, position.endLine, end)
+    val end = math.max(1, position.colEnd - indent)
+    val adjustedPos = Position(position.line, start, position.lineEnd, end)
     (trimmedLines, adjustedPos)
   }
 
@@ -97,7 +97,7 @@ case class MessageFormatter(
 
   private def coloredIndicatorLine(lineNum: Int, line: String, pos: Positioned): (String, String) = {
     import formatting._
-    val highlightedLine = if (lineNum in (pos.line to pos.endLine)) {
+    val highlightedLine = if (lineNum in (pos.line to pos.lineEnd)) {
       val MarkColor = Underline + color
       val (start, end) = startAndEnd(line, lineNum, pos)
       line.substring(0, start) + MarkColor(line.substring(start, end)) + line.substring(end, line.length)
@@ -110,7 +110,7 @@ case class MessageFormatter(
 
   private def indicatorLines(lineNum: Int, line: String, pos: Positioned): List[(String, String)] = {
     val firstLine = (lineNum.toString, line)
-    if (lineNum notIn (pos.line to pos.endLine))
+    if (lineNum notIn (pos.line to pos.lineEnd))
       return firstLine :: Nil
 
     val (start, end) = startAndEnd(line, lineNum, pos)
@@ -122,7 +122,7 @@ case class MessageFormatter(
   private def startAndEnd(line: String, lineNum: Int, pos: Positioned): (Int, Int) = {
     val startOfText = line.indexWhere(!_.isWhitespace)
     val start = if (lineNum == pos.line) pos.col - 1 else 0
-    val end = if (lineNum == pos.endLine) pos.endCol - 1 else line.length
+    val end = if (lineNum == pos.lineEnd) pos.colEnd - 1 else line.length
     (Math.max(startOfText, start), Math.min(end, line.length))
   }
 

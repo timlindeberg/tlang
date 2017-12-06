@@ -281,7 +281,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
     val lexer = Lexer(VoidReporter(), ErrorStringContext())
     val tokens = lexer(StringSource(code.stripAnsi, ""))
     tokens
-      .map(t => (t.kind.getClass.getSimpleName.dropRight(1), t.line, t.col, t.endLine, t.endCol))
+      .map(t => (t.kind.getClass.getSimpleName.dropRight(1), t.line, t.col, t.lineEnd, t.colEnd))
       .mkString("," + NL)
       .print
 

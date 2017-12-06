@@ -27,11 +27,9 @@ trait ParsingErrors extends ErrorHandling {
     lazy val message = err"Only constructors can be declared implicit."
   }
 
-
   case class StaticIndexingOperator(override val pos: Positioned) extends ParserError(1, pos) {
     lazy val message = err"Indexing operators cannot be declared static."
   }
-
 
   case class InvalidArrayDimension(size: Int, override val pos: Positioned) extends ParserError(2, pos) {
     lazy val message: String = {
@@ -39,6 +37,19 @@ trait ParsingErrors extends ErrorHandling {
       err"Invalid array dimension: $size, $maxArraySize is the maximum dimension of an array."
     }
   }
+
+  case class MainMethodAlreadyDefined(mainMethod: Positioned, override val pos: Positioned) extends ParserError(3, pos) {
+    lazy val message: String = {
+      err"Cannot have free statements since a main method is already defined at line ${ mainMethod.line }."
+    }
+  }
+
+  case class FileClassAlreadyDefined(name: String, fileClass: Positioned, override val pos: Positioned) extends ParserError(4, pos) {
+    lazy val message: String = {
+      err"Cannot have free statements or methods since a class with name $name is already defined at line ${ fileClass.line }. Consider moving the free statements in to $name."
+    }
+  }
+
 
   //---------------------------------------------------------------------------------------
   //  Fatal messages
