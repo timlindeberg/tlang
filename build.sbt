@@ -1,17 +1,29 @@
-lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
-  scalaVersion := "2.12.1",
-  organization := "com.tcompiler",
-  version := "1.0",
-  javacOptions ++= Seq("-encoding", "UTF-8")
-)
-
 scalacOptions in ThisBuild ++= Seq(
   "-deprecation",
-  "-unchecked",
-  "–encoding UTF8"
+  "-unchecked"
 )
 
-lazy val metaMacroSettings: Seq[Def.Setting[_]] = Seq(
+enablePlugins(JavaAppPackaging)
+
+val modulesDirectory = "modules"
+
+lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
+  scalaVersion := "2.12.1",
+  organization := "tlang",
+  version := "1.0",
+  javacOptions ++= Seq("-encoding", "UTF-8"),
+  // Common dependencies used by all modules
+  libraryDependencies ++= Seq(
+    "com.lihaoyi" %% "sourcecode" % "0.1.4",
+    "com.github.pathikrit" %% "better-files" % "3.1.0"
+  )
+)
+
+javaOptions in Universal ++= Seq(
+  "-Dfile.encoding=UTF-8"
+)
+
+lazy val metaMacroSettings = Seq(
   // New-style macro annotations are under active development.  As a result, in
   // this build we'll be referring to snapshot versions of both scala.meta and
   // macro paradise.
@@ -29,8 +41,23 @@ lazy val metaMacroSettings: Seq[Def.Setting[_]] = Seq(
   sources in(Compile, doc) := Nil // macroparadise doesn't work with scaladoc yet.
 )
 
-lazy val macros = project
+lazy val testSettings = Seq(
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+    "org.mockito" % "mockito-core" % "2.9.0" % Test,
+    "org.markushauck" %% "mockitoscala" % "0.3.0" % Test
+  ),
+  parallelExecution in Test := true,
+  logBuffered in Test := false
+)
+
+// ------------------------------------------------------------------------------------
+// --- Modules
+// ------------------------------------------------------------------------------------
+
+lazy val macros = (project in file(s"$modulesDirectory/macros"))
   .settings(
+    name := "macros",
     commonSettings,
     metaMacroSettings,
     libraryDependencies ++= Seq(
@@ -41,30 +68,67 @@ lazy val macros = project
   )
 
 
-lazy val core = project
+lazy val utils = (project in file(s"$modulesDirectory/utils"))
   .settings(
+    name := "utils",
     commonSettings,
     metaMacroSettings,
-    name := "T-Compiler",
+    testSettings,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.0.1" % Test,
-      "org.mockito" % "mockito-core" % "2.9.0" % Test,
-      "org.markushauck" %% "mockitoscala" % "0.3.0" % Test,
-
-      "com.google.code.findbugs" % "bcel-findbugs" % "6.0",
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.ow2.asm" % "asm-all" % "5.1",
-      "org.graphstream" % "gs-core" % "1.1.1",
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-      "com.googlecode.lanterna" % "lanterna" % "3.0.0",
-      "org.scala-lang" % "jline" % "2.9.0-1",
-      "org.scalaz" %% "scalaz-core" % "7.2.9",
-      "com.typesafe.akka" %% "akka-actor" % "2.4.17",
-      "com.lihaoyi" %% "sourcecode" % "0.1.4",
-      "com.github.pathikrit" %% "better-files" % "3.1.0"
-    ),
-    parallelExecution in Test := true,
-    logBuffered in Test := false
+      "org.scala-lang" % "jline" % "2.9.0-1", // Used to measure width of terminal
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4" // Used in simple parsers for stack traces etc.
+    )
   )
   .dependsOn(macros)
 
+
+lazy val cafebabe = (project in file(s"$modulesDirectory/cafebabe"))
+  .settings(
+    name := "cafebabe",
+    commonSettings
+  )
+  .dependsOn(utils)
+
+
+lazy val compiler = (project in file(s"$modulesDirectory/compiler"))
+  .settings(
+    name := "compiler",
+    mainClass in stage := Some("tlang.compiler.Main"),
+    commonSettings,
+    metaMacroSettings,
+    testSettings,
+    libraryDependencies ++= Seq(
+      "com.google.code.findbugs" % "bcel-findbugs" % "6.0", // Library used for parsing class files
+      "org.ow2.asm" % "asm-all" % "5.1" // Used to generate stack map frames
+    )
+  )
+  .dependsOn(macros, utils, cafebabe)
+
+lazy val repl = (project in file(s"$modulesDirectory/repl"))
+  .settings(
+    name := "repl",
+    commonSettings,
+    metaMacroSettings,
+    testSettings,
+    libraryDependencies ++= Seq(
+      "com.googlecode.lanterna" % "lanterna" % "3.0.0",
+      "org.scalaz" %% "scalaz-core" % "7.2.9", // Uses cord data structure to represent input
+      "com.typesafe.akka" %% "akka-actor" % "2.4.17"
+    )
+  )
+  .dependsOn(macros, utils, compiler)
+
+lazy val root = (project in file("."))
+  .aggregate(macros, utils, cafebabe, compiler, repl)
+  .settings(
+    name := "core",
+    mainClass in Compile := Some("tlang.compiler.Main"),
+    commonSettings,
+    metaMacroSettings,
+    testSettings,
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "sourcecode" % "0.1.4",
+      "com.github.pathikrit" %% "better-files" % "3.1.0"
+    )
+  )
+  .dependsOn(macros, utils, cafebabe, compiler, repl)
