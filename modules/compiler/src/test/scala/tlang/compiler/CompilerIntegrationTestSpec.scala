@@ -76,7 +76,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     testPath(getTestPath(path))
   }
 
-  def shouldBeIncludedInTestName(directoryName: String) = directoryName(0).isLower
+  private def shouldBeIncludedInTestName(directoryName: String): Boolean = directoryName(0).isLower
 
   def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
     val numbers = (1 to Math.max(result.length, solution.length)).map { i =>

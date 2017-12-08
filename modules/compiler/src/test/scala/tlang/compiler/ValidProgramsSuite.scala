@@ -63,7 +63,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
       .toList
 
   private def assertCorrect(results: List[String], solutions: List[(Int, String)]): Unit = {
-    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, results, solutions.map(_._2))
+    def extraInfo(i: Int) = NL + formatTestFailedMessage(i + 1, results, solutions.map(_._2))
 
     results.zip(solutions).zipWithIndex.foreach {
       case ((res, (line, sol)), i) =>

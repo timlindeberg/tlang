@@ -192,19 +192,24 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         compileBranch(conditionExpr, Label(body), Label(after))
         ch << Label(after)
       case PrintStatTree(expr)                       =>
-        ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
+        ch << GetStatic(JavaSystem, "out", s"L$JavaPrintStream;")
         compileExpr(expr)
 
-        def getArgType(tpe: Type): String = tpe match {
+        val arg = expr.getType match {
           case NonPrimitive(_) => s"L$JavaObject;"
           case Primitive(p)    => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
-          case TArray(t)       =>
-            val arrTpe = getArgType(t)
-            ch << InvokeStatic(JavaArrays, "toString", s"([$arrTpe)L$JavaString;")
+          case arr@TArray(t)   =>
+            // Use deepToString to render multidimensional arrays
+            val method = if (arr.dimension > 1) "deepToString" else "toString"
+            val arrTpe = t match {
+              case NonPrimitive(_) | TArray(_) => s"L$JavaObject;"
+              case Primitive(p)                => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
+            }
+
+            ch << InvokeStatic(JavaArrays, method, s"([$arrTpe)L$JavaString;")
             s"L$JavaObject;"
         }
 
-        val arg = getArgType(expr.getType)
         val funcName = statement match {
           case _: Print   => "print"
           case _: Println => "println"
