@@ -1,21 +1,23 @@
 package tlang.utils
 
-import java.lang.reflect.Method
+import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.{URL, URLClassLoader}
 
 import better.files.File
 
 import scala.concurrent.duration.Duration
 
+case class ExecutionResult(output: String, exception: Option[Throwable] = None)
+
 case class ProgramExecutor(classPaths: Set[String], timeout: Duration = Duration(0, "sec")) {
 
   private val URLs = classPaths.map(classPath => new URL(s"file:$classPath/")).toArray
 
-  def apply(classFile: File): String = apply(classFile.name.replaceAll("\\..*", ""))
+  def apply(classFile: File): ExecutionResult = apply(classFile.name.replaceAll("\\..*", ""))
 
-  def apply(className: String): String = execute(className)
+  def apply(className: String): ExecutionResult = execute(className)
 
-  private def execute(className: String): String = {
+  private def execute(className: String): ExecutionResult = {
     val method = getMainMethod(className)
 
     // In order to run tests in parallel we use a custom PrintStream to redirect threads started
@@ -23,7 +25,15 @@ case class ProgramExecutor(classPaths: Set[String], timeout: Duration = Duration
     // will be redirected to the original Sysout (at the time of redirection). It uses the a thread
     // local byte stream to redirect output to which enables multiple threads to use different output
     // streams. At the end of the block the threads output is redirected back to the original system out.
-    CapturedOutput { method.invoke(null, Array[String]()) }
+    var exception: Option[Throwable] = None
+
+    val output = CapturedOutput {
+      try method.invoke(null, Array[String]())
+      catch {
+        case e: InvocationTargetException => exception = Some(e.getCause)
+      }
+    }
+    ExecutionResult(output, exception)
   }
 
 

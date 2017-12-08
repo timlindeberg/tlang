@@ -3,7 +3,7 @@ package tlang.compiler
 import java.lang.reflect.InvocationTargetException
 
 import better.files.File
-import cafebabe.CodegenerationStackTrace
+import cafebabe.{CodeFreezingException, CodegenerationStackTrace}
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.argument._
@@ -150,12 +150,27 @@ object Main extends Logging {
     val stackTrace = formatter.highlightStackTrace(error)
     error"Execution error occurred: $stackTrace"
 
-    formatter
+    val grid = formatter
       .grid
-      .header(s"${ Bold }Compilation ${ Red("failed") }${ Bold(" with an unknown error") }")
+      .header(s"${ Bold }Compilation ${ Red("failed") }${ Bold(" with an unexpected error") }")
       .row()
       .content(stackTrace)
-      .print()
+
+    // Handling of special errors
+    error match {
+      case CodeFreezingException(_, Some(stackTrace)) =>
+        grid
+          .row(alignment = Center)
+          .content(Bold(Blue("Stack trace at time of code freezing")))
+          .emptyLine()
+          .content(stackTrace.header)
+          .row(5)
+          .columnHeaders("Line", "PC", "Height", "ByteCode", "Info")
+          .contents(stackTrace.content)
+      case _ =>
+    }
+
+    grid.print()
 
     if (options(VerboseFlag))
       ctx.printExecutionTimes(success = false)
@@ -332,18 +347,18 @@ object Main extends Logging {
     val formatter = ctx.formatter
     import formatter.formatting._
 
-    val mainMethods = cus.flatMap(_.classes.flatMap(_.methods.filter(_.isMain)))
-    if (mainMethods.isEmpty) {
+    val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
+    if (cusWithMainMethods.isEmpty) {
       println("--exec failed, none of the given files contains a main method.")
       return
     }
 
     val grid = ctx.formatter
       .grid
-      .header(Bold(if (mainMethods.lengthCompare(1) > 0) "Executing programs" else "Executing program"))
+      .header(Bold(if (cusWithMainMethods.lengthCompare(1) > 0) "Executing programs" else "Executing program"))
 
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
-    cus.foreach { executeProgram(_, formatter, programExecutor, grid) }
+    cusWithMainMethods.foreach { executeProgram(_, formatter, programExecutor, grid) }
     grid.print()
   }
 
@@ -351,23 +366,21 @@ object Main extends Logging {
     // Guaranteed to have a file source
     val file = cu.source.get.asInstanceOf[FileSource].file
 
-    val output = try {
-      programExecutor(file)
-    } catch {
-      case exception: InvocationTargetException =>
-        addExceptionOfProgram(grid, formatter, file.name, exception.getCause)
-        return
-    }
-    addOutputOfProgram(grid, formatter, file, output)
+    val result = programExecutor(file)
+    addOutputOfProgram(grid, formatter, file, result.output)
+    result.exception ifDefined { e => addExceptionOfProgram(grid, formatter, file.name, e) }
   }
 
-  private def addOutputOfProgram(grid: Grid, formatter: Formatter, file: File, output: String) = {
+  private def addOutputOfProgram(grid: Grid, formatter: Formatter, file: File, output: String): Unit = {
     import formatter.formatting._
-    val lines = formatter.syntaxHighlight(output)
-      .split("\r?\n")
+    if(output.isEmpty)
+      return
+
+    val highlighted = formatter.syntaxHighlight(output.trim)
+    val lines = formatter
+      .splitWithColors(highlighted)
       .zipWithIndex
       .map { case (line, i) => (Magenta(i + 1), line) }
-
     grid
       .row(alignment = Center)
       .content(formatter.fileName(file))
@@ -375,14 +388,24 @@ object Main extends Logging {
       .contents(lines)
   }
 
-  private def addExceptionOfProgram(grid: Grid, formatter: Formatter, header: String, exception: Throwable) = {
+  private def addExceptionOfProgram(grid: Grid, formatter: Formatter, fileName: String, exception: Throwable) = {
     import formatter.formatting._
     val errorColor = Red + Bold
+    val stackTrace = removeCompilerPartOfStacktrace(fileName, formatter.highlightStackTrace(exception))
     grid
       .row(alignment = Center)
-      .content(errorColor(header))
+      .content(errorColor(fileName))
       .row()
-      .content(formatter.highlightStackTrace(exception))
+      .content(stackTrace)
+  }
+
+  private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
+    val stackTraceLines = stackTrace.lines.toList
+    val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
+    if(lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
+      stackTrace
+    else
+      stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
   private def error(message: String) = {

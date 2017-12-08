@@ -25,7 +25,8 @@ object Symbols {
 
     def getSymbol: S = _sym match {
       case Some(s) => s
-      case None    => sys.error("Accessing undefined symbol.")
+      case None    =>
+        sys.error("Accessing undefined symbol.")
     }
 
   }

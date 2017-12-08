@@ -245,7 +245,6 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
 
     val resourcesFolder = TestConstants.Resources
-    println("resources: " + resourcesFolder)
     test("Valid files") {
       val options = createOptions(
         s"$resourcesFolder/positions/LexerPositions.t $resourcesFolder/errortests/flowing/DeadCode.t"

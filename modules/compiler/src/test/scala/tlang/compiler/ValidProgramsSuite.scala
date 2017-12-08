@@ -5,6 +5,7 @@ import org.scalatest.ParallelTestExecution
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
+import tlang.utils.Extensions._
 
 import scala.concurrent.duration.Duration
 
@@ -16,9 +17,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
   val TimeOut        = Duration(5, "sec")
   val ValidResources = s"$Resources/validtests"
 
-
-  testCorrectOutputOfPrograms(s"$ValidResources/Programs")
-  testCorrectOutputOfPrograms(s"$ValidResources/STD Lib")
+  testCorrectOutputOfPrograms(s"$ValidResources")
 
   def testCorrectOutputOfPrograms(path: String): Unit = testFiles(path, testValidProgram)
 
@@ -47,7 +46,8 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
       printExecutionTimes(file, ctx)
 
     val res = programExecutor(file)
-    val resLines = lines(res)
+    res.exception.ifDefined { e => fail(s"Program execution failed with exception: ${e.stackTrace}") }
+    val resLines = lines(res.output)
     val sol = parseSolutions(file)
     assertCorrect(resLines, sol)
   }

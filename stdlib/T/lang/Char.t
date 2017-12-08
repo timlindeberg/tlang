@@ -37,7 +37,7 @@ class Char =
 	Def *(a: Char,   b: Int)   : Int    = ;
 	Def *(a: Int,    b: Char)  : Int    = ;
 
-	Def /(a: Char,   b: Char)  : Int	= ;
+	Def /(a: Char,   b: Char)  : Int    = ;
 	Def /(a: Char,   b: Double): Double = ;
 	Def /(a: Double, b: Char)  : Double = ;
 	Def /(a: Char,   b: Float) : Float  = ;

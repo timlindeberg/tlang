@@ -92,6 +92,7 @@ case class Grid(var formatter: Formatter) {
     this.content()
   }
 
+  def emptyLine(): Grid = content()
   def content(): Grid = allContent(List.fill(currentRow.size)(List("")))
 
   def content(t: Product): Grid = addTuple(t)

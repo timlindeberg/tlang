@@ -1,5 +1,7 @@
 package tlang.repl.evaluation
 
+import java.lang.reflect.InvocationTargetException
+
 import better.files.File
 import tlang.compiler.Context
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
@@ -96,9 +98,10 @@ case class Evaluator(
 
     debug"Executing program $classFile"
     val res = programExecutor(classFile)
+    res.exception.ifDefined { e => throw new InvocationTargetException(e) }
     state.addStatementsToHistory()
 
-    getOutput(res).lines
+    getOutput(res.output).lines
   }
 
   private def resultMessage(definitionMessages: List[String], executionMessages: Iterator[String]): String = {

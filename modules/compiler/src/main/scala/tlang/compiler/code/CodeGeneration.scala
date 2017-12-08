@@ -26,7 +26,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
     val classes = cus.flatMap(_.classes)
-    ctx.executor.flatMap(classes) { generateClassFile(_, ctx) }
+    val results = ctx.executor.map(classes) { generateClassFile(_, ctx) }
+    ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
+      files.foreach(generateStackMapFrames)
+      stackTraces
+    }
   }
 
   override def description(formatting: Formatting): String =
@@ -35,8 +39,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   override def printDebugOutput(output: List[CodegenerationStackTrace], debugOutputFormatter: DebugOutputFormatter): Unit =
     debugOutputFormatter.printStackTraces(phaseName, output)
 
+
+  case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): List[CodegenerationStackTrace] = {
+  private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): Result = {
     info"Generating .class file for ${ classDecl.name }"
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
@@ -53,13 +59,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
     val className = classDecl.getSymbol.JVMName
-    ctx.outDirs
-      .map(classFilePath(_, className))
-      .foreach { file =>
-        classFile.writeToFile(file)
-        generateStackMapFrames(file)
-      }
-    stackTraces
+    val files = ctx.outDirs.map(classFilePath(_, className))
+    files.foreach { file => classFile.writeToFile(file) }
+    Result(files, stackTraces)
   }
 
   private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[CodegenerationStackTrace] = {
@@ -237,8 +239,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         classFile.addConstructor("", "new()")
     }
 
-    initializeNonStaticFields(classDecl, mh.codeHandler)
     addSuperCall(mh, classDecl)
+    initializeNonStaticFields(classDecl, mh.codeHandler)
     mh
   }
 

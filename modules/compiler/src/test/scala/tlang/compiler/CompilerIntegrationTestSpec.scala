@@ -60,7 +60,11 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
   def testFiles(path: String, executeTest: File => Unit): Unit = {
     def testPath(path: TestPath): Unit = {
       path match {
-        case TestDirectory(name, children) => name - { children foreach testPath }
+        case TestDirectory(name, children) =>
+          if(shouldBeIncludedInTestName(name))
+            children foreach testPath
+          else
+            name - { children foreach testPath }
         case TestFile(file)                =>
           val testName = file.nameWithoutExtension
           val test = testName taggedAs CompilerIntegrationTestTag
@@ -72,6 +76,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     testPath(getTestPath(path))
   }
 
+  def shouldBeIncludedInTestName(directoryName: String) = directoryName(0).isLower
 
   def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
     val numbers = (1 to Math.max(result.length, solution.length)).map { i =>

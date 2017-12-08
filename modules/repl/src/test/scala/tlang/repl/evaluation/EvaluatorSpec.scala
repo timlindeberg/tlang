@@ -5,7 +5,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.testutils.TreeTesting
 import tlang.testutils.UnitSpec
-import tlang.utils.{ProgramExecutor, StringSource}
+import tlang.utils.{ExecutionResult, ProgramExecutor, StringSource}
 
 class EvaluatorSpec extends UnitSpec with TreeTesting {
 
@@ -144,10 +144,12 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     val classFile = mock[File]
     val programExecutor = mock[ProgramExecutor]
 
-    programExecutor(classFile) returns
+    programExecutor(classFile) returns ExecutionResult(
       s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
           |${ Evaluator.ReplOutputMarker }
           |"""".stripMargin
+    )
+
 
 
     val evaluator = Evaluator(

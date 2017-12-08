@@ -13,8 +13,9 @@ object CapturedOutput {
     redirect()
     val byteOutput = new ByteArrayOutputStream()
     threadLocalByteStream.set(Some(byteOutput))
-    block
-    threadLocalByteStream.set(None)
+    try block
+    finally threadLocalByteStream.set(None)
+
     byteOutput.toString
   }
 

@@ -293,10 +293,5 @@ class CodeHandler private[cafebabe](
     }
   }
 
-  def error(message: String): Unit = {
-    println(message)
-    println(stackTrace(DefaultFormatting))
-    throw CodeFreezingException(message)
-
-  }
+  def error(message: String): Unit = throw CodeFreezingException(message, Some(stackTrace(DefaultFormatting)))
 }

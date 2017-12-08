@@ -23,6 +23,7 @@ object CodeGenerator {
   val ConstructorName = "<init>"
 
   val JavaLang = "java/lang/"
+  val JavaUtil = "java/util/"
   val JavaIO   = "java/io/"
 
   /* Java classes used by T compiler */
@@ -37,6 +38,7 @@ object CodeGenerator {
   val JavaDouble          : String = JavaLang + "Double"
   val JavaLong            : String = JavaLang + "Long"
   val JavaBool            : String = JavaLang + "Boolean"
+  val JavaArrays          : String = JavaUtil + "Arrays"
   val JavaRuntimeException: String = JavaLang + "RuntimeException"
 
   object Primitive {
@@ -192,11 +194,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case PrintStatTree(expr)                       =>
         ch << GetStatic(JavaSystem, "out", "L" + JavaPrintStream + ";")
         compileExpr(expr)
-        val arg = expr.getType match {
+
+        def getArgType(tpe: Type): String = tpe match {
           case NonPrimitive(_) => s"L$JavaObject;"
           case Primitive(p)    => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
-          case _               => ???
+          case TArray(t)       =>
+            val arrTpe = getArgType(t)
+            ch << InvokeStatic(JavaArrays, "toString", s"([$arrTpe)L$JavaString;")
+            s"L$JavaObject;"
         }
+
+        val arg = getArgType(expr.getType)
         val funcName = statement match {
           case _: Print   => "print"
           case _: Println => "println"
@@ -512,7 +520,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     ch << Label(after)
   }
 
-  private def compileArguments(methodSymbol: MethodSymbol, args: List[ExprTree]) =
+  private def compileArguments(methodSymbol: MethodSymbol, args: List[ExprTree]): Unit =
     args.zip(methodSymbol.argTypes).foreach {
       case (givenExpr, expected) => compileAndConvert(givenExpr, expected)
     }
@@ -546,7 +554,16 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
             codes.box(ch)
           case (Primitive(found), Primitive(desired)) if found.isNullable && !desired.isNullable =>
             // found nullable primitive, need non nullable primitive, unbox
-            unbox(desired)
+            unbox(found)
+            // The unboxed type might still be different from the desired type
+            // for instance if twe have Found: Float? and desired Double
+            val codes = found.getNonNullable.codes
+            desired match {
+              case Double => codes.toDouble(ch)
+              case Float  => codes.toFloat(ch)
+              case Long   => codes.toLong(ch)
+              case _      => codes.toInt(ch)
+            }
           case (Primitive(found), Primitive(desired)) if !found.isNullable && desired.isNullable =>
             // found non nullable primitive, need nullable primitive, box
             codes.box(ch)
@@ -563,12 +580,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   private def unbox(to: Type) = {
-    val bcName = to.byteCodeName
+    val bcName = to.getNonNullable.byteCodeName
     val className = to.TRef
     ch << CheckCast(className) << InvokeVirtual(className, s"Value", s"()$bcName")
   }
 
-  private def compileArrayLiteral(arrLit: ArrayLit, desiredType: Option[Type] = None) = {
+  private def compileArrayLiteral(arrLit: ArrayLit, desiredType: Option[Type] = None): Unit = {
     val expressions = arrLit.value
     val arrayType = arrLit.getType
     val newType = desiredType match {
@@ -641,9 +658,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   private def store(variable: VariableSymbol,
     putValue: () => Unit,
     duplicate: Boolean,
-    putObject: () => Unit = () => {
-      ch << ArgLoad(0)
-    }): CodeHandler = {
+    putObject: () => Unit = () => ch << ArgLoad(0)
+  ): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
     val codes = tpe.codes
@@ -705,6 +721,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     // a = 5 + a
     // b = b - 5
     // where the operands are of type int
+    // Such expressions can be optimized to use the IINC bytecode
     def unapply(e: ExprTree): Option[(VariableSymbol, Int)] = e match {
       case Assign(to, expr) => to match {
         case v1: VariableID =>
