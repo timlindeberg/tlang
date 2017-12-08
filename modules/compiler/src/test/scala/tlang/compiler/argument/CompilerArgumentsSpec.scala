@@ -95,14 +95,6 @@ class CompilerArgumentsSpec extends UnitSpec {
       val options = createOptions("--directory src,modules -d stdlib")
       options(DirectoryFlag) shouldBe Set(File("src"), File("modules"), File("stdlib"))
     }
-
-    test("Invalid directory") {
-      intercept[IllegalArgumentException] { createOptions("--directory /INVALIDPATH") }
-        .getMessage should include("/INVALIDPATH")
-
-      intercept[IllegalArgumentException] { createOptions("-d 12345") }
-        .getMessage should include("12345")
-    }
   }
 
 

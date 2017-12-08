@@ -1,10 +1,9 @@
 package tlang.utils
 
-import java.nio.file.Path
-
 import better.files.File
 import tlang.Constants
 import tlang.formatting.Formatting
+import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
@@ -19,7 +18,7 @@ object Source {
 
   private val TextCache: mutable.Map[File, String] = mutable.Map()
   def getText(file: File): String = TextCache.getOrElseUpdate(file, file.contentAsString)
-
+  def clearCache(file: File): Unit = TextCache.remove(file)
 }
 
 object FileSource {
@@ -35,16 +34,7 @@ case class FileSource(file: File) extends Source {
     import formatting._
     val style = Bold + NumColor
     val fileName = style(file.name)
-    relativize(file.parent.path) + file.fileSystem.getSeparator + fileName
-  }
-
-
-  private def relativize(path: Path): Path = {
-    val absolute = path.toAbsolutePath
-    if (absolute.startsWith(Constants.Pwd))
-      Constants.Pwd.relativize(absolute)
-    else
-      absolute
+    file.parent.path.relativePWD + file.fileSystem.getSeparator + fileName
   }
 }
 

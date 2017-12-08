@@ -113,7 +113,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
         if (!expressions.hasNext && nextString.exists(_.isEmpty))
           last = expression
         else
-          sb ++= highlight(expression)
+          sb ++= formatValue(expression)
       }
     }
     val msg = sb.toString()
@@ -215,7 +215,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
     case other        =>
       val lines = other.toString.split("\r?\n", -1)
       if (lines.length == 1)
-        lines.map(highlight(_))
+        Seq(formatValue(other))
       else
         lines.map(formatter.syntaxHighlight(_))
   }
@@ -275,5 +275,11 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
     enc.map(_.charAt(0)).mkString(".") + filePos
   }
 
-  private def highlight(s: Any) = if (useColor) HighlightColor(s) else s"'$s'"
+  private def formatValue(value: Any): String = {
+    val s = value match {
+      case f: File => f.path.relativePWD
+      case _       => value.toString
+    }
+    if (useColor) HighlightColor(s) else s"'$s'"
+  }
 }

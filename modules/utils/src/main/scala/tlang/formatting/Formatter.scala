@@ -1,6 +1,8 @@
 package tlang.formatting
 
 
+import java.nio.file.Path
+
 import better.files.File
 import tlang.Constants
 import tlang.formatting.grid.Grid
@@ -63,6 +65,19 @@ case class Formatter(
   def fileName(name: String): String = {
     val color = Bold + Magenta
     color(name + Constants.FileEnding)
+  }
+
+  def relativePath(file: File): String = {
+    val fileName = file.name
+    relativize(file.parent.path) + file.fileSystem.getSeparator + fileName
+  }
+
+  private def relativize(path: Path): Path = {
+    val absolute = path.toAbsolutePath
+    if (absolute.startsWith(Constants.Pwd))
+      Constants.Pwd.relativize(absolute)
+    else
+      absolute
   }
 
   def list(items: String*): String = list(items)

@@ -94,8 +94,6 @@ object Trees {
 
   case class CompilationUnit(pack: Package, var classes: List[ClassDeclTree], imports: Imports) extends Tree {
 
-    def packageName: String = pack.address.mkString("::")
-
     override def children: List[Tree] = imports.imports ::: classes
 
   }

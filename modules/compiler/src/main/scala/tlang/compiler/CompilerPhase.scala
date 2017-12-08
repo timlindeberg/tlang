@@ -42,8 +42,7 @@ abstract class CompilerPhase[F, T] extends Logging {
 
     val (output, time) = measureTime { run(ctx)(v) }
     if (Main.CompilerPhases.contains(this)) {
-      if (!ctx.executionTimes.contains(phaseName))
-        ctx.executionTimes += phaseName -> time
+      ctx.executionTimes += phaseName -> time
 
       if (phaseName in ctx.printCodePhase){
         printDebugOutput(output, ctx.debugOutputFormatter)

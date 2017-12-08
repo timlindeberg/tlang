@@ -1,9 +1,9 @@
 package tlang.compiler.argument
 
 import better.files.File
-import tlang.formatting.{ErrorStringContext, Formatter}
+import tlang.formatting.Formatter
 import tlang.options.ArgumentFlag
-import tlang.utils.Extensions._
+
 
 case object DirectoryFlag extends ArgumentFlag[Set[File]] {
   override val name           = "directory"
@@ -12,13 +12,6 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
 
   override def description(formatter: Formatter): String = {
     "Specify a path where generated classes are placed."
-  }
-
-  override def verify(outDir: String)(implicit errorContext: ErrorStringContext): Unit = {
-    import errorContext.ErrorStringContext
-
-    if (!outDir.isValidPath)
-      error(err"Invalid output directory: $outDir.")
   }
 
   override def parseValue(args: Set[String]): Set[File] = {

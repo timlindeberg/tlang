@@ -180,6 +180,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     else
       (Some(parents.head.JVMName), parents.drop(1))
 
+
     val classFile = new ClassFile(className, parent)
     traits.foreach(t => classFile.addInterface(t.JVMName))
 

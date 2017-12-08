@@ -1,8 +1,6 @@
 package tlang.compiler
 
-import java.lang.reflect.InvocationTargetException
-
-import better.files.File
+import better.files.{File, FileMonitor}
 import cafebabe.{CodeFreezingException, CodegenerationStackTrace}
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
@@ -15,15 +13,16 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.{CompilationException, CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.modification.Templating
 import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.Width.Percentage
 import tlang.formatting.grid.{Column, Grid, Width}
 import tlang.formatting.textformatters._
+import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils._
+
 
 object Main extends Logging {
 
@@ -63,8 +62,12 @@ object Main extends Logging {
     ThreadsFlag,
     VerboseFlag,
     VersionFlag,
-    WarningIsErrorFlag
+    WarningIsErrorFlag,
+    WatchFlag
   )
+
+  case class ExitException(code: Int) extends Throwable
+  def tryExit(code: Int) = throw ExitException(code)
 
   def main(args: Array[String]) {
 
@@ -91,21 +94,55 @@ object Main extends Logging {
     if (filesToCompile.isEmpty)
       ErrorNoFilesGiven()
 
-    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map(f => '"' + f.toString + '"').mkString(NL) }"
+    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map(_.path.relativePWD).mkString(NL) }"
 
     if (options(VerboseFlag))
       printFilesToCompile(formatter, filesToCompile)
 
     val ctx = createContext(options, formatter)
 
-    val CUs = runCompiler(filesToCompile, options, ctx)
+    compileAndExecute(filesToCompile, options, ctx)
 
-    if (options(VerboseFlag))
-      ctx.printExecutionTimes(success = true)
-
-    if (options(ExecFlag))
-      executePrograms(ctx, CUs)
+    if(options(WatchFlag))
+      startWatchers(filesToCompile, options, ctx)
   }
+
+  private def startWatchers(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
+    val formatter = ctx.formatter
+    import formatter.formatting._
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    info"Starting file watchers"
+
+    formatter
+      .grid
+      .header(s"Watching for ${Green("changes")}...")
+      .print()
+
+    case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
+      override def onModify(file: File, count: Int): Unit = {
+        info"$file changed, recompiling"
+        formatter
+          .grid
+          .header(s"Found changes to file ${Magenta(file.path.relativePWD)}, recompiling...")
+          .print()
+
+        Source.clearCache(file)
+        compileAndExecute(Set(file), options, ctx)
+      }
+    }
+
+    filesToCompile
+      .map { file =>
+        info"Watching file $file"
+        CompilerFileMonitor(file)
+      }
+      .foreach { _.start() }
+
+    // Block indefinitely
+    Thread.currentThread.join()
+  }
+
 
   private def parseOptions(args: Array[String]): Options = {
     val errorContext = ErrorStringContext()
@@ -118,6 +155,20 @@ object Main extends Logging {
     }
   }
 
+  private def compileAndExecute(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
+    try {
+      val CUs = runCompiler(filesToCompile, options, ctx)
+
+      if (options(VerboseFlag))
+        ctx.printExecutionTimes(success = true)
+
+      if (options(ExecFlag))
+        executePrograms(ctx, CUs)
+    } catch {
+      case ExitException(code) => if (!options(WatchFlag)) sys.exit(code)
+    }
+  }
+
   private def runCompiler(filesToCompile: Set[File], options: Options, ctx: Context): Seq[CompilationUnit] = {
     try {
       val CUs = runFrontend(filesToCompile, options, ctx)
@@ -125,7 +176,8 @@ object Main extends Logging {
       ctx.reporter.printWarnings()
       CUs
     } catch {
-      case e: Throwable => unknownError(ctx, options, e)
+      case e: ExitException => throw e
+      case e: Throwable     => unknownError(ctx, options, e)
     }
   }
 
@@ -138,7 +190,7 @@ object Main extends Logging {
         e.messages.print()
         if (options(VerboseFlag))
           ctx.printExecutionTimes(success = false)
-        sys.exit(1)
+        tryExit(1)
     }
   }
 
@@ -167,7 +219,7 @@ object Main extends Logging {
           .row(5)
           .columnHeaders("Line", "PC", "Height", "ByteCode", "Info")
           .contents(stackTrace.content)
-      case _ =>
+      case _                                          =>
     }
 
     grid.print()
@@ -175,7 +227,7 @@ object Main extends Logging {
     if (options(VerboseFlag))
       ctx.printExecutionTimes(success = false)
 
-    sys.exit(1)
+    tryExit(1)
   }
 
   private def createContext(options: Options, formatter: Formatter): Context = {
@@ -212,7 +264,7 @@ object Main extends Logging {
 
     val grid = formatter.grid.header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
-    val fileNames = files.toList.map(formatter.fileName)
+    val fileNames = files.toList.map(formatter.fileName).sorted
     formatting.lineWidth match {
       case x if x in (0 to 59)  =>
         grid.row().allContent(List(fileNames))
@@ -373,7 +425,7 @@ object Main extends Logging {
 
   private def addOutputOfProgram(grid: Grid, formatter: Formatter, file: File, output: String): Unit = {
     import formatter.formatting._
-    if(output.isEmpty)
+    if (output.isEmpty)
       return
 
     val highlighted = formatter.syntaxHighlight(output.trim)
@@ -402,7 +454,7 @@ object Main extends Logging {
   private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
     val stackTraceLines = stackTrace.lines.toList
     val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
-    if(lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
+    if (lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
       stackTrace
     else
       stackTraceLines.take(lastRow + 1).mkString(NL)

@@ -1,9 +1,9 @@
 package tlang.utils
 
 import java.io.{File, PrintWriter, StringWriter}
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
-import better.files.{File => BFile}
+import tlang.Constants
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
@@ -28,8 +28,6 @@ object Extensions {
 
   implicit val EscapeCharsAll: Map[Char, String] =
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
-
-  def debug(s: String): Unit = BFile("output.txt").write(s + NL)
 
   def withTimeout[T](duration: Duration)(block: => T): T = {
     if (duration.toNanos == 0)
@@ -94,6 +92,16 @@ object Extensions {
       val pw = new PrintWriter(sw)
       t.printStackTrace(pw)
       sw.toString
+    }
+  }
+
+  implicit class PathExtensions(path: Path) {
+    def relativePWD: Path = {
+      val absolute = path.toAbsolutePath
+      if (absolute.startsWith(Constants.Pwd))
+        Constants.Pwd.relativize(absolute)
+      else
+        absolute
     }
   }
 

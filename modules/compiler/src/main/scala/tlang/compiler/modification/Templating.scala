@@ -122,10 +122,9 @@ case class TemplateModifier(ctx: Context) extends Logging {
     }
 
     private def generateClass(typeId: ClassID): Unit = {
-      val name = typeId.templatedClassName
-      val shortName = name.split("::").last
+      val shortName = typeId.templatedClassName.split("::").last
 
-      if (generatedClassNames(shortName) || classSymbolLocator.classExists(name))
+      if (generatedClassNames(shortName))
         return
 
       debug"Generating template for $shortName"
