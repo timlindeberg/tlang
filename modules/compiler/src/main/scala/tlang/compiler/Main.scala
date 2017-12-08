@@ -403,7 +403,7 @@ object Main extends Logging {
 
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     if (cusWithMainMethods.isEmpty) {
-      println("--exec failed, none of the given files contains a main method.")
+      formatter.grid.header(s"Execution ${Red("failed")}, none of the given files contains a main method.").print()
       return
     }
 

@@ -1472,4 +1472,4 @@ for(val program in programs)
 
 for(val program in programs)
 	if(program.parent == null)
-		println("Top most parent: " + program.name) // res: Top most parent: Program(ykpsek, 84)
+		println("Top most parent: " + program.name) // res: Top most parent: ykpsek

@@ -43,6 +43,6 @@ class Day6 =
 			redistribute()
 			hash = Arrays.hashCode(memoryBanks)
 			count++
-		println("Count: " + count) // res: Count: 4074
+		println("Count: " + count) // res: Count: 2793
 
 new Day6(INPUT).Run()

@@ -1,3 +1,4 @@
+//ignore
 import java::util::Arrays
 
 val input = `rmhcw (26)
