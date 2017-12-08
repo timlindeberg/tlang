@@ -128,6 +128,8 @@ object Main extends Logging {
           .print()
 
         Source.clearCache(file)
+        ctx.reporter.clear()
+
         compileAndExecute(Set(file), options, ctx)
       }
     }

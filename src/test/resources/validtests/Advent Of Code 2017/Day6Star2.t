@@ -26,9 +26,19 @@ class Day6 =
 			memoryBanks[(maxIndex++) % N]++
 
 	Def Run() =
-		var count = 0
 		var hash = Arrays.hashCode(memoryBanks)
 		while(!seenCurrent(hash))
+			seen.Add(hash, hash)
+			redistribute()
+			hash = Arrays.hashCode(memoryBanks)
+
+		val seenHash = hash
+		redistribute()
+		hash = Arrays.hashCode(memoryBanks)
+
+		var count = 1
+
+		while(hash != seenHash)
 			seen.Add(hash, hash)
 			redistribute()
 			hash = Arrays.hashCode(memoryBanks)
