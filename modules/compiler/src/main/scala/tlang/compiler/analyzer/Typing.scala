@@ -362,7 +362,7 @@ case class TypeChecker(
     // fields and methods
     val tpe = app match {
       case MethodCall(meth, args)        =>
-        objType match {
+        val tpe = objType match {
           case TObject(classSymbol) =>
             classSymbol.lookupMethod(meth.name, argTypes.get, imports) map { methSymbol =>
               checkPrivacy(methSymbol, classSymbol, app)
@@ -382,6 +382,8 @@ case class TypeChecker(
             Int
           case _                    => TError
         }
+        app.setType(tpe)
+        tpe
       case fieldId@VariableID(fieldName) =>
         objType match {
           case TObject(classSymbol) =>
@@ -399,15 +401,13 @@ case class TypeChecker(
     }
 
 
-    val t = acc match {
+    acc match {
       case _: SafeAccess   =>
         if (!objType.isNullable)
           report(SafeAccessOnNonNullable(objType, acc))
         tpe.getNullable
       case _: NormalAccess => tpe
     }
-    app.setType(t)
-    t
   }
 
 

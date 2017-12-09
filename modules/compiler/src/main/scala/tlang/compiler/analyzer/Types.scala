@@ -14,13 +14,9 @@ object Types {
 
     protected var _tpe: Type = TUntyped
 
+    def setType(tpe: Typed): self.type = setType(tpe.getType)
     def setType(tpe: Type): self.type = {
       _tpe = tpe
-      this
-    }
-
-    def setType(tpe: Typed): self.type = {
-      _tpe = tpe.getType
       this
     }
 

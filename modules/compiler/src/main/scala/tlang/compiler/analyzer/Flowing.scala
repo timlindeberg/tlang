@@ -228,7 +228,7 @@ case class FlowAnalyser(
 
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
-        case acc@Access(obj, _)                 =>
+        case acc@NormalAccess(obj, _)                 =>
           traverseChildren(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
@@ -249,20 +249,32 @@ case class FlowAnalyser(
             case _: EqualsOperatorTree | _: And | _: Or =>
             case _                                      =>
               // Rest of the binary operators need to be null checked before use
-              checkValidUse(lhs, knowledge)
-              checkValidUse(rhs, knowledge)
+              val opArgumentTypes = binOp.lookupOperator((lhs.getType, rhs.getType), imports).get.argTypes
+
+              if(!opArgumentTypes(0).isNullable)
+                checkValidUse(lhs, knowledge)
+              if(!opArgumentTypes(1).isNullable)
+                checkValidUse(rhs, knowledge)
           }
         case ExtractNullable(expr)              =>
           traverse(expr)
         case op@UnaryOperatorTree(expr)         =>
           traverse(expr)
-          checkValidUse(expr, knowledge)
-          op.ifInstanceOf[IncrementDecrementTree] { incDec =>
-            knowledge.getIdentifier(expr) ifDefined { varId =>
-              checkReassignment(varId, op)
-              val v = if (incDec.isIncrement) 1 else -1
-              knowledge = knowledge.addToNumericValue(varId, v)
-            }
+          op match {
+            case _: Not => // Not can be used for nullable types
+            case _ =>
+              val opArgumentTypes = op.lookupOperator(expr.getType, imports).get.argTypes
+
+              if(!opArgumentTypes.head.isNullable)
+                checkValidUse(expr, knowledge)
+
+              op.ifInstanceOf[IncrementDecrementTree] { incDec =>
+                knowledge.getIdentifier(expr) ifDefined { varId =>
+                  checkReassignment(varId, op)
+                  val v = if (incDec.isIncrement) 1 else -1
+                  knowledge = knowledge.addToNumericValue(varId, v)
+                }
+              }
           }
         case arrOp@ArrayOperatorTree(arr)       =>
           traverse(arr)

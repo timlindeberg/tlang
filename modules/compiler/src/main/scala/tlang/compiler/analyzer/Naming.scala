@@ -287,14 +287,7 @@ case class NameAnalyser(
       val argTypes = opSym.argTypes
       val classSymbol = opSym.classSymbol
 
-      // Ensure that operator pertains to the class defined in and that
-      // types are not nullable
-      val nullableTypes = (retType ++ args.map(_.tpe)).filterInstance[NullableType]
-
-      // We don't want to report OperatorWrongTypes if types are nullable
-      if (!operatorType.isInstanceOf[ArraySlice] && nullableTypes.nonEmpty) {
-        nullableTypes.foreach(tpe => report(NullableInOperator(operatorType.opSign, tpe)))
-      } else if (isStaticOperator) {
+      if (isStaticOperator) {
         val tpe = classSymbol match {
           case e: ExtensionClassSymbol => e.getExtendedType
           case _                       => TObject(classSymbol)

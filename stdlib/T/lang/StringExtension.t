@@ -36,28 +36,13 @@ extension java::lang::String =
 	Def >(lhs: String, rhs: String)  = lhs.compareTo(rhs) > 0
 	Def >=(lhs: String, rhs: String) = lhs.compareTo(rhs) >= 0
 
-	Def +(lhs: String, rhs: String) = lhs.concat(rhs)
+	Def +(lhs: String, rhs: Object?): String =
+		val b = String.valueOf(rhs ?: "null")
+		lhs.concat(b)
 
-	Def +(lhs: String, rhs: Object) = lhs.concat(rhs.toString())
-	Def +(lhs: Object, rhs: String) = lhs.toString().concat(rhs)
-
-	Def +(lhs: String, rhs: Char)   = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Char, rhs: String)   = String.valueOf(lhs).concat(rhs)
-
-	Def +(lhs: String, rhs: Int)    = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Int, rhs: String)    = String.valueOf(lhs).concat(rhs)
-
-	Def +(lhs: String, rhs: Long)   = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Long, rhs: String)   = String.valueOf(lhs).concat(rhs)
-
-	Def +(lhs: String, rhs: Float)  = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Float, rhs: String)  = String.valueOf(lhs).concat(rhs)
-
-	Def +(lhs: String, rhs: Double) = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Double, rhs: String) = String.valueOf(lhs).concat(rhs)
-
-	Def +(lhs: String, rhs: Bool)   = lhs.concat(String.valueOf(rhs))
-	Def +(lhs: Bool, rhs: String)   = String.valueOf(lhs).concat(rhs)
+	Def +(lhs: Object?, rhs: String): String =
+		val a = String.valueOf(lhs ?: "null")
+		a.concat(rhs)
 
 	Def *(times: Long, str: String) = str * times
 	Def *(str: String, times: Long) =
@@ -66,8 +51,8 @@ extension java::lang::String =
 			sb.append(str)
 		sb.toString()
 
-	Def *(times: Int, str: String) = str * times as Long
-	Def *(str: String, times: Int) = str * times as Long
+	Def *(times: Int, str: String) = str * (times as Long)
+	Def *(str: String, times: Int) = str * (times as Long)
 
 	Def [](index: Int) = charAt(index)
 

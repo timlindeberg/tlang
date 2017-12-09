@@ -225,6 +225,14 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case '\'' :: r =>
           report(InvalidCharLiteral(parsed))
           (createToken(BAD, parsed), r)
+        case '\r' :: '\n' :: r =>
+          line += 1
+          column = 0
+          toEnd(r, parsed + 2)
+        case '\n' :: r         =>
+          line += 1
+          column = 0
+          toEnd(r, parsed + 1)
         case _ :: r    =>
           toEnd(r, parsed + 1)
       }

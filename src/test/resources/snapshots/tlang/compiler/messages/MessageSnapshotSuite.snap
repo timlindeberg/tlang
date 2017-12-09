@@ -139,9 +139,6 @@ N2017: [1mOnly the first parent can be a class.[0m
 ========================================= NamingErrors NonStaticFinalFieldInTrait
 N2022: [1mFields in traits need to be val static.[0m
 
-========================================= NamingErrors NullableInOperator
-N2002: [1mOperator [35mABC[0m[1m cannot have nullable types as arguments or return type.[0m
-
 ========================================= NamingErrors OperatorAlreadyDefined
 N2009: [1mOperator [35mABC[0m[1m is already defined at line [35m0[0m[1m.[0m
 

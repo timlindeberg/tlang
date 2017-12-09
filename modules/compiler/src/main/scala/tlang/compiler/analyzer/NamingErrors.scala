@@ -46,10 +46,7 @@ trait NamingErrors extends ErrorHandling {
     lazy val message = err"Operators cannot be abstract."
   }
 
-  case class NullableInOperator(operator: String, override val pos: Positioned)
-    extends NameAnalysisError(2, pos) {
-    lazy val message = err"Operator $operator cannot have nullable types as arguments or return type."
-  }
+  // Missing 2
 
   case class ClassAlreadyDefined(name: String, line: Int, override val pos: Positioned)
     extends NameAnalysisError(3, pos) {

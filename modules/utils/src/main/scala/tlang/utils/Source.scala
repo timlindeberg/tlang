@@ -19,6 +19,7 @@ object Source {
   private val TextCache: mutable.Map[File, String] = mutable.Map()
   def getText(file: File): String = TextCache.getOrElseUpdate(file, file.contentAsString)
   def clearCache(file: File): Unit = TextCache.remove(file)
+  def clearCache(): Unit = TextCache.clear()
 }
 
 object FileSource {

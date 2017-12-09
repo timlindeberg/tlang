@@ -127,7 +127,7 @@ object Main extends Logging {
           .header(s"Found changes to file ${Magenta(file.path.relativePWD)}, recompiling...")
           .print()
 
-        Source.clearCache(file)
+        Source.clearCache()
         ctx.reporter.clear()
 
         compileAndExecute(Set(file), options, ctx)
