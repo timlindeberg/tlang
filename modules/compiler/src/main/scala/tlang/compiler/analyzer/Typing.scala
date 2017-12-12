@@ -396,7 +396,11 @@ case class TypeChecker(
               val alternatives = classSymbol.fields.keys.toList
               report(ClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app))
             }
-          case _                    => TError
+          case _: TArray                    =>
+            // There are no fields on arrays
+            report(ClassDoesntHaveField(objType.toString, fieldName, Nil, app))
+          case _ =>
+            TError
         }
     }
 

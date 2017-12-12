@@ -114,18 +114,20 @@ object Main extends Logging {
 
     info"Starting file watchers"
 
-    formatter
-      .grid
-      .header(s"Watching for ${Green("changes")}...")
-      .print()
+    if(options(VerboseFlag))
+      formatter
+        .grid
+        .header(s"Watching for ${Green("changes")}...")
+        .print()
 
     case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
       override def onModify(file: File, count: Int): Unit = {
         info"$file changed, recompiling"
-        formatter
-          .grid
-          .header(s"Found changes to file ${Magenta(file.path.relativePWD)}, recompiling...")
-          .print()
+        if(options(VerboseFlag))
+          formatter
+            .grid
+            .header(s"Found changes to file ${Magenta(file.path.relativePWD)}, recompiling...")
+            .print()
 
         Source.clearCache()
         ctx.reporter.clear()
@@ -136,7 +138,7 @@ object Main extends Logging {
 
     filesToCompile
       .map { file =>
-        info"Watching file $file"
+        info"Watching file $file for changes"
         CompilerFileMonitor(file)
       }
       .foreach { _.start() }
@@ -369,32 +371,7 @@ object Main extends Logging {
 
   private def isValidTHomeDirectory(path: String): Boolean = {
     // TODO: Make this properly check that the directory is valid
-    /*
-    def listFiles(f: File): Array[File] = {
-      val these = f.listFiles
-      if (these == null)
-        return Array[File]()
-      these ++ these.filter(_.isDirectory).flatMap(listFiles)
-    }
-
-    val files = listFiles(new File(path))
-    val neededFiles = List(
-      "T",
-      "T/lang",
-      "T/lang/Object.t",
-      "T/lang/String.t",
-      "T/std"
-    )
-    val fileMap = mutable.Map() ++ neededFiles.map((_, false))
-    val filePaths = files.map(_.getAbsolutePath.drop(path.length + 1).replaceAll("\\\\", "/"))
-    for (f <- filePaths)
-      fileMap(f) = true
-
-    if (fileMap.exists(!_._2))
-      return false
-    */
     true
-
   }
 
   private def executePrograms(ctx: Context, cus: Seq[CompilationUnit]): Unit = {

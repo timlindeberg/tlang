@@ -338,7 +338,7 @@ case class NameAnalyser(
           }
           localVars
         case varDecl@VarDecl(id, typeTree, init, modifiers) =>
-          val newSymbol = new VariableSymbol(id.name, modifiers).setPos(varDecl)
+          val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
 
