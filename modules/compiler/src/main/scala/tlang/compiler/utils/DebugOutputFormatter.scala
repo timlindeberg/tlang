@@ -64,8 +64,8 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .content(formatter.fileName(tree.sourceName))
         .row()
         .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
-        .row(TruncatedColumn, Column, Column, Column)
-        .columnHeaders("Tree", "Reference", "Symbol", "Type")
+        .row(Column, TruncatedColumn, Column, Column, Column)
+        .columnHeaders("Line", "Tree", "Reference", "Symbol", "Type")
         .contents(treePrinter(tree))
     }
     grid.print()

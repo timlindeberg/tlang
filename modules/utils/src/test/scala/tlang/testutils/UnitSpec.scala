@@ -18,6 +18,12 @@ trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSuga
     }
   }
 
+  def mockedTruncatorReturningSameLine: Truncator = {
+    mock[Truncator] use { truncator =>
+      truncator.apply(*, *) answers { _.getArgument[String](0) }
+    }
+  }
+
 
   def memoryFile(content: String = ""): (StringBuilder, File) = {
     val buffer = new StringBuilder

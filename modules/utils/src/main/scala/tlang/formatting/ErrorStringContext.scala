@@ -85,7 +85,8 @@ case class ErrorStringContext(
 
       suggestions match {
         case suggestion :: Nil =>
-          val v = if (formatter.useColor) ValueColor(suggestion) else s"'$suggestion'"
+          val transformed = transform(suggestion)
+          val v = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"
           sb ++= " Did you mean " + v + Bold + "?"
           currentColor = Bold
           if (hasMore)
@@ -99,7 +100,7 @@ case class ErrorStringContext(
                 sb ++= Reset
                 sb ++= Bold
               }
-              sb ++= s"   $ListMarker " + ValueColor + suggestion
+              sb ++= s"   $ListMarker " + ValueColor + transform(suggestion)
               currentColor = ValueColor
               sb.toString
             }
@@ -109,9 +110,10 @@ case class ErrorStringContext(
       }
     }
 
+    private def transform(any: Any): String = Function.chain(transforms)(any.toString)
 
     private def evaluateAny(any: Any): Unit = {
-      val str = Function.chain(transforms)(any.toString)
+      val str = transform(any)
       if (!formatter.useColor) {
         sb ++= s"'$str'"
         return

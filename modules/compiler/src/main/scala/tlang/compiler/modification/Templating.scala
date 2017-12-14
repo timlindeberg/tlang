@@ -127,7 +127,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
       if (generatedClassNames(shortName))
         return
 
-      debug"Generating template for $shortName"
+      info"Generating template for $shortName"
 
       generatedClassNames += shortName
 
@@ -189,9 +189,10 @@ case class TemplateModifier(ctx: Context) extends Logging {
       val importedCus = templateImporter.importCUs(importName)
 
       importedCus foreach { cu =>
-        cu.classes.filterInstance[IDClassDeclTree] foreach { clazz =>
-          templateCus(clazz.id.name) = cu
-        }
+        cu.classes
+          .filterInstance[IDClassDeclTree]
+          .filter { clazz => !templateCus.contains(clazz.id.name) }
+          .foreach { clazz => templateCus(clazz.id.name) = cu }
       }
 
 

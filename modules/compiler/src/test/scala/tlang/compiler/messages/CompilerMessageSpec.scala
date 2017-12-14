@@ -4,7 +4,10 @@ import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.TError
 import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
 import tlang.formatting.Formatter
+import tlang.formatting.textformatters.Truncator
 import tlang.testutils.UnitSpec
+import tlang.utils.Extensions._
+import org.mockito.ArgumentMatchers
 import tlang.utils.{NoPosition, Position, Positioned}
 
 class CompilerMessageSpec extends UnitSpec {
@@ -149,7 +152,13 @@ class CompilerMessageSpec extends UnitSpec {
 
   it should "format message correctly" in {
 
-    val formatter = testFormatter(width = 40, useColor = false, wordWrapper = mockedWordWrapperReturningSplitLines)
+    val formatter = testFormatter(
+      width = 40,
+      useColor = false,
+      asciiOnly = false,
+      wordWrapper = mockedWordWrapperReturningSplitLines,
+      truncator = mockedTruncatorReturningSameLine
+    )
 
     test("two errors with valid positions") {
       val messageFormatter = mock[MessageFormatter]
@@ -196,25 +205,25 @@ class CompilerMessageSpec extends UnitSpec {
         message = "Moar errors!!!"
       )
       compilerMessages.formatMessages(MessageType.Error) shouldBe
-        """| ====================================== 
-           ||         There were 2 errors.         |
-           ||======================================|
-           || 1:3 from/a/very/cool/File.t          |
-           || Error A2123 There was an error!!!    |
-           ||--------------------------------------|
-           || 1 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
-           ||   |   ~~~~~                          |
-           || 2 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
-           || 3 | ABCDEFFGHIJKLMNOPQRSTUVXYZ       |
-           ||--------------------------------------|
-           || 54:1 from/another/cool/File.t        |
-           || Error B2321 Moar errors!!!           |
-           ||--------------------------------------|
-           || 53 | Line 1Line 1Line 1              |
-           || 54 | Line 2Line 2Line 2              |
-           ||    | ~~~~                            |
-           || 55 | Line 3Line 3Line 3              |
-           | -------------------------------------- """.stripMargin
+        """|╒══════════════════════════════════════╕
+           |│         There were 2 errors.         │
+           |╞══════════════════════════════════════╡
+           |│ 1:3 from/a/very/cool/File.t          │
+           |│ Error A2123 There was an error!!!    │
+           |├───┬──────────────────────────────────┤
+           |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+           |│   │   ~~~~~                          │
+           |│ 2 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+           |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+           |├───┴──────────────────────────────────┤
+           |│ 54:1 from/another/cool/File.t        │
+           |│ Error B2321 Moar errors!!!           │
+           |├────┬─────────────────────────────────┤
+           |│ 53 │ Line 1Line 1Line 1              │
+           |│ 54 │ Line 2Line 2Line 2              │
+           |│    │ ~~~~                            │
+           |│ 55 │ Line 3Line 3Line 3              │
+           |└────┴─────────────────────────────────┘""".stripMargin
     }
 
     test("one warning with a non valid position") {
@@ -231,16 +240,71 @@ class CompilerMessageSpec extends UnitSpec {
       messageFormatter.hasValidPosition returns false
       messageFormatter.prefix returns "Warning C1001"
 
-      val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
+      val compilerMessages = createCompilerMessages(
+        width = 40,
+        useColor = false,
+        messageFormatter = messageFormatter,
+        formatter = Some(formatter)
+      )
       compilerMessages += warning
       compilerMessages.formatMessages(MessageType.Warning) shouldBe
-        """| ====================================== 
-           ||         There was 1 warning.         |
-           ||======================================|
-           || Warning C1001 Here be a warning!!!   |
-           | -------------------------------------- """.stripMargin
+        """|╒══════════════════════════════════════╕
+           |│         There was 1 warning.         │
+           |╞══════════════════════════════════════╡
+           |│ Warning C1001 Here be a warning!!!   │
+           |└──────────────────────────────────────┘""".stripMargin
     }
+  }
 
+  it should "truncate long lines" in {
+    val messageFormatter = mock[MessageFormatter]
+
+    messageFormatter.hasValidPosition returns true
+    messageFormatter.sourceDescription returns "1:3 from/a/very/cool/File.t"
+
+    messageFormatter.prefix returns "Error A2123"
+    messageFormatter.locationInSource returns List(
+      ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZABCDEFFG"),
+      ("", "  ~~~~~"),
+      ("2", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
+      ("3", "ABCDEFFGHIJKLMNOPQRSTUVXYZ")
+    )
+
+    val truncator = mockedTruncatorReturningSameLine
+    truncator.apply(ArgumentMatchers.eq("ABCDEFFGHIJKLMNOPQRSTUVXYZABCDEFFG"), *) returns "ABCDEFFGHIJKLMNOPQRSTUVXYZABC..."
+    val formatter = testFormatter(
+      width = 40,
+      useColor = false,
+      asciiOnly = false,
+      wordWrapper = mockedWordWrapperReturningSplitLines,
+      truncator = truncator
+    )
+    val compilerMessages = createCompilerMessages(
+      width = 40,
+      useColor = false,
+      messageFormatter = messageFormatter,
+      formatter = Some(formatter)
+    )
+
+    compilerMessages += createMessage(
+      MessageType.Error,
+      errorLetters = "A",
+      codeNum = 123,
+      pos = Position(1, 3, 1, 8),
+      message = "There was an error!!!"
+    )
+    compilerMessages.formatMessages(MessageType.Error) shouldBe
+      """|╒══════════════════════════════════════╕
+         |│          There was 1 error.          │
+         |╞══════════════════════════════════════╡
+         |│ 1:3 from/a/very/cool/File.t          │
+         |│ Error A2123 There was an error!!!    │
+         |├───┬──────────────────────────────────┤
+         |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZABC... │
+         |│   │   ~~~~~                          │
+         |│ 2 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+         |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+         |└───┴──────────────────────────────────┘""".stripMargin
   }
 
   private def createCompilerMessages(

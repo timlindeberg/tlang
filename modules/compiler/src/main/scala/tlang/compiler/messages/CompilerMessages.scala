@@ -3,7 +3,7 @@ package tlang.compiler.messages
 import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErrorSymbol}
 import tlang.compiler.analyzer.Types.{TError, Typed}
 import tlang.formatting.Formatter
-import tlang.formatting.grid.Grid
+import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
 import tlang.options.argument.MaxErrorsFlag
 
 import scala.collection.mutable
@@ -118,7 +118,7 @@ case class CompilerMessages(
     grid.content(messageFormatter.prefix + " " + error.message)
 
     if (hasValidPosition) {
-      grid.row(2)
+      grid.row(Column, TruncatedColumn)
       grid.contents(messageFormatter.locationInSource)
     }
   }

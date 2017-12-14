@@ -189,6 +189,23 @@ class ErrorStringContextSpec extends UnitSpec {
       )
     }
 
+    test("Transforms suggestions") {
+      val alternativeSuggestor = mock[AlternativeSuggestor]
+      alternativeSuggestor.apply("ABCD", alternatives) returns Suggestion(List("ABC"))
+
+      val transforms = List[String => String](
+        s =>
+          if (s == "ABC") "DEF" else s
+      )
+      val errorStringContext = makeErrorStringContext(
+        useColor = false,
+        alternativeSuggestor = alternativeSuggestor,
+        transforms = transforms
+      )
+      import errorStringContext.{ErrorStringContext, suggestion}
+      err"Some text.${ suggestion("ABCD", alternatives)}More text." shouldBe "Some text. Did you mean 'DEF'? More text."
+    }
+
   }
 
   private def makeErrorStringContext(

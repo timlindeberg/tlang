@@ -14,12 +14,14 @@ import scala.collection.mutable.ListBuffer
 
 case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
 
+  type TreePrinterRow = (String, String, String, String, String)
+
   import formatter.formatting._
 
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
-  def apply(t: Tree): List[(String, String, String, String)] = {
+  def apply(t: Tree): List[TreePrinterRow] = {
     val Indent = List.fill(spacing)(' ')
     val Continuation = Vertical.head :: Indent
     val Whitespace = ' ' :: Indent
@@ -28,14 +30,14 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
     symbolMap = new java.util.IdentityHashMap[Symbol, (Int, Color)].asScala
 
     var first = true
-    val lines: ListBuffer[(String, String, String, String)] = ListBuffer()
+    val lines: ListBuffer[TreePrinterRow] = ListBuffer()
     val sb = new StringBuilder
 
 
     def printTree(tree: Tree, stack: List[Char]): Unit = {
       def addLine(): Unit = {
 
-        val line = (sb.toString, reference(tree), symbolContent(tree), typeContent(tree))
+        val line = (Magenta(tree.line), sb.toString, reference(tree), symbolContent(tree), typeContent(tree))
         lines += line
         sb.clear()
       }
@@ -82,7 +84,9 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
       case n: NumberLiteral[_] => NumColor(n.value)
       case _                   => ""
     }
-    Bold(tree.getClass.getSimpleName) + (if (content.nonEmpty) Bold("(") + content + Bold(")") else "")
+    val name = Bold(tree.getClass.getSimpleName)
+    val contentString = if (content.nonEmpty) Bold("(") + content + Bold(")") else ""
+    name + contentString
   }
 
   private def reference(tree: Tree): String = {

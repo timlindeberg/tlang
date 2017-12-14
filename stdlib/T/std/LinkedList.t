@@ -1,10 +1,11 @@
 package T::std
 
 import T::std::List
+import T::std::Queue
 import T::std::Collection
 import T::std::Iterator
 
-class LinkedList<T> : List<T> =
+class LinkedList<T> : List<T>, Queue<T> =
 
 	var first: LinkedListNode<T>? = null
 	var last:  LinkedListNode<T>? = null
@@ -23,6 +24,8 @@ class LinkedList<T> : List<T> =
 		Clear()
 		for(val e in elements)
 			Add(e)
+
+	// List interface
 
 	Def Get(index: Int) =
 		checkBounds(index)
@@ -89,7 +92,7 @@ class LinkedList<T> : List<T> =
 		if(post)
 			node.Next = post
 
-	Def RemoveIndex(index: Int) =
+	Def RemoveIndex(index: Int): Unit =
 		checkBounds(index)
 
 		val node = find(index)
@@ -114,8 +117,22 @@ class LinkedList<T> : List<T> =
 
 		size--
 
+
 	Def FirstNode() = first
 	Def LastNode() = last
+
+	// Queue interface
+
+	Def Enqueue(value: T): Unit = Add(value)
+
+	Def Dequeue(): T =
+		val e = first!!
+		RemoveIndex(0)
+		e.Value
+
+	Def Poll(): T? = last?.Value
+
+	// Misc
 
 	Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
