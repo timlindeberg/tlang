@@ -282,7 +282,8 @@ case class TypeChecker(
           case TArray(arrTpe) =>
             tcExpr(index, Int)
             arrTpe
-          case _              => ???
+          case TError              => TError
+          case _                   => ???
         }
       case ArraySlice(arr, start, end, step)  =>
         List(start, end, step).filter(_.isDefined).map(e => tcExpr(e.get, Int))

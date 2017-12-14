@@ -7,6 +7,8 @@ extension T::lang::Int =
 	Def static Size(): Int     = java::lang::Integer.SIZE
 	Def static Bytes(): Int    = java::lang::Integer.BYTES
 
+	Def static Parse(s: String, radix: Int): Int = java::lang::Integer.parseInt(s, radix)
+
 	Def BitsToFloat(): Float            = java::lang::Float.intBitsToFloat(this)
 	Def BitCount(): Int                 = java::lang::Integer.bitCount(this)
 	Def HighestOneBit(): Int            = java::lang::Integer.highestOneBit(this)
