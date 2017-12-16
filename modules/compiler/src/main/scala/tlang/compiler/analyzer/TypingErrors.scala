@@ -3,7 +3,7 @@ package tlang.compiler.analyzer
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, Symbol}
 import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.compiler.messages.{CompilerMessage, ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
@@ -22,9 +22,23 @@ trait TypingErrors extends ErrorHandling {
   import errorStringContext._
 
 
+  private def containsErrorType(product: Product): Boolean =
+    product.productIterator.exists {
+      case s: String                                                             => s == CompilerMessage.ErrorName
+      case t: Type                                                               => t == TError
+      case list: Traversable[_] if list.nonEmpty && list.head.isInstanceOf[Type] =>
+        list.asInstanceOf[Traversable[Type]].exists(_ == TError)
+      case _                                                                     => false
+    }
+
   private val ErrorLetters = "T"
-  abstract class TypeCheckingError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
-  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos)
+  abstract class TypeCheckingError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos) {
+    override def isValid: Boolean = !containsErrorType(this)
+  }
+
+  abstract class TypeCheckingWarning(code: Int, pos: Positioned) extends WarningMessage(ErrorLetters, code, pos) {
+    override def isValid: Boolean = !containsErrorType(this)
+  }
 
   object WrongType {
     def apply(expected: Type, found: Type, pos: Positioned): WrongType = WrongType(err"$expected", err"$found", pos)

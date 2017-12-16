@@ -246,7 +246,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def methodDescriptor(methSym: MethodSymbol) = {
-    methSym.classSymbol.JVMName + "." + methSym.signature + ":" + methSym.byteCodeSignature
+    methSym.classSymbol.JVMName + "." + methSym.signature + "<->" + methSym.byteCodeSignature
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {

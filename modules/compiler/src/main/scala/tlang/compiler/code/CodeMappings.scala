@@ -129,7 +129,7 @@ object IntCodeMap extends CodeMap {
   override def or(ch: CodeHandler): CodeHandler = ch << IOR
   override def xor(ch: CodeHandler): CodeHandler = ch << IXOR
   override def leftShift(ch: CodeHandler): CodeHandler = ch << ISHL
-  override def rightShift(ch: CodeHandler): CodeHandler = ch << ISHR
+  override def rightShift(ch: CodeHandler): CodeHandler = ch << IUSHR
 
   override def ret(ch: CodeHandler): CodeHandler = ch << IRETURN
   override def negation(ch: CodeHandler): CodeHandler = ch << INEG
@@ -170,7 +170,7 @@ object LongCodeMap extends CodeMap {
   override def or(ch: CodeHandler): CodeHandler = ch << LOR
   override def xor(ch: CodeHandler): CodeHandler = ch << LXOR
   override def leftShift(ch: CodeHandler): CodeHandler = ch << LSHL
-  override def rightShift(ch: CodeHandler): CodeHandler = ch << LSHR
+  override def rightShift(ch: CodeHandler): CodeHandler = ch << LUSHR
 
   override def ret(ch: CodeHandler): CodeHandler = ch << LRETURN
   override def negation(ch: CodeHandler): CodeHandler = ch << LNEG

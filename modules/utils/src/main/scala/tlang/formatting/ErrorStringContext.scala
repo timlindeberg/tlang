@@ -110,7 +110,7 @@ case class ErrorStringContext(
       }
     }
 
-    private def transform(any: Any): String = Function.chain(transforms)(any.toString)
+    private def transform(any: Any): String = Function.chain(transforms)(String.valueOf(any))
 
     private def evaluateAny(any: Any): Unit = {
       val str = transform(any)

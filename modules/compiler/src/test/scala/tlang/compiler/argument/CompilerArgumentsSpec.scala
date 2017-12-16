@@ -212,20 +212,26 @@ class CompilerArgumentsSpec extends UnitSpec {
       options(PrintOutputFlag) shouldBe Set()
     }
 
-    test("Default argument") {
-      val options = createOptions("--printoutput")
-      options(PrintOutputFlag) shouldBe Set("lowering")
-    }
-
     test("With arguments") {
       val options = createOptions("--printoutput lowering,codegeneration --printoutput typing")
       options(PrintOutputFlag) shouldBe Set("lowering", "codegeneration", "typing")
     }
 
-    test("Invalid argument should result in default argument") {
-      val options = createOptions("--printoutput --exec")
-      options(PrintOutputFlag) shouldBe Set("lowering")
-      options(ExecFlag) shouldBe true
+
+    test("No arguments is invalid") {
+      intercept[IllegalArgumentException] { createOptions("--printoutput") }
+    }
+
+    test("Invalid argument") {
+      intercept[IllegalArgumentException] { createOptions("--printoutput abc") }
+        .getMessage should include("abc")
+    }
+
+    test("Should show suggestions") {
+      val suggestor = mock[AlternativeSuggestor]
+      suggestor.apply(*, *) returns Suggestion(List("Did you mean 'ABC'?"))
+      intercept[IllegalArgumentException] { createOptions("--printoutput abc", suggestor) }
+        .getMessage should include("ABC")
     }
   }
 

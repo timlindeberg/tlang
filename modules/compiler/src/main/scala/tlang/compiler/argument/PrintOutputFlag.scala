@@ -1,19 +1,15 @@
 package tlang.compiler.argument
 
 import tlang.compiler.Main
-import tlang.compiler.code.Lowering
-import tlang.formatting.Formatter
-import tlang.options.OptionalArgumentFlag
+import tlang.formatting.{ErrorStringContext, Formatter}
+import tlang.options.ArgumentFlag
 import tlang.utils.Extensions._
 
-case object PrintOutputFlag extends OptionalArgumentFlag[Set[String]] {
-  override val name               = "printoutput"
-  override val argDescription     = "phase"
-  override val defaultArg: String = Lowering.phaseName
+case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
+  override val name           = "printoutput"
+  override val argDescription = "phase"
 
   private lazy val compilerPhases = Main.CompilerPhases.map(_.phaseName)
-
-  override def isValidArg(compilerPhase: String): Boolean = compilerPhase.toLowerCase in compilerPhases
 
 
   override def description(formatter: Formatter): String = {
@@ -44,5 +40,14 @@ case object PrintOutputFlag extends OptionalArgumentFlag[Set[String]] {
         |""".stripMargin.trim
   }
 
-  override def parseValue(args: Set[String]): Set[String] = args
+  override protected def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
+    val phase = arg.toLowerCase
+    import errorContext.ErrorStringContext
+    if (phase notIn compilerPhases) {
+      val suggestion = errorContext.suggestion(phase, compilerPhases.toList)
+      error(err"$phase is not a valid argument for --$name.${ suggestion }See --help $name for more information.")
+    }
+  }
+
+  override def parseValue(args: Set[String]): Set[String] = args.map(_.toLowerCase)
 }

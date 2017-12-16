@@ -7,6 +7,10 @@ extension T::lang::Long =
 	Def static Size(): Int      = java::lang::Long.SIZE
 	Def static Bytes(): Int     = java::lang::Long.BYTES
 
+	Def static Parse(s: String): Long             = java::lang::Long.parseLong(s)
+	Def static Parse(s: String, radix: Int): Long = java::lang::Long.parseLong(s, radix)
+
+
 	Def BitsToDouble(): Double           = java::lang::Double.longBitsToDouble(this)
 	Def BitCount(): Long                 = java::lang::Long.bitCount(this)
 	Def HighestOneBit(): Long            = java::lang::Long.highestOneBit(this)
@@ -29,3 +33,22 @@ extension T::lang::Long =
 			error("Index out of bounds: " + index)
 
 		(this & (1L << index)) != 0 ? 1 : 0
+
+	Def [::](start: Int?, end: Int?, step: Int?): Long =
+		val s = start ?: 0
+		val e = end ?: 63
+		if(step != null)
+			error("Long slicing does not support stepping: " + step)
+
+		if(s > 63 || s < 0)
+			error("Index out of bounds: " + s)
+
+		if(e > 63 || e < 0)
+			error("Index out of bounds: " + e)
+
+		if(s > e)
+			error("Starting index can't be greater or equal to ending index: " + s + " > " + e)
+
+		val allSet = 0xFFFFFFFFFFFFFFFFL
+		val mask = (allSet >> s) & (allSet << (63 - e))
+		this & mask

@@ -16,6 +16,8 @@ extension T::lang::Float =
 	Def static PositiveInfinity(): Float = java::lang::Float.POSITIVE_INFINITY
 	Def static NegativeInfinity(): Float = java::lang::Float.NEGATIVE_INFINITY
 
+	Def static Parse(s: String): Float = java::lang::Float.parseFloat(s)
+
 	Def ToIntBits(): Int    = java::lang::Float.floatToIntBits(this)
 	Def ToRawIntBits(): Int = java::lang::Float.floatToRawIntBits(this)
 	Def IsInfinite(): Bool  = java::lang::Float.isInfinite(this)

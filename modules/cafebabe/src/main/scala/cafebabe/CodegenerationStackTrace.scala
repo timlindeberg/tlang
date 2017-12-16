@@ -16,8 +16,8 @@ case class CodegenerationStackTrace(
   formatting: Formatting
 ) {
 
-  val heights: Array[Int]             = heightArray.clone()
-  val abcs   : List[AbstractByteCode] = abcBuffer.toList
+  val heights: Array[Int]                   = heightArray.clone()
+  val abcs   : IndexedSeq[AbstractByteCode] = abcBuffer.toIndexedSeq
 
   import formatting._
 
@@ -38,8 +38,8 @@ case class CodegenerationStackTrace(
 
   private def getLabelColor(label: String) = {
     colorMap.getOrElseUpdate(label, {
-      colorIndex = (colorIndex + 1) % FGColors.length
-      FGColors(colorIndex)
+      colorIndex = (colorIndex + 1) % AllColors.length
+      AllColors(colorIndex)
     })
   }
 
@@ -117,11 +117,12 @@ case class CodegenerationStackTrace(
     lines.toList
   }
 
+  private val Header = """(.+?)\.(.+?)<\->(.*)""".r
   def header: String = {
-    val split1 = signature.split("\\.")
-    val className = split1(0)
-    val rest = split1(1)
-    Green(className) + "." + Bold(Magenta(rest))
+    signature match {
+      case Header(className, methodSignature, methodJVMSignature) =>
+        Green(className) + "." + Bold(Magenta(methodSignature)) + " " + Bold(Blue(methodJVMSignature))
+    }
   }
 
 }

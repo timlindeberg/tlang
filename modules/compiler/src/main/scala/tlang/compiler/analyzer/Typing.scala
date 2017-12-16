@@ -6,9 +6,9 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.compiler.messages.Reporter
 import tlang.compiler.utils.DebugOutputFormatter
 import tlang.formatting.{ErrorStringContext, Formatting}
-import tlang.compiler.messages.Reporter
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
@@ -204,43 +204,43 @@ case class TypeChecker(
 
   def tcExpr(expression: ExprTree, expected: Traversable[Type]): Type = {
     val foundType = expression match {
-      case lit: Literal[_]                    => lit.getType
-      case id: VariableID                     =>
+      case lit: Literal[_]                            => lit.getType
+      case id: VariableID                             =>
         id.getSymbol.ifInstanceOf[FieldSymbol] { fieldSymbol =>
           checkPrivacy(fieldSymbol, fieldSymbol.classSymbol, id)
         }
         id.getType
-      case id: ClassID                        => id.getType
-      case th: This                           => th.getSymbol.getType
-      case su: Super                          => su.getSymbol.getType
-      case acc: Access                        => tcAccess(acc)
-      case assign: Assign                     => tcAssignment(assign)
-      case newDecl: New                       => tcNewExpr(newDecl)
-      case NewArray(tpe, sizes)               =>
+      case id: ClassID                                => id.getType
+      case th: This                                   => th.getSymbol.getType
+      case su: Super                                  => su.getSymbol.getType
+      case acc: Access                                => tcAccess(acc)
+      case assign: Assign                             => tcAssignment(assign)
+      case newDecl: New                               => tcNewExpr(newDecl)
+      case NewArray(tpe, sizes)                       =>
         sizes.foreach(tcExpr(_, Int))
         tpe.getType
-      case ArrayLit(expressions)              =>
+      case ArrayLit(expressions)                      =>
         val tpes = expressions.map(tcExpr(_))
         val inferredType = getReturnType(tpes)
 
         // An empty array literal should have Object type
         val tpe = if (inferredType == TUnit) Object else inferredType
         TArray(tpe)
-      case And(lhs, rhs)                      =>
+      case And(lhs, rhs)                              =>
         tcExpr(lhs, Bool)
         tcExpr(rhs, Bool)
         Bool
-      case Or(lhs, rhs)                       =>
+      case Or(lhs, rhs)                               =>
         tcExpr(lhs, Bool)
         tcExpr(rhs, Bool)
         Bool
-      case notOp@Not(expr)                    =>
+      case notOp@Not(expr)                            =>
         val tpe = tcExpr(expr)
         if (!tpe.isNullable && tpe != Bool)
           report(NotOnNonNullable(notOp))
 
         Bool
-      case eqOp@EqualsOperatorTree(lhs, rhs)  =>
+      case eqOp@EqualsOperatorTree(lhs, rhs)          =>
         val lhsTpe = tcExpr(lhs)
         val rhsTpe = tcExpr(rhs)
 
@@ -253,47 +253,55 @@ case class TypeChecker(
         } else {
           tcBinaryOperator(eqOp, lhsTpe, rhsTpe)
         }
-      case binOp@BinaryOperatorTree(lhs, rhs) =>
+      case binOp@BinaryOperatorTree(lhs, rhs)         =>
         tcBinaryOperator(binOp, tcExpr(lhs), tcExpr(rhs))
-      case incOp@IncrementDecrementTree(obj)  =>
+      case incOp@IncrementDecrementTree(obj)          =>
         if (!obj.isInstanceOf[Assignable])
           report(InvalidIncrementDecrementExpr(incOp))
 
         tcUnaryOperator(incOp, tcExpr(obj))
-      case ExtractNullable(expr)              =>
+      case ExtractNullable(expr)                      =>
         val exprTpe = tcExpr(expr)
         if (!exprTpe.isNullable)
           report(ExtractNullableNonNullable(exprTpe, expr))
         exprTpe.getNonNullable
-      case unaryOp@UnaryOperatorTree(expr)    =>
+      case unaryOp@UnaryOperatorTree(expr)            =>
         tcUnaryOperator(unaryOp, tcExpr(expr))
-      case Is(expr, _)                        =>
+      case Is(expr, _)                                =>
         tcExpr(expr)
         Bool
-      case As(expr, tpe)                      =>
+      case As(expr, tpe)                              =>
         tcExpr(expr, Object)
         tpe.getType
-      case arrRead@ArrayRead(arr, index)      =>
-        val arrTpe = tcExpr(arr)
-        arrTpe match {
+      case arrRead@ArrayRead(arr, index)              =>
+        val arrayType = tcExpr(arr)
+        arrayType match {
           case _: TObject     =>
             val indexType = tcExpr(index)
-            tcArrayOperator(arrTpe, arrRead, List(indexType), arrTpe, expression)
+            tcArrayOperator(arrayType, arrRead, List(indexType), arrayType, expression)
           case TArray(arrTpe) =>
             tcExpr(index, Int)
             arrTpe
+          case TError         => TError
+          case _              => ???
+        }
+      case arrSlice@ArraySlice(obj, start, end, step) =>
+        val argTypes = List(start, end, step).map {
+          case Some(expr) => tcExpr(expr, Int)
+          case None       => TNull
+        }
+        tcExpr(obj) match {
+          case objectType: TObject => tcArrayOperator(objectType, arrSlice, argTypes, objectType, expression)
+          case arrayType: TArray   => arrayType
           case TError              => TError
           case _                   => ???
         }
-      case ArraySlice(arr, start, end, step)  =>
-        List(start, end, step).filter(_.isDefined).map(e => tcExpr(e.get, Int))
-        tcExpr(arr)
-      case Ternary(condition, thn, els)       =>
+      case Ternary(condition, thn, els)               =>
         tcExpr(condition, Bool)
         val thnType = tcExpr(thn)
         val elsType = tcExpr(els)
         getReturnType(List(thnType, elsType))
-      case Elvis(nullableValue, ifNull)       =>
+      case Elvis(nullableValue, ifNull)               =>
         val nullableTpe = tcExpr(nullableValue)
         if (!nullableTpe.isNullable)
           report(ElvisOperatorNonNullable(nullableTpe, nullableValue))
@@ -397,10 +405,10 @@ case class TypeChecker(
               val alternatives = classSymbol.fields.keys.toList
               report(ClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app))
             }
-          case _: TArray                    =>
+          case _: TArray            =>
             // There are no fields on arrays
             report(ClassDoesntHaveField(objType.toString, fieldName, Nil, app))
-          case _ =>
+          case _                    =>
             TError
         }
     }

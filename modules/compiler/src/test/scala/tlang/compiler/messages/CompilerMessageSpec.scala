@@ -1,13 +1,9 @@
 package tlang.compiler.messages
 
-import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, VariableErrorSymbol}
-import tlang.compiler.analyzer.Types.TError
+import org.mockito.ArgumentMatchers
 import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
 import tlang.formatting.Formatter
-import tlang.formatting.textformatters.Truncator
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
-import org.mockito.ArgumentMatchers
 import tlang.utils.{NoPosition, Position, Positioned}
 
 class CompilerMessageSpec extends UnitSpec {
@@ -129,9 +125,9 @@ class CompilerMessageSpec extends UnitSpec {
   it should "not add invalid messages" in {
     val compilerMessages = createCompilerMessages()
 
-    compilerMessages += createMessage(messageType = MessageType.Error, pos = Plus(IntLit(1), IntLit(1)).setType(TError))
-    compilerMessages += createMessage(messageType = MessageType.Error, pos = VariableID("Id").setSymbol(VariableErrorSymbol))
-    compilerMessages += createMessage(messageType = MessageType.Error, pos = ClassID("Id").setSymbol(ClassErrorSymbol))
+    compilerMessages += createMessage(messageType = MessageType.Error, pos = Plus(IntLit(1), IntLit(1)), valid = false)
+    compilerMessages += createMessage(messageType = MessageType.Error, pos = VariableID("Id"), valid = false)
+    compilerMessages += createMessage(messageType = MessageType.Error, pos = ClassID("Id"), valid = false)
 
     compilerMessages(MessageType.Error) should be(empty)
   }
@@ -326,10 +322,14 @@ class CompilerMessageSpec extends UnitSpec {
     errorLetters: String = "ABC",
     codeNum: Int = 0,
     pos: Positioned = NoPosition,
-    message: String = "ABC"
+    message: String = "ABC",
+    valid: Boolean = true
   ): CompilerMessage = {
     val mess = message
-    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {override def message = mess }
+    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {
+      override def message = mess
+      override def isValid: Boolean = valid
+    }
   }
 
 }

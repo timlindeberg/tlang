@@ -46,12 +46,12 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
     if (colorKey.toLowerCase notIn ColorScheme.Keys) {
       val suggestion = errorContext.suggestion(colorKey, ColorScheme.Keys)
-      error(err"$colorKey is not a valid part of color scheme.${ suggestion }See --help colorscheme for more information.")
+      error(err"$colorKey is not a valid part of color scheme.${ suggestion }See --help $name for more information.")
     }
 
     if (getColorValue(color).isEmpty) {
       val suggestion = errorContext.suggestion(color, Colors.ColorNames)
-      error(err"$color is not a color.${ suggestion }See --help colorscheme for more information.")
+      error(err"$color is not a color.${ suggestion }See --help $name for more information.")
     }
   }
 

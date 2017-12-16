@@ -7,6 +7,7 @@ extension T::lang::Int =
 	Def static Size(): Int     = java::lang::Integer.SIZE
 	Def static Bytes(): Int    = java::lang::Integer.BYTES
 
+	Def static Parse(s: String): Int             = java::lang::Integer.parseInt(s)
 	Def static Parse(s: String, radix: Int): Int = java::lang::Integer.parseInt(s, radix)
 
 	Def BitsToFloat(): Float            = java::lang::Float.intBitsToFloat(this)
@@ -31,3 +32,23 @@ extension T::lang::Int =
 			error("Index out of bounds: " + index)
 
 		(this & (1 << index)) != 0 ? 1 : 0
+
+	Def [::](start: Int?, end: Int?, step: Int?): Int =
+		val s = start ?: 0
+		val e = end ?: 31
+		if(step != null)
+			error("Int slicing does not support stepping: " + step)
+
+		if(s > 31 || s < 0)
+			error("Index out of bounds: " + s)
+
+		if(e > 31 || e < 0)
+			error("Index out of bounds: " + e)
+
+		if(s > e)
+			error("Starting index can't be greater or equal to ending index: " + s + " > " + e)
+
+		val allSet = 0xFFFFFFFF
+		val mask = (allSet >> s) & (allSet << (31 - e))
+		this & mask
+

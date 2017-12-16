@@ -16,6 +16,8 @@ extension T::lang::Double =
 	Def static PositiveInfinity(): Double = java::lang::Double.POSITIVE_INFINITY
 	Def static NegativeInfinity(): Double = java::lang::Double.NEGATIVE_INFINITY
 
+	Def static Parse(s: String): Double = java::lang::Double.parseDouble(s)
+
 	Def ToLongBits(): Long    = java::lang::Double.doubleToLongBits(this)
 	Def ToRawLongBits(): Long = java::lang::Double.doubleToRawLongBits(this)
 	Def IsInfinite(): Bool    = java::lang::Double.isInfinite(this)

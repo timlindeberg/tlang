@@ -70,7 +70,6 @@ object Main extends Logging {
   def tryExit(code: Int) = throw ExitException(code)
 
   def main(args: Array[String]) {
-
     val options = parseOptions(args)
     val formatting = Formatting(options)
     val formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
@@ -103,30 +102,31 @@ object Main extends Logging {
 
     compileAndExecute(filesToCompile, options, ctx)
 
-    if(options(WatchFlag))
+    if (options(WatchFlag))
       startWatchers(filesToCompile, options, ctx)
   }
 
   private def startWatchers(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
     val formatter = ctx.formatter
     import formatter.formatting._
+
     import scala.concurrent.ExecutionContext.Implicits.global
 
     info"Starting file watchers"
 
-    if(options(VerboseFlag))
+    if (options(VerboseFlag))
       formatter
         .grid
-        .header(s"Watching for ${Green("changes")}...")
+        .header(s"Watching for ${ Green("changes") }...")
         .print()
 
     case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
       override def onModify(file: File, count: Int): Unit = {
         info"$file changed, recompiling"
-        if(options(VerboseFlag))
+        if (options(VerboseFlag))
           formatter
             .grid
-            .header(s"Found changes to file ${Magenta(file.path.relativePWD)}, recompiling...")
+            .header(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
             .print()
 
         Source.clearCache()
@@ -380,7 +380,7 @@ object Main extends Logging {
 
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     if (cusWithMainMethods.isEmpty) {
-      formatter.grid.header(s"Execution ${Red("failed")}, none of the given files contains a main method.").print()
+      formatter.grid.header(s"Execution ${ Red("failed") }, none of the given files contains a main method.").print()
       return
     }
 

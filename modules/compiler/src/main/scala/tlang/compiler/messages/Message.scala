@@ -6,12 +6,19 @@ import tlang.utils.Positioned
 
 
 object CompilerMessage {val ErrorName = "$ERROR" }
-abstract class CompilerMessage(val messageType: MessageType, val errorLetters: String, val typeCode: Int, val codeNum: Int, val pos: Positioned) {
+abstract class CompilerMessage(
+  val messageType: MessageType,
+  val errorLetters: String,
+  val typeCode: Int,
+  val codeNum: Int,
+  val pos: Positioned) {
   mess =>
 
   val code: String = errorLetters + typeCode + leftPadCode(codeNum)
 
   def message: String
+
+  def isValid = true
 
   def copy(
     messageType: MessageType = this.messageType,
@@ -45,13 +52,13 @@ abstract class CompilerMessage(val messageType: MessageType, val errorLetters: S
 }
 
 abstract class WarningMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
-  extends CompilerMessage(MessageType.Warning, errorLetters, MessageType.Warning.typeCode, codeNum, pos)
+  extends CompilerMessage(MessageType.Warning, errorLetters, MessageType.Warning.typeCode, codeNum, pos) with Product
 
 abstract class ErrorMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
-  extends CompilerMessage(MessageType.Error, errorLetters, MessageType.Error.typeCode, codeNum, pos)
+  extends CompilerMessage(MessageType.Error, errorLetters, MessageType.Error.typeCode, codeNum, pos) with Product
 
 abstract class FatalMessage(override val errorLetters: String, override val codeNum: Int, override val pos: Positioned)
-  extends CompilerMessage(MessageType.Fatal, errorLetters, MessageType.Fatal.typeCode, codeNum, pos)
+  extends CompilerMessage(MessageType.Fatal, errorLetters, MessageType.Fatal.typeCode, codeNum, pos) with Product
 
 
 trait MessageType {

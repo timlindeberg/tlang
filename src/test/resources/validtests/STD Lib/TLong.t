@@ -35,3 +35,10 @@ x = 0b1111L
 println(x[0]) // res: 1
 println(x[1]) // res: 1
 println(x[4]) // res: 0
+
+
+println(0xFFFFFFFFFFFFFFFFL[:]) // res: -1
+println(0xFFFFFFFFFFFFFFFFL[0:63]) // res: -1
+println(0xFFFFFFFFFFFFFFFFL[48:]) // res: 65535
+println(0xFFFFFFFFFFFFFFFFL[63:]) // res: 1
+println(0xFFFFFFFFFFFFFFFFL[1:5]) // res: 8935141660703064064

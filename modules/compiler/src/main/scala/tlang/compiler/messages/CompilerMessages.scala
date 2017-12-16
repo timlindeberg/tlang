@@ -1,7 +1,5 @@
 package tlang.compiler.messages
 
-import tlang.compiler.analyzer.Symbols.{ClassErrorSymbol, Symbolic, VariableErrorSymbol}
-import tlang.compiler.analyzer.Types.{TError, Typed}
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
 import tlang.options.argument.MaxErrorsFlag
@@ -30,7 +28,7 @@ case class CompilerMessages(
   override def clone(): CompilerMessages = copy(messages = mutable.Map() ++ messages.toMap)
 
   def +=(message: CompilerMessage): CompilerMessages = {
-    if (!isValidError(message))
+    if (!message.isValid)
       return this
 
     var messageType = message.messageType
@@ -96,15 +94,6 @@ case class CompilerMessages(
     else
       s"${ Bold }There $was $num$Bold $name.$Reset"
   }
-
-  private def isValidError(error: CompilerMessage): Boolean =
-    error.pos match {
-      case t: Typed if t.getType == TError => false
-      case s: Symbolic[_] if s.hasSymbol   =>
-        val sym = s.getSymbol
-        sym != ClassErrorSymbol && sym != VariableErrorSymbol
-      case _                               => true
-    }
 
   private def addToGrid(grid: Grid, error: CompilerMessage): Unit = {
     messageFormatter.setMessage(error)
