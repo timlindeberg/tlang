@@ -117,6 +117,7 @@ object Types {
     override def getNonNullable: TArray = if (isNullable) TArray(tpe, isNullable = false) else this
 
     override def isSubTypeOf(otherTpe: Type): Boolean = otherTpe match {
+      case Object         => true
       case TArray(arrTpe) => tpe.isSubTypeOf(arrTpe)
       case _              => false
     }

@@ -155,6 +155,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (obj, long, Object),
       (obj, char, Object),
       (obj, bool, Object),
+      (obj, array, Object),
 
       (array, array, array().getType)
     )
@@ -192,6 +193,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (obj, long, Object),
       (obj, char, Object),
       (obj, bool, Object),
+      (obj, array, Object),
 
       (array, array, array().getType)
 
@@ -250,6 +252,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (obj, long, Bool),
       (obj, char, Bool),
       (obj, bool, Bool),
+      (obj, array, Bool),
 
       (array, array, Bool),
 

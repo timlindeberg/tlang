@@ -47,4 +47,9 @@ println(a[2])  // res: F2004
 a = new Int[j]
 println(a[2])
 
+
+a = new Int['q' - 'a']
+println(a['q'])  // res: F2004
+
+
 Def GetArr() = return [ 1, 2, 3, 4, 5 ]

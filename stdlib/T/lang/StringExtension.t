@@ -44,6 +44,10 @@ extension java::lang::String =
 		val a = String.valueOf(lhs ?: "null")
 		a.concat(rhs)
 
+	Def +(lhs: Object?, rhs: String): String =
+		val a = String.valueOf(lhs ?: "null")
+		a.concat(rhs)
+
 	Def *(times: Long, str: String) = str * times
 	Def *(str: String, times: Long) =
 		val sb = new StringBuilder()
@@ -119,6 +123,9 @@ extension java::lang::String =
 
 	Def Split(regex: String)             = split(regex)
 	Def Split(regex: String, limit: Int) = split(regex, limit)
+
+	Def Substring(beginIndex: Int)                = substring(beginIndex)
+	Def Substring(beginIndex: Int, endIndex: Int) = substring(beginIndex, endIndex)
 
 	Def StartsWith(prefix: String)               = startsWith(prefix)
 	Def StartsWith(prefix: String, toffset: Int) = startsWith(prefix, toffset)

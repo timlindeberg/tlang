@@ -164,6 +164,7 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
   private def valueForArgument(arg: Symbol) = {
     arg.typeSignature match {
       case a if a <:< typeOf[Int]                            => 0
+      case a if a <:< typeOf[Long]                           => 0
       case a if a <:< typeOf[String]                         => "ABC"
       case a if a <:< typeOf[Char]                           => 'A'
       case a if a <:< typeOf[Boolean]                        => true

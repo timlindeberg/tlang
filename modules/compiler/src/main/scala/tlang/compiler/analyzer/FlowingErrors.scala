@@ -35,7 +35,7 @@ trait FlowingErrors extends ErrorHandling {
     lazy val message = err"Division by expression $zeroExpr is illegal since it is known to have the value ${ 0 }."
   }
 
-  case class OutOfBounds(index: String, value: Int, size: Int, override val pos: Positioned) extends FlowAnalysisError(4, pos) {
+  case class OutOfBounds(index: String, value: Long, size: Long, override val pos: Positioned) extends FlowAnalysisError(4, pos) {
     lazy val message: String = {
       val bounds = if (value < 0) s"$value < 0" else s"$value > $size"
       err"Indexing expression $index is out of bounds: $bounds."

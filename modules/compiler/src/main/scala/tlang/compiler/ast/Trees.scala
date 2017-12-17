@@ -347,7 +347,7 @@ object Trees {
     def opSign: String
     def operatorName: String
 
-    def orEmpty(args: List[Any], idx: Int): Any = if (idx < args.length) args(0) else "<EMPTY>"
+    def orEmpty(args: List[Any], idx: Int): Any = if (idx < args.length) args(idx) else "<EMPTY>"
 
     def signature(args: List[Any]): String
 
@@ -379,6 +379,7 @@ object Trees {
     def rhs: ExprTree
 
     def signature(args: List[Any]): String = s"${ orEmpty(args, 0) } $opSign ${ orEmpty(args, 1) }"
+
   }
 
   object BinaryOperatorTree {

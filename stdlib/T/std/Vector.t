@@ -3,6 +3,7 @@ package T::std
 import T::std::List
 import T::std::Collection
 import T::std::Iterator
+import java::util::Arrays
 
 class Vector<T>: List<T> =
 
@@ -11,6 +12,7 @@ class Vector<T>: List<T> =
 	var data: T[]
 
 	Def new() = Clear()
+
 
 	Def new(elements: Collection<T>) =
 		Clear()
@@ -81,6 +83,8 @@ class Vector<T>: List<T> =
 			data[i] = data[i + 1]
 
 		size--
+
+	Def Copy(): Vector<T> = new Vector<T>(data)
 
 	Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 

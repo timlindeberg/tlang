@@ -48,7 +48,7 @@ object Knowledge {
     override def toString = s"$id.${ varSymbol.name }"
   }
 
-  case class ArrayItemIdentifier(id: Identifier, index: Int) extends Identifier {
+  case class ArrayItemIdentifier(id: Identifier, index: Long) extends Identifier {
     val symbol = None
     def baseIdentifierEquals(varId: Identifier): Boolean = {
       if (id == varId) true
@@ -81,21 +81,21 @@ object Knowledge {
 
   case class Reassigned(at: StatTree) extends VarKnowledge {override def toString = s"Reassigned(${ at.line }:${ at.col })" }
   case class IsNull(value: Boolean) extends VarKnowledge {override def invert = IsNull(!value) }
-  case class ArraySize(size: Int) extends VarKnowledge
-  case class NumericValue(value: Int) extends VarKnowledge
+  case class ArraySize(size: Long) extends VarKnowledge
+  case class NumericValue(value: Long) extends VarKnowledge
   case class BoolValue(condition: ExprTree) extends VarKnowledge
 
   // TODO: Ranges?
-  case class Greater(value: Int) extends VarKnowledge {
+  case class Greater(value: Long) extends VarKnowledge {
     override def invert = LessEq(value)
   }
-  case class GreaterEq(value: Int) extends VarKnowledge {
+  case class GreaterEq(value: Long) extends VarKnowledge {
     override def invert = Less(value)
   }
-  case class Less(value: Int) extends VarKnowledge {
+  case class Less(value: Long) extends VarKnowledge {
     override def invert = GreaterEq(value)
   }
-  case class LessEq(value: Int) extends VarKnowledge {
+  case class LessEq(value: Long) extends VarKnowledge {
     override def invert = Greater(value)
   }
 
@@ -191,14 +191,14 @@ object Knowledge {
       copy(varKnowledge = newKnowledge + (varId -> varIdKnowledge))
     }
 
-    def addToNumericValue(varId: Identifier, increment: Int): Knowledge = {
+    def addToNumericValue(varId: Identifier, increment: Long): Knowledge = {
       get[NumericValue](varId) match {
         case Some(NumericValue(v)) => setNumericValue(varId, v + increment)
         case _                     => this
       }
     }
 
-    def setNumericValue(varId: Identifier, value: Int): Knowledge = {
+    def setNumericValue(varId: Identifier, value: Long): Knowledge = {
       val numericKnowledge = NumericValue(value)
       val oldKnowledge = varKnowledge.getOrElse(varId, Set()).filterNotInstance[NumericValue]
       val newKnowledge = oldKnowledge + numericKnowledge
@@ -242,9 +242,11 @@ object Knowledge {
       }
 
 
-    def getNumericValue(expr: ExprTree): Option[Int] = {
+    def getNumericValue(expr: ExprTree): Option[Long] = {
       expr match {
         case IntLit(value)                   => Some(value)
+        case LongLit(value)                  => Some(value)
+        case CharLit(value)                  => Some(value)
         case assignable: Assignable          => getIdentifier(assignable) flatMap { id => get[NumericValue](id).map(_.value) }
         case op@BinaryOperatorTree(lhs, rhs) =>
           getNumericValue(lhs) flatMap { lhsValue =>
@@ -354,14 +356,14 @@ object Knowledge {
     private def filterOldKnowledge(varId: Identifier) =
       varKnowledge.filter { case (id, _) => !id.baseIdentifierEquals(varId) }
 
-    private def getUnaryOperator(unaryOperatorTree: UnaryOperatorTree): Option[Int => Int] = unaryOperatorTree match {
-      case _: Hash                   => Some(_.hashCode)
+    private def getUnaryOperator(unaryOperatorTree: UnaryOperatorTree): Option[Long => Long] = unaryOperatorTree match {
+      case _: Hash                   => Some(_.hashCode.toLong)
       case _: Negation               => Some(-_)
       case _: LogicNot               => Some(~_)
       case _: IncrementDecrementTree => None
     }
 
-    private def getBinaryOperator(binaryOperatorTree: BinaryOperatorTree): (Int, Int) => Int = binaryOperatorTree match {
+    private def getBinaryOperator(binaryOperatorTree: BinaryOperatorTree): (Long, Long) => Long = binaryOperatorTree match {
       case _: Plus       => _ + _
       case _: Minus      => _ - _
       case _: Times      => _ * _

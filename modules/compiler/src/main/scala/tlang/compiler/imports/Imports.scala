@@ -110,7 +110,7 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   def getShortName(fullName: String): String = fullToShort.getOrElse(fullName, fullName)
 
   override def replaceNames(str: String): String =
-    fullToShort.foldLeft(str) { case (s, (full, short)) => s.replaceAll(full, short) }
+    fullToShort.foldLeft(str) { case (s, (full, short)) => s.replaceAll(s"\\Q$full\\E", short) }
 
   def contains(shortName: String): Boolean = shortToFull.contains(shortName)
 

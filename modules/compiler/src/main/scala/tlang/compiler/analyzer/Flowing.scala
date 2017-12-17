@@ -152,17 +152,17 @@ case class FlowAnalyser(
   }
 
   def analyzeCondition(tree: ExprTree, knowledge: Knowledge): Knowledge = tree match {
-    case And(lhs, rhs)                =>
+    case And(lhs, rhs)                   =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
       val conditionKnowledge = rhsKnowledge - knowledge
       knowledge.addAndKnowledge(conditionKnowledge)
-    case Or(lhs, rhs)                 =>
+    case Or(lhs, rhs)                    =>
       val lhsKnowledge = analyzeCondition(lhs, knowledge)
       val rhsKnowledge = analyzeCondition(rhs, lhsKnowledge)
       val conditionKnowledge = rhsKnowledge - knowledge
       knowledge.addOrKnowledge(conditionKnowledge)
-    case Not(expr)                    =>
+    case Not(expr)                       =>
       // Apply De Morgans law:
       expr match {
         case And(lhs, rhs) =>
@@ -177,7 +177,7 @@ case class FlowAnalyser(
               knowledge + (exprKnowledge - knowledge).invert
           }
       }
-    case assignable: Assignable       =>
+    case assignable: Assignable          =>
       analyzeExpr(assignable, knowledge)
       getBoolVarCondition(assignable, knowledge) match {
         case Some(condition) =>
@@ -186,10 +186,10 @@ case class FlowAnalyser(
           // Not a bool var
           nullCheck(tree, assignable, knowledge, isNull = false)
       }
-    case EqualsOperatorTree(lhs, rhs) =>
+    case eq@EqualsOperatorTree(lhs, rhs) =>
       val isNull = tree.isInstanceOf[Equals]
       val lhsKnowledge = analyzeExpr(lhs, knowledge)
-      val rhsKnowledge = analyzeExpr(rhs, lhsKnowledge)
+      var rhsKnowledge = analyzeExpr(rhs, lhsKnowledge)
 
       // Returns the value which
       def getOther(exprTree: ExprTree): Option[ExprTree] = {
@@ -198,6 +198,9 @@ case class FlowAnalyser(
           return None
         l.find(_ != exprTree)
       }
+
+      if (eq.isInstanceOf[Equals])
+        rhsKnowledge = analyzeComparison(eq, rhsKnowledge)
 
       getOther(NullLit()) ifDefined { x => return nullCheck(tree, x, rhsKnowledge, isNull) }
 
@@ -212,9 +215,10 @@ case class FlowAnalyser(
           return analyzeCondition(Not(condition), rhsKnowledge)
         }
       }
-
       rhsKnowledge
-    case _                            =>
+    case comp: ComparisonOperatorTree    =>
+      analyzeComparison(comp, knowledge)
+    case _                               =>
       analyzeExpr(tree, knowledge)
   }
 
@@ -228,7 +232,7 @@ case class FlowAnalyser(
 
           analyzeExpr(thn, afterCondition)
           analyzeExpr(els, knowledge + conditionKnowledge.invert)
-        case acc@NormalAccess(obj, _)                 =>
+        case acc@NormalAccess(obj, _)           =>
           traverseChildren(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
@@ -251,9 +255,9 @@ case class FlowAnalyser(
               // Rest of the binary operators need to be null checked before use
               val opArgumentTypes = binOp.lookupOperator((lhs.getType, rhs.getType), imports).get.argTypes
 
-              if(!opArgumentTypes(0).isNullable)
+              if (!opArgumentTypes(0).isNullable)
                 checkValidUse(lhs, knowledge)
-              if(!opArgumentTypes(1).isNullable)
+              if (!opArgumentTypes(1).isNullable)
                 checkValidUse(rhs, knowledge)
           }
         case ExtractNullable(expr)              =>
@@ -262,10 +266,10 @@ case class FlowAnalyser(
           traverse(expr)
           op match {
             case _: Not => // Not can be used for nullable types
-            case _ =>
+            case _      =>
               val opArgumentTypes = op.lookupOperator(expr.getType, imports).get.argTypes
 
-              if(!opArgumentTypes.head.isNullable)
+              if (!opArgumentTypes.head.isNullable)
                 checkValidUse(expr, knowledge)
 
               op.ifInstanceOf[IncrementDecrementTree] { incDec =>
@@ -296,6 +300,25 @@ case class FlowAnalyser(
       }
     }
     traverser.traverse(tree)
+    knowledge
+  }
+
+  private def analyzeComparison(comparison: BinaryOperatorTree, knowledge: Knowledge): Knowledge = {
+    val lhs = comparison.lhs
+    val rhs = comparison.rhs
+    for ((a, b) <- List((lhs, rhs), (rhs, lhs)))
+      knowledge.getIdentifier(a) ifDefined { varId =>
+        knowledge.getNumericValue(b) ifDefined { numericValue =>
+          val newKnowledge = comparison match {
+            case _: LessThan          => Less(numericValue)
+            case _: LessThanEquals    => LessEq(numericValue)
+            case _: GreaterThan       => Greater(numericValue)
+            case _: GreaterThanEquals => GreaterEq(numericValue)
+            case _: Equals            => NumericValue(numericValue)
+          }
+          return knowledge.add(varId, newKnowledge)
+        }
+      }
     knowledge
   }
 
