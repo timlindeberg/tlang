@@ -9,4 +9,4 @@ for(var i = 1; i <= 50000000; i++)
 	if(pos == 1)
 		value = i
 
-println(value) // res: 136
+println(value) // res: 1080289
