@@ -18,7 +18,11 @@ case class ProgramExecutor(classPaths: Set[String], timeout: Duration = Duration
   def apply(className: String): ExecutionResult = execute(className)
 
   private def execute(className: String): ExecutionResult = {
-    val method = getMainMethod(className)
+    val method = try {
+      getMainMethod(className)
+    } catch {
+      case e: VerifyError => return ExecutionResult("", Some(e))
+    }
 
     // In order to run tests in parallel we use a custom PrintStream to redirect threads started
     // from here to byte output streams. Threads that use println that are not started from here

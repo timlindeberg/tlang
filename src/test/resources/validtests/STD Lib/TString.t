@@ -68,6 +68,8 @@ println(empty * 25) // res:
 println(25 * empty) // res:
 println(s * 3) // res: StringStringString
 println(3 * s) // res: StringStringString
+println(3L * s) // res: StringStringString
+println(s * 3L) // res: StringStringString
 println(s + " " * 10 + s) // res: String          String
 
 // Accessor

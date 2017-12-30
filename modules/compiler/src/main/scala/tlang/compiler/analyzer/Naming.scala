@@ -1,17 +1,17 @@
 package tlang.compiler
 package analyzer
 
+import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ClassSymbolLocator
-import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.compiler.messages.Reporter
+import tlang.compiler.utils.DebugOutputFormatter
+import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
-import tlang.Constants
-import tlang.compiler.utils.DebugOutputFormatter
 
 object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
@@ -590,7 +590,7 @@ case class NameAnalyser(
     val op = operator.getSymbol.asInstanceOf[OperatorSymbol]
     val classSymbol = operator.getSymbol.classSymbol
     classSymbol.lookupOperator(operatorType, argTypes, cu.imports, exactTypes = true) match {
-      case Some(oldOperator) => report(OperatorAlreadyDefined(op.signature, oldOperator.line, operator))
+      case Some(oldOperator) => report(OperatorAlreadyDefined(op.signature, oldOperator, operator))
       case None              => operator.getSymbol.classSymbol.addOperator(op)
     }
   }

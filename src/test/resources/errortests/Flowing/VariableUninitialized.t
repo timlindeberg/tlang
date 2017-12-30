@@ -8,6 +8,7 @@ if(fl == 0.0)
 
 var a: A
 a.Test() // res: F2006
+F(a) // res: F2006
 
 a = new A()
 
@@ -71,6 +72,8 @@ g.Test() // res: F2006
 
 for(val x in [ new A(), new A(), new A() ])
 	x.Test()
+
+Def F(a: A) = a.Test()
 
 class A =
 	Def Test() = println()

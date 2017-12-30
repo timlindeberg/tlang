@@ -1,7 +1,8 @@
 package tlang.compiler
 package code
 
-import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
+import java.io.{BufferedInputStream, FileInputStream, FileOutputStream, IOException}
+import java.net.{URL, URLClassLoader}
 
 import better.files._
 import cafebabe.AbstractByteCodes._
@@ -147,6 +148,21 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val codeGenerator = new CodeGenerator(ch, localVariableMap)
     codeGenerator.compileStat(code)
     ch.use(_.freeze)
+  }
+
+
+  private def addURL(url: URL) = {
+    val sysloader = ClassLoader.getSystemClassLoader.asInstanceOf[URLClassLoader]
+    val sysclass = classOf[URLClassLoader]
+    try {
+      val method = sysclass.getDeclaredMethod("addURL", classOf[URL])
+      method.setAccessible(true)
+      method.invoke(sysloader, url)
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace()
+        throw new IOException("Error, could not add URL to system classloader");
+    }
   }
 
   private def generateStackMapFrames(file: String): Unit = {

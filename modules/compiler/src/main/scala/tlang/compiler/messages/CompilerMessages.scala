@@ -95,22 +95,34 @@ case class CompilerMessages(
       s"${ Bold }There $was $num$Bold $name.$Reset"
   }
 
-  private def addToGrid(grid: Grid, error: CompilerMessage): Unit = {
-    messageFormatter.setMessage(error)
+  private def addToGrid(grid: Grid, message: CompilerMessage): Unit = {
+    addMessage(grid, message, showSourceDescription = true)
+    message.extraInfo.foreach { extraInfo =>
+      val showSourceDescription = extraInfo.pos.source != message.pos.source
+      addMessage(grid, extraInfo, true)
+    }
+  }
+
+  private def addMessage(grid: Grid, message: CompilerMessage, showSourceDescription: Boolean) = {
+    messageFormatter.setMessage(message)
 
     grid.row()
 
     val hasValidPosition = messageFormatter.hasValidPosition
-    if (hasValidPosition)
-      grid.content(messageFormatter.sourceDescription)
+    if (showSourceDescription) {
+      if (hasValidPosition)
+        grid.content(messageFormatter.sourceDescription)
 
-    grid.content(messageFormatter.prefix + " " + error.message)
+      grid.content(messageFormatter.prefix + " " + message.message)
+    } else {
+      grid.content(message.message)
+    }
+
 
     if (hasValidPosition) {
       grid.row(Column, TruncatedColumn)
       grid.contents(messageFormatter.locationInSource)
     }
   }
-
 
 }

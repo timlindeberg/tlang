@@ -303,6 +303,81 @@ class CompilerMessageSpec extends UnitSpec {
          |└───┴──────────────────────────────────┘""".stripMargin
   }
 
+
+  it should "include extra info" in {
+    val formatter = testFormatter(
+      width = 40,
+      useColor = false,
+      asciiOnly = false,
+      wordWrapper = mockedWordWrapperReturningSplitLines,
+      truncator = mockedTruncatorReturningSameLine
+    )
+
+    val messageFormatter = mock[MessageFormatter]
+
+    messageFormatter.hasValidPosition returns true
+    messageFormatter.sourceDescription returns(
+      "1:3 from/a/very/cool/File.t",
+      "54:1 from/another/cool/File.t"
+    )
+
+    messageFormatter.prefix returns(
+      "Error A2123",
+      "Info"
+    )
+    messageFormatter.locationInSource returns(
+      List(
+        ("1", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
+        ("", "  ~~~~~"),
+        ("2", "ABCDEFFGHIJKLMNOPQRSTUVXYZ"),
+        ("3", "ABCDEFFGHIJKLMNOPQRSTUVXYZ")
+      ),
+      List(
+        ("53", "Line 1Line 1Line 1"),
+        ("54", "Line 2Line 2Line 2"),
+        ("", "~~~~"),
+        ("55", "Line 3Line 3Line 3")
+      )
+    )
+
+    val compilerMessages = createCompilerMessages(width = 40, useColor = false, messageFormatter = messageFormatter, formatter = Some(formatter))
+
+    compilerMessages += createMessage(
+      MessageType.Error,
+      errorLetters = "A",
+      codeNum = 123,
+      pos = Position(1, 3, 1, 8),
+      message = "There was an error!!!",
+      extraInfo = List(createMessage(
+        MessageType.Info,
+        errorLetters = "",
+        codeNum = -1,
+        pos = Position(54, 1, 54, 4),
+        message = "Cool extra info for ya!"
+      ))
+    )
+    compilerMessages.formatMessages(MessageType.Error) shouldBe
+      """|╒══════════════════════════════════════╕
+         |│          There was 1 error.          │
+         |╞══════════════════════════════════════╡
+         |│ 1:3 from/a/very/cool/File.t          │
+         |│ Error A2123 There was an error!!!    │
+         |├───┬──────────────────────────────────┤
+         |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+         |│   │   ~~~~~                          │
+         |│ 2 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+         |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
+         |├───┴──────────────────────────────────┤
+         |│ 54:1 from/another/cool/File.t        │
+         |│ Info Cool extra info for ya!         │
+         |├────┬─────────────────────────────────┤
+         |│ 53 │ Line 1Line 1Line 1              │
+         |│ 54 │ Line 2Line 2Line 2              │
+         |│    │ ~~~~                            │
+         |│ 55 │ Line 3Line 3Line 3              │
+         |└────┴─────────────────────────────────┘""".stripMargin
+  }
+
   private def createCompilerMessages(
     useColor: Boolean = true,
     messageFormatter: MessageFormatter = mock[MessageFormatter],
@@ -323,12 +398,15 @@ class CompilerMessageSpec extends UnitSpec {
     codeNum: Int = 0,
     pos: Positioned = NoPosition,
     message: String = "ABC",
-    valid: Boolean = true
+    valid: Boolean = true,
+    extraInfo: List[CompilerMessage] = Nil
   ): CompilerMessage = {
     val mess = message
+    val ex = extraInfo
     new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {
       override def message = mess
       override def isValid: Boolean = valid
+      override def extraInfo: List[CompilerMessage] = ex
     }
   }
 

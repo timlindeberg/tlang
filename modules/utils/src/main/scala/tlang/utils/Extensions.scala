@@ -18,7 +18,7 @@ object Extensions {
 
   def debugPrint(values: sourcecode.Text[_]*): Unit = {
     val maxNameWidth = values.map(_.source.length).max
-    values.foreach(value => printf(s"[%-${ maxNameWidth }s]: %s$NL", value.source, value.value.toString))
+    values.foreach(value => printf(s"[%-${ maxNameWidth }s]: '%s'$NL", value.source, value.value.toString))
   }
 
   val NL: String = System.lineSeparator

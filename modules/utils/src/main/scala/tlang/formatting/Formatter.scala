@@ -16,7 +16,7 @@ object Formatter {
       WordWrapper(wrapAnsiColors = formatting.useColor),
       Truncator(),
       syntaxHighlighter,
-      StackTraceHighlighter(formatting)
+      StackTraceHighlighter(formatting, failOnError = true)
     )
   }
 

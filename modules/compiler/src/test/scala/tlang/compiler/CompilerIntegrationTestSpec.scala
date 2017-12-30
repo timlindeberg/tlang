@@ -2,13 +2,13 @@ package tlang.compiler
 
 import better.files.File
 import org.scalatest._
-import tlang.formatting.textformatters.TabReplacer
-import tlang.testutils.TestConstants
-import tlang.utils.Extensions._
 import tlang.Constants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.utils.DebugOutputFormatter
+import tlang.formatting.textformatters.TabReplacer
+import tlang.testutils.TestConstants
+import tlang.utils.Extensions._
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -24,9 +24,10 @@ object CompilerIntegrationTestSpec {
   val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
-  val TestPattern  : Option[Regex]                 = sys.env.get("pattern")
-    .filter { _.nonEmpty }
-    .map { _.replaceAll(" +", "").toLowerCase.r }
+  val TestPattern  : Option[Regex]                 =
+    sys.env.get("pattern")
+      .filter { _.nonEmpty }
+      .map { _.replaceAll(" +", "").toLowerCase.r }
 
 }
 
@@ -61,7 +62,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     def testPath(path: TestPath): Unit = {
       path match {
         case TestDirectory(name, children) =>
-          if(shouldBeIncludedInTestName(name))
+          if (shouldBeIncludedInTestName(name))
             children foreach testPath
           else
             name - { children foreach testPath }

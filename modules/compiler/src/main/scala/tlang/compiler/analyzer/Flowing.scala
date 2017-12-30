@@ -236,7 +236,12 @@ case class FlowAnalyser(
           traverseChildren(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
-          traverseChildren(assign)
+          obj match {
+            case _: VariableID =>
+            // Don't analyze identifiers in assignments since we don't want to produce errors for variables being
+            // reassigned, e.g if they're uninitialized
+            case _ => analyzeExpr(obj, knowledge)
+          }
 
           knowledge.getIdentifier(obj) ifDefined { varId =>
             // Reset knowledge
@@ -297,6 +302,13 @@ case class FlowAnalyser(
             case _                           =>
           }
           checkValidUse(arr, knowledge)
+        case v: VariableID                      =>
+          knowledge.getIdentifier(v) ifDefined { varId =>
+            varId.symbol ifDefined { varSym =>
+              if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
+                report(VariableNotInitialized(v.toString, v))
+            }
+          }
       }
     }
     traverser.traverse(tree)
@@ -356,19 +368,18 @@ case class FlowAnalyser(
         if (objTpe.isNullable)
           report(AccessNullableMethod(meth.getSymbol.signature, obj))
       case _                                                               =>
-        knowledge.getIdentifier(obj) match {
-          case Some(varId) =>
-            if (objTpe.isNullable)
-              knowledge.get[IsNull](varId) match {
-                case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj.toString, obj))
-                case None                           => report(AccessMightBeNull(obj.toString, obj))
-                case _                              =>
-              }
-            varId.symbol ifDefined { varSym =>
-              if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-                report(VariableNotInitialized(obj.toString, obj))
+        knowledge.getIdentifier(obj) ifDefined { varId =>
+          if (objTpe.isNullable)
+            knowledge.get[IsNull](varId) match {
+              case Some(IsNull(isNull)) if isNull => report(AccessIsNull(obj.toString, obj))
+              case None                           => report(AccessMightBeNull(obj.toString, obj))
+              case _                              =>
             }
-          case _           =>
+
+          varId.symbol ifDefined { varSym =>
+            if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
+              report(VariableNotInitialized(obj.toString, obj))
+          }
         }
     }
   }

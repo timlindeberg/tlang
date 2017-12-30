@@ -2,7 +2,7 @@ package tlang.compiler.analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.ast.Trees._
-import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.compiler.messages._
 import tlang.utils.Positioned
 
 trait NamingErrors extends ErrorHandling {
@@ -82,13 +82,20 @@ trait NamingErrors extends ErrorHandling {
   case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
     extends NameAnalysisError(7, pos) {
     lazy val message = err"Method $methodSignature is already defined at line $line."
+
   }
 
   // Missing 8
 
-  case class OperatorAlreadyDefined(operator: String, line: Int, override val pos: Positioned)
+  case class OperatorAlreadyDefined(operator: String, alreadyDefined: Positioned, override val pos: Positioned)
     extends NameAnalysisError(9, pos) {
-    lazy val message = err"Operator $operator is already defined at line $line."
+    lazy val message = err"Operator $operator is already defined."
+
+    case class OperatorAlreadyDefinedExtraMessage() extends ExtraMessage(alreadyDefined) {
+      lazy val message: String = err"Operator is defined here:"
+    }
+
+    override lazy val extraInfo = List(OperatorAlreadyDefinedExtraMessage())
   }
 
   case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)
