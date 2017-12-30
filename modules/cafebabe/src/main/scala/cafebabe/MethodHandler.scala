@@ -7,14 +7,17 @@ import cafebabe.ClassFileTypes._
   * specify a method's body. <code>MethodHandler</code>s should not be created
   * manually but rather obtained directly when adding a method to a
   * <code>ClassFile</code>. */
-class MethodHandler private[cafebabe](m: MethodInfo, c: CodeAttributeInfo, cp: ConstantPool, paramTypes: String, signature: String) {
+class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo], cp: ConstantPool, paramTypes: String, signature: String) {
   private var ch: Option[CodeHandler] = None
 
   private lazy val annotationNameIndex = cp.addString("RuntimeInvisibleAnnotations")
 
   def codeHandler: CodeHandler = {
+    if (c.isEmpty)
+      sys.error("Can't get a code handler from an abstract method.")
+
     if (ch.isEmpty)
-      ch = Some(new CodeHandler(c, cp, paramTypes, m.isStatic, signature))
+      ch = Some(new CodeHandler(c.get, cp, paramTypes, m.isStatic, signature))
 
     ch.get
   }

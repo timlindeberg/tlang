@@ -68,12 +68,12 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   }
 
 
-  def addMethod(retTpe: String, name: String, args: String, signature: String): MethodHandler = {
+  def addMethod(retTpe: String, name: String, args: String, isAbstract: Boolean, signature: String): MethodHandler = {
     val accessFlags: U2 = defaultMethodAccessFlags
     val nameIndex: U2 = constantPool.addString(name)
     val descriptorIndex: U2 = constantPool.addString(s"($args)$retTpe")
-    val code = CodeAttributeInfo(codeNameIndex)
-    val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
+    val code = if (isAbstract) None else Some(CodeAttributeInfo(codeNameIndex))
+    val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, code.toList)
     methods = methods ::: (inf :: Nil)
 
 
@@ -82,7 +82,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
 
   /** Adds the main method */
   def addMainMethod: MethodHandler = {
-    val handler = addMethod("V", "main", "[Ljava/lang/String;", "main(args: java::lang::String[]): Unit")
+    val handler = addMethod("V", "main", "[Ljava/lang/String;", false, "main(args: java::lang::String[]): Unit")
     handler.setFlags(Flags.METHOD_ACC_PUBLIC | Flags.METHOD_ACC_STATIC)
     handler
   }
@@ -94,11 +94,11 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     val code = CodeAttributeInfo(codeNameIndex)
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, List(code))
     methods = methods ::: (inf :: Nil)
-    new MethodHandler(inf, code, constantPool, args, signature)
+    new MethodHandler(inf, Some(code), constantPool, args, signature)
   }
 
   def addClassInitializer: MethodHandler = {
-    val mh = addMethod("V", classInitializerName, "", s"$classInitializerName(): Unit")
+    val mh = addMethod("V", classInitializerName, "", false, s"$classInitializerName(): Unit")
     mh.setFlags(Flags.METHOD_ACC_STATIC)
     mh
   }

@@ -28,10 +28,10 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
     val classes = cus.flatMap(_.classes)
     val results = ctx.executor.map(classes) { generateClassFile(_, ctx) }
-    val stackTraces = results.flatMap(_.stackTraces)
 
     val extraClassPaths = ctx.outDirs.map(_.url).toArray
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
+
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
       files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
@@ -77,7 +77,13 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         case _: MethodDecl =>
           val argTypes = methSymbol.argTypes.map(_.byteCodeName).mkString
           val methDescriptor = methodDescriptor(methSymbol)
-          classFile.addMethod(methSymbol.getType.byteCodeName, methSymbol.name, argTypes, methDescriptor)
+          classFile.addMethod(
+            methSymbol.getType.byteCodeName,
+            methSymbol.name,
+            argTypes,
+            methodDecl.isAbstract,
+            methDescriptor
+          )
 
         case con: ConstructorDecl => generateConstructor(Some(con), classFile, classDecl)
         case _                    => ???
@@ -134,7 +140,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val retType = overriden.getType.byteCodeName
 
     val descriptor = methodDescriptor(overriden)
-    val mh = classFile.addMethod(retType, overriden.name, argTypes, descriptor)
+    val mh = classFile.addMethod(retType, overriden.name, argTypes, isAbstract = false, descriptor)
     mh.setFlags(flags)
 
     val args = overriden.argList.map(arg => VariableID(arg.name).setSymbol(arg))
