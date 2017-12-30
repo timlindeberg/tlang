@@ -611,8 +611,6 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
   private def compileBranch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
     case Not(expr)                                                             => compileBranch(expr, els, thn)
-    case TrueLit()                                                             => ch << Goto(thn.id)
-    case FalseLit()                                                            => ch << Goto(els.id)
     case And(lhs, rhs)                                                         =>
       val next = Label(ch.getFreshLabel("next"))
       compileBranch(lhs, next, els)

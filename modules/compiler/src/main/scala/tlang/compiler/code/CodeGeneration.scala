@@ -1,8 +1,8 @@
 package tlang.compiler
 package code
 
-import java.io.{BufferedInputStream, FileInputStream, FileOutputStream, IOException}
-import java.net.{URL, URLClassLoader}
+import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
+import java.net.URLClassLoader
 
 import better.files._
 import cafebabe.AbstractByteCodes._
@@ -28,8 +28,12 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CodegenerationStackTrace] = {
     val classes = cus.flatMap(_.classes)
     val results = ctx.executor.map(classes) { generateClassFile(_, ctx) }
+    val stackTraces = results.flatMap(_.stackTraces)
+
+    val extraClassPaths = ctx.outDirs.map(_.url).toArray
+    val classLoader = URLClassLoader.newInstance(extraClassPaths)
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
-      files.foreach(generateStackMapFrames)
+      files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
     }
   }
@@ -150,25 +154,14 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     ch.use(_.freeze)
   }
 
-
-  private def addURL(url: URL) = {
-    val sysloader = ClassLoader.getSystemClassLoader.asInstanceOf[URLClassLoader]
-    val sysclass = classOf[URLClassLoader]
-    try {
-      val method = sysclass.getDeclaredMethod("addURL", classOf[URL])
-      method.setAccessible(true)
-      method.invoke(sysloader, url)
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-        throw new IOException("Error, could not add URL to system classloader");
-    }
-  }
-
-  private def generateStackMapFrames(file: String): Unit = {
+  private def generateStackMapFrames(file: String, classLoader: ClassLoader): Unit = {
     // Use ASM library to generate the stack map frames
     // since Cafebabe does not support this.
-    val classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
+
+    // In some cases BCEL can need access to the generated classes when generating
+    // stack map frames. We use a new class loader with access to the newly
+    // generated classes .
+    val classWriter = new ClassWriterWithCustomClassLoader(classLoader, ClassWriter.COMPUTE_FRAMES)
     val inputStream = new BufferedInputStream(new FileInputStream(file))
     val classReader = new ClassReader(inputStream)
 
@@ -221,7 +214,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val codeGenerator = new CodeGenerator(ch, localVariableMap)
     codeGenerator.compileStat(methTree.stat.get)
     addReturnStatement(ch, methTree.getSymbol)
-    ch.use(_.freeze)
+    ch.freeze
+    ch
   }
 
   private def constructVariableMap(meth: MethodSymbol): mutable.Map[VariableSymbol, Int] = {

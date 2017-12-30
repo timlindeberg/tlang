@@ -122,6 +122,7 @@ case class CodegenerationStackTrace(
     signature match {
       case Header(className, methodSignature, methodJVMSignature) =>
         Green(className) + "." + Bold(Magenta(methodSignature)) + " " + Bold(Blue(methodJVMSignature))
+      case _                                                      => signature
     }
   }
 

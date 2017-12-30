@@ -98,8 +98,8 @@ lazy val compiler = (project in file(s"$modulesDirectory/compiler"))
     metaMacroSettings,
     testSettings,
     libraryDependencies ++= Seq(
-      "com.google.code.findbugs" % "bcel-findbugs" % "6.0", // Library used for parsing class files
-      "org.ow2.asm" % "asm-all" % "5.1" // Used to generate stack map frames
+      "org.apache.bcel" % "bcel" % "6.2", // Library used for parsing class files
+      "org.ow2.asm" % "asm-all" % "5.2" // Used to generate stack map frames
     )
   )
   .dependsOn(macros, utils, cafebabe)
