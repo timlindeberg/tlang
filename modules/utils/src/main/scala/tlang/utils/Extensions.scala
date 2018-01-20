@@ -6,8 +6,6 @@ import java.nio.file.{Path, Paths}
 import tlang.Constants
 
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.reflect.{ClassTag, _}
 import scala.util.Try
 import scala.util.matching.Regex
@@ -28,20 +26,6 @@ object Extensions {
 
   implicit val EscapeCharsAll: Map[Char, String] =
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
-
-  def withTimeout[T](duration: Duration)(block: => T): T = {
-    if (duration.toNanos == 0)
-      return block
-
-    implicit val exec = new CancelableExecutionContext()
-    try {
-      Await.result(Future(block), duration)
-    } catch {
-      case e@(_: TimeoutException | _: InterruptedException) =>
-        exec.cancel()
-        throw e
-    }
-  }
 
   def measureTime[T](block: => T): (T, Double) = {
     val t0 = System.nanoTime()
@@ -315,21 +299,6 @@ object Extensions {
           case None    => None
         }
       }
-  }
-
-  class CancelableExecutionContext extends AnyRef with ExecutionContext {
-
-    @volatile var lastThread: Option[Thread] = None
-    override def execute(runnable: Runnable): Unit = {
-      ExecutionContext.Implicits.global.execute(() => {
-        lastThread = Some(Thread.currentThread)
-        runnable.run()
-      })
-    }
-
-    def cancel(): Unit = lastThread ifDefined { _.stop }
-
-    override def reportFailure(t: Throwable): Unit = ???
   }
 
 }

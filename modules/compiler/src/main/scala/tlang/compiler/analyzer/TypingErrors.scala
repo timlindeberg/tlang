@@ -118,7 +118,11 @@ trait TypingErrors extends ErrorHandling {
 
   }
 
-  // Missing 10, 11, 12
+  case class AssignUnit(override val pos: Positioned) extends TypeCheckingError(10, pos) {
+    lazy val message: String = err"Cannot assign variable to an expression of type $TUnit."
+  }
+
+  // Missing 11, 12
 
   case class OperatorNotFound(operatorSignature: String, args: List[Type], override val pos: Positioned)
     extends TypeCheckingError(13, pos) {

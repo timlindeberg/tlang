@@ -7,6 +7,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
+import tlang.utils.Extensions._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -79,8 +80,8 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
       case v: VariableID       => VarColor(v.name)
       case m: MethodID         => MethodColor(m.name)
       case c: ClassID          => ClassColor(c.name)
-      case s: StringLit        => StringColor('"' + s.value + '"')
-      case c: CharLit          => StringColor(''' + c.value + ''')
+      case s: StringLit        => StringColor('"' + s.value.escape + '"')
+      case c: CharLit          => StringColor("'" + c.value.toString.escape + "'")
       case n: NumberLiteral[_] => NumColor(n.value)
       case _                   => ""
     }
@@ -92,7 +93,7 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
   private def reference(tree: Tree): String = {
     val id = identityHashCode(tree)
     val color = AllColors(id % AllColors.length)
-    color(id.toHexString.padTo(8, ' '))
+    color(id.toHexString.padTo(8, '0'))
   }
 
   private def typeContent(tree: Tree): String = tree match {

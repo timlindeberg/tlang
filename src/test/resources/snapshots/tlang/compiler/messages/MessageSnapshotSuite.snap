@@ -208,6 +208,9 @@ G2000: [1mWrong number of template parameters, expected [35m0[0m[1m, found 
 ========================================= TypingErrors AssignNullToNonNullable
 T2033: [1mCannot assign null to non nullable type [35mT::lang::Int[0m[1m.[0m
 
+========================================= TypingErrors AssignUnit
+T2010: [1mCannot assign variable to an expression of type [35mUnit[0m[1m.[0m
+
 ========================================= TypingErrors AssignValueToMethodCall
 T2037: [1mCannot assign a value to the result of a method call.[0m
 

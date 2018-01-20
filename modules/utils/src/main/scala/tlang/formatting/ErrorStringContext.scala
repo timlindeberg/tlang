@@ -83,7 +83,7 @@ case class ErrorStringContext(
         currentColor = Bold
       }
 
-      suggestions match {
+      suggestions.distinct match {
         case suggestion :: Nil =>
           val transformed = transform(suggestion)
           val v = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"

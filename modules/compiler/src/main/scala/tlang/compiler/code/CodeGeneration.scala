@@ -29,7 +29,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classes = cus.flatMap(_.classes)
     val results = ctx.executor.map(classes) { generateClassFile(_, ctx) }
 
-    val extraClassPaths = ctx.outDirs.map(_.url).toArray
+    val extraClassPaths = ctx.allClassPaths.map(File(_).url).toArray
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
 
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
@@ -262,7 +262,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def methodDescriptor(methSym: MethodSymbol) = {
-    methSym.classSymbol.JVMName + "." + methSym.signature + "<->" + methSym.byteCodeSignature
+    val signature = methSym.name + methSym.argTypes.mkString("(", ", ", ")")
+    methSym.classSymbol.JVMName + "." + signature + "<->" + methSym.byteCodeSignature
   }
 
   private def initializeStaticFields(classDecl: ClassDeclTree, classFile: ClassFile): Unit = {

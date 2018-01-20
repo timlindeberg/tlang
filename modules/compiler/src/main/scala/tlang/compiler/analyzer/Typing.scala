@@ -152,6 +152,10 @@ case class TypeChecker(
         case (Some(_), None)         => // Abstract
         case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
       }
+      init.ifDefined(expr =>
+        if (expr.getType == TUnit)
+          report(AssignUnit(expr))
+      )
     case If(condition, thn, els)           =>
       tcExpr(condition, Bool)
       tcStat(thn)
@@ -214,7 +218,8 @@ case class TypeChecker(
       case th: This                                   => th.getSymbol.getType
       case su: Super                                  => su.getSymbol.getType
       case acc: Access                                => tcAccess(acc)
-      case assign: Assign                             => tcAssignment(assign)
+      case assign: Assign                             =>
+        tcAssignment(assign)
       case newDecl: New                               => tcNewExpr(newDecl)
       case NewArray(tpe, sizes)                       =>
         sizes.foreach(tcExpr(_, Int))
@@ -489,7 +494,7 @@ case class TypeChecker(
     val to = assignment.to
     val expr = assignment.from
 
-    to match {
+    val tpe = to match {
       case _: VariableID          =>
         val toTpe = tcExpr(to)
 
@@ -522,6 +527,9 @@ case class TypeChecker(
           case _                => ???
         }
     }
+    if (expr.getType == TUnit)
+      report(AssignUnit(expr))
+    tpe
   }
 
   def tcBinaryOperator(operator: OperatorTree, arg1: Type, arg2: Type): Type = {

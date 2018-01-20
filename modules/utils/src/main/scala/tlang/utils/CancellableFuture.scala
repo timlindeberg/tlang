@@ -20,6 +20,9 @@ object CancellableFuture {
     }
 
     (future, () => {
+      // We have to use stop() to kill the thread since we have no control
+      // over execution so this warning is disabled.
+      //noinspection ScalaDeprecation
       aref.synchronized { Option(aref getAndSet null) foreach { _.stop() } }
       promise.tryFailure(new CancellationException)
     })

@@ -7,7 +7,7 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens.{LPAREN, _}
 import tlang.compiler.lexer._
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.{DebugOutputFormatter}
+import tlang.compiler.utils.DebugOutputFormatter
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
@@ -94,8 +94,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         case CLASS | TRAIT | EXTENSION => classDeclaration after statementEnd
         case PUBDEF | PRIVDEF          =>
           positioned {
-            val modifiers = methodModifiers + Static()
-            method(modifiers) after statementEnd
+            val modifiers = methodModifiers
+            method(modifiers + Static().setPos(modifiers.head)) after statementEnd
           }
         case _                         => statement after statementEnd
       }
@@ -302,6 +302,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <varDeclaration> ::= (var | val) <varDeclEnd> */
   def varDeclaration: VarDecl = positioned {
+    val startPos = tokens.next
     val modifiers: Set[Modifier] = tokens.next.kind match {
       case PRIVVAR =>
         eat(PRIVVAR)
@@ -311,6 +312,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         Set(Private(), Final())
       case _       => report(WrongToken(tokens.next, tokens.last, PRIVVAR, PRIVVAL))
     }
+    modifiers.foreach(_.setPos(startPos, tokens.lastVisible))
     varDeclEnd(modifiers)
   }
 
