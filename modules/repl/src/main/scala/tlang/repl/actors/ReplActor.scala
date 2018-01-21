@@ -77,7 +77,7 @@ class ReplActor(
       this.state = state
     case Start                  =>
       debug"Starting"
-      // replProgram ! Warmup
+      replProgram ! Warmup
       renderer ! RenderingActor.StartRepl
       awaitInput()
     case Stop                   =>

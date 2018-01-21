@@ -407,7 +407,7 @@ object Main extends Logging {
     if (output.isEmpty)
       return
 
-    val highlighted = formatter.syntaxHighlight(output.trim)
+    val highlighted = formatter.syntaxHighlight(output)
     val lines = formatter
       .splitWithColors(highlighted)
       .zipWithIndex

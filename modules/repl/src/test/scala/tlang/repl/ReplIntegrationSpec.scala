@@ -14,9 +14,8 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
 
   def Width = 80
   def Height = 300
-  def TimeoutMilliseconds = 5000
 
-  val testTerminal: TestTerminal = new TestTerminal(Width, Height, TimeoutMilliseconds)
+  val testTerminal: TestTerminal = new TestTerminal(Width, Height)
   var repl        : ActorRef     = _
 
   override def beforeAll(): Unit = {

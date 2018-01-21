@@ -1,6 +1,6 @@
 package tlang.repl
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
+import java.util.concurrent.TimeUnit
 
 import com.googlecode.lanterna.TextColor.ANSI
 import com.googlecode.lanterna.graphics.TextGraphics
@@ -24,7 +24,7 @@ import scala.concurrent.{Future, Promise}
   * It starts with giving Key input (here given through the executeCommand
   * function) and ends by producing an output which can be verified.
   */
-class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
+class TestTerminal(width: Int, height: Int) extends Terminal {
 
   private val ExecuteKey  : KeyStroke                   = new KeyStroke(' ', true, false)
   private val terminalSize: TerminalSize                = new TerminalSize(height, width)
@@ -52,7 +52,7 @@ class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
 
     (keyStrokes :+ ExecuteKey) foreach { input.enqueue(_) }
 
-    new TestTerminalExecution(timeout) use { exec => execution = Some(exec) }
+    new TestTerminalExecution() use { exec => execution = Some(exec) }
   }
 
   private def lastBox: String = {
@@ -168,12 +168,13 @@ class TestTerminal(width: Int, height: Int, timeout: Long) extends Terminal {
 }
 
 
-class TestTerminalExecution(timeout: Long) extends Matchers with AnsiMatchers {
-
+class TestTerminalExecution() extends Matchers with AnsiMatchers {
 
   private var stopAt: Option[String => Boolean] = None
   private val promise                           = Promise[String]()
   private var lastBox                           = ""
+  private val waitTime                          = 10
+  private var lastUpdate                        = 0L
 
   def finished: Boolean = promise.isCompleted
 
@@ -186,27 +187,21 @@ class TestTerminalExecution(timeout: Long) extends Matchers with AnsiMatchers {
     if (stopAt.isEmpty)
       throw new IllegalStateException("Cannot call 'display' without calling stopWhen")
 
-
-    Future {
-      Thread.sleep(timeout)
-      if (!promise.isCompleted) {
-        promise.failure(new TimeoutException(
-          s"""|Test timed out. Screen at time of timeout:
-              |${ "-" * 80 }
-              |${ lastBox.stripAnsi }
-              |${ "-" * 80 }
-           """.stripMargin
-        ))
-      }
-    }
-
     promise.future
   }
 
   def verifyBox(box: String): Unit = {
     lastBox = box
-    if (stopAt.exists(_.apply(box)) && !promise.isCompleted)
-      promise.success(box)
+    if (promise.isCompleted || !stopAt.exists(_.apply(box)))
+      return
+
+    val currentTime = System.currentTimeMillis()
+    lastUpdate = currentTime
+    Future {
+      Thread.sleep(waitTime)
+      if (lastUpdate == currentTime)
+        promise.success(box)
+    }
   }
 
 }

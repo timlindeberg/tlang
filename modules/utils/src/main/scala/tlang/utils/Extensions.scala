@@ -195,6 +195,8 @@ object Extensions {
 
   implicit class TupleCollectionExtensions[A, B](val tuples: Traversable[(A, B)]) extends AnyVal {
     def aligned: String = {
+      if (tuples.isEmpty) return ""
+      
       val maxWidth = tuples.map(_._1.toString.length).max
       tuples
         .map { case (a, b) => java.lang.String.format(s"%-${ maxWidth }s -> %s", a.toString, b.toString) }
