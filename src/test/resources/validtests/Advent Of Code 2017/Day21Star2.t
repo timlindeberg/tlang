@@ -1,6 +1,6 @@
 // Ignore
-// This solution is too slow to be part of the test suite but it's exactly
-// the same as Star 1 except more iterations so it doesnt matter
+// This solution is exactly the same as star 1 but with more iterations and take
+// around 2 seconds to execute so it's ignored
 import java::util::Arrays
 
 val input = `../.. => .##/##./.#.

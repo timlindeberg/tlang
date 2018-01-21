@@ -159,7 +159,6 @@ class Rule =
 				transformed[i][j] = match[size - j - 1][i]
 		transformed
 
-
 	Def Matches(square: Char[][]) =
 		if(square.Size() != size)
 			return false
@@ -205,7 +204,7 @@ var pattern = [
     ['#', '#', '#'],
 ]
 
-for(var iteration = 0; iteration < 18; iteration++)
+for(var iteration = 0; iteration < 5; iteration++)
 	val size = pattern.Size()
 	val width = size % 2 == 0 ? 2 : 3
 	val numSquares = size / width
