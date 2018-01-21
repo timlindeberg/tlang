@@ -5,11 +5,9 @@ import java.net.{URL, URLClassLoader}
 
 import better.files.File
 
-import scala.concurrent.duration.Duration
-
 case class ExecutionResult(output: String, exception: Option[Throwable] = None)
 
-case class ProgramExecutor(classPaths: Set[String], timeout: Duration = Duration(0, "sec")) {
+case class ProgramExecutor(classPaths: Set[String]) {
 
   private val URLs = classPaths.map(classPath => new URL(s"file:$classPath/")).toArray
 
