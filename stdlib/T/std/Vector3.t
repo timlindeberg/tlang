@@ -95,10 +95,10 @@ class Vector3<T> =
 	Def static Dot(lhs: Vector3<T>, rhs: Vector3<T>) = lhs.X * rhs.X + lhs.Y * rhs.Y + lhs.Z * rhs.Z
 
 	Def static Cross(lhs: Vector3<T>, rhs: Vector3<T>) = new Vector3<T>(
-	                                                                        lhs.Y * rhs.Z - lhs.Z * rhs.Y,
-	                                                                        lhs.Z * rhs.X - lhs.X * rhs.Z,
-	                                                                        lhs.X * rhs.Y - lhs.Y * rhs.X,
-	                                                                    )
+	    lhs.Y * rhs.Z - lhs.Z * rhs.Y,
+	    lhs.Z * rhs.X - lhs.X * rhs.Z,
+	    lhs.X * rhs.Y - lhs.Y * rhs.X,
+	)
 
 	//------------------------------------------------------
 	// Public methods

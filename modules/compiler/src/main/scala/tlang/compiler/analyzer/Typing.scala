@@ -438,7 +438,7 @@ case class TypeChecker(
       return uniqueTpes.head
 
     val containsNull = uniqueTpes.contains(TNull)
-    uniqueTpes = uniqueTpes.filter(_ != TNull)
+    uniqueTpes = uniqueTpes.filter(_ notIn List(TNull, TUnit))
     val tpe =
       if (uniqueTpes.size == 1) {
         uniqueTpes.head
