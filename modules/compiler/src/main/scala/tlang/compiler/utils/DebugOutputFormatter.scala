@@ -64,7 +64,7 @@ case class DebugOutputFormatter(formatter: Formatter, treePrinter: TreePrinter, 
         .content(formatter.fileName(tree.sourceName))
         .row()
         .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
-        .row(Column, TruncatedColumn, Column, Column, Column)
+        .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)
         .columnHeaders("Line", "Tree", "Reference", "Symbol", "Type")
         .contents(treePrinter(tree))
     }

@@ -4,8 +4,9 @@ import T::std::List
 import T::std::Collection
 import T::std::Iterator
 import java::util::Arrays
+import T::std::Stack
 
-class Vector<T>: List<T> =
+class Vector<T>: List<T>, Stack<T> =
 
 	val static InitialCapacity = 10
 	var size = 0
@@ -32,6 +33,9 @@ class Vector<T>: List<T> =
 		data = new T[size]
 		for(var i = 0; i < size; i++)
 			data[i] = value
+
+	/* ------------------------------ List ------------------------------  */
+
 
 	Def Get(index: Int) = data[index]
 	Def Set(index: Int, value: T) = (data[index] = value)
@@ -83,6 +87,15 @@ class Vector<T>: List<T> =
 			data[i] = data[i + 1]
 
 		size--
+
+	/* ------------------------------ Stack ------------------------------  */
+
+	Def Push(value: T): Unit = Add(size, value)
+	Def Pop(): T = data[size-- - 1]
+
+	Def Peek(): T? = IsEmpty() ? null : data[Size() - 1]
+
+	/* ------------------------------ Misc ------------------------------  */
 
 	Def Copy(): Vector<T> = new Vector<T>(data)
 

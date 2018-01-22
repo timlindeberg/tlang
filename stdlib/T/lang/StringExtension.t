@@ -44,10 +44,6 @@ extension java::lang::String =
 		val a = String.valueOf(lhs ?: "null")
 		a.concat(rhs)
 
-	Def +(lhs: Object?, rhs: String): String =
-		val a = String.valueOf(lhs ?: "null")
-		a.concat(rhs)
-
 	Def *(times: Long, str: String) = str * times
 	Def *(str: String, times: Long) =
 		val sb = new StringBuilder()
@@ -74,14 +70,16 @@ extension java::lang::String =
 
 		new String(chars)
 
-	//----------------------------------------------------------------
-	// Wrappers for java.lang.String methods to enable capital letters
-	//----------------------------------------------------------------
-
 	Def Capitalize() =
 		if(length() == 0 || this[0].IsUpper())
 			return this
 		this[0].ToUpper() + substring(1)
+
+	Def Lines(): String[] = Split("\r?\n")
+
+	//----------------------------------------------------------------
+	// Wrappers for java.lang.String methods to enable capital letters
+	//----------------------------------------------------------------
 
 	Def CharAt(index: Int) = charAt(index)
 	Def CodePointAt(index: Int) = codePointAt(index)

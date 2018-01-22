@@ -68,7 +68,7 @@ object Types {
 
     override def toString: String = name + (if (isNullable) "?" else "")
 
-    def getSuperTypes: Set[Type] = Set()
+    def getSuperTypes: Set[Type] = Set(Object)
 
     def implicitlyConvertibleFrom: List[Type] = List()
 

@@ -192,7 +192,16 @@ case class TypeChecker(
     case ret@Return(Some(expr))            =>
       val retType = currentMethodSymbol.getType match {
         case TUntyped => tcExpr(expr)
-        case retType  => tcExpr(expr, retType)
+        case retType  =>
+          // Special case where we try to return an empty array literal from a method
+          // with a specified array type. Then the returned array should have that
+          // type and not Object[]
+          (retType, expr) match {
+            case (tpe: TArray, ArrayLit(Nil)) =>
+              expr.setType(tpe)
+              tpe
+            case _                            => tcExpr(expr, retType)
+          }
       }
       returnStatements += ((ret, retType))
     case ret@Return(None)                  =>
@@ -225,11 +234,7 @@ case class TypeChecker(
         sizes.foreach(tcExpr(_, Int))
         tpe.getType
       case ArrayLit(expressions)                      =>
-        val tpes = expressions.map(tcExpr(_))
-        val inferredType = getReturnType(tpes)
-
-        // An empty array literal should have Object type
-        val tpe = if (inferredType == TUnit) Object else inferredType
+        val tpe = if (expressions.isEmpty) Object else getReturnType(expressions.map(tcExpr(_)))
         TArray(tpe)
       case And(lhs, rhs)                              =>
         tcExpr(lhs, Bool)
@@ -446,8 +451,8 @@ case class TypeChecker(
         // More than one type and at least one is a primitive
         Object
       } else {
-        val s = uniqueTpes.head.getSuperTypes
-        val commonTypes = uniqueTpes.drop(1).foldLeft(s) { (common, tpe) => common.intersect(tpe.getSuperTypes) }
+        val superTypes = uniqueTpes.map(_.getSuperTypes)
+        val commonTypes = superTypes.reduce((acc, superTypes) => acc.intersect(superTypes))
         commonTypes.head
       }
 
