@@ -1,3 +1,6 @@
+// Ignore
+// This is pretty much the same as Star 2 so there's
+// no need to test both since they take around 2-3 seconds.
 import java::lang::Math
 import T::std::LinkedList
 import T::std::Stack

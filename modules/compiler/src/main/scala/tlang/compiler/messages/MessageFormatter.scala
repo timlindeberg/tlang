@@ -26,7 +26,7 @@ case class MessageFormatter(
     }
   }
 
-  def hasValidPosition: Boolean = position.source.nonEmpty && (position.line in (1 to lines.size))
+  def hasValidPosition: Boolean = position.source.nonEmpty && (position.line in (1 to lines.size + 1))
 
   def color: Color = message.messageType.color(formatting) + formatting.Bold
   def position: Positioned = message.pos
@@ -80,10 +80,13 @@ case class MessageFormatter(
     (trimmedLines, adjustedPos)
   }
 
-  private def getMinimumIndent(lines: Seq[(String, Int)]): Int =
-    lines
+  private def getMinimumIndent(lines: Seq[(String, Int)]): Int = {
+    val nonEmptyLines = lines
       .filter { case (line, _) => line.nonEmpty }
-      .map { case (line, _) => indent(line) }.min
+      .map { case (line, _) => indent(line) }
+
+    if (nonEmptyLines.isEmpty) 0 else nonEmptyLines.min
+  }
 
   private def indent(line: String): Int = {
     var i = 0

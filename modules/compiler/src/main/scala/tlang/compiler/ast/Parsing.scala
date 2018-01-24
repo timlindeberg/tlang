@@ -391,7 +391,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    * */
+    **/
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit].ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -498,9 +498,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case DECREMENT     => unaryOperator(PreDecrement)
       case LBRACKET      => indexingOperator
       case _             =>
-        report(WrongToken(tokens.next, tokens.last, PLUS, MINUS, TIMES, DIV, MODULO, LOGICAND, LOGICOR, LOGICXOR, LSHIFT,
-          RSHIFT, LESSTHAN, LESSTHANEQ, GREATERTHAN, GREATERTHANEQ, EQUALS, NOTEQUALS, INCREMENT, DECREMENT,
-          LOGICNOT, LBRACKET))
+        report(UnexpectedToken(tokens.next, tokens.last))
     }
 
     val retType = optional(COLON)(returnType)
@@ -904,9 +902,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case DECREMENT     => preDecrement
       case MINUS         => negation
       case SUPER         => superCall
-      case _             => report(WrongToken(tokens.next, tokens.last, IDKIND, INTLITKIND, STRLITKIND, CHARLITKIND,
-        LONGLITKIND, DOUBLELITKIND, FLOATLITKIND, NEW, LPAREN, LBRACKET, NULL, THIS, TRUE, FALSE, BANG, LOGICNOT, HASH,
-        INCREMENT, DECREMENT, MINUS, SUPER))
+      case _             => report(UnexpectedToken(tokens.next, tokens.last))
     }
   }
 
