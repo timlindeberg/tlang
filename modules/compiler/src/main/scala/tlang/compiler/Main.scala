@@ -351,7 +351,7 @@ object Main extends Logging {
 
     flags.foreach { columns =>
       grid.row(Column(width = Width.Fixed(maxFlagWidth)), Column)
-      grid.content(columns)
+      grid.contents(columns)
     }
 
     grid.print()

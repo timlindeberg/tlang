@@ -1,7 +1,7 @@
 package tlang.testutils
 
 import org.scalatest.Tag
-import tlang.formatting.Formatter
+import tlang.formatting.Formatting
 
 import scala.util.Try
 import scala.util.matching.Regex
@@ -19,8 +19,7 @@ object TestConstants {
   val LineWidth      : Int         = sys.env.get("lineWidth").flatMap(num => Try(num.toInt).toOption).getOrElse(80)
   val PrintCodePhases: Set[String] = sys.env.get("printOutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
 
-  val TestFormatting = tlang.formatting.Formatting(LineWidth, useColor = UseColors, asciiOnly = AsciiOnly)
-  val TestFormatter  = Formatter(TestFormatting)
+  val TestFormatting = Formatting(LineWidth, useColor = UseColors, asciiOnly = AsciiOnly)
 
   val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
   val IgnoreRegex  : Regex = """// *[I|i]gnore""".r

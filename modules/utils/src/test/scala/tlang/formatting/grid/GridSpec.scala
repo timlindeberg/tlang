@@ -114,9 +114,9 @@ class GridSpec extends UnitSpec {
       .row(Column, Column)
       .content("A", "B")
       .row(Column, Column)
-      .content(("A", "B"))
+      .contents(("A", "B"))
       .row(Column, Column, Column, Column, Column, Column)
-      .content(sixTuple)
+      .contents(sixTuple)
       .row(Column, Column, Column, Column, Column, Column)
       .mapContent(0 to 3) { i => (i, i + 1, i + 2, i + 3, i + 4, i + 5) }
       .row(Column, Column, Column)
@@ -170,7 +170,7 @@ class GridSpec extends UnitSpec {
       .row(Column, Column)
       .content("A", "B")
       .row(Column, Column)
-      .content(("A", "B"))
+      .contents(("A", "B"))
 
     grid should have size 3
     grid(1) should have size 2
@@ -444,6 +444,47 @@ class GridSpec extends UnitSpec {
   }
 
 
+  it should "render correctly with centered content" in {
+    val wordWrapper = mockedWordWrapperReturningSplitLines
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 10) returns List("ABCDEFGHIJ", "KLMNOPQRST", "XYZ")
+
+    Grid(mockedFormatter(wordWrapper = wordWrapper, width = 40))
+      .row(Column, Column(width = Fixed(23)))
+      .contents(CenteredContent("Title"), "ABCDEFG")
+      .contents("ABCDEFGHIJKLMNOPQRSTUVXYZ", CenteredContent("Title", '_'))
+      .contents(CenteredContent(" ABC ", '-'), CenteredContent("\u001b[31mTitle\u001b[0m"))
+      .render().print should matchWithAnsi(
+      s"""|┌────────────┬─────────────────────────┐
+          |│   Title    │ ABCDEFG                 │
+          |│ ABCDEFGHIJ │ _________Title_________ │
+          |│ KLMNOPQRST │                         │
+          |│ XYZ        │                         │
+          |│ -- ABC --- │          \u001b[31mTitle\u001b[0m          │
+          |└────────────┴─────────────────────────┘""".stripMargin.print
+    )
+  }
+
+
+  it should "render correctly with a divider" in {
+
+    Grid(mockedFormatter(width = 40))
+      .row(Column, Column(width = Fixed(23)))
+      .contents("ABC", "ABC")
+      .contents(Divider("─"), Divider("A"))
+      .contents("ABC", "ABC")
+      .contents(Divider("─|"), Divider(".*^*."))
+      .contents(Divider("._."), Divider("─", Colors.Red))
+      .render() should matchWithAnsi(
+      s"""|┌────────────┬─────────────────────────┐
+          |│ ABC        │ ABC                     │
+          |│ ────────── │ AAAAAAAAAAAAAAAAAAAAAAA │
+          |│ ABC        │ ABC                     │
+          |│ ─|─|─|─|─| │ .*^*..*^*..*^*..*^*..*^ │
+          |│ ._.._.._.. │ \u001b[31m───────────────────────\u001b[0m │
+          |└────────────┴─────────────────────────┘""".stripMargin
+    )
+  }
+
   it should "render correctly with fixed and auto column widths" in {
     val wordWrapper = mock[WordWrapper]
     wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
@@ -471,7 +512,6 @@ class GridSpec extends UnitSpec {
          |│     │       │ H  │
          |└─────┴───────┴────┘""".stripMargin
   }
-
 
   it should "render correctly with different indentation" in {
     Grid(mockedFormatter(width = 30))
@@ -681,8 +721,6 @@ class GridSpec extends UnitSpec {
           |│ ABC │ DEF        │
           |└─────┴────────────┘""".stripMargin.trim
     )
-
-
   }
 
 

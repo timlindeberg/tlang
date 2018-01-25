@@ -4,6 +4,7 @@ import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatting
+import tlang.formatting.grid.Divider
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -48,7 +49,8 @@ case class CodegenerationStackTrace(
     color(label)
   }
 
-  private type StackTraceLine = (String, String, String, String, String)
+  // Any since we can return either a Divider or a String
+  private type StackTraceLine = (Any, Any, Any, Any, Any)
 
   override def toString: String = content.mkString
   def content: List[StackTraceLine] = {
@@ -73,8 +75,8 @@ case class CodegenerationStackTrace(
         case Label(name)                                =>
           import formatting.Horizontal
           val color = getLabelColor(name)
-          // Reasonable estimates for the sizes of the columns (mostly based on the width of the header)
-          val line = (color(Horizontal * 4), color(Horizontal * 3), color(Horizontal * 6), color(Horizontal * 13), color(Horizontal * 2 + "> " + name))
+          val divider = Divider(Horizontal, color)
+          val line = (divider, divider, divider, divider, color(Horizontal * 2 + " " + name))
           lines += line
         case LineNumber(line)                           =>
           currentLineNumber = line

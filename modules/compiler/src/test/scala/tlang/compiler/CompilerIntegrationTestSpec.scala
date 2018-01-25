@@ -5,9 +5,11 @@ import org.scalatest._
 import tlang.Constants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
+import tlang.formatting.Formatter
 import tlang.formatting.textformatters.TabReplacer
 import tlang.testutils.TestConstants
+import tlang.testutils.TestConstants.TestFormatting
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -24,6 +26,7 @@ object CompilerIntegrationTestSpec {
   val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
+  val TestFormatter                                = Formatter(TestFormatting, TLangSyntaxHighlighter(TestFormatting))
   val TestPattern  : Option[Regex]                 =
     sys.env.get("pattern")
       .filter { _.nonEmpty }
@@ -92,10 +95,9 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
   }
 
   def printExecutionTimes(file: File, ctx: Context): Unit = {
-    import TestFormatter._
     import TestFormatting._
 
-    grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
+    TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
     ctx.printExecutionTimes(success = true)
   }
 

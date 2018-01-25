@@ -1,8 +1,36 @@
 package tlang.formatting.grid
 
+import tlang.formatting.Colors
+import tlang.formatting.Colors.Color
 import tlang.utils.Extensions._
 
 import scala.collection.mutable.ListBuffer
+
+trait GridContent {
+
+  def render(width: Int): String
+
+  def width: Option[Int] = None
+}
+
+case class StringContent(any: Any) extends GridContent {
+  private val s = any.toString
+  def render(width: Int): String = s
+  override def width: Option[Int] = Some(s.visibleCharacters)
+}
+
+case class CenteredContent(content: Any, fill: Char = ' ') extends GridContent {
+  def render(width: Int): String = Alignment.Center(content.toString, width, fill)
+}
+
+case class Divider(fill: String, color: Color = Colors.NoColor) extends GridContent {
+  def render(width: Int): String = {
+    val charWidth = fill.visibleCharacters
+    val divider = (fill * (width / charWidth)) + fill.take(width % charWidth)
+    color(divider)
+  }
+}
+
 
 object ColumnDefaults {
   val Width            = tlang.formatting.grid.Width.Auto
@@ -19,16 +47,19 @@ case class Column(
   alignment: Alignment = ColumnDefaults.Alignment,
   overflowHandling: OverflowHandling = ColumnDefaults.OverflowHandling) {
 
-  private[grid] val lines: ListBuffer[String] = ListBuffer()
-  private       var _maxWidth                 = 0
+  private[grid] val lines: ListBuffer[GridContent] = ListBuffer()
+  private       var _maxWidth                      = 0
 
   def maxWidth: Int = _maxWidth
-  def addLine(newLine: String): Unit = {
-    _maxWidth = Math.max(_maxWidth, newLine.visibleCharacters)
-    lines += newLine
+  def addLine(newLine: String): Unit = addLine(StringContent(newLine))
+
+  def addLine(content: GridContent): Unit = {
+    content.width ifDefined { width => _maxWidth = Math.max(_maxWidth, width) }
+    lines += content
   }
 
-  def content: String = lines.mkString("\n")
+  def content: String = lines.map(content => content.render(_maxWidth)).mkString("\n")
+
 
 }
 
@@ -56,9 +87,8 @@ trait Alignment {
       throw new IllegalArgumentException(s"Cannot align text within a space smaller than 1: $width")
 
     val textWidth = text.visibleCharacters
-    if (textWidth > width) {
+    if (textWidth > width)
       throw new IllegalArgumentException(s"Cannot align text '$text' in the given space: $textWidth > $width")
-    }
 
     align(text, width - textWidth, fill)
   }

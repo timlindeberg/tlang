@@ -95,9 +95,8 @@ case class Grid(var formatter: Formatter) {
   def emptyLine(): Grid = content()
   def content(): Grid = allContent(List.fill(currentRow.size)(List("")))
 
-  def content(t: Product): Grid = addTuple(t)
 
-  def content(content: String, moreContent: String*): Grid = {
+  def content(content: Any, moreContent: Any*): Grid = {
     val allContent = content :: moreContent.toList
     verifyNumValues(allContent.length)
     addContent(allContent)
@@ -110,8 +109,22 @@ case class Grid(var formatter: Formatter) {
   }
 
   // Should be a list of tuples with the correct size
-  def contents(content: Iterable[Product]): Grid = {
-    content foreach addTuple
+  def contents(content: Any): Grid = {
+
+    def throwError() =
+      throw new IllegalArgumentException(
+        "Argument to contents method should be a Tuple or an Iterable[Tuple]. Received " + content
+      )
+
+    content match {
+      case it: Iterable[_]  =>
+        if (it.isEmpty || !it.head.isInstanceOf[Product])
+          throwError()
+
+        it.asInstanceOf[Iterable[Product]] foreach addTuple
+      case product: Product => addTuple(product)
+      case _                => throwError()
+    }
     this
   }
 
@@ -185,7 +198,10 @@ case class Grid(var formatter: Formatter) {
 
     def addContent(content: Iterable[Any]): Unit = {
       calculateColumnWidths.reset()
-      columns.zip(content).foreach { case (column, content) => column.addLine(content.toString) }
+      columns.zip(content).foreach {
+        case (column, content: GridContent) => column.addLine(content)
+        case (column, content)              => column.addLine(StringContent(content.toString))
+      }
     }
 
     private def spaceForContent(): Int = {
@@ -260,7 +276,7 @@ case class Grid(var formatter: Formatter) {
 
   }
 
-  case class GridRenderer(formatter: Formatter) {
+  private case class GridRenderer(formatter: Formatter) {
 
     private val formatting = formatter.formatting
 
@@ -374,7 +390,7 @@ case class Grid(var formatter: Formatter) {
       val columnWidths = row.columnWidths
 
       val rowContent = columns
-        .map(column => if (column.lines.nonEmpty) column.lines else List(""))
+        .map(column => if (column.lines.nonEmpty) column.lines else List(StringContent("")))
         // Transpose to get the corresponding line in each column together
         .transpose
         .map { lines =>
@@ -382,7 +398,7 @@ case class Grid(var formatter: Formatter) {
           val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
             val width = columnWidths(columnIndex)
             val method = columns(columnIndex).overflowHandling
-            handleOverflow(line, width, method)
+            handleOverflow(line.render(width), width, method)
           }
           val maxNumLines = overFlowedLines.map(_.length).max
 
