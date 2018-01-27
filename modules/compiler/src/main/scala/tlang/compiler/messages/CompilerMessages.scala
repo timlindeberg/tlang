@@ -1,8 +1,9 @@
 package tlang.compiler.messages
 
 import tlang.formatting.Formatter
-import tlang.formatting.grid.{Column, Grid, TruncatedColumn}
+import tlang.formatting.grid._
 import tlang.options.argument.MaxErrorsFlag
+import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
@@ -96,27 +97,30 @@ case class CompilerMessages(
   }
 
   private def addToGrid(grid: Grid, message: CompilerMessage): Unit = {
-    addMessage(grid, message, showSourceDescription = true)
+    addMessage(grid, message, showTitle = true)
     message.extraInfo.foreach { extraInfo =>
       val showSourceDescription = extraInfo.pos.source != message.pos.source
-      addMessage(grid, extraInfo, true)
+      addMessage(grid, extraInfo, showTitle = false)
     }
   }
 
-  private def addMessage(grid: Grid, message: CompilerMessage, showSourceDescription: Boolean) = {
+  private def addMessage(grid: Grid, message: CompilerMessage, showTitle: Boolean) = {
+    val formatting = formatter.formatting
     messageFormatter.setMessage(message)
 
     grid.row()
 
-    val hasValidPosition = messageFormatter.hasValidPosition
-    if (showSourceDescription) {
-      if (hasValidPosition)
-        grid.content(messageFormatter.sourceDescription)
-
-      grid.content(messageFormatter.prefix + " " + message.message)
-    } else {
-      grid.content(message.message)
+    if (showTitle) {
+      val color = message.messageType.color(formatting)
+      val title = s" ${ messageFormatter.prefix.stripAnsi } "
+      grid.content(CenteredContent(title, color, formatting.HorizontalThick))
     }
+
+    val hasValidPosition = messageFormatter.hasValidPosition
+    if (hasValidPosition)
+      grid.content(messageFormatter.sourceDescription)
+
+    grid.content(message.message)
 
 
     if (hasValidPosition) {

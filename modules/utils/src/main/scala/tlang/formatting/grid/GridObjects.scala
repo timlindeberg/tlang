@@ -16,11 +16,14 @@ trait GridContent {
 case class StringContent(any: Any) extends GridContent {
   private val s = any.toString
   def render(width: Int): String = s
-  override def width: Option[Int] = Some(s.visibleCharacters)
+  override def width: Option[Int] = {
+    val width = if (s.isEmpty) 0 else s.lines.map(_.visibleCharacters).max
+    Some(width)
+  }
 }
 
-case class CenteredContent(content: Any, fill: Char = ' ') extends GridContent {
-  def render(width: Int): String = Alignment.Center(content.toString, width, fill)
+case class CenteredContent(content: Any, color: Color = Colors.NoColor, fill: String = " ") extends GridContent {
+  def render(width: Int): String = color(Alignment.Center(content.toString, width, fill))
 }
 
 case class Divider(fill: String, color: Color = Colors.NoColor) extends GridContent {
@@ -31,6 +34,36 @@ case class Divider(fill: String, color: Color = Colors.NoColor) extends GridCont
   }
 }
 
+case class EvenlySpaced(items: Iterable[String], spacing: Int = 1) extends GridContent {
+  def render(width: Int): String = {
+    val columnWidth = items.map(_.visibleCharacters).max + spacing
+    val numColumns = (width + spacing) / columnWidth
+
+    if (numColumns == 0)
+      return items.map(pad(_, width)).mkString(NL)
+
+    val totalWidth = numColumns * columnWidth - spacing
+
+    items
+      .grouped(numColumns)
+      .map { columns =>
+        val x = columns
+          .zipWithIndex
+          .map { case (s, i) =>
+            var padding = columnWidth - s.visibleCharacters - spacing
+            if (i != columns.size - 1) padding += spacing
+            s + " " * padding
+          }
+          .mkString("")
+
+        pad(x, totalWidth)
+      }
+      .mkString(NL)
+  }
+
+  private def pad(s: String, width: Int) = s.padTo(width + s.length - s.visibleCharacters, ' ')
+
+}
 
 object ColumnDefaults {
   val Width            = tlang.formatting.grid.Width.Auto
@@ -82,7 +115,7 @@ object Width {
 }
 
 trait Alignment {
-  def apply(text: String, width: Int, fill: Char = ' '): String = {
+  def apply(text: String, width: Int, fill: String = " "): String = {
     if (width < 1)
       throw new IllegalArgumentException(s"Cannot align text within a space smaller than 1: $width")
 
@@ -93,24 +126,24 @@ trait Alignment {
     align(text, width - textWidth, fill)
   }
 
-  protected def align(text: String, space: Int, fill: Char): String
+  protected def align(text: String, space: Int, fill: String): String
 
 }
 
 object Alignment {
   case object Left extends Alignment {
-    override def align(text: String, space: Int, fill: Char): String = {
-      text + s"$fill" * space
+    override def align(text: String, space: Int, fill: String): String = {
+      text + fill * space
     }
   }
   case object Right extends Alignment {
-    override def align(text: String, space: Int, fill: Char): String = {
-      s"$fill" * space + text
+    override def align(text: String, space: Int, fill: String): String = {
+      fill * space + text
     }
   }
   case object Center extends Alignment {
-    override def align(text: String, space: Int, fill: Char): String = {
-      val halfSpace = s"$fill" * (space / 2)
+    override def align(text: String, space: Int, fill: String): String = {
+      val halfSpace = fill * (space / 2)
       val left = halfSpace
       val right = if (space % 2 == 0) halfSpace else halfSpace + fill
       left + text + right

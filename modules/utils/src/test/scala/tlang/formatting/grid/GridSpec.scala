@@ -450,17 +450,22 @@ class GridSpec extends UnitSpec {
 
     Grid(mockedFormatter(wordWrapper = wordWrapper, width = 40))
       .row(Column, Column(width = Fixed(23)))
-      .contents(CenteredContent("Title"), "ABCDEFG")
-      .contents("ABCDEFGHIJKLMNOPQRSTUVXYZ", CenteredContent("Title", '_'))
-      .contents(CenteredContent(" ABC ", '-'), CenteredContent("\u001b[31mTitle\u001b[0m"))
-      .render().print should matchWithAnsi(
+      .content(CenteredContent("Title"), "ABCDEFG")
+      .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", CenteredContent("Title", fill = "_"))
+      .content(
+        CenteredContent(" ABC ", color = Colors.Magenta, fill = "-"),
+        CenteredContent("\u001b[31mTitle\u001b[0m")
+      )
+      .content(CenteredContent("ABCDEFGHIJ"), CenteredContent(""))
+      .render() should matchWithAnsi(
       s"""|┌────────────┬─────────────────────────┐
           |│   Title    │ ABCDEFG                 │
           |│ ABCDEFGHIJ │ _________Title_________ │
           |│ KLMNOPQRST │                         │
           |│ XYZ        │                         │
-          |│ -- ABC --- │          \u001b[31mTitle\u001b[0m          │
-          |└────────────┴─────────────────────────┘""".stripMargin.print
+          |│ \u001b[35m-- ABC ---\u001b[0m │          \u001b[31mTitle\u001b[0m          │
+          |│ ABCDEFGHIJ │                         │
+          |└────────────┴─────────────────────────┘""".stripMargin
     )
   }
 
@@ -483,6 +488,107 @@ class GridSpec extends UnitSpec {
           |│ ._.._.._.. │ \u001b[31m───────────────────────\u001b[0m │
           |└────────────┴─────────────────────────┘""".stripMargin
     )
+  }
+
+  it should "render correctly with evenly spaced content" in {
+
+    val elements = List("ABC", "DEFG", "HIJK", "LM", "N", "OPQRST", "UVXYZ")
+    Grid(mockedFormatter(width = 30))
+      .row()
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌────────────────────────────┐
+          |│ ABC    DEFG   HIJK         │
+          |│ LM     N      OPQRST       │
+          |│ UVXYZ                      │
+          |└────────────────────────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 30))
+      .row()
+      .content(EvenlySpaced(elements.map(Colors.Red(_))))
+      .render() should matchWithAnsi(
+      s"""|┌────────────────────────────┐
+          |│ \u001b[31mABC\u001b[0m    \u001b[31mDEFG\u001b[0m   \u001b[31mHIJK\u001b[0m         │
+          |│ \u001b[31mLM\u001b[0m     \u001b[31mN\u001b[0m      \u001b[31mOPQRST\u001b[0m       │
+          |│ \u001b[31mUVXYZ\u001b[0m                      │
+          |└────────────────────────────┘""".stripMargin
+    )
+
+    Grid(mockedFormatter(width = 30))
+      .row(CenteredColumn)
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌────────────────────────────┐
+          |│    ABC    DEFG   HIJK      │
+          |│    LM     N      OPQRST    │
+          |│    UVXYZ                   │
+          |└────────────────────────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 30))
+      .row(CenteredColumn)
+      .content(EvenlySpaced(elements.map(Colors.Red(_))))
+      .render() should matchWithAnsi(
+      s"""|┌────────────────────────────┐
+          |│    \u001b[31mABC\u001b[0m    \u001b[31mDEFG\u001b[0m   \u001b[31mHIJK\u001b[0m      │
+          |│    \u001b[31mLM\u001b[0m     \u001b[31mN\u001b[0m      \u001b[31mOPQRST\u001b[0m    │
+          |│    \u001b[31mUVXYZ\u001b[0m                   │
+          |└────────────────────────────┘""".stripMargin
+    )
+
+    Grid(mockedFormatter(width = 31))
+      .row()
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌─────────────────────────────┐
+          |│ ABC    DEFG   HIJK   LM     │
+          |│ N      OPQRST UVXYZ         │
+          |└─────────────────────────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 52))
+      .row()
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌──────────────────────────────────────────────────┐
+          |│ ABC    DEFG   HIJK   LM     N      OPQRST UVXYZ  │
+          |└──────────────────────────────────────────────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 10))
+      .row()
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌────────┐
+          |│ ABC    │
+          |│ DEFG   │
+          |│ HIJK   │
+          |│ LM     │
+          |│ N      │
+          |│ OPQRST │
+          |│ UVXYZ  │
+          |└────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 10))
+      .row(CenteredColumn)
+      .content(EvenlySpaced(elements))
+      .render() shouldBe
+      s"""|┌────────┐
+          |│ ABC    │
+          |│ DEFG   │
+          |│ HIJK   │
+          |│ LM     │
+          |│ N      │
+          |│ OPQRST │
+          |│ UVXYZ  │
+          |└────────┘""".stripMargin
+
+    Grid(mockedFormatter(width = 52))
+      .row()
+      .content(EvenlySpaced(elements, spacing = 8))
+      .render() shouldBe
+      s"""|┌──────────────────────────────────────────────────┐
+          |│ ABC           DEFG          HIJK          LM     │
+          |│ N             OPQRST        UVXYZ                │
+          |└──────────────────────────────────────────────────┘""".stripMargin
+
   }
 
   it should "render correctly with fixed and auto column widths" in {
@@ -904,6 +1010,26 @@ class GridSpec extends UnitSpec {
           |└──────────────────┘""".stripMargin
     )
 
+    Grid(mockedFormatter(width = 40))
+      .row(2)
+      .content(
+        s"ABC${ NL }DEF${ NL }GHI${ NL }JKL${ NL }MNO${ NL }PQR${ NL }STU${ NL }VXY${ NL }ZAB${ NL }CDE",
+        "ABCDEFGHIJKLMNOPQRSTUVXYZABCDE"
+      )
+      .render() shouldBe
+      s"""|┌─────┬────────────────────────────────┐
+          |│ ABC │ ABCDEFGHIJKLMNOPQRSTUVXYZABCDE │
+          |│ DEF │                                │
+          |│ GHI │                                │
+          |│ JKL │                                │
+          |│ MNO │                                │
+          |│ PQR │                                │
+          |│ STU │                                │
+          |│ VXY │                                │
+          |│ ZAB │                                │
+          |│ CDE │                                │
+          |└─────┴────────────────────────────────┘""".stripMargin
+
   }
 
 
@@ -913,7 +1039,8 @@ class GridSpec extends UnitSpec {
         .row()
         .content("A", "B")
 
-    }.getMessage should include("2 != 1")
+    }
+      .getMessage should include(" 2 != 1")
 
     intercept[IllegalArgumentException] {
       Grid(mockedFormatter())
@@ -1022,7 +1149,7 @@ class GridSpec extends UnitSpec {
     Left("", 5) shouldBe "     "
     Left("ABC", 5) shouldBe "ABC  "
 
-    Left("ABC", 10, '-') shouldBe "ABC-------"
+    Left("ABC", 10, "-") shouldBe "ABC-------"
   }
 
 
@@ -1037,7 +1164,7 @@ class GridSpec extends UnitSpec {
     Center("ABC", 5) shouldBe " ABC "
     Center("ABCD", 5) shouldBe "ABCD "
 
-    Center("ABC", 10, '-') shouldBe "---ABC----"
+    Center("ABC", 10, "-") shouldBe "---ABC----"
   }
 
 
@@ -1049,7 +1176,7 @@ class GridSpec extends UnitSpec {
     Right("", 5) shouldBe "     "
     Right("ABC", 5) shouldBe "  ABC"
 
-    Right("ABC", 10, '-') shouldBe "-------ABC"
+    Right("ABC", 10, "-") shouldBe "-------ABC"
   }
 
 

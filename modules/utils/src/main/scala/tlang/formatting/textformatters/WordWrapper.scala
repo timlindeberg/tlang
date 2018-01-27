@@ -58,8 +58,13 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
   }
 
   private def wrap(line: String, maxWidth: Int, lines: ListBuffer[String]): Unit = {
+    val visibleChars = line.visibleCharacters + (line.count(_ == '\t') * (tabSize - 1))
     if (line.visibleCharacters == 0) {
       lines += ""
+      return
+    }
+    if (visibleChars <= maxWidth) {
+      lines += line.replaceAll("\t", " " * tabSize)
       return
     }
 

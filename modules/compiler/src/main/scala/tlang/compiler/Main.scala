@@ -14,8 +14,7 @@ import tlang.compiler.messages.{CompilationException, CompilerMessages, DefaultR
 import tlang.compiler.modification.Templating
 import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
 import tlang.formatting.grid.Alignment.Center
-import tlang.formatting.grid.Width.Percentage
-import tlang.formatting.grid.{Column, Grid, Width}
+import tlang.formatting.grid._
 import tlang.formatting.textformatters._
 import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.options.argument._
@@ -269,27 +268,9 @@ object Main extends Logging {
     val grid = formatter.grid.header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
     val fileNames = files.toList.map(formatter.fileName).sorted
-    formatting.lineWidth match {
-      case x if x in (0 to 59)  =>
-        grid.row().allContent(List(fileNames))
-      case x if x in (60 to 99) =>
-        grid
-          .row(Column(width = Percentage(0.5)), Column(width = Percentage(0.5)))
-          .mapContent(fileNames.grouped(2).toList) {
-            case f1 :: f2 :: Nil => (f1, f2)
-            case f :: Nil        => (f, "")
-            case _               => ("", "")
-          }
-      case x if x >= 100        =>
-        grid
-          .row(Column(width = Percentage(0.333)), Column(width = Percentage(0.333)), Column(width = Percentage(0.333)))
-          .mapContent(fileNames.grouped(3).toList) {
-            case f1 :: f2 :: f3 :: _ => (f1, f2, f3)
-            case f1 :: f2 :: Nil     => (f1, f2, "")
-            case f :: Nil            => (f, "", "")
-            case _                   => ("", "", "")
-          }
-    }
+    grid
+      .row(CenteredColumn)
+      .content(EvenlySpaced(fileNames))
     grid.print()
   }
 

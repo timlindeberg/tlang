@@ -92,7 +92,7 @@ trait NamingErrors extends ErrorHandling {
     lazy val message = err"Operator $operator is already defined."
 
     case class OperatorAlreadyDefinedExtraMessage() extends ExtraMessage(alreadyDefined) {
-      lazy val message: String = err"Operator is defined here:"
+      lazy val message: String = err"Here:"
     }
 
     override lazy val extraInfo = List(OperatorAlreadyDefinedExtraMessage())

@@ -204,16 +204,18 @@ class CompilerMessageSpec extends UnitSpec {
         """|╒══════════════════════════════════════╕
            |│         There were 2 errors.         │
            |╞══════════════════════════════════════╡
+           |│ ═══════════ Error A2123 ════════════ │
            |│ 1:3 from/a/very/cool/File.t          │
-           |│ Error A2123 There was an error!!!    │
+           |│ There was an error!!!                │
            |├───┬──────────────────────────────────┤
            |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
            |│   │   ~~~~~                          │
            |│ 2 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
            |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
            |├───┴──────────────────────────────────┤
+           |│ ═══════════ Error B2321 ════════════ │
            |│ 54:1 from/another/cool/File.t        │
-           |│ Error B2321 Moar errors!!!           │
+           |│ Moar errors!!!                       │
            |├────┬─────────────────────────────────┤
            |│ 53 │ Line 1Line 1Line 1              │
            |│ 54 │ Line 2Line 2Line 2              │
@@ -247,7 +249,8 @@ class CompilerMessageSpec extends UnitSpec {
         """|╒══════════════════════════════════════╕
            |│         There was 1 warning.         │
            |╞══════════════════════════════════════╡
-           |│ Warning C1001 Here be a warning!!!   │
+           |│ ══════════ Warning C1001 ═══════════ │
+           |│ Here be a warning!!!                 │
            |└──────────────────────────────────────┘""".stripMargin
     }
   }
@@ -293,8 +296,9 @@ class CompilerMessageSpec extends UnitSpec {
       """|╒══════════════════════════════════════╕
          |│          There was 1 error.          │
          |╞══════════════════════════════════════╡
+         |│ ═══════════ Error A2123 ════════════ │
          |│ 1:3 from/a/very/cool/File.t          │
-         |│ Error A2123 There was an error!!!    │
+         |│ There was an error!!!                │
          |├───┬──────────────────────────────────┤
          |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZABC... │
          |│   │   ~~~~~                          │
@@ -360,8 +364,9 @@ class CompilerMessageSpec extends UnitSpec {
       """|╒══════════════════════════════════════╕
          |│          There was 1 error.          │
          |╞══════════════════════════════════════╡
+         |│ ═══════════ Error A2123 ════════════ │
          |│ 1:3 from/a/very/cool/File.t          │
-         |│ Error A2123 There was an error!!!    │
+         |│ There was an error!!!                │
          |├───┬──────────────────────────────────┤
          |│ 1 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
          |│   │   ~~~~~                          │
@@ -369,7 +374,7 @@ class CompilerMessageSpec extends UnitSpec {
          |│ 3 │ ABCDEFFGHIJKLMNOPQRSTUVXYZ       │
          |├───┴──────────────────────────────────┤
          |│ 54:1 from/another/cool/File.t        │
-         |│ Info Cool extra info for ya!         │
+         |│ Cool extra info for ya!              │
          |├────┬─────────────────────────────────┤
          |│ 53 │ Line 1Line 1Line 1              │
          |│ 54 │ Line 2Line 2Line 2              │
