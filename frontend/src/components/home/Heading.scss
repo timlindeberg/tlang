@@ -1,0 +1,38 @@
+@import 'index';
+
+#Heading-container {
+  clip-path: polygon(0 0, 100% 0%, 100% 95%, 0% 100%);
+  min-height: 700px;
+  padding: 1em 0;
+  background: linear-gradient(to bottom right, $color-primary-0, $color-primary-2);
+}
+
+#Heading-main {
+  font-weight: normal;
+  margin-bottom: 0;
+  text-shadow: 4px 4px $color-secondary-1-0;
+  &.desktop {
+    font-size: 5em;
+    margin-top: 3em;
+  }
+
+  &.mobile {
+    font-size: 3em;
+    margin-top: 1.5em;
+  }
+}
+
+#Heading-secondary {
+  font-weight: normal;
+  margin-bottom: 2em;
+  &.desktop {
+    font-size: 1.7em;
+    margin-top: 1.5em;
+  }
+
+  &.mobile {
+    font-size: 1.5em;
+    margin-top: 0.5em;
+  }
+}
+

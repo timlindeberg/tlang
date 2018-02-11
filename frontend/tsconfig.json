@@ -15,7 +15,12 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "baseUrl": "./src",
+    "paths" : {
+      "src/*": ["./src/*"]
+    },
+    "pretty" :true
   },
   "exclude": [
     "node_modules",

@@ -1,8 +1,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import App from './App';
-import registerServiceWorker from './registerServiceWorker';
-import './index.scss';
+import 'index.scss';
+import 'semantic/dist/semantic.min.css';
+import App from 'App';
+
+import registerServiceWorker from  'registerServiceWorker';
 
 ReactDOM.render(
   <App />,
@@ -12,5 +14,5 @@ ReactDOM.render(
 registerServiceWorker();
 
 if (module.hot) {
-   module.hot.accept();
+  module.hot.accept();
 }

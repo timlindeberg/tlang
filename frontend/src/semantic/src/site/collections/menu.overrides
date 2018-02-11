@@ -1,3 +1,7 @@
 /*******************************
          Site Overrides
 *******************************/
+
+.ui.secondary.inverted.pointing.menu {
+	border-width: 0px;
+}

@@ -1,0 +1,57 @@
+@import 'index';
+
+.hljs {
+  padding: 5px;
+  border: 1px solid rgba($color-primary-0, 0.2);
+  color: $color-primary-3;
+  font-weight: bold;
+  background: $color-light-0;
+  box-shadow: 1px 1px 1px rgba($color-primary-1, 0.5);
+  tab-size: 2;
+  &:hover {
+    box-shadow: 4px 4px 10px rgba($color-primary-1, 0.5);
+    transition: box-shadow 500ms;
+  }
+  & code {
+    font-family: Inconsolata, monospace, monospace;
+    font-weight: bold;
+  }
+}
+
+.hljs-keyword {
+  color: $color-primary-0;
+}
+
+.hljs-comment {
+  color: $color-dark-2;
+}
+
+.hljs-type {
+  color: $color-secondary-1-3;
+}
+
+.hljs-string {
+  color: $color-secondary-1-0;
+}
+
+.hljs-number {
+  color: $color-secondary-2-0;
+}
+
+.hljs-symbol {
+  color: $color-dark-1;
+}
+
+.hljs-literal {
+  color: $color-secondary-2-0;
+}
+
+.hljs-params {
+  color: $color-secondary-2-0;
+}
+
+.react-syntax-highlighter-line-number {
+  color: $color-secondary-2-0;
+}
+
+
