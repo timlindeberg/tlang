@@ -19,6 +19,7 @@
 @black          : #000000;
 
 @borderColor: fade(@primaryColor, 20%);
+@invertedBackground: @primaryColor;
 
 @importGoogleFonts : true;
 @googleFontSizes   : '400,700,400italic,700italic';

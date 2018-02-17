@@ -6,15 +6,15 @@
   color: $color-primary-3;
   font-weight: bold;
   background: $color-light-0;
-  box-shadow: 1px 1px 1px rgba($color-primary-1, 0.5);
-  tab-size: 2;
+  box-shadow: 1px 1px 1px rgba($color-primary-1, 0.2);
+  transition: box-shadow 300ms;
   &:hover {
-    box-shadow: 4px 4px 10px rgba($color-primary-1, 0.5);
-    transition: box-shadow 500ms;
+    box-shadow: 4px 4px 10px rgba($color-primary-1, 0.2);
+    transition: box-shadow 300ms;
   }
   & code {
     font-family: Inconsolata, monospace, monospace;
-    font-weight: bold;
+    line-height: 20px;
   }
 }
 
@@ -52,6 +52,11 @@
 
 .react-syntax-highlighter-line-number {
   color: $color-secondary-2-0;
+  font-weight: bold;
+}
+
+.hljs-tab {
+  color: rgba($color-primary-3, 0.1)
 }
 
 

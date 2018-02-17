@@ -3,10 +3,6 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { registerLanguage } from 'react-syntax-highlighter/dist/light';
 import 'components/CodeBlock.scss';
 
-interface CodeBlockProps {
-  children: string;
-}
-
 registerLanguage('tlang', (hljs: any) => {
 
   const STRING = {
@@ -38,9 +34,15 @@ registerLanguage('tlang', (hljs: any) => {
     begin: /[\-+;.:,=*!#()\[\]{}?~&|%<>/^]/
   };
 
+  const HACK = {
+    className: 'keyword',
+    begin: /(Var|Val)/,
+    relevance: 0
+  };
+
   const TYPE = {
     className: 'type',
-    begin: /[A-Z][A-Za-z0-9_]*/,
+    begin: /\b[A-Z][A-Za-z0-9_]*/,
     relevance: 0
   };
 
@@ -67,6 +69,11 @@ registerLanguage('tlang', (hljs: any) => {
     ]
   };
 
+  const TAB = {
+    className: 'tab',
+    begin: /🠖+/,
+  };
+
   const METHOD = {
     className: 'function',
     beginKeywords: 'Def def',
@@ -82,37 +89,35 @@ registerLanguage('tlang', (hljs: any) => {
       'if else return this super new implicit print println error break continue in'
     },
     contains: [
-      hljs.COMMENT(
-        /\/\*/,      // begin regex
-        /\*\//,        // end regex
-      ),
+      hljs.C_BLOCK_COMMENT_MODE,
       hljs.C_LINE_COMMENT_MODE,
       STRING,
       NUMBER,
       SYMBOL,
-      TYPE,
       METHOD,
       CLASS,
-      hljs.C_NUMBER_MODE,
+      HACK,
+      TAB,
+      TYPE,
     ]
   };
 });
 
-export default class CodeBlock extends React.Component<CodeBlockProps> {
-
-  render() {
-    const { children } = this.props;
-    return (
-      <SyntaxHighlighter
-        wrapLines
-        useInlineStyles={false}
-        lineProps={{ className: 'hljs-font' }}
-        showLineNumbers
-        language="tlang"
-      >
-        {children}
-      </SyntaxHighlighter>
-    );
-  }
-
+interface CodeBlockProps {
+  children: string;
+  language: string;
 }
+
+const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children, language }: CodeBlockProps) => (
+  <SyntaxHighlighter
+    wrapLines
+    useInlineStyles={false}
+    lineProps={{ className: 'hljs-font' }}
+    showLineNumbers
+    language={language}
+  >
+    {children.replace(/\t/g, '🠖')}
+  </SyntaxHighlighter>
+);
+
+export default CodeBlock;

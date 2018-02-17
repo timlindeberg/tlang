@@ -1,10 +1,9 @@
 @import 'index';
 
-#Heading-container {
+#Heading-segment{
   clip-path: polygon(0 0, 100% 0%, 100% 95%, 0% 100%);
   min-height: 700px;
   padding: 1em 0;
-  background: linear-gradient(to bottom right, $color-primary-0, $color-primary-2);
 }
 
 #Heading-main {

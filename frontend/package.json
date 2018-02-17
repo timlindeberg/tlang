@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@types/react-router-dom": "^4.2.4",
     "@types/react-syntax-highlighter": "0.0.3",
     "@types/webpack-env": "^1.13.5",
     "autoprefixer": "7.1.6",
@@ -25,6 +26,9 @@
     "react": "^16.2.0",
     "react-dev-utils": "4.2.1",
     "react-dom": "^16.2.0",
+    "react-markdown": "^3.2.0",
+    "react-router-dom": "^4.2.2",
+    "react-router-page-transition": "^3.0.2",
     "react-syntax-highlighter": "^7.0.0",
     "sass-loader": "^6.0.6",
     "semantic-ui": "^2.2.14",
