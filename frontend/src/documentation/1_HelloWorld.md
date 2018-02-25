@@ -1,5 +1,5 @@
 # Hello World!
-In `tlang` the most simple hello world program is written like:
+In `tlang` the most simple hello world program is written as:
 
 ```tlang
 println("Hello world!")
@@ -53,3 +53,6 @@ class HelloWorld =
 class A = 
 	Def Run() = println("Hello World!")
 ```
+
+If a class called `HelloWorld` is already declared in the file, the main method and static methods
+will be put inside the existing class.

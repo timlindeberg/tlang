@@ -28,8 +28,6 @@ HEJ  | hads  | tres cool
 
 [hej](http://lol.com)
 
-![hej](../logo.svg)
-
 
 ldeds *ITALICURU [hej](das)* ddsa
 

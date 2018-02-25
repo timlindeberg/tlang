@@ -5,26 +5,26 @@ import 'components/CodeBlock.scss';
 
 registerLanguage('tlang', (hljs: any) => {
 
+  const ESCAPE_CHAR = {
+    className: 'escapeChar',
+    begin: /\\([tbnrf'"]|(u[0-9a-fA-F]{1,5}))/,
+  };
+
   const STRING = {
     className: 'string',
     variants: [
       {
         begin: '"', end: '"',
         illegal: '\\n',
-        contains: [hljs.BACKSLASH_ESCAPE]
+        contains: [ESCAPE_CHAR]
       },
       {
         begin: '\'', end: '\'',
-        contains: [hljs.BACKSLASH_ESCAPE]
+        contains: [ESCAPE_CHAR]
       },
       {
         begin: '`', end: '`',
         relevance: 10
-      },
-      {
-        begin: '[a-z]+"', end: '"',
-        illegal: '\\n',
-        contains: [hljs.BACKSLASH_ESCAPE]
       },
     ]
   };
