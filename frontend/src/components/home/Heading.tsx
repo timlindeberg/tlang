@@ -1,26 +1,21 @@
 import * as React from 'react';
 import { Button, Container, Header, Icon } from 'semantic-ui-react';
 import 'components/home/Heading.scss';
+import Logo from 'components/Logo';
 
 export interface HomepageHeadingProps {
   mobile: boolean;
 }
 
 const Heading = ({ mobile = false }: HomepageHeadingProps) => (
-  <Container text>
-    <Header
-      as="h1"
-      content="tlang"
-      inverted
-      id="Heading-main"
-      className={mobile ? 'mobile' : 'desktop'}
-    />
+  <Container text style={{ padding: '5em' }}>
+    <Logo size={4} />
     <Header
       as="h2"
       content="A supercool language for the JVM"
       inverted
       id="Heading-secondary"
-      className={mobile ? 'mobile' : 'desktop'}
+      style={{ paddingTop: '1.5em' }}
     />
     <Button secondary size="huge">
       Try it out!

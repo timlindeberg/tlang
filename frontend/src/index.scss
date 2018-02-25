@@ -34,3 +34,7 @@ $color-light-2: #a0a0a0;
 ::selection {
   background: rgba($color-primary-0, 0.5);
 }
+
+code {
+  color: $color-secondary-1-3;
+}

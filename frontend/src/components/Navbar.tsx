@@ -1,36 +1,26 @@
 import * as React from 'react';
-import { Container, Menu } from 'semantic-ui-react';
+import { Menu, Container } from 'semantic-ui-react';
+import { Link } from "react-router-dom";
+import { RouteComponentProps, withRouter } from 'react-router';
 
-interface NavbarProps {
-
+interface MenuLinkProps {
+  children: React.ReactNode;
+  to: string;
 }
 
-interface NavbarState {
+const MenuLink = withRouter(({ children, to, location }: RouteComponentProps<any> & MenuLinkProps) => (
+  <Menu.Item active={location.pathname === to} as={Link} to={to}>{children}</Menu.Item>
+));
 
-}
+const Navbar = () => (
+  <Container>
+    <Menu secondary inverted pointing size="large">
+      <MenuLink to="/">Home</MenuLink>
+      <MenuLink to="/documentation">Documentation</MenuLink>
+      <MenuLink to="/get_started">Get started</MenuLink>
+      <MenuLink to="/playground">Playground</MenuLink>
+    </Menu>
+  </Container>
+);
 
-export default class Navbar extends React.Component<NavbarProps, NavbarState> {
-  state = { fixed: false };
-
-  render() {
-    const { fixed } = this.state;
-
-    return (
-      <Menu
-        fixed={fixed ? 'top' : undefined}
-        inverted={!fixed}
-        pointing={!fixed}
-        secondary={!fixed}
-        size="large"
-      >
-        <Container>
-          <Menu.Item as="a" active>Home</Menu.Item>
-          <Menu.Item as="a">Get started</Menu.Item>
-          <Menu.Item as="a">Documentation</Menu.Item>
-          <Menu.Item as="a">Playground</Menu.Item>
-        </Container>
-      </Menu>
-    );
-  }
-
-}
+export default Navbar;

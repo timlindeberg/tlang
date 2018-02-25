@@ -20,7 +20,7 @@
     "paths" : {
       "src/*": ["./src/*"]
     },
-    "pretty" :true
+    "pretty": true
   },
   "exclude": [
     "node_modules",

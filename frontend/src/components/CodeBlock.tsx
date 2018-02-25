@@ -48,7 +48,7 @@ registerLanguage('tlang', (hljs: any) => {
 
   const NUMBER = {
     className: 'number',
-    begin: /(-[0-9]|[0-9])[0-9_]*\.?[0-9_]*([eE]-?[0-9]+)?([fFlL])?/,
+    begin: /(0b[01_]+[lL]?)|(0x[0-9a-fA-F_]+[lL]?)|((-[0-9]|[0-9])[0-9_]*\.?[0-9_]*([eE]-?[0-9]+)?([fFlL])?)/,
     relevance: 0
   };
 
@@ -71,7 +71,7 @@ registerLanguage('tlang', (hljs: any) => {
 
   const TAB = {
     className: 'tab',
-    begin: /🠖+/,
+    begin: /➝+/,
   };
 
   const METHOD = {
@@ -108,16 +108,27 @@ interface CodeBlockProps {
   language: string;
 }
 
-const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children, language }: CodeBlockProps) => (
-  <SyntaxHighlighter
-    wrapLines
-    useInlineStyles={false}
-    lineProps={{ className: 'hljs-font' }}
-    showLineNumbers
-    language={language}
-  >
-    {children.replace(/\t/g, '🠖')}
-  </SyntaxHighlighter>
-);
+const charCount = (str: string, char: string) => {
+  let count = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    if (str.charAt(i) === char) { count++; }
+  }
+  return count;
+};
+
+const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children, language }: CodeBlockProps) => {
+  const code = children.replace(/\t/g, '➝');
+  const numNewlines = charCount(code, '\n');
+  return (
+    <SyntaxHighlighter
+      wrapLines
+      useInlineStyles={false}
+      showLineNumbers={numNewlines > 5}
+      language={language}
+    >
+      {code}
+    </SyntaxHighlighter>
+  );
+};
 
 export default CodeBlock;
