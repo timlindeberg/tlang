@@ -118,12 +118,12 @@ const charCount = (str: string, char: string) => {
 
 const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children, language }: CodeBlockProps) => {
   const code = children.replace(/\t/g, '➝');
-  const numNewlines = charCount(code, '\n');
+  const numLines = 1 + charCount(code, '\n');
   return (
     <SyntaxHighlighter
       wrapLines
       useInlineStyles={false}
-      showLineNumbers={numNewlines > 5}
+      showLineNumbers={numLines >= 5}
       language={language}
     >
       {code}

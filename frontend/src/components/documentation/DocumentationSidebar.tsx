@@ -3,7 +3,6 @@ import { Menu, Segment, Sidebar } from 'semantic-ui-react';
 import { AST, Type } from 'typescriptDeclarations/markdownParser';
 import Logo from 'components/Logo';
 import { HashLink } from 'react-router-hash-link';
-import { Collapse } from 'react-collapse';
 
 interface Header {
   value: string;
@@ -53,25 +52,23 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
 
     const menuItems = headers.map((header, i) => {
       return (
-        <Menu.Item key={i}>
+        <Menu.Item key={i} active={isActive(header)}>
           <HashLink to={`#${header.value.replace(/ /g, '-')}`} smooth>{header.value}</HashLink>
           {header.children.length > 0 && (
-            <Collapse isOpened={isActive(header)}>
-              <Menu.Menu>
-                {header.children.map(({ value }) => (
-                  <Menu.Item
-                    key={value}
-                    active={active === value}
-                    as={HashLink}
-                    to={`#${value.replace(/ /g, '-')}`}
-                    onClick={e => e.stopPropagation()}
-                    style={{ paddingLeft: '2em' }}
-                  >
-                    <span>{value}</span>
-                  </Menu.Item>
-                ))}
-              </Menu.Menu>
-            </Collapse>
+            <Menu.Menu>
+              {header.children.map(({ value }) => (
+                <Menu.Item
+                  key={value}
+                  active={active === value}
+                  as={HashLink}
+                  to={`#${value.replace(/ /g, '-')}`}
+                  onClick={e => e.stopPropagation()}
+                  style={{ paddingLeft: '2em' }}
+                >
+                  <span>{value}</span>
+                </Menu.Item>
+              ))}
+            </Menu.Menu>
           )}
         </Menu.Item>
       );

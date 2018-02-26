@@ -40,15 +40,10 @@ export interface AST {
   lang?: string;
 }
 
-interface Header {
-  name: string;
-  ref: any;
-}
-
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
 
-  ref: any = null;
-  headers: Header[] = [];
+  ref?: Element;
+  headers: { [s: string]: Element } = {};
 
   state: DocumentationState = { active: '', documentation: [] };
 
@@ -91,13 +86,11 @@ export default class Documentation extends React.Component<DocumentationProps, D
     case Type.Paragraph:
       return <p>{children.map(parse)}</p>;
     case Type.Heading:
-      const child = parse(children[0]) as string;
+      const heading = parse(children[0]) as string;
       const depth = rest.depth!;
-      return (
-        <div ref={(r: any) => this.headers.push({ ref: r, name: child })} >
-          <Header as={`h${depth}`} id={child.replace(/ /g, '-')}>{child}</Header>
-        </div>
-      );
+      const id = heading.replace(/ /g, '-');
+      const header = <Header as={`h${depth}`} id={id}>{heading}</Header>;
+      return depth >= 3 ? header : <div ref={(r: any) => this.headers[heading] = r}>{header}</div>;
     case Type.List:
       return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
     case Type.ListItem:
@@ -124,7 +117,7 @@ export default class Documentation extends React.Component<DocumentationProps, D
   }
 
   onScroll = () => {
-    const { name } = this.headerClosestToMiddle();
+    const name = this.headerClosestToMiddle();
     if (name === this.state.active) {
       return;
     }
@@ -133,19 +126,18 @@ export default class Documentation extends React.Component<DocumentationProps, D
     this.props.setActive(name);
   }
 
-  headerClosestToMiddle = () => {
+  headerClosestToMiddle = (): string => {
     const body = document.body;
     const html = document.documentElement;
 
     const height = Math.max(
       body.scrollHeight,
       body.offsetHeight,
-      html.clientHeight,
       html.scrollHeight,
       html.offsetHeight
     );
 
-    const distanceToMiddle = (ref: any) => {
+    const distanceToMiddle = (ref: Element) => {
       if (!ref) {
         return Infinity;
       }
@@ -153,8 +145,10 @@ export default class Documentation extends React.Component<DocumentationProps, D
       return Math.abs(middleOfRef - (height / 2));
     };
 
-    return this.headers
-      .sort(({ ref: refA }, { ref: refB }) => distanceToMiddle(refA) - distanceToMiddle(refB))[0];
+    return Object.keys(this.headers)
+      .map((key): [string, number] => [key, distanceToMiddle(this.headers[key])])
+      .sort(([_1, d1], [_2, d2]) => d1 - d2)
+      [0][0];
   }
 
   divMounted = (ref: any) => {
