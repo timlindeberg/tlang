@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Divider, Segment, Header, List, Image } from 'semantic-ui-react';
+import { AST, Type } from 'types/markdown';
 import CodeBlock from 'components/CodeBlock';
 
 interface DocumentationProps {
@@ -8,36 +9,7 @@ interface DocumentationProps {
 }
 
 interface DocumentationState {
-  active: string;
   documentation: JSX.Element[];
-}
-
-export enum Type {
-  Root = 'root',
-  Text = 'text',
-  Paragraph = 'paragraph',
-  Heading = 'heading',
-  List = 'list',
-  ListItem = 'listItem',
-  ThematicBreak = 'thematicBreak',
-  Link = 'link',
-  Emphasis = 'emphasis',
-  Strong = 'strong',
-  InlineCode = 'inlineCode',
-  Image = 'image',
-  Table = 'table',
-  Code = 'code',
-}
-
-export interface AST {
-  type: Type;
-  children: AST[];
-  value?: string;
-  depth?: number;
-  ordered?: boolean;
-  url?: string;
-  alt?: string;
-  lang?: string;
 }
 
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
@@ -45,14 +17,20 @@ export default class Documentation extends React.Component<DocumentationProps, D
   ref?: Element;
   headers: { [s: string]: Element } = {};
 
-  state: DocumentationState = { active: '', documentation: [] };
+  state: DocumentationState = { documentation: [] };
 
   componentDidMount() {
     this.setState(() => ({ documentation: this.createDocumentation(this.props) }));
   }
 
   componentWillReceiveProps(nextProps: DocumentationProps) {
-    this.setState(() => ({ documentation: this.createDocumentation(nextProps) }));
+    if (nextProps.markdown !== this.props.markdown) {
+      this.setState(() => ({ documentation: this.createDocumentation(nextProps) }));
+    }
+  }
+
+  shouldComponentUpdate(nextProps: DocumentationProps, nextState: DocumentationState) {
+    return nextProps.markdown !== this.props.markdown || nextState.documentation !== this.state.documentation;
   }
 
   componentWillUnmount() {
@@ -116,13 +94,8 @@ export default class Documentation extends React.Component<DocumentationProps, D
     }
   }
 
-  onScroll = () => {
+  onScroll = (): void => {
     const name = this.headerClosestToMiddle();
-    if (name === this.state.active) {
-      return;
-    }
-
-    this.setState(() => ({ active: name }));
     this.props.setActive(name);
   }
 
@@ -137,7 +110,7 @@ export default class Documentation extends React.Component<DocumentationProps, D
       html.offsetHeight
     );
 
-    const distanceToMiddle = (ref: Element) => {
+    const distanceToMiddle = (ref: Element): number => {
       if (!ref) {
         return Infinity;
       }
@@ -160,8 +133,8 @@ export default class Documentation extends React.Component<DocumentationProps, D
 
   render() {
     return (
-      <div ref={this.divMounted} style={{ height: '100vh', overflowY: 'scroll' }}>
-        <Segment style={{ borderRadius: 0, padding: '1.5em' }}>
+      <div ref={this.divMounted} id="Documentation-docs">
+        <Segment style={{ border: 'none' }}>
           {this.state.documentation}
         </Segment>
       </div>

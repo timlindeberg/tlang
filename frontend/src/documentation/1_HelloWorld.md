@@ -5,7 +5,7 @@ In `tlang` the most simple hello world program is written as:
 println("Hello world!")
 ```
 
-A `.t`-file can contain statements, functions and classes in any order. When executing the file statements
+A `.t`-file can contain statements, functions and classes in any order. When executing the file, statements
 are executed in the order that they appear. Methods and classes can be used before they are declared.
 
 Example:

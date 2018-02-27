@@ -3,8 +3,8 @@ import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import DesktopContainer from 'components/home/DesktopContainer';
 import MobileContainer from 'components/home/MobileContainer';
 import CodeBlock from 'components/CodeBlock';
-import 'components/home/HomeView.scss';
 import Footer from 'Footer';
+import 'components/home/HomeView.scss';
 
 interface ResponsiveContainerProps {
   children: any;

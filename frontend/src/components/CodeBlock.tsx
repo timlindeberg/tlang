@@ -1,6 +1,6 @@
 import * as React from 'react';
-import SyntaxHighlighter from 'react-syntax-highlighter';
 import { registerLanguage } from 'react-syntax-highlighter/dist/light';
+import SyntaxHighlighter from 'react-syntax-highlighter';
 import 'components/CodeBlock.scss';
 
 registerLanguage('tlang', (hljs: any) => {

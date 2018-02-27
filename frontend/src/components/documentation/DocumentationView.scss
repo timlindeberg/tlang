@@ -1,0 +1,65 @@
+@import 'index';
+
+$time: 0.5s;
+$navBarHeight: 5rem;
+$pageHeight: calc(100vh - #{$navBarHeight});
+
+#Documentation-left  {
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+#Documentation-right {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+#Documentation-logo {
+  margin: 0;
+  border-radius: 0;
+  height: $navBarHeight;
+  padding-left: 2em;
+}
+
+#Documentation-menu {
+  margin: 0;
+  border-radius: 0;
+  height: $pageHeight;
+  overflow-y: scroll;
+  padding-top: 0;
+}
+
+#Documentation-navbar {
+  margin: 0;
+  border-radius: 0;
+  height: $navBarHeight;
+  padding-left: 2em;
+}
+
+#Documentation-docs {
+  border: none;
+  height: $pageHeight;
+  overflow-y: scroll;
+}
+
+.menu .item > span::before {
+  content: "";
+  position: absolute;
+  margin-left: 2em;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  font-weight: normal;
+  background-color: $color-secondary-1-1;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out 0s;
+}
+
+.menu .active.item > span::before {
+  visibility: visible;
+  width:60%;
+  transition: all 0.3s ease-in-out 0s;
+}
+

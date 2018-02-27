@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 import { Header } from 'semantic-ui-react';
 import 'components/Logo.scss';
 
@@ -15,7 +15,7 @@ const Logo = ({ size }: LogoProps) => {
       className="logo"
       style={{ fontSize: `${size}em` }}
     />
-  )
+  );
 };
 
 export default Logo;

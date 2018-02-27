@@ -14,5 +14,6 @@ ReactDOM.render(
 registerServiceWorker();
 
 if (module.hot) {
+  console.clear();
   module.hot.accept();
 }

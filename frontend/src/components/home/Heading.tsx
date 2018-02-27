@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button, Container, Header, Icon } from 'semantic-ui-react';
-import 'components/home/Heading.scss';
 import Logo from 'components/Logo';
+import 'components/home/Heading.scss';
 
 export interface HomepageHeadingProps {
   mobile: boolean;

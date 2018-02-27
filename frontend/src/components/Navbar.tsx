@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Menu, Container } from 'semantic-ui-react';
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 import { RouteComponentProps, withRouter } from 'react-router';
 
 interface MenuLinkProps {

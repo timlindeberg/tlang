@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Menu, Segment, Sidebar } from 'semantic-ui-react';
-import { AST, Type } from 'typescriptDeclarations/markdownParser';
-import Logo from 'components/Logo';
+
+import { Menu } from 'semantic-ui-react';
+import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
 
 interface Header {
@@ -48,37 +48,40 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
     const headers = this.parseHeaders();
     const active = this.props.active;
 
-    const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
-
-    const menuItems = headers.map((header, i) => {
-      return (
-        <Menu.Item key={i} active={isActive(header)}>
-          <HashLink to={`#${header.value.replace(/ /g, '-')}`} smooth>{header.value}</HashLink>
-          {header.children.length > 0 && (
-            <Menu.Menu>
-              {header.children.map(({ value }) => (
-                <Menu.Item
-                  key={value}
-                  active={active === value}
-                  as={HashLink}
-                  to={`#${value.replace(/ /g, '-')}`}
-                  onClick={e => e.stopPropagation()}
-                  style={{ paddingLeft: '2em' }}
-                >
-                  <span>{value}</span>
-                </Menu.Item>
-              ))}
-            </Menu.Menu>
-          )}
-        </Menu.Item>
-      );
+    const anchor = (value: string) => `#${value.replace(/ /g, '-')}`;
+    // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
+    const scrollBehavior = (el: Element) => el.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest',
     });
 
+    const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
-      <Sidebar as={Segment} animation="slide along" visible={this.props.visible} inverted>
-        <Logo size={3}/>
-        <Menu inverted fluid vertical size="small">{menuItems}</Menu>
-      </Sidebar>
+      <Menu inverted fluid vertical size="small">
+        { headers.map(header => (
+          <Menu.Item key={header.value} active={isActive(header)}>
+            <HashLink to={anchor(header.value)} scroll={scrollBehavior}>{header.value}</HashLink>
+            { header.children.length > 0 && (
+              <Menu.Menu>
+                {header.children.map(({ value }) => (
+                  <Menu.Item
+                    active={active === value}
+                    as={HashLink}
+                    to={anchor(value)}
+                    onClick={e => e.stopPropagation()}
+                    style={{ paddingLeft: '2em' }}
+                    scroll={scrollBehavior}
+                  >
+                    <span>{value}</span>
+                  </Menu.Item>
+                ))}
+              </Menu.Menu>
+            )}
+          </Menu.Item>
+          ))
+        }
+      </Menu>
     );
   }
 }
