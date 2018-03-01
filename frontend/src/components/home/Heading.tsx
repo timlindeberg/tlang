@@ -9,7 +9,7 @@ export interface HomepageHeadingProps {
 
 const Heading = ({ mobile = false }: HomepageHeadingProps) => (
   <Container text style={{ padding: '5em' }}>
-    <Logo size={4} />
+    <Logo link={false} size={4} />
     <Header
       as="h2"
       content="A supercool language for the JVM"

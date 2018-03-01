@@ -42,24 +42,3 @@ $pageHeight: calc(100vh - #{$navBarHeight});
   height: $pageHeight;
   overflow-y: scroll;
 }
-
-.menu .item > span::before {
-  content: "";
-  position: absolute;
-  margin-left: 2em;
-  width: 0;
-  height: 2px;
-  bottom: 0;
-  left: 0;
-  font-weight: normal;
-  background-color: $color-secondary-1-1;
-  visibility: hidden;
-  transition: all 0.3s ease-in-out 0s;
-}
-
-.menu .active.item > span::before {
-  visibility: visible;
-  width:60%;
-  transition: all 0.3s ease-in-out 0s;
-}
-

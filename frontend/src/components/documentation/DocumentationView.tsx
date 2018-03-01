@@ -2,7 +2,6 @@ import * as React from 'react';
 
 import { Grid, Segment, Button, Icon } from 'semantic-ui-react';
 import { AST } from 'types/markdown';
-import { Link } from 'react-router-dom';
 
 import Navbar from 'components/Navbar';
 import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
@@ -71,7 +70,7 @@ export default class DocumentationView extends React.Component<{}, Documentation
     const leftSide = (
       <React.Fragment>
         <Segment inverted id="Documentation-logo">
-          <Link to="/"><Logo size={2.5}/></Link>
+          <Logo size={2.5}/>
         </Segment>
         <Segment inverted id="Documentation-menu">
           <DocumentationSidebar markdown={markdown} visible={menuVisible} active={active}/>

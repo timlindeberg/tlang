@@ -1,3 +1,7 @@
 /*******************************
          Site Overrides
 *******************************/
+
+h1.ui.header {
+    text-shadow: 3px 3px 0px fade(@primaryColor, 20%);
+}

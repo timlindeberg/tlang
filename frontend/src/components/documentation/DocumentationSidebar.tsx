@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Menu } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
+import 'components/documentation/DocumentationSidebar.scss';
 
 interface Header {
   value: string;
@@ -58,7 +59,7 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
 
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
-      <Menu inverted fluid vertical size="small">
+      <Menu inverted borderless fluid vertical size="small" id="DocMenu">
         { headers.map(header => (
           <Menu.Item key={header.value} active={isActive(header)}>
             <HashLink to={anchor(header.value)} scroll={scrollBehavior}>{header.value}</HashLink>
