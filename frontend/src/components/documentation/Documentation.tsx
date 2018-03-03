@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Divider, Segment, Header, List, Image } from 'semantic-ui-react';
-import { AST, Type } from 'types/markdown';
-import CodeBlock from 'components/CodeBlock';
+import { Divider, Segment } from 'semantic-ui-react';
+import { AST } from 'types/markdown';
+import DocBuilder, { Block } from 'components/documentation/DocBuilder';
 
 interface DocumentationProps {
   markdown: AST[];
@@ -14,10 +14,10 @@ interface DocumentationState {
 
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
 
-  ref?: Element;
-  headers: { [s: string]: Element } = {};
-
   state: DocumentationState = { documentation: [] };
+
+  ref?: Element;
+  blocks: { [s: string]: Element } = {};
 
   componentDidMount() {
     this.setState(() => ({ documentation: this.createDocumentation(this.props) }));
@@ -44,55 +44,16 @@ export default class Documentation extends React.Component<DocumentationProps, D
 
     let documentation: JSX.Element[] = [];
     markdown.forEach((ast, i) => {
-      documentation = documentation.concat(this.astToReact(ast));
+      const docBuilder = new DocBuilder(i.toString(), this.onBlockMounted);
+      documentation = documentation.concat(docBuilder.build(ast));
       if (i < markdown.length - 1) {
-        documentation.push(<Divider style={{ marginTop: '2em', marginBottom: '2em' }}/>);
+        documentation.push(<Divider key={`d${i}`} style={{ marginTop: '2em', marginBottom: '2em' }}/>);
       }
     });
     return documentation;
   }
 
-  astToReact = (ast: AST): JSX.Element => this.parse(ast) as JSX.Element;
-
-  parse = ({ type, children, value, ...rest }: AST): JSX.Element | string => {
-    const parse = this.parse;
-    switch (type) {
-    case Type.Root:
-      return <React.Fragment>{children.map(parse)}</React.Fragment>;
-    case Type.Text:
-      return value!;
-    case Type.Paragraph:
-      return <p>{children.map(parse)}</p>;
-    case Type.Heading:
-      const heading = parse(children[0]) as string;
-      const depth = rest.depth!;
-      const id = heading.replace(/ /g, '-');
-      const header = <Header as={`h${depth}`} id={id}>{heading}</Header>;
-      return depth >= 3 ? header : <div ref={(r: any) => this.headers[heading] = r}>{header}</div>;
-    case Type.List:
-      return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
-    case Type.ListItem:
-      return <List.Item>{children.map((c: any) => parse(c.type === Type.Paragraph ? c.children[0] : c))}</List.Item>;
-    case Type.ThematicBreak:
-      return <Divider/>;
-    case Type.Link:
-      return <a href={rest.url!}>{children.map(parse)}</a>;
-    case Type.Emphasis:
-      return <em>{children.map(parse)}</em>;
-    case Type.Strong:
-      return <strong>{children.map(parse)}</strong>;
-    case Type.InlineCode:
-      return <code>{value!}</code>;
-    case Type.Image:
-      return <Image href={rest.url!}>{rest.alt!}</Image>;
-    case Type.Table:
-      return <p>TABLERERU</p>;
-    case Type.Code:
-      return <CodeBlock language={rest.lang!}>{value!}</CodeBlock>;
-    default:
-      throw new Error(`Unsupported type: ${type}`);
-    }
-  }
+  onBlockMounted = (ref: any, block: Block): void => this.blocks[block.name] = ref;
 
   onScroll = (): void => {
     const name = this.headerClosestToMiddle();
@@ -118,8 +79,8 @@ export default class Documentation extends React.Component<DocumentationProps, D
       return Math.abs(middleOfRef - (height / 2));
     };
 
-    return Object.keys(this.headers)
-      .map((key): [string, number] => [key, distanceToMiddle(this.headers[key])])
+    return Object.keys(this.blocks)
+      .map((key): [string, number] => [key, distanceToMiddle(this.blocks[key])])
       .sort(([_1, d1], [_2, d2]) => d1 - d2)
       [0][0];
   }

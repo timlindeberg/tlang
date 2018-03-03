@@ -67,6 +67,7 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
               <Menu.Menu>
                 {header.children.map(({ value }) => (
                   <Menu.Item
+                    key={value}
                     active={active === value}
                     as={HashLink}
                     to={anchor(value)}

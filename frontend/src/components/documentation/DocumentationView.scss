@@ -42,3 +42,10 @@ $pageHeight: calc(100vh - #{$navBarHeight});
   height: $pageHeight;
   overflow-y: scroll;
 }
+
+.Documentation-block {
+  margin-bottom: 1.5rem;
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
