@@ -22,12 +22,12 @@ const markdownFiles = findFiles(require.context('documentation', true, /\.md$/))
 interface DocumentationViewState {
   markdown: AST[];
   menuVisible: boolean;
-  active: string;
+  active?: string;
 }
 
 export default class DocumentationView extends React.Component<{}, DocumentationViewState> {
 
-  state: DocumentationViewState = { markdown: [], menuVisible: true, active: '' };
+  state: DocumentationViewState = { markdown: [], menuVisible: true };
 
   componentDidMount() {
     const markdown = markdownFiles.map(content => unified().use(remarkParse).parse(content));

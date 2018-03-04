@@ -17,7 +17,7 @@ interface Header {
 interface DocumentationSidebarProps {
   markdown: AST[];
   visible: boolean;
-  active: string;
+  active?: string;
 }
 
 interface DocumentationSidebarState {
@@ -90,7 +90,7 @@ export default class DocumentationSidebar
     const included = (header: Header): boolean =>
       searchResults.some(v => v === header.value) || header.children.some(included);
 
-    const headers = this.originalHeaders.slice()
+    const filteredHeaders = this.originalHeaders.slice()
       .filter(included)
       .map((header: Header) => {
         const newHeader = Object.assign({}, header);
@@ -98,7 +98,7 @@ export default class DocumentationSidebar
         return newHeader;
       });
 
-    this.setState({ searchResults, headers });
+    this.setState({ searchResults, headers: filteredHeaders });
   }
 
   onSearchKeyDown = (e: any) => {
@@ -141,21 +141,21 @@ export default class DocumentationSidebar
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
       <Accordion as={Menu} inverted borderless fluid vertical size="small" id="DocMenu">
-        {
-          headers.map((header) => {
-            const isHeaderActive = isActive(header);
-            const isHeaderOpen = isSearching || isHeaderActive;
-            return (
-              <Menu.Item key={header.value} active={isHeaderActive}>
-                <Accordion.Title
-                  as={HashLink}
-                  to={this.anchor(header.value)}
-                  scroll={this.scrollTo}
-                  active={isHeaderOpen}
-                  content={header.value}
-                />
-                <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
-                  {header.children.map(({ value }) => (
+        { headers.map((header, i) => {
+          const isHeaderActive = active ? isActive(header) : i === 0;
+          const isHeaderOpen = isSearching || isHeaderActive;
+          return (
+            <Menu.Item key={header.value} active={isHeaderActive}>
+              <Accordion.Title
+                as={HashLink}
+                to={this.anchor(header.value)}
+                scroll={this.scrollTo}
+                active={isHeaderOpen}
+                content={header.value}
+              />
+              <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
+                <div>
+                  { header.children.map(({ value }) => (
                     <Menu.Item
                       key={value}
                       active={active === value}
@@ -168,11 +168,11 @@ export default class DocumentationSidebar
                       <span>{value}</span>
                     </Menu.Item>
                   ))}
-                </Menu.Menu>
-              </Menu.Item>
-            );
-          })
-        }
+                </div>
+              </Menu.Menu>
+            </Menu.Item>
+          );
+        })}
       </Accordion>
     );
   }

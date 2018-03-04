@@ -91,21 +91,17 @@ export default class DocBuilder {
     case Type.Image:
       return <Image href={rest.url!}>{rest.alt!}</Image>;
     case Type.Table:
-      const header = children[0];
+      const headerItems = children[0].children;
       const rows = children.slice(1);
       return (
         <Table celled selectable striped collapsing>
           <Table.Header>
             <Table.Row>
-              {header.children.map(c => <Table.HeaderCell key={this.nextKey()}>{parse(c)}</Table.HeaderCell>)}
+              {headerItems.map(c => <Table.HeaderCell key={this.nextKey()}>{c.children.map(parse)}</Table.HeaderCell>)}
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {rows.map(row => (
-              <Table.Row>
-                {row.children.map(parse)}
-              </Table.Row>
-            ))}
+            {rows.map(row => <Table.Row key={this.nextKey()}>{row.children.map(parse)}</Table.Row>)}
           </Table.Body>
         </Table>
       );

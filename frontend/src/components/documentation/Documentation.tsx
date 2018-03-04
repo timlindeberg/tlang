@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Divider, Segment } from 'semantic-ui-react';
-import { AST } from 'types/markdown';
+import { AST, Type } from 'types/markdown';
 import DocBuilder, { Block } from 'components/documentation/DocBuilder';
 
 interface DocumentationProps {
@@ -41,8 +41,11 @@ export default class Documentation extends React.Component<DocumentationProps, D
 
   createDocumentation = (props: DocumentationProps): JSX.Element[] => {
     const markdown = props.markdown;
-
     let documentation: JSX.Element[] = [];
+    if (markdown.length === 0) {
+      return documentation;
+    }
+
     markdown.forEach((ast, i) => {
       const docBuilder = new DocBuilder(i.toString(), this.onBlockMounted);
       documentation = documentation.concat(docBuilder.build(ast));

@@ -12,6 +12,5 @@
 @headerBackground: white;
 @stripedBackground: white;
 @headerColor: @primaryColor;
-@headerVerticalPadding: 0;
 @rowBorder: @border;
 @cellBorder: @border;
