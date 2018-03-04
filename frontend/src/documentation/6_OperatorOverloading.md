@@ -17,7 +17,7 @@ can be extended:
 [] []= [:]
 ```
 
-Operators are implicitly `static and all arguments to the operator are declared. This means
+Operators are implicitly `static` and all arguments to the operator are declared. This means
 that `this` cannot be accessed within the operator.
 The arguments can be of any type but at least one of them has to of the same type as the class
 their declared in.
@@ -53,7 +53,7 @@ class A =
 	Def ^(lhs: A, rhs: A): A = ...
 	Def <<(lhs: A, rhs: A): A = ...
 	Def >>(lhs: A, rhs: A): A = ...
-	
+
 	Def <(lhs: A, rhs: A): Bool = ...
 	Def <=(lhs: A, rhs: A): Bool = ...
 	Def >(lhs: A, rhs: A): Bool = ...
@@ -72,18 +72,17 @@ class A =
 	Def []=(a: A, index: Int, value: String): Unit = ...
 	Def [:](a: A, start: Int?, end: Int?, step: Int?): A = ...
 
-// The declared operators can now be used for objects of type A
 
 val a1 = new A()
 val a2 = new A()
 
-println(a1 + a2)
-println(a1 == a2)
+a1 + a2
+a1 == a2
 
-println(#a)
-println(a[6])
-println(a[123] = "ABC")
-println(a[1:2:3])
+#a
+a[6]
+a[123] = "ABC"
+a[1:2:3]
 ```
 
 The return type of an operator can generally be anything with a few exceptions:
@@ -120,7 +119,7 @@ class A =
 	Def []=(a: A, index: Int, value: Int): Unit = ...
 	Def [](a: A, index: String, value: Long): Unit = ...
 	Def [](a: A, index: A, value: String): Unit = ...
-	
+
 val a = new A()
 
 a[5] = 5
@@ -141,7 +140,7 @@ class A =
 	Def [:](a: A, start: Int?, end: String?, step: Char?): A = 
 		println(start + " " + end + " " + step)
 		a
-	
+
 val a = new A()
 
 a[:] // null null null

@@ -1,9 +1,8 @@
 # Significant white spaces
 `tlang` is a significant white space language, meaning that whitespaces is relevant to how the grammar 
-is parsed similiar to languages like `Haskell` and `python`.
+is parsed similar to languages like `Haskell` and `python`.
 
-## Newlines terminate statements
-There are two types of significant whitespaces in `tlang`, new lines and tabs. A newline is used to end
+There are two types of significant whitespaces in `tlang`, newlines and tabs. A newline is used to end
 a statement:
 
 ```tlang

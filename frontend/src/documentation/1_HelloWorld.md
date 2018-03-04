@@ -35,11 +35,11 @@ println("Hello " + args[0] + "!")
 Executing with `java HelloWorld World` prints `Hello World!`.
 
 
-## How it works
+## Generated default class
 
-The `tlang` compiler generates a class called `HelloWorld` (taken from the filename) and puts all the loose statements in
-the file in to the main method and all loose functions are included in the class as static functions.
-The result looks something like this:
+The `tlang` compiler generates a class called `HelloWorld` (taken from the filename) and puts all the 
+loose statements in the file in to the main method and all loose functions are included in the class 
+as static functions. The result looks something like this:
 
 ```tlang
 class HelloWorld = 

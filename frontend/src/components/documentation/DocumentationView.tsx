@@ -44,7 +44,6 @@ export default class DocumentationView extends React.Component<{}, Documentation
 
   render() {
     const { markdown, menuVisible, active } = this.state;
-
     const rightSide = (
       <React.Fragment>
         <Segment inverted id="Documentation-navbar">

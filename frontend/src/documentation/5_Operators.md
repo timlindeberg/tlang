@@ -216,7 +216,7 @@ The bitwise not operator, `~`, returns the operand with each bit switched.
 ```
 ### Extract Nullable
 The extract nullable operator, `!!`, converts a nullable type into a non-nullable type. Use
-this operator if you know that a variable is not `null`. If used on a variable containg `null`
+this operator if you know that a variable is not `null`. If used on a variable containing `null`
 a null pointer exception will be thrown.
 ```tlang
 var a: Int? = 5

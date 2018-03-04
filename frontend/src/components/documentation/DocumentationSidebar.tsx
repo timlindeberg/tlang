@@ -24,6 +24,7 @@ interface DocumentationSidebarState {
   headers: Header[];
   searchValue: string;
   searchResults: string[];
+  mouseOver?: Header;
 }
 
 const MIN_CHARS = 3;
@@ -133,9 +134,12 @@ export default class DocumentationSidebar
   // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
   scrollTo = (el: Element) => el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
 
+  mouseEnterHeader = (header: Header) => this.setState(() => ({ mouseOver: header }));
+  mouseLeaveHeader = () => this.setState(() => ({ mouseOver: undefined }));
+
   Menu = () => {
     const active = this.props.active;
-    const { searchValue, headers } = this.state;
+    const { searchValue, headers, mouseOver } = this.state;
 
     const isSearching = searchValue.length >= MIN_CHARS;
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
@@ -143,9 +147,14 @@ export default class DocumentationSidebar
       <Accordion as={Menu} inverted borderless fluid vertical size="small" id="DocMenu">
         { headers.map((header, i) => {
           const isHeaderActive = active ? isActive(header) : i === 0;
-          const isHeaderOpen = isSearching || isHeaderActive;
+          const isHeaderOpen = mouseOver === header || isSearching || isHeaderActive;
           return (
-            <Menu.Item key={header.value} active={isHeaderActive}>
+            <Menu.Item
+              key={header.value}
+              active={isHeaderActive}
+              onMouseEnter={() => this.mouseEnterHeader(header)}
+              onMouseLeave={this.mouseLeaveHeader}
+            >
               <Accordion.Title
                 as={HashLink}
                 to={this.anchor(header.value)}
@@ -179,10 +188,10 @@ export default class DocumentationSidebar
 
   render() {
     return (
-      <React.Fragment>
+      <div id="Documentation-menu-inner">
         <this.SearchBar/>
         <this.Menu/>
-      </React.Fragment>
+      </div>
     );
   }
 }
