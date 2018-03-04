@@ -1,6 +1,8 @@
 import * as React from 'react';
 
-import { Accordion, Menu } from 'semantic-ui-react';
+import * as _ from 'lodash';
+
+import { Accordion, Divider, Menu, Search } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
 import 'components/documentation/DocumentationSidebar.scss';
@@ -18,23 +20,38 @@ interface DocumentationSidebarProps {
   active: string;
 }
 
-export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, {}> {
+interface DocumentationSidebarState {
+  headers: Header[];
+  searchValue: string;
+  searchResults: string[];
+}
 
-  headers: Header[] = [];
+const MIN_CHARS = 3;
+
+export default class DocumentationSidebar
+  extends React.Component<DocumentationSidebarProps, DocumentationSidebarState> {
+
+  originalHeaders: Header[] = [];
+  headerValues: string[] = [];
+  state: DocumentationSidebarState = { headers: [], searchValue: '', searchResults: [] };
 
   constructor(props: DocumentationSidebarProps) {
     super(props);
-    this.headers = this.parseHeaders(props.markdown);
+    this.parseHeaders(props.markdown);
+  }
+
+  componentDidMount() {
+    this.setState(() => ({ headers: this.originalHeaders.slice() }));
   }
 
   componentWillReceiveProps(nextProps: DocumentationSidebarProps) {
     if (nextProps.markdown !== this.props.markdown) {
-      this.headers = this.parseHeaders(nextProps.markdown);
+      this.parseHeaders(nextProps.markdown);
     }
   }
 
-  parseHeaders = (markdown: AST[]): Header[] => {
-    const headers: Header[] = [];
+  parseHeaders = (markdown: AST[]): void => {
+    this.originalHeaders = [];
     markdown.forEach((ast) => {
       const headings = ast.children.filter(child => child.type === Type.Heading && (child.depth!) < 3);
       if (headings.length === 0) {
@@ -43,10 +60,12 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
 
       let header: Header | null = null;
       headings.forEach(({ children, depth }) => {
-        const newHeader: Header = { children: [], value: children[0].value! };
+        const value = children[0].value!;
+        this.headerValues.push(value);
+        const newHeader: Header = { value, children: [] };
         if (depth === 1) {
           if (header) {
-            headers.push(header);
+            this.originalHeaders.push(header);
           }
           header = newHeader;
         } else {
@@ -54,56 +73,116 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
           header!.children.push(newHeader);
         }
       });
-      headers.push(header!);
+      this.originalHeaders.push(header!);
     });
-    return headers;
   }
 
-  render() {
-    const active = this.props.active;
-    const anchor = (value: string) => `#${value.replace(/ /g, '-')}`;
-    // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
-    const scrollBehavior = (el: Element) => el.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-      inline: 'nearest',
-    });
+  handleSearchChange = (e: any, { value }: any) => {
+    this.setState(() => ({ searchValue: value }));
+    if (value.length < MIN_CHARS) {
+      this.setState(() => ({ searchResults: [], headers: this.originalHeaders }));
+      return;
+    }
 
+    const re = new RegExp(_.escapeRegExp(value), 'i');
+    const searchResults = this.headerValues.filter(v => re.test(v));
+
+    const included = (header: Header): boolean =>
+      searchResults.some(v => v === header.value) || header.children.some(included);
+
+    const headers = this.originalHeaders.slice()
+      .filter(included)
+      .map((header: Header) => {
+        const newHeader = Object.assign({}, header);
+        newHeader.children = header.children.slice().filter(included);
+        return newHeader;
+      });
+
+    this.setState({ searchResults, headers });
+  }
+
+  onSearchKeyDown = (e: any) => {
+    const ENTER = 13;
+    if (e.keyCode !== ENTER) {
+      return;
+    }
+
+    const searchResult = this.state.searchResults[0];
+    if (!searchResult) {
+      return;
+    }
+    const element = document.getElementById(this.toId(searchResult))!;
+    this.scrollTo(element);
+  }
+
+  SearchBar = () => {
+    return (
+      <Search
+        size="mini"
+        value={this.state.searchValue}
+        onSearchChange={this.handleSearchChange}
+        onKeyDown={this.onSearchKeyDown}
+        open={false}
+      />
+    );
+  }
+
+  toId = (value: String) => value.replace(/ /g, '-');
+  anchor = (value: string) => `#${this.toId(value)}`;
+
+  // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
+  scrollTo = (el: Element) => el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+
+  Menu = () => {
+    const active = this.props.active;
+    const { searchValue, headers } = this.state;
+
+    const isSearching = searchValue.length >= MIN_CHARS;
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
       <Accordion as={Menu} inverted borderless fluid vertical size="small" id="DocMenu">
-        { this.headers.map((header) => {
-          const isHeaderActive = isActive(header);
-          return (
-            <Menu.Item key={header.value} active={isHeaderActive}>
-              <Accordion.Title
-                as={HashLink}
-                to={anchor(header.value)}
-                scroll={scrollBehavior}
-                active={isHeaderActive}
-                content={header.value}
-              />
-              { header.children.length > 0 && (
-                <Menu.Menu as={Collapse} isOpened={isHeaderActive}>
-                  { header.children.map(({ value }) => (
+        {
+          headers.map((header) => {
+            const isHeaderActive = isActive(header);
+            const isHeaderOpen = isSearching || isHeaderActive;
+            return (
+              <Menu.Item key={header.value} active={isHeaderActive}>
+                <Accordion.Title
+                  as={HashLink}
+                  to={this.anchor(header.value)}
+                  scroll={this.scrollTo}
+                  active={isHeaderOpen}
+                  content={header.value}
+                />
+                <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
+                  {header.children.map(({ value }) => (
                     <Menu.Item
                       key={value}
                       active={active === value}
                       as={HashLink}
-                      to={anchor(value)}
+                      to={this.anchor(value)}
                       onClick={e => e.stopPropagation()}
                       style={{ paddingLeft: '2em' }}
-                      scroll={scrollBehavior}
+                      scroll={this.scrollTo}
                     >
                       <span>{value}</span>
                     </Menu.Item>
                   ))}
                 </Menu.Menu>
-              )}
-            </Menu.Item>
-          );
-        })}
+              </Menu.Item>
+            );
+          })
+        }
       </Accordion>
+    );
+  }
+
+  render() {
+    return (
+      <React.Fragment>
+        <this.SearchBar/>
+        <this.Menu/>
+      </React.Fragment>
     );
   }
 }

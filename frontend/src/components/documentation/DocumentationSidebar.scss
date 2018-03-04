@@ -28,3 +28,8 @@ $transitionSlow: all 0.6s ease-in-out 0s;
     text-shadow: 1px 1px darken($color-primary-0, 10%);
   }
 }
+
+
+.ui.search > .ui.icon.input {
+  width: 100%;
+}

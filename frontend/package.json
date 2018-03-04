@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@types/lodash": "^4.14.104",
     "@types/react-collapse": "^4.0.1",
     "@types/react-router-dom": "^4.2.4",
     "@types/react-syntax-highlighter": "0.0.3",
@@ -19,6 +20,7 @@
     "he": "^1.1.1",
     "html-webpack-plugin": "2.29.0",
     "jest": "20.0.4",
+    "lodash": "^4.17.5",
     "node-sass": "^4.7.2",
     "object-assign": "4.1.1",
     "postcss-flexbugs-fixes": "3.2.0",
