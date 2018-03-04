@@ -12,7 +12,11 @@ export enum Type {
   InlineCode = 'inlineCode',
   Image = 'image',
   Table = 'table',
+  TableRow = 'tableRow',
+  TableCell = 'tableCell',
+  TableColumn = 'tableColumn',
   Code = 'code',
+  BlockQuote = 'blockquote',
 }
 
 export interface AST {

@@ -1,28 +1,30 @@
 @import 'index';
 
 $activeColor: lighten($color-secondary-1-0, 10%);
-$activeTransition: all 0.3s ease-in-out 0s;
+$transitionFast: all 0.1s ease-in-out 0s;
+$transitionSlow: all 0.6s ease-in-out 0s;
 #DocMenu {
   &.ui.inverted.menu .item {
     border-left: 3px solid white;
     border-radius: 0;
-    transition: $activeTransition;
+    transition: $transitionFast;
   }
 
   &.ui.inverted.menu .active.item {
     background: $color-primary-0;
     border-left: 3px solid $activeColor;
-    transition: $activeTransition;
+    transition: $transitionFast;
   }
 
   &.ui.vertical.menu .menu .item {
     border-left: none;
+    transition: $transitionSlow;
   }
 
   &.ui.vertical.menu .menu .active.item {
     font-weight: normal;
     color: $activeColor !important;
-    transition: $activeTransition;
+    transition: $transitionFast;
     text-shadow: 1px 1px darken($color-primary-0, 10%);
   }
 }

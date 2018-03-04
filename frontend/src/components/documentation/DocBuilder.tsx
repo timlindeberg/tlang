@@ -1,7 +1,8 @@
 import { AST, Type } from 'types/markdown';
-import { Divider, Header, List, Image } from 'semantic-ui-react';
+import { Divider, Header, List, Image, Segment, Table } from 'semantic-ui-react';
 import * as React from 'react';
 import CodeBlock from 'components/CodeBlock';
+import { decode } from 'he';
 
 export interface Block {
   name: string;
@@ -27,18 +28,18 @@ export default class DocBuilder {
     ast.children.forEach((child) => {
       const element = this.parse(child) as JSX.Element;
       if (child.type === Type.Heading && (child.depth!) < 3) {
-        this.addBlock();
+        this.addCurrentBlock();
         const name = this.parse(child.children[0]) as string;
         this.currentBlock = { name, elements: [] };
       }
       this.currentBlock!.elements.push(element);
     });
-    this.addBlock();
+    this.addCurrentBlock();
 
     return <React.Fragment key={this.id}>{this.elements}</React.Fragment>;
   }
 
-  private addBlock = () => {
+  private addCurrentBlock = () => {
     const block = this.currentBlock;
     if (!block) {
       return;
@@ -57,12 +58,13 @@ export default class DocBuilder {
 
   private parse = (ast: AST): JSX.Element | string => {
     if (ast.type === Type.Text) {
-      return ast.value!;
+      return decode(ast.value!);
     }
 
-    const key = `${this.id} ${this.nodeCount++}`;
-    return React.cloneElement(this.parseElement(ast), { key });
+    return React.cloneElement(this.parseElement(ast), { key: this.nextKey() });
   }
+
+  private nextKey = (): string => `${this.id} ${this.nodeCount++}`;
 
   private parseElement = ({ type, children, value, ...rest }: AST): JSX.Element => {
     const parse = this.parse;
@@ -75,7 +77,7 @@ export default class DocBuilder {
     case Type.List:
       return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
     case Type.ListItem:
-      return <List.Item>{children.map((c: any) => parse(c.type === Type.Paragraph ? c.children[0] : c))}</List.Item>;
+      return <List.Item>{children.map(parse)}</List.Item>;
     case Type.ThematicBreak:
       return <Divider/>;
     case Type.Link:
@@ -85,13 +87,34 @@ export default class DocBuilder {
     case Type.Strong:
       return <strong>{children.map(parse)}</strong>;
     case Type.InlineCode:
-      return <code>{value!}</code>;
+      return <code>{decode(value!)}</code>;
     case Type.Image:
       return <Image href={rest.url!}>{rest.alt!}</Image>;
     case Type.Table:
-      return <p>TABLERERU</p>;
+      const header = children[0];
+      const rows = children.slice(1);
+      return (
+        <Table celled selectable striped collapsing>
+          <Table.Header>
+            <Table.Row>
+              {header.children.map(c => <Table.HeaderCell key={this.nextKey()}>{parse(c)}</Table.HeaderCell>)}
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {rows.map(row => (
+              <Table.Row>
+                {row.children.map(parse)}
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      );
+    case Type.TableCell:
+      return <Table.Cell>{children.map(parse)}</Table.Cell>;
     case Type.Code:
-      return <CodeBlock language={rest.lang!}>{value!}</CodeBlock>;
+      return <CodeBlock language={rest.lang!}>{decode(value!)}</CodeBlock>;
+    case Type.BlockQuote:
+      return <Segment>{children.map(parse)}</Segment>;
     default:
       throw new Error(`Unsupported type: ${type}`);
     }

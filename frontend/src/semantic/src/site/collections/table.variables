@@ -1,3 +1,17 @@
 /*******************************
     User Variable Overrides
 *******************************/
+
+
+@_hoverColor: fade(@primaryColor, 10%);
+@background: fade(@primaryColor, 5%);
+@activeBackgroundHover: @_hoverColor;
+@positiveBackgroundHover: @_hoverColor;
+@negativeBackgroundHover: @_hoverColor;
+@selectableBackground: @_hoverColor;
+@headerBackground: white;
+@stripedBackground: white;
+@headerColor: @primaryColor;
+@headerVerticalPadding: 0;
+@rowBorder: @border;
+@cellBorder: @border;

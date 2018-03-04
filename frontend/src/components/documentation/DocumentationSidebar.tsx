@@ -1,9 +1,10 @@
 import * as React from 'react';
 
-import { Menu } from 'semantic-ui-react';
+import { Accordion, Menu } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
 import 'components/documentation/DocumentationSidebar.scss';
+import { Collapse } from 'react-collapse';
 
 interface Header {
   value: string;
@@ -19,9 +20,22 @@ interface DocumentationSidebarProps {
 
 export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, {}> {
 
-  parseHeaders = (): Header[] => {
+  headers: Header[] = [];
+
+  constructor(props: DocumentationSidebarProps) {
+    super(props);
+    this.headers = this.parseHeaders(props.markdown);
+  }
+
+  componentWillReceiveProps(nextProps: DocumentationSidebarProps) {
+    if (nextProps.markdown !== this.props.markdown) {
+      this.headers = this.parseHeaders(nextProps.markdown);
+    }
+  }
+
+  parseHeaders = (markdown: AST[]): Header[] => {
     const headers: Header[] = [];
-    this.props.markdown.forEach((ast) => {
+    markdown.forEach((ast) => {
       const headings = ast.children.filter(child => child.type === Type.Heading && (child.depth!) < 3);
       if (headings.length === 0) {
         return;
@@ -46,44 +60,50 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
   }
 
   render() {
-    const headers = this.parseHeaders();
     const active = this.props.active;
-
     const anchor = (value: string) => `#${value.replace(/ /g, '-')}`;
     // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
     const scrollBehavior = (el: Element) => el.scrollIntoView({
       behavior: 'smooth',
-      block: 'center',
+      block: 'start',
       inline: 'nearest',
     });
 
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
-      <Menu inverted borderless fluid vertical size="small" id="DocMenu">
-        { headers.map(header => (
-          <Menu.Item key={header.value} active={isActive(header)}>
-            <HashLink to={anchor(header.value)} scroll={scrollBehavior}>{header.value}</HashLink>
-            { header.children.length > 0 && (
-              <Menu.Menu>
-                {header.children.map(({ value }) => (
-                  <Menu.Item
-                    key={value}
-                    active={active === value}
-                    as={HashLink}
-                    to={anchor(value)}
-                    onClick={e => e.stopPropagation()}
-                    style={{ paddingLeft: '2em' }}
-                    scroll={scrollBehavior}
-                  >
-                    <span>{value}</span>
-                  </Menu.Item>
-                ))}
-              </Menu.Menu>
-            )}
-          </Menu.Item>
-          ))
-        }
-      </Menu>
+      <Accordion as={Menu} inverted borderless fluid vertical size="small" id="DocMenu">
+        { this.headers.map((header) => {
+          const isHeaderActive = isActive(header);
+          return (
+            <Menu.Item key={header.value} active={isHeaderActive}>
+              <Accordion.Title
+                as={HashLink}
+                to={anchor(header.value)}
+                scroll={scrollBehavior}
+                active={isHeaderActive}
+                content={header.value}
+              />
+              { header.children.length > 0 && (
+                <Menu.Menu as={Collapse} isOpened={isHeaderActive}>
+                  { header.children.map(({ value }) => (
+                    <Menu.Item
+                      key={value}
+                      active={active === value}
+                      as={HashLink}
+                      to={anchor(value)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ paddingLeft: '2em' }}
+                      scroll={scrollBehavior}
+                    >
+                      <span>{value}</span>
+                    </Menu.Item>
+                  ))}
+                </Menu.Menu>
+              )}
+            </Menu.Item>
+          );
+        })}
+      </Accordion>
     );
   }
 }

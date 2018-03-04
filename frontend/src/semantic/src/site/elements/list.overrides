@@ -1,3 +1,14 @@
 /*******************************
     User Variable Overrides
 *******************************/
+
+.list .item p {
+	line-height: 1em;
+}
+
+.list .item {
+	margin-bottom: 0.3em;
+	&::last-child {
+		margin-bottom: 0em;
+	}
+}

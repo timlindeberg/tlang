@@ -35,9 +35,13 @@ ldeds *ITALICURU [hej](das)* ddsa
 
 das **BELDERU** das
 
+***
+
 hej jag heter `cud` hehj
 
 ```lollang  
 djaskdjksajkd
 124
 ```
+
+> What a cool quote
