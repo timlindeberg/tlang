@@ -24,7 +24,7 @@ interface DocumentationSidebarState {
   headers: Header[];
   searchValue: string;
   searchResults: string[];
-  mouseOver?: Header;
+  mousedOverHeaders: Set<Header>;
 }
 
 const MIN_CHARS = 3;
@@ -34,11 +34,16 @@ export default class DocumentationSidebar
 
   originalHeaders: Header[] = [];
   headerValues: string[] = [];
-  state: DocumentationSidebarState = { headers: [], searchValue: '', searchResults: [] };
+  state: DocumentationSidebarState = {
+    headers: [],
+    searchValue: '',
+    searchResults: [],
+    mousedOverHeaders: new Set(),
+  };
 
   constructor(props: DocumentationSidebarProps) {
     super(props);
-    this.parseHeaders(props.markdown);
+    this.originalHeaders = this.parseHeaders(props.markdown);
   }
 
   componentDidMount() {
@@ -47,12 +52,12 @@ export default class DocumentationSidebar
 
   componentWillReceiveProps(nextProps: DocumentationSidebarProps) {
     if (nextProps.markdown !== this.props.markdown) {
-      this.parseHeaders(nextProps.markdown);
+      this.originalHeaders = this.parseHeaders(nextProps.markdown);
     }
   }
 
-  parseHeaders = (markdown: AST[]): void => {
-    this.originalHeaders = [];
+  parseHeaders = (markdown: AST[]): Header[] => {
+    const headers: Header[] = [];
     markdown.forEach((ast) => {
       const headings = ast.children.filter(child => child.type === Type.Heading && (child.depth!) < 3);
       if (headings.length === 0) {
@@ -66,7 +71,7 @@ export default class DocumentationSidebar
         const newHeader: Header = { value, children: [] };
         if (depth === 1) {
           if (header) {
-            this.originalHeaders.push(header);
+            headers.push(header);
           }
           header = newHeader;
         } else {
@@ -74,8 +79,9 @@ export default class DocumentationSidebar
           header!.children.push(newHeader);
         }
       });
-      this.originalHeaders.push(header!);
+      headers.push(header!);
     });
+    return headers;
   }
 
   handleSearchChange = (e: any, { value }: any) => {
@@ -112,9 +118,24 @@ export default class DocumentationSidebar
     if (!searchResult) {
       return;
     }
+
     const element = document.getElementById(this.toId(searchResult))!;
     this.scrollTo(element);
   }
+
+  toId = (value: String) => value.replace(/ /g, '-');
+  anchor = (value: string) => `#${this.toId(value)}`;
+
+  // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
+  scrollTo = (el: Element) => el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+
+  mouseEnterHeader = (header: Header) => {
+    const mousedOverHeaders = new Set(this.state.mousedOverHeaders);
+    mousedOverHeaders.add(header);
+    this.setState(() => ({ mousedOverHeaders }));
+  }
+
+  mouseLeaveMenu = () => this.setState(() => ({ mousedOverHeaders: new Set() }));
 
   SearchBar = () => {
     return (
@@ -128,33 +149,29 @@ export default class DocumentationSidebar
     );
   }
 
-  toId = (value: String) => value.replace(/ /g, '-');
-  anchor = (value: string) => `#${this.toId(value)}`;
-
-  // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
-  scrollTo = (el: Element) => el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-
-  mouseEnterHeader = (header: Header) => this.setState(() => ({ mouseOver: header }));
-  mouseLeaveHeader = () => this.setState(() => ({ mouseOver: undefined }));
-
   Menu = () => {
     const active = this.props.active;
-    const { searchValue, headers, mouseOver } = this.state;
+    const { searchValue, headers, mousedOverHeaders } = this.state;
 
     const isSearching = searchValue.length >= MIN_CHARS;
     const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
     return (
-      <Accordion as={Menu} inverted borderless fluid vertical size="small" id="DocMenu">
+      <Accordion
+        as={Menu}
+        inverted
+        borderless
+        fluid
+        vertical
+        size="small"
+        id="DocMenu"
+        onMouseLeave={this.mouseLeaveMenu}
+      >
         { headers.map((header, i) => {
           const isHeaderActive = active ? isActive(header) : i === 0;
-          const isHeaderOpen = mouseOver === header || isSearching || isHeaderActive;
+          const hasBeenMousedOver = mousedOverHeaders.has(header);
+          const isHeaderOpen = hasBeenMousedOver || isSearching || isHeaderActive;
           return (
-            <Menu.Item
-              key={header.value}
-              active={isHeaderActive}
-              onMouseEnter={() => this.mouseEnterHeader(header)}
-              onMouseLeave={this.mouseLeaveHeader}
-            >
+            <Menu.Item key={header.value} active={isHeaderActive} onMouseEnter={() => this.mouseEnterHeader(header)}>
               <Accordion.Title
                 as={HashLink}
                 to={this.anchor(header.value)}
