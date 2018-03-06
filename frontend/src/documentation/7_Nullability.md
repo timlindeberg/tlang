@@ -78,5 +78,5 @@ Together with the elvis operator, this provides a very concise and safe way of a
 
 ```tlang
 val abc = new D() 
-val x: D = a?.b?.GetC()?.d ?: a // If any of a, b or GetC() is null, x is assigned abc 
+val x: D = a?.b?.GetC()?.d ?: abc // If any of a, b or GetC() is null, x is assigned abc 
 ```

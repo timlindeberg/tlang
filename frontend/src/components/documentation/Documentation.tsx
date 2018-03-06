@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Divider, Segment } from 'semantic-ui-react';
-import { AST, Type } from 'types/markdown';
+import { AST } from 'types/markdown';
 import DocBuilder, { Block } from 'components/documentation/DocBuilder';
 
 interface DocumentationProps {
@@ -14,6 +14,7 @@ interface DocumentationState {
 
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
 
+  static NAV_BAR_HEIGHT = 5;
   state: DocumentationState = { documentation: [] };
 
   ref?: Element;
@@ -67,25 +68,38 @@ export default class Documentation extends React.Component<DocumentationProps, D
     const body = document.body;
     const html = document.documentElement;
 
-    const height = Math.max(
-      body.scrollHeight,
-      body.offsetHeight,
-      html.scrollHeight,
-      html.offsetHeight
-    );
+    const height = Math.max(body.scrollHeight, body.offsetHeight, html.scrollHeight, html.offsetHeight);
+    const headerSize = Documentation.NAV_BAR_HEIGHT * parseFloat(getComputedStyle(document.documentElement)!.fontSize!);
 
-    const distanceToMiddle = (ref: Element): number => {
+    const viewHeight = height - headerSize;
+
+    const percentageOfViewArea = (ref: Element): number => {
       if (!ref) {
         return Infinity;
       }
-      const middleOfRef = ref.getBoundingClientRect().top + (ref.clientHeight / 2);
-      return Math.abs(middleOfRef - (height / 2));
+
+      const rect = ref.getBoundingClientRect();
+      if (rect.bottom < headerSize || rect.top > height) {
+        return 0;
+      }
+
+      const top = Math.max(headerSize, rect.top);
+      const bottom = Math.min(height, rect.bottom);
+
+      return (bottom - top) / viewHeight;
     };
 
-    return Object.keys(this.blocks)
-      .map((key): [string, number] => [key, distanceToMiddle(this.blocks[key])])
-      .sort(([_1, d1], [_2, d2]) => d1 - d2)
-      [0][0];
+    let highestPercentage = 0;
+    let mostVisibleBlock = '';
+    Object.keys(this.blocks).forEach((block) => {
+      const percentage = percentageOfViewArea(this.blocks[block]);
+      if (percentage > highestPercentage) {
+        highestPercentage = percentage;
+        mostVisibleBlock = block;
+      }
+    });
+
+    return mostVisibleBlock;
   }
 
   divMounted = (ref: any) => {
