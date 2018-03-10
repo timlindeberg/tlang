@@ -1,35 +1,65 @@
 @import 'index';
 
-$activeColor: lighten($color-secondary-1-0, 10%);
-$transitionFast: all 0.1s ease-in-out 0s;
-$transitionSlow: all 0.6s ease-in-out 0s;
+$active-color: lighten($color-secondary-1-0, 10%);
+$sub-menu-color: #FFFFFF;
+$text-shadow: 1px 1px darken($color-primary-0, 5%);
+
+$transition-color: color 0.2s ease-in-out 0s;
+$transition-border: border 0.2s ease-in-out 0s;
+$indentTransition: transform 0.2s ease-in-out 0s;
+
+$indent: 3em;
+$activeIndent: 1em;
+$hoverIndent: 0.5em;
+
+
 #DocMenu {
   &.ui.inverted.menu .item {
     border-left: 3px solid white;
     border-radius: 0;
-    transition: $transitionFast;
+    transition: $transition-border, $indentTransition, $transition-color;
+    text-shadow: $text-shadow;
+
+    & .title {
+      transition: $indentTransition;
+      &:hover {
+        transform: translateX($hoverIndent);
+      }
+    }
   }
 
   &.ui.inverted.menu .active.item {
     background: $color-primary-0;
-    border-left: 3px solid $activeColor;
-    transition: $transitionFast;
+    border-left: 3px solid $active-color;
+    transition: $transition-border, $transition-color;
   }
 
   &.ui.vertical.menu .menu .item {
+    font-weight: bold;
     border-left: none;
-    transition: $transitionSlow;
+    color: rgba($sub-menu-color, 0.5) !important;
+    padding-left: $indent;
+    transition: $indentTransition, $transition-color;
+    text-shadow: $text-shadow;
+    &:hover {
+      color: $sub-menu-color !important;
+      transform: translateX($hoverIndent);
+    }
   }
 
   &.ui.vertical.menu .menu .active.item {
-    font-weight: normal;
-    color: $activeColor !important;
-    transition: $transitionFast;
-    text-shadow: 1px 1px darken($color-primary-0, 10%);
+    color: $active-color !important;
+    transition: $indentTransition, $transition-color;
+    text-shadow: $text-shadow;
+    transform: translateX($activeIndent);
   }
 }
 
 
 .ui.search > .ui.icon.input {
   width: 100%;
+}
+
+.Doc-menuSubItem {
+  padding-left: 2em;
 }

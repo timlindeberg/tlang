@@ -5,8 +5,8 @@ import * as _ from 'lodash';
 import { Accordion, Menu, Search } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
-import 'components/documentation/DocumentationSidebar.scss';
 import { Collapse } from 'react-collapse';
+import 'components/documentation/DocumentationSidebar.scss';
 
 interface Header {
   index: number;
@@ -137,24 +137,60 @@ export default class DocumentationSidebar
 
   mouseLeaveMenu = () => this.setState(() => ({ mousedOverHeaders: new Set() }));
 
-  SearchBar = () => {
-    return (
-      <Search
-        size="mini"
-        value={this.state.searchValue}
-        onSearchChange={this.handleSearchChange}
-        onKeyDown={this.onSearchKeyDown}
-        open={false}
-      />
-    );
+  SearchBar = () => (
+    <Search
+      size="mini"
+      value={this.state.searchValue}
+      onSearchChange={this.handleSearchChange}
+      onKeyDown={this.onSearchKeyDown}
+      open={false}
+    />
+  )
+
+  renderMenuSubItems = (header: Header): JSX.Element => (
+    <React.Fragment>
+      {header.children.map(({ value, index }) => (
+        <Menu.Item
+          key={value}
+          active={this.props.active === index}
+          as={HashLink}
+          to={this.anchor(value)}
+          onClick={e => e.stopPropagation()}
+          scroll={this.scrollTo}
+        >
+          <span>{value}</span>
+        </Menu.Item>
+      ))}
+    </React.Fragment>
+  )
+
+  renderMenuItems = () => {
+    const { searchValue, headers, mousedOverHeaders } = this.state;
+    const { active } = this.props;
+    const isSearching = searchValue.length >= MIN_CHARS;
+
+    const isActive = (header: Header): boolean => active === header.index || header.children.some(isActive);
+
+    return headers.map((header) => {
+      const isHeaderActive = isActive(header);
+      const hasBeenMousedOver = mousedOverHeaders.has(header);
+      const isHeaderOpen = hasBeenMousedOver || isSearching || isHeaderActive;
+      return (
+        <Menu.Item key={header.value} active={isHeaderActive} onMouseEnter={() => this.mouseEnterHeader(header)}>
+          <Accordion.Title
+            as={HashLink}
+            to={this.anchor(header.value)}
+            scroll={this.scrollTo}
+            active={isHeaderOpen}
+            content={header.value}
+          />
+          <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>{this.renderMenuSubItems(header)}</Menu.Menu>
+        </Menu.Item>
+      );
+    });
   }
 
   Menu = () => {
-    const active = this.props.active;
-    const { searchValue, headers, mousedOverHeaders } = this.state;
-
-    const isSearching = searchValue.length >= MIN_CHARS;
-    const isActive = (header: Header): boolean => active === header.index || header.children.some(isActive);
     return (
       <Accordion
         as={Menu}
@@ -166,39 +202,7 @@ export default class DocumentationSidebar
         id="DocMenu"
         onMouseLeave={this.mouseLeaveMenu}
       >
-        { headers.map((header) => {
-          const isHeaderActive = isActive(header);
-          const hasBeenMousedOver = mousedOverHeaders.has(header);
-          const isHeaderOpen = hasBeenMousedOver || isSearching || isHeaderActive;
-          return (
-            <Menu.Item key={header.value} active={isHeaderActive} onMouseEnter={() => this.mouseEnterHeader(header)}>
-              <Accordion.Title
-                as={HashLink}
-                to={this.anchor(header.value)}
-                scroll={this.scrollTo}
-                active={isHeaderOpen}
-                content={header.value}
-              />
-              <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
-                <div>
-                  { header.children.map(({ value, index }) => (
-                    <Menu.Item
-                      key={value}
-                      active={active === index}
-                      as={HashLink}
-                      to={this.anchor(value)}
-                      onClick={e => e.stopPropagation()}
-                      style={{ paddingLeft: '2em' }}
-                      scroll={this.scrollTo}
-                    >
-                      <span>{value}</span>
-                    </Menu.Item>
-                  ))}
-                </div>
-              </Menu.Menu>
-            </Menu.Item>
-          );
-        })}
+        {this.renderMenuItems()}
       </Accordion>
     );
   }
