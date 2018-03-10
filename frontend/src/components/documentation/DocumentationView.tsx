@@ -22,19 +22,19 @@ const markdownFiles = findFiles(require.context('documentation', true, /\.md$/))
 interface DocumentationViewState {
   markdown: AST[];
   menuVisible: boolean;
-  active?: string;
+  active: number;
 }
 
 export default class DocumentationView extends React.Component<{}, DocumentationViewState> {
 
-  state: DocumentationViewState = { markdown: [], menuVisible: true };
+  state: DocumentationViewState = { markdown: [], menuVisible: true, active: 0 };
 
   componentDidMount() {
     const markdown = markdownFiles.map(content => unified().use(remarkParse).parse(content));
     this.setState(() => ({ markdown }));
   }
 
-  setActive = (active: string) => {
+  setActive = (active: number) => {
     if (active !== this.state.active) {
       this.setState(() => ({ active }));
     }
@@ -58,7 +58,7 @@ export default class DocumentationView extends React.Component<{}, Documentation
             </Grid.Column>
           </Grid>
         </Segment>
-        <Documentation markdown={markdown} setActive={this.setActive} />
+        <Documentation markdown={markdown} active={active} setActive={this.setActive} />
       </React.Fragment>
     );
 

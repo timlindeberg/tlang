@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Divider, Segment } from 'semantic-ui-react';
 import { AST } from 'types/markdown';
-import DocBuilder, { Block } from 'components/documentation/DocBuilder';
+import DocBuilder from 'components/documentation/DocBuilder';
 
 interface DocumentationProps {
   markdown: AST[];
-  setActive: (active: string) => void;
+  active: number;
+  setActive: (active: number) => void;
 }
 
 interface DocumentationState {
@@ -15,10 +16,14 @@ interface DocumentationState {
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
 
   static NAV_BAR_HEIGHT = 5;
+  static SCROLL_OFFSET = 5;
+
   state: DocumentationState = { documentation: [] };
 
-  ref?: Element;
-  blocks: { [s: string]: Element } = {};
+  private ref?: Element;
+  private navBarHeight: number = 0;
+  private blocks: Element[] = [];
+  private lastScrollPosition: number = 0;
 
   componentDidMount() {
     this.setState(() => ({ documentation: this.createDocumentation(this.props) }));
@@ -57,54 +62,49 @@ export default class Documentation extends React.Component<DocumentationProps, D
     return documentation;
   }
 
-  onBlockMounted = (ref: any, block: Block): void => this.blocks[block.name] = ref;
+  onBlockMounted = (ref: any): void => { this.blocks.push(ref); };
 
-  onScroll = (): void => {
-    const name = this.headerClosestToMiddle();
-    this.props.setActive(name);
+  onScrollUp = (): void => {
+    const { setActive, active } = this.props;
+
+    if (active === this.blocks.length - 1) {
+      return;
+    }
+    const block = this.blocks[active + 1];
+    const pos = block.getBoundingClientRect().top;
+    if (pos <= this.navBarHeight + Documentation.SCROLL_OFFSET) {
+      setActive(active + 1);
+    }
   }
 
-  headerClosestToMiddle = (): string => {
-    const body = document.body;
-    const html = document.documentElement;
+  onScrollDown = (): void => {
+    const { setActive, active } = this.props;
 
-    const height = Math.max(body.scrollHeight, body.offsetHeight, html.scrollHeight, html.offsetHeight);
-    const headerSize = Documentation.NAV_BAR_HEIGHT * parseFloat(getComputedStyle(document.documentElement)!.fontSize!);
+    if (active === 0) {
+      return;
+    }
+    const block = this.blocks[active];
+    const pos = block.getBoundingClientRect().top;
+    if (pos >= this.navBarHeight + Documentation.SCROLL_OFFSET) {
+      setActive(active - 1);
+    }
+  }
 
-    const viewHeight = height - headerSize;
-
-    const percentageOfViewArea = (ref: Element): number => {
-      if (!ref) {
-        return Infinity;
-      }
-
-      const rect = ref.getBoundingClientRect();
-      if (rect.bottom < headerSize || rect.top > height) {
-        return 0;
-      }
-
-      const top = Math.max(headerSize, rect.top);
-      const bottom = Math.min(height, rect.bottom);
-
-      return (bottom - top) / viewHeight;
-    };
-
-    let highestPercentage = 0;
-    let mostVisibleBlock = '';
-    Object.keys(this.blocks).forEach((block) => {
-      const percentage = percentageOfViewArea(this.blocks[block]);
-      if (percentage > highestPercentage) {
-        highestPercentage = percentage;
-        mostVisibleBlock = block;
-      }
-    });
-
-    return mostVisibleBlock;
+  onScroll = (): void => {
+    const scrollPos = this.ref!.scrollTop;
+    if (scrollPos > this.lastScrollPosition) {
+      this.onScrollUp();
+    } else {
+      this.onScrollDown();
+    }
+    this.lastScrollPosition = scrollPos;
   }
 
   divMounted = (ref: any) => {
     if (ref) {
       this.ref = ref;
+      this.navBarHeight = Documentation.NAV_BAR_HEIGHT *
+        parseFloat(getComputedStyle(document.documentElement)!.fontSize!);
       ref.addEventListener('scroll', this.onScroll);
     }
   }

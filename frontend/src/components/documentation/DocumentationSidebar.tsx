@@ -2,22 +2,22 @@ import * as React from 'react';
 
 import * as _ from 'lodash';
 
-import { Accordion, Divider, Menu, Search } from 'semantic-ui-react';
+import { Accordion, Menu, Search } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
 import 'components/documentation/DocumentationSidebar.scss';
 import { Collapse } from 'react-collapse';
 
 interface Header {
+  index: number;
   value: string;
   children: Header[];
-  parent?: Header;
 }
 
 interface DocumentationSidebarProps {
   markdown: AST[];
   visible: boolean;
-  active?: string;
+  active: number;
 }
 
 interface DocumentationSidebarState {
@@ -58,6 +58,7 @@ export default class DocumentationSidebar
 
   parseHeaders = (markdown: AST[]): Header[] => {
     const headers: Header[] = [];
+    let headerIndex = 0;
     markdown.forEach((ast) => {
       const headings = ast.children.filter(child => child.type === Type.Heading && (child.depth!) < 3);
       if (headings.length === 0) {
@@ -68,14 +69,13 @@ export default class DocumentationSidebar
       headings.forEach(({ children, depth }) => {
         const value = children[0].value!;
         this.headerValues.push(value);
-        const newHeader: Header = { value, children: [] };
+        const newHeader: Header = { value, index: headerIndex++, children: [] };
         if (depth === 1) {
           if (header) {
             headers.push(header);
           }
           header = newHeader;
         } else {
-          newHeader.parent = header!;
           header!.children.push(newHeader);
         }
       });
@@ -154,7 +154,7 @@ export default class DocumentationSidebar
     const { searchValue, headers, mousedOverHeaders } = this.state;
 
     const isSearching = searchValue.length >= MIN_CHARS;
-    const isActive = (header: Header): boolean => active === header.value || header.children.some(isActive);
+    const isActive = (header: Header): boolean => active === header.index || header.children.some(isActive);
     return (
       <Accordion
         as={Menu}
@@ -166,8 +166,8 @@ export default class DocumentationSidebar
         id="DocMenu"
         onMouseLeave={this.mouseLeaveMenu}
       >
-        { headers.map((header, i) => {
-          const isHeaderActive = active ? isActive(header) : i === 0;
+        { headers.map((header) => {
+          const isHeaderActive = isActive(header);
           const hasBeenMousedOver = mousedOverHeaders.has(header);
           const isHeaderOpen = hasBeenMousedOver || isSearching || isHeaderActive;
           return (
@@ -181,10 +181,10 @@ export default class DocumentationSidebar
               />
               <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
                 <div>
-                  { header.children.map(({ value }) => (
+                  { header.children.map(({ value, index }) => (
                     <Menu.Item
                       key={value}
-                      active={active === value}
+                      active={active === index}
                       as={HashLink}
                       to={this.anchor(value)}
                       onClick={e => e.stopPropagation()}

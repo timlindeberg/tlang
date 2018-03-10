@@ -15,9 +15,9 @@ export default class DocBuilder {
   private id: string;
   private nodeCount: number;
   private currentBlock?: Block;
-  private onBlockMounted: (ref: any, block: Block) => void;
+  private onBlockMounted: (ref: any) => void;
 
-  constructor(id: string, onBlockMounted: (ref: any, block: Block) => void) {
+  constructor(id: string, onBlockMounted: (ref: any) => void) {
     this.id = id;
     this.nodeCount = 0;
     this.onBlockMounted = onBlockMounted;
@@ -46,11 +46,7 @@ export default class DocBuilder {
     }
 
     this.elements.push(
-      <div
-        key={block.name}
-        className="Documentation-block"
-        ref={(r: any) => this.onBlockMounted(r, block)}
-      >
+      <div key={block.name} className="Documentation-block" ref={this.onBlockMounted}>
         {block.elements}
       </div>
     );
@@ -73,7 +69,9 @@ export default class DocBuilder {
       return <p>{children.map(parse)}</p>;
     case Type.Heading:
       const heading = parse(children[0]) as string;
-      return <Header as={`h${rest.depth!}`} id={heading.replace(/ /g, '-')}>{heading}</Header>;
+      const depth = rest.depth!;
+      const id = depth < 3 && heading.replace(/ /g, '-');
+      return <Header as={`h${depth}`} id={id}>{heading}</Header>;
     case Type.List:
       return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
     case Type.ListItem:
