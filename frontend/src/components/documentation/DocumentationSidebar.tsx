@@ -147,21 +147,23 @@ export default class DocumentationSidebar
     />
   )
 
-  renderMenuSubItems = (header: Header): JSX.Element => (
-    <React.Fragment>
-      {header.children.map(({ value, index }) => (
-        <Menu.Item
-          key={value}
-          active={this.props.active === index}
-          as={HashLink}
-          to={this.anchor(value)}
-          onClick={e => e.stopPropagation()}
-          scroll={this.scrollTo}
-        >
-          <span>{value}</span>
-        </Menu.Item>
-      ))}
-    </React.Fragment>
+  renderSubMenu = (header: Header, isHeaderOpen: boolean): JSX.Element => (
+    <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>
+      <React.Fragment>
+        {header.children.map(({ value, index }) => (
+          <Menu.Item
+            key={value}
+            active={this.props.active === index}
+            as={HashLink}
+            to={this.anchor(value)}
+            onClick={e => e.stopPropagation()}
+            scroll={this.scrollTo}
+          >
+            <span>{value}</span>
+          </Menu.Item>
+        ))}
+      </React.Fragment>
+    </Menu.Menu>
   )
 
   renderMenuItems = () => {
@@ -184,28 +186,26 @@ export default class DocumentationSidebar
             active={isHeaderOpen}
             content={header.value}
           />
-          <Menu.Menu as={Collapse} isOpened={isHeaderOpen}>{this.renderMenuSubItems(header)}</Menu.Menu>
+          {this.renderSubMenu(header, isHeaderOpen)}
         </Menu.Item>
       );
     });
   }
 
-  Menu = () => {
-    return (
-      <Accordion
-        as={Menu}
-        inverted
-        borderless
-        fluid
-        vertical
-        size="small"
-        id="DocMenu"
-        onMouseLeave={this.mouseLeaveMenu}
-      >
-        {this.renderMenuItems()}
-      </Accordion>
-    );
-  }
+  Menu = () => (
+    <Accordion
+      as={Menu}
+      inverted
+      borderless
+      fluid
+      vertical
+      size="small"
+      id="DocMenu"
+      onMouseLeave={this.mouseLeaveMenu}
+    >
+      {this.renderMenuItems()}
+    </Accordion>
+  )
 
   render() {
     return (

@@ -15,7 +15,7 @@ interface DocumentationState {
 
 export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
 
-  static NAV_BAR_HEIGHT = 5;
+  static NAV_BAR_HEIGHT_EM = 5;
   static SCROLL_OFFSET = 5;
 
   state: DocumentationState = { documentation: [] };
@@ -64,49 +64,54 @@ export default class Documentation extends React.Component<DocumentationProps, D
 
   onBlockMounted = (ref: any): void => { this.blocks.push(ref); };
 
-  onScrollUp = (): void => {
-    const { setActive, active } = this.props;
+  onScrollDown = (): number => {
+    const { active } = this.props;
 
-    if (active === this.blocks.length - 1) {
-      return;
+    let activeBlock = active;
+    for (let block = active; block < this.blocks.length - 1; block++) {
+      const pos = this.blocks[block + 1].getBoundingClientRect().top;
+      if (pos > this.navBarHeight + Documentation.SCROLL_OFFSET) {
+        break;
+      }
+      activeBlock = block + 1;
     }
-    const block = this.blocks[active + 1];
-    const pos = block.getBoundingClientRect().top;
-    if (pos <= this.navBarHeight + Documentation.SCROLL_OFFSET) {
-      setActive(active + 1);
-    }
+    return activeBlock;
   }
 
-  onScrollDown = (): void => {
-    const { setActive, active } = this.props;
+  onScrollUp = (): number => {
+    const { active } = this.props;
 
-    if (active === 0) {
-      return;
+    let activeBlock = active;
+    for (let block = active; block >= 1; block--) {
+      const pos = this.blocks[block].getBoundingClientRect().top;
+      if (pos < this.navBarHeight + Documentation.SCROLL_OFFSET) {
+        break;
+      }
+      activeBlock = block - 1;
     }
-    const block = this.blocks[active];
-    const pos = block.getBoundingClientRect().top;
-    if (pos >= this.navBarHeight + Documentation.SCROLL_OFFSET) {
-      setActive(active - 1);
-    }
+    return activeBlock;
   }
 
   onScroll = (): void => {
+    const { setActive, active } = this.props;
+
     const scrollPos = this.ref!.scrollTop;
-    if (scrollPos > this.lastScrollPosition) {
-      this.onScrollUp();
-    } else {
-      this.onScrollDown();
+    const activeBlock = scrollPos > this.lastScrollPosition ? this.onScrollDown()  : this.onScrollUp();
+    if (activeBlock !== active) {
+      setActive(activeBlock);
     }
     this.lastScrollPosition = scrollPos;
   }
 
   divMounted = (ref: any) => {
-    if (ref) {
-      this.ref = ref;
-      this.navBarHeight = Documentation.NAV_BAR_HEIGHT *
-        parseFloat(getComputedStyle(document.documentElement)!.fontSize!);
-      ref.addEventListener('scroll', this.onScroll);
+    if (!ref) {
+      return;
     }
+
+    this.ref = ref;
+    const fontSize = getComputedStyle(document.documentElement)!.fontSize!;
+    this.navBarHeight = Documentation.NAV_BAR_HEIGHT_EM * parseFloat(fontSize);
+    ref.addEventListener('scroll', this.onScroll);
   }
 
   render() {

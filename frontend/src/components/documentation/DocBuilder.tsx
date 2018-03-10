@@ -70,7 +70,7 @@ export default class DocBuilder {
     case Type.Heading:
       const heading = parse(children[0]) as string;
       const depth = rest.depth!;
-      const id = depth < 3 && heading.replace(/ /g, '-');
+      const id = depth < 3 ? heading.replace(/ /g, '-') : undefined;
       return <Header as={`h${depth}`} id={id}>{heading}</Header>;
     case Type.List:
       return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
