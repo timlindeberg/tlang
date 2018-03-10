@@ -9,34 +9,18 @@ interface DocumentationProps {
   setActive: (active: number) => void;
 }
 
-interface DocumentationState {
-  documentation: JSX.Element[];
-}
-
-export default class Documentation extends React.Component<DocumentationProps, DocumentationState> {
+export default class Documentation extends React.Component<DocumentationProps, {}> {
 
   static NAV_BAR_HEIGHT_EM = 5;
   static SCROLL_OFFSET = 5;
-
-  state: DocumentationState = { documentation: [] };
 
   private ref?: Element;
   private navBarHeight: number = 0;
   private blocks: Element[] = [];
   private lastScrollPosition: number = 0;
 
-  componentDidMount() {
-    this.setState(() => ({ documentation: this.createDocumentation(this.props) }));
-  }
-
-  componentWillReceiveProps(nextProps: DocumentationProps) {
-    if (nextProps.markdown !== this.props.markdown) {
-      this.setState(() => ({ documentation: this.createDocumentation(nextProps) }));
-    }
-  }
-
-  shouldComponentUpdate(nextProps: DocumentationProps, nextState: DocumentationState) {
-    return nextProps.markdown !== this.props.markdown || nextState.documentation !== this.state.documentation;
+  shouldComponentUpdate(nextProps: DocumentationProps) {
+    return nextProps.markdown !== this.props.markdown;
   }
 
   componentWillUnmount() {
@@ -45,8 +29,9 @@ export default class Documentation extends React.Component<DocumentationProps, D
     }
   }
 
-  createDocumentation = (props: DocumentationProps): JSX.Element[] => {
-    const markdown = props.markdown;
+  createDocumentation = (): JSX.Element[] => {
+    const { markdown } = this.props;
+
     let documentation: JSX.Element[] = [];
     if (markdown.length === 0) {
       return documentation;
@@ -56,7 +41,7 @@ export default class Documentation extends React.Component<DocumentationProps, D
       const docBuilder = new DocBuilder(i.toString(), this.onBlockMounted);
       documentation = documentation.concat(docBuilder.build(ast));
       if (i < markdown.length - 1) {
-        documentation.push(<Divider key={`d${i}`} style={{ marginTop: '2em', marginBottom: '2em' }}/>);
+        documentation.push(<Divider key={`d${i}`} className="Documentation-divider"/>);
       }
     });
     return documentation;
@@ -118,7 +103,7 @@ export default class Documentation extends React.Component<DocumentationProps, D
     return (
       <div ref={this.divMounted} id="Documentation-docs">
         <Segment style={{ border: 'none' }}>
-          {this.state.documentation}
+          {this.createDocumentation()}
         </Segment>
       </div>
     );

@@ -55,3 +55,8 @@ $pageHeight: calc(100vh - #{$navBarHeight});
     margin-bottom: 0;
   }
 }
+
+.ui.divider.Documentation-divider {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
