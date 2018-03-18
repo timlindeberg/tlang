@@ -1,9 +1,6 @@
 import * as React from 'react';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import 'components/CodeBlock.scss';
-import registerTlang from 'utils/tlangSyntaxDefinition';
-
-registerTlang();
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/light';
+import 'utils/tlangSyntaxDefinition';
 
 interface CodeBlockProps {
   children: string;
@@ -18,8 +15,7 @@ const charCount = (str: string, char: string) => {
   return count;
 };
 
-const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children, language }: CodeBlockProps) => {
-  const code = children.replace(/\t/g, '➝');
+const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children: code, language }: CodeBlockProps) => {
   const numLines = 1 + charCount(code, '\n');
   return (
     <SyntaxHighlighter

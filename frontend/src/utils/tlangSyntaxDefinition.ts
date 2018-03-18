@@ -1,159 +1,125 @@
-
 import { registerLanguage } from 'react-syntax-highlighter/dist/light';
+import * as CodeMirror from 'codemirror';
+import 'codemirror/addon/mode/simple';
+import 'utils/SyntaxHighlighting.scss';
 
-const toRegex = (terms: string[]) => '\\b(' + terms.sort((a, b) => b.length - a.length).join('|') + ')\\b';
+const joinToRegex = (terms: string[]) => '\\b(' + terms.sort((a, b) => b.length - a.length).join('|') + ')\\b';
 
-const KEY_WORDS = [
-  'package',
-  'import',
-  'is',
-  'as',
-  'object',
-  'class',
-  'extension',
-  'trait',
-  'Def',
-  'def',
-  'protected',
-  'Var',
-  'Val',
-  'var',
-  'val',
-  'static',
-  'while',
-  'for',
-  'if',
-  'else',
-  'return',
-  'this',
-  'super',
-  'new',
-  'implicit',
-  'print',
-  'println',
-  'error',
-  'break',
-  'continue',
-  'in',
-];
+const KEY_WORDS = ['package', 'import', 'is', 'as', 'object', 'class', 'extension', 'trait', 'Def', 'def', 'protected',
+  'Var', 'Val', 'var', 'val', 'static', 'while', 'for', 'if', 'else', 'return', 'this', 'super', 'new', 'implicit',
+  'print', 'println', 'error', 'break', 'continue', 'in'];
 
 const LITERALS = ['true', 'false', 'null'];
 
-const ESCAPE_CHAR = {
-  className: 'escapeChar',
-  begin: /\\([tbnrf'"]|(u[0-9a-fA-F]{1,5}))/,
-};
-
-const STRING = {
-  className: 'string',
-  variants: [
-    {
-      begin: '"', end: '"',
-      illegal: '\\n',
-      contains: [ESCAPE_CHAR]
-    },
-    {
-      begin: '\'', end: '\'',
-      contains: [ESCAPE_CHAR]
-    },
-    {
-      begin: '`', end: '`',
-      relevance: 10
-    },
-  ]
-};
-
-const SYMBOL = {
-  className: 'symbol',
-  begin: /[\-+;.:,=*!#()\[\]{}?~&|%<>/^]/
-};
-
-const KEY_WORD = {
-  className: 'keyword',
-  begin: toRegex(KEY_WORDS),
-  relevance: 0
-};
-
-const LITERAL = {
-  className: 'literal',
-  begin: toRegex(LITERALS),
-};
-
-const TYPE = {
-  className: 'type',
-  begin: /\b[A-Z][A-Za-z0-9_]*/,
-  relevance: 0
-};
-
-const NUMBER = {
-  className: 'number',
-  begin: /(0b[01_]+[lL]?)|(0x[0-9a-fA-F_]+[lL]?)|((-[0-9]|[0-9])[0-9_]*\.?[0-9_]*([eE]-?[0-9]+)?([fFlL])?)/,
-  relevance: 0
-};
-
-const CLASS = {
-  className: 'class',
-  beginKeywords: 'class trait extension',
-  end: /[:=\n;]/,
-  excludeEnd: true,
-  contains: [
-    {
-      begin: /</,
-      end: />/,
-      excludeBegin: true,
-      excludeEnd: true,
-      relevance: 0,
-      contains: [TYPE]
-    },
-  ]
-};
-
-const TAB = {
-  className: 'tab',
-  begin: /➝+/,
-};
-
-const METHOD = {
-  className: 'function',
-  beginKeywords: 'Def def',
-  end: /[:=\n;]/,
-  excludeEnd: true,
-};
-
 const VARIABLE = {
-  className: 'variable',
-  begin: /[a-zA-Z_][0-9a-zA-Z_]*/,
+  regex: /[a-zA-Z_][0-9a-zA-Z_]*/,
+  className: 'variable'
+};
+const NUMBER = {
+  regex: /(-[0-9]|[0-9])[0-9_]*\.?[0-9_]*([Ee]-?[0-9]+)?([FfLl])?/,
+  className: 'number'
+};
+const BINARY_NUMBER = {
+  regex: /0[Bb][01_]+[Ll]?/,
+  className: 'number'
+};
+const HEX_NUMBER = {
+  regex: /0[Xx][0-9A-Fa-f_]+[Ll]?/,
+  className: 'number'
+};
+const TYPE = {
+  regex: /\b[A-Z][A-Za-z0-9_]*/,
+  className: 'type'
+};
+const LITERAL = {
+  regex: joinToRegex(LITERALS),
+  className: 'literal'
+};
+const KEYWORD = {
+  regex: joinToRegex(KEY_WORDS),
+  className: 'keyword'
+};
+const SYMBOL = {
+  regex: /[\-+;.:,=*!#()\[\]{}?~&|%<>/^]/,
+  className: 'symbol'
+};
+const ESCAPE_CHAR = {
+  regex: /\\([\\tbnrf'"]|(u[0-9a-fA-F]{1,5}))/,
+  className: 'escapeChar'
+};
+const LINE_COMMENT = {
+  regex: /\/\/.*/,
+  className: 'comment'
 };
 
-let registered = false;
+const STRING = { className: 'string' };
+const CHAR = { className: 'char' };
+const TAB = { className: 'tab' };
 
-export default function registerTLang() {
-  if (registered) {
-    return;
-  }
+(CodeMirror as any).defineSimpleMode('tlang', {
+  start: [
+    { regex: /"/, token: STRING.className, next: 'string' },
+    { regex: /'/, token: 'char', next: 'char' },
+    { regex: '\'' + ESCAPE_CHAR.regex.source + '\'', token: ESCAPE_CHAR.className },
+    { regex: /`/, token: STRING.className, next: 'multiLineString' },
+    { regex: /\/\*/, token: 'comment', next: 'multiLineComment' },
+    ...[
+      LINE_COMMENT, KEYWORD, LITERAL, BINARY_NUMBER, HEX_NUMBER, NUMBER, TYPE, VARIABLE, SYMBOL
+    ].map(({ regex, className }) => ({ regex, token: className })),
 
-  registered = true;
-  registerLanguage('tlang', (hljs: any) => {
-    return {
-      case_insensitive: false,
-      keywords: {
-        literal: LITERALS.join(' '),
-        keyword: KEY_WORDS.join(' '),
+    { regex: /=\s*$/, indent: true },
+  ],
+  char: [
+    { regex: ESCAPE_CHAR.regex, token: 'escapeChar', next: 'char' },
+    { regex: /.'/, token: 'char', next: 'start' },
+    { regex: /'/, token: 'char', next: 'start' },
+  ],
+  string: [
+    { regex: ESCAPE_CHAR.regex, token: 'escapeChar', next: 'string' },
+    { regex: /[^\\]+"/, token: STRING.className, next: 'start' },
+    { regex: /[^\\]+/, token: STRING.className, next: 'string' },
+  ],
+  multiLineComment: [
+    { regex: /.*?\*\//, token: 'comment', next: 'start' },
+    { regex: /.*/, token: 'comment' },
+  ],
+  multiLineString: [
+    { regex: /.*`/, token: 'string', next: 'start' },
+    { regex: /.*/, token: 'string' },
+  ],
+  meta: {
+    dontIndentStates: ['multiLineComment', 'multiLineString'],
+    lineComment: '//',
+  },
+});
+
+registerLanguage('tlang', (hljs: any) => {
+  const escapeChar = { className: ESCAPE_CHAR.className, begin: ESCAPE_CHAR.regex };
+  return {
+    case_insensitive: false,
+    keywords: { literal: LITERALS.join(' '), keyword: KEY_WORDS.join(' ') },
+    contains: [
+      {
+        className: 'string',
+        variants: [
+          {
+            begin: '"', end: '"',
+            illegal: '\\n',
+            contains: [escapeChar],
+          },
+          {
+            begin: '`', end: '`',
+            relevance: 10,
+          },
+        ],
       },
-      contains: [
-        hljs.C_BLOCK_COMMENT_MODE,
-        hljs.C_LINE_COMMENT_MODE,
-        STRING,
-        NUMBER,
-        SYMBOL,
-        LITERAL,
-        KEY_WORD,
-        METHOD,
-        CLASS,
-        TAB,
-        TYPE,
-        VARIABLE,
-      ]
-    };
-  });
-}
+      hljs.C_BLOCK_COMMENT_MODE,
+      hljs.C_LINE_COMMENT_MODE,
+      { className: CHAR.className, begin: '\'', end: '\'', contains: [escapeChar] },
+      { className: TAB.className, begin: /\t/ },
+      ...[
+        KEYWORD, LITERAL, BINARY_NUMBER, HEX_NUMBER, NUMBER, TYPE, VARIABLE, SYMBOL
+      ].map(({ regex, className }) => ({ className, begin: regex })),
+    ],
+  };
+});
