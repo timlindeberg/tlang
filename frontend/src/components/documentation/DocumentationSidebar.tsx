@@ -16,7 +16,6 @@ interface Header {
 
 interface DocumentationSidebarProps {
   markdown: AST[];
-  visible: boolean;
   active: number;
 }
 
@@ -209,10 +208,10 @@ export default class DocumentationSidebar
 
   render() {
     return (
-      <div id="Documentation-menu-inner">
+      <React.Fragment>
         <this.SearchBar/>
         <this.Menu/>
-      </div>
+      </React.Fragment>
     );
   }
 }

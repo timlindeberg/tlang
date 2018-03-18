@@ -1,6 +1,6 @@
 import * as React from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/light';
-import 'utils/tlangSyntaxDefinition';
+import 'syntaxHighlighting/highlightjs-highlighting';
 
 interface CodeBlockProps {
   children: string;

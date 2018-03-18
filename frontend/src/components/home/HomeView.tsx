@@ -1,10 +1,11 @@
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import DesktopContainer from 'components/home/DesktopContainer';
 import MobileContainer from 'components/home/MobileContainer';
-import CodeBlock from 'components/CodeBlock';
+import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
-import 'components/home/HomeView.scss';
+import 'components/home/Animation.scss';
 
 interface ResponsiveContainerProps {
   children: any;
@@ -19,16 +20,16 @@ val helloWorld = new HelloWorld<Long>(1300L) +
 helloWorld.Print() // prints "Hello world!" 1337 times
 
 class HelloWorld<T> =
-    
+
 	var times: T
-    
+
 	Def new(times: T?) = 
 		this.times = times ?: 1
-    
+
 	Def Print() = 
 		for(var i = 0; i < times; i++)
 			println("Hello world!")
-            
+
 	Def +(lhs: HelloWorld<T>, rhs: HelloWorld<T>) =
 		new HelloWorld(lhs.times + rhs.times)`;
 
@@ -42,7 +43,7 @@ const ResponsiveContainer = ({ children }: ResponsiveContainerProps) => (
 const HomeView = () => (
   <ResponsiveContainer>
     <Segment style={{ paddingTop: '4em' }} vertical>
-      <Grid container stackable verticalAlign="middle">
+      <Grid container stackable verticalAlign="middle" className="animated fade-in">
         <Grid.Row>
           <Grid.Column width={8}>
             <Header as="h1">Language philosophy</Header>

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Responsive, Segment, Visibility } from 'semantic-ui-react';
 import Heading from 'components/home/Heading';
-import Navbar from 'components/Navbar';
+import Navbar from 'components/layout/Navbar';
 
 interface DesktopContainerProps {
   children?: any;

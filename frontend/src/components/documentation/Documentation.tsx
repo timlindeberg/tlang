@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Divider, Segment } from 'semantic-ui-react';
 import { AST } from 'types/markdown';
 import DocBuilder from 'components/documentation/DocBuilder';
+import Title from 'components/misc/Title';
 
 interface DocumentationProps {
   markdown: AST[];
@@ -89,20 +90,22 @@ export default class Documentation extends React.Component<DocumentationProps, {
   }
 
   divMounted = (ref: any) => {
-    if (!ref) {
+    const parent = ref && ref.parentElement;
+    if (!parent) {
       return;
     }
 
-    this.ref = ref;
+    this.ref = parent;
     const fontSize = getComputedStyle(document.documentElement)!.fontSize!;
     this.navBarHeight = Documentation.NAV_BAR_HEIGHT_EM * parseFloat(fontSize);
-    ref.addEventListener('scroll', this.onScroll);
+    parent.addEventListener('scroll', this.onScroll);
   }
 
   render() {
     return (
-      <div ref={this.divMounted} id="Documentation-docs">
+      <div ref={this.divMounted}>
         <Segment style={{ border: 'none' }}>
+          <Title>Documentation</Title>
           {this.createDocumentation()}
         </Segment>
       </div>

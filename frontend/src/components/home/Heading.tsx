@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { Button, Container, Header, Icon } from 'semantic-ui-react';
-import Logo from 'components/Logo';
+import { Link } from 'react-router-dom';
+import Logo from 'components/misc/Logo';
 import 'components/home/Heading.scss';
+import 'components/home/Animation.scss';
 
 export interface HomepageHeadingProps {
   mobile: boolean;
@@ -9,18 +11,20 @@ export interface HomepageHeadingProps {
 
 const Heading = ({ mobile = false }: HomepageHeadingProps) => (
   <Container text style={{ padding: '5em' }}>
-    <Logo link={false} size={4} />
-    <Header
-      as="h2"
-      content="A supercool language for the JVM"
-      inverted
-      id="Heading-secondary"
-      style={{ paddingTop: '1.5em' }}
-    />
-    <Button secondary size="huge">
-      Try it out!
-      <Icon name="arrow right"/>
-    </Button>
+    <div className="animated fade-in-up">
+      <Logo link={false} size={4} />
+      <Header
+        as="h2"
+        content="A supercool language for the JVM"
+        inverted
+        id="Heading-secondary"
+        style={{ paddingTop: '1.5em' }}
+      />
+      <Button secondary size="huge" as={Link} to="/playground">
+        Try it out!
+        <Icon name="arrow right"/>
+      </Button>
+    </div>
   </Container>
 );
 

@@ -1,0 +1,14 @@
+@import 'index';
+
+.Title {
+  font-family: Oswald,'Helvetica Neue',Arial,Helvetica,sans-serif;
+  font-size: 3em;
+  font-weight: bold;
+  color: $color-primary-0;
+  border-bottom: 3px $color-secondary-1-0 solid;
+  box-shadow: 0px 3px rgba($color-secondary-1-0, 0.2);
+  text-shadow: 3px 3px rgba($color-primary-0, 0.2);
+  margin-bottom: 0.5em;
+  padding-bottom: 0.3em;
+  padding-left: 0.3em;
+}

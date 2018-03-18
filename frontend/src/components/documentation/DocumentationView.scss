@@ -1,54 +1,5 @@
 @import 'index';
 
-$time: 0.5s;
-$navBarHeight: 5rem;
-$pageHeight: calc(100vh - #{$navBarHeight});
-
-#Documentation-left  {
-  padding-right: 0;
-  padding-bottom: 0;
-}
-
-#Documentation-right {
-  padding-left: 0;
-  padding-right: 0;
-  padding-bottom: 0;
-}
-
-#Documentation-logo {
-  margin: 0;
-  border-radius: 0;
-  height: $navBarHeight;
-  padding-left: 2em;
-}
-
-#Documentation-menu {
-  margin: 0;
-  border-radius: 0;
-  height: $pageHeight;
-  overflow-y: scroll;
-  padding-top: 0;
-  transform: scaleX(-1);
-}
-
-#Documentation-menu-inner {
-  transform: scaleX(-1);
-}
-
-#Documentation-navbar {
-  margin: 0;
-  border-radius: 0;
-  height: $navBarHeight;
-  padding-left: 2em;
-}
-
-#Documentation-docs {
-  border: none;
-  height: $pageHeight;
-  width: calc(100% - 15px); // To make room for the scroll bar, otherwise it ends up outside the window for some reason
-  overflow-y: scroll;
-}
-
 .Documentation-block {
   margin-bottom: 1.5rem;
   &:last-child {

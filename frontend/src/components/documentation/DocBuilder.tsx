@@ -1,7 +1,7 @@
 import { AST, Type } from 'types/markdown';
 import { Divider, Header, List, Image, Segment, Table } from 'semantic-ui-react';
 import * as React from 'react';
-import CodeBlock from 'components/CodeBlock';
+import CodeBlock from 'components/misc/CodeBlock';
 import { decode } from 'he';
 
 export interface Block {

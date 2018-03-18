@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Header } from 'semantic-ui-react';
-import 'components/Logo.scss';
+import 'components/misc/Logo.scss';
 import { Link } from 'react-router-dom';
 
 interface LogoProps {
