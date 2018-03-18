@@ -25,8 +25,8 @@ if(a)
 	a.A() // this is okay since we know that a is not null
 ```
 
-A nullable type will evaluate to `true` in a condition if it's not `null` and `false` otherwise.
-Using a direct check is not the only way that the `tlang` compiler can now whether a variable is
+A nullable type will evaluate to `false` in a condition if it's `null` and `true` otherwise.
+Using a direct check is not the only way that the `tlang` compiler can know whether a variable is
 `null` or not.
 
 ```tlang

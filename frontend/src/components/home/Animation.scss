@@ -31,3 +31,33 @@
   }
 }
 
+
+.fade-in-right {
+  animation-name: fadeInRight;
+}
+
+@keyframes fadeInRight {
+  0% {
+    opacity: 0;
+    transform: translate3d(-30px, 0px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in-left {
+  animation-name: fadeInLeft;
+}
+
+@keyframes fadeInLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(30px, 0px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}

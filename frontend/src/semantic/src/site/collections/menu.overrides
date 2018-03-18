@@ -5,3 +5,7 @@
 .ui.secondary.inverted.pointing.menu {
 	border-width: 0px;
 }
+.ui.menu .item {
+	text-shadow: 1px 1px darken(@primaryColor, 5%);
+	font-family: @headerFont;
+}

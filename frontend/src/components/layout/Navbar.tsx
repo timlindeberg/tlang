@@ -12,8 +12,8 @@ const MenuLink = withRouter(({ children, to, location }: RouteComponentProps<any
   <Menu.Item active={location.pathname === to} as={Link} to={to}>{children}</Menu.Item>
 ));
 
-const Navbar = () => (
-  <Container>
+const Navbar = ({ className }: {className?: string}) => (
+  <Container className={className}>
     <Menu secondary inverted pointing size="large">
       <MenuLink to="/">Home</MenuLink>
       <MenuLink to="/documentation">Documentation</MenuLink>

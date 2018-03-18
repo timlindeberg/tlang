@@ -24,7 +24,7 @@ export default class DesktopContainer extends React.Component<DesktopContainerPr
       <Responsive {...Responsive.onlyComputer}>
         <Visibility once={false} onBottomPassed={this.showFixedMenu} onBottomPassedReverse={this.hideFixedMenu}>
           <Segment textAlign="center" vertical inverted id="Heading-segment">
-            <Navbar />
+            <Navbar className="animated fade-in-right"/>
             <Heading mobile={false}/>
           </Segment>
         </Visibility>

@@ -43,9 +43,9 @@ const ResponsiveContainer = ({ children }: ResponsiveContainerProps) => (
 const HomeView = () => (
   <ResponsiveContainer>
     <Segment style={{ paddingTop: '4em' }} vertical>
-      <Grid container stackable verticalAlign="middle" className="animated fade-in">
+      <Grid container stackable verticalAlign="middle">
         <Grid.Row>
-          <Grid.Column width={8}>
+          <Grid.Column width={8} className="animated fade-in-right">
             <Header as="h1">Language philosophy</Header>
             <p className="HomeView-larger-text">
               tlang takes inspiration from languages such as Kotlin, python, golang, Java, Scala and C++.
@@ -63,7 +63,7 @@ const HomeView = () => (
               <List.Item>Well designed and easy to read error messages</List.Item>
             </List>
           </Grid.Column>
-          <Grid.Column width={8} verticalAlign="middle">
+          <Grid.Column width={8} verticalAlign="middle" className="animated fade-in-left">
             <CodeBlock language="tlang">{codeExample}</CodeBlock>
           </Grid.Column>
         </Grid.Row>
