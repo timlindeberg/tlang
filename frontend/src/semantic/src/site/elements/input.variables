@@ -3,3 +3,5 @@
 *******************************/
 
 @iconOpacity: 0.7;
+@inputColor: lighten(@secondaryColor, 20%);
+@focusColor: @secondaryColor;

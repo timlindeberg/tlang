@@ -5,8 +5,8 @@ import * as React from 'react';
 import 'components/layout/MenuLayout.scss';
 
 interface MenuLayoutProps {
-  menu: JSX.Element;
-  content: JSX.Element;
+  menu: (state: MenuLayoutState) => JSX.Element;
+  content: (state: MenuLayoutState) => JSX.Element;
 }
 
 interface MenuLayoutState {
@@ -22,12 +22,13 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
   render() {
     const { menu, content } = this.props;
     const { menuVisible } = this.state;
+    const rightSideStyle = menuVisible ? { borderRadius: '2em 0 0 0' } : {};
     const rightSide = (
       <React.Fragment>
         <Segment inverted id="MenuLayout-navbar">
           <Grid>
-            <Grid.Column>
-              <Button icon size="large" onClick={this.toggleVisibility}>
+            <Grid.Column verticalAlign="middle">
+              <Button icon onClick={this.toggleVisibility}>
                 <Icon name={menuVisible ? 'angle double left' : 'angle double right'}/>
               </Button>
             </Grid.Column>
@@ -36,7 +37,9 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
             </Grid.Column>
           </Grid>
         </Segment>
-        <div id="MenuLayout-content">{content}</div>
+        <div id="MenuLayout-content" style={rightSideStyle}>
+          {content(this.state)}
+        </div>
       </React.Fragment>
     );
 
@@ -50,7 +53,9 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
           <Logo size={2.5}/>
         </Segment>
         <Segment inverted id="MenuLayout-menu">
-          <div id="MenuLayout-menu-inner">{menu}</div>
+          <div id="MenuLayout-menu-inner">
+            {menu(this.state)}
+          </div>
         </Segment>
       </React.Fragment>
     );

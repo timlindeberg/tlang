@@ -3,7 +3,7 @@ import { Button, Container, Header, Icon } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 import Logo from 'components/misc/Logo';
 import 'components/home/Heading.scss';
-import 'components/home/Animation.scss';
+import 'Animation.scss';
 
 export interface HomepageHeadingProps {
   mobile: boolean;
@@ -19,7 +19,7 @@ const Heading = ({ mobile = false }: HomepageHeadingProps) => (
       id="Heading-secondary"
       style={{ paddingTop: '1.5em' }}
     />
-    <Button secondary size="huge" as={Link} to="/playground">
+    <Button icon labelPosition="right" secondary size="huge" as={Link} to="/playground">
       Try it out!
       <Icon name="arrow right"/>
     </Button>

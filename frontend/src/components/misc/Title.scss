@@ -11,4 +11,7 @@
   margin-bottom: 0.5em;
   padding-bottom: 0.3em;
   padding-left: 0.3em;
+  &::selection {
+    background: rgba($color-secondary-1-0, 0.5);
+  }
 }

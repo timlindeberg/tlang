@@ -10,6 +10,7 @@ $pageHeight: calc(100vh - #{$navBarHeight});
 }
 
 #MenuLayout-right {
+  background: $color-primary-0;
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 0;
@@ -44,9 +45,8 @@ $pageHeight: calc(100vh - #{$navBarHeight});
 
 #MenuLayout-content {
   height: $pageHeight;
-  width: calc(100% - 15px); // To make room for the scroll bar, otherwise it ends up outside the window for some reason
   overflow-y: scroll;
-  border: 3px rgba($color-primary-0, 0.2) solid;
+  border: 2px lighten($color-secondary-1-0, 20%) solid;
   border-right: none;
   border-bottom: none;
 }

@@ -74,11 +74,6 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   render() {
-    return (
-      <MenuLayout
-        menu={<div/>}
-        content={<this.Content />}
-      />
-    );
+    return <MenuLayout menu={() => <div/>} content={this.Content}/>;
   }
 }

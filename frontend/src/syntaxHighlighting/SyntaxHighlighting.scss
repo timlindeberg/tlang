@@ -3,7 +3,7 @@
 .CodeMirror.cm-s-tlang, .hljs {
   border: 1px solid rgba($color-primary-0, 0.2);
   color: $color-primary-3;
-  border-radius: .28571429rem;
+  border-radius: 0.28571429rem;
   font-weight: bold;
   font-family: Inconsolata, monospace, monospace;
   background: $color-light-0;
@@ -26,7 +26,7 @@
   }
 }
 
-.cm-s-tlang .cm-variable {
+.cm-s-tlang .cm-variable, .hljs-variable {
   @include syntaxColor($color-primary-3);
 }
 
@@ -39,7 +39,7 @@
 }
 
 .cm-s-tlang .cm-type, .hljs-type {
-  @include syntaxColor($color-secondary-1-4);
+  @include syntaxColor($color-secondary-1-3);
 }
 
 .cm-s-tlang .cm-string, .hljs-string {

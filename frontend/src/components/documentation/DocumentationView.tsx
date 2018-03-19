@@ -37,13 +37,17 @@ export default class DocumentationView extends React.Component<{}, Documentation
     }
   }
 
-  render() {
+  Menu = () => {
     const { markdown, active } = this.state;
-    return (
-      <MenuLayout
-        menu={<DocumentationSidebar markdown={markdown} active={active}/>}
-        content={<Documentation markdown={markdown} active={active} setActive={this.setActive} />}
-      />
-    );
+    return <DocumentationSidebar markdown={markdown} active={active}/>;
+  }
+
+  Content = () => {
+    const { markdown, active } = this.state;
+    return <Documentation markdown={markdown} active={active} setActive={this.setActive} />;
+  }
+
+  render() {
+    return <MenuLayout menu={this.Menu} content={this.Content}/>;
   }
 }

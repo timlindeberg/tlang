@@ -1,11 +1,10 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
 import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import DesktopContainer from 'components/home/DesktopContainer';
 import MobileContainer from 'components/home/MobileContainer';
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
-import 'components/home/Animation.scss';
+import 'Animation.scss';
 
 interface ResponsiveContainerProps {
   children: any;
