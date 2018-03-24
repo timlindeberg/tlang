@@ -131,7 +131,7 @@ module.exports = {
         // back to the "file" loader at the end of the loader list.
         oneOf: [
           {
-            test: /\.md$/,
+            test: [/\.md$/, /\.t$/],
             loader: require.resolve('raw-loader')
           },
           // "url" loader works like "file" loader except that it embeds assets

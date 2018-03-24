@@ -42,12 +42,12 @@ Binary literals are also supported by prefexing the number with `0b`:
 
 ```tlang
 0b10       // 3
-0b11111111 // 255
+0b11111111 // 255   
 ```
 
 ## String and character literals
 A normal string literal is started using quotes and must end on the same line.
-`tlang` also supports multiline string which start and end with a backtick. Multiline
+`tlang` also supports multiline strings which start and end with a backtick. Multiline
 strings treat each character as it is meaning that escape characters are not possible.
 
 ```tlang

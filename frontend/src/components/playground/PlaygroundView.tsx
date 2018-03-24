@@ -1,7 +1,8 @@
 import * as React from 'react';
 
-import * as ReactCodeMirror from 'react-codemirror';
-import { Segment, Divider, Button, Icon, Grid, Header } from 'semantic-ui-react';
+import { Controlled as CodeMirror } from 'react-codemirror2';
+import { Accordion, Menu, Segment, Divider, Button, Icon, Grid, Header } from 'semantic-ui-react';
+import { findFilesWithNames } from 'utils/misc';
 
 import MenuLayout from 'components/layout/MenuLayout';
 import Title from 'components/misc/Title';
@@ -9,29 +10,8 @@ import Title from 'components/misc/Title';
 import 'codemirror/lib/codemirror.css';
 import 'syntaxHighlighting/codemirror-highlighting';
 import 'components/playground/PlaygroundView.scss';
-import Heading from 'components/home/Heading';
 
-const codeExample =
-  `package t::lang
-
-val helloWorld = new HelloWorld<Long>(1300L) + 
-   new HelloWorld<Long>(37L)
-
-helloWorld.Print() // prints "Hello world!" 1337 times
-
-class HelloWorld<T> =
-    
-	var times: T
-    
-	Def new(times: T?) = 
-		this.times = times ?: 1
-    
-	Def Print() = 
-		for(var i = 0; i < times; i++)
-			println("Hello world!")
-            
-	Def +(lhs: HelloWorld<T>, rhs: HelloWorld<T>) =
-		new HelloWorld(lhs.times + rhs.times)`;
+const codeExamples = findFilesWithNames(require.context('codeExamples', true, /\.t/));
 
 const codeMirrorOptions = {
   lineNumbers: true,
@@ -44,11 +24,44 @@ const codeMirrorOptions = {
   showCursorWhenSelecting: true,
 };
 
+interface PlaygroundViewState {
+  code: string;
+}
+
 export default class PlaygroundView extends React.Component<{}, {}> {
+
+  state: PlaygroundViewState = { code:  codeExamples['Hello World'] };
+
+  updateCode = (code: string) => this.setState({ code });
+
+  Menu = () => {
+    return (
+      <Accordion
+        as={Menu}
+        inverted
+        borderless
+        fluid
+        vertical
+        size="small"
+      >
+        <Menu.Item>
+          <Accordion.Title active content="Examples"/>
+          <Menu.Menu>
+            {Object
+              .keys(codeExamples)
+              .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+              .map(key => (
+              <Menu.Item onClick={() => this.updateCode(codeExamples[key])}>{key}</Menu.Item>
+            ))}
+          </Menu.Menu>
+        </Menu.Item>
+      </Accordion>
+    );
+  }
 
   Content = () => {
     return (
-      <Segment style={{ border: 'none' }}>
+      <Segment className="content-segment">
         <Title>Playground</Title>
         Here you can try out <code>tlang</code> in real time. Enter code below and press the Evaluate button
         to have it evaluated (or press <code>CMD</code> + <code>ENTER</code>).
@@ -59,9 +72,14 @@ export default class PlaygroundView extends React.Component<{}, {}> {
         <Grid>
           <Grid.Column width={10}>
             <Header as="h1">Editor</Header>
-            <ReactCodeMirror className="CodeWindow" value={codeExample} options={codeMirrorOptions}/>
+            <CodeMirror
+              className="CodeWindow shadow-hover"
+              value={this.state.code}
+              options={codeMirrorOptions}
+              onBeforeChange={(editor, data, value) => this.updateCode(value)}
+            />
             <Button icon labelPosition="right" secondary size="large">
-              Evaluate <Icon name="check"/>
+              Run Code! <Icon name="cogs"/>
             </Button>
           </Grid.Column>
           <Grid.Column width={6} stretched>
@@ -74,6 +92,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   render() {
-    return <MenuLayout menu={() => <div/>} content={this.Content}/>;
+    console.log('this.state', this.state);
+    return <MenuLayout menu={this.Menu} content={this.Content}/>;
   }
 }

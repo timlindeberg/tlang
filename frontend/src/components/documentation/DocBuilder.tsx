@@ -92,7 +92,7 @@ export default class DocBuilder {
       const headerItems = children[0].children;
       const rows = children.slice(1);
       return (
-        <Table celled selectable striped collapsing>
+        <Table celled selectable striped collapsing className="shadow-hover">
           <Table.Header>
             <Table.Row>
               {headerItems.map(c => <Table.HeaderCell key={this.nextKey()}>{c.children.map(parse)}</Table.HeaderCell>)}

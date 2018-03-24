@@ -23,8 +23,8 @@ import {
   ],
   string: [
     { regex: ESCAPE_CHAR.regex, token: 'escapeChar', next: 'string' },
-    { regex: /[^\\]+"/, token: STRING.className, next: 'start' },
-    { regex: /[^\\]+/, token: STRING.className, next: 'string' },
+    { regex: /[^\\]*"/, token: STRING.className, next: 'start' },
+    { regex: /[^\\]*/, token: STRING.className, next: 'string' },
   ],
   multiLineComment: [
     { regex: /.*?\*\//, token: COMMENT.className, next: 'start' },

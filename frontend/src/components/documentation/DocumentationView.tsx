@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { AST } from 'types/markdown';
+import { findFiles } from 'utils/misc';
 
 import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
 import Documentation from 'components/documentation/Documentation';
@@ -9,11 +10,6 @@ import remarkParse from 'remark-parse';
 
 import 'components/documentation/DocumentationView.scss';
 import MenuLayout from 'components/layout/MenuLayout';
-
-const findFiles = (ctx: any): string[] => {
-  const keys = ctx.keys();
-  return keys.map(ctx);
-};
 
 const markdownFiles = findFiles(require.context('documentation', true, /\.md$/));
 

@@ -7,16 +7,14 @@
   font-weight: bold;
   font-family: Inconsolata, monospace, monospace;
   background: $color-light-0;
-  box-shadow: 1px 1px 1px rgba($color-primary-1, 0.2);
-  transition: box-shadow 300ms;
-  &:hover {
-    box-shadow: 4px 4px 10px rgba($color-primary-1, 0.2);
-    transition: box-shadow 300ms;
-  }
 }
 
 .hljs {
   padding: 5px;
+}
+
+.CodeMirror.cm-s-tlang {
+  height: 70vh;
 }
 
 @mixin syntaxColor($color) {

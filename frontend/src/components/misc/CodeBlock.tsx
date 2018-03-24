@@ -1,6 +1,7 @@
 import * as React from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/light';
 import 'syntaxHighlighting/highlightjs-highlighting';
+import 'Animation.scss';
 
 interface CodeBlockProps {
   children: string;
@@ -18,14 +19,16 @@ const charCount = (str: string, char: string) => {
 const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children: code, language }: CodeBlockProps) => {
   const numLines = 1 + charCount(code, '\n');
   return (
-    <SyntaxHighlighter
-      wrapLines
-      useInlineStyles={false}
-      showLineNumbers={numLines >= 5}
-      language={language}
-    >
-      {code}
-    </SyntaxHighlighter>
+    <div className="shadow-hover">
+      <SyntaxHighlighter
+        wrapLines
+        useInlineStyles={false}
+        showLineNumbers={numLines >= 5}
+        language={language}
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
   );
 };
 

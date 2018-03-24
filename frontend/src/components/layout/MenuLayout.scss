@@ -46,7 +46,12 @@ $pageHeight: calc(100vh - #{$navBarHeight});
 #MenuLayout-content {
   height: $pageHeight;
   overflow-y: scroll;
-  border: 2px lighten($color-secondary-1-0, 20%) solid;
+  border: 2px lighten($color-primary-3, 10%) solid;
   border-right: none;
   border-bottom: none;
+}
+
+.content-segment {
+  border: none;
+  border-radius: 0;
 }

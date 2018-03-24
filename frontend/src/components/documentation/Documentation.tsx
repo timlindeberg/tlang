@@ -104,7 +104,7 @@ export default class Documentation extends React.Component<DocumentationProps, {
   render() {
     return (
       <div ref={this.divMounted}>
-        <Segment style={{ border: 'none' }}>
+        <Segment className="content-segment">
           <Title>Documentation</Title>
           {this.createDocumentation()}
         </Segment>

@@ -1,3 +1,5 @@
+@import 'index';
+
 .animated {
   animation-duration: 1s;
   animation-fill-mode: both;
@@ -5,6 +7,16 @@
 
 .fade-in-up {
   animation-name: fadeInUp;
+}
+
+.shadow-hover {
+  border-radius: 0.28571429rem;
+  box-shadow: 1px 1px 1px rgba($color-primary-1, 0.2) !important;
+  transition: box-shadow 300ms;
+  &:hover {
+    box-shadow: 4px 4px 10px rgba($color-primary-1, 0.2) !important;
+    transition: box-shadow 300ms;
+  }
 }
 
 @keyframes fadeInUp {
