@@ -179,5 +179,13 @@ Temporary Items
 
 frontend/src/semantic/dist
 
+backend/build
+backend/logs
+backend/target
+backend/.project
+backend/.settings
+backend/RUNNING_PID
+
+
 
 # End of https://www.gitignore.io/api/node,windows,intellij

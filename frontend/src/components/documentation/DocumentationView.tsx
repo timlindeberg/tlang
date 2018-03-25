@@ -1,7 +1,7 @@
 import * as React from 'react';
 
+import * as API from 'api';
 import { AST } from 'types/markdown';
-import { findFiles } from 'utils/misc';
 
 import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
 import Documentation from 'components/documentation/Documentation';
@@ -10,8 +10,6 @@ import remarkParse from 'remark-parse';
 
 import 'components/documentation/DocumentationView.scss';
 import MenuLayout from 'components/layout/MenuLayout';
-
-const markdownFiles = findFiles(require.context('documentation', true, /\.md$/));
 
 interface DocumentationViewState {
   markdown: AST[];
@@ -22,8 +20,9 @@ export default class DocumentationView extends React.Component<{}, Documentation
 
   state: DocumentationViewState = { markdown: [], active: 0 };
 
-  componentDidMount() {
-    const markdown = markdownFiles.map(content => unified().use(remarkParse).parse(content));
+  async componentDidMount() {
+    const markdownContent = await API.getDocumentation();
+    const markdown = markdownContent.map(content => unified().use(remarkParse).parse(content));
     this.setState(() => ({ markdown }));
   }
 
