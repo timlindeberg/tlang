@@ -42,17 +42,21 @@ export default class DocumentationSidebar
 
   constructor(props: DocumentationSidebarProps) {
     super(props);
-    this.originalHeaders = this.parseHeaders(props.markdown);
   }
 
   componentDidMount() {
-    this.setState(() => ({ headers: this.originalHeaders.slice() }));
+    this.updateHeaders(this.props);
   }
 
   componentWillReceiveProps(nextProps: DocumentationSidebarProps) {
     if (nextProps.markdown !== this.props.markdown) {
-      this.originalHeaders = this.parseHeaders(nextProps.markdown);
+      this.updateHeaders(nextProps);
     }
+  }
+
+  updateHeaders = (props: DocumentationSidebarProps) => {
+    this.originalHeaders = this.parseHeaders(props.markdown);
+    this.setState(() => ({ headers: this.originalHeaders.slice() }));
   }
 
   parseHeaders = (markdown: AST[]): Header[] => {
@@ -207,10 +211,12 @@ export default class DocumentationSidebar
   )
 
   render() {
+    const isLoading = this.props.markdown.length === 0;
+
     return (
       <React.Fragment>
         <this.SearchBar/>
-        <this.Menu/>
+        {!isLoading && <this.Menu/>}
       </React.Fragment>
     );
   }

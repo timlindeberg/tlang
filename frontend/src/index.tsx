@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import 'index.scss';
+import 'main.scss';
 import 'semantic/dist/semantic.min.css';
 import App from 'App';
 

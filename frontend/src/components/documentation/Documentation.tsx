@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { Divider, Segment } from 'semantic-ui-react';
+import { Divider, Segment, Loader, Transition } from 'semantic-ui-react';
 import { AST } from 'types/markdown';
 import DocBuilder from 'components/documentation/DocBuilder';
 import Title from 'components/misc/Title';
+import Loading from 'components/layout/Loading';
 
 interface DocumentationProps {
   markdown: AST[];
@@ -30,7 +31,7 @@ export default class Documentation extends React.Component<DocumentationProps, {
     }
   }
 
-  createDocumentation = (): JSX.Element[] => {
+  renderDocumentation = (): JSX.Element[] => {
     const { markdown } = this.props;
 
     let documentation: JSX.Element[] = [];
@@ -102,11 +103,13 @@ export default class Documentation extends React.Component<DocumentationProps, {
   }
 
   render() {
+    const isLoading = this.props.markdown.length === 0;
+
     return (
       <div ref={this.divMounted}>
         <Segment className="content-segment">
           <Title>Documentation</Title>
-          {this.createDocumentation()}
+          {isLoading ? <Loader key="loading" active>Loading</Loader> : this.renderDocumentation()}
         </Segment>
       </div>
     );
