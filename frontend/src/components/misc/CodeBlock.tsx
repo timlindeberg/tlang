@@ -1,7 +1,7 @@
 import * as React from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/light';
 import 'syntaxHighlighting/highlightjs-highlighting';
-import 'Animation.scss';
+import 'Animation.less';
 
 interface CodeBlockProps {
   children: string;

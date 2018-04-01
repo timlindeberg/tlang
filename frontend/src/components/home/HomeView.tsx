@@ -4,7 +4,7 @@ import DesktopContainer from 'components/home/DesktopContainer';
 import MobileContainer from 'components/home/MobileContainer';
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
-import 'Animation.scss';
+import 'Animation.less';
 
 interface ResponsiveContainerProps {
   children: any;

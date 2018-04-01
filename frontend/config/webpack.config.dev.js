@@ -28,6 +28,36 @@ const modulePaths = [path.resolve('./src'), path.resolve('./node_modules'), path
   process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
 );
 
+const styleLoader = require.resolve('style-loader');
+
+const CSSLoader = {
+  loader: require.resolve('css-loader'),
+  options: {
+    importLoaders: 1,
+  },
+};
+
+const postCSSLoader = {
+  loader: require.resolve('postcss-loader'),
+  options: {
+    // Necessary for external CSS imports to work
+    // https://github.com/facebookincubator/create-react-app/§issues/2677
+    ident: 'postcss',
+    plugins: () => [
+      require('postcss-flexbugs-fixes'),
+      autoprefixer({
+        browsers: [
+          '>1%',
+          'last 4 versions',
+          'Firefox ESR',
+          'not ie < 9', // React doesn't support IE8 anyway
+        ],
+        flexbox: 'no-2009',
+      }),
+    ],
+  },
+};
+
 // This is the development configuration.
 // It is focused on developer experience and fast rebuilds.
 // The production configuration is different and lives in a separate file.
@@ -97,7 +127,7 @@ module.exports = {
       '.jsx',
     ],
     alias: {
-      
+
       // Support React Native Web
       // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
       'react-native': 'react-native-web',
@@ -165,41 +195,25 @@ module.exports = {
           // In production, we use a plugin to extract that CSS to a file, but
           // in development "style" loader enables hot editing of CSS.
           {
-            test: /\.s?css$/,
+            test: /\.css$/,
             use: [
-              require.resolve('style-loader'),
+              styleLoader,
+              CSSLoader,
+              postCSSLoader
+            ],
+          },
+          {
+            test: /\.less$/,
+            use: [
+              styleLoader,
+              CSSLoader,
               {
-                loader: require.resolve('css-loader'),
-                options: {
-                  importLoaders: 1,
-                },
-              },
-              {
-                loader: require.resolve('sass-loader'),
+                loader: require.resolve('less-loader'),
                 options: {
                   includePaths: modulePaths,
                 }
               },
-              {
-                loader: require.resolve('postcss-loader'),
-                options: {
-                  // Necessary for external CSS imports to work
-                  // https://github.com/facebookincubator/create-react-app/issues/2677
-                  ident: 'postcss',
-                  plugins: () => [
-                    require('postcss-flexbugs-fixes'),
-                    autoprefixer({
-                      browsers: [
-                        '>1%',
-                        'last 4 versions',
-                        'Firefox ESR',
-                        'not ie < 9', // React doesn't support IE8 anyway
-                      ],
-                      flexbox: 'no-2009',
-                    }),
-                  ],
-                },
-              },
+              postCSSLoader
             ],
           },
           // "file" loader makes sure those assets get served by WebpackDevServer.

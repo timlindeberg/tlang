@@ -1,4 +1,4 @@
-import 'syntaxHighlighting/SyntaxHighlighting.scss';
+import 'syntaxHighlighting/SyntaxHighlighting.less';
 
 const joinToRegex = (terms: string[]) => '\\b(' + terms.sort((a, b) => b.length - a.length).join('|') + ')\\b';
 

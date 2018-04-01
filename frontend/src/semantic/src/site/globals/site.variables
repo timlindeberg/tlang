@@ -21,9 +21,7 @@
 @borderColor: fade(@primaryColor, 20%);
 @invertedBackground: @primaryColor;
 
-@importGoogleFonts : true;
-@googleFontSizes   : '400,700,400italic,700italic';
-@googleFontRequest : 'Oswald:400,500|Roboto:400,700|Inconsolata:400,700';
+@importGoogleFonts : false;
 
 @headerFont        : 'Oswald', 'Helvetica Neue', Arial, Helvetica, sans-serif;
 @pageFont          : 'Roboto', 'Helvetica Neue', Arial, Helvetica, sans-serif;

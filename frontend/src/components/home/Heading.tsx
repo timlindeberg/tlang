@@ -2,8 +2,8 @@ import * as React from 'react';
 import { Button, Container, Header, Icon } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 import Logo from 'components/misc/Logo';
-import 'components/home/Heading.scss';
-import 'Animation.scss';
+import 'components/home/Heading.less';
+import 'Animation.less';
 
 export interface HomepageHeadingProps {
   mobile: boolean;

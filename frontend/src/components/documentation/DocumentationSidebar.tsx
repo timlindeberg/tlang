@@ -6,7 +6,7 @@ import { Accordion, Menu, Search } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
 import { HashLink } from 'react-router-hash-link';
 import { Collapse } from 'react-collapse';
-import 'components/documentation/DocumentationSidebar.scss';
+import 'components/documentation/DocumentationSidebar.less';
 
 interface Header {
   index: number;

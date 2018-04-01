@@ -9,7 +9,7 @@ import Title from 'components/misc/Title';
 
 import 'codemirror/lib/codemirror.css';
 import 'syntaxHighlighting/codemirror-highlighting';
-import 'components/playground/PlaygroundView.scss';
+import 'components/playground/PlaygroundView.less';
 
 const codeExamples = findFilesWithNames(require.context('codeExamples', true, /\.t/));
 

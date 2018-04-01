@@ -1,12 +1,12 @@
-@import 'index';
+@import '~theme.less';
 
 .CodeMirror.cm-s-tlang, .hljs {
-  border: 1px solid rgba($color-primary-0, 0.2);
-  color: $color-primary-3;
+  border: 1px solid fade(@color-primary-0, 20%);
+  color: @color-primary-3;
   border-radius: 0.28571429rem;
   font-weight: bold;
   font-family: Inconsolata, monospace, monospace;
-  background: $color-light-0;
+  background: @color-light-0;
 }
 
 .hljs {
@@ -17,55 +17,48 @@
   height: 70vh;
 }
 
-@mixin syntaxColor($color) {
-  color: $color;
-  &::selection {
-    background: rgba($color, 0.4);
-  }
-}
-
 .cm-s-tlang .cm-variable, .hljs-variable {
-  @include syntaxColor($color-primary-3);
+  color: @color-primary-3;
 }
 
 .cm-s-tlang .cm-keyword, .hljs-keyword {
-  @include syntaxColor($color-primary-0)
+  color: @color-primary-0;
 }
 
 .cm-s-tlang .cm-comment, .hljs-comment {
-  @include syntaxColor($color-dark-2);
+  color: @color-dark-2;
 }
 
 .cm-s-tlang .cm-type, .hljs-type {
-  @include syntaxColor($color-secondary-1-3);
+  color: @color-secondary-1-3;
 }
 
 .cm-s-tlang .cm-string, .hljs-string {
-  @include syntaxColor($color-secondary-1-0);
+  color: @color-secondary-1-0;
 }
 
 .cm-s-tlang .cm-char, .hljs-char {
-  @include syntaxColor($color-secondary-1-0);
+  color: @color-secondary-1-0;
 }
 
 .cm-s-tlang .cm-escapeChar, .hljs-escapeChar {
-  @include syntaxColor($color-secondary-1-1);
+  color: @color-secondary-1-1;
 }
 
 .cm-s-tlang .cm-number, .hljs-number {
-  @include syntaxColor($color-secondary-2-0);
+  color: @color-secondary-2-0;
 }
 
 .cm-s-tlang .cm-symbol, .hljs-symbol {
-  @include syntaxColor($color-dark-1);
+  color: @color-dark-1;
 }
 
 .cm-s-tlang .cm-literal, .hljs-literal {
-  @include syntaxColor($color-secondary-2-0);
+  color: @color-secondary-2-0;
 }
 
 .cm-s-tlang .cm-params, .hljs-params {
-  @include syntaxColor($color-secondary-2-0);
+  color: @color-secondary-2-0;
 }
 
 .cm-s-tlang .cm-tab, .hljs-tab {
@@ -74,19 +67,19 @@
   background-repeat: no-repeat;
   tab-size: 4;
   &::selection {
-    background: rgba($color-primary-0, 0.1);
+    background: fade(@color-primary-0, 10%);
   }
 }
 
 .cm-s-tlang .CodeMirror-linenumber, .react-syntax-highlighter-line-number {
-  @include syntaxColor($color-secondary-2-0);
+  color: @color-secondary-2-0;
   font-weight: bold;
 }
 
 .cm-s-tlang .CodeMirror-selected {
-  background: rgba($color-secondary-2-0, 0.1) !important;
+  background: fade(@color-secondary-2-0, 10%) !important;
 }
 
 .cm-s-tlang .CodeMirror-cursor {
-  border-left: 2px solid $color-secondary-2-0;
+  border-left: 2px solid @color-secondary-2-0;
 }

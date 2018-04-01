@@ -8,7 +8,7 @@ import Documentation from 'components/documentation/Documentation';
 import unified from 'unified';
 import remarkParse from 'remark-parse';
 
-import 'components/documentation/DocumentationView.scss';
+import 'components/documentation/DocumentationView.less';
 import MenuLayout from 'components/layout/MenuLayout';
 
 interface DocumentationViewState {
@@ -32,13 +32,8 @@ export default class DocumentationView extends React.Component<{}, Documentation
     }
   }
 
-  Menu = () => {
-    return <DocumentationSidebar {...this.state}/>;
-  }
-
-  Content = () => {
-    return <Documentation {...this.state} setActive={this.setActive} />;
-  }
+  Menu = () => <DocumentationSidebar {...this.state}/>;
+  Content = () => <Documentation {...this.state} setActive={this.setActive} />;
 
   render() {
     return <MenuLayout menu={this.Menu} content={this.Content}/>;
