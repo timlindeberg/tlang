@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import 'fonts.css';
 import 'semantic/dist/semantic.min.css';
 import 'main.less';
 import App from 'App';

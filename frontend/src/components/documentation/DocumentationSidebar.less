@@ -1,11 +1,11 @@
 @import '~theme.less';
 
-@active-color: lighten(@color-secondary-1-0, 10%);
-@sub-menu-color: #FFFFFF;
-@text-shadow: 1px 1px darken(@color-primary-0, 5%);
+@activeColor: lighten(@secondaryColor, 10%);
+@subMenuColor: #FFFFFF;
+@text-shadow: 1px 1px darken(@primaryColor, 5%);
 
-@transition-color: color 0.2s ease-in-out 0s;
-@transition-border: border 0.2s ease-in-out 0s;
+@transitionColor: color 0.2s ease-in-out 0s;
+@transitionBorder: border 0.2s ease-in-out 0s;
 @indentTransition: transform 0.2s ease-in-out 0s;
 
 @indent: 3em;
@@ -17,7 +17,7 @@
   &.ui.inverted.menu .item {
     border-left: 3px solid white;
     border-radius: 0;
-    transition: @transition-border, @indentTransition, @transition-color;
+    transition: @transitionBorder, @indentTransition, @transitionColor;
     text-shadow: @text-shadow;
 
     & .title {
@@ -29,27 +29,27 @@
   }
 
   &.ui.inverted.menu .active.item {
-    background: @color-primary-0;
-    border-left: 3px solid @active-color;
-    transition: @transition-border, @transition-color;
+    background: @primaryColor;
+    border-left: 3px solid @activeColor;
+    transition: @transitionBorder, @transitionColor;
   }
 
   &.ui.vertical.menu .menu .item {
     font-weight: bold;
     border-left: none;
-    color: fade(@sub-menu-color, 50%) !important;
+    color: fade(@subMenuColor, 50%) !important;
     padding-left: @indent;
-    transition: @indentTransition, @transition-color;
+    transition: @indentTransition, @transitionColor;
     text-shadow: @text-shadow;
     &:hover {
-      color: @sub-menu-color !important;
+      color: @subMenuColor !important;
       transform: translateX(@hoverIndent);
     }
   }
 
   &.ui.vertical.menu .menu .active.item {
-    color: @active-color !important;
-    transition: @indentTransition, @transition-color;
+    color: @activeColor !important;
+    transition: @indentTransition, @transitionColor;
     text-shadow: @text-shadow;
     transform: translateX(@activeIndent);
   }

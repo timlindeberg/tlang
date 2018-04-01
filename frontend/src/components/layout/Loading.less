@@ -1,13 +1,13 @@
 @import '~theme.less';
 
-@animation-time: 1.0s;
-@font-size: 2em;
+@animationTime: 1.0s;
+@fontSize: 2em;
 
 .loading-text {
   position: absolute;
   z-index: 1;
-  font-size: @font-size;
-  color: @color-primary-0;
+  font-size: @fontSize;
+  color: @primaryColor;
   text-shadow:
           -1px -1px 0 #fff,
           1px -1px 0 #fff,
@@ -26,34 +26,34 @@
 
 .loading-bars {
   text-align: center;
-  height: 2 * @font-size;
+  height: 2 * @fontSize;
   & div {
     height: 100%;
     width: 7px;
     margin: 0 3px 0 0;
     background-color: #fff;
     display: inline-block;
-    animation: stretchdelay @animation-time ease-in-out;
+    animation: stretchdelay @animationTime ease-in-out;
     animation-iteration-count: infinite;
   }
 
   & .rect1 {
-    animation-delay: -@animation-time + 0.0s;
+    animation-delay: -@animationTime + 0.0s;
   }
   & .rect2 {
-    animation-delay: -@animation-time + 0.1s;
+    animation-delay: -@animationTime + 0.1s;
   }
   & .rect3 {
-    animation-delay: -@animation-time + 0.2s;
+    animation-delay: -@animationTime + 0.2s;
   }
   & .rect4 {
-    animation-delay: -@animation-time + 0.3s;
+    animation-delay: -@animationTime + 0.3s;
   }
   & .rect5 {
-    animation-delay: -@animation-time + 0.4s;
+    animation-delay: -@animationTime + 0.4s;
   }
   & .rect6 {
-    animation-delay: -@animation-time + 0.5s;
+    animation-delay: -@animationTime + 0.5s;
   }
 
 }
@@ -67,6 +67,6 @@
 
   20% {
     transform: scaleY(1);
-    background-color: fade(@color-secondary-1-0, 40%);
+    background-color: fade(@secondaryColor, 40%);
   }
 }

@@ -9,13 +9,13 @@
   animation-name: fadeInUp;
 }
 
-@shadow-color: fade(@color-primary-1, 20%);
+@shadowColor: fade(@primaryColor, 20%);
 .shadow-hover {
   border-radius: 0.28571429rem;
-  box-shadow: 1px 1px 1px @shadow-color !important;
+  box-shadow: 1px 1px 1px @shadowColor !important;
   transition: box-shadow 300ms;
   &:hover {
-    box-shadow: 4px 4px 10px @shadow-color !important;
+    box-shadow: 4px 4px 10px @shadowColor !important;
     transition: box-shadow 300ms;
   }
 }

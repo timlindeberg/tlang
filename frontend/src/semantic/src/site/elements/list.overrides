@@ -8,7 +8,7 @@
 
 .list .item {
 	margin-bottom: 0.3em;
-	&::last-child {
+	&:last-child {
 		margin-bottom: 0em;
 	}
 }

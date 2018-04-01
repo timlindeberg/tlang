@@ -1,12 +1,12 @@
 @import '~theme.less';
 
 .CodeMirror.cm-s-tlang, .hljs {
-  border: 1px solid fade(@color-primary-0, 20%);
-  color: @color-primary-3;
+  border: 1px solid fade(@primaryColor, 20%);
+  color: darken(@primaryColor, 20%);
   border-radius: 0.28571429rem;
   font-weight: bold;
-  font-family: Inconsolata, monospace, monospace;
-  background: @color-light-0;
+  font-family: @codeFont;
+  background: @lightColor;
 }
 
 .hljs {
@@ -18,47 +18,47 @@
 }
 
 .cm-s-tlang .cm-variable, .hljs-variable {
-  color: @color-primary-3;
+  color: darken(@primaryColor, 20%);
 }
 
 .cm-s-tlang .cm-keyword, .hljs-keyword {
-  color: @color-primary-0;
+  color: @primaryColor;
 }
 
 .cm-s-tlang .cm-comment, .hljs-comment {
-  color: @color-dark-2;
+  color: @grayColor;
 }
 
 .cm-s-tlang .cm-type, .hljs-type {
-  color: @color-secondary-1-3;
+  color: darken(@secondaryColor, 10%);
 }
 
 .cm-s-tlang .cm-string, .hljs-string {
-  color: @color-secondary-1-0;
+  color: @secondaryColor;
 }
 
 .cm-s-tlang .cm-char, .hljs-char {
-  color: @color-secondary-1-0;
+  color: @secondaryColor;
 }
 
 .cm-s-tlang .cm-escapeChar, .hljs-escapeChar {
-  color: @color-secondary-1-1;
+  color: lighten(@secondaryColor, 15%);
 }
 
 .cm-s-tlang .cm-number, .hljs-number {
-  color: @color-secondary-2-0;
+  color: @accentColor;
 }
 
 .cm-s-tlang .cm-symbol, .hljs-symbol {
-  color: @color-dark-1;
+  color: @darkColor;
 }
 
 .cm-s-tlang .cm-literal, .hljs-literal {
-  color: @color-secondary-2-0;
+  color: @accentColor;
 }
 
 .cm-s-tlang .cm-params, .hljs-params {
-  color: @color-secondary-2-0;
+  color: @accentColor;
 }
 
 .cm-s-tlang .cm-tab, .hljs-tab {
@@ -67,19 +67,19 @@
   background-repeat: no-repeat;
   tab-size: 4;
   &::selection {
-    background: fade(@color-primary-0, 10%);
+    background: fade(@primaryColor, 10%);
   }
 }
 
 .cm-s-tlang .CodeMirror-linenumber, .react-syntax-highlighter-line-number {
-  color: @color-secondary-2-0;
+  color: @accentColor;
   font-weight: bold;
 }
 
 .cm-s-tlang .CodeMirror-selected {
-  background: fade(@color-secondary-2-0, 10%) !important;
+  background: fade(@accentColor, 10%) !important;
 }
 
 .cm-s-tlang .CodeMirror-cursor {
-  border-left: 2px solid @color-secondary-2-0;
+  border-left: 2px solid @accentColor;
 }

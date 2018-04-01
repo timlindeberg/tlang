@@ -1,4 +1,0 @@
-/* This is needed because of a bug in less-loader for webpack which tries to resolve
- the url as a local url "./https://...". As a workaround we import the fonts in a
- regular css file. */
-@import url('https://fonts.googleapis.com/css?family=Inconsolata|Oswald|Roboto');
