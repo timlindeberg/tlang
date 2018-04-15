@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaSbtSettings">
+    <option name="customVMPath" />
+    <option name="linkedExternalProjectsSettings">
+      <SbtProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/../../T-Compiler" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/cafebabe" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/cafebabe/project" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/compiler" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/compiler/project" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/macros" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/macros/project" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/repl" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/repl/project" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/utils" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/modules/utils/project" />
+            <option value="$PROJECT_DIR$/../../T-Compiler/project" />
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/project" />
+          </set>
+        </option>
+        <option name="sbtVersion" value="1.1.1" />
+        <option name="useAutoImport" value="true" />
+      </SbtProjectSettings>
+    </option>
+    <option name="maximumHeapSize" value="2048" />
+  </component>
+</project>

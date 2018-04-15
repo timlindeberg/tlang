@@ -24,6 +24,8 @@
     "he": "^1.1.1",
     "html-webpack-plugin": "2.29.0",
     "jest": "20.0.4",
+    "less": "3.0.0",
+    "less-loader": "^4.1.0",
     "lodash": "^4.17.5",
     "node-sass": "^4.7.2",
     "object-assign": "4.1.1",

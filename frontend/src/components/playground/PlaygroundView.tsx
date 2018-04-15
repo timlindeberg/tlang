@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as API from 'api';
 
 import { Controlled as CodeMirror } from 'react-codemirror2';
 import { Accordion, Menu, Segment, Divider, Button, Icon, Grid, Header } from 'semantic-ui-react';
@@ -26,6 +27,12 @@ const codeMirrorOptions = {
 
 interface PlaygroundViewState {
   code: string;
+  ws?: WebSocket;
+  message?: { messageType: string, data?: string };
+}
+
+enum MessageType {
+  EVALUATE, CANCEL
 }
 
 export default class PlaygroundView extends React.Component<{}, {}> {
@@ -33,6 +40,34 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   state: PlaygroundViewState = { code:  codeExamples['Hello World'] };
 
   updateCode = (code: string) => this.setState({ code });
+
+  compileCode = () => this.sendMessage(MessageType.EVALUATE, { code: this.state.code });
+  cancelCompilation = () => this.sendMessage(MessageType.CANCEL);
+
+  onMessageReceived = (event: any) => {
+    console.log('event.data', event.data);
+    this.setState({ message: JSON.parse(event.data) });
+  }
+
+  sendMessage = (messageType: MessageType, data?: any) => {
+    const message = JSON.stringify({ messageType: MessageType[messageType], ...data });
+    console.log('message', message);
+    this.state.ws!.send(message);
+  }
+
+  async componentDidMount() {
+    const ws = await API.connectToCompilationService();
+    ws.onmessage = this.onMessageReceived;
+    console.log("Connected");
+    this.setState( { ws });
+  }
+
+  componentWillUnmount() {
+    const ws = this.state.ws;
+    if(ws) {
+      ws.close();
+    }
+  }
 
   Menu = () => {
     return (
@@ -51,7 +86,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
               .keys(codeExamples)
               .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
               .map(key => (
-              <Menu.Item onClick={() => this.updateCode(codeExamples[key])}>{key}</Menu.Item>
+              <Menu.Item key={key} onClick={() => this.updateCode(codeExamples[key])}>{key}</Menu.Item>
             ))}
           </Menu.Menu>
         </Menu.Item>
@@ -60,6 +95,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   Content = () => {
+    const message = this.state.message;
     return (
       <Segment className="content-segment">
         <Title>Playground</Title>
@@ -78,13 +114,21 @@ export default class PlaygroundView extends React.Component<{}, {}> {
               options={codeMirrorOptions}
               onBeforeChange={(editor, data, value) => this.updateCode(value)}
             />
-            <Button icon labelPosition="right" secondary size="large">
+            <Button icon labelPosition="right" secondary size="large" onClick={this.compileCode}>
               Run Code! <Icon name="cogs"/>
             </Button>
+            <Button icon labelPosition="right" secondary size="large" onClick={this.cancelCompilation}>
+              Cancel! <Icon name="cogs"/>
+            </Button>
           </Grid.Column>
-          <Grid.Column width={6} stretched>
+          <Grid.Column width={6}>
             <Header as="h1">Results</Header>
-            <Segment>LOLOL</Segment>
+            <Segment>
+              {message && message.messageType}
+            </Segment>
+            <Segment>
+              {message && message.data}
+            </Segment>
           </Grid.Column>
         </Grid>
       </Segment>
@@ -92,7 +136,6 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   render() {
-    console.log('this.state', this.state);
     return <MenuLayout menu={this.Menu} content={this.Content}/>;
   }
 }

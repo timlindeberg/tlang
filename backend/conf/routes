@@ -9,3 +9,4 @@ GET     /                           controllers.DocumentationController.document
 GET     /assets/*file               controllers.Assets.versioned(file)
 
 GET     /documentation              controllers.DocumentationController.documentation
+GET     /compilationWs              controllers.CompilationController.socket
