@@ -32,6 +32,8 @@ object Main extends Logging {
   val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
     Lowering andThen CodeGeneration
 
+  val Compiler: CompilerPhase[Source, CodegenerationStackTrace] = FrontEnd andThen GenerateCode
+
   val CompilerPhases: Seq[CompilerPhase[_, _]] = List(
     Lexing,
     Parsing,
@@ -104,48 +106,6 @@ object Main extends Logging {
     if (options(WatchFlag))
       startWatchers(filesToCompile, options, ctx)
   }
-
-  private def startWatchers(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
-    val formatter = ctx.formatter
-    import formatter.formatting._
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    info"Starting file watchers"
-
-    if (options(VerboseFlag))
-      formatter
-        .grid
-        .header(s"Watching for ${ Green("changes") }...")
-        .print()
-
-    case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
-      override def onModify(file: File, count: Int): Unit = {
-        info"$file changed, recompiling"
-        if (options(VerboseFlag))
-          formatter
-            .grid
-            .header(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
-            .print()
-
-        Source.clearCache()
-        ctx.reporter.clear()
-
-        compileAndExecute(Set(file), options, ctx)
-      }
-    }
-
-    filesToCompile
-      .map { file =>
-        info"Watching file $file for changes"
-        CompilerFileMonitor(file)
-      }
-      .foreach { _.start() }
-
-    // Block indefinitely
-    Thread.currentThread.join()
-  }
-
 
   private def parseOptions(args: Array[String]): Options = {
     val errorContext = ErrorStringContext()
@@ -381,6 +341,48 @@ object Main extends Logging {
     val result = programExecutor(file)
     addOutputOfProgram(grid, formatter, file, result.output)
     result.exception ifDefined { e => addExceptionOfProgram(grid, formatter, file.name, e) }
+  }
+
+
+  private def startWatchers(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
+    val formatter = ctx.formatter
+    import formatter.formatting._
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    info"Starting file watchers"
+
+    if (options(VerboseFlag))
+      formatter
+        .grid
+        .header(s"Watching for ${ Green("changes") }...")
+        .print()
+
+    case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
+      override def onModify(file: File, count: Int): Unit = {
+        info"$file changed, recompiling"
+        if (options(VerboseFlag))
+          formatter
+            .grid
+            .header(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
+            .print()
+
+        Source.clearCache()
+        ctx.reporter.clear()
+
+        compileAndExecute(Set(file), options, ctx)
+      }
+    }
+
+    filesToCompile
+      .map { file =>
+        info"Watching file $file for changes"
+        CompilerFileMonitor(file)
+      }
+      .foreach { _.start() }
+
+    // Block indefinitely
+    Thread.currentThread.join()
   }
 
   private def addOutputOfProgram(grid: Grid, formatter: Formatter, file: File, output: String): Unit = {

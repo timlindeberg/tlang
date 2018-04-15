@@ -8,11 +8,11 @@ enablePlugins(JavaAppPackaging)
 val modulesDirectory = "modules"
 
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.4",
   organization := "tlang",
   version := "1.0",
   javacOptions ++= Seq("-encoding", "UTF-8"),
-  // Common dependencies used by all modules
+  // Common dependencies used by all mo dules
   libraryDependencies ++= Seq(
     "com.lihaoyi" %% "sourcecode" % "0.1.4",
     "com.github.pathikrit" %% "better-files" % "3.1.0"
@@ -32,7 +32,7 @@ lazy val metaMacroSettings = Seq(
   // A dependency on macro paradise 3.x is required to both write and expand
   // new-style macros.  This is similar to how it works for old-style macro
   // annotations and a dependency on macro paradise 2.x.
-  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M8" cross CrossVersion.full),
+  addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
   scalacOptions += "-Xplugin-require:macroparadise",
   scalacOptions += "-language:experimental.macros",
   // temporary workaround for https://github.com/scalameta/paradise/issues/10
@@ -61,7 +61,7 @@ lazy val macros = (project in file(s"$modulesDirectory/macros"))
     commonSettings,
     metaMacroSettings,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "1.7.0",
+      "org.scalameta" %% "scalameta" % "1.8.0",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
