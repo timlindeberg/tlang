@@ -44,6 +44,7 @@ case class PrettyPrinter(formatting: Formatting) {
     case Protected()                                                => pp"protected"
     case Final()                                                    => pp"final"
     case Static()                                                   => pp"static"
+    case Implicit()                                                 => pp"implicit"
     // Types
     case ArrayType(tpe)    => pp"$tpe[]"
     case UnitType()        => pp"Unit"

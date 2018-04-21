@@ -2,14 +2,13 @@ package tlang.formatting.grid
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ArrayBuffer
 
-
 case class Grid(var formatter: Formatter) {
+
 
   private val rows             : ArrayBuffer[Row] = ArrayBuffer()
   private var indent           : Int              = 1
@@ -186,7 +185,9 @@ case class Grid(var formatter: Formatter) {
       .sum
 
     if (neededWidth > lineWidth)
-      throw new IllegalStateException(s"The minimum needed width of columns in row ${ row.rowNumber } is larger than the total width: $neededWidth > $lineWidth.")
+      throw new IllegalStateException(
+        s"The minimum needed width of columns in row ${ row.rowNumber } is larger than the total width: $neededWidth > $lineWidth."
+      )
   }
 
   case class Row private(rowNumber: Int, isHeader: Boolean, columns: Seq[Column]) {
@@ -283,12 +284,24 @@ case class Grid(var formatter: Formatter) {
     import formatting._
 
     // An approximation of the number of characters needed. Doesn't take in to account eventual
-    // linewrapping or ansi escape characters. Therefor we use double the approximated size
+    // line wrapping or ansi escape characters. Therefor we use double the approximated size
     private val approximateSize: Int = rows
-      .map { row => (row.columns.map { column => column.lines.length }.max + 1) * (formatting.lineWidth + 1) }
+      .map { row =>
+        val numberOfRows = row.columns
+          .map { column =>
+            column.lines.foldLeft(0) {
+              case (acc, s@StringContent(content)) =>
+                val string = s.string
+                acc + math.max(1, string.length / formatting.lineWidth)
+              case (acc, _)                        => acc + 1
+            }
+          }
+          .max + 1
+        numberOfRows * (formatting.lineWidth + 1)
+      }
       .sum
 
-    private val sb = new StringBuilder(2 * approximateSize)
+    private val sb = new StringBuilder(approximateSize)
 
     def render(): String = {
       if (rows.isEmpty)
@@ -397,8 +410,8 @@ case class Grid(var formatter: Formatter) {
           // Handle overflow in each line
           val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
             val width = columnWidths(columnIndex)
-            val method = columns(columnIndex).overflowHandling
-            handleOverflow(line.render(width), width, method)
+            val handleOverflow = columns(columnIndex).overflowHandling
+            handleOverflow(line.render(width), width, formatter)
           }
           val maxNumLines = overFlowedLines.map(_.length).max
 
@@ -425,24 +438,6 @@ case class Grid(var formatter: Formatter) {
       sb ++= rowContent
       sb ++= NL
     }
-
-    private def handleOverflow(line: String, width: Int, overflowHandling: OverflowHandling): List[String] = {
-      if (line.isEmpty)
-        return List("")
-
-      overflowHandling match {
-        case Except   =>
-          val lineWidth = line.visibleCharacters
-          if (lineWidth > width)
-            throw new IllegalStateException(s"Cannot fit line $line in the given space: $lineWidth > $width")
-          formatter.splitWithColors(line)
-        case Wrap     => formatter.wrap(line, width)
-        case Truncate =>
-          val lines = formatter.splitWithColors(line)
-          lines map { formatter.truncate(_, width) }
-      }
-    }
-
   }
 
 }

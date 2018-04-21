@@ -1,7 +1,7 @@
 package tlang.testutils
 
 import better.files.File
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, Inspectors, Matchers, OptionValues}
 import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting._
@@ -9,7 +9,13 @@ import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter
 import tlang.testutils.snapshot.SnapshotTesting
 import tlang.utils.Extensions._
 
-trait UnitSpec extends FlatSpec with Matchers with AnsiMatchers with MockitoSugar with SnapshotTesting {
+trait UnitSpec extends FlatSpec
+  with Matchers
+  with Inspectors
+  with OptionValues
+  with AnsiMatchers
+  with MockitoSugar
+  with SnapshotTesting {
 
   def mockedWordWrapperReturningSplitLines: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>

@@ -336,9 +336,9 @@ object Trees {
 
   trait PrimitiveTypeTree extends TypeTree with Leaf
 
-  case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]" }
-  case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?" }
-  case class UnitType() extends PrimitiveTypeTree {val name = "Unit" }
+  case class ArrayType(tpe: TypeTree) extends TypeTree { val name: String = tpe.name + "[]" }
+  case class NullableType(tpe: TypeTree) extends TypeTree { val name: String = tpe.name + "?" }
+  case class UnitType() extends PrimitiveTypeTree { val name = "Unit" }
 
   /*------------------------- Binary Operator Trees -------------------------*/
 

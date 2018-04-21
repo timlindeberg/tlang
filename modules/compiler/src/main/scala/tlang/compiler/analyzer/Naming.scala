@@ -214,8 +214,7 @@ case class NameAnalyser(
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
 
-    methSymbol.args += (id.name -> newSymbol)
-    methSymbol.argList ++= List(newSymbol)
+    methSymbol.addArgument(newSymbol)
 
     // Don't put out warning when args is unused since it's implicitly defined
     // or if the method is abstract
@@ -326,7 +325,8 @@ case class NameAnalyser(
     private def bind(statement: Tree,
       localVars: Map[String, VariableData],
       scopeLevel: Int,
-      canBreakContinue: Boolean = false): Map[String, VariableData] =
+      canBreakContinue: Boolean = false
+    ): Map[String, VariableData] =
       statement match {
         case Block(stats)                                   =>
           stats.dropRight(1)
