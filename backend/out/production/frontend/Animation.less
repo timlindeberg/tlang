@@ -1,0 +1,76 @@
+@import '~theme.less';
+
+.animated {
+  animation-duration: 1s;
+  animation-fill-mode: both;
+}
+
+.fade-in-up {
+  animation-name: fadeInUp;
+}
+
+@shadowColor: fade(@primaryColor, 20%);
+.shadow-hover {
+  border-radius: 0.28571429rem;
+  box-shadow: 1px 1px 1px @shadowColor !important;
+  transition: box-shadow 300ms;
+  &:hover {
+    box-shadow: 4px 4px 10px @shadowColor !important;
+    transition: box-shadow 300ms;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+.fade-in-right {
+  animation-name: fadeInRight;
+}
+
+@keyframes fadeInRight {
+  0% {
+    opacity: 0;
+    transform: translate3d(-30px, 0px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in-left {
+  animation-name: fadeInLeft;
+}
+
+@keyframes fadeInLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(30px, 0px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}

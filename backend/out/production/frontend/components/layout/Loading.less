@@ -1,0 +1,72 @@
+@import '~theme.less';
+
+@animationTime: 1.0s;
+@fontSize: 2em;
+
+.loading-text {
+  position: absolute;
+  z-index: 1;
+  font-size: @fontSize;
+  color: @primaryColor;
+  text-shadow:
+          -1px -1px 0 #fff,
+          1px -1px 0 #fff,
+          -1px 1px 0 #fff,
+          1px 1px 0 #fff;
+}
+
+.loading-container {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-bars {
+  text-align: center;
+  height: 2 * @fontSize;
+  & div {
+    height: 100%;
+    width: 7px;
+    margin: 0 3px 0 0;
+    background-color: #fff;
+    display: inline-block;
+    animation: stretchdelay @animationTime ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  & .rect1 {
+    animation-delay: -@animationTime + 0.0s;
+  }
+  & .rect2 {
+    animation-delay: -@animationTime + 0.1s;
+  }
+  & .rect3 {
+    animation-delay: -@animationTime + 0.2s;
+  }
+  & .rect4 {
+    animation-delay: -@animationTime + 0.3s;
+  }
+  & .rect5 {
+    animation-delay: -@animationTime + 0.4s;
+  }
+  & .rect6 {
+    animation-delay: -@animationTime + 0.5s;
+  }
+
+}
+
+
+@keyframes stretchdelay {
+  0%, 40%, 100% {
+    transform: scaleY(0.4);
+    background-color: white;
+  }
+
+  20% {
+    transform: scaleY(1);
+    background-color: fade(@secondaryColor, 40%);
+  }
+}

@@ -1,48 +1,31 @@
 package actor
 
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.CancellationException
+import java.util.concurrent.{CancellationException, TimeoutException}
 
 import akka.actor._
-import rapture.json._
-import rapture.json.dictionaries.dynamic._
-import rapture.json.jsonBackends.play._
-import rapture.net._
+import play.api.libs.json.{JsValue, Json, Writes}
 import tlang.SimpleEvaluator
-import tlang.compiler.messages.{CompilationException, MessageType}
+import tlang.compiler.messages.{CompilationException, CompilerMessage, MessageType}
 import tlang.repl.evaluation.Evaluator.ClassName
 import tlang.utils.CancellableFuture
 import tlang.utils.Extensions.{NL, _}
 
-import scala.util.Try
+import scala.util._
 
 object CompilationActor {
   def props(out: ActorRef, evaluator: SimpleEvaluator) = Props(new CompilationActor(out, evaluator))
 }
 
-trait CompilationMessageType {
-  def data: Option[String] = None
-  def messageType: String
-
-  def toJson: Json = data match {
-    case Some(data) => json"""{ "messageType": $messageType, "data": $data }"""
-    case None       => json"""{ "messageType": $messageType }"""
-  }
-}
-
-abstract class CompilationMessage(override val messageType: String) extends CompilationMessageType
-abstract class CompilationMessageWithData(override val messageType: String, result: String) extends CompilationMessageType {
-  override def data: Option[String] = Some(result)
-}
 
 object CompilationMessageType {
-  case object Evaluate extends CompilationMessage("EVALUATE")
-  case object Cancel extends CompilationMessage("CANCEL")
-  case object Timeout extends CompilationMessage("TIMEOUT")
-  case class Success(result: String) extends CompilationMessageWithData("SUCCESS", result)
-  case class CompilationError(error: String) extends CompilationMessageWithData("COMPILATION_ERROR", error)
-  case class ExecutionError(error: String) extends CompilationMessageWithData("EXECUTION_ERROR", error)
-  case class InternalCompilerError(error: String) extends CompilationMessageWithData("INTERNAL_COMPILER_ERROR", error)
+  val EVALUATE                = "EVALUATE"
+  val CANCEL                  = "CANCEL"
+  val TIMEOUT                 = "TIMEOUT"
+  val SUCCESS                 = "SUCCESS"
+  val COMPILATION_ERROR       = "COMPILATION_ERROR"
+  val EXECUTION_ERROR         = "EXECUTION_ERROR"
+  val INTERNAL_COMPILER_ERROR = "INTERNAL_COMPILER_ERROR"
 }
 
 
@@ -55,46 +38,49 @@ class CompilationActor(out: ActorRef, evaluator: SimpleEvaluator) extends Actor 
   import CompilationMessageType._
 
   private def waiting: PartialFunction[Any, Unit] = {
-    case j: Json if hasType(j, Evaluate) =>
-      val code = j.code.as[String]
+    case j: JsValue if hasType(j, EVALUATE) =>
+      val code = (j \ "code").as[String]
       println("Code: " + code)
       val (f, cancel) = CancellableFuture { evaluator(code) }
       f onComplete { onCompilationComplete }
       context become compiling(cancel)
-    case _                               => println("WATING: doing nothing")
+    case _                                  => println("WATING: doing nothing")
   }
 
   private def compiling(cancelCompilation: () => Boolean): PartialFunction[Any, Unit] = {
-    case j: Json if hasType(j, Cancel) =>
+    case j: JsValue if hasType(j, CANCEL) =>
       cancelCompilation()
       context become waiting
-    case _                             => println("COMPILING: doing nothing")
+    case _                                => println("COMPILING: doing nothing")
+  }
+
+  implicit val messageWriter: Writes[CompilerMessage] = (message: CompilerMessage) => {
+    val pos = message.pos
+    Json.obj(
+      "line" -> List(pos.line, pos.lineEnd),
+      "col" -> List(pos.col, pos.colEnd),
+      "message" -> message.message
+    )
   }
 
   private def onCompilationComplete(res: Try[String]): Unit = {
     val message = res match {
-      case util.Success(res) => Success(res)
-      case util.Failure(e)   =>
+      case Success(res) => Json.obj("messageType" -> SUCCESS, "result" -> res)
+      case Failure(e)   =>
         e match {
-          case e: CompilationException      => CompilationError(e.messages(MessageType.Error).toString)
-          case _: TimeoutException          => Timeout
-          case _: CancellationException     => Cancel
-          case e: InvocationTargetException => ExecutionError(formatStackTrace(e))
-          case e                            => InternalCompilerError(e.stackTrace)
+          case e: CompilationException      => Json.obj("messageType" -> COMPILATION_ERROR, "errors" -> e.messages(MessageType.Error))
+          case _: TimeoutException          => Json.obj("messageType" -> TIMEOUT)
+          case _: CancellationException     => Json.obj("messageType" -> CANCEL)
+          case e: InvocationTargetException => Json.obj("messageType" -> EXECUTION_ERROR, "error" -> formatStackTrace(e))
+          case e                            => Json.obj("messageType" -> INTERNAL_COMPILER_ERROR, "error" -> e.stackTrace)
         }
     }
-    out ! message.toJson
+    out ! message
     context become waiting
   }
 
-
-  private def hasType(json: Json, compilationMessageType: CompilationMessageType) = {
-    import rapture.core.modes.returnOption._
-    val MessageType = compilationMessageType.messageType
-    json.messageType.as[String] match {
-      case Some(MessageType) => true
-      case _                 => false
-    }
+  private def hasType(json: JsValue, CompilationMessageType: String) = {
+    (json \ "messageType").validate[String].isSuccess
   }
 
   private def formatStackTrace(e: Throwable): String = {

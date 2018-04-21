@@ -1,0 +1,17 @@
+@import '~theme.less';
+
+.Title {
+  font-family: @headerFont;
+  font-size: 3em;
+  font-weight: bold;
+  color: @primaryColor;
+  border-bottom: 3px @secondaryColor solid;
+  box-shadow: 0px 3px fade(@secondaryColor, 20%);
+  text-shadow: 3px 3px fade(@primaryColor, 20%);
+  margin-bottom: 0.5em;
+  padding-bottom: 0.3em;
+  padding-left: 0.3em;
+  &::selection {
+    background: fade(@secondaryColor, 50%);
+  }
+}

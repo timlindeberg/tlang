@@ -1,0 +1,24 @@
+/*******************************
+         Site Overrides
+*******************************/
+
+.ui.secondary.inverted.pointing.menu {
+	border-width: 0;
+}
+.ui.menu .item {
+	text-shadow: 1px 1px darken(@primaryColor, 5%);
+	font-family: @headerFont;
+}
+.ui.secondary.pointing.menu .active.item {
+	font-weight: normal;
+	box-shadow: 0 1px darken(@primaryColor, 5%);
+}
+
+@hoverTransition: transform 0.2s ease-in-out;
+.ui.secondary.pointing.menu .item:not(.active) {
+	transition:  @hoverTransition;
+	&:hover {
+		transition: @hoverTransition;
+		transform: translateY(-0.2em);
+	}
+}

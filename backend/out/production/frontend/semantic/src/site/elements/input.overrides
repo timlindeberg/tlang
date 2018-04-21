@@ -1,0 +1,15 @@
+/*******************************
+         Site Overrides
+*******************************/
+
+.ui.icon.input > i.icon {
+  color: @secondaryColor;
+}
+
+.ui.input > input {
+  transition: color .1s ease;
+}
+
+.ui.input > input:focus {
+  transition: color .1s ease;
+}
