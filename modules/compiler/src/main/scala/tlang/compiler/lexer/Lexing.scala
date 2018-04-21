@@ -219,10 +219,10 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
     @tailrec def toEnd(charList: List[Char], parsed: Int): (Token, List[Char]) =
       charList match {
-        case Nil       =>
+        case Nil               =>
           report(UnclosedCharLiteral(parsed))
           (createToken(BAD, parsed), Nil)
-        case '\'' :: r =>
+        case '\'' :: r         =>
           report(InvalidCharLiteral(parsed))
           (createToken(BAD, parsed), r)
         case '\r' :: '\n' :: r =>
@@ -233,7 +233,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
           line += 1
           column = 0
           toEnd(r, parsed + 1)
-        case _ :: r    =>
+        case _ :: r            =>
           toEnd(r, parsed + 1)
       }
 
@@ -273,7 +273,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case 'n'  => (createToken('\n', 4), r)
         case 'r'  => (createToken('\r', 4), r)
         case 'f'  => (createToken('\f', 4), r)
-        case '''  => (createToken('\'', 4), r)
+        case '\'' => (createToken('\'', 4), r)
         case '\\' => (createToken('\\', 4), r)
         case _    =>
           report(InvalidEscapeSequence(4))
@@ -314,7 +314,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case 'n' :: r  => getStringLiteral(r, s + '\n', parsed + 2)
         case 'r' :: r  => getStringLiteral(r, s + '\r', parsed + 2)
         case 'f' :: r  => getStringLiteral(r, s + '\f', parsed + 2)
-        case ''' :: r  => getStringLiteral(r, s + '\'', parsed + 2)
+        case '\'' :: r => getStringLiteral(r, s + '\'', parsed + 2)
         case '"' :: r  => getStringLiteral(r, s + '\"', parsed + 2)
         case '\\' :: r => getStringLiteral(r, s + '\\', parsed + 2)
         case '[' :: r  => getStringLiteral(r, s + 27.toChar + '[', parsed + 2)

@@ -22,7 +22,7 @@ object Extensions {
   val NL: String = System.lineSeparator
 
   val EscapeCharsNormal: Map[Char, String] =
-    Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", ''' -> "'", '"' -> "\"")
+    Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", '\'' -> "'", '"' -> "\"")
 
   implicit val EscapeCharsAll: Map[Char, String] =
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
@@ -196,7 +196,7 @@ object Extensions {
   implicit class TupleCollectionExtensions[A, B](val tuples: Traversable[(A, B)]) extends AnyVal {
     def aligned: String = {
       if (tuples.isEmpty) return ""
-      
+
       val maxWidth = tuples.map(_._1.toString.length).max
       tuples
         .map { case (a, b) => java.lang.String.format(s"%-${ maxWidth }s -> %s", a.toString, b.toString) }
