@@ -205,7 +205,7 @@ The hash operator, `#`, returns the hashcode of an object.
 #"ABC" // 64578
 ```
 ### Negation
-The negation operator, `#`, returns the negative of the operand.
+The negation operator, `-`, returns the negative of the operand.
 ```tlang
 -5 // -5
 ```
