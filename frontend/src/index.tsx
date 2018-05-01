@@ -1,3 +1,4 @@
+import 'animate.css';
 import App from 'App';
 import 'main.less';
 import * as React from 'react';

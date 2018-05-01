@@ -1,7 +1,11 @@
 @import '../../theme.less';
 @import '../layout/MenuLayout.less';
 
-@height: ~"calc(@{pageHeight} - 7.7rem)";
+@content-margin: 2rem;
+@menu-height: 2rem;
+@menu-margin: 1rem;
+@height:  ~"calc(@{pageHeight} - (2 * @{content-margin}) - @{menu-height} - @{menu-margin} - 1rem)";
+
 
 .CodeWindow {
   height: @height;
@@ -20,11 +24,23 @@
   border-bottom: 2px darken(@primaryColor, 5%) solid;
 }
 
-.PlaygroundView-content {
-  margin: 2em;
+#PlaygroundView-content {
+  margin: @content-margin;
+
+  // Make padding uniform between elements
+  .ui.grid .column.PlaygroundView-result-column {
+    padding-left: 0;
+  }
+
+  .ui.grid .column.no-padding-bottom {
+    padding-bottom: 0;
+  }
 }
 
 #PlaygroundView-menu.menu {
+  margin: @menu-margin 0;
+  height: @menu-height;
+
   & .item {
     font-weight: bold;
     color: @primaryColor;
@@ -80,17 +96,11 @@
   display: flex!important;
 }
 
-// Make padding uniform between elements
-.ui.grid .column.PlaygroundView-result-column {
-  padding-left: 0;
-}
-
-.ui.grid .column.no-padding-bottom {
-  padding-bottom: 0;
-}
 
 .error-marked {
-  border-bottom: 2px @dangerColor solid;
+  border-bottom: 1px @dangerColor solid;
+  color: @dangerColor;
+  transition: all 2s ease-in-out;
 }
 
 .CodeMirror-gutters .errors {
@@ -99,4 +109,8 @@
 
 .CodeMirror-gutter-elt {
   padding-left: 0.5em;
+}
+
+.ui.popup.error-popup {
+  color: @dangerColor;
 }

@@ -1,10 +1,10 @@
+import codeExamples from 'components/playground/codeExamples';
 import * as React from 'react';
 import { Dropdown, Icon, Loader, Menu } from 'semantic-ui-react';
 import HelpModal from './HelpModal';
 import { PlaygroundState } from './PlaygroundView';
 
 interface PlaygroundMenuProps {
-  codeExamples: string[];
   setCode: (s: string) => void;
   compileCode: () => void;
   connect: () => void;
@@ -68,7 +68,7 @@ export default class PlaygroundMenu extends React.Component<PlaygroundMenuProps,
   }
 
   examplesItem = () => {
-    const { setCode, codeExamples } = this.props;
+    const { setCode } = this.props;
     return (
       <Dropdown item text="Examples">
         <Dropdown.Menu>

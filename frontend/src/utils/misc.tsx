@@ -1,3 +1,10 @@
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+
+export async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function findFiles(ctx: any): string[] {
   const keys = ctx.keys();
   return keys.map(ctx);
@@ -32,4 +39,10 @@ export function widthOfRenderedText(text: string, className: string): number {
   const width = div.getBoundingClientRect().width;
   div.parentNode!.removeChild(div);
   return width;
+}
+
+export function asDOM(jsx: JSX.Element, wrapper: string = 'div'): HTMLElement {
+  const e = document.createElement(wrapper);
+  ReactDOM.render(jsx, e);
+  return e;
 }

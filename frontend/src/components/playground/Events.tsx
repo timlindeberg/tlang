@@ -1,4 +1,4 @@
-import 'components/playground/PlaygroundEvents.less';
+import 'components/playground/Events.less';
 import { CompilationError } from 'components/playground/PlaygroundTypes';
 import * as React from 'react';
 import { SemanticCOLORS, SemanticICONS } from 'semantic-ui-react';
@@ -55,7 +55,7 @@ export class CompilationErrorEvent extends PlaygroundEvent {
     this.errors = message.errors;
     this.positions = this.errors.map(({ start }) => `${start.line}:${start.col}`);
 
-    const longest = this.positions.sort((a, b) => b.length - a.length)[0];
+    const longest = this.positions.slice().sort((a, b) => b.length - a.length)[0];
     this.widthOfLongestPosition = widthOfRenderedText(longest, 'line-number');
   }
 
@@ -105,4 +105,20 @@ export class CanceledEvent extends PlaygroundEvent {
   title: string = 'Compilation canceled';
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'remove';
+}
+
+export class TimeoutEvent extends PlaygroundEvent {
+  title: string = 'Compilation timed out';
+  color: SemanticCOLORS = 'red';
+  icon: SemanticICONS = 'hourglass half';
+  private readonly timeout: number;
+
+  constructor(message: any) {
+    super();
+    this.timeout = message.timeout;
+  }
+
+  body() {
+    return `Compilation timed out after ${this.timeout}s`;
+  }
 }
