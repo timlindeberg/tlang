@@ -22,6 +22,7 @@ const CODE_MIRROR_OPTIONS: codemirror.EditorConfiguration = {
 interface CodeEditorProps {
   code: string;
   setCode: (code: string) => void;
+  compileCode: () => void;
   errors: CompilationError[];
 }
 
@@ -33,6 +34,13 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
   marks: TextMarker[] = [];
 
   setCode = (editor: any, data: any, value: string) => this.props.setCode(value);
+
+  onKeyPress = (editor: IInstance, event: KeyboardEvent) => {
+    console.log(event);
+    if ((event.ctrlKey || event.metaKey) && event.code === 'Space') {
+      this.props.compileCode();
+    }
+  }
 
   componentDidUpdate(prevProps: CodeEditorProps) {
     if (prevProps.errors === this.props.errors) {
@@ -96,6 +104,7 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
         options={CODE_MIRROR_OPTIONS}
         onBeforeChange={this.setCode}
         editorDidMount={editor => this.editor = editor}
+        onKeyPress={this.onKeyPress}
       />
     );
   }

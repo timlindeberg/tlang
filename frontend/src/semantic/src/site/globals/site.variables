@@ -20,6 +20,7 @@
 
 @borderColor: fade(@primaryColor, 20%);
 @invertedBackground: @primaryColor;
+@highlightBackground: fade(@primaryColor, 50%);
 
 @importGoogleFonts : true;
 @googleFontSizes   : '400,700,400italic,700italic';

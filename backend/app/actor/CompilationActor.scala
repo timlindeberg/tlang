@@ -7,7 +7,6 @@ import akka.actor._
 import play.api.libs.json.{JsValue, Json, Writes}
 import tlang.SimpleEvaluator
 import tlang.compiler.messages.{CompilationException, CompilerMessage, MessageType}
-import tlang.repl.evaluation.Evaluator.ClassName
 import tlang.utils.CancellableFuture
 import tlang.utils.Extensions.{NL, _}
 import play.api.Logger
@@ -90,6 +89,7 @@ class CompilationActor(out: ActorRef, evaluator: SimpleEvaluator) extends Actor 
   private def formatStackTrace(e: Throwable): String = {
     val stackTrace = e.getCause.stackTrace
     // Remove internal parts of the stacktrace
-    stackTrace.split("at " + ClassName).head + s"at $ClassName.main(Unknown Source)$NL"
+    val className = SimpleEvaluator.ClassName
+    stackTrace.split("at " + className).head + s"at $className.main(Unknown Source)$NL"
   }
 }

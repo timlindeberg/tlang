@@ -75,6 +75,50 @@ export class CompilationErrorEvent extends PlaygroundEvent {
   }
 }
 
+export class ExecutionError extends PlaygroundEvent {
+  title: string = 'Execution error';
+  color: SemanticCOLORS = 'red';
+  icon: SemanticICONS = 'exclamation circle';
+
+  private readonly error: string;
+
+  constructor(message: any) {
+    super();
+    this.error = message.error;
+  }
+
+  body() {
+    return (
+      <div>
+        <p>Execution exited with an exception:</p>
+        <p className="result-block stacktrace">{this.error}</p>
+      </div>
+    );
+  }
+}
+
+export class InternalCompilerError extends PlaygroundEvent {
+  title: string = 'Internal compiler error';
+  color: SemanticCOLORS = 'red';
+  icon: SemanticICONS = 'warning';
+
+  private readonly error: string;
+
+  constructor(message: any) {
+    super();
+    this.error = message.error;
+  }
+
+  body() {
+    return (
+      <div>
+        <p>The compiler crashed with an internal error:</p>
+        <p className="result-block stacktrace">{this.error}</p>
+      </div>
+    );
+  }
+}
+
 export class ConnectedEvent extends PlaygroundEvent {
   title: string = 'Connected to server';
   color: SemanticCOLORS = 'green';

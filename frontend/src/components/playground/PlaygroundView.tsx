@@ -7,7 +7,7 @@ import {
   CompilationSuccessfulEvent,
   ConnectedEvent,
   ConnectedFailedEvent,
-  DisconnectedEvent,
+  DisconnectedEvent, ExecutionError, InternalCompilerError,
   PlaygroundEvent, TimeoutEvent,
 } from 'components/playground/Events';
 import { CompilationError } from 'components/playground/PlaygroundTypes';
@@ -111,6 +111,12 @@ export default class PlaygroundView extends React.Component<{}, {}> {
       this.addEvent(new CompilationErrorEvent(message));
       this.setState(() => ({ errors: message.errors }));
       break;
+    case MessageType.EXECUTION_ERROR:
+      this.addEvent(new ExecutionError(message));
+      break;
+    case MessageType.INTERNAL_COMPILER_ERROR:
+      this.addEvent(new InternalCompilerError(message));
+      break;
     case MessageType.CANCEL:
       this.addEvent(new CanceledEvent());
       break;
@@ -181,7 +187,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
           <PlaygroundMenu playgroundState={playgroundState} {...this.menuFunctions()}/>
           <Grid>
             <Grid.Column width={10} className="no-padding-bottom">
-              <CodeEditor code={code} setCode={this.setCode} errors={errors}/>
+              <CodeEditor code={code} setCode={this.setCode} compileCode={this.compileCode} errors={errors}/>
             </Grid.Column>
             <Grid.Column width={6} className="PlaygroundView-result-column no-padding-bottom">
               <EventLog events={events}/>

@@ -3,3 +3,7 @@
 *******************************/
 
 @invertedBackground: @primaryColor;
+@dropdownItemColor: @primaryColor;
+@dropdownHoveredItemColor: @primaryColor;
+@dropdownHoveredItemBackground: fade(@primaryColor, 10%);
+@dropdownActiveItemBackground: fade(@primaryColor, 10%);

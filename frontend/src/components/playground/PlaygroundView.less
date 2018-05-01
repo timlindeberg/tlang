@@ -35,12 +35,22 @@
   .ui.grid .column.no-padding-bottom {
     padding-bottom: 0;
   }
+
+  & ::-webkit-scrollbar-track {
+    background: fade(@primaryColor, 10%);
+  }
+
+  & ::-webkit-scrollbar-thumb {
+    background: fade(@primaryColor, 30%);
+  }
 }
 
 #PlaygroundView-menu.menu {
   margin: @menu-margin 0;
   height: @menu-height;
-
+  & .active.item {
+    background: fade(@primaryColor, 10%);
+  }
   & .item {
     font-weight: bold;
     color: @primaryColor;
