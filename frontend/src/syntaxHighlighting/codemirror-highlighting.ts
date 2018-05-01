@@ -1,7 +1,7 @@
 import * as CodeMirror from 'codemirror';
 import 'codemirror/addon/mode/simple';
 import {
-  ESCAPE_CHAR, KEYWORD, COMMENT, LITERAL, STRING, BINARY_NUMBER, HEX_NUMBER, NUMBER, TYPE, VARIABLE, SYMBOL, CHAR,
+  BINARY_NUMBER, CHAR, COMMENT, ESCAPE_CHAR, HEX_NUMBER, KEYWORD, LITERAL, NUMBER, STRING, SYMBOL, TYPE, VARIABLE,
 } from 'syntaxHighlighting/syntax';
 
 (CodeMirror as any).defineSimpleMode('tlang', {

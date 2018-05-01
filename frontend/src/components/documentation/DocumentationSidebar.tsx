@@ -2,11 +2,12 @@ import * as React from 'react';
 
 import * as _ from 'lodash';
 
+import 'components/documentation/DocumentationSidebar.less';
+import { Collapse } from 'react-collapse';
+import { HashLink } from 'react-router-hash-link';
 import { Accordion, Menu, Search } from 'semantic-ui-react';
 import { AST, Type } from 'types/markdown';
-import { HashLink } from 'react-router-hash-link';
-import { Collapse } from 'react-collapse';
-import 'components/documentation/DocumentationSidebar.less';
+import { scrollTo } from 'utils/misc';
 
 interface Header {
   index: number;
@@ -123,14 +124,11 @@ export default class DocumentationSidebar
     }
 
     const element = document.getElementById(this.toId(searchResult))!;
-    this.scrollTo(element);
+    scrollTo(element);
   }
 
   toId = (value: String) => value.replace(/ /g, '-');
   anchor = (value: string) => `#${this.toId(value)}`;
-
-  // inline: 'nearest' fixes an issue of the window moving horizontally when scrolling.
-  scrollTo = (el: Element) => el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
 
   mouseEnterHeader = (header: Header) => {
     const mousedOverHeaders = new Set(this.state.mousedOverHeaders);
@@ -160,7 +158,7 @@ export default class DocumentationSidebar
             as={HashLink}
             to={this.anchor(value)}
             onClick={e => e.stopPropagation()}
-            scroll={this.scrollTo}
+            scroll={scrollTo}
           >
             <span>{value}</span>
           </Menu.Item>
@@ -185,7 +183,7 @@ export default class DocumentationSidebar
           <Accordion.Title
             as={HashLink}
             to={this.anchor(header.value)}
-            scroll={this.scrollTo}
+            scroll={scrollTo}
             active={isHeaderOpen}
             content={header.value}
           />
@@ -205,6 +203,7 @@ export default class DocumentationSidebar
       size="small"
       id="DocMenu"
       onMouseLeave={this.mouseLeaveMenu}
+      className="shadow"
     >
       {this.renderMenuItems()}
     </Accordion>

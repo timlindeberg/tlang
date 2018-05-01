@@ -1,9 +1,7 @@
-import * as React from 'react';
-import { Divider, Segment, Loader, Transition } from 'semantic-ui-react';
-import { AST } from 'types/markdown';
 import DocBuilder from 'components/documentation/DocBuilder';
-import Title from 'components/misc/Title';
-import Loading from 'components/layout/Loading';
+import * as React from 'react';
+import { Divider, Loader, Segment } from 'semantic-ui-react';
+import { AST } from 'types/markdown';
 
 interface DocumentationProps {
   markdown: AST[];

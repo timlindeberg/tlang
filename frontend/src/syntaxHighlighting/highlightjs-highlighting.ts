@@ -1,7 +1,7 @@
 import { registerLanguage } from 'react-syntax-highlighter/dist/light';
 import {
-  ESCAPE_CHAR, KEYWORD, LITERAL, LITERALS, BINARY_NUMBER, HEX_NUMBER, NUMBER, TYPE, VARIABLE, SYMBOL, KEY_WORDS, CHAR,
-  TAB,
+  BINARY_NUMBER, CHAR, ESCAPE_CHAR, HEX_NUMBER, KEY_WORDS, KEYWORD, LITERAL, LITERALS, NUMBER, SYMBOL, TAB, TYPE,
+  VARIABLE,
 } from 'syntaxHighlighting/syntax';
 
 registerLanguage('tlang', (hljs: any) => {

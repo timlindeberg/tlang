@@ -1,8 +1,8 @@
+import App from 'App';
+import 'main.less';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import 'semantic/dist/semantic.min.css';
-import 'main.less';
-import App from 'App';
 
 import registerServiceWorker from  'registerServiceWorker';
 

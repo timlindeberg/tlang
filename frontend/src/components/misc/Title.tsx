@@ -1,5 +1,5 @@
-import * as React from 'react';
 import 'components/misc/Title.less';
+import * as React from 'react';
 
 interface TitleProps {
   children: string;

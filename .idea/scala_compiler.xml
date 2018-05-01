@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaCompilerConfiguration">
+    <profile name="sbt 1" modules="backend_7997" />
+    <profile name="sbt 2" modules="tlangWeb-backend">
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <parameters>
+        <parameter value="-encoding" />
+        <parameter value="utf8" />
+      </parameters>
+    </profile>
+    <profile name="sbt 3" modules="compiler,utils,root,macros,repl">
+      <option name="macros" value="true" />
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <parameters>
+        <parameter value="-Xplugin-require:macroparadise" />
+      </parameters>
+      <plugins>
+        <plugin path="C:\Users\Tim Lindeberg\.ivy2\cache\org.scalameta\paradise_2.12.4\jars\paradise_2.12.4-3.0.0-M10.jar" />
+      </plugins>
+    </profile>
+    <profile name="sbt 4" modules="cafebabe">
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+    </profile>
+  </component>
+</project>

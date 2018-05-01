@@ -21,10 +21,11 @@
     "file-loader": "0.11.2",
     "fork-ts-checker-webpack-plugin": "^0.2.8",
     "fs-extra": "3.0.1",
+    "gulp": "^3.9.1",
     "he": "^1.1.1",
     "html-webpack-plugin": "2.29.0",
     "jest": "20.0.4",
-    "less": "3.0.0",
+    "less": "2.7.3",
     "less-loader": "^4.1.0",
     "lodash": "^4.17.5",
     "node-sass": "^4.7.2",
@@ -48,7 +49,7 @@
     "remark-parse": "^5.0.0",
     "sass-loader": "^6.0.6",
     "semantic-ui": "^2.2.14",
-    "semantic-ui-react": "^0.78.2",
+    "semantic-ui-react": "^0.79.1",
     "source-map-loader": "^0.2.1",
     "style-loader": "0.19.0",
     "sw-precache-webpack-plugin": "0.11.4",
@@ -116,13 +117,16 @@
     ],
     "globals": {
       "ts-jest": {
-        "tsConfigFile": "C  :\\Users\\Tim Lindeberg\\IdeaProjects\\tlangWeb\\frontend\\tsconfig.test.json"
+        "tsConfigFile": "C:\\Users\\Tim Lindeberg\\IdeaProjects\\tlangWeb\\frontend\\tsconfig.test.json"
       }
     }
   },
   "babel": {
     "presets": [
       "react-app"
+    ],
+    "plugins": [
+      "transform-class-properties"
     ]
   },
   "eslintConfig": {

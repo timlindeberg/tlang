@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Menu, Container } from 'semantic-ui-react';
-import { Link } from 'react-router-dom';
 import { RouteComponentProps, withRouter } from 'react-router';
+import { Link } from 'react-router-dom';
+import { Menu } from 'semantic-ui-react';
 
 interface MenuLinkProps {
   children: React.ReactNode;
@@ -13,14 +13,14 @@ const MenuLink = withRouter(({ children, to, location }: RouteComponentProps<any
 ));
 
 const Navbar = ({ className }: {className?: string}) => (
-  <Container className={className}>
-    <Menu secondary inverted pointing size="large">
+  <div className={className}>
+    <Menu secondary inverted pointing size="large" className="shadow">
       <MenuLink to="/">Home</MenuLink>
       <MenuLink to="/documentation">Documentation</MenuLink>
       <MenuLink to="/get_started">Get started</MenuLink>
       <MenuLink to="/playground">Playground</MenuLink>
     </Menu>
-  </Container>
+  </div>
 );
 
 export default Navbar;

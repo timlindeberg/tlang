@@ -1,8 +1,8 @@
-import { Segment, Grid, Button, Icon } from 'semantic-ui-react';
-import Logo from 'components/misc/Logo';
-import Navbar from 'components/layout/Navbar';
-import * as React from 'react';
 import 'components/layout/MenuLayout.less';
+import Navbar from 'components/layout/Navbar';
+import Logo from 'components/misc/Logo';
+import * as React from 'react';
+import { Button, Grid, Icon, Segment } from 'semantic-ui-react';
 
 interface MenuLayoutProps {
   menu: (state: MenuLayoutState) => JSX.Element;

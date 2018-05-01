@@ -29,6 +29,7 @@ const {
 const openBrowser = require('react-dev-utils/openBrowser');
 const paths = require('../config/paths');
 const config = require('../config/webpack.config.dev');
+const path = require('path');
 const createDevServerConfig = require('../config/webpackDevServer.config');
 
 const useYarn = fs.existsSync(paths.yarnLockFile);
@@ -77,6 +78,8 @@ choosePort(HOST, DEFAULT_PORT)
       openBrowser(urls.localUrlForBrowser);
     });
 
+    startGulpWatchProcess();
+
     ['SIGINT', 'SIGTERM'].forEach(function(sig) {
       process.on(sig, function() {
         devServer.close();
@@ -90,3 +93,21 @@ choosePort(HOST, DEFAULT_PORT)
     }
     process.exit(1);
   });
+
+const startGulpWatchProcess = () => {
+  const semanticPath = path.resolve("src/semantic");
+  const nodeModulesPath = path.resolve("node_modules");
+  const gulpPath = path.resolve(`${nodeModulesPath}/.bin/gulp`);
+
+  console.log(chalk.magenta('Starting gulp watch process...'));
+
+  const gulpCommand = `"${gulpPath}" --watch --cwd "${semanticPath}"`;
+  const gulpProcess = require('child_process').exec(gulpCommand, error => {
+    if (error) {
+      console.error(`Could not start gulp process: ${error}`);
+    }
+  });
+
+  gulpProcess.stdout.on('data', console.log);
+  gulpProcess.stderr.on('data', console.log);
+}

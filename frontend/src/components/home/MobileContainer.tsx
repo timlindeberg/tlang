@@ -1,6 +1,6 @@
+import Heading from 'components/home/Heading';
 import * as React from 'react';
 import { Button, Container, Icon, Menu, Responsive, Segment, Sidebar } from 'semantic-ui-react';
-import Heading from 'components/home/Heading';
 
 interface MobileContainerProps {
   children: any;

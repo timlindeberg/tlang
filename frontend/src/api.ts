@@ -14,6 +14,7 @@ export async function connectToCompilationService(): Promise<WebSocket> {
   return new Promise<WebSocket>((resolve, reject) => {
     const socket = new WebSocket(`ws://${API_URL}/compilationWs`);
     socket.onopen = () => resolve(socket);
-    socket.onerror = err => reject(err);
+    socket.onerror = err =>
+      reject(err);
   });
 }

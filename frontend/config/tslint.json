@@ -46,6 +46,7 @@
       "static-before-instance",
       "variables-before-functions"
     ],
+    "ordered-imports": true,
     "no-any": false,
     "no-arg": true,
     "no-bitwise": true,
@@ -54,6 +55,7 @@
     "no-construct": true,
     "no-debugger": true,
     "no-duplicate-variable": true,
+    "no-duplicate-imports": false,
     "no-empty": true,
     "no-eval": true,
     "no-shadowed-variable": true,

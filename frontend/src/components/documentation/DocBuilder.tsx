@@ -1,8 +1,8 @@
-import { AST, Type } from 'types/markdown';
-import { Divider, Header, List, Image, Segment, Table } from 'semantic-ui-react';
-import * as React from 'react';
 import CodeBlock from 'components/misc/CodeBlock';
 import { decode } from 'he';
+import * as React from 'react';
+import { Divider, Header, Image, List, Segment, Table } from 'semantic-ui-react';
+import { AST, Type } from 'types/markdown';
 
 export interface Block {
   name: string;

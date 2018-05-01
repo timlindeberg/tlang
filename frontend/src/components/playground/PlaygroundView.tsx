@@ -1,24 +1,51 @@
-import * as React from 'react';
 import * as API from 'api';
+import * as codemirror from 'codemirror';
+import * as React from 'react';
 
-import { Controlled as CodeMirror } from 'react-codemirror2';
-import { Segment, Button, Icon, Grid, Header } from 'semantic-ui-react';
+import { TextMarker } from 'codemirror';
+import {
+  CanceledEvent,
+  CompilationErrorEvent,
+  CompilationSuccessfulEvent,
+  ConnectedEvent,
+  ConnectedFailedEvent,
+  DisconnectedEvent,
+  PlaygroundEvent,
+} from 'components/playground/PlaygroundEvents';
+import { CompilationError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
+import { Controlled as CodeMirror, IInstance } from 'react-codemirror2';
+import { Grid, Icon, Segment } from 'semantic-ui-react';
 import { findFilesWithNames } from 'utils/misc';
 
-import MenuLayout from 'components/layout/MenuLayout';
+import Navbar from 'components/layout/Navbar';
+import Logo from 'components/misc/Logo';
+import EventLog from 'components/playground/EventLog';
 import PlaygroundMenu from 'components/playground/PlaygroundMenu';
 
 import 'codemirror/lib/codemirror.css';
-import 'syntaxHighlighting/codemirror-highlighting';
 import 'components/playground/PlaygroundView.less';
+import 'syntaxHighlighting/codemirror-highlighting';
 
 interface PlaygroundViewState {
   code: string;
   ws?: WebSocket;
-  result?: string[];
+  events: PlaygroundEvent[];
+  playgroundState: PlaygroundState;
+
 }
 
-enum MessageType {
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export enum PlaygroundState {
+  Disconnected,
+  Connecting,
+  Waiting,
+  Compiling,
+}
+
+export enum MessageType {
   EVALUATE,
   CANCEL,
   TIMEOUT,
@@ -29,7 +56,7 @@ enum MessageType {
 }
 
 const codeExamples = findFilesWithNames(require.context('codeExamples', true, /\.t/));
-const codeMirrorOptions = {
+const codeMirrorOptions: codemirror.EditorConfiguration = {
   lineNumbers: true,
   mode: 'tlang',
   theme: 'tlang',
@@ -38,45 +65,22 @@ const codeMirrorOptions = {
   tabSize: 4,
   indentUnit: 4,
   showCursorWhenSelecting: true,
+  gutters: ['errors', 'CodeMirror-linenumbers'],
 };
 
 export default class PlaygroundView extends React.Component<{}, {}> {
 
-  state: PlaygroundViewState = { code: codeExamples['Hello World'] };
+  state: PlaygroundViewState = {
+    code: codeExamples['Hello World'],
+    playgroundState: PlaygroundState.Disconnected,
+    events: [],
+  };
 
-  updateCode = (code: string) => this.setState({ code });
-
-  compileCode = () => this.sendMessage(MessageType.EVALUATE, { code: this.state.code });
-  cancelCompilation = () => this.sendMessage(MessageType.CANCEL);
-
-  onMessageReceived = (event: any) => {
-    console.log('event.data', event.data);
-    const message = JSON.parse(event.data);
-
-    const messageKey = message.messageType as keyof typeof MessageType
-
-    switch (MessageType[messageKey]) {
-      case MessageType.SUCCESS:
-        this.setState({ result: message.result.split("\n") });
-        break;
-      case MessageType.COMPILATION_ERROR:
-        this.setState({ });
-        break;
-
-    }
-  }
-
-  sendMessage = (messageType: MessageType, data?: any) => {
-    const message = JSON.stringify({ messageType: MessageType[messageType], ...data });
-    console.log('message', message);
-    this.state.ws!.send(message);
-  }
+  editor?: IInstance;
+  marks: TextMarker[] = [];
 
   async componentDidMount() {
-    const ws = await API.connectToCompilationService();
-    ws.onmessage = this.onMessageReceived;
-    console.log("Connected");
-    this.setState({ ws });
+    await this.connect();
   }
 
   componentWillUnmount() {
@@ -86,38 +90,144 @@ export default class PlaygroundView extends React.Component<{}, {}> {
     }
   }
 
-  Content = () => {
-    const result = this.state.result;
-    return (
-      <Segment className="content-segment">
-        <Grid>
-          <Grid.Column width={10}>
-            <CodeMirror
-              className="CodeWindow shadow-hover"
-              value={this.state.code}
-              options={codeMirrorOptions}
-              onBeforeChange={(editor, data, value) => this.updateCode(value)}
-            />
-            <Button icon labelPosition="right" secondary size="large" onClick={this.compileCode}>
-              Run Code! <Icon name="cogs"/>
-            </Button>
-          </Grid.Column>
-          <Grid.Column width={6}>
-            <Segment>
-              <Header as="h1">Results</Header>
-              <div className="result-segment">
-                {result && result.map(line => <React.Fragment key={line}>{line}<br/></React.Fragment>)}
-              </div>
-            </Segment>
-          </Grid.Column>
-        </Grid>
-      </Segment>
-    );
+  setCode = (code: string) => {
+    this.editor!.clearGutter('errors');
+    this.marks.forEach(_ => _.clear());
+    this.marks = [];
+    this.setState({ code });
   }
 
-  Menu = () => <PlaygroundMenu codeExamples={codeExamples} updateCode={this.updateCode}/>;
+  compileCode = () => {
+    this.sendMessage(MessageType.EVALUATE, { code: this.state.code });
+    this.goTo(PlaygroundState.Compiling);
+  }
+
+  cancelCompilation = () => {
+    this.sendMessage(MessageType.CANCEL);
+    this.goTo(PlaygroundState.Waiting);
+  }
+
+  onMessageReceived = async (msg: any) => {
+    // await sleep(1000);
+
+    const message = JSON.parse(msg.data);
+    console.log('Message', message);
+
+    const messageKey = message.messageType as keyof typeof MessageType;
+    switch (MessageType[messageKey]) {
+    case MessageType.SUCCESS:
+      this.addEvent(new CompilationSuccessfulEvent(message));
+      break;
+    case MessageType.COMPILATION_ERROR:
+      this.onCompilationError(message);
+      break;
+    case MessageType.CANCEL:
+      this.addEvent(new CanceledEvent());
+      break;
+    default:
+      this.addEvent({ title: 'Unknown messagetype', icon: 'military', body: () => null, color: 'red' });
+    }
+
+    this.goTo(PlaygroundState.Waiting);
+  }
+
+  onCompilationError = (message: any) => {
+    this.addEvent(new CompilationErrorEvent(message));
+
+    const errorMarker = <Icon name="exclamation triangle"/>;
+    const e = document.createElement('i');
+
+    message.errors.forEach((error: CompilationError) => {
+      const start = toCodeMirrorPosition(error.start);
+      const end = toCodeMirrorPosition(error.end);
+
+      this.editor!.setGutterMarker(start.line, 'errors', e);
+
+      const mark = this.editor!.markText(start, end, { className: 'error-marked' });
+      this.marks.push(mark);
+    });
+  }
+
+  goTo = (playgroundState: PlaygroundState) => this.setState(() => ({ playgroundState }));
+
+  addEvent = (event: PlaygroundEvent): void => {
+    this.setState(({ events }: PlaygroundViewState) => ({ events: [...events, event] }));
+  }
+
+  sendMessage = (messageType: MessageType, data?: any) => {
+    const message = JSON.stringify({ messageType: MessageType[messageType], ...data });
+    this.state.ws!.send(message);
+  }
+
+  clearEvents = () => this.setState(() => ({ events: [] }));
+
+  connect = async () => {
+    this.goTo(PlaygroundState.Connecting);
+
+    const setDisconnected = (event: PlaygroundEvent) => {
+      this.goTo(PlaygroundState.Disconnected);
+      this.addEvent(event);
+    };
+
+    let ws: WebSocket;
+    try {
+      ws = await API.connectToCompilationService();
+    } catch (e) {
+      setDisconnected(new ConnectedFailedEvent());
+      return;
+    }
+
+    ws.onmessage = this.onMessageReceived;
+    ws.onclose = () => setDisconnected(new DisconnectedEvent());
+    ws.onerror = ws.onclose;
+
+    await sleep(1000);
+
+    this.setState(() => ({ ws }));
+    this.goTo(PlaygroundState.Waiting);
+    this.addEvent(new ConnectedEvent());
+  }
 
   render() {
-    return <MenuLayout menu={this.Menu} content={this.Content}/>;
+    const { code, events } = this.state;
+    return (
+      <React.Fragment>
+        <Segment textAlign="left" inverted id="MenuLayout-navbar" className="Navbar-border">
+          <Grid >
+            <Grid.Column>
+              <Logo size={2.5}/>
+            </Grid.Column>
+            <Grid.Column>
+              <Navbar/>
+            </Grid.Column>
+          </Grid>
+        </Segment>
+        <div className="PlaygroundView-content">
+          <PlaygroundMenu
+            codeExamples={codeExamples}
+            setCode={this.setCode}
+            compileCode={this.compileCode}
+            playgroundState={this.state.playgroundState}
+            connect={this.connect}
+            clearEvents={this.clearEvents}
+            cancelCompilation={this.cancelCompilation}
+          />
+          <Grid>
+            <Grid.Column width={10} className="no-padding-bottom">
+              <CodeMirror
+                className="CodeWindow shadow-hover"
+                value={code}
+                options={codeMirrorOptions}
+                onBeforeChange={(editor, data, value) => this.setCode(value)}
+                editorDidMount={editor => this.editor = editor}
+              />
+            </Grid.Column>
+            <Grid.Column width={6} className="PlaygroundView-result-column no-padding-bottom">
+              <EventLog events={events}/>
+            </Grid.Column>
+          </Grid>
+        </div>
+      </React.Fragment>
+    );
   }
 }

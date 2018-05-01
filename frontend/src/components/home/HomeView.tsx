@@ -1,10 +1,10 @@
-import * as React from 'react';
-import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
+import 'Animation.less';
 import DesktopContainer from 'components/home/DesktopContainer';
 import MobileContainer from 'components/home/MobileContainer';
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
-import 'Animation.less';
+import * as React from 'react';
+import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 
 interface ResponsiveContainerProps {
   children: any;
