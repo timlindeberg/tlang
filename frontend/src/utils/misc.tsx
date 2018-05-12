@@ -46,3 +46,20 @@ export function asDOM(jsx: JSX.Element, wrapper: string = 'div'): HTMLElement {
   ReactDOM.render(jsx, e);
   return e;
 }
+
+export function htmlLines(s: string | string[], className: string) {
+  if (typeof s === 'string') {
+    return toHtmlLines((s as string).split('\n'), className);
+  }
+
+  return toHtmlLines(s as string[], className);
+}
+
+function toHtmlLines(lines: string[], className: string) {
+  return lines.map((line, i) => (
+    <React.Fragment key={i}>
+      <span className={className}>{line}</span>
+      <br/>
+    </React.Fragment>
+  ));
+}

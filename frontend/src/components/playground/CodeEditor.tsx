@@ -1,11 +1,11 @@
 import * as codemirror from 'codemirror';
 import { TextMarker } from 'codemirror';
-import { CompilationError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
+import { CodeError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Controlled as CodeMirror, IInstance } from 'react-codemirror2';
 import { Icon, Popup } from 'semantic-ui-react';
-import { asDOM } from 'utils/misc';
+import { asDOM, htmlLines } from 'utils/misc';
 
 const CODE_MIRROR_OPTIONS: codemirror.EditorConfiguration = {
   lineNumbers: true,
@@ -23,10 +23,11 @@ interface CodeEditorProps {
   code: string;
   setCode: (code: string) => void;
   compileCode: () => void;
-  errors: CompilationError[];
+  errors: CodeError[];
 }
 
-interface CodeEditorState {}
+interface CodeEditorState {
+}
 
 export default class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   state: CodeEditorState = {};
@@ -50,14 +51,17 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     const errors = this.props.errors;
 
     this.editor!.clearGutter('errors');
-    this.marks.forEach(_ => _.clear());
+    this.marks.forEach(m => m.clear());
 
     errors.forEach(this.markErrorInText);
-    const grouped = _.groupBy(errors, error => error.start.line);
+    const grouped = _.groupBy(errors, error => error.start ? error.start.line : -1);
     Object.keys(grouped).forEach(line => this.addErrorGutter(grouped[line]));
   }
 
-  markErrorInText = (error: CompilationError) => {
+  markErrorInText = (error: CodeError) => {
+    if (!error.start || !error.end) {
+      return;
+    }
     const start = toCodeMirrorPosition(error.start);
     const end = toCodeMirrorPosition(error.end);
     const editor = this.editor!;
@@ -70,8 +74,9 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
         className="error-popup fadeIn animated"
         position="top center"
         trigger={span}
-        content={error.message}
-      />,
+      >
+        {htmlLines(error.message, 'errorLine')}
+      </Popup>,
       'span'
     );
 
@@ -79,7 +84,13 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     this.marks.push(mark);
   }
 
-  addErrorGutter = (errors: CompilationError[]) => {
+  addErrorGutter = (errors: CodeError[]) => {
+    const first = errors[0];
+
+    if (!first.start) {
+      return;
+    }
+
     const icon = <Icon name="exclamation circle" color="red" className="bounceIn animated"/>;
     const errorMarker = asDOM(
       <Popup
@@ -88,11 +99,11 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
         position="right center"
         trigger={icon}
       >
-        {errors.map((e, i) => <div key={i}>{e.message}</div>)}
+        {errors.map((e, i) => <div key={i}>{htmlLines(e.message, 'errorLine')}</div>)}
       </Popup>
     );
 
-    const line = errors[0].start.line - 1;
+    const line = first.start.line - 1;
     this.editor!.setGutterMarker(line, 'errors', errorMarker);
   }
 

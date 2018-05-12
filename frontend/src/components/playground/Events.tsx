@@ -1,8 +1,8 @@
 import 'components/playground/Events.less';
-import { CompilationError } from 'components/playground/PlaygroundTypes';
+import { CodeError } from 'components/playground/PlaygroundTypes';
 import * as React from 'react';
 import { SemanticCOLORS, SemanticICONS } from 'semantic-ui-react';
-import { widthOfRenderedText } from 'utils/misc';
+import { htmlLines, widthOfRenderedText } from 'utils/misc';
 
 export abstract class PlaygroundEvent {
   abstract title: string;
@@ -41,19 +41,29 @@ export class CompilationSuccessfulEvent extends PlaygroundEvent {
   }
 }
 
+export class NoOutputEvent extends PlaygroundEvent {
+  title: string = 'No output';
+  color: SemanticCOLORS = 'green';
+  icon: SemanticICONS = 'circle thin';
+
+  body() {
+    return 'Compilation was successful but there was no output. Use print or println to output the results of your program.';
+  }
+}
+
 export class CompilationErrorEvent extends PlaygroundEvent {
   title: string = 'Compilation error';
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'exclamation triangle';
 
-  private readonly errors: CompilationError[];
+  private readonly errors: CodeError[];
   private readonly positions: string[];
   private readonly widthOfLongestPosition: number;
 
   constructor(message: any) {
     super();
     this.errors = message.errors;
-    this.positions = this.errors.map(({ start }) => `${start.line}:${start.col}`);
+    this.positions = this.errors.map(e => e.start ? `${e.start.line}:${e.start.col}` : '');
 
     const longest = this.positions.slice().sort((a, b) => b.length - a.length)[0];
     this.widthOfLongestPosition = widthOfRenderedText(longest, 'line-number');
@@ -79,19 +89,18 @@ export class ExecutionError extends PlaygroundEvent {
   title: string = 'Execution error';
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'exclamation circle';
-
-  private readonly error: string;
+  private lines: string[];
 
   constructor(message: any) {
     super();
-    this.error = message.error;
+    this.lines = message.error.split('\n');
   }
 
   body() {
     return (
       <div>
         <p>Execution exited with an exception:</p>
-        <p className="result-block stacktrace">{this.error}</p>
+        <p className="result-block stacktrace">{htmlLines(this.lines, 'errorLine')}</p>
       </div>
     );
   }
@@ -152,7 +161,7 @@ export class CanceledEvent extends PlaygroundEvent {
 }
 
 export class TimeoutEvent extends PlaygroundEvent {
-  title: string = 'Compilation timed out';
+  title: string = 'Execution timed out';
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'hourglass half';
   private readonly timeout: number;
@@ -163,6 +172,12 @@ export class TimeoutEvent extends PlaygroundEvent {
   }
 
   body() {
-    return `Compilation timed out after ${this.timeout}s`;
+    return `Execution timed out after ${this.timeout}s`;
   }
+}
+
+export class ServerError extends PlaygroundEvent {
+  title: string = 'Internal server error';
+  color: SemanticCOLORS = 'red';
+  icon: SemanticICONS = 'server';
 }

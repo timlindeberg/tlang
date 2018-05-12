@@ -8,14 +8,15 @@ import javax.inject._
 import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
-import tlang.SimpleEvaluator
+import tlang.SafeEvaluator
 import tlang.compiler.Context
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
 import tlang.compiler.utils.DebugOutputFormatter
 import tlang.formatting.textformatters.TabReplacer
 import tlang.formatting.{Formatter, SimpleFormatting}
-import tlang.utils.ProgramExecutor
+
+import scala.concurrent.duration.Duration
 
 @Singleton
 class CompilationController @Inject()(cc: ControllerComponents)(implicit system: ActorSystem, mat: Materializer) extends AbstractController(cc) {
@@ -29,9 +30,7 @@ class CompilationController @Inject()(cc: ControllerComponents)(implicit system:
 
   private val ctx = createContext(errorFormatter, tempDir)
 
-  private val programExecutor = ProgramExecutor(ctx.allClassPaths)
-
-  private val evaluator = SimpleEvaluator(ctx, programExecutor)
+  private val evaluator = SafeEvaluator(ctx, Duration("2s"))
 
   private def createContext(errorFormatter: MessageFormatter, tempDir: File): Context = {
     val formatter = errorFormatter.formatter

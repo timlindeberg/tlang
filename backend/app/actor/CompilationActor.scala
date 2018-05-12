@@ -1,20 +1,16 @@
 package actor
 
-import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.{CancellationException, TimeoutException}
-
 import akka.actor._
-import play.api.libs.json.{JsValue, Json, Writes}
-import tlang.SimpleEvaluator
-import tlang.compiler.messages.{CompilationException, CompilerMessage, MessageType}
-import tlang.utils.CancellableFuture
-import tlang.utils.Extensions.{NL, _}
 import play.api.Logger
+import play.api.libs.json.{JsValue, Json, Writes}
+import tlang._
+import tlang.compiler.messages.CompilerMessage
+import tlang.utils.Extensions.{NL, _}
 
 import scala.util._
 
 object CompilationActor {
-  def props(out: ActorRef, evaluator: SimpleEvaluator) = Props(new CompilationActor(out, evaluator))
+  def props(out: ActorRef, evaluator: SafeEvaluator) = Props(new CompilationActor(out, evaluator))
 }
 
 
@@ -23,13 +19,14 @@ object CompilationMessageType {
   val CANCEL                  = "CANCEL"
   val TIMEOUT                 = "TIMEOUT"
   val SUCCESS                 = "SUCCESS"
+  val NO_OUTPUT               = "NO_OUTPUT"
   val COMPILATION_ERROR       = "COMPILATION_ERROR"
   val EXECUTION_ERROR         = "EXECUTION_ERROR"
   val INTERNAL_COMPILER_ERROR = "INTERNAL_COMPILER_ERROR"
 }
 
 
-class CompilationActor(out: ActorRef, evaluator: SimpleEvaluator) extends Actor {
+class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
 
   import context.dispatcher
 
@@ -50,46 +47,49 @@ class CompilationActor(out: ActorRef, evaluator: SimpleEvaluator) extends Actor 
     case j: JsValue if hasType(j, EVALUATE) =>
       val code = (j \ "code").as[String]
       Logger.debug("Compiling code:\n" + code)
-      val (f, cancel) = CancellableFuture { evaluator(code) }
+      val (f, cancel) = evaluator(code)
       f onComplete { onCompilationComplete }
       context become compiling(cancel)
-    case _                                  => println("WATING: doing nothing")
+    case _                                  =>
   }
 
-  private def compiling(cancelCompilation: () => Boolean): PartialFunction[Any, Unit] = {
+  private def compiling(cancelCompilation: () => Unit): PartialFunction[Any, Unit] = {
     case j: JsValue if hasType(j, CANCEL) =>
       cancelCompilation()
       Logger.debug("Canceling compilation")
       context become waiting
-    case _                                => println("COMPILING: doing nothing")
+    case _                                =>
   }
 
-  private def onCompilationComplete(res: Try[String]): Unit = {
+  private def onCompilationComplete(res: Try[ExecutionResult]): Unit = {
     context become waiting
 
     val message = res match {
-      case Success(res) => Json.obj("messageType" -> SUCCESS, "result" -> res)
-      case Failure(e)   =>
-        e match {
-          case e: CompilationException      => Json.obj("messageType" -> COMPILATION_ERROR, "errors" -> e.messages(MessageType.Error))
-          case _: TimeoutException          => Json.obj("messageType" -> TIMEOUT)
-          case _: CancellationException     => Json.obj("messageType" -> CANCEL)
-          case e: InvocationTargetException => Json.obj("messageType" -> EXECUTION_ERROR, "error" -> formatStackTrace(e))
-          case e                            => Json.obj("messageType" -> INTERNAL_COMPILER_ERROR, "error" -> e.stackTrace)
-        }
+      case Success(executionResult) => executionResult match {
+        case ExecutionSuccessful(output)       => Json.obj("messageType" -> SUCCESS, "result" -> output)
+        case NoOutput                          => Json.obj("messageType" -> NO_OUTPUT)
+        case CompilationError(messages)        => Json.obj("messageType" -> COMPILATION_ERROR, "errors" -> messages)
+        case Timeout                           => Json.obj("messageType" -> TIMEOUT, "timeout" -> evaluator.timeout.toSeconds)
+        case Canceled                          => Json.obj("messageType" -> CANCEL)
+        case ExecutionError(stackTrace, line)  => Json.obj("messageType" -> EXECUTION_ERROR, "error" -> stackTrace, "line" -> line.getOrElse(-1).asInstanceOf[Int])
+        case InternalCompilerError(stackTrace) => Json.obj("messageType" -> INTERNAL_COMPILER_ERROR, "error" -> stackTrace)
+      }
+      case Failure(e)               =>
+        e.printStackTrace()
+        Json.obj("messageType" -> "SERVER_ERROR")
     }
     Logger.debug("Compilation complete. Result was: " + (message \ "messageType").get)
     out ! message
   }
 
-  private def hasType(json: JsValue, CompilationMessageType: String) = {
-    (json \ "messageType").validate[String].isSuccess
+  private def hasType(json: JsValue, messageType: String) = {
+    (json \ "messageType").validate[String].asOpt.contains(messageType)
   }
 
   private def formatStackTrace(e: Throwable): String = {
     val stackTrace = e.getCause.stackTrace
     // Remove internal parts of the stacktrace
-    val className = SimpleEvaluator.ClassName
+    val className = SafeEvaluator.ClassName
     stackTrace.split("at " + className).head + s"at $className.main(Unknown Source)$NL"
   }
 }

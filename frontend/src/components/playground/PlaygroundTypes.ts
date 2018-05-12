@@ -7,8 +7,8 @@ export function toCodeMirrorPosition(pos: ErrorPosition): CodeMirror.Position {
   return { line: pos.line - 1, ch: pos.col - 1 };
 }
 
-export interface CompilationError {
-  start: ErrorPosition;
-  end: ErrorPosition;
+export interface CodeError {
+  start?: ErrorPosition;
+  end?: ErrorPosition;
   message: string;
 }

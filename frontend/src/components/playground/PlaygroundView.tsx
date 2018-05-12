@@ -7,10 +7,10 @@ import {
   CompilationSuccessfulEvent,
   ConnectedEvent,
   ConnectedFailedEvent,
-  DisconnectedEvent, ExecutionError, InternalCompilerError,
-  PlaygroundEvent, TimeoutEvent,
+  DisconnectedEvent, ExecutionError, InternalCompilerError, NoOutputEvent,
+  PlaygroundEvent, ServerError, TimeoutEvent,
 } from 'components/playground/Events';
-import { CompilationError } from 'components/playground/PlaygroundTypes';
+import { CodeError } from 'components/playground/PlaygroundTypes';
 import { Grid, Segment } from 'semantic-ui-react';
 
 import Navbar from 'components/layout/Navbar';
@@ -28,7 +28,7 @@ import { sleep } from 'utils/misc';
 interface PlaygroundViewState {
   code: string;
   ws?: WebSocket;
-  errors: CompilationError[];
+  errors: CodeError[];
   events: PlaygroundEvent[];
   playgroundState: PlaygroundState;
 
@@ -46,9 +46,11 @@ export enum MessageType {
   CANCEL,
   TIMEOUT,
   SUCCESS,
+  NO_OUTPUT,
   COMPILATION_ERROR,
   EXECUTION_ERROR,
   INTERNAL_COMPILER_ERROR,
+  SERVER_ERROR,
 }
 
 export default class PlaygroundView extends React.Component<{}, {}> {
@@ -87,6 +89,10 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   compileCode = () => {
+    if (this.state.playgroundState !== PlaygroundState.Waiting) {
+      return;
+    }
+
     this.sendMessage(MessageType.EVALUATE, { code: this.state.code });
     this.goTo(PlaygroundState.Compiling);
   }
@@ -107,12 +113,21 @@ export default class PlaygroundView extends React.Component<{}, {}> {
     case MessageType.SUCCESS:
       this.addEvent(new CompilationSuccessfulEvent(message));
       break;
+    case MessageType.NO_OUTPUT:
+      this.addEvent(new NoOutputEvent());
+      break;
     case MessageType.COMPILATION_ERROR:
       this.addEvent(new CompilationErrorEvent(message));
       this.setState(() => ({ errors: message.errors }));
       break;
     case MessageType.EXECUTION_ERROR:
       this.addEvent(new ExecutionError(message));
+      const error: CodeError = { message: message.error };
+      const line = message.line;
+      if (line !== -1) {
+        error.start = { line, col: 1 };
+      }
+      this.setState(() => ({ errors: [error] }));
       break;
     case MessageType.INTERNAL_COMPILER_ERROR:
       this.addEvent(new InternalCompilerError(message));
@@ -122,6 +137,9 @@ export default class PlaygroundView extends React.Component<{}, {}> {
       break;
     case MessageType.TIMEOUT:
       this.addEvent(new TimeoutEvent(message));
+      break;
+    case MessageType.SERVER_ERROR:
+      this.addEvent(new ServerError());
       break;
     default:
       this.addEvent({ title: 'Unknown messagetype', icon: 'military', body: () => null, color: 'red' });
