@@ -55,7 +55,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
       printExecutionTimes(file, ctx)
 
     if (PrintErrors)
-      messages.print(messageType)
+      ctx.messageFormatter.print(messages, messageType)
 
     val foundCodes = getErrorCodes(messages(messageType))
     val expectedCodes = parseSolutions(file)

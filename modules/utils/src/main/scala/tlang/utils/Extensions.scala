@@ -21,10 +21,10 @@ object Extensions {
 
   val NL: String = System.lineSeparator
 
-  val EscapeCharsNormal: Map[Char, String] =
+  val EscapeCharsNormal: scala.collection.Map[Char, String] =
     Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\", '\'' -> "'", '"' -> "\"")
 
-  implicit val EscapeCharsAll: Map[Char, String] =
+  implicit val EscapeCharsAll: scala.collection.Map[Char, String] =
     EscapeCharsNormal + ('\u001b' -> "\\u001b")
 
   def measureTime[T](block: => T): (T, Double) = {
@@ -89,6 +89,8 @@ object Extensions {
     }
   }
 
+
+
   implicit class StringExtensions(val str: String) extends AnyVal {
 
 
@@ -120,7 +122,7 @@ object Extensions {
     def insert(s: String, i: Int): String = str.substring(0, i) + s + str.substring(i, str.length)
 
 
-    def escape(implicit escapeCharacters: Map[Char, String]): String = {
+    def escape(implicit escapeCharacters: scala.collection.Map[Char, String]): String = {
       val sb = new StringBuilder
       str.foreach { c =>
         escapeCharacters.get(c) match {
@@ -245,6 +247,8 @@ object Extensions {
       if (partialFunction.isDefinedAt(t))
         partialFunction.apply(t)
     }
+
+    def matches(p: PartialFunction[T, Boolean]): Boolean = p.isDefinedAt(t)
 
   }
 

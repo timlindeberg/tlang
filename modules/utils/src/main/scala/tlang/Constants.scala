@@ -11,29 +11,30 @@ object Constants {
   val THome                         = "T_HOME"
   val JavaObject                    = "java::lang::Object"
   val JavaString                    = "java::lang::String"
-  val TInt                          = "T::lang::Int"
-  val TIntRef                       = "T::lang::IntRef"
-  val TLong                         = "T::lang::Long"
-  val TLongRef                      = "T::lang::LongRef"
-  val TFloat                        = "T::lang::Float"
-  val TFloatRef                     = "T::lang::FloatRef"
-  val TDouble                       = "T::lang::Double"
-  val TDoubleRef                    = "T::lang::DoubleRef"
-  val TChar                         = "T::lang::Char"
-  val TCharRef                      = "T::lang::CharRef"
-  val TBool                         = "T::lang::Bool"
-  val TBoolRef                      = "T::lang::BoolRef"
-  val ExtensionAnnotation           = "T::lang::$ExtensionMethod"
-  val ImplicitConstructorAnnotation = "T::lang::$ImplicitConstructor"
+  val TLangPackage                  = "T::lang"
+  val TInt                          = s"$TLangPackage::Int"
+  val TIntRef                       = s"$TLangPackage::IntRef"
+  val TLong                         = s"$TLangPackage::Long"
+  val TLongRef                      = s"$TLangPackage::LongRef"
+  val TFloat                        = s"$TLangPackage::Float"
+  val TFloatRef                     = s"$TLangPackage::FloatRef"
+  val TDouble                       = s"$TLangPackage::Double"
+  val TDoubleRef                    = s"$TLangPackage::DoubleRef"
+  val TChar                         = s"$TLangPackage::Char"
+  val TCharRef                      = s"$TLangPackage::CharRef"
+  val TBool                         = s"$TLangPackage::Bool"
+  val TBoolRef                      = s"$TLangPackage::BoolRef"
+  val ExtensionAnnotation           = s"$TLangPackage::$$ExtensionMethod"
+  val ImplicitConstructorAnnotation = s"$TLangPackage::$$ImplicitConstructor"
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
-  lazy val TDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
-  val SettingsDirectory: File = System.getProperty("user.home") / ".tlang"
-  val Pwd              : Path = Paths.get("").toAbsolutePath
+  lazy val TDirectory       : String = sys.env.getOrElse(THome, FatalCantFindTHome)
+  lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
+  lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
 
   private def FatalCantFindTHome: Nothing = {
-    println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")
+    System.err.println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")
     sys.exit(1)
   }
 

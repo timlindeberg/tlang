@@ -2,7 +2,7 @@ package tlang.compiler
 
 import better.files.File
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.messages.Reporter
+import tlang.compiler.messages.{MessageFormatter, Reporter}
 import tlang.compiler.utils.DebugOutputFormatter
 import tlang.formatting.Colors.Color
 import tlang.formatting.{Formatter, Formatting}
@@ -15,6 +15,7 @@ case class Context(
   reporter: Reporter,
   formatter: Formatter,
   debugOutputFormatter: DebugOutputFormatter,
+  messageFormatter: MessageFormatter,
   classPath: ClassPath = ClassPath.Empty,
   executor: Executor = SingleThreadExecutor,
   outDirs: Set[File] = Set(File(".")),

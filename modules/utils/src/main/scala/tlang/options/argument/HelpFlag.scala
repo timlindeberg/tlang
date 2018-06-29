@@ -4,21 +4,21 @@ import tlang.formatting.Formatter
 import tlang.options.{FlagArgument, OptionalArgumentFlag}
 import tlang.utils.Extensions._
 
+object HelpFlag {
+  val Name           = "help"
+  val ShortFlag      = Some("h")
+  val ArgDescription = "about"
+  val DefaultArg     = "all"
+}
+
 // All flags is a function so we can pass the list of compiler flags to the help flag.
 // Otherwise we get a null pointer exception since the Help Flag is part of the compiler flags
 // list and gets initialized before the list exists.
-object HelpFlag {
-  val name           = "help"
-  val shortFlag      = Some("h")
-  val argDescription = "about"
-  val defaultArg     = "all"
-}
-
 class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[Set[String]] {
-  override val name           = HelpFlag.name
-  override val shortFlag      = HelpFlag.shortFlag
-  override val argDescription = HelpFlag.argDescription
-  override val defaultArg     = HelpFlag.defaultArg
+  override val name          : String       = HelpFlag.Name
+  override val shortFlag     : Some[String] = HelpFlag.ShortFlag
+  override val argDescription: String       = HelpFlag.ArgDescription
+  override val defaultArg    : String       = HelpFlag.DefaultArg
 
   val Phases: String = "phases"
 

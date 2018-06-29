@@ -4,11 +4,6 @@ import tlang.utils.Logging
 
 trait Reporter {
 
-  def printWarnings(): Unit
-  def printErrors(): Unit
-  def getWarnings: List[CompilerMessage]
-  def getErrors: List[CompilerMessage]
-
   def report(error: CompilerMessage): Unit
   def clear(): Unit
   def terminateIfErrors(): Unit
@@ -21,7 +16,7 @@ trait Reporter {
   def messages: CompilerMessages
 }
 
-case class DefaultReporter(messages: CompilerMessages) extends Reporter with Logging {
+case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) extends Reporter with Logging {
 
   def report(message: CompilerMessage): Unit = {
     info"Reporting compiler message: $message"
@@ -45,11 +40,6 @@ case class DefaultReporter(messages: CompilerMessages) extends Reporter with Log
   def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
   def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
 
-  override def printWarnings(): Unit = messages.print(MessageType.Warning)
-  override def printErrors(): Unit = messages.print(MessageType.Error)
-  override def getWarnings: List[CompilerMessage] = messages(MessageType.Warning)
-  override def getErrors: List[CompilerMessage] = messages(MessageType.Error)
-
   private def throwException(): Nothing = {
     val e = new CompilationException(messages.clone())
     clear()
@@ -62,11 +52,6 @@ case class VoidReporter() extends Reporter {
 
   private var _hasErrors   = false
   private var _hasWarnings = false
-
-  override def printWarnings(): Unit = {}
-  override def printErrors(): Unit = {}
-  override def getWarnings: List[CompilerMessage] = Nil
-  override def getErrors: List[CompilerMessage] = Nil
 
   override def report(message: CompilerMessage): Unit = message match {
     case _: FatalMessage   => throw new CompilationException(null: CompilerMessages)

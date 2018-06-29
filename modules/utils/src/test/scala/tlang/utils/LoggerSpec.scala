@@ -113,7 +113,7 @@ class LoggerSpec extends UnitSpec {
       testLineNumber = 25
       logger.info("ABC")
 
-      sb.toString shouldBe s"INFO  | 01:00:00:000 [TestThread] a.b.c.AbcDef(Abc.scala:25)                    ABC$NL"
+      sb.toString shouldBe s"INFO  | [TestThread] 01:00:00:000 a.b.c.AbcDef(Abc.scala:25)                    ABC$NL"
       sb.clear()
     }
 
@@ -123,7 +123,7 @@ class LoggerSpec extends UnitSpec {
       testLineNumber = 25
       logger.info("ABC")
 
-      sb.toString shouldBe s"INFO  | 01:00:00:000 [TestThread] a.a.a.Abcdefgh(Abcdefghijklmno.scala:25)      ABC$NL"
+      sb.toString shouldBe s"INFO  | [TestThread] 01:00:00:000 a.a.a.Abcdefgh(Abcdefghijklmno.scala:25)      ABC$NL"
       sb.clear()
     }
 
@@ -133,7 +133,7 @@ class LoggerSpec extends UnitSpec {
       testLineNumber = 25
       logger.info("ABC")
 
-      sb.toString shouldBe s"INFO  | 01:00:00:000 [TestThread] a.a.a.A(Abcdefghijklmno.scala:25)             ABC$NL"
+      sb.toString shouldBe s"INFO  | [TestThread] 01:00:00:000 a.a.a.A(Abcdefghijklmno.scala:25)             ABC$NL"
       sb.clear()
     }
 
@@ -144,7 +144,7 @@ class LoggerSpec extends UnitSpec {
       testLineNumber = 25
       logger.info("ABC")
 
-      sb.toString shouldBe s"INFO  | 01:00:00:000 [TestThread] q.r.s.t.u.v.x.y.z.A(Abcdefghijklmno.scala:25) ABC$NL"
+      sb.toString shouldBe s"INFO  | [TestThread] 01:00:00:000 q.r.s.t.u.v.x.y.z.A(Abcdefghijklmno.scala:25) ABC$NL"
       sb.clear()
     }
 
@@ -154,7 +154,7 @@ class LoggerSpec extends UnitSpec {
       testLineNumber = 25
       logger.info("ABC")
 
-      sb.toString shouldBe s"INFO  | 01:00:00:000 [TestThread] ...defghijklmnopqrstuvxyz1234567890.scala:25) ABC$NL"
+      sb.toString shouldBe s"INFO  | [TestThread] 01:00:00:000 ...defghijklmnopqrstuvxyz1234567890.scala:25) ABC$NL"
       sb.clear()
     }
   }

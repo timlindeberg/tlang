@@ -12,7 +12,7 @@ lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
   organization := "tlang",
   version := "1.0",
   javacOptions ++= Seq("-encoding", "UTF-8"),
-  // Common dependencies used by all mo dules
+    // Common dependencies used by all modules
   libraryDependencies ++= Seq(
     "com.lihaoyi" %% "sourcecode" % "0.1.4",
     "com.github.pathikrit" %% "better-files" % "3.1.0"

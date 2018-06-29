@@ -11,7 +11,7 @@ case object AsciiFlag extends BooleanFlag {
     import formatter.formatting._
     s"""|Prints all output from the compiler using only ASCII characters.
         |No Unicode characters will be printed.
-        |Type --${ Magenta(HelpFlag.name) } ${ Magenta(name) } for more information.
+        |Type --${ Magenta(HelpFlag.Name) } ${ Magenta(name) } for more information.
       """.stripMargin.trim
   }
 

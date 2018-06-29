@@ -9,10 +9,12 @@ import tlang.formatting.Colors.Color
 import tlang.formatting._
 import tlang.utils.Extensions._
 
+import scala.language.implicitConversions
 
-sealed abstract class LogLevel(val value: Int) extends Ordered[LogLevel] {
 
-  override def compare(that: LogLevel): Int = value - that.value
+sealed abstract class LogLevel(val priority: Int) extends Ordered[LogLevel] {
+
+  override def compare(that: LogLevel): Int = priority - that.priority
   def name: String = getClass.simpleObjectName.toLowerCase
 
 }
@@ -25,12 +27,12 @@ object LogLevel extends Enumerable[LogLevel] {
   case object Error extends LogLevel(4)
   case object Off extends LogLevel(5)
 
-  override lazy val Values: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.value)
+  override lazy val Values: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.priority)
 }
 
 
 case class LoggingSettings(
-  var timeFormat: DateFormat = new SimpleDateFormat("HH:mm:ss:SSS"),
+  var timeFormat: Date => String = (date) => new SimpleDateFormat("HH:mm:ss:SSS").format(date), // (date) => "",
   var threadWidth: Int = 10,
   var locationWidth: Int = 45,
   var logLevelWidth: Int = 5,
@@ -64,28 +66,30 @@ object Logging {
 
 }
 
+class LazyVal(wrp: => Any) {
+  lazy val value: Any = wrp
+}
 
 trait Logging {
 
   lazy val logger: Logger = new Logger
 
+  implicit def AnyToLazy(any: => Any): LazyVal = new LazyVal(any)
+
   implicit class LoggingStringContext(val sc: StringContext) {
 
-    def trace(args: Any*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
-      logger.logWithContext(LogLevel.Trace, sc, args)
+    def trace(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Trace, args)
+    def debug(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Debug, args)
+    def info(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Info, args)
+    def warn(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Warn, args)
+    def error(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Error, args)
 
-    def debug(args: Any*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
-      logger.logWithContext(LogLevel.Debug, sc, args)
+    private def log(logLevel: LogLevel, values: Seq[LazyVal])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
+      if (!logger.isEnabled(logLevel))
+        return
 
-    def info(args: Any*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
-      logger.logWithContext(LogLevel.Info, sc, args)
-
-    def warn(args: Any*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
-      logger.logWithContext(LogLevel.Warn, sc, args)
-
-    def error(args: Any*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit =
-      logger.logWithContext(LogLevel.Error, sc, args)
-
+      logger.logWithContext(logLevel, sc, values.map(_.value))
+    }
   }
 
 
@@ -96,9 +100,6 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   import loggingSettings._
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
-    if (!isEnabled(logLevel))
-      return
-
     val sb = new StringBuilder
     val expressions = values.iterator
     val strings = sc.parts.iterator
@@ -138,12 +139,14 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
       return
 
     val logLevelFormatted = logLevel(level)
-    val timestampFormatted = timestamp
     val threadFormatted = thread
+    val timestampFormatted = timestamp
     val locationFormatted = location(enclosing.value, file.value, line.value)
     val extraInfoFormatted = extraInfo(level, Option(extra))
 
-    val msg = s"$logLevelFormatted $timestampFormatted$threadFormatted $locationFormatted $message$extraInfoFormatted"
+    val msg = List(logLevelFormatted, threadFormatted, timestampFormatted, locationFormatted, message)
+      .filter(!_.isEmpty)
+      .mkString(" ") + extraInfoFormatted
 
     if (printToStdout)
       println(msg)
@@ -157,7 +160,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   protected def fileName(file: String): String = File(file).name
 
   protected def timestamp: String = {
-    val time = timeFormat.format(now)
+    val time = timeFormat(now)
     if (!useColor)
       return time
 
@@ -178,7 +181,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
       name = color(name)
     }
 
-    " [" + name + "]"
+    s"[$name]"
   }
 
   protected def logLevel(level: LogLevel): String = {

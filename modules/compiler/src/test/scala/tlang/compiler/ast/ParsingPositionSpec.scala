@@ -22,7 +22,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        e.messages.print(MessageType.Error)
+        TestContext.messageFormatter.print(e.messages, MessageType.Error)
         Empty()
     }
   }

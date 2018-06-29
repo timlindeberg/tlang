@@ -24,6 +24,8 @@ case class Options(
     argument.parseValue(valuesForArgument)
   }
 
+  def isEmpty = arguments.isEmpty
+
   private def processOptions(args: List[String]): Unit = {
     if (args == Nil)
       return

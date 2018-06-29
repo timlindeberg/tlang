@@ -28,7 +28,9 @@ object JSON {
       case _                     => jsonString(any)
     }
 
-    def isPrimitive(any: Any): Boolean = true
+    def isPrimitive(any: Any): Boolean = any matches {
+      case _: Int | _: Long | _: Float | _: Double | _: Byte | _: Short | _: Boolean => true
+    }
 
     def jsonObject(obj: Map[_, Any]): Unit = jsonContainer(obj, '{', '}') { case (key, value) =>
       jsonString(key)
@@ -51,7 +53,7 @@ object JSON {
 
     def jsonString(s: Any): Unit = {
       sb += '"'
-      sb ++= s.toString
+      sb ++= s.toString.escape(JSONEscapeChars)
       sb += '"'
     }
 

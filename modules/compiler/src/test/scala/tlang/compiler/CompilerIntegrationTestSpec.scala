@@ -4,7 +4,7 @@ import better.files.File
 import org.scalatest._
 import tlang.Constants
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
+import tlang.compiler.messages._
 import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.TabReplacer
@@ -48,12 +48,12 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
       case None    => File(".")
     }
 
-    val errorFormatter = MessageFormatter(TestFormatter, TabReplacer(2))
-    val errorMessages = CompilerMessages(TestFormatter, errorFormatter)
+    val messageFormatter = if(PrintJSON) JSONMessageFormatter() else PrettyMessageFormatter(TestFormatter, TabReplacer(2))
     val debugOutputFormatter = DebugOutputFormatter(TestFormatter)
     Context(
-      reporter = DefaultReporter(errorMessages),
+      reporter = DefaultReporter(),
       debugOutputFormatter = debugOutputFormatter,
+      messageFormatter = messageFormatter,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,
       printCodePhase = PrintCodePhases,

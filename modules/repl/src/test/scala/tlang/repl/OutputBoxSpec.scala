@@ -44,7 +44,6 @@ class OutputBoxSpec extends UnitSpec {
     OutputBox(
       testFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter),
       tabReplacer,
-      messageFormatter,
       maxOutputLines
     )
   }

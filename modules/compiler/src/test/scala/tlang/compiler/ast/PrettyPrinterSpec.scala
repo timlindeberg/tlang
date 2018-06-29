@@ -25,7 +25,8 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val CU = try parser(file).head
       catch {
         case e: CompilationException =>
-          fail(s"Could not parse file $TestFile:" + NL + e.messages.formatMessages(MessageType.Error))
+          val errors = TestContext.messageFormatter(e.messages, MessageType.Error)
+          fail(s"Could not parse file $TestFile:" + NL + errors)
       }
 
       val printedCU = prettyPrinter(CU)
@@ -33,10 +34,11 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val reparsedCU = try parser(StringSource(printedCU, "ParserPositions") :: Nil).head
       catch {
         case e: CompilationException =>
+          val errors = TestContext.messageFormatter(e.messages, MessageType.Error)
           fail(
             s"""
                |Could not reparse output from file $TestFile:
-               |${ e.messages.formatMessages(MessageType.Error) }
+               |$errors
                |
                |Printed output:
                |$printedCU

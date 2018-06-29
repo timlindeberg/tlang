@@ -10,7 +10,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexing
-import tlang.compiler.messages.{CompilationException, CompilerMessages, DefaultReporter, MessageFormatter}
+import tlang.compiler.messages._
 import tlang.compiler.modification.Templating
 import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
 import tlang.formatting.grid.Alignment.Center
@@ -22,9 +22,9 @@ import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils._
 
+case class ExitException(code: Int) extends Throwable
 
 object Main extends Logging {
-
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
     Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
@@ -53,6 +53,7 @@ object Main extends Logging {
     DirectoryFlag,
     ExecFlag,
     IgnoredDefaultImportsFlag,
+    JsonFlag,
     LineWidthFlag,
     LogLevelFlag,
     MaxErrorsFlag,
@@ -67,9 +68,6 @@ object Main extends Logging {
     WatchFlag
   )
 
-  case class ExitException(code: Int) extends Throwable
-  def tryExit(code: Int) = throw ExitException(code)
-
   def main(args: Array[String]) {
     val options = parseOptions(args)
     val formatting = Formatting(options)
@@ -79,32 +77,8 @@ object Main extends Logging {
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
     Logging.DefaultLogSettings.logThreads = options(ThreadsFlag).isInstanceOf[ParallellExecutor]
 
-    if (args.isEmpty) {
-      print(printHelpInfo(formatter))
-      sys.exit(1)
-    }
-
-    printHelp(formatter, options)
-
-    if (!isValidTHomeDirectory(TDirectory))
-      ErrorInvalidTHomeDirectory(TDirectory, THome)
-
-    val filesToCompile = options(TFilesArgument)
-
-    if (filesToCompile.isEmpty)
-      ErrorNoFilesGiven()
-
-    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map(_.path.relativePWD).mkString(NL) }"
-
-    if (options(VerboseFlag))
-      printFilesToCompile(formatter, filesToCompile)
-
     val ctx = createContext(options, formatter)
-
-    compileAndExecute(filesToCompile, options, ctx)
-
-    if (options(WatchFlag))
-      startWatchers(filesToCompile, options, ctx)
+    Main(options, ctx, formatter).run()
   }
 
   private def parseOptions(args: Array[String]): Options = {
@@ -118,39 +92,110 @@ object Main extends Logging {
     }
   }
 
-  private def compileAndExecute(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
+  private def createContext(options: Options, formatter: Formatter): Context = {
+    info"Creating context with options $options"
+
+    val messageFormatter = if(options(JsonFlag))
+      JSONMessageFormatter()
+    else
+      PrettyMessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
+
+    val messages = CompilerMessages(
+      maxErrors = options(MaxErrorsFlag),
+      warningIsError = options(WarningIsErrorFlag),
+      suppressWarnings = options(SuppressWarningsFlag)
+    )
+    val debugOutputFormatter = DebugOutputFormatter(formatter)
+    val executor = options(ThreadsFlag)
+    Context(
+      reporter = DefaultReporter(messages = messages),
+      formatter = formatter,
+      debugOutputFormatter = debugOutputFormatter,
+      messageFormatter = messageFormatter,
+      classPath = ClassPath.Default ++ options(ClassPathFlag),
+      executor = executor,
+      outDirs = options(DirectoryFlag),
+      printCodePhase = options(PrintOutputFlag),
+      ignoredImports = options(IgnoredDefaultImportsFlag)
+    )
+  }
+}
+
+
+case class Main(
+  options: Options,
+  ctx: Context,
+  formatter: Formatter
+) extends Logging {
+
+  val filesToCompile = options(TFilesArgument)
+
+  import Main._
+  import formatter.formatting._
+
+  def run(): Unit = {
+    if (options.isEmpty) {
+      printHelpInfo()
+      exit(1)
+    }
+
+    printHelp()
+
+    if (!isValidTHomeDirectory(TDirectory))
+      ErrorInvalidTHomeDirectory(TDirectory, THome)
+
+    if (filesToCompile.isEmpty)
+      ErrorNoFilesGiven()
+
+    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map(_.path.relativePWD).mkString(NL) }"
+
+    if (options(VerboseFlag))
+      printFilesToCompile()
+
+    compileAndExecute(filesToCompile)
+
+    if (!options(WatchFlag))
+      exit(0)
+
+    startWatchers()
+  }
+
+
+  private def tryExit(code: Int) = throw ExitException(code)
+
+  private def compileAndExecute(files: Set[File]): Unit = {
     try {
-      val CUs = runCompiler(filesToCompile, options, ctx)
+      val CUs = runCompiler(files)
 
       if (options(VerboseFlag))
         ctx.printExecutionTimes(success = true)
 
       if (options(ExecFlag))
-        executePrograms(ctx, CUs)
+        executePrograms(CUs)
     } catch {
-      case ExitException(code) => if (!options(WatchFlag)) sys.exit(code)
+      case ExitException(code) => exit(code)
     }
   }
 
-  private def runCompiler(filesToCompile: Set[File], options: Options, ctx: Context): Seq[CompilationUnit] = {
+  private def runCompiler(files: Set[File]): Seq[CompilationUnit] = {
     try {
-      val CUs = runFrontend(filesToCompile, options, ctx)
+      val CUs = runFrontend(files)
       GenerateCode.execute(ctx)(CUs)
-      ctx.reporter.printWarnings()
+      ctx.messageFormatter.print(ctx.reporter.messages, MessageType.Warning)
       CUs
     } catch {
       case e: ExitException => throw e
-      case e: Throwable     => unknownError(ctx, options, e)
+      case e: Throwable     => unknownError(e)
     }
   }
 
-  private def runFrontend(filesToCompile: Set[File], options: Options, ctx: Context): List[CompilationUnit] = {
+  private def runFrontend(files: Set[File]): List[CompilationUnit] = {
     try {
-      val sources = filesToCompile.toList.map(FileSource(_))
+      val sources = files.toList.map(FileSource(_))
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        e.messages.print()
+        print(ctx.messageFormatter(e.messages))
         if (options(VerboseFlag))
           ctx.printExecutionTimes(success = false)
         tryExit(1)
@@ -158,9 +203,8 @@ object Main extends Logging {
   }
 
   // Top level error handling for any unknown exception
-  private def unknownError(ctx: Context, options: Options, error: Throwable): Nothing = {
+  private def unknownError(error: Throwable): Nothing = {
     val formatter = ctx.formatter
-    import formatter.formatting._
 
     val stackTrace = formatter.highlightStackTrace(error)
     error"Execution error occurred: $stackTrace"
@@ -193,41 +237,13 @@ object Main extends Logging {
     tryExit(1)
   }
 
-  private def createContext(options: Options, formatter: Formatter): Context = {
-    info"Creating context with options $options"
-
-    val messageFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
-    val messages = CompilerMessages(
-      formatter,
-      messageFormatter,
-      maxErrors = options(MaxErrorsFlag),
-      warningIsError = options(WarningIsErrorFlag),
-      suppressWarnings = options(SuppressWarningsFlag)
-    )
-    val debugOutputFormatter = DebugOutputFormatter(formatter)
-    val executor = options(ThreadsFlag)
-    Context(
-      reporter = DefaultReporter(messages = messages),
-      formatter = formatter,
-      debugOutputFormatter = debugOutputFormatter,
-      classPath = ClassPath.Default ++ options(ClassPathFlag),
-      executor = executor,
-      outDirs = options(DirectoryFlag),
-      printCodePhase = options(PrintOutputFlag),
-      ignoredImports = options(IgnoredDefaultImportsFlag)
-    )
-  }
-
-  private def printFilesToCompile(formatter: Formatter, files: Set[File]): Unit = {
-    val formatting = formatter.formatting
-    import formatting._
-
-    val numFiles = files.size
+  private def printFilesToCompile(): Unit = {
+    val numFiles = filesToCompile.size
     val end = if (numFiles > 1) "files" else "file"
 
     val grid = formatter.grid.header(Bold("Compiling") + " " + Blue(numFiles) + " " + Bold(end))
 
-    val fileNames = files.toList.map(formatter.fileName).sorted
+    val fileNames = filesToCompile.toList.map(formatter.fileName).sorted
     grid
       .row(CenteredColumn)
       .content(EvenlySpaced(fileNames))
@@ -236,32 +252,32 @@ object Main extends Logging {
 
   private def versionInfo = s"T-Compiler $VersionNumber"
 
-  private def printHelp(formatter: Formatter, options: Options): Unit = {
+  private def printHelp(): Unit = {
     if (options(VersionFlag)) {
       print(versionInfo)
-      sys.exit()
+      exit(0)
     }
     val args = options(CompilerHelpFlag)
 
-    if (args.contains("all")) {
-      printHelpInfo(formatter)
-      sys.exit()
+    if (HelpFlag.DefaultArg in args) {
+      printHelpInfo()
+      exit(0)
     }
 
-    if (args.contains(CompilerHelpFlag.Phases)) {
-      printPhaseInfo(formatter)
+    if (CompilerHelpFlag.Phases in args) {
+      printPhaseInfo()
     }
 
-    args.foreach(arg => CompilerFlags.find(_.name == arg) ifDefined { flag =>
-      printFlagInfo(flag, formatter)
-    })
+    args.foreach { arg =>
+      CompilerFlags.find(_.name == arg) ifDefined { printFlagInfo }
+    }
 
     if (args.nonEmpty) {
-      sys.exit()
+      exit(0)
     }
   }
 
-  private def printFlagInfo(flag: FlagArgument[_], formatter: Formatter): Unit = {
+  private def printFlagInfo(flag: FlagArgument[_]): Unit = {
     val formatting = formatter.formatting
     formatter
       .grid
@@ -271,7 +287,7 @@ object Main extends Logging {
       .print()
   }
 
-  private def printHelpInfo(formatter: Formatter): Unit = {
+  private def printHelpInfo(): Unit = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -298,7 +314,7 @@ object Main extends Logging {
     grid.print()
   }
 
-  private def printPhaseInfo(formatter: Formatter): Unit = {
+  private def printPhaseInfo(): Unit = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -315,10 +331,7 @@ object Main extends Logging {
     true
   }
 
-  private def executePrograms(ctx: Context, cus: Seq[CompilationUnit]): Unit = {
-    val formatter = ctx.formatter
-    import formatter.formatting._
-
+  private def executePrograms(cus: Seq[CompilationUnit]): Unit = {
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     if (cusWithMainMethods.isEmpty) {
       formatter.grid.header(s"Execution ${ Red("failed") }, none of the given files contains a main method.").print()
@@ -330,11 +343,11 @@ object Main extends Logging {
       .header(Bold(if (cusWithMainMethods.lengthCompare(1) > 0) "Executing programs" else "Executing program"))
 
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
-    cusWithMainMethods.foreach { executeProgram(_, formatter, programExecutor, grid) }
+    cusWithMainMethods.foreach { executeProgram(_, programExecutor, grid) }
     grid.print()
   }
 
-  private def executeProgram(cu: CompilationUnit, formatter: Formatter, programExecutor: ProgramExecutor, grid: Grid): Unit = {
+  private def executeProgram(cu: CompilationUnit, programExecutor: ProgramExecutor, grid: Grid): Unit = {
     // Guaranteed to have a file source
     val file = cu.source.get.asInstanceOf[FileSource].file
 
@@ -344,10 +357,7 @@ object Main extends Logging {
   }
 
 
-  private def startWatchers(filesToCompile: Set[File], options: Options, ctx: Context): Unit = {
-    val formatter = ctx.formatter
-    import formatter.formatting._
-
+  private def startWatchers(): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
     info"Starting file watchers"
@@ -370,7 +380,7 @@ object Main extends Logging {
         Source.clearCache()
         ctx.reporter.clear()
 
-        compileAndExecute(Set(file), options, ctx)
+        compileAndExecute(Set(file))
       }
     }
 
@@ -422,9 +432,13 @@ object Main extends Logging {
       stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
-  private def error(message: String) = {
+  private def exit(code: Int): Nothing = {
+    sys.exit(code)
+  }
+
+  private def error(message: String): Nothing = {
     println(message)
-    sys.exit(1)
+    exit(1)
   }
 
   private def ErrorNoFilesGiven(): Nothing =
@@ -432,6 +446,5 @@ object Main extends Logging {
 
   private def ErrorInvalidTHomeDirectory(path: String, tHome: String): Nothing =
     error(s"'$path' is not a valid $tHome directory.")
-
 
 }

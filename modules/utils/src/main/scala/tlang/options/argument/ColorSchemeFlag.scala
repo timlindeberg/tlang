@@ -15,7 +15,7 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
     import formatter.formatting._
     s"""
        |Define the color scheme to use when printing error messages and code output.
-       |Argument is a JSON map of colors, type --${ Magenta(HelpFlag.name) } ${ Magenta(name) } for more details.
+       |Argument is a JSON map of colors, type --${ Magenta(HelpFlag.Name) } ${ Magenta(name) } for more details.
       """.stripMargin.trim
   }
 

@@ -1276,19 +1276,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
     val numNewlines = tokens.readNewLines()
-    if (logger isEnabled Debug) {
-      val tokensEaten = List.fill(numNewlines)(NEWLINE) ::: kinds.toList
-      debug"${ indentation }Eating tokens ${ tokensEaten.mkString(", ") }."
-    }
+    debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
 
     for (k <- kinds) tokens.next.kind match {
       case `k` => tokens.readNext()
       case _   => report(WrongToken(tokens.next, tokens.last, k))
     }
 
-    if (logger isEnabled Trace) {
-      trace"${ indentation }Tokens left: ${ NL + tokens.toString }"
-    }
+    trace"${ indentation }Tokens left: ${ NL + tokens.toString }"
   }
 
   /** <leftAssociativeOperator> ::= <next> { ( kinds[0] | kinds[1] | ... | kinds[n] ) <next> } */
@@ -1371,8 +1366,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   // Executes the given function and sets the start and end position on the resulting value
   private def positioned[T <: Positioned](parse: => T)(implicit enclosing: Enclosing, line: Line): T = {
-    if (logger isEnabled Debug)
-      debug"${ indentation }Parsing ${ enclosing.method }"
+    debug"${ indentation }Parsing ${ enclosing.method }"
 
     indent += 1
     val startPos = tokens.next

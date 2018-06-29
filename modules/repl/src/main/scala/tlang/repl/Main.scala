@@ -9,7 +9,7 @@ import tlang.compiler.argument.TFilesArgument
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.code.TreeBuilder
 import tlang.compiler.imports.{ClassPath, Imports}
-import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
+import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter, PrettyMessageFormatter}
 import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
 import tlang.formatting._
 import tlang.formatting.textformatters.TabReplacer
@@ -78,12 +78,12 @@ object Main extends Logging {
 
     // Inject dependencies
     val formatting = formatter.formatting
-    val errorFormatter = MessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
+    val messageFormatter = PrettyMessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
 
 
     val tempDir = File.newTemporaryDirectory("repl")
 
-    val ctx = createContext(options, errorFormatter, tempDir)
+    val ctx = createContext(options, messageFormatter, formatter, tempDir)
 
 
     val prettyPrinter = PrettyPrinter(formatting)
@@ -97,8 +97,6 @@ object Main extends Logging {
     val evaluator = Evaluator(ctx, extractor, programExecutor, statementTransformer, replState)
 
     val tabReplacer = TabReplacer(TabWidth)
-    val messageFormatter = MessageFormatter(formatter, tabReplacer)
-
 
     val keyConverter = KeyConverter(DoubleClickTime)
     val replTerminal = ReplTerminal(terminal, keyConverter, formatting, TabWidth)
@@ -113,7 +111,7 @@ object Main extends Logging {
       """.stripMargin
     )
     val actorSystem = ActorSystem("tRepl", akkaConfig)
-    val outputBox = OutputBox(formatter, tabReplacer, errorFormatter, maxOutputLines = 5)
+    val outputBox = OutputBox(formatter, tabReplacer, maxOutputLines = 5)
     val repl = actorSystem.actorOf(
       ReplActor.props(replState, evaluator, formatter, outputBox, replTerminal, input),
       ReplActor.name
@@ -142,16 +140,16 @@ object Main extends Logging {
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, errorFormatter: MessageFormatter, tempDir: File): Context = {
-    val formatter = errorFormatter.formatter
+  private def createContext(options: Options, messageFormatter: MessageFormatter, formatter: Formatter, tempDir: File): Context = {
     val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.pathAsString)
 
-    val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)
+    val errorMessages = CompilerMessages(maxErrors = 5)
     val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(errorMessages),
       formatter = formatter,
       debugOutputFormatter = debugOutputFormatter,
+      messageFormatter = messageFormatter,
       classPath = classPath,
       outDirs = Set(tempDir)
     )

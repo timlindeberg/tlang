@@ -5,7 +5,7 @@ import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.{FieldSymbol, GlobalScope, MethodSymbol, OperatorSymbol}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
-import tlang.compiler.messages.Reporter
+import tlang.compiler.messages.{MessageFormatter, Reporter}
 import tlang.compiler.testutils.SymbolMatchers
 import tlang.compiler.utils.DebugOutputFormatter
 import tlang.formatting.ErrorStringContext
@@ -180,7 +180,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers {
   private val formatter          = testFormatter(useColor = false)
   private val errorStringContext = ErrorStringContext(formatter)
   private val reporter           = mock[Reporter]
-  private val ctx                = Context(reporter, formatter, mock[DebugOutputFormatter])
+  private val ctx                = Context(reporter, formatter, mock[DebugOutputFormatter], mock[MessageFormatter])
   private val imports            = Imports(ctx, errorStringContext, Nil)
 
 

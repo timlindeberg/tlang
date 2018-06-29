@@ -1,9 +1,6 @@
 package tlang.compiler.messages
 
-import tlang.formatting.Formatter
-import tlang.formatting.grid._
 import tlang.options.argument.MaxErrorsFlag
-import tlang.utils.Extensions._
 
 import scala.collection.mutable
 
@@ -15,16 +12,12 @@ object CompilerMessages {
 }
 
 case class CompilerMessages(
-  formatter: Formatter,
-  messageFormatter: MessageFormatter,
   maxErrors: Int = MaxErrorsFlag.defaultValue,
   warningIsError: Boolean = false,
   suppressWarnings: Boolean = false,
   private var messages: mutable.Map[MessageType, mutable.Set[CompilerMessage]] = CompilerMessages.createMessages()) {
 
-  import formatter.formatting._
-
-  private val hitMax = mutable.Set[MessageType]()
+  private val _hitMax = mutable.Set[MessageType]()
 
   override def clone(): CompilerMessages = copy(messages = mutable.Map() ++ messages.toMap)
 
@@ -46,7 +39,7 @@ case class CompilerMessages(
       messageType = MessageType.Error
 
     if (maxErrors >= 0 && messages(messageType).size >= maxErrors) {
-      hitMax += messageType
+      _hitMax += messageType
       return this
     }
     messages(messageType) += message
@@ -57,76 +50,9 @@ case class CompilerMessages(
 
   def clear(): Unit = {
     messages = CompilerMessages.createMessages()
-    hitMax.clear()
+    _hitMax.clear()
   }
 
-  def print(): Unit = {
-    print(MessageType.Warning)
-    print(MessageType.Error)
-  }
-
-  def print(messageType: MessageType): Unit = {
-    if (messages(messageType).isEmpty)
-      return
-
-    println(formatMessages(messageType))
-  }
-
-  def formatMessages(messageType: MessageType): String = {
-    if (messages(messageType).isEmpty)
-      return ""
-    val grid = formatter.grid.header(header(messageType))
-    messages(messageType).foreach { addToGrid(grid, _) }
-    grid.render()
-  }
-
-  def header(messageType: MessageType): String = {
-    val n = messages(messageType).size
-    if (n == 0)
-      return ""
-
-    val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
-
-    val name = messageType.name.toLowerCase + appendix
-    val color = messageType.color(formatter.formatting)
-    val num = color(n)
-    if (hitMax(messageType))
-      s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
-    else
-      s"${ Bold }There $was $num$Bold $name.$Reset"
-  }
-
-  private def addToGrid(grid: Grid, message: CompilerMessage): Unit = {
-    addMessage(grid, message, showTitle = true)
-    message.extraInfo.foreach { extraInfo =>
-      val showSourceDescription = extraInfo.pos.source != message.pos.source
-      addMessage(grid, extraInfo, showTitle = false)
-    }
-  }
-
-  private def addMessage(grid: Grid, message: CompilerMessage, showTitle: Boolean) = {
-    val formatting = formatter.formatting
-    messageFormatter.setMessage(message)
-
-    grid.row()
-
-    if (showTitle) {
-      val color = message.messageType.color(formatting)
-      val title = s" ${ messageFormatter.prefix.stripAnsi } "
-      grid.content(CenteredContent(title, color, formatting.HorizontalThick))
-    }
-
-    val hasValidPosition = messageFormatter.hasValidPosition
-    if (hasValidPosition)
-      grid.content(messageFormatter.sourceDescription)
-
-    grid.content(message.message)
-
-
-    if (hasValidPosition) {
-      grid.row(Column, TruncatedColumn)
-      grid.contents(messageFormatter.locationInSource)
-    }
-  }
+  def hitMax(tpe: MessageType) = _hitMax(tpe)
 
 }

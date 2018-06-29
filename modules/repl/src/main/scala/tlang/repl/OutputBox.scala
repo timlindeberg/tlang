@@ -1,6 +1,6 @@
 package tlang.repl
 
-import tlang.compiler.messages.{CompilerMessage, MessageFormatter}
+import tlang.compiler.messages.{CompilerMessage, MessageFormatter, MessageInfo}
 import tlang.formatting.Colors.Color
 import tlang.formatting.grid.TruncatedColumn
 import tlang.formatting.textformatters.{Marking, TabReplacer}
@@ -26,7 +26,7 @@ object OutputBox {
   val XIndent           = 2
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
 
-  def apply(formatter: Formatter, tabReplacer: TabReplacer, errorFormatter: MessageFormatter, maxOutputLines: Int): OutputBox = {
+  def apply(formatter: Formatter, tabReplacer: TabReplacer, maxOutputLines: Int): OutputBox = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -35,7 +35,6 @@ object OutputBox {
     val renderState = RenderState(header = header)
     new OutputBox(
       formatter,
-      errorFormatter,
       tabReplacer,
       maxOutputLines,
       renderState,
@@ -47,7 +46,6 @@ object OutputBox {
 
 case class OutputBox private(
   formatter: Formatter,
-  errorFormatter: MessageFormatter,
   tabReplacer: TabReplacer,
   maxOutputLines: Int,
   renderState: RenderState,
@@ -129,9 +127,9 @@ case class OutputBox private(
     val highlightedInput = formatter.syntaxHighlight(replacedTabs, markings)
 
     val errorLines = errors.map { error =>
-      errorFormatter.setMessage(error)
+      val messageInfo = MessageInfo(error, formatter, tabReplacer)
       val locationIndicator = NumColor(error.pos.line) + ":" + NumColor(error.pos.col)
-      (locationIndicator, errorFormatter.prefix + " " + error.message)
+      (locationIndicator, messageInfo.prefix + " " + error.message)
     }
 
     val diff = errorLines.size - maxOutputLines

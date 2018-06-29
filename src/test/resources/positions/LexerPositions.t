@@ -15,7 +15,7 @@
 >= + -
 * / !!
 package import is
-as object class
+as class
 extension trait Def
 def protected Var
 Val var val
