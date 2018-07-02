@@ -7,6 +7,8 @@ import tlang.compiler.ast.Parsing
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.{CompilationException, CompilerMessage, CompilerMessages, MessageType}
 import tlang.compiler.modification.Templating
+import tlang.compiler.output.ErrorMessageOutput
+import tlang.formatting.textformatters.TabReplacer
 import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, Source}
 
@@ -17,6 +19,8 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
 
 
   val ErrorResources = s"$Resources/errortests"
+  val tabReplacer = TabReplacer(2)
+  val MessageContextSize = 3
 
   override def suiteName: String = "Compiler Errors"
 
@@ -54,8 +58,9 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
     if (Verbose)
       printExecutionTimes(file, ctx)
 
-    if (PrintErrors)
-      ctx.messageFormatter.print(messages, messageType)
+    if (PrintErrors){
+      ctx.output.add(ErrorMessageOutput(messages, messageTypes = List(messageType)))
+    }
 
     val foundCodes = getErrorCodes(messages(messageType))
     val expectedCodes = parseSolutions(file)

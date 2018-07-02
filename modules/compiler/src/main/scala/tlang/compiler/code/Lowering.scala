@@ -10,7 +10,9 @@ import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.Logging
 import tlang.Constants
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.analyzer.Naming.phaseName
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 
 import scala.collection.mutable.ListBuffer
 
@@ -23,8 +25,8 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
   override def description(formatting: Formatting): String =
     "Lowers the tree to simpler components. Performs desugaring."
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+
 
 }
 

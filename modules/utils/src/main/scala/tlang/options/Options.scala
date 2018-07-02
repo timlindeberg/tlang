@@ -24,7 +24,7 @@ case class Options(
     argument.parseValue(valuesForArgument)
   }
 
-  def isEmpty = arguments.isEmpty
+  def isEmpty: Boolean = arguments.isEmpty
 
   private def processOptions(args: List[String]): Unit = {
     if (args == Nil)
@@ -128,6 +128,13 @@ trait FlagArgument[T] extends Argument[T] {
   def names: List[String] = s"--$name" :: shortFlag.map(short => List(s"-$short")).getOrElse(Nil)
 
   def matchesString(str: String): Boolean = str.toLowerCase in names
+
+  def json: Map[String, Any] = Map(
+    "name" -> s"--$name",
+    "description" -> description(Formatter.SimpleFormatter),
+    "extendedDescription" -> extendedDescription(Formatter.SimpleFormatter),
+    "shortName" -> shortFlag.map(flag => s"-$flag")
+  )
 
 }
 

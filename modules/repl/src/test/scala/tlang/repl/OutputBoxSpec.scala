@@ -1,6 +1,5 @@
 package tlang.repl
 
-import tlang.compiler.messages.MessageFormatter
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.testutils.UnitSpec
 
@@ -38,7 +37,6 @@ class OutputBoxSpec extends UnitSpec {
     useColor: Boolean = false,
     maxOutputLines: Int = 5,
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
-    messageFormatter: MessageFormatter = mock[MessageFormatter],
     tabReplacer: TabReplacer = mock[TabReplacer]
   ) = {
     OutputBox(

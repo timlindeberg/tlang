@@ -1,13 +1,14 @@
 package tlang.compiler
 package analyzer
 
-import tlang.compiler.analyzer.Naming.createErrorStringContext
+import tlang.compiler.analyzer.Naming.{createErrorStringContext, phaseName}
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
@@ -34,8 +35,8 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def description(formatting: Formatting): String =
     "Performs type checking and attaches types to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {
     info"Typechecking fields of ${ cu.sourceName }"

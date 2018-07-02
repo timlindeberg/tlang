@@ -5,8 +5,8 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, TokenKind}
-import tlang.compiler.messages.{CompilationException, MessageFormatter, Reporter}
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.messages.{CompilationException, Reporter}
+import tlang.compiler.output.PrettyOutputHandler
 import tlang.formatting.ErrorStringContext
 import tlang.testutils.UnitSpec
 import tlang.utils.StringSource
@@ -1289,7 +1289,7 @@ class ParsingSpec extends UnitSpec {
 
   private val formatter          = testFormatter(useColor = false)
   private val errorStringContext = ErrorStringContext(formatter)
-  private val ctx                = Context(mock[Reporter], formatter, mock[DebugOutputFormatter], mock[MessageFormatter])
+  private val ctx                = Context(mock[Reporter], formatter, PrettyOutputHandler(formatter))
 
   private def parser(tokens: Any*) = Parser(ctx, errorStringContext, createTokenStream(tokens))
 

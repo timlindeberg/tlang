@@ -16,7 +16,7 @@ object TestConstants {
   val PrintErrors    : Boolean     = sys.env.get("printErrors").contains("true")
   val KeepFilesOnExit: Boolean     = sys.env.get("keepFilesOnExit").contains("true")
   val Verbose        : Boolean     = sys.env.get("verbose").contains("true")
-  val PrintJSON      : Boolean     = sys.env.get("printJson").contains("true")
+  val PrintJSON      : Boolean     = sys.env.get("json").contains("true")
   val LineWidth      : Int         = sys.env.get("lineWidth").flatMap(num => Try(num.toInt).toOption).getOrElse(80)
   val PrintCodePhases: Set[String] = sys.env.get("printOutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
 

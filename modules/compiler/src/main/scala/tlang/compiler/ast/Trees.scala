@@ -6,7 +6,7 @@ import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{DefaultFormatting, Formatter, SimpleFormatting}
 import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
@@ -16,8 +16,6 @@ import scala.collection.{TraversableLike, mutable}
 @FillTreeHelpers
 object Trees {
 
-
-  private val debugOutputFormatter = DebugOutputFormatter(Formatter(DefaultFormatting))
   private val noColorPrinter       = PrettyPrinter(SimpleFormatting)
   private val colorPrinter         = PrettyPrinter(DefaultFormatting)
 
@@ -61,7 +59,7 @@ object Trees {
     }
 
     def debugPrint(header: String = "Debug"): this.type = {
-      debugOutputFormatter.printASTs(header, this :: Nil)
+      println(ASTOutput(header, this :: Nil).pretty(Formatter(DefaultFormatting)))
       this
     }
 
@@ -770,15 +768,15 @@ object Trees {
 
     // This is used so we don't create new lists and sets when there is no change
     // to an element. This allows us to reuse larger parts of the tree and reduce allocation.
-    private def lazyMap(traversable: Traversable[Tree]): Traversable[Tree] = {
+    private def lazyMap(collection: Traversable[Tree]): Traversable[Tree] = {
       var anyDifferent = false
-      val newSet = traversable map { t =>
+      val newCollection = collection map { t =>
         val x = transform(t)
         if (!(t eq x))
           anyDifferent = true
         x
       }
-      if (anyDifferent) newSet else traversable
+      if (anyDifferent) newCollection else collection
     }
 
     private def lazyMap(op: Option[Tree]): Option[Tree] = op match {

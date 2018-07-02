@@ -3,7 +3,7 @@ package tlang.formatting.textformatters
 import tlang.utils.Extensions.NL
 import tlang.utils.{Position, Positioned}
 
-case class TabReplacer(tabWidth: Int) {
+case class TabReplacer(tabWidth: Int = 2) {
 
   private val TabReplacement = " " * tabWidth
 

@@ -5,9 +5,9 @@ import org.scalatest._
 import tlang.Constants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages._
-import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
+import tlang.compiler.output.{ExecutionTimeOutput, JSONOutputHandler, PrettyOutputHandler}
+import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Formatter
-import tlang.formatting.textformatters.TabReplacer
 import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants.TestFormatting
 import tlang.utils.Extensions._
@@ -48,12 +48,10 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
       case None    => File(".")
     }
 
-    val messageFormatter = if(PrintJSON) JSONMessageFormatter() else PrettyMessageFormatter(TestFormatter, TabReplacer(2))
-    val debugOutputFormatter = DebugOutputFormatter(TestFormatter)
+    val outputHandler = if(PrintJSON) JSONOutputHandler() else PrettyOutputHandler(TestFormatter)
     Context(
       reporter = DefaultReporter(),
-      debugOutputFormatter = debugOutputFormatter,
-      messageFormatter = messageFormatter,
+      output = outputHandler,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,
       printCodePhase = PrintCodePhases,
@@ -98,7 +96,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     import TestFormatting._
 
     TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
-    ctx.printExecutionTimes(success = true)
+    ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = true)
   }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as

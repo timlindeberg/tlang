@@ -9,8 +9,9 @@ import tlang.compiler.argument.TFilesArgument
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.code.TreeBuilder
 import tlang.compiler.imports.{ClassPath, Imports}
-import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter, PrettyMessageFormatter}
-import tlang.compiler.utils.{DebugOutputFormatter, TLangSyntaxHighlighter}
+import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
+import tlang.compiler.output.PrettyOutputHandler
+import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting._
 import tlang.formatting.textformatters.TabReplacer
 import tlang.options.argument._
@@ -51,7 +52,12 @@ object Main extends Logging {
   def main(args: Array[String]): Unit = {
 
     val options = parseOptions(args)
-    val formatting = Formatting(options)
+    val formatting = Formatting(
+      lineWidth = options(LineWidthFlag),
+      colorScheme = options(ColorSchemeFlag),
+      useColor = true,
+      asciiOnly = options(AsciiFlag)
+    )
     val formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
@@ -78,12 +84,10 @@ object Main extends Logging {
 
     // Inject dependencies
     val formatting = formatter.formatting
-    val messageFormatter = PrettyMessageFormatter(formatter, TabReplacer(2), options(MessageContextFlag))
-
 
     val tempDir = File.newTemporaryDirectory("repl")
 
-    val ctx = createContext(options, messageFormatter, formatter, tempDir)
+    val ctx = createContext(options, formatter, tempDir)
 
 
     val prettyPrinter = PrettyPrinter(formatting)
@@ -140,16 +144,14 @@ object Main extends Logging {
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, messageFormatter: MessageFormatter, formatter: Formatter, tempDir: File): Context = {
+  private def createContext(options: Options, formatter: Formatter, tempDir: File): Context = {
     val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.pathAsString)
 
     val errorMessages = CompilerMessages(maxErrors = 5)
-    val debugOutputFormatter = DebugOutputFormatter(formatter)
     Context(
       reporter = DefaultReporter(errorMessages),
       formatter = formatter,
-      debugOutputFormatter = debugOutputFormatter,
-      messageFormatter = messageFormatter,
+      output = PrettyOutputHandler(formatter),
       classPath = classPath,
       outDirs = Set(tempDir)
     )

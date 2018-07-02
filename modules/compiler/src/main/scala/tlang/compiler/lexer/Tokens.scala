@@ -2,22 +2,21 @@ package tlang.compiler
 package lexer
 
 import tlang.utils.{Enumerable, Enumeration, Positioned}
+import tlang.utils.Extensions._
 
 import scala.util.matching.Regex
 
 sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString: String = kind.toString
-  override def equals(o: Any): Boolean = o match {
+  override def equals(o: Any): Boolean = o matches {
     case t: Token if t.kind == kind => true
-    case _                          => false
   }
 }
 
 sealed class TokenWithValue[T](override val kind: TokenKind, val value: T) extends Token(kind) {
   override def toString: String = value.toString
-  override def equals(o: Any): Boolean = o match {
+  override def equals(o: Any): Boolean = o matches {
     case t: TokenWithValue[T] if t.kind == kind && t.value == value => true
-    case _                                                          => false
   }
 }
 
@@ -97,7 +96,7 @@ object Tokens extends Enumerable[TokenKind] {
   case object CLASS           extends TokenKind("class")
   case object EXTENSION       extends TokenKind("extension")
   case object TRAIT           extends TokenKind("trait")
-    case object PUBDEF          extends TokenKind("Def")
+  case object PUBDEF          extends TokenKind("Def")
   case object PRIVDEF         extends TokenKind("def")
   case object PROTECTED       extends TokenKind("protected")
   case object PUBVAR          extends TokenKind("Var")

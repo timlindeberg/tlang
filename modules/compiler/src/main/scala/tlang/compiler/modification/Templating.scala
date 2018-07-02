@@ -5,7 +5,8 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Logging
@@ -26,8 +27,8 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] with L
   override def description(formatting: Formatting): String =
     "Imports template classes and instantiates templates from generic classes."
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+
 
 }
 

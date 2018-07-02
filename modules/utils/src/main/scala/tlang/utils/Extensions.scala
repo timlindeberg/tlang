@@ -92,8 +92,6 @@ object Extensions {
 
 
   implicit class StringExtensions(val str: String) extends AnyVal {
-
-
     def isNumber: Boolean = Try(str.toInt).isSuccess
 
     def escapeAnsi: String = str.escape(Map('\u001b' -> "u001b"))

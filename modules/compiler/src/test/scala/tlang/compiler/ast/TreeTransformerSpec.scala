@@ -62,8 +62,7 @@ class TreeTransformerSpec extends UnitSpec {
         MethodDecl(MethodID("Method1"), stat = Some(Block(List(
           Plus(IntLit(5), IntLit(6)),
           VarDecl(VariableID("x"), initiation = Some(IntLit(10)))
-        )
-        )))
+        ))))
       )
     )
 

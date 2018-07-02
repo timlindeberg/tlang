@@ -220,7 +220,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
       if (lines.length == 1)
         Seq(formatValue(other))
       else
-        lines.map(formatter.syntaxHighlight(_))
+        lines map formatter.syntaxHighlight
   }
 
   private def fit(s: String, width: Int): String = {

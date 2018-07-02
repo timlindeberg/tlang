@@ -4,6 +4,7 @@ import better.files.File
 import tlang.compiler.{CompilerIntegrationTestSpec, Context}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.{CompilationException, MessageType}
+import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.SimpleFormatting
 import tlang.testutils.TestConstants._
 import tlang.utils.Extensions._
@@ -25,8 +26,8 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val CU = try parser(file).head
       catch {
         case e: CompilationException =>
-          val errors = TestContext.messageFormatter(e.messages, MessageType.Error)
-          fail(s"Could not parse file $TestFile:" + NL + errors)
+          val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
+          fail(s"Could not parse file $TestFile:" + NL + errors.pretty(TestContext.formatter))
       }
 
       val printedCU = prettyPrinter(CU)
@@ -34,11 +35,11 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val reparsedCU = try parser(StringSource(printedCU, "ParserPositions") :: Nil).head
       catch {
         case e: CompilationException =>
-          val errors = TestContext.messageFormatter(e.messages, MessageType.Error)
+          val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
           fail(
             s"""
                |Could not reparse output from file $TestFile:
-               |$errors
+               |${errors.pretty(TestContext.formatter)}
                |
                |Printed output:
                |$printedCU

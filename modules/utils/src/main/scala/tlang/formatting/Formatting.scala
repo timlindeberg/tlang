@@ -2,19 +2,10 @@ package tlang.formatting
 
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
-import tlang.options.Options
-import tlang.options.argument.{AsciiFlag, ColorSchemeFlag, LineWidthFlag, NoColorFlag}
+import tlang.options.argument.LineWidthFlag
 
 object DefaultFormatting extends Formatting(LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false)
 object SimpleFormatting extends Formatting(80, useColor = false, asciiOnly = true)
-
-object Formatting {
-
-  def apply(options: Options): Formatting = {
-    Formatting(options(LineWidthFlag), options(ColorSchemeFlag), !options(NoColorFlag), options(AsciiFlag))
-  }
-
-}
 
 case class Formatting(
   var lineWidth: Int = LineWidthFlag.DefaultWidth,

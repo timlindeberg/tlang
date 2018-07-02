@@ -1,6 +1,6 @@
 package tlang.repl
 
-import tlang.compiler.messages.{CompilerMessage, MessageFormatter, MessageInfo}
+import tlang.compiler.messages.{CompilerMessage, MessageInfo}
 import tlang.formatting.Colors.Color
 import tlang.formatting.grid.TruncatedColumn
 import tlang.formatting.textformatters.{Marking, TabReplacer}

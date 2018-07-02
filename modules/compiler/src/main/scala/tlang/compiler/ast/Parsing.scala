@@ -1,13 +1,15 @@
 package tlang.compiler.ast
 
 import sourcecode.{Enclosing, Line}
+import tlang.compiler.analyzer.Naming.phaseName
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens.{LPAREN, _}
 import tlang.compiler.lexer._
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
@@ -30,8 +32,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging 
   override def description(formatting: Formatting): String =
     "Parses the tokens produced by the lexing phase and generates an AST."
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
 
 }
 

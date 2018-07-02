@@ -5,6 +5,7 @@ import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbo
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.ErrorStringContext
 
 class OperatorTypeSpec extends CompilerIntegrationTestSpec {
@@ -15,7 +16,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
   private val ErrorContext = ErrorStringContext(TestContext.formatter)
   private val TestImports  = Imports(TestContext, ErrorContext)
   private val TypeChecker  = new TypeChecker(TestContext.reporter, ErrorContext, TestImports, MainMethod)
-
 
   private val int    = new TypeConstructor(Int)
   private val bool   = new TypeConstructor(Bool)
@@ -337,9 +337,9 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
         val resType2 = TypeChecker.tcExpr(expressionType(lhs(), rhs()))
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
-        if (reporter.hasErrors) {
-          TestContext.messageFormatter.print(reporter.messages)
-        }
+        if (reporter.hasErrors)
+          TestContext.output += ErrorMessageOutput(reporter.messages)
+
         assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }
 

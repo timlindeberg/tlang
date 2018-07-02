@@ -6,7 +6,8 @@ import java.math.BigInteger
 import sourcecode.{Enclosing, Line}
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.TokenOutput
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Source}
@@ -30,8 +31,7 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
   override def description(formatting: Formatting): String =
     "Lexes the input and produces tokens."
 
-  override def printDebugOutput(output: List[List[Token]], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printTokens(phaseName, output)
+  override def debugOutput(output: List[List[Token]]): Output = TokenOutput(phaseName, output)
 
 }
 

@@ -5,6 +5,8 @@ import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException
+import tlang.compiler.output.ErrorMessageOutput
+import tlang.options.argument.MessageContextFlag
 import tlang.utils.{FileSource, Logging}
 
 import scala.collection.mutable
@@ -43,7 +45,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        println(ctx.messageFormatter(e.messages))
+        ctx.output.add(ErrorMessageOutput(e.messages, messageContextSize = ctx.options(MessageContextFlag)))
         None
     }
   }

@@ -2,8 +2,8 @@ package tlang.compiler
 
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.messages.TemplateNameReplacer
-import tlang.compiler.utils.DebugOutputFormatter
-import tlang.formatting.{AlternativeSuggestor, ErrorStringContext, Formatting}
+import tlang.compiler.output.Output
+import tlang.formatting.{AlternativeSuggestor, ErrorStringContext, Formatting, SimpleFormatting}
 import tlang.utils.Extensions._
 import tlang.utils.Logging
 
@@ -13,7 +13,7 @@ abstract class CompilerPhase[F, T] extends Logging {
   val phaseName: String = getClass.simpleObjectName.toLowerCase
 
   def description(formatting: Formatting): String
-  def printDebugOutput(output: List[T], debugOutputFormatter: DebugOutputFormatter): Unit
+  def debugOutput(output: List[T]): Output
   protected def run(ctx: Context)(v: List[F]): List[T]
 
   def createErrorStringContext(ctx: Context, cu: CompilationUnit): ErrorStringContext = {
@@ -32,7 +32,7 @@ abstract class CompilerPhase[F, T] extends Logging {
     }
 
     override def description(formatting: Formatting): String = ""
-    override def printDebugOutput(output: List[G], debugOutputFormatter: DebugOutputFormatter): Unit = {}
+    override def debugOutput(output: List[G]): Output = null
 
   }
 
@@ -44,14 +44,17 @@ abstract class CompilerPhase[F, T] extends Logging {
     if (Main.CompilerPhases.contains(this)) {
       ctx.executionTimes += phaseName -> time
 
-      if (phaseName in ctx.printCodePhase){
-        printDebugOutput(output, ctx.debugOutputFormatter)
-      }
-
+      if (phaseName in ctx.printCodePhase)
+        ctx.output += debugOutput(output)
     }
     ctx.reporter.terminateIfErrors()
     output
   }
+
+  def json: Map[String, Any] = Map(
+    "name" -> phaseName,
+    "description" -> description(SimpleFormatting)
+  )
 
 
 }

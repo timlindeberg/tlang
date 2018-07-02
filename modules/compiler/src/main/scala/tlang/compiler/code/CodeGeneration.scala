@@ -14,7 +14,8 @@ import org.objectweb.asm.{ClassReader, ClassWriter}
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.CodeGenerationOutput
 import tlang.formatting.Formatting
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, StringSource}
@@ -41,8 +42,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   override def description(formatting: Formatting): String =
     "Generates bytecode that can run on the JVM."
 
-  override def printDebugOutput(output: List[CodegenerationStackTrace], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printStackTraces(phaseName, output)
+  override def debugOutput(output: List[CodegenerationStackTrace]): Output = CodeGenerationOutput(phaseName, output)
 
 
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])

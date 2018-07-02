@@ -2,13 +2,15 @@ package tlang.compiler
 package analyzer
 
 import tlang.Constants
+import tlang.compiler.analyzer.Flowing.phaseName
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.ClassSymbolLocator
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
@@ -40,8 +42,7 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def description(formatting: Formatting): String =
     "Resolves names and attaches symbols to trees."
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
 
 }
 

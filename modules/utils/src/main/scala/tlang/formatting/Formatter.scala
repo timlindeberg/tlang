@@ -10,6 +10,9 @@ import tlang.formatting.textformatters._
 import tlang.utils.Extensions._
 
 object Formatter {
+
+  val SimpleFormatter = Formatter(SimpleFormatting)
+
   def apply(formatting: Formatting, syntaxHighlighter: SyntaxHighlighter): Formatter = {
     Formatter(
       formatting,

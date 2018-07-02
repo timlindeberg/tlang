@@ -6,11 +6,12 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
-import tlang.compiler.utils.DebugOutputFormatter
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
-import tlang.utils.{LogLevel, Logging, Positioned}
+import tlang.utils.{Logging, Positioned}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
@@ -26,11 +27,10 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   }
 
   override def description(formatting: Formatting): String =
-    "Performs flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
+    "Performs data flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
 
 
-  override def printDebugOutput(output: List[CompilationUnit], debugOutputFormatter: DebugOutputFormatter): Unit =
-    debugOutputFormatter.printASTs(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
 
 
 }
@@ -81,8 +81,8 @@ case class FlowAnalyser(
       case VarDecl(id, _, init, _)           =>
         val varId = VarIdentifier(id.getSymbol)
         init match {
-          case Some(i) =>
-            val afterInit = analyzeExpr(i, knowledge)
+          case Some(initExpr) =>
+            val afterInit = analyzeExpr(initExpr, knowledge)
             afterInit.assignment(varId, init)
           case None    => knowledge.assignment(varId, None)
         }
@@ -164,10 +164,8 @@ case class FlowAnalyser(
     case Not(expr)                       =>
       // Apply De Morgans law:
       expr match {
-        case And(lhs, rhs) =>
-          analyzeCondition(Or(Not(lhs), Not(rhs)), knowledge)
-        case Or(lhs, rhs)  =>
-          analyzeCondition(And(Not(lhs), Not(rhs)), knowledge)
+        case And(lhs, rhs) => analyzeCondition(Or(Not(lhs), Not(rhs)), knowledge)
+        case Or(lhs, rhs)  => analyzeCondition(And(Not(lhs), Not(rhs)), knowledge)
         case _             =>
           getBoolVarCondition(expr, knowledge) match {
             case Some(condition) => analyzeCondition(Not(condition), knowledge)
@@ -190,12 +188,9 @@ case class FlowAnalyser(
       val lhsKnowledge = analyzeExpr(lhs, knowledge)
       var rhsKnowledge = analyzeExpr(rhs, lhsKnowledge)
 
-      // Returns the value which
       def getOther(exprTree: ExprTree): Option[ExprTree] = {
         val l = List(lhs, rhs)
-        if (!l.contains(exprTree))
-          return None
-        l.find(_ != exprTree)
+        if (!l.contains(exprTree)) None else l.find(_ != exprTree)
       }
 
       if (eq.isInstanceOf[Equals])
