@@ -241,7 +241,7 @@ object Extensions {
     def |>[A](f: T => A) = f(t)
 
     def ifInstanceOf[A: ClassTag](f: A => Unit): Unit = if (classTag[A].runtimeClass.isInstance(t)) f(t.asInstanceOf[A])
-    def ifMatches[U](partialFunction: PartialFunction[T, U]): Unit = {
+    def partialMatch[U](partialFunction: PartialFunction[T, U]): Unit = {
       if (partialFunction.isDefinedAt(t))
         partialFunction.apply(t)
     }

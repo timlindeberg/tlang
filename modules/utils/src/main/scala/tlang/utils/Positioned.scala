@@ -1,5 +1,6 @@
 package tlang.utils
 
+import tlang.formatting.{Formatting, SimpleFormatting}
 import tlang.utils.Extensions._
 
 trait Positioned {
@@ -65,7 +66,13 @@ trait Positioned {
   def isWithin(position: Positioned): Boolean =
     encodedStartPos >= position.encodedStartPos && encodedEndPos <= position.encodedEndPos
 
-  def sourceName: String = source.map(_.mainName).getOrElse("Missing Source")
+  def sourceDescription: String = sourceDescription(SimpleFormatting)
+  def sourceDescription(formatting: Formatting): String = {
+    import formatting._
+    source
+      .map(_.description(formatting))
+      .getOrElse(Red("Missing Source"))
+  }
 
 }
 

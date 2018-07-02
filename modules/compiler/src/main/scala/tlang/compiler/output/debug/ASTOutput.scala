@@ -13,7 +13,8 @@ case class ASTOutput(phaseName: String, trees: List[Tree]) extends Output {
   private val TabWidth = 2
 
   override def pretty(formatter: Formatter): String = {
-    import formatter.formatting._
+    val formatting = formatter.formatting
+    import formatting._
 
     val treePrinter = TreePrinter(formatter)
     val prettyPrinter = PrettyPrinter(formatter.formatting)
@@ -22,7 +23,7 @@ case class ASTOutput(phaseName: String, trees: List[Tree]) extends Output {
     trees foreach { tree =>
       grid
         .row(alignment = Center)
-        .content(formatter.fileName(tree.sourceName))
+        .content(tree.sourceDescription(formatting))
         .row()
         .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)

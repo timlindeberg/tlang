@@ -37,11 +37,11 @@ object Trees {
 
     def copyAttributes(from: Tree): this.type = {
       setPos(from)
-      (this, from) ifMatches {
+      (this, from) partialMatch {
         case (to: Symbolic[_], from: Symbolic[_]) => copySymbolTrees(to, from)
       }
 
-      (this, from) ifMatches {
+      (this, from) partialMatch {
         case (to: Typed, from: Typed) => to.setType(from.getType)
       }
       this

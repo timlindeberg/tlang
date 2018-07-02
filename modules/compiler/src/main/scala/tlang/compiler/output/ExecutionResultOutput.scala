@@ -1,18 +1,18 @@
 package tlang.compiler.output
-import better.files.File
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
-import tlang.utils.ExecutionResult
+import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
 
-case class ExecutionResultOutput(results: Seq[(File, ExecutionResult)]) extends Output {
+case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)]) extends Output {
   override def pretty(formatter: Formatter): String = {
-    import formatter.formatting._
+    val formatting = formatter.formatting
+    import formatting._
 
     val numPrograms = results.size
     val grid = formatter.grid
 
-    def addOutput(file: File, output: String): Unit = {
+    def addOutput(source: Source, output: String): Unit = {
       if (output.isEmpty)
         return
 
@@ -23,18 +23,16 @@ case class ExecutionResultOutput(results: Seq[(File, ExecutionResult)]) extends 
         .map { case (line, i) => (Magenta(i + 1), line) }
       grid
         .row(alignment = Center)
-        .content(formatter.fileName(file))
+        .content(source.description(formatting))
         .row(2)
         .contents(lines)
     }
 
-    def addException(fileName: String, exception: Throwable) = {
-      import formatter.formatting._
-      val errorColor = Red + Bold
-      val stackTrace = removeCompilerPartOfStacktrace(fileName, formatter.highlightStackTrace(exception))
+    def addException(source: Source, exception: Throwable) = {
+      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, formatter.highlightStackTrace(exception))
       grid
         .row(alignment = Center)
-        .content(errorColor(fileName))
+        .content(source.description(formatting, isError = true))
         .row()
         .content(stackTrace)
     }
@@ -45,9 +43,9 @@ case class ExecutionResultOutput(results: Seq[(File, ExecutionResult)]) extends 
 
     grid.header(Bold(if (numPrograms > 1) "Executing programs" else "Executing program"))
 
-    results foreach { case (file, result) =>
-      addOutput(file, result.output)
-      result.exception ifDefined { addException(file.name, _) }
+    results foreach { case (source, result) =>
+      addOutput(source, result.output)
+      result.exception ifDefined { addException(source, _) }
     }
 
     grid.render()
@@ -63,9 +61,9 @@ case class ExecutionResultOutput(results: Seq[(File, ExecutionResult)]) extends 
   }
 
   override def json(): Map[String, Any] = Map(
-    "execution" -> results.map { case (file, result) =>
+    "execution" -> results.map { case (source, result) =>
       Map(
-        "file" -> file,
+        "source" -> source.description,
         "output" -> result.output,
         "exception" -> result.exception.map(_.stackTrace)
       )

@@ -12,8 +12,8 @@ case class ProgramExecutor(classPaths: Set[String]) {
   private val URLs = classPaths.map(classPath => new URL(s"file:$classPath/")).toArray
 
   def apply(classFile: File): ExecutionResult = apply(classFile.name.replaceAll("\\..*", ""))
-
   def apply(className: String): ExecutionResult = execute(className)
+  def apply(source: Source): ExecutionResult = execute(source.mainName)
 
   private def execute(className: String): ExecutionResult = {
     val method = try {

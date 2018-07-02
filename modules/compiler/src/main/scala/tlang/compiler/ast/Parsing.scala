@@ -23,7 +23,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging 
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     ctx.executor.map(tokenList) { tokens =>
-      info"Parsing tokens of ${ tokens.head.sourceName }"
+      info"Parsing tokens of ${ tokens.head.source }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val astBuilder = Parser(ctx, errorStringContext, TokenStream(tokens))
       astBuilder.compilationUnit

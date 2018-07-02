@@ -94,7 +94,7 @@ case class ErrorMessageOutput(
     def formatMessage(message: CompilerMessage): Map[String, Any] = {
       val pos = message.pos
       Map(
-        "file" -> pos.sourceName,
+        "source" -> pos.sourceDescription,
         "start" -> Map(
           "line" -> pos.line,
           "col" -> pos.col

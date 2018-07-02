@@ -41,7 +41,7 @@ class Lowerer(imports: Imports) extends Logging {
   }
 
   private def firstPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing first pass of lowering phase for ${ cu.sourceName }"
+    debug"Executing first pass of lowering phase for ${ cu.sourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
@@ -55,7 +55,7 @@ class Lowerer(imports: Imports) extends Logging {
   }
 
   private def secondPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing second pass of lowering phase for ${ cu.sourceName }"
+    debug"Executing second pass of lowering phase for ${ cu.sourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {

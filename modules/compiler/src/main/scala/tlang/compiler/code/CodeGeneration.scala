@@ -18,7 +18,7 @@ import tlang.compiler.output.Output
 import tlang.compiler.output.debug.CodeGenerationOutput
 import tlang.formatting.Formatting
 import tlang.utils.Extensions._
-import tlang.utils.{FileSource, StringSource}
+import tlang.utils.FileSource
 
 import scala.collection.mutable
 
@@ -199,9 +199,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classFile = new ClassFile(className, parent)
     traits.foreach(t => classFile.addInterface(t.JVMName))
 
-    classDecl.source ifDefined {
-      case FileSource(file)            => classFile.setSourceFile(file.name)
-      case StringSource(str, mainName) => classFile.setSourceFile(mainName)
+    classDecl.source partialMatch {
+      case Some(FileSource(file)) => classFile.setSourceFile(file.name)
     }
 
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags

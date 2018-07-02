@@ -74,7 +74,7 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
 
   private def formatTree(tree: Tree): String = {
     val content = tree match {
-      case c: CompilationUnit  => formatter.fileName(c.sourceName)
+      case c: CompilationUnit  => formatter.fileName(c.sourceDescription)
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
       case v: VariableID       => VarColor(v.name)

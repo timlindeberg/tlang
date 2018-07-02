@@ -69,7 +69,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
   }
 
   private def replaceTypes(cu: CompilationUnit): CompilationUnit = {
-    debug"Replacing template types in ${ cu.sourceName }"
+    debug"Replacing template types in ${ cu.sourceDescription }"
     // Replace types with their templated class names, eg.
     // replace Map<Int, String> with -Map$Int$String-.
     val replace = new Trees.Transformer {

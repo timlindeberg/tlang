@@ -23,8 +23,7 @@ case object JSONFlag extends BooleanFlag {
         |This JSON object will always contain a key ${key("success")} with a boolean indicating whether execution was successful or not.
         |Compilation errors and warnings will be under the keys ${key("compilationErrors")} and ${key("compilationWarnings")}.
         |
-        |Adding the flag ${flag(VerboseFlag) } will output execution times of the different compiler phases under the key ${key("executionTimes")}
-        |as well as various other output.
+        |Adding the flag ${flag(VerboseFlag) } will output execution times of the different compiler phases under the key ${key("executionTimes")} as well as various other output.
         |
         |Running the compiler with the ${flag(ExecFlag)} will output execution information under the key ${key("execution")}.""".stripMargin
   }

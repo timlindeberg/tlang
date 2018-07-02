@@ -58,12 +58,12 @@ case class NameAnalyser(
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
   def addSymbols(): Unit = {
-    info"Adding symbols to ${ cu.sourceName }"
+    info"Adding symbols to ${ cu.sourceDescription }"
     cu.classes foreach addSymbols
   }
 
   def bindIdentifiers(): Unit = {
-    info"Binding identifiers in ${ cu.sourceName }"
+    info"Binding identifiers in ${ cu.sourceDescription }"
     cu.classes.foreach(bind)
   }
 

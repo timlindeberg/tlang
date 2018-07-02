@@ -22,8 +22,6 @@ import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
 import tlang.utils._
 
-case class ExitException(code: Int) extends Throwable
-
 object Main extends Logging {
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
@@ -60,6 +58,7 @@ object Main extends Logging {
     MessageContextFlag,
     NoColorFlag,
     PrintOutputFlag,
+    ReadStdinFlag,
     SuppressWarningsFlag,
     ThreadsFlag,
     VerboseFlag,
@@ -121,7 +120,7 @@ case class Main(ctx: Context) extends Logging {
 
   private val options = ctx.options
   private val formatter = ctx.formatter
-  private val filesToCompile = options(TFilesArgument)
+  private val formatting = formatter.formatting
   private val tabReplacer = TabReplacer(2)
 
   import Main._
@@ -129,7 +128,7 @@ case class Main(ctx: Context) extends Logging {
 
   def run(): Unit = {
     sys.addShutdownHook {
-      ctx.output += MessageOutput("Compilation stopped by signal.")
+      ctx.output += InterruptedOutput()
       exit(0)
     }
 
@@ -143,24 +142,32 @@ case class Main(ctx: Context) extends Logging {
     if (!isValidTHomeDirectory(TDirectory))
       ErrorInvalidTHomeDirectory(TDirectory, THome)
 
-    if (filesToCompile.isEmpty)
-      ErrorNoFilesGiven()
+    val sources = getSources
+    if (sources.isEmpty)
+      ErrorNoSourcesGiven()
 
-    info"Compiling ${ filesToCompile.size } files: ${ filesToCompile.map { _.path.relativePWD }.mkString(NL) }"
+    info"Compiling ${ sources.size } sources: ${ sources.map { _.description(formatting) }.mkString(NL) }"
 
     if (options(VerboseFlag))
-      ctx.output += FilesToCompileOutput(filesToCompile)
+      ctx.output += SourcesOutput(sources)
 
-    compileAndExecute(filesToCompile)
+    compileAndExecute(sources)
 
     if (options(WatchFlag))
-      watch()
+      watch(sources)
     exit(0)
   }
 
-  private def compileAndExecute(files: Set[File]): Unit = {
+
+  private def getSources: List[Source] = options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin()
+
+  private def sourceFromStdin(): List[Source] = {
+    if (options(ReadStdinFlag)) List(StdinSource()) else List()
+  }
+
+  private def compileAndExecute(sources: List[Source]): Unit = {
     try {
-      val CUs = runCompiler(files)
+      val CUs = runCompiler(sources)
       printExecutionTimes(success = true)
       if (options(ExecFlag))
         executePrograms(CUs)
@@ -169,9 +176,9 @@ case class Main(ctx: Context) extends Logging {
     }
   }
 
-  private def runCompiler(files: Set[File]): Seq[CompilationUnit] = {
+  private def runCompiler(sources: List[Source]): Seq[CompilationUnit] = {
     try {
-      val CUs = runFrontend(files)
+      val CUs = runFrontend(sources)
       GenerateCode.execute(ctx)(CUs)
       val messages = ctx.reporter.messages
       ctx.output += ErrorMessageOutput(messages, tabReplacer, options(MessageContextFlag), List(MessageType.Warning))
@@ -182,9 +189,8 @@ case class Main(ctx: Context) extends Logging {
     }
   }
 
-  private def runFrontend(files: Set[File]): List[CompilationUnit] = {
+  private def runFrontend(sources: List[Source]): List[CompilationUnit] = {
     try {
-      val sources = files.toList.map(FileSource(_))
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
@@ -238,46 +244,39 @@ case class Main(ctx: Context) extends Logging {
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
 
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
-    val files = cusWithMainMethods map { _.source.get.asInstanceOf[FileSource].file }
-    val results = files map { programExecutor(_) }
+    val sources = cusWithMainMethods map { _.source.get }
+    val results = sources map { programExecutor(_) }
 
-    ctx.output += ExecutionResultOutput(files zip results)
+    ctx.output += ExecutionResultOutput(sources zip results)
   }
 
-  private def watch(): Unit = {
+  private def watch(sources: List[Source]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
+
+    val fileSources = sources.filterInstance[FileSource]
+    if(fileSources.isEmpty) {
+      ctx.output += MessageOutput(s"No file sources were given, can't use watch flag.")
+      return
+    }
 
     info"Starting file watchers"
 
     if (options(VerboseFlag))
       ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
 
-    case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
-      override def onModify(file: File, count: Int): Unit = {
-        info"$file changed, recompiling"
-        if (options(VerboseFlag))
-          ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
-
-        Source.clearCache()
-        ctx.reporter.clear()
-
-        compileAndExecute(Set(file))
+    fileSources
+      .map { source => CompilerFileMonitor(source.file) }
+      .foreach { monitor =>
+        info"Watching file ${monitor.file} for changes"
+        monitor.start()
       }
-    }
 
-    filesToCompile
-      .map { file =>
-        info"Watching file $file for changes"
-        CompilerFileMonitor(file)
-      }
-      .foreach { _.start() }
-
-    Thread.currentThread().join()
+    Thread.currentThread.join()
   }
 
   private def printExecutionTimes(success: Boolean): Unit = {
     if (options(VerboseFlag))
-      ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = false)
+      ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
   }
 
   private def tryExit(code: Int) = throw ExitException(code)
@@ -294,10 +293,29 @@ case class Main(ctx: Context) extends Logging {
     exit(1)
   }
 
-  private def ErrorNoFilesGiven(): Nothing =
-    error(s"No files given.")
+  private def ErrorNoSourcesGiven(): Nothing =
+    error(s"No compilation sources given.")
 
   private def ErrorInvalidTHomeDirectory(path: String, tHome: String): Nothing =
     error(s"'$path' is not a valid $tHome directory.")
+
+
+  case class ExitException(code: Int) extends Throwable
+
+  case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
+
+    private val filesToCompile = List(FileSource(file))
+
+    override def onModify(file: File, count: Int): Unit = {
+      info"$file changed, recompiling"
+      if (options(VerboseFlag))
+        ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
+
+      Source.clearCache()
+      ctx.reporter.clear()
+
+      compileAndExecute(filesToCompile)
+    }
+  }
 
 }

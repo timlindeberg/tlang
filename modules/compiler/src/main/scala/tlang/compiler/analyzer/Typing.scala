@@ -39,7 +39,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking fields of ${ cu.sourceName }"
+    info"Typechecking fields of ${ cu.sourceDescription }"
     cu.classes.foreach { classDecl =>
       val typeChecker = TypeChecker(ctx, cu, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
@@ -48,7 +48,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
 
   private def typecheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking methods of ${ cu.sourceName }"
+    info"Typechecking methods of ${ cu.sourceDescription }"
     cu.classes.flatMap(_.methods).foreach { method =>
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
@@ -58,7 +58,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Verifying types of ${ cu.sourceName }"
+    info"Verifying types of ${ cu.sourceDescription }"
     val typeChecker = TypeChecker(ctx, cu, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)
