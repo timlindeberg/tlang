@@ -22,7 +22,7 @@ abstract class CompilerMessage(
 
   def isValid = true
 
-  def extraInfo: List[CompilerMessage] = Nil
+  def notes: List[CompilerMessage] = Nil
 
   def copy(
     messageType: MessageType = this.messageType,
@@ -30,11 +30,11 @@ abstract class CompilerMessage(
     typeCode: String = this.typeCode,
     codeNum: Int = this.codeNum,
     pos: Positioned = this.pos,
-    extraInfo: List[CompilerMessage] = this.extraInfo
+    notes: List[CompilerMessage] = this.notes
   ): CompilerMessage = {
     new CompilerMessage(messageType, errorLetters, typeCode, codeNum, pos) {
       override def message: String = mess.message
-      override def extraInfo: List[CompilerMessage] = mess.extraInfo
+      override def notes: List[CompilerMessage] = mess.notes
     }
   }
 
@@ -69,7 +69,7 @@ abstract class FatalMessage(override val errorLetters: String, override val code
   extends CompilerMessage(MessageType.Fatal, errorLetters, MessageType.Fatal.typeCode, codeNum, pos) with Product
 
 abstract class ExtraMessage(override val pos: Positioned)
-  extends CompilerMessage(MessageType.Info, "", MessageType.Info.typeCode, -1, pos) with Product
+  extends CompilerMessage(MessageType.Note, "", MessageType.Note.typeCode, -1, pos) with Product
 
 
 trait MessageType {
@@ -90,7 +90,7 @@ object MessageType {
     override def color(formatting: Formatting): Color = formatting.Red
     override def typeCode: String = "3"
   }
-  case object Info extends MessageType {
+  case object Note extends MessageType {
     override def color(formatting: Formatting): Color = formatting.Blue
     override def typeCode: String = ""
   }

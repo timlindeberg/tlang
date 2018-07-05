@@ -1,6 +1,6 @@
 package cafebabe
 
-import tlang.formatting.{DefaultFormatting, Formatting, SimpleFormatting}
+import tlang.formatting.{PrettyFormatting, Formatting, SimpleFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -293,5 +293,5 @@ class CodeHandler private[cafebabe](
     }
   }
 
-  def error(message: String): Unit = throw CodeFreezingException(message, Some(stackTrace(DefaultFormatting)))
+  def error(message: String): Unit = throw CodeFreezingException(message, Some(stackTrace(PrettyFormatting)))
 }

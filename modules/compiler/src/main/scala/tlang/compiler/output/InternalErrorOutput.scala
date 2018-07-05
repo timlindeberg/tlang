@@ -3,6 +3,7 @@ import cafebabe.CodeFreezingException
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 case class InternalErrorOutput(error: Throwable) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -32,5 +33,5 @@ case class InternalErrorOutput(error: Throwable) extends Output {
     grid.render()
   }
 
-  override def json(): Map[String, Any] = Map("internalError" -> error.stackTrace)
+  override def json: Json = Json("internalError" -> error.stackTrace)
 }

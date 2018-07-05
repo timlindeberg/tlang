@@ -24,7 +24,6 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
 
   override def suiteName: String = "Compiler Errors"
 
-
   testFileForErrors(s"$ErrorResources/Lexing", Lexing)
   testFileForErrors(s"$ErrorResources/Parsing", Lexing andThen Parsing)
   testFileForErrors(s"$ErrorResources/Templating", Lexing andThen Parsing andThen Templating)

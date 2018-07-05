@@ -1,6 +1,7 @@
 package tlang.compiler.output
 import tlang.formatting.Formatter
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 case class InterruptedOutput() extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -8,5 +9,5 @@ case class InterruptedOutput() extends Output {
     val color = Bold + Red
     NL +  formatter.grid.header(color("Compilation interrupted.")).render()
   }
-  override def json(): Map[String, Any] = Map("interrupted" -> true)
+  override def json: Json = Json("interrupted" -> true)
 }

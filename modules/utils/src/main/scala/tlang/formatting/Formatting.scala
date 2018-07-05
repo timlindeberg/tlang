@@ -4,7 +4,7 @@ import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.options.argument.LineWidthFlag
 
-object DefaultFormatting extends Formatting(LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false)
+object PrettyFormatting extends Formatting(LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false)
 object SimpleFormatting extends Formatting(80, useColor = false, asciiOnly = true)
 
 case class Formatting(

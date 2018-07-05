@@ -140,7 +140,7 @@ case class Main(ctx: Context) extends Logging {
     printHelp()
 
     if (!isValidTHomeDirectory(TDirectory))
-      ErrorInvalidTHomeDirectory(TDirectory, THome)
+      ErrorInvalidTHomeDirectory(TDirectory)
 
     val sources = getSources
     if (sources.isEmpty)
@@ -205,9 +205,7 @@ case class Main(ctx: Context) extends Logging {
     error"Execution error occurred: ${error.stackTrace}"
 
     ctx.output += InternalErrorOutput(error)
-
     printExecutionTimes(success = false)
-
     tryExit(1)
   }
 
@@ -296,8 +294,8 @@ case class Main(ctx: Context) extends Logging {
   private def ErrorNoSourcesGiven(): Nothing =
     error(s"No compilation sources given.")
 
-  private def ErrorInvalidTHomeDirectory(path: String, tHome: String): Nothing =
-    error(s"'$path' is not a valid $tHome directory.")
+  private def ErrorInvalidTHomeDirectory(path: String): Nothing =
+    error(s"'$path' is not a valid $THome directory.")
 
 
   case class ExitException(code: Int) extends Throwable

@@ -3,6 +3,7 @@ import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)]) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -60,9 +61,9 @@ case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)]) extend
       stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
-  override def json(): Map[String, Any] = Map(
+  override def json: Json = Json(
     "execution" -> results.map { case (source, result) =>
-      Map(
+      Json(
         "source" -> source.description,
         "output" -> result.output,
         "exception" -> result.exception.map(_.stackTrace)

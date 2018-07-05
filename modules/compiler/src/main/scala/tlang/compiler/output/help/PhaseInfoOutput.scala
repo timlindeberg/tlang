@@ -3,6 +3,7 @@ package tlang.compiler.output.help
 import tlang.compiler.CompilerPhase
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
+import tlang.utils.JSON.Json
 
 case class PhaseInfoOutput(phases: Seq[CompilerPhase[_, _]] ) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -17,5 +18,5 @@ case class PhaseInfoOutput(phases: Seq[CompilerPhase[_, _]] ) extends Output {
       .render()
   }
 
-  override def json(): Map[String, Any] = Map("phases" -> phases.map(_.json))
+  override def json: Json = Json("phases" -> phases.map(_.json))
 }

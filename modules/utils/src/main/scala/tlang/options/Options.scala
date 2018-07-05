@@ -2,6 +2,7 @@ package tlang.options
 
 import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 import scala.collection.mutable
 
@@ -129,7 +130,7 @@ trait FlagArgument[T] extends Argument[T] {
 
   def matchesString(str: String): Boolean = str.toLowerCase in names
 
-  def json: Map[String, Any] = Map(
+  def json: Json = Json(
     "name" -> s"--$name",
     "description" -> description(Formatter.SimpleFormatter),
     "extendedDescription" -> extendedDescription(Formatter.SimpleFormatter),

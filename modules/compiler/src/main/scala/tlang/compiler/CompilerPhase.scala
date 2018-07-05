@@ -5,6 +5,7 @@ import tlang.compiler.messages.TemplateNameReplacer
 import tlang.compiler.output.Output
 import tlang.formatting.{AlternativeSuggestor, ErrorStringContext, Formatting, SimpleFormatting}
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 import tlang.utils.Logging
 
 abstract class CompilerPhase[F, T] extends Logging {
@@ -51,7 +52,7 @@ abstract class CompilerPhase[F, T] extends Logging {
     output
   }
 
-  def json: Map[String, Any] = Map(
+  def json: Json = Json(
     "name" -> phaseName,
     "description" -> description(SimpleFormatting)
   )

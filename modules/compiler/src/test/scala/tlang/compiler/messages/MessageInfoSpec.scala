@@ -6,7 +6,7 @@ import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 import tlang.utils._
 
-class MessageInfoSpec extends UnitSpec {
+class MessageInfoSpec extends UnitSpec with MessageTesting {
 
   val DefaultContextSize = 2
   val DefaultTabWidth    = 2
@@ -597,7 +597,7 @@ class MessageInfoSpec extends UnitSpec {
 
     // the error is from "a" all the way to the end
     var errorPos = Position(2, 3, 3, 6, source = Some(source))
-    var message = createMessage(messageType = MessageType.Warning, pos = errorPos)
+    var message: CompilerMessage = createMessage(messageType = MessageType.Warning, pos = errorPos)
 
     var messageInfo = getMessageInfo(message, useColor = false)
     var lines = messageInfo.locationInSource
@@ -658,17 +658,6 @@ class MessageInfoSpec extends UnitSpec {
   ): MessageInfo = {
     val formatter = testFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting)
     MessageInfo(message, formatter, TabReplacer(tabWidth), contextSize)
-  }
-
-
-  private def createMessage(
-    messageType: MessageType = MessageType.Error,
-    errorLetters: String = "ABC",
-    codeNum: Int = 0,
-    pos: Positioned = NoPosition,
-    mess: String = "ABC"
-  ): CompilerMessage = {
-    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {override def message = mess }
   }
 
   // This mocked syntax highlighter just returns the input again

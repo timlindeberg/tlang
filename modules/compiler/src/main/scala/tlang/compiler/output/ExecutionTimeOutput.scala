@@ -3,6 +3,7 @@ import tlang.compiler.Main
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 case class ExecutionTimeOutput(executionTimes: Map[String, Double], success: Boolean) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -51,5 +52,5 @@ case class ExecutionTimeOutput(executionTimes: Map[String, Double], success: Boo
 
 
 
-  override def json(): Map[String, Any] = Map("executionTimes" -> executionTimes)
+  override def json: Json = Json("executionTimes" -> executionTimes)
 }

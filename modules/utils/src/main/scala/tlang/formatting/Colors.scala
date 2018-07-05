@@ -2,6 +2,7 @@ package tlang.formatting
 
 import scala.collection.Set
 import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
 
 object Colors {
 

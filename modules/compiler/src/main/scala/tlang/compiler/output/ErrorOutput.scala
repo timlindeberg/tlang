@@ -1,5 +1,6 @@
 package tlang.compiler.output
 import tlang.formatting.Formatter
+import tlang.utils.JSON.Json
 
 case class ErrorOutput(errorMessage: String) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -11,5 +12,5 @@ case class ErrorOutput(errorMessage: String) extends Output {
       .content(errorMessage)
       .render()
   }
-  override def json(): Map[String, Any] = Map("error" -> errorMessage)
+  override def json: Json = Json("error" -> errorMessage)
 }

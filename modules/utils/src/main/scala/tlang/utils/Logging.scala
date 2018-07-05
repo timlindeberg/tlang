@@ -1,6 +1,6 @@
 package tlang.utils
 
-import java.text.{DateFormat, SimpleDateFormat}
+import java.text.SimpleDateFormat
 import java.util.Date
 
 import better.files.File
@@ -38,7 +38,7 @@ case class LoggingSettings(
   var logLevelWidth: Int = 5,
   var logThreads: Boolean = false,
   var printToStdout: Boolean = true,
-  var formatter: Formatter = Formatter(DefaultFormatting),
+  var formatter: Formatter = Formatter(PrettyFormatting),
   var logLevel: LogLevel = LogLevel.Debug
 ) {
 

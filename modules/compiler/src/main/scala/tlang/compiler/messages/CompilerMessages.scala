@@ -21,6 +21,8 @@ case class CompilerMessages(
 
   override def clone(): CompilerMessages = copy(messages = mutable.Map() ++ messages.toMap)
 
+  def ++=(messages: Traversable[CompilerMessage]): Unit = messages foreach { this += _ }
+
   def +=(message: CompilerMessage): CompilerMessages = {
     if (!message.isValid)
       return this

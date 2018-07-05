@@ -21,6 +21,7 @@ object SnapshotTestingLike {
   val SnapshotIndex        : mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
   val Directory            : String                   = TestConstants.Resources + "/snapshots"
   val Extension            : String                   = ".snap"
+  val LocalNameSeparator   : String                   = " "
 
   private val HighlightColor: Color = Colors.Magenta
   private val FailColor     : Color = Colors.Red + Colors.Bold
@@ -56,9 +57,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
     if (ignore)
       return
 
-    val testNames = description :: localTestNames
-    localTestNames = testNames
-    try { testFun } finally { localTestNames = testNames.tail }
+    withLocalName(description) { testFun }
   }
 
   def snapshotName: String = {
@@ -95,7 +94,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
     if (unusedSnapshots.isEmpty)
       return Succeeded
 
-    def formatUnusedSnapshots = unusedSnapshots.map(HighlightColor(_)).mkString(NL)
+    def formatUnusedSnapshots: String = unusedSnapshots.map(HighlightColor(_)).mkString(NL)
 
     if (RemoveUnusedSnapshots) {
       println(
@@ -104,7 +103,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
             |$formatUnusedSnapshots
        """.stripMargin
       )
-      unusedSnapshots.foreach(snapshots -= _)
+      snapshots --= unusedSnapshots
       return Succeeded
     }
 
@@ -121,10 +120,15 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
     Failed(msg.stripAnsi)
   }
 
+  private def withLocalName[U](name: String)(testFun: => U): Unit = {
+    val testNames = name :: localTestNames
+    localTestNames = testNames
+    try { testFun } finally { localTestNames = testNames.tail }
+  }
 
   private def fullTestName: String = {
     val local = localTestNames
-    val localName = if (local == null || local.isEmpty) "" else " " + local.reverse.mkString(" ")
+    val localName = if (local.isEmpty) "" else local.reverse.mkString(LocalNameSeparator, LocalNameSeparator, "")
     currentTestName + localName
   }
 
@@ -148,7 +152,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
         Result(isSuccess = true,
           s"""|No existing snapshot for test ${ HighlightColor(snapshotName) }, creating a new one:
               |---------------------------------------------------------------------------------------------------------
-              |$newSnapshot
+              |${newSnapshot.escapeMargin}
               |---------------------------------------------------------------------------------------------------------
            """.stripMargin)
       case Some(oldSnapshot) if newSnapshot == oldSnapshot                                            =>
@@ -164,12 +168,12 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           s"""|$matches
               |Old snapshot:
               |---------------------------------------------------------------------------------------------------------
-              |$oldSnapshot
+              |${oldSnapshot.escapeMargin}
               |---------------------------------------------------------------------------------------------------------
               |
               |New snapshot:
               |---------------------------------------------------------------------------------------------------------
-              |$newSnapshot
+              |${newSnapshot.escapeMargin}
               |---------------------------------------------------------------------------------------------------------
            """.stripMargin)
       case Some(snapshot)                                                                             =>
@@ -180,12 +184,12 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           s"""|$failure
               |Existing snapshot:
               |---------------------------------------------------------------------------------------------------------
-              |$snapshot
+              |${snapshot.escapeMargin}
               |---------------------------------------------------------------------------------------------------------
               |
               |New snapshot:
               |---------------------------------------------------------------------------------------------------------
-              |$newSnapshot
+              |${newSnapshot.escapeMargin}
               |---------------------------------------------------------------------------------------------------------
               |
               |If the new display is correct rerun the test with environment variable

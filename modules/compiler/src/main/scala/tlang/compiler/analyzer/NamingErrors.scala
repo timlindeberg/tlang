@@ -95,7 +95,7 @@ trait NamingErrors extends ErrorHandling {
       lazy val message: String = err"Here:"
     }
 
-    override lazy val extraInfo = List(OperatorAlreadyDefinedExtraMessage())
+    override lazy val notes = List(OperatorAlreadyDefinedExtraMessage())
   }
 
   case class CantResolveSymbol(name: String, alternatives: List[String], override val pos: Positioned)

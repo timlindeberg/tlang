@@ -1,6 +1,7 @@
 package tlang.compiler.output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{CenteredColumn, EvenlySpaced}
+import tlang.utils.JSON.Json
 import tlang.utils.Source
 
 case class SourcesOutput(sources: List[Source]) extends Output {
@@ -20,5 +21,5 @@ case class SourcesOutput(sources: List[Source]) extends Output {
       .render()
   }
 
-  override def json(): Map[String, Any] = Map("sources" -> sources.map(_.description))
+  override def json: Json = Json("sources" -> sources.map(_.description))
 }

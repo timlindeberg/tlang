@@ -6,6 +6,7 @@ import tlang.formatting.{Formatter, SimpleFormatting}
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions.NL
+import tlang.utils.JSON.Json
 
 case class TokenOutput(phaseName: String, allTokens: List[List[Token]]) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -29,18 +30,18 @@ case class TokenOutput(phaseName: String, allTokens: List[List[Token]]) extends 
     grid.render()
   }
 
-  override def json(): Map[String, Any] = Map(
+  override def json: Json = Json(
     "tokens" -> allTokens.map { tokens =>
-      Map(
+      Json(
         "file" -> tokens.head.sourceDescription(SimpleFormatting),
         "tokens" -> tokens.map { token =>
-          Map(
+          Json(
             "name" -> name(token),
-            "start" -> Map(
+            "start" -> Json(
               "line" -> token.line,
               "col" -> token.col
             ),
-            "end" -> Map(
+            "end" -> Json(
               "line" -> token.lineEnd,
               "col" -> token.colEnd
             )

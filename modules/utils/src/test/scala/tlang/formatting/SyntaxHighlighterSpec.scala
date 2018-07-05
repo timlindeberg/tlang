@@ -58,7 +58,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
 
     test("With default color scheme") {
-      val syntaxHighlighter = makeSyntaxHighlighter(colors(DefaultFormatting), DefaultFormatting)
+      val syntaxHighlighter = makeSyntaxHighlighter(colors(PrettyFormatting), PrettyFormatting)
 
       syntaxHighlighter(code) should matchWithAnsi(
         s"""|\u001b[34mval \u001b[36ma \u001b[37m= \u001b[35m5
@@ -122,7 +122,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |val x = "ABC"
          |""".stripMargin
 
-    val formatting = DefaultFormatting
+    val formatting = PrettyFormatting
     import formatting._
 
 
@@ -161,7 +161,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |""".stripMargin
 
 
-    val formatting = DefaultFormatting
+    val formatting = PrettyFormatting
     import formatting._
 
     val colorings = createColorings(
@@ -213,7 +213,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |comment */
           |""".stripMargin
 
-    val formatting = DefaultFormatting
+    val formatting = PrettyFormatting
     import formatting._
 
     val colorings = createColorings(

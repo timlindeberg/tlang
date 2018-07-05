@@ -7,6 +7,7 @@ import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 case class ASTOutput(phaseName: String, trees: List[Tree]) extends Output {
 
@@ -32,5 +33,5 @@ case class ASTOutput(phaseName: String, trees: List[Tree]) extends Output {
     }
     grid.render()
   }
-  override def json(): Map[String, Any] = Map()
+  override def json: Json = Json()
 }

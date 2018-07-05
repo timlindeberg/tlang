@@ -6,6 +6,7 @@ import tlang.formatting.grid.{CenteredContent, Column, Grid, TruncatedColumn}
 import tlang.formatting.textformatters.TabReplacer
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.Extensions._
+import tlang.utils.JSON.Json
 
 object ErrorMessageOutput {
   val DefaultMessageTypes = List(MessageType.Warning, MessageType.Error)
@@ -26,6 +27,7 @@ case class ErrorMessageOutput(
       val messages = compilerMessages(messageType)
       if (messages.isEmpty)
         return ""
+
       val grid = formatter.grid.header(header(messageType))
       messages.foreach { addToGrid(grid, _) }
       grid.render()
@@ -51,7 +53,7 @@ case class ErrorMessageOutput(
 
     def addToGrid(grid: Grid, message: CompilerMessage): Unit = {
       addMessage(message, grid, showTitle = true)
-      message.extraInfo foreach { addMessage(_, grid, showTitle = false) }
+      message.notes foreach { addMessage(_, grid, showTitle = false) }
     }
 
     def addMessage(message: CompilerMessage, grid: Grid, showTitle: Boolean): Unit = {
@@ -82,33 +84,34 @@ case class ErrorMessageOutput(
   }
 
 
-  override def json(): Map[String, Any] = {
+  override def json: Json = {
 
-    def format(messageType: MessageType): Map[String, Any] = {
+    def format(messageType: MessageType): Json = {
       val messages = compilerMessages(messageType)
       val key = s"compilation${messageType}s"
 
-      Map(key -> messages.map(formatMessage))
+      Json(key -> messages.map(formatMessage))
     }
 
-    def formatMessage(message: CompilerMessage): Map[String, Any] = {
+    def formatMessage(message: CompilerMessage): Json = {
       val pos = message.pos
-      Map(
+      Json(
         "source" -> pos.sourceDescription,
-        "start" -> Map(
+        "start" -> Json(
           "line" -> pos.line,
           "col" -> pos.col
         ),
-        "end" -> Map(
+        "end" -> Json(
           "line" -> pos.lineEnd,
           "col" -> pos.colEnd
         ),
         "code" -> message.code,
-        "message" -> message.message
+        "message" -> message.message,
+        "notes" -> message.notes.map(formatMessage)
       )
     }
 
-    messageTypes.map(format).reduce(_ ++ _)
+    messageTypes.map(format).reduce(_ ++ _).asInstanceOf[Json]
   }
 }
 

@@ -4,6 +4,7 @@ import cafebabe.CodegenerationStackTrace
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
+import tlang.utils.JSON.Json
 
 case class CodeGenerationOutput(phaseName: String, stackTraces: List[CodegenerationStackTrace]) extends Output {
   override def pretty(formatter: Formatter): String = {
@@ -21,5 +22,5 @@ case class CodeGenerationOutput(phaseName: String, stackTraces: List[Codegenerat
     grid.render()
   }
 
-  override def json(): Map[String, Any] = Map()
+  override def json: Json = Json()
 }

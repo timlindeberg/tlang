@@ -1,7 +1,6 @@
 package tlang.compiler.ast
 
 import sourcecode.{Enclosing, Line}
-import tlang.compiler.analyzer.Naming.phaseName
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
@@ -13,7 +12,6 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatting}
 import tlang.utils.Extensions._
-import tlang.utils.LogLevel.{Debug, Trace}
 import tlang.utils.{Logging, NoPosition, Positioned}
 
 import scala.collection.mutable
@@ -23,7 +21,7 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging 
 
   def run(ctx: Context)(tokenList: List[List[Token]]): List[CompilationUnit] =
     ctx.executor.map(tokenList) { tokens =>
-      info"Parsing tokens of ${ tokens.head.source }"
+      info"Parsing tokens of ${ tokens.head.sourceDescription }"
       val errorStringContext = ErrorStringContext(ctx.formatter)
       val astBuilder = Parser(ctx, errorStringContext, TokenStream(tokens))
       astBuilder.compilationUnit
@@ -880,7 +878,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     */
   def termFirst: ExprTree = {
     // These are sorted by commonness. For instance IDKIND and INTLIT are the by
-    // far most common terms, thats why they appear first.
+    // far most common terms, that's why they appear first.
     tokens.next.kind match {
       case IDKIND        => identifierOrMethodCall
       case INTLITKIND    => literal(INTLITKIND, IntLit)

@@ -3,6 +3,7 @@ package tlang.compiler.output.help
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.options.FlagArgument
+import tlang.utils.JSON.Json
 
 case class FlagInfoOutput(flag: FlagArgument[_]) extends Output {
 
@@ -15,5 +16,5 @@ case class FlagInfoOutput(flag: FlagArgument[_]) extends Output {
       .render()
   }
 
-  override def json(): Map[String, Any] = Map("flag" -> flag.json)
+  override def json: Json = Json("flag" -> flag.json)
 }

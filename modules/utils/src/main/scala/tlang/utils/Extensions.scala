@@ -96,6 +96,8 @@ object Extensions {
 
     def escapeAnsi: String = str.escape(Map('\u001b' -> "u001b"))
 
+    def escapeMargin: String = str.replaceAll("\n\\|", "\n||")
+
     def withUnixLineEndings: String = {
       if (NL == "\n")
         return str

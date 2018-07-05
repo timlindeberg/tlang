@@ -1,12 +1,10 @@
 package tlang.compiler.messages
 
-import org.mockito.ArgumentMatchers
 import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
-import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
-import tlang.utils.{NoPosition, Position, Positioned}
+import tlang.utils.{NoPosition, Position}
 
-class CompilerMessageSpec extends UnitSpec {
+class CompilerMessageSpec extends UnitSpec with MessageTesting {
 
   behavior of "Compiler messages"
 
@@ -114,25 +112,6 @@ class CompilerMessageSpec extends UnitSpec {
     width: Int = 80
   ): CompilerMessages = {
     CompilerMessages(maxErrors, warningIsError, suppressWarnings)
-  }
-
-
-  private def createMessage(
-    messageType: MessageType = MessageType.Error,
-    errorLetters: String = "ABC",
-    codeNum: Int = 0,
-    pos: Positioned = NoPosition,
-    message: String = "ABC",
-    valid: Boolean = true,
-    extraInfo: List[CompilerMessage] = Nil
-  ): CompilerMessage = {
-    val mess = message
-    val ex = extraInfo
-    new CompilerMessage(messageType, errorLetters, messageType.typeCode, codeNum, pos) {
-      override def message = mess
-      override def isValid: Boolean = valid
-      override def extraInfo: List[CompilerMessage] = ex
-    }
   }
 
 }

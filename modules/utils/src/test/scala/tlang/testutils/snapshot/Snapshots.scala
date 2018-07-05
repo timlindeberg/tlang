@@ -22,7 +22,11 @@ case class Snapshots(file: File) {
   private implicit val encoding: Charset = Charset.defaultCharset()
 
   private      var isDirty  : Boolean                       = false
-  private lazy val snapshots: mutable.Map[String, Snapshot] = parse
+
+  // We use a LinkedHashMap to preserve the order of the snapshots in the tests
+  private lazy val snapshots: mutable.LinkedHashMap[String, Snapshot] = readFromFile()
+
+  def ++=(keyValues: Traversable[(String, String)]): Unit = keyValues foreach { this += _ }
 
   def +=(keyValue: (String, String)): Unit = keyValue match {
     case (name, newSnapshot) =>
@@ -33,6 +37,7 @@ case class Snapshots(file: File) {
       snapshots(name) = Snapshot(newSnapshot, used = true)
   }
 
+  def --=(keys: Traversable[String]): Unit = keys foreach { this -= _ }
   def -=(key: String): Unit = {
     if (!snapshots.contains(key))
       return
@@ -62,7 +67,6 @@ case class Snapshots(file: File) {
 
     val content = snapshots
       .toSeq
-      .sortBy { case (name, _) => name }
       .map { case (name, Snapshot(value, _)) => SnapshotNamePrefix + name + NL + value }
       .mkString(NL + NL) + NL
 
@@ -73,8 +77,8 @@ case class Snapshots(file: File) {
   override def toString: String = snapshots.toString().replace("Map", "Snapshots")
 
 
-  private def parse: mutable.Map[String, Snapshot] = {
-    val map = mutable.Map[String, Snapshot]()
+  private def readFromFile(): mutable.LinkedHashMap[String, Snapshot] = {
+    val map = mutable.LinkedHashMap[String, Snapshot]()
 
     if (!file.exists)
       return map
