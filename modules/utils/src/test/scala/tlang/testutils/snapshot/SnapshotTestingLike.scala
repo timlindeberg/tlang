@@ -7,6 +7,7 @@ import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 import tlang.testutils.TestConstants
 import tlang.utils.Extensions._
+import tlang.utils.StringDiff
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -22,6 +23,7 @@ object SnapshotTestingLike {
   val Directory            : String                   = TestConstants.Resources + "/snapshots"
   val Extension            : String                   = ".snap"
   val LocalNameSeparator   : String                   = " "
+  val Separator            : String                   = "---------------------------------------------------------------------------------------------------------"
 
   private val HighlightColor: Color = Colors.Magenta
   private val FailColor     : Color = Colors.Red + Colors.Bold
@@ -134,73 +136,73 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 
-    private case class Result(isSuccess: Boolean, message: String)
+    private case class Result(isSuccess: Boolean, printMessage: String, comparison: String)
 
     def apply(newSnapshot: String): MatchResult = {
-      val Result(isSuccess, message) = matchSnapshot(newSnapshot)
+      val Result(isSuccess, message, comparison) = matchSnapshot(newSnapshot)
       if (message.nonEmpty)
-        println(message)
+        println(message + comparison)
 
-      val successMessage = if (isSuccess) message.stripAnsi else ""
-      val failureMessage = if (!isSuccess) message.stripAnsi else ""
-      MatchResult(matches = isSuccess, failureMessage, successMessage)
+      val successMessage = if (isSuccess) message else ""
+      val failureMessage = if (!isSuccess) message else ""
+      MatchResult(matches = isSuccess, failureMessage.stripAnsi, successMessage.stripAnsi)
     }
 
     private def matchSnapshot(newSnapshot: String): Result = snapshots(snapshotName) match {
       case None                                                                                       =>
         snapshots += snapshotName -> newSnapshot
-        Result(isSuccess = true,
+        val message =
           s"""|No existing snapshot for test ${ HighlightColor(snapshotName) }, creating a new one:
-              |---------------------------------------------------------------------------------------------------------
-              |${newSnapshot.escapeMargin}
-              |---------------------------------------------------------------------------------------------------------
-           """.stripMargin)
+              |$Separator
+              |${ newSnapshot.escapeMargin }
+              |$Separator
+           """.stripMargin
+        Result(isSuccess = true, message, "")
       case Some(oldSnapshot) if newSnapshot == oldSnapshot                                            =>
-        Result(isSuccess = true, "")
+        Result(isSuccess = true, "", "")
       case Some(oldSnapshot) if UpdateSnapshots == snapshotName || (UpdateRegex matches snapshotName) =>
         snapshots += snapshotName -> newSnapshot
 
-        val matches = if (UpdateSnapshots == snapshotName)
+        val message = if (UpdateSnapshots == snapshotName)
           s"Updating existing snapshot."
         else
           s"${ HighlightColor(snapshotName) } matches '${ HighlightColor(UpdateSnapshots) }', updating existing snapshot."
-        Result(isSuccess = true,
-          s"""|$matches
-              |Old snapshot:
-              |---------------------------------------------------------------------------------------------------------
-              |${oldSnapshot.escapeMargin}
-              |---------------------------------------------------------------------------------------------------------
-              |
-              |New snapshot:
-              |---------------------------------------------------------------------------------------------------------
-              |${newSnapshot.escapeMargin}
-              |---------------------------------------------------------------------------------------------------------
-           """.stripMargin)
-      case Some(snapshot)                                                                             =>
-        var failure = s"${ FailColor(snapshotName) } failed, the new snapshot did not match the existing snapshot."
+        Result(isSuccess = true, message, compareSnapshots(oldSnapshot, newSnapshot))
+      case Some(oldSnapshot)                                                                          =>
+        var message = s"Failure: ${ FailColor(snapshotName) }, the new snapshot did not match the existing snapshot."
         if (UpdateSnapshots.nonEmpty)
-          failure += s"\nTest name did not match '${ HighlightColor(UpdateSnapshots) }'."
-        Result(isSuccess = false,
-          s"""|$failure
-              |Existing snapshot:
-              |---------------------------------------------------------------------------------------------------------
-              |${snapshot.escapeMargin}
-              |---------------------------------------------------------------------------------------------------------
-              |
-              |New snapshot:
-              |---------------------------------------------------------------------------------------------------------
-              |${newSnapshot.escapeMargin}
-              |---------------------------------------------------------------------------------------------------------
-              |
-              |If the new display is correct rerun the test with environment variable
+          message += s"\nTest name did not match '${ HighlightColor(UpdateSnapshots) }'."
+        message +=
+          s"""|
+              |If the new snapshot is correct rerun the test with environment variable
               |   $UpdateSnapshotsKey=${ HighlightColor(snapshotName) }
               |You can also use regexes to match any number of snapshots:
               |   $UpdateSnapshotsKey=${ HighlightColor(".*") }
               |   $UpdateSnapshotsKey=${ HighlightColor("MySpec/.*") }
               |This will update the matching snapshots in the executed tests.
-            """.stripMargin
-        )
+           """.stripMargin
+        Result(isSuccess = false, message, compareSnapshots(oldSnapshot, newSnapshot))
     }
+
+    private def compareSnapshots(oldSnapshot: String, newSnapshot: String): String = {
+      s"""|
+          |Existing snapshot:
+          |$Separator
+          |${ oldSnapshot.escapeMargin }
+          |$Separator
+          |
+          |New snapshot:
+          |$Separator
+          |${ newSnapshot.escapeMargin }
+          |$Separator
+          |
+          |Difference:
+          |$Separator
+          |${ StringDiff(oldSnapshot, newSnapshot) }
+          |$Separator
+       """.stripMargin
+    }
+
   }
 
 

@@ -96,7 +96,6 @@ case class ErrorMessageOutput(
     def formatMessage(message: CompilerMessage): Json = {
       val pos = message.pos
       Json(
-        "source" -> pos.sourceDescription,
         "start" -> Json(
           "line" -> pos.line,
           "col" -> pos.col
@@ -105,6 +104,7 @@ case class ErrorMessageOutput(
           "line" -> pos.lineEnd,
           "col" -> pos.colEnd
         ),
+        "source" -> pos.sourceDescription,
         "code" -> message.code,
         "message" -> message.message,
         "notes" -> message.notes.map(formatMessage)
