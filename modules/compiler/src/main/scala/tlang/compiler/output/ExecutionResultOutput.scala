@@ -5,8 +5,8 @@ import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)]) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class ExecutionResultOutput(formatter: Formatter, results: Seq[(Source, ExecutionResult)]) extends Output {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 

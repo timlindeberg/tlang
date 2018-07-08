@@ -9,7 +9,7 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
@@ -35,7 +35,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def description(formatting: Formatting): String =
     "Performs type checking and attaches types to trees."
 
-  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
 
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {

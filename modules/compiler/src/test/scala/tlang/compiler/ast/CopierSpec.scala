@@ -3,11 +3,12 @@ package tlang.compiler.ast
 import tlang.compiler.analyzer.Symbols.VariableSymbol
 import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
+import tlang.compiler.testutils.TreeTesting
 import tlang.testutils.UnitSpec
 import tlang.utils
 import tlang.utils.StringSource
 
-class CopierSpec extends UnitSpec {
+class CopierSpec extends UnitSpec with TreeTesting {
 
   behavior of "A tree copier"
 
@@ -17,7 +18,7 @@ class CopierSpec extends UnitSpec {
     val classId = ClassID("Clazzy")
     val varX = VariableID("X")
     val varXInitiation = IntLit(0)
-    val varXDecl = VarDecl(varX, initiation = Some(varXInitiation))
+    val varXDecl = VarDecl(varX, initiation = varXInitiation)
 
 
     val varYInitiation = IntLit(10)
@@ -25,10 +26,9 @@ class CopierSpec extends UnitSpec {
     val plusLhs = IntLit(5)
     val plusRhs = IntLit(6)
     val plus = Plus(plusLhs, plusRhs)
-    val varYDecl = VarDecl(varY, initiation = Some(varXInitiation))
+    val varYDecl = VarDecl(varY, initiation = varXInitiation)
     val block = Block(List(plus, varYDecl))
-    val methodID = MethodID("Method1")
-    val methodDecl = MethodDecl(methodID, stat = Some(block))
+    val methodDecl = MethodDecl("Method1", stat = block)
 
     val fields = List(varXDecl)
     val methods = List(methodDecl)
@@ -77,7 +77,7 @@ class CopierSpec extends UnitSpec {
 
     val varX = VariableID("X")
     val varXInitiation = IntLit(0)
-    val varXDecl = VarDecl(varX, initiation = Some(varXInitiation))
+    val varXDecl = VarDecl(varX, initiation = varXInitiation)
 
 
     val varYInitiation = IntLit(10)
@@ -85,10 +85,9 @@ class CopierSpec extends UnitSpec {
     val plusLhs = IntLit(5)
     val plusRhs = IntLit(6)
     val plus = Plus(plusLhs, plusRhs)
-    val varYDecl = VarDecl(varY, initiation = Some(varXInitiation))
+    val varYDecl = VarDecl(varY, initiation = varXInitiation)
     val block = Block(List(plus, varYDecl))
-    val methodID = MethodID("Method1")
-    val methodDecl = MethodDecl(methodID, stat = Some(block))
+    val methodDecl = MethodDecl("Method1", stat = block)
 
     val fields = List(varXDecl)
     val methods = List(methodDecl)

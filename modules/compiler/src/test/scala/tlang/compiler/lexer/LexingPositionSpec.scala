@@ -11,7 +11,6 @@ import tlang.utils.{FileSource, Position}
 class LexingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues {
 
   val TestFile   : File    = File(s"$Resources/positions/LexerPositions.t")
-  val TestContext: Context = testContext()
 
   lazy val Tokens: List[Token] = {
     val file = FileSource(TestFile) :: Nil

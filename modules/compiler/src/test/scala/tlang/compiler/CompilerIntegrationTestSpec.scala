@@ -3,9 +3,7 @@ package tlang.compiler
 import better.files.File
 import org.scalatest._
 import tlang.Constants
-import tlang.compiler.imports.ClassPath
-import tlang.compiler.messages._
-import tlang.compiler.output.{ExecutionTimeOutput, JSONOutputHandler, PrettyOutputHandler}
+import tlang.compiler.output.ExecutionTimeOutput
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Formatter
 import tlang.testutils.TestConstants
@@ -34,30 +32,10 @@ object CompilerIntegrationTestSpec {
 
 }
 
-trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
+trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContext {
 
   import CompilerIntegrationTestSpec._
   import TestConstants._
-
-  def testContext(file: Option[File] = None): Context = {
-    val outDir = file match {
-      case Some(f) =>
-        val resourceDir = File(Resources)
-        val mainName = f.pathAsString.stripPrefix(resourceDir.pathAsString).stripSuffix(Constants.FileEnding)
-        File(s"$TestOutputDirectory/$mainName/")
-      case None    => File(".")
-    }
-
-    val outputHandler = if(PrintJSON) JSONOutputHandler() else PrettyOutputHandler(TestFormatter)
-    Context(
-      reporter = DefaultReporter(),
-      output = outputHandler,
-      outDirs = Set(outDir),
-      classPath = ClassPath.Default,
-      printCodePhase = PrintCodePhases,
-      formatter = TestFormatter
-    )
-  }
 
   def testFiles(path: String, executeTest: File => Unit): Unit = {
     def testPath(path: TestPath): Unit = {
@@ -96,7 +74,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers {
     import TestFormatting._
 
     TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
-    ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = true)
+    ctx.output += ExecutionTimeOutput(ctx.formatter, ctx.executionTimes.toMap, success = true)
   }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as

@@ -5,9 +5,9 @@ import tlang.formatting.Formatter
 import tlang.options.FlagArgument
 import tlang.utils.JSON.Json
 
-case class FlagInfoOutput(flag: FlagArgument[_]) extends Output {
+case class FlagInfoOutput(formatter: Formatter, flag: FlagArgument[_]) extends Output {
 
-  override def pretty(formatter: Formatter): String = {
+  override def pretty: String = {
     formatter
       .grid
       .header(flag.flagName(formatter.formatting))

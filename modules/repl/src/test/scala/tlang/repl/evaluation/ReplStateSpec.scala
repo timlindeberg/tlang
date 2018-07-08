@@ -16,17 +16,17 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
     val methodA = createMethod(
       name = "A",
       args = List(StringType),
-      retType = Some(UnitType())
+      retType = UnitType()
     )
     val methodB = createMethod(
       name = "B",
       args = List(IntType, StringType),
-      retType = Some(StringType)
+      retType = StringType
     )
     replState.addMethods(List(methodA, methodB))
 
-    val classA = createClass("A")
-    val classB = createClass("B")
+    val classA = ClassDecl("A")
+    val classB = ClassDecl("B")
 
     replState.addClasses(List(classA, classB))
 
@@ -69,9 +69,9 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
   it should "overwrite classes with the same name" in {
     val replState = ReplState(mock[PrettyPrinter], mock[Imports])
 
-    val classA = createClass("A")
-    val classB = createClass("A")
-    val classC = createClass("B")
+    val classA = ClassDecl("A")
+    val classB = ClassDecl("A")
+    val classC = ClassDecl("B")
 
     replState.addClasses(List(classA, classB, classC))
 
@@ -91,17 +91,17 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
     val methodA = createMethod(
       name = "A",
       args = List(StringType, IntType),
-      retType = Some(UnitType())
+      retType = UnitType()
     )
     val methodB = createMethod(
       name = "A",
       args = List(StringType, IntType),
-      retType = Some(StringType)
+      retType = StringType
     )
     val methodC = createMethod(
       name = "A",
       args = List(IntType, StringType),
-      retType = Some(StringType)
+      retType = StringType
     )
     replState.addMethods(List(methodA, methodB, methodC))
 

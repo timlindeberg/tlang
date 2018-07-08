@@ -7,11 +7,12 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.compiler.messages.{CompilationException, Reporter}
 import tlang.compiler.output.PrettyOutputHandler
+import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.ErrorStringContext
 import tlang.testutils.UnitSpec
 import tlang.utils.StringSource
 
-class ParsingSpec extends UnitSpec {
+class ParsingSpec extends UnitSpec with TreeTesting {
 
 
   behavior of "A parser"
@@ -36,39 +37,35 @@ class ParsingSpec extends UnitSpec {
     ).compilationUnit shouldBe CompilationUnit(
       Package(List("A")),
       classes = List(
-        ClassDecl(
-          ClassID("ParsingSpec"),
+        ClassDecl("ParsingSpec",
           parents = Nil,
           fields = Nil,
           methods = List(
-            MethodDecl(
-              MethodID("main"),
+            MethodDecl("main",
               modifiers = Set(Public(), Static()),
-              args = List(Formal(ArrayType(ClassID("java::lang::String")), VariableID("args"))),
-              retType = Some(UnitType()),
-              stat = Some(Block(List(
+              args = List(Formal(ArrayType("java::lang::String"), "args")),
+              retType = UnitType(),
+              stat = Block(List(
                 Println(IntLit(1)),
                 Println(IntLit(2))
-              )))
+              ))
             ),
-            MethodDecl(
-              MethodID("D"),
+            MethodDecl("D",
               modifiers = Set(Public(), Static()),
               args = Nil,
               retType = None,
-              stat = Some(Return(Some(IntLit(1))))
+              stat = Return(IntLit(1))
             ),
-            MethodDecl(
-              MethodID("E"),
+            MethodDecl("E",
               modifiers = Set(Private(), Static()),
-              args = List(Formal(ClassID("A"), VariableID("a"))),
+              args = List(Formal("A", "a")),
               retType = None,
-              stat = Some(Return(Some(IntLit(1))))
+              stat = Return(IntLit(1))
             )
           )
         ),
-        ClassDecl(ClassID("F")),
-        TraitDecl(ClassID("G"))
+        ClassDecl("F"),
+        TraitDecl("G")
       ),
       imports = Imports(
         ctx,
@@ -108,22 +105,22 @@ class ParsingSpec extends UnitSpec {
 
   it should "parse a class declaration" in {
     // class A
-    parser(CLASS, ID("A")).classDeclaration shouldBe ClassDecl(ClassID("A"))
+    parser(CLASS, ID("A")).classDeclaration shouldBe ClassDecl("A")
 
     // class A<B>
     parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN)
-      .classDeclaration shouldBe TraitDecl(ClassID("A", List(ClassID("B"))))
+      .classDeclaration shouldBe TraitDecl(ClassID("A", List("B")))
 
     // class A : B
-    parser(CLASS, ID("A"), COLON, ID("B")).classDeclaration shouldBe ClassDecl(ClassID("A"), List(ClassID("B")))
+    parser(CLASS, ID("A"), COLON, ID("B")).classDeclaration shouldBe ClassDecl("A", List("B"))
 
     // trait A<B> : C
     parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN, COLON, ID("C"))
-      .classDeclaration shouldBe TraitDecl(ClassID("A", List(ClassID("B"))), List(ClassID("C")))
+      .classDeclaration shouldBe TraitDecl(ClassID("A", List("B")), List("C"))
 
     // class A : B, C, D
     parser(CLASS, ID("A"), COLON, ID("B"), COMMA, ID("C"), COMMA, ID("D"))
-      .classDeclaration shouldBe ClassDecl(ClassID("A"), List(ClassID("B"), ClassID("C"), ClassID("D")))
+      .classDeclaration shouldBe ClassDecl("A", List("B", "C", "D"))
 
     // class A : B,
     //           C,
@@ -132,10 +129,9 @@ class ParsingSpec extends UnitSpec {
     parser(
       CLASS, ID("A"), COLON, ID("B"), COMMA, NEWLINE, ID("C"), COMMA, NEWLINE, ID("D"), EQSIGN, NEWLINE, INDENT, PRIVVAR,
       ID("a"), NEWLINE, DEDENT
-    ).classDeclaration shouldBe ClassDecl(
-      ClassID("A"),
-      parents = List(ClassID("B"), ClassID("C"), ClassID("D")),
-      fields = List(VarDecl(VariableID("a"), modifiers = Set(Private())))
+    ).classDeclaration shouldBe ClassDecl("A",
+      parents = List("B", "C", "D"),
+      fields = List(VarDecl("a", modifiers = Set(Private())))
     )
 
     // trait A =
@@ -146,8 +142,8 @@ class ParsingSpec extends UnitSpec {
       ClassID("A"),
       parents = Nil,
       fields = List(
-        VarDecl(VariableID("a"), modifiers = Set(Private())),
-        VarDecl(VariableID("b"), modifiers = Set(Private()))
+        VarDecl("a", modifiers = Set(Private())),
+        VarDecl("b", modifiers = Set(Private()))
       )
     )
 
@@ -161,15 +157,15 @@ class ParsingSpec extends UnitSpec {
       ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
       RPAREN, NEWLINE, DEDENT
     ).classDeclaration shouldBe ClassDecl(
-      ClassID("A", List(ClassID("B"))),
-      parents = List(ClassID("C"), ClassID("D")),
+      ClassID("A", List("B")),
+      parents = List("C", "D"),
       fields = List(
-        VarDecl(VariableID("a"), modifiers = Set(Private())),
-        VarDecl(VariableID("b"), modifiers = Set(Private()))
+        VarDecl("a", modifiers = Set(Private())),
+        VarDecl("b", modifiers = Set(Private()))
       ),
       methods = List(
-        MethodDecl(MethodID("x"), modifiers = Set(Private())),
-        MethodDecl(MethodID("y"), modifiers = Set(Private()))
+        MethodDecl("x", modifiers = Set(Private())),
+        MethodDecl("y", modifiers = Set(Private()))
       )
     )
   }
@@ -182,17 +178,16 @@ class ParsingSpec extends UnitSpec {
     parser(
       EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
       RPAREN, NEWLINE, DEDENT
-    ).classDeclaration shouldBe ExtensionDecl(
-      ClassID("A"),
+    ).classDeclaration shouldBe ExtensionDecl("A",
       methods = List(
-        MethodDecl(MethodID("x"), modifiers = Set(Private())),
-        MethodDecl(MethodID("y"), modifiers = Set(Private()))
+        MethodDecl("x", modifiers = Set(Private())),
+        MethodDecl("y", modifiers = Set(Private()))
       )
     )
 
 
     // : B won't get parsed
-    parser(EXTENSION, ID("A"), COLON, ID("B")).classDeclaration shouldBe ExtensionDecl(ClassID("A"))
+    parser(EXTENSION, ID("A"), COLON, ID("B")).classDeclaration shouldBe ExtensionDecl("A")
 
     // No fields
     a[CompilationException] should be thrownBy parser(
@@ -202,40 +197,35 @@ class ParsingSpec extends UnitSpec {
 
   it should "parse a field declaration" in {
     parser(PRIVVAR, ID("x"))
-      .fieldDeclaration shouldBe VarDecl(
-      VariableID("x"),
+      .fieldDeclaration shouldBe VarDecl("x",
       tpe = None,
       initiation = None,
       modifiers = Set(Private())
     )
 
     parser(PRIVVAR, ID("x"), COLON, ID("Int"))
-      .fieldDeclaration shouldBe VarDecl(
-      VariableID("x"),
-      tpe = Some(ClassID("Int")),
+      .fieldDeclaration shouldBe VarDecl("x",
+      tpe = Some("Int"),
       initiation = None,
       modifiers = Set(Private())
     )
 
     parser(PUBVAR, STATIC, ID("x"), EQSIGN, INTLIT(1))
-      .fieldDeclaration shouldBe VarDecl(
-      VariableID("x"),
+      .fieldDeclaration shouldBe VarDecl("x",
       tpe = None,
-      initiation = Some(IntLit(1)),
+      initiation = IntLit(1),
       modifiers = Set(Public(), Static())
     )
 
     parser(PUBVAL, STATIC, ID("x"), COLON, ID("Int"), EQSIGN, INTLIT(1))
-      .fieldDeclaration shouldBe VarDecl(
-      VariableID("x"),
-      tpe = Some(ClassID("Int")),
-      initiation = Some(IntLit(1)),
+      .fieldDeclaration shouldBe VarDecl("x",
+      tpe = Some("Int"),
+      initiation = IntLit(1),
       modifiers = Set(Public(), Static(), Final())
     )
 
     parser(PRIVVAL, PROTECTED, ID("x"))
-      .fieldDeclaration shouldBe VarDecl(
-      VariableID("x"),
+      .fieldDeclaration shouldBe VarDecl("x",
       tpe = None,
       initiation = None,
       modifiers = Set(Protected(), Final())
@@ -245,24 +235,20 @@ class ParsingSpec extends UnitSpec {
   it should "parse a method declaration" in {
     // def x()
     parser(PRIVDEF, ID("x"), LPAREN, RPAREN)
-      .methodDeclaration shouldBe MethodDecl(
-      MethodID("x"), modifiers = Set(Private()), retType = None, args = Nil, stat = None
-    )
+      .methodDeclaration shouldBe MethodDecl("x", modifiers = Set(Private()), retType = None, args = Nil, stat = None)
 
     // Def x(): A
     parser(PUBDEF, ID("x"), LPAREN, RPAREN, COLON, ID("A"))
-      .methodDeclaration shouldBe MethodDecl(
-      MethodID("x"), modifiers = Set(Public()), retType = Some(ClassID("A")), args = Nil, stat = None
+      .methodDeclaration shouldBe MethodDecl("x", modifiers = Set(Public()), retType = Some("A"), args = Nil, stat = None
     )
 
     // def static x(): A = 1
     parser(PRIVDEF, STATIC, ID("x"), LPAREN, RPAREN, COLON, ID("A"), EQSIGN, INTLIT(1))
-      .methodDeclaration shouldBe MethodDecl(
-      MethodID("x"),
+      .methodDeclaration shouldBe MethodDecl("x",
       modifiers = Set(Private(), Static()),
-      retType = Some(ClassID("A")),
+      retType = Some("A"),
       args = Nil,
-      stat = Some(Return(Some(IntLit(1))))
+      stat = Return(IntLit(1))
     )
 
     // def static x(): A =
@@ -272,35 +258,32 @@ class ParsingSpec extends UnitSpec {
     parser(
       PRIVDEF, STATIC, ID("x"), LPAREN, RPAREN, COLON, ID("A"), EQSIGN, NEWLINE, INDENT, INTLIT(1), NEWLINE, INTLIT(2),
       NEWLINE, INTLIT(3), NEWLINE, DEDENT
-    ).methodDeclaration shouldBe MethodDecl(
-      MethodID("x"),
+    ).methodDeclaration shouldBe MethodDecl("x",
       modifiers = Set(Private(), Static()),
-      retType = Some(ClassID("A")),
+      retType = Some("A"),
       args = Nil,
-      stat = Some(Block(List(
+      stat = Block(List(
         IntLit(1),
         IntLit(2),
-        Return(Some(IntLit(3)))
-      )))
+        Return(IntLit(3))
+      ))
     )
 
     // Def static x(a: A, b: B) = 1
     parser(PUBDEF, STATIC, ID("x"), LPAREN, ID("a"), COLON, ID("A"), RPAREN, EQSIGN, INTLIT(1))
-      .methodDeclaration shouldBe MethodDecl(
-      MethodID("x"),
+      .methodDeclaration shouldBe MethodDecl("x",
       modifiers = Set(Public(), Static()),
       retType = None,
-      args = List(Formal(ClassID("A"), VariableID("a"))),
-      stat = Some(Return(Some(IntLit(1))))
+      args = List(Formal("A", "a")),
+      stat = Return(IntLit(1))
     )
 
     // Def x(a: A, b: B)
     parser(PUBDEF, ID("x"), LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"), RPAREN)
-      .methodDeclaration shouldBe MethodDecl(
-      MethodID("x"),
+      .methodDeclaration shouldBe MethodDecl("x",
       modifiers = Set(Public()),
       retType = None,
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
+      args = List(Formal("A", "a"), Formal("B", "b")),
       stat = None
     )
 
@@ -312,14 +295,13 @@ class ParsingSpec extends UnitSpec {
     parser(
       PUBDEF, ID("x"), LPAREN, NEWLINE, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE,
       ID("c"), COLON, ID("C"), COMMA, NEWLINE, RPAREN
-    ).methodDeclaration shouldBe MethodDecl(
-      MethodID("x"),
+    ).methodDeclaration shouldBe MethodDecl("x",
       modifiers = Set(Public()),
       retType = None,
       args = List(
-        Formal(ClassID("A"), VariableID("a")),
-        Formal(ClassID("B"), VariableID("b")),
-        Formal(ClassID("C"), VariableID("c"))
+        Formal("A", "a"),
+        Formal("B", "b"),
+        Formal("C", "c")
       ),
       stat = None
     )
@@ -330,17 +312,17 @@ class ParsingSpec extends UnitSpec {
       MethodID("new"),
       modifiers = Set(Public()),
       args = Nil,
-      retType = Some(UnitType()),
+      retType = UnitType(),
       stat = None
     )
 
     // def new(a: A, b: B)
     parser(PRIVDEF, NEW, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), RPAREN)
       .methodDeclaration shouldBe ConstructorDecl(
-      MethodID("new"),
+      "new",
       modifiers = Set(Private()),
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
-      retType = Some(UnitType()),
+      args = List(Formal("A", "a"), Formal("B", "b")),
+      retType = UnitType(),
       stat = None
     )
 
@@ -352,15 +334,15 @@ class ParsingSpec extends UnitSpec {
       PUBDEF, NEW, LPAREN, RPAREN, EQSIGN, NEWLINE, INDENT, INTLIT(1), NEWLINE, INTLIT(2),
       NEWLINE, INTLIT(3), NEWLINE, DEDENT
     ).methodDeclaration shouldBe ConstructorDecl(
-      MethodID("new"),
+      "new",
       modifiers = Set(Public()),
-      retType = Some(UnitType()),
+      retType = UnitType(),
       args = Nil,
-      stat = Some(Block(List(
+      stat = Block(List(
         IntLit(1),
         IntLit(2),
         IntLit(3)
-      )))
+      ))
     )
 
     // Def new(
@@ -372,13 +354,13 @@ class ParsingSpec extends UnitSpec {
       PUBDEF, NEW, LPAREN, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE, ID("c"),
       COLON, ID("C"), COMMA, NEWLINE, RPAREN
     ).methodDeclaration shouldBe ConstructorDecl(
-      MethodID("new"),
+      "new",
       modifiers = Set(Public()),
-      retType = Some(UnitType()),
+      retType = UnitType(),
       args = List(
-        Formal(ClassID("A"), VariableID("a")),
-        Formal(ClassID("B"), VariableID("b")),
-        Formal(ClassID("C"), VariableID("c"))
+        Formal("A", "a"),
+        Formal("B", "b"),
+        Formal("C", "c")
       ),
       stat = None
     )
@@ -391,7 +373,7 @@ class ParsingSpec extends UnitSpec {
         .methodDeclaration shouldBe OperatorDecl(
         operatorType(Empty(), Empty()),
         modifiers = Set(Public(), Static()),
-        args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
+        args = List(Formal("A", "a"), Formal("B", "b")),
         stat = None
       )
     }
@@ -419,7 +401,7 @@ class ParsingSpec extends UnitSpec {
         .methodDeclaration shouldBe OperatorDecl(
         operatorType(Empty()),
         modifiers = Set(Public(), Static()),
-        args = List(Formal(ClassID("A"), VariableID("a"))),
+        args = List(Formal("A", "a")),
         stat = None
       )
     }
@@ -435,7 +417,7 @@ class ParsingSpec extends UnitSpec {
       .methodDeclaration shouldBe OperatorDecl(
       ArrayRead(Empty(), Empty()),
       modifiers = Set(Public()),
-      args = List(Formal(ClassID("A"), VariableID("a"))),
+      args = List(Formal("A", "a")),
       stat = None
     )
 
@@ -444,7 +426,7 @@ class ParsingSpec extends UnitSpec {
       .methodDeclaration shouldBe OperatorDecl(
       Assign(ArrayRead(Empty(), Empty()), Empty()),
       modifiers = Set(Public()),
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
+      args = List(Formal("A", "a"), Formal("B", "b")),
       stat = None
     )
 
@@ -456,9 +438,9 @@ class ParsingSpec extends UnitSpec {
       ArraySlice(Empty(), None, None, None),
       modifiers = Set(Public()),
       args = List(
-        Formal(ClassID("A"), VariableID("a")),
-        Formal(ClassID("B"), VariableID("b")),
-        Formal(ClassID("C"), VariableID("c"))
+        Formal("A", "a"),
+        Formal("B", "b"),
+        Formal("C", "c")
       ),
       stat = None
     )
@@ -473,9 +455,9 @@ class ParsingSpec extends UnitSpec {
     ).methodDeclaration shouldBe OperatorDecl(
       Plus(Empty(), Empty()),
       modifiers = Set(Public(), Static()),
-      args = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b"))),
-      retType = Some(ClassID("A")),
-      stat = Some(Return(Some(IntLit(1))))
+      args = List(Formal("A", "a"), Formal("B", "b")),
+      retType = Some("A"),
+      stat = Return(IntLit(1))
     )
 
   }
@@ -483,20 +465,18 @@ class ParsingSpec extends UnitSpec {
   it should "create a class from free statements and methods" in {
     parser(PRINTLN, LPAREN, INTLIT(1), RPAREN, NEWLINE, PRINTLN, LPAREN, INTLIT(2), RPAREN, NEWLINE)
       .compilationUnit.classes shouldBe List(
-      ClassDecl(
-        ClassID("ParsingSpec"),
+      ClassDecl("ParsingSpec",
         parents = Nil,
         fields = Nil,
         methods = List(
-          MethodDecl(
-            MethodID("main"),
+          MethodDecl("main",
             modifiers = Set(Public(), Static()),
-            args = List(Formal(ArrayType(ClassID("java::lang::String")), VariableID("args"))),
-            retType = Some(UnitType()),
-            stat = Some(Block(List(
+            args = List(Formal(ArrayType("java::lang::String"), "args")),
+            retType = UnitType(),
+            stat = Block(List(
               Println(IntLit(1)),
               Println(IntLit(2))
-            )))
+            ))
           )
         )
       )
@@ -504,17 +484,15 @@ class ParsingSpec extends UnitSpec {
 
     parser(PUBDEF, ID("X"), LPAREN, RPAREN, EQSIGN, INTLIT(1))
       .compilationUnit.classes shouldBe List(
-      ClassDecl(
-        ClassID("ParsingSpec"),
+      ClassDecl("ParsingSpec",
         parents = Nil,
         fields = Nil,
         methods = List(
-          MethodDecl(
-            MethodID("X"),
+          MethodDecl("X",
             modifiers = Set(Public(), Static()),
             args = Nil,
             retType = None,
-            stat = Some(Return(Some(IntLit(1))))
+            stat = Return(IntLit(1))
           )
         )
       )
@@ -525,26 +503,26 @@ class ParsingSpec extends UnitSpec {
       LPAREN, RPAREN, EQSIGN, INTLIT(1)
     ).compilationUnit.classes shouldBe List(
       ClassDecl(
-        ClassID("ParsingSpec"),
+        "ParsingSpec",
         parents = Nil,
         fields = Nil,
         methods = List(
           MethodDecl(
-            MethodID("main"),
+            "main",
             modifiers = Set(Public(), Static()),
-            args = List(Formal(ArrayType(ClassID("java::lang::String")), VariableID("args"))),
-            retType = Some(UnitType()),
-            stat = Some(Block(List(
+            args = List(Formal(ArrayType("java::lang::String"), "args")),
+            retType = UnitType(),
+            stat = Block(List(
               Println(IntLit(1)),
               Println(IntLit(2))
-            )))
+            ))
           ),
           MethodDecl(
-            MethodID("X"),
+            "X",
             modifiers = Set(Public(), Static()),
             args = Nil,
             retType = None,
-            stat = Some(Return(Some(IntLit(1))))
+            stat = Return(IntLit(1))
           )
         )
       )
@@ -567,17 +545,17 @@ class ParsingSpec extends UnitSpec {
 
     test("If else on four lines") {
       parser(IF, LPAREN, FALSE, RPAREN, NEWLINE, CONTINUE, NEWLINE, ELSE, NEWLINE, BREAK).statement shouldBe
-        If(FalseLit(), Continue(), Some(Break()))
+        If(FalseLit(), Continue(), Break())
     }
 
     test("If else on two lines") {
       parser(IF, LPAREN, FALSE, RPAREN, CONTINUE, NEWLINE, ELSE, BREAK).statement shouldBe
-        If(FalseLit(), Continue(), Some(Break()))
+        If(FalseLit(), Continue(), Break())
     }
 
     test("If else on one line") {
       parser(IF, LPAREN, FALSE, RPAREN, CONTINUE, ELSE, BREAK).statement shouldBe
-        If(FalseLit(), Continue(), Some(Break()))
+        If(FalseLit(), Continue(), Break())
     }
   }
 
@@ -591,7 +569,7 @@ class ParsingSpec extends UnitSpec {
         FOR, LPAREN, PRIVVAR, ID("i"), EQSIGN, INTLIT(0), SEMICOLON, ID("i"), LESSTHAN, INTLIT(5), SEMICOLON,
         ID("i"), INCREMENT, RPAREN, BREAK
       ).statement shouldBe For(
-        List(VarDecl(VariableID("i"), None, Some(IntLit(0)), Set(Private()))),
+        List(VarDecl("i", None, IntLit(0), Set(Private()))),
         LessThan(VariableID("i"), IntLit(5)),
         List(PostIncrement(VariableID("i"))),
         Break()
@@ -611,7 +589,7 @@ class ParsingSpec extends UnitSpec {
     test("With no condition") {
       parser(FOR, LPAREN, PRIVVAR, ID("i"), EQSIGN, INTLIT(0), SEMICOLON, SEMICOLON, ID("i"), INCREMENT, RPAREN, BREAK)
         .statement shouldBe For(
-        List(VarDecl(VariableID("i"), None, Some(IntLit(0)), Set(Private()))),
+        List(VarDecl("i", None, IntLit(0), Set(Private()))),
         TrueLit(),
         List(PostIncrement(VariableID("i"))),
         Break()
@@ -623,7 +601,7 @@ class ParsingSpec extends UnitSpec {
         FOR, LPAREN, PRIVVAR, ID("i"), EQSIGN, INTLIT(0), SEMICOLON, ID("i"), LESSTHAN, INTLIT(5), SEMICOLON, RPAREN,
         BREAK
       ).statement shouldBe For(
-        List(VarDecl(VariableID("i"), None, Some(IntLit(0)), Set(Private()))),
+        List(VarDecl("i", None, IntLit(0), Set(Private()))),
         LessThan(VariableID("i"), IntLit(5)),
         Nil,
         Break()
@@ -637,7 +615,7 @@ class ParsingSpec extends UnitSpec {
 
   it should "parse for each loops" in {
     parser(FOR, LPAREN, PRIVVAR, ID("i"), IN, ID("X"), RPAREN, BREAK).statement shouldBe Foreach(
-      VarDecl(VariableID("i"), None, None, Set(Private())),
+      VarDecl("i", None, None, Set(Private())),
       VariableID("X"),
       Break()
     )
@@ -652,7 +630,7 @@ class ParsingSpec extends UnitSpec {
 
   it should "parse return statements" in {
     test("Return a value") {
-      parser(RETURN, STRLIT("ABC")).statement shouldBe Return(Some(StringLit("ABC")))
+      parser(RETURN, STRLIT("ABC")).statement shouldBe Return(StringLit("ABC"))
     }
 
     test("Return with no value") {
@@ -1046,7 +1024,7 @@ class ParsingSpec extends UnitSpec {
     parser(SUPER, DOT, ID("a")).expression shouldBe NormalAccess(Super(None), VariableID("a"))
 
     parser(SUPER, LESSTHAN, ID("A"), GREATERTHAN, DOT, ID("a"), LPAREN, INTLIT(1), RPAREN)
-      .expression shouldBe NormalAccess(Super(Some(ClassID("A"))), MethodCall(MethodID("a"), List(IntLit(1))))
+      .expression shouldBe NormalAccess(Super(Some("A")), MethodCall("a", List(IntLit(1))))
   }
 
   it should "parse new expressions" in {
@@ -1105,12 +1083,12 @@ class ParsingSpec extends UnitSpec {
   it should "parse access expressions" in {
     parser(ID("A"), DOT, ID("b")).expression shouldBe NormalAccess(VariableID("A"), VariableID("b"))
     parser(ID("A"), DOT, ID("b"), LPAREN, RPAREN).expression shouldBe
-      NormalAccess(VariableID("A"), MethodCall(MethodID("b"), Nil))
+      NormalAccess(VariableID("A"), MethodCall("b", Nil))
 
 
     parser(ID("A"), SAFEACCESS, ID("b")).expression shouldBe SafeAccess(VariableID("A"), VariableID("b"))
     parser(ID("A"), SAFEACCESS, ID("b"), LPAREN, RPAREN).expression shouldBe
-      SafeAccess(VariableID("A"), MethodCall(MethodID("b"), Nil))
+      SafeAccess(VariableID("A"), MethodCall("b", Nil))
   }
 
   it should "parse indexing expressions" in {
@@ -1130,43 +1108,43 @@ class ParsingSpec extends UnitSpec {
 
     // x[1:]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), None, None)
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), None, None)
 
     // x[:1]
     parser(ID("x"), LBRACKET, COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), None, Some(IntLit(1)), None)
+      .expression shouldBe ArraySlice(VariableID("x"), None, IntLit(1), None)
 
     // x[1::]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, COLON, RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), None, None)
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), None, None)
 
     // x[:1:]
     parser(ID("x"), LBRACKET, COLON, INTLIT(1), COLON, RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), None, Some(IntLit(1)), None)
+      .expression shouldBe ArraySlice(VariableID("x"), None, IntLit(1), None)
 
     // x[::1]
     parser(ID("x"), LBRACKET, COLON, COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), None, None, Some(IntLit(1)))
+      .expression shouldBe ArraySlice(VariableID("x"), None, None, IntLit(1))
 
     // x[1:1]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), Some(IntLit(1)), None)
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), IntLit(1), None)
 
     // x[1:1:]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, INTLIT(1), COLON, RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), Some(IntLit(1)), None)
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), IntLit(1), None)
 
     // x[1::1]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), None, Some(IntLit(1)))
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), None, IntLit(1))
 
     // x[:1:1]
     parser(ID("x"), LBRACKET, COLON, INTLIT(1), COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), None, Some(IntLit(1)), Some(IntLit(1)))
+      .expression shouldBe ArraySlice(VariableID("x"), None, IntLit(1), IntLit(1))
 
     // x[1:1:1]
     parser(ID("x"), LBRACKET, INTLIT(1), COLON, INTLIT(1), COLON, INTLIT(1), RBRACKET)
-      .expression shouldBe ArraySlice(VariableID("x"), Some(IntLit(1)), Some(IntLit(1)), Some(IntLit(1)))
+      .expression shouldBe ArraySlice(VariableID("x"), IntLit(1), IntLit(1), IntLit(1))
   }
 
   it should "parse extract nullable expressions" in {
@@ -1261,7 +1239,7 @@ class ParsingSpec extends UnitSpec {
   }
 
   it should "parse a formal" in {
-    parser(ID("x"), COLON, ID("X")).formal shouldBe Formal(ClassID("X"), VariableID("x"))
+    parser(ID("x"), COLON, ID("X")).formal shouldBe Formal("X", "x")
   }
 
   it should "parse class type identifiers" in {
@@ -1289,7 +1267,7 @@ class ParsingSpec extends UnitSpec {
 
   private val formatter          = testFormatter(useColor = false)
   private val errorStringContext = ErrorStringContext(formatter)
-  private val ctx                = Context(mock[Reporter], formatter, PrettyOutputHandler(formatter))
+  private val ctx                = Context(mock[Reporter], formatter, PrettyOutputHandler())
 
   private def parser(tokens: Any*) = Parser(ctx, errorStringContext, createTokenStream(tokens))
 

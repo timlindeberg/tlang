@@ -1,9 +1,10 @@
 package tlang.compiler.ast
 
 import tlang.compiler.ast.Trees._
+import tlang.compiler.testutils.TreeTesting
 import tlang.testutils.UnitSpec
 
-class TreeTraverserSpec extends UnitSpec {
+class TreeTraverserSpec extends UnitSpec with TreeTesting {
 
   behavior of "A Tree Traverser"
 
@@ -12,13 +13,12 @@ class TreeTraverserSpec extends UnitSpec {
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
-        VarDecl(VariableID("X"), initiation = Some(IntLit(0)))
+        VarDecl("X", initiation = IntLit(0))
       ),
       methods = List(
-        MethodDecl(MethodID("Method1"), stat = Some(Block(List(
+        MethodDecl("Method1", stat = Block(List(
           Plus(IntLit(5), IntLit(6)),
-          VarDecl(VariableID("x"), initiation = Some(IntLit(10)))
-        )
+          VarDecl("x", initiation = IntLit(10))
         )))
       )
     )
@@ -43,13 +43,12 @@ class TreeTraverserSpec extends UnitSpec {
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
-        VarDecl(VariableID("X"), initiation = Some(IntLit(0)))
+        VarDecl("X", initiation = IntLit(0))
       ),
       methods = List(
-        MethodDecl(MethodID("Method1"), stat = Some(Block(List(
+        MethodDecl("Method1", stat = Block(List(
           Plus(IntLit(5), IntLit(6)),
-          VarDecl(VariableID("x"), initiation = Some(IntLit(10)))
-        )
+          VarDecl("x", initiation = IntLit(10))
         )))
       )
     )

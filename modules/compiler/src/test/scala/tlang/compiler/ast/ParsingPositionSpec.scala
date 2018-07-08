@@ -1,11 +1,11 @@
 package tlang.compiler.ast
 
 import better.files.File
+import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException
 import tlang.compiler.output.ErrorMessageOutput
-import tlang.compiler.{CompilerIntegrationTestSpec, Context}
 import tlang.formatting.textformatters.TabReplacer
 import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, NoPosition, Position}
@@ -15,8 +15,7 @@ import scala.reflect.{ClassTag, classTag}
 class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
-  private val TestContext: Context = testContext()
-  private val TabReplacer = new TabReplacer()
+  private val TabReplacer = new TabReplacer(2)
 
   // We make Tree lazy so the parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
@@ -25,7 +24,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        TestContext.output.add(ErrorMessageOutput(e.messages))
+        TestContext.output += ErrorMessageOutput(TestContext.formatter, TabReplacer, e.messages)
         Empty()
     }
   }

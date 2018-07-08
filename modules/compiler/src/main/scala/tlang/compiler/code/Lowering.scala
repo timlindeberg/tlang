@@ -6,7 +6,7 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, Context}
-import tlang.formatting.Formatting
+import tlang.formatting.{Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.Logging
 import tlang.Constants
@@ -25,7 +25,7 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
   override def description(formatting: Formatting): String =
     "Lowers the tree to simpler components. Performs desugaring."
 
-  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
 
 
 }

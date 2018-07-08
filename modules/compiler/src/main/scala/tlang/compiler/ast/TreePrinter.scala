@@ -13,7 +13,12 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
+object TreePrinter {
+
+  def idFunction(any: Any): Int = identityHashCode(any)
+}
+
+case class TreePrinter(formatter: Formatter, idFunction: Any => Int = TreePrinter.idFunction, spacing: Int = 1) {
 
   type TreePrinterRow = (String, String, String, String, String)
 
@@ -91,7 +96,7 @@ case class TreePrinter(formatter: Formatter, spacing: Int = 1) {
   }
 
   private def reference(tree: Tree): String = {
-    val id = identityHashCode(tree)
+    val id = idFunction(tree)
     val color = AllColors(id % AllColors.length)
     color(id.toHexString.padTo(8, '0'))
   }

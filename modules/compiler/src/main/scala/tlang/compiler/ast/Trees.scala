@@ -7,7 +7,8 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
-import tlang.formatting.{PrettyFormatting, Formatter, SimpleFormatting}
+import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.formatting.{Formatter, PrettyFormatting, SimpleFormatting}
 import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
 
@@ -59,7 +60,8 @@ object Trees {
     }
 
     def debugPrint(header: String = "Debug"): this.type = {
-      println(ASTOutput(header, this :: Nil).pretty(Formatter(PrettyFormatting)))
+      val formatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
+      println(ASTOutput(formatter, header, this :: Nil).pretty)
       this
     }
 
@@ -632,6 +634,7 @@ object Trees {
       this
     }
   }
+
   object Identifier {
     def unapply[T <: Symbol](e: Identifier[T]) = Some(e.name)
   }
@@ -666,6 +669,7 @@ object Trees {
   }
 
   case class VariableID(name: String) extends Identifier[VariableSymbol] with Leaf with Assignable
+
   case class MethodID(name: String) extends Identifier[MethodSymbol] with Leaf
 
   /*------------------------------ Access Trees -----------------------------*/

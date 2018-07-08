@@ -1,6 +1,5 @@
 package tlang.compiler.output
 
-import tlang.formatting.Formatter
 import tlang.utils.JSON
 
 import scala.collection.mutable
@@ -14,9 +13,9 @@ trait OutputHandler {
 
 }
 
-case class PrettyOutputHandler(formatter: Formatter) extends OutputHandler {
+case class PrettyOutputHandler() extends OutputHandler {
   override def add(output: Output): Unit = {
-    val s = output.pretty(formatter)
+    val s = output.pretty
     if(s.nonEmpty)
       println(s)
   }

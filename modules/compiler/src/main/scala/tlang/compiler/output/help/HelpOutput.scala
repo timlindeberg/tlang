@@ -7,8 +7,8 @@ import tlang.options.FlagArgument
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class HelpOutput(flagArguments: Set[FlagArgument[_]]) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class HelpOutput(formatter: Formatter, flagArguments: Set[FlagArgument[_]]) extends Output {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatter.formatting._
 

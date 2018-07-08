@@ -5,8 +5,8 @@ import tlang.formatting.grid.Alignment.Center
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class InternalErrorOutput(error: Throwable) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class InternalErrorOutput(formatter: Formatter, error: Throwable) extends Output {
+  override def pretty: String = {
     import formatter.formatting._
     val stackTrace = formatter.highlightStackTrace(error)
 

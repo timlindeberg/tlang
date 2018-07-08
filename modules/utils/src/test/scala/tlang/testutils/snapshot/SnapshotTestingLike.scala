@@ -7,7 +7,6 @@ import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 import tlang.testutils.TestConstants
 import tlang.utils.Extensions._
-import tlang.utils.StringDiff
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -136,7 +135,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 
-    private case class Result(isSuccess: Boolean, printMessage: String, comparison: String)
+    private case class Result(isSuccess: Boolean, message: String, comparison: String)
 
     def apply(newSnapshot: String): MatchResult = {
       val Result(isSuccess, message, comparison) = matchSnapshot(newSnapshot)
@@ -194,11 +193,6 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           |New snapshot:
           |$Separator
           |${ newSnapshot.escapeMargin }
-          |$Separator
-          |
-          |Difference:
-          |$Separator
-          |${ StringDiff(oldSnapshot, newSnapshot) }
           |$Separator
        """.stripMargin
     }

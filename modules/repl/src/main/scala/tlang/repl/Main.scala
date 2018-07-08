@@ -151,7 +151,7 @@ object Main extends Logging {
     Context(
       reporter = DefaultReporter(errorMessages),
       formatter = formatter,
-      output = PrettyOutputHandler(formatter),
+      output = PrettyOutputHandler(),
       classPath = classPath,
       outDirs = Set(tempDir)
     )

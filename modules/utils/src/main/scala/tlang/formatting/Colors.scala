@@ -6,33 +6,33 @@ import scala.language.implicitConversions
 
 object Colors {
 
-  val NO_COLOR   = -1
-  val RESET      = 0
-  val BOLD       = 1
-  val UNDERLINED = 4
-  val BLINK      = 5
-  val INVERSE    = 7
-  val CONCEALED  = 8
+  val NO_COLOR  : Int = -1
+  val RESET     : Int = 0
+  val BOLD      : Int = 1
+  val UNDERLINED: Int = 4
+  val BLINK     : Int = 5
+  val INVERSE   : Int = 7
+  val CONCEALED : Int = 8
 
-  val BLACK      = 30
-  val RED        = 31
-  val GREEN      = 32
-  val YELLOW     = 33
-  val BLUE       = 34
-  val MAGENTA    = 35
-  val CYAN       = 36
-  val WHITE      = 37
-  val DEFAULT_FG = 39
+  val BLACK     : Int = 30
+  val RED       : Int = 31
+  val GREEN     : Int = 32
+  val YELLOW    : Int = 33
+  val BLUE      : Int = 34
+  val MAGENTA   : Int = 35
+  val CYAN      : Int = 36
+  val WHITE     : Int = 37
+  val DEFAULT_FG: Int = 39
 
-  val BLACK_BG   = 40
-  val RED_BG     = 41
-  val GREEN_BG   = 42
-  val YELLOW_BG  = 43
-  val BLUE_BG    = 44
-  val MAGENTA_BG = 45
-  val CYAN_BG    = 46
-  val WHITE_BG   = 47
-  val DEFAULT_BG = 49
+  val BLACK_BG  : Int = 40
+  val RED_BG    : Int = 41
+  val GREEN_BG  : Int = 42
+  val YELLOW_BG : Int = 43
+  val BLUE_BG   : Int = 44
+  val MAGENTA_BG: Int = 45
+  val CYAN_BG   : Int = 46
+  val WHITE_BG  : Int = 47
+  val DEFAULT_BG: Int = 49
 
   val Bold     : Color = RegularColor(modifiers = Set(BOLD))
   val Underline: Color = RegularColor(modifiers = Set(UNDERLINED))

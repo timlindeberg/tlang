@@ -58,7 +58,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
       printExecutionTimes(file, ctx)
 
     if (PrintErrors){
-      ctx.output.add(ErrorMessageOutput(messages, messageTypes = List(messageType)))
+      ctx.output += ErrorMessageOutput(ctx.formatter, TabReplacer(2), messages, messageTypes = List(messageType))
     }
 
     val foundCodes = getErrorCodes(messages(messageType))
@@ -70,7 +70,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
   private def getErrorCodes(errors: List[CompilerMessage]) = errors.map { error => (error.pos.line, error.code) }
 
   private def parseSolutions(file: File): List[(Int, String)] =
-    Source.getText(file).lines.zipWithIndex.flatMap {
+    FileSource.getText(file).lines.zipWithIndex.flatMap {
       case (SolutionRegex(line), lineNumber) => line.split(",").map(res => (lineNumber + 1, res.trim))
       case _                                 => Nil
     }.toList

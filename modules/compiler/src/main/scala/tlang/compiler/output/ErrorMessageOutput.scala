@@ -13,13 +13,14 @@ object ErrorMessageOutput {
 }
 
 case class ErrorMessageOutput(
+  formatter: Formatter,
+  tabReplacer: TabReplacer,
   compilerMessages: CompilerMessages,
-  tabReplacer: TabReplacer = TabReplacer(2),
   messageContextSize: Int = MessageContextFlag.defaultValue,
   messageTypes: List[MessageType] = ErrorMessageOutput.DefaultMessageTypes
 ) extends Output {
 
-  override def pretty(formatter: Formatter): String = {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 

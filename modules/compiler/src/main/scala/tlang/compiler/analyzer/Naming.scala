@@ -11,7 +11,7 @@ import tlang.compiler.imports.ClassSymbolLocator
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
@@ -42,7 +42,7 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def description(formatting: Formatting): String =
     "Resolves names and attaches symbols to trees."
 
-  override def debugOutput(output: List[CompilationUnit]): Output = ASTOutput(phaseName, output)
+  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
 
 }
 

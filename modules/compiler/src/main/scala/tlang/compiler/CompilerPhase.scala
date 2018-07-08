@@ -3,7 +3,7 @@ package tlang.compiler
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.messages.TemplateNameReplacer
 import tlang.compiler.output.Output
-import tlang.formatting.{AlternativeSuggestor, ErrorStringContext, Formatting, SimpleFormatting}
+import tlang.formatting._
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 import tlang.utils.Logging
@@ -14,7 +14,7 @@ abstract class CompilerPhase[F, T] extends Logging {
   val phaseName: String = getClass.simpleObjectName.toLowerCase
 
   def description(formatting: Formatting): String
-  def debugOutput(output: List[T]): Output
+  def debugOutput(output: List[T], formatter: Formatter): Output
   protected def run(ctx: Context)(v: List[F]): List[T]
 
   def createErrorStringContext(ctx: Context, cu: CompilationUnit): ErrorStringContext = {
@@ -33,7 +33,7 @@ abstract class CompilerPhase[F, T] extends Logging {
     }
 
     override def description(formatting: Formatting): String = ""
-    override def debugOutput(output: List[G]): Output = null
+    override def debugOutput(output: List[G], formatter: Formatter): Output = null
 
   }
 
@@ -46,7 +46,7 @@ abstract class CompilerPhase[F, T] extends Logging {
       ctx.executionTimes += phaseName -> time
 
       if (phaseName in ctx.printCodePhase)
-        ctx.output += debugOutput(output)
+        ctx.output += debugOutput(output, ctx.formatter)
     }
     ctx.reporter.terminateIfErrors()
     output

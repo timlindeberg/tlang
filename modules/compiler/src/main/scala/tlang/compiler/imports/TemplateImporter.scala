@@ -6,6 +6,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException
 import tlang.compiler.output.ErrorMessageOutput
+import tlang.formatting.textformatters.TabReplacer
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.{FileSource, Logging}
 
@@ -45,7 +46,12 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        ctx.output.add(ErrorMessageOutput(e.messages, messageContextSize = ctx.options(MessageContextFlag)))
+        ctx.output += ErrorMessageOutput(
+          ctx.formatter,
+          TabReplacer(2),
+          e.messages,
+          ctx.options(MessageContextFlag)
+        )
         None
     }
   }

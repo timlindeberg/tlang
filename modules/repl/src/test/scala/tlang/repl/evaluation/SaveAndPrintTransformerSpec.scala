@@ -29,10 +29,10 @@ class SaveAndPrintTransformerSpec extends UnitSpec with TreeTesting {
 
     val treeBuilder = mock[TreeBuilder]
     treeBuilder.createValDecl("res0", newStatement1, "") returns
-      VarDecl(VariableID("res0"), Some(IntType), initiation = Some(newStatement1), modifiers = Set(Private(), Final()))
+      VarDecl("res0", Some(IntType), initiation = newStatement1, modifiers = Set(Private(), Final()))
 
     treeBuilder.createValDecl("res1", newStatement2, "") returns
-      VarDecl(VariableID("res1"), Some(IntType), initiation = Some(newStatement2), modifiers = Set(Private(), Final()))
+      VarDecl("res1", Some(IntType), initiation = newStatement2, modifiers = Set(Private(), Final()))
 
     treeBuilder.stringConcat(StringLit("val res0: Int = "), VariableID("res0")) returns
       Plus(StringLit("val res0: Int = "), VariableID("res0"))
@@ -54,18 +54,18 @@ class SaveAndPrintTransformerSpec extends UnitSpec with TreeTesting {
       Println(StringLit("A")),
       Println(StringLit("B")),
       Evaluator.PrintMarker,
-      VarDecl(VariableID("res0"), Some(IntType), initiation = Some(newStatement1), modifiers = Set(Private(), Final())),
+      VarDecl("res0", Some(IntType), initiation = newStatement1, modifiers = Set(Private(), Final())),
       Println(Plus(StringLit("val res0: Int = "), VariableID("res0"))),
-      VarDecl(VariableID("res1"), Some(IntType), initiation = Some(newStatement2), modifiers = Set(Private(), Final())),
+      VarDecl("res1", Some(IntType), initiation = newStatement2, modifiers = Set(Private(), Final())),
       Println(Plus(StringLit("val res1: Int = "), VariableID("res1"))),
       Evaluator.PrintMarker
     ))
 
     there was one(replState).setNewStatements(List(
       Evaluator.PrintMarker,
-      VarDecl(VariableID("res0"), Some(IntType), initiation = Some(newStatement1), modifiers = Set(Private(), Final())),
+      VarDecl("res0", Some(IntType), initiation = newStatement1, modifiers = Set(Private(), Final())),
       Println(Plus(StringLit("val res0: Int = "), VariableID("res0"))),
-      VarDecl(VariableID("res1"), Some(IntType), initiation = Some(newStatement2), modifiers = Set(Private(), Final())),
+      VarDecl("res1", Some(IntType), initiation = newStatement2, modifiers = Set(Private(), Final())),
       Println(Plus(StringLit("val res1: Int = "), VariableID("res1"))),
       Evaluator.PrintMarker
     ))

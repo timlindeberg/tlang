@@ -5,8 +5,8 @@ import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.utils.JSON.Json
 
-case class PhaseInfoOutput(phases: Seq[CompilerPhase[_, _]] ) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class PhaseInfoOutput(formatter: Formatter, phases: Seq[CompilerPhase[_, _]] ) extends Output {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 

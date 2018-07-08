@@ -16,23 +16,21 @@ trait Source {
   def description: String = description(SimpleFormatting, isError = false)
 }
 
-object Source {
+object FileSource {
 
   private val TextCache: mutable.Map[File, String] = mutable.Map()
+
+  def apply(path: String): FileSource = apply(File(path))
+
   def getText(file: File): String = TextCache.getOrElseUpdate(file, file.contentAsString)
   def clearCache(file: File): Unit = TextCache.remove(file)
   def clearCache(): Unit = TextCache.clear()
-
-}
-
-object FileSource {
-  def apply(path: String): FileSource = apply(File(path))
 }
 
 case class FileSource(file: File) extends Source {
 
   override def mainName: String = file.name.dropRight(Constants.FileEnding.length)
-  override def text: String = Source.getText(file)
+  override def text: String = FileSource.getText(file)
   override def description(formatting: Formatting, isError: Boolean = false): String = {
     import formatting._
     val style = Bold + (if(isError) Red else NumColor)

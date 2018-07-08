@@ -8,8 +8,8 @@ import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions.NL
 import tlang.utils.JSON.Json
 
-case class TokenOutput(phaseName: String, allTokens: List[List[Token]]) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class TokenOutput(formatter: Formatter, phaseName: String, allTokens: List[List[Token]]) extends Output {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 

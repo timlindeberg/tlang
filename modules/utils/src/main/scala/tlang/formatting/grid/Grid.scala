@@ -197,9 +197,9 @@ case class Grid(var formatter: Formatter) {
     def apply(i: Int): Column = columns(i)
     def size: Int = columns.size
 
-    def addContent(content: Iterable[Any]): Unit = {
+    def addContent(contents: Iterable[Any]): Unit = {
       calculateColumnWidths.reset()
-      columns.zip(content).foreach {
+      columns.zip(contents).foreach {
         case (column, content: GridContent) => column.addLine(content)
         case (column, content)              => column.addLine(StringContent(content.toString))
       }
@@ -290,7 +290,7 @@ case class Grid(var formatter: Formatter) {
         val numberOfRows = row.columns
           .map { column =>
             column.lines.foldLeft(0) {
-              case (acc, s@StringContent(content)) =>
+              case (acc, s: StringContent) =>
                 val string = s.string
                 acc + math.max(1, string.length / formatting.lineWidth)
               case (acc, _)                        => acc + 1

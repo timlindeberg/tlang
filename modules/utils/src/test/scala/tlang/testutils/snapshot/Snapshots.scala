@@ -21,7 +21,7 @@ case class Snapshots(file: File) {
   // Without this here the file is not parsed correctly. Seems like a bug in betterfiles
   private implicit val encoding: Charset = Charset.defaultCharset()
 
-  private      var isDirty  : Boolean                       = false
+  private var isDirty: Boolean = false
 
   // We use a LinkedHashMap to preserve the order of the snapshots in the tests
   private lazy val snapshots: mutable.LinkedHashMap[String, Snapshot] = readFromFile()
@@ -47,11 +47,9 @@ case class Snapshots(file: File) {
   }
 
   def apply(name: String): Option[String] = {
-    snapshots.get(name) match {
-      case Some(Snapshot(value, _)) =>
-        snapshots(name) = Snapshot(value, used = true)
-        Some(value)
-      case _                        => None
+    snapshots.get(name) map { case Snapshot(value, _) =>
+      snapshots(name) = Snapshot(value, used = true)
+      value
     }
   }
 
@@ -66,7 +64,6 @@ case class Snapshots(file: File) {
       return
 
     val content = snapshots
-      .toSeq
       .map { case (name, Snapshot(value, _)) => SnapshotNamePrefix + name + NL + value }
       .mkString(NL + NL) + NL
 
@@ -76,19 +73,18 @@ case class Snapshots(file: File) {
 
   override def toString: String = snapshots.toString().replace("Map", "Snapshots")
 
-
   private def readFromFile(): mutable.LinkedHashMap[String, Snapshot] = {
-    val map = mutable.LinkedHashMap[String, Snapshot]()
+    val snapshots = mutable.LinkedHashMap[String, Snapshot]()
 
     if (!file.exists)
-      return map
+      return snapshots
 
     val lines = ListBuffer[String]()
     var name = ""
 
     def addSnapshot(): Unit = {
       if (name.nonEmpty)
-        map += name -> Snapshot(lines.dropRight(1).mkString(NL), used = false)
+        snapshots += name -> Snapshot(lines.dropRight(1).mkString(NL), used = false)
       lines.clear()
     }
 
@@ -102,7 +98,7 @@ case class Snapshots(file: File) {
     }
     lines += ""
     addSnapshot()
-    map
+    snapshots
   }
 
 

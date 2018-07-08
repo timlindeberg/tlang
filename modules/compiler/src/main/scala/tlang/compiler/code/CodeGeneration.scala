@@ -16,7 +16,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.CodeGenerationOutput
-import tlang.formatting.Formatting
+import tlang.formatting.{Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
@@ -42,7 +42,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   override def description(formatting: Formatting): String =
     "Generates bytecode that can run on the JVM."
 
-  override def debugOutput(output: List[CodegenerationStackTrace]): Output = CodeGenerationOutput(phaseName, output)
+  override def debugOutput(output: List[CodegenerationStackTrace], formatter: Formatter): Output =
+    CodeGenerationOutput(formatter, phaseName, output)
 
 
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])

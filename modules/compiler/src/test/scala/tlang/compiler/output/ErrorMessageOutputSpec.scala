@@ -12,6 +12,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
   private val PrettyFormatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
   private val SimpleFormatter = Formatter(SimpleFormatting)
 
+
   private val path = "src/a/path/to/the/File.t"
   private val source = mock[Source]
   source.lines returns IndexedSeq(
@@ -47,7 +48,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
       )
     )
 
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
   }
 
   it should "output a warning message" in {
@@ -60,7 +61,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
         pos = aPos
       )
     )
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
   }
 
 
@@ -82,7 +83,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
       )
     )
 
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
   }
 
   it should "output multiple error and warning messages" in {
@@ -116,7 +117,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
         pos = multipleLinesPos
       )
     )
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
   }
 
   it should "output error messages with context size" in {
@@ -137,13 +138,13 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
       )
     )
     test("0") {
-      testOutputSnapshots(makeErrorMessageOutput(messages, 0))
+     testMessages(messages, messageContextSize = 0)
     }
     test("1") {
-      testOutputSnapshots(makeErrorMessageOutput( messages, 1))
+     testMessages( messages, messageContextSize = 1)
     }
     test("10") {
-      testOutputSnapshots(makeErrorMessageOutput(messages, 10))
+     testMessages(messages, messageContextSize = 10)
     }
   }
 
@@ -166,7 +167,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
         )
       )
     )
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
   }
 
 
@@ -191,17 +192,17 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
         errorLetters = "GHI",
         codeNum = 345,
         pos = iLessThanPos,
-        message = "Message 2"
+        message = "Message 3"
       ),
       createMessage(
         messageType = MessageType.Error,
         errorLetters = "JKL",
         codeNum = 456,
         pos = multipleLinesPos,
-        message = "Message 2"
+        message = "Message 4"
       )
     )
-    testOutputSnapshots(makeErrorMessageOutput(messages, maxErrors = 3))
+   testMessages(messages, maxErrors = 3)
   }
 
   it should "show errors with no source" in {
@@ -214,32 +215,37 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
         message = "A message with no source"
       )
     )
-    testOutputSnapshots(makeErrorMessageOutput(messages))
+   testMessages(messages)
+  }
+
+  def testMessages(messages: List[CompilerMessage], messageContextSize: Int = 3, maxErrors: Int = 100): Unit = {
+
+    def makeErrorMessages(formatter: Formatter) =
+      makeErrorMessageOutput(formatter, messages, messageContextSize, maxErrors)
+
+    test("using pretty formatting") { makeErrorMessages(PrettyFormatter).pretty should matchSnapshot }
+    test("using simple formatting") { makeErrorMessages(SimpleFormatter).pretty should matchSnapshot }
+    test("as JSON") { JSON(makeErrorMessages(SimpleFormatter).json) should matchSnapshot }
   }
 
   it should "not output with no errors" in {
     val messages = List()
-    val output = makeErrorMessageOutput(messages)
-    output.pretty(SimpleFormatter) shouldBe ""
+    val output = makeErrorMessageOutput(SimpleFormatter, messages)
+    output.pretty shouldBe ""
     val json = output.json
     json("compilationWarnings") shouldBe Nil
     json("compilationErrors") shouldBe Nil
   }
 
-  private def testOutputSnapshots(output: ErrorMessageOutput): Unit = {
-    test("using pretty formatting") { output.pretty(PrettyFormatter) should matchSnapshot }
-    test("using simple formatting") { output.pretty(SimpleFormatter) should matchSnapshot }
-    test("as JSON") { JSON(output.json) should matchSnapshot }
-  }
-
   private def makeErrorMessageOutput(
+    formatter: Formatter,
     compilerMessages: Traversable[CompilerMessage],
-    messageContextSize: Int = 3,
+    messageContextSize: Int = 10,
     maxErrors: Int = 100
   ): ErrorMessageOutput = {
     val cm = CompilerMessages(maxErrors)
     cm ++= compilerMessages
-    ErrorMessageOutput(cm, TabReplacer(2), messageContextSize)
+    ErrorMessageOutput(formatter, TabReplacer(2), cm, messageContextSize)
   }
 
 }

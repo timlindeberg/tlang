@@ -5,7 +5,7 @@ import org.scalatest.ParallelTestExecution
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.testutils.TestConstants._
 import tlang.utils.Extensions._
-import tlang.utils.{FileSource, Logging, ProgramExecutor, Source}
+import tlang.utils.{FileSource, Logging, ProgramExecutor}
 
 class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution with Logging {
 
@@ -52,7 +52,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
   private def lines(str: String): List[String] = str.split("\\r?\\n").map(_.trim).toList
 
   private def parseSolutions(file: File): List[(Int, String)] =
-    Source
+    FileSource
       .getText(file)
       .lines
       .zipWithIndex

@@ -39,12 +39,12 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
             )
           )
         )),
-        ClassDecl(ClassID("A"), methods = List(
+        ClassDecl("A", methods = List(
           MethodDecl(
             id = MethodID("plusOne"),
             modifiers = Set(Public()),
-            args = List(Formal(IntType, VariableID("a"))),
-            stat = Some(Plus(VariableID("a"), IntLit(1)))
+            args = List(Formal(IntType, "a")),
+            stat = Plus(VariableID("a"), IntLit(1))
           )
         ))
       ),
@@ -66,7 +66,7 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
         ClassDecl(Evaluator.ReplClassID, methods = List(
           MethodDeclTree.mainMethod(List(
             // History added
-            VarDecl(VariableID("res0"), Some(IntType), Some(Plus(IntLit(1), IntLit(2))), Set(Private(), Final())),
+            VarDecl("res0", Some(IntType), Some(Plus(IntLit(1), IntLit(2))), Set(Private(), Final())),
             // Block with print markers added
             Block(List(
               Evaluator.PrintMarker,
@@ -78,12 +78,12 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
             ))
           ))
         )),
-        ClassDecl(ClassID("A"), methods = List(
+        ClassDecl("A", methods = List(
           MethodDecl(
             id = MethodID("plusOne"),
             modifiers = Set(Public()),
-            args = List(Formal(IntType, VariableID("a"))),
-            stat = Some(Plus(VariableID("a"), IntLit(1)))
+            args = List(Formal(IntType, "a")),
+            stat = Plus(VariableID("a"), IntLit(1))
           )
         ))
       ),
@@ -104,17 +104,16 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
         ClassDecl(Evaluator.ReplClassID, methods = List(
           MethodDeclTree.mainMethod(List(
             // History added
-            VarDecl(VariableID("res0"), Some(IntType), Some(Plus(IntLit(1), IntLit(2))), Set(Private(), Final())),
+            VarDecl("res0", Some(IntType), Some(Plus(IntLit(1), IntLit(2))), Set(Private(), Final())),
             // Block removed
             Evaluator.PrintMarker,
             // Variable declaration added
-            VarDecl(
-              VariableID("res1"),
+            VarDecl("res1",
               Some(IntType),
               Some(
                 NormalAccess(
                   New(ClassID("A"), args = Nil),
-                  MethodCall(MethodID("print"), List(IntLit(5)))
+                  MethodCall("print", List(IntLit(5)))
                 )
               ),
               Set(Private(), Final())
@@ -124,12 +123,11 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
             Evaluator.PrintMarker
           ))
         )),
-        ClassDecl(ClassID("A"), methods = List(
-          MethodDecl(
-            id = MethodID("plusOne"),
+        ClassDecl("A", methods = List(
+          MethodDecl("plusOne",
             modifiers = Set(Public()),
-            args = List(Formal(IntType, VariableID("a"))),
-            stat = Some(Plus(VariableID("a"), IntLit(1)))
+            args = List(Formal(IntType, "a")),
+            stat = Plus(VariableID("a"), IntLit(1))
           )
         ))
       ),

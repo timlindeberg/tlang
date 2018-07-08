@@ -6,8 +6,8 @@ import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.utils.JSON.Json
 
-case class CodeGenerationOutput(phaseName: String, stackTraces: List[CodegenerationStackTrace]) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class CodeGenerationOutput(formatter: Formatter, phaseName: String, stackTraces: List[CodegenerationStackTrace]) extends Output {
+  override def pretty: String = {
     import formatter.formatting._
 
     val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))

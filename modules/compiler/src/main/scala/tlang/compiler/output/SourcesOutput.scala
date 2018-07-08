@@ -4,8 +4,8 @@ import tlang.formatting.grid.{CenteredColumn, EvenlySpaced}
 import tlang.utils.JSON.Json
 import tlang.utils.Source
 
-case class SourcesOutput(sources: List[Source]) extends Output {
-  override def pretty(formatter: Formatter): String = {
+case class SourcesOutput(formatter: Formatter, sources: List[Source]) extends Output {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 

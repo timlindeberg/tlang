@@ -1,9 +1,10 @@
 package tlang.compiler.ast
 
 import tlang.compiler.ast.Trees._
+import tlang.compiler.testutils.TreeTesting
 import tlang.testutils.UnitSpec
 
-class TreeTransformerSpec extends UnitSpec {
+class TreeTransformerSpec extends UnitSpec with TreeTesting {
 
   behavior of "A tree transformer"
 
@@ -20,27 +21,27 @@ class TreeTransformerSpec extends UnitSpec {
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
-        VarDecl(VariableID("X"), initiation = Some(IntLit(0)))
+        VarDecl("X", initiation = IntLit(0))
       ),
       methods = List(
-        MethodDecl(MethodID("Method1"), stat = Some(Block(List(
+        MethodDecl("Method1", stat = Block(List(
           Plus(IntLit(5), IntLit(6)),
-          VarDecl(VariableID("x"), initiation = Some(IntLit(10)))
+          VarDecl("x", initiation = IntLit(10))
         )
-        )))
+        ))
       )
     )
 
     transform(clazz) shouldBe ClassDecl(
       ClassID("Clazzy"),
       fields = List(
-        VarDecl(VariableID("XABC"), initiation = Some(IntLit(1)))
+        VarDecl("XABC", initiation = IntLit(1))
       ),
       methods = List(
-        MethodDecl(MethodID("Method1"), stat = Some(Block(List(
+        MethodDecl("Method1", stat = Block(List(
           Times(IntLit(5), IntLit(6)),
-          VarDecl(VariableID("xABC"), initiation = Some(IntLit(11)))
-        ))))
+          VarDecl("xABC", initiation = IntLit(11))
+        )))
       )
     )
   }
@@ -56,13 +57,13 @@ class TreeTransformerSpec extends UnitSpec {
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
-        VarDecl(VariableID("X"), initiation = Some(IntLit(0)))
+        VarDecl("X", initiation = IntLit(0))
       ),
       methods = List(
-        MethodDecl(MethodID("Method1"), stat = Some(Block(List(
+        MethodDecl("Method1", stat = Block(List(
           Plus(IntLit(5), IntLit(6)),
-          VarDecl(VariableID("x"), initiation = Some(IntLit(10)))
-        ))))
+          VarDecl("x", initiation = IntLit(10))
+        )))
       )
     )
 

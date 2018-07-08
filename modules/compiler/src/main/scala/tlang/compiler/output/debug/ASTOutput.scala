@@ -9,16 +9,28 @@ import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ASTOutput(phaseName: String, trees: List[Tree]) extends Output {
+object ASTOutput {
+
+  def apply(formatter: Formatter, phaseName: String, trees: List[Tree]): ASTOutput = {
+    val prettyPrinter = PrettyPrinter(formatter.formatting)
+    val treePrinter = TreePrinter(formatter)
+    ASTOutput(formatter, prettyPrinter, treePrinter, phaseName, trees)
+  }
+}
+
+case class ASTOutput(
+  formatter: Formatter,
+  prettyPrinter: PrettyPrinter,
+  treePrinter: TreePrinter,
+  phaseName: String,
+  trees: List[Tree]
+) extends Output {
 
   private val TabWidth = 2
 
-  override def pretty(formatter: Formatter): String = {
+  override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
-
-    val treePrinter = TreePrinter(formatter)
-    val prettyPrinter = PrettyPrinter(formatter.formatting)
 
     val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
     trees foreach { tree =>

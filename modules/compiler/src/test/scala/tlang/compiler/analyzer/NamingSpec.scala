@@ -7,19 +7,19 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.PrettyOutputHandler
-import tlang.compiler.testutils.SymbolMatchers
+import tlang.compiler.testutils.{SymbolMatchers, TreeTesting}
 import tlang.formatting.ErrorStringContext
 import tlang.testutils.UnitSpec
 
-class NamingSpec extends UnitSpec with SymbolMatchers {
+class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
 
   behavior of "A Name Analyzer"
 
   it should "add symbols to classes" in {
     val classes = List(
-      ClassDecl(ClassID("A")),
-      TraitDecl(ClassID("B")),
-      ClassDecl(ClassID("C"))
+      ClassDecl("A"),
+      TraitDecl("B"),
+      ClassDecl("C")
     )
 
 
@@ -45,12 +45,12 @@ class NamingSpec extends UnitSpec with SymbolMatchers {
 
   it should "add symbols to methods" in {
     val methods = List(
-      MethodDecl(MethodID("A"), modifiers = Set(Static(), Final(), Private())),
-      MethodDecl(MethodID("B"), stat = Some(Block(Nil)), modifiers = Set(Static(), Public())),
-      ConstructorDecl(MethodID("new"), stat = Some(Block(Nil)), modifiers = Set(Protected(), Implicit())),
-      OperatorDecl(Plus(Empty(), Empty()), stat = Some(Block(Nil)))
+      MethodDecl("A", modifiers = Set(Static(), Final(), Private())),
+      MethodDecl("B", stat = Block(Nil), modifiers = Set(Static(), Public())),
+      ConstructorDecl(MethodID("new"), stat = Block(Nil), modifiers = Set(Protected(), Implicit())),
+      OperatorDecl(Plus(Empty(), Empty()), stat = Block(Nil))
     )
-    val classA = ClassDecl(ClassID("A"), methods = methods)
+    val classA = ClassDecl("A", methods = methods)
 
     val nameAnalyser = createNameAnalyzer(classA)
     nameAnalyser.addSymbols()
@@ -82,11 +82,11 @@ class NamingSpec extends UnitSpec with SymbolMatchers {
 
   it should "add symbols to fields" in {
     val fields = List(
-      VarDecl(VariableID("A"), modifiers = Set(Static(), Final(), Private())),
-      VarDecl(VariableID("B"), modifiers = Set(Static(), Public())),
-      VarDecl(VariableID("C"), modifiers = Set(Protected()))
+      VarDecl("A", modifiers = Set(Static(), Final(), Private())),
+      VarDecl("B", modifiers = Set(Static(), Public())),
+      VarDecl("C", modifiers = Set(Protected()))
     )
-    val classA = ClassDecl(ClassID("A"), fields = fields)
+    val classA = ClassDecl("A", fields = fields)
 
     val nameAnalyser = createNameAnalyzer(classA)
     nameAnalyser.addSymbols()
@@ -118,11 +118,11 @@ class NamingSpec extends UnitSpec with SymbolMatchers {
     val constructorArgs = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
     val operatorArgs = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
     val methods = List(
-      MethodDecl(MethodID("A"), args = methodArgs),
+      MethodDecl("A", args = methodArgs),
       ConstructorDecl(MethodID("new"), args = constructorArgs),
       OperatorDecl(Plus(Empty(), Empty()), args = operatorArgs)
     )
-    val classA = ClassDecl(ClassID("A"), methods = methods)
+    val classA = ClassDecl("A", methods = methods)
 
     val nameAnalyser = createNameAnalyzer(classA)
     nameAnalyser.addSymbols()
@@ -180,7 +180,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers {
   private val formatter          = testFormatter(useColor = false)
   private val errorStringContext = ErrorStringContext(formatter)
   private val reporter           = mock[Reporter]
-  private val ctx                = Context(reporter, formatter, PrettyOutputHandler(formatter))
+  private val ctx                = Context(reporter, formatter, PrettyOutputHandler())
   private val imports            = Imports(ctx, errorStringContext, Nil)
 
 

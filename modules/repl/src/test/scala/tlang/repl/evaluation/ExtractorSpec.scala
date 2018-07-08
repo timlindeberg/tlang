@@ -9,7 +9,6 @@ import tlang.testutils.UnitSpec
 
 class ExtractorSpec extends UnitSpec with TreeTesting {
 
-
   behavior of "An extractor"
 
   it should "extract classes" in {
@@ -17,9 +16,9 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = Extractor(formatter, replState)
     val replClass = ClassDecl(Evaluator.ReplClassID)
-    val classA = ClassDecl(ClassID("A"))
-    val classB = ClassDecl(ClassID("B"))
-    val classC = ClassDecl(ClassID("C"))
+    val classA = ClassDecl("A")
+    val classB = ClassDecl("B")
+    val classC = ClassDecl("C")
 
     val cu = createCU(replClass, classA, classB, classC)()
 
@@ -40,16 +39,16 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = Extractor(formatter, replState)
 
-    val methodA = createMethod(name = "A", retType = Some(IntType))
+    val methodA = createMethod(name = "A", retType = IntType)
     val methodB = createMethod(
       name = "B",
       args = List(StringType),
-      retType = Some(UnitType())
+      retType = UnitType()
     )
     val methodC = createMethod(
       name = "C",
       args = List(IntType, StringType),
-      retType = Some(StringType)
+      retType = StringType
     )
 
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(methodA, methodB, methodC))
@@ -98,10 +97,10 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = Extractor(formatter, replState)
 
-    val statement1 = VarDecl(VariableID("A"), tpe = Some(IntType))
+    val statement1 = VarDecl("A", tpe = Some(IntType))
     val statement2 = Plus(IntLit(1), IntLit(1))
-    val statement3 = VarDecl(VariableID("B"), tpe = Some(StringType))
-    val statement4 = VarDecl(VariableID("C"), tpe = None)
+    val statement3 = VarDecl("B", tpe = Some(StringType))
+    val statement4 = VarDecl("C", tpe = None)
 
     val statements = List(statement1, statement2, statement3, statement4)
 
@@ -127,13 +126,13 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = Extractor(formatter, replState)
 
-    val classA = ClassDecl(ClassID("A"))
-    val methodA = MethodDecl(MethodID("A"), retType = Some(IntType))
+    val classA = ClassDecl("A")
+    val methodA = MethodDecl("A", retType = IntType)
 
     val imports = mock[Imports]
     imports.imports returns List(RegularImport("ABC" :: "DEF" :: "GHI" :: Nil))
 
-    val statement = VarDecl(VariableID("A"), tpe = Some(IntType))
+    val statement = VarDecl("A", tpe = Some(IntType))
     val mainMethod = MethodDeclTree.mainMethod(List(statement))
 
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(mainMethod, methodA))

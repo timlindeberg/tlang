@@ -8,7 +8,7 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.TokenOutput
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Source}
 
@@ -31,7 +31,8 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
   override def description(formatting: Formatting): String =
     "Lexes the input and produces tokens."
 
-  override def debugOutput(output: List[List[Token]]): Output = TokenOutput(phaseName, output)
+  override def debugOutput(output: List[List[Token]], formatter: Formatter): Output =
+    TokenOutput(formatter, phaseName, output)
 
 }
 
