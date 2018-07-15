@@ -11,9 +11,8 @@ import play.api.mvc._
 import tlang.SafeEvaluator
 import tlang.compiler.Context
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.messages.{CompilerMessages, DefaultReporter, MessageFormatter}
-import tlang.compiler.utils.DebugOutputFormatter
-import tlang.formatting.textformatters.TabReplacer
+import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
+import tlang.compiler.output.JSONOutputHandler
 import tlang.formatting.{Formatter, SimpleFormatting}
 
 import scala.concurrent.duration.Duration
@@ -24,28 +23,17 @@ class CompilationController @Inject()(cc: ControllerComponents)(implicit system:
   private val formatting = SimpleFormatting
   private val formatter  = Formatter(formatting)
 
-  private val errorFormatter = MessageFormatter(formatter, TabReplacer(2), 3)
-
   private val tempDir = File.newTemporaryDirectory("repl")
 
-  private val ctx = createContext(errorFormatter, tempDir)
+  private val ctx = Context(
+    reporter = DefaultReporter(CompilerMessages(maxErrors = 5)),
+    formatter = formatter,
+    output = JSONOutputHandler(),
+    classPath = ClassPath.Default + tempDir.pathAsString,
+    outDirs = Set(tempDir)
+  )
 
-  private val evaluator = SafeEvaluator(ctx, Duration("2s"))
-
-  private def createContext(errorFormatter: MessageFormatter, tempDir: File): Context = {
-    val formatter = errorFormatter.formatter
-    val classPath = ClassPath.Default + tempDir.pathAsString
-
-    val errorMessages = CompilerMessages(formatter, errorFormatter, maxErrors = 5)
-    val debugOutputFormatter = DebugOutputFormatter(formatter)
-    Context(
-      reporter = DefaultReporter(errorMessages),
-      formatter = formatter,
-      debugOutputFormatter = debugOutputFormatter,
-      classPath = classPath,
-      outDirs = Set(tempDir)
-    )
-  }
+  private val evaluator = SafeEvaluator(ctx, Duration("10s"))
 
   def socket: WebSocket = WebSocket.accept[JsValue, JsValue] { request =>
     ActorFlow.actorRef { out =>

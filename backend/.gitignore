@@ -1,9 +1,9 @@
-
 build
 logs
 target
 .project
 .settings
+.idea
 RUNNING_PID
 
 project/target

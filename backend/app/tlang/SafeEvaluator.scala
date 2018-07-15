@@ -1,6 +1,7 @@
 package tlang
 
 import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 import better.files.File
 import tlang.compiler.ast.Trees.CompilationUnit
@@ -11,10 +12,13 @@ import tlang.utils.StringSource
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.language.postfixOps
 import scala.sys.process._
 
 object SafeEvaluator {
   val ClassName = "Evaluation"
+
+  val ExecScript = "docker/execute_in_docker.sh"
 }
 
 trait ExecutionResult
@@ -32,7 +36,6 @@ case class SafeEvaluator(ctx: Context, timeout: Duration) {
   import SafeEvaluator._
 
   def apply(code: String)(implicit executionContext: ExecutionContext): (Future[ExecutionResult], () => Unit) = {
-    val classFile = File(ctx.outDirs.head, ClassName + ".class")
     val source = List(StringSource(code, ClassName))
     val identity = () => {}
 
@@ -49,64 +52,58 @@ case class SafeEvaluator(ctx: Context, timeout: Duration) {
         val executionResult = InternalCompilerError(e.stackTrace)
         return (Future(executionResult), identity)
     }
+
+    val classFile = File(ctx.outDirs.head, ClassName + ".class")
     execute(classFile)
   }
 
   private def execute(classFile: File)(implicit executionContext: ExecutionContext): (Future[ExecutionResult], () => Unit) = {
+    val id = UUID.randomUUID()
+    val command = Seq(ExecScript, classFile.pathAsString, id.toString)
+    val output = new ByteArrayOutputStream()
 
-    val classPaths = ctx.allClassPaths.mkString(java.io.File.pathSeparator)
-    val command = s"""java -cp "$classPaths" $ClassName 2>&1"""
+    def writeLine(s: String): Unit = {
+      output.write(s.getBytes)
+      output.write('\n')
+    }
 
-    val byteOutput = new ByteArrayOutputStream()
-    val logger = ProcessLogger(
-      (out: String) => {
-        byteOutput.write(out.getBytes)
-        byteOutput.write('\n')
-      },
-      (err: String) => {
-        byteOutput.write(err.getBytes)
-        byteOutput.write('\n')
-      }
-    )
-
-    val process = command.run(logger)
-
+    val process = Process(command).run(ProcessLogger(fout = writeLine, ferr = writeLine))
     val promise = Promise[ExecutionResult]()
 
     val cancel: () => Unit = () => {
-      process.destroy()
+      cancelExecution(id)
       promise.success(Canceled)
     }
 
-    promise completeWith Future { awaitResult(process, byteOutput) }
+    promise completeWith Future { awaitResult(process, id, output) }
 
     (promise.future, cancel)
   }
 
-  private def awaitResult(process: Process, byteOutput: ByteArrayOutputStream): ExecutionResult = {
+  private def awaitResult(process: Process, id: UUID, output: ByteArrayOutputStream): ExecutionResult = {
     val startTime = System.currentTimeMillis()
 
     while (process.isAlive()) {
       val now = System.currentTimeMillis()
       if (now - startTime > timeout.toMillis) {
-        process.destroy()
+        cancelExecution(id)
         return Timeout
       }
       Thread.sleep(100)
     }
 
     val exitCode = process.exitValue()
-    val output = byteOutput.toString().trim
+    val outputString = output.toString().trim
     if (exitCode != 0)
-      return makeExecutionError(output)
+      return makeExecutionError(outputString)
 
-    if (output.isEmpty) NoOutput else ExecutionSuccessful(output)
+    if (outputString.isEmpty) NoOutput else ExecutionSuccessful(outputString)
   }
 
   private def hasMainMethod(cus: List[CompilationUnit]) = {
     cus.exists { cu =>
       cu.classes.exists { clazz =>
-        clazz.name == ClassName && clazz.methods.exists(_.getSymbol.isMainMethod)
+        clazz.name == ClassName && clazz.methods.exists { _.getSymbol.isMainMethod }
       }
     }
   }
@@ -118,4 +115,7 @@ case class SafeEvaluator(ctx: Context, timeout: Duration) {
       .replaceAll(ClassName + "[.:]?", "")
     ExecutionError(message, line)
   }
+
+  private def cancelExecution(id: UUID): Unit = s"docker kill $id" !!
+
 }
