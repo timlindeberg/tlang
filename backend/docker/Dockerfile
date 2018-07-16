@@ -9,11 +9,14 @@ RUN apt-get update && \
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA_HOME
 
-# Setup TLang library
-COPY stdlib /home/tlang/
+# Remove setgid and setuid rights of all binaries
+RUN find / -xdev -perm /6000 -type f -exec chmod a-s {} \; || true
 
 # Setup tlang user
 RUN useradd -m tlang
 USER tlang
 ENV HOME /home/tlang
 WORKDIR /home/tlang
+
+# Setup TLang library
+COPY stdlib /home/tlang/stdlib

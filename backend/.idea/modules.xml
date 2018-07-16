@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Projects-root.iml" filepath="$PROJECT_DIR$/.idea/modules/Projects-root.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/T-Compiler-root-build.iml" filepath="$PROJECT_DIR$/.idea/modules/T-Compiler-root-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend-build.iml" filepath="$PROJECT_DIR$/.idea/modules/backend-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/cafebabe.iml" filepath="$PROJECT_DIR$/.idea/modules/cafebabe.iml" />
@@ -15,6 +13,8 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/macros-build.iml" filepath="$PROJECT_DIR$/.idea/modules/macros-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/repl.iml" filepath="$PROJECT_DIR$/.idea/modules/repl.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/repl-build.iml" filepath="$PROJECT_DIR$/.idea/modules/repl-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/root.iml" filepath="$PROJECT_DIR$/.idea/modules/root.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/root-build.iml" filepath="$PROJECT_DIR$/.idea/modules/root-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/utils.iml" filepath="$PROJECT_DIR$/.idea/modules/utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/utils-build.iml" filepath="$PROJECT_DIR$/.idea/modules/utils-build.iml" />
     </modules>

@@ -5,7 +5,7 @@
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
     </profile>
-    <profile name="sbt 2" modules="Projects-root,compiler,macros,repl,utils">
+    <profile name="sbt 2" modules="Projects-root,root,compiler,macros,repl,utils">
       <option name="macros" value="true" />
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
@@ -16,7 +16,7 @@
         <plugin path="$USER_HOME$/.ivy2/cache/org.scalameta/paradise_2.12.4/jars/paradise_2.12.4-3.0.0-M10.jar" />
       </plugins>
     </profile>
-    <profile name="sbt 4" modules="root,backend">
+    <profile name="sbt 3" modules="backend">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <parameters>

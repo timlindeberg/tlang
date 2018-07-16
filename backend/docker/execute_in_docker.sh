@@ -1,16 +1,16 @@
 #!/bin/bash
 
-CLASS_PATH="$1"
-ID="$2"
+OUT_DIR="$1"
+CLASS="$2"
+ID="$3"
 
-BASE=${CLASS_PATH##*/}
-CLASS=${BASE%.*}
+OUTPUT_DIR="out"
 
 docker run \
-	--volume $CLASS_PATH:/home/tlang/$CLASS.class:ro \
+	--volume $OUT_DIR:/home/tlang/$OUTPUT_DIR:ro \
 	--name $ID \
 	--net=none \
 	--memory 128mb \
 	--cpus 0.2 \
 	exec \
-	java $CLASS
+	java -cp $OUTPUT_DIR:stdlib $CLASS

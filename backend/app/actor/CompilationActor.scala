@@ -5,7 +5,6 @@ import play.api.Logger
 import play.api.libs.json.{JsValue, Json, Writes}
 import tlang._
 import tlang.compiler.messages.CompilerMessage
-import tlang.utils.Extensions.{NL, _}
 
 import scala.util._
 
@@ -46,9 +45,9 @@ class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
   private def waiting: PartialFunction[Any, Unit] = {
     case j: JsValue if hasType(j, EVALUATE) =>
       val code = (j \ "code").as[String]
-      Logger.debug("Compiling code:\n" + code)
-      val (f, cancel) = evaluator(code)
-      f onComplete { onCompilationComplete }
+      Logger.debug(s"Compiling code:\n $code")
+      val Evaluation(result, cancel) = evaluator(code)
+      result onComplete { onEvaluationComplete }
       context become compiling(cancel)
     case _                                  =>
   }
@@ -61,7 +60,7 @@ class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
     case _                                =>
   }
 
-  private def onCompilationComplete(res: Try[ExecutionResult]): Unit = {
+  private def onEvaluationComplete(res: Try[EvaluationResult]): Unit = {
     context become waiting
 
     val message = res match {
@@ -86,10 +85,4 @@ class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
     (json \ "messageType").validate[String].asOpt.contains(messageType)
   }
 
-  private def formatStackTrace(e: Throwable): String = {
-    val stackTrace = e.getCause.stackTrace
-    // Remove internal parts of the stacktrace
-    val className = SafeEvaluator.ClassName
-    stackTrace.split("at " + className).head + s"at $className.main(Unknown Source)$NL"
-  }
 }

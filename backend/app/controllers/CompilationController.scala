@@ -3,7 +3,6 @@ package controllers
 import actor.CompilationActor
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import better.files.File
 import javax.inject._
 import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
@@ -20,17 +19,11 @@ import scala.concurrent.duration.Duration
 @Singleton
 class CompilationController @Inject()(cc: ControllerComponents)(implicit system: ActorSystem, mat: Materializer) extends AbstractController(cc) {
 
-  private val formatting = SimpleFormatting
-  private val formatter  = Formatter(formatting)
-
-  private val tempDir = File.newTemporaryDirectory("repl")
-
   private val ctx = Context(
     reporter = DefaultReporter(CompilerMessages(maxErrors = 5)),
-    formatter = formatter,
+    formatter = Formatter(SimpleFormatting),
     output = JSONOutputHandler(),
-    classPath = ClassPath.Default + tempDir.pathAsString,
-    outDirs = Set(tempDir)
+    classPath = ClassPath.Default
   )
 
   private val evaluator = SafeEvaluator(ctx, Duration("10s"))
