@@ -63,3 +63,9 @@ function toHtmlLines(lines: string[], className: string) {
     </React.Fragment>
   ));
 }
+
+export function thousandSeperatedNumber(num: number, seperator: string = ' ') {
+  const parts = num.toString().split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, seperator);
+  return parts.join(".");
+}

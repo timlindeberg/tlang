@@ -24,3 +24,15 @@
 .stacktrace {
   color: @accentColor;
 }
+
+@hoverTransition: transform 0.2s ease-in-out;
+.ui.accordion .title:not(.ui).show-more {
+  padding: 0;
+  color: @primaryColor;
+  transition: @hoverTransition;
+
+  &:hover {
+    transition: @hoverTransition;
+    transform: translateY(-.1em);
+  }
+}

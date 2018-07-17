@@ -62,11 +62,11 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     if (!error.start || !error.end) {
       return;
     }
+
     const start = toCodeMirrorPosition(error.start);
     const end = toCodeMirrorPosition(error.end);
-    const editor = this.editor!;
 
-    const mark = editor.markText(start, end, { className: 'error-marked flash animated' });
+    const mark = this.editor!.markText(start, end, { className: 'error-marked flash animated' });
     this.marks.push(mark);
   }
 

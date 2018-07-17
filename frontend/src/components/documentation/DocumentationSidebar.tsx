@@ -29,8 +29,7 @@ interface DocumentationSidebarState {
 
 const MIN_CHARS = 3;
 
-export default class DocumentationSidebar
-  extends React.Component<DocumentationSidebarProps, DocumentationSidebarState> {
+export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, DocumentationSidebarState> {
 
   originalHeaders: Header[] = [];
   headerValues: string[] = [];
