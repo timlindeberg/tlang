@@ -98,9 +98,9 @@ export class ExecutionError extends PlaygroundEvent {
 
   body() {
     return (
-      <div>
+      <div className="result-block">
         <p>Execution exited with an exception:</p>
-        <p className="result-block stacktrace">{htmlLines(this.lines, 'errorLine')}</p>
+        <p className="result-block stacktrace">{htmlLines(this.lines, 'error-line')}</p>
       </div>
     );
   }
@@ -120,7 +120,7 @@ export class InternalCompilerError extends PlaygroundEvent {
 
   body() {
     return (
-      <div>
+      <div className="result-block">
         <p>The compiler crashed with an internal error:</p>
         <p className="result-block stacktrace">{this.error}</p>
       </div>

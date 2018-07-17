@@ -66,21 +66,7 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     const end = toCodeMirrorPosition(error.end);
     const editor = this.editor!;
 
-    const text = editor.getRange(start, end);
-    const span = <span className="error-marked flash animated">{text}</span>;
-    const lineMarker = asDOM(
-      <Popup
-        wide
-        className="error-popup fadeIn animated"
-        position="top center"
-        trigger={span}
-      >
-        {htmlLines(error.message, 'errorLine')}
-      </Popup>,
-      'span'
-    );
-
-    const mark = editor.markText(start, end, { replacedWith: lineMarker });
+    const mark = editor.markText(start, end, { className: 'error-marked flash animated' });
     this.marks.push(mark);
   }
 
