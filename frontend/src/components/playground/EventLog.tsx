@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Divider, Header, Icon, Segment, TransitionGroup } from 'semantic-ui-react';
 import { scrollTo } from 'utils/misc';
-import { PlaygroundEvent } from './Events';
+import { PlaygroundEvent } from './events/Events';
 
 interface ResultsProps {
   events: PlaygroundEvent[];
@@ -19,18 +19,14 @@ export default class EventLog extends React.Component<ResultsProps, {}> {
   eventBlock = (event: PlaygroundEvent, key: string, shouldScrollTo: boolean): JSX.Element  => {
     const { title, color, icon } = event;
     const body = event.body();
-    const scrollFunction = shouldScrollTo ? this.scrollTo : () => {};
+    const scrollFunction = shouldScrollTo ? this.scrollTo : () => { return; };
     return (
       <div key={key} ref={scrollFunction} className="event-block">
         <Segment color={color} className="shadow-hover">
           <Header color={color}>
-            <Icon name={icon} /> {title}
+            <Icon name={icon} />{title}
           </Header>
-          { body &&  (
-            <React.Fragment>
-              <Divider /> {body}
-            </React.Fragment>
-          )}
+          {body &&  (<React.Fragment><Divider /> {body}</React.Fragment>)}
         </Segment>
       </div>
     );

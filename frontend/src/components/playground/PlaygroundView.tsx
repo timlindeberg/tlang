@@ -9,7 +9,7 @@ import {
   ConnectedFailedEvent,
   DisconnectedEvent, ExecutionError, InternalCompilerError, NoOutputEvent,
   PlaygroundEvent, ServerError, TimeoutEvent,
-} from 'components/playground/Events';
+} from 'components/playground/events/Events';
 import { CodeError } from 'components/playground/PlaygroundTypes';
 import { Grid, Segment } from 'semantic-ui-react';
 
@@ -23,7 +23,6 @@ import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
 import 'syntaxHighlighting/codemirror-highlighting';
-import { sleep } from 'utils/misc';
 
 interface PlaygroundViewState {
   code: string;
@@ -103,11 +102,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   }
 
   onMessageReceived = async (msg: any) => {
-    await sleep(500);
-
     const message = JSON.parse(msg.data);
-    console.log('Message', message);
-
     const messageKey = message.messageType as keyof typeof MessageType;
     switch (MessageType[messageKey]) {
     case MessageType.SUCCESS:
@@ -127,6 +122,8 @@ export default class PlaygroundView extends React.Component<{}, {}> {
       if (line !== -1) {
         error.start = { line, col: 1 };
       }
+      console.log('line', line);
+      console.log('error', error);
       this.setState(() => ({ errors: [error] }));
       break;
     case MessageType.INTERNAL_COMPILER_ERROR:
@@ -164,7 +161,6 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   connect = async () => {
     this.goTo(PlaygroundState.Connecting);
 
-    await sleep(500);
 
     const setDisconnected = (event: PlaygroundEvent) => {
       this.goTo(PlaygroundState.Disconnected);
@@ -192,7 +188,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
     return (
       <React.Fragment>
         <Segment textAlign="left" inverted id="MenuLayout-navbar" className="Navbar-border">
-          <Grid >
+          <Grid>
             <Grid.Column>
               <Logo size={2.5}/>
             </Grid.Column>

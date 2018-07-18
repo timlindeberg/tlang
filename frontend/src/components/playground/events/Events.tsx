@@ -1,10 +1,10 @@
-import 'components/playground/Events.less';
+import BodyWithExtraContent  from 'components/playground/events/BodyWithExtraContent';
+import 'components/playground/events/Events.less';
 import { CodeError } from 'components/playground/PlaygroundTypes';
 import * as React from 'react';
-import { SemanticCOLORS, SemanticICONS, Accordion, Divider } from 'semantic-ui-react';
-import { htmlLines, thousandSeperatedNumber, widthOfRenderedText } from 'utils/misc';
-import { Collapse } from 'react-collapse';
-import { HashLink } from "react-router-hash-link";
+import { HashLink } from 'react-router-hash-link';
+import { SemanticCOLORS, SemanticICONS } from 'semantic-ui-react';
+import { htmlLines, widthOfRenderedText } from 'utils/misc';
 
 export abstract class PlaygroundEvent {
   abstract title: string;
@@ -16,95 +16,37 @@ export abstract class PlaygroundEvent {
   }
 }
 
-const LINES_TO_SHOW: number = 15;
-
-
-interface CompilationSuccessfulBodyProps {
-  lines: string[];
-}
-interface CompilationSuccessfulState {
-  isOpen: boolean;
-}
-
-
-class CompilationSuccessfulBody extends React.Component<CompilationSuccessfulBodyProps, CompilationSuccessfulState> {
-  textWidth: number = 0;
-  state: CompilationSuccessfulState = {
-    isOpen: false
-  };
-
-  constructor(props: CompilationSuccessfulBodyProps) {
-    super(props);
-    this.textWidth = widthOfRenderedText(`${props.lines.length}`, 'line-number');
-  }
-
-  toggleOpen = () => this.setState((state) => ({ isOpen: !state.isOpen }));
-  
-  makeLine = (line: string, i: number): JSX.Element => (
-    <React.Fragment key={i}>
-      <span className="line-number" style={{ width: `${this.textWidth}px` }}>{i + 1}</span>
-      <span className="result-line">{line}</span>
-      <br/>
-    </React.Fragment>
-  );
-
-  getToggleText = (isOpen: Boolean, length: number): string =>
-    isOpen ? 'Show less' : `Show ${thousandSeperatedNumber(length)} more line${length > 1 ? 's' : ''}`
-
-  render() {
-    const { lines } = this.props;
-    const { isOpen } = this.state;
-    
-    const first = lines.slice(0, LINES_TO_SHOW);
-    const extra = lines.slice(LINES_TO_SHOW);
-
-    return (
-      <div className="result-block">
-        {first.map(this.makeLine)}
-        {extra.length > 0 && (
-          <Accordion>
-            <Collapse isOpened={isOpen}>
-              <React.Fragment>
-                {isOpen && extra.map((line, i) => this.makeLine(line, LINES_TO_SHOW + i))}
-              </React.Fragment>
-            </Collapse>
-            <Divider />
-            <Accordion.Title
-              active={isOpen}
-              content={this.getToggleText(isOpen, extra.length)}
-              onClick={this.toggleOpen}
-              className="show-more"
-            />
-          </Accordion>
-        )}
-      </div>
-    );
-  }
-}
-
 export class CompilationSuccessfulEvent extends PlaygroundEvent {
   title: string = 'Result';
   color: SemanticCOLORS = 'green';
   icon: SemanticICONS = 'check';
-  private lines: string[];
+  textWidth: number;
+  private readonly lines: string[];
 
   constructor(message: any) {
     super();
     this.lines = message.result.split('\n');
+    this.textWidth = widthOfRenderedText(`${this.lines.length}`, 'line-number');
   }
 
-  body() {
-    return <CompilationSuccessfulBody lines={this.lines}/>
-  }
-}
-
-export class NoOutputEvent extends PlaygroundEvent {
-  title: string = 'No output';
-  color: SemanticCOLORS = 'green';
-  icon: SemanticICONS = 'circle thin';
+  makeLine = (i: number): JSX.Element => (
+    <React.Fragment key={i}>
+      <span className="line-number" style={{ width: `${this.textWidth}px` }}>{i + 1}</span>
+      <span className="result-line">{this.lines[i]}</span>
+      <br/>
+    </React.Fragment>
+  )
 
   body() {
-    return 'Compilation was successful but there was no output. Use print or println to output the results of your program.';
+    return (
+      <BodyWithExtraContent
+        numLines={this.lines.length}
+        makeLine={this.makeLine}
+        maxToShow={15}
+        type="line"
+        width={this.textWidth}
+      />
+    );
   }
 }
 
@@ -126,18 +68,38 @@ export class CompilationErrorEvent extends PlaygroundEvent {
     this.widthOfLongestPosition = widthOfRenderedText(longest, 'line-number');
   }
 
+  makeLine = (i: number): JSX.Element => (
+    <React.Fragment key={i}>
+      <span className="line-number" style={{ width: `${this.widthOfLongestPosition}px` }}>{this.positions[i]}</span>
+      <span className="result-line">{this.errors[i].message}</span>
+      <br/>
+    </React.Fragment>
+  )
+
   body() {
-    const width = `${this.widthOfLongestPosition}px`;
     return (
-      <div className="result-block">
-        {this.errors.map((error, i) =>
-          <React.Fragment key={i}>
-            <span className="line-number" style={{ width }}>{this.positions[i]}</span>
-            <span className="result-line">{error.message}</span>
-            <br/>
-          </React.Fragment>
-        )}
-      </div>
+      <BodyWithExtraContent
+        numLines={this.errors.length}
+        makeLine={this.makeLine}
+        maxToShow={15}
+        type="error"
+        width={this.widthOfLongestPosition}
+      />
+    );
+  }
+}
+
+export class NoOutputEvent extends PlaygroundEvent {
+  title: string = 'No output';
+  color: SemanticCOLORS = 'green';
+  icon: SemanticICONS = 'circle thin';
+
+  body() {
+    return (
+      <p>
+        Compilation was successful but there was no output.
+        Use <code>print</code> or <code>println</code> to output the results of your program.
+      </p>
     );
   }
 }
@@ -146,7 +108,7 @@ export class ExecutionError extends PlaygroundEvent {
   title: string = 'Execution error';
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'exclamation circle';
-  private lines: string[];
+  private readonly lines: string[];
 
   constructor(message: any) {
     super();

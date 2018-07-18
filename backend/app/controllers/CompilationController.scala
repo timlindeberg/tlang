@@ -20,7 +20,7 @@ import scala.concurrent.duration.Duration
 class CompilationController @Inject()(cc: ControllerComponents)(implicit system: ActorSystem, mat: Materializer) extends AbstractController(cc) {
 
   private val ctx = Context(
-    reporter = DefaultReporter(CompilerMessages(maxErrors = 5)),
+    reporter = DefaultReporter(CompilerMessages(maxErrors = -1)),
     formatter = Formatter(SimpleFormatting),
     output = JSONOutputHandler(),
     classPath = ClassPath.Default

@@ -37,8 +37,7 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
   setCode = (editor: any, data: any, value: string) => this.props.setCode(value);
 
   onKeyPress = (editor: IInstance, event: KeyboardEvent) => {
-    console.log(event);
-    if ((event.ctrlKey || event.metaKey) && event.code === 'Space') {
+    if (event.ctrlKey && event.code === 'Enter') {
       this.props.compileCode();
     }
   }

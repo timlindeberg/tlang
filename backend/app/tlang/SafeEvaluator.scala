@@ -128,6 +128,12 @@ case class SafeEvaluator(ctx: Context, timeout: Duration) {
     ExecutionError(message, line)
   }
 
-  private def cancelExecution(id: UUID): Unit = s"docker kill $id" !!
+  private def cancelExecution(id: UUID): Unit = {
+    try {
+      s"docker kill $id" !!
+    } catch {
+      case e: RuntimeException => // do nothing
+    }
+  }
 
 }

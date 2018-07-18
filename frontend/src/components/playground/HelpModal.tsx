@@ -17,9 +17,6 @@ export default class HelpModal extends React.Component<HelpModalProps, HelpModal
   handleClose = () => this.setState({ isOpen: false });
 
   render() {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const modifier = isMac ? 'CMD' : 'CTRL';
-
     const icon = 'question circle outline';
     return (
       <React.Fragment>
@@ -35,7 +32,7 @@ export default class HelpModal extends React.Component<HelpModalProps, HelpModal
           <Modal.Content>
             In the Playground you can try out <code>tlang</code> in real time! Enter code in the editor and press
             the <strong>Run Code</strong> button to have it evaluated
-            (or press <code>{modifier}</code> + <code>SPACE</code>).
+            (or press <code>CTRL</code> + <code>ENTER</code>).
 
             If you're unsure what to write you can start out with some examples by selecting one in the examples
             dropdown.

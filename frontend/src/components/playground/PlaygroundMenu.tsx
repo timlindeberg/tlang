@@ -41,7 +41,6 @@ export default class PlaygroundMenu extends React.Component<PlaygroundMenuProps,
           </Menu.Item>
       );
     default: throw new Error(`Unhandled playground state: ${playgroundState}`);
-
     }
   }
 
@@ -74,11 +73,7 @@ export default class PlaygroundMenu extends React.Component<PlaygroundMenuProps,
         <Dropdown.Menu>
           {Object.keys(codeExamples)
             .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
-            .map(key => (
-              <Dropdown.Item key={key} onClick={() => setCode(codeExamples[key])}>
-                {key}
-              </Dropdown.Item>
-            ))}
+            .map(key => <Dropdown.Item key={key} onClick={() => setCode(codeExamples[key])}>{key}</Dropdown.Item>)}
         </Dropdown.Menu>
       </Dropdown>
     );
