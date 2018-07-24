@@ -1,13 +1,16 @@
 package tlang
 
+import java.io.FileNotFoundException
 import java.nio.file.{Path, Paths}
 
 import better.files.{File, _}
 
+import scala.io.Source
+import scala.util.Try
+
 object Constants {
 
   val FileEnding                    = ".t"
-  val VersionNumber                 = "0.0.1"
   val THome                         = "T_HOME"
   val JavaObject                    = "java::lang::Object"
   val JavaString                    = "java::lang::String"
@@ -29,13 +32,20 @@ object Constants {
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
+  lazy val Version          : String = readVersion()
   lazy val TDirectory       : String = sys.env.getOrElse(THome, FatalCantFindTHome)
   lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
   lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
+
+  private val VersionFile = "version.txt"
 
   private def FatalCantFindTHome: Nothing = {
     System.err.println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")
     sys.exit(1)
   }
+
+  private def readVersion(): String =
+    Try(Source.fromResource(VersionFile).mkString.trim)
+    .getOrElse(throw new FileNotFoundException(VersionFile))
 
 }

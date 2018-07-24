@@ -1,6 +1,0 @@
-[
-    {
-        "keys": [ "alt+shift+d" ], 
-        "command": "start_end_of_selection"
-    }
-]

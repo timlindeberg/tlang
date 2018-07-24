@@ -5,12 +5,14 @@ scalacOptions in ThisBuild ++= Seq(
 
 enablePlugins(JavaAppPackaging)
 
-val modulesDirectory = "modules"
+val ModulesDirectory = "modules"
+val VersionFile = s"$ModulesDirectory/utils/src/main/resources/version.txt"
+val Version = scala.io.Source.fromFile(VersionFile).mkString.trim
 
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
   scalaVersion := "2.12.4",
   organization := "tlang",
-  version := "1.0",
+  version := Version,
   javacOptions ++= Seq("-encoding", "UTF-8"),
     // Common dependencies used by all modules
   libraryDependencies ++= Seq(
@@ -55,7 +57,7 @@ lazy val testSettings = Seq(
 // --- Modules
 // ------------------------------------------------------------------------------------
 
-lazy val macros = (project in file(s"$modulesDirectory/macros"))
+lazy val macros = (project in file(s"$ModulesDirectory/macros"))
   .settings(
     name := "macros",
     commonSettings,
@@ -68,7 +70,7 @@ lazy val macros = (project in file(s"$modulesDirectory/macros"))
   )
 
 
-lazy val utils = (project in file(s"$modulesDirectory/utils"))
+lazy val utils = (project in file(s"$ModulesDirectory/utils"))
   .settings(
     name := "utils",
     commonSettings,
@@ -82,7 +84,7 @@ lazy val utils = (project in file(s"$modulesDirectory/utils"))
   .dependsOn(macros)
 
 
-lazy val cafebabe = (project in file(s"$modulesDirectory/cafebabe"))
+lazy val cafebabe = (project in file(s"$ModulesDirectory/cafebabe"))
   .settings(
     name := "cafebabe",
     commonSettings
@@ -90,7 +92,7 @@ lazy val cafebabe = (project in file(s"$modulesDirectory/cafebabe"))
   .dependsOn(utils)
 
 
-lazy val compiler = (project in file(s"$modulesDirectory/compiler"))
+lazy val compiler = (project in file(s"$ModulesDirectory/compiler"))
   .settings(
     name := "compiler",
     mainClass in stage := Some("tlang.compiler.Main"),
@@ -104,7 +106,7 @@ lazy val compiler = (project in file(s"$modulesDirectory/compiler"))
   )
   .dependsOn(macros, utils, cafebabe)
 
-lazy val repl = (project in file(s"$modulesDirectory/repl"))
+lazy val repl = (project in file(s"$ModulesDirectory/repl"))
   .settings(
     name := "repl",
     commonSettings,

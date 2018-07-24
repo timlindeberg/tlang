@@ -11,7 +11,7 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
   override val argDescription = "dir"
 
   override def description(formatter: Formatter): String = {
-    "Specify a path where generated classes are placed."
+    "Specify paths where generated classes are placed."
   }
 
   override def parseValue(args: Set[String]): Set[File] = {
