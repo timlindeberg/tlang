@@ -21,7 +21,7 @@ real_path () {
 }
 
 
-T_HOME="`real_path`/../"
+T_HOME="$(dirname "$(realpath "$0")")/.."
 export T_HOME
 
 java -cp "$T_HOME/lib/*" "$@"
