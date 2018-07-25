@@ -1,6 +1,6 @@
 *.log
 *.class
-
+tlang-*.tar.gz
 .DS_Store
 
 # sbt specific

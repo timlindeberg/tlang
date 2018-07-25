@@ -11,12 +11,14 @@ pushd $ROOT > /dev/null
 
 VERSION=`tools/get_version.sh`
 
-BUILD_FOLDER="build"
+BUILD_BASE="build_tlang"
+BUILD_FOLDER="$BUILD_BASE/tlang"
+rm -rf $BUILD_FOLDER
 mkdir -p $BUILD_FOLDER
 
 # Build project with sbt
 echo -e "Building project with sbt"
-sbt universal:packageBin
+#sbt universal:packageBin
 
 # Copy files
 echo -e "Copying needed files"
@@ -26,16 +28,13 @@ cp -r "$BUILD_FOLDER/$ZIP_NAME/lib" "$BUILD_FOLDER/lib"
 rm -rf "$BUILD_FOLDER/$ZIP_NAME"
 
 cp -r stdlib "$BUILD_FOLDER/stdlib"
-cp -r tools/bin "$BUILD_FOLDER/bin"
+cp -r tools/executables "$BUILD_FOLDER/bin"
 
 # Make final zip file
-TARGET="$ROOT/versions/$VERSION"
-mkdir -p $TARGET
-ZIP="$TARGET/tlang-$VERSION.tar.gz"
+ZIP="tlang-$VERSION.tar.gz"
 echo -e "Creating tar ball ${YELLOW}$ZIP${END}"
-tar -czf $ZIP -C $BUILD_FOLDER .
-rm -rf $BUILD_FOLDER
-
+tar -czf $ZIP -C $BUILD_BASE .
+rm -rf $BUILD_BASE
 echo -e "${GREEN}Successfully built!${END}"
 
 popd > /dev/null

@@ -139,8 +139,8 @@ case class Main(ctx: Context) extends Logging {
 
     printHelp()
 
-    if (!isValidTHomeDirectory(TDirectory))
-      ErrorInvalidTHomeDirectory(TDirectory)
+    if (!isValidTHomeDirectory(THomeDirectory))
+      ErrorInvalidTHomeDirectory(THomeDirectory)
 
     val sources = getSources
     if (sources.isEmpty)

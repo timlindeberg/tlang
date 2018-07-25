@@ -33,19 +33,31 @@ object Constants {
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
   lazy val Version          : String = readVersion()
-  lazy val TDirectory       : String = sys.env.getOrElse(THome, FatalCantFindTHome)
+  lazy val THomeDirectory   : String = sys.env.getOrElse(THome, FatalCantFindTHome)
+  lazy val TStdLibDirectory : String = getTStdLibDirectory()
   lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
   lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
 
   private val VersionFile = "version.txt"
+  private val StdLibDir   = "stdlib"
 
   private def FatalCantFindTHome: Nothing = {
     System.err.println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")
     sys.exit(1)
   }
 
-  private def readVersion(): String =
+  private def readVersion(): String = {
     Try(Source.fromResource(VersionFile).mkString.trim)
-    .getOrElse(throw new FileNotFoundException(VersionFile))
+      .getOrElse(throw new FileNotFoundException(VersionFile))
+  }
+
+  private def getTStdLibDirectory(): String = {
+    val dir = Paths.get(THomeDirectory, StdLibDir).toFile
+    if (!dir.exists()) {
+      System.err.println(s"$THome folder ($THomeDirectory) does not contain a $StdLibDir directory.")
+      sys.exit(1)
+    }
+    dir.getAbsolutePath
+  }
 
 }

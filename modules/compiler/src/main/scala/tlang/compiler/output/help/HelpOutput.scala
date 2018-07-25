@@ -12,13 +12,13 @@ case class HelpOutput(formatter: Formatter, flagArguments: Set[FlagArgument[_]])
     val formatting = formatter.formatting
     import formatter.formatting._
 
-    val tcomp = Green("tcomp")
+    val tcomp = Green("tcompile")
     val options = Blue("options")
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))
     val flags = flagArguments
       .toList
-      .sortBy(_.name)
+      .sortBy { _.name }
       .map { flag => (flag.flagName(formatting), flag.description(formatter)) }
 
     val maxFlagWidth = flags.map(_._1.visibleCharacters).max

@@ -23,7 +23,7 @@ object ClassPath {
       .toSet
 
     val javaClassPath = System.getProperty("java.class.path").split(File.pathSeparator).toSet
-    ClassPath(javaClassPath ++ javaLibJarFiles + Constants.TDirectory)
+    ClassPath(javaClassPath ++ javaLibJarFiles + Constants.TStdLibDirectory)
   }
   val Empty = new ClassPath(Map(), Array(), Set())
 
