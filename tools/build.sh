@@ -18,7 +18,7 @@ mkdir -p $BUILD_FOLDER
 
 # Build project with sbt
 echo -e "Building project with sbt"
-#sbt universal:packageBin
+sbt universal:packageBin
 
 # Copy files
 echo -e "Copying needed files"
@@ -26,9 +26,18 @@ ZIP_NAME="core-$VERSION"
 tar -xzf "target/universal/$ZIP_NAME.zip" -C $BUILD_FOLDER
 cp -r "$BUILD_FOLDER/$ZIP_NAME/lib" "$BUILD_FOLDER/lib"
 rm -rf "$BUILD_FOLDER/$ZIP_NAME"
-
 cp -r stdlib "$BUILD_FOLDER/stdlib"
-cp -r tools/executables "$BUILD_FOLDER/bin"
+
+# Create the executable scripts by combining init.sh with the bin files
+EXECUTABLES="tools/executables"
+mkdir "$BUILD_FOLDER/bin"
+for FILE in `ls $EXECUTABLES/bin`; do
+	BIN="$BUILD_FOLDER/bin/$FILE"
+	touch $BIN
+	chmod +x $BIN
+	cat "$EXECUTABLES/init.sh" >> $BIN
+	cat "$EXECUTABLES/bin/$FILE" >> $BIN
+done
 
 # Make final zip file
 ZIP="tlang-$VERSION.tar.gz"

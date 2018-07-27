@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# From SBT launch script
 real_path () {
   TARGET_FILE="$1"
   FIX_CYGPATH="$2"
@@ -21,7 +20,7 @@ real_path () {
 }
 
 
-T_HOME="$(dirname "$(realpath "$0")")/.."
+T_HOME="$(dirname "$(real_path "$0")")/.."
 export T_HOME
 
-java -cp "$T_HOME/lib/*" tlang.compiler.Main "$@"
+T_LIBS="$T_HOME/lib/*"
