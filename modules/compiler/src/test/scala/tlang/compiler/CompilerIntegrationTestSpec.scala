@@ -25,7 +25,7 @@ object CompilerIntegrationTestSpec {
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
 
-  implicit val TestFormatter: Formatter = Formatter(TestFormatting, TLangSyntaxHighlighter(TestFormatting))
+  implicit val TestFormatter: Formatter = Formatter(TestFormatting)
 
   val TestPattern: Option[Regex] =
     sys.env.get("pattern")

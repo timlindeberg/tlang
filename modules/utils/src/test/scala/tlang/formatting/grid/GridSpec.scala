@@ -13,12 +13,13 @@ class GridSpec extends UnitSpec {
 
   val DefaultMaxWidth = 20
 
+  private implicit val defaultFormatter: Formatter = mockedFormatter()
 
   behavior of "A Grid"
 
   it should "have correct grid size and attributes" in {
     val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))
-    val grid = Grid(mockedFormatter())
+    val grid = Grid()
       .header("ABC")
       .row()
       .content("A")
@@ -96,7 +97,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "be initialized with a default row" in {
-    val grid = Grid(mockedFormatter()).content("ABC")
+    val grid = Grid().content("ABC")
     grid should have size 1
     grid(0) should have size 1
     grid(0)(0).content shouldBe "ABC"
@@ -108,7 +109,7 @@ class GridSpec extends UnitSpec {
   it should "have correct content" in {
 
     val sixTuple = ("A", "B", "C", "D", "E", "F")
-    val grid = Grid(mockedFormatter(width = 10000))
+    val grid = Grid()(mockedFormatter(width = 10000))
       .row()
       .content("A")
       .row(Column, Column)
@@ -164,7 +165,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "be reset when calling clear" in {
-    val grid = Grid(mockedFormatter(width = 10000))
+    val grid = Grid()(mockedFormatter(width = 10000))
       .row()
       .content("A")
       .row(Column, Column)
@@ -196,7 +197,7 @@ class GridSpec extends UnitSpec {
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    var grid = Grid(mockedFormatter())
+    var grid = Grid()
       .row()
       .content("A")
 
@@ -205,7 +206,7 @@ class GridSpec extends UnitSpec {
     // ┌──────────────────┐
     // │ A                │
     // └──────────────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column(Width.Fixed(5)))
       .content("A")
 
@@ -214,7 +215,7 @@ class GridSpec extends UnitSpec {
     // ┌───┬──────────────┐
     // │ A │ B            │
     // └───┴──────────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column)
       .content("A", "B")
 
@@ -224,7 +225,7 @@ class GridSpec extends UnitSpec {
     // ┌────┬─────────────┐
     // │ AB │ C           │
     // └────┴─────────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column)
       .content("AB", "C")
 
@@ -233,7 +234,7 @@ class GridSpec extends UnitSpec {
     // ┌───┬──────────────┐
     // │ A │ BC           │
     // └───┴──────────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column)
       .content("A", "BC")
 
@@ -242,7 +243,7 @@ class GridSpec extends UnitSpec {
     // ┌───┬───┬───┬──────┐
     // │ A │ B │ C │ D    │
     // └───┴───┴───┴──────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column, Column, Column)
       .content("A", "B", "C", "D")
 
@@ -251,7 +252,7 @@ class GridSpec extends UnitSpec {
     // ┌────────┬─────────┐
     // │ ABC    │ DEF     │
     // └────────┴─────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column(Width.Percentage(0.5)), Column)
       .content("ABC", "DEF")
 
@@ -260,7 +261,7 @@ class GridSpec extends UnitSpec {
     // ┌──────────┬───────┐
     // │ ABC      │ D     │
     // └──────────┴───────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column(Width.Fixed(5)))
       .content("ABC", "D")
 
@@ -270,7 +271,7 @@ class GridSpec extends UnitSpec {
     // ┌────┬───────┬─────┐
     // │ AB │ D     │ DE  │
     // └────┴───────┴─────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column(Width.Fixed(5)), Column)
       .content("AB", "C", "DE")
 
@@ -279,7 +280,7 @@ class GridSpec extends UnitSpec {
     // ┌─────┬─────┬──────┐
     // │ A   │ B   │ C    │
     // └─────┴─────┴──────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)), Column(Width.Percentage(0.33)))
       .content("A", "B", "C")
 
@@ -288,7 +289,7 @@ class GridSpec extends UnitSpec {
     // ┌──────┬──────┬────┐
     // │ A    │ B    │ C  │
     // └──────┴──────┴────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column(Width.Fixed(4)), Column(Width.Fixed(4)), Column)
       .content("A", "B", "C")
 
@@ -297,7 +298,7 @@ class GridSpec extends UnitSpec {
     // ┌───────┬─────┬────┐
     // │ A     │ BCD │ E  │
     // └───────┴─────┴────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column(Width.Fixed(5)), Column, Column)
       .content("A", "BCD", "E")
 
@@ -308,7 +309,7 @@ class GridSpec extends UnitSpec {
     // │ GHIJKL │ HIJKLMN │
     // │ MNO    │ O       │
     // └────────┴─────────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column)
       .content("ABCDEFGHIJKLMNO", "ABCDEFGHIJKLMNO")
 
@@ -319,7 +320,7 @@ class GridSpec extends UnitSpec {
     // ├────┴┬──────┼─────┤
     // │ ABC │ 1234 │ DEF │
     // └─────┴──────┴─────┘
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(Column, Column, Column)
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
@@ -331,14 +332,14 @@ class GridSpec extends UnitSpec {
 
 
   it should "should be able to accept the same column multiple times" in {
-    var grid = Grid(mockedFormatter())
+    var grid = Grid()
       .row(Column, Column)
       .content("AB", "12345")
 
     grid(0)(0).content shouldBe "AB"
     grid(0)(1).content shouldBe "12345"
 
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(CenteredColumn, CenteredColumn)
       .content("AB", "12345")
 
@@ -349,7 +350,7 @@ class GridSpec extends UnitSpec {
 
     val RightAlignedTruncatedColumn = Column(alignment = Right, overflowHandling = Truncate)
 
-    grid = Grid(mockedFormatter())
+    grid = Grid()
       .row(RightAlignedTruncatedColumn, RightAlignedTruncatedColumn)
       .content("AB", "12345")
 
@@ -363,7 +364,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with a single row" in {
-    Grid(mockedFormatter())
+    Grid()
       .row()
       .content("ABC")
       .render() shouldBe
@@ -374,7 +375,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with a centered text" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column(alignment = Center))
       .content("ABC")
       .render() shouldBe
@@ -385,7 +386,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with a right aligned text" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column(alignment = Right))
       .content("ABC")
       .render() shouldBe
@@ -396,7 +397,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with two columns" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column)
       .content("ABC", "DEF")
       .render() shouldBe
@@ -407,7 +408,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with two columns and fixed width and centered text" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column(Width.Fixed(3)), Column(alignment = Alignment.Center))
       .content("ABC", "DEF")
       .render() shouldBe
@@ -418,7 +419,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with multiple rows and columns" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column, Column)
       .content("AB", "12345", "CDE")
       .row(Column, Column, Column)
@@ -430,7 +431,7 @@ class GridSpec extends UnitSpec {
          |│ ABC │ 1234 │ DEF │
          |└─────┴──────┴─────┘""".stripMargin
 
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column)
       .content("ABC", "DEF")
       .row(Column, Column)
@@ -448,7 +449,7 @@ class GridSpec extends UnitSpec {
     val wordWrapper = mockedWordWrapperReturningSplitLines
     wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 10) returns List("ABCDEFGHIJ", "KLMNOPQRST", "XYZ")
 
-    Grid(mockedFormatter(wordWrapper = wordWrapper, width = 40))
+    Grid()(mockedFormatter(wordWrapper = wordWrapper, width = 40))
       .row(Column, Column(width = Fixed(23)))
       .content(CenteredContent("Title"), "ABCDEFG")
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", CenteredContent("Title", fill = "_"))
@@ -472,7 +473,7 @@ class GridSpec extends UnitSpec {
 
   it should "render correctly with a divider" in {
 
-    Grid(mockedFormatter(width = 40))
+    Grid()(mockedFormatter(width = 40))
       .row(Column, Column(width = Fixed(23)))
       .contents("ABC", "ABC")
       .contents(Divider("─"), Divider("A"))
@@ -493,7 +494,7 @@ class GridSpec extends UnitSpec {
   it should "render correctly with evenly spaced content" in {
 
     val elements = List("ABC", "DEFG", "HIJK", "LM", "N", "OPQRST", "UVXYZ")
-    Grid(mockedFormatter(width = 30))
+    Grid()(mockedFormatter(width = 30))
       .row()
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -503,7 +504,7 @@ class GridSpec extends UnitSpec {
           |│ UVXYZ                      │
           |└────────────────────────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 30))
+    Grid()(mockedFormatter(width = 30))
       .row()
       .content(EvenlySpaced(elements.map(Colors.Red(_))))
       .render() should matchWithAnsi(
@@ -514,7 +515,7 @@ class GridSpec extends UnitSpec {
           |└────────────────────────────┘""".stripMargin
     )
 
-    Grid(mockedFormatter(width = 30))
+    Grid()(mockedFormatter(width = 30))
       .row(CenteredColumn)
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -524,7 +525,7 @@ class GridSpec extends UnitSpec {
           |│    UVXYZ                   │
           |└────────────────────────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 30))
+    Grid()(mockedFormatter(width = 30))
       .row(CenteredColumn)
       .content(EvenlySpaced(elements.map(Colors.Red(_))))
       .render() should matchWithAnsi(
@@ -535,7 +536,7 @@ class GridSpec extends UnitSpec {
           |└────────────────────────────┘""".stripMargin
     )
 
-    Grid(mockedFormatter(width = 31))
+    Grid()(mockedFormatter(width = 31))
       .row()
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -544,7 +545,7 @@ class GridSpec extends UnitSpec {
           |│ N      OPQRST UVXYZ         │
           |└─────────────────────────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 52))
+    Grid()(mockedFormatter(width = 52))
       .row()
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -552,7 +553,7 @@ class GridSpec extends UnitSpec {
           |│ ABC    DEFG   HIJK   LM     N      OPQRST UVXYZ  │
           |└──────────────────────────────────────────────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 10))
+    Grid()(mockedFormatter(width = 10))
       .row()
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -566,7 +567,7 @@ class GridSpec extends UnitSpec {
           |│ UVXYZ  │
           |└────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 10))
+    Grid()(mockedFormatter(width = 10))
       .row(CenteredColumn)
       .content(EvenlySpaced(elements))
       .render() shouldBe
@@ -580,7 +581,7 @@ class GridSpec extends UnitSpec {
           |│ UVXYZ  │
           |└────────┘""".stripMargin
 
-    Grid(mockedFormatter(width = 52))
+    Grid()(mockedFormatter(width = 52))
       .row()
       .content(EvenlySpaced(elements, spacing = 8))
       .render() shouldBe
@@ -602,7 +603,7 @@ class GridSpec extends UnitSpec {
     wordWrapper.apply("12345678", 5) returns List("12345", "678")
     wordWrapper.apply("DEFGH", 2) returns List("DE", "FG", "H")
 
-    Grid(mockedFormatter(wordWrapper = wordWrapper))
+    Grid()(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column(width = Fixed(2)), Column)
       .content("ABCDEFG", "12345", "HIJKMLN")
       .row(Column, Column, Column(width = Fixed(2)))
@@ -620,7 +621,7 @@ class GridSpec extends UnitSpec {
   }
 
   it should "render correctly with different indentation" in {
-    Grid(mockedFormatter(width = 30))
+    Grid()(mockedFormatter(width = 30))
       .indent(5)
       .row(Column, Column)
       .content("ABC", "DEF")
@@ -636,7 +637,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with a header" in {
-    Grid(mockedFormatter())
+    Grid()
       .header("Header")
       .row(Column, Column, Column)
       .content("ABC", "DEFG", "HIJ")
@@ -650,7 +651,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with and without unicode characters" in {
-    val grid = Grid(mockedFormatter())
+    val grid = Grid()
       .header("Header")
       .row(Column, Column)
       .content("ABC", "DEF")
@@ -678,7 +679,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with ansi colors" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column)
       .content("\u001b[31mABC\u001b[0m", "\u001b[32mDEF\u001b[0m")
       .row(Column, Column)
@@ -697,7 +698,7 @@ class GridSpec extends UnitSpec {
       "\u001b[31mABCDEFGHIJKLMNOP\u001b[0m",
       "\u001b[31mQRSTUVXYZ\u001b[0m"
     )
-    Grid(mockedFormatter(wordWrapper = wordWrapper))
+    Grid()(mockedFormatter(wordWrapper = wordWrapper))
       .row()
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m")
       .render() should matchWithAnsi(
@@ -709,7 +710,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with colored borders" in {
-    Grid(mockedFormatter())
+    Grid()
       .borderColor(Colors.Red)
       .row(Column, Column)
       .content("ABC", "DEF")
@@ -741,7 +742,7 @@ class GridSpec extends UnitSpec {
     wordWrapper.apply("ABCDEFG", 3) returns List("ABC", "DEF", "G")
     wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
 
-    Grid(mockedFormatter(wordWrapper = wordWrapper))
+    Grid()(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "ABCDEF")
       .row(Column, Column, Column)
@@ -780,7 +781,7 @@ class GridSpec extends UnitSpec {
     wordWrapper.apply("ABC", 1) returns List("A", "B", "C")
     wordWrapper.apply("A", 1) returns List("A")
 
-    Grid(mockedFormatter(width = 21, wordWrapper = wordWrapper))
+    Grid()(mockedFormatter(width = 21, wordWrapper = wordWrapper))
       .row(Column, Column, Column, Column, Column)
       .content("ABCDEFGHIJKL", "ABCDEFGHI", "ABCDEF", "ABC", "A")
       .render() shouldBe
@@ -802,7 +803,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with column headers" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column)
       .columnHeaders("ABC", "DEF")
       .content("ABC", "DEF")
@@ -815,7 +816,7 @@ class GridSpec extends UnitSpec {
     )
 
     val formatter = mockedFormatter()
-    Grid(formatter)
+    Grid()(formatter)
       .columnHeaderColor(formatter.formatting.Red)
       .row(Column, Column)
       .columnHeaders("ABC", "DEF")
@@ -831,7 +832,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with empty columns" in {
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column)
       .content("", "ABC")
       .render() shouldBe
@@ -839,7 +840,7 @@ class GridSpec extends UnitSpec {
          |│   │ ABC          │
          |└───┴──────────────┘""".stripMargin.trim
 
-    Grid(mockedFormatter())
+    Grid()
       .row(Column, Column, Column, Column)
       .content("", "ABC", "", "")
       .row()
@@ -884,7 +885,7 @@ class GridSpec extends UnitSpec {
     )
     wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
 
-    Grid(mockedFormatter(wordWrapper = wordWrapper))
+    Grid()(mockedFormatter(wordWrapper = wordWrapper))
       .row(Column, Column, Column)
       .content("\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMNOP\u001b[35mQRST\u001b[36mUVXY\u001b[37mZ\u001b[0m",
         "\u001b[31mABCD\u001b[32mEFGH\u001b[33mIJKL\u001b[34mMN\u001b[0m",
@@ -917,7 +918,7 @@ class GridSpec extends UnitSpec {
     truncator.apply("ABC", 3) returns "ABC"
     truncator.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns "A..."
 
-    Grid(mockedFormatter(truncator = truncator))
+    Grid()(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", "AB")
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
@@ -947,7 +948,7 @@ class GridSpec extends UnitSpec {
     truncator.apply("ABC", 3) returns "ABC"
     truncator.apply("\u001b[35mABC\u001b[36mDEF\u001b[37mGHIJKLMNOPQRSTUVXYZ\u001b[0m", 4) returns "\u001b[35mA\u001b[0m..."
 
-    Grid(mockedFormatter(truncator = truncator))
+    Grid()(mockedFormatter(truncator = truncator))
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
       .content("\u001b[31mABCDEFGHIJKLMNOPQRSTUVXYZ\u001b[0m", "ABCDEFGHIJKLMN", "\u001b[32mAB\u001b[0m")
       .row(TruncatedColumn, TruncatedColumn, TruncatedColumn)
@@ -964,7 +965,7 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with newlines in content" in {
-    Grid(mockedFormatter())
+    Grid()
       .row()
       .content(s"ABC${ NL }DEF${ NL }GHI")
       .render() shouldBe
@@ -974,7 +975,7 @@ class GridSpec extends UnitSpec {
          |│ GHI              │
          |└──────────────────┘""".stripMargin
 
-    Grid(mockedFormatter())
+    Grid()
       .row()
       .content(s"${ NL }ABC${ NL }${ NL }DEF${ NL }${ NL }GHI${ NL }")
       .render() shouldBe
@@ -988,7 +989,7 @@ class GridSpec extends UnitSpec {
          |│                  │
          |└──────────────────┘""".stripMargin
 
-    Grid(mockedFormatter())
+    Grid()
       .header("ABC")
       .row()
       .content(s"1+1\n")
@@ -1000,7 +1001,7 @@ class GridSpec extends UnitSpec {
          |│                  │
          |└──────────────────┘""".stripMargin
 
-    Grid(mockedFormatter())
+    Grid()
       .row()
       .content(s"\u001b[31m1+1\u001b[0m${ NL }\u001b[31m")
       .render() should matchWithAnsi(
@@ -1010,7 +1011,7 @@ class GridSpec extends UnitSpec {
           |└──────────────────┘""".stripMargin
     )
 
-    Grid(mockedFormatter(width = 40))
+    Grid()(mockedFormatter(width = 40))
       .row(2)
       .content(
         s"ABC${ NL }DEF${ NL }GHI${ NL }JKL${ NL }MNO${ NL }PQR${ NL }STU${ NL }VXY${ NL }ZAB${ NL }CDE",
@@ -1035,7 +1036,7 @@ class GridSpec extends UnitSpec {
 
   it should "throw when given content with improper dimension" in {
     intercept[IllegalArgumentException] {
-      Grid(mockedFormatter())
+      Grid()
         .row()
         .content("A", "B")
 
@@ -1043,14 +1044,14 @@ class GridSpec extends UnitSpec {
       .getMessage should include(" 2 != 1")
 
     intercept[IllegalArgumentException] {
-      Grid(mockedFormatter())
+      Grid()
         .row(Column, Column, Column)
         .content("A", "B")
 
     }.getMessage should include("2 != 3")
 
     intercept[IllegalArgumentException] {
-      Grid(mockedFormatter())
+      Grid()
         .row(Column, Column, Column)
         .contents(List(("A", "B"), ("C", "D")))
 
@@ -1060,7 +1061,7 @@ class GridSpec extends UnitSpec {
 
   it should "throw when line doesn't fit in column with OverflowHandling.Except" in {
     intercept[IllegalStateException] {
-      Grid(mockedFormatter())
+      Grid()
         .row(Column(overflowHandling = Except))
         .content("ABCDEFGHIJKLMNOPQRSTUVXYZ")
         .content("ABC")
@@ -1072,27 +1073,27 @@ class GridSpec extends UnitSpec {
 
   it should "throw when columns cannot fit in the row" in {
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row(Column(width = Fixed(25)))
+      Grid().row(Column(width = Fixed(25)))
 
     }.getMessage should include("29 > 20")
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row(Column(width = Percentage(0.9)), Column, Column)
+      Grid().row(Column(width = Percentage(0.9)), Column, Column)
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row(Column(width = Percentage(0.9)), Column(width = Fixed(3)))
+      Grid().row(Column(width = Percentage(0.9)), Column(width = Fixed(3)))
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row(Column, Column, Column, Column, Column)
+      Grid().row(Column, Column, Column, Column, Column)
 
     }.getMessage should include("21 > 20")
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row(Column(width = Fixed(5)), Column(width = Fixed(5)), Column)
+      Grid().row(Column(width = Fixed(5)), Column(width = Fixed(5)), Column)
 
     }.getMessage should include("21 > 20")
   }
@@ -1100,17 +1101,17 @@ class GridSpec extends UnitSpec {
 
   it should "throw when adding a header once a rows been added" in {
     intercept[IllegalStateException] {
-      Grid(mockedFormatter()).row().header("Header")
+      Grid().row().header("Header")
     }
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter())
+      Grid()
         .content("ABC")
         .header("Header")
     }
 
     intercept[IllegalStateException] {
-      Grid(mockedFormatter())
+      Grid()
         .row(Column, Column, Column, Column)
         .content("", "ABC", "", "")
         .row()
@@ -1124,14 +1125,14 @@ class GridSpec extends UnitSpec {
 
   it should "throw when given contents other than a tuple" in {
     intercept[IllegalArgumentException] {
-      Grid(mockedFormatter())
+      Grid()
         .contents(List(Nil))
 
     }.getMessage should include("Nil")
 
     // Column is a case class and there for implements Product
     intercept[IllegalArgumentException] {
-      Grid(mockedFormatter())
+      Grid()
         .row(3)
         .contents(List(("1", "2", "3"), ("4", "5", "6"), Column))
 

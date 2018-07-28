@@ -1,11 +1,12 @@
 package tlang.compiler.output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
+import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)])(implicit formatter: Formatter) extends Output {
+case class ExecutionResultOutput(stackTraceHighlighter: StackTraceHighlighter, syntaxHighlighter: SyntaxHighlighter, results: Seq[(Source, ExecutionResult)])(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
@@ -17,7 +18,7 @@ case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)])(implic
       if (output.isEmpty)
         return
 
-      val highlighted = formatter.syntaxHighlight(output)
+      val highlighted = syntaxHighlighter(output)
       val lines = formatter
         .splitWithColors(highlighted)
         .zipWithIndex
@@ -30,7 +31,7 @@ case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)])(implic
     }
 
     def addException(source: Source, exception: Throwable) = {
-      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, formatter.highlightStackTrace(exception))
+      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(exception))
       grid
         .row(alignment = Center)
         .content(source.errorDescription)

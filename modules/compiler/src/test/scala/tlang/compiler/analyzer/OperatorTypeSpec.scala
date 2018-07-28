@@ -7,7 +7,6 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.ErrorStringContext
-import tlang.formatting.textformatters.TabReplacer
 
 class OperatorTypeSpec extends CompilerIntegrationTestSpec {
 
@@ -17,7 +16,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
   private val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val ErrorContext = ErrorStringContext()
   private val TestImports  = Imports(TestContext, ErrorContext)
-  private val TabReplacer  = new TabReplacer(2)
   private val TypeChecker  = new TypeChecker(TestContext.reporter, ErrorContext, TestImports, MainMethod)
 
   private val int    = new TypeConstructor(Int)
@@ -341,7 +339,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         if (reporter.hasErrors)
-          TestContext.output += ErrorMessageOutput(TabReplacer, reporter.messages)
+          TestContext.output += ErrorMessageOutput(SyntaxHighlighter, reporter.messages)
 
         assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }

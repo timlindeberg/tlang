@@ -12,34 +12,18 @@ import tlang.utils.Extensions._
 object Formatter {
 
   val SimpleFormatter = Formatter(SimpleFormatting)
-
-  def apply(formatting: Formatting, syntaxHighlighter: SyntaxHighlighter): Formatter = {
-    Formatter(
-      formatting,
-      WordWrapper(wrapAnsiColors = formatting.useColor),
-      Truncator(),
-      syntaxHighlighter,
-      StackTraceHighlighter(formatting, failOnError = true)
-    )
-  }
+  val PrettyFormatter = Formatter(PrettyFormatting)
 
   def apply(formatting: Formatting): Formatter = {
-    Formatter(
-      formatting,
-      WordWrapper(wrapAnsiColors = formatting.useColor),
-      Truncator(),
-      SyntaxHighlighter(formatting)(_ => Nil),
-      StackTraceHighlighter(formatting)
-    )
+    Formatter(formatting, WordWrapper(wrapAnsiColors = formatting.useColor), Truncator(), TabReplacer(2))
   }
 }
 
 case class Formatter(
   formatting: Formatting,
-  private val wordWrapper: WordWrapper,
-  private val truncator: Truncator,
-  private val syntaxHighlighter: SyntaxHighlighter,
-  private val stackTraceHighlighter: StackTraceHighlighter
+  wordWrap: WordWrapper,
+  truncate: Truncator,
+  replaceTabs: TabReplacer
 ) {
 
   import formatting._
@@ -48,20 +32,10 @@ case class Formatter(
 
   def useColor: Boolean = formatting.useColor
 
-  def wrap(text: String, width: Int): List[String] = wordWrapper(text, width)
   def splitWithColors(str: String): List[String] = {
     val lines = str.split("\r?\n", -1).toList
-    wordWrapper.wrapAnsiFormatting(lines)
+    wordWrap.wrapAnsiFormatting(lines)
   }
-
-  def truncate(line: String, width: Int): String = truncator(line, width)
-
-  def syntaxHighlight(code: String): String = syntaxHighlighter(code)
-  def syntaxHighlight(code: String, marking: Marking): String = syntaxHighlighter(code, marking)
-  def syntaxHighlight(code: String, markings: Seq[Marking]): String = syntaxHighlighter(code, markings)
-
-  def highlightStackTrace(throwable: Throwable): String = stackTraceHighlighter(throwable)
-  def highlightStackTrace(stackTrace: String): String = stackTraceHighlighter(stackTrace)
 
   def fileName(file: File): String = fileName(file.nameWithoutExtension)
 

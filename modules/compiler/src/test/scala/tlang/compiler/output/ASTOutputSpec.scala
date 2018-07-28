@@ -14,7 +14,7 @@ import tlang.utils.Extensions._
 class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
 
 
-  private val PrettyFormatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
+  private val PrettyFormatter = Formatter(PrettyFormatting)
   private val SimpleFormatter = Formatter(SimpleFormatting)
 
   private val tree = CompilationUnit(

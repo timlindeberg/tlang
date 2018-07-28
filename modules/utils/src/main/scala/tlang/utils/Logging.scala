@@ -7,6 +7,7 @@ import better.files.File
 import sourcecode.{Enclosing, Line, File => SourceFile}
 import tlang.formatting.Colors.Color
 import tlang.formatting._
+import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.utils.Extensions._
 
 import scala.language.implicitConversions
@@ -101,6 +102,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   import loggingSettings._
 
   private implicit val formatter: Formatter = loggingSettings.formatter
+  private val stackTraceHighlighter = StackTraceHighlighter(formatter.formatting, failOnError = false)
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
     val sb = new StringBuilder
@@ -217,13 +219,10 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   }
 
   private def extraLines(extra: Any): Seq[String] = extra match {
-    case e: Throwable => formatter.highlightStackTrace(e).split("\r?\n", -1)
+    case e: Throwable => stackTraceHighlighter(e).split("\r?\n", -1)
     case other        =>
       val lines = other.toString.split("\r?\n", -1)
-      if (lines.length == 1)
-        Seq(formatValue(other))
-      else
-        lines map formatter.syntaxHighlight
+      if (lines.length == 1) Seq(formatValue(other)) else lines
   }
 
   private def fit(s: String, width: Int): String = {

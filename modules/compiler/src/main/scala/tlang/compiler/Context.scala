@@ -5,7 +5,7 @@ import tlang.compiler.argument.{DirectoryFlag, IgnoredDefaultImportsFlag, PrintO
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.OutputHandler
-import tlang.formatting.{Formatter, Formatting}
+import tlang.formatting.Formatter
 import tlang.options.Options
 import tlang.utils.{Executor, SingleThreadExecutor}
 
@@ -43,7 +43,8 @@ case class Context(
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()
 ) (
-  implicit val formatter: Formatter
+  implicit val formatter: Formatter,
+
 ){
 
   val executionTimes: mutable.Map[String, Double] = mutable.Map()

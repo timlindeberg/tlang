@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException
 import akka.actor.{Actor, Props}
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.formatting.Formatter
+import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.repl.actors.ReplActor.SetState
 import tlang.repl.evaluation.{Evaluator, ReplState}
 import tlang.utils.Extensions._
@@ -23,13 +24,13 @@ object EvaluationActor {
   case object PrettyPrint extends EvaluationMessage
   case object StopExecution extends EvaluationMessage
 
-  def props(state: ReplState, evaluator: Evaluator)(implicit formatter: Formatter) =
-    Props(new EvaluationActor(state, evaluator))
+  def props(state: ReplState, stackTraceHighlighter: StackTraceHighlighter, evaluator: Evaluator)(implicit formatter: Formatter) =
+    Props(new EvaluationActor(state, stackTraceHighlighter, evaluator))
 
   val name = "replProgram"
 }
 
-class EvaluationActor(state: ReplState, evaluator: Evaluator)(implicit formatter: Formatter) extends Actor with Logging {
+class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlighter, evaluator: Evaluator)(implicit formatter: Formatter) extends Actor with Logging {
 
   import EvaluationActor._
   import Evaluator.ClassName
@@ -77,7 +78,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator)(implicit formatter
             case e: InvocationTargetException => RenderingActor.DrawFailure(formatStackTrace(e), truncate = true)
             case e                            =>
               error"Internal compiler error: $e"
-              val err = FailureColor("Internal compiler error:" + NL) + formatter.highlightStackTrace(e)
+              val err = FailureColor("Internal compiler error:" + NL) + stackTraceHighlighter(e)
               RenderingActor.DrawFailure(err, truncate = true)
           }
       }
@@ -96,7 +97,7 @@ class EvaluationActor(state: ReplState, evaluator: Evaluator)(implicit formatter
     val stackTrace = e.getCause.stackTrace
     // Remove internal parts of the stacktrace
     val trimmed = stackTrace.split("at " + ClassName).head + s"at $ClassName.main(Unknown Source)$NL"
-    formatter.highlightStackTrace(trimmed).rightTrimWhiteSpaces
+    stackTraceHighlighter(trimmed).rightTrimWhiteSpaces
   }
 
 

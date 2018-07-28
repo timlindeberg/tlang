@@ -3,6 +3,7 @@ package tlang.repl.actors
 import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.KeyType
 import tlang.formatting.Formatter
+import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.repl.OutputBox
 import tlang.repl.actors.EvaluationActor._
 import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, RenderingMessage}
@@ -25,7 +26,9 @@ object ReplActor {
   case object FinishedRendering
   case class SetState(state: ExecutionState)
 
-  def props(replState: ReplState,
+  def props(
+    replState: ReplState,
+    stackTraceHighlighter: StackTraceHighlighter,
     evaluator: Evaluator,
     outputBox: OutputBox,
     terminal: ReplTerminal,
@@ -33,7 +36,7 @@ object ReplActor {
   )(
     implicit formatter: Formatter
   ) =
-    Props(new ReplActor(replState, evaluator, outputBox, terminal, input))
+    Props(new ReplActor(replState, stackTraceHighlighter, evaluator, outputBox, terminal, input))
 
   val name = "repl"
 }
@@ -48,6 +51,7 @@ sealed abstract class Command(state: ExecutionState, val priority: Int) extends 
 
 class ReplActor(
   replState: ReplState,
+  stackTraceHighlighter: StackTraceHighlighter,
   evaluator: Evaluator,
   outputBox: OutputBox,
   terminal: ReplTerminal,
@@ -69,7 +73,7 @@ class ReplActor(
   )
 
   private val replProgram = context.actorOf(
-    EvaluationActor.props(replState, evaluator),
+    EvaluationActor.props(replState, stackTraceHighlighter, evaluator),
     EvaluationActor.name
   )
 

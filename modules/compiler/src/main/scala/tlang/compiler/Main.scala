@@ -15,7 +15,7 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.textformatters._
+import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
@@ -76,7 +76,7 @@ object Main extends Logging {
       asciiOnly = options(AsciiFlag)
     )
 
-    implicit val formatter: Formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
+    implicit val formatter: Formatter = Formatter(formatting)
 
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
@@ -105,7 +105,7 @@ object Main extends Logging {
       warningIsError = options(WarningIsErrorFlag),
       suppressWarnings = options(SuppressWarningsFlag)
     )
-    val outputHandler = if(options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler()
+    val outputHandler = if (options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler()
     Context(
       reporter = DefaultReporter(messages = messages),
       outputHandler = outputHandler,
@@ -118,11 +118,12 @@ object Main extends Logging {
 
 case class Main(ctx: Context) extends Logging {
 
-  private val formatting = ctx.formatter.formatting
-  private val tabReplacer = TabReplacer(2)
+  private val formatting            = ctx.formatter.formatting
+  private val syntaxHighlighter     = TLangSyntaxHighlighter(formatting)
+  private val stackTraceHighlighter = StackTraceHighlighter(formatting)
 
-  import ctx._
   import Main._
+  import ctx._
   import formatting._
 
 
@@ -181,7 +182,7 @@ case class Main(ctx: Context) extends Logging {
       val CUs = runFrontend(sources)
       GenerateCode.execute(ctx)(CUs)
       val messages = ctx.reporter.messages
-      ctx.output += ErrorMessageOutput(tabReplacer, messages, options(MessageContextFlag), List(MessageType.Warning))
+      ctx.output += ErrorMessageOutput(syntaxHighlighter, messages, options(MessageContextFlag), List(MessageType.Warning))
       CUs
     } catch {
       case e: ExitException => throw e
@@ -194,7 +195,7 @@ case class Main(ctx: Context) extends Logging {
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        ctx.output += ErrorMessageOutput(tabReplacer, e.messages, options(MessageContextFlag))
+        ctx.output += ErrorMessageOutput(syntaxHighlighter, e.messages, options(MessageContextFlag))
         printExecutionTimes(success = false)
         tryExit(1)
     }
@@ -202,9 +203,9 @@ case class Main(ctx: Context) extends Logging {
 
   // Top level error handling for any unknown exception
   private def internalError(error: Throwable): Nothing = {
-    error"Execution error occurred: ${error.stackTrace}"
+    error"Execution error occurred: ${ error.stackTrace }"
 
-    ctx.output += InternalErrorOutput(error)
+    ctx.output += InternalErrorOutput(stackTraceHighlighter, error)
     printExecutionTimes(success = false)
     tryExit(1)
   }
@@ -245,14 +246,15 @@ case class Main(ctx: Context) extends Logging {
     val sources = cusWithMainMethods map { _.source.get }
     val results = sources map { programExecutor(_) }
 
-    ctx.output += ExecutionResultOutput(sources zip results)
+
+    ctx.output += ExecutionResultOutput(stackTraceHighlighter, syntaxHighlighter, sources zip results)
   }
 
   private def watch(sources: List[Source]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
     val fileSources = sources.filterInstance[FileSource]
-    if(fileSources.isEmpty) {
+    if (fileSources.isEmpty) {
       ctx.output += MessageOutput(s"No file sources were given, can't use watch flag.")
       return
     }
@@ -265,7 +267,7 @@ case class Main(ctx: Context) extends Logging {
     fileSources
       .map { source => CompilerFileMonitor(source.file) }
       .foreach { monitor =>
-        info"Watching file ${monitor.file} for changes"
+        info"Watching file ${ monitor.file } for changes"
         monitor.start()
       }
 

@@ -17,7 +17,7 @@ import scala.collection.{TraversableLike, mutable}
 @FillTreeHelpers
 object Trees {
 
-  private lazy val prettyFormatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
+  private lazy val prettyFormatter = Formatter(PrettyFormatting)
   private lazy val noColorPrinter  = PrettyPrinter()(Formatter.SimpleFormatter)
   private lazy val colorPrinter    = PrettyPrinter()(prettyFormatter)
 

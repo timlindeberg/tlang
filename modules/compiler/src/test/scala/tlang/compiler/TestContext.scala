@@ -5,12 +5,15 @@ import tlang.Constants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.DefaultReporter
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
+import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.testutils.TestConstants.{PrintCodePhases, PrintJSON, Resources, TestOutputDirectory}
 
 trait TestContext {
 
-  val TestContext: Context = testContext(None)
   import CompilerIntegrationTestSpec.TestFormatter
+
+  val TestContext: Context = testContext(None)
+  val SyntaxHighlighter = TLangSyntaxHighlighter(TestFormatter.formatting)
 
   def testContext(file: Option[File]): Context = {
     val outDir = file match {

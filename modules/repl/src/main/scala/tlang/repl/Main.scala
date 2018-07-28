@@ -13,7 +13,7 @@ import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.PrettyOutputHandler
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting._
-import tlang.formatting.textformatters.TabReplacer
+import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.repl.actors.RenderingActor.Resize
@@ -32,7 +32,7 @@ object Main extends Logging {
 
   val VersionNumber   = "0.0.1"
   val MaxRedoSize     = 500
-  val TabWidth        = 3
+  val TabWidth        = 4
   val DoubleClickTime = 500L
 
 
@@ -58,7 +58,7 @@ object Main extends Logging {
       useColor = true,
       asciiOnly = options(AsciiFlag)
     )
-    implicit val formatter: Formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
+    implicit val formatter: Formatter = Formatter(formatting)
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
     Logging.DefaultLogSettings.logThreads = true
@@ -94,13 +94,11 @@ object Main extends Logging {
     val errorStringContext = ErrorStringContext()
     val replState = ReplState(prettyPrinter, Imports(ctx, errorStringContext))
 
-
-    val extractor = Extractor(replState)
+    val syntaxHighlighter = TLangSyntaxHighlighter(formatting)
+    val extractor = Extractor(syntaxHighlighter, replState)
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
     val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
     val evaluator = Evaluator(ctx, extractor, programExecutor, statementTransformer, replState)
-
-    val tabReplacer = TabReplacer(TabWidth)
 
     val keyConverter = KeyConverter(DoubleClickTime)
     val replTerminal = ReplTerminal(terminal, keyConverter, TabWidth)
@@ -115,9 +113,10 @@ object Main extends Logging {
       """.stripMargin
     )
     val actorSystem = ActorSystem("tRepl", akkaConfig)
-    val outputBox = OutputBox(tabReplacer, maxOutputLines = 5)
+    val outputBox = OutputBox(maxOutputLines = 5)
+    val stackTraceHighlighter = StackTraceHighlighter(formatting, failOnError = false)
     val repl = actorSystem.actorOf(
-      ReplActor.props(replState, evaluator, outputBox, replTerminal, input),
+      ReplActor.props(replState, stackTraceHighlighter, evaluator, outputBox, replTerminal, input),
       ReplActor.name
     )
 

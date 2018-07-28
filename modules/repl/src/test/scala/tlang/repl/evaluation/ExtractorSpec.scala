@@ -11,10 +11,12 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
 
   behavior of "An extractor"
 
+  val syntaxHighlighter = mockedSyntaxHighlighter
+
   it should "extract classes" in {
 
     val replState = mock[ReplState]
-    val extractor = Extractor(replState)(formatter)
+    val extractor = makeExtractor(replState)
     val replClass = ClassDecl(Evaluator.ReplClassID)
     val classA = ClassDecl("A")
     val classB = ClassDecl("B")
@@ -37,7 +39,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   it should "extract methods" in {
 
     val replState = mock[ReplState]
-    val extractor = Extractor(replState)(formatter)
+    val extractor = makeExtractor(replState)
 
     val methodA = createMethod(name = "A", retType = IntType)
     val methodB = createMethod(
@@ -69,7 +71,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
 
   it should "extract imports" in {
     val replState = mock[ReplState]
-    val extractor = Extractor(replState)(formatter)
+    val extractor = makeExtractor(replState)
     val imports = mock[Imports]
 
     imports.imports returns List(
@@ -95,7 +97,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   it should "extract statements" in {
 
     val replState = mock[ReplState]
-    val extractor = Extractor(replState)(formatter)
+    val extractor = makeExtractor(replState)
 
     val statement1 = VarDecl("A", tpe = Some(IntType))
     val statement2 = Plus(IntLit(1), IntLit(1))
@@ -124,7 +126,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
 
   it should "extract multiple" in {
     val replState = mock[ReplState]
-    val extractor = Extractor(replState)(formatter)
+    val extractor = makeExtractor(replState)
 
     val classA = ClassDecl("A")
     val methodA = MethodDecl("A", retType = IntType)
@@ -158,6 +160,10 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val syntaxHighlighter = mock[SyntaxHighlighter]
     syntaxHighlighter.apply(*).forwardsArg(0)
     testFormatter(useColor = false, syntaxHighlighter = syntaxHighlighter)
+  }
+
+  private def makeExtractor(replState: ReplState): Extractor = {
+    Extractor(syntaxHighlighter, replState)(formatter)
   }
 
 }

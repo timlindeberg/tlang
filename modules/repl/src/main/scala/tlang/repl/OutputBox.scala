@@ -1,9 +1,10 @@
 package tlang.repl
 
 import tlang.compiler.messages.{CompilerMessage, MessageInfo}
+import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Colors.Color
 import tlang.formatting.grid.TruncatedColumn
-import tlang.formatting.textformatters.{Marking, TabReplacer}
+import tlang.formatting.textformatters.{Marking, SyntaxHighlighter}
 import tlang.formatting.{Formatter, Spinner}
 import tlang.repl.input.InputBuffer
 import tlang.utils.Extensions._
@@ -26,15 +27,16 @@ object OutputBox {
   val XIndent           = 2
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
 
-  def apply(tabReplacer: TabReplacer, maxOutputLines: Int)(implicit formatter: Formatter): OutputBox = {
+  def apply(maxOutputLines: Int)(implicit formatter: Formatter): OutputBox = {
     val formatting = formatter.formatting
     import formatting._
 
+    val syntaxHighlighter = TLangSyntaxHighlighter(formatter.formatting)
     val inputColor = Bold + Magenta
     val header = inputColor("Input")
     val renderState = RenderState(header = header)
     new OutputBox(
-      tabReplacer,
+      syntaxHighlighter,
       maxOutputLines,
       renderState,
       formatting.spinner
@@ -44,7 +46,7 @@ object OutputBox {
 }
 
 case class OutputBox private(
-  tabReplacer: TabReplacer,
+  syntaxHighlighter: SyntaxHighlighter,
   maxOutputLines: Int,
   renderState: RenderState,
   spinner: Spinner
@@ -105,10 +107,10 @@ case class OutputBox private(
 
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
     // Selected position is already adjusted for tabs so we can just replace it like normal.
-    val replacedTabs = text.replaceAll("\t", " " * tabReplacer.tabWidth)
+    val replacedTabs = text.replaceAll("\t", " " * formatter.replaceTabs.tabWidth)
 
     val selectionMarking = Marking(inputBuffer.selectedPosition, MarkColor, isAdditive = true)
-    val highlightedInput = formatter.syntaxHighlight(replacedTabs, selectionMarking)
+    val highlightedInput = syntaxHighlighter(replacedTabs, selectionMarking)
     copy(
       renderState = renderState.copy(input = input, highlightedInput = highlightedInput)
     )
@@ -121,13 +123,13 @@ case class OutputBox private(
     val header = ErrorColor("Error")
 
     val errorPositions = errors.map(_.pos)
-    val (replacedTabs, adjustedPositions) = tabReplacer(renderState.input, errorPositions)
+    val (replacedTabs, adjustedPositions) = formatter.replaceTabs(renderState.input, errorPositions)
 
     val markings = adjustedPositions.map { pos => Marking(pos, Bold + Underline + Red) }
-    val highlightedInput = formatter.syntaxHighlight(replacedTabs, markings)
+    val highlightedInput = syntaxHighlighter(replacedTabs, markings)
 
     val errorLines = errors.map { error =>
-      val messageInfo = MessageInfo(error, tabReplacer)
+      val messageInfo = MessageInfo(error, syntaxHighlighter)
       val locationIndicator = NumColor(error.pos.line) + ":" + NumColor(error.pos.col)
       (locationIndicator, messageInfo.prefix + " " + error.message)
     }
@@ -155,7 +157,7 @@ case class OutputBox private(
 
   private def setResult(output: String, shouldTruncate: Boolean, color: Color, headerText: String): OutputBox = {
     val text = if (shouldTruncate) truncate(output, color) else output
-    val colored = formatter.syntaxHighlight(text)
+    val colored = syntaxHighlighter(text)
     val header = color(headerText)
     val content = List(List(colored))
 
@@ -163,7 +165,7 @@ case class OutputBox private(
   }
 
   private def truncate(output: String, color: Color): String = {
-    val wordWrapped = formatter.wrap(output, formatting.lineWidth)
+    val wordWrapped = formatter.wordWrap(output, formatting.lineWidth)
 
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)

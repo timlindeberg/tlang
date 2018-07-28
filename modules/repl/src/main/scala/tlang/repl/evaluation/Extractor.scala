@@ -3,9 +3,10 @@ package tlang.repl.evaluation
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.formatting.Formatter
+import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.utils.Extensions._
 
-case class Extractor(state: ReplState)(implicit formatter: Formatter) {
+case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(implicit formatter: Formatter) {
 
   import Evaluator._
   import formatter.formatting._
@@ -31,20 +32,20 @@ case class Extractor(state: ReplState)(implicit formatter: Formatter) {
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     state.addClasses(newClasses)
     newClasses map { clazz =>
-      Bold("Defined ") + KeywordColor("class ") + formatter.syntaxHighlight(clazz.tpe.toString)
+      Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
     }
   }
 
   private def extractMethods(newMethods: List[MethodDeclTree]): List[String] = {
     state.addMethods(newMethods)
     newMethods map { meth =>
-      Bold("Defined ") + KeywordColor("method ") + formatter.syntaxHighlight(meth.fullSignature)
+      Bold("Defined ") + KeywordColor("method ") + syntaxHighlighter(meth.fullSignature)
     }
   }
 
   private def extractImports(imports: Imports): List[String] = {
     state.addImports(imports)
-    imports.imports map { imp => Bold("Imported ") + formatter.syntaxHighlight(imp.writtenName) }
+    imports.imports map { imp => Bold("Imported ") + syntaxHighlighter(imp.writtenName) }
   }
 
   private def extractStatements(stat: Option[StatTree]): List[String] = {
@@ -52,7 +53,7 @@ case class Extractor(state: ReplState)(implicit formatter: Formatter) {
     state.setNewStatements(stats)
     stats.filterInstance[VarDecl] map { variable =>
       val tpe = variable.tpe.map(t => ": " + t.name).getOrElse("")
-      Bold("Defined ") + KeywordColor("variable ") + formatter.syntaxHighlight(variable.id.name + tpe)
+      Bold("Defined ") + KeywordColor("variable ") + syntaxHighlighter(variable.id.name + tpe)
     }
   }
 

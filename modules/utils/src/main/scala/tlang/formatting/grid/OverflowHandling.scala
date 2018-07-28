@@ -26,7 +26,7 @@ object OverflowHandling {
 
   case object Wrap extends OverflowHandling {
     override def handleOverflow(line: String, width: Int)(implicit formatter: Formatter): List[String] = {
-      formatter.wrap(line, width)
+      formatter.wordWrap(line, width)
     }
   }
 

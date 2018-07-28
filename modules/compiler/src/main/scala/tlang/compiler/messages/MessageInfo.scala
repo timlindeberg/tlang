@@ -2,14 +2,14 @@ package tlang.compiler.messages
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.formatting.textformatters.TabReplacer
+import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
 case class MessageInfo(
   message: CompilerMessage,
-  tabReplacer: TabReplacer,
+  syntaxHighlighter: SyntaxHighlighter,
   messageContextSize: Int = MessageContextFlag.defaultValue
 )(
   implicit formatter: Formatter
@@ -43,7 +43,7 @@ case class MessageInfo(
   def locationInSource: Seq[(String, String)] = {
 
     val (trimmedLines, trimmedPos) = trimIndent(contextLines)
-    val (lines, adjustedPos) = tabReplacer(trimmedLines, trimmedPos)
+    val (lines, adjustedPos) = formatter.replaceTabs(trimmedLines, trimmedPos)
 
     if (formatting.useColor)
       lines.map { case (line, lineNum) => coloredIndicatorLine(lineNum, line, adjustedPos) }
@@ -99,7 +99,7 @@ case class MessageInfo(
       line
     }
 
-    (NumColor(lineNum), formatter.syntaxHighlight(highlightedLine))
+    (NumColor(lineNum), syntaxHighlighter(highlightedLine))
   }
 
   private def indicatorLines(lineNum: Int, line: String, pos: Positioned): List[(String, String)] = {

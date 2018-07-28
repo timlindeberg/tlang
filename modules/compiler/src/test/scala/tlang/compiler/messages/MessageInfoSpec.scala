@@ -3,7 +3,6 @@ package tlang.compiler.messages
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.formatting.{Colors, Formatting}
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
 import tlang.utils._
 
 class MessageInfoSpec extends UnitSpec with MessageTesting {
@@ -654,13 +653,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     syntaxHighlighter: SyntaxHighlighter = mockedSyntaxHighlighter,
     formatting: Option[Formatting] = None
   ): MessageInfo = {
-    val formatter = testFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting)
-    MessageInfo(message, TabReplacer(tabWidth), contextSize)(formatter)
+    val formatter = testFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting, tabReplacer = TabReplacer(tabWidth))
+    MessageInfo(message, syntaxHighlighter, contextSize)(formatter)
   }
 
-  // This mocked syntax highlighter just returns the input again
-  private def mockedSyntaxHighlighter: SyntaxHighlighter =
-    mock[SyntaxHighlighter] use { _.apply(*).forwardsArg(0) }
 
 
 }

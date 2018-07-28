@@ -33,7 +33,12 @@ class OutputBoxSpec extends UnitSpec {
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
     tabReplacer: TabReplacer = mock[TabReplacer]
   ) = {
-    val formatter = testFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter)
-    OutputBox(tabReplacer, maxOutputLines)(formatter)
+    val formatter = testFormatter(
+      width = width,
+      useColor = useColor,
+      syntaxHighlighter = syntaxHighlighter,
+      tabReplacer = tabReplacer
+    )
+    OutputBox(maxOutputLines)(formatter)
   }
 }

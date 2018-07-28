@@ -3,7 +3,7 @@ package tlang.compiler.output
 import tlang.compiler.messages._
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{CenteredContent, Column, Grid, TruncatedColumn}
-import tlang.formatting.textformatters.TabReplacer
+import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
@@ -13,13 +13,11 @@ object ErrorMessageOutput {
 }
 
 case class ErrorMessageOutput(
-  tabReplacer: TabReplacer,
+  syntaxHighlighter: SyntaxHighlighter,
   compilerMessages: CompilerMessages,
   messageContextSize: Int = MessageContextFlag.defaultValue,
   messageTypes: List[MessageType] = ErrorMessageOutput.DefaultMessageTypes
-)(
-  implicit formatter: Formatter
-) extends Output {
+)(implicit formatter: Formatter) extends Output {
 
   override def pretty: String = {
     val formatting = formatter.formatting
@@ -59,7 +57,7 @@ case class ErrorMessageOutput(
     }
 
     def addMessage(message: CompilerMessage, grid: Grid, showTitle: Boolean): Unit = {
-      val messageInfo = MessageInfo(message, tabReplacer, messageContextSize)
+      val messageInfo = MessageInfo(message, syntaxHighlighter, messageContextSize)
 
       grid.row()
 
