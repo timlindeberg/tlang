@@ -1,18 +1,17 @@
 package tlang.compiler.code
 
+import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
+import tlang.compiler.output.Output
+import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.Logging
-import tlang.Constants
-import tlang.compiler.analyzer.Naming.phaseName
-import tlang.compiler.output.Output
-import tlang.compiler.output.debug.ASTOutput
 
 import scala.collection.mutable.ListBuffer
 

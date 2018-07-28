@@ -328,6 +328,26 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
+  it should "use tabwidth argument" in {
+    test("No arguments should give default width") {
+      val options = createOptions("")
+      options(TabWidthFlag) shouldBe TabWidthFlag.defaultValue
+    }
+
+    test("With arguments should pick largest value") {
+      val options = createOptions("--tabwidth 5,10 --tabwidth 25")
+      options(TabWidthFlag) shouldBe 25
+    }
+
+    test("Invalid argument") {
+      intercept[IllegalArgumentException] { createOptions("--tabwidth abc") }
+        .getMessage should include("abc")
+
+      intercept[IllegalArgumentException] { createOptions("--tabwidth -5") }
+        .getMessage should include("-5")
+    }
+  }
+
   private def createOptions(args: String, suggestor: AlternativeSuggestor = mock[AlternativeSuggestor]) = {
     val errorContext = ErrorStringContext(suggestor)(Formatter.SimpleFormatter)
     val flags = tlang.compiler.Main.CompilerFlags

@@ -13,7 +13,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
     if (!formatter.useColor)
       return stackTrace
 
-
     if (stackTrace.trim.isEmpty) "" else StackTraceParser.parse(stackTrace)
   }
 

@@ -8,10 +8,6 @@ import tlang.utils._
 
 class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
 
-  private val PrettyFormatter = Formatter.PrettyFormatter
-  private val SimpleFormatter = Formatter.SimpleFormatter
-
-
   private val path = "src/a/path/to/the/File.t"
   private val source = mock[Source]
   source.lines returns IndexedSeq(
@@ -21,18 +17,18 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     "var d = 0",
     "var e = 0",
     "for(var i = x; i < 5; i++)",
-    "\t\ta++",
-    "\t\tb++",
-    "\t\tc++",
-    "\t\td++",
-    "\t\te++"
+    "\ta++",
+    "\tb++",
+    "\tc++",
+    "\td++",
+    "\te++"
   )
   source.errorDescription(*) returns path
   source.description(*) returns path
 
   private val aPos = Position(1, 5, 1, 6, source = Some(source))
   private val iLessThanPos = Position(6, 16, 6, 21, source = Some(source))
-  private val dPlusPos = Position(10, 3, 10, 6, source = Some(source))
+  private val dPlusPos = Position(10, 2, 10, 5, source = Some(source))
   private val multipleLinesPos = Position(4, 1, 6, 8, source = Some(source))
 
 
@@ -222,14 +218,14 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     def makeErrorMessages(formatter: Formatter) =
       makeErrorMessageOutput(formatter, messages, messageContextSize, maxErrors)
 
-    test("using pretty formatting") { makeErrorMessages(PrettyFormatter).pretty should matchSnapshot }
-    test("using simple formatting") { makeErrorMessages(SimpleFormatter).pretty should matchSnapshot }
-    test("as JSON") { JSON(makeErrorMessages(SimpleFormatter).json) should matchSnapshot }
+    test("using pretty formatting") { makeErrorMessages(Formatter.PrettyFormatter).pretty should matchSnapshot }
+    test("using simple formatting") { makeErrorMessages(Formatter.SimpleFormatter).pretty should matchSnapshot }
+    test("as JSON") { JSON(makeErrorMessages(Formatter.SimpleFormatter).json) should matchSnapshot }
   }
 
   it should "not output with no errors" in {
     val messages = List()
-    val output = makeErrorMessageOutput(SimpleFormatter, messages)
+    val output = makeErrorMessageOutput(Formatter.SimpleFormatter, messages)
     output.pretty shouldBe ""
     val json = output.json
     json("compilationWarnings") shouldBe Nil

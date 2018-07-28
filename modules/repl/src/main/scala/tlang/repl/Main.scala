@@ -32,9 +32,7 @@ object Main extends Logging {
 
   val VersionNumber   = "0.0.1"
   val MaxRedoSize     = 500
-  val TabWidth        = 4
   val DoubleClickTime = 500L
-
 
   val HistoryFileName: String = "repl_history"
 
@@ -46,14 +44,15 @@ object Main extends Logging {
     MessageContextFlag,
     NoColorFlag,
     ReplHelpFlag,
+    TabWidthFlag,
     VersionFlag
   )
 
   def main(args: Array[String]): Unit = {
-
     val options = parseOptions(args)
     implicit val formatter: Formatter = Formatter(
       lineWidth = options(LineWidthFlag),
+      tabWidth = options(TabWidthFlag),
       colorScheme = options(ColorSchemeFlag),
       useColor = true,
       asciiOnly = options(AsciiFlag)
@@ -82,8 +81,6 @@ object Main extends Logging {
     info"Creating Repl with options: $options"
 
     // Inject dependencies
-
-
     val tempDir = File.newTemporaryDirectory("repl")
 
     val ctx = createContext(options, tempDir)
@@ -100,11 +97,11 @@ object Main extends Logging {
     val evaluator = Evaluator(ctx, extractor, programExecutor, statementTransformer, replState)
 
     val keyConverter = KeyConverter(DoubleClickTime)
-    val replTerminal = ReplTerminal(terminal, keyConverter, TabWidth)
+    val replTerminal = ReplTerminal(terminal, keyConverter, options(TabWidthFlag))
     replTerminal.enableMouseReporting = true
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
-    val input = Input(historyFile, Clipboard(), MaxRedoSize, TabWidth)
+    val input = Input(historyFile, Clipboard(), MaxRedoSize, options(TabWidthFlag))
 
     val akkaConfig = ConfigFactory.parseString(
       """|rendererMailbox.mailbox-type = "tlang.repl.actors.SingleMessageMailbox"

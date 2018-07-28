@@ -9,16 +9,27 @@ import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters._
-import tlang.options.argument.LineWidthFlag
+import tlang.options.argument.{LineWidthFlag, TabWidthFlag}
 import tlang.utils.Extensions._
 
 object Formatter {
 
-  val SimpleFormatter: Formatter = Formatter(80, useColor = false, asciiOnly = true)
-  val PrettyFormatter: Formatter = Formatter(LineWidthFlag.DefaultWidth, useColor = true, asciiOnly = false)
+  val SimpleFormatter: Formatter = Formatter(
+    80,
+    TabWidthFlag.defaultValue,
+    useColor = false,
+    asciiOnly = true
+  )
+  val PrettyFormatter: Formatter = Formatter(
+    LineWidthFlag.DefaultWidth,
+    TabWidthFlag.defaultValue,
+    useColor = true,
+    asciiOnly = false
+  )
 
   def apply(
     lineWidth: Int = LineWidthFlag.DefaultWidth,
+    tabWidth: Int = TabWidthFlag.defaultValue,
     colorScheme: ColorScheme = DefaultColorScheme,
     useColor: Boolean = true,
     asciiOnly: Boolean = false
@@ -26,7 +37,7 @@ object Formatter {
     Formatter(
       WordWrapper(wrapAnsiColors = useColor),
       Truncator(),
-      TabReplacer(2),
+      TabReplacer(tabWidth),
       lineWidth,
       colorScheme,
       useColor,

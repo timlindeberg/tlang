@@ -60,6 +60,7 @@ object Main extends Logging {
     PrintOutputFlag,
     ReadStdinFlag,
     SuppressWarningsFlag,
+    TabWidthFlag,
     ThreadsFlag,
     VerboseFlag,
     VersionFlag,
@@ -69,8 +70,9 @@ object Main extends Logging {
 
   def main(args: Array[String]): Unit = {
     val options = parseOptions(args)
-    implicit val formatter = Formatter(
+    implicit val formatter: Formatter = Formatter(
       lineWidth = options(LineWidthFlag),
+      tabWidth = options(TabWidthFlag),
       colorScheme = options(ColorSchemeFlag),
       useColor = !(options(NoColorFlag) || options(JSONFlag)),
       asciiOnly = options(AsciiFlag)
