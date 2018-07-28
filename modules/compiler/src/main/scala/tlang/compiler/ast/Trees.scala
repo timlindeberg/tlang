@@ -7,8 +7,7 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
-import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.{Formatter, PrettyFormatting}
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
 
@@ -17,9 +16,8 @@ import scala.collection.{TraversableLike, mutable}
 @FillTreeHelpers
 object Trees {
 
-  private lazy val prettyFormatter = Formatter(PrettyFormatting)
   private lazy val noColorPrinter  = PrettyPrinter()(Formatter.SimpleFormatter)
-  private lazy val colorPrinter    = PrettyPrinter()(prettyFormatter)
+  private lazy val colorPrinter    = PrettyPrinter()(Formatter.PrettyFormatter)
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -61,7 +59,8 @@ object Trees {
     }
 
     def debugPrint(header: String = "Debug"): this.type = {
-      println(ASTOutput(header, this :: Nil)(prettyFormatter).pretty)
+      val tree = ASTOutput(header, this :: Nil)(Formatter.PrettyFormatter).pretty
+      println(tree)
       this
     }
 

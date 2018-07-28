@@ -15,8 +15,8 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.textformatters.StackTraceHighlighter
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils.Extensions._
@@ -69,14 +69,12 @@ object Main extends Logging {
 
   def main(args: Array[String]): Unit = {
     val options = parseOptions(args)
-    val formatting = Formatting(
+    implicit val formatter = Formatter(
       lineWidth = options(LineWidthFlag),
       colorScheme = options(ColorSchemeFlag),
       useColor = !(options(NoColorFlag) || options(JSONFlag)),
       asciiOnly = options(AsciiFlag)
     )
-
-    implicit val formatter: Formatter = Formatter(formatting)
 
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
@@ -118,13 +116,14 @@ object Main extends Logging {
 
 case class Main(ctx: Context) extends Logging {
 
-  private val formatting            = ctx.formatter.formatting
-  private val syntaxHighlighter     = TLangSyntaxHighlighter(formatting)
-  private val stackTraceHighlighter = StackTraceHighlighter(formatting)
 
   import Main._
   import ctx._
-  import formatting._
+  import ctx.formatter._
+
+  private implicit val syntaxHighlighter    : SyntaxHighlighter     = TLangSyntaxHighlighter()
+  private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
+
 
 
   def run(): Unit = {
@@ -182,7 +181,7 @@ case class Main(ctx: Context) extends Logging {
       val CUs = runFrontend(sources)
       GenerateCode.execute(ctx)(CUs)
       val messages = ctx.reporter.messages
-      ctx.output += ErrorMessageOutput(syntaxHighlighter, messages, options(MessageContextFlag), List(MessageType.Warning))
+      ctx.output += ErrorMessageOutput(messages, options(MessageContextFlag), List(MessageType.Warning))
       CUs
     } catch {
       case e: ExitException => throw e
@@ -195,7 +194,7 @@ case class Main(ctx: Context) extends Logging {
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        ctx.output += ErrorMessageOutput(syntaxHighlighter, e.messages, options(MessageContextFlag))
+        ctx.output += ErrorMessageOutput(e.messages, options(MessageContextFlag))
         printExecutionTimes(success = false)
         tryExit(1)
     }
@@ -205,7 +204,7 @@ case class Main(ctx: Context) extends Logging {
   private def internalError(error: Throwable): Nothing = {
     error"Execution error occurred: ${ error.stackTrace }"
 
-    ctx.output += InternalErrorOutput(stackTraceHighlighter, error)
+    ctx.output += InternalErrorOutput(error)
     printExecutionTimes(success = false)
     tryExit(1)
   }
@@ -247,7 +246,7 @@ case class Main(ctx: Context) extends Logging {
     val results = sources map { programExecutor(_) }
 
 
-    ctx.output += ExecutionResultOutput(stackTraceHighlighter, syntaxHighlighter, sources zip results)
+    ctx.output += ExecutionResultOutput(sources zip results)
   }
 
   private def watch(sources: List[Source]): Unit = {

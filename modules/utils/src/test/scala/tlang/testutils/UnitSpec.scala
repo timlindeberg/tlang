@@ -62,19 +62,20 @@ trait UnitSpec extends FlatSpec
     useColor: Boolean = true,
     asciiOnly: Boolean = true,
     colorScheme: ColorScheme = DefaultColorScheme,
-    formatting: Option[Formatting] = None,
     wordWrapper: WordWrapper = mock[WordWrapper],
     truncator: Truncator = mock[Truncator],
     tabReplacer: TabReplacer = mock[TabReplacer],
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
     stackTraceHighlighter: StackTraceHighlighter = mock[StackTraceHighlighter]
   ): Formatter = {
-
     Formatter(
-      formatting = formatting.getOrElse(Formatting(width, colorScheme, useColor, asciiOnly)),
       wordWrapper,
       truncator,
-      tabReplacer
+      tabReplacer,
+      width,
+      colorScheme,
+      useColor,
+      asciiOnly
     )
   }
 

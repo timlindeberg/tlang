@@ -2,14 +2,14 @@ package tlang.compiler.output
 
 import tlang.compiler.messages.{CompilerMessage, CompilerMessages, MessageTesting, MessageType}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.{Formatter, PrettyFormatting, SimpleFormatting}
+import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
 import tlang.utils._
 
 class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
 
-  private val PrettyFormatter = Formatter(PrettyFormatting)
-  private val SimpleFormatter = Formatter(SimpleFormatting)
+  private val PrettyFormatter = Formatter.PrettyFormatter
+  private val SimpleFormatter = Formatter.SimpleFormatter
 
 
   private val path = "src/a/path/to/the/File.t"
@@ -244,8 +244,8 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
   ): ErrorMessageOutput = {
     val cm = CompilerMessages(maxErrors)
     cm ++= compilerMessages
-    val syntaxHighlighter = TLangSyntaxHighlighter(formatter.formatting)
-    ErrorMessageOutput(syntaxHighlighter, cm, messageContextSize)(formatter)
+    val syntaxHighlighter = TLangSyntaxHighlighter()(formatter)
+    ErrorMessageOutput(cm, messageContextSize)(formatter, syntaxHighlighter)
   }
 
 }

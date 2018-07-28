@@ -8,7 +8,7 @@ import tlang.compiler.imports.ImportErrors
 import tlang.compiler.lexer.Tokens.{INTLIT, INTLITKIND}
 import tlang.compiler.lexer.{LexingErrors, Token, TokenKind}
 import tlang.compiler.modification.TemplatingErrors
-import tlang.formatting.{PrettyFormatting, ErrorStringContext, Formatter}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.TestConstants.CompilerIntegrationTestTag
 import tlang.testutils.snapshot.SnapshotTesting
 import tlang.utils.Extensions._
@@ -25,7 +25,7 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
 
   private val CompilerMessageType = typeOf[CompilerMessage].typeSymbol
 
-  private val _errorStringContext = ErrorStringContext()(Formatter(PrettyFormatting))
+  private val _errorStringContext = ErrorStringContext()(Formatter.PrettyFormatter)
   private val _reporter           = VoidReporter()
 
 

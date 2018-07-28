@@ -1378,7 +1378,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   private def indentation: String = {
-    import ctx.formatter.formatting._
+    import ctx.formatter._
     VerticalRight + Horizontal * indent + " "
   }
 

@@ -73,7 +73,7 @@ abstract class ExtraMessage(override val pos: Positioned)
 
 
 sealed abstract class MessageType(val typeCode: String, private val _color: Color) {
-  def color(implicit formatter: Formatter): Color = formatter.formatting.translate(_color)
+  def color(implicit formatter: Formatter): Color = formatter.translate(_color)
   def name: String = getClass.getSimpleName.dropRight(1)
 }
 object MessageType {

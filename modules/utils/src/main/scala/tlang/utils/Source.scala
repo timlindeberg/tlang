@@ -13,8 +13,8 @@ trait Source {
   def mainName: String
   def text: String
   def lines: IndexedSeq[String] = text.lines.toIndexedSeq
-  def description(implicit formatter: Formatter): String = getDescription(formatter.formatting.NumColor)
-  def errorDescription(implicit formatter: Formatter): String = getDescription(formatter.formatting.Red)
+  def description(implicit formatter: Formatter): String = getDescription(formatter.NumColor)
+  def errorDescription(implicit formatter: Formatter): String = getDescription(formatter.Red)
 
   def getDescription(color: Color)(implicit formatter: Formatter): String
 }
@@ -35,7 +35,7 @@ case class FileSource(file: File) extends Source {
   override def mainName: String = file.name.dropRight(Constants.FileEnding.length)
   override def text: String = FileSource.getText(file)
   override def getDescription(color: Color)(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     val style = Bold + color
     val fileName = style(file.name)
     file.parent.path.relativePWD + file.fileSystem.getSeparator + fileName
@@ -48,7 +48,7 @@ case class StdinSource() extends Source {
   override def mainName: String = "stdin"
   override val text: String = readStdin()
   override def getDescription(color: Color)(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     val style = Bold + color
     style(mainName)
   }
@@ -68,7 +68,7 @@ case class StringSource(str: String, override val mainName: String) extends Sour
 
   override def text: String = str
   override def getDescription(color: Color)(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     val style = Bold + color
     style(mainName)
   }

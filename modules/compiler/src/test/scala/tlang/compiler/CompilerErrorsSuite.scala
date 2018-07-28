@@ -16,7 +16,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
-
   val ErrorResources = s"$Resources/errortests"
   val MessageContextSize = 3
 
@@ -52,12 +51,11 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
   }
 
   private def verifyMessages(file: File, ctx: Context, messages: CompilerMessages, messageType: MessageType): Unit = {
-    import ctx.formatter
     if (Verbose)
       printExecutionTimes(file, ctx)
 
     if (PrintErrors){
-      ctx.output += ErrorMessageOutput(SyntaxHighlighter, messages, messageTypes = List(messageType))
+      ctx.output += ErrorMessageOutput(messages, messageTypes = List(messageType))
     }
 
     val foundCodes = getErrorCodes(messages(messageType))

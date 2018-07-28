@@ -6,7 +6,7 @@ import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.{CompilerPhase, Context}
-import tlang.formatting.{Formatter, Formatting}
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.Logging
 import tlang.Constants

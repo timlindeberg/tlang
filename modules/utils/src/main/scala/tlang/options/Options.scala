@@ -123,7 +123,7 @@ trait FlagArgument[T] extends Argument[T] {
   def matches(args: List[String])(implicit errorContext: ErrorStringContext): Option[(Set[String], List[String])]
 
   def flagName(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     val shortFlagDescription = shortFlag.map { f => s" (-${ Magenta(f) })" }.getOrElse("")
     flag(name) + shortFlagDescription
   }
@@ -144,13 +144,12 @@ trait FlagArgument[T] extends Argument[T] {
 
   def flag(flag: FlagArgument[_])(implicit formatter: Formatter): String = this.flag(flag.name)
   def flag(flagName: String)(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     s"--${ Magenta(flagName) }"
   }
 
   def highlight(value: Any)(implicit formatter: Formatter): String = {
-    val formatting = formatter.formatting
-    if (formatting.useColor) formatting.Blue(value) else s"'$value'"
+    if (formatter.useColor) formatter.Blue(value) else s"'$value'"
   }
 
   protected def description(implicit formatter: Formatter): String
@@ -176,7 +175,7 @@ trait ArgumentFlag[T] extends FlagArgument[T] {
   def argDescription: String
 
   override def flagName(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     // Dropping space
     super.flagName + s" <${ Blue(argDescription) }> "
   }

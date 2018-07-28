@@ -1,7 +1,6 @@
 package tlang.formatting
 
-import tlang.formatting.Colors.{Color, ColorScheme}
-import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
+import tlang.formatting.Colors.Color
 import tlang.formatting.textformatters.{Coloring, Marking, SyntaxHighlighter}
 import tlang.testutils.UnitSpec
 import tlang.utils.Position
@@ -25,8 +24,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |""".stripMargin
 
 
-    def colors(formatting: Formatting) = {
-      import formatting._
+    def colors(formatter: Formatter) = {
+      import formatter._
       createColorings(
         (KeywordColor, 1, 1, 1, 4),
         (VarColor, 1, 5, 1, 6),
@@ -58,7 +57,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
 
     test("With default color scheme") {
-      val syntaxHighlighter = makeSyntaxHighlighter(colors(PrettyFormatting), PrettyFormatting)
+      val syntaxHighlighter = makeSyntaxHighlighter(colors(Formatter.PrettyFormatter), Formatter.PrettyFormatter)
 
       syntaxHighlighter(code) should matchWithAnsi(
         s"""|\u001b[34mval \u001b[36ma \u001b[37m= \u001b[35m5
@@ -76,7 +75,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
     test("With custom color scheme") {
       import Colors._
 
-      val formatting = testFormatter(colorScheme = new ColorScheme {
+      val formatter = testFormatter(colorScheme = new ColorScheme {
         override def Comment: Int = GREEN
         override def Variable: Int = RED
         override def Keyword: Int = MAGENTA
@@ -85,9 +84,9 @@ class SyntaxHighlighterSpec extends UnitSpec {
         override def String: Int = CYAN
         override def Number: Int = BLUE
         override def Class: Int = NO_COLOR
-      }).formatting
+      })
 
-      val syntaxHighlighter = makeSyntaxHighlighter(colors(formatting), formatting)
+      val syntaxHighlighter: SyntaxHighlighter = makeSyntaxHighlighter(colors(formatter), formatter)
 
       syntaxHighlighter(code) should matchWithAnsi(
         s"""|\u001b[35mval \u001b[31ma \u001b[33m= \u001b[34m5
@@ -106,10 +105,10 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
 
   it should "not highlight code when colors are disabled" in {
-    val formatting = Formatting(useColor = false)
+    val formatter = Formatter(useColor = false)
     val colorings = mock[List[Coloring]]
 
-    val syntaxHighlighter = SyntaxHighlighter(formatting)(_ => colorings)
+    val syntaxHighlighter = SyntaxHighlighter(_ => colorings)(formatter)
     there were zeroInteractions(colorings)
 
     syntaxHighlighter("ABC DEF") shouldBe theSameInstanceAs("ABC DEF")
@@ -122,9 +121,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |val x = "ABC"
          |""".stripMargin
 
-    val formatting = PrettyFormatting
-    import formatting._
-
+    val formatter = Formatter.PrettyFormatter
+    import formatter._
 
     val colorings = createColorings(
       (KeywordColor, 1, 1, 1, 4),
@@ -139,7 +137,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (NoColor, 3, 1, 3, 1)
     )
 
-    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatting)
+    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatter)
 
     syntaxHighlighter(code) should matchWithAnsi(
       s"""|\u001b[34mval \u001b[36ma \u001b[37m= \u001b[0m0b123456
@@ -161,8 +159,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |""".stripMargin
 
 
-    val formatting = PrettyFormatting
-    import formatting._
+    val formatter = Formatter.PrettyFormatter
+    import formatter._
 
     val colorings = createColorings(
       (KeywordColor, 1, 1, 1, 4),
@@ -187,7 +185,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       (NoColor, 8, 1, 8, 1)
     )
 
-    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatting)
+    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatter)
 
     syntaxHighlighter(code) should matchWithAnsi(
       s"""|\u001b[34mval \u001b[31ma = 5
@@ -213,8 +211,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |comment */
           |""".stripMargin
 
-    val formatting = PrettyFormatting
-    import formatting._
+    val formatter = Formatter.PrettyFormatter
+    import formatter._
 
     val colorings = createColorings(
       (KeywordColor, 1, 1, 1, 4),
@@ -245,7 +243,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
       Marking(Position(7, 7, 7, 11), Bold + Underline + GreenBG)
     )
 
-    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatting)
+    val syntaxHighlighter = makeSyntaxHighlighter(colorings, formatter)
     syntaxHighlighter(code, markings) should matchWithAnsi(
       s"""|\u001b[34mval \u001b[31ma = 5
           |val \u001b[36mb \u001b[37m= \u001b[33m"ABC"
@@ -258,8 +256,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
     )
   }
 
-  private def makeSyntaxHighlighter(colorings: List[Coloring], formatting: Formatting): SyntaxHighlighter = {
-    SyntaxHighlighter(formatting)(_ => colorings)
+  private def makeSyntaxHighlighter(colorings: List[Coloring], formatter: Formatter): SyntaxHighlighter = {
+    SyntaxHighlighter(_ => colorings)(formatter)
   }
 
   private def createColorings(values: (Color, Int, Int, Int, Int)*): List[Coloring] = {

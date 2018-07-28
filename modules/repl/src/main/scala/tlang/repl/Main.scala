@@ -52,13 +52,12 @@ object Main extends Logging {
   def main(args: Array[String]): Unit = {
 
     val options = parseOptions(args)
-    val formatting = Formatting(
+    implicit val formatter: Formatter = Formatter(
       lineWidth = options(LineWidthFlag),
       colorScheme = options(ColorSchemeFlag),
       useColor = true,
       asciiOnly = options(AsciiFlag)
     )
-    implicit val formatter: Formatter = Formatter(formatting)
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
     Logging.DefaultLogSettings.logThreads = true
@@ -83,7 +82,7 @@ object Main extends Logging {
     info"Creating Repl with options: $options"
 
     // Inject dependencies
-    val formatting = formatter.formatting
+
 
     val tempDir = File.newTemporaryDirectory("repl")
 
@@ -94,7 +93,7 @@ object Main extends Logging {
     val errorStringContext = ErrorStringContext()
     val replState = ReplState(prettyPrinter, Imports(ctx, errorStringContext))
 
-    val syntaxHighlighter = TLangSyntaxHighlighter(formatting)
+    val syntaxHighlighter = TLangSyntaxHighlighter()
     val extractor = Extractor(syntaxHighlighter, replState)
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
     val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
@@ -114,7 +113,7 @@ object Main extends Logging {
     )
     val actorSystem = ActorSystem("tRepl", akkaConfig)
     val outputBox = OutputBox(maxOutputLines = 5)
-    val stackTraceHighlighter = StackTraceHighlighter(formatting, failOnError = false)
+    val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
     val repl = actorSystem.actorOf(
       ReplActor.props(replState, stackTraceHighlighter, evaluator, outputBox, replTerminal, input),
       ReplActor.name
@@ -122,8 +121,8 @@ object Main extends Logging {
 
     terminal.addResizeListener((_, newSize) => {
       val width = newSize.getColumns
-      if (formatting.lineWidth != width) {
-        formatting.lineWidth = width
+      if (formatter.lineWidth != width) {
+        formatter.lineWidth = width
         repl ! Resize(width)
       }
     })

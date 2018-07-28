@@ -13,8 +13,7 @@ import tlang.utils.Extensions._
 case class PrettyPrinter()(implicit formatter: Formatter) {
 
   import Trees._
-  private val formatting = formatter.formatting
-  import formatting._
+  import formatter._
 
   private var currentIndent: Int = 0
   private val seperator          = NL * 2 + "/* ----------------------------------------------------------------- */" + NL * 2
@@ -316,7 +315,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     }
 
     private def colorKeywords(output: String): String = {
-      if (!formatting.useColor)
+      if (!formatter.useColor)
         return output
 
       Tokens.KeywordsRegex.replaceAllIn(output, m => {

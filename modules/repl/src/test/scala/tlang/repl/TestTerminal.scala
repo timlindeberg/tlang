@@ -9,7 +9,7 @@ import com.googlecode.lanterna.terminal.{Terminal, TerminalResizeListener}
 import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
 import org.scalatest.Matchers
 import tlang.formatting.Colors.Color
-import tlang.formatting.{Colors, PrettyFormatting}
+import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.AnsiMatchers
 import tlang.utils.Extensions._
 
@@ -60,7 +60,7 @@ class TestTerminal(width: Int, height: Int) extends Terminal {
     var previousColor: Color = Colors.NoColor
 
     // Find start of the last box
-    val start = textBuffer.lastIndexWhere { row => row.head._2.toString == PrettyFormatting.TopLeftThick }
+    val start = textBuffer.lastIndexWhere { row => row.head._2.toString == Formatter.PrettyFormatter.TopLeftThick }
 
     for (i <- start to height) {
       val row = textBuffer(i)

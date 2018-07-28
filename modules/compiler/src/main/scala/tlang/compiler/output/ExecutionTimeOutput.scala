@@ -12,8 +12,8 @@ case class ExecutionTimeOutput(
   implicit formatter: Formatter
 ) extends Output {
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     def calculateColors(phases: Seq[String]): Map[String, Color] = {
       val colors = Array(Green, Yellow, Red)

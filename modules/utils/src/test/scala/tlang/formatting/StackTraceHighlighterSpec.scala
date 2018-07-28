@@ -10,7 +10,7 @@ class StackTraceHighlighterSpec extends UnitSpec {
 
 
   it should "highlight stacktraces" in {
-    val stackTraceHighlighter = StackTraceHighlighter(Formatting(), failOnError = true)
+    val stackTraceHighlighter = StackTraceHighlighter(failOnError = true)(Formatter.PrettyFormatter)
 
     stackTraceHighlighter(
       """|Exception in thread "main" java.lang.RuntimeException: Compilation Failed with an unknown error

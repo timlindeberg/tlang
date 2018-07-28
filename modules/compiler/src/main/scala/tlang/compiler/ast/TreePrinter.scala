@@ -22,7 +22,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
   type TreePrinterRow = (String, String, String, String, String)
 
-  import formatter.formatting._
+  import formatter._
 
   private var symbolId                                     = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _

@@ -10,8 +10,8 @@ import tlang.utils.JSON.Json
 
 case class TokenOutput(phaseName: String, allTokens: List[List[Token]])(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
     allTokens.foreach { tokens =>

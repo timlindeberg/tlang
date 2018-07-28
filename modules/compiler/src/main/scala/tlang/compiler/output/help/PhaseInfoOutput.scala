@@ -8,7 +8,7 @@ import tlang.utils.JSON.Json
 case class PhaseInfoOutput(phases: Seq[CompilerPhase[_, _]])(implicit formatter: Formatter) extends Output {
 
   override def pretty: String = {
-    import formatter.formatting._
+    import formatter._
 
     formatter
       .grid

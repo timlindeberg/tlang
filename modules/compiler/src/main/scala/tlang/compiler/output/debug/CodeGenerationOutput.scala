@@ -9,7 +9,7 @@ import tlang.utils.JSON.Json
 case class CodeGenerationOutput(phaseName: String, stackTraces: List[CodegenerationStackTrace])
   (implicit formatter: Formatter) extends Output {
   override def pretty: String = {
-    import formatter.formatting._
+    import formatter._
 
     val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
     stackTraces.foreach { stackTrace =>

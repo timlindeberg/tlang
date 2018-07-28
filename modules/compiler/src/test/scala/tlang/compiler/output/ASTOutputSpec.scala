@@ -1,21 +1,17 @@
 package tlang.compiler.output
 
 import tlang.compiler.TestContext
-import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.ast.Trees._
+import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.testutils.TreeTesting
-import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.{ErrorStringContext, Formatter, PrettyFormatting, SimpleFormatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 
 class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
 
-
-  private val PrettyFormatter = Formatter(PrettyFormatting)
-  private val SimpleFormatter = Formatter(SimpleFormatting)
 
   private val tree = CompilationUnit(
     pack = Package(List("A", "B", "C")),
@@ -52,18 +48,18 @@ class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
     ),
     imports = Imports(
       TestContext,
-      ErrorStringContext()(SimpleFormatter),
+      ErrorStringContext()(Formatter.SimpleFormatter),
       imports = List(RegularImport(List("B")), WildCardImport(List("C")))
     )
   )
 
   it should "print debug info for trees" in {
-    test("using pretty formatting") { makeASTOutput(PrettyFormatter).pretty should matchSnapshot }
-    test("using simple formatting") { makeASTOutput(SimpleFormatter).pretty should matchSnapshot }
+    test("using pretty formatting") { makeASTOutput(Formatter.PrettyFormatter).pretty should matchSnapshot }
+    test("using simple formatting") { makeASTOutput(Formatter.SimpleFormatter).pretty should matchSnapshot }
   }
 
   it should "not output JSON" in {
-    makeASTOutput(SimpleFormatter).json shouldBe empty
+    makeASTOutput(Formatter.SimpleFormatter).json shouldBe empty
   }
 
   private val prettyPrinter = mock[PrettyPrinter] use { _.apply(*[Tree]) returns "Tree but pretty printed!" }

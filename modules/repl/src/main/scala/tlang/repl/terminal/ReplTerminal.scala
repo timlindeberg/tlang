@@ -26,10 +26,9 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
 
   import ReplTerminal._
 
-  private val formatting = formatter.formatting
   private var _isCursorVisible      = true
   private var _enableMouseReporting = false
-  private var _width: Int           = formatting.lineWidth
+  private var _width: Int           = formatter.lineWidth
 
   private var boxStartPosition : TerminalPosition = cursorPosition
   private var boxHeight        : Int              = 0
@@ -76,7 +75,7 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
     cursorPosition = getCursorsPositionWithinBox(cursor.x, cursor.y)
 
     // To make room for truncation
-    val boxSpace = formatting.lineWidth - 2 * XIndent
+    val boxSpace = formatter.lineWidth - 2 * XIndent
     val end = if (lineLength > boxSpace) boxSpace - 3 else boxSpace
     val isCursorInsideBox = cursor.x <= end
     isCursorVisible = isCursorInsideBox
@@ -100,7 +99,7 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
     var key: Option[Key] = None
     while (key.isEmpty) {
       key = term.readInput() match {
-        case m: MouseAction => keyConverter.convertMouseAction(m, boxStartPosition, formatting.lineWidth, boxHeight)
+        case m: MouseAction => keyConverter.convertMouseAction(m, boxStartPosition, formatter.lineWidth, boxHeight)
         case key            => keyConverter.convertKey(key)
       }
     }

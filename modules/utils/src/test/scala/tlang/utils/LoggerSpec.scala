@@ -2,7 +2,7 @@ package tlang.utils
 
 import java.util.Date
 
-import tlang.formatting.{Formatter, Formatting, SimpleFormatting}
+import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
 import tlang.utils.Extensions._
 
@@ -88,7 +88,7 @@ class LoggerSpec extends UnitSpec {
     val (sb, memFile) = memoryFile()
     val logSettings = LoggingSettings(
       printToStdout = false,
-      formatter = Formatter(SimpleFormatting),
+      formatter = Formatter.SimpleFormatter,
       logLevel = LogLevel.Info,
       logThreads = true
     )
@@ -214,7 +214,7 @@ class LoggerSpec extends UnitSpec {
   private def getLogger(logLevel: LogLevel = LogLevel.Trace, useColor: Boolean = false): (Logger, StringBuilder) = {
     val (sb, memFile) = memoryFile()
 
-    val formatter = Formatter(Formatting(useColor = useColor))
+    val formatter = Formatter(useColor = useColor)
 
     val logSettings = LoggingSettings(
       logLevel = logLevel,

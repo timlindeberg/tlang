@@ -5,7 +5,7 @@ import tlang.utils.JSON.Json
 
 case class InterruptedOutput()(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
-    import formatter.formatting._
+    import formatter._
     val color = Bold + Red
     NL +  formatter.grid.header(color("Compilation interrupted.")).render()
   }

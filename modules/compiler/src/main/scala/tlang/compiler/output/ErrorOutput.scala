@@ -4,7 +4,7 @@ import tlang.utils.JSON.Json
 
 case class ErrorOutput(errorMessage: String)(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
-    import formatter.formatting._
+    import formatter._
     formatter
       .grid
       .header(Red("Error"))

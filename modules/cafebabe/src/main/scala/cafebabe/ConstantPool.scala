@@ -43,7 +43,7 @@ class ConstantPool extends Streamable {
 
   // Ugly way of printing nicer debug info
   def getByteInfo(idx: U2)(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
 
     if (inverseClassMap.contains(idx))
       return ClassColor(inverseStringMap(inverseClassMap(idx)))

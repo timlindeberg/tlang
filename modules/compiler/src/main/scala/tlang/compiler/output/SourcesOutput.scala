@@ -6,8 +6,8 @@ import tlang.utils.Source
 
 case class SourcesOutput(sources: List[Source])(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     val numSources = sources.size
     val end = if (numSources > 1) "sources" else "source"

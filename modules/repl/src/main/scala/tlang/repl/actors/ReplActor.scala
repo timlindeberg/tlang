@@ -62,10 +62,10 @@ class ReplActor(
 
   import ReplActor._
   import context.dispatcher
-  import formatter.formatting._
+  import formatter._
 
   private val MaxOutputLines  = 10
-  private val LoadingInterval = formatter.formatting.spinner.frameTime.length
+  private val LoadingInterval = formatter.spinner.frameTime.length
 
   private val renderer = context.actorOf(
     RenderingActor.props(terminal, outputBox).withMailbox("rendererMailbox"),

@@ -5,7 +5,7 @@ import org.scalatest._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
-import tlang.testutils.TestConstants
+import tlang.testutils.{StringDifference, TestConstants}
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -194,6 +194,9 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           |$Separator
           |${ newSnapshot.escapeMargin }
           |$Separator
+          |
+          |Difference:
+          |${StringDifference(newSnapshot, oldSnapshot)}
        """.stripMargin
     }
 

@@ -17,7 +17,7 @@ sealed abstract class LogLevel(val priority: Int, private val _color: Color) ext
 
   override def compare(that: LogLevel): Int = priority - that.priority
   def name: String = getClass.simpleObjectName.toLowerCase
-  def color(implicit formatter: Formatter): Color = formatter.formatting.translate(_color)
+  def color(implicit formatter: Formatter): Color = formatter.translate(_color)
 
 }
 
@@ -40,15 +40,12 @@ case class LoggingSettings(
   var logLevelWidth: Int = 5,
   var logThreads: Boolean = false,
   var printToStdout: Boolean = true,
-  var formatter: Formatter = Formatter(PrettyFormatting),
+  var formatter: Formatter = Formatter.PrettyFormatter,
   var logLevel: LogLevel = LogLevel.Debug
 ) {
 
-  def formatting: Formatting = formatter.formatting
-  def useColor: Boolean = formatting.useColor
-
-  def TimeColor: Color = formatting.Magenta
-  def HighlightColor: Color = formatting.Cyan
+  def TimeColor: Color = formatter.Magenta
+  def HighlightColor: Color = formatter.Cyan
 
   var _printToFile: List[File] = Nil
   def printToFile: List[File] = _printToFile
@@ -102,7 +99,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   import loggingSettings._
 
   private implicit val formatter: Formatter = loggingSettings.formatter
-  private val stackTraceHighlighter = StackTraceHighlighter(formatter.formatting, failOnError = false)
+  private val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
     val sb = new StringBuilder
@@ -112,7 +109,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
     var nextString: Option[String] = Some(strings.next)
 
     while (nextString.isDefined) {
-      sb ++= formatting.Bold(nextString.get)
+      sb ++= formatter.Bold(nextString.get)
       nextString = if (strings.hasNext) Some(strings.next()) else None
       if (expressions.hasNext) {
         val expression = expressions.next
@@ -166,7 +163,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
 
   protected def timestamp: String = {
     val time = timeFormat(now)
-    if (!useColor)
+    if (!formatter.useColor)
       return time
 
     time.split("[.,:\\-]").map(TimeColor(_)).mkString(":")
@@ -180,8 +177,8 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
     var name = s.substring(math.max(s.length - threadWidth, 0), s.length)
     name = fit(name, threadWidth)
 
-    if (useColor) {
-      val allColors = formatting.AllColors
+    if (formatter.useColor) {
+      val allColors = formatter.AllColors
       val color = allColors(threadId % allColors.length)
       name = color(name)
     }
@@ -192,7 +189,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   protected def logLevel(level: LogLevel): String = {
     val name = fit(level.getClass.getSimpleName.stripSuffix("$").toUpperCase, logLevelWidth)
     val color = level.color
-    color(s"$name " + formatting.Vertical)
+    color(s"$name " + formatter.Vertical)
   }
 
   protected def location(enclosing: String, file: String, lineNumber: Int): String = {
@@ -200,7 +197,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
   }
 
   protected def extraInfo(logLevel: LogLevel, extra: Option[Any]): String = {
-    val f = formatting
+    val f = formatter
     import f._
 
     if (extra.isEmpty)
@@ -276,6 +273,6 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
       case f: File => f.path.relativePWD
       case _       => value.toString
     }
-    if (useColor) HighlightColor(s) else s"'$s'"
+    if (formatter.useColor) HighlightColor(s) else s"'$s'"
   }
 }

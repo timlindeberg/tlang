@@ -1,16 +1,16 @@
 package tlang.formatting.textformatters
 
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
 
-case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = false) {
+case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatter: Formatter) {
 
   def apply(throwable: Throwable): String = apply(throwable.stackTrace)
   def apply(stackTrace: String): String = {
-    if (!formatting.useColor)
+    if (!formatter.useColor)
       return stackTrace
 
 
@@ -20,8 +20,7 @@ case class StackTraceHighlighter(formatting: Formatting, failOnError: Boolean = 
 
   object StackTraceParser extends RegexParsers {
 
-
-    import formatting._
+    import formatter._
 
     private val TextColor   = Bold
     private val FileColor   = Cyan + Bold + Underline

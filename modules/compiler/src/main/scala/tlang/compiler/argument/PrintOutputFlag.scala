@@ -48,7 +48,7 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
   override def parseValue(args: Set[String]): Set[String] = args.map(_.toLowerCase)
 
   private def phases(implicit formatter: Formatter): String =  {
-    import formatter.formatting._
+    import formatter._
     formatter.list(Main.CompilerPhases.map(phase => Blue(phase.phaseName.capitalize)))
   }
 }

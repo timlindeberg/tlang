@@ -1,7 +1,7 @@
 package tlang.compiler.messages
 
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
-import tlang.formatting.{Colors, Formatting}
+import tlang.formatting.Colors
 import tlang.testutils.UnitSpec
 import tlang.utils._
 
@@ -650,13 +650,15 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     useColor: Boolean = true,
     contextSize: Int = DefaultContextSize,
     tabWidth: Int = DefaultTabWidth,
-    syntaxHighlighter: SyntaxHighlighter = mockedSyntaxHighlighter,
-    formatting: Option[Formatting] = None
+    syntaxHighlighter: SyntaxHighlighter = mockedSyntaxHighlighter
   ): MessageInfo = {
-    val formatter = testFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting, tabReplacer = TabReplacer(tabWidth))
+    val formatter = testFormatter(
+      syntaxHighlighter = syntaxHighlighter,
+      tabReplacer = TabReplacer(tabWidth),
+      useColor = useColor
+    )
     MessageInfo(message, syntaxHighlighter, contextSize)(formatter)
   }
-
 
 
 }

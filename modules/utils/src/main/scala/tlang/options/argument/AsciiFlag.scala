@@ -23,9 +23,8 @@ case object AsciiFlag extends BooleanFlag {
        |"""
 
   private def formatBoxes(implicit formatter: Formatter): String = {
-    val formatting = formatter.formatting
-    import formatting._
-    val exampleFormatting = formatting.copy(lineWidth = formatting.lineWidth - 4)
+    import formatter._
+    val exampleFormatter = formatter.copy(lineWidth = formatter.lineWidth - 4)
 
     val lorumIpsum =
       s"""
@@ -38,7 +37,7 @@ case object AsciiFlag extends BooleanFlag {
 
     List(true, false)
       .map { asciiOnly =>
-        val boxFormatter = formatter.copy(formatting = exampleFormatting.copy(asciiOnly = asciiOnly))
+        val boxFormatter = exampleFormatter.copy(asciiOnly = asciiOnly)
         val list = s"A ${ Cyan("list") }" + NL + s"${ boxFormatter.list(Red("A"), Green("B"), Blue("C")) }"
         val column = s"A ${ Yellow("column") }."
         val header = if (asciiOnly) "ASCII" else "Unicode"

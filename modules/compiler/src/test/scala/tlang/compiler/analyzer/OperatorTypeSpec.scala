@@ -339,7 +339,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         if (reporter.hasErrors)
-          TestContext.output += ErrorMessageOutput(SyntaxHighlighter, reporter.messages)
+          TestContext.output += ErrorMessageOutput(reporter.messages)
 
         assert(!reporter.hasErrors, "for (" + lhs + ", " + rhs + ")")
       }

@@ -16,8 +16,7 @@ case class MessageInfo(
 ) {
 
   private val lines: IndexedSeq[String] = message.pos.source.map(_.lines).getOrElse(IndexedSeq())
-  private val formatting = formatter.formatting
-  import formatting._
+  import formatter._
 
 
   def color: Color = message.messageType.color + Bold
@@ -45,7 +44,7 @@ case class MessageInfo(
     val (trimmedLines, trimmedPos) = trimIndent(contextLines)
     val (lines, adjustedPos) = formatter.replaceTabs(trimmedLines, trimmedPos)
 
-    if (formatting.useColor)
+    if (formatter.useColor)
       lines.map { case (line, lineNum) => coloredIndicatorLine(lineNum, line, adjustedPos) }
     else
       lines.flatMap { case (line, lineNum) => indicatorLines(lineNum, line, adjustedPos) }

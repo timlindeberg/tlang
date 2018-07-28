@@ -17,7 +17,7 @@ case class ErrorStringContext(
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
-    import formatter.formatting._
+    import formatter._
 
 
     private val ValueColor: Color = NumColor

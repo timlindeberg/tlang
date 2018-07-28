@@ -85,12 +85,12 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
   }
 
   private def validKeys(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     formatter.list(Keys.map(Blue))
   }
 
   private def validColors(implicit formatter: Formatter): String = {
-    import formatter.formatting._
+    import formatter._
     formatter.list(Colors.ColorNames.map(Magenta))
   }
 

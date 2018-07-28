@@ -2,18 +2,20 @@ package tlang.compiler
 
 import better.files.File
 import tlang.Constants
+import tlang.testutils.TestConstants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.DefaultReporter
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.testutils.TestConstants.{PrintCodePhases, PrintJSON, Resources, TestOutputDirectory}
 
 trait TestContext {
 
-  import CompilerIntegrationTestSpec.TestFormatter
+  import TestConstants.TestFormatter
 
   val TestContext: Context = testContext(None)
-  val SyntaxHighlighter = TLangSyntaxHighlighter(TestFormatter.formatting)
+  implicit val SyntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
 
   def testContext(file: Option[File]): Context = {
     val outDir = file match {

@@ -6,14 +6,13 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException
 import tlang.compiler.output.ErrorMessageOutput
-import tlang.testutils.TestConstants._
 import tlang.utils.{FileSource, NoPosition, Position}
 
 import scala.reflect.{ClassTag, classTag}
 
 class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
-  import TestContext.formatter
+  import tlang.testutils.TestConstants._
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
 
@@ -26,7 +25,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        TestContext.output += ErrorMessageOutput(SyntaxHighlighter, e.messages)
+        TestContext.output += ErrorMessageOutput(e.messages)
         Empty()
     }
   }

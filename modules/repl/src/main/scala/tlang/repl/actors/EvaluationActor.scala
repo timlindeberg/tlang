@@ -36,9 +36,7 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
   import Evaluator.ClassName
   import context.dispatcher
 
-  private val formatting = formatter.formatting
-
-  import formatting._
+  import formatter._
 
   private val WarmupProgram   = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
   private val FailureColor    = Bold + Red

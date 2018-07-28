@@ -14,7 +14,7 @@ trait AnsiMatchers {
     def apply(found: String): MatchResult = {
       MatchResult(
         found == expected,
-        s"The strings did not match:\n${ format(found, expected) }",
+        s"The strings did not match:\n${ StringDifference(found, expected) }",
         s"The strings matched."
       )
     }
@@ -55,7 +55,7 @@ trait AnsiMatchers {
         .zip(expectedStrings)
         .zipWithIndex
         .find { case ((actual, expected), _) => actual != expected }
-        .map { case ((actual, expected), i) => (false, s"String number ${ i + 1 } did not match:\n${ format(actual, expected) }") }
+        .map { case ((actual, expected), i) => (false, s"String number ${ i + 1 } did not match:\n${ StringDifference(actual, expected) }") }
         .getOrElse((true, s""))
       MatchResult(matches, failMessage, Matched)
     }
@@ -65,46 +65,8 @@ trait AnsiMatchers {
   def matchWithAnsi(expectedString: String) = new AnsiStringMatcher(expectedString)
   def allMatchWithAnsi(expectedString: String, moreStrings: String*) = new MultipleAnsiStringMatcher(expectedString :: moreStrings.toList)
 
-
-  private def format(f: String, e: String): String = {
-    val found = if (f == null) "null" else f
-    val expected = if (e == null) "null" else e
-
-    val sbFound = new StringBuilder("  Actual:")
-    val sbExpected = new StringBuilder("Expected:")
-    val sbDifference = new StringBuilder("         ")
-    var i = 0
-    while (i < found.length || i < expected.length) {
-      var f = if (i < found.length) replaceChar(found(i)) else ""
-      var e = if (i < expected.length) replaceChar(expected(i)) else ""
-
-      // Since \r and \n is two characters we need to add a space to keep alignment
-      (f.length, e.length) match {
-        case (2, 1) => e += " "
-        case (1, 2) => f += " "
-        case _      =>
-      }
-
-      if (f.nonEmpty) sbFound ++= " '" + f + "'"
-      if (e.nonEmpty) sbExpected ++= " '" + e + "'"
-
-      val diffChar = if (f != e) "‾" else " "
-      sbDifference ++= " " + diffChar * (2 + math.max(f.length, e.length))
-      i += 1
-    }
-    sbFound.toString + NL + sbExpected.toString + NL + sbDifference.toString
-  }
-
-  private def replaceChar(c: Char): String = c match {
-    case '\u001b' => "▯"
-    case '\n'     => "\\n"
-    case '\r'     => "\\r"
-    case '\t'     => "\\t"
-    case c        => s"$c"
-  }
-
   private def formatLine(line: String, name: String, seperator: String = ": "): String = {
-    val l = if (line.isEmpty) "<empty" else line.ansiDebugString
+    val l = if (line.isEmpty) "<empty>" else line.ansiDebugString
     s"$name$seperator$l"
   }
 

@@ -1,28 +1,28 @@
 package tlang.compiler.utils
 
-import tlang.compiler.lexer.{Lexer, Token}
 import tlang.compiler.lexer.Tokens._
+import tlang.compiler.lexer.{Lexer, Token}
 import tlang.compiler.messages.VoidReporter
 import tlang.formatting.Colors.Color
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.formatting.textformatters.{Coloring, SyntaxHighlighter}
-import tlang.utils._
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
+import tlang.utils._
 
 
 object TLangSyntaxHighlighter {
 
-  def apply(formatting: Formatting): TLangSyntaxHighlighter = {
+  def apply()(implicit formatter: Formatter): TLangSyntaxHighlighter = {
     val errorStringContext = ErrorStringContext(null)(Formatter.SimpleFormatter)
     val lexer = new Lexer(VoidReporter(), errorStringContext) {
       override lazy val logger: Logger = new Logger()(LoggingSettings(logLevel = LogLevel.Off))
     }
 
-    new TLangSyntaxHighlighter(formatting, lexer)
+    new TLangSyntaxHighlighter(lexer)
   }
 
-  def lexing(formatting: Formatting, lexer: Lexer): String => List[Coloring] = {
-    import formatting._
+  def lexing(lexer: Lexer)(implicit formatter: Formatter): String => List[Coloring] = {
+    import formatter._
     def getColor(token: Token): Color = token.kind match {
       case NEWLINE | INDENT | DEDENT | BAD                         => NoColor
       case COMMENTLITKIND                                          => CommentColor
@@ -40,5 +40,5 @@ object TLangSyntaxHighlighter {
 
 }
 
-class TLangSyntaxHighlighter(formatting: Formatting, lexer: Lexer) extends
-  SyntaxHighlighter(formatting)(TLangSyntaxHighlighter.lexing(formatting, lexer))
+class TLangSyntaxHighlighter(lexer: Lexer)(implicit formatter: Formatter) extends
+  SyntaxHighlighter(TLangSyntaxHighlighter.lexing(lexer))

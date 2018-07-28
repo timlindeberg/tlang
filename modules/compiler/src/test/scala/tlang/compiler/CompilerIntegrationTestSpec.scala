@@ -4,10 +4,7 @@ import better.files.File
 import org.scalatest._
 import tlang.Constants
 import tlang.compiler.output.ExecutionTimeOutput
-import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.Formatter
 import tlang.testutils.TestConstants
-import tlang.testutils.TestConstants.TestFormatting
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -24,8 +21,6 @@ object CompilerIntegrationTestSpec {
   val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
-
-  implicit val TestFormatter: Formatter = Formatter(TestFormatting)
 
   val TestPattern: Option[Regex] =
     sys.env.get("pattern")
@@ -62,7 +57,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
 
   def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
     val numbers = (1 to Math.max(result.length, solution.length)).map { i =>
-      if (i == failedTest) s"$i" + " " + TestFormatting.LeftArrow else s"$i"
+      if (i == failedTest) s"$i" + " " + TestFormatter.LeftArrow else s"$i"
     }
     TestFormatter
       .grid
@@ -73,7 +68,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
   }
 
   def printExecutionTimes(file: File, ctx: Context): Unit = {
-    import TestFormatting._
+    import TestFormatter._
 
     TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
     ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = true)

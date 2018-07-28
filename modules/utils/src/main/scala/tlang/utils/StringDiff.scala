@@ -1,6 +1,6 @@
 package tlang.utils
 
-import tlang.formatting.{Colors, Formatter, Formatting}
+import tlang.formatting.{Colors, Formatter}
 
 // Code is copied from https://github.com/bitwalker/scaladiff since
 // the repository hasn't been updated for Scala 2.12. It has been slightly

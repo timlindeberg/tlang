@@ -6,10 +6,16 @@ import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ExecutionResultOutput(stackTraceHighlighter: StackTraceHighlighter, syntaxHighlighter: SyntaxHighlighter, results: Seq[(Source, ExecutionResult)])(implicit formatter: Formatter) extends Output {
+case class ExecutionResultOutput(
+  results: Seq[(Source, ExecutionResult)]
+)(
+  implicit formatter: Formatter,
+  stackTraceHighlighter: StackTraceHighlighter,
+  syntaxHighlighter: SyntaxHighlighter
+) extends Output {
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     val numPrograms = results.size
     val grid = formatter.grid

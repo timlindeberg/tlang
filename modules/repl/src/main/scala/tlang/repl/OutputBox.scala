@@ -28,10 +28,10 @@ object OutputBox {
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
 
   def apply(maxOutputLines: Int)(implicit formatter: Formatter): OutputBox = {
-    val formatting = formatter.formatting
-    import formatting._
 
-    val syntaxHighlighter = TLangSyntaxHighlighter(formatter.formatting)
+    import formatter._
+
+    val syntaxHighlighter = TLangSyntaxHighlighter()
     val inputColor = Bold + Magenta
     val header = inputColor("Input")
     val renderState = RenderState(header = header)
@@ -39,7 +39,7 @@ object OutputBox {
       syntaxHighlighter,
       maxOutputLines,
       renderState,
-      formatting.spinner
+      formatter.spinner
     )
   }
 
@@ -54,10 +54,8 @@ case class OutputBox private(
   implicit formatter: Formatter
 ) {
 
-  private val formatting = formatter.formatting
-
   import OutputBox._
-  import formatting._
+  import formatter._
 
   private lazy val InputColor   = Bold + Magenta
   private lazy val SuccessColor = Bold + Green
@@ -66,7 +64,7 @@ case class OutputBox private(
 
   def clear(): OutputBox = {
     val header = InputColor("Input")
-    copy(renderState = RenderState(header = header), spinner = formatting.spinner)
+    copy(renderState = RenderState(header = header), spinner = formatter.spinner)
   }
 
   def welcome(): OutputBox = {
@@ -165,7 +163,7 @@ case class OutputBox private(
   }
 
   private def truncate(output: String, color: Color): String = {
-    val wordWrapped = formatter.wordWrap(output, formatting.lineWidth)
+    val wordWrapped = formatter.wordWrap(output, formatter.lineWidth)
 
     val diff = wordWrapped.size - maxOutputLines
     val lines = wordWrapped.take(maxOutputLines)

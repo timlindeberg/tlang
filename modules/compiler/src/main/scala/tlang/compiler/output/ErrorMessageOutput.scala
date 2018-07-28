@@ -13,15 +13,16 @@ object ErrorMessageOutput {
 }
 
 case class ErrorMessageOutput(
-  syntaxHighlighter: SyntaxHighlighter,
   compilerMessages: CompilerMessages,
   messageContextSize: Int = MessageContextFlag.defaultValue,
   messageTypes: List[MessageType] = ErrorMessageOutput.DefaultMessageTypes
-)(implicit formatter: Formatter) extends Output {
+)(implicit formatter: Formatter,
+  syntaxHighlighter: SyntaxHighlighter,
+) extends Output {
 
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     def format(messageType: MessageType): String = {
       val messages = compilerMessages(messageType)
@@ -64,7 +65,7 @@ case class ErrorMessageOutput(
       if (showTitle) {
         val color = message.messageType.color
         val title = s" ${ messageInfo.prefix.stripAnsi } "
-        grid.content(CenteredContent(title, color, formatting.HorizontalThick))
+        grid.content(CenteredContent(title, color, HorizontalThick))
       }
 
       val validPos = messageInfo.hasValidPosition

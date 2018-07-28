@@ -817,7 +817,7 @@ class GridSpec extends UnitSpec {
 
     val formatter = mockedFormatter()
     Grid()(formatter)
-      .columnHeaderColor(formatter.formatting.Red)
+      .columnHeaderColor(formatter.Red)
       .row(Column, Column)
       .columnHeaders("ABC", "DEF")
       .content("ABC", "DEF")

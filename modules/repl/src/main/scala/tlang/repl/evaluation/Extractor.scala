@@ -9,7 +9,7 @@ import tlang.utils.Extensions._
 case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(implicit formatter: Formatter) {
 
   import Evaluator._
-  import formatter.formatting._
+  import formatter._
 
   // Updates the repl state and returns messages for all new definitions
   def apply(cu: CompilationUnit): List[String] = {

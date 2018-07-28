@@ -11,8 +11,8 @@ import tlang.utils.JSON.Json
 case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: Formatter) extends Output {
 
   override def pretty: String = {
-    val formatting = formatter.formatting
-    import formatting._
+
+    import formatter._
 
     val tcomp = Green(Constants.CommandName)
     val options = Blue("options")

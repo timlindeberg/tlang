@@ -5,17 +5,15 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.compiler.{CompilerIntegrationTestSpec, Context}
-import tlang.testutils.TestConstants._
 import tlang.utils.Extensions._
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
 
+  import tlang.testutils.TestConstants._
 
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val testContext: Context = testContext(Some(TestFile))
-
-  import testContext.formatter
 
   "A pretty printer should " - {
     "produce the same tree after being pretty printed and reparsed" in {
@@ -27,7 +25,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val CU = try parser(file).head
       catch {
         case e: CompilationException =>
-          val errors = ErrorMessageOutput(SyntaxHighlighter, e.messages, messageTypes = List(MessageType.Error))
+          val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
           fail(s"Could not parse file $TestFile:" + NL + errors.pretty)
       }
 
@@ -36,7 +34,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       val reparsedCU = try parser(StringSource(printedCU, "ParserPositions") :: Nil).head
       catch {
         case e: CompilationException =>
-          val errors = ErrorMessageOutput(SyntaxHighlighter, e.messages, messageTypes = List(MessageType.Error))
+          val errors = ErrorMessageOutput(e.messages, messageTypes = List(MessageType.Error))
           fail(
             s"""
                |Could not reparse output from file $TestFile:

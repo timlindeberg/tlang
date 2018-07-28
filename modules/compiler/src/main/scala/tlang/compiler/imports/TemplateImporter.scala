@@ -15,6 +15,7 @@ import scala.collection.mutable
 class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set()) extends Logging {
 
   import ctx.formatter
+  implicit val syntaxHighlighter: TLangSyntaxHighlighter = TLangSyntaxHighlighter()
 
   def classExists(importName: String): Boolean = ctx.classPath(importName).exists(_.isInstanceOf[TemplateFile])
 
@@ -48,8 +49,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        val syntaxHighlighter = TLangSyntaxHighlighter(ctx.formatter.formatting)
-        ctx.output += ErrorMessageOutput(syntaxHighlighter, e.messages, ctx.options(MessageContextFlag))
+        ctx.output += ErrorMessageOutput(e.messages, ctx.options(MessageContextFlag))
         None
     }
   }

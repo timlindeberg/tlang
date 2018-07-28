@@ -21,8 +21,7 @@ case class CodegenerationStackTrace(
   val heights: Array[Int]                   = heightArray.clone()
   val abcs   : IndexedSeq[AbstractByteCode] = abcBuffer.toIndexedSeq
 
-  private val formatting = formatter.formatting
-  import formatting._
+  import formatter._
 
   private val UninitializedHeight: Int = Int.MinValue
   private val types                    = Map(

@@ -1,7 +1,7 @@
 package tlang.formatting.grid
 
 import tlang.formatting.Colors.Color
-import tlang.formatting.{Formatter, Formatting}
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
@@ -9,12 +9,10 @@ import scala.collection.mutable.ArrayBuffer
 
 case class Grid()(implicit var formatter: Formatter) {
 
-  def formatting: Formatting = formatter.formatting
-
   private val rows             : ArrayBuffer[Row] = ArrayBuffer()
   private var indent           : Int              = 1
-  private var borderColor      : Color            = formatting.NoColor
-  private var columnHeaderColor: Color            = formatting.Blue + formatting.Bold
+  private var borderColor      : Color            = formatter.NoColor
+  private var columnHeaderColor: Color            = formatter.Blue + formatter.Bold
   private var shouldTrim       : Boolean          = true
 
   private var _currentRow: Option[Row] = None
@@ -174,7 +172,7 @@ case class Grid()(implicit var formatter: Formatter) {
   private def verifyRowWidth(row: Row): Unit = {
     val columns = row.columns
 
-    val lineWidth = formatting.lineWidth
+    val lineWidth = formatter.lineWidth
     val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
 
     val neededWidth = indentAndBorderSize + columns
@@ -208,7 +206,7 @@ case class Grid()(implicit var formatter: Formatter) {
 
     private def spaceForContent(): Int = {
       val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
-      formatting.lineWidth - indentAndBorderSize
+      formatter.lineWidth - indentAndBorderSize
     }
 
     private val calculateColumnWidths: Memoized[Seq[Int]] = Memoize {
@@ -280,7 +278,7 @@ case class Grid()(implicit var formatter: Formatter) {
 
   private case class GridRenderer() {
 
-    private val f = formatting
+    private val f = formatter
     import f._
 
     // An approximation of the number of characters needed. Doesn't take in to account eventual
@@ -292,12 +290,12 @@ case class Grid()(implicit var formatter: Formatter) {
             column.lines.foldLeft(0) {
               case (acc, s: StringContent) =>
                 val string = s.string
-                acc + math.max(1, string.length / formatting.lineWidth)
+                acc + math.max(1, string.length / formatter.lineWidth)
               case (acc, _)                        => acc + 1
             }
           }
           .max + 1
-        numberOfRows * (formatting.lineWidth + 1)
+        numberOfRows * (formatter.lineWidth + 1)
       }
       .sum
 
@@ -368,7 +366,7 @@ case class Grid()(implicit var formatter: Formatter) {
 
 
       val sb = new StringBuilder
-      val maxWidth = formatting.lineWidth
+      val maxWidth = formatter.lineWidth
 
 
       sb ++= verticalRight
@@ -411,7 +409,7 @@ case class Grid()(implicit var formatter: Formatter) {
           val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
             val width = columnWidths(columnIndex)
             val handleOverflow = columns(columnIndex).overflowHandling
-            handleOverflow(line.render(width), width, formatter)
+            handleOverflow(line.render(width), width)
           }
           val maxNumLines = overFlowedLines.map(_.length).max
 

@@ -1,21 +1,21 @@
 package tlang.formatting.textformatters
 
 import tlang.formatting.Colors._
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 import tlang.utils.{Position, Positioned}
 
 
 case class Coloring(color: Color, position: Positioned)
 case class Marking(pos: Positioned, style: Color, isAdditive: Boolean = false, lineOffset: Int = 1)
 
-case class SyntaxHighlighter(formatting: Formatting)(coloring: String => Seq[Coloring]) {
+case class SyntaxHighlighter(coloring: String => Seq[Coloring])(implicit formatter: Formatter) {
 
-  import formatting._
+  import formatter._
 
   def apply(code: String): String = apply(code, Seq())
   def apply(code: String, marking: Marking): String = apply(code, Seq(marking))
   def apply(code: String, markings: Seq[Marking] = Seq()): String = {
-    if (code.isEmpty || !formatting.useColor)
+    if (code.isEmpty || !useColor)
       return code
 
     val (codeWithoutColors, colors) = splitStringAndColors(code)
