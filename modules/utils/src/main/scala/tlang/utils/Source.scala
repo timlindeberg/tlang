@@ -2,7 +2,8 @@ package tlang.utils
 
 import better.files.File
 import tlang.Constants
-import tlang.formatting.{Formatting, SimpleFormatting}
+import tlang.formatting.Colors.Color
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 
 import scala.collection.mutable
@@ -12,8 +13,10 @@ trait Source {
   def mainName: String
   def text: String
   def lines: IndexedSeq[String] = text.lines.toIndexedSeq
-  def description(formatting: Formatting, isError: Boolean = false): String
-  def description: String = description(SimpleFormatting, isError = false)
+  def description(implicit formatter: Formatter): String = getDescription(formatter.formatting.NumColor)
+  def errorDescription(implicit formatter: Formatter): String = getDescription(formatter.formatting.Red)
+
+  def getDescription(color: Color)(implicit formatter: Formatter): String
 }
 
 object FileSource {
@@ -31,9 +34,9 @@ case class FileSource(file: File) extends Source {
 
   override def mainName: String = file.name.dropRight(Constants.FileEnding.length)
   override def text: String = FileSource.getText(file)
-  override def description(formatting: Formatting, isError: Boolean = false): String = {
-    import formatting._
-    val style = Bold + (if(isError) Red else NumColor)
+  override def getDescription(color: Color)(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    val style = Bold + color
     val fileName = style(file.name)
     file.parent.path.relativePWD + file.fileSystem.getSeparator + fileName
   }
@@ -44,9 +47,9 @@ case class StdinSource() extends Source {
 
   override def mainName: String = "stdin"
   override val text: String = readStdin()
-  override def description(formatting: Formatting, isError: Boolean): String = {
-    import formatting._
-    val style = Bold + (if(isError) Red else NumColor)
+  override def getDescription(color: Color)(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    val style = Bold + color
     style(mainName)
   }
 
@@ -64,9 +67,9 @@ case class StdinSource() extends Source {
 case class StringSource(str: String, override val mainName: String) extends Source {
 
   override def text: String = str
-  override def description(formatting: Formatting, isError: Boolean = false): String = {
-    import formatting._
-    val style = Bold + (if(isError) Red else NumColor)
+  override def getDescription(color: Color)(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    val style = Bold + color
     style(mainName)
   }
 }

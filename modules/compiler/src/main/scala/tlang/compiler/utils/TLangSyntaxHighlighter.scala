@@ -4,7 +4,7 @@ import tlang.compiler.lexer.{Lexer, Token}
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.VoidReporter
 import tlang.formatting.Colors.Color
-import tlang.formatting.{ErrorStringContext, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
 import tlang.formatting.textformatters.{Coloring, SyntaxHighlighter}
 import tlang.utils._
 import tlang.utils.Extensions._
@@ -13,7 +13,7 @@ import tlang.utils.Extensions._
 object TLangSyntaxHighlighter {
 
   def apply(formatting: Formatting): TLangSyntaxHighlighter = {
-    val errorStringContext = ErrorStringContext(null)
+    val errorStringContext = ErrorStringContext(null)(Formatter.SimpleFormatter)
     val lexer = new Lexer(VoidReporter(), errorStringContext) {
       override lazy val logger: Logger = new Logger()(LoggingSettings(logLevel = LogLevel.Off))
     }

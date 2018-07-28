@@ -13,11 +13,12 @@ object ErrorMessageOutput {
 }
 
 case class ErrorMessageOutput(
-  formatter: Formatter,
   tabReplacer: TabReplacer,
   compilerMessages: CompilerMessages,
   messageContextSize: Int = MessageContextFlag.defaultValue,
   messageTypes: List[MessageType] = ErrorMessageOutput.DefaultMessageTypes
+)(
+  implicit formatter: Formatter
 ) extends Output {
 
   override def pretty: String = {
@@ -44,7 +45,7 @@ case class ErrorMessageOutput(
       val (was, appendix) = if (n == 1) ("was", "") else ("were", "s")
 
       val name = messageType.name.toLowerCase + appendix
-      val color = messageType.color(formatter.formatting)
+      val color = messageType.color
       val num = color(n)
       if (compilerMessages.hitMax(messageType))
         s"${ Bold }There were more than $num$Bold $name, only showing the first $num$Reset."
@@ -58,13 +59,12 @@ case class ErrorMessageOutput(
     }
 
     def addMessage(message: CompilerMessage, grid: Grid, showTitle: Boolean): Unit = {
-      val formatting = formatter.formatting
-      val messageInfo = MessageInfo(message, formatter, tabReplacer, messageContextSize)
+      val messageInfo = MessageInfo(message, tabReplacer, messageContextSize)
 
       grid.row()
 
       if (showTitle) {
-        val color = message.messageType.color(formatting)
+        val color = message.messageType.color
         val title = s" ${ messageInfo.prefix.stripAnsi } "
         grid.content(CenteredContent(title, color, formatting.HorizontalThick))
       }

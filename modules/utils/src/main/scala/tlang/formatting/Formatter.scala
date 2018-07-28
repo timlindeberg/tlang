@@ -44,7 +44,7 @@ case class Formatter(
 
   import formatting._
 
-  def grid: Grid = Grid(this)
+  def grid: Grid = Grid()(this)
 
   def useColor: Boolean = formatting.useColor
 

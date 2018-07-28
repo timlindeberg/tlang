@@ -14,6 +14,8 @@ import scala.collection.mutable
 
 class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set()) extends Logging {
 
+  import ctx.formatter
+
   def classExists(importName: String): Boolean = ctx.classPath(importName).exists(_.isInstanceOf[TemplateFile])
 
   def importCUs(importName: String): List[CompilationUnit] = {
@@ -46,12 +48,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
       Some(parsedProgram)
     } catch {
       case e: CompilationException =>
-        ctx.output += ErrorMessageOutput(
-          ctx.formatter,
-          TabReplacer(2),
-          e.messages,
-          ctx.options(MessageContextFlag)
-        )
+        ctx.output += ErrorMessageOutput(TabReplacer(2), e.messages, ctx.options(MessageContextFlag))
         None
     }
   }

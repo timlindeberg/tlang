@@ -22,15 +22,17 @@ object RenderingActor {
   case class DrawSuccess(output: String, truncate: Boolean) extends RenderingMessage
   case class DrawFailure(output: String, truncate: Boolean) extends RenderingMessage
 
-  def props(formatter: Formatter, terminal: ReplTerminal, outputBox: OutputBox) =
-    Props(new RenderingActor(formatter, terminal, outputBox))
+  def props(terminal: ReplTerminal, outputBox: OutputBox)(implicit formatter: Formatter) =
+    Props(new RenderingActor(terminal, outputBox))
   val name = "renderer"
 }
 
 class RenderingActor(
-  formatter: Formatter,
   terminal: ReplTerminal,
-  var outputBox: OutputBox) extends Actor with Logging {
+  var outputBox: OutputBox
+)(
+  implicit formatter: Formatter
+) extends Actor with Logging {
 
   import RenderingActor._
 

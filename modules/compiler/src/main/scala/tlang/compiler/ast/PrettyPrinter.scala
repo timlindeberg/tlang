@@ -6,13 +6,14 @@ import java.util.regex.Matcher
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 
 
-case class PrettyPrinter(formatting: Formatting) {
+case class PrettyPrinter()(implicit formatter: Formatter) {
 
   import Trees._
+  private val formatting = formatter.formatting
   import formatting._
 
   private var currentIndent: Int = 0

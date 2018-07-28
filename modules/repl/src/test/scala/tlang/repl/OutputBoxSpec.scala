@@ -26,12 +26,6 @@ class OutputBoxSpec extends UnitSpec {
     outputBox.renderState.contentAsString shouldBe "Thanks for using the T-REPL!"
   }
 
-
-  it should "render new input" in {
-
-
-  }
-
   private def createOutputBox(
     width: Int = 30,
     useColor: Boolean = false,
@@ -39,10 +33,7 @@ class OutputBoxSpec extends UnitSpec {
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
     tabReplacer: TabReplacer = mock[TabReplacer]
   ) = {
-    OutputBox(
-      testFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter),
-      tabReplacer,
-      maxOutputLines
-    )
+    val formatter = testFormatter(width = width, useColor = useColor, syntaxHighlighter = syntaxHighlighter)
+    OutputBox(tabReplacer, maxOutputLines)(formatter)
   }
 }

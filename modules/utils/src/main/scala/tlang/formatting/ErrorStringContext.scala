@@ -4,15 +4,11 @@ import tlang.formatting.Colors.Color
 import tlang.utils.Extensions._
 
 
-object ErrorStringContext {
-
-  def apply(): ErrorStringContext = ErrorStringContext(Formatter(SimpleFormatting))
-}
-
 case class ErrorStringContext(
-  formatter: Formatter,
   private val alternativeSuggestor: AlternativeSuggestor = AlternativeSuggestor(),
   private val transforms: List[String => String] = Nil
+)(
+  implicit val formatter: Formatter
 ) {
 
 

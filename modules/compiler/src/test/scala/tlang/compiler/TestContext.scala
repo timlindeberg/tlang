@@ -2,7 +2,6 @@ package tlang.compiler
 
 import better.files.File
 import tlang.Constants
-import tlang.compiler.CompilerIntegrationTestSpec.TestFormatter
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.DefaultReporter
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
@@ -10,7 +9,8 @@ import tlang.testutils.TestConstants.{PrintCodePhases, PrintJSON, Resources, Tes
 
 trait TestContext {
 
-  lazy val TestContext: Context = testContext(None)
+  val TestContext: Context = testContext(None)
+  import CompilerIntegrationTestSpec.TestFormatter
 
   def testContext(file: Option[File]): Context = {
     val outDir = file match {
@@ -27,8 +27,7 @@ trait TestContext {
       output = outputHandler,
       outDirs = Set(outDir),
       classPath = ClassPath.Default,
-      printCodePhase = PrintCodePhases,
-      formatter = TestFormatter
+      printCodePhase = PrintCodePhases
     )
   }
 

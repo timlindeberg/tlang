@@ -14,6 +14,7 @@ import scala.reflect.{ClassTag, classTag}
 
 class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
+  import TestContext.formatter
   private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
   private val TabReplacer = new TabReplacer(2)
 
@@ -24,7 +25,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
       (Lexing andThen Parsing).execute(TestContext)(file).head
     } catch {
       case e: CompilationException =>
-        TestContext.output += ErrorMessageOutput(TestContext.formatter, TabReplacer, e.messages)
+        TestContext.output += ErrorMessageOutput(TabReplacer, e.messages)
         Empty()
     }
   }

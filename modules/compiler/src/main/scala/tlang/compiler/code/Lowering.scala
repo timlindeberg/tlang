@@ -22,10 +22,10 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
     ctx.executor.map(cus) { cu => new Lowerer(cu.imports)(cu) }
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Lowers the tree to simpler components. Performs desugaring."
 
-  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
 }
@@ -41,7 +41,7 @@ class Lowerer(imports: Imports) extends Logging {
   }
 
   private def firstPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing first pass of lowering phase for ${ cu.sourceDescription }"
+    debug"Executing first pass of lowering phase for ${ cu.simpleSourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
@@ -55,7 +55,7 @@ class Lowerer(imports: Imports) extends Logging {
   }
 
   private def secondPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing second pass of lowering phase for ${ cu.sourceDescription }"
+    debug"Executing second pass of lowering phase for ${ cu.simpleSourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {

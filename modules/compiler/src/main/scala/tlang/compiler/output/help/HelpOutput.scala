@@ -1,5 +1,6 @@
 package tlang.compiler.output.help
 
+import tlang.Constants
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{Column, Width}
@@ -7,15 +8,13 @@ import tlang.options.FlagArgument
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class HelpOutput(formatter: Formatter, flagArguments: Set[FlagArgument[_]]) extends Output {
-
-  private implicit val f: Formatter = formatter
+case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: Formatter) extends Output {
 
   override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
 
-    val tcomp = Green("tcompile")
+    val tcomp = Green(Constants.CommandName)
     val options = Blue("options")
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))

@@ -58,7 +58,7 @@ object Main extends Logging {
       useColor = true,
       asciiOnly = options(AsciiFlag)
     )
-    val formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
+    implicit val formatter: Formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
     Logging.DefaultLogSettings.logThreads = true
@@ -69,17 +69,17 @@ object Main extends Logging {
     }
 
     if (options(ReplHelpFlag).nonEmpty) {
-      printHelp(formatting, options(ReplHelpFlag))
+      printHelp(options(ReplHelpFlag))
       sys.exit()
     }
 
 
     val terminal = TerminalFactory.createTerminal()
-    val repl = createRepl(terminal, options, formatter)
+    val repl = createRepl(terminal, options)
     repl ! Start
   }
 
-  def createRepl(terminal: Terminal, options: Options, formatter: Formatter): ActorRef = {
+  def createRepl(terminal: Terminal, options: Options)(implicit formatter: Formatter): ActorRef = {
     info"Creating Repl with options: $options"
 
     // Inject dependencies
@@ -87,15 +87,15 @@ object Main extends Logging {
 
     val tempDir = File.newTemporaryDirectory("repl")
 
-    val ctx = createContext(options, formatter, tempDir)
+    val ctx = createContext(options, tempDir)
 
 
-    val prettyPrinter = PrettyPrinter(formatting)
-    val errorStringContext = ErrorStringContext(formatter)
+    val prettyPrinter = PrettyPrinter()
+    val errorStringContext = ErrorStringContext()
     val replState = ReplState(prettyPrinter, Imports(ctx, errorStringContext))
 
 
-    val extractor = Extractor(formatter, replState)
+    val extractor = Extractor(replState)
     val programExecutor = ProgramExecutor(ctx.allClassPaths)
     val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
     val evaluator = Evaluator(ctx, extractor, programExecutor, statementTransformer, replState)
@@ -103,7 +103,7 @@ object Main extends Logging {
     val tabReplacer = TabReplacer(TabWidth)
 
     val keyConverter = KeyConverter(DoubleClickTime)
-    val replTerminal = ReplTerminal(terminal, keyConverter, formatting, TabWidth)
+    val replTerminal = ReplTerminal(terminal, keyConverter, TabWidth)
     replTerminal.enableMouseReporting = true
 
     val historyFile = File(SettingsDirectory, HistoryFileName)
@@ -115,9 +115,9 @@ object Main extends Logging {
       """.stripMargin
     )
     val actorSystem = ActorSystem("tRepl", akkaConfig)
-    val outputBox = OutputBox(formatter, tabReplacer, maxOutputLines = 5)
+    val outputBox = OutputBox(tabReplacer, maxOutputLines = 5)
     val repl = actorSystem.actorOf(
-      ReplActor.props(replState, evaluator, formatter, outputBox, replTerminal, input),
+      ReplActor.props(replState, evaluator, outputBox, replTerminal, input),
       ReplActor.name
     )
 
@@ -136,21 +136,20 @@ object Main extends Logging {
 
 
   private def parseOptions(args: Array[String]): Options = {
-    val formatter = Formatter(SimpleFormatting)
+    val formatter = Formatter.SimpleFormatter
 
-    val errorContext = ErrorStringContext(formatter)
+    val errorContext = ErrorStringContext()(formatter)
     Options(flags = ReplFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")
 
-  private def createContext(options: Options, formatter: Formatter, tempDir: File): Context = {
+  private def createContext(options: Options, tempDir: File)(implicit formatter: Formatter): Context = {
     val classPath = ClassPath.Default ++ (options(ClassPathFlag) + tempDir.pathAsString)
 
     val errorMessages = CompilerMessages(maxErrors = 5)
     Context(
       reporter = DefaultReporter(errorMessages),
-      formatter = formatter,
       output = PrettyOutputHandler(),
       classPath = classPath,
       outDirs = Set(tempDir)
@@ -158,7 +157,7 @@ object Main extends Logging {
   }
 
 
-  private def printHelp(formatting: Formatting, args: Set[String] = Set("")) = {
+  private def printHelp(args: Set[String] = Set("")) = {
     println("TODO")
     sys.exit(0)
   }

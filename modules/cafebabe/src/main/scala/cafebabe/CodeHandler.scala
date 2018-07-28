@@ -1,6 +1,6 @@
 package cafebabe
 
-import tlang.formatting.{PrettyFormatting, Formatting, SimpleFormatting}
+import tlang.formatting.{Formatter, PrettyFormatting}
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
@@ -276,9 +276,8 @@ class CodeHandler private[cafebabe](
     heightArray.max.asInstanceOf[U2]
   }
 
-  def stackTrace: CodegenerationStackTrace = CodegenerationStackTrace(abcBuffer, heightArray, cp, signature, SimpleFormatting)
-  def stackTrace(formatting: Formatting): CodegenerationStackTrace =
-    CodegenerationStackTrace(abcBuffer, heightArray, cp, signature, formatting)
+  def stackTrace(implicit formatter: Formatter): CodegenerationStackTrace =
+    CodegenerationStackTrace(abcBuffer, heightArray, cp, signature)
 
   def print(): Unit = if (!frozen) {
     var pc = 0
@@ -293,5 +292,8 @@ class CodeHandler private[cafebabe](
     }
   }
 
-  def error(message: String): Unit = throw CodeFreezingException(message, Some(stackTrace(PrettyFormatting)))
+  def error(message: String): Unit = {
+    val formatter = Formatter(PrettyFormatting)
+    throw CodeFreezingException(message, Some(stackTrace(formatter)))
+  }
 }

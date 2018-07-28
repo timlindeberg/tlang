@@ -75,18 +75,19 @@ object Main extends Logging {
       useColor = !(options(NoColorFlag) || options(JSONFlag)),
       asciiOnly = options(AsciiFlag)
     )
-    val formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
+
+    implicit val formatter: Formatter = Formatter(formatting, TLangSyntaxHighlighter(formatting))
 
     Logging.DefaultLogSettings.formatter = formatter
     Logging.DefaultLogSettings.logLevel = options(LogLevelFlag)
     Logging.DefaultLogSettings.logThreads = options(ThreadsFlag).isInstanceOf[ParallellExecutor]
 
-    val ctx = createContext(options, formatter)
+    val ctx = createContext(options)
     Main(ctx).run()
   }
 
   private def parseOptions(args: Array[String]): Options = {
-    val errorContext = ErrorStringContext()
+    val errorContext = ErrorStringContext()(Formatter.SimpleFormatter)
     try {
       Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
     } catch {
@@ -96,7 +97,7 @@ object Main extends Logging {
     }
   }
 
-  private def createContext(options: Options, formatter: Formatter): Context = {
+  private def createContext(options: Options)(implicit formatter: Formatter): Context = {
     info"Creating context with options $options"
 
     val messages = CompilerMessages(
@@ -107,7 +108,6 @@ object Main extends Logging {
     val outputHandler = if(options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler()
     Context(
       reporter = DefaultReporter(messages = messages),
-      formatter = formatter,
       outputHandler = outputHandler,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       options = options
@@ -118,22 +118,22 @@ object Main extends Logging {
 
 case class Main(ctx: Context) extends Logging {
 
-  private val options = ctx.options
-  private val formatter = ctx.formatter
-  private val formatting = formatter.formatting
+  private val formatting = ctx.formatter.formatting
   private val tabReplacer = TabReplacer(2)
 
+  import ctx._
   import Main._
-  import formatter.formatting._
+  import formatting._
+
 
   def run(): Unit = {
     sys.addShutdownHook {
-      ctx.output += InterruptedOutput(formatter)
+      ctx.output += InterruptedOutput()
       exit(0)
     }
 
     if (options.isEmpty) {
-      ctx.output += HelpOutput(formatter, CompilerFlags)
+      ctx.output += HelpOutput(CompilerFlags)
       exit(1)
     }
 
@@ -146,10 +146,10 @@ case class Main(ctx: Context) extends Logging {
     if (sources.isEmpty)
       ErrorNoSourcesGiven()
 
-    info"Compiling ${ sources.size } sources: ${ sources.map { _.description(formatting) }.mkString(NL) }"
+    info"Compiling ${ sources.size } sources: ${ sources.map { _.description }.mkString(NL) }"
 
     if (options(VerboseFlag))
-      ctx.output += SourcesOutput(formatter, sources)
+      ctx.output += SourcesOutput(sources)
 
     compileAndExecute(sources)
 
@@ -181,7 +181,7 @@ case class Main(ctx: Context) extends Logging {
       val CUs = runFrontend(sources)
       GenerateCode.execute(ctx)(CUs)
       val messages = ctx.reporter.messages
-      ctx.output += ErrorMessageOutput(formatter, tabReplacer, messages, options(MessageContextFlag), List(MessageType.Warning))
+      ctx.output += ErrorMessageOutput(tabReplacer, messages, options(MessageContextFlag), List(MessageType.Warning))
       CUs
     } catch {
       case e: ExitException => throw e
@@ -194,7 +194,7 @@ case class Main(ctx: Context) extends Logging {
       FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        ctx.output += ErrorMessageOutput(formatter, tabReplacer, e.messages, options(MessageContextFlag))
+        ctx.output += ErrorMessageOutput(tabReplacer, e.messages, options(MessageContextFlag))
         printExecutionTimes(success = false)
         tryExit(1)
     }
@@ -204,29 +204,29 @@ case class Main(ctx: Context) extends Logging {
   private def internalError(error: Throwable): Nothing = {
     error"Execution error occurred: ${error.stackTrace}"
 
-    ctx.output += InternalErrorOutput(formatter, error)
+    ctx.output += InternalErrorOutput(error)
     printExecutionTimes(success = false)
     tryExit(1)
   }
 
   private def printHelp(): Unit = {
     if (options(VersionFlag)) {
-      ctx.output += VersionOutput(formatter)
+      ctx.output += VersionOutput()
       exit(0)
     }
     val args = options(CompilerHelpFlag)
 
     if (HelpFlag.DefaultArg in args) {
-      ctx.output += HelpOutput(formatter, CompilerFlags)
+      ctx.output += HelpOutput(CompilerFlags)
       exit(0)
     }
 
     if (CompilerHelpFlag.Phases in args) {
-      ctx.output += PhaseInfoOutput(formatter, CompilerPhases)
+      ctx.output += PhaseInfoOutput(CompilerPhases)
     }
 
     args foreach { arg =>
-      CompilerFlags.find(_.name == arg) ifDefined { ctx.output += FlagInfoOutput(formatter, _) }
+      CompilerFlags.find(_.name == arg) ifDefined { ctx.output += FlagInfoOutput(_) }
     }
 
     if (args.nonEmpty)
@@ -245,7 +245,7 @@ case class Main(ctx: Context) extends Logging {
     val sources = cusWithMainMethods map { _.source.get }
     val results = sources map { programExecutor(_) }
 
-    ctx.output += ExecutionResultOutput(formatter, sources zip results)
+    ctx.output += ExecutionResultOutput(sources zip results)
   }
 
   private def watch(sources: List[Source]): Unit = {
@@ -253,14 +253,14 @@ case class Main(ctx: Context) extends Logging {
 
     val fileSources = sources.filterInstance[FileSource]
     if(fileSources.isEmpty) {
-      ctx.output += MessageOutput(formatter, s"No file sources were given, can't use watch flag.")
+      ctx.output += MessageOutput(s"No file sources were given, can't use watch flag.")
       return
     }
 
     info"Starting file watchers"
 
     if (options(VerboseFlag))
-      ctx.output += MessageOutput(formatter, s"Watching for ${ Green("changes") }...")
+      ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
 
     fileSources
       .map { source => CompilerFileMonitor(source.file) }
@@ -274,7 +274,7 @@ case class Main(ctx: Context) extends Logging {
 
   private def printExecutionTimes(success: Boolean): Unit = {
     if (options(VerboseFlag))
-      ctx.output += ExecutionTimeOutput(formatter, ctx.executionTimes.toMap, success)
+      ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
   }
 
   private def tryExit(code: Int) = throw ExitException(code)
@@ -287,7 +287,7 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def error(message: String): Nothing = {
-    ctx.output += ErrorOutput(formatter, message)
+    ctx.output += ErrorOutput(message)
     exit(1)
   }
 
@@ -307,7 +307,7 @@ case class Main(ctx: Context) extends Logging {
     override def onModify(file: File, count: Int): Unit = {
       info"$file changed, recompiling"
       if (options(VerboseFlag))
-        ctx.output += MessageOutput(formatter, s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
+        ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
 
       FileSource.clearCache()
       ctx.reporter.clear()

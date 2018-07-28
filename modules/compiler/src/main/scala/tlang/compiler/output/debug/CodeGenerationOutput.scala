@@ -6,7 +6,8 @@ import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.utils.JSON.Json
 
-case class CodeGenerationOutput(formatter: Formatter, phaseName: String, stackTraces: List[CodegenerationStackTrace]) extends Output {
+case class CodeGenerationOutput(phaseName: String, stackTraces: List[CodegenerationStackTrace])
+  (implicit formatter: Formatter) extends Output {
   override def pretty: String = {
     import formatter.formatting._
 

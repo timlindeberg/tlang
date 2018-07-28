@@ -14,14 +14,14 @@ import scala.collection.mutable
 object Context {
   def apply(
     reporter: Reporter,
-    formatter: Formatter,
     outputHandler: OutputHandler,
     classPath: ClassPath,
     options: Options
+  )(
+    implicit formatter: Formatter
   ): Context = {
     Context(
       reporter,
-      formatter,
       outputHandler,
       classPath,
       options,
@@ -35,7 +35,6 @@ object Context {
 
 case class Context(
   reporter: Reporter,
-  formatter: Formatter,
   output: OutputHandler,
   classPath: ClassPath = ClassPath.Empty,
   options: Options = Options.Empty,
@@ -43,11 +42,10 @@ case class Context(
   outDirs: Set[File] = Set(File(".")),
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()
-) {
+) (
+  implicit val formatter: Formatter
+){
 
   val executionTimes: mutable.Map[String, Double] = mutable.Map()
-
-  def formatting: Formatting = formatter.formatting
-
   def allClassPaths: Set[String] = outDirs.map(_.pathAsString) ++ classPath.paths
 }

@@ -5,7 +5,12 @@ import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ExecutionTimeOutput(formatter: Formatter, executionTimes: Map[String, Double], success: Boolean) extends Output {
+case class ExecutionTimeOutput(
+  executionTimes: Map[String, Double],
+  success: Boolean
+)(
+  implicit formatter: Formatter
+) extends Output {
   override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._

@@ -7,14 +7,20 @@ import tlang.options.argument.MessageContextFlag
 import tlang.utils.Extensions._
 import tlang.utils.{Position, Positioned}
 
-case class MessageInfo(message: CompilerMessage, formatter: Formatter, tabReplacer: TabReplacer, messageContextSize: Int = MessageContextFlag.defaultValue) {
+case class MessageInfo(
+  message: CompilerMessage,
+  tabReplacer: TabReplacer,
+  messageContextSize: Int = MessageContextFlag.defaultValue
+)(
+  implicit formatter: Formatter
+) {
 
   private val lines: IndexedSeq[String] = message.pos.source.map(_.lines).getOrElse(IndexedSeq())
   private val formatting = formatter.formatting
-
   import formatting._
 
-  def color: Color = message.messageType.color(formatting) + formatting.Bold
+
+  def color: Color = message.messageType.color + Bold
   def position: Positioned = message.pos
 
   def hasValidPosition: Boolean = position.source.nonEmpty && (position.line in (1 to lines.size + 1))
@@ -28,7 +34,7 @@ case class MessageInfo(message: CompilerMessage, formatter: Formatter, tabReplac
 
   def sourceDescription: String = {
     val sourceDescription = position.source match {
-      case Some(source) => source.description(formatting)
+      case Some(source) => source.description
       case _            => ""
     }
     positionDescription + " " + sourceDescription
@@ -102,7 +108,7 @@ case class MessageInfo(message: CompilerMessage, formatter: Formatter, tabReplac
       return firstLine :: Nil
 
     val (start, end) = startAndEnd(line, lineNum, pos)
-    val indicator = formatting.UnderlineCharacter * (end - start)
+    val indicator = UnderlineCharacter * (end - start)
     val indentation = " " * start
     firstLine :: ("", indentation + indicator) :: Nil
   }

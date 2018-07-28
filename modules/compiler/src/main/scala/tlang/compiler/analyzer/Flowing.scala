@@ -9,7 +9,7 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
@@ -26,11 +26,11 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
     cus
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Performs data flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
 
 
-  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
 }

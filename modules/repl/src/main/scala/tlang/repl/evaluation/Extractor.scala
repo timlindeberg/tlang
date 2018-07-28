@@ -5,7 +5,7 @@ import tlang.compiler.imports.Imports
 import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 
-case class Extractor(formatter: Formatter, state: ReplState) {
+case class Extractor(state: ReplState)(implicit formatter: Formatter) {
 
   import Evaluator._
   import formatter.formatting._

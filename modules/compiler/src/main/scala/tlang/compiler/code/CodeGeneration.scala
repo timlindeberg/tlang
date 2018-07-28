@@ -16,7 +16,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.CodeGenerationOutput
-import tlang.formatting.{Formatter, Formatting}
+import tlang.formatting.Formatter
 import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
@@ -39,11 +39,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     }
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Generates bytecode that can run on the JVM."
 
-  override def debugOutput(output: List[CodegenerationStackTrace], formatter: Formatter): Output =
-    CodeGenerationOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[CodegenerationStackTrace])(implicit formatter: Formatter): Output =
+    CodeGenerationOutput(phaseName, output)
 
 
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])
@@ -71,6 +71,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def generateMethods(ctx: Context, classDecl: ClassDeclTree, classFile: ClassFile): List[CodegenerationStackTrace] = {
+    import ctx.formatter
+
     classDecl.methods.flatMap { methodDecl =>
       val methSymbol = methodDecl.getSymbol
 
@@ -108,7 +110,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
             generateBridgeMethod(classFile, overriden, methSymbol, flags, thisTree)
           }
 
-        Some(ch.stackTrace(ctx.formatting))
+        Some(ch.stackTrace)
       } else {
         None
       }

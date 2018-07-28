@@ -25,8 +25,8 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
 
   private val CompilerMessageType = typeOf[CompilerMessage].typeSymbol
 
-  val _errorStringContext = ErrorStringContext(Formatter(PrettyFormatting))
-  val _reporter           = VoidReporter()
+  private val _errorStringContext = ErrorStringContext()(Formatter(PrettyFormatting))
+  private val _reporter           = VoidReporter()
 
 
   testMessages(

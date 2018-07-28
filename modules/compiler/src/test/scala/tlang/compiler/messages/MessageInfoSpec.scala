@@ -62,25 +62,23 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
 
 
   it should "show source description correctly" in {
-    val formattingWithColor = Formatting(useColor = true)
-    val formattingWithoutColor = Formatting(useColor = false)
-
     val source = mock[Source]
     source.lines returns IndexedSeq()
-    source.description(formattingWithColor) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
 
-    source.description(formattingWithoutColor) returns s"core/src/test/resources/positions/ParserPositions.t"
 
     val posWithFile = Position(1, 10, 100, 1000, source = Some(source))
     val message = createMessage(pos = posWithFile)
-    messageInfo = getMessageInfo(message, useColor = true, formatting = Some(formattingWithColor))
+    messageInfo = getMessageInfo(message, useColor = true)
+    source.description(*) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
 
     messageInfo.sourceDescription should matchWithAnsi(
       s"\u001b[1;35m1\u001b[0m:\u001b[1;35m10\u001b[0m core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
     )
 
     // Without color
-    messageInfo = getMessageInfo(message, useColor = false, formatting = Some(formattingWithoutColor))
+    messageInfo = getMessageInfo(message, useColor = false)
+    source.description(*) returns s"core/src/test/resources/positions/ParserPositions.t"
+
     messageInfo.sourceDescription should matchWithAnsi(s"1:10 core/src/test/resources/positions/ParserPositions.t")
   }
 
@@ -657,7 +655,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     formatting: Option[Formatting] = None
   ): MessageInfo = {
     val formatter = testFormatter(useColor = useColor, syntaxHighlighter = syntaxHighlighter, formatting = formatting)
-    MessageInfo(message, formatter, TabReplacer(tabWidth), contextSize)
+    MessageInfo(message, TabReplacer(tabWidth), contextSize)(formatter)
   }
 
   // This mocked syntax highlighter just returns the input again

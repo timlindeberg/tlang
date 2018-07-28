@@ -177,10 +177,11 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
   /* -------------------- Helpers ---------------------*/
 
 
-  private val formatter          = testFormatter(useColor = false)
-  private val errorStringContext = ErrorStringContext(formatter)
+  private implicit val formatter = testFormatter(useColor = false)
+
+  private val errorStringContext = ErrorStringContext()
   private val reporter           = mock[Reporter]
-  private val ctx                = Context(reporter, formatter, PrettyOutputHandler())
+  private val ctx                = Context(reporter, PrettyOutputHandler())
   private val imports            = Imports(ctx, errorStringContext, Nil)
 
 

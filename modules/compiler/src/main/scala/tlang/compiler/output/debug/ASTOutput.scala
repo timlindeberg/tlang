@@ -11,20 +11,19 @@ import tlang.utils.JSON.Json
 
 object ASTOutput {
 
-  def apply(formatter: Formatter, phaseName: String, trees: List[Tree]): ASTOutput = {
-    val prettyPrinter = PrettyPrinter(formatter.formatting)
-    val treePrinter = TreePrinter(formatter)
-    ASTOutput(formatter, prettyPrinter, treePrinter, phaseName, trees)
+  def apply(phaseName: String, trees: List[Tree])(implicit formatter: Formatter): ASTOutput = {
+    val prettyPrinter = PrettyPrinter()
+    val treePrinter = TreePrinter()
+    ASTOutput(prettyPrinter, treePrinter, phaseName, trees)
   }
 }
 
 case class ASTOutput(
-  formatter: Formatter,
   prettyPrinter: PrettyPrinter,
   treePrinter: TreePrinter,
   phaseName: String,
   trees: List[Tree]
-) extends Output {
+)(implicit formatter: Formatter) extends Output {
 
   private val TabWidth = 2
 
@@ -36,7 +35,7 @@ case class ASTOutput(
     trees foreach { tree =>
       grid
         .row(alignment = Center)
-        .content(tree.sourceDescription(formatting))
+        .content(tree.sourceDescription)
         .row()
         .content(prettyPrinter(tree).replaceAll("\t", " " * TabWidth).trimWhiteSpaces)
         .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)

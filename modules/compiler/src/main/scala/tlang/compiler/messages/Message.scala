@@ -1,7 +1,7 @@
 package tlang.compiler.messages
 
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatting
+import tlang.formatting.{Colors, Formatter}
 import tlang.utils.Positioned
 
 
@@ -72,26 +72,13 @@ abstract class ExtraMessage(override val pos: Positioned)
   extends CompilerMessage(MessageType.Note, "", MessageType.Note.typeCode, -1, pos) with Product
 
 
-trait MessageType {
-  def color(formatting: Formatting): Color
+sealed abstract class MessageType(val typeCode: String, private val _color: Color) {
+  def color(implicit formatter: Formatter): Color = formatter.formatting.translate(_color)
   def name: String = getClass.getSimpleName.dropRight(1)
-  def typeCode: String
 }
 object MessageType {
-  case object Warning extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Yellow
-    override def typeCode: String = "1"
-  }
-  case object Error extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Red
-    override def typeCode: String = "2"
-  }
-  case object Fatal extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Red
-    override def typeCode: String = "3"
-  }
-  case object Note extends MessageType {
-    override def color(formatting: Formatting): Color = formatting.Blue
-    override def typeCode: String = ""
-  }
+  case object Warning extends MessageType("1", Colors.Yellow)
+  case object Error extends MessageType("2", Colors.Red)
+  case object Fatal extends MessageType("3", Colors.Red)
+  case object Note extends MessageType( "", Colors.Blue)
 }

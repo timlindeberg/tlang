@@ -28,8 +28,8 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     "\t\td++",
     "\t\te++"
   )
-  source.description(*, *) returns path
-  source.description returns path
+  source.errorDescription(*) returns path
+  source.description(*) returns path
 
   private val aPos = Position(1, 5, 1, 6, source = Some(source))
   private val iLessThanPos = Position(6, 16, 6, 21, source = Some(source))
@@ -245,7 +245,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
   ): ErrorMessageOutput = {
     val cm = CompilerMessages(maxErrors)
     cm ++= compilerMessages
-    ErrorMessageOutput(formatter, TabReplacer(2), cm, messageContextSize)
+    ErrorMessageOutput(TabReplacer(2), cm, messageContextSize)(formatter)
   }
 
 }

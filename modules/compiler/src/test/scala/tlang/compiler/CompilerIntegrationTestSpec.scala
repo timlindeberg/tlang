@@ -24,8 +24,10 @@ object CompilerIntegrationTestSpec {
   val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
   val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
   val RootDirectory: String                        = File(".").pathAsString
-  val TestFormatter                                = Formatter(TestFormatting, TLangSyntaxHighlighter(TestFormatting))
-  val TestPattern  : Option[Regex]                 =
+
+  implicit val TestFormatter: Formatter = Formatter(TestFormatting, TLangSyntaxHighlighter(TestFormatting))
+
+  val TestPattern: Option[Regex] =
     sys.env.get("pattern")
       .filter { _.nonEmpty }
       .map { _.replaceAll(" +", "").toLowerCase.r }
@@ -74,7 +76,7 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
     import TestFormatting._
 
     TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
-    ctx.output += ExecutionTimeOutput(ctx.formatter, ctx.executionTimes.toMap, success = true)
+    ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = true)
   }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as

@@ -2,7 +2,7 @@ package tlang.compiler.output
 import tlang.formatting.Formatter
 import tlang.utils.JSON.Json
 
-case class ErrorOutput(formatter: Formatter, errorMessage: String) extends Output {
+case class ErrorOutput(errorMessage: String)(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
     import formatter.formatting._
     formatter

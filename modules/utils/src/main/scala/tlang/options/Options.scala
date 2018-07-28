@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 
 object Options {
-  def Empty: Options = Options(Set(), None, Array())(ErrorStringContext())
+  def Empty: Options = Options(Set(), None, Array())(ErrorStringContext()(Formatter.SimpleFormatter))
 }
 
 case class Options(

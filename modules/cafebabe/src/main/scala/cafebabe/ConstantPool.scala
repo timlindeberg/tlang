@@ -1,6 +1,6 @@
 package cafebabe
 
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 
 
 class ConstantPool extends Streamable {
@@ -42,8 +42,8 @@ class ConstantPool extends Streamable {
   def size: U2 = entries.length
 
   // Ugly way of printing nicer debug info
-  def getByteInfo(idx: U2, formatting: Formatting): String = {
-    import formatting._
+  def getByteInfo(idx: U2)(implicit formatter: Formatter): String = {
+    import formatter.formatting._
 
     if (inverseClassMap.contains(idx))
       return ClassColor(inverseStringMap(inverseClassMap(idx)))

@@ -3,7 +3,7 @@ package cafebabe
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatting
+import tlang.formatting.Formatter
 import tlang.formatting.grid.{CenteredContent, Divider}
 
 import scala.collection.mutable
@@ -14,12 +14,14 @@ case class CodegenerationStackTrace(
   heightArray: Array[Int],
   cp: ConstantPool,
   signature: String,
-  formatting: Formatting
+)(
+  implicit formatter: Formatter
 ) {
 
   val heights: Array[Int]                   = heightArray.clone()
   val abcs   : IndexedSeq[AbstractByteCode] = abcBuffer.toIndexedSeq
 
+  private val formatting = formatter.formatting
   import formatting._
 
   private val UninitializedHeight: Int = Int.MinValue
@@ -73,7 +75,6 @@ case class CodegenerationStackTrace(
       val abc = abcs(i)
       abc match {
         case Label(name)                                =>
-          import formatting.Horizontal
           val color = getLabelColor(name)
           val divider = Divider(Horizontal, color)
           val line = (divider, divider, divider, divider, CenteredContent(s" $name ", color, Horizontal))
@@ -106,8 +107,8 @@ case class CodegenerationStackTrace(
         case _                                          =>
           val extraInfo = if (i + 1 < abcs.size) {
             abcs(i + 1) match {
-              case RawByte(idx)  => cp.getByteInfo(idx, formatting)
-              case RawBytes(idx) => cp.getByteInfo(idx, formatting)
+              case RawByte(idx)  => cp.getByteInfo(idx)
+              case RawBytes(idx) => cp.getByteInfo(idx)
               case _             => ""
             }
           } else ""

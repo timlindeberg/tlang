@@ -1265,9 +1265,9 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     ).classTypeIdentifier shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
   }
 
-  private val formatter          = testFormatter(useColor = false)
-  private val errorStringContext = ErrorStringContext(formatter)
-  private val ctx                = Context(mock[Reporter], formatter, PrettyOutputHandler())
+  private implicit val formatter          = testFormatter(useColor = false)
+  private          val errorStringContext = ErrorStringContext()
+  private          val ctx                = Context(mock[Reporter], PrettyOutputHandler())
 
   private def parser(tokens: Any*) = Parser(ctx, errorStringContext, createTokenStream(tokens))
 

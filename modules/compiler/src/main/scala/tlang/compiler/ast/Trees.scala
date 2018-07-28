@@ -8,7 +8,7 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.{Formatter, PrettyFormatting, SimpleFormatting}
+import tlang.formatting.{Formatter, PrettyFormatting}
 import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
 
@@ -17,8 +17,9 @@ import scala.collection.{TraversableLike, mutable}
 @FillTreeHelpers
 object Trees {
 
-  private val noColorPrinter       = PrettyPrinter(SimpleFormatting)
-  private val colorPrinter         = PrettyPrinter(PrettyFormatting)
+  private lazy val prettyFormatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
+  private lazy val noColorPrinter  = PrettyPrinter()(Formatter.SimpleFormatter)
+  private lazy val colorPrinter    = PrettyPrinter()(prettyFormatter)
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -60,8 +61,7 @@ object Trees {
     }
 
     def debugPrint(header: String = "Debug"): this.type = {
-      val formatter = Formatter(PrettyFormatting, TLangSyntaxHighlighter(PrettyFormatting))
-      println(ASTOutput(formatter, header, this :: Nil).pretty)
+      println(ASTOutput(header, this :: Nil)(prettyFormatter).pretty)
       this
     }
 
@@ -336,9 +336,9 @@ object Trees {
 
   trait PrimitiveTypeTree extends TypeTree with Leaf
 
-  case class ArrayType(tpe: TypeTree) extends TypeTree { val name: String = tpe.name + "[]" }
-  case class NullableType(tpe: TypeTree) extends TypeTree { val name: String = tpe.name + "?" }
-  case class UnitType() extends PrimitiveTypeTree { val name = "Unit" }
+  case class ArrayType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "[]" }
+  case class NullableType(tpe: TypeTree) extends TypeTree {val name: String = tpe.name + "?" }
+  case class UnitType() extends PrimitiveTypeTree {val name = "Unit" }
 
   /*------------------------- Binary Operator Trees -------------------------*/
 

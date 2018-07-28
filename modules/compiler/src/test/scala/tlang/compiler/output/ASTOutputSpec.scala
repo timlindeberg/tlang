@@ -52,7 +52,7 @@ class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
     ),
     imports = Imports(
       TestContext,
-      ErrorStringContext(),
+      ErrorStringContext()(SimpleFormatter),
       imports = List(RegularImport(List("B")), WildCardImport(List("C")))
     )
   )
@@ -70,7 +70,8 @@ class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
   private val treePrinter   = mock[TreePrinter] use { _.apply(*[Tree]) returns List(("A", "B", "C", "D", "E")) }
 
 
-  private def makeASTOutput(formatter: Formatter) = ASTOutput(formatter, prettyPrinter, treePrinter, "TestPhase", List(tree))
+  private def makeASTOutput(formatter: Formatter) =
+    ASTOutput(prettyPrinter, treePrinter, "TestPhase", List(tree))(formatter)
 
 
 }

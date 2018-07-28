@@ -8,7 +8,7 @@ import com.googlecode.lanterna.terminal.Terminal
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.{SGR, TerminalPosition}
 import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
-import tlang.formatting.{Colors, Formatting}
+import tlang.formatting.{Colors, Formatter}
 import tlang.repl.OutputBox.{XIndent, YIndent}
 import tlang.repl._
 import tlang.repl.input.{Cursor, InputBuffer}
@@ -22,10 +22,11 @@ object ReplTerminal {
 
 }
 
-case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, formatting: Formatting, tabWidth: Int) {
+case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: Int)(implicit formatter: Formatter) {
 
   import ReplTerminal._
 
+  private val formatting = formatter.formatting
   private var _isCursorVisible      = true
   private var _enableMouseReporting = false
   private var _width: Int           = formatting.lineWidth

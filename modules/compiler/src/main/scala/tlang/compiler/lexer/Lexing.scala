@@ -8,7 +8,7 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.TokenOutput
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Source}
 
@@ -20,19 +20,20 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
   val MaximumStringSize = 65535
 
   override protected def run(ctx: Context)(inputs: List[Source]): List[List[Token]] = {
+    import ctx.formatter
     ctx.executor.map(inputs) { source =>
       info"Lexing ${ source.mainName }"
-      val errorStringContext = ErrorStringContext(ctx.formatter)
+      val errorStringContext = ErrorStringContext()
       val lexer = Lexer(ctx.reporter, errorStringContext)
       lexer(source)
     }
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Lexes the input and produces tokens."
 
-  override def debugOutput(output: List[List[Token]], formatter: Formatter): Output =
-    TokenOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[List[Token]])(implicit formatter: Formatter): Output =
+    TokenOutput(phaseName, output)
 
 }
 

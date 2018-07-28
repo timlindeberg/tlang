@@ -16,7 +16,7 @@ class ErrorStringContextSpec extends UnitSpec {
 
   it should "should mark interpolated values with color" in {
     val errorStringContext = makeErrorStringContext(useColor = true)
-    import errorStringContext.{ErrorStringContext, suggestion}
+    import errorStringContext.ErrorStringContext
 
     val x = "x"
     val y = "y"
@@ -33,7 +33,7 @@ class ErrorStringContextSpec extends UnitSpec {
 
   it should "should mark interpolated values without color" in {
     val errorStringContext = makeErrorStringContext(useColor = false)
-    import errorStringContext.{ErrorStringContext, suggestion}
+    import errorStringContext.ErrorStringContext
 
     val x = "x"
     val y = "y"
@@ -54,7 +54,7 @@ class ErrorStringContextSpec extends UnitSpec {
         s => if (s == "ABC") "DEF" else s
       )
       val errorStringContext = makeErrorStringContext(useColor = false, transforms = transforms)
-      import errorStringContext.{ErrorStringContext, suggestion}
+      import errorStringContext.ErrorStringContext
 
       val abc = "ABC"
 
@@ -70,7 +70,7 @@ class ErrorStringContextSpec extends UnitSpec {
         s => s * 3
       )
       val errorStringContext = makeErrorStringContext(useColor = false, transforms = transforms)
-      import errorStringContext.{ErrorStringContext, suggestion}
+      import errorStringContext.ErrorStringContext
 
       val abc = "ABC"
 
@@ -194,8 +194,7 @@ class ErrorStringContextSpec extends UnitSpec {
       alternativeSuggestor.apply("ABCD", alternatives) returns Suggestion(List("ABC"))
 
       val transforms = List[String => String](
-        s =>
-          if (s == "ABC") "DEF" else s
+        s => if (s == "ABC") "DEF" else s
       )
       val errorStringContext = makeErrorStringContext(
         useColor = false,
@@ -203,7 +202,7 @@ class ErrorStringContextSpec extends UnitSpec {
         transforms = transforms
       )
       import errorStringContext.{ErrorStringContext, suggestion}
-      err"Some text.${ suggestion("ABCD", alternatives)}More text." shouldBe "Some text. Did you mean 'DEF'? More text."
+      err"Some text.${ suggestion("ABCD", alternatives) }More text." shouldBe "Some text. Did you mean 'DEF'? More text."
     }
 
   }
@@ -214,7 +213,7 @@ class ErrorStringContextSpec extends UnitSpec {
     transforms: List[String => String] = Nil
   ): ErrorStringContext = {
     val formatter = testFormatter(useColor = useColor)
-    ErrorStringContext(formatter, alternativeSuggestor = alternativeSuggestor, transforms = transforms)
+    ErrorStringContext(alternativeSuggestor = alternativeSuggestor, transforms = transforms)(formatter)
   }
 
 

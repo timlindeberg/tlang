@@ -54,11 +54,12 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
   }
 
   private def verifyMessages(file: File, ctx: Context, messages: CompilerMessages, messageType: MessageType): Unit = {
+    import ctx.formatter
     if (Verbose)
       printExecutionTimes(file, ctx)
 
     if (PrintErrors){
-      ctx.output += ErrorMessageOutput(ctx.formatter, TabReplacer(2), messages, messageTypes = List(messageType))
+      ctx.output += ErrorMessageOutput(TabReplacer(2), messages, messageTypes = List(messageType))
     }
 
     val foundCodes = getErrorCodes(messages(messageType))

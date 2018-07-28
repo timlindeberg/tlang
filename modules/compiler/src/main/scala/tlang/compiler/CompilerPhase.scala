@@ -13,13 +13,13 @@ abstract class CompilerPhase[F, T] extends Logging {
 
   val phaseName: String = getClass.simpleObjectName.toLowerCase
 
-  def description(formatting: Formatting): String
-  def debugOutput(output: List[T], formatter: Formatter): Output
+  def description(implicit formatter: Formatter): String
+  def debugOutput(output: List[T])(implicit formatter: Formatter): Output
   protected def run(ctx: Context)(v: List[F]): List[T]
 
   def createErrorStringContext(ctx: Context, cu: CompilationUnit): ErrorStringContext = {
+    import ctx.formatter
     ErrorStringContext(
-      ctx.formatter,
       AlternativeSuggestor(),
       List[String => String](TemplateNameReplacer.apply, cu.imports.replaceNames)
     )
@@ -32,12 +32,14 @@ abstract class CompilerPhase[F, T] extends Logging {
       second
     }
 
-    override def description(formatting: Formatting): String = ""
-    override def debugOutput(output: List[G], formatter: Formatter): Output = null
+    override def description(implicit formatter: Formatter): String = ""
+    override def debugOutput(output: List[G])(implicit formatter: Formatter): Output = null
 
   }
 
   def execute(ctx: Context)(v: List[F]): List[T] = {
+    import ctx.formatter
+
     if (Main.CompilerPhases.contains(this))
       info"Executing compiler stage $phaseName"
 
@@ -46,7 +48,7 @@ abstract class CompilerPhase[F, T] extends Logging {
       ctx.executionTimes += phaseName -> time
 
       if (phaseName in ctx.printCodePhase)
-        ctx.output += debugOutput(output, ctx.formatter)
+        ctx.output += debugOutput(output)
     }
     ctx.reporter.terminateIfErrors()
     output
@@ -54,7 +56,7 @@ abstract class CompilerPhase[F, T] extends Logging {
 
   def json: Json = Json(
     "name" -> phaseName,
-    "description" -> description(SimpleFormatting)
+    "description" -> description(Formatter.SimpleFormatter)
   )
 
 

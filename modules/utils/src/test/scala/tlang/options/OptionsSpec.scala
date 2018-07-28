@@ -5,7 +5,7 @@ import tlang.testutils.UnitSpec
 
 class OptionsSpec extends UnitSpec {
 
-  implicit val errorContext: ErrorStringContext = ErrorStringContext()
+  implicit val errorContext: ErrorStringContext = ErrorStringContext()(Formatter.SimpleFormatter)
 
 
   behavior of "An option parser"

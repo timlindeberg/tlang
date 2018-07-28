@@ -1,19 +1,20 @@
 package tlang.formatting.grid
 
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatter
+import tlang.formatting.{Formatter, Formatting}
 import tlang.utils.Extensions._
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ArrayBuffer
 
-case class Grid(var formatter: Formatter) {
+case class Grid()(implicit var formatter: Formatter) {
 
+  def formatting: Formatting = formatter.formatting
 
   private val rows             : ArrayBuffer[Row] = ArrayBuffer()
   private var indent           : Int              = 1
-  private var borderColor      : Color            = formatter.formatting.NoColor
-  private var columnHeaderColor: Color            = formatter.formatting.Blue + formatter.formatting.Bold
+  private var borderColor      : Color            = formatting.NoColor
+  private var columnHeaderColor: Color            = formatting.Blue + formatting.Bold
   private var shouldTrim       : Boolean          = true
 
   private var _currentRow: Option[Row] = None
@@ -137,7 +138,7 @@ case class Grid(var formatter: Formatter) {
 
   def print(): Unit = println(render())
 
-  def render(): String = GridRenderer(formatter).render()
+  def render(): String = GridRenderer().render()
 
   private def addRow(columns: Iterable[Column], isHeader: Boolean): Grid = {
     val row = Row(rows.length + 1, isHeader, columns.toList)
@@ -173,7 +174,7 @@ case class Grid(var formatter: Formatter) {
   private def verifyRowWidth(row: Row): Unit = {
     val columns = row.columns
 
-    val lineWidth = formatter.formatting.lineWidth
+    val lineWidth = formatting.lineWidth
     val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
 
     val neededWidth = indentAndBorderSize + columns
@@ -207,7 +208,7 @@ case class Grid(var formatter: Formatter) {
 
     private def spaceForContent(): Int = {
       val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
-      formatter.formatting.lineWidth - indentAndBorderSize
+      formatting.lineWidth - indentAndBorderSize
     }
 
     private val calculateColumnWidths: Memoized[Seq[Int]] = Memoize {
@@ -277,11 +278,10 @@ case class Grid(var formatter: Formatter) {
 
   }
 
-  private case class GridRenderer(formatter: Formatter) {
+  private case class GridRenderer() {
 
-    private val formatting = formatter.formatting
-
-    import formatting._
+    private val f = formatting
+    import f._
 
     // An approximation of the number of characters needed. Doesn't take in to account eventual
     // line wrapping or ansi escape characters. Therefor we use double the approximated size

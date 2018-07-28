@@ -26,7 +26,7 @@ object OutputBox {
   val XIndent           = 2
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
 
-  def apply(formatter: Formatter, tabReplacer: TabReplacer, maxOutputLines: Int): OutputBox = {
+  def apply(tabReplacer: TabReplacer, maxOutputLines: Int)(implicit formatter: Formatter): OutputBox = {
     val formatting = formatter.formatting
     import formatting._
 
@@ -34,7 +34,6 @@ object OutputBox {
     val header = inputColor("Input")
     val renderState = RenderState(header = header)
     new OutputBox(
-      formatter,
       tabReplacer,
       maxOutputLines,
       renderState,
@@ -45,11 +44,12 @@ object OutputBox {
 }
 
 case class OutputBox private(
-  formatter: Formatter,
   tabReplacer: TabReplacer,
   maxOutputLines: Int,
   renderState: RenderState,
   spinner: Spinner
+)(
+  implicit formatter: Formatter
 ) {
 
   private val formatting = formatter.formatting
@@ -127,7 +127,7 @@ case class OutputBox private(
     val highlightedInput = formatter.syntaxHighlight(replacedTabs, markings)
 
     val errorLines = errors.map { error =>
-      val messageInfo = MessageInfo(error, formatter, tabReplacer)
+      val messageInfo = MessageInfo(error, tabReplacer)
       val locationIndicator = NumColor(error.pos.line) + ":" + NumColor(error.pos.col)
       (locationIndicator, messageInfo.prefix + " " + error.message)
     }

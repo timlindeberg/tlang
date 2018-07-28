@@ -23,13 +23,13 @@ object EvaluationActor {
   case object PrettyPrint extends EvaluationMessage
   case object StopExecution extends EvaluationMessage
 
-  def props(state: ReplState, evaluator: Evaluator, formatter: Formatter) =
-    Props(new EvaluationActor(state, evaluator, formatter))
+  def props(state: ReplState, evaluator: Evaluator)(implicit formatter: Formatter) =
+    Props(new EvaluationActor(state, evaluator))
 
   val name = "replProgram"
 }
 
-class EvaluationActor(state: ReplState, evaluator: Evaluator, formatter: Formatter) extends Actor with Logging {
+class EvaluationActor(state: ReplState, evaluator: Evaluator)(implicit formatter: Formatter) extends Actor with Logging {
 
   import EvaluationActor._
   import Evaluator.ClassName

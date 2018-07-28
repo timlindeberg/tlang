@@ -27,11 +27,13 @@ object ReplActor {
 
   def props(replState: ReplState,
     evaluator: Evaluator,
-    formatter: Formatter,
     outputBox: OutputBox,
     terminal: ReplTerminal,
-    input: Input) =
-    Props(new ReplActor(replState, evaluator, formatter, outputBox, terminal, input))
+    input: Input
+  )(
+    implicit formatter: Formatter
+  ) =
+    Props(new ReplActor(replState, evaluator, outputBox, terminal, input))
 
   val name = "repl"
 }
@@ -47,10 +49,12 @@ sealed abstract class Command(state: ExecutionState, val priority: Int) extends 
 class ReplActor(
   replState: ReplState,
   evaluator: Evaluator,
-  formatter: Formatter,
   outputBox: OutputBox,
   terminal: ReplTerminal,
-  input: Input) extends Actor with Logging {
+  input: Input
+)(
+  implicit formatter: Formatter,
+) extends Actor with Logging {
 
   import ReplActor._
   import context.dispatcher
@@ -60,12 +64,12 @@ class ReplActor(
   private val LoadingInterval = formatter.formatting.spinner.frameTime.length
 
   private val renderer = context.actorOf(
-    RenderingActor.props(formatter, terminal, outputBox).withMailbox("rendererMailbox"),
+    RenderingActor.props(terminal, outputBox).withMailbox("rendererMailbox"),
     RenderingActor.name
   )
 
   private val replProgram = context.actorOf(
-    EvaluationActor.props(replState, evaluator, formatter),
+    EvaluationActor.props(replState, evaluator),
     EvaluationActor.name
   )
 

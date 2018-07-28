@@ -7,7 +7,7 @@ import tlang.compiler.imports.{ClassSymbolLocator, Imports, TemplateImporter}
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.Logging
 
@@ -24,15 +24,17 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] with L
     templateClassGenerator.generateTemplates(cus)
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Imports template classes and instantiates templates from generic classes."
 
-  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
 }
 
 case class TemplateModifier(ctx: Context) extends Logging {
+
+  import ctx.formatter
 
   private val templateCus         = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
@@ -49,7 +51,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
     // This can't be ran in parallell since there are dependencies between CUs
     cus foreach { cu =>
       val transforms = List[String => String](cu.imports.replaceNames)
-      val errorStringContext = ErrorStringContext(ctx.formatter, transforms = transforms)
+      val errorStringContext = ErrorStringContext(transforms = transforms)
       val templateClassGenerator = TemplateClassGenerator(ctx.reporter, errorStringContext, cu, classSymbolLocator)
       templateClassGenerator()
     }
@@ -229,7 +231,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
             val newId = copier.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated) {
               val transforms = List[String => String](templateCU.imports.replaceNames)
-              val e = ErrorStringContext(errorStringContext.formatter, transforms = transforms)
+              val e = ErrorStringContext(transforms = transforms)(errorStringContext.formatter)
               TemplateClassGenerator(reporter, e, templateCU, classSymbolLocator).generateClass(newId)
             }
 

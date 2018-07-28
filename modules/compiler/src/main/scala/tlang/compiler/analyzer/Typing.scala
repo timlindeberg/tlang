@@ -1,7 +1,7 @@
 package tlang.compiler
 package analyzer
 
-import tlang.compiler.analyzer.Naming.{createErrorStringContext, phaseName}
+import tlang.compiler.analyzer.Naming.createErrorStringContext
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -9,7 +9,7 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
@@ -32,14 +32,14 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
     cus
   }
 
-  override def description(formatting: Formatting): String =
+  override def description(implicit formatter: Formatter): String =
     "Performs type checking and attaches types to trees."
 
-  override def debugOutput(output: List[CompilationUnit], formatter: Formatter): Output = ASTOutput(formatter, phaseName, output)
+  override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
   private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking fields of ${ cu.sourceDescription }"
+    info"Typechecking fields of ${ cu.simpleSourceDescription }"
     cu.classes.foreach { classDecl =>
       val typeChecker = TypeChecker(ctx, cu, new MethodSymbol("", classDecl.getSymbol, None, Set()))
       classDecl.fields.foreach(typeChecker.tcStat(_))
@@ -48,7 +48,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
 
   private def typecheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking methods of ${ cu.sourceDescription }"
+    info"Typechecking methods of ${ cu.simpleSourceDescription }"
     cu.classes.flatMap(_.methods).foreach { method =>
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
@@ -58,7 +58,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Verifying types of ${ cu.sourceDescription }"
+    info"Verifying types of ${ cu.simpleSourceDescription }"
     val typeChecker = TypeChecker(ctx, cu, emptyMethSym)
     typeChecker.checkMethodUsage()
     typeChecker.checkCorrectOverrideReturnTypes(cu)

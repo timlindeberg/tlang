@@ -18,7 +18,7 @@ object TreePrinter {
   def idFunction(any: Any): Int = identityHashCode(any)
 }
 
-case class TreePrinter(formatter: Formatter, idFunction: Any => Int = TreePrinter.idFunction, spacing: Int = 1) {
+case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing: Int = 1)(implicit formatter: Formatter) {
 
   type TreePrinterRow = (String, String, String, String, String)
 

@@ -1,6 +1,6 @@
 package tlang.utils
 
-import tlang.formatting.{Colors, Formatting}
+import tlang.formatting.{Colors, Formatter, Formatting}
 
 // Code is copied from https://github.com/bitwalker/scaladiff since
 // the repository hasn't been updated for Scala 2.12. It has been slightly
@@ -9,9 +9,9 @@ import tlang.formatting.{Colors, Formatting}
 object StringDiff {
 
   def apply(a: String, b: String): String = Diff.create(a, b).colored
-  def apply(a: String, b: String, formatting: Formatting): String = {
+  def apply(a: String, b: String)(implicit formatter: Formatter): String = {
     val diff = Diff.create(a, b)
-    if (formatting.useColor) diff.colored else diff.humanized
+    if (formatter.useColor) diff.colored else diff.humanized
   }
 
   trait OperationType

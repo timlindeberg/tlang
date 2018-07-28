@@ -5,7 +5,7 @@ import tlang.utils.{ExecutionResult, Source}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
-case class ExecutionResultOutput(formatter: Formatter, results: Seq[(Source, ExecutionResult)]) extends Output {
+case class ExecutionResultOutput(results: Seq[(Source, ExecutionResult)])(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
     val formatting = formatter.formatting
     import formatting._
@@ -24,7 +24,7 @@ case class ExecutionResultOutput(formatter: Formatter, results: Seq[(Source, Exe
         .map { case (line, i) => (Magenta(i + 1), line) }
       grid
         .row(alignment = Center)
-        .content(source.description(formatting))
+        .content(source.description)
         .row(2)
         .contents(lines)
     }
@@ -33,7 +33,7 @@ case class ExecutionResultOutput(formatter: Formatter, results: Seq[(Source, Exe
       val stackTrace = removeCompilerPartOfStacktrace(source.mainName, formatter.highlightStackTrace(exception))
       grid
         .row(alignment = Center)
-        .content(source.description(formatting, isError = true))
+        .content(source.errorDescription)
         .row()
         .content(stackTrace)
     }
