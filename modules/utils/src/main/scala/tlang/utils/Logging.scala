@@ -12,20 +12,21 @@ import tlang.utils.Extensions._
 import scala.language.implicitConversions
 
 
-sealed abstract class LogLevel(val priority: Int) extends Ordered[LogLevel] {
+sealed abstract class LogLevel(val priority: Int, private val _color: Color) extends Ordered[LogLevel] {
 
   override def compare(that: LogLevel): Int = priority - that.priority
   def name: String = getClass.simpleObjectName.toLowerCase
+  def color(implicit formatter: Formatter): Color = formatter.formatting.translate(_color)
 
 }
 
 object LogLevel extends Enumerable[LogLevel] {
-  case object Trace extends LogLevel(0)
-  case object Debug extends LogLevel(1)
-  case object Info extends LogLevel(2)
-  case object Warn extends LogLevel(3)
-  case object Error extends LogLevel(4)
-  case object Off extends LogLevel(5)
+  case object Trace extends LogLevel(0, Colors.Cyan)
+  case object Debug extends LogLevel(1, Colors.Blue)
+  case object Info extends LogLevel(2, Colors.Green)
+  case object Warn extends LogLevel(3, Colors.Yellow)
+  case object Error extends LogLevel(4, Colors.Red)
+  case object Off extends LogLevel(5, Colors.NoColor)
 
   override lazy val Values: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.priority)
 }
@@ -98,6 +99,8 @@ trait Logging {
 class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.DefaultLogSettings) {
 
   import loggingSettings._
+
+  private implicit val formatter: Formatter = loggingSettings.formatter
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
     val sb = new StringBuilder
@@ -186,7 +189,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
 
   protected def logLevel(level: LogLevel): String = {
     val name = fit(level.getClass.getSimpleName.stripSuffix("$").toUpperCase, logLevelWidth)
-    val color = logLevelColor(level)
+    val color = level.color
     color(s"$name " + formatting.Vertical)
   }
 
@@ -201,7 +204,7 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
     if (extra.isEmpty)
       return ""
 
-    val color = logLevelColor(logLevel)
+    val color = logLevel.color
 
     val lines = extraLines(extra.get)
     if (lines.lengthCompare(1) == 0 || lines.forall(_.isEmpty))
@@ -231,15 +234,6 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
       s
 
     name + " " * (width - name.length)
-  }
-
-  private def logLevelColor(logLevel: LogLevel) = logLevel match {
-    case LogLevel.Trace => formatting.Cyan
-    case LogLevel.Debug => formatting.Blue
-    case LogLevel.Info  => formatting.Green
-    case LogLevel.Warn  => formatting.Yellow
-    case LogLevel.Error => formatting.Red
-    case LogLevel.Off   => ???
   }
 
 

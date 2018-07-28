@@ -1,6 +1,6 @@
 package tlang.options
 
-import tlang.formatting.{ErrorStringContext, Formatter, Formatting}
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
@@ -113,29 +113,50 @@ trait FlagArgument[T] extends Argument[T] {
 
   def name: String
   def shortFlag: Option[String] = None
-  def description(formatter: Formatter): String
-  def extendedDescription(formatter: Formatter): String = description(formatter).stripMargin.trim
+
+
+  def getDescription(implicit formatter: Formatter): String = cleanDescription(description)
+  def getExtendedDescription(implicit formatter: Formatter): String = cleanDescription(extendedDescription)
 
   def parseValue(args: Set[String]): T
 
   def matches(args: List[String])(implicit errorContext: ErrorStringContext): Option[(Set[String], List[String])]
 
-  def flagName(formatting: Formatting): String = {
-    import formatting._
-    val shortFlagDescription = shortFlag.map(f => s" (-${ Magenta(f) })").getOrElse("")
-    "--" + Magenta(name) + shortFlagDescription
+  def flagName(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    val shortFlagDescription = shortFlag.map { f => s" (-${ Magenta(f) })" }.getOrElse("")
+    flag(name) + shortFlagDescription
   }
 
   def names: List[String] = s"--$name" :: shortFlag.map(short => List(s"-$short")).getOrElse(Nil)
 
   def matchesString(str: String): Boolean = str.toLowerCase in names
 
-  def json: Json = Json(
-    "name" -> s"--$name",
-    "description" -> description(Formatter.SimpleFormatter),
-    "extendedDescription" -> extendedDescription(Formatter.SimpleFormatter),
-    "shortName" -> shortFlag.map(flag => s"-$flag")
-  )
+  def json: Json = {
+    implicit val formatter: Formatter = Formatter.SimpleFormatter
+    Json(
+      "name" -> s"--$name",
+      "description" -> getDescription,
+      "extendedDescription" -> extendedDescription,
+      "shortName" -> shortFlag.map(flag => s"-$flag")
+    )
+  }
+
+  def flag(flag: FlagArgument[_])(implicit formatter: Formatter): String = this.flag(flag.name)
+  def flag(flagName: String)(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    s"--${ Magenta(flagName) }"
+  }
+
+  def highlight(value: Any)(implicit formatter: Formatter): String = {
+    val formatting = formatter.formatting
+    if (formatting.useColor) formatting.Blue(value) else s"'$value'"
+  }
+
+  protected def description(implicit formatter: Formatter): String
+  protected def extendedDescription(implicit formatter: Formatter): String = description
+
+  private def cleanDescription(description: String): String = description.stripMargin.trim
 
 }
 
@@ -154,10 +175,10 @@ trait ArgumentFlag[T] extends FlagArgument[T] {
 
   def argDescription: String
 
-  override def flagName(formatting: Formatting): String = {
-    import formatting._
+  override def flagName(implicit formatter: Formatter): String = {
+    import formatter.formatting._
     // Dropping space
-    super.flagName(formatting) + s" <${ Blue(argDescription) }> "
+    super.flagName + s" <${ Blue(argDescription) }> "
   }
 
 

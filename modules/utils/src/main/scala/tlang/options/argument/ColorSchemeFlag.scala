@@ -8,26 +8,21 @@ import tlang.utils.Extensions._
 
 case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
+  import tlang.formatting.Colors.ColorScheme._
+
   override val name          : String = "colorscheme"
   override val argDescription: String = "colormap"
 
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
+  override def description(implicit formatter: Formatter): String =
     s"""
        |Define the color scheme to use when printing error messages and code output.
-       |Argument is a JSON map of colors, type --${ Magenta(HelpFlag.Name) } ${ Magenta(name) } for more details.
-      """.stripMargin.trim
-  }
+       |Argument is a list comma separated key-values, type ${ flag(HelpFlag.Name) } ${ highlight(name) } for more details.
+      """
 
 
-  override def extendedDescription(formatter: Formatter): String = {
-    import formatter.formatting._
-    import tlang.formatting.Colors.ColorScheme._
-
-    val validKeys = formatter.list(Keys.map(Blue))
-    val validColors = formatter.list(Colors.ColorNames.map(Magenta))
+  override def extendedDescription(implicit formatter: Formatter): String =
     s"""
-       |The --${ Magenta(name) } flag accepts key-value-pairs as it's argument. The following types can be set:
+       |The ${ flag(this) } flag accepts key-value-pairs as it's argument. The following types can be set:
        |
        |$validKeys
        |
@@ -37,9 +32,8 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
        |
        |Example:
        |
-       |--${ Magenta(name) } $KeywordName=red,$VariableName=1,$ClassName=4,$MethodName=magenta,$StringName=green,$NumberName=bold,$CommentName=underlined,$SymbolName=black
-       |""".stripMargin.trim
-  }
+       |${ flag(this) } $KeywordName=red,$VariableName=1,$ClassName=4,$MethodName=magenta,$StringName=green,$NumberName=bold,$CommentName=underlined,$SymbolName=black
+       |"""
 
   override def verifyArg(colorKey: String, color: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
@@ -90,4 +84,14 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
     ColorNameMap.get(color)
   }
 
-}
+  private def validKeys(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    formatter.list(Keys.map(Blue))
+  }
+
+  private def validColors(implicit formatter: Formatter): String = {
+    import formatter.formatting._
+    formatter.list(Colors.ColorNames.map(Magenta))
+  }
+
+  }

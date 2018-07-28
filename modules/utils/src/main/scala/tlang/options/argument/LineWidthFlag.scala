@@ -12,14 +12,11 @@ case object LineWidthFlag extends NumberFlag {
 
   override val name = "linewidth"
 
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
+  override def description(implicit formatter: Formatter): String =
     s"""
        |Specifies the width of a line in error messages and output.
-       |If none is given (or ${ Blue(-1) } is given) the width of the terminal will be used, if it can be determined.
-       |Otherwise, '${ Blue(DefaultWidth) }' will be used.
-      """.stripMargin.trim
-  }
+       |If none is given the width of the terminal will be used, if it can be determined. Otherwise, ${ highlight(DefaultWidth) } will be used.
+      """
 
   protected override def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
     super.verify(arg)

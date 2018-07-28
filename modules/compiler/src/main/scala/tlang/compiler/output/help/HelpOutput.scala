@@ -8,9 +8,12 @@ import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
 case class HelpOutput(formatter: Formatter, flagArguments: Set[FlagArgument[_]]) extends Output {
+
+  private implicit val f: Formatter = formatter
+
   override def pretty: String = {
     val formatting = formatter.formatting
-    import formatter.formatting._
+    import formatting._
 
     val tcomp = Green("tcompile")
     val options = Blue("options")
@@ -19,7 +22,7 @@ case class HelpOutput(formatter: Formatter, flagArguments: Set[FlagArgument[_]])
     val flags = flagArguments
       .toList
       .sortBy { _.name }
-      .map { flag => (flag.flagName(formatting), flag.description(formatter)) }
+      .map { flag => (flag.flagName, flag.getDescription) }
 
     val maxFlagWidth = flags.map(_._1.visibleCharacters).max
 

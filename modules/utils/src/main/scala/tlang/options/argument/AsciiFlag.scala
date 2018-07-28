@@ -7,36 +7,33 @@ import tlang.utils.Extensions._
 case object AsciiFlag extends BooleanFlag {
   override val name = "ascii"
 
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
-    s"""|Prints all output from the compiler using only ASCII characters.
-        |No Unicode characters will be printed.
-        |Type --${ Magenta(HelpFlag.Name) } ${ Magenta(name) } for more information.
-      """.stripMargin.trim
-  }
+  override def description(implicit formatter: Formatter): String =
+    s"""
+       |Prints all output from the compiler using only ASCII characters. No Unicode characters will be printed.
+       |Type ${ flag(HelpFlag.Name) } ${ highlight(name) } for more information.
+      """
 
-  override def extendedDescription(formatter: Formatter): String = {
-    val desc =
-      s"""|Prints all output from the compiler using only ASCII characters.
-          |No Unicode characters will be printed.
-          |
-          |This is what the output would look like:
-          |""".stripMargin.trim
+  override def extendedDescription(implicit formatter: Formatter): String =
+    s"""
+       |Prints all output from the compiler using only ASCII characters. No Unicode characters will be printed.
+       |
+       |This is what the output look like:
+       |
+       |$formatBoxes
+       |"""
 
-    desc + NL * 2 + formatBoxes(formatter)
-  }
-
-  private def formatBoxes(formatter: Formatter): String = {
+  private def formatBoxes(implicit formatter: Formatter): String = {
     val formatting = formatter.formatting
     import formatting._
     val exampleFormatting = formatting.copy(lineWidth = formatting.lineWidth - 4)
 
     val lorumIpsum =
-      s"""|Lorem ipsum dolor sit amet, consectetur ${ Red("adipiscing") } elit. Vestibulum massa augue,
-          |${ Magenta("dictum") } eget metus ac, bibendum ${ Yellow("ultricies") } ligula.
-          |Aliquam ${ Green("commodo") } ante vitae tellus pharetra dignissim. ${ Cyan("Suspendisse") } non arcu
-          |vitae ligula ${ Blue("varius") } suscipit. Etiam tincidunt pretium est, auctor ${ Red("congue") } est
-          |laoreet et. Sed ${ Blue("congue") } eu semut sodales.
+      s"""
+         |Lorem ipsum dolor sit amet, consectetur ${ Red("adipiscing") } elit. Vestibulum massa augue,
+         |${ Magenta("dictum") } eget metus ac, bibendum ${ Yellow("ultricies") } ligula.
+         |Aliquam ${ Green("commodo") } ante vitae tellus pharetra dignissim. ${ Cyan("Suspendisse") } non arcu
+         |vitae ligula ${ Blue("varius") } suscipit. Etiam tincidunt pretium est, auctor ${ Red("congue") } est
+         |laoreet et. Sed ${ Blue("congue") } eu semut sodales.
         """.stripMargin.trim
 
     List(true, false)

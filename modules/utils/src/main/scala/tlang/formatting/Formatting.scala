@@ -13,6 +13,8 @@ case class Formatting(
   useColor: Boolean = true,
   asciiOnly: Boolean = false) {
 
+  def translate(c: Color): Color = color(c)
+
   /*--------------------------------- Colors --------------------------------*/
 
   val NoColor  : Color = Colors.NoColor

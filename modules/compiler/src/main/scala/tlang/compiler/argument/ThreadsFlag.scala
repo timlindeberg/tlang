@@ -9,19 +9,19 @@ case object ThreadsFlag extends ArgumentFlag[Executor] {
   override val name           = "threads"
   override val argDescription = "num"
 
-  override def description(formatter: Formatter): String = {
+  override def description(implicit formatter: Formatter): String =
     "Specifies how many threads should be used. By default compilation is single threaded."
-  }
 
-  override def extendedDescription(formatter: Formatter): String = {
-    import formatter.formatting._
-    s"""|Specifies how many threads should be used. By default compilation is single threaded.
-        |
-        |Give ${ Blue("0") } to use the available number of processors.
-        |
-        |Multiple threads will be used when possible. In general a compiler stage will execute in parallel for each given file except for when there are dependencies between compilation units.
-        |During code generation each class file is generated in parallell.""".stripMargin
-  }
+
+  override def extendedDescription(implicit formatter: Formatter): String =
+    s"""
+       |Specifies how many threads should be used. By default compilation is single threaded.
+       |
+       |Give ${ highlight("0") } to use the available number of processors.
+       |
+       |Multiple threads will be used when possible. In general a compiler stage will execute in parallel for each given file except for when there are dependencies between compilation units.
+       |During code generation each class file is generated in parallel.
+      """
 
   override def parseValue(args: Set[String]): Executor = {
     if (args.isEmpty)

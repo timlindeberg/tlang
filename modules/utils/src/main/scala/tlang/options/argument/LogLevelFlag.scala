@@ -9,19 +9,16 @@ case object LogLevelFlag extends ArgumentFlag[LogLevel] {
   override val name           = "loglevel"
   override val argDescription = "level"
 
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
-    s"Specifies the log level to use. Default is ${ Blue("Off") }."
-  }
+  override def description(implicit formatter: Formatter): String =
+    s"Specifies the log level to use. Default is ${ highlight("Off") }."
 
-  override def extendedDescription(formatter: Formatter): String = {
-    import formatter.formatting._
-    val logLevels = LogLevel.map(Blue(_))
-    s"""|Specifies the log level to use. Default is ${ Blue("Off") }.
-        |
-        |Valid levels are:
-        |${ formatter.list(logLevels) }""".stripMargin
-  }
+  override def extendedDescription(implicit formatter: Formatter): String =
+    s"""
+       |Specifies the log level to use. Default is ${ highlight("Off") }.
+       |
+       |Valid levels are:
+       |$logLevels
+      """
 
   override def parseValue(args: Set[String]): LogLevel = {
     val argsLower = args.map(_.toLowerCase)
@@ -30,9 +27,17 @@ case object LogLevelFlag extends ArgumentFlag[LogLevel] {
 
   protected override def verify(logLevel: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
-    val logLevels = LogLevel.map { _.getClass.simpleObjectName.toLowerCase }
+    val logLevels = LogLevel.map { _.name }
     if (logLevel.toLowerCase notIn logLevels)
       error(err"Invalid log level: $logLevel.")
+  }
+
+  private def logLevels(implicit formatter: Formatter): String = {
+    val logLevels = LogLevel.map { logLevel =>
+      val color = logLevel.color
+      color(logLevel)
+    }
+    formatter.list(logLevels)
   }
 
 }

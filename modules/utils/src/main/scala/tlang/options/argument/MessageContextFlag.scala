@@ -9,6 +9,11 @@ case object MessageContextFlag extends NumberFlag {
   override val name      = "messagecontext"
   override val shortFlag = Some("c")
 
+  override def description(implicit formatter: Formatter): String =
+    s"""
+       |Specify how many lines to display around an error position in error messages and warnings.
+       |The default is ${ highlight(defaultValue) }.
+      """
 
   protected override def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {
     super.verify(arg)
@@ -17,15 +22,6 @@ case object MessageContextFlag extends NumberFlag {
     if (num < -1) {
       error(err"$num is not a number of message context lines.")
     }
-  }
-
-
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
-    s"""
-       |Specify how many lines to display around an error position in error messages and warnings.
-       |The default is '${ Blue(defaultValue) }'.
-      """.stripMargin.trim
   }
 
 }

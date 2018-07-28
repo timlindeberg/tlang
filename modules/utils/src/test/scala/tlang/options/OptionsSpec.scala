@@ -25,15 +25,15 @@ class OptionsSpec extends UnitSpec {
   it should "parse boolean flags" in {
     val a = new BooleanFlag {
       override def name = "a"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val b = new BooleanFlag {
       override def name = "b"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val c = new BooleanFlag {
       override def name = "c"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val args = "--a --b".split(" ")
@@ -50,19 +50,19 @@ class OptionsSpec extends UnitSpec {
       override def name = "a"
       override def parseValue(args: Set[String]): Set[String] = args
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val b = new ArgumentFlag[Set[String]] {
       override def name = "b"
       override def parseValue(args: Set[String]): Set[String] = args
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val c = new ArgumentFlag[Set[String]] {
       override def name = "c"
       override def parseValue(args: Set[String]): Set[String] = args
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val args = "--a abc --b abc --a def,ghi,jkl,,".split(" ")
@@ -81,7 +81,7 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
       override def isValidArg(arg: String): Boolean = arg.startsWith("a")
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val b = new OptionalArgumentFlag[Set[String]] {
@@ -90,7 +90,7 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
       override def isValidArg(arg: String): Boolean = arg.startsWith("a")
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val c = new OptionalArgumentFlag[Set[String]] {
@@ -99,7 +99,7 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
       override def isValidArg(arg: String): Boolean = arg.startsWith("c")
       override def argDescription: Nothing = ???
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val args = "--a abc --b --a abcdef".split(" ")
@@ -116,17 +116,17 @@ class OptionsSpec extends UnitSpec {
     val a = new NumberFlag {
       override def name = "a"
       override def defaultValue = 123
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val b = new NumberFlag {
       override def name = "b"
       override def defaultValue = 456
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val c = new NumberFlag {
       override def name = "c"
       override def defaultValue = 789
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val args = "--a 1 --b 1 --a 1337".split(" ")
@@ -142,19 +142,19 @@ class OptionsSpec extends UnitSpec {
     val a = new DictionaryFlag[Map[String, String]] {
       override def name = "a"
       override def parseValue(args: Map[String, String]): Map[String, String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
     val b = new DictionaryFlag[Map[String, String]] {
       override def name = "b"
       override def parseValue(args: Map[String, String]): Map[String, String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
     val c = new DictionaryFlag[Map[String, String]] {
       override def name = "c"
       override def parseValue(args: Map[String, String]): Map[String, String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
@@ -180,13 +180,13 @@ class OptionsSpec extends UnitSpec {
     val argFlag = new ArgumentFlag[Set[String]] {
       override def name = "arg"
       override def parseValue(args: Set[String]): Set[String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
     val booleanFlag = new BooleanFlag {
       override def name = "bool"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val optionalArgFlag = new OptionalArgumentFlag[Set[String]] {
@@ -194,14 +194,14 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
       override def defaultArg = "ABC"
       override def isValidArg(arg: String): Boolean = arg.startsWith("a")
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
     val dictionaryFlag = new DictionaryFlag[Map[String, String]] {
       override def name = "dict"
       override def parseValue(args: Map[String, String]): Map[String, String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
@@ -223,13 +223,13 @@ class OptionsSpec extends UnitSpec {
     val argFlag = new ArgumentFlag[Set[String]] {
       override def name = "arg"
       override def parseValue(args: Set[String]): Set[String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
     val booleanFlag = new BooleanFlag {
       override def name = "bool"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
 
     val optionalArgFlag = new OptionalArgumentFlag[Set[String]] {
@@ -237,14 +237,14 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
       override def defaultArg = "ABC"
       override def isValidArg(arg: String): Boolean = arg.startsWith("a")
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
     val dictionaryFlag = new DictionaryFlag[Map[String, String]] {
       override def name = "dict"
       override def parseValue(args: Map[String, String]): Map[String, String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
@@ -266,7 +266,7 @@ class OptionsSpec extends UnitSpec {
       override def name = "arg"
       override def shortFlag: Option[String] = Some("a")
       override def parseValue(args: Set[String]): Set[String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
@@ -285,7 +285,7 @@ class OptionsSpec extends UnitSpec {
     val argFlag = new ArgumentFlag[Set[String]] {
       override def name = "arg"
       override def parseValue(args: Set[String]): Set[String] = args
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
       override def argDescription: Nothing = ???
     }
 
@@ -300,15 +300,15 @@ class OptionsSpec extends UnitSpec {
   it should "throw when given an invalid flag" in {
     val a = new BooleanFlag {
       override def name = "a"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val b = new BooleanFlag {
       override def name = "b"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val c = new BooleanFlag {
       override def name = "c"
-      override def description(formatter: Formatter): Nothing = ???
+      override def description(implicit formatter: Formatter): Nothing = ???
     }
     val args = "--a --b --d".split(" ")
     intercept[IllegalArgumentException] { Options(Set(a, b, c), None, args) }
@@ -322,7 +322,7 @@ class OptionsSpec extends UnitSpec {
       new DictionaryFlag[Map[String, String]] {
         override def name = "a"
         override def parseValue(args: Map[String, String]): Map[String, String] = args
-        override def description(formatter: Formatter): Nothing = ???
+        override def description(implicit formatter: Formatter): Nothing = ???
         override def argDescription: Nothing = ???
       }
     )
@@ -341,7 +341,7 @@ class OptionsSpec extends UnitSpec {
     val flags: Set[FlagArgument[_]] = Set(
       new NumberFlag {
         override def name = "a"
-        override def description(formatter: Formatter): Nothing = ???
+        override def description(implicit formatter: Formatter): Nothing = ???
         override def defaultValue = 1
       }
     )

@@ -6,7 +6,6 @@ import tlang.options.BooleanFlag
 case object VersionFlag extends BooleanFlag {
   override val name = "version"
 
-  override def description(formatter: Formatter): String = {
+  override def description(implicit formatter: Formatter): String =
     "Prints version information and exits."
-  }
 }

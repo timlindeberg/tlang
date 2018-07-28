@@ -18,13 +18,11 @@ case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
     }
   }
 
-  override def description(formatter: Formatter): String = {
-    import formatter.formatting._
+  override def description(implicit formatter: Formatter): String =
     s"""
        |Specify a default import to ignore.
-       |Example: --${ Magenta(name) } java::lang::object
-      """.stripMargin.trim
-  }
+       |Example: ${flag(this)} ${highlight("java::lang::Object")}
+      """
 
   override def parseValue(ignoredImports: Set[String]): Set[String] = {
     ignoredImports.map { ignoredImport =>

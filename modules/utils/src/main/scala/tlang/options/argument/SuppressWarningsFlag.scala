@@ -6,8 +6,7 @@ import tlang.options.BooleanFlag
 case object SuppressWarningsFlag extends BooleanFlag {
   override val name = "nowarn"
 
-  override def description(formatter: Formatter): String = {
+  override def description(implicit formatter: Formatter): String =
     "Suppresses warning messages."
-  }
 
 }
