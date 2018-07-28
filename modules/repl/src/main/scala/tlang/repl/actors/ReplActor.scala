@@ -93,7 +93,7 @@ class ReplActor(
       renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()
-      context.system.terminate()
+      context.system.terminate() map { sys.exit(0) }
     case msg: RenderingMessage  => renderer forward msg
     case msg: EvaluationMessage => replProgram forward msg
   }
