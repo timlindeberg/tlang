@@ -32,7 +32,8 @@ local.properties
 .loadpath
 
 # IntelliJ
-.idea
+**/.idea/workspace.xml 
+**/.idea/tasks.xml
 
 # Eclipse Core
 .project

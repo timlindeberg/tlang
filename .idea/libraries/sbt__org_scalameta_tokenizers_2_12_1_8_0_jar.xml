@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.scalameta:tokenizers_2.12:1.8.0:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.scalameta/tokenizers_2.12/jars/tokenizers_2.12-1.8.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.scalameta/tokenizers_2.12/srcs/tokenizers_2.12-1.8.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
