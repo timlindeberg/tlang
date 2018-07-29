@@ -1,6 +1,6 @@
-# T-lang Compiler
-A compiler project for the awesome new T-language. T is an object-oriented language compiled to the JVM which supports C++-like generics. 
-The T-tlang.compiler is written in Scala.
+# tlang
+A compiler project for the awesome new language `t`. `tlang` is an object-oriented language compiled to the JVM which supports C++-like generics. 
+The `tlang` compiler is written in Scala.
 
 ## Features
 * Classes and inheritence.
