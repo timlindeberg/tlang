@@ -121,7 +121,6 @@ case class Main(ctx: Context) extends Logging {
 
   import Main._
   import ctx._
-  import ctx.formatter._
 
   private implicit val syntaxHighlighter    : SyntaxHighlighter     = TLangSyntaxHighlighter()
   private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
@@ -253,6 +252,7 @@ case class Main(ctx: Context) extends Logging {
 
   private def watch(sources: List[Source]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
+    import ctx.formatter._
 
     val fileSources = sources.filterInstance[FileSource]
     if (fileSources.isEmpty) {
@@ -308,6 +308,8 @@ case class Main(ctx: Context) extends Logging {
     private val filesToCompile = List(FileSource(file))
 
     override def onModify(file: File, count: Int): Unit = {
+      import ctx.formatter._
+
       info"$file changed, recompiling"
       if (options(VerboseFlag))
         ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")

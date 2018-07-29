@@ -1,5 +1,6 @@
 package tlang.repl
 
+import tlang.Constants
 import tlang.compiler.messages.{CompilerMessage, MessageInfo}
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Colors.Color
@@ -75,7 +76,7 @@ case class OutputBox private(
     val tColor = Bold + Green
 
     copy(renderState = renderState.copy(
-      header = Bold("Welcome to the ") + tColor("T-REPL") + Bold("!"),
+      header = Bold("Welcome to ") + tColor(Constants.ReplCommandName) + Bold("!"),
       content = List(List(
         s"""|Type in code to have it evaluated or type one of the following commands:
             |
@@ -89,7 +90,7 @@ case class OutputBox private(
 
 
   def exit(): OutputBox = {
-    val content = Bold("Thanks for using the ") + SuccessColor("T-REPL") + Bold("!")
+    val content = Bold("Thanks for using ") + SuccessColor(Constants.ReplCommandName) + Bold("!")
     copy(renderState = renderState.copy(content = List(List(content))))
   }
 

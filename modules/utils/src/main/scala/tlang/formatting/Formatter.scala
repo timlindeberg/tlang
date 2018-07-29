@@ -50,7 +50,7 @@ case class Formatter(
   wordWrap: WordWrapper,
   truncate: Truncator,
   replaceTabs: TabReplacer,
-  var lineWidth: Int,
+  var lineWidth: Int, // this is a var so we can change line width dynamically in trepl
   colorScheme: ColorScheme,
   useColor: Boolean,
   asciiOnly: Boolean
@@ -73,14 +73,6 @@ case class Formatter(
   def relativePath(file: File): String = {
     val fileName = file.name
     relativize(file.parent.path) + file.fileSystem.getSeparator + fileName
-  }
-
-  private def relativize(path: Path): Path = {
-    val absolute = path.toAbsolutePath
-    if (absolute.startsWith(Constants.Pwd))
-      Constants.Pwd.relativize(absolute)
-    else
-      absolute
   }
 
   def list(items: String*): String = list(items)
@@ -179,5 +171,9 @@ case class Formatter(
   private def ascii[T](ascii: => T, nonAscii: => T): T = if (asciiOnly) ascii else nonAscii
   private def color(color: Color): Color = if (useColor) color else Colors.NoColor
 
+  private def relativize(path: Path): Path = {
+    val absolute = path.toAbsolutePath
+    if (absolute.startsWith(Constants.Pwd)) Constants.Pwd.relativize(absolute) else absolute
+  }
 
 }

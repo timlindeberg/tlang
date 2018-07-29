@@ -72,10 +72,9 @@ case class Grid()(implicit var formatter: Formatter) {
   def row(numColumns: Int): Grid = row(List.fill(numColumns)(Column.copy()))
 
   def row(column: Column, moreColumns: Column*): Grid = {
-    // This allows us to pass the Column object to receive a column with default values
+    // We copy the columns.This allows us to pass a Column object to receive a column with default values
     // That way we can write .row(Column, Column) instead of .row(Column(), Column())
-    // Also, if we pass the same column multiple types. eg
-    // val rightColumn = Column(alignment = Right) and pass that multiple times.
+    // It also allows us to pass the same column multiple times.
     // You also should not be able to pass a column with preexisting state.
     val columns = (column :: moreColumns.toList) map { _.copy() use { _.lines.clear() } }
     row(columns)

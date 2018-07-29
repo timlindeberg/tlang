@@ -14,7 +14,7 @@ case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: F
 
     import formatter._
 
-    val tcomp = Green(Constants.CommandName)
+    val tcompile = (Bold + Green)(Constants.CompilerCommandName)
     val options = Blue("options")
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))
@@ -27,7 +27,7 @@ case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: F
 
     val grid = formatter
       .grid
-      .header(s"> $tcomp <$options> <$source> \n\n $optionsHeader")
+      .header(s"> $tcompile <$options> <$source> $NL$NL $optionsHeader")
 
     flags.foreach { columns =>
       grid.row(Column(width = Width.Fixed(maxFlagWidth)), Column)

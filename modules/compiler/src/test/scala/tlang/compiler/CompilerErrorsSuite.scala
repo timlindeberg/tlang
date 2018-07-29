@@ -9,6 +9,7 @@ import tlang.compiler.messages.{CompilationException, CompilerMessage, CompilerM
 import tlang.compiler.modification.Templating
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestConstants._
+import tlang.utils.Extensions._
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
@@ -82,7 +83,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
     val resStrings = asString(results)
     val solStrings = asString(solutions)
 
-    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + "\n"
+    def extraInfo(i: Int) = formatTestFailedMessage(i + 1, resStrings, solStrings) + NL
 
     val resultMap = mutable.HashMap[Int, ArrayBuffer[String]]()
     results foreach { case (line, res) =>
