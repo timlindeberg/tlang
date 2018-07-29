@@ -1,0 +1,12 @@
+build
+logs
+target
+.project
+.settings
+.idea
+RUNNING_PID
+
+project/target
+
+
+# End of https://www.gitignore.io/api/node,windows,intellij

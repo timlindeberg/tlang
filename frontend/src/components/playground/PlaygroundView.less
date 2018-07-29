@@ -1,0 +1,131 @@
+@import '../../theme.less';
+@import '../layout/MenuLayout.less';
+
+@content-margin: 2rem;
+@menu-height: 2rem;
+@menu-margin: 1rem;
+@height:  ~"calc(@{pageHeight} - (2 * @{content-margin}) - @{menu-height} - @{menu-margin} - 1rem)";
+
+
+.CodeWindow {
+  height: @height;
+}
+
+.CodeMirror.cm-s-tlang {
+  height: @height;
+}
+
+.PlaygroundView-result-segment {
+  height: @height;
+  overflow-y: scroll;
+}
+
+#MenuLayout-navbar.Navbar-border {
+  border-bottom: 2px darken(@primaryColor, 5%) solid;
+}
+
+#PlaygroundView-content {
+  margin: @content-margin;
+
+  // Make padding uniform between elements
+  .ui.grid .column.PlaygroundView-result-column {
+    padding-left: 0;
+  }
+
+  .ui.grid .column.no-padding-bottom {
+    padding-bottom: 0;
+  }
+
+  & ::-webkit-scrollbar-track {
+    background: fade(@primaryColor, 10%);
+  }
+
+  & ::-webkit-scrollbar-thumb {
+    background: fade(@primaryColor, 30%);
+  }
+}
+
+#PlaygroundView-menu.menu {
+  margin: @menu-margin 0;
+  height: @menu-height;
+  & .active.item {
+    background: fade(@primaryColor, 10%);
+  }
+  & .item {
+    font-weight: bold;
+    color: @primaryColor;
+    &.disabled {
+      color: fade(@primaryColor, 50%);
+    }
+  }
+  & a.item:not(.disabled), & .dropdown.item:not(.disabled) {
+    transition: all 300ms;
+    &:hover {
+      background: lighten(@primaryColor, 55%);
+      z-index: 5;
+      box-shadow: 2px 2px 1px fade(@primaryColor, 20%) !important;
+      transition: all 300ms;
+    }
+  }
+
+}
+
+.PlaygroundState {
+  width: 10em;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  color: @successColor !important;
+
+  &.Disconnected, &.Connecting {
+    color: @dangerColor !important;
+  }
+
+  & span {
+    padding-right: 1em;
+  }
+}
+
+.CompileButton {
+  color: @secondaryColor !important;
+  &.Compiling {
+    color: @dangerColor !important;
+  }
+
+  &.disabled {
+    color: fade(@secondaryColor, 50%) !important;
+  }
+}
+
+.ClearEventLogButton {
+  color: @dangerColor !important;
+}
+
+// Hack to fix modals not appaearing in the correct location
+.ui.page.modals.dimmer.transition.visible.active {
+  display: flex!important;
+}
+
+
+.error-marked {
+  border-bottom: 1px @dangerColor solid;
+  color: @dangerColor !important;
+  transition: all 2s ease-in-out;
+}
+
+.CodeMirror-gutters .errors {
+  width: 1.5em;
+}
+
+.CodeMirror-gutter-elt {
+  padding-left: 0.5em;
+}
+
+.ui.popup.error-popup {
+  color: @dangerColor;
+}
+
+.error-line {
+  tab-size: 2;
+  white-space: pre-wrap;
+}

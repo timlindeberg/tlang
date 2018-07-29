@@ -1,0 +1,27 @@
+/*******************************
+     User Global Variables
+*******************************/
+@import '../../../../theme.less';
+
+@red            : #F10059;
+@orange         : #FC8F34;
+@yellow         : #FFCF00;
+@olive          : #32CD32;
+@green          : #016936;
+@teal           : #008080;
+@blue           : #02B5D6;
+@violet         : #EE82EE;
+@purple         : #B413EC;
+@pink           : #FF1493;
+@brown          : #A52A2A;
+@grey           : #A0A0A0;
+@black          : #000000;
+
+@borderColor: fade(@primaryColor, 20%);
+@invertedBackground: @primaryColor;
+
+@importGoogleFonts : true;
+@googleFontSizes   : '400,700,400italic,700italic';
+@googleFontRequest : 'Oswald:400,500|Roboto:400,700|Inconsolata:400,700';
+
+

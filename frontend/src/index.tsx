@@ -1,0 +1,27 @@
+import 'animate.css';
+import App from 'App';
+import 'main.less';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import 'semantic/dist/semantic.min.css';
+
+import registerServiceWorker from  'registerServiceWorker';
+
+const startHMRGroup = () => {
+  const count: number = parseInt(sessionStorage.getItem('hmr_counter') || '0', 10);
+  console.groupEnd();
+  console.group(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━🔥 HMR ${count} 🔥━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  sessionStorage.setItem('hmr_counter', (count + 1).toString());
+};
+
+if (module.hot) {
+  startHMRGroup();
+  module.hot.accept();
+}
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('root') as HTMLElement
+);
+
+registerServiceWorker();

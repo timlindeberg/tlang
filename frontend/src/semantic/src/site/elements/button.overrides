@@ -1,0 +1,18 @@
+/*******************************
+         Site Overrides
+*******************************/
+
+@time: 0.2s;
+
+.ui.button {
+	transition: all @time ease;
+	&:hover {
+		transition: all @time ease;
+	}
+	&:focus {
+		transition: all @time ease;
+	}
+	&:active {
+		transition: all @time ease;
+	}
+}

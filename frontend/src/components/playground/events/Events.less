@@ -1,0 +1,38 @@
+@import '../../../theme.less';
+
+.result-block {
+  font-family: @codeFont;
+  word-wrap: break-word;
+}
+
+.line-number {
+  color: @accentColor;
+  display: inline-block;
+  border-right: 1px solid fade(@primaryColor, 20%);
+  padding: 0 .5em;
+  margin-right: .5em;
+  -webkit-user-select: none;
+  font-weight: bold;
+  word-wrap: normal;
+}
+
+
+.event-block:not(:last-child) {
+  margin-bottom: 1em;
+}
+
+.stacktrace {
+  color: @accentColor;
+}
+
+@hoverTransition: transform 0.2s ease-in-out;
+.ui.accordion .title:not(.ui).show-more {
+  padding: 0;
+  color: @primaryColor;
+  transition: @hoverTransition;
+
+  &:hover {
+    transition: @hoverTransition;
+    transform: translateY(-.1em);
+  }
+}
