@@ -1,4 +1,6 @@
-package tlang.compiler.code
+package tlang
+package compiler
+package code
 
 import cafebabe.AbstractByteCodes._
 import cafebabe.ByteCodes._

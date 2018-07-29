@@ -1,4 +1,6 @@
-package tlang.compiler.modification
+package tlang
+package compiler
+package modification
 
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage}
 import tlang.utils.Positioned
@@ -29,4 +31,3 @@ trait TemplatingErrors extends ErrorHandling {
   }
 
 }
- 

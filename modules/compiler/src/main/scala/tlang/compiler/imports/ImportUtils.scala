@@ -1,4 +1,6 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
 object ImportUtils {
 

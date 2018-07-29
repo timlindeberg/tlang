@@ -1,8 +1,10 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
-import tlang.utils.Extensions._
+
 
 trait GridContent {
   def render(width: Int): String

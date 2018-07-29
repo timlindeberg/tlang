@@ -1,4 +1,7 @@
-package tlang.compiler.output.debug
+package tlang
+package compiler
+package output
+package debug
 
 import tlang.compiler.ast.Trees.Tree
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
@@ -6,7 +9,7 @@ import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}
-import tlang.utils.Extensions._
+
 import tlang.utils.JSON.Json
 
 object ASTOutput {

@@ -1,8 +1,10 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import tlang.formatting.Colors
 import tlang.repl.input.CordExtensions._
-import tlang.utils.Extensions._
+
 import tlang.utils.Position
 
 import scala.collection.mutable.ListBuffer

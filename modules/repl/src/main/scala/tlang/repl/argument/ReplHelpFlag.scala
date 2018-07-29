@@ -1,4 +1,6 @@
-package tlang.repl.argument
+package tlang
+package repl
+package argument
 
 import tlang.options.argument.HelpFlag
 

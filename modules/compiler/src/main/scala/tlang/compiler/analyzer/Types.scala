@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 package analyzer
 
 import tlang.Constants._

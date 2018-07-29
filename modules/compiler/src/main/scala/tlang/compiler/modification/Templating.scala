@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 package modification
 
 import tlang.compiler.ast.Trees
@@ -8,7 +9,6 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.Logging
 
 import scala.collection.mutable

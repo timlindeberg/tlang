@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.testutils.UnitSpec
@@ -10,7 +11,7 @@ class OutputBoxSpec extends UnitSpec {
   it should "render a welcome box" in {
     val outputBox = createOutputBox().welcome()
 
-    outputBox.renderState.header shouldBe "Welcome to the T-REPL!"
+    outputBox.renderState.header shouldBe "Welcome to trepl!"
     val content = outputBox.renderState.contentAsString
     content should include("CTRL + Space")
     content should include("CTRL + C")
@@ -23,7 +24,7 @@ class OutputBoxSpec extends UnitSpec {
     val outputBox = createOutputBox().exit()
 
     outputBox.renderState.header shouldBe "Input"
-    outputBox.renderState.contentAsString shouldBe "Thanks for using the T-REPL!"
+    outputBox.renderState.contentAsString shouldBe "Thanks for using trepl!"
   }
 
   private def createOutputBox(

@@ -1,11 +1,13 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
 import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages.Reporter
 import tlang.formatting.ErrorStringContext
-import tlang.utils.Extensions._
+
 import tlang.utils.Logging
 
 import scala.collection.mutable

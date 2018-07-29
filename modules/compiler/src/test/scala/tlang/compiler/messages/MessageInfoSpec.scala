@@ -1,4 +1,6 @@
-package tlang.compiler.messages
+package tlang
+package compiler
+package messages
 
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.formatting.Colors

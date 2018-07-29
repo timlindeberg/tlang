@@ -1,10 +1,12 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 
 import cafebabe.CodeFreezingException
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.textformatters.StackTraceHighlighter
-import tlang.utils.Extensions._
+
 import tlang.utils.JSON.Json
 
 case class InternalErrorOutput(error: Throwable)(implicit formatter: Formatter, stackTraceHighlighter: StackTraceHighlighter) extends Output {

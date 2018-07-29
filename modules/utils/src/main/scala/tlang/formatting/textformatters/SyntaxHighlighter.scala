@@ -1,4 +1,6 @@
-package tlang.formatting.textformatters
+package tlang
+package formatting
+package textformatters
 
 import tlang.formatting.Colors._
 import tlang.formatting.Formatter

@@ -1,4 +1,6 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 object Cursor {
   def apply(x: Int, y: Int): Cursor = Cursor(0, x, y)

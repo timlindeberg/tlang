@@ -1,11 +1,14 @@
-package tlang.compiler.output.help
+package tlang
+package compiler
+package output
+package help
 
 import tlang.Constants
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{Column, Width}
 import tlang.options.FlagArgument
-import tlang.utils.Extensions._
+
 import tlang.utils.JSON.Json
 
 case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: Formatter) extends Output {

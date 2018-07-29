@@ -1,10 +1,12 @@
-package tlang.compiler.argument
+package tlang
+package compiler
+package argument
 
 import tlang.compiler.Main
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
 import tlang.options.argument.HelpFlag
-import tlang.utils.Extensions._
+
 
 case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
   override val name           = "printoutput"

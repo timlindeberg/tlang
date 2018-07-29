@@ -1,4 +1,6 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 
 import tlang.compiler.messages.{CompilerMessage, CompilerMessages, MessageTesting, MessageType}
 import tlang.compiler.utils.TLangSyntaxHighlighter

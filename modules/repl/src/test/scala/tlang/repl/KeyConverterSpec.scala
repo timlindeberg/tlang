@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{KeyStroke, KeyType, MouseAction, MouseActionType}

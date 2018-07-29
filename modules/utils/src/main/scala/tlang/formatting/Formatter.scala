@@ -1,16 +1,17 @@
-package tlang.formatting
+package tlang
+package formatting
 
 
 import java.nio.file.Path
 
 import better.files.File
 import tlang.Constants
-import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
+import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters._
 import tlang.options.argument.{LineWidthFlag, TabWidthFlag}
-import tlang.utils.Extensions._
+
 
 object Formatter {
 

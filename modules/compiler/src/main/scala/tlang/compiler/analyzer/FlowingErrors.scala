@@ -1,4 +1,6 @@
-package tlang.compiler.analyzer
+package tlang
+package compiler
+package analyzer
 
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned

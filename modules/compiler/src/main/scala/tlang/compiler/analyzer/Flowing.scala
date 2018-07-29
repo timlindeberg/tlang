@@ -1,4 +1,6 @@
-package tlang.compiler.analyzer
+package tlang
+package compiler
+package analyzer
 
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
@@ -8,9 +10,7 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
@@ -84,7 +84,7 @@ case class FlowAnalyser(
           case Some(initExpr) =>
             val afterInit = analyzeExpr(initExpr, knowledge)
             afterInit.assignment(varId, init)
-          case None    => knowledge.assignment(varId, None)
+          case None           => knowledge.assignment(varId, None)
         }
       case For(init, condition, post, stat)  =>
         val afterInit = init.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }

@@ -1,4 +1,5 @@
-package tlang.testutils
+package tlang
+package testutils
 
 import better.files.File
 import org.scalatest.{FlatSpec, Inspectors, Matchers, OptionValues}
@@ -7,7 +8,7 @@ import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting._
 import tlang.formatting.textformatters._
 import tlang.testutils.snapshot.SnapshotTesting
-import tlang.utils.Extensions._
+
 
 trait UnitSpec extends FlatSpec
   with Matchers

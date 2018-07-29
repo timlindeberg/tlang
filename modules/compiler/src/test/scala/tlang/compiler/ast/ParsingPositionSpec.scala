@@ -1,4 +1,6 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import better.files.File
 import tlang.compiler.CompilerIntegrationTestSpec

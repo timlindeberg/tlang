@@ -1,4 +1,6 @@
-package tlang.compiler.code
+package tlang
+package compiler
+package code
 
 import cafebabe.AbstractByteCodes.{InvokeVirtual, _}
 import cafebabe.ByteCodes._
@@ -10,7 +12,7 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.utils.Extensions._
+
 import tlang.utils.Logging
 
 import scala.collection.mutable

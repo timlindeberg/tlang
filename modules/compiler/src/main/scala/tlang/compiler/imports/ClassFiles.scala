@@ -1,4 +1,6 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
 import org.apache.bcel.classfile.{ClassParser, JavaClass}
 

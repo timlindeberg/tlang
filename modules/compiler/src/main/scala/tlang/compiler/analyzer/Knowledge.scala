@@ -1,9 +1,10 @@
-package tlang.compiler.analyzer
+package tlang
+package compiler
+package analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.utils.Extensions._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

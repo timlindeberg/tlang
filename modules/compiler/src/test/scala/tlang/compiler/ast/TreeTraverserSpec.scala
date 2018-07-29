@@ -1,4 +1,6 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import tlang.compiler.ast.Trees._
 import tlang.compiler.testutils.TreeTesting

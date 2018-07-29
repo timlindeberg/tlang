@@ -1,7 +1,9 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import tlang.formatting.Colors
-import tlang.utils.Extensions._
+
 
 object History {
 

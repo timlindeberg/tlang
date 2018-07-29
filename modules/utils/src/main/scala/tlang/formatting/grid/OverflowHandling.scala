@@ -1,7 +1,9 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 
 trait OverflowHandling {
   def apply(line: String, width: Int)(implicit formatter: Formatter): List[String] = {

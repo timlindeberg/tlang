@@ -1,4 +1,6 @@
-package tlang.repl.actors
+package tlang
+package repl
+package actors
 
 import java.util.concurrent.atomic.AtomicReference
 

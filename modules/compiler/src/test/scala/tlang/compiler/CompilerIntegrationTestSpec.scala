@@ -1,11 +1,12 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import better.files.File
 import org.scalatest._
 import tlang.Constants
 import tlang.compiler.output.ExecutionTimeOutput
 import tlang.testutils.TestConstants
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 import scala.util.matching.Regex

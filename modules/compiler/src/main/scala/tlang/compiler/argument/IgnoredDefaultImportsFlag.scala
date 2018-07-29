@@ -1,9 +1,11 @@
-package tlang.compiler.argument
+package tlang
+package compiler
+package argument
 
 import tlang.compiler.imports.Imports
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
-import tlang.utils.Extensions._
+
 
 case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
   override val name           = "ignoreimport"

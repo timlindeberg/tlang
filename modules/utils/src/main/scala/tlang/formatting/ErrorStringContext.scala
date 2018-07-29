@@ -1,7 +1,7 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import tlang.formatting.Colors.Color
-import tlang.utils.Extensions._
 
 
 case class ErrorStringContext(

@@ -1,8 +1,9 @@
-package tlang.utils
+package tlang
+package utils
 
 import java.io.{ByteArrayOutputStream, OutputStream, PrintStream}
 
-import tlang.utils.Extensions._
+
 
 object CapturedOutput {
 

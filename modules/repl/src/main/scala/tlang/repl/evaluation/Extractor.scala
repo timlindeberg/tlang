@@ -1,10 +1,12 @@
-package tlang.repl.evaluation
+package tlang
+package repl
+package evaluation
 
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
-import tlang.utils.Extensions._
+
 
 case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(implicit formatter: Formatter) {
 

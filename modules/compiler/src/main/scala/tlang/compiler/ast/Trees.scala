@@ -1,14 +1,13 @@
-package tlang.compiler
+package tlang
+package compiler
 package ast
 
-import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
 import tlang.utils.{FillTreeHelpers, Positioned}
 
 import scala.collection.{TraversableLike, mutable}

@@ -1,4 +1,7 @@
-package tlang.compiler.output.debug
+package tlang
+package compiler
+package output
+package debug
 
 import cafebabe.CodegenerationStackTrace
 import tlang.compiler.output.Output

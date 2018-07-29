@@ -1,4 +1,6 @@
-package tlang.repl.actors
+package tlang
+package repl
+package actors
 
 import akka.actor.{Actor, Props}
 import tlang.compiler.messages.CompilerMessage

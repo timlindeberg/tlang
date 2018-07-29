@@ -1,8 +1,10 @@
-package tlang.options.argument
+package tlang
+package options
+package argument
 
 import tlang.formatting.Formatter
 import tlang.options.{FlagArgument, OptionalArgumentFlag}
-import tlang.utils.Extensions._
+
 
 object HelpFlag {
   val Name           = "help"

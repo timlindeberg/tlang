@@ -1,4 +1,5 @@
-package tlang.options
+package tlang
+package options
 
 import tlang.testutils.{PackageSuite, UnitSpec}
 

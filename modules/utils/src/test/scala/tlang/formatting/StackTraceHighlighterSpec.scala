@@ -1,4 +1,5 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.testutils.UnitSpec

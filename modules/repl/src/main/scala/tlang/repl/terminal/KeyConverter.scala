@@ -1,9 +1,11 @@
-package tlang.repl.terminal
+package tlang
+package repl
+package terminal
 
 import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{KeyStroke, KeyType, MouseAction, MouseActionType}
 import tlang.repl.OutputBox
-import tlang.utils.Extensions._
+
 
 case class KeyConverter(doubleClickTime: Long) {
 

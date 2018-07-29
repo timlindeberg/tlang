@@ -1,4 +1,5 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import tlang.formatting.Colors._
 import tlang.testutils.UnitSpec

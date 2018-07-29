@@ -1,4 +1,6 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
 
 trait Width

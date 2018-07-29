@@ -1,4 +1,6 @@
-package tlang.compiler.lexer
+package tlang
+package compiler
+package lexer
 
 import tlang.compiler.lexer.Tokens.BAD
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}

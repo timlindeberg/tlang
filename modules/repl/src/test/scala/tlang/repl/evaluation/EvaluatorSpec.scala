@@ -1,4 +1,6 @@
-package tlang.repl.evaluation
+package tlang
+package repl
+package evaluation
 
 import better.files.File
 import tlang.compiler.ast.Trees._

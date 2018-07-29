@@ -1,7 +1,9 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 import tlang.utils.Position
 
 class InputBufferSpec extends UnitSpec {

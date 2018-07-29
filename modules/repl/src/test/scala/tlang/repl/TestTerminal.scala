@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import java.util.concurrent.TimeUnit
 
@@ -11,7 +12,7 @@ import org.scalatest.Matchers
 import tlang.formatting.Colors.Color
 import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.AnsiMatchers
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global

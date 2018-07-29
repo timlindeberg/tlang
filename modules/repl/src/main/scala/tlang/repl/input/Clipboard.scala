@@ -1,4 +1,6 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import java.awt.Toolkit
 import java.awt.datatransfer.{DataFlavor, StringSelection}

@@ -1,4 +1,6 @@
-package tlang.compiler.messages
+package tlang
+package compiler
+package messages
 
 import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
 import tlang.testutils.UnitSpec

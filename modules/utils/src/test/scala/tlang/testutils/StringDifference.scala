@@ -1,6 +1,7 @@
-package tlang.testutils
+package tlang
+package testutils
 
-import tlang.utils.Extensions._
+
 
 object StringDifference {
 

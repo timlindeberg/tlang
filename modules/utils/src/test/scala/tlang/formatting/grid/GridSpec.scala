@@ -1,4 +1,6 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
 import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
@@ -6,7 +8,7 @@ import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
 import tlang.formatting.textformatters.{Truncator, WordWrapper}
 import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 
 
 class GridSpec extends UnitSpec {

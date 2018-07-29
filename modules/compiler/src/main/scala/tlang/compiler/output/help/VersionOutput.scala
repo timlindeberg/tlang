@@ -1,4 +1,7 @@
-package tlang.compiler.output.help
+package tlang
+package compiler
+package output
+package help
 
 import tlang.Constants
 import tlang.compiler.output.Output

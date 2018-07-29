@@ -1,11 +1,13 @@
-package tlang.compiler.output.debug
+package tlang
+package compiler
+package output
+package debug
 
 import tlang.compiler.lexer.Token
 import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}
-import tlang.utils.Extensions.NL
 import tlang.utils.JSON.Json
 
 case class TokenOutput(phaseName: String, allTokens: List[List[Token]])(implicit formatter: Formatter) extends Output {

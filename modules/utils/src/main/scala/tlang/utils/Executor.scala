@@ -1,8 +1,7 @@
-package tlang.utils
+package tlang
+package utils
 
 import java.util.concurrent.ForkJoinPool
-
-import tlang.utils.Extensions._
 
 import scala.collection.parallel.{ForkJoinTaskSupport, TaskSupport}
 

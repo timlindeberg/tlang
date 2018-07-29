@@ -1,11 +1,11 @@
-package tlang.compiler
+package tlang
+package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
 import tlang.compiler.messages.CompilerMessage
-import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
 import scala.collection.mutable

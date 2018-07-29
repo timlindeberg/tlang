@@ -1,10 +1,12 @@
-package tlang.compiler.messages
+package tlang
+package compiler
+package messages
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
-import tlang.utils.Extensions._
+
 import tlang.utils.{Position, Positioned}
 
 case class MessageInfo(

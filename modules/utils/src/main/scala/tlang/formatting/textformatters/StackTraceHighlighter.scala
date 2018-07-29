@@ -1,7 +1,9 @@
-package tlang.formatting.textformatters
+package tlang
+package formatting
+package textformatters
 
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers

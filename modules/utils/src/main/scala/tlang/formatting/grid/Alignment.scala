@@ -1,6 +1,8 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
-import tlang.utils.Extensions._
+
 
 trait Alignment {
   def apply(text: String, width: Int, fill: String = " "): String = {

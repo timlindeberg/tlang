@@ -1,4 +1,5 @@
-package tlang.testutils
+package tlang
+package testutils
 
 import org.markushauck.mockito._
 import org.mockito.Mockito

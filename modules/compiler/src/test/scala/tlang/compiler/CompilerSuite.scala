@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import tlang.testutils.{PackageSuite, UnitSpec}
 

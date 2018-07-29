@@ -1,7 +1,8 @@
-package tlang.utils
+package tlang
+package utils
 
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 
 trait Positioned {
   var source : Option[Source] = None

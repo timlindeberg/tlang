@@ -1,4 +1,6 @@
-package tlang.compiler.code
+package tlang
+package compiler
+package code
 
 import org.objectweb.asm.ClassWriter
 

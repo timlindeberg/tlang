@@ -1,4 +1,6 @@
-package tlang.compiler.analyzer
+package tlang
+package compiler
+package analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
 import tlang.compiler.ast.Trees._

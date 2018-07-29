@@ -1,6 +1,8 @@
-package tlang.formatting.textformatters
+package tlang
+package formatting
+package textformatters
 
-import tlang.utils.Extensions._
+
 
 case class Truncator() {
 

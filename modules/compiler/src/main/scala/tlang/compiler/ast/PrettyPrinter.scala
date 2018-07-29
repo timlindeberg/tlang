@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 package ast
 
 import java.util.regex.Matcher
@@ -7,8 +8,6 @@ import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
-
 
 case class PrettyPrinter()(implicit formatter: Formatter) {
 

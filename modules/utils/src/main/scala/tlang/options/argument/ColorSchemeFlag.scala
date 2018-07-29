@@ -1,9 +1,11 @@
-package tlang.options.argument
+package tlang
+package options
+package argument
 
 import tlang.formatting.Colors.{ColorNameMap, ColorScheme}
 import tlang.formatting.{Colors, ErrorStringContext, Formatter}
 import tlang.options.DictionaryFlag
-import tlang.utils.Extensions._
+
 
 
 case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {

@@ -1,4 +1,6 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import scalaz.Cord
 

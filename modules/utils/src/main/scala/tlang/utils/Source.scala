@@ -1,10 +1,10 @@
-package tlang.utils
+package tlang
+package utils
 
 import better.files.File
 import tlang.Constants
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
 
 import scala.collection.mutable
 import scala.io.StdIn
@@ -56,7 +56,7 @@ case class StdinSource() extends Source {
   private def readStdin(): String = {
     var line = ""
     val sb = new StringBuilder
-    while ({line = StdIn.readLine(); line != null}) {
+    while ( { line = StdIn.readLine(); line != null }) {
       sb ++= line
       sb ++= NL
     }

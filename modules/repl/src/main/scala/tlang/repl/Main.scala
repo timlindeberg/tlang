@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import akka.actor.{ActorRef, ActorSystem}
 import better.files._

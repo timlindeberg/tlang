@@ -1,6 +1,8 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable.ListBuffer
 

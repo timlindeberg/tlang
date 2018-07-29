@@ -1,8 +1,10 @@
-package tlang.formatting.grid
+package tlang
+package formatting
+package grid
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ArrayBuffer

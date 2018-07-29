@@ -1,4 +1,5 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import scala.concurrent.duration.FiniteDuration
 

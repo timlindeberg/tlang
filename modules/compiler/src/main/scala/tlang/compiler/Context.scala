@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import better.files.File
 import tlang.compiler.argument.{DirectoryFlag, IgnoredDefaultImportsFlag, PrintOutputFlag, ThreadsFlag}

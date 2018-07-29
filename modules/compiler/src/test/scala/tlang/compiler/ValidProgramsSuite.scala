@@ -1,10 +1,11 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.testutils.TestConstants._
-import tlang.utils.Extensions._
+
 import tlang.utils.{FileSource, Logging, ProgramExecutor}
 
 class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution with Logging {

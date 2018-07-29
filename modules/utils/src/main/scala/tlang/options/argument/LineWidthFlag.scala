@@ -1,4 +1,6 @@
-package tlang.options.argument
+package tlang
+package options
+package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.NumberFlag

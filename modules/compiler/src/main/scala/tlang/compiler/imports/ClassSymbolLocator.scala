@@ -1,4 +1,6 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
@@ -7,7 +9,7 @@ import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 

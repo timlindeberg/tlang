@@ -1,11 +1,12 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 
 import tlang.compiler.messages._
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{CenteredContent, Column, Grid, TruncatedColumn}
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
-import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 
 object ErrorMessageOutput {
@@ -88,7 +89,7 @@ case class ErrorMessageOutput(
 
     def format(messageType: MessageType): Json = {
       val messages = compilerMessages(messageType)
-      val key = s"compilation${messageType}s"
+      val key = s"compilation${ messageType }s"
 
       Json(key -> messages.map(formatMessage))
     }

@@ -1,8 +1,9 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import tlang.compiler.lexer.Token
 import tlang.compiler.lexer.Tokens._
-import tlang.utils.Extensions._
 import tlang.utils.Source
 
 case class TokenStream(tokenList: Traversable[Token]) {

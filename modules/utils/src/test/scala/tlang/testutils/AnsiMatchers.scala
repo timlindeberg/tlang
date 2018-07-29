@@ -1,7 +1,8 @@
-package tlang.testutils
+package tlang
+package testutils
 
 import org.scalatest.matchers.{MatchResult, Matcher}
-import tlang.utils.Extensions._
+
 
 // When comparing Strings with ansi colors the parser for IntelliJ:s test runner
 // breaks. Comparing lists of characters works a lot better and has the added benefit

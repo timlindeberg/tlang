@@ -1,10 +1,12 @@
-package tlang.compiler.lexer
+package tlang
+package compiler
+package lexer
 
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.formatting.ErrorStringContext
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 import tlang.utils.StringSource
 
 class LexingSpec extends UnitSpec {

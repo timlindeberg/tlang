@@ -1,6 +1,7 @@
-package tlang.utils
+package tlang
+package utils
 
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable.ArrayBuffer
 

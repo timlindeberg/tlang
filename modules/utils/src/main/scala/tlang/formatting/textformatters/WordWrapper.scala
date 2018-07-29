@@ -1,8 +1,10 @@
-package tlang.formatting.textformatters
+package tlang
+package formatting
+package textformatters
 
 import tlang.formatting.Colors
 import tlang.formatting.Colors.{Color, NoColor, Reset, extractColorFrom}
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable.ListBuffer
 

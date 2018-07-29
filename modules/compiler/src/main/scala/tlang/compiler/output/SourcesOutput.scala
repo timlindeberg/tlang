@@ -1,4 +1,6 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{CenteredColumn, EvenlySpaced}
 import tlang.utils.JSON.Json

@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import tlang.testutils.UnitSpec
 

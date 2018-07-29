@@ -1,10 +1,12 @@
-package tlang.repl.evaluation
+package tlang
+package repl
+package evaluation
 
 import tlang.compiler.analyzer.Symbols.ClassSymbol
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

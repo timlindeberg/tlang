@@ -1,4 +1,6 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import sourcecode.{Enclosing, Line}
 import tlang.compiler.analyzer.Types.TUnit
@@ -11,7 +13,6 @@ import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.{Logging, NoPosition, Positioned}
 
 import scala.collection.mutable

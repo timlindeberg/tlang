@@ -1,4 +1,6 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
 import java.io.File
 import java.nio.file.{Files, Path}

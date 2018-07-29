@@ -1,4 +1,5 @@
-package tlang.testutils
+package tlang
+package testutils
 
 import org.scalatest.Suite
 import tlang.utils.ClassLocator
@@ -16,5 +17,5 @@ class PackageSuite[T <: Suite : ClassTag](packageName: String) extends Suite {
   }
 
 
-  override val suiteName: String = packageName.split('.').last.capitalize
+  override val suiteName: String = packageName.split("\\.").last.capitalize
 }

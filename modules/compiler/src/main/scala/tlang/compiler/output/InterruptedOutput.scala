@@ -1,6 +1,8 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 import tlang.utils.JSON.Json
 
 case class InterruptedOutput()(implicit formatter: Formatter) extends Output {

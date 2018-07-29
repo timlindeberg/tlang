@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import org.scalatest.Suites
 import tlang.compiler.ast.ParsingPositionSpec

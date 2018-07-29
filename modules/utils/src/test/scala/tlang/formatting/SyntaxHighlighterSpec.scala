@@ -1,4 +1,5 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import tlang.formatting.Colors.Color
 import tlang.formatting.textformatters.{Coloring, Marking, SyntaxHighlighter}

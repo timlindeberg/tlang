@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Naming.createErrorStringContext
@@ -10,7 +11,6 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
 import scala.collection.mutable

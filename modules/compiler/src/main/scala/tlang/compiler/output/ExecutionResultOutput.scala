@@ -1,9 +1,11 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.utils.{ExecutionResult, Source}
-import tlang.utils.Extensions._
+
 import tlang.utils.JSON.Json
 
 case class ExecutionResultOutput(

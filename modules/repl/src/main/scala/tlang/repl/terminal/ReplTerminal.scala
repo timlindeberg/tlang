@@ -1,4 +1,6 @@
-package tlang.repl.terminal
+package tlang
+package repl
+package terminal
 
 import java.awt.event._
 
@@ -12,7 +14,7 @@ import tlang.formatting.{Colors, Formatter}
 import tlang.repl.OutputBox.{XIndent, YIndent}
 import tlang.repl._
 import tlang.repl.input.{Cursor, InputBuffer}
-import tlang.utils.Extensions._
+
 
 
 object ReplTerminal {

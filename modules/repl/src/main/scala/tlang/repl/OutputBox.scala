@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import tlang.Constants
 import tlang.compiler.messages.{CompilerMessage, MessageInfo}
@@ -8,7 +9,7 @@ import tlang.formatting.grid.TruncatedColumn
 import tlang.formatting.textformatters.{Marking, SyntaxHighlighter}
 import tlang.formatting.{Formatter, Spinner}
 import tlang.repl.input.InputBuffer
-import tlang.utils.Extensions._
+
 
 import scala.concurrent.duration.FiniteDuration
 

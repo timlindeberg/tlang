@@ -1,4 +1,5 @@
-package tlang.utils
+package tlang
+package utils
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -8,7 +9,6 @@ import sourcecode.{Enclosing, Line, File => SourceFile}
 import tlang.formatting.Colors.Color
 import tlang.formatting._
 import tlang.formatting.textformatters.StackTraceHighlighter
-import tlang.utils.Extensions._
 
 import scala.language.implicitConversions
 
@@ -98,8 +98,8 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
 
   import loggingSettings._
 
-  private implicit val formatter: Formatter = loggingSettings.formatter
-  private val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
+  private implicit val formatter: Formatter  = loggingSettings.formatter
+  private          val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
     val sb = new StringBuilder

@@ -1,4 +1,6 @@
-package tlang.testutils.snapshot
+package tlang
+package testutils
+package snapshot
 
 import org.scalatest._
 

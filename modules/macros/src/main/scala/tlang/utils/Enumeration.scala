@@ -1,4 +1,5 @@
-package tlang.utils
+package tlang
+package utils
 
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox

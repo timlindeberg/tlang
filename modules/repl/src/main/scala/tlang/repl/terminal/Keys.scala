@@ -1,4 +1,6 @@
-package tlang.repl.terminal
+package tlang
+package repl
+package terminal
 
 import java.util
 

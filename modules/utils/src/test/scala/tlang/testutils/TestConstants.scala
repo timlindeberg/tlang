@@ -1,4 +1,5 @@
-package tlang.testutils
+package tlang
+package testutils
 
 import org.scalatest.Tag
 import tlang.formatting.Formatter

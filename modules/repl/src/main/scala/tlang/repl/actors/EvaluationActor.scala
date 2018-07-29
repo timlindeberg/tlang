@@ -1,4 +1,6 @@
-package tlang.repl.actors
+package tlang
+package repl
+package actors
 
 import java.lang.reflect.InvocationTargetException
 
@@ -8,7 +10,7 @@ import tlang.formatting.Formatter
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.repl.actors.ReplActor.SetState
 import tlang.repl.evaluation.{Evaluator, ReplState}
-import tlang.utils.Extensions._
+
 import tlang.utils.{CancellableFuture, Logging}
 
 import scala.concurrent.{CancellationException, TimeoutException}

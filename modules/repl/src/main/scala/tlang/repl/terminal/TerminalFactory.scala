@@ -1,4 +1,6 @@
-package tlang.repl.terminal
+package tlang
+package repl
+package terminal
 
 import java.nio.charset.Charset
 
@@ -8,7 +10,7 @@ import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
-import tlang.utils.Extensions._
+
 import tlang.utils.Logging
 
 object TerminalFactory {

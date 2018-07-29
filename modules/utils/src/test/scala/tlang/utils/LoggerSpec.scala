@@ -1,10 +1,11 @@
-package tlang.utils
+package tlang
+package utils
 
 import java.util.Date
 
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 
 class LoggerSpec extends UnitSpec {
 

@@ -1,7 +1,7 @@
-package tlang.compiler
+package tlang
+package compiler
 package analyzer
 
-import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
@@ -11,7 +11,6 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.{Logging, Positioned}
 
 object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {

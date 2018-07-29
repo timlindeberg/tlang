@@ -1,4 +1,6 @@
-package tlang.compiler.code
+package tlang
+package compiler
+package code
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._

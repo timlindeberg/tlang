@@ -1,11 +1,13 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import better.files.File
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.compiler.{CompilerIntegrationTestSpec, Context}
-import tlang.utils.Extensions._
+
 import tlang.utils.{FileSource, StringSource}
 
 class PrettyPrinterSpec extends CompilerIntegrationTestSpec {

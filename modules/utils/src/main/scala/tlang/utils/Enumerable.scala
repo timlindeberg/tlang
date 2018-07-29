@@ -1,4 +1,5 @@
-package tlang.utils
+package tlang
+package utils
 
 trait Enumerable[T] extends Seq[T] {
 

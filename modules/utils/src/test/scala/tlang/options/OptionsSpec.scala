@@ -1,4 +1,5 @@
-package tlang.options
+package tlang
+package options
 
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec

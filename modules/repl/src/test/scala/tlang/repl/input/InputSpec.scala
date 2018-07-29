@@ -1,8 +1,10 @@
-package tlang.repl.input
+package tlang
+package repl
+package input
 
 import better.files.File
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 
 // When testing the InputHistory class we should maybe mock more of it's dependencies
 // such as CircularBuffer and InputBuffer but it makes writing meaningful tests really difficult

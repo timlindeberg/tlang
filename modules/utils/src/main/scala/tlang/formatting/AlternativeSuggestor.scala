@@ -1,4 +1,5 @@
-package tlang.formatting
+package tlang
+package formatting
 
 case class AlternativeSuggestor() {
 

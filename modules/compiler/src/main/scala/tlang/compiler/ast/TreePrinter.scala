@@ -1,4 +1,6 @@
-package tlang.compiler.ast
+package tlang
+package compiler
+package ast
 
 import java.lang.System.identityHashCode
 
@@ -7,7 +9,6 @@ import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable

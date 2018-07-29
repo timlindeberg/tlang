@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import better.files.{File, FileMonitor}
 import cafebabe.CodegenerationStackTrace
@@ -19,7 +20,6 @@ import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
-import tlang.utils.Extensions._
 import tlang.utils._
 
 object Main extends Logging {
@@ -124,7 +124,6 @@ case class Main(ctx: Context) extends Logging {
 
   private implicit val syntaxHighlighter    : SyntaxHighlighter     = TLangSyntaxHighlighter()
   private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
-
 
 
   def run(): Unit = {
@@ -251,8 +250,9 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def watch(sources: List[Source]): Unit = {
-    import scala.concurrent.ExecutionContext.Implicits.global
     import ctx.formatter._
+
+    import scala.concurrent.ExecutionContext.Implicits.global
 
     val fileSources = sources.filterInstance[FileSource]
     if (fileSources.isEmpty) {

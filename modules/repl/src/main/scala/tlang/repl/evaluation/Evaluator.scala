@@ -1,4 +1,6 @@
-package tlang.repl.evaluation
+package tlang
+package repl
+package evaluation
 
 import java.lang.reflect.InvocationTargetException
 
@@ -10,7 +12,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.utils.Extensions._
+
 import tlang.utils.{Logging, ProgramExecutor, StringSource}
 
 

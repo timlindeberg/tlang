@@ -1,9 +1,11 @@
-package tlang.compiler.testutils
+package tlang
+package compiler
+package testutils
 
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.testutils.MockitoSugar
-import tlang.utils.Extensions._
+
 
 trait TreeTesting extends MockitoSugar {
 

@@ -1,15 +1,16 @@
-package tlang.compiler
+package tlang
+package compiler
 package lexer
 
 import java.math.BigInteger
 
 import sourcecode.{Enclosing, Line}
+import tlang.compiler.CompilerPhase
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.TokenOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils.{Logging, Source}
 
 import scala.annotation.tailrec

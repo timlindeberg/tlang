@@ -1,6 +1,7 @@
-package tlang.compiler.messages
+package tlang
+package compiler
+package messages
 
-import tlang.utils.Extensions._
 
 class CompilationException(val messages: CompilerMessages) extends Exception() {
 

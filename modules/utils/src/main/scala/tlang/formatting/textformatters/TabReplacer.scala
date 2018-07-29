@@ -1,6 +1,7 @@
-package tlang.formatting.textformatters
+package tlang
+package formatting
+package textformatters
 
-import tlang.utils.Extensions.NL
 import tlang.utils.{Position, Positioned}
 
 case class TabReplacer(tabWidth: Int) {

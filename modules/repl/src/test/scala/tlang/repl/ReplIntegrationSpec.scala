@@ -1,4 +1,5 @@
-package tlang.repl
+package tlang
+package repl
 
 import akka.actor.ActorRef
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}

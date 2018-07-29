@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 package code
 
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
@@ -17,7 +18,6 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.CodeGenerationOutput
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
 import tlang.utils.FileSource
 
 import scala.collection.mutable

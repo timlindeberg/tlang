@@ -1,4 +1,5 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import better.files.File
 import org.scalatest.ParallelTestExecution
@@ -9,7 +10,7 @@ import tlang.compiler.messages.{CompilationException, CompilerMessage, CompilerM
 import tlang.compiler.modification.Templating
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestConstants._
-import tlang.utils.Extensions._
+
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable

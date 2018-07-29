@@ -1,10 +1,10 @@
-package tlang.compiler
+package tlang
+package compiler
 
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.messages.TemplateNameReplacer
 import tlang.compiler.output.Output
 import tlang.formatting._
-import tlang.utils.Extensions._
 import tlang.utils.JSON.Json
 import tlang.utils.Logging
 

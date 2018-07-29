@@ -1,8 +1,9 @@
-package tlang.formatting
+package tlang
+package formatting
 
 import tlang.formatting.textformatters.TabReplacer
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 import tlang.utils.Position
 
 class TabReplacerSpec extends UnitSpec {

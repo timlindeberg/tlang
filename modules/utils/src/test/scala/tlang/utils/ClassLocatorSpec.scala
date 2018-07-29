@@ -1,4 +1,5 @@
-package tlang.utils
+package tlang
+package utils
 
 import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters.SyntaxHighlighter

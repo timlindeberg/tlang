@@ -1,4 +1,6 @@
-package tlang.compiler.utils
+package tlang
+package compiler
+package utils
 
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Lexer, Token}
@@ -6,7 +8,6 @@ import tlang.compiler.messages.VoidReporter
 import tlang.formatting.Colors.Color
 import tlang.formatting.textformatters.{Coloring, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.Extensions._
 import tlang.utils._
 
 
@@ -33,9 +34,10 @@ object TLangSyntaxHighlighter {
       case _                                                       => SymbolColor
     }
 
-    s: String => lexer
-      .apply(StringSource(s, ""))
-      .map { token => Coloring(getColor(token), token) }
+    s: String =>
+      lexer
+        .apply(StringSource(s, ""))
+        .map { token => Coloring(getColor(token), token) }
   }
 
 }

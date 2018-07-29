@@ -1,8 +1,10 @@
-package tlang.options.argument
+package tlang
+package options
+package argument
 
 import tlang.formatting.Formatter
 import tlang.options.BooleanFlag
-import tlang.utils.Extensions._
+
 
 case object AsciiFlag extends BooleanFlag {
   override val name = "ascii"

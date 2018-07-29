@@ -1,4 +1,5 @@
-package tlang.utils
+package tlang
+package utils
 
 import java.io.PrintWriter
 

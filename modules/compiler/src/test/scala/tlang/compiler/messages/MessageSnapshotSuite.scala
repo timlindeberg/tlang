@@ -1,4 +1,6 @@
-package tlang.compiler.messages
+package tlang
+package compiler
+package messages
 
 import org.scalatest.{FreeSpec, Matchers}
 import tlang.compiler.analyzer._
@@ -11,7 +13,7 @@ import tlang.compiler.modification.TemplatingErrors
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.TestConstants.CompilerIntegrationTestTag
 import tlang.testutils.snapshot.SnapshotTesting
-import tlang.utils.Extensions._
+
 import tlang.utils._
 
 import scala.reflect.ClassTag

@@ -1,15 +1,14 @@
-package tlang.utils
+package tlang
+package utils
 
-import tlang.utils.Extensions._
 
-import scala.collection.Map
-import scala.collection.mutable
+import scala.collection.{Map, mutable}
 
 object JSON {
 
   type Json = mutable.LinkedHashMap[String, Any]
 
-  def Json(entries: (String, Any)*):Json = mutable.LinkedHashMap[String, Any](entries: _*)
+  def Json(entries: (String, Any)*): Json = mutable.LinkedHashMap[String, Any](entries: _*)
 
   private val JSONEscapeChars = Map(
     '"' -> "\"",

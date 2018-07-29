@@ -1,11 +1,13 @@
-package tlang.compiler.lexer
+package tlang
+package compiler
+package lexer
 
 import better.files.File
 import org.scalatest.AppendedClues
 import tlang.compiler.{CompilerIntegrationTestSpec, Context}
 import tlang.compiler.lexer.Tokens._
 import tlang.testutils.TestConstants._
-import tlang.utils.Extensions._
+
 import tlang.utils.{FileSource, Position}
 
 class LexingPositionSpec extends CompilerIntegrationTestSpec with AppendedClues {

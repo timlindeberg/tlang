@@ -1,10 +1,11 @@
-package tlang.compiler.analyzer
+package tlang
+package compiler
+package analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol, MethodSymbol, Symbol}
 import tlang.compiler.analyzer.Types.{TError, TObject, TUnit, Type}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages.{CompilerMessage, ErrorHandling, ErrorMessage, WarningMessage}
-import tlang.utils.Extensions._
 import tlang.utils.Positioned
 
 trait TypingErrors extends ErrorHandling {

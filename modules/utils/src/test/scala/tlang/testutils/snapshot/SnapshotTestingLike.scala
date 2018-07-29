@@ -1,4 +1,6 @@
-package tlang.testutils.snapshot
+package tlang
+package testutils
+package snapshot
 
 import better.files._
 import org.scalatest._
@@ -6,7 +8,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 import tlang.testutils.{StringDifference, TestConstants}
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 import scala.util.matching.Regex

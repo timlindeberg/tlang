@@ -1,9 +1,11 @@
-package tlang.testutils.snapshot
+package tlang
+package testutils
+package snapshot
 
 import java.nio.charset.Charset
 
 import better.files.File
-import tlang.utils.Extensions._
+
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

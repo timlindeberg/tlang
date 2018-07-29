@@ -1,8 +1,10 @@
-package tlang.options.argument
+package tlang
+package options
+package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
-import tlang.utils.Extensions._
+
 
 case object ClassPathFlag extends ArgumentFlag[Set[String]] {
   override val name           = "classpath"

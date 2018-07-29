@@ -1,6 +1,7 @@
-package tlang.compiler.imports
+package tlang
+package compiler
+package imports
 
-import tlang.compiler.Context
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
@@ -15,6 +16,7 @@ import scala.collection.mutable
 class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set()) extends Logging {
 
   import ctx.formatter
+
   implicit val syntaxHighlighter: TLangSyntaxHighlighter = TLangSyntaxHighlighter()
 
   def classExists(importName: String): Boolean = ctx.classPath(importName).exists(_.isInstanceOf[TemplateFile])

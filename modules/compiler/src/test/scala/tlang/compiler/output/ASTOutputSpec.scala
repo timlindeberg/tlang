@@ -1,4 +1,6 @@
-package tlang.compiler.output
+package tlang
+package compiler
+package output
 
 import tlang.compiler.TestContext
 import tlang.compiler.ast.Trees._
@@ -8,7 +10,7 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec
-import tlang.utils.Extensions._
+
 
 class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
 

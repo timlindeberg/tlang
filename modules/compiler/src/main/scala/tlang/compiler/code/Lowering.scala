@@ -1,4 +1,6 @@
-package tlang.compiler.code
+package tlang
+package compiler
+package code
 
 import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
@@ -10,7 +12,7 @@ import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.Formatter
-import tlang.utils.Extensions._
+
 import tlang.utils.Logging
 
 import scala.collection.mutable.ListBuffer

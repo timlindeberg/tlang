@@ -1,4 +1,6 @@
-package tlang.repl.evaluation
+package tlang
+package repl
+package evaluation
 
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports

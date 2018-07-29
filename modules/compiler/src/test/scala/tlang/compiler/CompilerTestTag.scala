@@ -1,2 +1,3 @@
-package tlang.compiler
+package tlang
+package compiler
 
