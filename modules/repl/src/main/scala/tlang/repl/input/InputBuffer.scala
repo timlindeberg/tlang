@@ -158,11 +158,13 @@ case class InputBuffer(
     else
       s.insert(secondaryMarker, secondaryCursor.position).insert(mainMarker, mainCursor.position)
 
-    text.escape(EscapeCharsNormal) +
-      "\n   Lines:   " + linePositions +
-      "\n   Cursor:  " + mainCursor +
-      "\n   Mark:    " + secondaryCursor +
-      "\n   UpDownX: " + upDownX
+    s"""
+       |${text.escape(EscapeCharsNormal)}
+       |   Lines:   $linePositions
+       |   Cursor:  $mainCursor
+       |   Mark:    $secondaryCursor
+       |   UpDownX: $upDownX
+     """.stripMargin.trim
   }
 
 

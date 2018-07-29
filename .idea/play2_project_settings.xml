@@ -6,7 +6,8 @@
         <entry key="backend">
           <value>
             <ProjectSettingsEntry>
-              <option name="confDir" value="C:\Users\Tim Lindeberg\IdeaProjects\tlangWeb\backend\app" />
+              <option name="sourceDir" value="C:\Users\Tim Lindeberg\IdeaProjects\tlangWeb\backend\app" />
+              <option name="confDir" value="$PROJECT_DIR$/modules/backend/app" />
               <option name="templateImports">
                 <list>
                   <option value="_root_.play.twirl.api.TwirlFeatureImports._" />
@@ -29,7 +30,21 @@
                   <option value="controllers.Assets.Asset" />
                 </list>
               </option>
-              <option name="uri" value="/C:/Users/Tim%20Lindeberg/IdeaProjects/tlangWeb/backend" />
+              <option name="uri" value="$PROJECT_DIR$/modules/backend" />
+            </ProjectSettingsEntry>
+          </value>
+        </entry>
+        <entry key="core">
+          <value>
+            <ProjectSettingsEntry>
+              <option name="playDistrPath" value="$USER_HOME$/.ivy2/cache/com.typesafe.play/play_2.12/jars/play_2.12-2.6.12.jar" />
+            </ProjectSettingsEntry>
+          </value>
+        </entry>
+        <entry key="t-compiler">
+          <value>
+            <ProjectSettingsEntry>
+              <option name="playDistrPath" value="$USER_HOME$/.ivy2/cache/com.typesafe.play/play_2.12/jars/play_2.12-2.6.12.jar" />
             </ProjectSettingsEntry>
           </value>
         </entry>

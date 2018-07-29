@@ -1,8 +1,0 @@
-/*******************************
-         Site Overrides
-*******************************/
-
-.ui.text.loader {
-  font-family: @headerFont;
-  color: @primaryColor;
-}

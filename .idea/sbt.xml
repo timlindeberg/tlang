@@ -7,6 +7,8 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/modules/backend" />
+            <option value="$PROJECT_DIR$/modules/backend/project" />
             <option value="$PROJECT_DIR$/modules/cafebabe" />
             <option value="$PROJECT_DIR$/modules/cafebabe/project" />
             <option value="$PROJECT_DIR$/modules/compiler" />

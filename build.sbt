@@ -5,8 +5,8 @@ scalacOptions in ThisBuild ++= Seq(
 
 enablePlugins(JavaAppPackaging)
 
-val ModulesDirectory = "modules"
-val VersionFile = s"$ModulesDirectory/utils/src/main/resources/version.txt"
+val Modules = "modules"
+val VersionFile = s"$Modules/utils/src/main/resources/version.txt"
 val Version = scala.io.Source.fromFile(VersionFile).mkString.trim
 
 lazy val commonSettings: Seq[Def.Setting[_]] = Seq(
@@ -57,7 +57,7 @@ lazy val testSettings = Seq(
 // --- Modules
 // ------------------------------------------------------------------------------------
 
-lazy val macros = (project in file(s"$ModulesDirectory/macros"))
+lazy val macros = (project in file(s"$Modules/macros"))
   .settings(
     name := "macros",
     commonSettings,
@@ -70,7 +70,7 @@ lazy val macros = (project in file(s"$ModulesDirectory/macros"))
   )
 
 
-lazy val utils = (project in file(s"$ModulesDirectory/utils"))
+lazy val utils = (project in file(s"$Modules/utils"))
   .settings(
     name := "utils",
     commonSettings,
@@ -84,7 +84,7 @@ lazy val utils = (project in file(s"$ModulesDirectory/utils"))
   .dependsOn(macros)
 
 
-lazy val cafebabe = (project in file(s"$ModulesDirectory/cafebabe"))
+lazy val cafebabe = (project in file(s"$Modules/cafebabe"))
   .settings(
     name := "cafebabe",
     commonSettings
@@ -92,10 +92,10 @@ lazy val cafebabe = (project in file(s"$ModulesDirectory/cafebabe"))
   .dependsOn(utils)
 
 
-lazy val compiler = (project in file(s"$ModulesDirectory/compiler"))
+lazy val compiler = (project in file(s"$Modules/compiler"))
   .settings(
     name := "compiler",
-    mainClass in stage := Some("tlang.compiler.Main"),
+    mainClass in (Compile, run) := Some("tlang.compiler.Main"),
     commonSettings,
     metaMacroSettings,
     testSettings,
@@ -106,9 +106,10 @@ lazy val compiler = (project in file(s"$ModulesDirectory/compiler"))
   )
   .dependsOn(macros, utils, cafebabe)
 
-lazy val repl = (project in file(s"$ModulesDirectory/repl"))
+lazy val repl = (project in file(s"$Modules/repl"))
   .settings(
     name := "repl",
+    mainClass in (Compile, run) := Some("tlang.repl.Main"),
     commonSettings,
     metaMacroSettings,
     testSettings,
@@ -120,17 +121,27 @@ lazy val repl = (project in file(s"$ModulesDirectory/repl"))
   )
   .dependsOn(macros, utils, compiler)
 
-lazy val root = (project in file("."))
-  .aggregate(macros, utils, cafebabe, compiler, repl)
+lazy val backend = (project in file(s"$Modules/backend"))
   .settings(
-    name := "core",
-    mainClass in Compile := Some("tlang.compiler.Main"),
+    name := "backend",
     commonSettings,
     metaMacroSettings,
-    testSettings,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "sourcecode" % "0.1.4",
-      "com.github.pathikrit" %% "better-files" % "3.1.0"
+      guice,
+      "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
+      "com.h2database" % "h2" % "1.4.196"
     )
   )
-  .dependsOn(macros, utils, cafebabe, compiler, repl)
+  .enablePlugins(PlayScala)
+  .dependsOn(utils, compiler)
+
+
+lazy val root = (project in file("."))
+  .aggregate(macros, utils, cafebabe, compiler, repl, backend)
+  .settings(
+    name := "core",
+    commonSettings,
+    metaMacroSettings,
+    testSettings
+  )
+  .dependsOn(macros, utils, cafebabe, compiler, repl, backend)

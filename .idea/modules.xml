@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend-build.iml" filepath="$PROJECT_DIR$/.idea/modules/backend-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/cafebabe.iml" filepath="$PROJECT_DIR$/.idea/modules/cafebabe.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/cafebabe-build.iml" filepath="$PROJECT_DIR$/.idea/modules/cafebabe-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/compiler.iml" filepath="$PROJECT_DIR$/.idea/modules/compiler.iml" />
