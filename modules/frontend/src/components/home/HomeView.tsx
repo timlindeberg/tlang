@@ -5,6 +5,8 @@ import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
 import * as React from 'react';
 import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
+import { LazyImage } from 'react-lazy-images';
+
 
 interface ResponsiveContainerProps {
   children: any;
@@ -69,6 +71,15 @@ const HomeView = () => (
         <Grid.Row>
           <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
             <Button secondary size="huge">Get started</Button>
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row>
+          <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
+            <LazyImage
+              src="/trepl.svg"
+              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" alt={imageProps.alt} />}
+              actual={({imageProps}:any) => <img {...imageProps} />}
+            />
           </Grid.Column>
         </Grid.Row>
       </Grid>

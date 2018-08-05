@@ -95,7 +95,7 @@ lazy val cafebabe = (project in file(s"$Modules/cafebabe"))
 lazy val compiler = (project in file(s"$Modules/compiler"))
   .settings(
     name := "compiler",
-    mainClass in (Compile, run) := Some("tlang.compiler.Main"),
+    mainClass in Compile := Some("tlang.compiler.Main"),
     commonSettings,
     metaMacroSettings,
     testSettings,
@@ -109,7 +109,7 @@ lazy val compiler = (project in file(s"$Modules/compiler"))
 lazy val repl = (project in file(s"$Modules/repl"))
   .settings(
     name := "repl",
-    mainClass in (Compile, run) := Some("tlang.repl.Main"),
+    mainClass in Compile := Some("tlang.repl.Main"),
     commonSettings,
     metaMacroSettings,
     testSettings,
@@ -137,11 +137,12 @@ lazy val backend = (project in file(s"$Modules/backend"))
 
 
 lazy val root = (project in file("."))
-  .aggregate(macros, utils, cafebabe, compiler, repl, backend)
+  .aggregate(macros, utils, cafebabe, compiler, repl)
   .settings(
     name := "core",
+    mainClass in Compile := Some("tlang.compiler.Main"),
     commonSettings,
     metaMacroSettings,
     testSettings
   )
-  .dependsOn(macros, utils, cafebabe, compiler, repl, backend)
+  .dependsOn(macros, utils, cafebabe, compiler, repl)

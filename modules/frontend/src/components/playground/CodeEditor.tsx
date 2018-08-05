@@ -92,6 +92,7 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     this.editor!.setGutterMarker(line, 'errors', errorMarker);
   }
 
+
   render() {
     return (
       <CodeMirror
