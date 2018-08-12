@@ -172,7 +172,9 @@ case class Main(ctx: Context) extends Logging {
       if (options(ExecFlag))
         executePrograms(CUs)
     } catch {
-      case ExitException(code) => exit(code)
+      case ExitException(code) =>
+        if(!options(WatchFlag))
+          exit(code)
     }
   }
 
