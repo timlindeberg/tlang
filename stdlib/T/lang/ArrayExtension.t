@@ -10,7 +10,7 @@ import java::util::Locale
 import T::std::Iterable
 import T::std::Iterator
 
-extension <T> T[] =
+extension<T> T[]: List<T> =
 
 	@CompilerGenerated
 	Def Size(): Int = ;

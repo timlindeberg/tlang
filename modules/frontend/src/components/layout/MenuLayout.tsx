@@ -22,7 +22,7 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
   render() {
     const { menu, content } = this.props;
     const { menuVisible } = this.state;
-    const rightSideStyle = menuVisible ? { borderRadius: '1em 0 0 0' } : {};
+    const rightSideStyle = menuVisible ? {} : { borderLeft: 0 };
     const rightSide = (
       <React.Fragment>
         <Segment inverted id="MenuLayout-navbar">

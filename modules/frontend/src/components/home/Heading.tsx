@@ -14,7 +14,7 @@ const Heading = ({ mobile = false }: HomepageHeadingProps) => (
     <Logo link={false} size={4} />
     <Header
       as="h2"
-      content="A supercool language for the JVM"
+      content="A useful scripting language for the JVM"
       inverted
       id="Heading-secondary"
       style={{ paddingTop: '1.5em' }}

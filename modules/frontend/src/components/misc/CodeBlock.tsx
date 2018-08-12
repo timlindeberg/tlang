@@ -17,12 +17,12 @@ const charCount = (str: string, char: string) => {
   return count;
 };
 
-const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children: code, language, alwaysShowLineNumbers }: CodeBlockProps) => {
-  const numLines = 1 + charCount(code, '\n');
-  return (
+const CodeBlock: React.StatelessComponent<CodeBlockProps> =
+  ({ children: code, language, alwaysShowLineNumbers }: CodeBlockProps) => {
+    const numLines = 1 + charCount(code, '\n');
+    return (
     <div className="shadow-hover">
       <SyntaxHighlighter
-        wrapLines
         useInlineStyles={false}
         showLineNumbers={alwaysShowLineNumbers || numLines >= 5}
         language={language}
@@ -30,7 +30,7 @@ const CodeBlock: React.StatelessComponent<CodeBlockProps> = ({ children: code, l
         {code}
       </SyntaxHighlighter>
     </div>
-  );
-};
+    );
+  };
 
 export default CodeBlock;

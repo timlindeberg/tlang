@@ -1,16 +1,14 @@
 import 'Animation.less';
-import DesktopContainer from 'components/home/DesktopContainer';
-import MobileContainer from 'components/home/MobileContainer';
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
 import * as React from 'react';
 import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import { LazyImage } from 'react-lazy-images';
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
+import Navbar from 'components/layout/Navbar';
+import Heading from 'components/home/Heading';
 
-
-interface ResponsiveContainerProps {
-  children: any;
-}
 
 const codeExample =
 `package t::lang
@@ -34,15 +32,14 @@ class HelloWorld<T> =
 	Def +(lhs: HelloWorld<T>, rhs: HelloWorld<T>) =
 		new HelloWorld(lhs.times + rhs.times)`;
 
-const ResponsiveContainer = ({ children }: ResponsiveContainerProps) => (
-  <div>
-    <DesktopContainer>{children}</DesktopContainer>
-    <MobileContainer>{children}</MobileContainer>
-  </div>
-);
-
 const HomeView = () => (
-  <ResponsiveContainer>
+  <React.Fragment>
+    <Segment textAlign="center" vertical inverted id="Heading-segment">
+      <Container>
+        <Navbar className="animated fade-in-right"/>
+      </Container>
+      <Heading mobile={false}/>
+    </Segment>
     <Segment style={{ paddingTop: '4em' }} vertical>
       <Grid container stackable verticalAlign="middle">
         <Grid.Row>
@@ -68,24 +65,37 @@ const HomeView = () => (
             <CodeBlock language="tlang">{codeExample}</CodeBlock>
           </Grid.Column>
         </Grid.Row>
+        <Divider />
+        <Grid.Row>
+          <Grid.Column width={8} className="animated fade-in-right">
+            <LazyImage
+              src="/trepl0.1.svg"
+              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
+              actual={({imageProps}:any) => <img {...imageProps} className="shadow-hover"/>}
+            />
+          </Grid.Column>
+          <Grid.Column width={8}>
+            <Header as="h1">trepl</Header>
+            <List bulleted className="HomeView-larger-text">
+              <List.Item>Fully featured REPL</List.Item>
+              <List.Item>Evaluate expressions</List.Item>
+              <List.Item>Keeps history</List.Item>
+              <List.Item>Syntax highlighting</List.Item>
+              <List.Item>Supports mouse input and selection</List.Item>
+              <List.Item>Easy navigation with ALT and CMD modifiers</List.Item>
+              <List.Item>Supports multiline editing</List.Item>
+            </List>
+          </Grid.Column>
+        </Grid.Row>
         <Grid.Row>
           <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
             <Button secondary size="huge">Get started</Button>
           </Grid.Column>
         </Grid.Row>
-        <Grid.Row>
-          <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
-            <LazyImage
-              src="/trepl.svg"
-              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" alt={imageProps.alt} />}
-              actual={({imageProps}:any) => <img {...imageProps} />}
-            />
-          </Grid.Column>
-        </Grid.Row>
       </Grid>
     </Segment>
     <Footer />
-  </ResponsiveContainer>
+  </React.Fragment>
 );
 
 export default HomeView;

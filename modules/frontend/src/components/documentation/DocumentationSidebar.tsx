@@ -6,7 +6,7 @@ import 'components/documentation/DocumentationSidebar.less';
 import { Collapse } from 'react-collapse';
 import { HashLink } from 'react-router-hash-link';
 import { Accordion, Menu, Search } from 'semantic-ui-react';
-import { AST, Type } from 'types/markdown';
+import { AST, Markdown } from 'types/markdown';
 import { scrollTo } from 'utils/misc';
 
 interface Header {
@@ -29,7 +29,8 @@ interface DocumentationSidebarState {
 
 const MIN_CHARS = 3;
 
-export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, DocumentationSidebarState> {
+export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, DocumentationSidebarState>
+{
 
   originalHeaders: Header[] = [];
   headerValues: string[] = [];
@@ -63,7 +64,7 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
     const headers: Header[] = [];
     let headerIndex = 0;
     markdown.forEach((ast) => {
-      const headings = ast.children.filter(child => child.type === Type.Heading && (child.depth!) < 3);
+      const headings = ast.children.filter(child => child.type === Markdown.Heading && (child.depth!) < 3);
       if (headings.length === 0) {
         return;
       }

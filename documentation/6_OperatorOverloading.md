@@ -17,8 +17,7 @@ can be extended:
 [] []= [:]
 ```
 
-Operators are implicitly `static` and all arguments to the operator are declared. This means
-that `this` cannot be accessed within the operator.
+Operators are implicitly `static` and you have to declare all arguments to.
 The arguments can be of any type but at least one of them has to of the same type as the class
 their declared in.
 

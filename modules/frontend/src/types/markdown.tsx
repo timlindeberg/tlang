@@ -1,4 +1,4 @@
-export enum Type {
+export enum Markdown {
   Root = 'root',
   Text = 'text',
   Paragraph = 'paragraph',
@@ -20,7 +20,7 @@ export enum Type {
 }
 
 export interface AST {
-  type: Type;
+  type: Markdown;
   children: AST[];
   value?: string;
   depth?: number;

@@ -2,7 +2,7 @@ import CodeBlock from 'components/misc/CodeBlock';
 import { decode } from 'he';
 import * as React from 'react';
 import { Divider, Header, Image, List, Segment, Table } from 'semantic-ui-react';
-import { AST, Type } from 'types/markdown';
+import { AST, Markdown } from 'types/markdown';
 
 export interface Block {
   name: string;
@@ -27,7 +27,7 @@ export default class DocBuilder {
   build = (ast: AST): JSX.Element => {
     ast.children.forEach((child) => {
       const element = this.parse(child) as JSX.Element;
-      if (child.type === Type.Heading && (child.depth!) < 3) {
+      if (child.type === Markdown.Heading && (child.depth!) < 3) {
         this.addCurrentBlock();
         const name = this.parse(child.children[0]) as string;
         this.currentBlock = { name, elements: [] };
@@ -53,7 +53,7 @@ export default class DocBuilder {
   }
 
   private parse = (ast: AST): JSX.Element | string => {
-    if (ast.type === Type.Text) {
+    if (ast.type === Markdown.Text) {
       return decode(ast.value!);
     }
 
@@ -65,30 +65,30 @@ export default class DocBuilder {
   private parseElement = ({ type, children, value, ...rest }: AST): JSX.Element => {
     const parse = this.parse;
     switch (type) {
-    case Type.Paragraph:
+    case Markdown.Paragraph:
       return <p>{children.map(parse)}</p>;
-    case Type.Heading:
+    case Markdown.Heading:
       const heading = parse(children[0]) as string;
       const depth = rest.depth!;
       const id = depth < 3 ? heading.replace(/ /g, '-') : undefined;
       return <Header as={`h${depth}`} id={id}>{heading}</Header>;
-    case Type.List:
+    case Markdown.List:
       return <List bulleted={!rest.ordered!} ordered={rest.ordered!}>{children.map(parse)}</List>;
-    case Type.ListItem:
+    case Markdown.ListItem:
       return <List.Item>{children.map(parse)}</List.Item>;
-    case Type.ThematicBreak:
+    case Markdown.ThematicBreak:
       return <Divider/>;
-    case Type.Link:
+    case Markdown.Link:
       return <a href={rest.url!}>{children.map(parse)}</a>;
-    case Type.Emphasis:
+    case Markdown.Emphasis:
       return <em>{children.map(parse)}</em>;
-    case Type.Strong:
+    case Markdown.Strong:
       return <strong>{children.map(parse)}</strong>;
-    case Type.InlineCode:
+    case Markdown.InlineCode:
       return <code>{decode(value!)}</code>;
-    case Type.Image:
+    case Markdown.Image:
       return <Image href={rest.url!}>{rest.alt!}</Image>;
-    case Type.Table:
+    case Markdown.Table:
       const headerItems = children[0].children;
       const rows = children.slice(1);
       return (
@@ -103,11 +103,11 @@ export default class DocBuilder {
           </Table.Body>
         </Table>
       );
-    case Type.TableCell:
+    case Markdown.TableCell:
       return <Table.Cell>{children.map(parse)}</Table.Cell>;
-    case Type.Code:
+    case Markdown.Code:
       return <CodeBlock language={rest.lang!}>{decode(value!)}</CodeBlock>;
-    case Type.BlockQuote:
+    case Markdown.BlockQuote:
       return <Segment>{children.map(parse)}</Segment>;
     default:
       throw new Error(`Unsupported type: ${type}`);

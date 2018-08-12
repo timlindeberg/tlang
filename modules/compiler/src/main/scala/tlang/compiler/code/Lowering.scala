@@ -607,25 +607,26 @@ class Lowerer(imports: Imports) extends Logging {
     val arrType = arrayType.asInstanceOf[TArray].tpe
 
     val c = new TreeBuilder
+    import c._
 
+    val container = putVarDecl("container", arr)
 
-    val container = c.putVarDecl("container", arr)
+    // TODO: This needs a check and an error message if the class does not have a Size method
+    val sizeCall = createMethodCall(container, "Size", Int)
 
-    val sizeCall = c.createMethodCall(container, "Size", Int)
-
-    val start = c.putVarDecl("start", arraySlice.start.getOrElse(IntLit(0)))
-    val end = c.putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(Int))
-    val step = c.putVarDecl("step", arraySlice.step.getOrElse(IntLit(1)))
+    val start = putVarDecl("start", arraySlice.start.getOrElse(IntLit(0)))
+    val end = putVarDecl("end", arraySlice.end.getOrElse(sizeCall).setType(Int))
+    val step = putVarDecl("step", arraySlice.step.getOrElse(IntLit(1)))
 
     var size: ExprTree = Minus(end, start).setType(Int)
     if (arraySlice.step.isDefined)
       size = Div(Plus(size, Minus(step, IntLit(1)).setType(Int)).setType(Int), step).setType(Int)
 
-    val typeTree = c.getTypeTree(arrayType)
+    val typeTree = getTypeTree(arrayType)
     val newArray = NewArray(typeTree, List(size)).setType(arr)
-    val slice = c.putVarDecl("slice", newArray)
+    val slice = putVarDecl("slice", newArray)
 
-    val indexDecl = c.createVarDecl("i", start)
+    val indexDecl = createVarDecl("i", start)
     val indexId = indexDecl.id
     val comparison = LessThan(indexId, end).setType(Bool)
     val post = Assign(indexId, Plus(indexId, step).setType(Int)).setType(Int)
@@ -635,12 +636,12 @@ class Lowerer(imports: Imports) extends Logging {
     val fromArr = ArrayRead(container, indexId).setType(arrType)
     val copyValue = Assign(toSlice, fromArr).setType(arrType)
 
-    c.put(For(List(indexDecl), comparison, List(post), copyValue))
-    c.put(slice)
+    put(For(List(indexDecl), comparison, List(post), copyValue))
+    put(slice)
 
-    c.setPos(arraySlice)
+    setPos(arraySlice)
 
-    c.getCode
+    getCode
   }
 
   //@formatter:off

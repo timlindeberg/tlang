@@ -49,7 +49,6 @@ Note the lack of tabs after the function declaration. This is interpreted by the
 
 ```tlang
 Def F() = var x = 1 + 1
-
 x += 5
 ```
 
@@ -66,4 +65,4 @@ Def F() =
 ```
 
 Note that all lines in the block above only have an indentation level of one, the numbers in the array
-literal are then indented using spaces.
+literal are indented using spaces.

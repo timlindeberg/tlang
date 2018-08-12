@@ -133,7 +133,7 @@ lazy val backend = (project in file(s"$Modules/backend"))
     )
   )
   .enablePlugins(PlayScala)
-  .dependsOn(utils, compiler)
+  .dependsOn(utils, compiler, repl)
 
 
 lazy val root = (project in file("."))

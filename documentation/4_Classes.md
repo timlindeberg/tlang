@@ -65,10 +65,10 @@ extending existing classes with new methods. `this` inside the extension class w
 to the instance of the object being extended.
 
 ```tlang
-extension t::lang::String =
-	Def WithPrefix(s: String) = s + " " + this
+extension java::lang::String =
+	Def WithPrefix(s: String) = s + this
 
-println("123".WithPrefix("ABC")) // ABC 123
+println("123".WithPrefix("ABC")) // ABC123
 ```
 
 This also works for all types including primitive types like `Int` and `Double` but does not 

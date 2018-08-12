@@ -462,7 +462,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
             case _      => report(WrongToken(tokens.next, tokens.last, EQSIGN, LPAREN))
           }
         case COLON    =>
-          eat(COLON, COLON, RBRACKET)
+          eat(COLON, RBRACKET)
           (3, ArraySlice(Empty(), None, None, None))
         case _        => report(WrongToken(tokens.next, tokens.last, RBRACKET, COLON))
       }
