@@ -1,14 +1,14 @@
 import 'Animation.less';
+import Heading from 'components/home/Heading';
+import 'components/home/HomeView.less';
+import Navbar from 'components/layout/Navbar';
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
 import * as React from 'react';
-import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import { LazyImage } from 'react-lazy-images';
-import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
-import Navbar from 'components/layout/Navbar';
-import Heading from 'components/home/Heading';
-
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
 
 const codeExample =
 `package t::lang
@@ -43,7 +43,7 @@ const HomeView = () => (
     <Segment style={{ paddingTop: '4em' }} vertical>
       <Grid container stackable verticalAlign="middle">
         <Grid.Row>
-          <Grid.Column width={8} className="animated fade-in-right">
+          <Grid.Column width={8} className="animated fade-in-right column-left">
             <Header as="h1">Language philosophy</Header>
             <p className="HomeView-larger-text">
               tlang takes inspiration from languages such as Kotlin, python, golang, Java, Scala and C++.
@@ -61,20 +61,20 @@ const HomeView = () => (
               <List.Item>Well designed and easy to read error messages</List.Item>
             </List>
           </Grid.Column>
-          <Grid.Column width={8} verticalAlign="middle" className="animated fade-in-left">
+          <Grid.Column width={8} verticalAlign="middle" className="animated fade-in-left column-right">
             <CodeBlock language="tlang">{codeExample}</CodeBlock>
           </Grid.Column>
         </Grid.Row>
         <Divider />
         <Grid.Row>
-          <Grid.Column width={8} className="animated fade-in-right">
+          <Grid.Column width={8} className="animated fade-in-right column-left">
             <LazyImage
               src="/trepl0.1.svg"
               placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
-              actual={({imageProps}:any) => <img {...imageProps} className="shadow-hover"/>}
+              actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
             />
           </Grid.Column>
-          <Grid.Column width={8}>
+          <Grid.Column width={8} className="animated fade-in-left column-right">
             <Header as="h1">trepl</Header>
             <List bulleted className="HomeView-larger-text">
               <List.Item>Fully featured REPL</List.Item>
@@ -87,6 +87,26 @@ const HomeView = () => (
             </List>
           </Grid.Column>
         </Grid.Row>
+        <Divider />
+        <Grid.Row>
+          <Grid.Column width={8} className="animated fade-in-right column-left">
+            <Header as="h1">Watch mode</Header>
+            <List bulleted className="HomeView-larger-text">
+              <List.Item>The t-compiler can watch your files and recompile when it changes</List.Item>
+              <List.Item>Combine with the --exec flag to execute and view the output</List.Item>
+              <List.Item>Get immediate feedback through easy to read error messages</List.Item>
+              <List.Item>Formats the output for easier reading</List.Item>
+            </List>
+          </Grid.Column>
+          <Grid.Column width={8} className="animated fade-in-left column-right">
+            <LazyImage
+              src="/watch.svg"
+              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
+              actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
+            />
+          </Grid.Column>
+        </Grid.Row>
+        <Divider />
         <Grid.Row>
           <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
             <Button secondary size="huge">Get started</Button>
