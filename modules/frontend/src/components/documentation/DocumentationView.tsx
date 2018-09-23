@@ -3,10 +3,10 @@ import * as React from 'react';
 import * as API from 'api';
 import { AST } from 'types/markdown';
 
-import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
 import Documentation from 'components/documentation/Documentation';
-import unified from 'unified';
+import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
 import remarkParse from 'remark-parse';
+import unified from 'unified';
 
 import 'components/documentation/DocumentationView.less';
 import MenuLayout from 'components/layout/MenuLayout';

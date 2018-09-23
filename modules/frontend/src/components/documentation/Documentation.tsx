@@ -2,6 +2,7 @@ import DocBuilder from 'components/documentation/DocBuilder';
 import * as React from 'react';
 import { Divider, Loader, Segment } from 'semantic-ui-react';
 import { AST } from 'types/markdown';
+import Footer from 'Footer';
 
 interface DocumentationProps {
   markdown: AST[];
@@ -108,6 +109,7 @@ export default class Documentation extends React.Component<DocumentationProps, {
         <Segment className="content-segment">
           {isLoading ? <Loader key="loading" active>Loading</Loader> : this.renderDocumentation()}
         </Segment>
+        <Footer />
       </div>
     );
   }

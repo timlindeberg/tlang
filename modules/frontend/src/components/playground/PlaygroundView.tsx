@@ -23,6 +23,7 @@ import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
 import 'syntaxHighlighting/codemirror-highlighting';
+import Footer from 'Footer';
 
 interface PlaygroundViewState {
   code: string;
@@ -208,6 +209,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
             </Grid.Column>
           </Grid>
         </div>
+        <Footer />
       </React.Fragment>
     );
   }

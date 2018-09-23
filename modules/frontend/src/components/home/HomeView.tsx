@@ -6,6 +6,7 @@ import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
 import * as React from 'react';
 import { LazyImage } from 'react-lazy-images';
+import { Link } from 'react-router-dom';
 import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
 import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
 import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
@@ -13,24 +14,27 @@ import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
 const codeExample =
 `package t::lang
 
-val helloWorld = new HelloWorld<Long>(1300L) + 
-   new HelloWorld<Long>(37L)
-
-helloWorld.Print() // prints "Hello world!" 1337 times
-
 class HelloWorld<T> =
 
 	var times: T
 
-	Def new(times: T?) = 
+	Def new(times: T?) =  
 		this.times = times ?: 1
 
 	Def Print() = 
 		for(var i = 0; i < times; i++)
 			println("Hello world!")
 
-	Def +(lhs: HelloWorld<T>, rhs: HelloWorld<T>) =
-		new HelloWorld(lhs.times + rhs.times)`;
+	Def +(lhs: HelloWorld<T>, rhs: HelloWorld<T>) = 
+	new HelloWorld(lhs.times + rhs.times)
+
+// -----------------------------------------------------
+
+val helloWorld = new HelloWorld<Long>(1300L) + 
+   new HelloWorld<Long>(37L)
+
+helloWorld.Print() // prints "Hello world!" 1337 times
+`;
 
 const HomeView = () => (
   <React.Fragment>
@@ -95,7 +99,7 @@ const HomeView = () => (
               <List.Item>The t-compiler can watch your files and recompile when it changes</List.Item>
               <List.Item>Combine with the --exec flag to execute and view the output</List.Item>
               <List.Item>Get immediate feedback through easy to read error messages</List.Item>
-              <List.Item>Formats the output for easier reading</List.Item>
+              <List.Item>Formats the output   for easier reading</List.Item>
             </List>
           </Grid.Column>
           <Grid.Column width={8} className="animated fade-in-left column-right">
@@ -109,7 +113,7 @@ const HomeView = () => (
         <Divider />
         <Grid.Row>
           <Grid.Column style={{ padding: '4em 0' }} textAlign="center" verticalAlign="middle">
-            <Button secondary size="huge">Get started</Button>
+            <Button secondary size="huge" as={Link} to="/getting_started">Get started</Button>
           </Grid.Column>
         </Grid.Row>
       </Grid>

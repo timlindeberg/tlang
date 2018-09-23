@@ -17,7 +17,7 @@ const Navbar = ({ className }: {className?: string}) => (
     <Menu secondary inverted pointing size="large" className="shadow">
       <MenuLink to="/">Home</MenuLink>
       <MenuLink to="/documentation">Documentation</MenuLink>
-      <MenuLink to="/get_started">Get started</MenuLink>
+      <MenuLink to="/getting_started">Get started</MenuLink>
       <MenuLink to="/playground">Playground</MenuLink>
     </Menu>
   </div>
