@@ -73,7 +73,7 @@ const HomeView = () => (
         <Grid.Row>
           <Grid.Column width={8} className="animated fade-in-right column-left">
             <LazyImage
-              src="/trepl0.1.svg"
+              src="/trepl.svg"
               placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
               actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
             />

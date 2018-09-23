@@ -109,7 +109,6 @@ export default class Documentation extends React.Component<DocumentationProps, {
         <Segment className="content-segment">
           {isLoading ? <Loader key="loading" active>Loading</Loader> : this.renderDocumentation()}
         </Segment>
-        <Footer />
       </div>
     );
   }
