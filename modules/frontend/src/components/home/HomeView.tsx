@@ -3,7 +3,7 @@ import Heading from 'components/home/Heading';
 import 'components/home/HomeView.less';
 import Navbar from 'components/layout/Navbar';
 import CodeBlock from 'components/misc/CodeBlock';
-import Footer from 'Footer';
+import Footer from 'components/layout/Footer';
 import * as React from 'react';
 import { LazyImage } from 'react-lazy-images';
 import { Link } from 'react-router-dom';

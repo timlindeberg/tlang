@@ -10,7 +10,7 @@ import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 
 import CodeBlock from 'components/misc/CodeBlock';
-import Footer from 'Footer';
+import Footer from 'components/layout/Footer';
 import 'syntaxHighlighting/codemirror-highlighting';
 
 export default class GettingStartedView extends React.Component<{}, {}> {

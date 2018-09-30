@@ -23,7 +23,7 @@ import 'codemirror/lib/codemirror.css';
 import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
-import Footer from 'Footer';
+import Footer from 'components/layout/Footer';
 import 'syntaxHighlighting/codemirror-highlighting';
 
 interface PlaygroundViewState {

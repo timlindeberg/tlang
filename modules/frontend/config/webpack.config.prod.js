@@ -47,6 +47,42 @@ const extractTextPluginOptions = shouldUseRelativeAssetPaths
     { publicPath: Array(cssFilename.split('/').length).join('../') }
   : {};
 
+
+
+const cssLoader = {
+  loader: require.resolve('css-loader'),
+  options: {
+    importLoaders: 1,
+    minimize: true,
+  },
+};
+
+const postCssLoader = {
+  loader: require.resolve('postcss-loader'),
+  options: {
+    // Necessary for external CSS imports to work
+    // https://github.com/facebookincubator/create-react-app/§issues/2677
+    ident: 'postcss',
+    plugins: () => [
+      require('postcss-flexbugs-fixes'),
+      autoprefixer({
+        browsers: [
+          '>1%',
+          'last 4 versions',
+          'Firefox ESR',
+          'not ie < 9', // React doesn't support IE8 anyway
+        ],
+        flexbox: 'no-2009',
+      }),
+    ],
+  },
+};
+
+const modulePaths = [path.resolve('./src'), path.resolve('./node_modules'), paths.appNodeModules].concat(
+  // It is guaranteed to exist because we tweak it in `env.js`
+  process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
+);
+
 // This is the production configuration.
 // It compiles slowly and is focused on producing a fast and minimal bundle.
 // The development configuration is different and lives in a separate file.
@@ -79,10 +115,7 @@ module.exports = {
     // We placed these paths second because we want `node_modules` to "win"
     // if there are any conflicts. This matches Node resolution mechanism.
     // https://github.com/facebookincubator/create-react-app/issues/253
-    modules: ['node_modules', paths.appNodeModules].concat(
-      // It is guaranteed to exist because we tweak it in `env.js`
-      process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
-    ),
+    modules: modulePaths,
     // These are the reasonable defaults supported by the Node ecosystem.
     // We also include JSX as a common component filename extension to support
     // some tools, although we do not recommend using it, see:
@@ -134,6 +167,10 @@ module.exports = {
         // match the requirements. When no loader matches it will fall
         // back to the "file" loader at the end of the loader list.
         oneOf: [
+          {
+            test: [/\.md$/, /\.t$/],
+            loader: require.resolve('raw-loader')
+          },
           // "url" loader works just like "file" loader but it also embeds
           // assets smaller than specified size as data URLs to avoid requests.
           {
@@ -182,34 +219,35 @@ module.exports = {
                     },
                   },
                   use: [
-                    {
-                      loader: require.resolve('css-loader'),
-                      options: {
-                        importLoaders: 1,
-                        minimize: true,
-                        sourceMap: shouldUseSourceMap,
-                      },
+                    cssLoader,
+                    postCssLoader
+                  ],
+                },
+                extractTextPluginOptions
+              )
+            ),
+            // Note: this won't work without `new ExtractTextPlugin()` in `plugins`.
+          },
+          {
+            test: /\.less$/,
+            loader: ExtractTextPlugin.extract(
+              Object.assign(
+                {
+                  fallback: {
+                    loader: require.resolve('style-loader'),
+                    options: {
+                      hmr: false,
                     },
+                  },
+                  use: [
+                    cssLoader,
                     {
-                      loader: require.resolve('postcss-loader'),
+                      loader: require.resolve('less-loader'),
                       options: {
-                        // Necessary for external CSS imports to work
-                        // https://github.com/facebookincubator/create-react-app/issues/2677
-                        ident: 'postcss',
-                        plugins: () => [
-                          require('postcss-flexbugs-fixes'),
-                          autoprefixer({
-                            browsers: [
-                              '>1%',
-                              'last 4 versions',
-                              'Firefox ESR',
-                              'not ie < 9', // React doesn't support IE8 anyway
-                            ],
-                            flexbox: 'no-2009',
-                          }),
-                        ],
-                      },
+                        includePaths: modulePaths,
+                      }
                     },
+                    postCssLoader
                   ],
                 },
                 extractTextPluginOptions
@@ -328,12 +366,6 @@ module.exports = {
       // Don't precache sourcemaps (they're large) and build asset manifest:
       staticFileGlobsIgnorePatterns: [/\.map$/, /asset-manifest\.json$/],
     }),
-    // Moment.js is an extremely popular library that bundles large locale files
-    // by default due to how Webpack interprets its code. This is a practical
-    // solution that requires the user to opt into importing specific locales.
-    // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
-    // You can remove this if you don't use Moment.js:
-    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
     // Perform type checking and linting in a separate process to speed up compilation
     new ForkTsCheckerWebpackPlugin({
       async: false,
