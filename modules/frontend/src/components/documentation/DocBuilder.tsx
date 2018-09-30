@@ -1,7 +1,11 @@
 import CodeBlock from 'components/misc/CodeBlock';
-import { decode } from 'he';
 import * as React from 'react';
-import { Divider, Header, Image, List, Segment, Table } from 'semantic-ui-react';
+import Table from 'semantic-ui-react/dist/commonjs/collections/Table/Table';
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import Image from 'semantic-ui-react/dist/commonjs/elements/Image/Image';
+import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 import { AST, Markdown } from 'types/markdown';
 
 export interface Block {
@@ -11,11 +15,12 @@ export interface Block {
 
 export default class DocBuilder {
 
-  private elements: JSX.Element[];
-  private id: string;
+  private readonly elements: JSX.Element[];
+  private readonly id: string;
+  private readonly onBlockMounted: (ref: any) => void;
+
   private nodeCount: number;
   private currentBlock?: Block;
-  private onBlockMounted: (ref: any) => void;
 
   constructor(id: string, onBlockMounted: (ref: any) => void) {
     this.id = id;
@@ -54,7 +59,7 @@ export default class DocBuilder {
 
   private parse = (ast: AST): JSX.Element | string => {
     if (ast.type === Markdown.Text) {
-      return decode(ast.value!);
+      return this.decode(ast.value!);
     }
 
     return React.cloneElement(this.parseElement(ast), { key: this.nextKey() });
@@ -85,7 +90,7 @@ export default class DocBuilder {
     case Markdown.Strong:
       return <strong>{children.map(parse)}</strong>;
     case Markdown.InlineCode:
-      return <code>{decode(value!)}</code>;
+      return <code>{this.decode(value!)}</code>;
     case Markdown.Image:
       return <Image href={rest.url!}>{rest.alt!}</Image>;
     case Markdown.Table:
@@ -106,12 +111,18 @@ export default class DocBuilder {
     case Markdown.TableCell:
       return <Table.Cell>{children.map(parse)}</Table.Cell>;
     case Markdown.Code:
-      return <CodeBlock language={rest.lang!}>{decode(value!)}</CodeBlock>;
+      return <CodeBlock language={rest.lang!}>{this.decode(value!)}</CodeBlock>;
     case Markdown.BlockQuote:
       return <Segment>{children.map(parse)}</Segment>;
     default:
       throw new Error(`Unsupported type: ${type}`);
     }
+  }
+
+  private decode = (str: string) => {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
   }
 
 }

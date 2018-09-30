@@ -1,5 +1,9 @@
 import * as React from 'react';
-import { Divider, Header, Icon, Segment, TransitionGroup } from 'semantic-ui-react';
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
+import TransitionGroup from 'semantic-ui-react/dist/commonjs/modules/Transition/TransitionGroup';
 import { scrollTo } from 'utils/misc';
 import { PlaygroundEvent } from './events/Events';
 

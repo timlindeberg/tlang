@@ -185,12 +185,6 @@ true ? "ABC" : "123" // "ABC"
 false ? "ABC" : "123" // "123"
 ```
 
-### New
-The new operator, `new`, constructs a new instance of a class.
-```tlang
-val x: A = new A()
-```
-
 ## Unary operators
 
 ### Not
@@ -260,6 +254,12 @@ val b = a--;
 // a == 4
 // b == 5
 ```
+### New
+The new operator, `new`, constructs a new instance of a class.
+```tlang
+val x: A = new A()
+```
+
 ## Indexing operators
 
 ### Indexing
@@ -280,7 +280,7 @@ The slice operator, `[:]`, returns a slice of the underlying array, string or co
 three values, `start`, `end` and `step`. The result of applying the operator is a copy
 of the underlying value containing entries from `start` up to but not including `end`. If `step`
 is provided every `step`:th value will be included. All values can be skipped, in which case a 
-default value is insterted:
+default value is inserted:
 
 - `start` is replaced by `0`
 - `end` is replaced by `value.Size()`

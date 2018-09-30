@@ -1,6 +1,6 @@
 import 'components/layout/Loading.less';
 import * as React from 'react';
-import { Loader } from 'semantic-ui-react';
+import Loader from 'semantic-ui-react/dist/commonjs/elements/Loader/Loader';
 
 export default class Loading extends React.Component<{}, {}> {
 

@@ -26,7 +26,7 @@ This program can be executed by running `java HelloWorld`.
 
 ## Arguments
 
-Arguments can be accessed throug    h the `args` variable:
+When in the outermost scope, arguments can be accessed through the `args` variable:
 
 ```tlang
 println("Hello " + args[0] + "!") 

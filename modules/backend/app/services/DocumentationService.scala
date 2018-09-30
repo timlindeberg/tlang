@@ -27,13 +27,12 @@ class DocumentationService @Inject()(config: Configuration) {
 
   private def staticDocumentation: List[Documentation] = {
     def documentationPath = Paths.get(config.get[String]("tlang.documentation.path"))
-
     Files.walk(documentationPath)
       .iterator
       .asScala
       .filter(_.toString.endsWith(".md"))
       .toList
-      .sortBy(_.toString)
+      .sortBy { path => path.getFileName.toString.split("_").head.toInt }
       .map { path =>
         val source = Source.fromFile(path.toFile)
         val content = try source.mkString finally source.close()

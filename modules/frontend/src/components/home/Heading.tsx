@@ -3,13 +3,12 @@ import 'components/home/Heading.less';
 import Logo from 'components/misc/Logo';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Container, Header, Icon } from 'semantic-ui-react';
+import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
+import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
 
-export interface HomepageHeadingProps {
-  mobile: boolean;
-}
-
-const Heading = ({ mobile = false }: HomepageHeadingProps) => (
+const Heading = () => (
   <Container text style={{ padding: '5em' }} className="animated fade-in-up">
     <Logo link={false} size={4} />
     <Header

@@ -7,9 +7,13 @@ import Footer from 'Footer';
 import * as React from 'react';
 import { LazyImage } from 'react-lazy-images';
 import { Link } from 'react-router-dom';
-import { Button, Grid, Header, List, Segment } from 'semantic-ui-react';
+import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
+import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
 import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
 import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 
 const codeExample =
 `package t::lang
@@ -42,7 +46,7 @@ const HomeView = () => (
       <Container>
         <Navbar className="animated fade-in-right"/>
       </Container>
-      <Heading mobile={false}/>
+      <Heading />
     </Segment>
     <Segment style={{ paddingTop: '4em' }} vertical>
       <Grid container stackable verticalAlign="middle">
@@ -50,9 +54,10 @@ const HomeView = () => (
           <Grid.Column width={8} className="animated fade-in-right column-left">
             <Header as="h1">Language philosophy</Header>
             <p className="HomeView-larger-text">
-              tlang takes inspiration from languages such as Kotlin, python, golang, Java, Scala and C++.
-              Combining object oriented design with functional programming ideas together with
-              a clean whitespace based syntax.
+              <code>tlang</code> is a strongly, statically typed scripting language takes inspiration from
+              languages such as Kotlin, python, golang, Java, Scala and C++. Combining object
+              oriented design with functional programming ideas together with a clean whitespace
+              based syntax.
             </p>
             <Header as="h1">Features</Header>
             <List bulleted className="HomeView-larger-text">

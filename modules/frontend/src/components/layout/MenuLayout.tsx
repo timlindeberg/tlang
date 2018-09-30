@@ -2,7 +2,11 @@ import 'components/layout/MenuLayout.less';
 import Navbar from 'components/layout/Navbar';
 import Logo from 'components/misc/Logo';
 import * as React from 'react';
-import { Button, Grid, Icon, Segment } from 'semantic-ui-react';
+
+import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
+import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 
 interface MenuLayoutProps {
   menu: (state: MenuLayoutState) => JSX.Element;

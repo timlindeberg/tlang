@@ -1,6 +1,9 @@
 import codeExamples from 'components/playground/codeExamples';
 import * as React from 'react';
-import { Dropdown, Icon, Loader, Menu } from 'semantic-ui-react';
+import Menu from 'semantic-ui-react/dist/commonjs/collections/Menu/Menu';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
+import Loader from 'semantic-ui-react/dist/commonjs/elements/Loader/Loader';
+import Dropdown from 'semantic-ui-react/dist/commonjs/modules/Dropdown/Dropdown';
 import HelpModal from './HelpModal';
 import { PlaygroundState } from './PlaygroundView';
 

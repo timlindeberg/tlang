@@ -4,10 +4,14 @@ import 'components/layout/MenuLayout.less';
 import Navbar from 'components/layout/Navbar';
 import Logo from 'components/misc/Logo';
 import * as React from 'react';
-import { Container, Grid, Header, List, Segment } from 'semantic-ui-react';
-import 'syntaxHighlighting/codemirror-highlighting';
+import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
+
 import CodeBlock from 'components/misc/CodeBlock';
 import Footer from 'Footer';
+import 'syntaxHighlighting/codemirror-highlighting';
 
 export default class GettingStartedView extends React.Component<{}, {}> {
 
@@ -26,10 +30,10 @@ export default class GettingStartedView extends React.Component<{}, {}> {
         </Segment>
         <Segment id="GettingStartedView-content">
             <Header as="h1">Installation</Header>
-            <p>The t compiler requires <code>Java 8</code> or later to run.</p>
+            <p>The <code>t</code> compiler requires <code>Java 8</code> or later to run.</p>
             <Header as="h3">Mac OSX</Header>
-            <p>The t compiler is currently hosted in it's own repo since it has too few stars to be in the main
-            homebrew repository</p>
+            <p>The compiler and repl is currently hosted in it's own repo since it has too
+              few stars to be in the main homebrew repository.</p>
             <List bulleted className="HomeView-larger-text">
               <List.Item>Install homebrew.</List.Item>
               <List.Item>Run <code>brew timlindeberg/tlang/tlang</code>.</List.Item>

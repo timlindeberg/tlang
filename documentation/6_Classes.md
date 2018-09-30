@@ -59,7 +59,7 @@ class C : A, B =
 new C().Calculate() // 6
 ```
 
-## Extension Classses
+## Extension classes
 `tlang` also supports extensions classes using the `extension` keyword which allows
 extending existing classes with new methods. `this` inside the extension class will refer
 to the instance of the object being extended.
@@ -73,3 +73,15 @@ println("123".WithPrefix("ABC")) // ABC123
 
 This also works for all types including primitive types like `Int` and `Double` but does not 
 currently support generics. 
+
+## Static methods and fields
+`tlang` supports static methods and fields:
+
+```tlang
+class A =
+	Val static x = 5
+	Def static F() = 5 + x
+
+println(A::x) // 5
+println(A::F()) // 10
+```

@@ -1,10 +1,12 @@
 import * as codemirror from 'codemirror';
 import { TextMarker } from 'codemirror';
 import { CodeError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
-import * as _ from 'lodash';
+import groupBy from 'lodash/groupBy';
+
 import * as React from 'react';
 import { Controlled as CodeMirror, IInstance } from 'react-codemirror2';
-import { Icon, Popup } from 'semantic-ui-react';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
+import Popup from 'semantic-ui-react/dist/commonjs/modules/Popup/Popup';
 import { asDOM, htmlLines } from 'utils/misc';
 
 const CODE_MIRROR_OPTIONS: codemirror.EditorConfiguration = {
@@ -53,7 +55,7 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     this.marks.forEach(m => m.clear());
 
     errors.forEach(this.markErrorInText);
-    const grouped = _.groupBy(errors, error => error.start ? error.start.line : -1);
+    const grouped = groupBy(errors, error => error.start ? error.start.line : -1);
     Object.keys(grouped).forEach(line => this.addErrorGutter(grouped[line]));
   }
 
@@ -91,7 +93,6 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     const line = first.start.line - 1;
     this.editor!.setGutterMarker(line, 'errors', errorMarker);
   }
-
 
   render() {
     return (

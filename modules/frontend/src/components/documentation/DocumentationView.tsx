@@ -3,13 +3,13 @@ import * as React from 'react';
 import * as API from 'api';
 import { AST } from 'types/markdown';
 
+import 'components/documentation/DocumentationView.less';
+
 import Documentation from 'components/documentation/Documentation';
 import DocumentationSidebar from 'components/documentation/DocumentationSidebar';
+import MenuLayout from 'components/layout/MenuLayout';
 import remarkParse from 'remark-parse';
 import unified from 'unified';
-
-import 'components/documentation/DocumentationView.less';
-import MenuLayout from 'components/layout/MenuLayout';
 
 interface DocumentationViewState {
   markdown: AST[];

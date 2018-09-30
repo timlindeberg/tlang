@@ -11,8 +11,7 @@ class A =
 	Def X(x: Int?) = ;
 ```
 
-##   Accessing nullable variables
-
+## Accessing nullable variables
 Accessing a variable that can be `null` is a compilation error. `tlang` uses data flow analysis to
 determine whether a variable can be `null` or not.
 
@@ -53,7 +52,6 @@ if(!(a == null || b == null ))
 ```
 
 ## Null extraction
-
 `tlang` should be able to determine whether a variable is `null` but for the cases when it can't
 know the Extract Nullable operator, `!!` can be used to tell the `tlang` compiler that a value is not 
 `null`. If the expression was `null` anyway a `NullPointerException` will be thrown.

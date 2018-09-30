@@ -1,11 +1,15 @@
 import * as React from 'react';
 
-import * as _ from 'lodash';
+import escapeRegExp from 'lodash/escapeRegExp';
 
 import 'components/documentation/DocumentationSidebar.less';
 import { Collapse } from 'react-collapse';
 import { HashLink } from 'react-router-hash-link';
-import { Accordion, Menu, Search } from 'semantic-ui-react';
+import Menu from 'semantic-ui-react/dist/commonjs/collections/Menu/Menu';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+import Accordion from 'semantic-ui-react/dist/commonjs/modules/Accordion/Accordion';
+import Search from 'semantic-ui-react/dist/commonjs/modules/Search/Search';
+
 import { AST, Markdown } from 'types/markdown';
 import { scrollTo } from 'utils/misc';
 
@@ -29,11 +33,12 @@ interface DocumentationSidebarState {
 
 const MIN_CHARS = 3;
 
-export default class DocumentationSidebar extends React.Component<DocumentationSidebarProps, DocumentationSidebarState>
-{
+export default class
+DocumentationSidebar extends React.Component<DocumentationSidebarProps, DocumentationSidebarState> {
 
   originalHeaders: Header[] = [];
   headerValues: string[] = [];
+
   state: DocumentationSidebarState = {
     headers: [],
     searchValue: '',
@@ -53,11 +58,20 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
     if (nextProps.markdown !== this.props.markdown) {
       this.updateHeaders(nextProps);
     }
+
+    if (nextProps.active !== this.props.active) {
+      const id = this.headerId(nextProps.active);
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+      }
+    }
   }
 
   updateHeaders = (props: DocumentationSidebarProps) => {
     this.originalHeaders = this.parseHeaders(props.markdown);
     this.setState(() => ({ headers: this.originalHeaders.slice() }));
+
   }
 
   parseHeaders = (markdown: AST[]): Header[] => {
@@ -95,7 +109,7 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
       return;
     }
 
-    const re = new RegExp(_.escapeRegExp(value), 'i');
+    const re = new RegExp(escapeRegExp(value), 'i');
     const searchResults = this.headerValues.filter(v => re.test(v));
 
     const included = (header: Header): boolean =>
@@ -128,7 +142,9 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
   }
 
   toId = (value: String) => value.replace(/ /g, '-');
+  headerId = (index: number) => `Header${index}`;
   anchor = (value: string) => `#${this.toId(value)}`;
+  scrollTo = (el: any) => el.scrollIntoView({ behavior: 'instant', block: 'start', inline: 'nearest' });
 
   mouseEnterHeader = (header: Header) => {
     const mousedOverHeaders = new Set(this.state.mousedOverHeaders);
@@ -158,7 +174,7 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
             as={HashLink}
             to={this.anchor(value)}
             onClick={e => e.stopPropagation()}
-            scroll={scrollTo}
+            scroll={this.scrollTo}
           >
             <span>{value}</span>
           </Menu.Item>
@@ -179,11 +195,16 @@ export default class DocumentationSidebar extends React.Component<DocumentationS
       const hasBeenMousedOver = mousedOverHeaders.has(header);
       const isHeaderOpen = hasBeenMousedOver || isSearching || isHeaderActive;
       return (
-        <Menu.Item key={header.value} active={isHeaderActive} onMouseEnter={() => this.mouseEnterHeader(header)}>
+        <Menu.Item
+          key={header.value}
+          id={this.headerId(header.index)}
+          active={isHeaderActive}
+          onMouseEnter={() => this.mouseEnterHeader(header)}
+        >
           <Accordion.Title
             as={HashLink}
             to={this.anchor(header.value)}
-            scroll={scrollTo}
+            scroll={this.scrollTo}
             active={isHeaderOpen}
             content={header.value}
           />

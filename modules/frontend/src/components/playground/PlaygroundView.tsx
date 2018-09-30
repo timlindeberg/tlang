@@ -11,7 +11,8 @@ import {
   PlaygroundEvent, ServerError, TimeoutEvent,
 } from 'components/playground/events/Events';
 import { CodeError } from 'components/playground/PlaygroundTypes';
-import { Grid, Segment } from 'semantic-ui-react';
+import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 
 import Navbar from 'components/layout/Navbar';
 import Logo from 'components/misc/Logo';
@@ -22,8 +23,8 @@ import 'codemirror/lib/codemirror.css';
 import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
-import 'syntaxHighlighting/codemirror-highlighting';
 import Footer from 'Footer';
+import 'syntaxHighlighting/codemirror-highlighting';
 
 interface PlaygroundViewState {
   code: string;
@@ -161,7 +162,6 @@ export default class PlaygroundView extends React.Component<{}, {}> {
 
   connect = async () => {
     this.goTo(PlaygroundState.Connecting);
-
 
     const setDisconnected = (event: PlaygroundEvent) => {
       this.goTo(PlaygroundState.Disconnected);

@@ -1,15 +1,14 @@
 import * as React from 'react';
-import { Button, Icon, Menu, Modal } from 'semantic-ui-react';
-
-interface HelpModalProps {
-
-}
+import Menu from 'semantic-ui-react/dist/commonjs/collections/Menu/Menu';
+import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
+import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
+import Modal from 'semantic-ui-react/dist/commonjs/modules/Modal/Modal';
 
 interface HelpModalState {
   isOpen: boolean;
 }
 
-export default class HelpModal extends React.Component<HelpModalProps, HelpModalState> {
+export default class HelpModal extends React.Component<{}, HelpModalState> {
   state: HelpModalState = { isOpen: false };
 
   handleOpen = () => this.setState({ isOpen: true });
@@ -24,7 +23,7 @@ export default class HelpModal extends React.Component<HelpModalProps, HelpModal
           <Icon name={icon}/>
           Help
         </Menu.Item>
-        <Modal open={this.state.isOpen} size="small" dimmer="blurring" onClose={this.handleClose}>
+        <Modal open={this.state.isOpen} size="small" dimmer onClose={this.handleClose}>
           <Modal.Header>
             <Icon name={icon}/>
             Playground Help

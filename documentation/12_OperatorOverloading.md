@@ -161,7 +161,7 @@ class A =
 
 	Def +(a: A, s: String) = new A(a.s + s)
 
-	Def toString() = s
+	Def ToString() = s
 
 var a = new A("ABC")
 val x = a

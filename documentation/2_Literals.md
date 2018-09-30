@@ -38,7 +38,7 @@ Number literals can also include underscores to easier visualize large numbers:
 
 ## Binary literals
 
-Binary literals are also supported by prefexing the number with `0b`:
+Binary literals are also supported by prefixing the number with `0b`:
 
 ```tlang
 0b10       // 3

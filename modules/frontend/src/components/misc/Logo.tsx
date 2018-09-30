@@ -1,7 +1,8 @@
 import 'components/misc/Logo.less';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Header } from 'semantic-ui-react';
+import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
+
 
 interface LogoProps {
   size: number;

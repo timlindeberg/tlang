@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Collapse } from 'react-collapse';
-import { Accordion, Divider } from 'semantic-ui-react';
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Accordion from 'semantic-ui-react/dist/commonjs/modules/Accordion/Accordion';
 import { thousandSeperatedNumber } from 'utils/misc';
 
 interface BodyWithExtraContentProps {
@@ -19,7 +20,7 @@ export default class BodyWithExtraContent
   extends React.Component<BodyWithExtraContentProps, BodyWithExtraContentState> {
 
   state: BodyWithExtraContentState = {
-    isOpen: false
+    isOpen: false,
   };
 
   toggleOpen = () => this.setState(state => ({ isOpen: !state.isOpen }));
@@ -48,7 +49,7 @@ export default class BodyWithExtraContent
         {numLines > maxToShow && (
           <React.Fragment>
             <Collapse isOpened={isOpen}>{isOpen && this.makeExtra()}</Collapse>
-            <Divider />
+            <Divider/>
             <Accordion>
               <Accordion.Title
                 active={isOpen}

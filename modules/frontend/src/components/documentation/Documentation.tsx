@@ -1,8 +1,9 @@
 import DocBuilder from 'components/documentation/DocBuilder';
 import * as React from 'react';
-import { Divider, Loader, Segment } from 'semantic-ui-react';
+import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
+import Loader from 'semantic-ui-react/dist/commonjs/elements/Loader/Loader';
+import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 import { AST } from 'types/markdown';
-import Footer from 'Footer';
 
 interface DocumentationProps {
   markdown: AST[];
