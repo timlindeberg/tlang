@@ -23,7 +23,12 @@ const publicUrl = '';
 // Get environment variables to inject into our app.
 const env = getClientEnvironment(publicUrl);
 
-const modulePaths = [path.resolve('./src'), path.resolve('./node_modules'), paths.appNodeModules].concat(
+const modulePaths = [
+  path.resolve('./src'),
+  path.resolve('./node_modules'),
+  path.resolve('./public'),
+  paths.appNodeModules
+].concat(
   // It is guaranteed to exist because we tweak it in `env.js`
   process.env.NODE_PATH.split(path.delimiter).filter(Boolean)
 );

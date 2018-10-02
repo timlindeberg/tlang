@@ -13,7 +13,7 @@ const MenuLink = withRouter(({ children, to, location }: RouteComponentProps<any
 ));
 
 const Navbar = ({ className }: {className?: string}) => (
-  <div className={className}>
+  <div className={className} id="NavBar">
     <Menu secondary inverted pointing size="large" className="shadow">
       <MenuLink to="/">Home</MenuLink>
       <MenuLink to="/documentation">Documentation</MenuLink>

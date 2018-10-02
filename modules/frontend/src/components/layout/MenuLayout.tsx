@@ -7,6 +7,7 @@ import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
 import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
 import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
+import Footer from 'components/layout/Footer';
 
 interface MenuLayoutProps {
   menu: (state: MenuLayoutState) => JSX.Element;
@@ -65,10 +66,13 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
     );
 
     return (
-      <Grid>
-        <Grid.Column width={3} id="MenuLayout-left">{leftSide}</Grid.Column>
-        <Grid.Column width={13} id="MenuLayout-right">{rightSide}</Grid.Column>
-      </Grid>
+      <React.Fragment>
+        <Grid>
+          <Grid.Column width={3} id="MenuLayout-left">{leftSide}</Grid.Column>
+          <Grid.Column width={13} id="MenuLayout-right">{rightSide}</Grid.Column>
+        </Grid>
+        <Footer bottom/>
+      </React.Fragment>
     );
   }
 }

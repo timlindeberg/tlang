@@ -1,17 +1,13 @@
-import 'codemirror/lib/codemirror.css';
 import 'components/gettingStarted/GettingStartedView.less';
-import 'components/layout/MenuLayout.less';
+import Footer from 'components/layout/Footer';
 import Navbar from 'components/layout/Navbar';
+import CodeBlock from 'components/misc/CodeBlock';
 import Logo from 'components/misc/Logo';
 import * as React from 'react';
 import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
 import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
 import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
-
-import CodeBlock from 'components/misc/CodeBlock';
-import Footer from 'components/layout/Footer';
-import 'syntaxHighlighting/codemirror-highlighting';
 
 export default class GettingStartedView extends React.Component<{}, {}> {
 
@@ -76,7 +72,7 @@ export default class GettingStartedView extends React.Component<{}, {}> {
               </List.Item>
             </List>
         </Segment>
-        <Footer />
+        <Footer bottom={false} />
       </React.Fragment>
     );
   }

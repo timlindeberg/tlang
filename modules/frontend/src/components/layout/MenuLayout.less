@@ -1,8 +1,9 @@
 @import '../../theme.less';
+@import '../layout/Footer.less';
+@import '../layout/Navbar.less';
 
 @time: 0.5s;
-@navBarHeight: 5rem;
-@pageHeight: ~"calc(100vh - @{navBarHeight})";
+@pageHeight: ~"calc(100vh - @{navbarHeight} - @{footerHeight})";
 
 #MenuLayout-left  {
   padding-right: 0;
@@ -19,7 +20,7 @@
 #MenuLayout-logo {
   margin: 0;
   border-radius: 0;
-  height: @navBarHeight;
+  height: @navbarHeight;
 }
 
 #MenuLayout-menu {
@@ -39,7 +40,7 @@
 #MenuLayout-navbar {
   margin: 0;
   border-radius: 0;
-  height: @navBarHeight;
+  height: @navbarHeight;
 }
 
 #MenuLayout-content {
@@ -47,7 +48,6 @@
   overflow-y: scroll;
   border: 2px darken(@primaryColor, 5%) solid;
   border-right: none;
-  border-bottom: none;
 }
 
 .ui.segment.content-segment {

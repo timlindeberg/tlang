@@ -209,7 +209,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
             </Grid.Column>
           </Grid>
         </div>
-        <Footer />
+        <Footer bottom />
       </React.Fragment>
     );
   }

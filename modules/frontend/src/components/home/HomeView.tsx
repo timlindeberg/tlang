@@ -1,9 +1,9 @@
 import 'Animation.less';
 import Heading from 'components/home/Heading';
 import 'components/home/HomeView.less';
+import Footer from 'components/layout/Footer';
 import Navbar from 'components/layout/Navbar';
 import CodeBlock from 'components/misc/CodeBlock';
-import Footer from 'components/layout/Footer';
 import * as React from 'react';
 import { LazyImage } from 'react-lazy-images';
 import { Link } from 'react-router-dom';
@@ -14,6 +14,12 @@ import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
 import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
 import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
+import Loader from 'semantic-ui-react/dist/commonjs/elements/Loader/Loader';
+import Loading from 'components/layout/Loading';
+
+const emptyImage = require('images/empty.svg');
+const replImage = require('images/trepl.svg');
+const watchImage = require('images/watch.svg');
 
 const codeExample =
 `package t::lang
@@ -39,6 +45,14 @@ val helloWorld = new HelloWorld<Long>(1300L) +
 
 helloWorld.Print() // prints "Hello world!" 1337 times
 `;
+
+const TerminalImage = ({ src }: { src: string }) => (
+  <LazyImage
+    src={src}
+    placeholder={({ imageProps, ref }: any) => <img ref={ref} src={emptyImage} className="shadow-hover"/>}
+    actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
+  />
+);
 
 const HomeView = () => (
   <React.Fragment>
@@ -77,11 +91,7 @@ const HomeView = () => (
         <Divider />
         <Grid.Row>
           <Grid.Column width={8} className="animated fade-in-right column-left">
-            <LazyImage
-              src="/trepl.svg"
-              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
-              actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
-            />
+            <TerminalImage src={replImage} />
           </Grid.Column>
           <Grid.Column width={8} className="animated fade-in-left column-right">
             <Header as="h1">trepl</Header>
@@ -104,15 +114,11 @@ const HomeView = () => (
               <List.Item>The t-compiler can watch your files and recompile when it changes</List.Item>
               <List.Item>Combine with the --exec flag to execute and view the output</List.Item>
               <List.Item>Get immediate feedback through easy to read error messages</List.Item>
-              <List.Item>Formats the output   for easier reading</List.Item>
+              <List.Item>Formats the output for easier reading</List.Item>
             </List>
           </Grid.Column>
           <Grid.Column width={8} className="animated fade-in-left column-right">
-            <LazyImage
-              src="/watch.svg"
-              placeholder={({ imageProps, ref }: any) => <img ref={ref} src="/empty.svg" className="shadow-hover"/>}
-              actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
-            />
+            <TerminalImage src={watchImage} />
           </Grid.Column>
         </Grid.Row>
         <Divider />
@@ -123,7 +129,7 @@ const HomeView = () => (
         </Grid.Row>
       </Grid>
     </Segment>
-    <Footer />
+    <Footer bottom={false}/>
   </React.Fragment>
 );
 

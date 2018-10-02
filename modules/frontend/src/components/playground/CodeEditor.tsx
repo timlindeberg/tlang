@@ -1,5 +1,4 @@
 import * as codemirror from 'codemirror';
-import { TextMarker } from 'codemirror';
 import { CodeError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
 import groupBy from 'lodash/groupBy';
 
@@ -34,7 +33,7 @@ interface CodeEditorState {
 export default class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   state: CodeEditorState = {};
   editor?: IInstance;
-  marks: TextMarker[] = [];
+  marks: codemirror.TextMarker[] = [];
 
   setCode = (editor: any, data: any, value: string) => this.props.setCode(value);
 

@@ -1,5 +1,11 @@
+import Loading from 'components/layout/Loading';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import * as Loadable from 'react-loadable';
+
+export function makeLoadable<Props>(loader: any) {
+  return Loadable({ loader, loading: () => <Loading />, });
+}
 
 export async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
