@@ -1,7 +1,7 @@
 # Literals 
 
 `tlang` supports the usual numeric types used on the JVM such as `Int`, `Long`, `Float` and `Double`. Currently `Byte`
-and `Short` is not supported but will be implemented in future versions. A number literal without decimal points ending 
+and `Short` is not supported but will be implemented in a future version. A number literal without decimal points ending 
 with `L` or `l` is of type `Long`, otherwise it's an `Int`. If a number contains a decimal point and ends with `F` or 
 `f` it's a `Float`, otherwise it's a `Double`.
 
@@ -17,7 +17,7 @@ Examples:
 128.256E8F // Float
 ```
 
-Number literals can also include underscores to easier visualize large numbers:
+Number literals can also include underscores to more easily visualize large numbers:
 
 ```tlang
 1_000_000
@@ -48,7 +48,7 @@ Binary literals are also supported by prefixing the number with `0b`:
 ## String and character literals
 A normal string literal is started using quotes and must end on the same line.
 `tlang` also supports multiline strings which start and end with a backtick. Multiline
-strings treat each character as it is meaning that escape characters are not possible.
+strings treat each character as is. meaning that escape characters are not possible.
 
 ```tlang
 "This is a normal string \n which contains \"escaped\" characters \uF431 \u1F4BB"

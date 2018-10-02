@@ -29,12 +29,12 @@ export default class HelpModal extends React.Component<{}, HelpModalState> {
             Playground Help
           </Modal.Header>
           <Modal.Content>
-            In the Playground you can try out <code>tlang</code> in real time! Enter code in the editor and press
+            In the playground you can try out <code>tlang</code> in real time! Enter code in the editor and press
             the <strong>Run Code</strong> button to have it evaluated
             (or press <code>CTRL</code> + <code>ENTER</code>).
 
-            If you're unsure what to write you can start out with some examples by selecting one in the examples
-            dropdown.
+            If you're unsure what to write you can start out with some examples by selecting one in
+            the <strong>Examples</strong> dropdown.
           </Modal.Content>
           <Modal.Actions>
             <Button color="green" inverted onClick={this.handleClose}>

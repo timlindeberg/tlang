@@ -2,7 +2,7 @@
 `tlang` is a statically typed language meaning that types are checked at compile time.
 This means that every variable has to have a type and every function needs a
 return type. However, always declaring types manually can be tedious and can also
-reduce readability in many cases where the type is duplicate, for instance when
+reduce readability in many cases, especially where the type is duplicated, for instance when
 constructing a new value. Because of this `tlang` supports type inference.
 
 ## Primitive types
@@ -19,11 +19,15 @@ There are `6` primitive types in `tlang`:
 However, `tlang` doesn't treat primitive types different from other types, even
 though they are implemented as such under the hood to give good performance.
 Primitive types in `tlang` are subclasses of `Object` just like classes.
+
 To preserve compatibility with `Java`, `tlang` does not define it's own `Object`
 type but instead uses `java::lang::Object` as the base of all types. In the same way
 `String`:s in `tlang` are instances of `java::lang::String`. There does however 
 exist extensions to the these classes so `Object`:s and `String`:s have more methods
 `tlang` than they do in `Java`. 
+
+There is also the `Unit` type which is analogous to `Java`s `void`. A function which
+returns nothing is of type `Unit`.
 
 ## Type inference
 The compiler can figure out the type of most variables and functions. Because of this,
@@ -33,15 +37,15 @@ to skip type declarations.
 
 ```tlang
 val x: Int = 5
-val x = 5 // Type is infered to be Int since the literal 5 is of type Int
+val x = 5 // Type is inferred to be Int since the literal 5 is of type Int
 
 class A =
 
 	val x: Int = 5 
-	val y = 5 // Type is infered to be Int
+	val y = 5 // Type is inferred to be Int
 
 	Def MyFunction(): String = "5"
-	Def MyFunction2() = "5" // Return type is infered to be String
+	Def MyFunction2() = "5" // Return type is inferred to be String
 
 	// Compilation error since the return type doesn't
 	// match the declared type

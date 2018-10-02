@@ -15,7 +15,7 @@ class A =
 		println(a) // a refers to the method argument
 		val a = 10
 		println(a) // prints(10)
-		for(var i = 0; i < a; i++) // a refers to the the outer scope
+		for(var i = 0; i < a; i++) // a refers to the outer scope
 			val a = 15
 			println(a) // prints 15, 10 times
 ```

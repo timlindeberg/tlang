@@ -1,6 +1,5 @@
 # Operator Overloading
-Operator overloading is supported in `tlang` where the following operators 
-can be extended:
+Operator overloading is supported in `tlang`, the following operators can be extended:
 
 ### Binary Operators
 ```tlang
@@ -17,7 +16,7 @@ can be extended:
 [] []= [:]
 ```
 
-Operators are implicitly `static` and you have to declare all arguments to.
+Operators are implicitly `static` and you have to declare all arguments to them.
 The arguments can be of any type but at least one of them has to of the same type as the class
 their declared in.
 
@@ -175,6 +174,6 @@ The statement `a += "123"` is translated by the compiler to `a = a + "123"`. In 
 will be possible to customize the behaviour of the assignment operators.
 
 Overloading the increment and decrement operators will overload both the pre- and post operators.
-The operator can modify the object and should typically return a reference to the object modified,
+The operator can modify the object and should typically return the object being modified,
 but can return anything.
 

@@ -71,8 +71,8 @@ extension java::lang::String =
 println("123".WithPrefix("ABC")) // ABC123
 ```
 
-This also works for all types including primitive types like `Int` and `Double` but does not 
-currently support generics. 
+This also works for all types including primitive types like `Int` and `Double`. Generic
+extension classes are currently not supported but will be in the future.
 
 ## Static methods and fields
 `tlang` supports static methods and fields:

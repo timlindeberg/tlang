@@ -10,7 +10,7 @@ var a = new A()
 println(a) 
 ```
 
-Statements can also be ended with a semicolon but it's not generally recommended:
+Statements can also be ended with a semicolon but that is generally not recommended:
 
 ```tlang
 Def F() = 
@@ -21,7 +21,7 @@ Def F() =
 In `tlang` tabs are used for indentation and spaces are used for alignment. This allows each programmer to choose an indentation 
 width of their liking while still maintaining correct alignment. Since the rules are clear there
 can't be any conflict of whether spaces or tabs should be used. Tabs are used to declare
-a block and spaces have no syntactic meaning.
+a block and spaces have no syntactic meaning (except sometimes to separate tokens).
 
 ```tlang
 Def F() =

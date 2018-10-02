@@ -1,6 +1,6 @@
 # Nullability
 In `tlang` not every value can be `null`, only types that are explicitly declared as nullable.
-This removes a whole category of bugs since it's always clear whether a value exists or not. A
+This removes a whole category of bugs since it's always clear whether a value can exist or not. A
 nullable type is declared by appending a `?` to the type.
 
 ```tlang
@@ -8,7 +8,7 @@ val x: Int? = Math.random() > 0.5 ? 1 : null
 
 class A =
 	Val Y: String?
-	Def X(x: Int?) = ;
+	Def X(x: Int?)
 ```
 
 ## Accessing nullable variables

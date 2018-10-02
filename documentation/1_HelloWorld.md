@@ -1,5 +1,5 @@
 # Hello World!
-In `tlang` the most simple hello world program is written as:
+In `tlang` a very simple program can be written as:
 
 ```tlang
 println("Hello world!")
@@ -44,7 +44,7 @@ as static functions. The result looks something like this:
 ```tlang
 class HelloWorld = 
 
-	Def main(args: String[]) =
+	Def static main(args: String[]) =
 		val a = ConstructA()
 		a.Run() // Hello World!
 

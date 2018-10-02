@@ -23,7 +23,7 @@ The minus operator, `-`, subtracts the right hand side from the left hand side.
 ``` 
 
 ### Multiplication
-The multiplication operator, `*`, multiplies two numbers.
+The multiplication operator, `*`, multiplies two numbers together.
 ```tlang
 5 * 5 // 25
 ```
@@ -33,7 +33,7 @@ The division operator, `/`, divides the left hand side by the right hand side.
 25 / 5 // 5
 ```
 ### Modulo
-The modulo operator, `%`, gives the remainder when dividing the the left hand side by right.
+The modulo operator, `%`, gives the remainder when dividing the the left hand side by the right hand side.
 ```tlang
 11 % 3 // 2 
 ```
@@ -55,7 +55,7 @@ Only applies to integral types.
 ```
 ### Bitwise Xor
 The bitwise exclusive or operator, `^`, compares each bit in the left hand side to each bit of the right hand side.
-If one bit is `1` and the other is `0` bit is set to `1` otherwise it's set to `0`. 
+If one bit is `1` and the other is `0` the bit is set to `1` otherwise it's set to `0`. 
 
 Only applies to integral types.
 ```tlang
@@ -70,7 +70,7 @@ Only applies to integral types.
 ```
 ### Right Shift
 The right shift operator, `>>`, shifts the bits of the left hand operand by the right hand operand.
-The equivalent in Java would be `>>>`, the logical shift operator. This means that for a negative
+The equivalent in `Java` would be `>>>`, the logical shift operator. This means that for a negative
 number the sign will not be preserved.
  
 Only applies to integral types.
@@ -93,14 +93,14 @@ the left operand is smaller than or equal to the right.
 ```
 ### Greater Than
 The greater than operator, `>`, compares the left hand operand by the right hand and returns true if
-the left operand is smaller than or equal to the right.
+the left operand is greater than the right.
 ```tlang
 5 > 4 // true
 5 > 5 // false
 ```
 ### Greater Than Equals
 The greater than equals operator, `>=`, compares the left hand operand by the right hand and returns true if
-the left operand is smaller than or equal to the right.
+the left operand is greater than or equal to the right.
 ```tlang
 5 >= 4 // true
 5 >= 5 // true
@@ -121,6 +121,8 @@ they're not equal.
 ```
 ### And
 The and operator, `&&`, accepts two boolean conditions and returns true if they're both true.
+The operator is short circuiting, meaning that if the first argument is false, the second argument
+won't get evaluated. 
 ```tlang
 false && false // false
 false && true // false
@@ -129,6 +131,8 @@ true && true // true
 ```
 ### Or
 The or operator, `||`, accepts two boolean conditions and returns true if they're both true.
+The operator is short circuiting, meaning that if the first argument is true, the second argument
+won't get evaluated.
 ```tlang
 false || false // false
 false || true // true
@@ -153,19 +157,19 @@ downcast a type and will throw a `CastException` when the cast is not possible.
 
 12345 as Double // 12345.0 
 
-class A : B
-class B
+class A
+class B: A
 
-val a: A = new A()
+val a: A = new B()
 val b: B = a as B
 val c: A = b as A
 
-val x = new B()
-val y = x as A // throws an exception
+val x = new A()
+val y = x as B // throws an exception
 ```
-
+``
 ### Elvis
-The elvis operator, `?:`, will return the right hand operand if the left operand is null. Otherwise,
+The elvis operator, `?:`, will return the right hand operand if the left operand is `null. Otherwise,
 the left hand operand is returned. The type of the left hand operand has to be nullable.
 ```tlang
 var x: Int? = null
@@ -204,7 +208,7 @@ The negation operator, `-`, returns the negative of the operand.
 -5 // -5
 ```
 ### Bitwise Not
-The bitwise not operator, `~`, returns the operand with each bit switched.
+The bitwise not operator, `~`, returns the operand with each bit inverted.
 ```tlang
 ~0b1011_1111 // 0b0100_0000
 ```

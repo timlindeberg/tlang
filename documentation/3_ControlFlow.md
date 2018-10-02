@@ -38,12 +38,12 @@ for (val i in vec)
 
 A type `Foo` is `Iterable` if and only if the following is true:
 
-* `Foo` implements a method called `Iterator()` with zero arguments
+* `Foo` implements a method called `Iterator()` accepting zero arguments.
 * `Iterator()` returns an `Iterator` object.
 * The `Iterator` object implements the following functions:
 ```tlang
-Def Bool HasNext()
-Def T Next()
+Def HasNext(): Bool 
+Def Next(): T 
 ```
 A type which implements the `t::lang::Iterable` interface will always uphold 
 these criteria but it is not needed to be `Iterable`.
