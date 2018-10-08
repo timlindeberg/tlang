@@ -3,10 +3,12 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                           controllers.DocumentationController.documentation
+GET     /                           controllers.Assets.at(path = "index.html")
 
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(file)
+# Map static resources from the /public folder to the /static URL path
+GET     /static/*file               controllers.Assets.at(file)
 
-GET     /documentation              controllers.DocumentationController.documentation
-GET     /compilationWs              controllers.CompilationController.socket
+GET     /api/documentation          controllers.DocumentationController.documentation
+GET     /api/compilationWs          controllers.CompilationController.socket
+
+

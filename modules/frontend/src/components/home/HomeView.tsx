@@ -14,12 +14,10 @@ import Divider from 'semantic-ui-react/dist/commonjs/elements/Divider/Divider';
 import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
 import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
-import Loader from 'semantic-ui-react/dist/commonjs/elements/Loader/Loader';
-import Loading from 'components/layout/Loading';
 
-const emptyImage = require('images/empty.svg');
-const replImage = require('images/trepl.svg');
-const watchImage = require('images/watch.svg');
+const emptyImage = require('static/images/empty.svg');
+const replImage = require('static/images/trepl.svg');
+const watchImage = require('static/images/watch.svg');
 
 const codeExample =
 `package t::lang
@@ -68,7 +66,7 @@ const HomeView = () => (
           <Grid.Column width={8} className="animated fade-in-right column-left">
             <Header as="h1">Language philosophy</Header>
             <p className="HomeView-larger-text">
-              <code>tlang</code> is a strongly, statically typed scripting language takes inspiration from
+              <code>tlang</code> is a strongly typed scripting language which takes inspiration from
               languages such as Kotlin, python, golang, Java, Scala and C++. Combining object
               oriented design with functional programming ideas together with a clean whitespace
               based syntax.
@@ -118,7 +116,7 @@ const HomeView = () => (
             </List>
           </Grid.Column>
           <Grid.Column width={8} className="animated fade-in-left column-right">
-            <TerminalImage src={watchImage} />
+              <TerminalImage src={watchImage} />
           </Grid.Column>
         </Grid.Row>
         <Divider />

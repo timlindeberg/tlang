@@ -80,6 +80,7 @@ module.exports = function(proxy, allowedHost) {
     host: host,
     overlay: false,
     historyApiFallback: {
+
       // Paths with dots should still use the history fallback.
       // See https://github.com/facebookincubator/create-react-app/issues/387.
       disableDotRule: true,

@@ -129,7 +129,8 @@ lazy val backend = (project in file(s"$Modules/backend"))
     libraryDependencies ++= Seq(
       guice,
       "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
-      "com.h2database" % "h2" % "1.4.196"
+      "com.h2database" % "h2" % "1.4.196",
+      filters
     )
   )
   .enablePlugins(PlayScala)

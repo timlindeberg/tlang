@@ -1,7 +1,7 @@
 const API_URL = 'localhost:9000';
 
 export async function getDocumentation(): Promise<String[]> {
-  const response = await fetch(`http://${API_URL}/documentation`);
+  const response = await fetch(`http://${API_URL}/api/documentation`);
   if (!response.ok) {
     throw new Error('Could not fetch documentation');
   }
@@ -12,7 +12,7 @@ export async function getDocumentation(): Promise<String[]> {
 
 export async function connectToCompilationService(): Promise<WebSocket> {
   return new Promise<WebSocket>((resolve, reject) => {
-    const socket = new WebSocket(`ws://${API_URL}/compilationWs`);
+    const socket = new WebSocket(`ws://${API_URL}/api/compilationWs`);
     socket.onopen = () => resolve(socket);
     socket.onerror = err =>
       reject(err);

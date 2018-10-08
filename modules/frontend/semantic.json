@@ -18,5 +18,29 @@
   "permission": false,
   "autoInstall": false,
   "rtl": false,
-  "version": "2.3.3"
+  "version": "2.3.3",
+  "components": [
+    "reset",
+    "site",
+    "button",
+    "container",
+    "divider",
+    "header",
+    "icon",
+    "image",
+    "input",
+    "list",
+    "loader",
+    "segment",
+    "grid",
+    "menu",
+    "table",
+    "accordion",
+    "dimmer",
+    "dropdown",
+    "modal",
+    "popup",
+    "search",
+    "transition"
+  ]
 }
