@@ -19,6 +19,7 @@
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/resource_managed/main" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/resource_managed/test" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/test/resources" type="java-test-resource" />
+      <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/public" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/target/streams" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/target/universal" />

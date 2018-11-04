@@ -64,22 +64,23 @@ const HomeView = () => (
       <Grid container stackable verticalAlign="middle">
         <Grid.Row>
           <Grid.Column width={8} className="animated fade-in-right column-left">
-            <Header as="h1">Language philosophy</Header>
+            <Header as="h1">tlang</Header>
             <p className="HomeView-larger-text">
-              <code>tlang</code> is a strongly typed scripting language which takes inspiration from
-              languages such as Kotlin, python, golang, Java, Scala and C++. Combining object
-              oriented design with functional programming ideas together with a clean whitespace
-              based syntax.
+              is a strongly typed scripting language which takes inspiration from
+              languages such as <code>Kotlin</code>, <code>Scala</code> and <code>C++</code>.
+              The language combines object oriented design with functional programming ideas
+              together with a clean whitespace based syntax.
             </p>
             <Header as="h1">Features</Header>
             <List bulleted className="HomeView-larger-text">
               <List.Item>Object oriented design with classes, traits and inheritance</List.Item>
-              <List.Item>C++ like templates with run time generics</List.Item>
+              <List.Item><code>C++</code> like templates with run time generics</List.Item>
               <List.Item>Extension classes</List.Item>
-              <List.Item>Fully featured REPL</List.Item>
               <List.Item>Operator overloading</List.Item>
-              <List.Item>Integrates easily with existing Java code</List.Item>
-              <List.Item>Well designed and easy to read error messages</List.Item>
+              <List.Item>Easy to read whitespace based syntax</List.Item>
+              <List.Item>Compile time guaranteed <code>null</code> safety</List.Item>
+              <List.Item>Integrates easily with existing <code>Java</code> code</List.Item>
+              <List.Item>Well designed and easy to read error messages with syntax highlighting</List.Item>
             </List>
           </Grid.Column>
           <Grid.Column width={8} verticalAlign="middle" className="animated fade-in-left column-right">
@@ -94,12 +95,12 @@ const HomeView = () => (
           <Grid.Column width={8} className="animated fade-in-left column-right">
             <Header as="h1">trepl</Header>
             <List bulleted className="HomeView-larger-text">
-              <List.Item>Fully featured REPL</List.Item>
-              <List.Item>Evaluate expressions</List.Item>
+              <List.Item>Fully featured <code>REPL</code></List.Item>
+              <List.Item>Evaluate complicated expressions</List.Item>
               <List.Item>Keeps history</List.Item>
-              <List.Item>Syntax highlighting</List.Item>
+              <List.Item>Supports real time syntax highlighting</List.Item>
               <List.Item>Supports mouse input and selection</List.Item>
-              <List.Item>Easy navigation with ALT and CMD modifiers</List.Item>
+              <List.Item>Easy navigation with <code>ALT</code> and <code>CMD</code> modifiers</List.Item>
               <List.Item>Supports multiline editing</List.Item>
             </List>
           </Grid.Column>
@@ -109,8 +110,8 @@ const HomeView = () => (
           <Grid.Column width={8} className="animated fade-in-right column-left">
             <Header as="h1">Watch mode</Header>
             <List bulleted className="HomeView-larger-text">
-              <List.Item>The t-compiler can watch your files and recompile when it changes</List.Item>
-              <List.Item>Combine with the --exec flag to execute and view the output</List.Item>
+              <List.Item>The <code>t</code>-compiler can watch your files and recompile when it changes</List.Item>
+              <List.Item>Combine with the <code>--exec</code> flag to execute and view the output</List.Item>
               <List.Item>Get immediate feedback through easy to read error messages</List.Item>
               <List.Item>Formats the output for easier reading</List.Item>
             </List>
