@@ -12,7 +12,7 @@ export default class Loading extends React.Component<{}, {}> {
   render() {
     return (
       <React.Fragment>
-        <Segment textAlign="left" inverted id="MenuLayout-navbar" className="Navbar-border">
+        <Segment textAlign="left" inverted id="MenuLayout-navbar">
           <Grid>
             <Grid.Column>
               <Logo size={2.5}/>

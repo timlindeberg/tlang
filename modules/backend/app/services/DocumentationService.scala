@@ -26,7 +26,7 @@ class DocumentationService @Inject()(config: Configuration) {
   }
 
   private def staticDocumentation: List[Documentation] = {
-    def documentationPath = Paths.get(config.get[String]("tlang.documentation.path"))
+    val documentationPath = Paths.get(config.get[String]("tlang.documentation.path"))
     Files.walk(documentationPath)
       .iterator
       .asScala

@@ -2,13 +2,10 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# An example controller showing a sample home page
-GET     /                           controllers.Assets.at(path = "index.html")
-
 # Map static resources from the /public folder to the /static URL path
 GET     /static/*file               controllers.Assets.at(file)
 
 GET     /api/documentation          controllers.DocumentationController.documentation
 GET     /api/compilationWs          controllers.CompilationController.socket
-
-
+GET     /                           controllers.IndexController.index(path = "")
+GET     /*path                      controllers.IndexController.index(path)
