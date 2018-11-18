@@ -12,14 +12,14 @@ BACKEND_FOLDER="$ROOT/modules/backend"
 FRONTEND_FOLDER="$ROOT/modules/frontend"
 
 cd "$FRONTEND_FOLDER"
-echo -e "Building frontend with yarn"
+echo "Building frontend with yarn"
 yarn build
 
 if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo -e "Gziping assets and putting them in public folder"
+echo "Gziping assets and putting them in public folder"
 
 PUBLIC_FOLDER="$BACKEND_FOLDER/public"
 rm -rf $PUBLIC_FOLDER
@@ -34,14 +34,13 @@ for TYPE in js html css map ico eot svg xml json ttf; do
 	find . -type f -iname "*.$TYPE" -exec gzip --best --keep {} \;		
 done
 
-echo -e "Building backend with sbt"
+echo "Building backend with sbt"
 cd "$ROOT"
 sbt "project backend" universal:packageBin
 
 echo "Copying needed files to build directory"
 
-BUILD_BASE="build_tlang"
-BUILD_FOLDER="$BUILD_BASE/opt/tlang"
+BUILD_FOLDER="build_tlang"
 rm -rf $BUILD_FOLDER
 mkdir -p $BUILD_FOLDER
 
@@ -59,7 +58,7 @@ rm -rf "$BUILD_FOLDER/$ZIP_NAME"
 
 ZIP="tlang-website-$VERSION.tar.gz"
 echo "Creating zip ${YELLOW}$ZIP${END}"
-tar -czf $ZIP -C $BUILD_BASE .
-rm -rf $BUILD_BASE
+tar -czf $ZIP -C $BUILD_FOLDER .
+rm -rf $BUILD_FOLDER
 
 echo "${GREEN}Successfully built!${END}"
