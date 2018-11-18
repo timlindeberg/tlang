@@ -1,10 +1,9 @@
 import 'components/gettingStarted/GettingStartedView.less';
 import Footer from 'components/layout/Footer';
-import Navbar from 'components/layout/Navbar';
+import NavbarWithLogo from 'components/layout/NavbarWithLogo';
 import CodeBlock from 'components/misc/CodeBlock';
-import Logo from 'components/misc/Logo';
 import * as React from 'react';
-import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
+import Container from 'semantic-ui-react/dist/commonjs/elements/Container/Container';
 import Header from 'semantic-ui-react/dist/commonjs/elements/Header/Header';
 import List from 'semantic-ui-react/dist/commonjs/elements/List/List';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
@@ -14,17 +13,9 @@ export default class GettingStartedView extends React.Component<{}, {}> {
   render() {
     return (
       <React.Fragment>
-        <Segment textAlign="left" inverted id="MenuLayout-navbar">
-          <Grid>
-            <Grid.Column>
-              <Logo size={2.5}/>
-            </Grid.Column>
-            <Grid.Column>
-              <Navbar/>
-            </Grid.Column>
-          </Grid>
-        </Segment>
+        <NavbarWithLogo />
         <Segment id="GettingStartedView-content">
+          <Container text>
             <Header as="h1">Installation</Header>
             <p>The <code>t</code> compiler requires <code>Java 8</code> or later to run.</p>
             <Header as="h3">Mac OSX</Header>
@@ -39,7 +30,7 @@ export default class GettingStartedView extends React.Component<{}, {}> {
               <List.Item>
                 Download the latest release at <a href="https://github.com/timlindeberg/tlang/releases">
                 https://github.com/timlindeberg/tlang/releases
-                </a>.
+              </a>.
               </List.Item>
               <List.Item>
                 Unpack the zip somewhere.
@@ -71,6 +62,7 @@ export default class GettingStartedView extends React.Component<{}, {}> {
                 to compiling it.
               </List.Item>
             </List>
+          </Container>
         </Segment>
         <Footer bottom={false} />
       </React.Fragment>

@@ -2,5 +2,5 @@
     User Variable Overrides
 *******************************/
 
-@loaderFillColor: fade(@primaryColor, 10%);
-@loaderLineColor: @primaryColor;
+@loaderFillColor: fade(@secondaryColor, 10%);
+@loaderLineColor: @secondaryColor;

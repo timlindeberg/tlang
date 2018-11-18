@@ -12,18 +12,16 @@ import {
 } from 'components/playground/events/Events';
 import { CodeError } from 'components/playground/PlaygroundTypes';
 import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
-import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
 
-import Navbar from 'components/layout/Navbar';
-import Logo from 'components/misc/Logo';
 import EventLog from 'components/playground/EventLog';
 import PlaygroundMenu from 'components/playground/PlaygroundMenu';
 
 import 'codemirror/lib/codemirror.css';
+import Footer from 'components/layout/Footer';
+import NavbarWithLogo from 'components/layout/NavbarWithLogo';
 import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
-import Footer from 'components/layout/Footer';
 import 'syntaxHighlighting/codemirror-highlighting';
 
 interface PlaygroundViewState {
@@ -188,16 +186,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
     const { code, events, errors, playgroundState } = this.state;
     return (
       <React.Fragment>
-        <Segment textAlign="left" inverted id="MenuLayout-navbar">
-          <Grid>
-            <Grid.Column>
-              <Logo size={2.5}/>
-            </Grid.Column>
-            <Grid.Column>
-              <Navbar/>
-            </Grid.Column>
-          </Grid>
-        </Segment>
+        <NavbarWithLogo />
         <div id="PlaygroundView-content">
           <PlaygroundMenu playgroundState={playgroundState} {...this.menuFunctions()}/>
           <Grid>

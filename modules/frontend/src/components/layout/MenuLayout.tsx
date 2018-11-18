@@ -3,11 +3,11 @@ import Navbar from 'components/layout/Navbar';
 import Logo from 'components/misc/Logo';
 import * as React from 'react';
 
+import Footer from 'components/layout/Footer';
 import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
 import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
 import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
 import Segment from 'semantic-ui-react/dist/commonjs/elements/Segment/Segment';
-import Footer from 'components/layout/Footer';
 
 interface MenuLayoutProps {
   menu: (state: MenuLayoutState) => JSX.Element;
@@ -27,7 +27,7 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
   render() {
     const { menu, content } = this.props;
     const { menuVisible } = this.state;
-    const rightSideStyle = menuVisible ? {} : { borderLeft: 0 };
+    const rightSideStyle = menuVisible ? { width: 'calc(100% - 15px)' } : { borderLeft: 0 };
     const rightSide = (
       <React.Fragment>
         <Segment inverted id="MenuLayout-navbar">
@@ -49,7 +49,12 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
     );
 
     if (!menuVisible) {
-      return rightSide;
+      return (
+        <React.Fragment>
+          {rightSide}
+          <Footer bottom/>
+        </React.Fragment>
+      );
     }
 
     const leftSide = (
