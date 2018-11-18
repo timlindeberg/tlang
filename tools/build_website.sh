@@ -2,8 +2,6 @@ GREEN="\033[32m"
 YELLOW="\033[33m"
 END="\033[0m"
 
-set -e
-
 ROOT=`git rev-parse --show-toplevel`
 
 pushd $ROOT > /dev/null
