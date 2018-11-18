@@ -15,8 +15,8 @@ object ClassPath {
   lazy val Default: ClassPath = {
     val javaLibDirectory = Paths.get(System.getProperty("java.home") + File.separator + "lib")
 
-    val javaLibJarFiles: Set[String] = Files
-      .find(javaLibDirectory, 1000, (path, attr) =>
+    val javaLibJarFiles: Set[String] =
+      Files.find(javaLibDirectory, 1000, (path, attr) =>
         attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
       )
       .iterator

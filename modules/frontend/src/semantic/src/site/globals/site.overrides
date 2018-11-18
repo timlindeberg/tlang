@@ -1,3 +1,22 @@
 /*******************************
          Site Overrides
 *******************************/
+
+body .ui.inverted::-webkit-scrollbar-track {
+  background: @primaryColor;
+}
+
+
+body ::-webkit-scrollbar-track {
+  background: @primaryColor;
+}
+
+
+body .ui.inverted::-webkit-scrollbar-thumb {
+  background: lighten(@primaryColor, 10%)
+
+}
+
+body ::-webkit-scrollbar-thumb {
+  background: lighten(@primaryColor, 10%);
+}

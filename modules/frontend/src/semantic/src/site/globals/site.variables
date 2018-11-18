@@ -17,10 +17,12 @@
 @grey           : #A0A0A0;
 @black          : #000000;
 
-
 @borderColor: fade(@primaryColor, 20%);
 @invertedBackground: @primaryColor;
 @highlightBackground: fade(@primaryColor, 50%);
+@linkColor: @fourthColor;
+@linkHoverColor: lighten(@fourthColor, 20%);
+
 
 @importGoogleFonts : true;
 @googleFontSizes   : '400,700,400italic,700italic';

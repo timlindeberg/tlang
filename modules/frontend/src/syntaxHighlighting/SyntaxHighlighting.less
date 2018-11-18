@@ -26,7 +26,7 @@
 }
 
 .cm-s-tlang .cm-variable, .hljs-variable {
-  color: darken(@primaryColor, 20 %);
+  color: @accentColor;
 }
 
 .cm-s-tlang .cm-keyword, .hljs-keyword {
@@ -38,15 +38,15 @@
 }
 
 .cm-s-tlang .cm-type, .hljs-type {
-  color: darken(@secondaryColor, 10%);
+  color: lighten(@secondaryColor, 10%);
 }
 
 .cm-s-tlang .cm-string, .hljs-string {
-  color: @secondaryColor;
+  color: @fourthColor;
 }
 
 .cm-s-tlang .cm-char, .hljs-char {
-  color: @secondaryColor;
+  color: @fourthColor;
 }
 
 .cm-s-tlang .cm-escapeChar, .hljs-escapeChar {
@@ -54,15 +54,15 @@
 }
 
 .cm-s-tlang .cm-number, .hljs-number {
-  color: @accentColor;
+  color: @successColor;
 }
 
 .cm-s-tlang .cm-symbol, .hljs-symbol {
-  color: @darkColor;
+  color: lighten(@primaryColor, 20%);
 }
 
 .cm-s-tlang .cm-literal, .hljs-literal {
-  color: @accentColor;
+  color: @secondaryColor;
 }
 
 .cm-s-tlang .cm-params, .hljs-params {

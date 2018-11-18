@@ -47,8 +47,8 @@ helloWorld.Print() // prints "Hello world!" 1337 times
 const TerminalImage = ({ src }: { src: string }) => (
   <LazyImage
     src={src}
-    placeholder={({ imageProps, ref }: any) => <img ref={ref} src={emptyImage} className="shadow-hover"/>}
-    actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover"/>}
+    placeholder={({ imageProps, ref }: any) => <img ref={ref} src={emptyImage} className="shadow-hover terminal-image"/>}
+    actual={({ imageProps }: any) => <img {...imageProps} className="shadow-hover terminal-image"/>}
   />
 );
 

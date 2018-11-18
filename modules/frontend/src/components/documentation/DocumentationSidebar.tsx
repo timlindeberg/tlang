@@ -155,13 +155,15 @@ DocumentationSidebar extends React.Component<DocumentationSidebarProps, Document
   mouseLeaveMenu = () => this.setState(() => ({ mousedOverHeaders: new Set() }));
 
   SearchBar = () => (
-    <Search
-      size="mini"
-      value={this.state.searchValue}
-      onSearchChange={this.handleSearchChange}
-      onKeyDown={this.onSearchKeyDown}
-      open={false}
-    />
+    <div id="MenuLayout-searchbar">
+      <Search
+        size="mini"
+        value={this.state.searchValue}
+        onSearchChange={this.handleSearchChange}
+        onKeyDown={this.onSearchKeyDown}
+        open={false}
+      />
+    </div>
   )
 
   renderSubMenu = (header: Header, isHeaderOpen: boolean): JSX.Element => (

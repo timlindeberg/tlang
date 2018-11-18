@@ -71,7 +71,9 @@ class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
         case Timeout                           => Json.obj("messageType" -> TIMEOUT, "timeout" -> evaluator.timeout.toSeconds)
         case Canceled                          => Json.obj("messageType" -> CANCEL)
         case ExecutionError(stackTrace, line)  => Json.obj("messageType" -> EXECUTION_ERROR, "error" -> stackTrace, "line" -> line.getOrElse(-1).asInstanceOf[Int])
-        case InternalCompilerError(stackTrace) => Json.obj("messageType" -> INTERNAL_COMPILER_ERROR, "error" -> stackTrace)
+        case InternalCompilerError(stackTrace) =>
+          Logger.error("Internal compiler error\n" + stackTrace)
+          Json.obj("messageType" -> INTERNAL_COMPILER_ERROR, "error" -> stackTrace)
       }
       case Failure(e)               =>
         e.printStackTrace()
