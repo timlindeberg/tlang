@@ -17,8 +17,7 @@ import EventLog from 'components/playground/EventLog';
 import PlaygroundMenu from 'components/playground/PlaygroundMenu';
 
 import 'codemirror/lib/codemirror.css';
-import Footer from 'components/layout/Footer';
-import NavbarWithLogo from 'components/layout/NavbarWithLogo';
+import StandardLayout from 'components/layout/StandardLayout';
 import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
@@ -185,8 +184,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
   render() {
     const { code, events, errors, playgroundState } = this.state;
     return (
-      <React.Fragment>
-        <NavbarWithLogo />
+      <StandardLayout bottom>
         <div id="PlaygroundView-content">
           <PlaygroundMenu playgroundState={playgroundState} {...this.menuFunctions()}/>
           <Grid>
@@ -198,8 +196,7 @@ export default class PlaygroundView extends React.Component<{}, {}> {
             </Grid.Column>
           </Grid>
         </div>
-        <Footer bottom />
-      </React.Fragment>
+      </StandardLayout>
     );
   }
 }

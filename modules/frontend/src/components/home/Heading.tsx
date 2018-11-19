@@ -18,7 +18,7 @@ const Heading = () => (
       id="Heading-secondary"
       style={{ paddingTop: '1.5em' }}
     />
-    <Button icon labelPosition="right" secondary size="huge" as={Link} to="/playground">
+    <Button icon labelPosition="right" secondary size="large" as={Link} to="/playground">
       Try it out!
       <Icon name="arrow right"/>
     </Button>

@@ -4,6 +4,8 @@ import Logo from 'components/misc/Logo';
 import * as React from 'react';
 
 import Footer from 'components/layout/Footer';
+import Layout from 'components/layout/Layout';
+import StandardLayout from 'components/layout/StandardLayout';
 import Grid from 'semantic-ui-react/dist/commonjs/collections/Grid/Grid';
 import Button from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
 import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
@@ -24,9 +26,16 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
 
   toggleVisibility = (): void => this.setState(prev => ({ menuVisible: !prev.menuVisible }));
 
-  render() {
+  mobileLayout = () => {
+    const { content } = this.props;
+    return <StandardLayout bottom={false}>{content(this.state)}</StandardLayout>;
+  }
+
+  desktopLayout = () => {
     const { menu, content } = this.props;
     const { menuVisible } = this.state;
+
+    // 15 px is the width of the scroll bar
     const rightSideStyle = menuVisible ? { width: 'calc(100% - 15px)' } : { borderLeft: 0 };
     const rightSide = (
       <React.Fragment>
@@ -38,7 +47,7 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
               </Button>
             </Grid.Column>
             <Grid.Column>
-              <Navbar/>
+              <Navbar />
             </Grid.Column>
           </Grid>
         </Segment>
@@ -78,6 +87,15 @@ export default class MenuLayout extends React.Component<MenuLayoutProps, MenuLay
         </Grid>
         <Footer bottom/>
       </React.Fragment>
+    );
+  }
+
+  render() {
+    return (
+      <Layout
+        mobile={this.mobileLayout}
+        desktop={this.desktopLayout}
+      />
     );
   }
 }
