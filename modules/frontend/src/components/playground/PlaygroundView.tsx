@@ -22,6 +22,7 @@ import CodeEditor from 'components/playground/CodeEditor';
 import codeExamples from 'components/playground/codeExamples';
 import 'components/playground/PlaygroundView.less';
 import 'syntaxHighlighting/codemirror-highlighting';
+import Layout from 'components/layout/Layout';
 
 interface PlaygroundViewState {
   code: string;
@@ -181,7 +182,20 @@ export default class PlaygroundView extends React.Component<{}, {}> {
     this.addEvent(new ConnectedEvent());
   }
 
-  render() {
+  mobileLayout = () => {
+    const { code, events, errors, playgroundState } = this.state;
+    return (
+      <StandardLayout bottom={false}>
+        <div id="PlaygroundView-content">
+          <PlaygroundMenu playgroundState={playgroundState} {...this.menuFunctions()}/>
+          <EventLog events={events}/>
+          <CodeEditor code={code} setCode={this.setCode} compileCode={this.compileCode} errors={errors}/>
+        </div>
+      </StandardLayout>
+    );
+  }
+
+  desktopLayout = () => {
     const { code, events, errors, playgroundState } = this.state;
     return (
       <StandardLayout bottom>
@@ -198,5 +212,9 @@ export default class PlaygroundView extends React.Component<{}, {}> {
         </div>
       </StandardLayout>
     );
+  }
+
+  render() {
+    return <Layout mobile={this.mobileLayout} desktop={this.desktopLayout}/>;
   }
 }

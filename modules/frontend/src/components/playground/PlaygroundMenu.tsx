@@ -1,3 +1,4 @@
+import Layout from 'components/layout/Layout';
 import codeExamples from 'components/playground/codeExamples';
 import * as React from 'react';
 import Menu from 'semantic-ui-react/dist/commonjs/collections/Menu/Menu';
@@ -91,16 +92,26 @@ export default class PlaygroundMenu extends React.Component<PlaygroundMenuProps,
     );
   }
 
+  mobileLayout = () => (
+    <Menu id="PlaygroundView-menu" className="shadow-hover" widths={3}>
+      {this.connectionStatusItem()}
+      {this.runCodeItem()}
+      <HelpModal/>
+    </Menu>
+  )
+
+  desktopLayout = () => (
+    <Menu id="PlaygroundView-menu" className="shadow-hover" widths={5}>
+      {this.connectionStatusItem()}
+      {this.runCodeItem()}
+      <HelpModal/>
+      {this.examplesItem()}
+      {this.clearEventLogItem()}
+    </Menu>
+  )
+
   render() {
-    return (
-      <Menu id="PlaygroundView-menu" className="shadow-hover" widths={5}>
-        {this.connectionStatusItem()}
-        {this.runCodeItem()}
-        <HelpModal/>
-        {this.examplesItem()}
-        {this.clearEventLogItem()}
-      </Menu>
-    );
+    return <Layout mobile={this.mobileLayout} desktop={this.desktopLayout}/>;
   }
 
 }

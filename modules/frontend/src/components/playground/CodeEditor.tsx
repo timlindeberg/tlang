@@ -2,6 +2,7 @@ import * as codemirror from 'codemirror';
 import { CodeError, toCodeMirrorPosition } from 'components/playground/PlaygroundTypes';
 import groupBy from 'lodash/groupBy';
 
+import Layout from 'components/layout/Layout';
 import * as React from 'react';
 import { Controlled as CodeMirror, IInstance } from 'react-codemirror2';
 import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
@@ -93,15 +94,22 @@ export default class CodeEditor extends React.Component<CodeEditorProps, CodeEdi
     this.editor!.setGutterMarker(line, 'errors', errorMarker);
   }
 
+  layout = (className: string) => (
+    <CodeMirror
+      className={`${className} shadow-hover`}
+      value={this.props.code}
+      options={CODE_MIRROR_OPTIONS}
+      onBeforeChange={this.setCode}
+      editorDidMount={editor => this.editor = editor}
+      onKeyPress={this.onKeyPress}
+    />
+  )
+
   render() {
     return (
-      <CodeMirror
-        className="CodeWindow shadow-hover"
-        value={this.props.code}
-        options={CODE_MIRROR_OPTIONS}
-        onBeforeChange={this.setCode}
-        editorDidMount={editor => this.editor = editor}
-        onKeyPress={this.onKeyPress}
+      <Layout
+        mobile={() => this.layout('CodeWindow-mobile')}
+        desktop={() => this.layout('CodeWindow')}
       />
     );
   }

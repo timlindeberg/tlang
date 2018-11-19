@@ -11,7 +11,7 @@ export abstract class PlaygroundEvent {
   abstract color: SemanticCOLORS;
   abstract icon: SemanticICONS;
 
-  body(): any {
+  body(maxToShow: number): any {
     return null;
   }
 }
@@ -37,12 +37,12 @@ export class CompilationSuccessfulEvent extends PlaygroundEvent {
     </React.Fragment>
   )
 
-  body() {
+  body(maxToShow: number) {
     return (
       <BodyWithExtraContent
         numLines={this.lines.length}
         makeLine={this.makeLine}
-        maxToShow={15}
+        maxToShow={maxToShow}
         type="line"
         width={this.textWidth}
       />
@@ -76,12 +76,12 @@ export class CompilationErrorEvent extends PlaygroundEvent {
     </React.Fragment>
   )
 
-  body() {
+  body(maxToShow: number) {
     return (
       <BodyWithExtraContent
         numLines={this.errors.length}
         makeLine={this.makeLine}
-        maxToShow={15}
+        maxToShow={maxToShow}
         type="error"
         width={this.widthOfLongestPosition}
       />
@@ -94,7 +94,7 @@ export class NoOutputEvent extends PlaygroundEvent {
   color: SemanticCOLORS = 'green';
   icon: SemanticICONS = 'circle thin';
 
-  body() {
+  body(maxToShow: number) {
     return (
       <p>
         Compilation was successful but there was no output.
@@ -115,7 +115,7 @@ export class ExecutionError extends PlaygroundEvent {
     this.lines = message.error.split('\n');
   }
 
-  body() {
+  body(maxToShow: number) {
     return (
       <div className="result-block">
         <p>Execution exited with an exception:</p>
@@ -137,7 +137,7 @@ export class InternalCompilerError extends PlaygroundEvent {
     this.error = message.error;
   }
 
-  body() {
+  body(maxToShow: number) {
     return (
       <div className="result-block">
         <p>The compiler crashed with an internal error:</p>
@@ -158,7 +158,7 @@ export class ConnectedFailedEvent extends PlaygroundEvent {
   color: SemanticCOLORS = 'red';
   icon: SemanticICONS = 'ban';
 
-  body() {
+  body(maxToShow: number) {
     return 'Press the reconnect button to try again.';
   }
 }
@@ -168,7 +168,7 @@ export class DisconnectedEvent extends PlaygroundEvent {
   color: SemanticCOLORS = 'orange';
   icon: SemanticICONS = 'remove circle';
 
-  body() {
+  body(maxToShow: number) {
     return 'Press the reconnect button to reconnect.';
   }
 }
@@ -190,7 +190,7 @@ export class TimeoutEvent extends PlaygroundEvent {
     this.timeout = message.timeout;
   }
 
-  body() {
+  body(maxToShow: number) {
     return `Execution timed out after ${this.timeout}s`;
   }
 }
