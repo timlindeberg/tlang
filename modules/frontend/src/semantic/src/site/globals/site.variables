@@ -3,9 +3,9 @@
 *******************************/
 @import '../../../../theme.less';
 
-@red            : @dangerColor;
-@orange         : #FC8F34;
-@yellow         : #FFCF00;
+@red            : @secondaryColor;
+@orange         : @accentColor;
+@yellow         : @accentColor;
 @olive          : @successColor;
 @green          : @successColor;
 @teal           : #008080;

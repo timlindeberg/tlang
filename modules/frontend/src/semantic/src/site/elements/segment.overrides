@@ -1,3 +1,8 @@
 /*******************************
          Site Overrides
 *******************************/
+
+/* No idea why this is needed */
+.ui.red.segment:not(.inverted) {
+  border-top: 2px solid #F10059 !important;
+}

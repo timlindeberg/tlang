@@ -7,10 +7,11 @@
 }
 .ui.menu .item {
 	font-family: @headerFont;
+	text-shadow: none;
+	box-shadow: none;
 }
 .ui.secondary.pointing.menu .active.item {
 	font-weight: normal;
-	box-shadow: 0 1px darken(@primaryColor, 5%);
 }
 
 @hoverTransition: transform 0.2s ease-in-out;

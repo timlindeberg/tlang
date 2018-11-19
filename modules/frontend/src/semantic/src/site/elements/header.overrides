@@ -3,7 +3,7 @@
 *******************************/
 
 h1.ui.header {
-    text-shadow: 3px 3px 0px fade(@primaryColor, 20%);
+    font-size: 2.5rem;
 }
 
 .ui.header::selection {
