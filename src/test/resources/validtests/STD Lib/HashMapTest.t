@@ -89,7 +89,7 @@ Def LargeMap() =
 	t.AssertEquals(map.Size(), count)
 
 Def InitialCapacity() =
-	testCapacity(1, 2)
+	testCapacity(1, 1)
 	testCapacity(2, 2)
 	testCapacity(3, 4)
 	testCapacity(512, 512)
@@ -101,7 +101,7 @@ Def ToStringTest() =
 	map[1] = 5
 	map[2] = 2
 	map[64] = -1
-	t.AssertEquals(map.toString(), "[ (1 -> 5), (2 -> 2), (64 -> -1) ]")
+	t.AssertEquals(map.toString(), "[ (64 -> -1), (1 -> 5), (2 -> 2) ]")
 
 Def Get() =
 	val to = new Tester<Int>()

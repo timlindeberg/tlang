@@ -31,7 +31,6 @@ case class CompilationWatcher(
     info"Starting file watchers"
     if (options(VerboseFlag))
       ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
-
     startFileWatchers(fileSources)
     Thread.currentThread.join()
   }
@@ -41,8 +40,7 @@ case class CompilationWatcher(
     fileSources
       .flatMap { fileSource =>
         val file = fileSource.file
-        val cu = CUs.find(_.source.get == fileSource).get
-        file :: getDependencies(cu) map { CompilerFileMonitor(_, file) }
+        file :: getDependencies(fileSource) map { CompilerFileMonitor(_, file) }
       }
       .foreach { monitor =>
         info"Watching file ${ monitor.fileToWatch } for changes to ${ monitor.fileToCompile }"
@@ -50,8 +48,12 @@ case class CompilationWatcher(
       }
   }
 
-  private def getDependencies(cu: CompilationUnit): List[File] = {
-    cu.imports.entries
+  private def getDependencies(fileSource: FileSource): List[File] = {
+    val cu = CUs.find(_.source.get == fileSource)
+    if(cu.isEmpty)
+      return Nil
+
+    cu.get.imports.entries
       .flatMap { case (_, fullName) =>
         ctx.classPath(fullName).
           filter { _.isInstanceOf[TemplateFile] }
