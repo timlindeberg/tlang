@@ -1018,9 +1018,6 @@ val input =`+7
 val frequencies = new HashSet<Int>()
 frequencies.Add(0)
 
-val set: HashSet<Int> = [1, 3, 5, 7, 1, 3]
-println(set)
-
 val lines = input.Lines()
 var sum = 0
 var i = 0
