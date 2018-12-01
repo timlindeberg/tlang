@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Frontend" type="js.build_tools.npm" factoryName="npm">
+    <package-json value="$PROJECT_DIR$/modules/frontend/package.json" />
+    <command value="start" />
+    <node-interpreter value="node" />
+    <envs />
+    <method />
+  </configuration>
+</component>
