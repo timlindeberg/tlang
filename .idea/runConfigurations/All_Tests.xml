@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="All Tests" type="ScalaTestRunConfiguration" factoryName="ScalaTest">
-    <module name="root" />
+    <module name="core" />
     <setting name="path" value="" />
     <setting name="vmparams" value="" />
     <setting name="params" value="-P4" />
@@ -17,6 +17,12 @@
     </envs>
     <setting name="testKind" value="All in package" />
     <setting name="package" value="tlang.testsuites" />
-    <method />
+    <buffered bufClass="tlang.testsuites.IntegrationTestSuite" />
+    <buffered bufClass="tlang.testsuites.IntegrationTestSuite" />
+    <buffered bufClass="tlang.testsuites.UnitTestSuite" />
+    <buffered bufClass="tlang.testsuites.UnitTestSuite" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>

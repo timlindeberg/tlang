@@ -9,7 +9,7 @@ import tlang.compiler.argument._
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
-import tlang.compiler.imports.ClassPath
+import tlang.compiler.imports.{ClassPath, TemplateFile, TemplateImporter}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages._
 import tlang.compiler.modification.Templating
@@ -21,6 +21,8 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
+
+import scala.collection.mutable
 
 object Main extends Logging {
 
@@ -151,10 +153,10 @@ case class Main(ctx: Context) extends Logging {
     if (options(VerboseFlag))
       ctx.output += SourcesOutput(sources)
 
-    compileAndExecute(sources)
+    val CUs = compileAndExecute(sources)
 
     if (options(WatchFlag))
-      watch(sources)
+      CompilationWatcher(ctx, CUs, options, sources, compileAndExecute).watch()
     exit(0)
   }
 
@@ -165,16 +167,18 @@ case class Main(ctx: Context) extends Logging {
     if (options(ReadStdinFlag)) List(StdinSource()) else List()
   }
 
-  private def compileAndExecute(sources: List[Source]): Unit = {
+  private def compileAndExecute(sources: List[Source]): Seq[CompilationUnit] = {
     try {
       val CUs = runCompiler(sources)
       printExecutionTimes(success = true)
       if (options(ExecFlag))
         executePrograms(CUs)
+      CUs
     } catch {
       case ExitException(code) =>
         if(!options(WatchFlag))
           exit(code)
+        Nil
     }
   }
 
@@ -251,32 +255,6 @@ case class Main(ctx: Context) extends Logging {
     ctx.output += ExecutionResultOutput(sources zip results)
   }
 
-  private def watch(sources: List[Source]): Unit = {
-    import ctx.formatter._
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    val fileSources = sources.filterInstance[FileSource]
-    if (fileSources.isEmpty) {
-      ctx.output += MessageOutput(s"No file sources were given, can't use watch flag.")
-      return
-    }
-
-    info"Starting file watchers"
-
-    if (options(VerboseFlag))
-      ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
-
-    fileSources
-      .map { source => CompilerFileMonitor(source.file) }
-      .foreach { monitor =>
-        info"Watching file ${ monitor.file } for changes"
-        monitor.start()
-      }
-
-    Thread.currentThread.join()
-  }
-
   private def printExecutionTimes(success: Boolean): Unit = {
     if (options(VerboseFlag))
       ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
@@ -304,23 +282,4 @@ case class Main(ctx: Context) extends Logging {
 
 
   case class ExitException(code: Int) extends Throwable
-
-  case class CompilerFileMonitor(file: File) extends FileMonitor(file, file.isDirectory) {
-
-    private val filesToCompile = List(FileSource(file))
-
-    override def onModify(file: File, count: Int): Unit = {
-      import ctx.formatter._
-
-      info"$file changed, recompiling"
-      if (options(VerboseFlag))
-        ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
-
-      FileSource.clearCache()
-      ctx.reporter.clear()
-
-      compileAndExecute(filesToCompile)
-    }
-  }
-
 }

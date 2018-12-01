@@ -20,7 +20,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    repl = Main.createRepl(testTerminal, Options.Empty)(Formatter.PrettyFormatter)
+    repl = Main.createRepl(testTerminal, Options.Empty, killProcessOnTerminate = false)(Formatter.PrettyFormatter)
     repl ! Start
   }
 

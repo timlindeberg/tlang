@@ -151,7 +151,7 @@ trait List<T>: Collection<T> =
 	* @param end the end position of the slice or null. Will be 'Size()' if null.
 	* @param step the step size of the slice or null. Will be 1 if null.
 	*/
-	Def [::](start: Int?, end: Int?, step: Int?): List<T> =
+	Def [:](start: Int?, end: Int?, step: Int?): List<T> =
 		val s  = start ?: 0
 		val e  = end   ?: Size()
 		val st = step  ?: 1

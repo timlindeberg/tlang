@@ -7,7 +7,7 @@
           <value>
             <ProjectSettingsEntry>
               <option name="sourceDir" value="$PROJECT_DIR$/modules/backend/app" />
-              <option name="confDir" value="$PROJECT_DIR$/modules/backend/app" />
+              <option name="confDir" value="C:\Users\Tim Lindeberg\IdeaProjects\tlang\modules\backend\app" />
               <option name="templateImports">
                 <list>
                   <option value="_root_.play.twirl.api.TwirlFeatureImports._" />
@@ -30,7 +30,7 @@
                   <option value="controllers.Assets.Asset" />
                 </list>
               </option>
-              <option name="uri" value="$PROJECT_DIR$/modules/backend" />
+              <option name="uri" value="/C:/Users/Tim%20Lindeberg/IdeaProjects/tlang/modules/backend" />
             </ProjectSettingsEntry>
           </value>
         </entry>

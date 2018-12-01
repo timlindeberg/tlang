@@ -1,5 +1,4 @@
 package T::std
-import T::std::List
 
 trait Iterator<T> =
 

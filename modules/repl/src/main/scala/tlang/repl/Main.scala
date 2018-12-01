@@ -78,7 +78,7 @@ object Main extends Logging {
     repl ! Start
   }
 
-  def createRepl(terminal: Terminal, options: Options)(implicit formatter: Formatter): ActorRef = {
+  def createRepl(terminal: Terminal, options: Options, killProcessOnTerminate: Boolean = true)(implicit formatter: Formatter): ActorRef = {
     info"Creating Repl with options: $options"
 
     // Inject dependencies
@@ -113,7 +113,7 @@ object Main extends Logging {
     val outputBox = OutputBox(maxOutputLines = 5)
     val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
     val repl = actorSystem.actorOf(
-      ReplActor.props(replState, stackTraceHighlighter, evaluator, outputBox, replTerminal, input),
+      ReplActor.props(replState, stackTraceHighlighter, evaluator, outputBox, replTerminal, input, killProcessOnTerminate),
       ReplActor.name
     )
 

@@ -36,7 +36,6 @@ trait Map<K, V>: Collection<MapEntry<K, V>> =
 	// Operators
 	//------------------------------------------------------------
 
-
 	Def ==(lhs: Map<K, V>, rhs: Map<K, V>): Bool =
 		if(lhs.Size() != rhs.Size())
 			return false

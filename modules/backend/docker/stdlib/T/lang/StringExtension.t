@@ -56,7 +56,7 @@ extension java::lang::String =
 
 	Def [](index: Int) = charAt(index)
 
-	Def [::](start: Int?, end: Int?, step: Int?): String =
+	Def [:](start: Int?, end: Int?, step: Int?): String =
 		val s  = start ?: 0
 		val e  = end   ?: Size()
 		val st = step  ?: 1

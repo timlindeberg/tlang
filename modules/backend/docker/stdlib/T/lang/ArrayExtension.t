@@ -53,7 +53,7 @@ extension <T> T[] =
 			res = 31 * res ^ #arr[i]
 		res
 
-	Def [::](start: Int?, end: Int?, step?): T[] =
+	Def [:](start: Int?, end: Int?, step?): T[] =
 		val newArr = new T[(end - start + step - 1) / step]
 		for(var i = start; i < end; i += step)
 		  newArr[(i - start) / step] = this[i]

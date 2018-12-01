@@ -432,9 +432,9 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       stat = None
     )
 
-    // Def [::](a: A, b: B, c: C)
+    // Def [:](a: A, b: B, c: C)
     parser(
-      PUBDEF, LBRACKET, COLON, COLON, RBRACKET, LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"),
+      PUBDEF, LBRACKET, COLON, RBRACKET, LPAREN, ID("a"), COLON, ID("A"), COMMA, ID("b"), COLON, ID("B"),
       COMMA, ID("c"), COLON, ID("C"), RPAREN
     ).methodDeclaration shouldBe OperatorDecl(
       ArraySlice(Empty(), None, None, None),
@@ -1023,8 +1023,14 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   }
 
   it should "parse super expressions" in {
+    // super.a
     parser(SUPER, DOT, ID("a")).expression shouldBe NormalAccess(Super(None), VariableID("a"))
 
+    // super.A(1)
+    parser(SUPER, DOT, ID("A"), LPAREN, INTLIT(1), RPAREN)
+      .expression shouldBe NormalAccess(Super(None), MethodCall("A", List(IntLit(1))))
+
+    // super<A>.a(1)
     parser(SUPER, LESSTHAN, ID("A"), GREATERTHAN, DOT, ID("a"), LPAREN, INTLIT(1), RPAREN)
       .expression shouldBe NormalAccess(Super(Some("A")), MethodCall("a", List(IntLit(1))))
   }

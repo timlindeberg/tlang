@@ -34,7 +34,7 @@ extension T::lang::Long =
 
 		(this & (1L << index)) != 0 ? 1 : 0
 
-	Def [::](start: Int?, end: Int?, step: Int?): Long =
+	Def [:](start: Int?, end: Int?, step: Int?): Long =
 		val s = start ?: 0
 		val e = end ?: 63
 		if(step != null)

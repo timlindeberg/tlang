@@ -86,6 +86,8 @@ Def LargeMap() =
 	for(var i = 0; i < count; i++)
 		t.AssertEquals(map[i], i + 1)
 
+	t.AssertEquals(map.Size(), count)
+
 Def InitialCapacity() =
 	testCapacity(1, 2)
 	testCapacity(2, 2)

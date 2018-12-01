@@ -2,8 +2,10 @@
   <configuration default="false" name="Compiler" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="tlang.compiler.Main" />
     <module name="compiler" />
-    <option name="PROGRAM_PARAMETERS" value="--watch --exec $USER_HOME$/Example.t" />
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-    <method />
+    <option name="PROGRAM_PARAMETERS" value="--verbose --exec --watch &quot;src/test/resources/validtests/Advent Of Code 2017/Day6/Day6Star1.t&quot;" />
+    <option name="REDIRECT_INPUT" value="true" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>

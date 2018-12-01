@@ -34,11 +34,12 @@ object ReplActor {
     evaluator: Evaluator,
     outputBox: OutputBox,
     terminal: ReplTerminal,
-    input: Input
+    input: Input,
+    killProcessOnTerminate: Boolean
   )(
     implicit formatter: Formatter
   ) =
-    Props(new ReplActor(replState, stackTraceHighlighter, evaluator, outputBox, terminal, input))
+    Props(new ReplActor(replState, stackTraceHighlighter, evaluator, outputBox, terminal, input, killProcessOnTerminate))
 
   val name = "repl"
 }
@@ -57,7 +58,8 @@ class ReplActor(
   evaluator: Evaluator,
   outputBox: OutputBox,
   terminal: ReplTerminal,
-  input: Input
+  input: Input,
+  killProcessOnTerminate: Boolean
 )(
   implicit formatter: Formatter,
 ) extends Actor with Logging {
@@ -95,7 +97,8 @@ class ReplActor(
       renderer ! RenderingActor.StopRepl
       terminal.close()
       input.saveToFile()
-      context.system.terminate() map { sys.exit(0) }
+      val terminate = context.system.terminate()
+      if (killProcessOnTerminate) terminate.map { sys.exit(0) } else terminate
     case msg: RenderingMessage  => renderer forward msg
     case msg: EvaluationMessage => replProgram forward msg
   }

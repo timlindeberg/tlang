@@ -53,7 +53,7 @@ class A =
 
 	Def [](index: Int): Int = return I + index
 	Def []=(index: Int, value: Int): Unit = I = index + value
-	Def [::](start: Int?, end: Int?, step: Int?): Int = (start ?: 0) + (end ?: 0) + (step ?: 0)
+	Def [:](start: Int?, end: Int?, step: Int?): Int = (start ?: 0) + (end ?: 0) + (step ?: 0)
 
 
 	// Binary operators

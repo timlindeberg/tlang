@@ -4,8 +4,8 @@ package compiler
 import better.files.File
 import org.scalatest.ParallelTestExecution
 import tlang.compiler.messages.{CompilationException, MessageType}
+import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestConstants._
-
 import tlang.utils.{FileSource, Logging, ProgramExecutor}
 
 class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution with Logging {
@@ -29,7 +29,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
       Main.FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
-        e.messages.print(MessageType.Error)
+        ctx.output += ErrorMessageOutput(e.messages)
         fail("Compilation failed")
       case e: Throwable            =>
         error"Unknown execution error: $e"

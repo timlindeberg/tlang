@@ -119,7 +119,6 @@ class HashMap<K, V>: Map<K, V> =
 			data[index] = newEntry
 			return true
 
-		// This should be a do while loop
 		var entry: HashMapEntry<K, V>? = null
 		for(val v in startingEntry)
 			if(v.Key() == newEntry.Key())
@@ -135,14 +134,12 @@ class HashMap<K, V>: Map<K, V> =
 		val newCapacity = capacity << 1
 		val newData = new HashMapEntry<K, V>?[newCapacity]
 
-		for(val entry in entries)
-			if(!entry)
-				continue
 
-			for(val e in entry)
-				val index = index(entry.Hash, newCapacity)
-				e.Next = null
-				addTo(newData, index, e)
+		for(val entry in this)
+			val hashEntry = entry as HashMapEntry<K, V>
+			val newEntry = new HashMapEntry<K, V>(hashEntry.Key(), entry.Value(), hashEntry.Hash)
+			val i = index(hashEntry.Hash, capacity)
+			addTo(newData, i, newEntry)
 
 		entries = newData
 		capacity = newCapacity

@@ -33,7 +33,7 @@ extension T::lang::Int =
 
 		(this & (1 << index)) != 0 ? 1 : 0
 
-	Def [::](start: Int?, end: Int?, step: Int?): Int =
+	Def [:](start: Int?, end: Int?, step: Int?): Int =
 		val s = start ?: 0
 		val e = end ?: 31
 		if(step != null)
