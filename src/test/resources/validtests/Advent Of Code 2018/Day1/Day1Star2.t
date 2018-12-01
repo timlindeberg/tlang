@@ -1,5 +1,4 @@
-import T::std::HashMap
-import java::util::HashSet
+import T::std::HashSet
 
 val input =`+7
 -5
@@ -1016,8 +1015,11 @@ val input =`+7
 +19
 +111653`
 
-val frequencies = new HashMap<Int, Bool>()
-frequencies[0] = true
+val frequencies = new HashSet<Int>()
+frequencies.Add(0)
+
+val set: HashSet<Int> = [1, 3, 5, 7, 1, 3]
+println(set)
 
 val lines = input.Lines()
 var sum = 0
@@ -1028,11 +1030,11 @@ while(true)
 	if(line[0] == '+') sum += num
 	else               sum -= num
 
-	if(frequencies.Contains(sum))
+	if(frequencies[sum])
 		println(sum) // res: 312
 		break
 
-	frequencies[sum] = true
+	frequencies.Add(sum)
 	i = (i + 1) % lines.Size()
 
 

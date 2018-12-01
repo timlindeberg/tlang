@@ -2,7 +2,7 @@
   <configuration default="false" name="Compiler" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="tlang.compiler.Main" />
     <module name="compiler" />
-    <option name="PROGRAM_PARAMETERS" value="--verbose --exec --watch &quot;src/test/resources/validtests/Advent Of Code 2017/Day6/Day6Star1.t&quot;" />
+    <option name="PROGRAM_PARAMETERS" value="--verbose --exec --watch &quot;src/test/resources/validtests/Advent Of Code 2018/Day1/Day1Star2.t&quot;" />
     <option name="REDIRECT_INPUT" value="true" />
     <method v="2">
       <option name="Make" enabled="true" />
