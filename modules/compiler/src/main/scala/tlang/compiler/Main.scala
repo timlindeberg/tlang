@@ -1,7 +1,6 @@
 package tlang
 package compiler
 
-import better.files.{File, FileMonitor}
 import cafebabe.CodegenerationStackTrace
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
@@ -9,7 +8,7 @@ import tlang.compiler.argument._
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
-import tlang.compiler.imports.{ClassPath, TemplateFile, TemplateImporter}
+import tlang.compiler.imports.ClassPath
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages._
 import tlang.compiler.modification.Templating
@@ -21,8 +20,6 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
-
-import scala.collection.mutable
 
 object Main extends Logging {
 

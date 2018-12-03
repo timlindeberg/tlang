@@ -8,14 +8,13 @@ class HashSet<T>: Set<T> =
 
 	var map: HashMap<T, Bool>
 
-	Def new()                                         = map = new HashMap<T, Bool>()
-	Def new(initialCapacity: Int)                     = map = new HashMap<T, Bool>(initialCapacity)
-	Def new(initialCapacity: Int, loadFactor: Double) = map = new HashMap<T, Bool>(initialCapacity, loadFactor)
+	Def new()                                         = (map = new HashMap<T, Bool>())
+	Def new(initialCapacity: Int)                     = (map = new HashMap<T, Bool>(initialCapacity))
+	Def new(initialCapacity: Int, loadFactor: Double) = (map = new HashMap<T, Bool>(initialCapacity, loadFactor))
 	Def implicit new(entries: T[]) =
 		map = new HashMap<T, Bool>()
 		for(val e in entries)
 			Add(e)
-
 
 	Def Size(): Int = map.Size()
 	Def Clear(): Unit = map.Clear()
@@ -26,4 +25,4 @@ class HashSet<T>: Set<T> =
 	Def Contains(value: T): Bool = map.Contains(value)
 	Def Iterator(): Iterator<T> = map.Keys()
 
-	Def toString(): String = IsEmpty() ? "{}" : "{ " + MakeString(", ") + " }"
+	Def toString(): String = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"

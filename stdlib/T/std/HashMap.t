@@ -147,7 +147,10 @@ class HashMap<K, V>: Map<K, V> =
 		n |= n >> 4
 		n |= n >> 8
 		n |= n >> 16
-		return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1
+
+		if(n < 0) return 1
+		if(n >= MAXIMUM_CAPACITY) return MAXIMUM_CAPACITY
+		n + 1
 
 class HashMapEntry<K, V>: MapEntry<K, V>, Iterable<HashMapEntry<K, V>> =
 
