@@ -1,6 +1,8 @@
 package tlang
 package compiler
 
+import java.nio.file.Files
+
 import better.files.{File, FileMonitor}
 import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.Trees.CompilationUnit
@@ -9,6 +11,8 @@ import tlang.compiler.output.MessageOutput
 import tlang.formatting.Formatter
 import tlang.options.Options
 import tlang.utils.{FileSource, Logging, Source}
+import java.nio.file.Files
+import java.nio.file.attribute.FileTime
 
 import scala.collection.mutable
 
@@ -84,7 +88,7 @@ case class CompilationWatcher(
 
     // On Windows the modified event is sometimes triggered twice
     private def hasAlreadyHandled(file: File): Boolean = {
-      val lastModified = file.lastModifiedTime.getNano
+      val lastModified = Files.getLastModifiedTime(file.path).toMillis
       val path = file.pathAsString
       if (modifiedTimes.get(path).contains(lastModified))
         return true

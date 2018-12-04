@@ -23,7 +23,7 @@ trait TemplatingErrors extends ErrorHandling {
   }
 
   case class ClassDoesNotExist(name: String, override val pos: Positioned) extends TemplateError(1, pos) {
-    lazy val message = err"Can not find template class named $name."
+    lazy val message = err"Could not find template class named $name."
   }
 
   case class SameName(name: String, override val pos: Positioned) extends TemplateError(2, pos) {
