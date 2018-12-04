@@ -84,6 +84,8 @@ trait CodeMap {
 
   def dup_x2(ch: CodeHandler): CodeHandler = ch
 
+  def pop(ch: CodeHandler): CodeHandler = ch
+
   // Conversions
   def toDouble(ch: CodeHandler): CodeHandler = ch
 
@@ -138,6 +140,7 @@ object IntCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
   override def toDouble(ch: CodeHandler): CodeHandler = ch << I2D
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
@@ -179,6 +182,7 @@ object LongCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP2
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP2_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP2_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP2
 
   override def toDouble(ch: CodeHandler): CodeHandler = ch << L2D
   override def toFloat(ch: CodeHandler): CodeHandler = ch << L2F
@@ -215,6 +219,7 @@ object FloatCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
   override def toDouble(ch: CodeHandler): CodeHandler = ch << F2D
   override def toLong(ch: CodeHandler): CodeHandler = ch << F2L
@@ -250,6 +255,7 @@ object DoubleCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP2
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP2_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP2_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP2
 
   override def toFloat(ch: CodeHandler): CodeHandler = ch << D2F
   override def toLong(ch: CodeHandler): CodeHandler = ch << D2L
@@ -291,6 +297,7 @@ object CharCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
   override def toDouble(ch: CodeHandler): CodeHandler = ch << I2D
   override def toFloat(ch: CodeHandler): CodeHandler = ch << I2F
@@ -319,6 +326,7 @@ object BoolCodeMap extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
   override def box(ch: CodeHandler): CodeHandler = _box(ch, Bool)
 
@@ -339,6 +347,7 @@ class ArrayCodeMap(typeName: String) extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
 }
 
@@ -357,5 +366,6 @@ class ObjectCodeMap(name: String) extends CodeMap {
   override def dup(ch: CodeHandler): CodeHandler = ch << DUP
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
+  override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
 }

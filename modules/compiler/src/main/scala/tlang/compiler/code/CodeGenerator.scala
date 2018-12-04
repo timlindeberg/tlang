@@ -368,8 +368,9 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
                 )
             }
 
-            if (!duplicate && methSymbol.getType != TUnit)
-              ch << POP
+            val tpe = methSymbol.getType
+            if (!duplicate)
+              tpe.codes.pop(ch)
         }
       case newTree@Trees.New(tpe, args)                 =>
         tpe.getType match {

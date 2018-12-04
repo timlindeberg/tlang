@@ -2,6 +2,7 @@ package T::std
 
 import T::std::Collection
 import T::std::Vector
+import T::std::Comparator
 
 /**
 * An ordered collection of elements.
@@ -123,6 +124,18 @@ trait List<T>: Collection<T> =
 
 		RemoveIndex(index)
 		true
+
+	// TODO: Implement better sorting algorithm
+	Def Sort(comparator: Comparator<T>) =
+		val n = Size()
+		for (var i = 1; i < n; i++)
+			val key = this[i];
+			var j = i - 1;
+
+			while (j >= 0 && comparator.Compare(this[j], key) > 0)
+				this[j+1] = this[j];
+				j = j - 1;
+			this[j + 1] = key;
 
 	//------------------------------------------------------------
 	// Operators
