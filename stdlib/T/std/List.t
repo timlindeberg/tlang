@@ -170,7 +170,7 @@ trait List<T>: Collection<T> =
 		val st = step  ?: 1
 		val newList = new Vector<T>((e - s + st - 1) / st)
 		for(var i = s; i < e; i += st)
-			newList[(i - s) / st] = Get(i)
+			newList.Add(Get(i))
 
 		newList
 

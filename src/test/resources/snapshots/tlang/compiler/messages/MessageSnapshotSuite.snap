@@ -197,10 +197,7 @@ P3003: [1mUnexpected token: [35m0[0m
 P3002: [1mExpected [0m[1;35mInt literal[0m[1m, found: [35m0[0m[1m.[0m
 
 ========================================= TemplatingErrors ClassDoesNotExist
-G2001: [1mCan not find template class named [35mABC[0m[1m.[0m
-
-========================================= TemplatingErrors SameName
-G2002: [1mGeneric parameter [35mABC[0m[1m appears multiple times.[0m
+G2001: [1mCould not find template class named [35mABC[0m[1m.[0m
 
 ========================================= TemplatingErrors WrongNumGenerics
 G2000: [1mWrong number of template parameters, expected [35m0[0m[1m, found [35m0[0m[1m.[0m
@@ -310,3 +307,6 @@ T2015: [1mExpected a return value of type [35mT::lang::Int[0m[1m.[0m
 
 ========================================= TypingErrors WrongType
 T2000: [1mExpected type: [0mABC[1m, found: [0mABC[1m.[0m
+
+========================================= TemplatingErrors SameName
+G2002: [1mGeneric parameter [35mABC[0m[1m appears multiple times.[0m

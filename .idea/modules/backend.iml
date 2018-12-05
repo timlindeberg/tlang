@@ -6,9 +6,7 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../modules/backend">
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/app" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/app-2.12" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/test" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/test-2.12" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/routes/main" isTestSource="false" generated="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/src_managed/main" isTestSource="false" generated="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/twirl/main" isTestSource="false" generated="true" />
@@ -16,9 +14,6 @@
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/src_managed/test" isTestSource="true" generated="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/twirl/test" isTestSource="true" generated="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/conf" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/resource_managed/main" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/target/scala-2.12/resource_managed/test" type="java-test-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/../../modules/backend/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/public" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../modules/backend/target/streams" />

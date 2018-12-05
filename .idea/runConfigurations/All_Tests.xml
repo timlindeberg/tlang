@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="All Tests" type="ScalaTestRunConfiguration" factoryName="ScalaTest">
-    <module name="core" />
+    <module name="root" />
     <setting name="path" value="" />
     <setting name="vmparams" value="" />
     <setting name="params" value="-P4" />
@@ -13,7 +13,7 @@
       <envVar name="colors" value="false" />
       <envVar name="printErrors" value="false" />
       <envVar name="removeUnusedSnapshots" value="true" />
-      <envVar name="updateSnapshots" value="A repl should exit when pressing CTRL+C" />
+      <envVar name="updateSnapshots" value="" />
     </envs>
     <setting name="testKind" value="All in package" />
     <setting name="package" value="tlang.testsuites" />

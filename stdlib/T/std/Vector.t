@@ -24,9 +24,7 @@ class Vector<T>: List<T>, Stack<T> =
 		for(val e in array)
 			Add(e)
 
-	Def new(initSize: Int) =
-		size = initSize
-		data = new T[size]
+	Def new(capacity: Int) = data = new T[capacity]
 
 	Def new(initSize: Int, value: T) =
 		size = initSize

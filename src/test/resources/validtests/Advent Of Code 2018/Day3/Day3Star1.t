@@ -1326,5 +1326,4 @@ for(val entry in pointCount)
 	if(entry.Value() > 1)
 		overlapping++
 
-println(overlapping)
-
+println(overlapping) // res: 105047

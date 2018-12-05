@@ -86,13 +86,13 @@ Def CreateVector(chars: String) =
 	val numPrograms = 'q' - 'a'
 	val programs = new Vector<Char>(numPrograms)
 	for(var i = 0; i < numPrograms; i++)
-		programs[i] = chars[i]
+		programs.Add(chars[i])
 	programs
 
 val numPrograms = 'q' - 'a'
 var programs = new Vector<Char>(numPrograms)
 for(var i = 0; i < numPrograms; i++)
-	programs[i] = 'a' + i
+	programs.Add('a' + i)
 
 val ops = input.Split(",")
 val operations = new Operation[ops.Size()]
