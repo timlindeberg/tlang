@@ -139,15 +139,16 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     val saveAndPrintTransformer = mock[SaveAndPrintTransformer]
     saveAndPrintTransformer(adjustedCompilationUnit) returns saveAndPrintTransformed
 
-    val compile = mock[(List[CompilationUnit]) => Unit]
+    val compile = mock[List[CompilationUnit] => Unit]
 
     val classFile = mock[File]
     val programExecutor = mock[ProgramExecutor]
 
     programExecutor(classFile) returns ExecutionResult(
-      s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
+      output = s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
           |${ Evaluator.ReplOutputMarker }
-          |"""".stripMargin
+          |"""".stripMargin,
+      time = 0
     )
 
 

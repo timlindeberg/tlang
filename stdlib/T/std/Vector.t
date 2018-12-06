@@ -89,7 +89,7 @@ class Vector<T>: List<T>, Stack<T> =
 	/* ------------------------------ Stack ------------------------------  */
 
 	Def Push(value: T): Unit = Add(size, value)
-	Def Pop(): T = data[size-- - 1]
+	Def Pop(): T = data[(size--) - 1]
 
 	Def Peek(): T? = IsEmpty() ? null : data[Size() - 1]
 

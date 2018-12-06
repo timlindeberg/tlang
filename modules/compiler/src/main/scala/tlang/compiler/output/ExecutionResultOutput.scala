@@ -22,10 +22,13 @@ case class ExecutionResultOutput(
     val numPrograms = results.size
     val grid = formatter.grid
 
-    def addOutput(source: Source, output: String): Unit = {
+    def addOutput(source: Source, output: String, time: Double): Unit = {
       if (output.isEmpty)
         return
 
+      val timeFormatted = f"$time%.3f"
+      val timeDescription = s"${Bold}Executed in ${Blue(timeFormatted)}${Bold("s")}"
+      
       val highlighted = syntaxHighlighter(output)
       val lines = formatter
         .splitWithColors(highlighted)
@@ -34,6 +37,7 @@ case class ExecutionResultOutput(
       grid
         .row(alignment = Center)
         .content(source.description)
+        .content(timeDescription)
         .row(2)
         .contents(lines)
     }
@@ -53,9 +57,9 @@ case class ExecutionResultOutput(
 
     grid.header(Bold(if (numPrograms > 1) "Executing programs" else "Executing program"))
 
-    results foreach { case (source, result) =>
-      addOutput(source, result.output)
-      result.exception ifDefined { addException(source, _) }
+    results foreach { case (source, ExecutionResult(output, time, exception)) =>
+      addOutput(source, output, time)
+      exception ifDefined { addException(source, _) }
     }
 
     grid.render()
@@ -71,11 +75,12 @@ case class ExecutionResultOutput(
   }
 
   override def json: Json = Json(
-    "execution" -> results.map { case (source, result) =>
+    "execution" -> results.map { case (source, ExecutionResult(output, time, exception)) =>
       Json(
         "source" -> source.description,
-        "output" -> result.output,
-        "exception" -> result.exception.map(_.stackTrace)
+        "output" -> output,
+        "timeSec" -> time,
+        "exception" -> exception.map(_.stackTrace)
       )
     }
   )
