@@ -20,6 +20,8 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
+l
+case class ExitException(code: Int) extends Throwable
 
 object Main extends Logging {
 
@@ -117,13 +119,11 @@ object Main extends Logging {
 
 case class Main(ctx: Context) extends Logging {
 
-
   import Main._
   import ctx._
 
   private implicit val syntaxHighlighter    : SyntaxHighlighter     = TLangSyntaxHighlighter()
   private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
-
 
   def run(): Unit = {
     sys.addShutdownHook {
@@ -158,7 +158,7 @@ case class Main(ctx: Context) extends Logging {
   }
 
 
-  private def getSources: List[Source] = options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin()
+  private def getSources: List[Source] = options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin
 
   private def sourceFromStdin(): List[Source] = {
     if (options(ReadStdinFlag)) List(StdinSource()) else List()
@@ -248,7 +248,6 @@ case class Main(ctx: Context) extends Logging {
     val sources = cusWithMainMethods map { _.source.get }
     val results = sources map { programExecutor(_) }
 
-
     ctx.output += ExecutionResultOutput(sources zip results)
   }
 
@@ -276,7 +275,4 @@ case class Main(ctx: Context) extends Logging {
 
   private def ErrorInvalidTHomeDirectory(path: String): Nothing =
     error(s"'$path' is not a valid $THome directory.")
-
-
-  case class ExitException(code: Int) extends Throwable
 }

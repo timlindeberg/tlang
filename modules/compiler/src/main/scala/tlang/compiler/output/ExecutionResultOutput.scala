@@ -28,7 +28,7 @@ case class ExecutionResultOutput(
 
       val timeFormatted = f"$time%.3f"
       val timeDescription = s"${Bold}Executed in ${Blue(timeFormatted)}${Bold("s")}"
-      
+
       val highlighted = syntaxHighlighter(output)
       val lines = formatter
         .splitWithColors(highlighted)

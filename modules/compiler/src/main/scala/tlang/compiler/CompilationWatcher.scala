@@ -1,8 +1,6 @@
 package tlang
 package compiler
 
-import java.nio.file.Files
-
 import better.files.{File, FileMonitor}
 import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.Trees.CompilationUnit
@@ -12,7 +10,6 @@ import tlang.formatting.Formatter
 import tlang.options.Options
 import tlang.utils.{FileSource, Logging, Source}
 import java.nio.file.Files
-import java.nio.file.attribute.FileTime
 
 import scala.collection.mutable
 

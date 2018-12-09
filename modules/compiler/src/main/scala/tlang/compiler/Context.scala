@@ -45,7 +45,6 @@ case class Context(
   ignoredImports: Set[String] = Set()
 ) (
   implicit val formatter: Formatter,
-
 ){
 
   val executionTimes: mutable.Map[String, Double] = mutable.Map()

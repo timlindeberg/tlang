@@ -2,7 +2,6 @@ package tlang
 package compiler
 package code
 
-import tlang.Constants
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
@@ -10,7 +9,6 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.Formatter
 
 import tlang.utils.Logging
@@ -27,8 +25,7 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
     "Lowers the tree to simpler components. Performs desugaring."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
-
+  
 }
 
 class Lowerer(imports: Imports) extends Logging {

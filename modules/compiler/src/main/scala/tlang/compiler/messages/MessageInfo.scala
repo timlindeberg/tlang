@@ -38,7 +38,7 @@ case class MessageInfo(
       case Some(source) => source.description
       case _            => ""
     }
-    positionDescription + " " + sourceDescription
+    s"$sourceDescription:$positionDescription"
   }
 
   def locationInSource: Seq[(String, String)] = {

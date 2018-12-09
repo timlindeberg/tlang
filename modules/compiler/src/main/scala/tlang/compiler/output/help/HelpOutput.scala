@@ -3,8 +3,6 @@ package compiler
 package output
 package help
 
-import tlang.Constants
-import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{Column, Width}
 import tlang.options.FlagArgument

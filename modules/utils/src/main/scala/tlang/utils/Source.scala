@@ -13,7 +13,7 @@ trait Source {
   def mainName: String
   def text: String
   def lines: IndexedSeq[String] = text.lines.toIndexedSeq
-  def description(implicit formatter: Formatter): String = getDescription(formatter.NumColor)
+  def description(implicit formatter: Formatter): String = getDescription(formatter.KeywordColor)
   def errorDescription(implicit formatter: Formatter): String = getDescription(formatter.Red)
 
   def getDescription(color: Color)(implicit formatter: Formatter): String
@@ -43,7 +43,6 @@ case class FileSource(file: File) extends Source {
 }
 
 case class StdinSource() extends Source {
-
 
   override def mainName: String = "stdin"
   override val text: String = readStdin()
