@@ -6,11 +6,12 @@ trait Streamable {
 
 /** Wrapper around various Java streams. */
 class ByteStream {
-  import java.io.{DataOutputStream,ByteArrayOutputStream}
+
+  import java.io.{DataOutputStream, ByteArrayOutputStream}
   import ClassFileTypes._
 
   private var bytes = new ByteArrayOutputStream
-  def getBytes : Array[Byte] = { stream.flush() ; bytes.toByteArray }
+  def getBytes: Array[Byte] = { stream.flush(); bytes.toByteArray }
   private var stream: DataOutputStream = new DataOutputStream(bytes)
 
   // appends bytes to the stream

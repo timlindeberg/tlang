@@ -40,7 +40,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
           fail(
             s"""
                |Could not reparse output from file $TestFile:
-               |${errors.pretty}
+               |${ errors.pretty }
                |
                |Printed output:
                |$printedCU

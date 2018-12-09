@@ -51,7 +51,7 @@ case class CompilationWatcher(
 
   private def getDependencies(fileSource: FileSource): List[File] = {
     val cu = CUs.find(_.source.get == fileSource)
-    if(cu.isEmpty)
+    if (cu.isEmpty)
       return Nil
 
     cu.get.imports.entries

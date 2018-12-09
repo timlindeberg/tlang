@@ -145,8 +145,15 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     val programExecutor = mock[ProgramExecutor]
 
     programExecutor(classFile) returns ExecutionResult(
-      output = s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
-          |${ Evaluator.ReplOutputMarker }
+      output =
+        s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
+            |${ Evaluator.ReplOutputMarker }
+
+
+
+
+
+
           |"""".stripMargin,
       time = 0
     )

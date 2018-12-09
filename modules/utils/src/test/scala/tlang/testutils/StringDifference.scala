@@ -2,7 +2,6 @@ package tlang
 package testutils
 
 
-
 object StringDifference {
 
   def apply(f: String, e: String): String = {

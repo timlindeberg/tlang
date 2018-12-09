@@ -27,7 +27,7 @@ trait TestContext {
       case None    => File(".")
     }
 
-    val outputHandler = if(PrintJSON) JSONOutputHandler() else PrettyOutputHandler()
+    val outputHandler = if (PrintJSON) JSONOutputHandler() else PrettyOutputHandler()
     Context(
       reporter = DefaultReporter(),
       output = outputHandler,

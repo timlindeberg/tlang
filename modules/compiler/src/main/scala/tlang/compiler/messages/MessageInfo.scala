@@ -18,6 +18,7 @@ case class MessageInfo(
 ) {
 
   private val lines: IndexedSeq[String] = message.pos.source.map(_.lines).getOrElse(IndexedSeq())
+
   import formatter._
 
 

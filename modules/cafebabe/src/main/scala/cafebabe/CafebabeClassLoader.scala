@@ -1,19 +1,19 @@
 package cafebabe
 
-import scala.collection.mutable.{Map=>MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 /** A `ClassLoader` with the capability for loading cafebabe
- *  `ClassFile`s directly from memory. */
-class CafebabeClassLoader(parent : ClassLoader) extends ClassLoader(parent) {
+  *  `ClassFile`s directly from memory. */
+class CafebabeClassLoader(parent: ClassLoader) extends ClassLoader(parent) {
   def this() {
     this(ClassLoader.getSystemClassLoader())
   }
 
-  private val classBytes : MutableMap[String,Array[Byte]] = MutableMap.empty
+  private val classBytes: MutableMap[String, Array[Byte]] = MutableMap.empty
 
-  def register(classFile : ClassFile) {
+  def register(classFile: ClassFile) {
     val name = classFile.className
-    if(classBytes.isDefinedAt(name)) {
+    if (classBytes.isDefinedAt(name)) {
       throw new IllegalArgumentException("Cannot define the same class twice (%s).".format(name))
     }
 
@@ -21,7 +21,7 @@ class CafebabeClassLoader(parent : ClassLoader) extends ClassLoader(parent) {
     classBytes(name) = byteStream.getBytes
   }
 
-  override def findClass(name : String) : Class[_] = {
+  override def findClass(name: String): Class[_] = {
     classBytes.get(name) match {
       case Some(ba) =>
         defineClass(name, ba, 0, ba.length)
@@ -30,7 +30,7 @@ class CafebabeClassLoader(parent : ClassLoader) extends ClassLoader(parent) {
     }
   }
 
-  def newInstance(name : String) : AnyRef = {
+  def newInstance(name: String): AnyRef = {
     val klass = this.loadClass(name)
     klass.newInstance().asInstanceOf[AnyRef]
   }

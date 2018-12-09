@@ -43,13 +43,13 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
     import errorContext.ErrorStringContext
     if (phase notIn compilerPhases) {
       val suggestion = errorContext.suggestion(phase, compilerPhases.toList)
-      error(err"$phase is not a valid argument for --$name.${ suggestion }See --${HelpFlag.Name} for more information.")
+      error(err"$phase is not a valid argument for --$name.${ suggestion }See --${ HelpFlag.Name } for more information.")
     }
   }
 
   override def parseValue(args: Set[String]): Set[String] = args.map(_.toLowerCase)
 
-  private def phases(implicit formatter: Formatter): String =  {
+  private def phases(implicit formatter: Formatter): String = {
     import formatter._
     formatter.list(Main.CompilerPhases.map(phase => Blue(phase.phaseName.capitalize)))
   }

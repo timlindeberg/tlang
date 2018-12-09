@@ -2,7 +2,6 @@ package tlang
 package utils
 
 
-
 import scala.collection.mutable.ArrayBuffer
 
 object CircularBuffer {

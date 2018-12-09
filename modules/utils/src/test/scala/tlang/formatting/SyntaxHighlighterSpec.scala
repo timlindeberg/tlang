@@ -263,7 +263,8 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
   private def createColorings(values: (Color, Int, Int, Int, Int)*): List[Coloring] = {
     values.map { case (color, line, col, endLine, endCol) =>
-      Coloring(color, Position(line, col, endLine, endCol))}
+      Coloring(color, Position(line, col, endLine, endCol))
+    }
       .toList
   }
 

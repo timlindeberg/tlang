@@ -12,10 +12,10 @@ import scala.reflect.ClassTag
 // and changed verification syntax
 object MockitoSugar extends MockitoSugar
 trait MockitoSugar extends MockingSyntax
-                           with StubbingSyntax
-                           with ArgumentMatchingSyntax
-                           with MockSyntax
-                           with VerificationSyntax
+  with StubbingSyntax
+  with ArgumentMatchingSyntax
+  with MockSyntax
+  with VerificationSyntax
 
 trait StubbingSyntax {
   implicit class StubbingOps[A](mockee: => A) {

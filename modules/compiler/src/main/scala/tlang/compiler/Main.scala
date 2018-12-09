@@ -15,6 +15,9 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.formatting.grid.Alignment.Center
+import tlang.formatting.grid.{Column, OverflowHandling}
+import tlang.formatting.grid.Width.Fixed
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
@@ -173,7 +176,7 @@ case class Main(ctx: Context) extends Logging {
       CUs
     } catch {
       case ExitException(code) =>
-        if(!options(WatchFlag))
+        if (!options(WatchFlag))
           exit(code)
         Nil
     }
@@ -242,13 +245,67 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def executePrograms(cus: Seq[CompilationUnit]): Unit = {
-    val programExecutor = ProgramExecutor(ctx.allClassPaths)
 
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     val sources = cusWithMainMethods map { _.source.get }
-    val results = sources map { programExecutor(_) }
+    if (options(JSONFlag)) {
+      val programExecutor = DefaultProgramExecutor(ctx.allClassPaths)
+      val results = sources map { programExecutor(_) }
 
-    ctx.output += ExecutionResultOutput(sources zip results)
+      ctx.output += ExecutionResultOutput(sources zip results)
+    } else {
+      sources foreach executeStreamingProgram
+    }
+  }
+
+  private def executeStreamingProgram(source: Source): Unit = {
+    import formatter._
+
+    val boxLines = grid
+      .header(Bold("Executing program"))
+      .row(alignment = Center)
+      .content(source.description)
+      .row(Column(width = Fixed(7)), Column)
+      .contents("", "")
+      .render()
+      .lines
+      .toList
+    val programExecutor = StreamingProgramExecutor(ctx.allClassPaths, printExecLine)
+    boxLines.take(5).foreach(println)
+    val res = programExecutor(source)
+    println(boxLines.last)
+
+    if (res.exception.isDefined) {
+      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(res.exception.get))
+      grid
+        .header((Red + Bold) ("There was an exception"))
+        .row()
+        .content(stackTrace)
+        .print()
+    }
+  }
+
+  private def printExecLine(line: String, lineNumber: Int): Unit = {
+    import formatter._
+    grid
+      .row(Column(width = Fixed(7), overflowHandling = OverflowHandling.Truncate), Column)
+      .content(Magenta(lineNumber), syntaxHighlighter(line))
+      .render()
+      .lines
+      .drop(1)
+      .toList
+      .dropRight(1)
+      .foreach(println)
+  }
+
+
+  private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
+    val stackTraceLines = stackTrace.lines.toList
+    val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
+    if (lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
+      stackTrace
+    else
+      stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
   private def printExecutionTimes(success: Boolean): Unit = {

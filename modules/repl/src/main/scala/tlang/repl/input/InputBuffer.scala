@@ -161,7 +161,7 @@ case class InputBuffer(
       s.insert(secondaryMarker, secondaryCursor.position).insert(mainMarker, mainCursor.position)
 
     s"""
-       |${text.escape(EscapeCharsNormal)}
+       |${ text.escape(EscapeCharsNormal) }
        |   Lines:   $linePositions
        |   Cursor:  $mainCursor
        |   Mark:    $secondaryCursor

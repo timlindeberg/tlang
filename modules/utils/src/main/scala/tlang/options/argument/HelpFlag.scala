@@ -33,7 +33,7 @@ class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[S
   override def description(implicit formatter: Formatter): String =
     s"""
        |Prints help information and exits. Giving a flag as argument will give more information about that flag.
-       |${ flag(this) } ${highlight(Phases)} prints information about the different phases of the T-Compiler.
+       |${ flag(this) } ${ highlight(Phases) } prints information about the different phases of the T-Compiler.
       """
 
   override def parseValue(args: Set[String]): Set[String] = args

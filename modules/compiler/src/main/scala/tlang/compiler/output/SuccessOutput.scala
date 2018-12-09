@@ -1,6 +1,7 @@
 package tlang
 package compiler
 package output
+
 import tlang.utils.JSON.Json
 
 case class SuccessOutput(success: Boolean) extends Output {

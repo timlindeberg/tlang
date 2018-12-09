@@ -10,7 +10,6 @@ import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.UnitSpec
 
 
-
 class GridSpec extends UnitSpec {
 
   val DefaultMaxWidth = 20

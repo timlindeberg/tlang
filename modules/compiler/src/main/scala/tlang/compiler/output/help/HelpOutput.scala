@@ -15,7 +15,7 @@ case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: F
 
     import formatter._
 
-    val tcompile = (Bold + Green)(Constants.CompilerCommandName)
+    val tcompile = (Bold + Green) (Constants.CompilerCommandName)
     val options = Blue("options")
     val source = Blue("source files")
     val optionsHeader = Bold(Magenta("Options"))

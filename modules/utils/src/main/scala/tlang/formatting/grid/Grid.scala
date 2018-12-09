@@ -3,7 +3,6 @@ package formatting
 package grid
 
 import tlang.formatting.Colors.Color
-import tlang.formatting.Formatter
 
 import tlang.utils.{Memoize, Memoized}
 
@@ -280,6 +279,7 @@ case class Grid()(implicit var formatter: Formatter) {
   private case class GridRenderer() {
 
     private val f = formatter
+
     import f._
 
     // An approximation of the number of characters needed. Doesn't take in to account eventual
@@ -292,7 +292,7 @@ case class Grid()(implicit var formatter: Formatter) {
               case (acc, s: StringContent) =>
                 val string = s.string
                 acc + math.max(1, string.length / formatter.lineWidth)
-              case (acc, _)                        => acc + 1
+              case (acc, _)                => acc + 1
             }
           }
           .max + 1

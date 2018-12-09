@@ -41,11 +41,13 @@ class ClassPathParser(paths: Set[String]) {
 
   private def addClasses(dir: File): Unit = {
     val classPath = dir.getAbsolutePath
+
     def addFile(p: Path, fileType: String, classFileType: String => ClassFile) = {
       val path = p.toAbsolutePath.toString
       val name = path.substring(classPath.length + 1, path.length - fileType.length).replaceAll("\\\\", "/")
       addClass(name, classFileType(path))
     }
+
     Files.walk(dir.toPath, 500)
       .forEach { path =>
         path.getFileName.toString match {

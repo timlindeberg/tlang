@@ -16,7 +16,6 @@ import tlang.repl._
 import tlang.repl.input.{Cursor, InputBuffer}
 
 
-
 object ReplTerminal {
 
   val MouseReportingDragClick = "\u001b[?1002"

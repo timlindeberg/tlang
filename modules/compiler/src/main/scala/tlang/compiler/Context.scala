@@ -43,9 +43,9 @@ case class Context(
   outDirs: Set[File] = Set(File(".")),
   printCodePhase: Set[String] = Set(),
   ignoredImports: Set[String] = Set()
-) (
+)(
   implicit val formatter: Formatter,
-){
+) {
 
   val executionTimes: mutable.Map[String, Double] = mutable.Map()
   def allClassPaths: Set[String] = outDirs.map(_.pathAsString) ++ classPath.paths

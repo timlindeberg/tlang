@@ -18,7 +18,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
-  val ErrorResources = s"$Resources/errortests"
+  val ErrorResources     = s"$Resources/errortests"
   val MessageContextSize = 3
 
   override def suiteName: String = "Compiler Errors"
@@ -56,7 +56,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
     if (Verbose)
       printExecutionTimes(file, ctx)
 
-    if (PrintErrors){
+    if (PrintErrors) {
       ctx.output += ErrorMessageOutput(messages, messageTypes = List(messageType))
     }
 

@@ -1,6 +1,7 @@
 // Ignore
 import T::std::Vector
 import T::std::HashMap
+import T::std::Comparator
 import java::util::regex::Matcher
 import java::util::regex::Pattern
 import java::lang::Math
@@ -116,6 +117,9 @@ Step D must be finished before step E can begin.
 Step F must be finished before step E can begin.
 `
 
+class CharComparator: Comparator<Char> =
+	Def Compare(a: Char, b: Char) = a - b
+
 
 class Day7 =
 
@@ -161,13 +165,14 @@ class Day7 =
 		for(val e in parents)
 			if(e.Value().IsEmpty())
 				starts.Add(e.Key())
-		starts.Sort()
+		starts.Sort(new CharComparator())
 		starts
 
 	Def ParseGraph(input: String) =
 		for(val line in input.Lines())
 			val m = regex.matcher(line)
 			m.matches()
+			println(line)
 			val from = m.group(1)[0]
 			val to = m.group(2)[0]
 
@@ -180,7 +185,7 @@ class Day7 =
 			parents.GetOrDefault(from)
 
 		for(val entry in graph)
-			entry.Value().Sort()
+			entry.Value().Sort(new CharComparator())
 
 		println(graph)
 		println(parents)

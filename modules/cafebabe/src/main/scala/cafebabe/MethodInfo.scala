@@ -12,7 +12,7 @@ case class MethodInfo(var accessFlags: U2, nameIndex: U2, descriptorIndex: U2, v
   }
 
   def getAnnotationAttribute(attributeNameIndex: U2) = {
-    if(annotationAttribute.isEmpty){
+    if (annotationAttribute.isEmpty) {
       val attr = new RuntimeAnnotationAttribute(attributeNameIndex)
       annotationAttribute = Some(attr)
       attributes ::= attr
@@ -23,5 +23,5 @@ case class MethodInfo(var accessFlags: U2, nameIndex: U2, descriptorIndex: U2, v
   def addAttribute(attributeInfo: AttributeInfo) = attributes ::= attributeInfo
   def hasAttribute(attributeInfo: AttributeInfo) = attributes.contains(attributeInfo)
 
-  def isStatic : Boolean = (accessFlags & Flags.METHOD_ACC_STATIC) != 0
+  def isStatic: Boolean = (accessFlags & Flags.METHOD_ACC_STATIC) != 0
 }

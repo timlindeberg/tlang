@@ -7,7 +7,6 @@ import tlang.formatting.{Colors, ErrorStringContext, Formatter}
 import tlang.options.DictionaryFlag
 
 
-
 case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
   import tlang.formatting.Colors.ColorScheme._
@@ -96,4 +95,4 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
     formatter.list(Colors.ColorNames.map(Magenta))
   }
 
-  }
+}

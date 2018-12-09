@@ -65,7 +65,8 @@ class JSONSpec extends UnitSpec {
         "E" -> List(TestClass(), Some("abc"))
       ),
       TestClass() -> "ABC"
-    )) shouldBe """{"A":[1,"2",false,true,null],"B":{"C":null,"D":"a","E":["\"ABC\"","abc"]},"\"ABC\"":"ABC"}"""
+    )) shouldBe
+      """{"A":[1,"2",false,true,null],"B":{"C":null,"D":"a","E":["\"ABC\"","abc"]},"\"ABC\"":"ABC"}"""
   }
 
 }

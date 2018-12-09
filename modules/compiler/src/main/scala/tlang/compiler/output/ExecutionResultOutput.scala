@@ -1,6 +1,7 @@
 package tlang
 package compiler
 package output
+
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
@@ -27,7 +28,7 @@ case class ExecutionResultOutput(
         return
 
       val timeFormatted = f"$time%.3f"
-      val timeDescription = s"${Bold}Executed in ${Blue(timeFormatted)}${Bold("s")}"
+      val timeDescription = s"${ Bold }Executed in ${ Blue(timeFormatted) }${ Bold("s") }"
 
       val highlighted = syntaxHighlighter(output)
       val lines = formatter
@@ -52,7 +53,7 @@ case class ExecutionResultOutput(
     }
 
 
-    if(numPrograms == 0)
+    if (numPrograms == 0)
       return grid.header(s"Execution ${ Red("failed") }, none of the given files contains a main method.").render()
 
     grid.header(Bold(if (numPrograms > 1) "Executing programs" else "Executing program"))

@@ -1,6 +1,7 @@
 package tlang
 package compiler
 package output
+
 import tlang.compiler.Main
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
@@ -56,7 +57,6 @@ case class ExecutionTimeOutput(
       .contents(columns)
       .render()
   }
-
 
 
   override def json: Json = Json("executionTimes" -> executionTimes)

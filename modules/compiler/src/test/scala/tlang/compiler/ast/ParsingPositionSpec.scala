@@ -16,8 +16,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
   import tlang.testutils.TestConstants._
 
-  private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
-
+  private val TestFile: File = File(s"$Resources/positions/ParserPositions.t")
 
 
   // We make Tree lazy so the parsing time counts towards the test execution time

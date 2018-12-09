@@ -6,7 +6,7 @@ import org.scalatest.ParallelTestExecution
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestConstants._
-import tlang.utils.{FileSource, Logging, ProgramExecutor}
+import tlang.utils.{DefaultProgramExecutor, FileSource, Logging, ProgramExecutor}
 
 class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution with Logging {
 
@@ -22,7 +22,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
   def testValidProgram(file: File): Unit = {
     val ctx = testContext(Some(file))
 
-    val programExecutor = ProgramExecutor(ctx.allClassPaths)
+    val programExecutor = DefaultProgramExecutor(ctx.allClassPaths)
 
     val sources = FileSource(file) :: Nil
     val cus = try {

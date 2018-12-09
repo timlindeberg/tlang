@@ -25,7 +25,7 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
     "Lowers the tree to simpler components. Performs desugaring."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-  
+
 }
 
 class Lowerer(imports: Imports) extends Logging {

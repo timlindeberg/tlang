@@ -23,7 +23,7 @@ case class SyntaxHighlighter(coloring: String => Seq[Coloring])(implicit formatt
     val (codeWithoutColors, colors) = splitStringAndColors(code)
 
     val colorings = coloring(codeWithoutColors)
-    if(colorings.isEmpty)
+    if (colorings.isEmpty)
       return code
 
 

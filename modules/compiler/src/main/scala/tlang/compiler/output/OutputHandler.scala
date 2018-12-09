@@ -18,7 +18,7 @@ trait OutputHandler {
 case class PrettyOutputHandler() extends OutputHandler {
   override def add(output: Output): Unit = {
     val s = output.pretty
-    if(s.nonEmpty)
+    if (s.nonEmpty)
       println(s)
   }
   override def flush(): Unit = {}

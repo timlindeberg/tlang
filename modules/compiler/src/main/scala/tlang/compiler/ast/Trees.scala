@@ -15,8 +15,8 @@ import scala.collection.{TraversableLike, mutable}
 @FillTreeHelpers
 object Trees {
 
-  private lazy val noColorPrinter  = PrettyPrinter()(Formatter.SimpleFormatter)
-  private lazy val colorPrinter    = PrettyPrinter()(Formatter.PrettyFormatter)
+  private lazy val noColorPrinter = PrettyPrinter()(Formatter.SimpleFormatter)
+  private lazy val colorPrinter   = PrettyPrinter()(Formatter.PrettyFormatter)
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 

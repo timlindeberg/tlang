@@ -198,7 +198,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           |$Separator
           |
           |Difference:
-          |${StringDifference(newSnapshot, oldSnapshot)}
+          |${ StringDifference(newSnapshot, oldSnapshot) }
        """.stripMargin
     }
 

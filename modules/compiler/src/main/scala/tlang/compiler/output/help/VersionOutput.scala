@@ -11,7 +11,7 @@ import tlang.utils.JSON.Json
 case class VersionOutput()(implicit formatter: Formatter) extends Output {
   override def pretty: String = {
     import formatter._
-    s"${Green(Constants.CompilerCommandName) } version ${ Blue(Constants.Version) }"
+    s"${ Green(Constants.CompilerCommandName) } version ${ Blue(Constants.Version) }"
   }
 
   override def json: Json = Json("version" -> Constants.Version)

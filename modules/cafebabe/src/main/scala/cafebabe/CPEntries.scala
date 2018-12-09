@@ -3,19 +3,20 @@ package cafebabe
 import ClassFileTypes._
 
 object CPTags {
+
   import ClassFileTypes._
 
-  val Class: U1              = 7
-  val Fieldref: U1           = 9
-  val Methodref: U1          = 10
+  val Class             : U1 = 7
+  val Fieldref          : U1 = 9
+  val Methodref         : U1 = 10
   val InterfaceMethodref: U1 = 11
-  val String: U1             = 8
-  val Integer: U1            = 3
-  val Float: U1              = 4
-  val Long: U1               = 5
-  val Double: U1             = 6
-  val NameAndType: U1        = 12
-  val Utf8: U1               = 1
+  val String            : U1 = 8
+  val Integer           : U1 = 3
+  val Float             : U1 = 4
+  val Long              : U1 = 5
+  val Double            : U1 = 6
+  val NameAndType       : U1 = 12
+  val Utf8              : U1 = 1
 }
 
 sealed abstract class CPEntry(val tag: U1) extends Streamable
@@ -88,7 +89,7 @@ case class CPUtf8Info(val bytes: Seq[U1]) extends CPEntry(CPTags.Utf8) {
 
   override def toStream(stream: ByteStream): ByteStream = {
     stream << tag << bytes.length.asInstanceOf[U2]
-    bytes.foreach(b => stream << b )
+    bytes.foreach(b => stream << b)
     stream
   }
 

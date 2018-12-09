@@ -24,7 +24,7 @@ import tlang.repl.argument.ReplHelpFlag
 import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
-import tlang.utils.{Logging, ProgramExecutor}
+import tlang.utils.{DefaultProgramExecutor, Logging, ProgramExecutor}
 
 
 object Main extends Logging {
@@ -93,7 +93,7 @@ object Main extends Logging {
 
     val syntaxHighlighter = TLangSyntaxHighlighter()
     val extractor = Extractor(syntaxHighlighter, replState)
-    val programExecutor = ProgramExecutor(ctx.allClassPaths)
+    val programExecutor = DefaultProgramExecutor(ctx.allClassPaths)
     val statementTransformer = SaveAndPrintTransformer(TreeBuilder(), replState)
     val evaluator = Evaluator(ctx, extractor, programExecutor, statementTransformer, replState)
 

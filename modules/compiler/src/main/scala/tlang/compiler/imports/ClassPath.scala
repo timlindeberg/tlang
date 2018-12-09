@@ -19,10 +19,10 @@ object ClassPath {
       Files.find(javaLibDirectory, 1000, (path, attr) =>
         attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
       )
-      .iterator
-      .asScala
-      .map(_.toString)
-      .toSet
+        .iterator
+        .asScala
+        .map(_.toString)
+        .toSet
 
     val javaClassPath = System.getProperty("java.class.path").split(File.pathSeparator).toSet
     ClassPath(javaClassPath ++ javaLibJarFiles + Constants.TStdLibDirectory)

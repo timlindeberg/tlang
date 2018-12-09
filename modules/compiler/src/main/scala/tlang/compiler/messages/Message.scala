@@ -82,5 +82,5 @@ object MessageType {
   case object Warning extends MessageType("1", Colors.Yellow)
   case object Error extends MessageType("2", Colors.Red)
   case object Fatal extends MessageType("3", Colors.Red)
-  case object Note extends MessageType( "", Colors.Blue)
+  case object Note extends MessageType("", Colors.Blue)
 }
