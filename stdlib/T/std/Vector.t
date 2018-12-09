@@ -81,10 +81,13 @@ class Vector<T>: List<T>, Stack<T> =
 		size += numElements
 
 	Def RemoveIndex(index: Int) =
+		val value = data[index]
 		for(var i = index; i < size; i++)
 			data[i] = data[i + 1]
 
 		size--
+		value
+
 
 	/* ------------------------------ Stack ------------------------------  */
 

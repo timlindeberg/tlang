@@ -276,10 +276,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     // TODO: why lazy?
     lazy val ch: CodeHandler = classFile.addClassInitializer.codeHandler
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    staticFields.foreach {
-      case VarDecl(id, _, Some(expr), _) => compileField(expr, id, classDecl, ch, codeGenerator)
-      case _                             =>
-    }
+    staticFields foreach { codeGenerator.compileField(classDecl, _) }
+
     ch << RETURN
     ch.freeze
   }
@@ -287,25 +285,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   private def initializeNonStaticFields(classDecl: ClassDeclTree, ch: CodeHandler): Unit = {
     val nonStaticFields = classDecl.fields.filter(v => v.initiation.isDefined && !v.isStatic)
     val codeGenerator = new CodeGenerator(ch, mutable.HashMap())
-    nonStaticFields foreach {
-      case VarDecl(id, _, Some(expr), _) =>
-        ch << ArgLoad(0) // put this-reference on stack
-        compileField(expr, id, classDecl, ch, codeGenerator)
-      case _                             =>
-    }
-  }
-
-  private def compileField(expr: ExprTree, id: VariableID, classDecl: ClassDeclTree, ch: CodeHandler, codeGenerator: CodeGenerator) = {
-    codeGenerator.compileExpr(expr)
-    val sym = id.getSymbol
-    val className = classDecl.getSymbol.JVMName
-    val fieldName = id.getSymbol.name
-    val typeName = sym.getType.byteCodeName
-    if (sym.isStatic)
-      ch << PutStatic(className, fieldName, typeName)
-    else
-      ch << PutField(className, fieldName, typeName)
-
+    nonStaticFields foreach { codeGenerator.compileField(classDecl, _) }
   }
 
   private def getMethodFlags(method: MethodDeclTree) = {

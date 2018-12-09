@@ -12,7 +12,6 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-
 import tlang.utils.Logging
 
 import scala.collection.mutable
@@ -412,6 +411,23 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           case stat           => compileStat(stat, compileUseless = true)
         }
     }
+  }
+
+  def compileField(classDecl: ClassDeclTree, varDecl: VarDecl): CodeHandler = {
+    val VarDecl(id, _, Some(init), _) = varDecl
+    val sym = id.getSymbol
+    if(!sym.isStatic)
+      ch << ArgLoad(0) // put this-reference on stack
+
+    compileAndConvert(init, id.getType)
+    val className = classDecl.getSymbol.JVMName
+    val fieldName = id.getSymbol.name
+    val typeName = sym.getType.byteCodeName
+
+    if (sym.isStatic)
+      ch << PutStatic(className, fieldName, typeName)
+    else
+      ch << PutField(className, fieldName, typeName)
   }
 
   private def isPrimitiveOperatorCall(acc: Access): Boolean = {

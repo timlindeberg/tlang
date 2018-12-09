@@ -34,7 +34,7 @@ trait List<T>: Collection<T> =
 	* Removes the element at the given index.
 	* @param index the position to remove
 	*/
-	Def RemoveIndex(index: Int): Unit
+	Def RemoveIndex(index: Int): T
 
 	/**
 	* Returns the first found index containing the given value.

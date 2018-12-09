@@ -726,7 +726,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         while (tokens.nextIncludingNewlines.kind in List(SEMICOLON, NEWLINE))
           tokens.readNext()
       case EOF                 =>
-      case _                   => report(WrongToken(tokens.next, tokens.last, SEMICOLON, NEWLINE))
+      case _                   => report(WrongToken(tokens.next, tokens.last, NEWLINE, SEMICOLON))
     }
   }
 

@@ -31,6 +31,9 @@ var implArr: ImplicitArr = arr
 
 println(implArr) // res: 1 2 3
 
+println(new A().impl) //res: 5
+println(A.staticImpl) //res: 10
+
 Def GetInt() = return 5
 Def PrintImplicit(impl: Implicit): Unit = println(impl)
 Def PrintImplicitArray(implArray: Implicit[]) =
@@ -56,3 +59,7 @@ class ImplicitArr =
 		for(var i = 0; i < impl.Size(); i++)
 			str += impl[i] + " "
 		return str
+
+class A =
+	Val impl: Implicit = 5
+	Val static staticImpl: Implicit = 10

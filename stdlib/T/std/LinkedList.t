@@ -93,7 +93,7 @@ class LinkedList<T> : List<T>, Queue<T>, Stack<T> =
 		if(post)
 			node.Next = post
 
-	Def RemoveIndex(index: Int): Unit =
+	Def RemoveIndex(index: Int): T =
 		checkBounds(index)
 
 		val node = find(index)
@@ -117,6 +117,7 @@ class LinkedList<T> : List<T>, Queue<T>, Stack<T> =
 			size = 1
 
 		size--
+		node.Value
 
 
 	Def FirstNode() = first
