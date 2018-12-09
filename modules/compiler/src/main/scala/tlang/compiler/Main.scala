@@ -263,15 +263,14 @@ case class Main(ctx: Context) extends Logging {
 
     val boxLines = grid
       .header(Bold("Executing program"))
-      .row(alignment = Center)
       .content(source.description)
-      .row(Column(width = Fixed(7)), Column)
+      .row(Column(width = Fixed(6)), Column)
       .contents("", "")
       .render()
       .lines
       .toList
     val programExecutor = StreamingProgramExecutor(ctx.allClassPaths, printExecLine)
-    boxLines.take(5).foreach(println)
+    boxLines.take(4).foreach(println)
     val res = programExecutor(source)
     println(boxLines.last)
 
@@ -287,17 +286,15 @@ case class Main(ctx: Context) extends Logging {
 
   private def printExecLine(line: String, lineNumber: Int): Unit = {
     import formatter._
-    grid
-      .row(Column(width = Fixed(7), overflowHandling = OverflowHandling.Truncate), Column)
-      .content(Magenta(lineNumber), syntaxHighlighter(line))
-      .render()
-      .lines
-      .drop(1)
-      .toList
-      .dropRight(1)
-      .foreach(println)
-  }
 
+    val s = grid
+      .row(Column(width = Fixed(6), overflowHandling = OverflowHandling.Truncate), Column)
+      .content(Magenta(lineNumber), syntaxHighlighter(line))
+      .removeTop()
+      .removeBottom()
+      .render()
+    print(s)
+  }
 
   private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
     val stackTraceLines = stackTrace.lines.toList

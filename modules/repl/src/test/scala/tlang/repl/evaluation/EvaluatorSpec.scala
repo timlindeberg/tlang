@@ -154,8 +154,20 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
 
 
 
-          |"""".stripMargin,
-      time = 0
+
+
+
+
+
+
+          |"""".str
+
+
+        n,
+      time
+
+
+    = 0
     )
 
 

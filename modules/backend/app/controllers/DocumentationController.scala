@@ -12,6 +12,7 @@ class DocumentationController @Inject()(cc: ControllerComponents, documentationS
 
   def documentation = Action {
     def documentation = documentationService.documentation
+
     Ok(
       Json.obj {
         "markdown" -> documentation.map { doc => Json.toJson(doc) }

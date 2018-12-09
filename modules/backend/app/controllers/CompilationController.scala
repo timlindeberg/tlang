@@ -23,7 +23,7 @@ import scala.concurrent.duration.Duration
 class CompilationController @Inject()(cc: ControllerComponents, config: Configuration)(implicit system: ActorSystem, mat: Materializer) extends AbstractController(cc) {
 
   implicit val formatter: Formatter = Formatter.SimpleFormatter
-  private val dockerScriptPath = config.get[String]("tlang.dockerScript.path")
+  private  val dockerScriptPath     = config.get[String]("tlang.dockerScript.path")
 
   private val ctx = Context(
     reporter = DefaultReporter(CompilerMessages(maxErrors = -1)),

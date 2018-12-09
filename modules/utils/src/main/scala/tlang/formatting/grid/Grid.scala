@@ -15,6 +15,8 @@ case class Grid()(implicit var formatter: Formatter) {
   private var borderColor      : Color            = formatter.NoColor
   private var columnHeaderColor: Color            = formatter.Blue + formatter.Bold
   private var shouldTrim       : Boolean          = true
+  private var drawTop          : Boolean          = true
+  private var drawBottom       : Boolean          = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
@@ -61,6 +63,16 @@ case class Grid()(implicit var formatter: Formatter) {
 
     addRow(List(Column(alignment = Alignment.Center)), isHeader = true)
     addContent(List(content))
+  }
+
+  def removeTop(): Grid = {
+    this.drawTop = false
+    this
+  }
+
+  def removeBottom(): Grid = {
+    this.drawBottom = false
+    this
   }
 
   def row(
@@ -306,9 +318,20 @@ case class Grid()(implicit var formatter: Formatter) {
       if (rows.isEmpty)
         return ""
 
+      if (drawTop) {
+        sb ++= drawTopLine(rows.head)
+        sb ++= NL
+      }
 
-      sb ++= drawTopLine(rows.head)
-      sb ++= NL
+      drawRows()
+      if (drawBottom) {
+        sb ++= drawBottomLine(rows.last)
+      }
+
+      sb.toString
+    }
+
+    private def drawRows() = {
       for (i <- rows.indices) {
         val row = rows(i)
         drawContent(row)
@@ -318,8 +341,6 @@ case class Grid()(implicit var formatter: Formatter) {
           sb ++= NL
         }
       }
-      sb ++= drawBottomLine(rows.last)
-      sb.toString
     }
 
     private def drawTopLine(row: Row) = {
@@ -334,7 +355,6 @@ case class Grid()(implicit var formatter: Formatter) {
         drawTopOrBottom(BottomLeftThick, HorizontalThick, HorizontalUpThick, BottomRightThick, row)
       else
         drawTopOrBottom(BottomLeft, Horizontal, HorizontalUp, BottomRight, row)
-
     }
 
     private def drawTopOrBottom(left: String, middle: String, middleBreak: String, right: String, row: Row): String = {
