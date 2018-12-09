@@ -73,14 +73,14 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     source.description(*) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
 
     messageInfo.sourceDescription should matchWithAnsi(
-      s"\u001b[1;35m1\u001b[0m:\u001b[1;35m10\u001b[0m core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
+      s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m:\u001b[1;35m1\u001b[0m:\u001b[1;35m10\u001b[0m"
     )
 
     // Without color
     messageInfo = getMessageInfo(message, useColor = false)
     source.description(*) returns s"core/src/test/resources/positions/ParserPositions.t"
 
-    messageInfo.sourceDescription should matchWithAnsi(s"1:10 core/src/test/resources/positions/ParserPositions.t")
+    messageInfo.sourceDescription should matchWithAnsi(s"core/src/test/resources/positions/ParserPositions.t:1:10")
   }
 
 

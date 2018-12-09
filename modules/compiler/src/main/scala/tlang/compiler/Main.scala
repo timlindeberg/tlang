@@ -20,7 +20,7 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
-l
+
 case class ExitException(code: Int) extends Throwable
 
 object Main extends Logging {
