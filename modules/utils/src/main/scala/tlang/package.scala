@@ -253,6 +253,7 @@ package object tlang {
     def filterNotInstance[A <: T : ClassTag]: Collection[T] = collection.filter(!classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Collection[T]]
 
     def findInstance[A <: T : ClassTag]: Option[A] = collection.find(classTag[A].runtimeClass.isInstance(_)).asInstanceOf[Option[A]]
+    def existsInstance[A <: T : ClassTag]: Boolean = collection.exists(classTag[A].runtimeClass.isInstance(_))
     def findDefined[A](f: T => Option[A]): Option[A] = {
       for (v <- collection) {
         val o = f(v)

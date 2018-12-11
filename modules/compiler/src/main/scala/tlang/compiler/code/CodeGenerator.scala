@@ -416,7 +416,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   def compileField(classDecl: ClassDeclTree, varDecl: VarDecl): CodeHandler = {
     val VarDecl(id, _, Some(init), _) = varDecl
     val sym = id.getSymbol
-    if(!sym.isStatic)
+    if (!sym.isStatic)
       ch << ArgLoad(0) // put this-reference on stack
 
     compileAndConvert(init, id.getType)

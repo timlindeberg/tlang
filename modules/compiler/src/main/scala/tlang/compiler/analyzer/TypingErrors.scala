@@ -156,9 +156,11 @@ trait TypingErrors extends ErrorHandling {
     lazy val message = err"Expected a return value of type $tpe."
   }
 
-  case class DoesntHaveConstructor(className: String, methodSignature: String, override val pos: Positioned)
+  case class DoesntHaveConstructor(className: String, argTypes: List[Type], override val pos: Positioned)
     extends TypeCheckingError(16, pos) {
     lazy val message = err"Class $className does not contain a constructor $methodSignature."
+
+    private def methodSignature = "new" + argTypes.mkString("(", ", ", ")")
   }
 
   // Missing 17

@@ -1,4 +1,3 @@
-// Ignore
 import T::std::Vector
 import T::std::HashMap
 import T::std::Comparator
@@ -117,40 +116,61 @@ Step D must be finished before step E can begin.
 Step F must be finished before step E can begin.
 `
 
-class CharComparator: Comparator<Char> =
-	Def Compare(a: Char, b: Char) = a - b
+class CharDescending: Comparator<Char> =
+	Def Compare(a: Char, b: Char) = b - a
 
+class Worker =
+	Var FinishedAt = -1
+	Var Task = '\0'
 
 class Day7 =
 
+
+	Val NumWorkers = 2
+
+	var time = 0
 	val graph = new HashMap<Char, Vector<Char>>()
 	val parents = new HashMap<Char, Vector<Char>>()
 	val visited = new Bool[1 + 'Z' - 'A']
 	val regex = Pattern.compile(`Step ([A-Z]) must be finished before step ([A-Z]) can begin.`)
+	val workers = new Worker[NumWorkers]
 
-	Def new(input: String) = ParseGraph(input)
-
+	Def new(input: String) =
+		ParseGraph(input)
+		for(var i = 0; i < NumWorkers; i++)
+			workers[i] = new Worker()
 
 	Def Run() =
-		val starts = FindStarts()
 		val queue = new Vector<Char>()
 
-		for(var i = starts.Size() - 1; i >= 0; i--)
-			queue.Add(starts[i])
-		println("Starts:" + starts)
-		val order = new Vector<Char>()
+		queue.AddAll(FindStarts())
+		queue.Sort(new CharDescending())
+
 		while(!queue.IsEmpty())
 			val node = queue.Pop()
 			if(Visited(node)) continue
 
-			visited[node - 'A'] = true
+			var worker = GetFreeWorker()
+			while(!worker)
+				time++
+				worker = GetFreeWorker()
+
+			val w = worker!!
+			w.Task = node
+			w.FinishedAt = time + 1 + (node - 'A')
 			print(node)
-			order.Add(node)
-			val edges = graph[node]
-			for(var i = edges.Size() - 1; i >= 0; i--)
-				val e = edges[i]
+			visited[node - 'A'] = true
+			for(val e in graph[node])
 				if(VisitedParents(e))
 					queue.Add(e)
+			queue.Sort(new CharDescending())
+
+
+	Def GetFreeWorker(): Worker? =
+		for(val worker in workers)
+			if(worker.FinishedAt < time)
+				return worker
+		return null
 
 	Def Visited(node: Char) = visited[node - 'A']
 
@@ -165,30 +185,21 @@ class Day7 =
 		for(val e in parents)
 			if(e.Value().IsEmpty())
 				starts.Add(e.Key())
-		starts.Sort(new CharComparator())
 		starts
 
 	Def ParseGraph(input: String) =
 		for(val line in input.Lines())
 			val m = regex.matcher(line)
 			m.matches()
-			println(line)
 			val from = m.group(1)[0]
 			val to = m.group(2)[0]
 
-			val n = graph.GetOrDefault(from)
+			val n = graph.GetOrDefault(from, new Vector<Char>())
 			n.Add(to)
-			graph.GetOrDefault(to)
+			graph.GetOrDefault(to, new Vector<Char>())
 
-			val p = parents.GetOrDefault(to)
+			val p = parents.GetOrDefault(to, new Vector<Char>())
 			p.Add(from)
-			parents.GetOrDefault(from)
+			parents.GetOrDefault(from, new Vector<Char>())
 
-		for(val entry in graph)
-			entry.Value().Sort(new CharComparator())
-
-		println(graph)
-		println(parents)
-
-new Day7(input).Run()
-// res: 3006
+new Day7(input).Run() // res: CQSWKZFJONPBEUMXADLYIGVRHT

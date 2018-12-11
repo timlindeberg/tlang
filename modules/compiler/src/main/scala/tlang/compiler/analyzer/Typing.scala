@@ -341,23 +341,17 @@ case class TypeChecker(
     val exprs = newExpr.args
     val argTypes = exprs.map(tcExpr(_))
     tpe.getType match {
-      case TObject(classSymbol) =>
-        if (classSymbol.isAbstract) {
-          report(InstantiateTrait(classSymbol.name, newExpr))
-        } else {
-          classSymbol.lookupMethod("new", argTypes, imports) match {
-            case Some(constructorSymbol) =>
-              checkPrivacy(constructorSymbol, classSymbol, newExpr)
-              newExpr.setSymbol(constructorSymbol)
-            case None if exprs.nonEmpty  =>
-              val methodSignature = "new" + exprs.map(_.getType).mkString("(", ", ", ")")
-              report(DoesntHaveConstructor(tpe.name, methodSignature, newExpr))
-            case _                       =>
-              val defaultConstructor = new MethodSymbol("new", classSymbol, None, Set(Public()))
-              newExpr.setSymbol(defaultConstructor)
-          }
+      case TObject(classSymbol) if classSymbol.isAbstract =>
+        report(InstantiateTrait(classSymbol.name, newExpr))
+      case TObject(classSymbol)                           =>
+        classSymbol.findMethod("new", argTypes, exactTypes = false) match {
+          case Some(constructorSymbol) =>
+            checkPrivacy(constructorSymbol, classSymbol, newExpr)
+            newExpr.setSymbol(constructorSymbol)
+          case None                    =>
+            report(DoesntHaveConstructor(tpe.name, argTypes, newExpr))
         }
-      case _                    => ???
+      case _                                              => ???
     }
     tpe.getType
   }

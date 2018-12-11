@@ -251,6 +251,9 @@ case class NameAnalyser(
     case classDecl@IDClassDeclTree(_, _, _, methods)                     =>
       setParentSymbol(classDecl)
       bindFields(classDecl)
+      if (!methods.existsInstance[ConstructorDecl]) {
+        addDefaultConstructor(classDecl)
+      }
       methods foreach bind
     case methDecl@MethodDecl(_, _, args, retType, stat)                  =>
       val methSym = methDecl.getSymbol
@@ -316,6 +319,12 @@ case class NameAnalyser(
 
       init ifDefined { new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_) }
     }
+
+  private def addDefaultConstructor(classDecl: IDClassDeclTree): Unit = {
+    val methSym = new MethodSymbol("new", classDecl.getSymbol, Some(Block(Nil)), Set(Public())).setType(TUnit)
+    classDecl.getSymbol.addMethod(methSym)
+  }
+
 
   private class StatementBinder(scope: Symbol, isStaticContext: Boolean) {
 
@@ -403,7 +412,6 @@ case class NameAnalyser(
       }
 
     def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)
-
 
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
       val traverser = new Trees.Traverser {

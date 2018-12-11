@@ -39,14 +39,6 @@ trait Map<K, V>: Collection<MapEntry<K, V>> =
 		Add(key, default)
 		default
 
-	Def GetOrDefault(key: K): V =
-		val v = Get(key)
-		if(v) return v
-
-		val default = new V()
-		Add(key, default)
-		default
-
 	//------------------------------------------------------------
 	// Operators
 	//------------------------------------------------------------

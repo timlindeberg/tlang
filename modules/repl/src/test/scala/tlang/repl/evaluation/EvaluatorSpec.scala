@@ -146,31 +146,12 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
 
     programExecutor(classFile) returns ExecutionResult(
       output =
-        s"""|${ Evaluator.ReplOutputMarker }val res1: Int = 6
-            |${ Evaluator.ReplOutputMarker }
-
-
-
-
-
-
-
-
-
-
-
-
-          |"""".str
-
-
-        n,
-      time
-
-
-    = 0
+        s"""
+           |${ Evaluator.ReplOutputMarker }val res1: Int = 6
+           |${ Evaluator.ReplOutputMarker }
+           |"""".stripMargin,
+      time = 0
     )
-
-
 
     val evaluator = Evaluator(
       classFile,

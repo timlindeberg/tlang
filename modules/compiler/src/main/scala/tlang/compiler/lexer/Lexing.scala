@@ -276,6 +276,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case 'n'  => (createToken('\n', 4), r)
         case 'r'  => (createToken('\r', 4), r)
         case 'f'  => (createToken('\f', 4), r)
+        case '0'  => (createToken('\0', 4), r)
         case '\'' => (createToken('\'', 4), r)
         case '\\' => (createToken('\\', 4), r)
         case _    =>

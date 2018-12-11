@@ -13,7 +13,7 @@
       <envVar name="colors" value="false" />
       <envVar name="printErrors" value="false" />
       <envVar name="removeUnusedSnapshots" value="true" />
-      <envVar name="updateSnapshots" value="" />
+      <envVar name="updateSnapshots" value="TypingErrors DoesntHaveConstructor" />
     </envs>
     <setting name="testKind" value="All in package" />
     <setting name="package" value="tlang.testsuites" />

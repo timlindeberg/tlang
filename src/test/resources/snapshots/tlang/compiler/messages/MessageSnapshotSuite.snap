@@ -202,20 +202,8 @@ G2001: [1mCould not find template class named [35mABC[0m[1m.[0m
 ========================================= TemplatingErrors WrongNumGenerics
 G2000: [1mWrong number of template parameters, expected [35m0[0m[1m, found [35m0[0m[1m.[0m
 
-========================================= TypingErrors AssignNullToNonNullable
-T2033: [1mCannot assign null to non nullable type [35mT::lang::Int[0m[1m.[0m
-
 ========================================= TypingErrors AssignUnit
 T2010: [1mCannot assign variable to an expression of type [35mUnit[0m[1m.[0m
-
-========================================= TypingErrors AssignValueToMethodCall
-T2037: [1mCannot assign a value to the result of a method call.[0m
-
-========================================= TypingErrors CantInferTypeRecursiveMethod
-T2021: [1mCannot infer type of recursive method.[0m
-
-========================================= TypingErrors CantPrintUnitType
-T2028: [1mCannot print an expression of type [35mUnit[0m[1m.[0m
 
 ========================================= TypingErrors ClassDoesntHaveField
 T2003: [1mClass [35mABC[0m[1m does not contain a field [35mABC[0m[1m.[0m
@@ -224,43 +212,16 @@ T2003: [1mClass [35mABC[0m[1m does not contain a field [35mABC[0m[1m.[0m
 T2001: [1mClass [35mABC[0m[1m does not contain a method [35mABC[0m[1m.[0m
 
 ========================================= TypingErrors DoesntHaveConstructor
-T2016: [1mClass [35mABC[0m[1m does not contain a constructor [35mABC[0m[1m.[0m
-
-========================================= TypingErrors ElvisOperatorNonNullable
-T2036: [1mCannot use the elvis operator on non-nullable type [35mT::lang::Int[0m[1m.[0m
-
-========================================= TypingErrors ExtractNullableNonNullable
-T2035: [1mCannot use the nullable extraction operator on non nullable type [35mT::lang::Int[0m[1m.[0m
+T2016: [1mClass [35mABC[0m[1m does not contain a constructor [35mnew()[0m[1m.[0m
 
 ========================================= TypingErrors FieldOnWrongType
 T2004: [1mCannot access field on type [35mABC[0m[1m.[0m
-
-========================================= TypingErrors ForeachNotIterable
-T2032: [1mType [35mT::lang::Int[0m[1m is not iterable.[0m
-
-========================================= TypingErrors InstantiateTrait
-T2024: [1mCannot instantiate trait [35mABC[0m[1m.[0m
-
-========================================= TypingErrors InvalidIncrementDecrementExpr
-T2022: [1mInvalid increment/decrement expression.[0m
 
 ========================================= TypingErrors InvalidPrivacyAccess
 T2009: [1mCannot use [35mprivate[0m[1m [0m[1mmethod [35mABC()[0m[1m in class [35mABC[0m[1m from class [35mABC[0m[1m.[0m
 
 ========================================= TypingErrors MethodOnWrongType
 T2002: [1mCannot call method [35mABC[0m[1m on type [35mABC[0m[1m.[0m
-
-========================================= TypingErrors NoSuperTypeHasField
-T2030: [1mNo super type of class [35mABC[0m[1m has a field [35mABC[0m[1m.[0m
-
-========================================= TypingErrors NoSuperTypeHasMethod
-T2029: [1mNo super type of class [35mABC[0m[1m implements a method [35mABC[0m[1m.[0m
-
-========================================= TypingErrors NoTypeNoInitializer
-T2018: [1mVariable [35mABC[0m[1m declared with no type or initialization.[0m
-
-========================================= TypingErrors NonNullableEqualsNull
-T2038: [1mCannot check if non nullable type [35mT::lang::Int[0m[1m is null.[0m
 
 ========================================= TypingErrors NonStaticFieldAsStatic
 T2007: [1mTrying to access field [35mABC[0m[1m statically but the field is not declared as static.[0m
@@ -274,33 +235,11 @@ T2005: [1mTrying to call method [35mABC[0m[1m statically but the method is n
 ========================================= TypingErrors NonStaticMethodFromStatic
 T2006: [1mCannot access non-static method [35mABC[0m[1m from a static method.[0m
 
-========================================= TypingErrors NotOnNonNullable
-T2020: [1;35m![0m[1m operator can only be applied to [35mBool[0m[1m and nullable types.[0m
-
 ========================================= TypingErrors OperatorNotFound
 T2013: [1m define an operator [35mABC[0m[1m.[0m
 
 ========================================= TypingErrors OperatorWrongReturnType
 T2014: [1mOperator [35mABC[0m[1m has wrong return type: expected [35mT::lang::Int[0m[1m, found [35mT::lang::Int[0m[1m.[0m
-
-========================================= TypingErrors OverridingMethodDifferentReturnType
-T2027: [1mOverriding method [35mABC()[0m[1m in class [35mABC[0m[1m has return type [35m[untyped][0m[1m while the method in parent [35mABC[0m[1m has return type [35m[untyped][0m[1m.[0m
-
-========================================= TypingErrors SafeAccessOnNonNullable
-T2034: [1mCannot use safe access on non nullable type [35mT::lang::Int[0m[1m.[0m
-
-========================================= TypingErrors UnimplementedMethodFromTrait
-T2025: [1mClass [35mABC[0m[1m does not implement the following methods:[0m
-
-
-========================================= TypingErrors UnimplementedOperatorFromTrait
-T2026: [1mClass [35mABC[0m[1m does not implement operator [35mABC[0m[1m from trait [35mABC[0m[1m.[0m
-
-========================================= TypingErrors UnusedPrivateMethod
-T1000: [1mPrivate method [35mABC[0m[1m is never used.[0m
-
-========================================= TypingErrors ValueMustBeInitialized
-T2019: [1mValue [35mABC[0m[1m is not initialized.[0m
 
 ========================================= TypingErrors WrongReturnType
 T2015: [1mExpected a return value of type [35mT::lang::Int[0m[1m.[0m
@@ -310,3 +249,64 @@ T2000: [1mExpected type: [0mABC[1m, found: [0mABC[1m.[0m
 
 ========================================= TemplatingErrors SameName
 G2002: [1mGeneric parameter [35mABC[0m[1m appears multiple times.[0m
+
+========================================= TypingErrors NoTypeNoInitializer
+T2018: [1mVariable [35mABC[0m[1m declared with no type or initialization.[0m
+
+========================================= TypingErrors ValueMustBeInitialized
+T2019: [1mValue [35mABC[0m[1m is not initialized.[0m
+
+========================================= TypingErrors NotOnNonNullable
+T2020: [1;35m![0m[1m operator can only be applied to [35mBool[0m[1m and nullable types.[0m
+
+========================================= TypingErrors CantInferTypeRecursiveMethod
+T2021: [1mCannot infer type of recursive method.[0m
+
+========================================= TypingErrors InvalidIncrementDecrementExpr
+T2022: [1mInvalid increment/decrement expression.[0m
+
+========================================= TypingErrors InstantiateTrait
+T2024: [1mCannot instantiate trait [35mABC[0m[1m.[0m
+
+========================================= TypingErrors UnimplementedMethodFromTrait
+T2025: [1mClass [35mABC[0m[1m does not implement the following methods:[0m
+
+
+========================================= TypingErrors UnimplementedOperatorFromTrait
+T2026: [1mClass [35mABC[0m[1m does not implement operator [35mABC[0m[1m from trait [35mABC[0m[1m.[0m
+
+========================================= TypingErrors OverridingMethodDifferentReturnType
+T2027: [1mOverriding method [35mABC()[0m[1m in class [35mABC[0m[1m has return type [35m[untyped][0m[1m while the method in parent [35mABC[0m[1m has return type [35m[untyped][0m[1m.[0m
+
+========================================= TypingErrors CantPrintUnitType
+T2028: [1mCannot print an expression of type [35mUnit[0m[1m.[0m
+
+========================================= TypingErrors NoSuperTypeHasMethod
+T2029: [1mNo super type of class [35mABC[0m[1m implements a method [35mABC[0m[1m.[0m
+
+========================================= TypingErrors NoSuperTypeHasField
+T2030: [1mNo super type of class [35mABC[0m[1m has a field [35mABC[0m[1m.[0m
+
+========================================= TypingErrors ForeachNotIterable
+T2032: [1mType [35mT::lang::Int[0m[1m is not iterable.[0m
+
+========================================= TypingErrors AssignNullToNonNullable
+T2033: [1mCannot assign null to non nullable type [35mT::lang::Int[0m[1m.[0m
+
+========================================= TypingErrors SafeAccessOnNonNullable
+T2034: [1mCannot use safe access on non nullable type [35mT::lang::Int[0m[1m.[0m
+
+========================================= TypingErrors ExtractNullableNonNullable
+T2035: [1mCannot use the nullable extraction operator on non nullable type [35mT::lang::Int[0m[1m.[0m
+
+========================================= TypingErrors ElvisOperatorNonNullable
+T2036: [1mCannot use the elvis operator on non-nullable type [35mT::lang::Int[0m[1m.[0m
+
+========================================= TypingErrors AssignValueToMethodCall
+T2037: [1mCannot assign a value to the result of a method call.[0m
+
+========================================= TypingErrors NonNullableEqualsNull
+T2038: [1mCannot check if non nullable type [35mT::lang::Int[0m[1m is null.[0m
+
+========================================= TypingErrors UnusedPrivateMethod
+T1000: [1mPrivate method [35mABC[0m[1m is never used.[0m

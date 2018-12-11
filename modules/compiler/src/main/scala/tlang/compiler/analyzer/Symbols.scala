@@ -74,9 +74,10 @@ object Symbols {
 
     def parents_=(parents: List[ClassSymbol]): Unit = _parents = parents
 
-    def implicitConstructors: List[MethodSymbol] = methods.filter { method =>
-      method.name == "new" &&
-        method.modifiers.contains(Implicit()) &&
+    def constructors: List[MethodSymbol] = methods.filter { _.name == "new" }
+
+    def implicitConstructors: List[MethodSymbol] = constructors.filter { method =>
+      method.modifiers.contains(Implicit()) &&
         method.argList.lengthCompare(1) == 0
     }
 
