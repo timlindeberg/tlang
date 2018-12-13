@@ -282,19 +282,20 @@ case class FlowAnalyser(
         case arrOp@ArrayOperatorTree(arr)       =>
           traverse(arr)
 
-          arrOp match {
-            case arrRead@ArrayRead(_, index) =>
-              knowledge.getNumericValue(index) ifDefined { value =>
-                if (value < 0)
-                  report(OutOfBounds(index.toString, value, 0, arrRead))
-                else
-                  getArraySize(arr, knowledge) ifDefined { size =>
-                    if (value >= size)
-                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
-                  }
-              }
-            case _                           =>
-          }
+          // TODO: This currently doesn't work properly in loops
+          //          arrOp match {
+          //            case arrRead@ArrayRead(_, index) =>
+          //              knowledge.getNumericValue(index) ifDefined { value =>
+          //                if (value < 0)
+          //                  report(OutOfBounds(index.toString, value, 0, arrRead))
+          //                else
+          //                  getArraySize(arr, knowledge) ifDefined { size =>
+          //                    if (value >= size)
+          //                      report(OutOfBounds(index.toString, value, size - 1, arrRead))
+          //                  }
+          //              }
+          //            case _                           =>
+          //          }
           checkValidUse(arr, knowledge)
         case v: VariableID                      =>
           knowledge.getIdentifier(v) ifDefined { varId =>

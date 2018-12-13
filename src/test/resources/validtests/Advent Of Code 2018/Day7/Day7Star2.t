@@ -1,150 +1,220 @@
-// Ignore
 import T::std::Vector
-import java::lang::Math
 import T::std::HashMap
+import T::std::HashSet
+import T::std::Comparator
+import java::util::regex::Matcher
+import java::util::regex::Pattern
+import java::lang::Math
 
-val input =`77, 279
-216, 187
-72, 301
-183, 82
-57, 170
-46, 335
-55, 89
-71, 114
-313, 358
-82, 88
-78, 136
-339, 314
-156, 281
-260, 288
-125, 249
-150, 130
-210, 271
-190, 258
-73, 287
-187, 332
-283, 353
-66, 158
-108, 97
-237, 278
-243, 160
-61, 52
-353, 107
-260, 184
-234, 321
-181, 270
-104, 84
-290, 109
-193, 342
-43, 294
-134, 211
-50, 129
-92, 112
-309, 130
-291, 170
-89, 204
-186, 177
-286, 302
-188, 145
-40, 52
-254, 292
-270, 287
-238, 216
-299, 184
-141, 264
-117, 129`
+val input = `Step Q must be finished before step O can begin.
+Step Z must be finished before step G can begin.
+Step W must be finished before step V can begin.
+Step C must be finished before step X can begin.
+Step O must be finished before step E can begin.
+Step K must be finished before step N can begin.
+Step P must be finished before step I can begin.
+Step X must be finished before step D can begin.
+Step N must be finished before step E can begin.
+Step F must be finished before step A can begin.
+Step U must be finished before step Y can begin.
+Step M must be finished before step H can begin.
+Step J must be finished before step B can begin.
+Step B must be finished before step E can begin.
+Step S must be finished before step L can begin.
+Step A must be finished before step L can begin.
+Step E must be finished before step L can begin.
+Step L must be finished before step G can begin.
+Step D must be finished before step I can begin.
+Step Y must be finished before step I can begin.
+Step I must be finished before step G can begin.
+Step G must be finished before step R can begin.
+Step V must be finished before step T can begin.
+Step R must be finished before step H can begin.
+Step H must be finished before step T can begin.
+Step S must be finished before step E can begin.
+Step C must be finished before step E can begin.
+Step P must be finished before step T can begin.
+Step I must be finished before step H can begin.
+Step O must be finished before step P can begin.
+Step M must be finished before step L can begin.
+Step S must be finished before step D can begin.
+Step P must be finished before step D can begin.
+Step P must be finished before step R can begin.
+Step I must be finished before step R can begin.
+Step Y must be finished before step G can begin.
+Step Q must be finished before step L can begin.
+Step N must be finished before step R can begin.
+Step J must be finished before step E can begin.
+Step N must be finished before step T can begin.
+Step B must be finished before step V can begin.
+Step Q must be finished before step B can begin.
+Step J must be finished before step H can begin.
+Step F must be finished before step B can begin.
+Step W must be finished before step X can begin.
+Step S must be finished before step T can begin.
+Step J must be finished before step G can begin.
+Step O must be finished before step R can begin.
+Step K must be finished before step B can begin.
+Step Z must be finished before step O can begin.
+Step Q must be finished before step S can begin.
+Step K must be finished before step V can begin.
+Step B must be finished before step R can begin.
+Step J must be finished before step T can begin.
+Step E must be finished before step T can begin.
+Step G must be finished before step V can begin.
+Step D must be finished before step Y can begin.
+Step M must be finished before step Y can begin.
+Step F must be finished before step G can begin.
+Step C must be finished before step P can begin.
+Step V must be finished before step R can begin.
+Step R must be finished before step T can begin.
+Step J must be finished before step Y can begin.
+Step U must be finished before step R can begin.
+Step Z must be finished before step F can begin.
+Step Q must be finished before step V can begin.
+Step U must be finished before step M can begin.
+Step J must be finished before step R can begin.
+Step L must be finished before step V can begin.
+Step W must be finished before step K can begin.
+Step B must be finished before step Y can begin.
+Step O must be finished before step N can begin.
+Step D must be finished before step V can begin.
+Step P must be finished before step B can begin.
+Step U must be finished before step I can begin.
+Step O must be finished before step T can begin.
+Step S must be finished before step G can begin.
+Step X must be finished before step A can begin.
+Step U must be finished before step T can begin.
+Step A must be finished before step I can begin.
+Step B must be finished before step G can begin.
+Step N must be finished before step Y can begin.
+Step Z must be finished before step J can begin.
+Step M must be finished before step D can begin.
+Step U must be finished before step A can begin.
+Step S must be finished before step R can begin.
+Step Z must be finished before step A can begin.
+Step Y must be finished before step R can begin.
+Step E must be finished before step Y can begin.
+Step N must be finished before step G can begin.
+Step Z must be finished before step X can begin.
+Step P must be finished before step X can begin.
+Step Z must be finished before step T can begin.
+Step Z must be finished before step P can begin.
+Step V must be finished before step H can begin.
+Step P must be finished before step L can begin.
+Step L must be finished before step H can begin.
+Step X must be finished before step V can begin.
+Step W must be finished before step G can begin.
+Step N must be finished before step D can begin.
+Step Z must be finished before step U can begin.`
 
-val testInput = `1, 1
-1, 6
-8, 3
-3, 4
-5, 5
-8, 9`
+val testInput = `Step C must be finished before step A can begin.
+Step C must be finished before step F can begin.
+Step A must be finished before step B can begin.
+Step A must be finished before step D can begin.
+Step B must be finished before step E can begin.
+Step D must be finished before step E can begin.
+Step F must be finished before step E can begin.
+`
 
-class Point =
-	Var X: Int
-	Var Y: Int
+class CharDescending: Comparator<Char> =
+	Def Compare(a: Char, b: Char) = b - a
 
-	Def new(x: Int, y: Int) =
-		X = x
-		Y = y
+class Worker =
+	Var FinishedAt = -1
+	Var Task: Char? = null
 
-	Def ==(a: Point, b: Point) = (a.X == b.X && a.Y == b.Y)
+	Def toString() = Task ? "(" + Task!! + ": " + FinishedAt + ")" : "Free"
 
-	Def #(a: Point) = 31 * a.X ^ a.Y
+class Day7 =
 
-	Def toString() = "(" + X + ", " + Y + ")"
+	Val NumWorkers = 5
+	Val BaseTime = 60
 
-class Day6 =
-
-	val MAX_DISTANCE = 10_000
-	var grid: Bool[][]
-	var checked: Bool[][]
-	val coords = new Vector<Point>()
-	val names = new HashMap<Point, String>()
+	var time = 0
+	val graph = new HashMap<Char, Vector<Char>>()
+	val parents = new HashMap<Char, Vector<Char>>()
+	val workers = new Worker[NumWorkers]
+	var nodes = new HashSet<Char>()
+	var finished = new HashSet<Char>()
 
 	Def new(input: String) =
-		var c = 'a'
-		var maxX = 0
-		var maxY = 0
-		for(val line in input.Lines())
-			val s = line.Split(", ")
-			val coord = new Point(s[0].ToInt(), s[1].ToInt())
-			names[coord] = "" + c++
-			coords.Add(coord)
-			maxX = Math.max(maxX, coord.X)
-			maxY = Math.max(maxY, coord.Y)
-		grid = new Bool[maxY + MAX_DISTANCE * 2][maxX + MAX_DISTANCE * 2]
-		checked = new Bool[grid.Size()][grid[0].Size()]
+		ParseGraph(input)
+		for(var i = 0; i < NumWorkers; i++)
+			workers[i] = new Worker()
 
 	Def Run() =
-		CalculateDistances()
-		var maxArea = 0
-		for(var y = 0; y < grid.Size(); y++)
-			for(var x = 0; x < grid[0].Size(); x++)
-				if(checked[y][x])
-					continue
-				maxArea = Math.max(maxArea, GetArea(new Point(x, y)))
-		println(maxArea)
+		val queue = new Vector<Char>()
 
-	Def GetArea(p: Point): Int =
-		val queue = new Vector<Point>()
-		queue.Add(p)
-		var area = 0
-		while(!queue.IsEmpty())
-			val p = queue.Pop()
-			val x = p.X
-			val y = p.Y
-			if(checked[y][x]) continue
+		queue.AddAll(FindStarts())
+		queue.Sort(new CharDescending())
 
-			checked[y][x] = true
-			if(!grid[y][x]) continue
+		while(finished.Size() != nodes.Size())
+			var finishedWorker = GetFinishedWorker()
+			while(finishedWorker)
+				val node = finishedWorker.Task!!
+				finishedWorker.Task = null
+				finished.Add(node)
 
-			area += 1
-			if(Valid(x + 1, y)) queue.Add(new Point(x + 1, y))
-			if(Valid(x - 1, y)) queue.Add(new Point(x - 1, y))
-			if(Valid(x, y + 1)) queue.Add(new Point(x, y + 1))
-			if(Valid(x, y - 1)) queue.Add(new Point(x, y - 1))
+				for(val e in graph[node])
+					if(FinishedParents(e))
+						queue.Add(e)
+				finishedWorker = GetFinishedWorker()
+				queue.Sort(new CharDescending())
 
-		area
+			var worker = GetFreeWorker()
+			while(worker && !queue.IsEmpty())
+				val node = queue.Pop()
+				worker.Task = node
+				worker.FinishedAt = time + BaseTime + 1 + (node - 'A')
+				worker = GetFreeWorker()
 
-	Def Valid(x: Int, y: Int) =
-		y >= 0 && y < checked.Size() &&
-		x >= 0 && x < checked[0].Size() &&
-		!checked[y][x]
+			time++
 
-	Def CalculateDistances() =
-		for(var y = 0; y < grid.Size(); y++)
-			for(var x = 0; x < grid[0].Size(); x++)
-				grid[y][x] = GetTotalDistance(x - MAX_DISTANCE, y - MAX_DISTANCE) < MAX_DISTANCE
+		println(time - 1)
 
-	Def Distance(p1: Point, p2: Point): Int = Math.abs((p1.X - p2.X)) + Math.abs((p1.Y - p2.Y))
+	Def GetFreeWorker(): Worker? =
+		for(val worker in workers)
+			if(!worker.Task)
+				return worker
+		return null
 
-	Def GetTotalDistance(x: Int, y: Int) =
-		var totalDistance = 0
-		for(val c in coords)
-			val distance = Math.abs(c.X - x) + Math.abs(c.Y - y)
-			totalDistance += distance
-		totalDistance
+	Def GetFinishedWorker(): Worker? =
+		for(val worker in workers)
+			if(worker.Task && time == worker.FinishedAt)
+				return worker
+		return null
 
-new Day6(input).Run() // res: 42998
+	Def FinishedParents(node: Char) =
+		for(val p in parents[node])
+			if(!finished[p])
+				return false
+		true
+
+	Def FindStarts() =
+		val starts = new Vector<Char>()
+		for(val e in parents)
+			if(e.Value().IsEmpty())
+				starts.Add(e.Key())
+		starts
+
+	Def ParseGraph(input: String) =
+		val r = Pattern.compile(`Step ([A-Z]) must be finished before step ([A-Z]) can begin.`)
+
+		for(val line in input.Lines())
+			val m = r.matcher(line)
+			m.matches()
+			val from = m.group(1)[0]
+			val to = m.group(2)[0]
+			nodes.Add(from)
+			nodes.Add(to)
+
+			val n = graph.GetOrDefault(from, new Vector<Char>())
+			n.Add(to)
+			graph.GetOrDefault(to, new Vector<Char>())
+
+			val p = parents.GetOrDefault(to, new Vector<Char>())
+			p.Add(from)
+			parents.GetOrDefault(from, new Vector<Char>())
+
+new Day7(input).Run() // res: 914

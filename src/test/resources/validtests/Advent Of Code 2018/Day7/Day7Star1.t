@@ -119,26 +119,14 @@ Step F must be finished before step E can begin.
 class CharDescending: Comparator<Char> =
 	Def Compare(a: Char, b: Char) = b - a
 
-class Worker =
-	Var FinishedAt = -1
-	Var Task = '\0'
-
 class Day7 =
 
-
-	Val NumWorkers = 2
-
-	var time = 0
 	val graph = new HashMap<Char, Vector<Char>>()
 	val parents = new HashMap<Char, Vector<Char>>()
 	val visited = new Bool[1 + 'Z' - 'A']
 	val regex = Pattern.compile(`Step ([A-Z]) must be finished before step ([A-Z]) can begin.`)
-	val workers = new Worker[NumWorkers]
 
-	Def new(input: String) =
-		ParseGraph(input)
-		for(var i = 0; i < NumWorkers; i++)
-			workers[i] = new Worker()
+	Def new(input: String) = ParseGraph(input)
 
 	Def Run() =
 		val queue = new Vector<Char>()
@@ -150,14 +138,6 @@ class Day7 =
 			val node = queue.Pop()
 			if(Visited(node)) continue
 
-			var worker = GetFreeWorker()
-			while(!worker)
-				time++
-				worker = GetFreeWorker()
-
-			val w = worker!!
-			w.Task = node
-			w.FinishedAt = time + 1 + (node - 'A')
 			print(node)
 			visited[node - 'A'] = true
 			for(val e in graph[node])
@@ -165,12 +145,7 @@ class Day7 =
 					queue.Add(e)
 			queue.Sort(new CharDescending())
 
-
-	Def GetFreeWorker(): Worker? =
-		for(val worker in workers)
-			if(worker.FinishedAt < time)
-				return worker
-		return null
+		println()
 
 	Def Visited(node: Char) = visited[node - 'A']
 

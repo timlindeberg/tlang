@@ -15,3 +15,11 @@ Def Value() =
 		for(val m in MetaData) v += Children[m].Value()
 	v
 The class Int does not define an operator Int + [untyped].
+
+5. Ternary doesn't prove non nullableness:
+Def toString() = Task ? "(" + Task + ": " + FinishedAt + ")" : "Free"
+Errors on Task
+
+6. Cannot add Nullable types to Strings. 
+
+7. Array comparison should use Arrays.equals
