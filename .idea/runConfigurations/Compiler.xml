@@ -2,7 +2,7 @@
   <configuration default="false" name="Compiler" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="tlang.compiler.Main" />
     <module name="compiler" />
-    <option name="PROGRAM_PARAMETERS" value="--watch --linewidth 130 --verbose --exec &quot;src/test/resources/validtests/Advent Of Code 2018/Day12/Day12Star1.t&quot;" />
+    <option name="PROGRAM_PARAMETERS" value="--watch --linewidth 130 --verbose --exec &quot;src/test/resources/validtests/Advent Of Code 2018/Day14/Day14Star2.t&quot;" />
     <option name="VM_PARAMETERS" value=" " />
     <method v="2">
       <option name="Make" enabled="true" />
