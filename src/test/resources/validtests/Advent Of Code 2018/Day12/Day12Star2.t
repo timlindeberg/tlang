@@ -97,7 +97,7 @@ class Pot =
 
 class Day12 =
 
-	val PotsToAdd = 150
+	val PotsToAdd = 140
 
 	var Pots: Pot[]
 	var Rules: Rule[]
@@ -127,7 +127,7 @@ class Day12 =
 			Rules[i] = new Rule(producesPlant, new Entries(entries))
 
 	Def Run() =
-		for(var generation = 1; generation <= 20; generation++)
+		for(var generation = 1; generation <= 1   ; generation++)
 			val changes = new HashMap<Pot, Bool>()
 			for(val pot in Pots)
 				val rule = FindMatchingRule(pot)
@@ -135,8 +135,10 @@ class Day12 =
 
 			for(val e in changes)
 				e.Key().HasPlant = e.Value()
+			println(generation)
+			PrintPots()
+			println(GetSum())
 
-		println(GetSum())
 
 	Def GetSum() =
 		var sum = 0
@@ -162,4 +164,4 @@ class Day12 =
 		println()
 
 
-new Day12(initial, input).Run() // res: 2930
+new Day12(initial, input).Run() // res: 3099999999491
