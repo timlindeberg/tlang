@@ -122,10 +122,9 @@ object Tokens extends Enumerable[TokenKind] {
   case object CONTINUE        extends TokenKind("continue")
   case object IN              extends TokenKind("in")
   case object NULL            extends TokenKind("null")
-
-  case object NEWLINE extends TokenKind("\\n")
-  case object INDENT  extends TokenKind("<indentation>")
-  case object DEDENT  extends TokenKind("<dedentation>")
+  case object NEWLINE         extends TokenKind("\\n")
+  case object INDENT          extends TokenKind("<indentation>")
+  case object DEDENT          extends TokenKind("<dedentation>")
   // @formatter:on
 
 
@@ -142,12 +141,9 @@ object Tokens extends Enumerable[TokenKind] {
     override def toString: String = '"' + value + '"'
   }
 
-
   override lazy val Values       : List[TokenKind]        = Enumeration.instancesOf[TokenKind]
   lazy          val Keywords     : Set[TokenKind]         = Tokens.filter(_.str.matches("[A-Za-z]+")).toSet
   lazy          val KeywordMap   : Map[String, TokenKind] = Keywords.map(t => t.str -> t).toMap
   lazy          val NonKeywords  : Map[String, TokenKind] = Tokens.filter(t => t.str.length > 0 && !KeywordMap.contains(t.str)).map(t => t.str -> t).toMap
   lazy          val KeywordsRegex: Regex                  = s"(${ Keywords.toList.sortBy(-_.str.length).mkString("|") })".r
-
-
 }

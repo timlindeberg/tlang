@@ -74,13 +74,14 @@ object Trees {
     }
 
     def children: List[Tree] = {
-      val x = productIterator.flatMap {
-        case l: Traversable[_] if l.nonEmpty && l.head.isInstanceOf[Tree] => l.asInstanceOf[Traversable[Tree]]
-        case o: Option[_] if o.nonEmpty && o.get.isInstanceOf[Tree]       => o.get.asInstanceOf[Tree] :: Nil
-        case t: Tree                                                      => t :: Nil
-        case _                                                            => Nil
-      }
-      x.toList
+      productIterator
+        .flatMap {
+          case l: Traversable[_] if l.nonEmpty && l.head.isInstanceOf[Tree] => l.asInstanceOf[Traversable[Tree]]
+          case o: Option[_] if o.nonEmpty && o.get.isInstanceOf[Tree]       => o.get.asInstanceOf[Tree] :: Nil
+          case t: Tree                                                      => t :: Nil
+          case _                                                            => Nil
+        }
+        .toList
     }
 
   }
@@ -91,9 +92,7 @@ object Trees {
   /*---------------------------- Top level Trees ----------------------------*/
 
   case class CompilationUnit(pack: Package, var classes: List[ClassDeclTree], imports: Imports) extends Tree {
-
     override def children: List[Tree] = imports.imports ::: classes
-
   }
 
   case class Annotation() extends Tree
@@ -115,7 +114,6 @@ object Trees {
     val name       : String = address.mkString("::")
     val writtenName: String = name
     val shortName  : String = address.last
-
   }
 
   case object RegularImport {
@@ -129,11 +127,10 @@ object Trees {
   case class WildCardImport(address: List[String]) extends Import {
     override val writtenName: String = address.mkString("::") + "::*"
   }
-  case class ExtensionImport(address: List[String], className: List[String]) extends Import {
 
+  case class ExtensionImport(address: List[String], className: List[String]) extends Import {
     override val name       : String = ((address :+ ExtensionDecl.seperator) ::: className).mkString("::")
     override val writtenName: String = ((address :+ "extension") ::: className).mkString("::")
-
   }
 
   /*------------------------ Class Declaration Trees ------------------------*/
@@ -803,6 +800,4 @@ object Trees {
     final def traverse(op: Option[Tree]): Unit = op foreach traverse
     final def traverse(trees: Traversable[Tree]): Unit = trees foreach traverse
   }
-
-
 }

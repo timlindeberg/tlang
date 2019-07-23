@@ -11,7 +11,6 @@ import tlang.compiler.lexer._
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
-import tlang.compiler.{CompilerPhase, Context}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.{Logging, NoPosition, Positioned}
 
@@ -115,7 +114,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     if (pack.isEmpty)
       return imports
 
-    // If we have a package we add a mapping from the shortname to the full name,
+    // If we have a package we add a mapping from the short name to the full name,
     // C -> A::B::C
     val packageName = pack.name
     classes
@@ -226,8 +225,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val parents = parentsDeclaration
     val (vars, methods) = tokens.next.kind match {
       case EQSIGN =>
-        eat(EQSIGN)
-        eat(INDENT)
+        eat(EQSIGN, INDENT)
         val vars = untilNot(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL) { fieldDeclaration after statementEnd }
         val methods = untilNot(PRIVDEF, PUBDEF) { methodDeclaration after statementEnd }
         eat(DEDENT)
@@ -247,8 +245,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val id = tpe
     val methods = tokens.next.kind match {
       case EQSIGN =>
-        eat(EQSIGN)
-        eat(INDENT)
+        eat(EQSIGN, INDENT)
         val methods = untilNot(PRIVDEF, PUBDEF) { methodDeclaration after statementEnd }
         eat(DEDENT)
         methods
@@ -396,7 +393,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
     * */
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
-    modifiers.findInstance[Implicit].ifDefined { impl =>
+    modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
     }
 
@@ -406,8 +403,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     def minusOperator: (OperatorTree, List[Formal], Set[Modifier]) = {
       // Minus is a special case since it can be both a unary and a binary operator
-      eat(MINUS)
-      eat(LPAREN)
+      eat(MINUS, LPAREN)
       val f1 = formal
       tokens.next.kind match {
         case COMMA =>
@@ -513,7 +509,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <methodBody> ::= [ "=" <statement> ] */
   def methodBody: Option[StatTree] = optional(EQSIGN) { replaceWithReturnStatement(statement) }
 
-
   /** <formal> ::= <identifier> : <tpe> */
   def formal: Formal = positioned {
     val id = identifier(VariableID)
@@ -608,17 +603,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** <printStatement> ::= print"(" [ <expression> ] ")" */
-  def printStatement: Print = printPrintlnError(PRINT, Print)
+  def printStatement: Print = functionLikeStatement(PRINT, Print)
 
   /** <printlnStatement> ::= println"(" [ <expression> ] ")" */
-  def printlnStatement: Println = printPrintlnError(PRINTLN, Println)
+  def printlnStatement: Println = functionLikeStatement(PRINTLN, Println)
 
   /** <errorStatement> ::= error"(" [ <expression> ] ")" */
-  def errorStatement: Error = printPrintlnError(ERROR, Error)
+  def errorStatement: Error = functionLikeStatement(ERROR, Error)
 
-  private def printPrintlnError[T <: StatTree](methType: TokenKind, cons: ExprTree => T): T = positioned {
-    eat(methType)
-    eat(LPAREN)
+  private def functionLikeStatement[T <: StatTree](methType: TokenKind, cons: ExprTree => T): T = positioned {
+    eat(methType, LPAREN)
     val expr = tokens.next.kind match {
       case RPAREN => StringLit("")
       case _      => expression
@@ -1016,25 +1010,20 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <negation> ::= - <term> */
   def negation: ExprTree = positioned {
+    def negated[T : Numeric](value: T, kind: TokenKind, tree: T => ExprTree): ExprTree = {
+      eat(kind)
+      val num = implicitly[Numeric[T]].negate(value)
+      tree(num)
+    }
+
     eat(MINUS)
     tokens.next match {
-      case x: INTLIT    =>
-        eat(INTLITKIND)
-        IntLit(-x.value)
-      case x: LONGLIT   =>
-        eat(LONGLITKIND)
-        LongLit(-x.value)
-      case x: FLOATLIT  =>
-        eat(FLOATLITKIND)
-        FloatLit(-x.value)
-      case x: DOUBLELIT =>
-        eat(DOUBLELITKIND)
-        DoubleLit(-x.value)
-      case x: CHARLIT   =>
-        eat(CHARLITKIND)
-        IntLit(-x.value)
-      case _            =>
-        Negation(term)
+      case x: INTLIT    => negated(x.value, x.kind, IntLit)
+      case x: LONGLIT   => negated(x.value, x.kind, LongLit)
+      case x: FLOATLIT  => negated(x.value, x.kind, FloatLit)
+      case x: DOUBLELIT => negated(x.value, x.kind, DoubleLit)
+      case x: CHARLIT   => negated(x.value.toInt, x.kind, IntLit)
+      case _            => Negation(term)
     }
   }
 
