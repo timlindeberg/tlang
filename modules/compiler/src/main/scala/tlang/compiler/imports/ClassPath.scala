@@ -16,9 +16,10 @@ object ClassPath {
     val javaLibDirectory = Paths.get(System.getProperty("java.home") + File.separator + "lib")
 
     val javaLibJarFiles: Set[String] =
-      Files.find(javaLibDirectory, 1000, (path, attr) =>
-        attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
-      )
+      Files
+        .find(javaLibDirectory, 1000, (path, attr) =>
+          attr.isRegularFile && path.getFileName.toString.matches(".*\\.jar")
+        )
         .iterator
         .asScala
         .map(_.toString)
@@ -83,6 +84,8 @@ class ClassPath private(val pathToFile: Map[String, ClassFile], val classes: Arr
   def size: Int = paths.size
   def isEmpty: Boolean = size == 0
   def nonEmpty: Boolean = size != 0
+
+  def exists(className: String): Boolean = classes.binarySearch(className) != -1
 
   private def getStartPosition(path: String): Int = {
     if (classes.isEmpty)

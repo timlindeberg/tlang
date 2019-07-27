@@ -118,10 +118,12 @@ object Trees {
 
   case object RegularImport {
     def apply(fullName: String) = new RegularImport(fullName)
+
   }
 
   case class RegularImport(address: List[String]) extends Import {
     def this(fullName: String) = this(fullName.split("::").toList)
+    val extensionName: String = address.updated(address.size - 1, ExtensionDecl.prefix + address.last).mkString("::") // eg. t::lang::ext$StringExtensions
   }
 
   case class WildCardImport(address: List[String]) extends Import {
@@ -129,8 +131,8 @@ object Trees {
   }
 
   case class ExtensionImport(address: List[String], className: List[String]) extends Import {
-    override val name       : String = ((address :+ ExtensionDecl.seperator) ::: className).mkString("::")
-    override val writtenName: String = ((address :+ "extension") ::: className).mkString("::")
+    override val name: String = ((address :+ ExtensionDecl.prefix) ::: className).mkString("::") // eg. t::lang::$EX::java::lang::Object
+    override val writtenName: String = ((address :+ "extension") ::: className).mkString("::") // eg. t::lang::extension::java::lang::Object
   }
 
   /*------------------------ Class Declaration Trees ------------------------*/
@@ -179,8 +181,8 @@ object Trees {
   }
 
   object ExtensionDecl {
-    def stripExtension(fullName: String): String = fullName.replaceAll(""".*\$EX::""", "")
-    val seperator = "$EX"
+    def stripPrefix(fullName: String): String = fullName.replaceAll(""".*ext\$""", "")
+    val prefix = "ext$"
   }
 
   case class ExtensionDecl(tpe: TypeTree, methods: List[MethodDeclTree] = Nil) extends ClassDeclTree {

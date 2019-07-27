@@ -5,7 +5,7 @@ println(Int.GetValue()) // res: 1
 println(x.subtract(5)) // res: 0
 println(5.subtract(10)) // res: -5
 
-extension T::lang::Int =
+extension IntExtensions : T::lang::Int =
 
 	Def subtract(x: Int) = this - x
 

@@ -4,7 +4,7 @@ val b = new A()
 a.StaticTest() // res: Static A
 A.StaticTest() // res: Static A
 
-extension A =
+extension AExtension : A =
 
 	Def static StaticTest() = println("Static A")
 

@@ -3,8 +3,6 @@ package compiler
 package imports
 
 import java.util.regex.Matcher
-
-import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages.Reporter
@@ -15,17 +13,19 @@ import scala.collection.mutable
 
 object Imports {
 
-  private val javaObject = List("java", "lang", "Object")
-  private val javaString = List("java", "lang", "String")
-  private val TInt       = List("T", "lang", "Int")
-  private val TLong      = List("T", "lang", "Long")
-  private val TFloat     = List("T", "lang", "Float")
-  private val TDouble    = List("T", "lang", "Double")
-  private val TChar      = List("T", "lang", "Char")
-  private val TBool      = List("T", "lang", "Bool")
-  private val TLang      = List("T", "lang")
+  private val javaLang = List("java", "lang")
+  private val tLang    = List("T", "lang")
 
-  val DefaultImports: List[Import] = List[Import](
+  private val javaObject = javaLang :+ "Object"
+  private val javaString = javaLang :+ "String"
+  private val TInt       = tLang :+ "Int"
+  private val TLong      = tLang :+ "Long"
+  private val TFloat     = tLang :+ "Float"
+  private val TDouble    = tLang :+ "Double"
+  private val TChar      = tLang :+ "Char"
+  private val TBool      = tLang :+ "Bool"
+
+  val DefaultImports: List[Import] = List(
     RegularImport(javaObject),
     RegularImport(javaString),
     RegularImport(TInt),
@@ -34,13 +34,13 @@ object Imports {
     RegularImport(TDouble),
     RegularImport(TChar),
     RegularImport(TBool),
-    ExtensionImport(TLang, javaObject),
-    ExtensionImport(TLang, javaString),
-    ExtensionImport(TLang, TInt),
-    ExtensionImport(TLang, TLong),
-    ExtensionImport(TLang, TFloat),
-    ExtensionImport(TLang, TDouble),
-    ExtensionImport(TLang, TChar)
+    ExtensionImport(tLang, javaObject),
+    ExtensionImport(tLang, javaString),
+    ExtensionImport(tLang, TInt),
+    ExtensionImport(tLang, TLong),
+    ExtensionImport(tLang, TFloat),
+    ExtensionImport(tLang, TDouble),
+    ExtensionImport(tLang, TChar)
   )
 
   val DefaultImportNames: List[String] = DefaultImports.map(_.writtenName)
@@ -59,23 +59,24 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   private val fullToShort        = mutable.Map[String, String]()
   private val classPath          = ctx.classPath
   private val classSymbolLocator = ClassSymbolLocator(classPath)
+  private val templateImporter   = new TemplateImporter(ctx)
 
 
   // Initialize
   {
     val defaultImports = DefaultImports.filter(_.writtenName notIn ctx.ignoredImports)
-    defaultImports ++ imports foreach { this += _ }
+    (defaultImports ++ imports) foreach { this += _ }
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
     extensionSymbols.filter { extSym =>
-      val name = ExtensionDecl.stripExtension(extSym.name)
+      val name = ExtensionDecl.stripPrefix(extSym.name)
       name == className
     }
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol): Unit = extensionSymbols ::= extensionClassSymbol
 
-  def +=(tup: (String, String)): Unit = this += (tup._1, tup._2)
+  def +=(tup: (String, String)): this.type = this += (tup._1, tup._2)
   def +=(short: String, full: String): this.type = {
     shortToFull += short -> full
     fullToShort += full -> short
@@ -85,26 +86,42 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   def +=(imp: Import): this.type = {
     debug"Adding import ${ imp.writtenName }"
     imp match {
-      case regImp: RegularImport            =>
-        val fullName = regImp.name
-        val shortName = regImp.shortName
-        val templateImporter = new TemplateImporter(ctx)
-
-        if (contains(shortName))
-          report(ConflictingImport(regImp.writtenName, getFullName(shortName), regImp))
-        else if (!(templateImporter.classExists(fullName) || classSymbolLocator.classExists(fullName)))
-          report(CantResolveImport(regImp.writtenName, regImp))
-        else
-          this += (shortName, fullName)
-      case extensionImport: ExtensionImport =>
-        classSymbolLocator.findExtensionSymbol(extensionImport.name) match {
-          case Some(e) => addExtensionClass(e)
-          case None    => report(CantResolveExtensionsImport(extensionImport.writtenName, extensionImport))
-        }
-      case wildCardImport: WildCardImport   =>
-        classPath.getClassesInPackage(wildCardImport.name) foreach { name => this += RegularImport(name) }
+      case imp: RegularImport  => addImport(imp)
+      case imp: WildCardImport => addWildCardImport(imp)
     }
     this
+  }
+
+  private def addImport(imp: RegularImport): Unit = {
+    val shortName = imp.shortName
+
+    if (contains(shortName)) {
+      report(ConflictingImport(imp.writtenName, getFullName(shortName), imp))
+      return
+    }
+
+    if (classExists(imp.name)) {
+      this += (shortName, imp.name)
+      return
+    }
+
+    val extensionClassName = ExtensionDecl.prefix + imp.name
+    if (classExists(extensionClassName)) {
+      classSymbolLocator.findExtensionSymbol(extensionClassName) match {
+        case Some(e) => addExtensionClass(e)
+        case None    => report(CantResolveExtensionsImport(imp.writtenName, imp))
+      }
+      return
+    }
+    report(CantResolveImport(imp.writtenName, imp))
+  }
+
+  private def addWildCardImport(imp: WildCardImport): Unit = {
+    classPath.getClassesInPackage(imp.name) foreach { name => this += RegularImport(name) }
+  }
+
+  private def classExists(className: String): Boolean = {
+    templateImporter.classExists(className) || classSymbolLocator.classExists(className)
   }
 
   def ++=(imps: Imports): this.type = { imps.imports foreach { this += _ }; this }

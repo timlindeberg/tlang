@@ -1,8 +1,8 @@
 import java::util::Locale
 import java::util::Random
 import java::lang::System
-import T::lang::extension java::lang::Object
-import T::lang::extension java::lang::String
+import T::lang::ObjectExtension
+import T::lang::StringExtension
 
 // TODO: This test only works in CET on a computer with english Locale :)
 

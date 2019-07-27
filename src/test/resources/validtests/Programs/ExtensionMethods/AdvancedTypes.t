@@ -6,7 +6,7 @@ println(Int.GetValue()) // res: 1
 println(x.subtract(5)) // res: 0
 println(5.subtract(10)) // res: -5
 
-extension A? =
+extension AExtension : A? =
 
 	Def subtract(x: Int) = (this?.i ?: 0) - x
 

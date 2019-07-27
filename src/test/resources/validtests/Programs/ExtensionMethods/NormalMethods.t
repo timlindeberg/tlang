@@ -6,7 +6,7 @@ a.Test(5) // res: A5
 val x = a.Test2()
 println(x) // res: 6
 
-extension A =
+extension AExtension : A =
 
 	Def Test(i: Int) = println("A" + i)
 	Def Test() = println("A")

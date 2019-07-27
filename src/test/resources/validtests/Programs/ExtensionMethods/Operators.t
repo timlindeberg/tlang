@@ -6,7 +6,7 @@ println(#a) // res: 10
 a[5] = 5
 println(a[5]) // res: 15
 
-extension A =
+extension AExtension : A =
 
 	Def +(lhs: A, rhs: A) = 5
 	Def #(a: A) = (-a).GetInt() + 5

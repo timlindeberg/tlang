@@ -119,7 +119,7 @@ case class NameAnalyser(
     val sym = classDecl match {
       case ext: ExtensionDecl     =>
         val tpe = ext.tpe
-        val fullName = (cu.pack.address :+ ExtensionDecl.seperator :+ tpe.name).mkString("::")
+        val fullName = (cu.pack.address :+ ExtensionDecl.prefix :+ tpe.name).mkString("::")
         val newSymbol = new ExtensionClassSymbol(fullName)
         cu.imports.addExtensionClass(newSymbol)
         newSymbol

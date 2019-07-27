@@ -56,22 +56,22 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   import ImportUtils._
 
   def findSymbol(className: String): Option[ClassSymbol] = {
-    SymbolCache.getOrElseMaybeUpdate(className) {
-      _findSymbol(className) { clazz =>
-        new ClassSymbol(toTName(clazz.getClassName)) use { _.isAbstract = clazz.isInterface }
-      }
+    locateSymbol(className) { clazz =>
+      new ClassSymbol(toTName(clazz.getClassName)) use { _.isAbstract = clazz.isInterface }
     }
   }
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
-    SymbolCache.getOrElseMaybeUpdate(className) {
-      _findSymbol(className) { clazz =>
-        val extensionName = toTName(clazz.getClassName)
-        val originalClassName = toTName(ExtensionDecl.stripExtension(extensionName))
-        val originalSymbol = findSymbol(originalClassName)
+    locateSymbol(className) { clazz =>
+      val extensionName = toTName(clazz.getClassName)
 
-        new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(originalSymbol.get)) }
-      }
+      val annotations = clazz.getAnnotationEntries
+      annotations(0).getElementValuePairs()(0).getValue.stringifyValue()
+
+      val extendedClassName = toTName(ExtensionDecl.stripPrefix(extensionName))
+      val extendedSymbol = findSymbol(extendedClassName)
+
+      new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(extendedSymbol.get)) }
     }.asInstanceOf[Option[ExtensionClassSymbol]]
   }
 
@@ -90,8 +90,11 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
   def classExists(name: String): Boolean = classPath(name).exists(_.isInstanceOf[JavaClassFile])
 
-  private def _findSymbol[T <: ClassSymbol](className: String)(cons: JavaClass => T): Option[T] =
-    findClass(className) map { cons(_) use { fillClassSymbol } }
+  private def locateSymbol(className: String)(cons: JavaClass => ClassSymbol): Option[ClassSymbol] = {
+    SymbolCache.getOrElseMaybeUpdate(className) {
+      findClass(className) map { cons(_) use { fillClassSymbol } }
+    }
+  }
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     classSymbol.isAbstract = clazz.isInterface
@@ -116,31 +119,31 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       case null   => List(ObjectSymbol)
       case parent => List(lazySymbol(toTName(parent.getClassName)))
     }
-    val traits = clazz.getInterfaces.map { interface =>
-      lazySymbol(toTName(interface.getClassName))
-    }.toList
+    val traits = clazz
+      .getInterfaces
+      .map { interface => lazySymbol(toTName(interface.getClassName)) }
+      .toList
     parent ::: traits
   }
 
   private def convertFields(owningClass: ClassSymbol, clazz: JavaClass): List[FieldSymbol] = {
-    clazz.getFields.map { field =>
-      new FieldSymbol(field.getName, convertModifiers(field), owningClass) use {
-        _.setType(convertType(field.getType))
+    clazz
+      .getFields
+      .map { field =>
+        new FieldSymbol(field.getName, convertModifiers(field), owningClass) use {
+          _.setType(convertType(field.getType))
+        }
       }
-    }.toList
+      .toList
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
-    def isAnnotatedWith(annotation: String) = {
-      val annotations = meth.getAnnotationEntries map { _.getAnnotationType.replaceAll("/", "::") }
-      annotation in annotations
-    }
-
     var modifiers = convertModifiers(meth)
-    if (isAnnotatedWith(ImplicitConstructorAnnotation))
+    val annotations = meth.getAnnotationEntries
+    if (isAnnotatedWith(annotations, ImplicitConstructorAnnotation))
       modifiers += Implicit()
 
-    if (isAnnotatedWith(ExtensionAnnotation))
+    if (isAnnotatedWith(annotations, ExtensionAnnotation))
       modifiers -= Static() // Remove the static modifier which is added to methods in extension classes
 
     val name = meth.getName match {
@@ -157,11 +160,13 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
     symbol.setType(convertType(meth.getReturnType))
 
-    var args = meth.getArgumentTypes.zipWithIndex.map { case (tpe, i) =>
-      convertArgument(tpe, s"arg$i")
-    }.toList
+    var args = meth
+      .getArgumentTypes
+      .zipWithIndex
+      .map { case (tpe, i) => convertArgument(tpe, s"arg$i") }
+      .toList
 
-    if (isAnnotatedWith(ExtensionAnnotation))
+    if (isAnnotatedWith(annotations, ExtensionAnnotation))
       args = args.drop(1) // Remove the added this argument
 
     symbol.argList = args
@@ -214,12 +219,16 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
 
+  private def isAnnotatedWith(annotations: Array[AnnotationEntry], annotation: String): Boolean = {
+    annotation in annotations.map { _.getAnnotationType.replaceAll("/", "::") }
+  }
 
   private def getOperatorType(name: String) = OperatorTypes(name.drop(1))
 
   private def lazySymbol(name: String) = {
     SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
   }
+
 
   private class LazyClassSymbol(override val name: String) extends ClassSymbol(name) {
 
@@ -229,14 +238,17 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       loadClassSymbol()
       _methods
     }
+
     override def operators: List[OperatorSymbol] = {
       loadClassSymbol()
       _operators
     }
+
     override def fields: Map[String, FieldSymbol] = {
       loadClassSymbol()
       _fields
     }
+
     override def isAbstract: Boolean = {
       loadClassSymbol()
       _isAbstract
