@@ -1,8 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Backend" type="SbtRunConfiguration" factoryName="sbt Task">
-    <setting name="tasks" value="&quot;project backend&quot; run" />
-    <setting name="vmparams" value="-Xms512M -Xmx1024M -Xss1M -XX:+CMSClassUnloadingEnabled" />
-    <setting name="workingDir" value="$PROJECT_DIR$/" />
-    <method />
-  </configuration>
-</component>
