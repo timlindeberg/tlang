@@ -227,7 +227,7 @@ object FillTreeHelpers {
   // Used to log trees to file during compilation
   def logTree(t: Tree): Unit = {
     val path = "C:\\Users\\Tim Lindeberg\\IdeaProjects\\log.txt"
-    new PrintWriter(path) {write(t.syntax); close() }
+    new PrintWriter(path) { write(t.syntax); close() }
   }
 
   private def equality(params: List[Term.Param]): Option[Term] = {

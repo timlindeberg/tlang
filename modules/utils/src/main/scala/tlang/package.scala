@@ -12,7 +12,9 @@ package object tlang {
 
   def debugPrint(values: sourcecode.Text[_]*): Unit = {
     val maxNameWidth = values.map(_.source.length).max
-    values.foreach(value => printf(s"[%-${ maxNameWidth }s]: '%s'$NL", value.source, value.value.toString))
+    values foreach {
+      value => printf(s"[%-${ maxNameWidth }s]: '%s'$NL", value.source, value.value.toString)
+    }
   }
 
   val NL: String = System.lineSeparator
@@ -116,10 +118,9 @@ package object tlang {
 
     def insert(s: String, i: Int): String = str.substring(0, i) + s + str.substring(i, str.length)
 
-
     def escape(implicit escapeCharacters: scala.collection.Map[Char, String]): String = {
       val sb = new StringBuilder
-      str.foreach { c =>
+      str foreach { c =>
         escapeCharacters.get(c) match {
           case Some(x) => sb ++= s"\\$x"
           case None    => sb += c
@@ -301,6 +302,10 @@ package object tlang {
           case None    => None
         }
       }
+  }
+
+  implicit class ArrayExtensions[T](val arr: Array[T]) extends AnyVal {
+    def binarySearch(key: T): Int = java.util.Arrays.binarySearch(arr.asInstanceOf[Array[AnyRef]], key)
   }
 
 }

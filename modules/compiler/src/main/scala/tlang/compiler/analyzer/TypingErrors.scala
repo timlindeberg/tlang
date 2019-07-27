@@ -102,7 +102,7 @@ trait TypingErrors extends ErrorHandling {
     extends TypeCheckingError(9, pos) {
     lazy val message: String = {
 
-      val accessability = sym.accessability match {
+      val accessability = sym.accessibility match {
         case Protected() => "protected"
         case Private()   => "private"
         case _           => ???

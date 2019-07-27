@@ -166,7 +166,7 @@ class Lowerer(imports: Imports) extends Logging {
         val newMethSym = new MethodSymbol(methSym.name, classSymbol, None, modifiers).setType(methSym)
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
-        newMethSym.annotations = Constants.ExtensionAnnotation :: methSym.annotations
+        newMethSym.addAnnotation(AnnotationSymbol(Constants.ExtensionAnnotation))
         val thisArg = Formal(extensionDecl.tpe, thisId).setSymbol(thisSym)
 
         // Replace references to this with the this variable

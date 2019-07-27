@@ -2,7 +2,7 @@ package tlang
 package compiler
 package analyzer
 
-import tlang.compiler.analyzer.Symbols._
+import tlang.compiler.analyzer.Symbols.{AnnotationSymbol, _}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
@@ -160,7 +160,7 @@ case class NameAnalyser(
       report(NonStaticFinalFieldInTrait(varDecl))
 
     // Check usage for private fields
-    varDecl.accessability match {
+    varDecl.accessibility match {
       case Private() => variableUsage += newSymbol -> false
       case _         => variableUsage += newSymbol -> true
     }
@@ -187,7 +187,7 @@ case class NameAnalyser(
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
         if (modifiers.contains(Implicit()))
-          methSym.annotations = Constants.ImplicitConstructorAnnotation :: Nil
+          methSym.addAnnotation(AnnotationSymbol(Constants.ImplicitConstructorAnnotation))
         methSym
       case opDecl@OperatorDecl(operatorType, modifiers, _, _, stat) =>
         if (stat.isEmpty)

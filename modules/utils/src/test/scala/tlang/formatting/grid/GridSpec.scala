@@ -268,7 +268,6 @@ class GridSpec extends UnitSpec {
 
     grid(0).columnWidths should contain theSameElementsInOrderAs Seq(8, 5)
 
-
     // ┌────┬───────┬─────┐
     // │ AB │ D     │ DE  │
     // └────┴───────┴─────┘
@@ -473,7 +472,6 @@ class GridSpec extends UnitSpec {
 
 
   it should "render correctly with a divider" in {
-
     Grid()(mockedFormatter(width = 40))
       .row(Column, Column(width = Fixed(23)))
       .contents("ABC", "ABC")
@@ -493,7 +491,6 @@ class GridSpec extends UnitSpec {
   }
 
   it should "render correctly with evenly spaced content" in {
-
     val elements = List("ABC", "DEFG", "HIJK", "LM", "N", "OPQRST", "UVXYZ")
     Grid()(mockedFormatter(width = 30))
       .row()
@@ -590,7 +587,6 @@ class GridSpec extends UnitSpec {
           |│ ABC           DEFG          HIJK          LM     │
           |│ N             OPQRST        UVXYZ                │
           |└──────────────────────────────────────────────────┘""".stripMargin
-
   }
 
   it should "render correctly with fixed and auto column widths" in {

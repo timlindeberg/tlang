@@ -181,6 +181,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(TIMES)
           imp = Some(WildCardImport(address.toList))
         case EXTENSION =>
+          eat(EXTENSION)
           imp = Some(extensionImportDeclaration(address.toList))
         case _         => address += identifierName
       }
@@ -190,8 +191,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <extensionImportDeclaration> ::= extension <identifierName> { :: <identifierName> } */
   def extensionImportDeclaration(address: List[String]): Import = {
-    eat(EXTENSION)
-
     val className = nonEmptyList(COLON, COLON)(identifierName)
     ExtensionImport(address, className)
   }
@@ -529,7 +528,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     returnStatement.setPos(stat)
   }
 
-  private def protectedOrPrivate: Accessability = positioned {
+  private def protectedOrPrivate: Accessibility = positioned {
     tokens.next.kind match {
       case PROTECTED =>
         eat(PROTECTED)

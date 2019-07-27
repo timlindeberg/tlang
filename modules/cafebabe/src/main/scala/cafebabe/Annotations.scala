@@ -1,9 +1,8 @@
 package cafebabe
 
-import cafebabe.ClassFileTypes.{U2, U4}
+import cafebabe.ClassFileTypes.{U1, U2, U4}
 
-class RuntimeAnnotationAttribute(override val attributeNameIndex: U2) extends AttributeInfo(attributeNameIndex, Nil) {
-
+class AnnotationAttribute(override val attributeNameIndex: U2) extends AttributeInfo(attributeNameIndex, Nil) {
   var annotations: List[AnnotationInfo] = Nil
 
   override def toStream(stream: ByteStream): ByteStream = {
@@ -11,11 +10,18 @@ class RuntimeAnnotationAttribute(override val attributeNameIndex: U2) extends At
     val attributeLength: U4 = 4 * numAnnotations + 2
     stream << attributeNameIndex << attributeLength << numAnnotations << annotations
   }
-
 }
 
-// These can also contain ElementValuePairs but for now they can only use the typeIndex
-class AnnotationInfo(typeIndex: U2) extends Streamable {
+class AnnotationInfo(typeIndex: U2, var elementValuePairs: List[AnnotationElementValue]) extends Streamable {
   override def toStream(stream: ByteStream): ByteStream =
-    stream << typeIndex << 0.asInstanceOf[U2]
+    stream <<
+      typeIndex <<
+      elementValuePairs.size.asInstanceOf[U2] <<
+      elementValuePairs
+}
+
+// Currently only supports strings (const_value_index in the JVM spec)
+class AnnotationElementValue(tag: U1, nameIndex: U2, valueIndex: U2) extends Streamable {
+  override def toStream(stream: ByteStream): ByteStream =
+    stream << nameIndex << tag << valueIndex
 }

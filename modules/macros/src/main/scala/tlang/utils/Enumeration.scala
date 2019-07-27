@@ -5,7 +5,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 /*
- * A macro to produce a TreeSet of all instances of a sealed trait.
+ * A macro to produce a List of all instances of a sealed trait.
  * Based on Travis Brown's work:
  * http://stackoverflow.com/questions/13671734/iteration-over-a-sealed-trait-in-scala
 */

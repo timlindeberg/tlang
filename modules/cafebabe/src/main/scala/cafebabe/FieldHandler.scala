@@ -7,7 +7,5 @@ import cafebabe.ClassFileTypes._
   * rather obtained directly when adding a field method to a
   * <code>ClassFile</code>. */
 class FieldHandler private[cafebabe](f: FieldInfo, cp: ConstantPool) {
-  private val field: FieldInfo = f
-
   def setFlags(flags: U2): Unit = { f.accessFlags = flags }
 }

@@ -12,6 +12,7 @@ import cafebabe.ClassFileTypes._
 import cafebabe.Flags._
 import cafebabe._
 import org.objectweb.asm.{ClassReader, ClassWriter}
+import tlang.compiler.analyzer.Symbols
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -93,7 +94,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       }
       val flags = getMethodFlags(methodDecl)
       methodHandle.setFlags(flags)
-      methSymbol.annotations foreach methodHandle.addAnnotation
+      methSymbol.annotations foreach { addAnnotation(methodHandle, _) }
 
       if (!methodDecl.isAbstract) {
         val ch = generateMethod(methodHandle, methodDecl)
@@ -114,6 +115,19 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       } else {
         None
       }
+    }
+  }
+
+  private def addAnnotation(annotatable: Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
+    val annotation = annotatable.addAnnotation(annotation.name)
+    annotation.elements foreach { case (name, v) => v match {
+      case IntAnnotationValue(v)    => annotation.addValue(name, v)
+      case LongAnnotationValue(v)   => annotation.addValue(name, v)
+      case FloatAnnotationValue(v)  => annotation.addValue(name, v)
+      case DoubleAnnotationValue(v) => annotation.addValue(name, v)
+      case StringAnnotationValue(v) => annotation.addValue(name, v)
+      case _                        => ???
+    }
     }
   }
 
@@ -209,6 +223,8 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
     classFile.setFlags(flags)
     // Default is public
+
+    classSymbol.annotations foreach { addAnnotation(classFile, _) }
 
     classFile
   }

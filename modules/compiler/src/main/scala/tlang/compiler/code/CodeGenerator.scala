@@ -358,7 +358,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
               ch << (
                 if (acc.isStatic)
                   InvokeStatic(className, methName, signature)
-                else if (obj.isInstanceOf[Super] || methSymbol.accessability == Private())
+                else if (obj.isInstanceOf[Super] || methSymbol.accessibility == Private())
                   InvokeSpecial(className, methName, signature)
                 else if (classSymbol.isAbstract)
                   InvokeInterface(className, methName, signature)

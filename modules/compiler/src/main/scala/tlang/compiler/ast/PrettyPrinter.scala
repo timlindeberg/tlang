@@ -179,7 +179,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   private def templateList(id: ClassID) = if (id.isTemplated) pp"<${ Separated(id.templateTypes, ", ") }>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {
-    val decl = modifiers.find(_.isInstanceOf[Accessability]) match {
+    val decl = modifiers.find(_.isInstanceOf[Accessibility]) match {
       case Some(access) => access match {
         case Private()   => pp"def"
         case Public()    => pp"Def"
@@ -193,7 +193,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
 
   private def varDecl(modifiers: Set[Modifier]) = {
     val isFinal = modifiers.contains(Final())
-    val decl = modifiers.find(_.isInstanceOf[Accessability]) match {
+    val decl = modifiers.find(_.isInstanceOf[Accessibility]) match {
       case Some(access) => access match {
         case Private() if isFinal   => pp"val"
         case Private()              => pp"var"

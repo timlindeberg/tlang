@@ -7,7 +7,7 @@ import cafebabe.ClassFileTypes._
   * specify a method's body. <code>MethodHandler</code>s should not be created
   * manually but rather obtained directly when adding a method to a
   * <code>ClassFile</code>. */
-class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo], cp: ConstantPool, paramTypes: String, signature: String) {
+class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo], cp: ConstantPool, paramTypes: String, signature: String) extends Annotatable {
   private var ch: Option[CodeHandler] = None
 
   private lazy val annotationNameIndex = cp.addString("RuntimeInvisibleAnnotations")
@@ -22,10 +22,12 @@ class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo
     ch.get
   }
 
-  def addAnnotation(name: String) = {
-    m.getAnnotationAttribute(annotationNameIndex).annotations ::= new AnnotationInfo(cp.addString(name))
+  override def addAnnotation(name: String): AnnotationHandler = {
+    val annotationAttribute = m.getAnnotationAttribute(annotationNameIndex)
+    val inf = new AnnotationInfo(cp.addString(name), Nil)
+    annotationAttribute.annotations ::= inf
+    new AnnotationHandler(inf, cp)
   }
-
 
   def setFlags(flags: U2): Unit = {
     if (ch.isDefined) {

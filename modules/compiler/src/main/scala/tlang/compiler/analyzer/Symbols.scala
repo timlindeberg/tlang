@@ -15,7 +15,6 @@ object Symbols {
   trait Symbolic[S <: Symbol] {
     private var _sym: Option[S] = None
 
-
     def hasSymbol: Boolean = _sym.isDefined
 
     def setSymbol(sym: S): this.type = {
@@ -25,10 +24,8 @@ object Symbols {
 
     def getSymbol: S = _sym match {
       case Some(s) => s
-      case None    =>
-        sys.error("Accessing undefined symbol.")
+      case None    => sys.error("Accessing undefined symbol.")
     }
-
   }
 
   sealed abstract class Symbol extends Positioned with Typed {
@@ -37,7 +34,6 @@ object Symbols {
   }
 
   class GlobalScope(classSymbolLocator: ClassSymbolLocator) {
-
     val classes: mutable.Map[String, ClassSymbol] =
       mutable.Map() ++ Types.DefaultTypes.map(tpe => tpe.name -> tpe.classSymbol).toMap
 
@@ -47,39 +43,42 @@ object Symbols {
     }
 
     def classNames: List[String] = classes.keys.toList
-
   }
 
-
   object ClassErrorSymbol extends ClassSymbol(CompilerMessage.ErrorName)
-  class ClassSymbol(override val name: String) extends Symbol {
 
-    protected var _parents   : List[ClassSymbol]        = Nil
-    protected var _methods   : List[MethodSymbol]       = Nil
-    protected var _operators : List[OperatorSymbol]     = Nil
-    protected var _fields    : Map[String, FieldSymbol] = Map()
-    protected var _isAbstract: Boolean                  = false
+  class ClassSymbol(override val name: String) extends Symbol {
+    protected var _parents    : List[ClassSymbol]        = Nil
+    protected var _methods    : List[MethodSymbol]       = Nil
+    protected var _operators  : List[OperatorSymbol]     = Nil
+    protected var _fields     : Map[String, FieldSymbol] = Map()
+    protected var _isAbstract : Boolean                  = false
+    protected var _annotations: List[AnnotationSymbol]   = Nil
+
 
     def parents: List[ClassSymbol] = _parents
     def methods: List[MethodSymbol] = _methods
     def operators: List[OperatorSymbol] = _operators
     def fields: Map[String, FieldSymbol] = _fields
+    def annotations: List[AnnotationSymbol] = _annotations
     def isAbstract: Boolean = _isAbstract
-    def isAbstract_=(isAbstract: Boolean): Unit = _isAbstract = isAbstract
+    def isAbstract_=(isAbstract: Boolean): this.type = { _isAbstract = isAbstract; this }
 
     def addOperator(operator: OperatorSymbol): Unit = _operators ::= operator
     def addMethod(method: MethodSymbol): Unit = _methods ::= method
     def addField(field: FieldSymbol): Unit = _fields += (field.name -> field)
     def addParent(parent: ClassSymbol): Unit = _parents ::= parent
+    def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
 
     def parents_=(parents: List[ClassSymbol]): Unit = _parents = parents
 
     def constructors: List[MethodSymbol] = methods.filter { _.name == "new" }
 
-    def implicitConstructors: List[MethodSymbol] = constructors.filter { method =>
-      method.modifiers.contains(Implicit()) &&
-        method.argList.lengthCompare(1) == 0
-    }
+    def implicitConstructors: List[MethodSymbol] =
+      constructors.filter { method =>
+        method.modifiers.contains(Implicit()) &&
+          method.argList.lengthCompare(1) == 0
+      }
 
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
       findMethod(abstractMeth.name, abstractMeth.argTypes, exactTypes = true)
@@ -100,14 +99,11 @@ object Symbols {
     def lookupParentMethod(name: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
       parents.findDefined(_.lookupMethod(name, args, imports, exactTypes))
 
-
     def lookupParentOperator(operatorType: OperatorTree, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[OperatorSymbol] =
       parents.findDefined(_.lookupOperator(operatorType, args, imports, exactTypes))
 
-
     def lookupParentField(name: String): Option[FieldSymbol] =
       parents.findDefined(_.lookupField(name))
-
 
     def lookupMethod(name: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
       findMethod(name, args, exactTypes)
@@ -121,7 +117,6 @@ object Symbols {
 
     def lookupField(name: String): Option[FieldSymbol] =
       fields.get(name).orElse(lookupParentField(name))
-
 
     def abstractMethods(): List[(MethodSymbol, ClassSymbol)] = {
       methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.abstractMethods())
@@ -175,7 +170,6 @@ object Symbols {
         case _                                                                        => operatorType1.getClass == operatorType2.getClass
       }
     }
-
   }
 
   class ExtensionClassSymbol(override val name: String) extends ClassSymbol(name) {
@@ -199,7 +193,6 @@ object Symbols {
     private def classSymbol: Option[ClassSymbol] = _extendedType collect {
       case TObject(classSymbol) => classSymbol
     }
-
   }
 
   class MethodSymbol(
@@ -211,12 +204,15 @@ object Symbols {
     var isAbstract : Boolean                     = stat.isEmpty
     var args       : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
     var argList    : List[VariableSymbol]        = Nil
-    var annotations: List[String]                = Nil
+    var annotations: List[AnnotationSymbol]      = Nil
 
     def addArgument(arg: VariableSymbol): Unit = {
       args += arg.name -> arg
       argList :+= arg
     }
+
+    def addAnnotation(annotation: AnnotationSymbol): Unit = annotations ::= annotation
+
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)
 
@@ -235,7 +231,7 @@ object Symbols {
       if (argList.lengthCompare(1) != 0 || argList.head.name != "args")
         return false
 
-      if (modifiers.size != 2 || !isStatic || accessability != Public())
+      if (modifiers.size != 2 || !isStatic || accessibility != Public())
         return false
 
       true
@@ -244,18 +240,15 @@ object Symbols {
     override def toString: String = signature
   }
 
-
   class OperatorSymbol(
     val operatorType: OperatorTree,
     override val classSymbol: ClassSymbol,
     override val stat: Option[StatTree],
     override val modifiers: Set[Modifier]
   ) extends MethodSymbol(operatorType.operatorName, classSymbol, stat, modifiers) {
-
     override def signature: String = operatorType.signature(argList.map(_.getType))
 
     override def toString: String = signature
-
   }
 
   object VariableErrorSymbol extends VariableSymbol(CompilerMessage.ErrorName)
@@ -268,6 +261,18 @@ object Symbols {
     override val modifiers: Set[Modifier] = Set(),
     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol {val name = CompilerMessage.ErrorName }
+  case object ErrorSymbol extends Symbol {val name: String = CompilerMessage.ErrorName }
+
+
+  trait AnnotationValue
+
+  case class IntAnnotationValue(value: Int) extends AnnotationValue
+  case class LongAnnotationValue(value: Long) extends AnnotationValue
+  case class FloatAnnotationValue(value: Float) extends AnnotationValue
+  case class DoubleAnnotationValue(value: Double) extends AnnotationValue
+  case class StringAnnotationValue(value: String) extends AnnotationValue
+
+  // Currently only supports constant types
+  case class AnnotationSymbol(name: String, elements: List[(String, AnnotationValue)] = Nil)
 
 }

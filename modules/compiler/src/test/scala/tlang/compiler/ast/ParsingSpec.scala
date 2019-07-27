@@ -2,7 +2,6 @@ package tlang
 package compiler
 package ast
 
-import tlang.compiler.Context
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
@@ -1160,7 +1159,6 @@ class ParsingSpec extends UnitSpec with TreeTesting {
 
     parser(INTLIT(1), PLUS, ID("x"), EXTRACTNULLABLE).expression shouldBe Plus(IntLit(1), ExtractNullable(VariableID("x")))
   }
-
 
   //------------------------------------------------------------------------------------
   //--- Misc

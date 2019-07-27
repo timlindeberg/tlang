@@ -196,11 +196,11 @@ object Trees {
 
   trait Modifier extends Tree with Leaf
 
-  trait Accessability extends Modifier
+  trait Accessibility extends Modifier
 
-  case class Public() extends Accessability
-  case class Private() extends Accessability
-  case class Protected() extends Accessability
+  case class Public() extends Accessibility
+  case class Private() extends Accessibility
+  case class Protected() extends Accessibility
 
   case class Static() extends Modifier
   case class Implicit() extends Modifier
@@ -211,7 +211,7 @@ object Trees {
 
     def isStatic: Boolean = modifiers.contains(Static())
     def isFinal: Boolean = modifiers.contains(Final())
-    def accessability: Accessability = modifiers.findInstance[Accessability].getOrElse(Private())
+    def accessibility: Accessibility = modifiers.findInstance[Accessibility].getOrElse(Private())
   }
 
   /*----------------------- Function Declaration Trees ----------------------*/
@@ -298,7 +298,6 @@ object Trees {
   object PrintStatTree {
     def unapply(e: PrintStatTree) = Some(e.expr)
   }
-
 
   case class VarDecl(
     id: VariableID,

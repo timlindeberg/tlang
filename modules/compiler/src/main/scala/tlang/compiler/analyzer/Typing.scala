@@ -52,7 +52,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
     cu.classes.flatMap(_.methods).foreach { method =>
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
-        methodUsage += methodSymbol -> !method.accessability.isInstanceOf[Private]
+        methodUsage += methodSymbol -> !method.accessibility.isInstanceOf[Private]
       TypeChecker(ctx, cu, methodSymbol).tcMethod()
     }
   }
@@ -642,11 +642,11 @@ case class TypeChecker(
   }
 
   private def checkPrivacy(sym: Symbol with Modifiable, classSymbol: ClassSymbol, pos: Positioned) = {
-    if (!isValidAccess(classSymbol, sym.accessability))
+    if (!isValidAccess(classSymbol, sym.accessibility))
       report(InvalidPrivacyAccess(sym, classSymbol, currentMethodSymbol.classSymbol, pos))
   }
 
-  private def isValidAccess(classSymbol: ClassSymbol, access: Accessability) = access match {
+  private def isValidAccess(classSymbol: ClassSymbol, access: Accessibility) = access match {
     case Public()                                                                                => true
     case Private() if classSymbol == currentMethodSymbol.classSymbol                             => true
     case Protected() if currentMethodSymbol.classSymbol.getType.isSubTypeOf(classSymbol.getType) => true
