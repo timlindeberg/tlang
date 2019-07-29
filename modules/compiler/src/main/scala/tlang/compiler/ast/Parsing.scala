@@ -207,9 +207,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <classOrTraitDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration>
     * [ = <indent>
-    *    { <fieldDeclaration> <statementEnd> }
-    *    { <methodDeclaration> <statementEnd> }
-    *    <dedent>
+    * { <fieldDeclaration> <statementEnd> }
+    * { <methodDeclaration> <statementEnd> }
+    * <dedent>
     * ]
     */
   def classOrTraitDeclaration: ClassDeclTree = positioned {
@@ -390,7 +390,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    * */
+    **/
   def operator(modifiers: Set[Modifier]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -1009,7 +1009,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <negation> ::= - <term> */
   def negation: ExprTree = positioned {
-    def negated[T : Numeric](value: T, kind: TokenKind, tree: T => ExprTree): ExprTree = {
+    def negated[T: Numeric](value: T, kind: TokenKind, tree: T => ExprTree): ExprTree = {
       eat(kind)
       val num = implicitly[Numeric[T]].negate(value)
       tree(num)
@@ -1266,12 +1266,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     * statement will point to the calling method instead of here.
     * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
-    val numNewlines = tokens.readNewLines()
-    debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
-
-    for (k <- kinds) tokens.next.kind match {
-      case `k` => tokens.readNext()
-      case _   => report(WrongToken(tokens.next, tokens.last, k))
+    for (kind <- kinds) {
+      val numNewlines = tokens.readNewLines()
+      debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
+      tokens.next.kind match {
+        case `kind` => tokens.readNext()
+        case _      => report(WrongToken(tokens.next, tokens.last, kind))
+      }
     }
 
     trace"${ indentation }Tokens left: ${ NL + tokens.toString }"

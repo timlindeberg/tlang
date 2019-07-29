@@ -119,13 +119,13 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   }
 
   private def addAnnotation(annotatable: Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
-    val annotation = annotatable.addAnnotation(annotation.name)
+    val annotationHandler = annotatable.addAnnotation(annotation.name)
     annotation.elements foreach { case (name, v) => v match {
-      case IntAnnotationValue(v)    => annotation.addValue(name, v)
-      case LongAnnotationValue(v)   => annotation.addValue(name, v)
-      case FloatAnnotationValue(v)  => annotation.addValue(name, v)
-      case DoubleAnnotationValue(v) => annotation.addValue(name, v)
-      case StringAnnotationValue(v) => annotation.addValue(name, v)
+      case IntAnnotationValue(v)    => annotationHandler.addValue(name, v)
+      case LongAnnotationValue(v)   => annotationHandler.addValue(name, v)
+      case FloatAnnotationValue(v)  => annotationHandler.addValue(name, v)
+      case DoubleAnnotationValue(v) => annotationHandler.addValue(name, v)
+      case StringAnnotationValue(v) => annotationHandler.addValue(name, v)
       case _                        => ???
     }
     }
