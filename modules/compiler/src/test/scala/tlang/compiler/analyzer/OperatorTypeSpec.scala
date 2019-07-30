@@ -308,7 +308,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
     def valid(expressionType: VariableID => UnaryOperatorTree, validTpes: (TypeConstructor, Type)*): Unit = {
       validTpes.foreach { case (id, tpe) =>
         TestContext.reporter.clear()
-        val resType = TypeChecker.tcExpr(expressionType(id()))
+        val resType = TypeChecker.typeCheckExpr(expressionType(id()))
         assert(resType == tpe, "for " + id + "")
 
         val noErrors = !TestContext.reporter.hasErrors
@@ -316,7 +316,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       }
 
       getInvalidCombinations(validTpes.toList) foreach { id =>
-        TypeChecker.tcExpr(expressionType(id()))
+        TypeChecker.typeCheckExpr(expressionType(id()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for " + id + "")
         TestContext.reporter.clear()
@@ -334,10 +334,10 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
 
         reporter.clear()
 
-        val resType1 = TypeChecker.tcExpr(expressionType(rhs(), lhs()))
+        val resType1 = TypeChecker.typeCheckExpr(expressionType(rhs(), lhs()))
         assert(resType1 == tpe, "for (" + rhs + ", " + lhs + ")")
 
-        val resType2 = TypeChecker.tcExpr(expressionType(lhs(), rhs()))
+        val resType2 = TypeChecker.typeCheckExpr(expressionType(lhs(), rhs()))
         assert(resType2 == tpe, "for (" + lhs + ", " + rhs + ")")
 
         if (reporter.hasErrors)
@@ -347,7 +347,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       }
 
       getInvalidCombinations(validCombinations.toList).foreach { case (lhs, rhs) =>
-        TypeChecker.tcExpr(expressionType(lhs(), rhs()))
+        TypeChecker.typeCheckExpr(expressionType(lhs(), rhs()))
         val invalid = TestContext.reporter.hasErrors
         assert(invalid, "for (" + lhs + ", " + rhs + ")")
         TestContext.reporter.clear()
@@ -371,7 +371,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       validCombinations.foreach { case (id, expr, tpe) =>
 
         TestContext.reporter.clear()
-        val resType = TypeChecker.tcExpr(expressionType(id(), expr()))
+        val resType = TypeChecker.typeCheckExpr(expressionType(id(), expr()))
         assert(resType == tpe, s"for $id = $expr")
 
         val noErrors = !TestContext.reporter.hasErrors
@@ -379,7 +379,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       }
 
       getInvalidCombinations(validCombinations.toList) foreach { case (id, expr) =>
-        TypeChecker.tcExpr(expressionType(id(), expr()))
+        TypeChecker.typeCheckExpr(expressionType(id(), expr()))
         val invalid = TestContext.reporter.hasErrors
 
         assert(invalid, s"for $id = $expr")
@@ -403,7 +403,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
         TestContext.reporter.clear()
         val id = createIdentifier(TArray(identifier().getType))
 
-        val resType = TypeChecker.tcExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
+        val resType = TypeChecker.typeCheckExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
         assert(resType == tpe, "for (" + identifier + ", " + expr + ")")
 
         val noErrors = !TestContext.reporter.hasErrors
@@ -412,7 +412,7 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
 
       getInvalidCombinations(validCombinations.toList) foreach { case (identifier, expr) =>
         val id = createIdentifier(TArray(identifier().getType))
-        TypeChecker.tcExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
+        TypeChecker.typeCheckExpr(Assign(ArrayRead(id, IntLit(0)), expr()))
         val invalid = TestContext.reporter.hasErrors
 
         assert(invalid, "for (" + identifier + ", " + expr + ")")

@@ -1,11 +1,19 @@
 class AnnotationA : Annotation
 class AnnotationB : Annotation =
-	Val S: String
+	Var S: String
+
+	Def new(s: String) = (S = s)
 
 class AnnotationC : Annotation =
-	Val A: Int
-	Val B: Double
-	Val C: String
+	Var A: Int
+	Var B: Double
+	Var C: String
+
+	Def new(a: Int, b: Double, c: String) =
+		A = a
+		B = b
+		C = c
+
 
 @AnnotationA
 class A
@@ -25,6 +33,7 @@ class B
 
 	@AnnotationA
 	@AnnotationB("ABC")
+	@AnnotationC(5, 5.0, "GHI")
 	Def MyMethod(): String = "ABC"
 
 	@AnnotationA Def MyMethod2(): Int = 5

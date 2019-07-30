@@ -222,8 +222,8 @@ package object tlang {
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
-    def use(f: T => Unit): T = { val x = t; f(t); x }
-    def <|(f: => Unit): T = { val x = t; f; x }
+    def use[U](f: T => U): T = { val x = t; f(t); x }
+    def <|[U](f: => U): T = { val x = t; f; x }
 
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }

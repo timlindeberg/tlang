@@ -25,8 +25,8 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    ctx.executor.foreach(cus) { typecheckFields(ctx, _) }
-    ctx.executor.foreach(cus) { typecheckMethods(ctx, _) }
+    ctx.executor.foreach(cus) { typeCheckFieldsAndAnnotations(ctx, _) }
+    ctx.executor.foreach(cus) { typeCheckMethods(ctx, _) }
     ctx.executor.foreach(cus) { verify(ctx, _) }
 
     cus
@@ -38,22 +38,26 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
-  private def typecheckFields(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking fields of ${ cu.simpleSourceDescription }"
-    cu.classes.foreach { classDecl =>
-      val typeChecker = TypeChecker(ctx, cu, new MethodSymbol("", classDecl.getSymbol, None, Set()))
-      classDecl.fields.foreach(typeChecker.tcStat(_))
+  private def typeCheckFieldsAndAnnotations(ctx: Context, cu: CompilationUnit): Unit = {
+    info"Typechecking fields and annotations of ${ cu.simpleSourceDescription }"
+
+    cu.classes foreach { classDecl =>
+      val fakeMethodSymbol = new MethodSymbol("", classDecl.getSymbol, None, Set())
+      val typeChecker = TypeChecker(ctx, cu, fakeMethodSymbol)
+      val stats = classDecl.fields ::: classDecl.annotations.flatMap(_.values)
+      stats foreach { typeChecker.typeCheckStatement }
     }
   }
 
-
-  private def typecheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
+  private def typeCheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
     info"Typechecking methods of ${ cu.simpleSourceDescription }"
-    cu.classes.flatMap(_.methods).foreach { method =>
+    cu.classes.flatMap(_.methods) foreach { method =>
       val methodSymbol = method.getSymbol
       if (!methodUsage.contains(methodSymbol))
         methodUsage += methodSymbol -> !method.accessibility.isInstanceOf[Private]
-      TypeChecker(ctx, cu, methodSymbol).tcMethod()
+      val typeChecker = TypeChecker(ctx, cu, methodSymbol)
+      method.annotations.flatMap(_.values) foreach { typeChecker.typeCheckStatement }
+      typeChecker.typeCheckMethod()
     }
   }
 
@@ -90,7 +94,7 @@ case class TypeChecker(
 
   val returnStatements: ArrayBuffer[(Return, Type)] = ArrayBuffer()
 
-  def tcMethod(): Unit = {
+  def typeCheckMethod(): Unit = {
     if (Typing.hasBeenTypechecked(currentMethodSymbol))
       return
 
@@ -101,7 +105,7 @@ case class TypeChecker(
       return
     }
 
-    currentMethodSymbol.stat.ifDefined(tcStat)
+    currentMethodSymbol.stat.ifDefined(typeCheckStatement)
     hasBeenTypechecked += currentMethodSymbol
 
     val methType = currentMethodSymbol.getType
@@ -139,17 +143,17 @@ case class TypeChecker(
     case _                  =>
   }
 
-  def tcStat(statement: StatTree): Unit = statement match {
+  def typeCheckStatement(statement: StatTree): Unit = statement match {
     case Block(stats)                      =>
-      stats.foreach(tcStat)
+      stats foreach typeCheckStatement
     case VarDecl(id, tpe, init, _, _)      =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
         report(ValueMustBeInitialized(varSym.name, varSym))
 
       (tpe, init) match {
-        case (Some(tpe), Some(expr)) => tcExpr(expr, tpe.getType)
-        case (None, Some(expr))      => id.setType(tcExpr(expr))
+        case (Some(tpe), Some(expr)) => typeCheckExpr(expr, tpe.getType)
+        case (None, Some(expr))      => id.setType(typeCheckExpr(expr))
         case (Some(_), None)         => // Abstract
         case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
       }
@@ -158,19 +162,19 @@ case class TypeChecker(
           report(AssignUnit(expr))
       )
     case If(condition, thn, els)           =>
-      tcExpr(condition, Bool)
-      tcStat(thn)
-      els ifDefined tcStat
+      typeCheckExpr(condition, Bool)
+      typeCheckStatement(thn)
+      els ifDefined typeCheckStatement
     case While(condition, stat)            =>
-      tcExpr(condition, Bool)
-      tcStat(stat)
+      typeCheckExpr(condition, Bool)
+      typeCheckStatement(stat)
     case For(init, condition, post, stat)  =>
-      init foreach tcStat
-      tcExpr(condition, Bool)
-      post foreach tcStat
-      tcStat(stat)
+      init foreach typeCheckStatement
+      typeCheckExpr(condition, Bool)
+      post foreach typeCheckStatement
+      typeCheckStatement(stat)
     case Foreach(varDecl, container, stat) =>
-      val containerType = tcExpr(container)
+      val containerType = typeCheckExpr(container)
       val expectedVarType = containerType match {
         case TArray(arrTpe)       =>
           arrTpe
@@ -183,16 +187,16 @@ case class TypeChecker(
         case tpe if tpe != expectedVarType => report(WrongType(expectedVarType, tpe, varDecl.id))
         case _                             =>
       }
-      tcStat(stat)
+      typeCheckStatement(stat)
     case PrintStatTree(expr)               =>
-      tcExpr(expr)
+      typeCheckExpr(expr)
       if (expr.getType == TUnit)
         report(CantPrintUnitType(expr))
     case Error(expr)                       =>
-      tcExpr(expr, String)
+      typeCheckExpr(expr, String)
     case ret@Return(Some(expr))            =>
       val retType = currentMethodSymbol.getType match {
-        case TUntyped => tcExpr(expr)
+        case TUntyped => typeCheckExpr(expr)
         case retType  =>
           // Special case where we try to return an empty array literal from a method
           // with a specified array type. Then the returned array should have that
@@ -201,7 +205,7 @@ case class TypeChecker(
             case (tpe: TArray, ArrayLit(Nil)) =>
               expr.setType(tpe)
               tpe
-            case _                            => tcExpr(expr, retType)
+            case _                            => typeCheckExpr(expr, retType)
           }
       }
       returnStatements += ((ret, retType))
@@ -211,12 +215,12 @@ case class TypeChecker(
       returnStatements += ((ret, TUnit))
     case _: Break | _: Continue            =>
     case expr: ExprTree                    =>
-      tcExpr(expr)
+      typeCheckExpr(expr)
   }
 
-  def tcExpr(expr: ExprTree, expected: Type*): Type = tcExpr(expr, expected.toList)
+  def typeCheckExpr(expr: ExprTree, expected: Type*): Type = typeCheckExpr(expr, expected.toList)
 
-  def tcExpr(expression: ExprTree, expected: Traversable[Type]): Type = {
+  def typeCheckExpr(expression: ExprTree, expected: Traversable[Type]): Type = {
     val foundType = expression match {
       case lit: Literal[_]                            => lit.getType
       case id: VariableID                             =>
@@ -227,33 +231,33 @@ case class TypeChecker(
       case id: ClassID                                => id.getType
       case th: This                                   => th.getSymbol.getType
       case su: Super                                  => su.getSymbol.getType
-      case acc: Access                                => tcAccess(acc)
+      case acc: Access                                => typeCheckAccess(acc)
       case assign: Assign                             =>
-        tcAssignment(assign)
-      case newDecl: New                               => tcNewExpr(newDecl)
+        typeCheckAssignment(assign)
+      case newDecl: New                               => typeCheckNewExpr(newDecl)
       case NewArray(tpe, sizes)                       =>
-        sizes.foreach(tcExpr(_, Int))
+        sizes.foreach(typeCheckExpr(_, Int))
         tpe.getType
       case ArrayLit(expressions)                      =>
-        val tpe = if (expressions.isEmpty) Object else getReturnType(expressions.map(tcExpr(_)))
+        val tpe = if (expressions.isEmpty) Object else getReturnType(expressions.map(typeCheckExpr(_)))
         TArray(tpe)
       case And(lhs, rhs)                              =>
-        tcExpr(lhs, Bool)
-        tcExpr(rhs, Bool)
+        typeCheckExpr(lhs, Bool)
+        typeCheckExpr(rhs, Bool)
         Bool
       case Or(lhs, rhs)                               =>
-        tcExpr(lhs, Bool)
-        tcExpr(rhs, Bool)
+        typeCheckExpr(lhs, Bool)
+        typeCheckExpr(rhs, Bool)
         Bool
       case notOp@Not(expr)                            =>
-        val tpe = tcExpr(expr)
+        val tpe = typeCheckExpr(expr)
         if (!tpe.isNullable && tpe != Bool)
           report(NotOnNonNullable(notOp))
 
         Bool
       case eqOp@EqualsOperatorTree(lhs, rhs)          =>
-        val lhsTpe = tcExpr(lhs)
-        val rhsTpe = tcExpr(rhs)
+        val lhsTpe = typeCheckExpr(lhs)
+        val rhsTpe = typeCheckExpr(rhs)
 
         if (lhsTpe == TNull || rhsTpe == TNull) {
           if (lhsTpe == TNull && !rhsTpe.isNullable || rhsTpe == TNull && !lhsTpe.isNullable)
@@ -262,61 +266,61 @@ case class TypeChecker(
         } else if (lhsTpe.isInstanceOf[TArray] && rhsTpe.isInstanceOf[TArray]) {
           Bool
         } else {
-          tcBinaryOperator(eqOp, lhsTpe, rhsTpe)
+          typeCheckBinaryOperator(eqOp, lhsTpe, rhsTpe)
         }
       case binOp@BinaryOperatorTree(lhs, rhs)         =>
-        tcBinaryOperator(binOp, tcExpr(lhs), tcExpr(rhs))
+        typeCheckBinaryOperator(binOp, typeCheckExpr(lhs), typeCheckExpr(rhs))
       case incOp@IncrementDecrementTree(obj)          =>
         if (!obj.isInstanceOf[Assignable])
           report(InvalidIncrementDecrementExpr(incOp))
 
-        tcUnaryOperator(incOp, tcExpr(obj))
+        typeCheckUnaryOperator(incOp, typeCheckExpr(obj))
       case ExtractNullable(expr)                      =>
-        val exprTpe = tcExpr(expr)
+        val exprTpe = typeCheckExpr(expr)
         if (!exprTpe.isNullable)
           report(ExtractNullableNonNullable(exprTpe, expr))
         exprTpe.getNonNullable
       case unaryOp@UnaryOperatorTree(expr)            =>
-        tcUnaryOperator(unaryOp, tcExpr(expr))
+        typeCheckUnaryOperator(unaryOp, typeCheckExpr(expr))
       case Is(expr, _)                                =>
-        tcExpr(expr)
+        typeCheckExpr(expr)
         Bool
       case As(expr, tpe)                              =>
-        tcExpr(expr, Object)
+        typeCheckExpr(expr, Object)
         tpe.getType
       case arrRead@ArrayRead(arr, index)              =>
-        val arrayType = tcExpr(arr)
+        val arrayType = typeCheckExpr(arr)
         arrayType match {
           case _: TObject     =>
-            val indexType = tcExpr(index)
-            tcArrayOperator(arrayType, arrRead, List(indexType), arrayType, expression)
+            val indexType = typeCheckExpr(index)
+            typeCheckArrayOperator(arrayType, arrRead, List(indexType), arrayType, expression)
           case TArray(arrTpe) =>
-            tcExpr(index, Int)
+            typeCheckExpr(index, Int)
             arrTpe
           case TError         => TError
           case _              => ???
         }
       case arrSlice@ArraySlice(obj, start, end, step) =>
         val argTypes = List(start, end, step).map {
-          case Some(expr) => tcExpr(expr, Int)
+          case Some(expr) => typeCheckExpr(expr, Int)
           case None       => TNull
         }
-        tcExpr(obj) match {
-          case objectType: TObject => tcArrayOperator(objectType, arrSlice, argTypes, objectType, expression)
+        typeCheckExpr(obj) match {
+          case objectType: TObject => typeCheckArrayOperator(objectType, arrSlice, argTypes, objectType, expression)
           case arrayType: TArray   => arrayType
           case TError              => TError
           case _                   => ???
         }
       case Ternary(condition, thn, els)               =>
-        tcExpr(condition, Bool)
-        val thnType = tcExpr(thn)
-        val elsType = tcExpr(els)
+        typeCheckExpr(condition, Bool)
+        val thnType = typeCheckExpr(thn)
+        val elsType = typeCheckExpr(els)
         getReturnType(List(thnType, elsType))
       case Elvis(nullableValue, ifNull)               =>
-        val nullableTpe = tcExpr(nullableValue)
+        val nullableTpe = typeCheckExpr(nullableValue)
         if (!nullableTpe.isNullable)
           report(ElvisOperatorNonNullable(nullableTpe, nullableValue))
-        tcExpr(ifNull, nullableTpe)
+        typeCheckExpr(ifNull, nullableTpe)
         nullableTpe.getNonNullable
     }
 
@@ -336,10 +340,10 @@ case class TypeChecker(
     res
   }
 
-  def tcNewExpr(newExpr: New): Type = {
+  def typeCheckNewExpr(newExpr: New): Type = {
     val tpe = newExpr.tpe
     val exprs = newExpr.args
-    val argTypes = exprs.map(tcExpr(_))
+    val argTypes = exprs.map(typeCheckExpr(_))
     tpe.getType match {
       case TObject(classSymbol) if classSymbol.isAbstract =>
         report(InstantiateTrait(classSymbol.name, newExpr))
@@ -356,12 +360,12 @@ case class TypeChecker(
     tpe.getType
   }
 
-  def tcAccess(acc: Access): Type = {
+  def typeCheckAccess(acc: Access): Type = {
     val app = acc.application
 
     // If it's a method access we type check it now
     val argTypes = app match {
-      case MethodCall(_, args) => Some(args.map(tcExpr(_)))
+      case MethodCall(_, args) => Some(args.map(typeCheckExpr(_)))
       case _                   => None
     }
 
@@ -370,7 +374,7 @@ case class TypeChecker(
       methodCall.meth.name + argTypes.get.mkString("(", ", ", ")")
     }
 
-    val objType = tcAccessObject(acc, argTypes, methSignature)
+    val objType = typeCheckAccessObject(acc, argTypes, methSignature)
 
     // Most of the duplication here is to give a different error message for
     // fields and methods
@@ -457,7 +461,7 @@ case class TypeChecker(
       tpe
   }
 
-  private def tcAccessObject(acc: Access, argTypes: Option[List[Type]], methSignature: => String): Type = {
+  private def typeCheckAccessObject(acc: Access, argTypes: Option[List[Type]], methSignature: => String): Type = {
     val obj = acc.obj
     val app = acc.application
 
@@ -486,43 +490,43 @@ case class TypeChecker(
         sup.setSymbol(classSymbol)
         sup.setType(classSymbol.getType)
         classSymbol.getType
-      case _                                                 => tcExpr(obj)
+      case _                                                 => typeCheckExpr(obj)
     }
   }
 
-  def tcAssignment(assignment: Assign): Type = {
+  def typeCheckAssignment(assignment: Assign): Type = {
     val to = assignment.to
     val expr = assignment.from
 
     val tpe = to match {
       case _: VariableID          =>
-        val toTpe = tcExpr(to)
+        val toTpe = typeCheckExpr(to)
 
-        tcExpr(expr, toTpe)
+        typeCheckExpr(expr, toTpe)
         toTpe
       case Access(_, application) =>
         application match {
           case _: MethodCall => report(AssignValueToMethodCall(assignment))
           case _: VariableID =>
-            val toTpe = tcExpr(to)
-            tcExpr(expr, toTpe)
+            val toTpe = typeCheckExpr(to)
+            typeCheckExpr(expr, toTpe)
             toTpe
           case _             => ???
         }
       case ArrayRead(arr, index)  =>
-        val arrTpe = tcExpr(arr)
+        val arrTpe = typeCheckExpr(arr)
         to.setType(arr)
         arrTpe match {
           case _: TObject       =>
-            val indexType = tcExpr(index)
-            val exprType = tcExpr(expr)
+            val indexType = typeCheckExpr(index)
+            val exprType = typeCheckExpr(expr)
 
             val argList = List(indexType, exprType)
-            tcArrayOperator(arrTpe, assignment, argList, arrTpe, assignment)
+            typeCheckArrayOperator(arrTpe, assignment, argList, arrTpe, assignment)
             exprType
           case TArray(arrayTpe) =>
-            tcExpr(index, Int)
-            tcExpr(expr, arrayTpe)
+            typeCheckExpr(index, Int)
+            typeCheckExpr(expr, arrayTpe)
             arrTpe.asInstanceOf[TArray].tpe
           case _                => ???
         }
@@ -532,27 +536,27 @@ case class TypeChecker(
     tpe
   }
 
-  def tcBinaryOperator(operator: OperatorTree, arg1: Type, arg2: Type): Type = {
+  def typeCheckBinaryOperator(operator: OperatorTree, arg1: Type, arg2: Type): Type = {
     val argList = List(arg1, arg2)
     typeCheckOperator(arg1, operator, argList)
       .orElse(typeCheckOperator(arg2, operator, argList))
       .getOrElse(report(OperatorNotFound(operator.signature(argList), argList, operator)))
   }
 
-  def tcUnaryOperator(expr: OperatorTree, arg: Type): Type = {
+  def typeCheckUnaryOperator(expr: OperatorTree, arg: Type): Type = {
     val argList = List(arg)
     typeCheckOperator(arg, expr, argList)
       .getOrElse(report(OperatorNotFound(expr.signature(argList), argList, expr)))
   }
 
-  def tcArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
+  def typeCheckArrayOperator(classTpe: Type, opType: ArrayOperatorTree, argList: List[Type], arrTpe: Type, pos: Positioned): Type = {
     typeCheckOperator(classTpe, opType, argList)
       .getOrElse(report(OperatorNotFound(opType.operatorString(argList, arrTpe.toString), List(arrTpe), pos)))
   }
 
   def checkMethodUsage(): Unit = {
     // Check method usage
-    // TODO: Refactoring of typechecker global variables etc.
+    // TODO: Refactoring of typeChecker global variables etc.
     methodUsage
       .filter { case (_, used) => !used }
       .foreach { case (method, _) => report(UnusedPrivateMethod(method.signature, method)) }
@@ -621,7 +625,7 @@ case class TypeChecker(
 
   private def inferTypeOfMethod(methodSymbol: MethodSymbol): Type = {
     if (methodSymbol.getType == TUntyped)
-      TypeChecker(reporter, errorStringContext, imports, methodSymbol, currentMethodSymbol :: methodStack).tcMethod()
+      TypeChecker(reporter, errorStringContext, imports, methodSymbol, currentMethodSymbol :: methodStack).typeCheckMethod()
     methodSymbol.getType
   }
 

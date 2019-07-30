@@ -243,19 +243,24 @@ case class NameAnalyser(
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case extension@ExtensionDecl(tpe, methods, _)                           =>
+    case annotation@Annotation(id, _)                                       =>
+      setType(id)
+      annotation.setSymbol(id.getSymbol)
+    case extension@ExtensionDecl(tpe, methods, annotations)                 =>
       val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
       setType(tpe)
       extensionSym.setExtendedType(tpe.getType)
       methods foreach bind
-    case classDecl@IDClassDeclTree(_, _, _, methods)                        =>
+      annotations foreach bind
+    case classDecl@IDClassDeclTree(_, _, _, methods, annotations)           =>
       setParentSymbol(classDecl)
       bindFields(classDecl)
       if (!methods.existsInstance[ConstructorDecl]) {
         addDefaultConstructor(classDecl)
       }
       methods foreach bind
-    case methDecl@MethodDecl(_, _, _, args, retType, stat)                  =>
+      annotations foreach bind
+    case methDecl@MethodDecl(_, _, annotations, args, retType, stat)        =>
       val methSym = methDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -263,6 +268,7 @@ case class NameAnalyser(
         methSym.setType(tpe.getType)
       }
 
+      annotations foreach bind
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
       stat ifDefined { new StatementBinder(methSym, methDecl.isStatic).bindStatement(_) }

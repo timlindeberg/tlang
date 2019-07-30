@@ -112,13 +112,14 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
       val traverser = new Trees.Traverser {
         def traversal: TreeTraversal = {
-          case ClassDeclTree(_, parents, fields, methods) =>
+          case ClassDeclTree(_, parents, fields, methods, annotations) =>
             // Ignore the id of classdecls since these can declare templated types
             // which should not be generated
             traverse(parents)
             traverse(fields)
             traverse(methods)
-          case c: ClassID if c.isTemplated                => generateClass(c)
+            traverse(annotations)
+          case c: ClassID if c.isTemplated                             => generateClass(c)
         }
       }
       traverser.traverse(cu)
@@ -217,17 +218,17 @@ case class TemplateModifier(ctx: Context) extends Logging {
         override val copier = new Trees.Copier
 
         def transformation: TreeTransformation = {
-          case c@ClassDeclTree(id, parents, fields, methods) =>
+          case c@ClassDeclTree(id, parents, fields, methods, annotations) =>
             // Update the name of the templated class
             val templateName = template.id.templatedClassName(templateTypes)
             val newId = copier.ClassID(id, templateName, Nil)
-            val cons: (List[ClassID], List[VarDecl], List[MethodDeclTree]) => ClassDeclTree = c match {
-              case _: ClassDecl => copier.ClassDecl(c, newId, _, _, _)
-              case _: TraitDecl => copier.TraitDecl(c, newId, _, _, _)
+            val cons: (List[ClassID], List[VarDecl], List[MethodDeclTree], List[Annotation]) => ClassDeclTree = c match {
+              case _: ClassDecl => copier.ClassDecl(c, newId, _, _, _, _)
+              case _: TraitDecl => copier.TraitDecl(c, newId, _, _, _, _)
               case _            => ???
             }
-            cons(transform(parents), transform(fields), transform(methods))
-          case classId@ClassID(name, tTypes)                 =>
+            cons(transform(parents), transform(fields), transform(methods), transform(annotations))
+          case classId@ClassID(name, tTypes)                              =>
             val newId = copier.ClassID(classId, name, transform(tTypes))
             if (classId.isTemplated) {
               val transforms = List[String => String](templateCU.imports.replaceNames)

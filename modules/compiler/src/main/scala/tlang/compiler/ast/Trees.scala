@@ -95,7 +95,7 @@ object Trees {
     override def children: List[Tree] = imports.imports ::: classes
   }
 
-  case class Annotation(id: ClassID, values: List[ExprTree]) extends Tree
+  case class Annotation(id: ClassID, values: List[ExprTree]) extends Tree with Symbolic[ClassSymbol]
 
   /*------------------------ Package and Import Trees -----------------------*/
 
@@ -137,11 +137,11 @@ object Trees {
 
 
   object ClassDeclTree {
-    def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods)
+    def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods, c.annotations)
   }
 
   object IDClassDeclTree {
-    def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods)
+    def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods, c.annotations)
   }
 
   trait Annotatable {

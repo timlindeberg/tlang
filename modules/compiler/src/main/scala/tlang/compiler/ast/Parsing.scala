@@ -221,21 +221,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <classOrTraitDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> [ = <classBody> ] */
   def classOrTraitDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
     val classOrTrait = tokens.next.kind match {
-      case CLASS =>
-        eat(CLASS)
-        ClassDecl
-      case TRAIT =>
-        eat(TRAIT)
-        TraitDecl
+      case CLASS => eat(CLASS); ClassDecl
+      case TRAIT => eat(TRAIT); TraitDecl
       case _     => report(wrongToken(CLASS, TRAIT))
     }
 
     val id = classTypeIdentifier
     val parents = parentsDeclaration
     val (vars, methods) = tokens.next.kind match {
-      case EQSIGN =>
-        eat(EQSIGN)
-        classBody
+      case EQSIGN => eat(EQSIGN); classBody
       case _      => (Nil, Nil)
     }
 
@@ -275,9 +269,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <parentsDeclaration> ::= [ : <classType> { "," <classType> } ] */
   def parentsDeclaration: List[ClassID] = tokens.next.kind match {
-    case COLON =>
-      eat(COLON)
-      nonEmptyList(COMMA)(classType)
+    case COLON => eat(COLON); nonEmptyList(COMMA)(classType)
     case _     => Nil
   }
 
@@ -323,15 +315,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def varDeclaration: VarDecl = positioned {
     val startPos = tokens.next
     val modifiers: Set[Modifier] = tokens.next.kind match {
-      case PRIVVAR =>
-        eat(PRIVVAR)
-        Set(Private())
-      case PRIVVAL =>
-        eat(PRIVVAL)
-        Set(Private(), Final())
+      case PRIVVAR => eat(PRIVVAR); Set(Private())
+      case PRIVVAL => eat(PRIVVAL); Set(Private(), Final())
       case _       => report(wrongToken(PRIVVAR, PRIVVAL))
     }
-    modifiers.foreach(_.setPos(startPos, tokens.lastVisible))
+    modifiers foreach { _.setPos(startPos, tokens.lastVisible) }
     // TODO: Support annotations on local variables
     varDeclEnd(modifiers, Nil)
   }
@@ -359,12 +347,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val modifiers = mutable.Set[Modifier]()
     modifiers += positioned {
       tokens.next.kind match {
-        case PUBDEF  =>
-          eat(PUBDEF)
-          Public()
-        case PRIVDEF =>
-          eat(PRIVDEF)
-          protectedOrPrivate
+        case PUBDEF  => eat(PUBDEF); Public()
+        case PRIVDEF => eat(PRIVDEF); protectedOrPrivate
         case _       => report(wrongToken(PUBDEF, PRIVDEF))
       }
     }
@@ -372,12 +356,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     while (tokens.next.kind in List(STATIC, IMPLICIT)) {
       modifiers += positioned {
         tokens.next.kind match {
-          case STATIC   =>
-            eat(STATIC)
-            Static()
-          case IMPLICIT =>
-            eat(IMPLICIT)
-            Implicit()
+          case STATIC   => eat(STATIC); Static()
+          case IMPLICIT => eat(IMPLICIT); Implicit()
           case _        => ???
         }
       }
@@ -387,7 +367,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <method> ::= <identifier> "(" [ <formal> { , <formal> } ] ")" [ : <returnType> ] <methodBody> */
   def method(modifiers: Set[Modifier], annotations: List[Annotation]): MethodDecl = {
-    modifiers.filterInstance[Implicit].foreach(mod => report(ImplicitMethodOrOperator(mod)))
+    modifiers.filterInstance[Implicit] foreach { mod => report(ImplicitMethodOrOperator(mod)) }
 
     val id = identifier(MethodID)
     val args = commaList(LPAREN, RPAREN)(formal)
@@ -410,7 +390,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    **/
+    * */
   def operator(modifiers: Set[Modifier], annotations: List[Annotation]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -549,9 +529,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   private def protectedOrPrivate: Accessibility = positioned {
     tokens.next.kind match {
-      case PROTECTED =>
-        eat(PROTECTED)
-        Protected()
+      case PROTECTED => eat(PROTECTED); Protected()
       case _         => Private()
     }
   }
@@ -1062,12 +1040,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <access> ::= (. | ?.) <identifier> [ "(" <expression> { , <expression> } ")" ] */
   def access(obj: ExprTree): Access = positioned {
     val access = tokens.next.kind match {
-      case DOT        =>
-        eat(DOT)
-        NormalAccess
-      case SAFEACCESS =>
-        eat(SAFEACCESS)
-        SafeAccess
+      case DOT        => eat(DOT); NormalAccess
+      case SAFEACCESS => eat(SAFEACCESS); SafeAccess
       case _          => report(wrongToken(DOT, QUESTIONMARK))
     }
 
@@ -1092,19 +1066,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // Uses current token since a newline should stop the iteration
     while (tokens.nextIncludingNewlines.kind in List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, INCREMENT, DECREMENT)) {
       e = tokens.nextIncludingNewlines.kind match {
-        case DOT | SAFEACCESS =>
-          access(e)
-        case LBRACKET         =>
-          arrayIndexing(e)
-        case INCREMENT        =>
-          eat(INCREMENT)
-          PostIncrement(e)
-        case DECREMENT        =>
-          eat(DECREMENT)
-          PostDecrement(e)
-        case EXTRACTNULLABLE  =>
-          eat(EXTRACTNULLABLE)
-          ExtractNullable(e)
+        case DOT | SAFEACCESS => access(e)
+        case LBRACKET         => arrayIndexing(e)
+        case INCREMENT        => eat(INCREMENT); PostIncrement(e)
+        case DECREMENT        => eat(DECREMENT); PostDecrement(e)
+        case EXTRACTNULLABLE  => eat(EXTRACTNULLABLE); ExtractNullable(e)
         case _                => ???
       }
       e.setPos(termFirst, tokens.lastVisible)
@@ -1117,11 +1083,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(LBRACKET)
     val exprs = until(RBRACKET) {
       tokens.next.kind match {
-        case COLON =>
-          eat(COLON)
-          None
-        case _     =>
-          Some(expression)
+        case COLON => eat(COLON); None
+        case _     => Some(expression)
       }
     }
     eat(RBRACKET)
@@ -1163,8 +1126,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(QUESTIONMARK)
           NullableType(e)
         case LBRACKET     =>
-          eat(LBRACKET, RBRACKET)
           dimension += 1
+          eat(LBRACKET, RBRACKET)
           ArrayType(e)
         case _            => ???
       }

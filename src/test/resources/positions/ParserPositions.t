@@ -51,7 +51,7 @@ class Class<T> : T, B, C =
 		return d
 
 
-trait B
+@Annotation @Annotation trait B
 
 
 extension A
