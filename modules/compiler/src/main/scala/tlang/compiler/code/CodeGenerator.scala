@@ -142,7 +142,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           compileExpr(expr)
       case Block(stats)                              =>
         stats.foreach(compileStat(_, continue, break, compileUseless))
-      case v@VarDecl(_, _, init, _)                  =>
+      case v@VarDecl(_, _, init, _, _)               =>
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
@@ -414,7 +414,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   def compileField(classDecl: ClassDeclTree, varDecl: VarDecl): CodeHandler = {
-    val VarDecl(id, _, Some(init), _) = varDecl
+    val VarDecl(id, _, Some(init), _, _) = varDecl
     val sym = id.getSymbol
     if (!sym.isStatic)
       ch << ArgLoad(0) // put this-reference on stack

@@ -142,7 +142,7 @@ case class TypeChecker(
   def tcStat(statement: StatTree): Unit = statement match {
     case Block(stats)                      =>
       stats.foreach(tcStat)
-    case VarDecl(id, tpe, init, _)         =>
+    case VarDecl(id, tpe, init, _, _)      =>
       val varSym = id.getSymbol
       if (varSym.isFinal && init.isEmpty)
         report(ValueMustBeInitialized(varSym.name, varSym))

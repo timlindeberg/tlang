@@ -223,20 +223,18 @@ package object tlang {
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
     def use(f: T => Unit): T = { val x = t; f(t); x }
-    def after(f: => Unit): T = { val x = t; f; x }
+    def <|(f: => Unit): T = { val x = t; f; x }
 
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }
     def print[U](prefix: String): T = { println(s"$prefix: '$t'"); t }
 
-    def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
-    def notIn(seq: TraversableOnce[T]): Boolean = !t.in(seq)
-    def in(set: Set[T]): Boolean = set.contains(t)
-    def notIn(set: Set[T]): Boolean = !t.in(set)
+    def in[P >: T](seq: TraversableOnce[P]): Boolean = seq.exists(_ == t)
+    def notIn[P >: T](seq: TraversableOnce[P]): Boolean = !t.in(seq)
+    def in[P >: T](set: Set[P]): Boolean = set.contains(t)
+    def notIn[P >: T](set: Set[P]): Boolean = !t.in(set)
     def in(range: Range): Boolean = range.contains(t)
     def notIn(range: Range): Boolean = !t.in(range)
-
-    def |>[A](f: T => A) = f(t)
 
     def ifInstanceOf[A: ClassTag](f: A => Unit): Unit = if (classTag[A].runtimeClass.isInstance(t)) f(t.asInstanceOf[A])
     def partialMatch[U](partialFunction: PartialFunction[T, U]): Unit = {
@@ -266,6 +264,11 @@ package object tlang {
     def partitionInstance[A <: T : ClassTag]: (Collection[A], Collection[T]) = {
       val (a, b) = collection.partition(classTag[A].runtimeClass.isInstance(_))
       (a.asInstanceOf[Collection[A]], b.asInstanceOf[Collection[T]])
+    }
+
+    def partitionInstances[A <: T : ClassTag, B <: T]: (Collection[A], Collection[B]) = {
+      val (a, b) = collection.partitionInstance[A]
+      (a, b.asInstanceOf[Collection[B]])
     }
 
     def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]

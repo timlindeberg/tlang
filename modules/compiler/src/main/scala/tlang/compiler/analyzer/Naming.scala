@@ -82,10 +82,10 @@ case class NameAnalyser(
       }
 
       val newSet = set + classSymbol
-      classSymbol.parents.foreach(checkInheritanceCycles(_, newSet))
+      classSymbol.parents foreach { checkInheritanceCycles(_, newSet) }
     }
 
-    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
+    globalScope.classes foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
   }
 
 
@@ -173,7 +173,7 @@ case class NameAnalyser(
     val id = funcTree.id
     val name = id.name
     val sym = funcTree match {
-      case methDecl@MethodDecl(_, modifiers, _, retType, stat)      =>
+      case methDecl@MethodDecl(_, modifiers, _, _, retType, stat)      =>
         if (!classSymbol.isAbstract && stat.isEmpty)
           report(ClassUnimplementedMethod(methDecl))
 
@@ -181,7 +181,7 @@ case class NameAnalyser(
           report(UnimplementedMethodNoReturnType(methDecl.signature, methDecl))
 
         new MethodSymbol(name, classSymbol, stat, modifiers)
-      case conDecl@ConstructorDecl(_, modifiers, _, _, stat)        =>
+      case conDecl@ConstructorDecl(_, modifiers, _, _, _, stat)        =>
         if (stat.isEmpty)
           report(AbstractConstructor(conDecl))
 
@@ -189,7 +189,7 @@ case class NameAnalyser(
         if (modifiers.contains(Implicit()))
           methSym.addAnnotation(AnnotationSymbol(Constants.ImplicitConstructorAnnotation))
         methSym
-      case opDecl@OperatorDecl(operatorType, modifiers, _, _, stat) =>
+      case opDecl@OperatorDecl(operatorType, modifiers, _, _, _, stat) =>
         if (stat.isEmpty)
           report(AbstractOperator(opDecl))
 
@@ -243,19 +243,19 @@ case class NameAnalyser(
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case extension@ExtensionDecl(tpe, methods)                           =>
+    case extension@ExtensionDecl(tpe, methods, _)                           =>
       val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
       setType(tpe)
       extensionSym.setExtendedType(tpe.getType)
       methods foreach bind
-    case classDecl@IDClassDeclTree(_, _, _, methods)                     =>
+    case classDecl@IDClassDeclTree(_, _, _, methods)                        =>
       setParentSymbol(classDecl)
       bindFields(classDecl)
       if (!methods.existsInstance[ConstructorDecl]) {
         addDefaultConstructor(classDecl)
       }
       methods foreach bind
-    case methDecl@MethodDecl(_, _, args, retType, stat)                  =>
+    case methDecl@MethodDecl(_, _, _, args, retType, stat)                  =>
       val methSym = methDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -266,14 +266,14 @@ case class NameAnalyser(
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
       stat ifDefined { new StatementBinder(methSym, methDecl.isStatic).bindStatement(_) }
-    case constructorDecl@ConstructorDecl(_, _, args, _, stat)            =>
+    case constructorDecl@ConstructorDecl(_, _, _, args, _, stat)            =>
 
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
       val conSym = constructorDecl.getSymbol
       stat ifDefined { new StatementBinder(conSym, false).bindStatement(_) }
-    case operatorDecl@OperatorDecl(operatorType, _, args, retType, stat) =>
+    case operatorDecl@OperatorDecl(operatorType, _, _, args, retType, stat) =>
       val opSym = operatorDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -311,7 +311,7 @@ case class NameAnalyser(
     }
 
   private def bindFields(classDecl: ClassDeclTree): Unit =
-    classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _) =>
+    classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _, _) =>
       typeTree ifDefined { t =>
         val tpe = setType(t)
         varId.setType(tpe)
@@ -338,7 +338,7 @@ case class NameAnalyser(
       canBreakContinue: Boolean = false
     ): Map[String, VariableData] =
       statement match {
-        case Block(stats)                                   =>
+        case Block(stats)                                      =>
           stats.dropRight(1)
             .collect { case Trees.UselessStatement(expr) => expr }
             .foreach { expr => report(UselessStatement(expr)) }
@@ -347,7 +347,7 @@ case class NameAnalyser(
             bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue)
           }
           localVars
-        case varDecl@VarDecl(id, typeTree, init, modifiers) =>
+        case varDecl@VarDecl(id, typeTree, init, modifiers, _) =>
           val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
@@ -368,7 +368,7 @@ case class NameAnalyser(
           }
 
           localVars + (id.name -> new VariableData(newSymbol, scopeLevel))
-        case For(init, condition, post, stat)               =>
+        case For(init, condition, post, stat)                  =>
           val newVars = init.foldLeft(localVars) { (currentLocalVars, nextStatement) =>
             bind(nextStatement, currentLocalVars, scopeLevel + 1)
           }
@@ -376,39 +376,39 @@ case class NameAnalyser(
           post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case Foreach(varDecl, container, stat)              =>
+        case Foreach(varDecl, container, stat)                 =>
           val newVars = bind(varDecl, localVars, scopeLevel)
           bind(container, localVars, scopeLevel)
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case If(condition, thn, els)                        =>
+        case If(condition, thn, els)                           =>
           bind(condition, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel, canBreakContinue)
           els ifDefined { els => bind(els, localVars, scopeLevel, canBreakContinue) }
           localVars
-        case While(condition, stat)                         =>
+        case While(condition, stat)                            =>
           bind(condition, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
-        case PrintStatTree(expr)                            =>
+        case PrintStatTree(expr)                               =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Error(expr)                                    =>
+        case Error(expr)                                       =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Return(expr)                                   =>
+        case Return(expr)                                      =>
           expr ifDefined { expr => bind(expr, localVars, scopeLevel) }
           localVars
-        case _: Break | _: Continue                         =>
+        case _: Break | _: Continue                            =>
           if (!canBreakContinue) {
             val breakOrContinue = if (statement.isInstanceOf[Break]) "break" else "continue"
             report(BreakContinueOutsideLoop(breakOrContinue, statement))
           }
           localVars
-        case expr: ExprTree                                 =>
+        case expr: ExprTree                                    =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
-        case _                                              => ???
+        case _                                                 => ???
       }
 
     def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)

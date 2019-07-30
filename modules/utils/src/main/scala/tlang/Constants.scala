@@ -29,6 +29,7 @@ object Constants {
   val TCharRef                      = s"$TLangPackage::CharRef"
   val TBool                         = s"$TLangPackage::Bool"
   val TBoolRef                      = s"$TLangPackage::BoolRef"
+  val TAnnotation                   = s"$TLangPackage::Annotation"
   val ExtensionAnnotation           = s"$TLangPackage::$$ExtensionMethod"
   val ImplicitConstructorAnnotation = s"$TLangPackage::$$ImplicitConstructor"
 
@@ -36,7 +37,7 @@ object Constants {
 
   lazy val Version          : String = readVersion()
   lazy val THomeDirectory   : String = sys.env.getOrElse(THome, FatalCantFindTHome)
-  lazy val TStdLibDirectory : String = getTStdLibDirectory()
+  lazy val TStdLibDirectory : String = tStdLibDirectory
   lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
   lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
 
@@ -53,7 +54,7 @@ object Constants {
       .getOrElse(throw new FileNotFoundException(VersionFile))
   }
 
-  private def getTStdLibDirectory(): String = {
+  private def tStdLibDirectory: String = {
     val dir = Paths.get(THomeDirectory, StdLibDir).toFile
     if (!dir.exists()) {
       System.err.println(s"$THome folder ($THomeDirectory) does not contain a $StdLibDir directory.")

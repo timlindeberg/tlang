@@ -89,6 +89,7 @@ object Tokens extends Enumerable[TokenKind] {
   case object TIMES           extends TokenKind("*")
   case object DIV             extends TokenKind("/")
   case object EXTRACTNULLABLE extends TokenKind("!!")
+  case object AT              extends TokenKind("@")
   case object PACKAGE         extends TokenKind("package")
   case object IMPORT          extends TokenKind("import")
   case object IS              extends TokenKind("is")

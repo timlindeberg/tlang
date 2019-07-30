@@ -118,7 +118,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     }
   }
 
-  private def addAnnotation(annotatable: Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
+  private def addAnnotation(annotatable: cafebabe.Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
     val annotationHandler = annotatable.addAnnotation(annotation.name)
     annotation.elements foreach { case (name, v) => v match {
       case IntAnnotationValue(v)    => annotationHandler.addValue(name, v)

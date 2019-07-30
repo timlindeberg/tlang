@@ -78,7 +78,7 @@ case class FlowAnalyser(
           case _                                =>
         }
         endKnowledge
-      case VarDecl(id, _, init, _)           =>
+      case VarDecl(id, _, init, _, _)        =>
         val varId = VarIdentifier(id.getSymbol)
         init match {
           case Some(initExpr) =>

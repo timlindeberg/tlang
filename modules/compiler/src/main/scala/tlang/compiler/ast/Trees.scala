@@ -95,7 +95,7 @@ object Trees {
     override def children: List[Tree] = imports.imports ::: classes
   }
 
-  case class Annotation() extends Tree
+  case class Annotation(id: ClassID, values: List[ExprTree]) extends Tree
 
   /*------------------------ Package and Import Trees -----------------------*/
 
@@ -144,7 +144,11 @@ object Trees {
     def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods)
   }
 
-  trait ClassDeclTree extends Tree with Symbolic[ClassSymbol] {
+  trait Annotatable {
+    def annotations: List[Annotation]
+  }
+
+  trait ClassDeclTree extends Tree with Symbolic[ClassSymbol] with Annotatable {
     def tpe: TypeTree
     def parents: List[ClassID]
     def fields: List[VarDecl]
@@ -166,7 +170,8 @@ object Trees {
   case class ClassDecl(id: ClassID,
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
-    methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree {
+    methods: List[MethodDeclTree] = Nil,
+    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
 
     val isAbstract = false
   }
@@ -174,7 +179,8 @@ object Trees {
   case class TraitDecl(id: ClassID,
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
-    methods: List[MethodDeclTree] = Nil) extends IDClassDeclTree {
+    methods: List[MethodDeclTree] = Nil,
+    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
     val isAbstract = true
   }
 
@@ -183,7 +189,10 @@ object Trees {
     val seperator = "$EX"
   }
 
-  case class ExtensionDecl(tpe: TypeTree, methods: List[MethodDeclTree] = Nil) extends ClassDeclTree {
+  case class ExtensionDecl(
+    tpe: TypeTree,
+    methods: List[MethodDeclTree] = Nil,
+    annotations: List[Annotation] = Nil) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
     val parents: List[ClassID] = List[ClassID]()
@@ -209,8 +218,8 @@ object Trees {
   trait Modifiable {
     def modifiers: Set[Modifier]
 
-    def isStatic: Boolean = modifiers.contains(Static())
-    def isFinal: Boolean = modifiers.contains(Final())
+    def isStatic: Boolean = Static() in modifiers
+    def isFinal: Boolean = Final() in modifiers
     def accessibility: Accessibility = modifiers.findInstance[Accessibility].getOrElse(Private())
   }
 
@@ -230,7 +239,7 @@ object Trees {
       val id = MethodID("main")
       val args = Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")) :: Nil
       val retType = Some(UnitType())
-      val meth = MethodDecl(id, modifiers, args, retType, stat)
+      val meth = MethodDecl(id, modifiers, Nil, args, retType, stat)
       if (classSym.isDefined) {
         val mainSym = new MethodSymbol("main", classSym.get, stat, modifiers).setType(TUnit)
         val argsSym = new VariableSymbol("args").setType(TArray(String))
@@ -241,7 +250,7 @@ object Trees {
     }
   }
 
-  trait MethodDeclTree extends Tree with Symbolic[MethodSymbol] with Modifiable {
+  trait MethodDeclTree extends Tree with Symbolic[MethodSymbol] with Modifiable with Annotatable {
     def id: MethodID
     def args: List[Formal]
     def retType: Option[TypeTree]
@@ -253,36 +262,39 @@ object Trees {
     def isAbstract: Boolean = stat.isEmpty
 
     // Does not contain return type. Can be used to compare methods.
-    def signature: String = id.name + args.map(_.tpe.name).mkString("(", ", ", ")")
+    def signature: String = id.name + args.map { _.tpe.name }.mkString("(", ", ", ")")
 
     // This can used for displaying the method and contains the return type as well
-    def fullSignature: String = signature + retType.map(t => ": " + t.name).getOrElse("")
+    def fullSignature: String = signature + retType.map { t => ": " + t.name }.getOrElse("")
 
   }
 
   case class MethodDecl(
     id: MethodID,
     modifiers: Set[Modifier] = Set(),
+    annotations: List[Annotation] = Nil,
     args: List[Formal] = Nil,
     retType: Option[TypeTree] = None,
-    stat: Option[StatTree] = None
+    stat: Option[StatTree] = None,
   ) extends MethodDeclTree
 
   case class ConstructorDecl(
     id: MethodID,
     modifiers: Set[Modifier] = Set(),
+    annotations: List[Annotation] = Nil,
     args: List[Formal] = Nil,
     retType: Option[TypeTree] = None,
-    stat: Option[StatTree] = None
+    stat: Option[StatTree] = None,
   ) extends MethodDeclTree
 
   case class OperatorDecl(
     operatorType: OperatorTree,
     modifiers: Set[Modifier] = Set(),
+    annotations: List[Annotation] = Nil,
     args: List[Formal] = Nil,
     retType: Option[TypeTree] = None,
-    stat: Option[StatTree] = None)
-    extends MethodDeclTree {
+    stat: Option[StatTree] = None,
+  ) extends MethodDeclTree {
     val id: MethodID = MethodID("")
   }
 
@@ -303,8 +315,9 @@ object Trees {
     id: VariableID,
     tpe: Option[TypeTree] = None,
     initiation: Option[ExprTree] = None,
-    modifiers: Set[Modifier] = Set())
-    extends StatTree with Symbolic[VariableSymbol] with Modifiable
+    modifiers: Set[Modifier] = Set(),
+    annotations: List[Annotation] = Nil)
+    extends StatTree with Symbolic[VariableSymbol] with Modifiable with Annotatable
 
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(condition: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
@@ -342,13 +355,10 @@ object Trees {
     def operatorName: String
 
     def orEmpty(args: List[Any], idx: Int): Any = if (idx < args.length) args(idx) else "<EMPTY>"
-
     def signature(args: List[Any]): String
 
     def lookupOperator(arg: Type, imports: Imports): Option[OperatorSymbol] = lookupOperator(List(arg), imports)
-
     def lookupOperator(args: (Type, Type), imports: Imports): Option[OperatorSymbol] = lookupOperator(List(args._1, args._2), imports)
-
     def lookupOperator(args: List[Type], imports: Imports): Option[OperatorSymbol] = {
       args.foreach { arg =>
         lookupOperator(arg, args, imports) match {
@@ -358,7 +368,6 @@ object Trees {
       }
       None
     }
-
     def lookupOperator(classType: Type, args: List[Type], imports: Imports): Option[OperatorSymbol] = {
       classType match {
         case TObject(classSymbol) => classSymbol.lookupOperator(this, args, imports)

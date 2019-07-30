@@ -30,7 +30,6 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
   testFileForErrors(s"$ErrorResources/Typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)
   testFileForErrors(s"$ErrorResources/Flowing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing)
 
-
   private def testFileForErrors[T](path: String, pipeLine: CompilerPhase[Source, T]): Unit = testFiles(path, testFileForErrors(pipeLine, _))
 
   private def testFileForErrors[T](pipeLine: CompilerPhase[Source, T], file: File): Unit = {

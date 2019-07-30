@@ -171,7 +171,7 @@ class Lowerer(imports: Imports) extends Logging {
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }
-        MethodDecl(meth.id, modifiers, thisArg :: meth.args, meth.retType, newStat).setSymbol(newMethSym)
+        MethodDecl(meth.id, modifiers, meth.annotations, thisArg :: meth.args, meth.retType, newStat).setSymbol(newMethSym)
       }
     }
 
@@ -304,13 +304,13 @@ class Lowerer(imports: Imports) extends Logging {
     val methodID = MethodID(opSymbol.name).setSymbol(opSymbol).setPos(op)
     val methDecl =
       if (op.isAbstract)
-        MethodDecl(methodID, op.modifiers, op.args, op.retType, op.stat)
+        MethodDecl(methodID, op.modifiers, op.annotations, op.args, op.retType, op.stat)
       else opSymbol.operatorType match {
         case Assign(ArrayRead(_, _), _) =>
           // Convert array assignment so the value is returned in order to be consistent with other
           // types of assignments
           val valueId = op.args(1).id
-          val retType = new TreeBuilder().getTypeTree(valueId.getType)
+          val retType = TreeBuilder().getTypeTree(valueId.getType)
           val ret = Return(Some(valueId)).setType(valueId.getType)
           val stats: List[StatTree] = op.stat.get match {
             case Block(stats)    =>
@@ -324,9 +324,9 @@ class Lowerer(imports: Imports) extends Logging {
             case stat: StatTree  => List(stat, ret)
           }
           opSymbol.setType(valueId.getType)
-          MethodDecl(methodID, op.modifiers, op.args, Some(retType), Some(Block(stats)))
+          MethodDecl(methodID, op.modifiers, op.annotations, op.args, Some(retType), Some(Block(stats)))
         case _                          =>
-          MethodDecl(methodID, op.modifiers, op.args, op.retType, op.stat)
+          MethodDecl(methodID, op.modifiers, op.annotations, op.args, op.retType, op.stat)
       }
     methDecl.setSymbol(opSymbol).setPos(op)
   }

@@ -61,7 +61,7 @@ trait ParsingErrors extends ErrorHandling {
     lazy val message = err"Expected identifier or array access on left side of assignment."
   }
 
-  case class WrongToken(currentToken: Token, lastToken: Token, kind: TokenKind, more: TokenKind*)
+  case class WrongToken(currentToken: Token, lastToken: Token, kind: TokenKind, more: Seq[TokenKind])
     extends ParserFatal(2, restOf(currentToken, lastToken)) {
 
     lazy val message: String = {

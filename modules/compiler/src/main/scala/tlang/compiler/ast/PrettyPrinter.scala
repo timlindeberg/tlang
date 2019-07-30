@@ -25,34 +25,39 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   }
 
   private def prettyPrint(t: Tree): String = t match {
-    case CompilationUnit(pack, classes, imps)                       => pp"$pack${ imports(imps) }$classes"
-    case Package(address)                                           => pp"${ packDecl(address) }"
-    case RegularImport(address)                                     => pp"import ${ address.mkString("::") }"
-    case ExtensionImport(address, className)                        => pp"import ${ address.mkString("::") }::extension ${ className.mkString("::") }"
-    case WildCardImport(address)                                    => pp"import ${ address.mkString("::") }.*"
-    case ClassDecl(id, parents, fields, methods)                    => pp"${ N }class ${ restOfClassDecl(id, parents, fields, methods) }"
-    case TraitDecl(id, parents, fields, methods)                    => pp"${ N }trait ${ restOfClassDecl(id, parents, fields, methods) }"
-    case ExtensionDecl(tpe, methods)                                => pp"${ N }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
-    case VarDecl(id, tpe, expr, modifiers)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe)(t => pp": $t") }${ optional(expr)(t => pp" = $t") }"
-    case MethodDecl(id, modifiers, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") }${ optional(stat)(s => pp" = $s") }"
-    case ConstructorDecl(_, modifiers, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args, ", ") }) = $stat"
-    case OperatorDecl(operatorType, modifiers, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args, ", ") })${ optional(retType)(t => pp": $t") } = $stat"
-    case Formal(tpe, id)                                            => pp"$id: $tpe"
-    case Private()                                                  => pp"private"
-    case Public()                                                   => pp"public"
-    case Protected()                                                => pp"protected"
-    case Final()                                                    => pp"final"
-    case Static()                                                   => pp"static"
-    case Implicit()                                                 => pp"implicit"
+    case CompilationUnit(pack, classes, imps) => pp"$pack${ imports(imps) }$classes"
+    // Imports
+    case Package(address)                    => pp"${ packDecl(address) }"
+    case RegularImport(address)              => pp"import ${ address.mkString("::") }"
+    case ExtensionImport(address, className) => pp"import ${ address.mkString("::") }::extension ${ className.mkString("::") }"
+    case WildCardImport(address)             => pp"import ${ address.mkString("::") }.*"
+    // Class Declarations
+    case ClassDecl(id, parents, fields, methods, annots) => pp"${ N }class ${ restOfClassDecl(id, parents, fields, methods) }"
+    case TraitDecl(id, parents, fields, methods, annots) => pp"${ N }trait ${ restOfClassDecl(id, parents, fields, methods) }"
+    case ExtensionDecl(tpe, methods, annots)             => pp"${ N }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
+    // Variable and method declarations
+    case VarDecl(id, tpe, expr, modifiers, annots)                          => pp"${ varDecl(modifiers) } $id${ optional(tpe) { t => pp": $t" } }${ optional(expr) { t => pp" = $t" } }"
+    case MethodDecl(id, modifiers, annots, args, retType, stat)             => pp"${ definition(modifiers) } $id(${ Separated(args) })${ optional(retType) { t => pp": $t" } }${ optional(stat) { s => pp" = $s" } }"
+    case ConstructorDecl(_, modifiers, annots, args, _, stat)               => pp"${ definition(modifiers) } new(${ Separated(args) }) = $stat"
+    case OperatorDecl(operatorType, modifiers, annots, args, retType, stat) => pp"${ definition(modifiers) } ${ operatorType.opSign }(${ Separated(args) })${ optional(retType) { t => pp": $t" } } = $stat"
+    case Formal(tpe, id)                                                    => pp"$id: $tpe"
+    // Modifiers
+    case Private()              => pp"private"
+    case Public()               => pp"public"
+    case Protected()            => pp"protected"
+    case Final()                => pp"final"
+    case Static()               => pp"static"
+    case Implicit()             => pp"implicit"
+    case Annotation(id, values) => pp"@$id${ optional(values) { v => pp"(${ Separated(v) }" } }"
     // Types
     case ArrayType(tpe)    => pp"$tpe[]"
     case UnitType()        => pp"Unit"
     case NullableType(tpe) => pp"$tpe?"
     // Statements
     case Block(stats)                      => if (stats.isEmpty) ";" else pp"$L$stats$R"
-    case If(condition, thn, els)           => pp"if($condition) ${ Stat(thn) }${ optional(els)(stat => pp"${ N }else ${ Stat(stat) }") }"
+    case If(condition, thn, els)           => pp"if($condition) ${ Stat(thn) }${ optional(els) { stat => pp"${ N }else ${ Stat(stat) }" } }"
     case While(condition, stat)            => pp"while($condition) ${ Stat(stat) }"
-    case For(init, condition, post, stat)  => pp"for(${ Separated(init, ", ") } ; $condition ; ${ Separated(post, ", ") }) ${ Stat(stat) }"
+    case For(init, condition, post, stat)  => pp"for(${ Separated(init) } ; $condition ; ${ Separated(post) }) ${ Stat(stat) }"
     case Foreach(varDecl, container, stat) => pp"for($varDecl in $container) ${ Stat(stat) }"
     case Print(expr)                       => pp"print($expr)"
     case Println(expr)                     => pp"println($expr)"
@@ -88,23 +93,23 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case ArraySlice(arr, start, end, step) => pp"$arr[$start:$end:$step]"
     case NormalAccess(obj, application)    => access(obj, application, ".")
     case SafeAccess(obj, application)      => access(obj, application, "?.")
-    case MethodCall(meth, args)            => pp"$meth(${ Separated(args, ", ") })"
+    case MethodCall(meth, args)            => pp"$meth(${ Separated(args) })"
     case IntLit(value)                     => pp"$value"
     case LongLit(value)                    => pp"${ value }L"
     case FloatLit(value)                   => pp"${ value }F"
     case DoubleLit(value)                  => pp"$value"
     case CharLit(value)                    => pp"'${ escapeChar(pp"$value") }'"
     case StringLit(value)                  => "\"" + pp"${ escapeString(pp"$value") }" + "\""
-    case ArrayLit(expressions)             => pp"[ ${ Separated(expressions, ", ") } ]"
+    case ArrayLit(expressions)             => pp"[ ${ Separated(expressions) } ]"
     case TrueLit()                         => pp"true"
     case FalseLit()                        => pp"false"
     case NullLit()                         => pp"null"
     case id@ClassID(value, _)              => pp"$value${ templateList(id) }"
     case Identifier(value)                 => pp"$value"
     case This()                            => pp"this"
-    case Super(spec)                       => pp"super${ optional(spec)(s => pp"<$s>") }"
+    case Super(spec)                       => pp"super${ optional(spec) { s => pp"<$s>" } }"
     case NewArray(tpe, sizes)              => pp"new ${ newArray(tpe, sizes) }"
-    case New(tpe, exprs)                   => pp"new $tpe(${ Separated(exprs, ", ") })"
+    case New(tpe, exprs)                   => pp"new $tpe(${ Separated(exprs) })"
     case PreIncrement(id)                  => pp"++$id"
     case PostIncrement(id)                 => pp"$id++"
     case PreDecrement(id)                  => pp"--$id"
@@ -162,7 +167,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   private def parentList(parents: List[ClassID]) = {
     if (parents.isEmpty) ""
     else
-      pp": ${ Separated(parents, ", ") }"
+      pp": ${ Separated(parents) }"
   }
 
   private def newArray(tpe: TypeTree, sizes: List[ExprTree]) = {
@@ -176,7 +181,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     str(tpe, sizes.reverse)
   }
 
-  private def templateList(id: ClassID) = if (id.isTemplated) pp"<${ Separated(id.templateTypes, ", ") }>" else ""
+  private def templateList(id: ClassID) = if (id.isTemplated) pp"<${ Separated(id.templateTypes) }>" else ""
 
   private def definition(modifiers: Set[Modifier]) = {
     val decl = modifiers.find(_.isInstanceOf[Accessibility]) match {
@@ -221,7 +226,8 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   }
 
 
-  private def optional[T](t: Option[T])(f: (T => String)) = if (t.isDefined) f(t.get) else ""
+  private def optional[T](t: Option[T])(f: (T => String)): String = if (t.isDefined) f(t.get) else ""
+  private def optional[T](list: List[T])(f: (List[T] => String)): String = if (list.nonEmpty) f(list) else ""
 
   //--------------------------------------------------------
   // Custom string context to enable pp-string interpolation
@@ -262,7 +268,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     }
   }
 
-  case class Separated(list: List[Tree], seperator: String) extends Formatter {
+  case class Separated(list: List[Tree], seperator: String = ", ") extends Formatter {
     def apply(): String = list.map(t => pp"$t").mkString(seperator)
   }
 
