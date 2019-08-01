@@ -9,7 +9,6 @@ import tlang.compiler.messages.CompilerMessage
 
 object Types {
 
-
   trait Typed {
     self =>
 

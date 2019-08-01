@@ -29,7 +29,12 @@ case class ExitException(code: Int) extends Throwable
 object Main extends Logging {
 
   val FrontEnd: CompilerPhase[Source, CompilationUnit] =
-    Lexing andThen Parsing andThen Templating andThen Naming andThen Typing andThen Flowing
+    Lexing andThen
+      Parsing andThen
+      Templating andThen
+      Naming andThen
+      Typing andThen
+      Flowing
 
   val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
     Lowering andThen CodeGeneration

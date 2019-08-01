@@ -31,6 +31,9 @@ object Symbols {
   sealed abstract class Symbol extends Positioned with Typed {
     def name: String
     def repr: String = System.identityHashCode(this).toHexString
+
+    def annotations: List[AnnotationSymbol]
+    def addAnnotation(annotation: AnnotationSymbol): Unit
   }
 
   class GlobalScope(classSymbolLocator: ClassSymbolLocator) {
@@ -252,17 +255,25 @@ object Symbols {
   }
 
   object VariableErrorSymbol extends VariableSymbol(CompilerMessage.ErrorName)
-  class VariableSymbol(val name: String,
+  class VariableSymbol(
+    val name: String,
     val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
+    protected var _annotations: List[AnnotationSymbol] = Nil
+
     override def toString: String = name
+    override def annotations: List[AnnotationSymbol] = _annotations
+    override def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
   }
 
   class FieldSymbol(override val name: String,
     override val modifiers: Set[Modifier] = Set(),
     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol {val name: String = CompilerMessage.ErrorName }
-
+  case object ErrorSymbol extends Symbol {
+    val name: String = CompilerMessage.ErrorName
+    override def annotations: List[AnnotationSymbol] = Nil
+    override def addAnnotation(annotation: AnnotationSymbol): Unit = {}
+  }
 
   trait AnnotationValue
 

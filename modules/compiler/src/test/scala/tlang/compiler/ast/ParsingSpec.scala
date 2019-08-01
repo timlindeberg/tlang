@@ -41,7 +41,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       PRINTLN, LPAREN, INTLIT(2), RPAREN, NEWLINE,
       PUBDEF, ID("D"), LPAREN, RPAREN, EQSIGN, INTLIT(1), NEWLINE,
       PRIVDEF, ID("E"), LPAREN, ID("a"), COLON, ID("A"), RPAREN, EQSIGN, INTLIT(1), NEWLINE,
-      AT, ID("AnnotationA"), LPAREN, STRLIT("ABC"), COMMA, INTLIT(1), RPAREN,
+      AT, ID("AnnotationA"), LPAREN, ID("a"), EQSIGN, STRLIT("ABC"), COMMA, ID("b"), EQSIGN, INTLIT(1), RPAREN,
       CLASS, ID("F"), NEWLINE,
       TRAIT, ID("G"), NEWLINE
     ).compilationUnit shouldBe CompilationUnit(
@@ -74,7 +74,12 @@ class ParsingSpec extends UnitSpec with TreeTesting {
             )
           )
         ),
-        ClassDecl("F", annotations = List(Annotation("AnnotationA", List(StringLit("ABC"), IntLit(1))))),
+        ClassDecl("F",
+          annotations = List(Annotation("AnnotationA", List(
+            KeyValuePair("a", StringLit("ABC")),
+            KeyValuePair("b", IntLit(1))
+          )))
+        ),
         TraitDecl("G")
       ),
       imports = Imports(
@@ -128,9 +133,30 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     // @A()
     parser(AT, ID("A"), LPAREN, RPAREN).annotationDeclaration shouldBe Annotation("A", Nil)
 
-    // @A(1, "ABC", 3 * 2)
-    parser(AT, ID("A"), LPAREN, INTLIT(1), COMMA, STRLIT("ABC"), COMMA, INTLIT(3), TIMES, INTLIT(2), RPAREN)
-      .annotationDeclaration shouldBe Annotation("A", List(IntLit(1), StringLit("ABC"), Times(IntLit(3), IntLit(2))))
+    // @A(a = 1, b = "ABC", c = 3)
+    parser(AT, ID("A"), LPAREN, ID("a"), EQSIGN, INTLIT(1), COMMA, ID("b"), EQSIGN, STRLIT("ABC"),
+      COMMA, ID("c"), EQSIGN, INTLIT(3), RPAREN)
+      .annotationDeclaration shouldBe Annotation("A", List(
+      KeyValuePair(VariableID("a"), IntLit(1)),
+      KeyValuePair(VariableID("b"), StringLit("ABC")),
+      KeyValuePair(VariableID("c"), IntLit(3))
+    ))
+
+    // @A(
+    //    a = 1,
+    //    b = "ABC",
+    //    c = 3,
+    // )
+    parser(AT, ID("A"), LPAREN, NEWLINE,
+      ID("a"), EQSIGN, INTLIT(1), COMMA, NEWLINE,
+      ID("b"), EQSIGN, STRLIT("ABC"), COMMA, NEWLINE,
+      ID("c"), EQSIGN, INTLIT(3), COMMA,
+      RPAREN)
+      .annotationDeclaration shouldBe Annotation("A", List(
+      KeyValuePair(VariableID("a"), IntLit(1)),
+      KeyValuePair(VariableID("b"), StringLit("ABC")),
+      KeyValuePair(VariableID("c"), IntLit(3))
+    ))
 
     // @A::B::C
     parser(AT, ID("A"), COLON, COLON, ID("B"), COLON, COLON, ID("C"))

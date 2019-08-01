@@ -54,26 +54,26 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
   }
 
   testPositions[CompilationUnit](
-    Position(1, 1, 57, 12)
+    Position(1, 1, 57, 12),
   )
   testPositions[ClassDecl](
-    Position(1, 1, 51, 11)
+    Position(1, 1, 51, 11),
   )
   testPositions[TraitDecl](
-    Position(54, 25, 54, 32)
+    Position(55, 1, 55, 8),
   )
   testPositions[ExtensionDecl](
-    Position(57, 1, 57, 12)
+    Position(57, 1, 57, 12),
   )
   testPositions[MethodDecl](
     Position(12, 2, 12, 30),
-    Position(14, 2, 51, 11)
+    Position(14, 2, 51, 11),
   )
   testPositions[ConstructorDecl](
-    Position(8, 2, 8, 46)
+    Position(8, 2, 8, 46),
   )
   testPositions[OperatorDecl](
-    Position(10, 2, 10, 47)
+    Position(10, 2, 10, 47),
   )
   testPositions[Formal](
     Position(8, 19, 8, 28),
@@ -81,16 +81,16 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(10, 8, 10, 19),
     Position(10, 21, 10, 32),
     Position(14, 11, 14, 19),
-    Position(14, 21, 14, 28)
+    Position(14, 21, 14, 28),
   )
   testPositions[ArrayType](
-    Position(8, 33, 8, 41)
+    Position(8, 33, 8, 41),
   )
   testPositions[NullableType](
-    Position(14, 14, 14, 19)
+    Position(14, 14, 14, 19),
   )
   testPositions[UnitType](
-    Position(12, 22, 12, 26)
+    Position(12, 22, 12, 26),
   )
   testPositions[VarDecl](
     Position(3, 2, 3, 16),
@@ -99,138 +99,138 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(6, 2, 6, 29),
     Position(23, 7, 23, 16),
     Position(26, 7, 26, 12),
-    Position(30, 3, 37, 4)
+    Position(30, 3, 37, 4),
   )
   testPositions[Block](
     Position(8, 45, 8, 46),
     Position(10, 46, 10, 47),
     Position(12, 29, 12, 30),
-    Position(15, 1, 51, 11)
+    Position(15, 1, 51, 11),
   )
   testPositions[If](
-    Position(15, 3, 18, 16)
+    Position(15, 3, 18, 16),
   )
   testPositions[While](
-    Position(20, 3, 21, 16)
+    Position(20, 3, 21, 16),
   )
   testPositions[For](
-    Position(23, 3, 24, 12)
+    Position(23, 3, 24, 12),
   )
   testPositions[Foreach](
-    Position(26, 3, 27, 9)
+    Position(26, 3, 27, 9),
   )
   testPositions[Error](
-    Position(21, 4, 21, 16)
+    Position(21, 4, 21, 16),
   )
   testPositions[Return](
-    Position(51, 3, 51, 11)
+    Position(51, 3, 51, 11),
   )
   testPositions[Break](
-    Position(27, 4, 27, 9)
+    Position(27, 4, 27, 9),
   )
   testPositions[Continue](
-    Position(24, 4, 24, 12)
+    Position(24, 4, 24, 12),
   )
   testPositions[Print](
-    Position(18, 4, 18, 16)
+    Position(18, 4, 18, 16),
   )
   testPositions[Println](
-    Position(16, 4, 16, 18)
+    Position(16, 4, 16, 18),
   )
   testPositions[Plus](
-    Position(16, 12, 16, 17)
+    Position(16, 12, 16, 17),
   )
   testPositions[Minus](
-    Position(18, 10, 18, 15)
+    Position(18, 10, 18, 15),
   )
   testPositions[Times](
-    Position(21, 10, 21, 15)
+    Position(21, 10, 21, 15),
   )
   testPositions[Div](
-    Position(29, 9, 29, 14)
+    Position(29, 9, 29, 14),
   )
   testPositions[Modulo](
-    Position(31, 7, 31, 13)
+    Position(31, 7, 31, 13),
   )
   testPositions[LogicAnd](
-    Position(32, 7, 32, 20)
+    Position(32, 7, 32, 20),
   )
   testPositions[LogicOr](
-    Position(33, 7, 33, 13)
+    Position(33, 7, 33, 13),
   )
   testPositions[LogicXor](
-    Position(34, 7, 34, 16)
+    Position(34, 7, 34, 16),
   )
   testPositions[LeftShift](
-    Position(35, 7, 35, 20)
+    Position(35, 7, 35, 20),
   )
   testPositions[RightShift](
-    Position(36, 7, 36, 20)
+    Position(36, 7, 36, 20),
   )
   testPositions[LessThan](
     Position(15, 6, 15, 13),
-    Position(23, 18, 23, 23)
+    Position(23, 18, 23, 23),
   )
   testPositions[LessThanEquals](
-    Position(15, 17, 15, 25)
+    Position(15, 17, 15, 25),
   )
   testPositions[GreaterThan](
-    Position(15, 29, 15, 38)
+    Position(15, 29, 15, 38),
   )
   testPositions[GreaterThanEquals](
-    Position(15, 42, 15, 52)
+    Position(15, 42, 15, 52),
   )
   testPositions[Equals](
-    Position(20, 9, 20, 17)
+    Position(20, 9, 20, 17),
   )
   testPositions[NotEquals](
-    Position(20, 21, 20, 27)
+    Position(20, 21, 20, 27),
   )
   testPositions[And](
     Position(15, 6, 15, 52),
     Position(15, 6, 15, 38),
-    Position(15, 6, 15, 25)
+    Position(15, 6, 15, 25),
   )
   testPositions[Or](
-    Position(20, 9, 20, 27)
+    Position(20, 9, 20, 27),
   )
   testPositions[Not](
-    Position(15, 6, 15, 8)
+    Position(15, 6, 15, 8),
   )
   testPositions[Hash](
-    Position(15, 11, 15, 13)
+    Position(15, 11, 15, 13),
   )
   testPositions[Negation](
-    Position(15, 17, 15, 19)
+    Position(15, 17, 15, 19),
   )
   testPositions[LogicNot](
-    Position(15, 23, 15, 25)
+    Position(15, 23, 15, 25),
   )
   testPositions[ExtractNullable](
-    Position(15, 29, 15, 32)
+    Position(15, 29, 15, 32),
   )
   testPositions[PreIncrement](
-    Position(15, 35, 15, 38)
+    Position(15, 35, 15, 38),
   )
   testPositions[PostIncrement](
-    Position(15, 42, 15, 45)
+    Position(15, 42, 15, 45),
   )
   testPositions[PreDecrement](
-    Position(15, 49, 15, 52)
+    Position(15, 49, 15, 52),
   )
   testPositions[PostDecrement](
-    Position(20, 9, 20, 12)
+    Position(20, 9, 20, 12),
   )
   testPositions[ArrayRead](
     Position(40, 11, 40, 15),
-    Position(44, 3, 44, 7)
+    Position(44, 3, 44, 7),
   )
   testPositions[ArraySlice](
     Position(41, 13, 41, 17),
     Position(42, 10, 42, 30),
     Position(43, 14, 43, 19),
     Position(46, 7, 46, 12),
-    Position(47, 9, 47, 21)
+    Position(47, 9, 47, 21),
   )
   testPositions[IntLit](
     Position(3, 15, 3, 16),
@@ -250,36 +250,38 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(48, 13, 48, 14),
     Position(49, 33, 49, 34),
     Position(50, 18, 50, 19),
-    Position(50, 21, 50, 22)
+    Position(50, 21, 50, 22),
+    Position(54, 41, 54, 42),
   )
   testPositions[LongLit](
-    Position(31, 11, 31, 13)
+    Position(31, 11, 31, 13),
   )
   testPositions[FloatLit](
-    Position(32, 13, 32, 20)
+    Position(32, 13, 32, 20),
   )
   testPositions[DoubleLit](
     Position(32, 7, 32, 10),
-    Position(34, 7, 34, 10)
+    Position(34, 7, 34, 10),
   )
   testPositions[CharLit](
-    Position(34, 13, 34, 16)
+    Position(34, 13, 34, 16),
   )
   testPositions[StringLit](
     Position(6, 24, 6, 29),
-    Position(35, 7, 35, 12)
+    Position(35, 7, 35, 12),
+    Position(54, 30, 54, 35),
   )
   testPositions[TrueLit](
-    Position(35, 16, 35, 20)
+    Position(35, 16, 35, 20),
   )
   testPositions[FalseLit](
-    Position(36, 7, 36, 12)
+    Position(36, 7, 36, 12),
   )
   testPositions[NullLit](
-    Position(36, 16, 36, 20)
+    Position(36, 16, 36, 20),
   )
   testPositions[ArrayLit](
-    Position(30, 11, 37, 4)
+    Position(30, 11, 37, 4),
   )
   testPositions[ClassID](
     Position(1, 7, 1, 15),
@@ -304,10 +306,10 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(48, 11, 48, 12),
     Position(49, 13, 49, 19),
     Position(50, 11, 50, 17),
-    Position(54, 31, 54, 32),
+    Position(55, 7, 55, 8),
     Position(54, 2, 54, 12),
-    Position(54, 14, 54, 24),
-    Position(57, 11, 57, 12)
+    Position(54, 14, 54, 25),
+    Position(57, 11, 57, 12),
   )
   testPositions[VariableID](
     Position(3, 6, 3, 7),
@@ -367,7 +369,9 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(49, 23, 49, 24),
     Position(49, 28, 49, 29),
     Position(50, 3, 50, 4),
-    Position(51, 10, 51, 11)
+    Position(51, 10, 51, 11),
+    Position(54, 26, 54, 27),
+    Position(54, 37, 54, 38),
   )
   testPositions[MethodID](
     Position(8, 15, 8, 18),
@@ -377,17 +381,17 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(40, 6, 40, 10),
     Position(41, 8, 41, 12),
     Position(42, 5, 42, 9),
-    Position(43, 9, 43, 13)
+    Position(43, 9, 43, 13),
   )
   testPositions[NormalAccess](
     Position(29, 3, 29, 15),
     Position(41, 3, 41, 18),
     Position(42, 3, 42, 31),
     Position(43, 3, 43, 20),
-    Position(47, 3, 47, 6)
+    Position(47, 3, 47, 6),
   )
   testPositions[SafeAccess](
-    Position(40, 3, 40, 16)
+    Position(40, 3, 40, 16),
   )
   testPositions[Assign](
     Position(44, 3, 44, 16),
@@ -395,42 +399,45 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(47, 3, 47, 21),
     Position(48, 3, 48, 15),
     Position(49, 3, 49, 35),
-    Position(50, 3, 50, 23)
+    Position(50, 3, 50, 23),
   )
   testPositions[MethodCall](
     Position(29, 3, 29, 15),
     Position(40, 6, 40, 16),
     Position(41, 8, 41, 18),
     Position(42, 5, 42, 31),
-    Position(43, 9, 43, 20)
+    Position(43, 9, 43, 20),
   )
   testPositions[This](
-    Position(41, 3, 41, 7)
+    Position(41, 3, 41, 7),
   )
   testPositions[Super](
-    Position(43, 3, 43, 8)
+    Position(43, 3, 43, 8),
   )
   testPositions[NewArray](
-    Position(48, 7, 48, 15)
+    Position(48, 7, 48, 15),
   )
   testPositions[New](
-    Position(50, 7, 50, 23)
+    Position(50, 7, 50, 23),
   )
   testPositions[Ternary](
-    Position(49, 7, 49, 35)
+    Position(49, 7, 49, 35),
   )
   testPositions[Elvis](
-    Position(49, 27, 49, 35)
+    Position(49, 27, 49, 35),
   )
   testPositions[Is](
-    Position(49, 7, 49, 20)
+    Position(49, 7, 49, 20),
   )
   testPositions[As](
-    Position(44, 10, 44, 16)
+    Position(44, 10, 44, 16),
   )
   testPositions[Annotation](
     Position(54, 1, 54, 12),
-    Position(54, 13, 54, 24)
+    Position(54, 13, 54, 43),
   )
-
+  testPositions[KeyValuePair](
+    Position(54, 26, 54, 35),
+    Position(54, 37, 54, 42),
+  )
 }

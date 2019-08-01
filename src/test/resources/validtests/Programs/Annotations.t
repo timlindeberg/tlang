@@ -1,45 +1,41 @@
-class AnnotationA : Annotation
-class AnnotationB : Annotation =
-	Var S: String
+trait AnnotationA : Annotation
+trait AnnotationB : Annotation =
+	Def S(): String
 
-	Def new(s: String) = (S = s)
-
-class AnnotationC : Annotation =
-	Var A: Int
-	Var B: Double
-	Var C: String
-
-	Def new(a: Int, b: Double, c: String) =
-		A = a
-		B = b
-		C = c
-
+trait AnnotationC : Annotation =
+	Def A(): Int
+	Def B(): Double
+	Def C(): String
 
 @AnnotationA
 class A
 
-@AnnotationB("ABC")
+@AnnotationB(S = "ABC")
 class B
 
-@AnnotationB("DEF") @AnnotationA class C
+@AnnotationB(S = "DEF") @AnnotationA class C
 
-@AnnotationC(5, 5.0, "GHI") class D
+@AnnotationC(
+    A = 5,
+    B = 5.0,
+    C = "GHI",
+) class D
 
 @AnnotationA
-@AnnotationB("JKL") class E =
+@AnnotationB(S = "JKL") class E =
 
-	@AnnotationA @AnnotationB("ABC")
+	@AnnotationA @AnnotationB(S = "ABC")
 	Def new() = ;
 
 	@AnnotationA
-	@AnnotationB("ABC")
-	@AnnotationC(5, 5.0, "GHI")
+	@AnnotationB(S = "ABC")
+	@AnnotationC(B = 5.0, C = "GHI", A = 5)
 	Def MyMethod(): String = "ABC"
 
 	@AnnotationA Def MyMethod2(): Int = 5
 
-	@AnnotationA @AnnotationB("ABC") Def +(e: E, i: Int) = i
+	@AnnotationA @AnnotationB(S = "ABC") Def +(e: E, i: Int) = i
 
 	@AnnotationA
-	@AnnotationB("ABC")
+	@AnnotationB(S = "ABC")
 	Val MyValue = 25

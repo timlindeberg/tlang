@@ -310,3 +310,13 @@ T2038: [1mCannot check if non nullable type [35mT::lang::Int[0m[1m is null.
 
 ========================================= TypingErrors UnusedPrivateMethod
 T1000: [1mPrivate method [35mABC[0m[1m is never used.[0m
+
+========================================= NamingErrors AnnotationNeedsLiteralValue
+N2024: [1mOnly literal values can be used in annotations.[0m
+
+========================================= TypingErrors MissingAnnotationValues
+T2011: [1mAnnotation [35mABC[0m[1m is missing the following values:[0m
+
+
+========================================= TypingErrors AnnotationValueDoesNotExist
+T2012: [1mAnnotation [35mABC[0m[1m does not have a value named [35mABC[0m[1m.[0m

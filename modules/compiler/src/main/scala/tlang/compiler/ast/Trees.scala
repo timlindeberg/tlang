@@ -95,8 +95,6 @@ object Trees {
     override def children: List[Tree] = imports.imports ::: classes
   }
 
-  case class Annotation(id: ClassID, values: List[ExprTree]) extends Tree with Symbolic[ClassSymbol]
-
   /*------------------------ Package and Import Trees -----------------------*/
 
   case class Package(address: List[String] = Nil) extends Tree with Leaf {
@@ -135,6 +133,7 @@ object Trees {
 
   /*------------------------ Class Declaration Trees ------------------------*/
 
+  case class Annotation(id: ClassID, values: List[KeyValuePair]) extends Tree with Symbolic[ClassSymbol]
 
   object ClassDeclTree {
     def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods, c.annotations)
@@ -156,7 +155,7 @@ object Trees {
 
     def isAbstract: Boolean
 
-    def traits: List[ClassID] = parents.filter(_.getSymbol.isAbstract)
+    def traits: List[ClassID] = parents filter { _.getSymbol.isAbstract }
     def name: String
   }
 
@@ -166,8 +165,8 @@ object Trees {
     override def name: String = id.name
   }
 
-
-  case class ClassDecl(id: ClassID,
+  case class ClassDecl(
+    id: ClassID,
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
     methods: List[MethodDeclTree] = Nil,
@@ -176,7 +175,8 @@ object Trees {
     val isAbstract = false
   }
 
-  case class TraitDecl(id: ClassID,
+  case class TraitDecl(
+    id: ClassID,
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
     methods: List[MethodDeclTree] = Nil,
@@ -299,6 +299,7 @@ object Trees {
   }
 
   case class Formal(tpe: TypeTree, id: VariableID) extends Tree with Symbolic[VariableSymbol]
+  case class KeyValuePair(id: VariableID, expr: ExprTree) extends Tree
 
   /*---------------------------- Statement Trees ----------------------------*/
 

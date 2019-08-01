@@ -197,14 +197,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     ExtensionImport(address, className)
   }
 
-  /** <annotationDeclaration> ::= "@" <classType> [ "(" [ <expression> { , <expression> } ] ")" ] */
+  /** <annotationDeclaration> ::= "@" <classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
   def annotationDeclaration: Annotation = positioned {
     eat(AT)
     val id = classType
     val arguments = tokens.next.kind match {
-      case LPAREN => commaList(LPAREN, RPAREN)(expression)
+      case LPAREN => commaList(LPAREN, RPAREN)(keyValuePair)
       case _      => Nil
     }
+
     Annotation(id, arguments)
   }
 
@@ -513,6 +514,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(COLON)
     val typ = tpe
     Formal(typ, id)
+  }
+
+  /** <keyValuePair> ::= <identifier> = <expression> */
+  def keyValuePair: KeyValuePair = positioned {
+    val id = identifier(VariableID)
+    eat(EQSIGN)
+    KeyValuePair(id, expression)
   }
 
   private def replaceWithReturnStatement(stat: StatTree): StatTree = {
@@ -1219,6 +1227,24 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       eat(IDKIND)
       id.value
     case _      => report(wrongToken(IDKIND))
+  }
+
+  /** <literal> ::=
+    * | <intLit>
+    * | <stringLit>
+    * | <charLit>
+    * | <longLit>
+    * | <doubleLit>
+    * | <floatLit>
+    */
+  private def literal: Literal[_] = tokens.next.kind match {
+    case INTLITKIND    => literal(INTLITKIND, IntLit)
+    case STRLITKIND    => literal(STRLITKIND, StringLit)
+    case CHARLITKIND   => literal(CHARLITKIND, CharLit)
+    case LONGLITKIND   => literal(LONGLITKIND, LongLit)
+    case DOUBLELITKIND => literal(DOUBLELITKIND, DoubleLit)
+    case FLOATLITKIND  => literal(FLOATLITKIND, FloatLit)
+    case _             => report(wrongToken(INTLITKIND, STRLITKIND, CHARLITKIND, LONGLITKIND, DOUBLELITKIND, FLOATLITKIND))
   }
 
   /** Parses a literal of the given kind, producing the given literalType

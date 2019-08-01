@@ -3,6 +3,7 @@ package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
+import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages._
 import tlang.utils.Positioned
@@ -176,6 +177,13 @@ trait NamingErrors extends ErrorHandling {
   case class UnimplementedMethodNoReturnType(method: String, override val pos: Positioned)
     extends NameAnalysisError(23, pos) {
     lazy val message = err"Unimplemented method $method needs a return type."
+  }
+
+  case class AnnotationNeedsLiteralValue(override val pos: Positioned)
+    extends NameAnalysisError(24, pos) {
+    lazy val message: String = {
+      err"Only literal values can be used in annotations."
+    }
   }
 
 

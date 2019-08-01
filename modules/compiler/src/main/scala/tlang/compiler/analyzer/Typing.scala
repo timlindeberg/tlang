@@ -18,14 +18,14 @@ import scala.collection.mutable.ArrayBuffer
 
 object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
-  val hasBeenTypechecked: mutable.Set[MethodSymbol]  = mutable.Set()
+  val hasBeenTypeChecked: mutable.Set[MethodSymbol]  = mutable.Set()
   var methodUsage       : Map[MethodSymbol, Boolean] = Map()
 
   val emptyClassSym = new ClassSymbol("")
   val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    ctx.executor.foreach(cus) { typeCheckFieldsAndAnnotations(ctx, _) }
+    ctx.executor.foreach(cus) { typeCheckFields(ctx, _) }
     ctx.executor.foreach(cus) { typeCheckMethods(ctx, _) }
     ctx.executor.foreach(cus) { verify(ctx, _) }
 
@@ -38,27 +38,33 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
 
-  private def typeCheckFieldsAndAnnotations(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking fields and annotations of ${ cu.simpleSourceDescription }"
+  private def typeCheckFields(ctx: Context, cu: CompilationUnit): Unit = {
+    info"Type checking fields of ${ cu.simpleSourceDescription }"
 
     cu.classes foreach { classDecl =>
       val fakeMethodSymbol = new MethodSymbol("", classDecl.getSymbol, None, Set())
       val typeChecker = TypeChecker(ctx, cu, fakeMethodSymbol)
-      val stats = classDecl.fields ::: classDecl.annotations.flatMap(_.values)
-      stats foreach { typeChecker.typeCheckStatement }
+      classDecl.fields foreach { field =>
+        typeChecker.typeCheckStatement(field)
+        field.annotations foreach { typeChecker.typeCheckAnnotation }
+      }
+      classDecl.annotations foreach { typeChecker.typeCheckAnnotation }
     }
   }
 
   private def typeCheckMethods(ctx: Context, cu: CompilationUnit): Unit = {
-    info"Typechecking methods of ${ cu.simpleSourceDescription }"
-    cu.classes.flatMap(_.methods) foreach { method =>
-      val methodSymbol = method.getSymbol
-      if (!methodUsage.contains(methodSymbol))
-        methodUsage += methodSymbol -> !method.accessibility.isInstanceOf[Private]
-      val typeChecker = TypeChecker(ctx, cu, methodSymbol)
-      method.annotations.flatMap(_.values) foreach { typeChecker.typeCheckStatement }
-      typeChecker.typeCheckMethod()
-    }
+    info"Type checking methods of ${ cu.simpleSourceDescription }"
+    cu.classes
+      .flatMap { _.methods }
+      .foreach { method =>
+        val methodSymbol = method.getSymbol
+        if (!methodUsage.contains(methodSymbol))
+          methodUsage += methodSymbol -> !method.accessibility.isInstanceOf[Private]
+        val typeChecker = TypeChecker(ctx, cu, methodSymbol)
+
+        method.annotations foreach { typeChecker.typeCheckAnnotation }
+        typeChecker.typeCheckMethod()
+      }
   }
 
   private def verify(ctx: Context, cu: CompilationUnit): Unit = {
@@ -81,6 +87,7 @@ object TypeChecker {
     List()
   )
 }
+
 case class TypeChecker(
   override val reporter: Reporter,
   override val errorStringContext: ErrorStringContext,
@@ -95,7 +102,7 @@ case class TypeChecker(
   val returnStatements: ArrayBuffer[(Return, Type)] = ArrayBuffer()
 
   def typeCheckMethod(): Unit = {
-    if (Typing.hasBeenTypechecked(currentMethodSymbol))
+    if (Typing.hasBeenTypeChecked(currentMethodSymbol))
       return
 
     debug"Typechecking method $currentMethodSymbol"
@@ -106,7 +113,7 @@ case class TypeChecker(
     }
 
     currentMethodSymbol.stat.ifDefined(typeCheckStatement)
-    hasBeenTypechecked += currentMethodSymbol
+    hasBeenTypeChecked += currentMethodSymbol
 
     val methType = currentMethodSymbol.getType
     if (methType != TUntyped) {
@@ -157,10 +164,10 @@ case class TypeChecker(
         case (Some(_), None)         => // Abstract
         case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
       }
-      init.ifDefined(expr =>
+      init ifDefined { expr =>
         if (expr.getType == TUnit)
           report(AssignUnit(expr))
-      )
+      }
     case If(condition, thn, els)           =>
       typeCheckExpr(condition, Bool)
       typeCheckStatement(thn)
@@ -382,17 +389,20 @@ case class TypeChecker(
       case MethodCall(meth, args)        =>
         val tpe = objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupMethod(meth.name, argTypes.get, imports) map { methSymbol =>
-              checkPrivacy(methSymbol, classSymbol, app)
-              checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
-              Typing.methodUsage += methSymbol -> true
-              inferTypeOfMethod(methSymbol)
-              meth.setSymbol(methSymbol)
-              meth.getType
-            } getOrElse {
-              val alternatives = classSymbol.methods.filter(_.argTypes == argTypes.get).map(_.name)
-              report(ClassDoesntHaveMethod(classSymbol.name, methSignature, meth.name, alternatives, app))
-            }
+            classSymbol
+              .lookupMethod(meth.name, argTypes.get, imports)
+              .map { methSymbol =>
+                checkPrivacy(methSymbol, classSymbol, app)
+                checkStaticMethodConstraints(acc, classSymbol, methSymbol, app)
+                Typing.methodUsage += methSymbol -> true
+                inferTypeOfMethod(methSymbol)
+                meth.setSymbol(methSymbol)
+                meth.getType
+              }
+              .getOrElse {
+                val alternatives = classSymbol.methods.filter(_.argTypes == argTypes.get).map(_.name)
+                report(ClassDoesntHaveMethod(classSymbol.name, methSignature, meth.name, alternatives, app))
+              }
           case _: TArray            =>
             if (args.nonEmpty || meth.name != "Size")
               report(MethodOnWrongType(methSignature, objType.toString, app))
@@ -405,15 +415,18 @@ case class TypeChecker(
       case fieldId@VariableID(fieldName) =>
         objType match {
           case TObject(classSymbol) =>
-            classSymbol.lookupField(fieldName) map { fieldSymbol =>
-              checkPrivacy(fieldSymbol, classSymbol, app)
-              checkStaticFieldConstraints(acc, classSymbol, fieldSymbol, app)
-              fieldId.setSymbol(fieldSymbol)
-              fieldId.getType
-            } getOrElse {
-              val alternatives = classSymbol.fields.keys.toList
-              report(ClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app))
-            }
+            classSymbol
+              .lookupField(fieldName)
+              .map { fieldSymbol =>
+                checkPrivacy(fieldSymbol, classSymbol, app)
+                checkStaticFieldConstraints(acc, classSymbol, fieldSymbol, app)
+                fieldId.setSymbol(fieldSymbol)
+                fieldId.getType
+              }
+              .getOrElse {
+                val alternatives = classSymbol.fields.keys.toList
+                report(ClassDoesntHaveField(classSymbol.name, fieldName, alternatives, app))
+              }
           case _: TArray            =>
             // There are no fields on arrays
             report(ClassDoesntHaveField(objType.toString, fieldName, Nil, app))
@@ -431,7 +444,6 @@ case class TypeChecker(
       case _: NormalAccess => tpe
     }
   }
-
 
   def getReturnType(tpes: Traversable[Type]): Type = {
     var uniqueTpes = tpes.toSet
@@ -455,10 +467,7 @@ case class TypeChecker(
         commonTypes.head
       }
 
-    if (containsNull)
-      tpe.getNullable
-    else
-      tpe
+    if (containsNull) tpe.getNullable else tpe
   }
 
   private def typeCheckAccessObject(acc: Access, argTypes: Option[List[Type]], methSignature: => String): Type = {
@@ -474,17 +483,15 @@ case class TypeChecker(
         val thisSymbol = sup.getSymbol
         val classSymbol = app match {
           case MethodCall(meth, _)   =>
-            thisSymbol.lookupParentMethod(meth.name, argTypes.get, imports) map {
-              _.classSymbol
-            } getOrElse {
-              return report(NoSuperTypeHasMethod(thisSymbol.name, methSignature, app))
-            }
+            thisSymbol
+              .lookupParentMethod(meth.name, argTypes.get, imports)
+              .map { _.classSymbol }
+              .getOrElse { return report(NoSuperTypeHasMethod(thisSymbol.name, methSignature, app)) }
           case Identifier(fieldName) =>
-            thisSymbol.lookupParentField(fieldName).map {
-              _.classSymbol
-            } getOrElse {
-              return report(NoSuperTypeHasField(thisSymbol.name, fieldName, app))
-            }
+            thisSymbol
+              .lookupParentField(fieldName)
+              .map { _.classSymbol }
+              .getOrElse { return report(NoSuperTypeHasField(thisSymbol.name, fieldName, app)) }
           case _                     => ???
         }
         sup.setSymbol(classSymbol)
@@ -554,6 +561,31 @@ case class TypeChecker(
       .getOrElse(report(OperatorNotFound(opType.operatorString(argList, arrTpe.toString), List(arrTpe), pos)))
   }
 
+  def typeCheckAnnotation(annotation: Annotation): Type = {
+    val methods = annotation.getSymbol.methods.filter { meth => meth.args.isEmpty && meth.isAbstract }
+    annotation.values foreach { case KeyValuePair(id, value) =>
+      methods.find { _.name == id.name } match {
+        case Some(method) =>
+          id.setType(method)
+          if (value.getType != method.getType) {
+            report(WrongType(method.getType, value.getType, value))
+          }
+        case None         =>
+          report(AnnotationValueDoesNotExist(annotation.id.name, id.name, methods.map(_.name), id))
+      }
+    }
+    val annotationValueNames = annotation.values.map(_.id.name)
+
+    val missingValues = methods
+      .filter { meth => !annotationValueNames.contains(meth.name) }
+      .map { meth => (meth.name, meth.getType) }
+
+    if (missingValues.nonEmpty) {
+      report(MissingAnnotationValues(annotation.id.name, missingValues, annotation))
+    }
+    annotation.getSymbol.getType
+  }
+
   def checkMethodUsage(): Unit = {
     // Check method usage
     // TODO: Refactoring of typeChecker global variables etc.
@@ -569,7 +601,8 @@ case class TypeChecker(
         val classSymbol = clazz.getSymbol
         val methSymbol = meth.getSymbol
         val methType = meth.getSymbol.getType
-        classSymbol.lookupParentMethod(methSymbol.name, methSymbol.argTypes, imports)
+        classSymbol
+          .lookupParentMethod(methSymbol.name, methSymbol.argTypes, imports)
           .filter { parentMeth => parentMeth.getType != methType && !methType.isSubTypeOf(parentMeth.getType) }
           .foreach { parentMeth => report(OverridingMethodDifferentReturnType(methSymbol, parentMeth)) }
       }
@@ -577,8 +610,8 @@ case class TypeChecker(
 
 
   def checkTraitsAreImplemented(cu: CompilationUnit): Unit =
-    cu.classes.filterInstance[ClassDecl].foreach { classDecl =>
-      classDecl.traits.foreach(t => checkTraitIsImplemented(classDecl, t.getSymbol))
+    cu.classes.filterInstance[ClassDecl] foreach { classDecl =>
+      classDecl.traits foreach { t => checkTraitIsImplemented(classDecl, t.getSymbol) }
     }
 
   private def typeCheckOperator(classType: Type, operator: OperatorTree, args: List[Type]): Option[Type] =
@@ -614,11 +647,10 @@ case class TypeChecker(
     classSymbol.lookupMethod("Iterator", Nil, imports).flatMap { methSymbol =>
       inferTypeOfMethod(methSymbol) match {
         case TObject(methodClassSymbol) =>
-          methodClassSymbol.lookupMethod("HasNext", Nil, imports)
+          methodClassSymbol
+            .lookupMethod("HasNext", Nil, imports)
             .filter { inferTypeOfMethod(_) == Bool }
-            .flatMap { _ =>
-              methodClassSymbol.lookupMethod("Next", Nil, imports).map(inferTypeOfMethod)
-            }
+            .flatMap { _ => methodClassSymbol.lookupMethod("Next", Nil, imports).map(inferTypeOfMethod) }
         case _                          => None
       }
     }

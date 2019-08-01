@@ -12,12 +12,12 @@ case class AlternativeSuggestor() {
 
     Suggestion(
       alternatives
-        .filter(_.length >= MinLength)
-        .map(target => DistanceData(name, target))
-        .filter(_.isAcceptable)
-        .sortBy(-_.similarity)
-        .map(_.target)
-        .take(MaxSuggestions)
+        .filter { _.length >= MinLength }
+        .map { target => DistanceData(name, target) }
+        .filter { _.isAcceptable }
+        .sortBy { -_.similarity }
+        .map { _.target }
+        .take { MaxSuggestions }
     )
   }
 

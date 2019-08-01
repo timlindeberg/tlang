@@ -31,26 +31,28 @@ case class Options(
     if (args == Nil)
       return
 
-    val rest = flags findDefined { flag =>
-      flag.matches(args) collect { case (argsForFlag, rest) =>
-        addArgs(flag, argsForFlag)
+    val rest = flags
+      .findDefined { flag =>
+        flag.matches(args) collect { case (argsForFlag, rest) =>
+          addArgs(flag, argsForFlag)
+          rest
+        }
+      }
+      .getOrElse {
+        val arg :: rest = args
+        if (arg.startsWith("-"))
+          ErrorInvalidFlag(arg)
+
+        positionalArgument match {
+          case Some(positional) =>
+            if (arg.nonEmpty) {
+              positional.verifyArgument(arg)
+              addArg(positional, arg)
+            }
+          case None             => ErrorUnrecognizedArgument(arg)
+        }
         rest
       }
-    } getOrElse {
-      val arg :: rest = args
-      if (arg.startsWith("-"))
-        ErrorInvalidFlag(arg)
-
-      positionalArgument match {
-        case Some(positional) =>
-          if (arg.nonEmpty) {
-            positional.verifyArgument(arg)
-            addArg(positional, arg)
-          }
-        case None             => ErrorUnrecognizedArgument(arg)
-      }
-      rest
-    }
 
     processOptions(rest)
   }

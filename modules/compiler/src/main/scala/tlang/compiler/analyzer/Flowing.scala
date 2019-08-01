@@ -60,7 +60,6 @@ case class FlowAnalyser(
       val knowledge: Knowledge = fieldKnowledge + argKnowledge
       analyze(meth.stat.get, knowledge)
     }
-
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {

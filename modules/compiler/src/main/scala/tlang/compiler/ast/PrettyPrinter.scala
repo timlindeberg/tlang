@@ -36,12 +36,17 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case TraitDecl(id, parents, fields, methods, annos) => pp"${ N }${ annotations(annos) }trait ${ restOfClassDecl(id, parents, fields, methods) }"
     case ExtensionDecl(tpe, methods, annos)             => pp"${ N }${ annotations(annos) }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
     // Variable and method declarations
-    case VarDecl(id, tpe, expr, modifiers, annos)                          => pp"${ annotations(annos) }${ varDecl(modifiers) } $id${ optional(tpe) { t => pp": $t" } }${ optional(expr) { t => pp" = $t" } }"
-    case MethodDecl(id, modifiers, annos, args, retType, stat)             => pp"${ annotations(annos) }${ definition(modifiers) } $id(${ commaSeparated(args) })${ optional(retType) { t => pp": $t" } }${ optional(stat) { s => pp" = $s" } }"
-    case ConstructorDecl(_, modifiers, annos, args, _, stat)               => pp"${ annotations(annos) }${ definition(modifiers) } new(${ commaSeparated(args) }) = $stat"
-    case OperatorDecl(operatorType, modifiers, annos, args, retType, stat) => pp"${ annotations(annos) }${ definition(modifiers) } ${ operatorType.opSign }(${ commaSeparated(args) })${ optional(retType) { t => pp": $t" } } = $stat"
-    case Formal(tpe, id)                                                   => pp"$id: $tpe"
+    case VarDecl(id, tpe, expr, modifiers, annos)                          =>
+      pp"${ annotations(annos) }${ varDecl(modifiers) } $id${ optional(tpe) { t => pp": $t" } }${ optional(expr) { t => pp" = $t" } }"
+    case MethodDecl(id, modifiers, annos, args, retType, stat)             =>
+      pp"${ annotations(annos) }${ definition(modifiers) } $id(${ commaSeparated(args) })${ optional(retType) { t => pp": $t" } }${ optional(stat) { s => pp" = $s" } }"
+    case ConstructorDecl(_, modifiers, annos, args, _, stat)               =>
+      pp"${ annotations(annos) }${ definition(modifiers) } new(${ commaSeparated(args) }) = $stat"
+    case OperatorDecl(operatorType, modifiers, annos, args, retType, stat) =>
+      pp"${ annotations(annos) }${ definition(modifiers) } ${ operatorType.opSign }(${ commaSeparated(args) })${ optional(retType) { t => pp": $t" } } = $stat"
     // Modifiers
+    case Formal(tpe, id)        => pp"$id: $tpe"
+    case KeyValuePair(id, expr) => pp"$id = $expr"
     case Private()              => pp"private"
     case Public()               => pp"public"
     case Protected()            => pp"protected"
