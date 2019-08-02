@@ -39,3 +39,4 @@ class B
 	@AnnotationA
 	@AnnotationB(S = "ABC")
 	Val MyValue = 25
+

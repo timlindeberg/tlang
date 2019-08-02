@@ -88,7 +88,6 @@ case class NameAnalyser(
     globalScope.classes foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
   }
 
-
   def checkVariableUsage(): Unit =
     variableUsage
       .filter { case (variable, used) => !used && !variable.name.startsWith("_") }
@@ -116,6 +115,8 @@ case class NameAnalyser(
   /*-------------------------------- Adding symbols --------------------------------*/
 
   private def addSymbols(classDecl: ClassDeclTree): Unit = {
+    debug"Adding symbol to ${ classDecl.name }"
+
     val sym = classDecl match {
       case ext: ExtensionDecl     =>
         val tpe = ext.tpe
@@ -142,8 +143,6 @@ case class NameAnalyser(
     }
 
     addAnnotations(sym, classDecl)
-
-    debug"Adding symbol to ${ classDecl.name }"
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
     classDecl.fields foreach { addSymbols(_, sym) }
@@ -151,6 +150,8 @@ case class NameAnalyser(
   }
 
   private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
+    debug"Adding field to ${ classSymbol.name }"
+
     val id = varDecl.id
     val sym = new FieldSymbol(id.name, varDecl.modifiers, classSymbol).setPos(varDecl)
     ensureIdentifierNotDefined(classSymbol.fields, id.name, varDecl)
@@ -165,11 +166,12 @@ case class NameAnalyser(
     variableUsage += sym -> (varDecl.accessibility != Private())
     addAnnotations(sym, varDecl)
 
-    debug"Adding field to ${ classSymbol.name }"
     classSymbol.addField(sym)
   }
 
   private def addSymbols(methDecl: MethodDeclTree, classSymbol: ClassSymbol): Unit = {
+    debug"Adding symbol to ${ methDecl.signature }"
+
     val id = methDecl.id
     val name = id.name
     val sym = methDecl match {
@@ -197,9 +199,6 @@ case class NameAnalyser(
     }
 
     addAnnotations(sym, methDecl)
-
-    debug"Adding symbol to ${ methDecl.signature }"
-
     sym.setPos(methDecl)
     id.setSymbol(sym)
     methDecl.setSymbol(sym)
@@ -207,12 +206,12 @@ case class NameAnalyser(
   }
 
   private def addSymbols(formal: Formal, methSymbol: MethodSymbol): Unit = {
+    debug"Adding symbol to argument ${ formal.id.name } in ${ methSymbol.name }"
+
     val id = formal.id
     val modifiers: Set[Modifier] = Set(Private(), Final())
     val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
     ensureIdentifierNotDefined(methSymbol.args, id.name, id)
-
-    debug"Adding symbol to argument ${ id.name } in ${ methSymbol.name }"
 
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)

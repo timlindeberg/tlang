@@ -7,12 +7,15 @@ class AnnotationAttribute(override val attributeNameIndex: U2) extends Attribute
 
   override def toStream(stream: ByteStream): ByteStream = {
     val numAnnotations: U2 = annotations.size.asInstanceOf[U2]
-    val attributeLength: U4 = 4 * numAnnotations + 2
+    val attributeLength: U4 = 2 + annotations.map { _.size }.sum
     stream << attributeNameIndex << attributeLength << numAnnotations << annotations
   }
 }
 
 class AnnotationInfo(typeIndex: U2, var elementValuePairs: List[AnnotationElementValue]) extends Streamable {
+
+  def size: U4 = 4 + elementValuePairs.size * 5
+
   override def toStream(stream: ByteStream): ByteStream =
     stream <<
       typeIndex <<
@@ -20,7 +23,7 @@ class AnnotationInfo(typeIndex: U2, var elementValuePairs: List[AnnotationElemen
       elementValuePairs
 }
 
-// Currently only supports strings (const_value_index in the JVM spec)
+// Currently only supports constants (const_value_index in the JVM spec)
 class AnnotationElementValue(tag: U1, nameIndex: U2, valueIndex: U2) extends Streamable {
   override def toStream(stream: ByteStream): ByteStream =
     stream << nameIndex << tag << valueIndex

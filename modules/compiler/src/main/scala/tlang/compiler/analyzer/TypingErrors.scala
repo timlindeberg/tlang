@@ -10,7 +10,6 @@ import tlang.utils.Positioned
 
 trait TypingErrors extends ErrorHandling {
 
-
   def report(error: ErrorMessage): Type = {
     reporter.report(error)
     TError
@@ -102,7 +101,7 @@ trait TypingErrors extends ErrorHandling {
     extends TypeCheckingError(9, pos) {
     lazy val message: String = {
 
-      val accessability = sym.accessibility match {
+      val accessibility = sym.accessibility match {
         case Protected() => "protected"
         case Private()   => "private"
         case _           => ???
@@ -114,7 +113,7 @@ trait TypingErrors extends ErrorHandling {
       }
       val className = clazz.name
       val callingClassName = callingClass.name
-      err"Cannot use $accessability " + tpe + err" in class $className from class $callingClassName."
+      err"Cannot use $accessibility " + tpe + err" in class $className from class $callingClassName."
     }
 
   }
@@ -156,7 +155,7 @@ trait TypingErrors extends ErrorHandling {
       else if (!args(1).isInstanceOf[TObject])
         err"The class ${ args(0) } does not"
       else
-        err"None of the classes " + args.map(arg => err"$arg").mkString(err" or ")
+        err"None of the classes " + args.map { arg => err"$arg" }.mkString(err" or ")
 
   }
 

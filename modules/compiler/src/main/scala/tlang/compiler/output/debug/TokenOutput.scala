@@ -15,7 +15,7 @@ case class TokenOutput(phaseName: String, allTokens: List[List[Token]])(implicit
 
     import formatter._
 
-    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
+    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize) + Bold(" phase"))
     allTokens.foreach { tokens =>
       grid
         .row(alignment = Center)

@@ -32,7 +32,7 @@ case class ASTOutput(
 
     import formatter._
 
-    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
+    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize) + Bold(" phase"))
     val tabReplacement = " " * formatter.replaceTabs.tabWidth
     trees foreach { tree =>
       grid
@@ -46,5 +46,6 @@ case class ASTOutput(
     }
     grid.render()
   }
+
   override def json: Json = Json()
 }

@@ -14,7 +14,7 @@ case class CodeGenerationOutput(phaseName: String, stackTraces: List[Codegenerat
   override def pretty: String = {
     import formatter._
 
-    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize))
+    val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize) + Bold(" phase"))
     stackTraces.foreach { stackTrace =>
       grid
         .row(alignment = Center)

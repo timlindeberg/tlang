@@ -157,7 +157,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
 
   }
 
-  def stringToDescriptor(s: String) = s
+  def stringToDescriptor(s: String): String = s
 }
 
 

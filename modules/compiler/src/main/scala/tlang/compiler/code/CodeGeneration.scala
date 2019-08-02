@@ -35,7 +35,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
 
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
-      files.foreach(generateStackMapFrames(_, classLoader))
+      //files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
     }
   }
@@ -66,7 +66,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
     val className = classDecl.getSymbol.JVMName
-    val files = ctx.outDirs.map(classFilePath(_, className))
+    val files = ctx.outDirs.map { classFilePath(_, className) }
     files.foreach { file => classFile.writeToFile(file) }
     Result(files, stackTraces)
   }
