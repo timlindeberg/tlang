@@ -18,8 +18,9 @@ import scala.collection.mutable
 
 object CodeGenerator {
 
-  val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
-  val ClassFlags: U2 = CLASS_ACC_PUBLIC
+  val TraitFlags     : U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
+  val AnnotationFlags: U2 = TraitFlags | CLASS_ACC_ANNOTATION
+  val ClassFlags     : U2 = CLASS_ACC_PUBLIC
 
   val ConstructorName = "<init>"
 
@@ -256,10 +257,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
-      case branch: BranchingOperatorTree                =>
-        compileValueBranch(branch)
-      case arrLit: ArrayLit                             =>
-        compileArrayLiteral(arrLit)
+      case branch: BranchingOperatorTree                => compileValueBranch(branch)
+      case arrLit: ArrayLit                             => compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
         sizes foreach (compileExpr(_))
         val dimension = newArray.sizes.size

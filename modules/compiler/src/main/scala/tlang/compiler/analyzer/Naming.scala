@@ -260,7 +260,8 @@ case class NameAnalyser(
       }
       (id.name, value)
     }
-    AnnotationSymbol(annotation.id.name, elements)
+
+    AnnotationSymbol(annotation.id.name, elements) use { annotation.setSymbol(_) }
   }
 
   /*-------------------------------- Binding symbols --------------------------------*/
@@ -269,7 +270,7 @@ case class NameAnalyser(
   private def bind(tree: Tree): Unit = tree match {
     case annotation@Annotation(id, values)                                            =>
       setType(id)
-      annotation.setSymbol(id.getSymbol)
+      annotation.getSymbol.setType(annotation.id)
     case extension@ExtensionDecl(tpe, methods, annotations)                           =>
       val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
       setType(tpe)

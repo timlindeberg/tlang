@@ -4,7 +4,7 @@ package ast
 
 import java.lang.System.identityHashCode
 
-import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
+import tlang.compiler.analyzer.Symbols.{AnnotationSymbol, ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
@@ -147,6 +147,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     case _: MethodSymbol                => "M"
     case _: FieldSymbol                 => "F"
     case _: VariableSymbol              => "V"
+    case _: AnnotationSymbol            => "A"
   }
 
   private def newSymbolFormatting: (Int, Color) = {

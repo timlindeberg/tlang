@@ -32,8 +32,11 @@ object Symbols {
     def name: String
     def repr: String = System.identityHashCode(this).toHexString
 
-    def annotations: List[AnnotationSymbol]
-    def addAnnotation(annotation: AnnotationSymbol): Unit
+    def annotations: List[AnnotationSymbol] = _annotations
+    def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
+
+    protected var _annotations: List[AnnotationSymbol] = Nil
+
   }
 
   class GlobalScope(classSymbolLocator: ClassSymbolLocator) {
@@ -51,19 +54,17 @@ object Symbols {
   object ClassErrorSymbol extends ClassSymbol(CompilerMessage.ErrorName)
 
   class ClassSymbol(override val name: String) extends Symbol {
-    protected var _parents    : List[ClassSymbol]        = Nil
-    protected var _methods    : List[MethodSymbol]       = Nil
-    protected var _operators  : List[OperatorSymbol]     = Nil
-    protected var _fields     : Map[String, FieldSymbol] = Map()
-    protected var _isAbstract : Boolean                  = false
-    protected var _annotations: List[AnnotationSymbol]   = Nil
+    protected var _parents   : List[ClassSymbol]        = Nil
+    protected var _methods   : List[MethodSymbol]       = Nil
+    protected var _operators : List[OperatorSymbol]     = Nil
+    protected var _fields    : Map[String, FieldSymbol] = Map()
+    protected var _isAbstract: Boolean                  = false
 
 
     def parents: List[ClassSymbol] = _parents
     def methods: List[MethodSymbol] = _methods
     def operators: List[OperatorSymbol] = _operators
     def fields: Map[String, FieldSymbol] = _fields
-    def annotations: List[AnnotationSymbol] = _annotations
     def isAbstract: Boolean = _isAbstract
     def isAbstract_=(isAbstract: Boolean): this.type = { _isAbstract = isAbstract; this }
 
@@ -71,7 +72,6 @@ object Symbols {
     def addMethod(method: MethodSymbol): Unit = _methods ::= method
     def addField(field: FieldSymbol): Unit = _fields += (field.name -> field)
     def addParent(parent: ClassSymbol): Unit = _parents ::= parent
-    def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
 
     def parents_=(parents: List[ClassSymbol]): Unit = _parents = parents
 
@@ -204,17 +204,14 @@ object Symbols {
     val stat: Option[StatTree],
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
-    var isAbstract : Boolean                     = stat.isEmpty
-    var args       : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
-    var argList    : List[VariableSymbol]        = Nil
-    var annotations: List[AnnotationSymbol]      = Nil
+    var isAbstract: Boolean                     = stat.isEmpty
+    var args      : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
+    var argList   : List[VariableSymbol]        = Nil
 
     def addArgument(arg: VariableSymbol): Unit = {
       args += arg.name -> arg
       argList :+= arg
     }
-
-    def addAnnotation(annotation: AnnotationSymbol): Unit = annotations ::= annotation
 
     def lookupField(name: String): Option[VariableSymbol] = classSymbol.lookupField(name)
     def lookupArgument(name: String): Option[VariableSymbol] = args.get(name)
@@ -258,22 +255,15 @@ object Symbols {
   class VariableSymbol(
     val name: String,
     val modifiers: Set[Modifier] = Set()) extends Symbol with Modifiable {
-    protected var _annotations: List[AnnotationSymbol] = Nil
 
     override def toString: String = name
-    override def annotations: List[AnnotationSymbol] = _annotations
-    override def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
   }
 
   class FieldSymbol(override val name: String,
     override val modifiers: Set[Modifier] = Set(),
     val classSymbol: ClassSymbol) extends VariableSymbol(name, modifiers) with Modifiable
 
-  case object ErrorSymbol extends Symbol {
-    val name: String = CompilerMessage.ErrorName
-    override def annotations: List[AnnotationSymbol] = Nil
-    override def addAnnotation(annotation: AnnotationSymbol): Unit = {}
-  }
+  case object ErrorSymbol extends Symbol {val name: String = CompilerMessage.ErrorName }
 
   trait AnnotationValue
 
@@ -284,6 +274,6 @@ object Symbols {
   case class StringAnnotationValue(value: String) extends AnnotationValue
 
   // Currently only supports constant types
-  case class AnnotationSymbol(name: String, elements: List[(String, AnnotationValue)] = Nil)
+  case class AnnotationSymbol(name: String, elements: List[(String, AnnotationValue)] = Nil) extends Symbol
 
 }

@@ -133,7 +133,7 @@ object Trees {
 
   /*------------------------ Class Declaration Trees ------------------------*/
 
-  case class Annotation(id: ClassID, values: List[KeyValuePair]) extends Tree with Symbolic[ClassSymbol]
+  case class Annotation(id: ClassID, values: List[KeyValuePair]) extends Tree with Symbolic[AnnotationSymbol]
 
   object ClassDeclTree {
     def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods, c.annotations)

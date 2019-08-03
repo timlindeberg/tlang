@@ -6,4 +6,4 @@ package T::lang
  * annotations will be visible to the tlang compiler appear in the generated
  * class files so they can be found using runtime reflection.
  */
-trait Annotation
+trait Annotation : java::lang::annotation::Annotation

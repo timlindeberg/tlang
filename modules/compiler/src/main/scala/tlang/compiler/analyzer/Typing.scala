@@ -562,7 +562,7 @@ case class TypeChecker(
   }
 
   def typeCheckAnnotation(annotation: Annotation): Type = {
-    val methods = annotation.getSymbol.methods.filter { meth => meth.args.isEmpty && meth.isAbstract }
+    val methods = annotation.id.getSymbol.methods.filter { meth => meth.args.isEmpty && meth.isAbstract }
     annotation.values foreach { case KeyValuePair(id, value) =>
       methods.find { _.name == id.name } match {
         case Some(method) =>
