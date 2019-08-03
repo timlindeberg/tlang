@@ -32,9 +32,10 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case ExtensionImport(address, className) => pp"import ${ address.mkString("::") }::extension ${ className.mkString("::") }"
     case WildCardImport(address)             => pp"import ${ address.mkString("::") }.*"
     // Class Declarations
-    case ClassDecl(id, parents, fields, methods, annos) => pp"${ N }${ annotations(annos) }class ${ restOfClassDecl(id, parents, fields, methods) }"
-    case TraitDecl(id, parents, fields, methods, annos) => pp"${ N }${ annotations(annos) }trait ${ restOfClassDecl(id, parents, fields, methods) }"
-    case ExtensionDecl(tpe, methods, annos)             => pp"${ N }${ annotations(annos) }extension ${ restOfClassDecl(tpe, Nil, Nil, methods) }"
+    case ClassDecl(id, parents, fields, methods, annotations) => classDecl(pp"class", annotations, id, parents, fields, methods)
+    case TraitDecl(id, parents, fields, methods, annotations) => classDecl(pp"trait", annotations, id, parents, fields, methods)
+    case ExtensionDecl(tpe, methods, annotations)             => classDecl(pp"extension", annotations, tpe, Nil, Nil, methods)
+    case AnnotationDecl(tpe, methods, annotations)            => classDecl(pp"annotation", annotations, tpe, Nil, Nil, methods)
     // Variable and method declarations
     case VarDecl(id, tpe, expr, modifiers, annos)                          =>
       pp"${ annotations(annos) }${ varDecl(modifiers) } $id${ optional(tpe) { t => pp": $t" } }${ optional(expr) { t => pp" = $t" } }"
@@ -138,10 +139,10 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case _       => pp"$obj$dotNotation$application"
   }
 
-  private def restOfClassDecl(tpe: TypeTree, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
-    val start = pp"$tpe${ parentList(parents) }"
+  private def classDecl(name: String, annos: List[Annotation], tpe: TypeTree, parents: List[ClassID], fields: List[VarDecl], methods: List[MethodDeclTree]): String = {
+    val start = pp"${ N }${ annotations(annos) }$name $tpe${ parentList(parents) }"
     if (fields.isEmpty && methods.isEmpty)
-      return s"$start"
+      return start
 
     if (fields.isEmpty)
       return pp"$start = $L$methods$R"

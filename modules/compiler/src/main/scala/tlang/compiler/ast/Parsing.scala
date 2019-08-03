@@ -14,6 +14,7 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.{Logging, NoPosition, Positioned}
 
+import scala.collection.immutable.Stream.cons
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -80,7 +81,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <compilationUnit> ::=
     * [ <packageDeclaration> <statementEnd>  ]
     * { <importDeclaration> <statementEnd> }
-    * { <classDeclaration> <statementEnd> | <methodDeclaration> <statementEnd> | <statement> <statementEnd> }
+    * {
+    * ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
+    * <statementEnd>
+    * }
     * <EOF>
     */
   def compilationUnit: CompilationUnit = positioned {
@@ -92,16 +96,20 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val imps = untilNot(IMPORT) { importDeclaration <| statementEnd }
 
     val code = until(EOF) {
-      val annotations = untilNot(AT)(annotationDeclaration)
-      tokens.next.kind match {
-        case CLASS | TRAIT | EXTENSION => classDeclaration(annotations) <| statementEnd
-        case PUBDEF | PRIVDEF          =>
+      val annotations = untilNot(AT)(annotation)
+      val tree = tokens.next.kind match {
+        case CLASS            => classDeclaration(annotations)
+        case TRAIT            => traitDeclaration(annotations)
+        case EXTENSION        => extensionDeclaration(annotations)
+        case ANNOTATION       => annotationDeclaration(annotations)
+        case PUBDEF | PRIVDEF =>
           positioned {
             val modifiers = methodModifiers
-            method(modifiers + Static().setPos(modifiers.head), annotations) <| statementEnd
+            method(modifiers + Static().setPos(modifiers.head), annotations)
           }
-        case _                         => statement <| statementEnd
+        case _                => statement
       }
+      tree <| statementEnd
     }
 
     val classes = createClasses(code)
@@ -135,7 +143,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     val mainName = tokens.source.map(_.mainName).getOrElse("MissingSource")
 
-    classes.filterInstance[ClassDecl].find(_.id.name == mainName) ifDefined { mainClass =>
+    classes.filterInstance[ClassDecl].find { _.id.name == mainName } ifDefined { mainClass =>
       val pos = if (stats.nonEmpty) stats.head else methods.head
       report(FileClassAlreadyDefined(mainName, mainClass, pos))
     }
@@ -143,7 +151,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     if (stats.isEmpty)
       return createMainClass(mainName, methods) :: classes
 
-    methods.find(_.id.name == "main") ifDefined { mainMethod =>
+    methods.find { _.id.name == Constants.MainMethod } ifDefined { mainMethod =>
       report(MainMethodAlreadyDefined(mainMethod, stats.head))
     }
 
@@ -158,10 +166,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   private def createMainMethod(stats: List[StatTree]): MethodDecl = {
-    val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
+    val args = List(Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")))
     val modifiers: Set[Modifier] = Set(Public(), Static())
-    MethodDecl(MethodID("main").setNoPos(), modifiers, Nil, args, Some(UnitType()), Some(Block(stats)))
-      .setPos(stats.head, tokens.lastVisible)
+    MethodDecl(
+      MethodID(Constants.MainMethod).setNoPos(),
+      modifiers,
+      Nil,
+      args,
+      Some(UnitType()),
+      Some(Block(stats))
+    ).setPos(stats.head, tokens.lastVisible)
   }
 
   /** <packageDeclaration> ::= package <identifierName> { :: <identifierName> } */
@@ -197,8 +211,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     ExtensionImport(address, className)
   }
 
-  /** <annotationDeclaration> ::= "@" <classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
-  def annotationDeclaration: Annotation = positioned {
+  /** <annotation> ::= @<classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
+  def annotation: Annotation = positioned {
     eat(AT)
     val id = classType
     val arguments = tokens.next.kind match {
@@ -209,39 +223,63 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     Annotation(id, arguments)
   }
 
-  /** <classDeclaration> ::=
-    * | <classOrTraitDeclaration>
-    * | <extensionDeclaration>
-    */
-  def classDeclaration(annotations: List[Annotation]): ClassDeclTree =
-    if (tokens.next.kind == EXTENSION)
-      extensionDeclaration(annotations)
-    else
-      classOrTraitDeclaration(annotations)
-
-  /** <classOrTraitDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration> [ = <classBody> ] */
-  def classOrTraitDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
-    val classOrTrait = tokens.next.kind match {
-      case CLASS => eat(CLASS); ClassDecl
-      case TRAIT => eat(TRAIT); TraitDecl
-      case _     => report(wrongToken(CLASS, TRAIT))
-    }
-
+  /** <classDeclaration> ::= class <classTypeIdentifier> [ : <parentsDeclaration> ] [ = <classBody> ] */
+  def classDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
+    eat(CLASS)
     val id = classTypeIdentifier
-    val parents = parentsDeclaration
-    val (vars, methods) = tokens.next.kind match {
-      case EQSIGN => eat(EQSIGN); classBody
-      case _      => (Nil, Nil)
-    }
+    val parents = optional(COLON)(parentsDeclaration).getOrElse(Nil)
+    val (vars, methods) = optional(EQSIGN)(classBody).getOrElse((Nil, Nil))
 
-    classOrTrait(id, parents, vars, methods, annotations)
+    ClassDecl(id, parents, vars, methods, annotations)
+  }
+
+  /** <traitDeclaration> ::= trait <classTypeIdentifier> [ : <parentsDeclaration> ] [ = <classBody> ] */
+  def traitDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
+    eat(TRAIT)
+    val id = classTypeIdentifier
+    val parents = optional(COLON)(parentsDeclaration).getOrElse(Nil)
+    val (vars, methods) = optional(EQSIGN)(classBody).getOrElse((Nil, Nil))
+
+    TraitDecl(id, parents, vars, methods, annotations)
+  }
+
+  /** <extensionDeclaration> ::= extension <tpe> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
+  def extensionDeclaration(annotations: List[Annotation]): ExtensionDecl = positioned {
+    eat(EXTENSION)
+    val id = tpe
+    val methods = optional(EQSIGN)(classMethods).getOrElse(Nil)
+
+    ExtensionDecl(id, methods, annotations)
+  }
+
+  /** <annotationDeclaration> ::= annotation <classTypeIdentifier> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
+  def annotationDeclaration(annotations: List[Annotation]): AnnotationDecl = positioned {
+    eat(ANNOTATION)
+    val id = classTypeIdentifier
+    val methods = optional(EQSIGN)(classMethods).getOrElse(Nil)
+
+    AnnotationDecl(id, methods, annotations)
+  }
+
+  /** <classMethods> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
+  def classMethods: List[MethodDeclTree] = {
+    eat(INDENT)
+    val methods = until(DEDENT) {
+      val annotations = untilNot(AT)(annotation)
+      tokens.next.kind match {
+        case PRIVDEF | PUBDEF => methodDeclaration(annotations) <| statementEnd
+        case _                => report(wrongToken(PRIVDEF, PUBDEF))
+      }
+    }
+    eat(DEDENT)
+    methods
   }
 
   /** <classBody> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
   def classBody: (List[VarDecl], List[MethodDeclTree]) = {
     eat(INDENT)
     val trees = until(DEDENT) {
-      val annotations = untilNot(AT)(annotationDeclaration)
+      val annotations = untilNot(AT)(annotation)
       tokens.next.kind match {
         case PUBVAR | PRIVVAR | PUBVAL | PRIVVAL => fieldDeclaration(annotations) <| statementEnd
         case PRIVDEF | PUBDEF                    => methodDeclaration(annotations) <| statementEnd
@@ -253,33 +291,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     trees.partitionInstances[VarDecl, MethodDeclTree]
   }
 
-  /** <extensionDeclaration> ::= extension <tpe> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
-  def extensionDeclaration(annotations: List[Annotation]): ExtensionDecl = positioned {
-    eat(EXTENSION)
-    val id = tpe
-    val methods = tokens.next.kind match {
-      case EQSIGN =>
-        eat(EQSIGN, INDENT)
-        val methods = untilNot(PRIVDEF, PUBDEF) { methodDeclaration(annotations) <| statementEnd }
-        eat(DEDENT)
-        methods
-      case _      => Nil
-    }
-    ExtensionDecl(id, methods, annotations)
-  }
+  /** <parentsDeclaration> ::= <classType> { "," <classType> } */
+  def parentsDeclaration: List[ClassID] = nonEmptyList(COMMA)(classType)
 
-  /** <parentsDeclaration> ::= [ : <classType> { "," <classType> } ] */
-  def parentsDeclaration: List[ClassID] = tokens.next.kind match {
-    case COLON => eat(COLON); nonEmptyList(COMMA)(classType)
-    case _     => Nil
-  }
 
   /** <fieldDeclaration> ::= <fieldModifiers> <varDeclEnd> */
   def fieldDeclaration(annotations: List[Annotation]): VarDecl = positioned {
     varDeclEnd(fieldModifiers, annotations)
   }
 
-  /** <fieldModifiers> ::= ( Var | Val | (var | val [ protected ])) [ static } */
+  /** <fieldModifiers> ::= ( Var | Val | var | val [ protected ]) [ static ] */
   def fieldModifiers: Set[Modifier] = {
     val startPos = tokens.next
     val modifiers = mutable.Set[Modifier]()
@@ -1346,7 +1367,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
 
   /** <optional> ::= [ <parse> ] */
-  private def optional[T <: Positioned](kinds: TokenKind*)(parse: => T): Option[T] = {
+  private def optional[T](kinds: TokenKind*)(parse: => T): Option[T] = {
     if (tokens.next.kind notIn kinds)
       return None
 

@@ -223,7 +223,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       case Some(FileSource(file)) => classFile.setSourceFile(file.name)
     }
 
-    val isAnnotation = parents.size == 1 && parents.head.name == Constants.TAnnotation
+    val isAnnotation = classDecl.isInstanceOf[AnnotationDecl]
 
     val flags = if (isAnnotation)
       AnnotationFlags

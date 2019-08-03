@@ -195,9 +195,20 @@ object Trees {
     annotations: List[Annotation] = Nil) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
-    val parents: List[ClassID] = List[ClassID]()
-    val fields : List[VarDecl] = List[VarDecl]()
+    val parents: List[ClassID] = Nil
+    val fields : List[VarDecl] = Nil
     val isAbstract             = false
+    override def name: String = tpe.name
+  }
+
+  case class AnnotationDecl(
+    id: ClassID,
+    methods: List[MethodDeclTree] = Nil,
+    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
+
+    val parents: List[ClassID] = ClassID(Constants.JavaAnnotation) :: Nil
+    val fields : List[VarDecl] = Nil
+    val isAbstract             = true
     override def name: String = tpe.name
   }
 

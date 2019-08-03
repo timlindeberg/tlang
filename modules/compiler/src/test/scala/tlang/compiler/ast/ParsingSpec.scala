@@ -126,17 +126,17 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       .importDeclaration shouldBe ExtensionImport(List("A", "B"), List("C", "D"))
   }
 
-  it should "parse an annotation declaration" in {
+  it should "parse an annotation" in {
     // @A
-    parser(AT, ID("A")).annotationDeclaration shouldBe Annotation("A", Nil)
+    parser(AT, ID("A")).annotation shouldBe Annotation("A", Nil)
 
     // @A()
-    parser(AT, ID("A"), LPAREN, RPAREN).annotationDeclaration shouldBe Annotation("A", Nil)
+    parser(AT, ID("A"), LPAREN, RPAREN).annotation shouldBe Annotation("A", Nil)
 
     // @A(a = 1, b = "ABC", c = 3)
     parser(AT, ID("A"), LPAREN, ID("a"), EQSIGN, INTLIT(1), COMMA, ID("b"), EQSIGN, STRLIT("ABC"),
       COMMA, ID("c"), EQSIGN, INTLIT(3), RPAREN)
-      .annotationDeclaration shouldBe Annotation("A", List(
+      .annotation shouldBe Annotation("A", List(
       KeyValuePair(VariableID("a"), IntLit(1)),
       KeyValuePair(VariableID("b"), StringLit("ABC")),
       KeyValuePair(VariableID("c"), IntLit(3))
@@ -152,7 +152,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       ID("b"), EQSIGN, STRLIT("ABC"), COMMA, NEWLINE,
       ID("c"), EQSIGN, INTLIT(3), COMMA,
       RPAREN)
-      .annotationDeclaration shouldBe Annotation("A", List(
+      .annotation shouldBe Annotation("A", List(
       KeyValuePair(VariableID("a"), IntLit(1)),
       KeyValuePair(VariableID("b"), StringLit("ABC")),
       KeyValuePair(VariableID("c"), IntLit(3))
@@ -160,27 +160,20 @@ class ParsingSpec extends UnitSpec with TreeTesting {
 
     // @A::B::C
     parser(AT, ID("A"), COLON, COLON, ID("B"), COLON, COLON, ID("C"))
-      .annotationDeclaration shouldBe Annotation("A::B::C", Nil)
+      .annotation shouldBe Annotation("A::B::C", Nil)
 
     // @A<B>
     parser(AT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN)
-      .annotationDeclaration shouldBe Annotation(ClassID("A", List("B")), Nil)
+      .annotation shouldBe Annotation(ClassID("A", List("B")), Nil)
   }
 
   it should "parse a class declaration" in {
     // class A
-    parser(CLASS, ID("A")).classDeclaration(Nil) shouldBe ClassDecl("A")
-
-    // class A<B>
-    parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN)
-      .classDeclaration(Nil) shouldBe TraitDecl(ClassID("A", List("B")))
+    parser(CLASS, ID("A"))
+      .classDeclaration(Nil) shouldBe ClassDecl("A")
 
     // class A : B
     parser(CLASS, ID("A"), COLON, ID("B")).classDeclaration(Nil) shouldBe ClassDecl("A", List("B"))
-
-    // trait A<B> : C
-    parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN, COLON, ID("C"))
-      .classDeclaration(Nil) shouldBe TraitDecl(ClassID("A", List("B")), List("C"))
 
     // class A : B, C, D
     parser(CLASS, ID("A"), COLON, ID("B"), COMMA, ID("C"), COMMA, ID("D"))
@@ -196,19 +189,6 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     ).classDeclaration(Nil) shouldBe ClassDecl("A",
       parents = List("B", "C", "D"),
       fields = List(VarDecl("a", modifiers = Set(Private())))
-    )
-
-    // trait A =
-    //  var a
-    //  var b
-    parser(TRAIT, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, DEDENT)
-      .classDeclaration(Nil) shouldBe TraitDecl(
-      ClassID("A"),
-      parents = Nil,
-      fields = List(
-        VarDecl("a", modifiers = Set(Private())),
-        VarDecl("b", modifiers = Set(Private()))
-      )
     )
 
     // class A<B> : C, D =
@@ -234,15 +214,40 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     )
   }
 
+  it should "parse a trait declaration" in {
+    // trait A<B>
+    parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN)
+      .traitDeclaration(Nil) shouldBe TraitDecl(ClassID("A", List("B")))
+
+    // trait A<B> : C
+    parser(TRAIT, ID("A"), LESSTHAN, ID("B"), GREATERTHAN, COLON, ID("C"))
+      .traitDeclaration(Nil) shouldBe TraitDecl(ClassID("A", List("B")), List("C"))
+
+    // trait A =
+    //  var a
+    //  var b
+    parser(TRAIT, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("a"), NEWLINE, PRIVVAR, ID("b"), NEWLINE, DEDENT)
+      .traitDeclaration(Nil) shouldBe TraitDecl(
+      ClassID("A"),
+      parents = Nil,
+      fields = List(
+        VarDecl("a", modifiers = Set(Private())),
+        VarDecl("b", modifiers = Set(Private()))
+      )
+    )
+  }
+
   it should "parse an extension declaration" in {
-    parser(EXTENSION, ID("A")).classDeclaration(Nil) shouldBe ExtensionDecl(ClassID("A"))
+    // extension A
+    parser(EXTENSION, ID("A")).extensionDeclaration(Nil) shouldBe ExtensionDecl(ClassID("A"))
+
     // extension A =
     //  def x()
     //  def y()
     parser(
       EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
       RPAREN, NEWLINE, DEDENT
-    ).classDeclaration(Nil) shouldBe ExtensionDecl("A",
+    ).extensionDeclaration(Nil) shouldBe ExtensionDecl("A",
       methods = List(
         MethodDecl("x", modifiers = Set(Private())),
         MethodDecl("y", modifiers = Set(Private()))
@@ -251,12 +256,32 @@ class ParsingSpec extends UnitSpec with TreeTesting {
 
 
     // : B won't get parsed
-    parser(EXTENSION, ID("A"), COLON, ID("B")).classDeclaration(Nil) shouldBe ExtensionDecl("A")
+    parser(EXTENSION, ID("A"), COLON, ID("B")).extensionDeclaration(Nil) shouldBe ExtensionDecl("A")
 
     // No fields
     a[CompilationException] should be thrownBy parser(
       EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVVAR, ID("x"), NEWLINE, DEDENT
-    ).classDeclaration(Nil)
+    ).extensionDeclaration(Nil)
+  }
+
+  it should "parse an annotation declaration" in {
+    // annotation A
+    parser(ANNOTATION, ID("A")).annotationDeclaration(Nil) shouldBe AnnotationDecl(ClassID("A"))
+
+    // annotation A =
+    //  Def x()
+    //  Def y()
+    parser(
+      ANNOTATION, ID("A"), EQSIGN, NEWLINE, INDENT,
+      PUBDEF, ID("x"), LPAREN, RPAREN, NEWLINE,
+      PUBDEF, ID("y"), LPAREN, RPAREN, NEWLINE,
+      DEDENT
+    ).annotationDeclaration(Nil) shouldBe AnnotationDecl("A",
+      methods = List(
+        MethodDecl("x", modifiers = Set(Public())),
+        MethodDecl("y", modifiers = Set(Public()))
+      )
+    )
   }
 
   it should "parse a field declaration" in {
@@ -372,6 +397,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   }
 
   it should "parse a constructor declaration" in {
+    // Def new()
     parser(PUBDEF, NEW, LPAREN, RPAREN).methodDeclaration(Nil) shouldBe ConstructorDecl(
       MethodID("new"),
       modifiers = Set(Public()),

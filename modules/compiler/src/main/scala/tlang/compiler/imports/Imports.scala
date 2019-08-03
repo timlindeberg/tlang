@@ -15,16 +15,15 @@ import scala.collection.mutable
 
 object Imports {
 
-  private val javaObject  = List("java", "lang", "Object")
-  private val javaString  = List("java", "lang", "String")
-  private val TInt        = List("T", "lang", "Int")
-  private val TLong       = List("T", "lang", "Long")
-  private val TFloat      = List("T", "lang", "Float")
-  private val TDouble     = List("T", "lang", "Double")
-  private val TChar       = List("T", "lang", "Char")
-  private val TBool       = List("T", "lang", "Bool")
-  private val TAnnotation = List("T", "lang", "Annotation")
-  private val TLang       = List("T", "lang")
+  private val javaObject = List("java", "lang", "Object")
+  private val javaString = List("java", "lang", "String")
+  private val TInt       = List("T", "lang", "Int")
+  private val TLong      = List("T", "lang", "Long")
+  private val TFloat     = List("T", "lang", "Float")
+  private val TDouble    = List("T", "lang", "Double")
+  private val TChar      = List("T", "lang", "Char")
+  private val TBool      = List("T", "lang", "Bool")
+  private val TLang      = List("T", "lang")
 
   val DefaultImports: List[Import] = List[Import](
     RegularImport(javaObject),
@@ -35,7 +34,6 @@ object Imports {
     RegularImport(TDouble),
     RegularImport(TChar),
     RegularImport(TBool),
-    RegularImport(TAnnotation),
     ExtensionImport(TLang, javaObject),
     ExtensionImport(TLang, javaString),
     ExtensionImport(TLang, TInt),
