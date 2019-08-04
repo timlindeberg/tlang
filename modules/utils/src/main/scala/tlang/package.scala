@@ -12,7 +12,9 @@ package object tlang {
 
   def debugPrint(values: sourcecode.Text[_]*): Unit = {
     val maxNameWidth = values.map(_.source.length).max
-    values.foreach(value => printf(s"[%-${ maxNameWidth }s]: '%s'$NL", value.source, value.value.toString))
+    values foreach {
+      value => printf(s"[%-${ maxNameWidth }s]: '%s'$NL", value.source, value.value.toString)
+    }
   }
 
   val NL: String = System.lineSeparator
@@ -116,10 +118,9 @@ package object tlang {
 
     def insert(s: String, i: Int): String = str.substring(0, i) + s + str.substring(i, str.length)
 
-
     def escape(implicit escapeCharacters: scala.collection.Map[Char, String]): String = {
       val sb = new StringBuilder
-      str.foreach { c =>
+      str foreach { c =>
         escapeCharacters.get(c) match {
           case Some(x) => sb ++= s"\\$x"
           case None    => sb += c
@@ -221,21 +222,19 @@ package object tlang {
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
 
-    def use(f: T => Unit): T = { val x = t; f(t); x }
-    def after(f: => Unit): T = { val x = t; f; x }
+    def use[U](f: T => U): T = { val x = t; f(t); x }
+    def <|[U](f: => U): T = { val x = t; f; x }
 
     def print: T = { println(t); t }
     def print[U](f: T => U): T = { println(f(t)); t }
     def print[U](prefix: String): T = { println(s"$prefix: '$t'"); t }
 
-    def in(seq: TraversableOnce[T]): Boolean = seq.exists(_ == t)
-    def notIn(seq: TraversableOnce[T]): Boolean = !t.in(seq)
-    def in(set: Set[T]): Boolean = set.contains(t)
-    def notIn(set: Set[T]): Boolean = !t.in(set)
+    def in[P >: T](seq: TraversableOnce[P]): Boolean = seq.exists(_ == t)
+    def notIn[P >: T](seq: TraversableOnce[P]): Boolean = !t.in(seq)
+    def in[P >: T](set: Set[P]): Boolean = set.contains(t)
+    def notIn[P >: T](set: Set[P]): Boolean = !t.in(set)
     def in(range: Range): Boolean = range.contains(t)
     def notIn(range: Range): Boolean = !t.in(range)
-
-    def |>[A](f: T => A) = f(t)
 
     def ifInstanceOf[A: ClassTag](f: A => Unit): Unit = if (classTag[A].runtimeClass.isInstance(t)) f(t.asInstanceOf[A])
     def partialMatch[U](partialFunction: PartialFunction[T, U]): Unit = {
@@ -265,6 +264,11 @@ package object tlang {
     def partitionInstance[A <: T : ClassTag]: (Collection[A], Collection[T]) = {
       val (a, b) = collection.partition(classTag[A].runtimeClass.isInstance(_))
       (a.asInstanceOf[Collection[A]], b.asInstanceOf[Collection[T]])
+    }
+
+    def partitionInstances[A <: T : ClassTag, B <: T]: (Collection[A], Collection[B]) = {
+      val (a, b) = collection.partitionInstance[A]
+      (a, b.asInstanceOf[Collection[B]])
     }
 
     def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]
@@ -301,6 +305,10 @@ package object tlang {
           case None    => None
         }
       }
+  }
+
+  implicit class ArrayExtensions[T](val arr: Array[T]) extends AnyVal {
+    def binarySearch(key: T): Int = java.util.Arrays.binarySearch(arr.asInstanceOf[Array[AnyRef]], key)
   }
 
 }

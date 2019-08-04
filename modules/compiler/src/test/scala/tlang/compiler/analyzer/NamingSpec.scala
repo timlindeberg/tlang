@@ -4,7 +4,7 @@ package analyzer
 
 import tlang.Constants
 import tlang.compiler.Context
-import tlang.compiler.analyzer.Symbols.{FieldSymbol, GlobalScope, MethodSymbol, OperatorSymbol}
+import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
 import tlang.compiler.messages.Reporter
@@ -77,7 +77,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
     symbolB.modifiers should contain allOf(Static(), Public())
     symbolNew.modifiers should contain allOf(Protected(), Implicit())
 
-    symbolNew.annotations should contain(Constants.ImplicitConstructorAnnotation)
+    symbolNew.annotations should contain(AnnotationSymbol(Constants.ImplicitConstructorAnnotation))
 
     symbolA.isAbstract shouldBe true
   }

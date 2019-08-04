@@ -9,7 +9,6 @@ import tlang.compiler.messages.CompilerMessage
 
 object Types {
 
-
   trait Typed {
     self =>
 
@@ -45,6 +44,8 @@ object Types {
 
   val Primitives  : List[TObject] = List(Int, Long, Float, Double, Char, Bool)
   val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
+
+  val AnnotationTypes: List[Type] = List(Int, Long, Float, Double, String)
 
   private def initialize(symbols: ClassSymbol*): Unit = {
     val classSymbolLocator = ClassSymbolLocator(ClassPath.Default)

@@ -4,7 +4,7 @@ package cafebabe
   * information that will be written to a <code>.class</code> file.  In the Java
   * model, that generally corresponds to one class (or interface) as declared in
   * source code, however this is by no means a restriction of the platform. */
-class ClassFile(val className: String, parentName: Option[String] = None) extends Streamable {
+class ClassFile(val className: String, parentName: Option[String] = None) extends Streamable with Annotatable {
 
   import ClassFileTypes._
   import Defaults._
@@ -33,6 +33,8 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   private var methods   : List[MethodInfo]    = Nil
   private var interfaces: List[InterfaceInfo] = Nil
   private var attributes: List[AttributeInfo] = Nil
+
+  private var annotationAttribute: Option[AnnotationAttribute] = None
 
   def addInterface(name: String) {
     val nameIndex = constantPool.addClass(constantPool.addString(name))
@@ -80,7 +82,6 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     new MethodHandler(inf, code, constantPool, args, signature)
   }
 
-  /** Adds the main method */
   def addMainMethod: MethodHandler = {
     val handler = addMethod("V", "main", "[Ljava/lang/String;", false, "main(args: java::lang::String[]): Unit")
     handler.setFlags(Flags.METHOD_ACC_PUBLIC | Flags.METHOD_ACC_STATIC)
@@ -116,6 +117,18 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     mh
   }
 
+  override def addAnnotation(name: String): AnnotationHandler = {
+    if (annotationAttribute.isEmpty) {
+      val attr = new AnnotationAttribute(runtimeVisibleAnnotationsIndex)
+      annotationAttribute = Some(attr)
+      attributes ::= attr
+    }
+
+    val inf = new AnnotationInfo(constantPool.addString(name), Nil)
+    annotationAttribute.get.annotations ::= inf
+    new AnnotationHandler(inf, constantPool)
+  }
+
   /** Writes the binary representation of this class file to a file. */
   def writeToFile(fileName: String) {
     // The stream we'll ultimately use to write the class file data
@@ -144,7 +157,7 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
 
   }
 
-  def stringToDescriptor(s: String) = s
+  def stringToDescriptor(s: String): String = s
 }
 
 

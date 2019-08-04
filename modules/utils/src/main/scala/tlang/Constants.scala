@@ -14,8 +14,11 @@ object Constants {
   val THome                         = "T_HOME"
   val CompilerCommandName           = "tcompile"
   val ReplCommandName               = "trepl"
-  val JavaObject                    = "java::lang::Object"
-  val JavaString                    = "java::lang::String"
+  val MainMethod                    = "main"
+  val JavaLangPackage               = "java::lang"
+  val JavaObject                    = s"$JavaLangPackage::Object"
+  val JavaString                    = s"$JavaLangPackage::String"
+  val JavaAnnotation                = s"$JavaLangPackage::annotation::Annotation"
   val TLangPackage                  = "T::lang"
   val TInt                          = s"$TLangPackage::Int"
   val TIntRef                       = s"$TLangPackage::IntRef"
@@ -36,7 +39,7 @@ object Constants {
 
   lazy val Version          : String = readVersion()
   lazy val THomeDirectory   : String = sys.env.getOrElse(THome, FatalCantFindTHome)
-  lazy val TStdLibDirectory : String = getTStdLibDirectory()
+  lazy val TStdLibDirectory : String = tStdLibDirectory
   lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
   lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
 
@@ -53,7 +56,7 @@ object Constants {
       .getOrElse(throw new FileNotFoundException(VersionFile))
   }
 
-  private def getTStdLibDirectory(): String = {
+  private def tStdLibDirectory: String = {
     val dir = Paths.get(THomeDirectory, StdLibDir).toFile
     if (!dir.exists()) {
       System.err.println(s"$THome folder ($THomeDirectory) does not contain a $StdLibDir directory.")

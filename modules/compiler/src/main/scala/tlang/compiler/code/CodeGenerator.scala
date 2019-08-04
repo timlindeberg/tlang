@@ -18,8 +18,9 @@ import scala.collection.mutable
 
 object CodeGenerator {
 
-  val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
-  val ClassFlags: U2 = CLASS_ACC_PUBLIC
+  val TraitFlags     : U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
+  val AnnotationFlags: U2 = TraitFlags | CLASS_ACC_ANNOTATION
+  val ClassFlags     : U2 = CLASS_ACC_PUBLIC
 
   val ConstructorName = "<init>"
 
@@ -142,7 +143,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           compileExpr(expr)
       case Block(stats)                              =>
         stats.foreach(compileStat(_, continue, break, compileUseless))
-      case v@VarDecl(_, _, init, _)                  =>
+      case v@VarDecl(_, _, init, _, _)               =>
         val sym = v.getSymbol
         val tpe = sym.getType
         val id = ch.getFreshVar(tpe.size)
@@ -256,10 +257,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case id: VariableID                               => load(id.getSymbol)
       case _: This                                      => ch << ArgLoad(0)
       case _: Super                                     => ch << ArgLoad(0)
-      case branch: BranchingOperatorTree                =>
-        compileValueBranch(branch)
-      case arrLit: ArrayLit                             =>
-        compileArrayLiteral(arrLit)
+      case branch: BranchingOperatorTree                => compileValueBranch(branch)
+      case arrLit: ArrayLit                             => compileArrayLiteral(arrLit)
       case newArray@Trees.NewArray(tpe, sizes)          =>
         sizes foreach (compileExpr(_))
         val dimension = newArray.sizes.size
@@ -358,7 +357,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
               ch << (
                 if (acc.isStatic)
                   InvokeStatic(className, methName, signature)
-                else if (obj.isInstanceOf[Super] || methSymbol.accessability == Private())
+                else if (obj.isInstanceOf[Super] || methSymbol.accessibility == Private())
                   InvokeSpecial(className, methName, signature)
                 else if (classSymbol.isAbstract)
                   InvokeInterface(className, methName, signature)
@@ -414,7 +413,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   }
 
   def compileField(classDecl: ClassDeclTree, varDecl: VarDecl): CodeHandler = {
-    val VarDecl(id, _, Some(init), _) = varDecl
+    val VarDecl(id, _, Some(init), _, _) = varDecl
     val sym = id.getSymbol
     if (!sym.isStatic)
       ch << ArgLoad(0) // put this-reference on stack

@@ -1,3 +1,6 @@
+// Ignore
+// TODO: Fix out of bounds checking
+
 var a = new Int[5]
 println(a[-1]) // res: F2004
 

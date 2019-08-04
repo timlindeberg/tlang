@@ -47,7 +47,7 @@ case class LoggingSettings(
   def TimeColor: Color = formatter.Magenta
   def HighlightColor: Color = formatter.Cyan
 
-  var _printToFile: List[File] = Nil
+  private var _printToFile: List[File] = Nil
   def printToFile: List[File] = _printToFile
   def printToFile_=(files: List[File]): Unit = {
     files.foreach(_.createDirectories())
@@ -65,8 +65,8 @@ object Logging {
 
 }
 
-class LazyVal(wrp: => Any) {
-  lazy val value: Any = wrp
+class LazyVal(lazyValue: => Any) {
+  lazy val value: Any = lazyValue
 }
 
 trait Logging {
@@ -76,7 +76,6 @@ trait Logging {
   implicit def AnyToLazy(any: => Any): LazyVal = new LazyVal(any)
 
   implicit class LoggingStringContext(val sc: StringContext) {
-
     def trace(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Trace, args)
     def debug(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Debug, args)
     def info(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Info, args)
@@ -84,14 +83,10 @@ trait Logging {
     def error(args: LazyVal*)(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = log(LogLevel.Error, args)
 
     private def log(logLevel: LogLevel, values: Seq[LazyVal])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
-      if (!logger.isEnabled(logLevel))
-        return
-
-      logger.logWithContext(logLevel, sc, values.map(_.value))
+      if (logger.isEnabled(logLevel))
+        logger.logWithContext(logLevel, sc, values.map(_.value))
     }
   }
-
-
 }
 
 class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.DefaultLogSettings) {

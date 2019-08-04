@@ -14,6 +14,7 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.{Logging, NoPosition, Positioned}
 
+import scala.collection.immutable.Stream.cons
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -80,27 +81,35 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <compilationUnit> ::=
     * [ <packageDeclaration> <statementEnd>  ]
     * { <importDeclaration> <statementEnd> }
-    * { <classDeclaration> <statementEnd> | <methodDeclaration> <statementEnd> | <statement> <statementEnd> }
+    * {
+    * ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
+    * <statementEnd>
+    * }
     * <EOF>
     */
   def compilationUnit: CompilationUnit = positioned {
     val pack = tokens.next.kind match {
-      case PACKAGE => packageDeclaration after statementEnd
+      case PACKAGE => packageDeclaration <| statementEnd
       case _       => Package(Nil)
     }
 
-    val imps = untilNot(IMPORT) { importDeclaration after statementEnd }
+    val imps = untilNot(IMPORT) { importDeclaration <| statementEnd }
 
     val code = until(EOF) {
-      tokens.next.kind match {
-        case CLASS | TRAIT | EXTENSION => classDeclaration after statementEnd
-        case PUBDEF | PRIVDEF          =>
+      val annotations = untilNot(AT)(annotation)
+      val tree = tokens.next.kind match {
+        case CLASS            => classDeclaration(annotations)
+        case TRAIT            => traitDeclaration(annotations)
+        case EXTENSION        => extensionDeclaration(annotations)
+        case ANNOTATION       => annotationDeclaration(annotations)
+        case PUBDEF | PRIVDEF =>
           positioned {
             val modifiers = methodModifiers
-            method(modifiers + Static().setPos(modifiers.head)) after statementEnd
+            method(modifiers + Static().setPos(modifiers.head), annotations)
           }
-        case _                         => statement after statementEnd
+        case _                => statement
       }
+      tree <| statementEnd
     }
 
     val classes = createClasses(code)
@@ -134,7 +143,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     val mainName = tokens.source.map(_.mainName).getOrElse("MissingSource")
 
-    classes.filterInstance[ClassDecl].find(_.id.name == mainName) ifDefined { mainClass =>
+    classes.filterInstance[ClassDecl].find { _.id.name == mainName } ifDefined { mainClass =>
       val pos = if (stats.nonEmpty) stats.head else methods.head
       report(FileClassAlreadyDefined(mainName, mainClass, pos))
     }
@@ -142,7 +151,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     if (stats.isEmpty)
       return createMainClass(mainName, methods) :: classes
 
-    methods.find(_.id.name == "main") ifDefined { mainMethod =>
+    methods.find { _.id.name == Constants.MainMethod } ifDefined { mainMethod =>
       report(MainMethodAlreadyDefined(mainMethod, stats.head))
     }
 
@@ -157,9 +166,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   private def createMainMethod(stats: List[StatTree]): MethodDecl = {
-    val args = List(Formal(ArrayType(ClassID("java::lang::String", List())), VariableID("args")))
+    val args = List(Formal(ArrayType(ClassID(Constants.JavaString, List())), VariableID("args")))
     val modifiers: Set[Modifier] = Set(Public(), Static())
-    MethodDecl(MethodID("main").setNoPos(), modifiers, args, Some(UnitType()), Some(Block(stats))).setPos(stats.head, tokens.lastVisible)
+    MethodDecl(
+      MethodID(Constants.MainMethod).setNoPos(),
+      modifiers,
+      Nil,
+      args,
+      Some(UnitType()),
+      Some(Block(stats))
+    ).setPos(stats.head, tokens.lastVisible)
   }
 
   /** <packageDeclaration> ::= package <identifierName> { :: <identifierName> } */
@@ -181,6 +197,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(TIMES)
           imp = Some(WildCardImport(address.toList))
         case EXTENSION =>
+          eat(EXTENSION)
           imp = Some(extensionImportDeclaration(address.toList))
         case _         => address += identifierName
       }
@@ -190,84 +207,100 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <extensionImportDeclaration> ::= extension <identifierName> { :: <identifierName> } */
   def extensionImportDeclaration(address: List[String]): Import = {
-    eat(EXTENSION)
-
     val className = nonEmptyList(COLON, COLON)(identifierName)
     ExtensionImport(address, className)
   }
 
-  /** <classDeclaration> ::=
-    * | <classOrTraitDeclaration>
-    * | <extensionDeclaration>
-    */
-  def classDeclaration: ClassDeclTree =
-    if (tokens.next.kind == EXTENSION)
-      extensionDeclaration
-    else
-      classOrTraitDeclaration
-
-  /** <classOrTraitDeclaration> ::= (class|trait) <classTypeIdentifier> <parentsDeclaration>
-    * [ = <indent>
-    *    { <fieldDeclaration> <statementEnd> }
-    *    { <methodDeclaration> <statementEnd> }
-    *    <dedent>
-    * ]
-    */
-  def classOrTraitDeclaration: ClassDeclTree = positioned {
-    val classOrTrait = tokens.next.kind match {
-      case CLASS => CLASS
-      case TRAIT => TRAIT
-      case _     => report(WrongToken(tokens.next, tokens.last, CLASS, TRAIT))
+  /** <annotation> ::= @<classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
+  def annotation: Annotation = positioned {
+    eat(AT)
+    val id = classType
+    val arguments = tokens.next.kind match {
+      case LPAREN => commaList(LPAREN, RPAREN)(keyValuePair)
+      case _      => Nil
     }
-    eat(classOrTrait)
 
+    Annotation(id, arguments)
+  }
+
+  /** <classDeclaration> ::= class <classTypeIdentifier> [ : <parentsDeclaration> ] [ = <classBody> ] */
+  def classDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
+    eat(CLASS)
     val id = classTypeIdentifier
-    val parents = parentsDeclaration
-    val (vars, methods) = tokens.next.kind match {
-      case EQSIGN =>
-        eat(EQSIGN, INDENT)
-        val vars = untilNot(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL) { fieldDeclaration after statementEnd }
-        val methods = untilNot(PRIVDEF, PUBDEF) { methodDeclaration after statementEnd }
-        eat(DEDENT)
-        (vars, methods)
-      case _      => (Nil, Nil)
-    }
+    val parents = optional(COLON)(parentsDeclaration).getOrElse(Nil)
+    val (vars, methods) = optional(EQSIGN)(classBody).getOrElse((Nil, Nil))
 
-    if (classOrTrait == CLASS)
-      ClassDecl(id, parents, vars, methods)
-    else
-      TraitDecl(id, parents, vars, methods)
+    ClassDecl(id, parents, vars, methods, annotations)
+  }
+
+  /** <traitDeclaration> ::= trait <classTypeIdentifier> [ : <parentsDeclaration> ] [ = <classBody> ] */
+  def traitDeclaration(annotations: List[Annotation]): ClassDeclTree = positioned {
+    eat(TRAIT)
+    val id = classTypeIdentifier
+    val parents = optional(COLON)(parentsDeclaration).getOrElse(Nil)
+    val (vars, methods) = optional(EQSIGN)(classBody).getOrElse((Nil, Nil))
+
+    TraitDecl(id, parents, vars, methods, annotations)
   }
 
   /** <extensionDeclaration> ::= extension <tpe> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
-  def extensionDeclaration: ExtensionDecl = positioned {
+  def extensionDeclaration(annotations: List[Annotation]): ExtensionDecl = positioned {
     eat(EXTENSION)
     val id = tpe
-    val methods = tokens.next.kind match {
-      case EQSIGN =>
-        eat(EQSIGN, INDENT)
-        val methods = untilNot(PRIVDEF, PUBDEF) { methodDeclaration after statementEnd }
-        eat(DEDENT)
-        methods
-      case _      => Nil
-    }
-    ExtensionDecl(id, methods)
+    val methods = optional(EQSIGN)(classMethods).getOrElse(Nil)
+
+    ExtensionDecl(id, methods, annotations)
   }
 
-  /** <parentsDeclaration> ::= [ : <classType> { "," <classType> } ] */
-  def parentsDeclaration: List[ClassID] = tokens.next.kind match {
-    case COLON =>
-      eat(COLON)
-      nonEmptyList(COMMA)(classType)
-    case _     => Nil
+  /** <annotationDeclaration> ::= annotation <classTypeIdentifier> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
+  def annotationDeclaration(annotations: List[Annotation]): AnnotationDecl = positioned {
+    eat(ANNOTATION)
+    val id = classTypeIdentifier
+    val methods = optional(EQSIGN)(classMethods).getOrElse(Nil)
+
+    AnnotationDecl(id, methods, annotations)
   }
+
+  /** <classMethods> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
+  def classMethods: List[MethodDeclTree] = {
+    eat(INDENT)
+    val methods = until(DEDENT) {
+      val annotations = untilNot(AT)(annotation)
+      tokens.next.kind match {
+        case PRIVDEF | PUBDEF => methodDeclaration(annotations) <| statementEnd
+        case _                => report(wrongToken(PRIVDEF, PUBDEF))
+      }
+    }
+    eat(DEDENT)
+    methods
+  }
+
+  /** <classBody> ::= <indent> { { <annotationDeclaration> } ( <fieldDeclaration> | <methodDeclaration> ) ) } <dedent> */
+  def classBody: (List[VarDecl], List[MethodDeclTree]) = {
+    eat(INDENT)
+    val trees = until(DEDENT) {
+      val annotations = untilNot(AT)(annotation)
+      tokens.next.kind match {
+        case PUBVAR | PRIVVAR | PUBVAL | PRIVVAL => fieldDeclaration(annotations) <| statementEnd
+        case PRIVDEF | PUBDEF                    => methodDeclaration(annotations) <| statementEnd
+        case _                                   => report(wrongToken(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL, PRIVDEF, PUBDEF))
+      }
+    }
+    eat(DEDENT)
+
+    trees.partitionInstances[VarDecl, MethodDeclTree]
+  }
+
+  /** <parentsDeclaration> ::= <classType> { "," <classType> } */
+  def parentsDeclaration: List[ClassID] = nonEmptyList(COMMA)(classType)
+
 
   /** <fieldDeclaration> ::= <fieldModifiers> <varDeclEnd> */
-  def fieldDeclaration: VarDecl = positioned {
-    varDeclEnd(fieldModifiers)
+  def fieldDeclaration(annotations: List[Annotation]): VarDecl = positioned {
+    varDeclEnd(fieldModifiers, annotations)
   }
 
-  /** <fieldModifiers> ::= ( Var | Val | (var | val [ protected ])) [ static } */
+  /** <fieldModifiers> ::= ( Var | Val | var | val [ protected ]) [ static ] */
   def fieldModifiers: Set[Modifier] = {
     val startPos = tokens.next
     val modifiers = mutable.Set[Modifier]()
@@ -287,7 +320,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         eat(PRIVVAL)
         modifiers += protectedOrPrivate.setPos(startPos, tokens.lastVisible)
         modifiers += Final().setPos(startPos, tokens.lastVisible)
-      case _       => report(WrongToken(tokens.next, tokens.last, PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
+      case _       => report(wrongToken(PUBVAR, PRIVVAR, PUBVAL, PRIVVAL))
     }
 
     val pos = tokens.next
@@ -304,95 +337,83 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def varDeclaration: VarDecl = positioned {
     val startPos = tokens.next
     val modifiers: Set[Modifier] = tokens.next.kind match {
-      case PRIVVAR =>
-        eat(PRIVVAR)
-        Set(Private())
-      case PRIVVAL =>
-        eat(PRIVVAL)
-        Set(Private(), Final())
-      case _       => report(WrongToken(tokens.next, tokens.last, PRIVVAR, PRIVVAL))
+      case PRIVVAR => eat(PRIVVAR); Set(Private())
+      case PRIVVAL => eat(PRIVVAL); Set(Private(), Final())
+      case _       => report(wrongToken(PRIVVAR, PRIVVAL))
     }
-    modifiers.foreach(_.setPos(startPos, tokens.lastVisible))
-    varDeclEnd(modifiers)
+    modifiers foreach { _.setPos(startPos, tokens.lastVisible) }
+    // TODO: Support annotations on local variables
+    varDeclEnd(modifiers, Nil)
   }
 
   /** <varDeclEnd> ::= <identifier> [ : <tpe> ] [ = <expression> ] */
-  def varDeclEnd(modifiers: Set[Modifier]): VarDecl = {
+  def varDeclEnd(modifiers: Set[Modifier], annotations: List[Annotation]): VarDecl = {
     val id = identifier(VariableID)
     val typ = optional(COLON)(tpe)
     val init = optional(EQSIGN)(expression)
-    VarDecl(id, typ, init, modifiers)
+    VarDecl(id, typ, init, modifiers, annotations)
   }
 
   /** <methodDeclaration> ::= <methodModifiers> ( <method> | <constructor> | <operator> ) */
-  def methodDeclaration: MethodDeclTree = positioned {
+  def methodDeclaration(annotations: List[Annotation]): MethodDeclTree = positioned {
     val mods = methodModifiers
     tokens.next.kind match {
-      case IDKIND => method(mods)
-      case NEW    => constructor(mods)
-      case _      => operator(mods)
+      case IDKIND => method(mods, annotations)
+      case NEW    => constructor(mods, annotations)
+      case _      => operator(mods, annotations)
     }
   }
 
   /** <methodModifiers> ::= ( Def | def [ protected ])) { static | implicit } */
   def methodModifiers: Set[Modifier] = {
-    val startPos = tokens.next
     val modifiers = mutable.Set[Modifier]()
-    val accessability = tokens.next.kind match {
-      case PUBDEF  =>
-        eat(PUBDEF)
-        Public()
-      case PRIVDEF =>
-        eat(PRIVDEF)
-        protectedOrPrivate
-      case _       => report(WrongToken(tokens.next, tokens.last, PUBDEF, PRIVDEF))
+    modifiers += positioned {
+      tokens.next.kind match {
+        case PUBDEF  => eat(PUBDEF); Public()
+        case PRIVDEF => eat(PRIVDEF); protectedOrPrivate
+        case _       => report(wrongToken(PUBDEF, PRIVDEF))
+      }
     }
 
-    modifiers += accessability.setPos(startPos, tokens.lastVisible)
-
     while (tokens.next.kind in List(STATIC, IMPLICIT)) {
-      val pos = tokens.next
-      val modifier = tokens.next.kind match {
-        case STATIC   =>
-          eat(STATIC)
-          Static()
-        case IMPLICIT =>
-          eat(IMPLICIT)
-          Implicit()
-        case _        => ???
+      modifiers += positioned {
+        tokens.next.kind match {
+          case STATIC   => eat(STATIC); Static()
+          case IMPLICIT => eat(IMPLICIT); Implicit()
+          case _        => ???
+        }
       }
-      modifiers += modifier.setPos(pos, tokens.lastVisible)
     }
     modifiers.toSet
   }
 
   /** <method> ::= <identifier> "(" [ <formal> { , <formal> } ] ")" [ : <returnType> ] <methodBody> */
-  def method(modifiers: Set[Modifier]): MethodDecl = {
-    modifiers.filterInstance[Implicit].foreach(mod => report(ImplicitMethodOrOperator(mod)))
+  def method(modifiers: Set[Modifier], annotations: List[Annotation]): MethodDecl = {
+    modifiers.filterInstance[Implicit] foreach { mod => report(ImplicitMethodOrOperator(mod)) }
 
     val id = identifier(MethodID)
     val args = commaList(LPAREN, RPAREN)(formal)
     val retType = optional(COLON)(returnType)
 
     val methBody = methodBody
-    MethodDecl(id, modifiers, args, retType, methBody)
+    MethodDecl(id, modifiers, annotations, args, retType, methBody)
   }
 
   /** <constructor> ::= new "(" [ <formal> { , <formal> } ] ")" <methodBody> */
-  def constructor(modifiers: Set[Modifier]): ConstructorDecl = {
+  def constructor(modifiers: Set[Modifier], annotations: List[Annotation]): ConstructorDecl = {
     val pos = tokens.next
     eat(NEW)
     val methId = MethodID("new").setPos(pos, tokens.lastVisible)
     val args = commaList(LPAREN, RPAREN)(formal)
     val retType = Some(UnitType().setType(TUnit).setNoPos())
     val methBody = optional(EQSIGN)(statement)
-    ConstructorDecl(methId, modifiers, args, retType, methBody)
+    ConstructorDecl(methId, modifiers, annotations, args, retType, methBody)
   }
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
     * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
     * */
-  def operator(modifiers: Set[Modifier]): OperatorDecl = {
+  def operator(modifiers: Set[Modifier], annotations: List[Annotation]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
     }
@@ -455,12 +476,12 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
             case EQSIGN =>
               eat(EQSIGN)
               (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
-            case _      => report(WrongToken(tokens.next, tokens.last, EQSIGN, LPAREN))
+            case _      => report(wrongToken(EQSIGN, LPAREN))
           }
         case COLON    =>
           eat(COLON, RBRACKET)
           (3, ArraySlice(Empty(), None, None, None))
-        case _        => report(WrongToken(tokens.next, tokens.last, RBRACKET, COLON))
+        case _        => report(wrongToken(RBRACKET, COLON))
       }
 
       modifiers.findInstance[Static].ifDefined { static =>
@@ -496,14 +517,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case INCREMENT     => unaryOperator(PreIncrement)
       case DECREMENT     => unaryOperator(PreDecrement)
       case LBRACKET      => indexingOperator
-      case _             =>
-        report(UnexpectedToken(tokens.next, tokens.last))
+      case _             => report(UnexpectedToken(tokens.next, tokens.last))
     }
 
     val retType = optional(COLON)(returnType)
     val methBody = methodBody
 
-    OperatorDecl(operatorType.setNoPos(), newModifiers, args, retType, methBody)
+    OperatorDecl(operatorType.setNoPos(), newModifiers, annotations, args, retType, methBody)
   }
 
   /** <methodBody> ::= [ "=" <statement> ] */
@@ -515,6 +535,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(COLON)
     val typ = tpe
     Formal(typ, id)
+  }
+
+  /** <keyValuePair> ::= <identifier> = <expression> */
+  def keyValuePair: KeyValuePair = positioned {
+    val id = identifier(VariableID)
+    eat(EQSIGN)
+    KeyValuePair(id, expression)
   }
 
   private def replaceWithReturnStatement(stat: StatTree): StatTree = {
@@ -529,11 +556,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     returnStatement.setPos(stat)
   }
 
-  private def protectedOrPrivate: Accessability = positioned {
+  private def protectedOrPrivate: Accessibility = positioned {
     tokens.next.kind match {
-      case PROTECTED =>
-        eat(PROTECTED)
-        Protected()
+      case PROTECTED => eat(PROTECTED); Protected()
       case _         => Private()
     }
   }
@@ -578,7 +603,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <block> ::= <indent> { <statement> <statementEnd> } <dedent> */
   def block: Block = positioned {
     eat(INDENT)
-    val statements = until(DEDENT) { statement after statementEnd }
+    val statements = until(DEDENT) { statement <| statementEnd }
     eat(DEDENT)
     Block(statements)
   }
@@ -687,7 +712,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           if (tokens.next.kind in assignmentTokens)
             assignment(Some(id)).asInstanceOf[Assign].setPos(startPos, tokens.lastVisible)
           else
-            report(WrongToken(tokens.next, tokens.last, assignmentTokens.head, assignmentTokens.tail: _*))
+            report(wrongToken(assignmentTokens.head, assignmentTokens.tail: _*))
       }
     }
 
@@ -720,7 +745,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
         while (tokens.nextIncludingNewlines.kind in List(SEMICOLON, NEWLINE))
           tokens.readNext()
       case EOF                 =>
-      case _                   => report(WrongToken(tokens.next, tokens.last, NEWLINE, SEMICOLON))
+      case _                   => report(wrongToken(NEWLINE, SEMICOLON))
     }
   }
 
@@ -733,7 +758,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <expression> ::= <assignment> */
   def expression: ExprTree = assignment()
 
-  /** <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ] **/
+  /** <assignment> ::= <ternary> [ ( = | += | -= | *= | /= | %= | &= | |= | ^= | <<= | >>= ) <expression> ] */
   def assignment(expr: Option[ExprTree] = None): ExprTree = {
     val startPos = tokens.next
     val e = expr getOrElse ternary
@@ -949,7 +974,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           _nullableBracket()
 
         NewArray(e, sizes.toList)
-      case _                       => report(WrongToken(tokens.next, tokens.last, LPAREN, LBRACKET))
+      case _                       => report(wrongToken(LPAREN, LBRACKET))
     }
   }
 
@@ -1010,7 +1035,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <negation> ::= - <term> */
   def negation: ExprTree = positioned {
-    def negated[T : Numeric](value: T, kind: TokenKind, tree: T => ExprTree): ExprTree = {
+    def negated[T: Numeric](value: T, kind: TokenKind, tree: T => ExprTree): ExprTree = {
       eat(kind)
       val num = implicitly[Numeric[T]].negate(value)
       tree(num)
@@ -1037,20 +1062,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <superTerm> ::= super [ "<" <identifier> "> ] */
   def superTerm: ExprTree = positioned {
     eat(SUPER)
-    val specifier = optional(LESSTHAN) { identifier(ClassID(_, Nil)) after eat(GREATERTHAN) }
+    val specifier = optional(LESSTHAN) { identifier(ClassID(_, Nil)) <| eat(GREATERTHAN) }
     Super(specifier)
   }
 
   /** <access> ::= (. | ?.) <identifier> [ "(" <expression> { , <expression> } ")" ] */
   def access(obj: ExprTree): Access = positioned {
     val access = tokens.next.kind match {
-      case DOT        =>
-        eat(DOT)
-        NormalAccess
-      case SAFEACCESS =>
-        eat(SAFEACCESS)
-        SafeAccess
-      case _          => report(WrongToken(tokens.next, tokens.last, DOT, QUESTIONMARK))
+      case DOT        => eat(DOT); NormalAccess
+      case SAFEACCESS => eat(SAFEACCESS); SafeAccess
+      case _          => report(wrongToken(DOT, QUESTIONMARK))
     }
 
     access(obj, application)
@@ -1074,19 +1095,11 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // Uses current token since a newline should stop the iteration
     while (tokens.nextIncludingNewlines.kind in List(DOT, SAFEACCESS, EXTRACTNULLABLE, LBRACKET, INCREMENT, DECREMENT)) {
       e = tokens.nextIncludingNewlines.kind match {
-        case DOT | SAFEACCESS =>
-          access(e)
-        case LBRACKET         =>
-          arrayIndexing(e)
-        case INCREMENT        =>
-          eat(INCREMENT)
-          PostIncrement(e)
-        case DECREMENT        =>
-          eat(DECREMENT)
-          PostDecrement(e)
-        case EXTRACTNULLABLE  =>
-          eat(EXTRACTNULLABLE)
-          ExtractNullable(e)
+        case DOT | SAFEACCESS => access(e)
+        case LBRACKET         => arrayIndexing(e)
+        case INCREMENT        => eat(INCREMENT); PostIncrement(e)
+        case DECREMENT        => eat(DECREMENT); PostDecrement(e)
+        case EXTRACTNULLABLE  => eat(EXTRACTNULLABLE); ExtractNullable(e)
         case _                => ???
       }
       e.setPos(termFirst, tokens.lastVisible)
@@ -1099,11 +1112,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     eat(LBRACKET)
     val exprs = until(RBRACKET) {
       tokens.next.kind match {
-        case COLON =>
-          eat(COLON)
-          None
-        case _     =>
-          Some(expression)
+        case COLON => eat(COLON); None
+        case _     => Some(expression)
       }
     }
     eat(RBRACKET)
@@ -1145,8 +1155,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           eat(QUESTIONMARK)
           NullableType(e)
         case LBRACKET     =>
-          eat(LBRACKET, RBRACKET)
           dimension += 1
+          eat(LBRACKET, RBRACKET)
           ArrayType(e)
         case _            => ???
       }
@@ -1189,7 +1199,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           case _        => List()
         }
         ClassID(id.value, templateIds)
-      case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
+      case _      => report(wrongToken(IDKIND))
     }
   }
 
@@ -1205,7 +1215,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     tokens.next.kind match {
       case LESSTHAN =>
         eat(LESSTHAN)
-        commaList(stop = _ in List(GREATERTHAN, RSHIFT))(tpe) after endTemplateList
+        commaList(stop = _ in List(GREATERTHAN, RSHIFT))(tpe) <| endTemplateList
       case _        => List()
     }
   }
@@ -1225,7 +1235,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case _           =>
         toSpare -= 1
         if (toSpare < 0)
-          report(WrongToken(tokens.next, tokens.last, GREATERTHAN))
+          report(wrongToken(GREATERTHAN))
     }
   }
 
@@ -1237,7 +1247,25 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     case id: ID =>
       eat(IDKIND)
       id.value
-    case _      => report(WrongToken(tokens.next, tokens.last, IDKIND))
+    case _      => report(wrongToken(IDKIND))
+  }
+
+  /** <literal> ::=
+    * | <intLit>
+    * | <stringLit>
+    * | <charLit>
+    * | <longLit>
+    * | <doubleLit>
+    * | <floatLit>
+    */
+  private def literal: Literal[_] = tokens.next.kind match {
+    case INTLITKIND    => literal(INTLITKIND, IntLit)
+    case STRLITKIND    => literal(STRLITKIND, StringLit)
+    case CHARLITKIND   => literal(CHARLITKIND, CharLit)
+    case LONGLITKIND   => literal(LONGLITKIND, LongLit)
+    case DOUBLELITKIND => literal(DOUBLELITKIND, DoubleLit)
+    case FLOATLITKIND  => literal(FLOATLITKIND, FloatLit)
+    case _             => report(wrongToken(INTLITKIND, STRLITKIND, CHARLITKIND, LONGLITKIND, DOUBLELITKIND, FLOATLITKIND))
   }
 
   /** Parses a literal of the given kind, producing the given literalType
@@ -1252,7 +1280,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       val tokenValue = next.asInstanceOf[TokenWithValue[T]].value
       literalType(tokenValue)
     } else {
-      report(WrongToken(next, tokens.last, kind))
+      report(wrongToken(kind))
     }
   }
 
@@ -1261,18 +1289,22 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   //--- Help functions
   //----------------------------------------------------------------------------------------------
 
+  private def wrongToken(kind: TokenKind, more: TokenKind*): WrongToken = {
+    WrongToken(tokens.next, tokens.last, kind, more)
+  }
 
   /** Eats the expected tokens, or terminates with an error.
     * Takes enclosing and line as implicit parameters so that the logging
     * statement will point to the calling method instead of here.
     * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
-    val numNewlines = tokens.readNewLines()
-    debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
-
-    for (k <- kinds) tokens.next.kind match {
-      case `k` => tokens.readNext()
-      case _   => report(WrongToken(tokens.next, tokens.last, k))
+    kinds foreach { kind =>
+      val numNewlines = tokens.readNewLines()
+      debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
+      tokens.next.kind match {
+        case `kind` => tokens.readNext()
+        case _      => report(wrongToken(kind))
+      }
     }
 
     trace"${ indentation }Tokens left: ${ NL + tokens.toString }"
@@ -1335,7 +1367,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
 
   /** <optional> ::= [ <parse> ] */
-  private def optional[T <: Positioned](kinds: TokenKind*)(parse: => T): Option[T] = {
+  private def optional[T](kinds: TokenKind*)(parse: => T): Option[T] = {
     if (tokens.next.kind notIn kinds)
       return None
 

@@ -310,3 +310,32 @@ T2038: [1mCannot check if non nullable type [35mT::lang::Int[0m[1m is null.
 
 ========================================= TypingErrors UnusedPrivateMethod
 T1000: [1mPrivate method [35mABC[0m[1m is never used.[0m
+
+========================================= NamingErrors AnnotationNeedsLiteralValue
+N2024: [1mOnly literal values can be used in an annotation.[0m
+
+========================================= TypingErrors MissingAnnotationValues
+T2011: [1mAnnotation [35mABC[0m[1m is missing the following values:[0m
+
+
+========================================= TypingErrors AnnotationValueDoesNotExist
+T2012: [1mAnnotation [35mABC[0m[1m does not have a value named [35mABC[0m[1m.[0m
+
+========================================= NamingErrors StaticInAnnotation
+N2025: [1mCannot use static inside an annotation.[0m
+
+========================================= NamingErrors ConstructorInAnnotation
+N2026: [1mCannot declare a constructor inside an annotation.[0m
+
+========================================= NamingErrors OperatorInAnnotation
+N2027: [1mCannot declare an operator inside an annotation.[0m
+
+========================================= NamingErrors ImplementedMethodInAnnotation
+N2028: [1mMethods inside annotations need to be abstract.[0m
+
+========================================= NamingErrors InvalidMethodReturnTypeInAnnotation
+N2029: [1mMethods inside annotations need to return one of following types:[0m
+[1;35mT::lang::Int[0m, [1;35mT::lang::Long[0m, [1;35mT::lang::Float[0m, [1;35mT::lang::Double[0m or [1;35mjava::lang::String[0m
+
+========================================= NamingErrors PrivateMethodInAnnotation
+N2030: [1mMethods inside annotations need to be public.[0m

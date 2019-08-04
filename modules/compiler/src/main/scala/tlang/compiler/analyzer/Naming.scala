@@ -2,7 +2,7 @@ package tlang
 package compiler
 package analyzer
 
-import tlang.compiler.analyzer.Symbols._
+import tlang.compiler.analyzer.Symbols.{AnnotationSymbol, _}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
@@ -64,7 +64,7 @@ case class NameAnalyser(
 
   def bindIdentifiers(): Unit = {
     info"Binding identifiers in ${ cu.sourceDescription }"
-    cu.classes.foreach(bind)
+    cu.classes foreach bind
   }
 
   def checkInheritanceCycles(): Unit = {
@@ -82,12 +82,11 @@ case class NameAnalyser(
       }
 
       val newSet = set + classSymbol
-      classSymbol.parents.foreach(checkInheritanceCycles(_, newSet))
+      classSymbol.parents foreach { checkInheritanceCycles(_, newSet) }
     }
 
-    globalScope.classes.foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
+    globalScope.classes foreach { case (_, classSymbol) => checkInheritanceCycles(classSymbol, Set[ClassSymbol]()) }
   }
-
 
   def checkVariableUsage(): Unit =
     variableUsage
@@ -116,6 +115,8 @@ case class NameAnalyser(
   /*-------------------------------- Adding symbols --------------------------------*/
 
   private def addSymbols(classDecl: ClassDeclTree): Unit = {
+    debug"Adding symbol to ${ classDecl.name }"
+
     val sym = classDecl match {
       case ext: ExtensionDecl     =>
         val tpe = ext.tpe
@@ -126,6 +127,8 @@ case class NameAnalyser(
       case clazz: IDClassDeclTree =>
         val id = clazz.id
         val fullName = (cu.pack.address :+ id.name).mkString("::")
+
+        clazz ifInstanceOf[AnnotationDecl] { verifyAnnotationDeclaration }
 
         // This is here for when we compile the primitive classes.
         // Since they are already imported we'll get a conflict otherwise
@@ -141,7 +144,7 @@ case class NameAnalyser(
         }
     }
 
-    debug"Adding symbol to ${ classDecl.name }"
+    addAnnotations(sym, classDecl)
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
     classDecl.fields foreach { addSymbols(_, sym) }
@@ -149,31 +152,32 @@ case class NameAnalyser(
   }
 
   private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
-    val id = varDecl.id
-    val newSymbol = new FieldSymbol(id.name, varDecl.modifiers, classSymbol).setPos(varDecl)
-    ensureIdentifierNotDefined(classSymbol.fields, id.name, varDecl)
-    id.setSymbol(newSymbol)
-    varDecl.setSymbol(newSymbol)
+    debug"Adding field to ${ classSymbol.name }"
 
-    val isStaticFinal = newSymbol.isStatic && newSymbol.isFinal
+    val id = varDecl.id
+    val sym = new FieldSymbol(id.name, varDecl.modifiers, classSymbol).setPos(varDecl)
+    ensureIdentifierNotDefined(classSymbol.fields, id.name, varDecl)
+    id.setSymbol(sym)
+    varDecl.setSymbol(sym)
+
+    val isStaticFinal = sym.isStatic && sym.isFinal
     if (classSymbol.isAbstract && !isStaticFinal)
       report(NonStaticFinalFieldInTrait(varDecl))
 
     // Check usage for private fields
-    varDecl.accessability match {
-      case Private() => variableUsage += newSymbol -> false
-      case _         => variableUsage += newSymbol -> true
-    }
+    variableUsage += sym -> (varDecl.accessibility != Private())
+    addAnnotations(sym, varDecl)
 
-    debug"Adding field to ${ classSymbol.name }"
-    classSymbol.addField(newSymbol)
+    classSymbol.addField(sym)
   }
 
-  private def addSymbols(funcTree: MethodDeclTree, classSymbol: ClassSymbol): Unit = {
-    val id = funcTree.id
+  private def addSymbols(methDecl: MethodDeclTree, classSymbol: ClassSymbol): Unit = {
+    debug"Adding symbol to ${ methDecl.signature }"
+
+    val id = methDecl.id
     val name = id.name
-    val sym = funcTree match {
-      case methDecl@MethodDecl(_, modifiers, _, retType, stat)      =>
+    val sym = methDecl match {
+      case methDecl@MethodDecl(_, modifiers, _, _, retType, stat)      =>
         if (!classSymbol.isAbstract && stat.isEmpty)
           report(ClassUnimplementedMethod(methDecl))
 
@@ -181,36 +185,35 @@ case class NameAnalyser(
           report(UnimplementedMethodNoReturnType(methDecl.signature, methDecl))
 
         new MethodSymbol(name, classSymbol, stat, modifiers)
-      case conDecl@ConstructorDecl(_, modifiers, _, _, stat)        =>
+      case conDecl@ConstructorDecl(_, modifiers, _, _, _, stat)        =>
         if (stat.isEmpty)
           report(AbstractConstructor(conDecl))
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
         if (modifiers.contains(Implicit()))
-          methSym.annotations = Constants.ImplicitConstructorAnnotation :: Nil
+          methSym.addAnnotation(AnnotationSymbol(Constants.ImplicitConstructorAnnotation))
         methSym
-      case opDecl@OperatorDecl(operatorType, modifiers, _, _, stat) =>
+      case opDecl@OperatorDecl(operatorType, modifiers, _, _, _, stat) =>
         if (stat.isEmpty)
           report(AbstractOperator(opDecl))
 
         new OperatorSymbol(operatorType, classSymbol, stat, modifiers)
     }
 
-    debug"Adding symbol to ${ funcTree.signature }"
-
-    sym.setPos(funcTree)
+    addAnnotations(sym, methDecl)
+    sym.setPos(methDecl)
     id.setSymbol(sym)
-    funcTree.setSymbol(sym)
-    funcTree.args foreach { arg => addSymbols(arg, sym) }
+    methDecl.setSymbol(sym)
+    methDecl.args foreach { arg => addSymbols(arg, sym) }
   }
 
   private def addSymbols(formal: Formal, methSymbol: MethodSymbol): Unit = {
+    debug"Adding symbol to argument ${ formal.id.name } in ${ methSymbol.name }"
+
     val id = formal.id
     val modifiers: Set[Modifier] = Set(Private(), Final())
     val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
     ensureIdentifierNotDefined(methSymbol.args, id.name, id)
-
-    debug"Adding symbol to argument ${ id.name } in ${ methSymbol.name }"
 
     id.setSymbol(newSymbol)
     formal.setSymbol(newSymbol)
@@ -219,10 +222,7 @@ case class NameAnalyser(
 
     // Don't put out warning when args is unused since it's implicitly defined
     // or if the method is abstract
-    if (methSymbol.isMainMethod || methSymbol.isAbstract)
-      variableUsage += newSymbol -> true
-    else
-      variableUsage += newSymbol -> false
+    variableUsage += newSymbol -> (methSymbol.isMainMethod || methSymbol.isAbstract)
   }
 
   private def ensureClassNotDefined(id: ClassID): Unit = {
@@ -238,24 +238,78 @@ case class NameAnalyser(
       report(VariableAlreadyDefined(id, oldSymbol.line, pos))
     }
 
+  private def addAnnotations(sym: Symbol, annotatable: Annotatable): Unit = {
+    annotatable.annotations foreach { annotation =>
+      sym.addAnnotation(addAnnotationSymbol(annotation))
+    }
+  }
+
+  private def addAnnotationSymbol(annotation: Annotation): AnnotationSymbol = {
+    annotation.values foreach { case KeyValuePair(id, _) =>
+      id.setSymbol(new VariableSymbol(id.name))
+    }
+
+    val elements = annotation.values map { case KeyValuePair(id, expr) =>
+      val value = expr match {
+        case IntLit(x)    => IntAnnotationValue(x)
+        case LongLit(x)   => LongAnnotationValue(x)
+        case FloatLit(x)  => FloatAnnotationValue(x)
+        case DoubleLit(x) => DoubleAnnotationValue(x)
+        case StringLit(x) => StringAnnotationValue(x)
+        case _            =>
+          report(AnnotationNeedsLiteralValue(expr))
+          IntAnnotationValue(-1)
+      }
+      (id.name, value)
+    }
+
+    AnnotationSymbol(annotation.id.name, elements) use { annotation.setSymbol(_) }
+  }
+
+  private def verifyAnnotationDeclaration(annotation: AnnotationDecl): Unit = {
+    annotation.methods foreach {
+      case meth@(_: OperatorDecl)    => report(OperatorInAnnotation(meth))
+      case meth@(_: ConstructorDecl) => report(ConstructorInAnnotation(meth))
+      case meth                      =>
+        if (meth.isStatic) {
+          report(StaticInAnnotation(meth))
+        }
+        if (!meth.isAbstract) {
+          report(ImplementedMethodInAnnotation(meth))
+        }
+        if (meth.accessibility != Public()) {
+          report(PrivateMethodInAnnotation(meth))
+        }
+        meth.retType ifDefined { tpe =>
+          if (setType(tpe) notIn Types.AnnotationTypes) {
+            report(InvalidMethodReturnTypeInAnnotation(meth))
+          }
+        }
+    }
+  }
 
   /*-------------------------------- Binding symbols --------------------------------*/
 
 
   private def bind(tree: Tree): Unit = tree match {
-    case extension@ExtensionDecl(tpe, methods)                           =>
+    case annotation@Annotation(id, values)                                            =>
+      setType(id)
+      annotation.getSymbol.setType(annotation.id)
+    case extension@ExtensionDecl(tpe, methods, annotations)                           =>
       val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
       setType(tpe)
       extensionSym.setExtendedType(tpe.getType)
       methods foreach bind
-    case classDecl@IDClassDeclTree(_, _, _, methods)                     =>
+      annotations foreach bind
+    case classDecl@IDClassDeclTree(_, _, _, methods, annotations)                     =>
       setParentSymbol(classDecl)
       bindFields(classDecl)
       if (!methods.existsInstance[ConstructorDecl]) {
         addDefaultConstructor(classDecl)
       }
       methods foreach bind
-    case methDecl@MethodDecl(_, _, args, retType, stat)                  =>
+      annotations foreach bind
+    case methDecl@MethodDecl(_, _, annotations, args, retType, stat)                  =>
       val methSym = methDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -263,17 +317,19 @@ case class NameAnalyser(
         methSym.setType(tpe.getType)
       }
 
+      annotations foreach bind
       bindArguments(args)
       ensureMethodNotDefined(methDecl)
       stat ifDefined { new StatementBinder(methSym, methDecl.isStatic).bindStatement(_) }
-    case constructorDecl@ConstructorDecl(_, _, args, _, stat)            =>
-
+    case constructorDecl@ConstructorDecl(_, _, annotations, args, _, stat)            =>
+      annotations foreach bind
       bindArguments(args)
       ensureMethodNotDefined(constructorDecl)
 
       val conSym = constructorDecl.getSymbol
       stat ifDefined { new StatementBinder(conSym, false).bindStatement(_) }
-    case operatorDecl@OperatorDecl(operatorType, _, args, retType, stat) =>
+    case operatorDecl@OperatorDecl(operatorType, _, annotations, args, retType, stat) =>
+
       val opSym = operatorDecl.getSymbol
 
       retType ifDefined { tpe =>
@@ -282,6 +338,7 @@ case class NameAnalyser(
         operatorType.setType(t)
       }
 
+      annotations foreach bind
       bindArguments(args)
       ensureOperatorNotDefined(operatorDecl)
 
@@ -311,7 +368,8 @@ case class NameAnalyser(
     }
 
   private def bindFields(classDecl: ClassDeclTree): Unit =
-    classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _) =>
+    classDecl.fields.foreach { case varDecl@VarDecl(varId, typeTree, init, _, annotations) =>
+      annotations foreach bind
       typeTree ifDefined { t =>
         val tpe = setType(t)
         varId.setType(tpe)
@@ -338,8 +396,9 @@ case class NameAnalyser(
       canBreakContinue: Boolean = false
     ): Map[String, VariableData] =
       statement match {
-        case Block(stats)                                   =>
-          stats.dropRight(1)
+        case Block(stats)                                      =>
+          stats
+            .dropRight(1) // The last statement is an implicit return
             .collect { case Trees.UselessStatement(expr) => expr }
             .foreach { expr => report(UselessStatement(expr)) }
 
@@ -347,7 +406,7 @@ case class NameAnalyser(
             bind(nextStatement, currentLocalVars, scopeLevel + 1, canBreakContinue)
           }
           localVars
-        case varDecl@VarDecl(id, typeTree, init, modifiers) =>
+        case varDecl@VarDecl(id, typeTree, init, modifiers, _) =>
           val newSymbol = new VariableSymbol(id.name, modifiers).setPos(id)
           id.setSymbol(newSymbol)
           varDecl.setSymbol(newSymbol)
@@ -368,7 +427,7 @@ case class NameAnalyser(
           }
 
           localVars + (id.name -> new VariableData(newSymbol, scopeLevel))
-        case For(init, condition, post, stat)               =>
+        case For(init, condition, post, stat)                  =>
           val newVars = init.foldLeft(localVars) { (currentLocalVars, nextStatement) =>
             bind(nextStatement, currentLocalVars, scopeLevel + 1)
           }
@@ -376,46 +435,45 @@ case class NameAnalyser(
           post.foreach(bind(_, newVars, scopeLevel, canBreakContinue))
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case Foreach(varDecl, container, stat)              =>
+        case Foreach(varDecl, container, stat)                 =>
           val newVars = bind(varDecl, localVars, scopeLevel)
           bind(container, localVars, scopeLevel)
           bind(stat, newVars, scopeLevel + 1, canBreakContinue = true)
           localVars
-        case If(condition, thn, els)                        =>
+        case If(condition, thn, els)                           =>
           bind(condition, localVars, scopeLevel)
           bind(thn, localVars, scopeLevel, canBreakContinue)
           els ifDefined { els => bind(els, localVars, scopeLevel, canBreakContinue) }
           localVars
-        case While(condition, stat)                         =>
+        case While(condition, stat)                            =>
           bind(condition, localVars, scopeLevel)
           bind(stat, localVars, scopeLevel, canBreakContinue = true)
           localVars
-        case PrintStatTree(expr)                            =>
+        case PrintStatTree(expr)                               =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Error(expr)                                    =>
+        case Error(expr)                                       =>
           bind(expr, localVars, scopeLevel)
           localVars
-        case Return(expr)                                   =>
+        case Return(expr)                                      =>
           expr ifDefined { expr => bind(expr, localVars, scopeLevel) }
           localVars
-        case _: Break | _: Continue                         =>
+        case _: Break | _: Continue                            =>
           if (!canBreakContinue) {
             val breakOrContinue = if (statement.isInstanceOf[Break]) "break" else "continue"
             report(BreakContinueOutsideLoop(breakOrContinue, statement))
           }
           localVars
-        case expr: ExprTree                                 =>
+        case expr: ExprTree                                    =>
           bindExpr(expr, localVars, scopeLevel)
           localVars
-        case _                                              => ???
+        case _                                                 => ???
       }
 
     def bindExpr(tree: ExprTree): Unit = bindExpr(tree, Map(), 0)
 
     private def bindExpr(startingTree: ExprTree, localVars: Map[String, VariableData], scopeLevel: Int): Unit = {
       val traverser = new Trees.Traverser {
-
         def traversal: TreeTraversal = {
           case acc@Access(obj, application) =>
             obj match {
@@ -539,9 +597,11 @@ case class NameAnalyser(
 
       def getArguments(methodSymbol: MethodSymbol) = methodSymbol.argList.map(_.name)
 
-      def getFields(classSymbol: ClassSymbol) = classSymbol.fields.filter { case (_, sym) =>
-        !isStaticContext || sym.isStatic
-      }.keys.toList
+      def getFields(classSymbol: ClassSymbol) =
+        classSymbol.fields
+          .filter { case (_, sym) => !isStaticContext || sym.isStatic }
+          .keys
+          .toList
 
       scope match {
         case methodSymbol: MethodSymbol => // Binding symbols inside a method
@@ -560,12 +620,12 @@ case class NameAnalyser(
       def lookupArgument(methodSymbol: MethodSymbol) = methodSymbol.lookupArgument(name)
 
       def lookupField(methodSymbol: MethodSymbol) = {
-        val m = methodSymbol.lookupField(name)
-        m foreach { sym =>
+        val field = methodSymbol.classSymbol.lookupField(name)
+        field foreach { sym =>
           if (isStaticContext && !sym.isStatic)
             report(AccessNonStaticFromStatic(id.name, id))
         }
-        m
+        field
       }
 
       scope match {

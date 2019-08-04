@@ -7,12 +7,7 @@ import tlang.utils.Positioned
 
 trait TemplatingErrors extends ErrorHandling {
 
-  //---------------------------------------------------------------------------------------
-  //  Error messages
-  //---------------------------------------------------------------------------------------
-
   import errorStringContext._
-
 
   def report(error: ErrorMessage): Unit = reporter.report(error)
 

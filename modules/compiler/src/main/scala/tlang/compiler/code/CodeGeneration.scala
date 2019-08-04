@@ -12,6 +12,7 @@ import cafebabe.ClassFileTypes._
 import cafebabe.Flags._
 import cafebabe._
 import org.objectweb.asm.{ClassReader, ClassWriter}
+import tlang.compiler.analyzer.Symbols
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -34,7 +35,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
 
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
-      files.foreach(generateStackMapFrames(_, classLoader))
+      //files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
     }
   }
@@ -49,7 +50,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
   private def generateClassFile(classDecl: ClassDeclTree, ctx: Context): Result = {
-    info"Generating .class file for ${ classDecl.name }"
     val classFile = makeClassFile(classDecl)
     classDecl.fields.foreach { varDecl =>
       val varSymbol = varDecl.getSymbol
@@ -65,8 +65,11 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val stackTraces = generateMethods(ctx, classDecl, classFile)
 
     val className = classDecl.getSymbol.JVMName
-    val files = ctx.outDirs.map(classFilePath(_, className))
-    files.foreach { file => classFile.writeToFile(file) }
+    val files = ctx.outDirs.map { classFilePath(_, className) }
+    files.foreach { file =>
+      info"Creating .class file $file"
+      classFile.writeToFile(file)
+    }
     Result(files, stackTraces)
   }
 
@@ -93,7 +96,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       }
       val flags = getMethodFlags(methodDecl)
       methodHandle.setFlags(flags)
-      methSymbol.annotations foreach methodHandle.addAnnotation
+      methSymbol.annotations foreach { addAnnotation(methodHandle, _) }
 
       if (!methodDecl.isAbstract) {
         val ch = generateMethod(methodHandle, methodDecl)
@@ -113,6 +116,20 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         Some(ch.stackTrace)
       } else {
         None
+      }
+    }
+  }
+
+  private def addAnnotation(annotatable: cafebabe.Annotatable, annotation: Symbols.AnnotationSymbol): Unit = {
+    val annotationHandler = annotatable.addAnnotation(annotation.getType.byteCodeName)
+    annotation.elements foreach { case (name, v) =>
+      v match {
+        case IntAnnotationValue(v)    => annotationHandler.addValue(name, v)
+        case LongAnnotationValue(v)   => annotationHandler.addValue(name, v)
+        case FloatAnnotationValue(v)  => annotationHandler.addValue(name, v)
+        case DoubleAnnotationValue(v) => annotationHandler.addValue(name, v)
+        case StringAnnotationValue(v) => annotationHandler.addValue(name, v)
+        case _                        => ???
       }
     }
   }
@@ -200,16 +217,26 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
 
     val classFile = new ClassFile(className, parent)
-    traits.foreach(t => classFile.addInterface(t.JVMName))
+    traits.foreach { t => classFile.addInterface(t.JVMName) }
 
     classDecl.source partialMatch {
       case Some(FileSource(file)) => classFile.setSourceFile(file.name)
     }
 
-    val flags = if (classSymbol.isAbstract) TraitFlags else ClassFlags
+    val isAnnotation = classDecl.isInstanceOf[AnnotationDecl]
+
+    val flags = if (isAnnotation)
+      AnnotationFlags
+    else if (classSymbol.isAbstract)
+      TraitFlags
+    else
+      ClassFlags
+
+
     classFile.setFlags(flags)
     // Default is public
 
+    classSymbol.annotations foreach { addAnnotation(classFile, _) }
     classFile
   }
 

@@ -2,14 +2,11 @@ package tlang
 package formatting
 package textformatters
 
-import tlang.formatting.Colors
 import tlang.formatting.Colors.{Color, NoColor, Reset, extractColorFrom}
-
 
 import scala.collection.mutable.ListBuffer
 
 case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
-
 
   val BreakCharacters = "-/.,_\\;:()[]{}"
   val WhiteSpaces     = " \t"

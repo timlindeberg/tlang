@@ -10,7 +10,6 @@ import tlang.utils.Positioned
 
 trait TypingErrors extends ErrorHandling {
 
-
   def report(error: ErrorMessage): Type = {
     reporter.report(error)
     TError
@@ -102,7 +101,7 @@ trait TypingErrors extends ErrorHandling {
     extends TypeCheckingError(9, pos) {
     lazy val message: String = {
 
-      val accessability = sym.accessability match {
+      val accessibility = sym.accessibility match {
         case Protected() => "protected"
         case Private()   => "private"
         case _           => ???
@@ -114,7 +113,7 @@ trait TypingErrors extends ErrorHandling {
       }
       val className = clazz.name
       val callingClassName = callingClass.name
-      err"Cannot use $accessability " + tpe + err" in class $className from class $callingClassName."
+      err"Cannot use $accessibility " + tpe + err" in class $className from class $callingClassName."
     }
 
   }
@@ -123,7 +122,21 @@ trait TypingErrors extends ErrorHandling {
     lazy val message: String = err"Cannot assign variable to an expression of type $TUnit."
   }
 
-  // Missing 11, 12
+
+  case class MissingAnnotationValues(name: String, missing: List[(String, Type)], override val pos: Positioned)
+    extends TypeCheckingError(11, pos) {
+    lazy val message: String = {
+      val values = missing map { case (name, tpe) => err"$name of type $tpe" }
+      err"Annotation $name is missing the following values:" + NL + formatter.list(values)
+    }
+  }
+
+  case class AnnotationValueDoesNotExist(name: String, value: String, alternatives: List[String], override val pos: Positioned)
+    extends TypeCheckingError(12, pos) {
+    lazy val message: String = {
+      err"Annotation $name does not have a value named $value.${ suggestion(name, alternatives) }"
+    }
+  }
 
   case class OperatorNotFound(operatorSignature: String, args: List[Type], override val pos: Positioned)
     extends TypeCheckingError(13, pos) {
@@ -142,7 +155,7 @@ trait TypingErrors extends ErrorHandling {
       else if (!args(1).isInstanceOf[TObject])
         err"The class ${ args(0) } does not"
       else
-        err"None of the classes " + args.map(arg => err"$arg").mkString(err" or ")
+        err"None of the classes " + args.map { arg => err"$arg" }.mkString(err" or ")
 
   }
 
@@ -201,11 +214,11 @@ trait TypingErrors extends ErrorHandling {
   case class UnimplementedMethodFromTrait(className: String, unimplementedMethods: List[(MethodSymbol, ClassSymbol)], override val pos: Positioned)
     extends TypeCheckingError(25, pos) {
     lazy val message: String = {
-      val methods = formatter.list(unimplementedMethods.map { case (meth, from) =>
+      val methods = unimplementedMethods.map { case (meth, from) =>
         val methSignature = meth.signature
         err"$methSignature from trait $from"
-      })
-      err"Class $className does not implement the following methods:" + NL + methods
+      }
+      err"Class $className does not implement the following methods:" + NL + formatter.list(methods)
     }
   }
 

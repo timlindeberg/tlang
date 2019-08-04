@@ -4,7 +4,7 @@ package ast
 
 import java.lang.System.identityHashCode
 
-import tlang.compiler.analyzer.Symbols.{ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
+import tlang.compiler.analyzer.Symbols.{AnnotationSymbol, ClassSymbol, ExtensionClassSymbol, FieldSymbol, MethodSymbol, OperatorSymbol, Symbol, Symbolic, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
 import tlang.formatting.Colors.Color
@@ -15,7 +15,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object TreePrinter {
-
   def idFunction(any: Any): Int = identityHashCode(any)
 }
 
@@ -40,10 +39,8 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     val lines: ListBuffer[TreePrinterRow] = ListBuffer()
     val sb = new StringBuilder
 
-
     def printTree(tree: Tree, stack: List[Char]): Unit = {
       def addLine(): Unit = {
-
         val line = (Magenta(tree.line), sb.toString, reference(tree), symbolContent(tree), typeContent(tree))
         lines += line
         sb.clear()
@@ -80,7 +77,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
   private def formatTree(tree: Tree): String = {
     val content = tree match {
-      case c: CompilationUnit  => formatter.fileName(c.sourceDescription)
+      case c: CompilationUnit  => c.sourceDescription
       case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
       case v: VariableID       => VarColor(v.name)
@@ -150,6 +147,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     case _: MethodSymbol                => "M"
     case _: FieldSymbol                 => "F"
     case _: VariableSymbol              => "V"
+    case _: AnnotationSymbol            => "A"
   }
 
   private def newSymbolFormatting: (Int, Color) = {
