@@ -128,6 +128,8 @@ case class NameAnalyser(
         val id = clazz.id
         val fullName = (cu.pack.address :+ id.name).mkString("::")
 
+        clazz ifInstanceOf[AnnotationDecl] { verifyAnnotationDeclaration }
+
         // This is here for when we compile the primitive classes.
         // Since they are already imported we'll get a conflict otherwise
         if (fullName in Constants.Primitives) {
@@ -262,6 +264,28 @@ case class NameAnalyser(
     }
 
     AnnotationSymbol(annotation.id.name, elements) use { annotation.setSymbol(_) }
+  }
+
+  private def verifyAnnotationDeclaration(annotation: AnnotationDecl): Unit = {
+    annotation.methods foreach {
+      case meth@(_: OperatorDecl)    => report(OperatorInAnnotation(meth))
+      case meth@(_: ConstructorDecl) => report(ConstructorInAnnotation(meth))
+      case meth                      =>
+        if (meth.isStatic) {
+          report(StaticInAnnotation(meth))
+        }
+        if (!meth.isAbstract) {
+          report(ImplementedMethodInAnnotation(meth))
+        }
+        if (meth.accessibility != Public()) {
+          report(PrivateMethodInAnnotation(meth))
+        }
+        meth.retType ifDefined { tpe =>
+          if (setType(tpe) notIn Types.AnnotationTypes) {
+            report(InvalidMethodReturnTypeInAnnotation(meth))
+          }
+        }
+    }
   }
 
   /*-------------------------------- Binding symbols --------------------------------*/

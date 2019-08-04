@@ -47,4 +47,7 @@ trait B
 val e = new A()
 val c = e.getClass()
 val annotations = c.getAnnotations()
-println(annotations)
+// This test should probably use runtime visible annotations but for that
+// we need enums in annotations (and enums in the language) so for now
+// it's just empty
+println(annotations) // res: []

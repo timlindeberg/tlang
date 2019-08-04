@@ -5,7 +5,6 @@ package formatting
 import java.nio.file.Path
 
 import better.files.File
-import tlang.Constants
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.formatting.grid.Grid
@@ -79,8 +78,14 @@ case class Formatter(
   def list(items: String*): String = list(items)
   def list(items: Traversable[String]): String =
     items
-      .map(item => s"  ${ Bold(ListMarker) } $item")
+      .map { item => s"  ${ Bold(ListMarker) } $item" }
       .mkString(NL)
+
+  def commaOrList(items: Traversable[String]): String = {
+    if (items.isEmpty) ""
+    else if (items.size == 1) items.head.toString
+    else items.take(items.size - 1).mkString(", ") + " or " + items.last.toString
+  }
 
   def translate(c: Color): Color = color(c)
 

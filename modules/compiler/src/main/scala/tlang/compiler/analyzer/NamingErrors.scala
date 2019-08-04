@@ -3,7 +3,6 @@ package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, _}
-import tlang.compiler.analyzer.Types.Type
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages._
 import tlang.utils.Positioned
@@ -182,11 +181,52 @@ trait NamingErrors extends ErrorHandling {
   case class AnnotationNeedsLiteralValue(override val pos: Positioned)
     extends NameAnalysisError(24, pos) {
     lazy val message: String = {
-      err"Only literal values can be used in annotations."
+      err"Only literal values can be used in an annotation."
     }
   }
 
+  case class StaticInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(25, pos) {
+    lazy val message: String = {
+      err"Cannot use static inside an annotation."
+    }
+  }
 
+  case class ConstructorInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(26, pos) {
+    lazy val message: String = {
+      err"Cannot declare a constructor inside an annotation."
+    }
+  }
+
+  case class OperatorInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(27, pos) {
+    lazy val message: String = {
+      err"Cannot declare an operator inside an annotation."
+    }
+  }
+
+  case class ImplementedMethodInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(28, pos) {
+    lazy val message: String = {
+      err"Methods inside annotations need to be abstract."
+    }
+  }
+
+  case class InvalidMethodReturnTypeInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(29, pos) {
+    lazy val message: String = {
+      val validTypes = Types.AnnotationTypes.map { tpe => err"$tpe" }
+      err"Methods inside annotations need to return one of following types:" + NL + formatter.commaOrList(validTypes)
+    }
+  }
+
+  case class PrivateMethodInAnnotation(override val pos: Positioned)
+    extends NameAnalysisError(30, pos) {
+    lazy val message: String = {
+      err"Methods inside annotations need to be public."
+    }
+  }
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
