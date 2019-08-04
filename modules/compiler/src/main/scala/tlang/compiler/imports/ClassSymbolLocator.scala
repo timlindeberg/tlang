@@ -4,12 +4,10 @@ package imports
 
 import org.apache.bcel.classfile._
 import org.apache.bcel.generic.{BasicType, ObjectType, Type}
-import tlang.Constants
 import tlang.Constants._
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
-
 
 import scala.collection.mutable
 
@@ -57,49 +55,56 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
   def findSymbol(className: String): Option[ClassSymbol] = {
     locateSymbol(className) { clazz =>
-      new ClassSymbol(toTName(clazz.getClassName)) use { _.isAbstract = clazz.isInterface }
+      Some(new ClassSymbol(toTName(clazz.getClassName)) use { _.isAbstract = clazz.isInterface })
     }
   }
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
     locateSymbol(className) { clazz =>
       val extensionName = toTName(clazz.getClassName)
-
-      val annotations = clazz.getAnnotationEntries
-      annotations(0).getElementValuePairs()(0).getValue.stringifyValue()
-
-      val extendedClassName = toTName(ExtensionDecl.stripPrefix(extensionName))
-      val extendedSymbol = findSymbol(extendedClassName)
-
-      new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(extendedSymbol.get)) }
+      findExtendedClassSymbol(clazz) map { extendedClass =>
+        new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(extendedClass)) }
+      }
     }.asInstanceOf[Option[ExtensionClassSymbol]]
   }
 
-  def fillClassSymbol(classSymbol: ClassSymbol): Unit = {
+  def fillClassSymbol(classSymbol: ClassSymbol): ClassSymbol = {
     val name = classSymbol.name
     val clazz = findClass(name).get // It's an error if the class doesnt exist
 
     if (!SymbolCache.contains(name))
       SymbolCache += name -> classSymbol
     fillClassSymbol(classSymbol, clazz)
+    classSymbol
   }
 
   def findClass(name: String): Option[JavaClass] = classPath(name) collect {
     case c: JavaClassFile => c.parse
   }
 
-  def classExists(name: String): Boolean = classPath(name).exists(_.isInstanceOf[JavaClassFile])
+  def classExists(name: String): Boolean = classPath(name).exists { _.isInstanceOf[JavaClassFile] }
 
-  private def locateSymbol(className: String)(cons: JavaClass => ClassSymbol): Option[ClassSymbol] = {
+  private def findExtendedClassSymbol(extensionClass: JavaClass): Option[ClassSymbol] = {
+    extensionClass
+      .getAnnotationEntries
+      .find { entry => entry.getAnnotationType == Constants.ExtensionAnnotation }
+      .flatMap { entry =>
+        entry.getElementValuePairs
+          .find { pair => pair.getNameString == "$ExtendedClass" }
+          .flatMap { pair => findSymbol(pair.getValue.stringifyValue) }
+      }
+  }
+
+  private def locateSymbol(className: String)(cons: JavaClass => Option[ClassSymbol]): Option[ClassSymbol] = {
     SymbolCache.getOrElseMaybeUpdate(className) {
-      findClass(className) map { cons(_) use { fillClassSymbol } }
+      findClass(className) flatMap { cons(_) map { fillClassSymbol } }
     }
   }
 
   private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
     classSymbol.isAbstract = clazz.isInterface
     val (operators, methods) = clazz.getMethods
-      .map(convertMethod(_, clazz, classSymbol))
+      .map { convertMethod(_, clazz, classSymbol) }
       .toList
       .partitionInstance[OperatorSymbol]
 
@@ -107,6 +112,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     operators foreach classSymbol.addOperator
     convertParents(clazz) foreach classSymbol.addParent
     convertFields(classSymbol, clazz) foreach classSymbol.addField
+    convertAnnotations(clazz.getAnnotationEntries) foreach classSymbol.addAnnotation
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
@@ -130,9 +136,10 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     clazz
       .getFields
       .map { field =>
-        new FieldSymbol(field.getName, convertModifiers(field), owningClass) use {
-          _.setType(convertType(field.getType))
-        }
+        val sym = new FieldSymbol(field.getName, convertModifiers(field), owningClass)
+        sym.setType(convertType(field.getType))
+        convertAnnotations(field.getAnnotationEntries) foreach sym.addAnnotation
+        sym
       }
       .toList
   }
@@ -172,8 +179,11 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     symbol.argList = args
     symbol.isAbstract = meth.isAbstract
 
+    convertAnnotations(meth.getAnnotationEntries) foreach symbol.addAnnotation
+
     symbol
   }
+
 
   private def convertArgument(tpe: Type, newName: String) = {
     val modifiers: Set[Modifier] = Set(Private(), Final())
@@ -181,7 +191,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   private def convertModifiers(obj: AccessFlags): Set[Modifier] = {
-    var set: Set[Modifier] = Set()
+    val set = mutable.Set[Modifier]()
     obj match {
       case x if x.isPublic    => set += Public()
       case x if x.isProtected => set += Protected()
@@ -190,7 +200,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
     if (obj.isStatic) set += Static()
     if (obj.isFinal) set += Final()
-    set
+    set.toSet
   }
 
   private def convertType(tpe: Type): tlang.compiler.analyzer.Types.Type = tpe match {
@@ -219,6 +229,17 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     case x: org.apache.bcel.generic.ArrayType => TArray(convertType(x.getBasicType))
   }
 
+  private def convertAnnotations(annotations: Array[AnnotationEntry]): List[AnnotationSymbol] = {
+    annotations
+      .map { annotation =>
+        val values = annotation.getElementValuePairs
+          .map { pair => (pair.getNameString, StringAnnotationValue(pair.getValue.stringifyValue)) }
+          .toList
+        AnnotationSymbol(toTName(annotation.getAnnotationType), values)
+      }
+      .toList
+  }
+
   private def isAnnotatedWith(annotations: Array[AnnotationEntry], annotation: String): Boolean = {
     annotation in annotations.map { _.getAnnotationType.replaceAll("/", "::") }
   }
@@ -228,7 +249,6 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   private def lazySymbol(name: String) = {
     SymbolCache.getOrElseUpdate(name, new LazyClassSymbol(name))
   }
-
 
   private class LazyClassSymbol(override val name: String) extends ClassSymbol(name) {
 

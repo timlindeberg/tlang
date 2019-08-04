@@ -64,7 +64,7 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
   // Initialize
   {
-    val defaultImports = DefaultImports.filter { _.writtenName notIn ctx.ignoredImport }
+    val defaultImports = DefaultImports.filter { imp => imp.writtenName notIn ctx.ignoredImports }
     (defaultImports ++ imports) foreach { this += _ }
   }
 
