@@ -28,8 +28,6 @@ object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] with L
     "Imports template classes and instantiates templates from generic classes."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
-
 }
 
 case class TemplateModifier(ctx: Context) extends Logging {
@@ -42,7 +40,9 @@ case class TemplateModifier(ctx: Context) extends Logging {
   def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
 
     templateCus ++= cus.flatMap { cu =>
-      cu.classes.filter(_.id.isTemplated).map { clazz => (clazz.id.name, cu) }
+      cu.classes
+        .filter { _.id.isTemplated }
+        .map { clazz => (clazz.id.name, cu) }
     }
 
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
@@ -64,7 +64,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
     // Remove all template classes and replace types in rest of the classes
     ctx.executor.map(allCus.toList) { cu =>
-      cu.classes = cu.classes.filter(!_.id.isTemplated) ++ cu.classes.filterInstance[ExtensionDecl]
+      cu.classes = cu.classes.filter { !_.id.isTemplated }
       replaceTypes(cu)
     }
   }

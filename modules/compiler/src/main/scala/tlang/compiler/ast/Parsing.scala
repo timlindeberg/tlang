@@ -446,7 +446,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       (operatorType, List(f1, f2), modifiers + Static())
     }
 
-    def unaryOperator(constructor: (ExprTree) => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
+    def unaryOperator(constructor: ExprTree => OperatorTree): (OperatorTree, List[Formal], Set[Modifier]) = {
       eat(tokens.next.kind)
       val operatorType: OperatorTree = constructor(Empty()).setType(TUnit)
       eat(LPAREN)
@@ -1238,24 +1238,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       eat(IDKIND)
       id.value
     case _      => report(wrongToken(IDKIND))
-  }
-
-  /** <literal> ::=
-    * | <intLit>
-    * | <stringLit>
-    * | <charLit>
-    * | <longLit>
-    * | <doubleLit>
-    * | <floatLit>
-    */
-  private def literal: Literal[_] = tokens.next.kind match {
-    case INTLITKIND    => literal(INTLITKIND, IntLit)
-    case STRLITKIND    => literal(STRLITKIND, StringLit)
-    case CHARLITKIND   => literal(CHARLITKIND, CharLit)
-    case LONGLITKIND   => literal(LONGLITKIND, LongLit)
-    case DOUBLELITKIND => literal(DOUBLELITKIND, DoubleLit)
-    case FLOATLITKIND  => literal(FLOATLITKIND, FloatLit)
-    case _             => report(wrongToken(INTLITKIND, STRLITKIND, CHARLITKIND, LONGLITKIND, DOUBLELITKIND, FLOATLITKIND))
   }
 
   /** Parses a literal of the given kind, producing the given literalType

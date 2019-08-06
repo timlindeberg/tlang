@@ -68,7 +68,6 @@ case class NameAnalyser(
   }
 
   def checkInheritanceCycles(): Unit = {
-
     var classesFoundInCycle = Set[ClassSymbol]()
 
     def checkInheritanceCycles(classSymbol: ClassSymbol, set: Set[ClassSymbol]): Unit = {

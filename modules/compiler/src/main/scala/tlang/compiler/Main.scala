@@ -15,7 +15,6 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, OverflowHandling}
 import tlang.formatting.grid.Width.Fixed
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
