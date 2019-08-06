@@ -11,15 +11,15 @@ object AbstractByteCodes {
   }
 
   /** Line numbers take no space in the actual bytecode. They are
-    * stored (at freeze-time) in the line number table and useful
-    * for debugging and for meaningful stack-traces */
+   * stored (at freeze-time) in the line number table and useful
+   * for debugging and for meaningful stack-traces */
   case class LineNumber(line: Int) extends AbstractByteCode {
     override val size: Int = 0
     override def toStream(bs: ByteStream): ByteStream = bs
   }
 
   /** A label takes no space in the actual bytecode, but serves
-    * as an anchor in the stream of ABC. */
+   * as an anchor in the stream of ABC. */
   case class Label(id: String) extends AbstractByteCode {
     override val size: Int = 0
     override def toStream(bs: ByteStream): ByteStream = bs
@@ -188,41 +188,41 @@ object AbstractByteCodes {
   }
 
   object ALoad {
-    def apply(index: Int) = storeLoad(index, "ALoad", ALOAD, ALOAD_0, ALOAD_1, ALOAD_2, ALOAD_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "ALoad", ALOAD, ALOAD_0, ALOAD_1, ALOAD_2, ALOAD_3)
   }
   object DLoad {
-    def apply(index: Int) = storeLoad(index, "DLoad", DLOAD, DLOAD_0, DLOAD_1, DLOAD_2, DLOAD_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "DLoad", DLOAD, DLOAD_0, DLOAD_1, DLOAD_2, DLOAD_3)
   }
   object FLoad {
-    def apply(index: Int) = storeLoad(index, "FLoad", FLOAD, FLOAD_0, FLOAD_1, FLOAD_2, FLOAD_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "FLoad", FLOAD, FLOAD_0, FLOAD_1, FLOAD_2, FLOAD_3)
   }
   object ILoad {
-    def apply(index: Int) = storeLoad(index, "ILoad", ILOAD, ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "ILoad", ILOAD, ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3)
   }
   object LLoad {
-    def apply(index: Int) = storeLoad(index, "LLoad", LLOAD, LLOAD_0, LLOAD_1, LLOAD_2, LLOAD_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "LLoad", LLOAD, LLOAD_0, LLOAD_1, LLOAD_2, LLOAD_3)
   }
   object AStore {
-    def apply(index: Int) = storeLoad(index, "AStore", ASTORE, ASTORE_0, ASTORE_1, ASTORE_2, ASTORE_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "AStore", ASTORE, ASTORE_0, ASTORE_1, ASTORE_2, ASTORE_3)
   }
   object DStore {
-    def apply(index: Int) = storeLoad(index, "DStore", DSTORE, DSTORE_0, DSTORE_1, DSTORE_2, DSTORE_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "DStore", DSTORE, DSTORE_0, DSTORE_1, DSTORE_2, DSTORE_3)
   }
   object FStore {
-    def apply(index: Int) = storeLoad(index, "FStore", FSTORE, FSTORE_0, FSTORE_1, FSTORE_2, FSTORE_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "FStore", FSTORE, FSTORE_0, FSTORE_1, FSTORE_2, FSTORE_3)
   }
   object IStore {
-    def apply(index: Int) = storeLoad(index, "IStore", ISTORE, ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "IStore", ISTORE, ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3)
   }
   object LStore {
-    def apply(index: Int) = storeLoad(index, "LStore", LSTORE, LSTORE_0, LSTORE_1, LSTORE_2, LSTORE_3)
+    def apply(index: Int): AbstractByteCodeGenerator = storeLoad(index, "LStore", LSTORE, LSTORE_0, LSTORE_1, LSTORE_2, LSTORE_3)
   }
 
   // Some magic for loading locals.
 
   object ArgLoad {
     /** Loads an argument by its index in the argument list. 0 is the receiver
-      * for non-static methods. */
+     * for non-static methods. */
     def apply(index: Int): AbstractByteCodeGenerator = (ch: CodeHandler) => ch.argSlotMap.get(index) match {
       case None           => sys.error("Invalid argument index : " + index)
       case Some((tpe, i)) => tpe match {
@@ -239,16 +239,16 @@ object AbstractByteCodes {
 
   // Field access
   object GetField {
-    def apply(className: String, fieldName: String, fieldType: String) = accessField(GETFIELD, className, fieldName, fieldType)
+    def apply(className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator = accessField(GETFIELD, className, fieldName, fieldType)
   }
   object GetStatic {
-    def apply(className: String, fieldName: String, fieldType: String) = accessField(GETSTATIC, className, fieldName, fieldType)
+    def apply(className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator = accessField(GETSTATIC, className, fieldName, fieldType)
   }
   object PutField {
-    def apply(className: String, fieldName: String, fieldType: String) = accessField(PUTFIELD, className, fieldName, fieldType)
+    def apply(className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator = accessField(PUTFIELD, className, fieldName, fieldType)
   }
   object PutStatic {
-    def apply(className: String, fieldName: String, fieldType: String) = accessField(PUTSTATIC, className, fieldName, fieldType)
+    def apply(className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator = accessField(PUTSTATIC, className, fieldName, fieldType)
   }
 
   private def accessField(bc: ByteCode, className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator =
@@ -358,7 +358,7 @@ object AbstractByteCodes {
       apply(types(tpe))
     }
 
-    val types = Map(
+    val types: Map[String, U4] = Map(
       "T_BOOLEAN" -> 4,
       "T_CHAR" -> 5,
       "T_FLOAT" -> 6,

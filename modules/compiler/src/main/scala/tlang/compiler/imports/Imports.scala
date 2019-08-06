@@ -76,10 +76,7 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
-    extensionSymbols.filter { extSym =>
-      val name = ExtensionDecl.stripPrefix(extSym.name)
-      name == className
-    }
+    extensionSymbols.filter { extSym => extSym.getExtendedType.name == className }
 
   def addExtensionClass(extensionClassSymbol: ExtensionClassSymbol): Unit = extensionSymbols ::= extensionClassSymbol
 

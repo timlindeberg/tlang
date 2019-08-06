@@ -57,6 +57,6 @@ case class CompilerMessages(
     _hitMax.clear()
   }
 
-  def hitMax(tpe: MessageType) = _hitMax(tpe)
+  def hitMax(tpe: MessageType): Boolean = _hitMax(tpe)
 
 }

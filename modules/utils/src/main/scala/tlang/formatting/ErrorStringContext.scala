@@ -12,7 +12,7 @@ case class ErrorStringContext(
 ) {
 
 
-  def suggestion(name: String, alternatives: List[String]) = alternativeSuggestor(name, alternatives)
+  def suggestion(name: String, alternatives: List[String]): Suggestion = alternativeSuggestor(name, alternatives)
 
 
   implicit class ErrorStringContext(val sc: StringContext) {
@@ -82,7 +82,7 @@ case class ErrorStringContext(
       suggestions.distinct match {
         case suggestion :: Nil =>
           val transformed = transform(suggestion)
-          val v = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"
+          val v           = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"
           sb ++= " Did you mean " + v + Bold + "?"
           currentColor = Bold
           if (hasMore)

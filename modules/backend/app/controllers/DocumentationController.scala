@@ -10,7 +10,7 @@ class DocumentationController @Inject()(cc: ControllerComponents, documentationS
 
   private implicit val documentationWrites: OWrites[Documentation] = Json.writes[Documentation]
 
-  def documentation = Action {
+  def documentation: Action[AnyContent] = Action {
     def documentation = documentationService.documentation
 
     Ok(

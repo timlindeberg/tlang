@@ -13,16 +13,16 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
 
   behavior of "An extractor"
 
-  val syntaxHighlighter = mockedSyntaxHighlighter
+  private val syntaxHighlighter = mockedSyntaxHighlighter
 
   it should "extract classes" in {
 
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
     val replClass = ClassDecl(Evaluator.ReplClassID)
-    val classA = ClassDecl("A")
-    val classB = ClassDecl("B")
-    val classC = ClassDecl("C")
+    val classA    = ClassDecl("A")
+    val classB    = ClassDecl("B")
+    val classC    = ClassDecl("C")
 
     val cu = createCU(replClass, classA, classB, classC)()
 
@@ -74,7 +74,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   it should "extract imports" in {
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
-    val imports = mock[Imports]
+    val imports   = mock[Imports]
 
     imports.imports returns List(
       RegularImport("ABC" :: "DEF" :: "GHI" :: Nil),
@@ -130,18 +130,18 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
 
-    val classA = ClassDecl("A")
+    val classA  = ClassDecl("A")
     val methodA = MethodDecl("A", retType = IntType)
 
     val imports = mock[Imports]
     imports.imports returns List(RegularImport("ABC" :: "DEF" :: "GHI" :: Nil))
 
-    val statement = VarDecl("A", tpe = Some(IntType))
+    val statement  = VarDecl("A", tpe = Some(IntType))
     val mainMethod = MethodDeclTree.mainMethod(List(statement))
 
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(mainMethod, methodA))
 
-    val cu = createCU(classA, replClass)(imports)
+    val cu       = createCU(classA, replClass)(imports)
     val messages = extractor(cu)
 
     messages should contain theSameElementsInOrderAs Seq(

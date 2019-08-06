@@ -23,24 +23,27 @@ object Types {
     def getType: Type = _tpe
   }
 
-  val IntSymbol    = new ClassSymbol(TInt)
-  val LongSymbol   = new ClassSymbol(TLong)
-  val FloatSymbol  = new ClassSymbol(TFloat)
-  val DoubleSymbol = new ClassSymbol(TDouble)
-  val CharSymbol   = new ClassSymbol(TChar)
-  val BoolSymbol   = new ClassSymbol(TBool)
-  val ObjectSymbol = new ClassSymbol(JavaObject)
-  val StringSymbol = new ClassSymbol(JavaString)
+  val IntSymbol                 = new ClassSymbol(TInt)
+  val LongSymbol                = new ClassSymbol(TLong)
+  val FloatSymbol               = new ClassSymbol(TFloat)
+  val DoubleSymbol              = new ClassSymbol(TDouble)
+  val CharSymbol                = new ClassSymbol(TChar)
+  val BoolSymbol                = new ClassSymbol(TBool)
+  val ObjectSymbol              = new ClassSymbol(JavaObject)
+  val StringSymbol              = new ClassSymbol(JavaString)
+  val ExtensionAnnotationSymbol = new ClassSymbol(TExtensionAnnotation)
 
-  val Int    = TObject(IntSymbol)
-  val Long   = TObject(LongSymbol)
-  val Float  = TObject(FloatSymbol)
-  val Double = TObject(DoubleSymbol)
-  val Char   = TObject(CharSymbol)
-  val Bool   = TObject(BoolSymbol)
-  val Object = TObject(ObjectSymbol)
-  val String = TObject(StringSymbol)
-  val Array  = TArray(Object)
+  val Int                 = TObject(IntSymbol)
+  val Long                = TObject(LongSymbol)
+  val Float               = TObject(FloatSymbol)
+  val Double              = TObject(DoubleSymbol)
+  val Char                = TObject(CharSymbol)
+  val Bool                = TObject(BoolSymbol)
+  val Object              = TObject(ObjectSymbol)
+  val String              = TObject(StringSymbol)
+  val Array               = TArray(Object)
+  val ExtensionAnnotation = TObject(ExtensionAnnotationSymbol)
+
 
   val Primitives  : List[TObject] = List(Int, Long, Float, Double, Char, Bool)
   val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
@@ -53,7 +56,7 @@ object Types {
       classSymbolLocator fillClassSymbol sym
   }
 
-  initialize(IntSymbol, LongSymbol, FloatSymbol, DoubleSymbol, CharSymbol, BoolSymbol, ObjectSymbol, StringSymbol)
+  initialize(IntSymbol, LongSymbol, FloatSymbol, DoubleSymbol, CharSymbol, BoolSymbol, ObjectSymbol, StringSymbol, ExtensionAnnotationSymbol)
 
   sealed abstract class Type {
     def isNullable: Boolean
@@ -78,33 +81,33 @@ object Types {
   }
 
   case object TError extends Type {
-    override val isNullable                  = false
+    override val isNullable    : Boolean     = false
     override val getNullable   : TError.type = this
     override val getNonNullable: TError.type = this
     override def isSubTypeOf(tpe: Type): Boolean = true
-    override val name = CompilerMessage.ErrorName
+    override val name: String = CompilerMessage.ErrorName
   }
 
   case object TUntyped extends Type {
-    override val isNullable                    = false
+    override val isNullable    : Boolean       = false
     override val getNullable   : TUntyped.type = this
     override val getNonNullable: TUntyped.type = this
     override def isSubTypeOf(tpe: Type): Boolean = false
-    override val name = "[untyped]"
+    override val name: String = "[untyped]"
   }
 
   case object TUnit extends Type {
-    override val isNullable                 = false
+    override val isNullable    : Boolean    = false
     override val getNullable   : TUnit.type = this
     override val getNonNullable: TUnit.type = this
-    override val name                       = "Unit"
+    override val name          : String     = "Unit"
   }
 
   case object TNull extends Type {
     override val getNullable   : TNull.type = this
     override val getNonNullable: TNull.type = this
-    override val isNullable                 = false
-    override val name                       = "Null"
+    override val isNullable    : Boolean    = false
+    override val name          : String     = "Null"
     override def isSubTypeOf(tpe: Type): Boolean = tpe.isNullable
   }
 

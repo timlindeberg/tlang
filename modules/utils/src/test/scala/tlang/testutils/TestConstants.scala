@@ -21,7 +21,7 @@ object TestConstants {
   val LineWidth      : Int         = sys.env.get("lineWidth").flatMap(num => Try(num.toInt).toOption).getOrElse(80)
   val PrintCodePhases: Set[String] = sys.env.get("printOutput").map(_.split(", *").map(_.trim).toSet).getOrElse(Set())
 
-  implicit val TestFormatter = Formatter(LineWidth, useColor = UseColors, asciiOnly = AsciiOnly)
+  implicit val TestFormatter: Formatter = Formatter(LineWidth, useColor = UseColors, asciiOnly = AsciiOnly)
 
   val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
   val IgnoreRegex  : Regex = """// *[I|i]gnore""".r

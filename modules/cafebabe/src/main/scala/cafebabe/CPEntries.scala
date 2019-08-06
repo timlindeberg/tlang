@@ -93,5 +93,5 @@ case class CPUtf8Info(val bytes: Seq[U1]) extends CPEntry(CPTags.Utf8) {
     stream
   }
 
-  override def toString = "CPUtf8Info(\"" + new String(bytes.toArray) + "\")"
+  override def toString: String = "CPUtf8Info(\"" + new String(bytes.toArray) + "\")"
 }

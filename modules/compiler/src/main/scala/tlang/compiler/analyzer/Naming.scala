@@ -199,7 +199,7 @@ case class NameAnalyser(
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
         if (modifiers.contains(Implicit()))
-          methSym.addAnnotation(AnnotationSymbol(Constants.ImplicitConstructorAnnotation))
+          methSym.addAnnotation(AnnotationSymbol(Constants.TImplicitConstructorAnnotation))
         methSym
       case opDecl@OperatorDecl(operatorType, modifiers, _, _, _, stat) =>
         if (stat.isEmpty)

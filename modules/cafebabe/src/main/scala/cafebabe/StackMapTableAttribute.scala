@@ -6,7 +6,7 @@ class StackMapTableAttribute(val nameIndex: U2, stackMapFrames: List[StackMapFra
 
   override def toStream(stream: ByteStream): ByteStream = {
     val stackMapSize: U4 = 2 + stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
-    val ne: U2 = stackMapFrames.size
+    val ne          : U2 = stackMapFrames.size
 
     stream << nameIndex << stackMapSize << ne
     stackMapFrames.foreach(stream << _)
@@ -29,13 +29,13 @@ object VerificationTypeInfoTags {
 }
 
 object StackMapFrameTypes {
-  val SameFrame                         = 0 to 63
-  val SameLocals1StackItemFrame         = 64 to 127
-  val SameLocals1StackItemFrameExtended = 247 to 247
-  val ChopFrame                         = 248 to 250
-  val SameFrameExtended                 = 251 to 251
-  val AppendFrame                       = 252 to 254
-  val FullFrame                         = 255 to 255
+  val SameFrame                        : Range.Inclusive = 0 to 63
+  val SameLocals1StackItemFrame        : Range.Inclusive = 64 to 127
+  val SameLocals1StackItemFrameExtended: Range.Inclusive = 247 to 247
+  val ChopFrame                        : Range.Inclusive = 248 to 250
+  val SameFrameExtended                : Range.Inclusive = 251 to 251
+  val AppendFrame                      : Range.Inclusive = 252 to 254
+  val FullFrame                        : Range.Inclusive = 255 to 255
 }
 
 import cafebabe.VerificationTypeInfoTags._
@@ -82,7 +82,7 @@ case class SameLocals1StackItemFrame(frameType: U1, stack: Array[VerificationTyp
     stack.foreach(stream << _)
     stream
   }
-  val size = 1 + VerificationTypeInfoTags.size(stack)
+  val size: U4 = 1 + VerificationTypeInfoTags.size(stack)
 
 }
 
@@ -94,7 +94,7 @@ case class SameLocals1StackItemFrameExtended(frameType: U1, offsetDelta: U2, sta
     stack.foreach(stream << _)
     stream
   }
-  val size = 3 + VerificationTypeInfoTags.size(stack)
+  val size: U4 = 3 + VerificationTypeInfoTags.size(stack)
 }
 
 case class ChopFrame(frameType: U1, offsetDelta: U2) extends StackMapFrame(frameType) {
@@ -118,7 +118,7 @@ case class AppendFrame(frameType: U1, offsetDelta: U2, locals: Array[Verificatio
     locals.foreach(stream << _)
     stream
   }
-  val size = 3 + VerificationTypeInfoTags.size(locals)
+  val size: U4 = 3 + VerificationTypeInfoTags.size(locals)
 }
 
 case class FullFrame(offsetDelta: U2,
@@ -137,6 +137,6 @@ case class FullFrame(offsetDelta: U2,
     stack.foreach(stream << _)
     stream
   }
-  val size = 7 + VerificationTypeInfoTags.size(locals) + VerificationTypeInfoTags.size(stack)
+  val size: U4 = 7 + VerificationTypeInfoTags.size(locals) + VerificationTypeInfoTags.size(stack)
 
 }

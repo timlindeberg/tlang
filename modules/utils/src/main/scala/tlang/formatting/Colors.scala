@@ -215,8 +215,8 @@ object Colors {
       case NoColor                                         => NoColor
       case Reset                                           => NoColor
       case RegularColor(foreground, background, modifiers) =>
-        val fg = if (foreground != -1) foreground else this.foreground
-        val bg = if (background != -1) background else this.background
+        val fg   = if (foreground != -1) foreground else this.foreground
+        val bg   = if (background != -1) background else this.background
         val mods = modifiers ++ this.modifiers
         RegularColor(fg, bg, mods)
     }
@@ -227,8 +227,8 @@ object Colors {
       case NoColor                                         => this
       case Reset                                           => this
       case RegularColor(foreground, background, modifiers) =>
-        val fg = if (foreground == this.foreground) -1 else this.foreground
-        val bg = if (background == this.background) -1 else this.background
+        val fg   = if (foreground == this.foreground) -1 else this.foreground
+        val bg   = if (background == this.background) -1 else this.background
         val mods = this.modifiers -- modifiers
         if (fg == -1 && bg == -1 && mods.isEmpty) NoColor else RegularColor(fg, bg, mods)
     }
@@ -274,7 +274,7 @@ object Colors {
     def Comment: Int
     def Symbol: Int
 
-    def colorMap = Map(
+    def colorMap: Map[String, Int] = Map(
       KeywordName -> Keyword,
       VariableName -> Variable,
       ClassName -> Class,
@@ -342,7 +342,7 @@ object Colors {
   // an array of the color each character.
   def splitStringAndColors(str: String): (String, Array[Color]) = {
     val colors = new ArrayBuffer[Color] {override val initialSize: Int = str.length }
-    val sb = new StringBuilder(str.length)
+    val sb     = new StringBuilder(str.length)
 
     foreachWithColor(str) { (c, color) => sb += c; colors += color }
     (sb.toString, colors.toArray)
@@ -352,9 +352,9 @@ object Colors {
   // and the index where the ansi sequence ended
   def extractColorFrom(str: String, startIndex: Int, initialColor: Color = NoColor, extractMultiple: Boolean = true): (Color, Int) = {
     var color: Color = initialColor
-    var i = startIndex
+    var i            = startIndex
     while (i < str.length && str(i) == '\u001b' && str(i + 1) == '[') {
-      val endOfAnsi = str.indexOf('m', i + 1)
+      val endOfAnsi          = str.indexOf('m', i + 1)
       val ansiEscapeSequence = str.substring(i + 2, endOfAnsi)
       color += Color(ansiEscapeSequence)
       i = endOfAnsi + 1

@@ -14,13 +14,12 @@ object Knowledge {
 
   trait Identifier extends Typed {
     def symbol: Option[VariableSymbol]
-
     def baseIdentifierEquals(varId: Identifier): Boolean
   }
 
   case class VarIdentifier(varSymbol: VariableSymbol) extends Identifier {
-    val symbol = Some(varSymbol)
-    def baseIdentifierEquals(varId: Identifier): Boolean = varId match {
+    override val symbol: Option[VariableSymbol] = Some(varSymbol)
+    override def baseIdentifierEquals(varId: Identifier): Boolean = varId match {
       case VarIdentifier(v) => varSymbol == v
       case _                => false
     }
@@ -29,8 +28,8 @@ object Knowledge {
   }
 
   case class ClassIdentifier(classSymbol: ClassSymbol) extends Identifier {
-    val symbol = None
-    def baseIdentifierEquals(varId: Identifier): Boolean = varId match {
+    override val symbol: Option[VariableSymbol] = None
+    override def baseIdentifierEquals(varId: Identifier): Boolean = varId match {
       case ClassIdentifier(c) => classSymbol == c
       case _                  => false
     }
@@ -39,8 +38,8 @@ object Knowledge {
   }
 
   case class AccessIdentifier(id: Identifier, varSymbol: VariableSymbol) extends Identifier {
-    val symbol = Some(varSymbol)
-    def baseIdentifierEquals(varId: Identifier): Boolean = {
+    override val symbol: Option[VariableSymbol] = Some(varSymbol)
+    override def baseIdentifierEquals(varId: Identifier): Boolean = {
       if (id == varId) true
       else id.baseIdentifierEquals(varId)
     }
@@ -50,8 +49,8 @@ object Knowledge {
   }
 
   case class ArrayItemIdentifier(id: Identifier, index: Long) extends Identifier {
-    val symbol = None
-    def baseIdentifierEquals(varId: Identifier): Boolean = {
+    override val symbol: Option[VariableSymbol] = None
+    override def baseIdentifierEquals(varId: Identifier): Boolean = {
       if (id == varId) true
       else id.baseIdentifierEquals(varId)
     }
@@ -184,10 +183,10 @@ object Knowledge {
     })
 
     def assignment(varId: Identifier, init: Option[ExprTree], extraInfo: VarKnowledge*): Knowledge = {
-      val varTpe = varId.getType
-      val initial = getInitialKnowledge(varId, varTpe, init)
+      val varTpe         = varId.getType
+      val initial        = getInitialKnowledge(varId, varTpe, init)
       // Remove old knowledge of the given variable symbol
-      val newKnowledge = filterOldKnowledge(varId) ++ initial
+      val newKnowledge   = filterOldKnowledge(varId) ++ initial
       val varIdKnowledge = newKnowledge(varId) ++ extraInfo.toSet
       copy(varKnowledge = newKnowledge + (varId -> varIdKnowledge))
     }
@@ -201,8 +200,8 @@ object Knowledge {
 
     def setNumericValue(varId: Identifier, value: Long): Knowledge = {
       val numericKnowledge = NumericValue(value)
-      val oldKnowledge = varKnowledge.getOrElse(varId, Set()).filterNotInstance[NumericValue]
-      val newKnowledge = oldKnowledge + numericKnowledge
+      val oldKnowledge     = varKnowledge.getOrElse(varId, Set()).filterNotInstance[NumericValue]
+      val newKnowledge     = oldKnowledge + numericKnowledge
       copy(varKnowledge = varKnowledge + (varId -> newKnowledge))
     }
 
@@ -214,7 +213,7 @@ object Knowledge {
 
     def filterReassignedVariables(branch: StatTree, afterBranch: Knowledge): Knowledge = {
       val gainedKnowledge = afterBranch - this
-      val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]() ++ varKnowledge
+      val newKnowledge    = mutable.Map[Identifier, Set[VarKnowledge]]() ++ varKnowledge
       gainedKnowledge.varKnowledge foreach { case (varId, knowledge) =>
         knowledge.findInstance[Reassigned] match {
           case Some(Reassigned(_)) =>
@@ -222,7 +221,7 @@ object Knowledge {
             // remove previous knowledge
             // The knowledge that can be saved from the branch is the intersection
             // of the knowledge after the branch and the original knowledge
-            val inter = intersection(afterBranch, None)
+            val inter          = intersection(afterBranch, None)
             val varIdKnowledge = inter.varKnowledge.getOrElse(varId, Set())
             inter.varKnowledge foreach { case (vId, k) => newKnowledge += vId -> k }
             newKnowledge += varId -> (varIdKnowledge + Reassigned(branch))
@@ -271,7 +270,7 @@ object Knowledge {
     private def _addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {
       val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
       from.varKnowledge.foreach { case (varId, vKnowledge) =>
-        val v = varKnowledge.getOrElse(varId, Set())
+        val v       = varKnowledge.getOrElse(varId, Set())
         val wrapped = vKnowledge map {
           case k: VarKnowledgeWrapper => k
           case k if v.contains(k)     => k
@@ -311,8 +310,8 @@ object Knowledge {
         val s: Set[VarKnowledge] = if (varTpe in Primitives) Set(Initialized) else Set()
         return List(varId -> s)
       }
-      val init = maybeInit.get
-      val knowledge = ListBuffer[(Identifier, Set[VarKnowledge])]()
+      val init           = maybeInit.get
+      val knowledge      = ListBuffer[(Identifier, Set[VarKnowledge])]()
       var varIdKnowledge = Set[VarKnowledge](Initialized)
 
       // Old knowledge gets transferred to new var

@@ -27,8 +27,8 @@ case class TokenStream(tokenList: Traversable[Token]) {
 
 
   def source: Option[Source] = last.source
-  def apply(i: Int) = tokens(i)
-  def offset(i: Int) = tokens(currentIndex + i)
+  def apply(i: Int): Token = tokens(i)
+  def offset(i: Int): Token = tokens(currentIndex + i)
 
   def readNext(): Unit = {
     currentIndex += 1

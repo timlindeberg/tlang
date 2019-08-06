@@ -9,7 +9,7 @@ import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.compiler.messages.{CompilationException, Reporter}
 import tlang.compiler.output.PrettyOutputHandler
 import tlang.compiler.testutils.TreeTesting
-import tlang.formatting.ErrorStringContext
+import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec
 import tlang.utils.StringSource
 
@@ -1368,9 +1368,9 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     ).classTypeIdentifier shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
   }
 
-  private implicit val formatter          = testFormatter(useColor = false)
-  private          val errorStringContext = ErrorStringContext()
-  private          val ctx                = Context(mock[Reporter], PrettyOutputHandler())
+  private implicit val formatter: Formatter = testFormatter(useColor = false)
+  private          val errorStringContext   = ErrorStringContext()
+  private          val ctx                  = Context(mock[Reporter], PrettyOutputHandler())
 
   private def parser(tokens: Any*) = Parser(ctx, errorStringContext, createTokenStream(tokens))
 

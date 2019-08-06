@@ -105,7 +105,7 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
         // If a method is overriden but with another return type
         // a bridge method needs to be generated
         classSymbol.overriddenMethod(methSymbol)
-          .filter(_.getType != methSymbol.getType)
+          .filter { _.getType != methSymbol.getType }
           .ifDefined { overriden =>
             val flags = METHOD_ACC_PUBLIC | METHOD_ACC_BRIDGE | METHOD_ACC_SYNTHETIC
 

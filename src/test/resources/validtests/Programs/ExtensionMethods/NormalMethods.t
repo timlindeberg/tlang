@@ -8,7 +8,7 @@ println(x) // res: 6
 
 extension AExtension : A =
 
-	Def Test(i: Int) = println("A" + i)
+	Def Test(i: Int) = println(i)
 	Def Test() = println("A")
 	Def Test2() = GetInt() + this.i
 

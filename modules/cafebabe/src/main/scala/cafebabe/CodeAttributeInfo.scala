@@ -11,20 +11,20 @@ object CodeAttributeInfo {
 }
 
 class CodeAttributeInfo(val codeNameIndex: U2) extends AttributeInfo(codeNameIndex, Nil) {
-  var maxStack: U2 = 0 // gets set when the code handler 'freezes'
-  var maxLocals: U2 = 0 // gets set when the code handler 'freezes'
-  var code: ByteStream = new ByteStream
+  var maxStack : U2         = 0 // gets set when the code handler 'freezes'
+  var maxLocals: U2         = 0 // gets set when the code handler 'freezes'
+  var code     : ByteStream = new ByteStream
 
   case class ExceptionTableEntry(startPC: U2, endPC: U2, handlerPC: U2, catchType: U2) extends Streamable {
-    override def toStream(stream: ByteStream) = stream
+    override def toStream(stream: ByteStream): ByteStream = stream
   }
   var exceptionTable: Seq[ExceptionTableEntry] = Nil
   var attributes    : Seq[AttributeInfo]       = Nil
 
   override def toStream(stream: ByteStream): ByteStream = {
-    val codeLength: U4 = code.size.asInstanceOf[U4]
+    val codeLength          : U4 = code.size.asInstanceOf[U4]
     val exceptionTableLength: U2 = exceptionTable.size.asInstanceOf[U2]
-    val attributesCount: U2 = attributes.size.asInstanceOf[U2]
+    val attributesCount     : U2 = attributes.size.asInstanceOf[U2]
 
     val totalLength = size
     stream << codeNameIndex << (totalLength - 6).asInstanceOf[U4] << maxStack << maxLocals << codeLength << code
