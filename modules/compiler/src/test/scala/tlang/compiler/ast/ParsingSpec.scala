@@ -120,10 +120,6 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     // import A::B::*
     parser(IMPORT, ID("A"), COLON, COLON, ID("B"), COLON, COLON, TIMES)
       .importDeclaration shouldBe WildCardImport(List("A", "B"))
-
-    // import A::B::extension C::D
-    parser(IMPORT, ID("A"), COLON, COLON, ID("B"), COLON, COLON, EXTENSION, ID("C"), COLON, COLON, ID("D"))
-      .importDeclaration shouldBe ExtensionImport(List("A", "B"), List("C", "D"))
   }
 
   it should "parse an annotation" in {
@@ -238,25 +234,30 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   }
 
   it should "parse an extension declaration" in {
-    // extension A
-    parser(EXTENSION, ID("A")).extensionDeclaration(Nil) shouldBe ExtensionDecl(ClassID("A"))
+    // extension A: B
+    parser(EXTENSION, ID("A"), COLON, ID("B")).extensionDeclaration(Nil) shouldBe ExtensionDecl("A", "B")
 
-    // extension A =
+    // extension A<T>: B<C<T, Int>>
+    parser(EXTENSION, ID("A"), LESSTHAN, ID("T"), GREATERTHAN, COLON, ID("B"), LESSTHAN, ID("C"), LESSTHAN,
+      ID("T"), COMMA, ID("Int"), RSHIFT)
+      .extensionDeclaration(Nil) shouldBe ExtensionDecl(
+      ClassID("A", "T" :: Nil),
+      ClassID("B", ClassID("C", ClassID("T", Nil) :: ClassID("Int", Nil) :: Nil) :: Nil)
+    )
+
+    // extension A: B =
     //  def x()
     //  def y()
     parser(
-      EXTENSION, ID("A"), EQSIGN, NEWLINE, INDENT, PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE, PRIVDEF, ID("y"), LPAREN,
-      RPAREN, NEWLINE, DEDENT
-    ).extensionDeclaration(Nil) shouldBe ExtensionDecl("A",
+      EXTENSION, ID("A"), COLON, ID("B"), EQSIGN, NEWLINE, INDENT,
+      PRIVDEF, ID("x"), LPAREN, RPAREN, NEWLINE,
+      PRIVDEF, ID("y"), LPAREN, RPAREN, NEWLINE, DEDENT
+    ).extensionDeclaration(Nil) shouldBe ExtensionDecl("A", "B",
       methods = List(
         MethodDecl("x", modifiers = Set(Private())),
         MethodDecl("y", modifiers = Set(Private()))
       )
     )
-
-
-    // : B won't get parsed
-    parser(EXTENSION, ID("A"), COLON, ID("B")).extensionDeclaration(Nil) shouldBe ExtensionDecl("A")
 
     // No fields
     a[CompilationException] should be thrownBy parser(
@@ -285,6 +286,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   }
 
   it should "parse a field declaration" in {
+    // var x
     parser(PRIVVAR, ID("x"))
       .fieldDeclaration(Nil) shouldBe VarDecl("x",
       tpe = None,
@@ -292,6 +294,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       modifiers = Set(Private())
     )
 
+    // var x: Int
     parser(PRIVVAR, ID("x"), COLON, ID("Int"))
       .fieldDeclaration(Nil) shouldBe VarDecl("x",
       tpe = Some("Int"),
@@ -299,6 +302,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       modifiers = Set(Private())
     )
 
+    // Var static x = 1
     parser(PUBVAR, STATIC, ID("x"), EQSIGN, INTLIT(1))
       .fieldDeclaration(Nil) shouldBe VarDecl("x",
       tpe = None,
@@ -306,6 +310,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       modifiers = Set(Public(), Static())
     )
 
+    // Var static x: Int = 1
     parser(PUBVAL, STATIC, ID("x"), COLON, ID("Int"), EQSIGN, INTLIT(1))
       .fieldDeclaration(Nil) shouldBe VarDecl("x",
       tpe = Some("Int"),
@@ -313,6 +318,7 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       modifiers = Set(Public(), Static(), Final())
     )
 
+    // var protected x
     parser(PRIVVAL, PROTECTED, ID("x"))
       .fieldDeclaration(Nil) shouldBe VarDecl("x",
       tpe = None,
@@ -382,7 +388,9 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     //    c: C,
     // )
     parser(
-      PUBDEF, ID("x"), LPAREN, NEWLINE, ID("a"), COLON, ID("A"), COMMA, NEWLINE, ID("b"), COLON, ID("B"), COMMA, NEWLINE,
+      PUBDEF, ID("x"), LPAREN, NEWLINE,
+      ID("a"), COLON, ID("A"), COMMA, NEWLINE,
+      ID("b"), COLON, ID("B"), COMMA, NEWLINE,
       ID("c"), COLON, ID("C"), COMMA, NEWLINE, RPAREN
     ).methodDeclaration(Nil) shouldBe MethodDecl("x",
       modifiers = Set(Public()),

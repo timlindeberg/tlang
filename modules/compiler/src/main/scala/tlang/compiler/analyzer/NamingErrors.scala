@@ -131,9 +131,10 @@ trait NamingErrors extends ErrorHandling {
     }
   }
 
-  case class BreakContinueOutsideLoop(breakOrContinue: String, override val pos: Positioned)
+  case class BreakContinueOutsideLoop(tree: Tree, override val pos: Positioned)
     extends NameAnalysisError(15, pos) {
     lazy val message: String = {
+      val breakOrContinue = if (tree.isInstanceOf[Break]) "break" else "continue"
       err"Can not use $breakOrContinue statement outside of a loop."
     }
   }

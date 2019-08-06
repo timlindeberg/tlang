@@ -623,9 +623,10 @@ case class TypeChecker(
       operatorSymbol.getType
     }
 
-  private def checkTraitIsImplemented(classDecl: IDClassDeclTree, implementedTrait: ClassSymbol) = {
+  private def checkTraitIsImplemented(classDecl: ClassDeclTree, implementedTrait: ClassSymbol) = {
     val classSymbol = classDecl.getSymbol
-    val unimplementedMethods = implementedTrait.abstractMethods()
+    val unimplementedMethods = implementedTrait
+      .abstractMethods
       .filter { case (method, _) => !classSymbol.implementsMethod(method) }
 
     if (unimplementedMethods.nonEmpty)

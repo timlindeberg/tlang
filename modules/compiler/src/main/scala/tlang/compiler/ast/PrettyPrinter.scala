@@ -27,15 +27,14 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   private def prettyPrint(t: Tree): String = t match {
     case CompilationUnit(pack, classes, imps) => pp"$pack${ imports(imps) }$classes"
     // Imports
-    case Package(address)                    => pp"${ packDecl(address) }"
-    case RegularImport(address)              => pp"import ${ address.mkString("::") }"
-    case ExtensionImport(address, className) => pp"import ${ address.mkString("::") }::extension ${ className.mkString("::") }"
-    case WildCardImport(address)             => pp"import ${ address.mkString("::") }.*"
+    case Package(address)        => pp"${ packDecl(address) }"
+    case RegularImport(address)  => pp"import ${ address.mkString("::") }"
+    case WildCardImport(address) => pp"import ${ address.mkString("::") }.*"
     // Class Declarations
-    case ClassDecl(id, parents, fields, methods, annotations) => classDecl(pp"class", annotations, id, parents, fields, methods)
-    case TraitDecl(id, parents, fields, methods, annotations) => classDecl(pp"trait", annotations, id, parents, fields, methods)
-    case ExtensionDecl(tpe, methods, annotations)             => classDecl(pp"extension", annotations, tpe, Nil, Nil, methods)
-    case AnnotationDecl(tpe, methods, annotations)            => classDecl(pp"annotation", annotations, tpe, Nil, Nil, methods)
+    case ClassDecl(id, parents, fields, methods, annotations)  => classDecl(pp"class", annotations, id, parents, fields, methods)
+    case TraitDecl(id, parents, fields, methods, annotations)  => classDecl(pp"trait", annotations, id, parents, fields, methods)
+    case ExtensionDecl(id, extendedType, methods, annotations) => classDecl(pp"extension", annotations, id, extendedType :: Nil, Nil, methods)
+    case AnnotationDecl(id, methods, annotations)              => classDecl(pp"annotation", annotations, id, Nil, Nil, methods)
     // Variable and method declarations
     case VarDecl(id, tpe, expr, modifiers, annos)                          =>
       pp"${ annotations(annos) }${ varDecl(modifiers) } $id${ optional(tpe) { t => pp": $t" } }${ optional(expr) { t => pp" = $t" } }"

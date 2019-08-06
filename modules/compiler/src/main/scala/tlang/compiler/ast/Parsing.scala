@@ -127,7 +127,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // C -> A::B::C
     val packageName = pack.name
     classes
-      .filterInstance[IDClassDeclTree]
       .map { _.id.name }
       .foreach { name => imports += (name, s"$packageName::$name") }
     imports
@@ -189,26 +188,16 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def importDeclaration: Import = positioned {
     eat(IMPORT)
     val address = ListBuffer[String](identifierName)
-    var imp: Option[Import] = None
     while (tokens.next.kind == COLON) {
       eat(COLON, COLON)
       tokens.next.kind match {
-        case TIMES     =>
+        case TIMES =>
           eat(TIMES)
-          imp = Some(WildCardImport(address.toList))
-        case EXTENSION =>
-          eat(EXTENSION)
-          imp = Some(extensionImportDeclaration(address.toList))
-        case _         => address += identifierName
+          return WildCardImport(address.toList)
+        case _     => address += identifierName
       }
     }
-    imp.getOrElse(RegularImport(address.toList))
-  }
-
-  /** <extensionImportDeclaration> ::= extension <identifierName> { :: <identifierName> } */
-  def extensionImportDeclaration(address: List[String]): Import = {
-    val className = nonEmptyList(COLON, COLON)(identifierName)
-    ExtensionImport(address, className)
+    RegularImport(address.toList)
   }
 
   /** <annotation> ::= @<classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
@@ -243,13 +232,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     TraitDecl(id, parents, vars, methods, annotations)
   }
 
-  /** <extensionDeclaration> ::= extension <tpe> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
+  /** <extensionDeclaration> ::= extension <classTypeIdentifier> : <classType> = <indent> { <methodDeclaration> <statementEnd> } <dedent> */
   def extensionDeclaration(annotations: List[Annotation]): ExtensionDecl = positioned {
     eat(EXTENSION)
-    val id = tpe
+    val id = classTypeIdentifier
+    eat(COLON)
+    val extendedType = classType
     val methods = optional(EQSIGN)(classMethods).getOrElse(Nil)
 
-    ExtensionDecl(id, methods, annotations)
+    ExtensionDecl(id, extendedType, methods, annotations)
   }
 
   /** <annotationDeclaration> ::= annotation <classTypeIdentifier> [ = <indent> { <methodDeclaration> <statementEnd> } <dedent> ] */
@@ -1191,16 +1182,15 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <classTypeIdentifier> ::= <identifier> [ "<" <identifier> { "," <identifier> } ">" ] */
   def classTypeIdentifier: ClassID = positioned {
-    tokens.next match {
-      case id: ID =>
-        eat(IDKIND)
-        val templateIds = tokens.next.kind match {
-          case LESSTHAN => commaList(LESSTHAN, GREATERTHAN)(identifier(ClassID(_, Nil)))
-          case _        => List()
-        }
-        ClassID(id.value, templateIds)
-      case _      => report(wrongToken(IDKIND))
+    // The differences between a classTypeIdentifier and a classType is that
+    // classTypeIdentifier can't have sub names or nested template arguments eg:
+    // A<B, C>, not A::B::C<T1<T2, T3>>
+    val id = identifierName
+    val templateIds = tokens.next.kind match {
+      case LESSTHAN => commaList(LESSTHAN, GREATERTHAN)(identifier(ClassID(_, Nil)))
+      case _        => List()
     }
+    ClassID(id, templateIds)
   }
 
   /** <classType> ::= <identifier> { :: <identifier> } <templateList> */

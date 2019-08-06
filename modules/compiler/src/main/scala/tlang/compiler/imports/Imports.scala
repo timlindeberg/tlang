@@ -16,14 +16,21 @@ object Imports {
   private val javaLang = List("java", "lang")
   private val tLang    = List("T", "lang")
 
-  private val javaObject = javaLang :+ "Object"
-  private val javaString = javaLang :+ "String"
-  private val TInt       = tLang :+ "Int"
-  private val TLong      = tLang :+ "Long"
-  private val TFloat     = tLang :+ "Float"
-  private val TDouble    = tLang :+ "Double"
-  private val TChar      = tLang :+ "Char"
-  private val TBool      = tLang :+ "Bool"
+  private val javaObject       = javaLang :+ "Object"
+  private val javaString       = javaLang :+ "String"
+  private val TInt             = tLang :+ "Int"
+  private val TLong            = tLang :+ "Long"
+  private val TFloat           = tLang :+ "Float"
+  private val TDouble          = tLang :+ "Double"
+  private val TChar            = tLang :+ "Char"
+  private val TBool            = tLang :+ "Bool"
+  private val TObjectExtension = tLang :+ "ObjectExtension"
+  private val TStringExtension = tLang :+ "StringExtension"
+  private val TIntExtension    = tLang :+ "IntExtension"
+  private val TLongExtension   = tLang :+ "LongExtension"
+  private val TFloatExtension  = tLang :+ "FloatExtension"
+  private val TDoubleExtension = tLang :+ "DoubleExtension"
+  private val TCharExtension   = tLang :+ "CharExtension"
 
   val DefaultImports: List[Import] = List(
     RegularImport(javaObject),
@@ -34,13 +41,13 @@ object Imports {
     RegularImport(TDouble),
     RegularImport(TChar),
     RegularImport(TBool),
-    ExtensionImport(tLang, javaObject),
-    ExtensionImport(tLang, javaString),
-    ExtensionImport(tLang, TInt),
-    ExtensionImport(tLang, TLong),
-    ExtensionImport(tLang, TFloat),
-    ExtensionImport(tLang, TDouble),
-    ExtensionImport(tLang, TChar)
+    RegularImport(TObjectExtension),
+    RegularImport(TStringExtension),
+    RegularImport(TIntExtension),
+    RegularImport(TLongExtension),
+    RegularImport(TFloatExtension),
+    RegularImport(TDoubleExtension),
+    RegularImport(TCharExtension)
   )
 
   val DefaultImportNames: List[String] = DefaultImports.map(_.writtenName)

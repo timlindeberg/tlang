@@ -42,8 +42,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
   def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
 
     templateCus ++= cus.flatMap { cu =>
-      val classes = cu.classes.filterInstance[IDClassDeclTree]
-      classes.filter(_.id.isTemplated).map { clazz => (clazz.id.name, cu) }
+      cu.classes.filter(_.id.isTemplated).map { clazz => (clazz.id.name, cu) }
     }
 
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
@@ -65,7 +64,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
     // Remove all template classes and replace types in rest of the classes
     ctx.executor.map(allCus.toList) { cu =>
-      cu.classes = cu.classes.filterInstance[IDClassDeclTree].filter(!_.id.isTemplated) ++ cu.classes.filterInstance[ExtensionDecl]
+      cu.classes = cu.classes.filter(!_.id.isTemplated) ++ cu.classes.filterInstance[ExtensionDecl]
       replaceTypes(cu)
     }
   }
@@ -108,7 +107,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
       * generated template classes.
       */
     def apply(): Unit = {
-      cu.classes.filterInstance[IDClassDeclTree].filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
+      cu.classes.filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
 
       val traverser = new Trees.Traverser {
         def traversal: TreeTraversal = {
@@ -157,7 +156,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
       }
     }
 
-    private def checkDuplicateTemplateNames(templateClass: IDClassDeclTree): Unit = {
+    private def checkDuplicateTemplateNames(templateClass: ClassDeclTree): Unit = {
       var seen = Set[TypeTree]()
       var reportedFor = Set[TypeTree]()
       val templateTypes = templateClass.id.templateTypes
@@ -194,7 +193,6 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
       importedCus foreach { cu =>
         cu.classes
-          .filterInstance[IDClassDeclTree]
           .filter { clazz => !templateCus.contains(clazz.id.name) }
           .foreach { clazz => templateCus(clazz.id.name) = cu }
       }
@@ -205,7 +203,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
     private def newTemplateClass(templateCU: CompilationUnit, typeId: ClassID): ClassDeclTree = {
       val shortName = typeId.name.split("::").last
-      val template = templateCU.classes.filterInstance[IDClassDeclTree].find(_.id.name == shortName).get
+      val template = templateCU.classes.find(_.id.name == shortName).get
 
       checkDuplicateTemplateNames(template)
 

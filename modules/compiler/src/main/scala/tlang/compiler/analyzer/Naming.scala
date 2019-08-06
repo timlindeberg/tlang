@@ -117,38 +117,38 @@ case class NameAnalyser(
   private def addSymbols(classDecl: ClassDeclTree): Unit = {
     debug"Adding symbol to ${ classDecl.name }"
 
-    val sym = classDecl match {
-      case ext: ExtensionDecl     =>
-        val tpe = ext.tpe
-        val fullName = (cu.pack.address :+ ExtensionDecl.prefix :+ tpe.name).mkString("::")
-        val newSymbol = new ExtensionClassSymbol(fullName)
-        cu.imports.addExtensionClass(newSymbol)
-        newSymbol
-      case clazz: IDClassDeclTree =>
-        val id = clazz.id
-        val fullName = (cu.pack.address :+ id.name).mkString("::")
-
-        clazz ifInstanceOf[AnnotationDecl] { verifyAnnotationDeclaration }
-
-        // This is here for when we compile the primitive classes.
-        // Since they are already imported we'll get a conflict otherwise
-        if (fullName in Constants.Primitives) {
-          globalScope.classes(fullName)
-        } else {
-          ensureClassNotDefined(id)
-          val newSymbol = new ClassSymbol(fullName)
-          newSymbol.isAbstract = classDecl.isAbstract
-          id.setSymbol(newSymbol)
-          globalScope.classes += (fullName -> newSymbol)
-          newSymbol
-        }
-    }
-
+    val sym = createClassSymbol(classDecl)
     addAnnotations(sym, classDecl)
     sym.setPos(classDecl)
     classDecl.setSymbol(sym)
     classDecl.fields foreach { addSymbols(_, sym) }
     classDecl.methods foreach { addSymbols(_, sym) }
+  }
+
+  private def createClassSymbol(classDecl: ClassDeclTree): ClassSymbol = {
+    val id = classDecl.id
+    val fullName = (cu.pack.address :+ id.name).mkString("::")
+    // This is here for when we compile the primitive classes.
+    // Since they are already imported we'll get a conflict otherwise
+    if (fullName in Constants.Primitives) {
+      return globalScope.classes(fullName)
+    }
+
+    ensureClassNotDefined(id)
+
+    val sym = classDecl match {
+      case _: ClassDecl        =>
+        new ClassSymbol(fullName)
+      case _: ExtensionDecl    =>
+        new ExtensionClassSymbol(fullName) use { cu.imports.addExtensionClass }
+      case ann: AnnotationDecl =>
+        verifyAnnotationDeclaration(ann)
+        new ClassSymbol(fullName)
+    }
+    sym.isAbstract = classDecl.isAbstract
+    id.setSymbol(sym)
+    globalScope.classes += (fullName -> sym)
+    sym
   }
 
   private def addSymbols(varDecl: VarDecl, classSymbol: ClassSymbol): Unit = {
@@ -174,9 +174,18 @@ case class NameAnalyser(
   private def addSymbols(methDecl: MethodDeclTree, classSymbol: ClassSymbol): Unit = {
     debug"Adding symbol to ${ methDecl.signature }"
 
+    val sym = createMethodSymbol(methDecl, classSymbol)
+    addAnnotations(sym, methDecl)
+    sym.setPos(methDecl)
+    methDecl.id.setSymbol(sym)
+    methDecl.setSymbol(sym)
+    methDecl.args foreach { arg => addSymbols(arg, sym) }
+  }
+
+  private def createMethodSymbol(methDecl: MethodDeclTree, classSymbol: ClassSymbol): MethodSymbol = {
     val id = methDecl.id
     val name = id.name
-    val sym = methDecl match {
+    methDecl match {
       case methDecl@MethodDecl(_, modifiers, _, _, retType, stat)      =>
         if (!classSymbol.isAbstract && stat.isEmpty)
           report(ClassUnimplementedMethod(methDecl))
@@ -199,12 +208,6 @@ case class NameAnalyser(
 
         new OperatorSymbol(operatorType, classSymbol, stat, modifiers)
     }
-
-    addAnnotations(sym, methDecl)
-    sym.setPos(methDecl)
-    id.setSymbol(sym)
-    methDecl.setSymbol(sym)
-    methDecl.args foreach { arg => addSymbols(arg, sym) }
   }
 
   private def addSymbols(formal: Formal, methSymbol: MethodSymbol): Unit = {
@@ -295,13 +298,15 @@ case class NameAnalyser(
     case annotation@Annotation(id, values)                                            =>
       setType(id)
       annotation.getSymbol.setType(annotation.id)
-    case extension@ExtensionDecl(tpe, methods, annotations)                           =>
+    case extension@ExtensionDecl(id, extendedType, methods, annotations)              =>
+      setType(id)
+      setType(extendedType)
+
       val extensionSym = extension.getSymbol.asInstanceOf[ExtensionClassSymbol]
-      setType(tpe)
-      extensionSym.setExtendedType(tpe.getType)
+      extensionSym.setExtendedType(extendedType.getType)
       methods foreach bind
       annotations foreach bind
-    case classDecl@IDClassDeclTree(_, _, _, methods, annotations)                     =>
+    case classDecl@ClassDeclTree(_, _, _, methods, annotations)                       =>
       setParentSymbol(classDecl)
       bindFields(classDecl)
       if (!methods.existsInstance[ConstructorDecl]) {
@@ -378,7 +383,7 @@ case class NameAnalyser(
       init ifDefined { new StatementBinder(classDecl.getSymbol, varDecl.isStatic).bindExpr(_) }
     }
 
-  private def addDefaultConstructor(classDecl: IDClassDeclTree): Unit = {
+  private def addDefaultConstructor(classDecl: ClassDeclTree): Unit = {
     val methSym = new MethodSymbol("new", classDecl.getSymbol, Some(Block(Nil)), Set(Public())).setType(TUnit)
     classDecl.getSymbol.addMethod(methSym)
   }
@@ -460,8 +465,7 @@ case class NameAnalyser(
           localVars
         case _: Break | _: Continue                            =>
           if (!canBreakContinue) {
-            val breakOrContinue = if (statement.isInstanceOf[Break]) "break" else "continue"
-            report(BreakContinueOutsideLoop(breakOrContinue, statement))
+            report(BreakContinueOutsideLoop(statement, statement))
           }
           localVars
         case expr: ExprTree                                    =>

@@ -51,7 +51,7 @@ case class ReplState(prettyPrinter: PrettyPrinter, private val _imports: Imports
   }
 
   def addClasses(newClasses: Traversable[ClassDeclTree]): this.type = {
-    _classes ++= newClasses.map(clazz => clazz.tpe.toString -> clazz)
+    _classes ++= newClasses.map(clazz => clazz.id.toString -> clazz)
     this
   }
 

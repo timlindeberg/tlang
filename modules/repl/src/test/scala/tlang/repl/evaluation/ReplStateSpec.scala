@@ -47,7 +47,7 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
     cu.classes should contain(classA)
     cu.classes should contain(classB)
 
-    val maybeMainClass = cu.classes.find { _.tpe == Evaluator.ReplClassID }
+    val maybeMainClass = cu.classes.find { _.id == Evaluator.ReplClassID }
     maybeMainClass should not be empty
     val mainClass = maybeMainClass.get
 
@@ -81,7 +81,7 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
 
     // Including the main class
     cu.classes should have size 3
-    val c = cu.classes.find { _.tpe.name == "A" }
+    val c = cu.classes.find { _.id.name == "A" }
     c should not be empty
     c.get should be theSameInstanceAs classB
     cu.classes should contain(classC)
@@ -109,7 +109,7 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
 
     val cu = replState.compilationUnit
 
-    val maybeMainClass = cu.classes.find { _.tpe == Evaluator.ReplClassID }
+    val maybeMainClass = cu.classes.find { _.id == Evaluator.ReplClassID }
     maybeMainClass should not be empty
     val mainClass = maybeMainClass.get
 

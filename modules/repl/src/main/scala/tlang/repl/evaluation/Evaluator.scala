@@ -86,7 +86,7 @@ case class Evaluator(
 
     // Templating can generate additional CU's. We extract the one with REPL-class
     // and transform that one.
-    val replCU = allCUs.find { _.classes.exists(_.tpe == ReplClassID) }.get
+    val replCU = allCUs.find { _.classes.exists { _.id == ReplClassID } }.get
     val rest = allCUs.remove(replCU)
 
     val transformed: CompilationUnit = saveAndPrintTransformer(replCU)

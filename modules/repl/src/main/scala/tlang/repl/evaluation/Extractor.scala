@@ -15,7 +15,7 @@ case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(imp
 
   // Updates the repl state and returns messages for all new definitions
   def apply(cu: CompilationUnit): List[String] = {
-    val replClass = cu.classes.find { _.tpe == ReplClassID }
+    val replClass = cu.classes.find { _.id == ReplClassID }
     extractImports(cu.imports) ++ (replClass match {
       case Some(mainClass) =>
         val classes = cu.classes.remove(mainClass)
@@ -34,7 +34,7 @@ case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(imp
   private def extractClasses(newClasses: List[ClassDeclTree]): List[String] = {
     state.addClasses(newClasses)
     newClasses map { clazz =>
-      Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.tpe.toString)
+      Bold("Defined ") + KeywordColor("class ") + syntaxHighlighter(clazz.id.toString)
     }
   }
 

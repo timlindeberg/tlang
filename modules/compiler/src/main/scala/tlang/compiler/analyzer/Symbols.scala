@@ -121,8 +121,8 @@ object Symbols {
     def lookupField(name: String): Option[FieldSymbol] =
       fields.get(name).orElse(lookupParentField(name))
 
-    def abstractMethods(): List[(MethodSymbol, ClassSymbol)] = {
-      methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.abstractMethods())
+    def abstractMethods: List[(MethodSymbol, ClassSymbol)] = {
+      methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.abstractMethods)
     }
 
     def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {

@@ -100,7 +100,7 @@ class Lowerer(imports: Imports) extends Logging {
     * Examples:
     * --------------------------------------------------------------------------------
     *
-    * extension A {
+    * extension Extension : A {
     *
     *   Def Method(arg1: A, arg2: Int) = {
     *     OtherMethod() + arg1.i + i + arg2.M()
@@ -112,7 +112,7 @@ class Lowerer(imports: Imports) extends Logging {
     *
     * becomes:
     *
-    * class $EX::A {
+    * class ext$Extension {
     *
     *   Def static Method($this: A, arg1: A, arg2: Int) = {
     *     $this.OtherMethod() + arg1.i + $this.i + arg2.M()
@@ -167,7 +167,7 @@ class Lowerer(imports: Imports) extends Logging {
         newMethSym.argList = thisSym :: methSym.argList
         newMethSym.args = methSym.args + (ThisName -> thisSym)
         newMethSym.addAnnotation(AnnotationSymbol(Constants.ExtensionAnnotation))
-        val thisArg = Formal(extensionDecl.tpe, thisId).setSymbol(thisSym)
+        val thisArg = Formal(extensionDecl.extendedType, thisId).setSymbol(thisSym)
 
         // Replace references to this with the this variable
         val newStat = meth.stat map { s => replaceThis(s, thisId) }

@@ -116,7 +116,6 @@ object Trees {
 
   case object RegularImport {
     def apply(fullName: String) = new RegularImport(fullName)
-
   }
 
   case class RegularImport(address: List[String]) extends Import {
@@ -128,21 +127,12 @@ object Trees {
     override val writtenName: String = address.mkString("::") + "::*"
   }
 
-  case class ExtensionImport(address: List[String], className: List[String]) extends Import {
-    override val name: String = ((address :+ ExtensionDecl.prefix) ::: className).mkString("::") // eg. t::lang::$EX::java::lang::Object
-    override val writtenName: String = ((address :+ "extension") ::: className).mkString("::") // eg. t::lang::extension::java::lang::Object
-  }
-
   /*------------------------ Class Declaration Trees ------------------------*/
 
   case class Annotation(id: ClassID, values: List[KeyValuePair]) extends Tree with Symbolic[AnnotationSymbol]
 
   object ClassDeclTree {
-    def unapply(c: ClassDeclTree) = Some(c.tpe, c.parents, c.fields, c.methods, c.annotations)
-  }
-
-  object IDClassDeclTree {
-    def unapply(c: IDClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods, c.annotations)
+    def unapply(c: ClassDeclTree) = Some(c.id, c.parents, c.fields, c.methods, c.annotations)
   }
 
   trait Annotatable {
@@ -150,7 +140,7 @@ object Trees {
   }
 
   trait ClassDeclTree extends Tree with Symbolic[ClassSymbol] with Annotatable {
-    def tpe: TypeTree
+    def id: ClassID
     def parents: List[ClassID]
     def fields: List[VarDecl]
     def methods: List[MethodDeclTree]
@@ -158,13 +148,7 @@ object Trees {
     def isAbstract: Boolean
 
     def traits: List[ClassID] = parents filter { _.getSymbol.isAbstract }
-    def name: String
-  }
-
-  trait IDClassDeclTree extends ClassDeclTree {
-    def id: ClassID
-    override val tpe: ClassID = id
-    override def name: String = id.name
+    def name: String = id.name
   }
 
   case class ClassDecl(
@@ -172,9 +156,8 @@ object Trees {
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
     methods: List[MethodDeclTree] = Nil,
-    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
-
-    val isAbstract = false
+    annotations: List[Annotation] = Nil) extends ClassDeclTree {
+    override def isAbstract = false
   }
 
   case class TraitDecl(
@@ -182,8 +165,8 @@ object Trees {
     parents: List[ClassID] = Nil,
     fields: List[VarDecl] = Nil,
     methods: List[MethodDeclTree] = Nil,
-    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
-    val isAbstract = true
+    annotations: List[Annotation] = Nil) extends ClassDeclTree {
+    override def isAbstract = true
   }
 
   object ExtensionDecl {
@@ -192,26 +175,25 @@ object Trees {
   }
 
   case class ExtensionDecl(
-    tpe: TypeTree,
+    id: ClassID,
+    extendedType: ClassID,
     methods: List[MethodDeclTree] = Nil,
     annotations: List[Annotation] = Nil) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
-    val parents: List[ClassID] = Nil
-    val fields : List[VarDecl] = Nil
-    val isAbstract             = false
-    override def name: String = tpe.name
+    override def parents: List[ClassID] = List(extendedType)
+    override def fields: List[VarDecl] = Nil
+    override def isAbstract = false
   }
 
   case class AnnotationDecl(
     id: ClassID,
     methods: List[MethodDeclTree] = Nil,
-    annotations: List[Annotation] = Nil) extends IDClassDeclTree {
+    annotations: List[Annotation] = Nil) extends ClassDeclTree {
 
-    val parents: List[ClassID] = ClassID(Constants.JavaAnnotation) :: Nil
-    val fields : List[VarDecl] = Nil
-    val isAbstract             = true
-    override def name: String = tpe.name
+    override def parents: List[ClassID] = ClassID(Constants.JavaAnnotation) :: Nil
+    override def fields: List[VarDecl] = Nil
+    override def isAbstract = true
   }
 
   /*----------------------------- Modifier Trees ----------------------------*/
@@ -279,7 +261,6 @@ object Trees {
 
     // This can used for displaying the method and contains the return type as well
     def fullSignature: String = signature + retType.map { t => ": " + t.name }.getOrElse("")
-
   }
 
   case class MethodDecl(
