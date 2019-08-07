@@ -16,7 +16,7 @@ import scala.collection.{TraversableLike, mutable}
 object Trees {
 
   private lazy val noColorPrinter = PrettyPrinter()(Formatter.SimpleFormatter)
-  private lazy val colorPrinter   = PrettyPrinter()(Formatter.PrettyFormatter)
+  private lazy val colorPrinter = PrettyPrinter()(Formatter.PrettyFormatter)
 
   trait Tree extends Positioned with Product with TraversableLike[Tree, List[Tree]] {
 
@@ -109,9 +109,9 @@ object Trees {
   trait Import extends Tree with Leaf {
     def address: List[String]
 
-    val name       : String = address.mkString("::")
+    val name: String = address.mkString("::")
     val writtenName: String = name
-    val shortName  : String = address.last
+    val shortName: String = address.last
   }
 
   case object RegularImport {
@@ -169,7 +169,18 @@ object Trees {
   }
 
   object ExtensionDecl {
+    val ExtensionPrefix = "ext$"
+
     def stripPrefix(fullName: String): String = fullName.replaceAll(""".*ext\$""", "")
+    def nameToExtensionName(name: String): String = {
+      val parts = name.split("::")
+      parts(parts.size - 1) = ExtensionPrefix + parts(parts.size - 1)
+      parts.mkString("::")
+    }
+
+    def ExtensionNameToRegularName(name: String): String = {
+      if (name.startsWith(ExtensionPrefix)) name.substring(ExtensionPrefix.length) else name
+    }
   }
 
   case class ExtensionDecl(
@@ -398,45 +409,45 @@ object Trees {
   }
 
   case class Plus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {
-    val opSign       = "+"
+    val opSign = "+"
     val operatorName = "$Plus"
   }
   case class Minus(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {
-    val opSign       = "-"
+    val opSign = "-"
     val operatorName = "$Minus"
   }
   case class Times(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {
-    val opSign       = "*"
+    val opSign = "*"
     val operatorName = "$Times"
   }
   case class Div(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {
-    val opSign       = "/"
+    val opSign = "/"
     val operatorName = "$Div"
   }
   case class Modulo(lhs: ExprTree, rhs: ExprTree) extends ArithmeticOperatorTree {
-    val opSign       = "%"
+    val opSign = "%"
     val operatorName = "$Modulo"
   }
 
   case class LogicAnd(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {
-    val opSign       = "&"
+    val opSign = "&"
     val operatorName = "$LogicAnd"
   }
   case class LogicOr(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {
-    val opSign       = "|"
+    val opSign = "|"
     val operatorName = "$LogicOr"
   }
   case class LogicXor(lhs: ExprTree, rhs: ExprTree) extends LogicalOperatorTree {
-    val opSign       = "^"
+    val opSign = "^"
     val operatorName = "$LogicXor"
   }
 
   case class LeftShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {
-    val opSign       = "<<"
+    val opSign = "<<"
     val operatorName = "$LeftShift"
   }
   case class RightShift(lhs: ExprTree, rhs: ExprTree) extends ShiftOperatorTree {
-    val opSign       = ">>"
+    val opSign = ">>"
     val operatorName = "$RightShift"
   }
 
@@ -455,37 +466,37 @@ object Trees {
   }
 
   case class LessThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {
-    val opSign       = "<"
+    val opSign = "<"
     val operatorName = "$LessThan"
   }
   case class LessThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {
-    val opSign       = "<="
+    val opSign = "<="
     val operatorName = "$LessThanEquals"
   }
   case class GreaterThan(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {
-    val opSign       = ">"
+    val opSign = ">"
     val operatorName = "$GreaterThan"
   }
   case class GreaterThanEquals(lhs: ExprTree, rhs: ExprTree) extends ComparisonOperatorTree {
-    val opSign       = ">="
+    val opSign = ">="
     val operatorName = "$GreaterThanEquals"
   }
 
   case class Equals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {
-    val opSign       = "=="
+    val opSign = "=="
     val operatorName = "$Equals"
   }
   case class NotEquals(lhs: ExprTree, rhs: ExprTree) extends EqualsOperatorTree {
-    val opSign       = "!="
+    val opSign = "!="
     val operatorName = "$NotEquals"
   }
 
   case class And(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {
-    val opSign       = "&&"
+    val opSign = "&&"
     val operatorName = "$And"
   }
   case class Or(lhs: ExprTree, rhs: ExprTree) extends BranchingOperatorTree with BinaryOperatorTree {
-    val opSign       = "||"
+    val opSign = "||"
     val operatorName = "$Or"
   }
 
@@ -510,50 +521,50 @@ object Trees {
   }
 
   case class Not(expr: ExprTree) extends BranchingOperatorTree with UnaryOperatorTree {
-    val opSign       = "!"
+    val opSign = "!"
     val operatorName = "$Not"
   }
   case class Hash(expr: ExprTree) extends UnaryOperatorTree {
-    val opSign       = "#"
+    val opSign = "#"
     val operatorName = "$Hash"
   }
   case class Negation(expr: ExprTree) extends UnaryOperatorTree {
-    val opSign       = "-"
+    val opSign = "-"
     val operatorName = "$Negation"
   }
   case class LogicNot(expr: ExprTree) extends UnaryOperatorTree {
-    val opSign       = "~"
+    val opSign = "~"
     val operatorName = "$LogicNot"
   }
   case class ExtractNullable(expr: ExprTree) extends UnaryOperatorTree {
-    val opSign       = "!!"
+    val opSign = "!!"
     val operatorName = "$ExtractNullable"
   }
 
   case class PreIncrement(expr: ExprTree) extends IncrementDecrementTree {
-    val opSign       = "++"
+    val opSign = "++"
     val operatorName = "$PreIncrement"
-    val isPre        = true
-    val isIncrement  = true
+    val isPre = true
+    val isIncrement = true
   }
   case class PreDecrement(expr: ExprTree) extends IncrementDecrementTree {
-    val opSign       = "--"
+    val opSign = "--"
     val operatorName = "$PreDecrement"
-    val isPre        = true
-    val isIncrement  = false
+    val isPre = true
+    val isIncrement = false
   }
   case class PostIncrement(expr: ExprTree) extends IncrementDecrementTree {
-    val opSign       = "++"
+    val opSign = "++"
     val operatorName = "$PostIncrement"
-    val isPre        = false
-    val isIncrement  = true
+    val isPre = false
+    val isIncrement = true
     override def signature(args: List[Any]): String = orEmpty(args, 0) + opSign
   }
   case class PostDecrement(expr: ExprTree) extends IncrementDecrementTree {
-    val opSign       = "--"
+    val opSign = "--"
     val operatorName = "$PostDecrement"
-    val isPre        = false
-    val isIncrement  = false
+    val isPre = false
+    val isIncrement = false
     override def signature(args: List[Any]): String = orEmpty(args, 0) + opSign
   }
 
@@ -569,12 +580,12 @@ object Trees {
   }
 
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ArrayOperatorTree with Assignable {
-    val opSign       = "[]"
+    val opSign = "[]"
     val operatorName = "$ArrayRead"
     override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }]"
   }
   case class ArraySlice(arr: ExprTree, start: Option[ExprTree], end: Option[ExprTree], step: Option[ExprTree]) extends ArrayOperatorTree {
-    val opSign       = "[::]"
+    val opSign = "[::]"
     val operatorName = "$ArraySlice"
     override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }:${ orEmpty(args, 1) }]"
   }
@@ -698,9 +709,9 @@ object Trees {
   trait Assignable extends ExprTree
 
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
-    override val arr         : ExprTree = to
-    override val opSign      : String   = "[]="
-    override val operatorName: String   = "Assign"
+    override val arr: ExprTree = to
+    override val opSign: String = "[]="
+    override val operatorName: String = "Assign"
     override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }] = ${ orEmpty(args, 1) }"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree

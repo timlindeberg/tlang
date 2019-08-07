@@ -1,6 +1,6 @@
 package T::lang
 
-extension T::lang::Float =
+extension FloatExtension: Float =
 
 	Def static MaxExponent(): Int = java::lang::Float.MAX_EXPONENT
 	Def static MaxValue(): Float  = java::lang::Float.MAX_VALUE

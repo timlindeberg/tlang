@@ -6,7 +6,7 @@ import java::util::Locale
 import T::std::Iterable
 import T::std::Iterator
 
-extension java::lang::String =
+extension StringExtension: String =
 
 	Def Iterator(): Iterator<Char> = new StringIterator(this)
 

@@ -34,8 +34,9 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val extraClassPaths = ctx.allClassPaths.map(File(_).url).toArray
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
 
+
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
-      //files.foreach(generateStackMapFrames(_, classLoader))
+      files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
     }
   }

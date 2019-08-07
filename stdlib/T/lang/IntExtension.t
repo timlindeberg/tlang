@@ -1,6 +1,6 @@
 package T::lang
 
-extension T::lang::Int =
+extension IntExtension: Int =
 
 	Def static MaxValue(): Int = java::lang::Integer.MAX_VALUE
 	Def static MinValue(): Int = java::lang::Integer.MIN_VALUE

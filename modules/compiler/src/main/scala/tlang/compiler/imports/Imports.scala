@@ -14,23 +14,23 @@ import scala.collection.mutable
 object Imports {
 
   private val javaLang = List("java", "lang")
-  private val tLang    = List("T", "lang")
+  private val tLang = List("T", "lang")
 
-  private val javaObject       = javaLang :+ "Object"
-  private val javaString       = javaLang :+ "String"
-  private val TInt             = tLang :+ "Int"
-  private val TLong            = tLang :+ "Long"
-  private val TFloat           = tLang :+ "Float"
-  private val TDouble          = tLang :+ "Double"
-  private val TChar            = tLang :+ "Char"
-  private val TBool            = tLang :+ "Bool"
+  private val javaObject = javaLang :+ "Object"
+  private val javaString = javaLang :+ "String"
+  private val TInt = tLang :+ "Int"
+  private val TLong = tLang :+ "Long"
+  private val TFloat = tLang :+ "Float"
+  private val TDouble = tLang :+ "Double"
+  private val TChar = tLang :+ "Char"
+  private val TBool = tLang :+ "Bool"
   private val TObjectExtension = tLang :+ "ObjectExtension"
   private val TStringExtension = tLang :+ "StringExtension"
-  private val TIntExtension    = tLang :+ "IntExtension"
-  private val TLongExtension   = tLang :+ "LongExtension"
-  private val TFloatExtension  = tLang :+ "FloatExtension"
+  private val TIntExtension = tLang :+ "IntExtension"
+  private val TLongExtension = tLang :+ "LongExtension"
+  private val TFloatExtension = tLang :+ "FloatExtension"
   private val TDoubleExtension = tLang :+ "DoubleExtension"
-  private val TCharExtension   = tLang :+ "CharExtension"
+  private val TCharExtension = tLang :+ "CharExtension"
 
   val DefaultImports: List[Import] = List(
     RegularImport(javaObject),
@@ -62,11 +62,11 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
   private var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
-  private val shortToFull        = mutable.Map[String, String]()
-  private val fullToShort        = mutable.Map[String, String]()
-  private val classPath          = ctx.classPath
+  private val shortToFull = mutable.Map[String, String]()
+  private val fullToShort = mutable.Map[String, String]()
+  private val classPath = ctx.classPath
   private val classSymbolLocator = ClassSymbolLocator(classPath)
-  private val templateImporter   = new TemplateImporter(ctx)
+  private val templateImporter = new TemplateImporter(ctx)
 
 
   // Initialize
@@ -105,23 +105,26 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
     val name = imp.name
 
-    if (classExists(name)) {
+    if (classSymbolLocator.classExists(name)) {
       this += (shortName, name)
       return
     }
 
-    classSymbolLocator.findExtensionSymbol(name) match {
-      case Some(e) => addExtensionClass(e)
-      case None    => report(CantResolveImport(imp.writtenName, imp))
+    classSymbolLocator.findExtensionSymbol(name) ifDefined { e =>
+      addExtensionClass(e)
+      return
     }
+
+    if (templateImporter.classExists(name)) {
+      this += (shortName, name)
+      return
+    }
+
+    report(CantResolveImport(imp.writtenName, imp))
   }
 
   private def addWildCardImport(imp: WildCardImport): Unit = {
     classPath.getClassesInPackage(imp.name) foreach { name => this += RegularImport(name) }
-  }
-
-  private def classExists(className: String): Boolean = {
-    templateImporter.classExists(className) || classSymbolLocator.classExists(className)
   }
 
   def ++=(imps: Imports): this.type = { imps.imports foreach { this += _ }; this }

@@ -60,10 +60,9 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
-    locateSymbol(Constants.TExtensionPrefix + className) { clazz =>
-      val extensionName = getExtensionClassName(clazz.getClassName)
+    locateSymbol(ExtensionDecl.nameToExtensionName(className)) { clazz =>
       findExtendedClassSymbol(clazz) map { extendedClass =>
-        new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(extendedClass)) }
+        new ExtensionClassSymbol(className) use { _.setExtendedType(TObject(extendedClass)) }
       }
     }.asInstanceOf[Option[ExtensionClassSymbol]]
   }
@@ -87,7 +86,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   private def findExtendedClassSymbol(extensionClass: JavaClass): Option[ClassSymbol] = {
     extensionClass
       .getAnnotationEntries
-      .find { entry => entry.getAnnotationType == TExtensionClassAnnotation }
+      .find { entry => jvmObjectNameToTName(entry.getAnnotationType) == TExtensionClassAnnotation }
       .flatMap { entry =>
         entry.getElementValuePairs
           .find { pair => pair.getNameString == TExtendedClassName }
@@ -97,11 +96,14 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
   private def locateSymbol(className: String)(cons: JavaClass => Option[ClassSymbol]): Option[ClassSymbol] = {
     SymbolCache.getOrElseMaybeUpdate(className) {
-      findClass(className) flatMap { cons(_) map { fillClassSymbol } }
+      findClass(className)
+        .flatMap { clazz =>
+          cons(clazz).map { sym => fillClassSymbol(sym, clazz) }
+        }
     }
   }
 
-  private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): Unit = {
+  private def fillClassSymbol(classSymbol: ClassSymbol, clazz: JavaClass): ClassSymbol = {
     classSymbol.isAbstract = clazz.isInterface
     val (operators, methods) = clazz.getMethods
       .map { convertMethod(_, clazz, classSymbol) }
@@ -113,6 +115,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     convertParents(clazz) foreach classSymbol.addParent
     convertFields(classSymbol, clazz) foreach classSymbol.addField
     convertAnnotations(clazz.getAnnotationEntries) foreach classSymbol.addAnnotation
+    classSymbol
   }
 
   private def convertParents(clazz: JavaClass): List[ClassSymbol] = {
@@ -145,13 +148,23 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
+    var args = meth
+      .getArgumentTypes
+      .zipWithIndex
+      .map { case (tpe, i) => convertArgument(tpe, s"arg$i") }
+      .toList
+
     var modifiers = convertModifiers(meth)
     val annotations = meth.getAnnotationEntries
-    if (isAnnotatedWith(annotations, TImplicitConstructorAnnotation))
-      modifiers += Implicit()
 
-    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation))
+    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation)) {
       modifiers -= Static() // Remove the static modifier which is added to methods in extension classes
+      args = args.drop(1) // Remove the added this argument
+    }
+
+    if (isAnnotatedWith(annotations, TImplicitConstructorAnnotation)) {
+      modifiers += Implicit()
+    }
 
     val name = meth.getName match {
       case "<init>" => "new"
@@ -166,16 +179,6 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     }
 
     symbol.setType(convertType(meth.getReturnType))
-
-    var args = meth
-      .getArgumentTypes
-      .zipWithIndex
-      .map { case (tpe, i) => convertArgument(tpe, s"arg$i") }
-      .toList
-
-    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation))
-      args = args.drop(1) // Remove the added this argument
-
     symbol.argList = args
     symbol.isAbstract = meth.isAbstract
 
@@ -236,22 +239,18 @@ case class ClassSymbolLocator(classPath: ClassPath) {
         val values = annotation.getElementValuePairs
           .map { pair => (pair.getNameString, StringAnnotationValue(pair.getValue.stringifyValue)) }
           .toList
-        AnnotationSymbol(toTName(annotation.getAnnotationType), values)
+        AnnotationSymbol(jvmObjectNameToTName(annotation.getAnnotationType), values)
       }
       .toList
   }
 
-  private def getExtensionClassName(name: String) = {
-    val extensionName = if (name.startsWith(Constants.TExtensionPrefix))
-      name.substring(Constants.TExtensionPrefix.size)
-    else
-      name
-    toTName(extensionName)
+  private def isAnnotatedWith(annotations: Array[AnnotationEntry], name: String): Boolean = {
+    annotations.exists { annotation =>
+      name == jvmObjectNameToTName(annotation.getAnnotationType)
+    }
   }
 
-  private def isAnnotatedWith(annotations: Array[AnnotationEntry], annotation: String): Boolean = {
-    annotation in annotations.map { _.getAnnotationType.replaceAll("/", "::") }
-  }
+  private def jvmObjectNameToTName(name: String) = toTName(name.drop(1).dropRight(1))
 
   private def getOperatorType(name: String) = OperatorTypes(name.drop(1))
 

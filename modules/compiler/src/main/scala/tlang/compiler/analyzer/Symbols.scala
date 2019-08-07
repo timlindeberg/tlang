@@ -54,12 +54,11 @@ object Symbols {
   object ClassErrorSymbol extends ClassSymbol(CompilerMessage.ErrorName)
 
   class ClassSymbol(override val name: String) extends Symbol {
-    protected var _parents   : List[ClassSymbol]        = Nil
-    protected var _methods   : List[MethodSymbol]       = Nil
-    protected var _operators : List[OperatorSymbol]     = Nil
-    protected var _fields    : Map[String, FieldSymbol] = Map()
-    protected var _isAbstract: Boolean                  = false
-
+    protected var _parents: List[ClassSymbol] = Nil
+    protected var _methods: List[MethodSymbol] = Nil
+    protected var _operators: List[OperatorSymbol] = Nil
+    protected var _fields: Map[String, FieldSymbol] = Map()
+    protected var _isAbstract: Boolean = false
 
     def parents: List[ClassSymbol] = _parents
     def methods: List[MethodSymbol] = _methods
@@ -85,44 +84,47 @@ object Symbols {
 
     def implementingMethod(abstractMeth: MethodSymbol): Option[MethodSymbol] =
       findMethod(abstractMeth.name, abstractMeth.argTypes, exactTypes = true)
-        .filter(concreteMeth => !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType))
-        .orElse(parents.findDefined(_.implementingMethod(abstractMeth)))
+        .filter { concreteMeth => !concreteMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType) }
+        .orElse { parents.findDefined { _.implementingMethod(abstractMeth) } }
 
     def overriddenMethod(concreteMeth: MethodSymbol): Option[MethodSymbol] =
-      parents.findDefined(_.findMethod(concreteMeth.name, concreteMeth.argTypes, exactTypes = true))
-        .filter(abstractMeth => abstractMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType))
-        .orElse(parents.findDefined(_.overriddenMethod(concreteMeth)))
+      parents
+        .findDefined { _.findMethod(concreteMeth.name, concreteMeth.argTypes, exactTypes = true) }
+        .filter { abstractMeth => abstractMeth.isAbstract && concreteMeth.getType.isSubTypeOf(abstractMeth.getType) }
+        .orElse { parents.findDefined { _.overriddenMethod(concreteMeth) } }
 
     def implementsMethod(abstractMethod: MethodSymbol): Boolean = implementingMethod(abstractMethod).isDefined
     def overridesMethod(concreteMethod: MethodSymbol): Boolean = overriddenMethod(concreteMethod).isDefined
 
     def lookupParent(name: String): Option[ClassSymbol] =
-      parents.find(_.name == name).orElse(parents.findDefined(_.lookupParent(name)))
+      parents
+        .find { _.name == name }
+        .orElse { parents.findDefined { _.lookupParent(name) } }
 
     def lookupParentMethod(name: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
-      parents.findDefined(_.lookupMethod(name, args, imports, exactTypes))
+      parents.findDefined { _.lookupMethod(name, args, imports, exactTypes) }
 
     def lookupParentOperator(operatorType: OperatorTree, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[OperatorSymbol] =
-      parents.findDefined(_.lookupOperator(operatorType, args, imports, exactTypes))
+      parents.findDefined { _.lookupOperator(operatorType, args, imports, exactTypes) }
 
     def lookupParentField(name: String): Option[FieldSymbol] =
-      parents.findDefined(_.lookupField(name))
+      parents.findDefined { _.lookupField(name) }
 
     def lookupMethod(name: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
       findMethod(name, args, exactTypes)
-        .orElse(findExtensionMethod(name, args, imports, exactTypes))
-        .orElse(lookupParentMethod(name, args, imports, exactTypes))
+        .orElse { findExtensionMethod(name, args, imports, exactTypes) }
+        .orElse { lookupParentMethod(name, args, imports, exactTypes) }
 
     def lookupOperator(operatorType: OperatorTree, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[OperatorSymbol] =
       findOperator(operatorType, args, exactTypes)
-        .orElse(findExtensionOperator(operatorType, args, imports, exactTypes))
-        .orElse(lookupParentOperator(operatorType, args, imports, exactTypes))
+        .orElse { findExtensionOperator(operatorType, args, imports, exactTypes) }
+        .orElse { lookupParentOperator(operatorType, args, imports, exactTypes) }
 
     def lookupField(name: String): Option[FieldSymbol] =
-      fields.get(name).orElse(lookupParentField(name))
+      fields.get(name).orElse { lookupParentField(name) }
 
     def abstractMethods: List[(MethodSymbol, ClassSymbol)] = {
-      methods.filter(_.isAbstract).map((_, this)) ::: parents.flatMap(_.abstractMethods)
+      methods.filter { _.isAbstract }.map { (_, this) } ::: parents.flatMap { _.abstractMethods }
     }
 
     def findOperator(operatorType: OperatorTree, args: List[Type], exactTypes: Boolean): Option[OperatorSymbol] = {
@@ -131,7 +133,7 @@ object Symbols {
     }
 
     def findMethod(name: String, args: List[Type], exactTypes: Boolean): Option[MethodSymbol] = {
-      val meths = methods.filter(_.name == name)
+      val meths = methods.filter { _.name == name }
       findMethodPrioritiseExactMatch(meths, name, args, exactTypes)
     }
 
@@ -140,17 +142,20 @@ object Symbols {
     override def setType(tpe: Type): Nothing = sys.error("Cannot set type on ClassSymbol")
 
     protected def findMethodPrioritiseExactMatch[T <: MethodSymbol](methods: List[T], name: String, args: List[Type], exactTypes: Boolean): Option[T] =
-      methods.find(sym => hasMatchingArgumentList(sym, args, exactTypes = true))
+      methods
+        .find { sym => hasMatchingArgumentList(sym, args, exactTypes = true) }
         .orElse {
           if (exactTypes) None
           else methods.find(sym => hasMatchingArgumentList(sym, args, exactTypes = false))
         }
 
     protected def findExtensionMethod(methodName: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
-      imports.getExtensionClasses(name).findDefined(ext => ext.findMethod(methodName, args, exactTypes))
+      imports.getExtensionClasses(name)
+        .findDefined { ext => ext.findMethod(methodName, args, exactTypes) }
 
     protected def findExtensionOperator(operatorType: OperatorTree, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[OperatorSymbol] =
-      imports.getExtensionClasses(name).findDefined(ext => ext.findOperator(operatorType, args, exactTypes))
+      imports.getExtensionClasses(name)
+        .findDefined { ext => ext.findOperator(operatorType, args, exactTypes) }
 
     protected def hasMatchingArgumentList(symbol: MethodSymbol, args: List[Type], exactTypes: Boolean): Boolean = {
       if (args.lengthCompare(symbol.argList.size) != 0)
@@ -182,16 +187,20 @@ object Symbols {
     def getExtendedType: Type = _extendedType.get
 
     override def lookupField(name: String): Option[FieldSymbol] = {
-      classSymbol.flatMap(_.lookupField(name))
+      classSymbol.flatMap { _.lookupField(name) }
     }
 
     override def lookupMethod(name: String, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[MethodSymbol] =
-      super.lookupMethod(name, args, imports, exactTypes).
-        orElse(classSymbol.flatMap(_.lookupMethod(name, args, imports, exactTypes)))
+      super.lookupMethod(name, args, imports, exactTypes)
+        .orElse {
+          classSymbol.flatMap { _.lookupMethod(name, args, imports, exactTypes) }
+        }
 
     override def lookupOperator(operatorType: OperatorTree, args: List[Type], imports: Imports, exactTypes: Boolean = false): Option[OperatorSymbol] =
-      super.lookupOperator(operatorType, args, imports, exactTypes).
-        orElse(classSymbol.flatMap(_.lookupOperator(operatorType, args, imports, exactTypes)))
+      super.lookupOperator(operatorType, args, imports, exactTypes)
+        .orElse {
+          classSymbol.flatMap { _.lookupOperator(operatorType, args, imports, exactTypes) }
+        }
 
     private def classSymbol: Option[ClassSymbol] = _extendedType collect {
       case TObject(classSymbol) => classSymbol
@@ -204,9 +213,9 @@ object Symbols {
     val stat: Option[StatTree],
     val modifiers: Set[Modifier]) extends Symbol with Modifiable {
 
-    var isAbstract: Boolean                     = stat.isEmpty
-    var args      : Map[String, VariableSymbol] = Map[String, VariableSymbol]()
-    var argList   : List[VariableSymbol]        = Nil
+    var isAbstract: Boolean = stat.isEmpty
+    var args: Map[String, VariableSymbol] = Map[String, VariableSymbol]()
+    var argList: List[VariableSymbol] = Nil
 
     def addArgument(arg: VariableSymbol): Unit = {
       args += arg.name -> arg

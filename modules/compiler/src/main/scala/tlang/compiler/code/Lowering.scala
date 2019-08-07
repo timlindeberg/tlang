@@ -131,7 +131,7 @@ class Lowerer(imports: Imports) extends Logging {
 
     val extensionDecl = t.asInstanceOf[ExtensionDecl]
     val extensionClassSymbol = extensionDecl.getSymbol.asInstanceOf[ExtensionClassSymbol]
-    val exName = Constants.TExtensionPrefix + extensionClassSymbol.name
+    val exName = ExtensionDecl.nameToExtensionName(extensionClassSymbol.name)
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
@@ -207,7 +207,7 @@ class Lowerer(imports: Imports) extends Logging {
     case Access(obj, method@MethodCall(meth, args)) =>
       val methSym = meth.getSymbol
       val extSymbol = meth.getSymbol.classSymbol.asInstanceOf[ExtensionClassSymbol]
-      val className = Constants.TExtensionPrefix + extSymbol.name
+      val className = ExtensionDecl.nameToExtensionName(extSymbol.name)
       val classSym = new ClassSymbol(className)
       val classId = ClassID(className).setSymbol(classSym)
       val treeCopy = new Trees.LazyCopier
@@ -461,8 +461,8 @@ class Lowerer(imports: Imports) extends Logging {
 
 
   /**
-    * Desugars for each loops, either array based or an iterator based.
-    */
+   * Desugars for each loops, either array based or an iterator based.
+   */
   private def desugarForeach(t: Tree): Tree = {
     if (!t.isInstanceOf[Foreach])
       return t

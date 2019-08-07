@@ -1,6 +1,6 @@
 package T::lang
 
-extension T::lang::Double =
+extension DoubleExtension: Double =
 
 	Def static MaxExponent(): Int  = java::lang::Double.MAX_EXPONENT
 	Def static MaxValue(): Double  = java::lang::Double.MAX_VALUE

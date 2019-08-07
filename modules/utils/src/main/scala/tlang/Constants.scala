@@ -10,47 +10,46 @@ import scala.util.Try
 
 object Constants {
 
-  val FileEnding          = ".t"
-  val THome               = "T_HOME"
+  val FileEnding = ".t"
+  val THome = "T_HOME"
   val CompilerCommandName = "tcompile"
-  val ReplCommandName     = "trepl"
-  val MainMethod          = "main"
-  val JavaLangPackage     = "java::lang"
-  val JavaObject          = s"$JavaLangPackage::Object"
-  val JavaString          = s"$JavaLangPackage::String"
-  val JavaAnnotation      = s"$JavaLangPackage::annotation::Annotation"
-  val TLangPackage        = "T::lang"
-  val TInt                = s"$TLangPackage::Int"
-  val TIntRef             = s"$TLangPackage::IntRef"
-  val TLong               = s"$TLangPackage::Long"
-  val TLongRef            = s"$TLangPackage::LongRef"
-  val TFloat              = s"$TLangPackage::Float"
-  val TFloatRef           = s"$TLangPackage::FloatRef"
-  val TDouble             = s"$TLangPackage::Double"
-  val TDoubleRef          = s"$TLangPackage::DoubleRef"
-  val TChar               = s"$TLangPackage::Char"
-  val TCharRef            = s"$TLangPackage::CharRef"
-  val TBool               = s"$TLangPackage::Bool"
-  val TBoolRef            = s"$TLangPackage::BoolRef"
+  val ReplCommandName = "trepl"
+  val MainMethod = "main"
+  val JavaLangPackage = "java::lang"
+  val JavaObject = s"$JavaLangPackage::Object"
+  val JavaString = s"$JavaLangPackage::String"
+  val JavaAnnotation = s"$JavaLangPackage::annotation::Annotation"
+  val TLangPackage = "T::lang"
+  val TInt = s"$TLangPackage::Int"
+  val TIntRef = s"$TLangPackage::IntRef"
+  val TLong = s"$TLangPackage::Long"
+  val TLongRef = s"$TLangPackage::LongRef"
+  val TFloat = s"$TLangPackage::Float"
+  val TFloatRef = s"$TLangPackage::FloatRef"
+  val TDouble = s"$TLangPackage::Double"
+  val TDoubleRef = s"$TLangPackage::DoubleRef"
+  val TChar = s"$TLangPackage::Char"
+  val TCharRef = s"$TLangPackage::CharRef"
+  val TBool = s"$TLangPackage::Bool"
+  val TBoolRef = s"$TLangPackage::BoolRef"
 
-  val TAnnotationPackage         = s"$TLangPackage::annotations"
+  val TAnnotationPackage = s"$TLangPackage::annotations"
   val TExtensionMethodAnnotation = s"$TAnnotationPackage::ExtensionMethod"
-  val TExtensionClassAnnotation  = s"$TAnnotationPackage::ExtensionClass"
-  val TExtendedClassName         = "ExtendedClass"
-  val TExtensionPrefix           = "ext$"
+  val TExtensionClassAnnotation = s"$TAnnotationPackage::ExtensionClass"
+  val TExtendedClassName = "ExtendedClass"
 
   val TImplicitConstructorAnnotation = s"$TAnnotationPackage::ImplicitConstructor"
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)
 
-  lazy val Version          : String = readVersion()
-  lazy val THomeDirectory   : String = sys.env.getOrElse(THome, FatalCantFindTHome)
-  lazy val TStdLibDirectory : String = tStdLibDirectory
-  lazy val SettingsDirectory: File   = System.getProperty("user.home") / ".tlang"
-  lazy val Pwd              : Path   = Paths.get("").toAbsolutePath
+  lazy val Version: String = readVersion()
+  lazy val THomeDirectory: String = sys.env.getOrElse(THome, FatalCantFindTHome)
+  lazy val TStdLibDirectory: String = tStdLibDirectory
+  lazy val SettingsDirectory: File = System.getProperty("user.home") / ".tlang"
+  lazy val Pwd: Path = Paths.get("").toAbsolutePath
 
   private val VersionFile = "version.txt"
-  private val StdLibDir   = "stdlib"
+  private val StdLibDir = "stdlib"
 
   private def FatalCantFindTHome: Nothing = {
     System.err.println(s"$THome environment variable is not set. It needs to point to the directory of the T standard library.")

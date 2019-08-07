@@ -52,7 +52,7 @@ case class NameAnalyser(
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
-  private var variableUsage        = Map[VariableSymbol, Boolean]()
+  private var variableUsage = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
   import errorStringContext.formatter
@@ -136,11 +136,11 @@ case class NameAnalyser(
     ensureClassNotDefined(id)
 
     val sym = classDecl match {
-      case _: ClassDecl        =>
+      case _: ClassDecl | _: TraitDecl =>
         new ClassSymbol(fullName)
-      case _: ExtensionDecl    =>
+      case _: ExtensionDecl            =>
         new ExtensionClassSymbol(fullName) use { cu.imports.addExtensionClass }
-      case ann: AnnotationDecl =>
+      case ann: AnnotationDecl         =>
         verifyAnnotationDeclaration(ann)
         new ClassSymbol(fullName)
     }

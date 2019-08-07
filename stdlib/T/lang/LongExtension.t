@@ -1,6 +1,6 @@
 package T::lang
 
-extension T::lang::Long =
+extension LongExtension : Long =
 
 	Def static MaxValue(): Long = java::lang::Long.MAX_VALUE
 	Def static MinValue(): Long = java::lang::Long.MIN_VALUE
@@ -12,7 +12,7 @@ extension T::lang::Long =
 
 
 	Def BitsToDouble(): Double           = java::lang::Double.longBitsToDouble(this)
-	Def BitCount(): Long                 = java::lang::Long.bitCount(this)
+	Def BitCount(): Int                  = java::lang::Long.bitCount(this)
 	Def HighestOneBit(): Long            = java::lang::Long.highestOneBit(this)
 	Def LowestOneBit(): Long             = java::lang::Long.lowestOneBit(this)
 	Def NumberOfLeadingZeros(): Int      = java::lang::Long.numberOfLeadingZeros(this)
@@ -21,7 +21,7 @@ extension T::lang::Long =
 	Def ReverseBytes(): Long             = java::lang::Long.reverseBytes(this)
 	Def RotateLeft(distance: Int): Long  = java::lang::Long.rotateLeft(this, distance)
 	Def RotateRight(distance: Int): Long = java::lang::Long.rotateRight(this, distance)
-	Def Sign(): Long                     = java::lang::Long.signum(this)
+	Def Sign(): Int                      = java::lang::Long.signum(this)
 	Def ToBinaryString(): String         = java::lang::Long.toBinaryString(this)
 	Def ToHexString(): String            = java::lang::Long.toHexString(this)
 	Def ToOctalString(): String          = java::lang::Long.toOctalString(this)
