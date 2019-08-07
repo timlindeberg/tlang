@@ -2,7 +2,7 @@ val a = new A()
 val b = new A()
 
 a.Test() // res: A
-a.Test(5) // res: A5
+a.Test(5) // res: 5
 val x = a.Test2()
 println(x) // res: 6
 

@@ -33,10 +33,12 @@ object Constants {
   val TBool               = s"$TLangPackage::Bool"
   val TBoolRef            = s"$TLangPackage::BoolRef"
 
-  val TAnnotationPackage             = s"$TLangPackage::annotations"
-  val TExtensionMethodAnnotation     = s"$TAnnotationPackage::ExtensionMethod"
-  val TExtensionClassAnnotation      = s"$TAnnotationPackage::ExtensionClass"
-  val TExtendedClassName             = "ExtendedClass"
+  val TAnnotationPackage         = s"$TLangPackage::annotations"
+  val TExtensionMethodAnnotation = s"$TAnnotationPackage::ExtensionMethod"
+  val TExtensionClassAnnotation  = s"$TAnnotationPackage::ExtensionClass"
+  val TExtendedClassName         = "ExtendedClass"
+  val TExtensionPrefix           = "ext$"
+
   val TImplicitConstructorAnnotation = s"$TAnnotationPackage::ImplicitConstructor"
 
   val Primitives = List(TInt, TLong, TFloat, TDouble, TBool, TChar)

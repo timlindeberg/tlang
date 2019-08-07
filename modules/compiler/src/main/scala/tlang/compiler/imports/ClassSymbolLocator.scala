@@ -60,8 +60,8 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   def findExtensionSymbol(className: String): Option[ExtensionClassSymbol] = {
-    locateSymbol(className) { clazz =>
-      val extensionName = toTName(clazz.getClassName)
+    locateSymbol(Constants.TExtensionPrefix + className) { clazz =>
+      val extensionName = getExtensionClassName(clazz.getClassName)
       findExtendedClassSymbol(clazz) map { extendedClass =>
         new ExtensionClassSymbol(extensionName) use { _.setExtendedType(TObject(extendedClass)) }
       }
@@ -239,6 +239,14 @@ case class ClassSymbolLocator(classPath: ClassPath) {
         AnnotationSymbol(toTName(annotation.getAnnotationType), values)
       }
       .toList
+  }
+
+  private def getExtensionClassName(name: String) = {
+    val extensionName = if (name.startsWith(Constants.TExtensionPrefix))
+      name.substring(Constants.TExtensionPrefix.size)
+    else
+      name
+    toTName(extensionName)
   }
 
   private def isAnnotatedWith(annotations: Array[AnnotationEntry], annotation: String): Boolean = {

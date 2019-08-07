@@ -31,10 +31,6 @@ trait ImportErrors extends ErrorHandling {
     lazy val message = err"Imports $imp1 and $imp2 are conflicting."
   }
 
-  case class CantResolveExtensionsImport(importName: String, override val pos: Positioned) extends ImportError(2, pos) {
-    lazy val message = err"Cannot resolve extension import $importName"
-  }
-
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------

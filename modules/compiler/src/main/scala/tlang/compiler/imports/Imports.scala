@@ -60,7 +60,7 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
   override val reporter: Reporter = ctx.reporter
 
-  var extensionSymbols: List[ExtensionClassSymbol] = Nil
+  private var extensionSymbols: List[ExtensionClassSymbol] = Nil
 
   private val shortToFull        = mutable.Map[String, String]()
   private val fullToShort        = mutable.Map[String, String]()
@@ -98,26 +98,22 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
   private def addImport(imp: RegularImport): Unit = {
     val shortName = imp.shortName
-
     if (contains(shortName)) {
       report(ConflictingImport(imp.writtenName, getFullName(shortName), imp))
       return
     }
 
-    if (classExists(imp.name)) {
-      this += (shortName, imp.name)
+    val name = imp.name
+
+    if (classExists(name)) {
+      this += (shortName, name)
       return
     }
 
-    val extensionClassName = ExtensionDecl.prefix + imp.name
-    if (classExists(extensionClassName)) {
-      classSymbolLocator.findExtensionSymbol(extensionClassName) match {
-        case Some(e) => addExtensionClass(e)
-        case None    => report(CantResolveExtensionsImport(imp.writtenName, imp))
-      }
-      return
+    classSymbolLocator.findExtensionSymbol(name) match {
+      case Some(e) => addExtensionClass(e)
+      case None    => report(CantResolveImport(imp.writtenName, imp))
     }
-    report(CantResolveImport(imp.writtenName, imp))
   }
 
   private def addWildCardImport(imp: WildCardImport): Unit = {

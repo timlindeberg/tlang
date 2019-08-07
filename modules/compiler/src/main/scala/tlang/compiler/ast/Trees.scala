@@ -120,7 +120,6 @@ object Trees {
 
   case class RegularImport(address: List[String]) extends Import {
     def this(fullName: String) = this(fullName.split("::").toList)
-    val extensionName: String = address.updated(address.size - 1, ExtensionDecl.prefix + address.last).mkString("::") // eg. t::lang::ext$StringExtensions
   }
 
   case class WildCardImport(address: List[String]) extends Import {
@@ -171,7 +170,6 @@ object Trees {
 
   object ExtensionDecl {
     def stripPrefix(fullName: String): String = fullName.replaceAll(""".*ext\$""", "")
-    val prefix = "ext$"
   }
 
   case class ExtensionDecl(

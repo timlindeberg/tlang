@@ -131,7 +131,7 @@ class Lowerer(imports: Imports) extends Logging {
 
     val extensionDecl = t.asInstanceOf[ExtensionDecl]
     val extensionClassSymbol = extensionDecl.getSymbol.asInstanceOf[ExtensionClassSymbol]
-    val exName = extensionClassSymbol.name
+    val exName = Constants.TExtensionPrefix + extensionClassSymbol.name
 
     def replaceThis(stat: StatTree, thisId: VariableID) = {
       val transformThis = new Trees.Transformer {
@@ -207,7 +207,7 @@ class Lowerer(imports: Imports) extends Logging {
     case Access(obj, method@MethodCall(meth, args)) =>
       val methSym = meth.getSymbol
       val extSymbol = meth.getSymbol.classSymbol.asInstanceOf[ExtensionClassSymbol]
-      val className = extSymbol.name
+      val className = Constants.TExtensionPrefix + extSymbol.name
       val classSym = new ClassSymbol(className)
       val classId = ClassID(className).setSymbol(classSym)
       val treeCopy = new Trees.LazyCopier
@@ -254,7 +254,8 @@ class Lowerer(imports: Imports) extends Logging {
     }
 
 
-    val c = new TreeBuilder
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
 
     op match {
       case BinaryOperatorTree(lhs, rhs) =>
@@ -267,14 +268,14 @@ class Lowerer(imports: Imports) extends Logging {
 
         val opSymbol = op.lookupOperator((lhs.getType, rhs.getType), imports).get
         val obj = getClassID(opSymbol)
-        c.createMethodCall(obj, opSymbol, lhs, rhs)
+        createMethodCall(obj, opSymbol, lhs, rhs)
       case UnaryOperatorTree(expr)      =>
         if (!isObject(expr))
           return op
 
         val opSymbol = op.lookupOperator(expr.getType, imports).get
         val obj = getClassID(opSymbol)
-        c.createMethodCall(obj, opSymbol, expr)
+        createMethodCall(obj, opSymbol, expr)
       case ArrayOperatorTree(arr)       =>
         if (!isObject(arr))
           return op
@@ -296,7 +297,7 @@ class Lowerer(imports: Imports) extends Logging {
         val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), imports).get
         if (op.isInstanceOf[Assign])
           opSymbol.setType(args(1))
-        c.createMethodCall(obj, opSymbol, args)
+        createMethodCall(obj, opSymbol, args)
       case _                            => op
     }
   }
@@ -395,19 +396,20 @@ class Lowerer(imports: Imports) extends Logging {
       return t
 
     val incDec = t.asInstanceOf[IncrementDecrementTree]
-    val c = new TreeBuilder
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
 
     def getPlusOrMinus(value: ExprTree) = {
-      val o = c.createOne(value.getType)
+      val o = createOne(value.getType)
       val plusOrMinus = if (incDec.isIncrement) Plus(value, o) else Minus(value, o)
       plusOrMinus.setType(value)
     }
 
     def putResult(to: Assignable, from: ExprTree, value: ExprTree) = {
-      c.put(Assign(to, from).setType(to))
-      c.put(PutValue(value))
-      c.setPos(incDec)
-      c.getCode
+      put(Assign(to, from).setType(to))
+      put(PutValue(value))
+      setPos(incDec)
+      getCode
     }
 
     // Simple case first:
@@ -415,7 +417,7 @@ class Lowerer(imports: Imports) extends Logging {
       case variable: VariableID =>
         val plusOrMinus = getPlusOrMinus(variable)
         val v = if (incDec.isPre) variable
-        else c.putVarDecl("v", variable)
+        else putVarDecl("v", variable)
 
         return putResult(variable, plusOrMinus, v)
       case _                    =>
@@ -426,31 +428,31 @@ class Lowerer(imports: Imports) extends Logging {
       case acc@Access(obj, application)  =>
         obj match {
           case _: Identifier[_] =>
-            val v = if (incDec.isPre) acc else c.putVarDecl("v", acc)
+            val v = if (incDec.isPre) acc else putVarDecl("v", acc)
             (acc, v)
           case _                =>
-            val objId = c.putVarDecl("obj", obj)
+            val objId = putVarDecl("obj", obj)
             val newAccess = NormalAccess(objId, application).setType(application)
-            val v = if (newAccess.isStatic && incDec.isPre) newAccess else c.putVarDecl("v", newAccess)
+            val v = if (newAccess.isStatic && incDec.isPre) newAccess else putVarDecl("v", newAccess)
             (newAccess, v)
         }
       case arrRead@ArrayRead(arr, index) =>
         val arrId = arr match {
           case _: VariableID => arr
-          case _             => c.putVarDecl("arr", arr)
+          case _             => putVarDecl("arr", arr)
         }
         val indexId = index match {
           case _: VariableID | _: Literal[_] => index
-          case _                             => c.putVarDecl("idx", index)
+          case _                             => putVarDecl("idx", index)
         }
 
         val a = ArrayRead(arrId, indexId).setType(arrRead)
-        (a, c.putVarDecl("v", a))
+        (a, putVarDecl("v", a))
     }
 
     val plusOrMinus = getPlusOrMinus(value)
     if (incDec.isPre) {
-      val newValue = c.putVarDecl("newV", plusOrMinus)
+      val newValue = putVarDecl("newV", plusOrMinus)
       putResult(assignTo, newValue, newValue)
     } else {
       putResult(assignTo, plusOrMinus, value)
@@ -500,13 +502,15 @@ class Lowerer(imports: Imports) extends Logging {
     */
   //@formatter:on
   private def desugarArrayForeach(varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val c = new TreeBuilder
-    val indexDecl = c.createVarDecl("i", IntLit(0))
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
+
+    val indexDecl = createVarDecl("i", IntLit(0))
     val index = indexDecl.id
 
-    val containerId = c.putVarDecl("container", container)
+    val containerId = putVarDecl("container", container)
 
-    val sizeCall = c.createMethodCall(containerId, "Size", Int)
+    val sizeCall = createMethodCall(containerId, "Size", Int)
 
     val comparison = LessThan(index, sizeCall).setType(Bool).setPos(varDecl)
     val post = Assign(index, Plus(index, IntLit(1)).setType(Int)).setType(Int).setPos(varDecl)
@@ -520,8 +524,8 @@ class Lowerer(imports: Imports) extends Logging {
       case _        => Block(List(valInit, stat))
     }
 
-    c.put(For(List(indexDecl), comparison, List(post), stats).setPos(stat))
-    c.getCode
+    put(For(List(indexDecl), comparison, List(post), stats).setPos(stat))
+    getCode
   }
 
   //@formatter:off
@@ -547,15 +551,16 @@ class Lowerer(imports: Imports) extends Logging {
     */
   //@formatter:on
   private def desugarIteratorForeach(classSymbol: ClassSymbol, varDecl: VarDecl, container: ExprTree, stat: StatTree) = {
-    val c = new TreeBuilder
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
 
-    val iteratorCall = c.createMethodCall(container, classSymbol, "Iterator", imports, List())
-    val iterator = c.putVarDecl("it", iteratorCall)
+    val iteratorCall = createMethodCall(container, classSymbol, "Iterator", imports, List())
+    val iterator = putVarDecl("it", iteratorCall)
 
     val iteratorClass = iteratorCall.getType.asInstanceOf[TObject].classSymbol
 
-    val comparisonCall = c.createMethodCall(iterator, iteratorClass, "HasNext", imports, List())
-    val nextMethodCall = c.createMethodCall(iterator, iteratorClass, "Next", imports, List())
+    val comparisonCall = createMethodCall(iterator, iteratorClass, "HasNext", imports, List())
+    val nextMethodCall = createMethodCall(iterator, iteratorClass, "Next", imports, List())
 
     val valInit = VarDecl(varDecl.id, varDecl.tpe, Some(nextMethodCall), varDecl.modifiers).setPos(stat)
     valInit.setSymbol(varDecl.getSymbol)
@@ -564,8 +569,8 @@ class Lowerer(imports: Imports) extends Logging {
       case _        => Block(List(valInit, stat))
     }
 
-    c.put(While(comparisonCall, stats))
-    c.getCode
+    put(While(comparisonCall, stats))
+    getCode
   }
 
   //@formatter:off
@@ -610,8 +615,8 @@ class Lowerer(imports: Imports) extends Logging {
 
     val arrType = arrayType.asInstanceOf[TArray].tpe
 
-    val c = new TreeBuilder
-    import c._
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
 
     val container = putVarDecl("container", arr)
 
@@ -690,7 +695,9 @@ class Lowerer(imports: Imports) extends Logging {
     if (!t.isInstanceOf[SafeAccess])
       return t
 
-    val c = new TreeBuilder
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
+
     var safeAccess = t.asInstanceOf[ExprTree]
     val apps = new ListBuffer[ExprTree]()
 
@@ -713,14 +720,14 @@ class Lowerer(imports: Imports) extends Logging {
         return PutValue(ternary)
       }
       val ifNull = PutValue(NullLit())
-      val varDecl = c.createVarDecl(s"tmp$i", access)
+      val varDecl = createVarDecl(s"tmp$i", access)
       val thn = List(varDecl, _desugar(i + 1, varDecl.id, apps.tail))
       If(condition, Block(thn), Some(Block(List(ifNull))))
     }
 
-    c.put(_desugar(1, obj, appsInOrder))
-    c.setPos(t)
-    c.getCode.setType(t.asInstanceOf[SafeAccess])
+    put(_desugar(1, obj, appsInOrder))
+    setPos(t)
+    getCode.setType(t.asInstanceOf[SafeAccess])
   }
 
   //@formatter:off
@@ -744,18 +751,19 @@ class Lowerer(imports: Imports) extends Logging {
     if (!t.isInstanceOf[Elvis])
       return t
 
+    val treeBuilder = new TreeBuilder
+    import treeBuilder._
+
     val elvis = t.asInstanceOf[Elvis]
     val nullableValue = elvis.nullableValue
     val ifNull = elvis.ifNull
 
-    val c = new TreeBuilder
-
-    val nullableID = c.putVarDecl("tmp", nullableValue)
+    val nullableID = putVarDecl("tmp", nullableValue)
 
     val condition = Equals(nullableID, NullLit()).setType(Bool)
-    c.put(Ternary(condition, ifNull, nullableID).setType(elvis))
-    c.setPos(elvis)
-    c.getCode
+    put(Ternary(condition, ifNull, nullableID).setType(elvis))
+    setPos(elvis)
+    getCode
   }
 
   private def isObject(expr: ExprTree) = expr.getType.isInstanceOf[TObject]
