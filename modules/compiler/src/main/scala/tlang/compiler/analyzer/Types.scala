@@ -23,26 +23,30 @@ object Types {
     def getType: Type = _tpe
   }
 
-  val IntSymbol                 = new ClassSymbol(TInt)
-  val LongSymbol                = new ClassSymbol(TLong)
-  val FloatSymbol               = new ClassSymbol(TFloat)
-  val DoubleSymbol              = new ClassSymbol(TDouble)
-  val CharSymbol                = new ClassSymbol(TChar)
-  val BoolSymbol                = new ClassSymbol(TBool)
-  val ObjectSymbol              = new ClassSymbol(JavaObject)
-  val StringSymbol              = new ClassSymbol(JavaString)
-  val ExtensionAnnotationSymbol = new ClassSymbol(TExtensionAnnotation)
+  val IntSymbol                           = new ClassSymbol(TInt)
+  val LongSymbol                          = new ClassSymbol(TLong)
+  val FloatSymbol                         = new ClassSymbol(TFloat)
+  val DoubleSymbol                        = new ClassSymbol(TDouble)
+  val CharSymbol                          = new ClassSymbol(TChar)
+  val BoolSymbol                          = new ClassSymbol(TBool)
+  val ObjectSymbol                        = new ClassSymbol(JavaObject)
+  val StringSymbol                        = new ClassSymbol(JavaString)
+  val ExtensionMethodAnnotationSymbol     = new ClassSymbol(TExtensionMethodAnnotation)
+  val ExtensionClassAnnotationSymbol      = new ClassSymbol(TExtensionClassAnnotation)
+  val ImplicitConstructorAnnotationSymbol = new ClassSymbol(TImplicitConstructorAnnotation)
 
-  val Int                 = TObject(IntSymbol)
-  val Long                = TObject(LongSymbol)
-  val Float               = TObject(FloatSymbol)
-  val Double              = TObject(DoubleSymbol)
-  val Char                = TObject(CharSymbol)
-  val Bool                = TObject(BoolSymbol)
-  val Object              = TObject(ObjectSymbol)
-  val String              = TObject(StringSymbol)
-  val Array               = TArray(Object)
-  val ExtensionAnnotation = TObject(ExtensionAnnotationSymbol)
+  val Int                           = TObject(IntSymbol)
+  val Long                          = TObject(LongSymbol)
+  val Float                         = TObject(FloatSymbol)
+  val Double                        = TObject(DoubleSymbol)
+  val Char                          = TObject(CharSymbol)
+  val Bool                          = TObject(BoolSymbol)
+  val Object                        = TObject(ObjectSymbol)
+  val String                        = TObject(StringSymbol)
+  val Array                         = TArray(Object)
+  val ExtensionMethodAnnotation     = TObject(ExtensionMethodAnnotationSymbol)
+  val ExtensionClassAnnotation      = TObject(ExtensionClassAnnotationSymbol)
+  val ImplicitConstructorAnnotation = TObject(ImplicitConstructorAnnotationSymbol)
 
 
   val Primitives  : List[TObject] = List(Int, Long, Float, Double, Char, Bool)
@@ -56,7 +60,19 @@ object Types {
       classSymbolLocator fillClassSymbol sym
   }
 
-  initialize(IntSymbol, LongSymbol, FloatSymbol, DoubleSymbol, CharSymbol, BoolSymbol, ObjectSymbol, StringSymbol, ExtensionAnnotationSymbol)
+  initialize(
+    IntSymbol,
+    LongSymbol,
+    FloatSymbol,
+    DoubleSymbol,
+    CharSymbol,
+    BoolSymbol,
+    ObjectSymbol,
+    StringSymbol,
+    ExtensionMethodAnnotationSymbol,
+    ExtensionClassAnnotationSymbol,
+    ImplicitConstructorAnnotationSymbol
+  )
 
   sealed abstract class Type {
     def isNullable: Boolean

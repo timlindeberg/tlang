@@ -181,7 +181,7 @@ object Trees {
     annotations: List[Annotation] = Nil) extends ClassDeclTree {
     // Extensions cannot declare parents or fields
     // Fields might be supported in the future
-    override def parents: List[ClassID] = List(extendedType)
+    override val parents: List[ClassID] = List(extendedType)
     override def fields: List[VarDecl] = Nil
     override def isAbstract = false
   }
@@ -191,7 +191,7 @@ object Trees {
     methods: List[MethodDeclTree] = Nil,
     annotations: List[Annotation] = Nil) extends ClassDeclTree {
 
-    override def parents: List[ClassID] = ClassID(Constants.JavaAnnotation) :: Nil
+    override val parents: List[ClassID] = ClassID(Constants.JavaAnnotation) :: Nil
     override def fields: List[VarDecl] = Nil
     override def isAbstract = true
   }

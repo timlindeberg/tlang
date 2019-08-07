@@ -704,6 +704,6 @@ case class NameAnalyser(
       }
     }
 
-    classSymbol.parents = classDecl.parents.map(_.getSymbol)
+    classSymbol.parents = parents.map(_.getSymbol)
   }
 }

@@ -69,7 +69,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   def fillClassSymbol(classSymbol: ClassSymbol): ClassSymbol = {
-    val name  = classSymbol.name
+    val name = classSymbol.name
     val clazz = findClass(name).get // It's an error if the class doesnt exist
 
     if (!SymbolCache.contains(name))
@@ -87,10 +87,10 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   private def findExtendedClassSymbol(extensionClass: JavaClass): Option[ClassSymbol] = {
     extensionClass
       .getAnnotationEntries
-      .find { entry => entry.getAnnotationType == Constants.TExtensionAnnotation }
+      .find { entry => entry.getAnnotationType == TExtensionClassAnnotation }
       .flatMap { entry =>
         entry.getElementValuePairs
-          .find { pair => pair.getNameString == "$ExtendedClass" }
+          .find { pair => pair.getNameString == TExtendedClassName }
           .flatMap { pair => findSymbol(pair.getValue.stringifyValue) }
       }
   }
@@ -145,12 +145,12 @@ case class ClassSymbolLocator(classPath: ClassPath) {
   }
 
   private def convertMethod(meth: Method, clazz: JavaClass, owningClass: ClassSymbol): MethodSymbol = {
-    var modifiers   = convertModifiers(meth)
+    var modifiers = convertModifiers(meth)
     val annotations = meth.getAnnotationEntries
     if (isAnnotatedWith(annotations, TImplicitConstructorAnnotation))
       modifiers += Implicit()
 
-    if (isAnnotatedWith(annotations, TExtensionAnnotation))
+    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation))
       modifiers -= Static() // Remove the static modifier which is added to methods in extension classes
 
     val name = meth.getName match {
@@ -173,7 +173,7 @@ case class ClassSymbolLocator(classPath: ClassPath) {
       .map { case (tpe, i) => convertArgument(tpe, s"arg$i") }
       .toList
 
-    if (isAnnotatedWith(annotations, TExtensionAnnotation))
+    if (isAnnotatedWith(annotations, TExtensionMethodAnnotation))
       args = args.drop(1) // Remove the added this argument
 
     symbol.argList = args
