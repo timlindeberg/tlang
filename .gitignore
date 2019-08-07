@@ -1,5 +1,6 @@
 *.log
 *.class
+!stdlib/**/*.class
 tlang-*.tar.gz
 .DS_Store
 
