@@ -54,7 +54,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
   }
 
   testPositions[CompilationUnit](
-    Position(1, 1, 57, 12),
+    Position(1, 1, 57, 15),
   )
   testPositions[ClassDecl](
     Position(1, 1, 51, 11),
@@ -63,7 +63,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(55, 1, 55, 8),
   )
   testPositions[ExtensionDecl](
-    Position(57, 1, 57, 12),
+    Position(57, 1, 57, 15),
   )
   testPositions[MethodDecl](
     Position(12, 2, 12, 30),
@@ -310,6 +310,7 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
     Position(54, 2, 54, 12),
     Position(54, 14, 54, 25),
     Position(57, 11, 57, 12),
+    Position(57, 14, 57, 15),
   )
   testPositions[VariableID](
     Position(3, 6, 3, 7),

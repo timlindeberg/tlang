@@ -54,4 +54,4 @@ class Class<T> : T, B, C =
 @Annotation @AnnotationB(a = "abc", b = 1)
 trait B
 
-extension A
+extension A: B

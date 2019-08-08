@@ -467,7 +467,8 @@ case class NameAnalyser(
           localVars
         case _: Break | _: Continue                            =>
           if (!canBreakContinue) {
-            report(BreakContinueOutsideLoop(statement, statement))
+            val breakOrContinue = if (statement.isInstanceOf[Break]) "break" else "continue"
+            report(BreakContinueOutsideLoop(breakOrContinue, statement))
           }
           localVars
         case expr: ExprTree                                    =>

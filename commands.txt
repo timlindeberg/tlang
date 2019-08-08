@@ -1,0 +1,4 @@
+Compiling all primitive types:
+```
+--ignoreimport T::lang::Int,T::lang::Long,T::lang::Char,T::lang::Bool,T::lang::Double,T::lang::Float "stdlib/T/lang/Int.t" "stdlib/T/lang/Long.t" "stdlib/T/lang/Char.t" "stdlib/T/lang/Bool.t" "stdlib/T/lang/Double.t" "stdlib/T/lang/Float.t"
+```

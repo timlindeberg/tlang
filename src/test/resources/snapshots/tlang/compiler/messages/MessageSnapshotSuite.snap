@@ -28,9 +28,6 @@ F1002: [1mElse is unnecessary since code flow ends in then branch.[0m
 ========================================= FlowingErrors VariableNotInitialized
 F2006: [1mCannot use variable [35mABC[0m[1m since it may not have been initialized.[0m
 
-========================================= ImportErrors CantResolveExtensionsImport
-I2002: [1mCannot resolve extension import [35mABC[0m
-
 ========================================= ImportErrors CantResolveImport
 I2000: [1mCannot resolve import [35mABC[0m[1m.[0m
 
