@@ -1,5 +1,11 @@
 package T::lang
 
+import T::lang::Char
+import T::lang::Int
+import T::lang::Float
+import T::lang::Double
+import T::lang::Bool
+
 class Long =
 
 	Def new()                 = ;
@@ -18,7 +24,7 @@ class Long =
 	Def +(a: Int,    b: Long)  : Long   = ;
 	Def +(a: Long,   b: Char)  : Long   = ;
 	Def +(a: Char,   b: Long)  : Long   = ;
-	
+
 	Def -(a: Long,   b: Long)  : Long   = ;
 	Def -(a: Long,   b: Double): Double = ;
 	Def -(a: Double, b: Long)  : Double = ;
@@ -28,7 +34,7 @@ class Long =
 	Def -(a: Int,    b: Long)  : Long   = ;
 	Def -(a: Long,   b: Char)  : Long   = ;
 	Def -(a: Char,   b: Long)  : Long   = ;
-	
+
 	Def *(a: Long,   b: Long)  : Long   = ;
 	Def *(a: Long,   b: Double): Double = ;
 	Def *(a: Double, b: Long)  : Double = ;
@@ -38,7 +44,7 @@ class Long =
 	Def *(a: Int,    b: Long)  : Long   = ;
 	Def *(a: Long,   b: Char)  : Long   = ;
 	Def *(a: Char,   b: Long)  : Long   = ;
-	
+
 	Def /(a: Long,   b: Long)  : Long   = ;
 	Def /(a: Long,   b: Double): Double = ;
 	Def /(a: Double, b: Long)  : Double = ;
@@ -48,7 +54,7 @@ class Long =
 	Def /(a: Int,    b: Long)  : Long   = ;
 	Def /(a: Long,   b: Char)  : Long   = ;
 	Def /(a: Char,   b: Long)  : Long   = ;
-	
+
 	Def %(a: Long,   b: Long)  : Long   = ;
 	Def %(a: Long,   b: Double): Double = ;
 	Def %(a: Double, b: Long)  : Double = ;
@@ -58,7 +64,7 @@ class Long =
 	Def %(a: Int,    b: Long)  : Long   = ;
 	Def %(a: Long,   b: Char)  : Long   = ;
 	Def %(a: Char,   b: Long)  : Long   = ;
-	
+
 
 	// Logical operators
 
@@ -105,7 +111,7 @@ class Long =
 	Def <(a: Int,    b: Long)  : Bool = ;
 	Def <(a: Long,   b: Char)  : Bool = ;
 	Def <(a: Char,   b: Long)  : Bool = ;
-	
+
 	Def <=(a: Long,   b: Long)  : Bool = ;
 	Def <=(a: Long,   b: Double): Bool = ;
 	Def <=(a: Double, b: Long)  : Bool = ;
@@ -125,7 +131,7 @@ class Long =
 	Def >(a: Int,    b: Long)  : Bool = ;
 	Def >(a: Long,   b: Char)  : Bool = ;
 	Def >(a: Char,   b: Long)  : Bool = ;
-	
+
 	Def >=(a: Long,   b: Long)  : Bool = ;
 	Def >=(a: Long,   b: Double): Bool = ;
 	Def >=(a: Double, b: Long)  : Bool = ;
@@ -135,9 +141,9 @@ class Long =
 	Def >=(a: Int,    b: Long)  : Bool = ;
 	Def >=(a: Long,   b: Char)  : Bool = ;
 	Def >=(a: Char,   b: Long)  : Bool = ;
-	
+
 	// Equals operators
-	
+
 	Def ==(a: Long,   b: Long)  : Bool = ;
 	Def ==(a: Long,   b: Double): Bool = ;
 	Def ==(a: Double, b: Long)  : Bool = ;
@@ -147,7 +153,7 @@ class Long =
 	Def ==(a: Int,    b: Long)  : Bool = ;
 	Def ==(a: Long,   b: Char)  : Bool = ;
 	Def ==(a: Char,   b: Long)  : Bool = ;
-	   
+
 	Def !=(a: Long,   b: Long)  : Bool = ;
 	Def !=(a: Long,   b: Double): Bool = ;
 	Def !=(a: Double, b: Long)  : Bool = ;

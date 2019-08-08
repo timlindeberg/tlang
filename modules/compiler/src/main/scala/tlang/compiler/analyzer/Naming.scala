@@ -52,7 +52,7 @@ case class NameAnalyser(
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
-  private var variableUsage = Map[VariableSymbol, Boolean]()
+  private var variableUsage        = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
   import errorStringContext.formatter
@@ -198,8 +198,11 @@ case class NameAnalyser(
           report(AbstractConstructor(conDecl))
 
         val methSym = new MethodSymbol(name, classSymbol, stat, modifiers).setType(TUnit)
-        if (modifiers.contains(Implicit()))
-          methSym.addAnnotation(AnnotationSymbol(Constants.TImplicitConstructorAnnotation))
+        if (modifiers.contains(Implicit())) {
+          val annotation = AnnotationSymbol(Constants.TImplicitConstructorAnnotation)
+            .setType(Types.ImplicitConstructorAnnotation)
+          methSym.addAnnotation(annotation)
+        }
         methSym
       case opDecl@OperatorDecl(operatorType, modifiers, _, _, _, stat) =>
         if (stat.isEmpty)

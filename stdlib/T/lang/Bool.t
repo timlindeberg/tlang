@@ -1,5 +1,7 @@
 package T::lang
 
+import T::lang::Int
+
 class Bool =
 
 	Def new()        = ;

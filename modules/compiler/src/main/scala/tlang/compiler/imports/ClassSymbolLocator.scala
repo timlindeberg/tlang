@@ -69,11 +69,11 @@ case class ClassSymbolLocator(classPath: ClassPath) {
 
   def fillClassSymbol(classSymbol: ClassSymbol): ClassSymbol = {
     val name = classSymbol.name
-    val clazz = findClass(name).get // It's an error if the class doesnt exist
-
-    if (!SymbolCache.contains(name))
-      SymbolCache += name -> classSymbol
-    fillClassSymbol(classSymbol, clazz)
+    findClass(name) ifDefined { clazz =>
+      if (!SymbolCache.contains(name))
+        SymbolCache += name -> classSymbol
+      fillClassSymbol(classSymbol, clazz)
+    }
     classSymbol
   }
 

@@ -1,5 +1,11 @@
 package T::lang
 
+import T::lang::Int
+import T::lang::Long
+import T::lang::Float
+import T::lang::Double
+import T::lang::Bool
+
 class Char =
 
 	Def new()                = ;
