@@ -1,4 +1,4 @@
-trait MyAnnotation: Annotation =
+annotation MyAnnotation =
 	Def MyString(): String
 
 @MyAnnotation(MyString = "", MyInt = 8) // res: T2012

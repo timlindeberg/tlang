@@ -14,7 +14,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
 
   import tlang.testutils.TestConstants._
 
-  private val TestFile   : File    = File(s"$Resources/positions/ParserPositions.t")
+  private val TestFile: File = File(s"$Resources/positions/ParserPositions.t")
   private val testContext: Context = testContext(Some(TestFile))
 
   "A pretty printer should " - {
@@ -40,7 +40,7 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
           fail(
             s"""
                |Could not reparse output from file $TestFile:
-               |${ errors.pretty }
+               |${ errors }
                |
                |Printed output:
                |$printedCU

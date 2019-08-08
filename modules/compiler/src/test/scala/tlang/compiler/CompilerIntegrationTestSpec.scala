@@ -3,7 +3,6 @@ package compiler
 
 import better.files.File
 import org.scalatest._
-import tlang.Constants
 import tlang.compiler.output.ExecutionTimeOutput
 import tlang.testutils.TestConstants
 
@@ -19,9 +18,9 @@ case object Empty extends TestPath
 
 object CompilerIntegrationTestSpec {
 
-  val IgnoredFiles : mutable.Map[File, Boolean]    = mutable.Map[File, Boolean]()
-  val TestPaths    : mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
-  val RootDirectory: String                        = File(".").pathAsString
+  val IgnoredFiles: mutable.Map[File, Boolean] = mutable.Map[File, Boolean]()
+  val TestPaths: mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
+  val RootDirectory: String = File(".").pathAsString
 
   val TestPattern: Option[Regex] =
     sys.env.get("pattern")

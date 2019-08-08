@@ -83,7 +83,6 @@ object Trees {
         }
         .toList
     }
-
   }
 
   // Signals that the node is a leaf and no further recursion is necessary
@@ -98,7 +97,7 @@ object Trees {
   /*------------------------ Package and Import Trees -----------------------*/
 
   case class Package(address: List[String] = Nil) extends Tree with Leaf {
-    override val isEmpty: Boolean = address.isEmpty
+    val hasAddress: Boolean = address.nonEmpty
     val name: String = address.mkString("::")
   }
 
@@ -742,7 +741,7 @@ object Trees {
   // Used as a placeholder
   case class Empty() extends ExprTree with Leaf {
     override def toString = "<EMPTY>"
-    override def getType: Type = TUnit
+    override def getType: Type = TNull
   }
 
   // Statements that have no effect on their own.

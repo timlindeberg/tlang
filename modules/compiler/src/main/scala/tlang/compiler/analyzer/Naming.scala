@@ -52,7 +52,7 @@ case class NameAnalyser(
 
   override def replaceNames(str: String): String = cu.imports.replaceNames(str)
 
-  private var variableUsage        = Map[VariableSymbol, Boolean]()
+  private var variableUsage = Map[VariableSymbol, Boolean]()
   private var variableReassignment = Map[VariableSymbol, Boolean]()
 
   import errorStringContext.formatter
@@ -561,14 +561,15 @@ case class NameAnalyser(
                 val parents = methodSymbol.classSymbol.parents
 
                 specifier match {
-                  case Some(spec) =>
-                    parents.find(_.name == spec.name) match {
-                      case Some(p) =>
-                        superSymbol.setSymbol(p)
-                      case None    =>
-                        report(SuperSpecifierDoesNotExist(spec.name, methodSymbol.classSymbol.name, spec))
+                  case Some(classSpecifier) =>
+                    parents.find { _.name == classSpecifier.name } match {
+                      case Some(parent) =>
+                        superSymbol.setSymbol(parent)
+                        classSpecifier.setSymbol(parent)
+                      case None         =>
+                        report(SuperSpecifierDoesNotExist(classSpecifier.name, methodSymbol.classSymbol.name, classSpecifier))
                     }
-                  case None       =>
+                  case None                 =>
                     superSymbol.setSymbol(methodSymbol.classSymbol)
                   // Set symbol to this and let the typechecker decide later.
                 }

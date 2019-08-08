@@ -1,4 +1,4 @@
-trait MyAnnotation: Annotation =
+annotation MyAnnotation =
 	Def MyString(): String
 	Def MyInt(): Int
 	Def MyFloat(): Float

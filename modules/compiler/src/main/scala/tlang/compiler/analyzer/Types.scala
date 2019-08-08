@@ -9,6 +9,9 @@ import tlang.compiler.messages.CompilerMessage
 
 object Types {
 
+  object Typed {
+    def unapply(arg: Typed): Option[Type] = Some(arg.getType)
+  }
   trait Typed {
     self =>
 
@@ -21,35 +24,36 @@ object Types {
     }
 
     def getType: Type = _tpe
+    def hasType: Boolean = getType != TUntyped
   }
 
-  val IntSymbol                           = new ClassSymbol(TInt)
-  val LongSymbol                          = new ClassSymbol(TLong)
-  val FloatSymbol                         = new ClassSymbol(TFloat)
-  val DoubleSymbol                        = new ClassSymbol(TDouble)
-  val CharSymbol                          = new ClassSymbol(TChar)
-  val BoolSymbol                          = new ClassSymbol(TBool)
-  val ObjectSymbol                        = new ClassSymbol(JavaObject)
-  val StringSymbol                        = new ClassSymbol(JavaString)
-  val ExtensionMethodAnnotationSymbol     = new ClassSymbol(TExtensionMethodAnnotation)
-  val ExtensionClassAnnotationSymbol      = new ClassSymbol(TExtensionClassAnnotation)
+  val IntSymbol = new ClassSymbol(TInt)
+  val LongSymbol = new ClassSymbol(TLong)
+  val FloatSymbol = new ClassSymbol(TFloat)
+  val DoubleSymbol = new ClassSymbol(TDouble)
+  val CharSymbol = new ClassSymbol(TChar)
+  val BoolSymbol = new ClassSymbol(TBool)
+  val ObjectSymbol = new ClassSymbol(JavaObject)
+  val StringSymbol = new ClassSymbol(JavaString)
+  val ExtensionMethodAnnotationSymbol = new ClassSymbol(TExtensionMethodAnnotation)
+  val ExtensionClassAnnotationSymbol = new ClassSymbol(TExtensionClassAnnotation)
   val ImplicitConstructorAnnotationSymbol = new ClassSymbol(TImplicitConstructorAnnotation)
 
-  val Int                           = TObject(IntSymbol)
-  val Long                          = TObject(LongSymbol)
-  val Float                         = TObject(FloatSymbol)
-  val Double                        = TObject(DoubleSymbol)
-  val Char                          = TObject(CharSymbol)
-  val Bool                          = TObject(BoolSymbol)
-  val Object                        = TObject(ObjectSymbol)
-  val String                        = TObject(StringSymbol)
-  val Array                         = TArray(Object)
-  val ExtensionMethodAnnotation     = TObject(ExtensionMethodAnnotationSymbol)
-  val ExtensionClassAnnotation      = TObject(ExtensionClassAnnotationSymbol)
+  val Int = TObject(IntSymbol)
+  val Long = TObject(LongSymbol)
+  val Float = TObject(FloatSymbol)
+  val Double = TObject(DoubleSymbol)
+  val Char = TObject(CharSymbol)
+  val Bool = TObject(BoolSymbol)
+  val Object = TObject(ObjectSymbol)
+  val String = TObject(StringSymbol)
+  val Array = TArray(Object)
+  val ExtensionMethodAnnotation = TObject(ExtensionMethodAnnotationSymbol)
+  val ExtensionClassAnnotation = TObject(ExtensionClassAnnotationSymbol)
   val ImplicitConstructorAnnotation = TObject(ImplicitConstructorAnnotationSymbol)
 
 
-  val Primitives  : List[TObject] = List(Int, Long, Float, Double, Char, Bool)
+  val Primitives: List[TObject] = List(Int, Long, Float, Double, Char, Bool)
   val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
 
   val AnnotationTypes: List[Type] = List(Int, Long, Float, Double, String)
@@ -97,33 +101,33 @@ object Types {
   }
 
   case object TError extends Type {
-    override val isNullable    : Boolean     = false
-    override val getNullable   : TError.type = this
+    override val isNullable: Boolean = false
+    override val getNullable: TError.type = this
     override val getNonNullable: TError.type = this
     override def isSubTypeOf(tpe: Type): Boolean = true
     override val name: String = CompilerMessage.ErrorName
   }
 
   case object TUntyped extends Type {
-    override val isNullable    : Boolean       = false
-    override val getNullable   : TUntyped.type = this
+    override val isNullable: Boolean = false
+    override val getNullable: TUntyped.type = this
     override val getNonNullable: TUntyped.type = this
     override def isSubTypeOf(tpe: Type): Boolean = false
     override val name: String = "[untyped]"
   }
 
   case object TUnit extends Type {
-    override val isNullable    : Boolean    = false
-    override val getNullable   : TUnit.type = this
+    override val isNullable: Boolean = false
+    override val getNullable: TUnit.type = this
     override val getNonNullable: TUnit.type = this
-    override val name          : String     = "Unit"
+    override val name: String = "Unit"
   }
 
   case object TNull extends Type {
-    override val getNullable   : TNull.type = this
+    override val getNullable: TNull.type = this
     override val getNonNullable: TNull.type = this
-    override val isNullable    : Boolean    = false
-    override val name          : String     = "Null"
+    override val isNullable: Boolean = false
+    override val name: String = "Null"
     override def isSubTypeOf(tpe: Type): Boolean = tpe.isNullable
   }
 

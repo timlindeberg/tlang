@@ -21,7 +21,7 @@ trait B
     A = 5,
     B = 5.0,
     C = "GHI",
-) extension A
+) extension AExtension : A
 
 @AnnotationA
 @AnnotationB(S = "JKL") class E =

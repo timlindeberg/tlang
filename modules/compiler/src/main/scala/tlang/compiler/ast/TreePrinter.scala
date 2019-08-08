@@ -24,7 +24,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
 
   import formatter._
 
-  private var symbolId                                     = -1
+  private var symbolId = -1
   private var symbolMap: mutable.Map[Symbol, (Int, Color)] = _
 
   def apply(t: Tree): List[TreePrinterRow] = {
@@ -78,7 +78,7 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
   private def formatTree(tree: Tree): String = {
     val content = tree match {
       case c: CompilationUnit  => c.sourceDescription
-      case p: Package          => VarColor(if (p.isEmpty) "None" else p.name)
+      case p: Package          => VarColor(if (!p.hasAddress) "None" else p.name)
       case i: Import           => ClassColor(i.writtenName)
       case v: VariableID       => VarColor(v.name)
       case m: MethodID         => MethodColor(m.name)

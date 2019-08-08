@@ -3,7 +3,7 @@ package compiler
 package ast
 
 import sourcecode.{Enclosing, Line}
-import tlang.compiler.analyzer.Types.TUnit
+import tlang.compiler.analyzer.Types.{TNull, TUnit}
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens.{LPAREN, _}
@@ -68,7 +68,7 @@ object Parser {
 case class Parser(ctx: Context, override val errorStringContext: ErrorStringContext, tokens: TokenStream) extends ParsingErrors with Logging {
 
   override val reporter: Reporter = ctx.reporter
-  private  var indent             = 0
+  private var indent = 0
 
   import Parser._
 
@@ -79,14 +79,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
 
   /** <compilationUnit> ::=
-    * [ <packageDeclaration> <statementEnd>  ]
-    * { <importDeclaration> <statementEnd> }
-    * {
-    * ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
-    * <statementEnd>
-    * }
-    * <EOF>
-    */
+   * [ <packageDeclaration> <statementEnd>  ]
+   * { <importDeclaration> <statementEnd> }
+   * {
+   * ( <classDeclaration> | <traitDeclaration> | <extensionDeclaration> | <annotationDeclaration> | <methodDeclaration> | <statement> )
+   * <statementEnd>
+   * }
+   * <EOF>
+   */
   def compilationUnit: CompilationUnit = positioned {
     val pack = tokens.next.kind match {
       case PACKAGE => packageDeclaration <| statementEnd
@@ -120,7 +120,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   private def createImports(imps: List[Import], pack: Package, classes: List[ClassDeclTree]): Imports = {
     val imports = Imports(ctx, errorStringContext, imps)
-    if (pack.isEmpty)
+    if (!pack.hasAddress)
       return imports
 
     // If we have a package we add a mapping from the short name to the full name,
@@ -402,8 +402,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
-    * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-    * */
+   * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
+   **/
   def operator(modifiers: Set[Modifier], annotations: List[Annotation]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -466,7 +466,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
               (1, ArrayRead(Empty(), Empty()))
             case EQSIGN =>
               eat(EQSIGN)
-              (2, Assign(ArrayRead(Empty(), Empty()), Empty()))
+              val arrRead = ArrayRead(Empty(), Empty()).setType(TNull)
+              (2, Assign(arrRead, Empty()))
             case _      => report(wrongToken(EQSIGN, LPAREN))
           }
         case COLON    =>
@@ -474,6 +475,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           (3, ArraySlice(Empty(), None, None, None))
         case _        => report(wrongToken(RBRACKET, COLON))
       }
+
 
       modifiers.findInstance[Static].ifDefined { static =>
         report(StaticIndexingOperator(static))
@@ -514,7 +516,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     val retType = optional(COLON)(returnType)
     val methBody = methodBody
 
-    OperatorDecl(operatorType.setNoPos(), newModifiers, annotations, args, retType, methBody)
+    OperatorDecl(operatorType.setNoPos().setType(TNull), newModifiers, annotations, args, retType, methBody)
   }
 
   /** <methodBody> ::= [ "=" <statement> ] */
@@ -561,20 +563,20 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
 
   /** <statement> ::=
-    * | <varDeclaration>
-    * | <block>
-    * | <ifStatement>
-    * | <returnStatement>
-    * | <printlnStatement>
-    * | <printStatement>
-    * | <errorStatement>
-    * | <forLoop>
-    * | <whileLoop>
-    * | <break>
-    * | <continue>
-    * | <emptyBlock>
-    * | <expression>
-    * */
+   * | <varDeclaration>
+   * | <block>
+   * | <ifStatement>
+   * | <returnStatement>
+   * | <printlnStatement>
+   * | <printStatement>
+   * | <errorStatement>
+   * | <forLoop>
+   * | <whileLoop>
+   * | <break>
+   * | <continue>
+   * | <emptyBlock>
+   * | <expression>
+   * */
   def statement: StatTree = tokens.next.kind match {
     case PRIVVAR | PRIVVAL => varDeclaration
     case INDENT            => block
@@ -868,28 +870,28 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   def term: ExprTree = termRest(termFirst)
 
   /** <termFirst> ::=
-    * | <identifierOrMethodCall>
-    * | <intLit>
-    * | <stringLit>
-    * | <charLit>
-    * | <longLit>
-    * | <doubleLit>
-    * | <floatLit>
-    * | <newExpression>
-    * | <paren>
-    * | <arrayLit>
-    * | <nullTerm>
-    * | <thisTerm>
-    * | <trueTerm>
-    * | <falseTerm>
-    * | <notTerm>
-    * | <logicNot>
-    * | <hash>
-    * | <increment>
-    * | <decrement>
-    * | <negation>
-    * | <superCall>
-    */
+   * | <identifierOrMethodCall>
+   * | <intLit>
+   * | <stringLit>
+   * | <charLit>
+   * | <longLit>
+   * | <doubleLit>
+   * | <floatLit>
+   * | <newExpression>
+   * | <paren>
+   * | <arrayLit>
+   * | <nullTerm>
+   * | <thisTerm>
+   * | <trueTerm>
+   * | <falseTerm>
+   * | <notTerm>
+   * | <logicNot>
+   * | <hash>
+   * | <increment>
+   * | <decrement>
+   * | <negation>
+   * | <superCall>
+   */
   def termFirst: ExprTree = {
     // These are sorted by commonness. For instance IDKIND and INTLIT are the by
     // far most common terms, that's why they appear first.
@@ -1211,9 +1213,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /**
-    * Handles the conflict of generics having multiple ">" signs by
-    * treating RSHIFT (>>) as two ">".
-    */
+   * Handles the conflict of generics having multiple ">" signs by
+   * treating RSHIFT (>>) as two ">".
+   */
   private var toSpare = 0
   private def endTemplateList(): Unit = {
     tokens.next.kind match {
@@ -1241,10 +1243,10 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** Parses a literal of the given kind, producing the given literalType
-    * e.g. literal(STRLITKIND, StringLit)
-    *
-    * The kind has to be of a TokenWithValue kind.
-    */
+   * e.g. literal(STRLITKIND, StringLit)
+   *
+   * The kind has to be of a TokenWithValue kind.
+   */
   private def literal[T, Lit <: Literal[T]](kind: TokenKind, literalType: T => Lit): Lit = positioned {
     val next = tokens.next
     if (kind.getClass.isInstance(next.kind)) {
@@ -1266,9 +1268,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   }
 
   /** Eats the expected tokens, or terminates with an error.
-    * Takes enclosing and line as implicit parameters so that the logging
-    * statement will point to the calling method instead of here.
-    * */
+   * Takes enclosing and line as implicit parameters so that the logging
+   * statement will point to the calling method instead of here.
+   * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
     kinds foreach { kind =>
       val numNewlines = tokens.readNewLines()
