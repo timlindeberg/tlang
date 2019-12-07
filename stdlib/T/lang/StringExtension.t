@@ -57,9 +57,14 @@ extension StringExtension: String =
 	Def [](index: Int) = charAt(index)
 
 	Def [:](start: Int?, end: Int?, step: Int?): String =
-		val s  = start ?: 0
-		val e  = end   ?: Size()
+		var s = start ?: 0
+		if(s < 0) s = Size() + s
+
+		var e = end ?: Size()
+		if(e < 0) e = Size() + e
+
 		val st = step  ?: 1
+
 		if(st == 1)
 			return substring(s, e)
 

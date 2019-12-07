@@ -96,6 +96,15 @@ println("test"[:]) // res: test
 println("test"[1:]) // res: est
 println("test"[1:3]) // res: es
 println("test"[::2]) // res: ts
+println("test"[:-1]) // res: tes
+println("test"[:-2]) // res: te
+println("test"[:-3]) // res: t
+println("test"[:-4]) // res:
+println("test"[-1:]) // res: t
+println("test"[-2:]) // res: st
+println("test"[-3:]) // res: est
+println("test"[-4:]) // res: test
+println("test"[-3:-1]) // res: es
 
 // CharAt
 println(s.CharAt(0)) // res: S
