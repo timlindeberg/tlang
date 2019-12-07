@@ -23,3 +23,6 @@ Errors on Task
 6. Cannot add Nullable types to Strings. 
 
 7. Array comparison should use Arrays.equals
+
+8. Trailing commas and template parameters doesn't mix well. This fails to parse:
+	`Def DSF(graph: HashMap<String, Vector<String>>, node: String, distance: Int): Int =`
