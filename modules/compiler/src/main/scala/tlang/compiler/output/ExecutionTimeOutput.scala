@@ -43,7 +43,7 @@ case class ExecutionTimeOutput(
         val time = executionTimes(phase)
         val percentage = ((time / totalTime) * 100).asInstanceOf[Int]
         val color = colors(phase)
-        (Blue(phase.capitalize), color(f"$time%.2f"), color(f"$percentage%02d"))
+        (Blue(phase.capitalize), color(f"$time%.3fs ($percentage%02d%%)"))
       }
 
     val (successOrFailure, color) = if (success) ("succeeded", Green) else ("failed", Red)
@@ -52,8 +52,8 @@ case class ExecutionTimeOutput(
     formatter
       .grid
       .header(header)
-      .row(3)
-      .columnHeaders("Phase", "Time (s)", "Percentage")
+      .row(2)
+      .columnHeaders("Phase", "Time")
       .contents(columns)
       .render()
   }
