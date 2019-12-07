@@ -14,7 +14,7 @@ sealed class Token(val kind: TokenKind) extends Positioned {
 }
 
 sealed class TokenWithValue[T](override val kind: TokenKind, val value: T) extends Token(kind) {
-  override def toString: String = value.toString
+  override def toString: String = s"$kind($value)"
   override def equals(o: Any): Boolean = o matches {
     case t: TokenWithValue[T] if t.kind == kind && t.value == value => true
   }
@@ -30,14 +30,14 @@ object Tokens extends Enumerable[TokenKind] {
 
   // @formatter:off
 
-  case object IDKIND         extends TokenKind("") { override def toString = "Identifier" }
-  case object INTLITKIND     extends TokenKind("") { override def toString = "Int literal" }
-  case object LONGLITKIND    extends TokenKind("") { override def toString = "Long literal" }
-  case object FLOATLITKIND   extends TokenKind("") { override def toString = "Float literal" }
-  case object DOUBLELITKIND  extends TokenKind("") { override def toString = "Double literal" }
-  case object CHARLITKIND    extends TokenKind("") { override def toString = "Char literal" }
-  case object STRLITKIND     extends TokenKind("") { override def toString = "String literal" }
-  case object COMMENTLITKIND extends TokenKind("") { override def toString = "Comment literal" }
+  case object IDKIND         extends TokenKind("") { override def toString = "Id" }
+  case object INTLITKIND     extends TokenKind("") { override def toString = "Int" }
+  case object LONGLITKIND    extends TokenKind("") { override def toString = "Long" }
+  case object FLOATLITKIND   extends TokenKind("") { override def toString = "Float" }
+  case object DOUBLELITKIND  extends TokenKind("") { override def toString = "Double" }
+  case object CHARLITKIND    extends TokenKind("") { override def toString = "Char" }
+  case object STRLITKIND     extends TokenKind("") { override def toString = "String" }
+  case object COMMENTLITKIND extends TokenKind("") { override def toString = "Comment" }
 
   case object EOF             extends TokenKind("EOF")
   case object BAD             extends TokenKind("")
@@ -128,7 +128,6 @@ object Tokens extends Enumerable[TokenKind] {
   case object INDENT          extends TokenKind("<indentation>")
   case object DEDENT          extends TokenKind("<dedentation>")
   // @formatter:on
-
 
   case class ID(override val value: String) extends TokenWithValue[String](IDKIND, value)
   case class INTLIT(override val value: Int) extends TokenWithValue[Int](INTLITKIND, value)

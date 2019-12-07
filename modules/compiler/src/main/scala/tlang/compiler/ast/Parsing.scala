@@ -1237,7 +1237,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** Parses the name of the identifier without creating an identifier object */
   private def identifierName: String = tokens.next match {
     case id: ID =>
-      eat(IDKIND)
+      eatToken(id)
       id.value
     case _      => report(wrongToken(IDKIND))
   }
@@ -1272,15 +1272,29 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
    * statement will point to the calling method instead of here.
    * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
-    kinds foreach { kind =>
-      val numNewlines = tokens.readNewLines()
-      debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: kinds.toList).mkString(", ") }."
-      tokens.next.kind match {
-        case `kind` => tokens.readNext()
-        case _      => report(wrongToken(kind))
-      }
-    }
+    kinds foreach { kind => eat(kind, kinds)(enclosing, line) }
+    traceTokensLeft()
+  }
 
+  /** Eats the expected tokens, or terminates with an error.
+   * Takes enclosing and line as implicit parameters so that the logging
+   * statement will point to the calling method instead of here.
+   * */
+  private def eatToken(tokensToEat: Token*)(implicit enclosing: Enclosing, line: Line): Unit = {
+    tokensToEat foreach { token => eat(token.kind, tokensToEat)(enclosing, line) }
+    traceTokensLeft()
+  }
+
+  private def eat[T](kind: TokenKind, elements: Seq[T])(implicit enclosing: Enclosing, line: Line): Unit = {
+    val numNewlines = tokens.readNewLines()
+    debug"${ indentation }Eating tokens ${ (List.fill(numNewlines)(NEWLINE) ::: elements.toList).mkString(", ") }"
+    tokens.next.kind match {
+      case `kind` => tokens.readNext()
+      case _      => report(wrongToken(kind))
+    }
+  }
+
+  private def traceTokensLeft(): Unit = {
     trace"${ indentation }Tokens left: ${ NL + tokens.toString }"
   }
 

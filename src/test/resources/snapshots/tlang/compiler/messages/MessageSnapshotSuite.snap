@@ -188,10 +188,10 @@ P2003: [1mCannot have free statements since a main method is already defined at
 P2001: [1mIndexing operators cannot be declared static.[0m
 
 ========================================= ParsingErrors UnexpectedToken
-P3003: [1mUnexpected token: [35m0[0m
+P3003: [1mUnexpected token: [35mInt(0)[0m
 
 ========================================= ParsingErrors WrongToken
-P3002: [1mExpected [0m[1;35mInt literal[0m[1m, found: [35m0[0m[1m.[0m
+P3002: [1mExpected [0m[1;35mInt[0m[1m, found: [35mInt(0)[0m[1m.[0m
 
 ========================================= TemplatingErrors ClassDoesNotExist
 G2001: [1mCould not find template class named [35mABC[0m[1m.[0m
