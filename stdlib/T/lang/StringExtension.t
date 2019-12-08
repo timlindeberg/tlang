@@ -59,11 +59,13 @@ extension StringExtension: String =
 	Def [:](start: Int?, end: Int?, step: Int?): String =
 		var s = start ?: 0
 		if(s < 0) s = Size() + s
+		if(s < 0) return this
 
 		var e = end ?: Size()
 		if(e < 0) e = Size() + e
+		if(e < 0) return ""
 
-		val st = step  ?: 1
+		val st = step ?: 1
 
 		if(st == 1)
 			return substring(s, e)

@@ -100,10 +100,12 @@ println("test"[:-1]) // res: tes
 println("test"[:-2]) // res: te
 println("test"[:-3]) // res: t
 println("test"[:-4]) // res:
+println("test"[:-100]) // res:
 println("test"[-1:]) // res: t
 println("test"[-2:]) // res: st
 println("test"[-3:]) // res: est
 println("test"[-4:]) // res: test
+println("test"[-100:]) // res: test
 println("test"[-3:-1]) // res: es
 
 // CharAt
