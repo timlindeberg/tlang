@@ -40,9 +40,9 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
 
   import formatter._
 
-  private val WarmupProgram   = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
-  private val FailureColor    = Bold + Red
-  private val NoCancel        = () => false
+  private val WarmupProgram = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"
+  private val FailureColor = Bold + Red
+  private val NoCancel = () => false
   private var cancelExecution = NoCancel
 
 
@@ -64,9 +64,9 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
   }
 
   private def evaluate(command: String): Unit = {
-    val (f, cancel) = CancellableFuture { evaluator(command) }
-    cancelExecution = cancel
-    f onComplete { res =>
+    val f = CancellableFuture { evaluator(command) }
+    cancelExecution = f.cancel
+    f.future onComplete { res =>
       cancelExecution = NoCancel
       val renderMessage = res match {
         case Success(res) => RenderingActor.DrawSuccess(res, truncate = true)

@@ -15,13 +15,18 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.grid.{Column, OverflowHandling}
+import tlang.formatting.grid.{CenteredContent, Column, OverflowHandling}
 import tlang.formatting.grid.Width.Fixed
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
+
+import scala.concurrent.{Await, CancellationException, TimeoutException}
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
+import sun.misc.Signal
 
 case class ExitException(code: Int) extends Throwable
 
@@ -58,6 +63,7 @@ object Main extends Logging {
     CompilerHelpFlag,
     DirectoryFlag,
     ExecFlag,
+    ExecTimeoutFlag,
     IgnoredDefaultImportsFlag,
     JSONFlag,
     LineWidthFlag,
@@ -129,14 +135,13 @@ case class Main(ctx: Context) extends Logging {
   import Main._
   import ctx._
 
-  private implicit val syntaxHighlighter    : SyntaxHighlighter     = TLangSyntaxHighlighter()
+  private implicit val syntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
   private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
 
+  private var cancelExecution: Option[CancellableFuture.CancelFunction] = None
+
   def run(): Unit = {
-    sys.addShutdownHook {
-      ctx.output += InterruptedOutput()
-      exit(0)
-    }
+    Signal.handle(new Signal("INT"), (_: Signal) => onInterrupt())
 
     if (options.isEmpty) {
       ctx.output += HelpOutput(CompilerFlags)
@@ -273,18 +278,29 @@ case class Main(ctx: Context) extends Logging {
       .render()
       .lines
       .toList
+
     val programExecutor = StreamingProgramExecutor(ctx.allClassPaths, printExecLine)
     boxLines.take(4).foreach(println)
-    val res = programExecutor(source)
-    println(boxLines.last)
 
-    if (res.exception.isDefined) {
-      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(res.exception.get))
-      grid
-        .header((Red + Bold) ("There was an exception"))
-        .row()
-        .content(stackTrace)
-        .print()
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    val execution = programExecutor.executeAsync(sour
+      awaitExecution(execution, source, boxLines.last)
+  }
+
+  private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    cancelExecution = Some(execution.cancel)
+    val timeout = options(ExecTimeoutFlag)
+    val result = Try(Await.result(execution.future, timeout))
+    cancelExecution = None
+    println(endOfBox)
+    result match {
+      case Success(ExecutionResult(_, _, Some(exception))) => printStackTrace(source, exception)
+      case Failure(_: TimeoutException)                    => printTimeout(timeout)
+      case Failure(_: CancellationException)               => printCancelation()
+      case _                                               =>
     }
   }
 
@@ -309,9 +325,46 @@ case class Main(ctx: Context) extends Logging {
       stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
+  private def printStackTrace(source: Source, exception: Throwable) = {
+    import formatter._
+
+    val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(exception))
+    grid
+      .header((Red + Bold) ("There was an exception"))
+      .row()
+      .content(stackTrace)
+      .print()
+  }
+
+  private def printCancelation() = {
+    import formatter._
+    grid
+      .row()
+      .content(CenteredContent(Red("Canceled execution")))
+      .print()
+  }
+
+  private def printTimeout(timeout: Duration) = {
+    import formatter._
+    grid
+      .row()
+      .content(CenteredContent(Red("Execution timed out after ") + (Bold + Red) (timeout.toMillis) + Red(" ms.")))
+      .print()
+  }
+
   private def printExecutionTimes(success: Boolean): Unit = {
     if (options(VerboseFlag))
       ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
+  }
+
+  private def onInterrupt(): Unit = {
+    cancelExecution match {
+      case Some(cancel) =>
+        cancel()
+      case None         =>
+        ctx.output += InterruptedOutput()
+        exit(0)
+    }
   }
 
   private def tryExit(code: Int) = throw ExitException(code)

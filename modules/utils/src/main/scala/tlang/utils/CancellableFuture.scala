@@ -3,11 +3,15 @@ package utils
 
 import java.util.concurrent.atomic.AtomicReference
 
+
 import scala.concurrent.{CancellationException, ExecutionContext, Future, Promise}
+
 
 object CancellableFuture {
 
-  def apply[T](fun: => T)(implicit ex: ExecutionContext): (Future[T], () => Boolean) = {
+  type CancelFunction = () => Boolean
+  
+  def apply[T](fun: => T)(implicit ex: ExecutionContext): CancellableFuture[T] = {
     val promise = Promise[T]()
     val future = promise.future
     val aref = new AtomicReference[Thread](null)
@@ -20,7 +24,7 @@ object CancellableFuture {
       }
     }
 
-    (future, () => {
+    CancellableFuture(future, () => {
       // We have to use stop() to kill the thread since we have no control
       // over execution so this warning is disabled.
       //noinspection ScalaDeprecation
@@ -30,3 +34,5 @@ object CancellableFuture {
   }
 
 }
+
+case class CancellableFuture[T](future: Future[T], cancel: CancellableFuture.CancelFunction)

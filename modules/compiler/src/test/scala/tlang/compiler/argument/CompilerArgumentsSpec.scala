@@ -2,6 +2,8 @@ package tlang
 package compiler
 package argument
 
+import java.util.concurrent.TimeUnit
+
 import better.files.File
 import tlang.compiler.imports.Imports
 import tlang.formatting._
@@ -9,6 +11,8 @@ import tlang.options.Options
 import tlang.options.argument._
 import tlang.testutils.{TestConstants, UnitSpec}
 import tlang.utils.{LogLevel, ParallellExecutor, SingleThreadExecutor}
+
+import scala.concurrent.duration.Duration
 
 class CompilerArgumentsSpec extends UnitSpec {
 
@@ -346,6 +350,26 @@ class CompilerArgumentsSpec extends UnitSpec {
         .getMessage should include("abc")
 
       intercept[IllegalArgumentException] { createOptions("--tabwidth -5") }
+        .getMessage should include("-5")
+    }
+  }
+
+  it should "use exec-timeout argument" in {
+    test("No arguments should give default width") {
+      val options = createOptions("")
+      options(ExecTimeoutFlag) shouldBe Duration.Inf
+    }
+
+    test("With arguments should pick largest value") {
+      val options = createOptions("--exec-timeout 5.0,10.1 --exec-timeout 25.25")
+      options(ExecTimeoutFlag) shouldBe Duration(25.25, TimeUnit.SECONDS)
+    }
+
+    test("Invalid argument") {
+      intercept[IllegalArgumentException] { createOptions("--exec-timeout abc") }
+        .getMessage should include("abc")
+
+      intercept[IllegalArgumentException] { createOptions("--exec-timeout -5") }
         .getMessage should include("-5")
     }
   }

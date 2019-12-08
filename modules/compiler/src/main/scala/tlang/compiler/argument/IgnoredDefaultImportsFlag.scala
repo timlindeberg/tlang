@@ -23,6 +23,7 @@ case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
   override def description(implicit formatter: Formatter): String =
     s"""
        |Specify a default import to ignore.
+       |
        |Example: ${ flag(this) } ${ highlight("java::lang::Object") }
       """
 

@@ -68,7 +68,6 @@ class ReplActor(
   import context.dispatcher
   import formatter._
 
-  private val MaxOutputLines  = 10
   private val LoadingInterval = formatter.spinner.frameTime.length
 
   private val renderer = context.actorOf(

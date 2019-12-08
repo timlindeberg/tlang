@@ -2,7 +2,6 @@ package tlang
 package formatting
 package grid
 
-import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
 
 

@@ -6,17 +6,33 @@ import java.net.{URL, URLClassLoader}
 
 import better.files.File
 
+import scala.concurrent.ExecutionContext
+
 case class ExecutionResult(output: String, time: Double, exception: Option[Throwable] = None)
 
 trait ProgramExecutor {
   def classPaths: Set[String]
   def apply(classFile: File): ExecutionResult = apply(classFile.name.replaceAll("\\..*", ""))
-  def apply(className: String): ExecutionResult = _execute(className)
-  def apply(source: Source): ExecutionResult = _execute(source.mainName)
+  def apply(className: String): ExecutionResult = executeClass(className)
+  def apply(source: Source): ExecutionResult = executeClass(source.mainName)
+
+  def executeAsync(source: Source)(implicit ex: ExecutionContext): CancellableFuture[ExecutionResult] = {
+    CancellableFuture { apply(source) }
+  }
 
   protected def execute(method: Method, className: String): ExecutionResult
 
-  private def _execute(className: String): ExecutionResult = {
+  protected def executeMethod(method: Method): Option[Throwable] = {
+    var exception: Option[Throwable] = None
+    try {
+      method.invoke(null, Array[String]())
+    } catch {
+      case e: InvocationTargetException => exception = Some(e.getCause)
+    }
+    exception
+  }
+
+  private def executeClass(className: String): ExecutionResult = {
     val method = try {
       getMainMethod(className)
     } catch {
@@ -46,10 +62,7 @@ case class DefaultProgramExecutor(classPaths: Set[String]) extends ProgramExecut
     var exception: Option[Throwable] = None
     val (output, time) = measureTime {
       capturedOutput {
-        try method.invoke(null, Array[String]())
-        catch {
-          case e: InvocationTargetException => exception = Some(e.getCause)
-        }
+        exception = executeMethod(method)
       }
     }
     ExecutionResult(output, time, exception)
@@ -70,13 +83,9 @@ case class StreamingProgramExecutor(classPaths: Set[String], lineHandler: (Strin
 
   protected def execute(method: Method, className: String): ExecutionResult = {
     var exception: Option[Throwable] = None
-
     val (_, time) = measureTime {
       streamingOutput {
-        try method.invoke(null, Array[String]())
-        catch {
-          case e: InvocationTargetException => exception = Some(e.getCause)
-        }
+        exception = executeMethod(method)
       }
     }
     ExecutionResult("", time, exception)
