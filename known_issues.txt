@@ -26,3 +26,5 @@ Errors on Task
 
 8. Trailing commas and template parameters doesn't mix well. This fails to parse:
 	`Def DSF(graph: HashMap<String, Vector<String>>, node: String, distance: Int): Int =`
+
+9. Unreachable code warning is weird for larger code blocks
