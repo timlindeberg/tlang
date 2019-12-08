@@ -10,7 +10,6 @@ import tlang.compiler.messages.{CompilationException, CompilerMessage, CompilerM
 import tlang.compiler.modification.Templating
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.testutils.TestConstants._
-
 import tlang.utils.{FileSource, Source}
 
 import scala.collection.mutable
@@ -18,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestExecution {
 
-  val ErrorResources     = s"$Resources/errortests"
+  val ErrorResources = s"$Resources/errortests"
   val MessageContextSize = 3
 
   override def suiteName: String = "Compiler Errors"

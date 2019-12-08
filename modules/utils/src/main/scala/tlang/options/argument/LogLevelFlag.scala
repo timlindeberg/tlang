@@ -3,12 +3,10 @@ package options
 package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.options.ArgumentFlag
-
 import tlang.utils.LogLevel
 
 case object LogLevelFlag extends ArgumentFlag[LogLevel] {
-  override val name           = "loglevel"
+  override val name = "loglevel"
   override val argDescription = "level"
 
   override def description(implicit formatter: Formatter): String =

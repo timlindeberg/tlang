@@ -101,8 +101,8 @@ trait MouseEvent extends Key {
   def x: Int
   def y: Int
 
-  override val ctrl : Ctrl  = Ctrl(false)
-  override val alt  : Alt   = Alt(false)
+  override val ctrl: Ctrl = Ctrl(false)
+  override val alt: Alt = Alt(false)
   override val shift: Shift = Shift(false)
 }
 

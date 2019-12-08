@@ -67,7 +67,7 @@ case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) {
     resultCounter += 1
 
     val valDecl = treeBuilder.createValDecl(varName, e, prefix = "")
-    val tpe     = state.imports.replaceNames(e.getType.toString)
+    val tpe = state.imports.replaceNames(e.getType.toString)
 
     val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName: $tpe = "), valDecl.id)
     valDecl :: Println(varDeclMessage) :: Nil

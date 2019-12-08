@@ -10,7 +10,6 @@ import com.googlecode.lanterna.terminal.ansi.{UnixLikeTerminal, UnixTerminal}
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration.CursorStyle
 import com.googlecode.lanterna.terminal.swing._
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal}
-
 import tlang.utils.Logging
 
 object TerminalFactory {

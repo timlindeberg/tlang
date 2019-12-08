@@ -6,7 +6,6 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.formatting.ErrorStringContext
 import tlang.testutils.UnitSpec
-
 import tlang.utils.StringSource
 
 class LexingSpec extends UnitSpec {

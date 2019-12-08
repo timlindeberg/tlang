@@ -5,7 +5,7 @@ import java.io.{OutputStream, PrintStream}
 import java.nio.charset.StandardCharsets
 
 object LineOutputStream {
-  var OriginalOut      : Option[PrintStream]               = None
+  var OriginalOut: Option[PrintStream] = None
   val ThreadLocalStream: ThreadLocal[Option[OutputStream]] = ThreadLocal.withInitial(() => None)
 
   def redirect(printLine: (String, Int) => Unit): Unit = {
@@ -24,7 +24,7 @@ object LineOutputStream {
 class LineOutputStream(originalOut: OutputStream, printLine: (String, Int) => Unit) extends PrintStream(originalOut) {
 
   private var lineNumber = 1
-  private val sb         = new StringBuilder()
+  private val sb = new StringBuilder()
 
   override def write(b: Array[Byte]): Unit = writeString(new String(b, StandardCharsets.UTF_8))
   override def write(buf: Array[Byte], off: Int, len: Int): Unit = writeString(new String(buf, off, len, StandardCharsets.UTF_8))

@@ -1,6 +1,6 @@
 package cafebabe
 
-import ClassFileTypes._
+import cafebabe.ClassFileTypes._
 
 class LineNumberTableAttributeInfo(val nameIndex: U2) extends AttributeInfo(nameIndex, Nil) {
   private var _entries: Map[Int, Int] = Map.empty

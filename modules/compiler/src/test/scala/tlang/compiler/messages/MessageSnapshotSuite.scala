@@ -13,7 +13,6 @@ import tlang.compiler.modification.TemplatingErrors
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.TestConstants.CompilerIntegrationTestTag
 import tlang.testutils.snapshot.SnapshotTesting
-
 import tlang.utils._
 
 import scala.reflect.ClassTag
@@ -28,57 +27,57 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
   private val CompilerMessageType = typeOf[CompilerMessage].typeSymbol
 
   private val _errorStringContext = ErrorStringContext()(Formatter.PrettyFormatter)
-  private val _reporter           = VoidReporter()
+  private val _reporter = VoidReporter()
 
 
   testMessages(
     new LexingErrors {
-      override protected var line              : Int                = 0
-      override protected var column            : Int                = 0
-      override protected var source            : Source             = StringSource("ABC", "Test")
-      override           val reporter          : Reporter           = _reporter
-      override           val errorStringContext: ErrorStringContext = _errorStringContext
+      override protected var line: Int = 0
+      override protected var column: Int = 0
+      override protected var source: Source = StringSource("ABC", "Test")
+      override val reporter: Reporter = _reporter
+      override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new ParsingErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new ImportErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new TemplatingErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new NamingErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new TypingErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
 
   testMessages(
     new FlowingErrors {
-      override val reporter          : Reporter           = _reporter
+      override val reporter: Reporter = _reporter
       override val errorStringContext: ErrorStringContext = _errorStringContext
     }
   )
@@ -159,8 +158,8 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
 
   private def arguments(constructor: universe.MethodSymbol) = constructor.paramLists.flatMap(_.map(valueForArgument))
 
-  private val classSymbol    = new Symbols.ClassSymbol("ABC")
-  private val methodSymbol   = new Symbols.MethodSymbol("ABC", classSymbol, None, Set(Private()))
+  private val classSymbol = new Symbols.ClassSymbol("ABC")
+  private val methodSymbol = new Symbols.MethodSymbol("ABC", classSymbol, None, Set(Private()))
   private val variableSymbol = new Symbols.VariableSymbol("ABC")
   // These values are used to construct the error messages.
   private def valueForArgument(arg: Symbol) = {

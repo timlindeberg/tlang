@@ -8,7 +8,7 @@ import tlang.options.argument.HelpFlag
 
 
 case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
-  override val name           = "printoutput"
+  override val name = "printoutput"
   override val argDescription = "phase"
 
   private lazy val compilerPhases = Main.CompilerPhases.map(_.phaseName)

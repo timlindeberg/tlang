@@ -2,7 +2,6 @@ package tlang
 package compiler
 package analyzer
 
-import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
 import tlang.compiler.ast.Trees._
@@ -14,22 +13,22 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
 
   import TestContext.formatter
 
-  private val ClassSymbol  = new ClassSymbol("obj")
-  private val MainMethod   = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
+  private val ClassSymbol = new ClassSymbol("obj")
+  private val MainMethod = new MethodSymbol("main", ClassSymbol, None, Set(Public(), Static())).setType(TUnit)
   private val ErrorContext = ErrorStringContext()
-  private val TestImports  = Imports(TestContext, ErrorContext)
-  private val TypeChecker  = new TypeChecker(TestContext.reporter, ErrorContext, TestImports, MainMethod)
+  private val TestImports = Imports(TestContext, ErrorContext)
+  private val TypeChecker = new TypeChecker(TestContext.reporter, ErrorContext, TestImports, MainMethod)
 
-  private val int    = new TypeConstructor(Int)
-  private val bool   = new TypeConstructor(Bool)
-  private val long   = new TypeConstructor(Long)
-  private val float  = new TypeConstructor(Float)
+  private val int = new TypeConstructor(Int)
+  private val bool = new TypeConstructor(Bool)
+  private val long = new TypeConstructor(Long)
+  private val float = new TypeConstructor(Float)
   private val double = new TypeConstructor(Double)
-  private val char   = new TypeConstructor(Char)
-  private val array  = new TypeConstructor(TArray(Int))
-  private val obj    = new TypeConstructor(Object)
+  private val char = new TypeConstructor(Char)
+  private val array = new TypeConstructor(TArray(Int))
+  private val obj = new TypeConstructor(Object)
 
-  private val allTypes        = List[TypeConstructor](int, bool, long, float, double, char, array, obj)
+  private val allTypes = List[TypeConstructor](int, bool, long, float, double, char, array, obj)
   private val allCombinations = for (x <- allTypes; y <- allTypes) yield (x, y)
 
   private def createIdentifier(tpe: Type) = VariableID("").setSymbol(new VariableSymbol("")).setType(tpe)

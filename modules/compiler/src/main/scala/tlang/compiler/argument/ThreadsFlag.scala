@@ -4,11 +4,10 @@ package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
-
 import tlang.utils.{Executor, ParallellExecutor, SingleThreadExecutor}
 
 case object ThreadsFlag extends ArgumentFlag[Executor] {
-  override val name           = "threads"
+  override val name = "threads"
   override val argDescription = "num"
 
   override def description(implicit formatter: Formatter): String =

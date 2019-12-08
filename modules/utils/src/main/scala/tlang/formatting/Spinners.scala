@@ -5,7 +5,7 @@ import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class Spinner(val frameTime: FiniteDuration, images: String*) {
 
-  private var index        = 0
+  private var index = 0
   private var _elapsedTime = FiniteDuration(0, "ms")
 
   def nextImage: String = {

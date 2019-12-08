@@ -3,6 +3,7 @@ package compiler
 package imports
 
 import java.util.regex.Matcher
+
 import tlang.compiler.analyzer.Symbols.ExtensionClassSymbol
 import tlang.compiler.ast.Trees._
 import tlang.compiler.messages.Reporter

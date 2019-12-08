@@ -17,7 +17,7 @@ class OptionsSpec extends UnitSpec {
       override def parseValue(args: Set[String]): Set[String] = args
     }
 
-    val args    = "ABC DEF GHI".split(" ")
+    val args = "ABC DEF GHI".split(" ")
     val options = Options(Set(), Some(positionalArgument), args)
     options(positionalArgument) shouldBe Set("ABC", "DEF", "GHI")
   }
@@ -37,7 +37,7 @@ class OptionsSpec extends UnitSpec {
       override def description(implicit formatter: Formatter): Nothing = ???
     }
 
-    val args    = "--a --b".split(" ")
+    val args = "--a --b".split(" ")
     val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe true
@@ -66,7 +66,7 @@ class OptionsSpec extends UnitSpec {
       override def description(implicit formatter: Formatter): Nothing = ???
     }
 
-    val args    = "--a abc --b abc --a def,ghi,jkl,,".split(" ")
+    val args = "--a abc --b abc --a def,ghi,jkl,,".split(" ")
     val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe Set("abc", "def", "ghi", "jkl")
@@ -103,7 +103,7 @@ class OptionsSpec extends UnitSpec {
       override def description(implicit formatter: Formatter): Nothing = ???
     }
 
-    val args    = "--a abc --b --a abcdef".split(" ")
+    val args = "--a abc --b --a abcdef".split(" ")
     val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe Set("abc", "abcdef")
@@ -130,7 +130,7 @@ class OptionsSpec extends UnitSpec {
       override def description(implicit formatter: Formatter): Nothing = ???
     }
 
-    val args    = "--a 1 --b 1 --a 1337".split(" ")
+    val args = "--a 1 --b 1 --a 1337".split(" ")
     val options = Options(Set(a, b, c), None, args)
 
     options(a) shouldBe 1337
@@ -159,7 +159,7 @@ class OptionsSpec extends UnitSpec {
       override def argDescription: Nothing = ???
     }
 
-    val args    = "--a abc=a --b abc=b,def=b --a def=a".split(" ")
+    val args = "--a abc=a --b abc=b,def=b --a def=a".split(" ")
     val options = Options(Set(a, b, c), None, args)
     options(a) shouldBe Map(
       "abc" -> "a",
@@ -206,7 +206,7 @@ class OptionsSpec extends UnitSpec {
       override def argDescription: Nothing = ???
     }
 
-    val args    = "--arg ABC ABC --opt DEF GHI --opt abc JKL --bool --dict a=b,b=c MNO --dict c=d --arg GHI".split(" ")
+    val args = "--arg ABC ABC --opt DEF GHI --opt abc JKL --bool --dict a=b,b=c MNO --dict c=d --arg GHI".split(" ")
     val options = Options(Set(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), Some(positionalArgument), args)
 
     options(positionalArgument) shouldBe Set("ABC", "DEF", "GHI", "JKL", "MNO")
@@ -249,7 +249,7 @@ class OptionsSpec extends UnitSpec {
       override def argDescription: Nothing = ???
     }
 
-    val args    = "--ArG abC --oPt aBc --booL --DiCt A=b,b=C --dICt A=d".split(" ")
+    val args = "--ArG abC --oPt aBc --booL --DiCt A=b,b=C --dICt A=d".split(" ")
     val options = Options(Set(argFlag, booleanFlag, optionalArgFlag, dictionaryFlag), None, args)
 
     options(argFlag) shouldBe Set("abC")
@@ -271,7 +271,7 @@ class OptionsSpec extends UnitSpec {
       override def argDescription: Nothing = ???
     }
 
-    val args    = "--arg ABC -a DEF".split(" ")
+    val args = "--arg ABC -a DEF".split(" ")
     val options = Options(Set(argFlag), None, args)
 
     options(argFlag) shouldBe Set("ABC", "DEF")
@@ -290,7 +290,7 @@ class OptionsSpec extends UnitSpec {
       override def argDescription: Nothing = ???
     }
 
-    val args    = "--arg ABC --arg ABC ABC ABC ABC".split(" ")
+    val args = "--arg ABC --arg ABC ABC ABC ABC".split(" ")
     val options = Options(Set(argFlag), Some(positionalArgument), args)
 
     options(argFlag) shouldBe Set("ABC")
@@ -311,7 +311,7 @@ class OptionsSpec extends UnitSpec {
       override def name = "c"
       override def description(implicit formatter: Formatter): Nothing = ???
     }
-    val args           = "--a --b --d".split(" ")
+    val args = "--a --b --d".split(" ")
     intercept[IllegalArgumentException] { Options(Set(a, b, c), None, args) }
       .getMessage should include("--d")
 

@@ -2,10 +2,8 @@ package tlang
 package compiler
 package output
 
-import tlang.compiler.Main
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
-
 import tlang.utils.JSON.Json
 
 case class ExecutionTimeOutput(

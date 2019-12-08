@@ -7,7 +7,8 @@ trait Streamable {
 /** Wrapper around various Java streams. */
 class ByteStream {
 
-  import java.io.{DataOutputStream, ByteArrayOutputStream}
+  import java.io.{ByteArrayOutputStream, DataOutputStream}
+
   import ClassFileTypes._
 
   private var bytes = new ByteArrayOutputStream

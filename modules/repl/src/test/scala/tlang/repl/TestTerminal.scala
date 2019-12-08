@@ -13,26 +13,25 @@ import tlang.formatting.Colors.Color
 import tlang.formatting.{Colors, Formatter}
 import tlang.testutils.AnsiMatchers
 
-
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 
 /**
-  * Class used for doing integration tests on the REPL.
-  * The Terminal is both the starting point and the end point of the REPL.
-  * It starts with giving Key input (here given through the executeCommand
-  * function) and ends by producing an output which can be verified.
-  */
+ * Class used for doing integration tests on the REPL.
+ * The Terminal is both the starting point and the end point of the REPL.
+ * It starts with giving Key input (here given through the executeCommand
+ * function) and ends by producing an output which can be verified.
+ */
 class TestTerminal(width: Int, height: Int) extends Terminal {
 
-  private val ExecuteKey  : KeyStroke                   = new KeyStroke(' ', true, false)
-  private val terminalSize: TerminalSize                = new TerminalSize(height, width)
-  private var cursor      : TerminalPosition            = TerminalPosition.TOP_LEFT_CORNER
-  private var color       : Color                       = Colors.NoColor
-  private val input       : mutable.Queue[KeyStroke]    = new mutable.Queue[KeyStroke]()
-  private val textBuffer  : Array[Array[(Color, Char)]] = Array.tabulate(height, width)((_, _) => (Colors.NoColor, 0))
+  private val ExecuteKey: KeyStroke = new KeyStroke(' ', true, false)
+  private val terminalSize: TerminalSize = new TerminalSize(height, width)
+  private var cursor: TerminalPosition = TerminalPosition.TOP_LEFT_CORNER
+  private var color: Color = Colors.NoColor
+  private val input: mutable.Queue[KeyStroke] = new mutable.Queue[KeyStroke]()
+  private val textBuffer: Array[Array[(Color, Char)]] = Array.tabulate(height, width)((_, _) => (Colors.NoColor, 0))
 
   private var execution: Option[TestTerminalExecution] = None
 
@@ -172,10 +171,10 @@ class TestTerminal(width: Int, height: Int) extends Terminal {
 class TestTerminalExecution() extends Matchers with AnsiMatchers {
 
   private var stopAt: Option[String => Boolean] = None
-  private val promise                           = Promise[String]()
-  private var lastBox                           = ""
-  private val waitTime                          = 10
-  private var lastUpdate                        = 0L
+  private val promise = Promise[String]()
+  private var lastBox = ""
+  private val waitTime = 10
+  private var lastUpdate = 0L
 
   def finished: Boolean = promise.isCompleted
 

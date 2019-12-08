@@ -9,7 +9,7 @@ import tlang.utils.{Positioned, Source}
 trait LexingErrors extends ErrorHandling {
 
   protected var source: Source
-  protected var line  : Int
+  protected var line: Int
   protected var column: Int
 
   def report(error: ErrorMessage): Unit = reporter.report(error)

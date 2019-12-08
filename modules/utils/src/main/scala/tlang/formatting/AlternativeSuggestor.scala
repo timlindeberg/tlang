@@ -3,7 +3,7 @@ package formatting
 
 case class AlternativeSuggestor() {
 
-  private val MinLength      = 3
+  private val MinLength = 3
   private val MaxSuggestions = 5
 
   def apply(name: String, alternatives: List[String]): Suggestion = {
@@ -25,8 +25,8 @@ case class AlternativeSuggestor() {
 
     val AcceptableSimilarity = 0.5
 
-    val distance    : Int     = Distance(source, target)
-    val similarity  : Double  = 1.0 - (distance.toDouble / math.max(source.length, target.length))
+    val distance: Int = Distance(source, target)
+    val similarity: Double = 1.0 - (distance.toDouble / math.max(source.length, target.length))
     val isAcceptable: Boolean = similarity > AcceptableSimilarity
 
   }

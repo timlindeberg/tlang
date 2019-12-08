@@ -93,8 +93,8 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
 
   import loggingSettings._
 
-  private implicit val formatter: Formatter  = loggingSettings.formatter
-  private          val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
+  private implicit val formatter: Formatter = loggingSettings.formatter
+  private val stackTraceHighlighter = StackTraceHighlighter(failOnError = false)
 
   def logWithContext(logLevel: LogLevel, sc: StringContext, values: Seq[Any])(implicit line: Line, file: SourceFile, enclosing: Enclosing): Unit = {
     val sb = new StringBuilder

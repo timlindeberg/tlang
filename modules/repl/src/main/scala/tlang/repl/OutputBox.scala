@@ -1,7 +1,6 @@
 package tlang
 package repl
 
-import tlang.Constants
 import tlang.compiler.messages.{CompilerMessage, MessageInfo}
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Colors.Color
@@ -9,7 +8,6 @@ import tlang.formatting.grid.TruncatedColumn
 import tlang.formatting.textformatters.{Marking, SyntaxHighlighter}
 import tlang.formatting.{Formatter, Spinner}
 import tlang.repl.input.InputBuffer
-
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -25,8 +23,8 @@ case class RenderState(
 
 object OutputBox {
 
-  val YIndent           = 3
-  val XIndent           = 2
+  val YIndent = 3
+  val XIndent = 2
   val ShowCtrlCReminder = FiniteDuration(2, "sec")
 
   def apply(maxOutputLines: Int)(implicit formatter: Formatter): OutputBox = {
@@ -59,10 +57,10 @@ case class OutputBox private(
   import OutputBox._
   import formatter._
 
-  private lazy val InputColor   = Bold + Magenta
+  private lazy val InputColor = Bold + Magenta
   private lazy val SuccessColor = Bold + Green
-  private lazy val ErrorColor   = Bold + Red
-  private lazy val MarkColor    = Inverse
+  private lazy val ErrorColor = Bold + Red
+  private lazy val MarkColor = Inverse
 
   def clear(): OutputBox = {
     val header = InputColor("Input")

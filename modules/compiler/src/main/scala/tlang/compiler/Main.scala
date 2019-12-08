@@ -2,6 +2,7 @@ package tlang
 package compiler
 
 import cafebabe.CodegenerationStackTrace
+import sun.misc.Signal
 import tlang.Constants._
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.argument._
@@ -15,18 +16,17 @@ import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.grid.{CenteredContent, Column, OverflowHandling}
 import tlang.formatting.grid.Width.Fixed
+import tlang.formatting.grid.{CenteredContent, Column, OverflowHandling}
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
 
-import scala.concurrent.{Await, CancellationException, TimeoutException}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, CancellationException, TimeoutException}
 import scala.util.{Failure, Success, Try}
-import sun.misc.Signal
 
 case class ExitException(code: Int) extends Throwable
 
@@ -289,7 +289,6 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
-    import scala.concurrent.ExecutionContext.Implicits.global
 
     cancelExecution = Some(execution.cancel)
     val timeout = options(ExecTimeoutFlag)

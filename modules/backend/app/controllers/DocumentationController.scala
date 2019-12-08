@@ -1,8 +1,8 @@
 package controllers
 
 import javax.inject._
-import play.api.mvc._
 import play.api.libs.json.{Json, OWrites}
+import play.api.mvc._
 import services.{Documentation, DocumentationService}
 
 @Singleton

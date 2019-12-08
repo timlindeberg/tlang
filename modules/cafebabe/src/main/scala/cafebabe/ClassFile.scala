@@ -1,9 +1,9 @@
 package cafebabe
 
 /** A <code>ClassFile</code> object is an abstract representation of all the
-  * information that will be written to a <code>.class</code> file.  In the Java
-  * model, that generally corresponds to one class (or interface) as declared in
-  * source code, however this is by no means a restriction of the platform. */
+ * information that will be written to a <code>.class</code> file.  In the Java
+ * model, that generally corresponds to one class (or interface) as declared in
+ * source code, however this is by no means a restriction of the platform. */
 class ClassFile(val className: String, parentName: Option[String] = None) extends Streamable with Annotatable {
 
   import ClassFileTypes._
@@ -13,11 +13,11 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
   private val minor: U2 = defaultMinor
   private val major: U2 = defaultMajor
 
-  private      val constantPool                         = new ConstantPool()
-  private lazy val codeNameIndex                   : U2 = constantPool.addString("Code")
-  private lazy val runtimeVisibleAnnotationsIndex  : U2 = constantPool.addString("RuntimeVisibleAnnotations")
+  private val constantPool = new ConstantPool()
+  private lazy val codeNameIndex: U2 = constantPool.addString("Code")
+  private lazy val runtimeVisibleAnnotationsIndex: U2 = constantPool.addString("RuntimeVisibleAnnotations")
   private lazy val runtimeInvisibleAnnotationsIndex: U2 = constantPool.addString("RuntimeInvisibleAnnotations")
-  private lazy val sourceFileNameIndex             : U2 = constantPool.addString("SourceFile")
+  private lazy val sourceFileNameIndex: U2 = constantPool.addString("SourceFile")
 
   private var accessFlags: U2 = defaultClassAccessFlags
 
@@ -27,10 +27,10 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     case None       => "java/lang/Object"
     case Some(name) => name
   }
-  private val superClass    : U2     = constantPool.addClass(constantPool.addString(superClassName))
+  private val superClass: U2 = constantPool.addClass(constantPool.addString(superClassName))
 
-  private var fields    : List[FieldInfo]     = Nil
-  private var methods   : List[MethodInfo]    = Nil
+  private var fields: List[FieldInfo] = Nil
+  private var methods: List[MethodInfo] = Nil
   private var interfaces: List[InterfaceInfo] = Nil
   private var attributes: List[AttributeInfo] = Nil
 

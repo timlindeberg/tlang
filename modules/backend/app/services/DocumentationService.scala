@@ -2,14 +2,13 @@ package services
 
 import java.nio.file.{Files, Path, Paths}
 
-import javax.inject._
-import javax.inject.Inject
+import javax.inject.{Inject, _}
 import play.api.Configuration
 import tlang.formatting.Formatter
 import tlang.options.FlagArgument
 
-import scala.io.Source
 import scala.collection.JavaConverters._
+import scala.io.Source
 
 case class Documentation(name: String, content: String)
 
@@ -19,7 +18,7 @@ class DocumentationService @Inject()(config: Configuration) {
   private implicit val formatter: Formatter = Formatter.SimpleFormatter
 
   private lazy val compilerFlagDocs = flagDocumentation("Compiler flags", tlang.compiler.Main.CompilerFlags)
-  private lazy val replFlagDocs     = flagDocumentation("trepl flags", tlang.repl.Main.ReplFlags)
+  private lazy val replFlagDocs = flagDocumentation("trepl flags", tlang.repl.Main.ReplFlags)
 
   def documentation: List[Documentation] = {
     staticDocumentation

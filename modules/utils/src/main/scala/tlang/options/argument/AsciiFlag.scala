@@ -3,7 +3,6 @@ package options
 package argument
 
 import tlang.formatting.Formatter
-import tlang.options.BooleanFlag
 
 
 case object AsciiFlag extends BooleanFlag {

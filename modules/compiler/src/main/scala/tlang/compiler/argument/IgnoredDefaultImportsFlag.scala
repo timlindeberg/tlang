@@ -8,7 +8,7 @@ import tlang.options.ArgumentFlag
 
 
 case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
-  override val name           = "ignoreimport"
+  override val name = "ignoreimport"
   override val argDescription = "import"
 
   override protected def verify(ignoredImport: String)(implicit errorContext: ErrorStringContext): Unit = {

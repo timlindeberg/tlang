@@ -5,11 +5,11 @@ import tlang.formatting.Formatter
 
 
 trait Positioned {
-  var source : Option[Source] = None
-  var line   : Int            = 0
-  var col    : Int            = 0
-  var lineEnd: Int            = 0
-  var colEnd : Int            = 0
+  var source: Option[Source] = None
+  var line: Int = 0
+  var col: Int = 0
+  var lineEnd: Int = 0
+  var colEnd: Int = 0
 
   def setPos(source: Source, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     this.line = lineStart

@@ -4,13 +4,12 @@ package terminal
 
 import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{KeyStroke, KeyType, MouseAction, MouseActionType}
-import tlang.repl.OutputBox
 
 
 case class KeyConverter(doubleClickTime: Long) {
 
   private var lastMouseClick: (Int, Int, Long) = (0, 0, 0L)
-  private var numClicks     : Int              = 1
+  private var numClicks: Int = 1
 
   def convertKey(key: KeyStroke): Option[Key] = {
     val ctrl = Ctrl(key.isCtrlDown)

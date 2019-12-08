@@ -9,7 +9,7 @@ import tlang.testutils.MockitoSugar
 
 trait TreeTesting extends MockitoSugar {
 
-  val IntType    = ClassID("Int")
+  val IntType = ClassID("Int")
   val StringType = ClassID("String")
 
   implicit def stringToClassId(str: String): ClassID = ClassID(str)

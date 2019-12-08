@@ -1,22 +1,22 @@
 package cafebabe
 
-import ClassFileTypes._
+import cafebabe.ClassFileTypes._
 
 object CPTags {
 
   import ClassFileTypes._
 
-  val Class             : U1 = 7
-  val Fieldref          : U1 = 9
-  val Methodref         : U1 = 10
+  val Class: U1 = 7
+  val Fieldref: U1 = 9
+  val Methodref: U1 = 10
   val InterfaceMethodref: U1 = 11
-  val String            : U1 = 8
-  val Integer           : U1 = 3
-  val Float             : U1 = 4
-  val Long              : U1 = 5
-  val Double            : U1 = 6
-  val NameAndType       : U1 = 12
-  val Utf8              : U1 = 1
+  val String: U1 = 8
+  val Integer: U1 = 3
+  val Float: U1 = 4
+  val Long: U1 = 5
+  val Double: U1 = 6
+  val NameAndType: U1 = 12
+  val Utf8: U1 = 1
 }
 
 sealed abstract class CPEntry(val tag: U1) extends Streamable

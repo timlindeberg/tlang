@@ -6,7 +6,6 @@ import java.nio.charset.Charset
 
 import better.files.File
 
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 

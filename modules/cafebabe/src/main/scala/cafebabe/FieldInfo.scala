@@ -1,6 +1,6 @@
 package cafebabe
 
-import ClassFileTypes._
+import cafebabe.ClassFileTypes._
 
 case class FieldInfo(var accessFlags: U2, nameIndex: U2, descriptorIndex: U2, attributes: Seq[AttributeInfo]) extends Streamable {
   override def toStream(stream: ByteStream): ByteStream = {

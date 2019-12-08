@@ -3,20 +3,19 @@ package formatting
 package grid
 
 import tlang.formatting.Colors.Color
-
 import tlang.utils.{Memoize, Memoized}
 
 import scala.collection.mutable.ArrayBuffer
 
 case class Grid()(implicit var formatter: Formatter) {
 
-  private val rows             : ArrayBuffer[Row] = ArrayBuffer()
-  private var indent           : Int              = 1
-  private var borderColor      : Color            = formatter.NoColor
-  private var columnHeaderColor: Color            = formatter.Blue + formatter.Bold
-  private var shouldTrim       : Boolean          = true
-  private var drawTop          : Boolean          = true
-  private var drawBottom       : Boolean          = true
+  private val rows: ArrayBuffer[Row] = ArrayBuffer()
+  private var indent: Int = 1
+  private var borderColor: Color = formatter.NoColor
+  private var columnHeaderColor: Color = formatter.Blue + formatter.Bold
+  private var shouldTrim: Boolean = true
+  private var drawTop: Boolean = true
+  private var drawBottom: Boolean = true
 
   private var _currentRow: Option[Row] = None
   private def currentRow: Row = {
@@ -184,7 +183,7 @@ case class Grid()(implicit var formatter: Formatter) {
   private def verifyRowWidth(row: Row): Unit = {
     val columns = row.columns
 
-    val lineWidth           = formatter.lineWidth
+    val lineWidth = formatter.lineWidth
     val indentAndBorderSize = 2 + (2 * indent) + ((columns.length - 1) * (1 + 2 * indent))
 
     val neededWidth = indentAndBorderSize + columns
@@ -223,7 +222,7 @@ case class Grid()(implicit var formatter: Formatter) {
 
     private val calculateColumnWidths: Memoized[Seq[Int]] = Memoize {
       val contentSpace = spaceForContent()
-      val numAuto      = columns.count(_.width == Width.Auto)
+      val numAuto = columns.count(_.width == Width.Auto)
 
       if (numAuto == 0)
         columnWidthsOnlyFixedSize(contentSpace)
@@ -375,7 +374,7 @@ case class Grid()(implicit var formatter: Formatter) {
       // Returns the positions where the row has a column break
       def getBreakPositions(row: Row): Iterator[Int] = {
         val widths = row.columnWidths
-        var acc    = 2 * indent + widths.head
+        var acc = 2 * indent + widths.head
         widths.tail.map { width => acc use { _ => acc += width + 2 * indent + 1 } }.iterator
       }
 
@@ -386,17 +385,17 @@ case class Grid()(implicit var formatter: Formatter) {
           (HorizontalVertical, HorizontalUp, HorizontalDown, Horizontal, VerticalRight, VerticalLeft)
 
 
-      val sb       = new StringBuilder
+      val sb = new StringBuilder
       val maxWidth = formatter.lineWidth
 
 
       sb ++= verticalRight
 
-      val upPositions   = getBreakPositions(before)
+      val upPositions = getBreakPositions(before)
       val downPositions = getBreakPositions(after)
-      var up            = if (upPositions.hasNext) upPositions.next() else -1
-      var down          = if (downPositions.hasNext) downPositions.next() else -1
-      var x             = 0
+      var up = if (upPositions.hasNext) upPositions.next() else -1
+      var down = if (downPositions.hasNext) downPositions.next() else -1
+      var x = 0
       while (x < maxWidth - 2) {
         val X = x // X is a stable identifier, we cant use x since it's a var
         sb ++= ((up, down) match {
@@ -418,7 +417,7 @@ case class Grid()(implicit var formatter: Formatter) {
     }
 
     private def drawContent(row: Row): Unit = {
-      val columns      = row.columns
+      val columns = row.columns
       val columnWidths = row.columnWidths
 
       val rowContent = columns
@@ -428,11 +427,11 @@ case class Grid()(implicit var formatter: Formatter) {
         .map { lines =>
           // Handle overflow in each line
           val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
-            val width          = columnWidths(columnIndex)
+            val width = columnWidths(columnIndex)
             val handleOverflow = columns(columnIndex).overflowHandling
             handleOverflow(line.render(width), width)
           }
-          val maxNumLines     = overFlowedLines.map(_.length).max
+          val maxNumLines = overFlowedLines.map(_.length).max
 
 
           // Fill out the columns with empty lines so that each column has the same
@@ -445,12 +444,12 @@ case class Grid()(implicit var formatter: Formatter) {
         .transpose
         .map { columnsInLine =>
           // Draw each line
-          val content     = columnsInLine.zipWithIndex.map { case (line, columnIndex) =>
+          val content = columnsInLine.zipWithIndex.map { case (line, columnIndex) =>
             columns(columnIndex).alignment(line, columnWidths(columnIndex))
           }
-          val fill        = " " * indent
+          val fill = " " * indent
           val columnBreak = borderColor(Vertical)
-          val line        = columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak
+          val line = columnBreak + fill + content.mkString(fill + columnBreak + fill) + fill + columnBreak
           line
         }
         .mkString(NL)

@@ -5,11 +5,11 @@ import tlang.formatting.Formatter
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
 /** A code handler contains methods to help the generation of method bodies.
-  * The general usage is to generate abstract byte codes, then freeze the code,
-  * which as a consequence generates the proper bytes in the CodeAttributeInfo.
-  * Information is added to the constant pool during the ABS generation already.
-  * <code>CodeHandler</code>s should not be created manually, but rather obtained
-  * from the corresponding <code>MethodHandler</code>. */
+ * The general usage is to generate abstract byte codes, then freeze the code,
+ * which as a consequence generates the proper bytes in the CodeAttributeInfo.
+ * Information is added to the constant pool during the ABS generation already.
+ * <code>CodeHandler</code>s should not be created manually, but rather obtained
+ * from the corresponding <code>MethodHandler</code>. */
 class CodeHandler private[cafebabe](
   c: CodeAttributeInfo,
   cp: ConstantPool,
@@ -21,14 +21,14 @@ class CodeHandler private[cafebabe](
   import ByteCodes._
   import ClassFileTypes._
 
-  private             val code        : CodeAttributeInfo            = c
-  protected[cafebabe] val constantPool: ConstantPool                 = cp
+  private val code: CodeAttributeInfo = c
+  protected[cafebabe] val constantPool: ConstantPool = cp
   // will be built backwards and reversed at the end...
-  private             val abcBuffer   : ListBuffer[AbstractByteCode] = ListBuffer.empty
-  private             var frozen      : Boolean                      = false
+  private val abcBuffer: ListBuffer[AbstractByteCode] = ListBuffer.empty
+  private var frozen: Boolean = false
   protected[cafebabe] def isFrozen: Boolean = frozen
-  private var heightArray        : Array[Int] = Array()
-  private val UninitializedHeight: Int        = Int.MinValue
+  private var heightArray: Array[Int] = Array()
+  private val UninitializedHeight: Int = Int.MinValue
 
   def peek: Option[AbstractByteCode] = abcBuffer.headOption
 
@@ -56,13 +56,13 @@ class CodeHandler private[cafebabe](
   }
 
   // Helpers to get slots.
-  private             val argTypesAndBytes: Seq[(String, Int)]      = {
+  private val argTypesAndBytes: Seq[(String, Int)] = {
     val bc = typesToTypesAndBytes(paramTypes)
     // that's a dirty trick, but this info is very private..
     // only used for the ArgLoad ABC.
     if (isStatic) bc else ("L;", 1) +: bc
   }
-  protected[cafebabe] val argSlotMap      : Map[Int, (String, Int)] = {
+  protected[cafebabe] val argSlotMap: Map[Int, (String, Int)] = {
     var acc: Int = 0
     (for (((tpe, sz), arg) <- argTypesAndBytes.zipWithIndex) yield {
       val s = acc
@@ -70,7 +70,7 @@ class CodeHandler private[cafebabe](
       (arg, (tpe, s))
     }).toMap
   }
-  private             var locals          : Int                     = argTypesAndBytes.unzip._2.sum
+  private var locals: Int = argTypesAndBytes.unzip._2.sum
 
   /** Get a slot for a var that fits in one byte (all but `double` or `long`). */
   def getFreshVar: Int = getFreshVar(1)
@@ -101,7 +101,7 @@ class CodeHandler private[cafebabe](
   }
 
   /** "Freezes" the code: maxLocals is computed, abstract byte codes are turned
-    * into concrete ones. This includes computation of the label offsets. */
+   * into concrete ones. This includes computation of the label offsets. */
   def freeze: Unit = {
     if (frozen)
       throw CodeFreezingException("Cannot invoke `freeze` twice on the same CodeHandler.")

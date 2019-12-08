@@ -3,11 +3,10 @@ package options
 package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.options.NumberFlag
 
 case object TabWidthFlag extends NumberFlag {
   override val defaultValue: Int = 4
-  override val name              = "tabwidth"
+  override val name = "tabwidth"
 
   override def description(implicit formatter: Formatter): String =
     s"""

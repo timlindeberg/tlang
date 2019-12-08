@@ -10,7 +10,7 @@ import tlang.utils._
 
 class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
 
-  private val path   = "src/a/path/to/the/File.t"
+  private val path = "src/a/path/to/the/File.t"
   private val source = mock[Source]
   source.lines returns IndexedSeq(
     "var a = 0",
@@ -28,9 +28,9 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
   source.errorDescription(*) returns path
   source.description(*) returns path
 
-  private val aPos             = Position(1, 5, 1, 6, source = Some(source))
-  private val iLessThanPos     = Position(6, 16, 6, 21, source = Some(source))
-  private val dPlusPos         = Position(10, 2, 10, 5, source = Some(source))
+  private val aPos = Position(1, 5, 1, 6, source = Some(source))
+  private val iLessThanPos = Position(6, 16, 6, 21, source = Some(source))
+  private val dPlusPos = Position(10, 2, 10, 5, source = Some(source))
   private val multipleLinesPos = Position(4, 1, 6, 8, source = Some(source))
 
 

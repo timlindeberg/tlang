@@ -3,7 +3,6 @@ package options
 package argument
 
 import tlang.formatting.Formatter
-import tlang.options.BooleanFlag
 
 case object NoColorFlag extends BooleanFlag {
   override val name = "nocolor"

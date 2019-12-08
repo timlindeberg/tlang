@@ -3,7 +3,6 @@ package compiler
 package output
 package help
 
-import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.options.FlagArgument
 import tlang.utils.JSON.Json

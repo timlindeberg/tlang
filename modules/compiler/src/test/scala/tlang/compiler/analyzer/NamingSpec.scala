@@ -2,8 +2,6 @@ package tlang
 package compiler
 package analyzer
 
-import tlang.Constants
-import tlang.compiler.Context
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
@@ -25,7 +23,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
     )
 
 
-    val globalScope  = new GlobalScope(mock[ClassSymbolLocator])
+    val globalScope = new GlobalScope(mock[ClassSymbolLocator])
     val nameAnalyser = createNameAnalyzer(classes, globalScope)
     nameAnalyser.addSymbols()
 
@@ -52,7 +50,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
       ConstructorDecl(MethodID("new"), stat = Block(Nil), modifiers = Set(Protected(), Implicit())),
       OperatorDecl(Plus(Empty(), Empty()), stat = Block(Nil))
     )
-    val classA  = ClassDecl("A", methods = methods)
+    val classA = ClassDecl("A", methods = methods)
 
     val nameAnalyser = createNameAnalyzer(classA)
     nameAnalyser.addSymbols()
@@ -116,15 +114,15 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
   }
 
   it should "add symbols to method arguments" in {
-    val methodArgs      = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
+    val methodArgs = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
     val constructorArgs = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
-    val operatorArgs    = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
-    val methods         = List(
+    val operatorArgs = List(Formal(ClassID("A"), VariableID("a")), Formal(ClassID("B"), VariableID("b")))
+    val methods = List(
       MethodDecl("A", args = methodArgs),
       ConstructorDecl(MethodID("new"), args = constructorArgs),
       OperatorDecl(Plus(Empty(), Empty()), args = operatorArgs)
     )
-    val classA          = ClassDecl("A", methods = methods)
+    val classA = ClassDecl("A", methods = methods)
 
     val nameAnalyser = createNameAnalyzer(classA)
     nameAnalyser.addSymbols()
@@ -182,9 +180,9 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
   private implicit val formatter: Formatter = testFormatter(useColor = false)
 
   private val errorStringContext = ErrorStringContext()
-  private val reporter           = mock[Reporter]
-  private val ctx                = Context(reporter, PrettyOutputHandler())
-  private val imports            = Imports(ctx, errorStringContext, Nil)
+  private val reporter = mock[Reporter]
+  private val ctx = Context(reporter, PrettyOutputHandler())
+  private val imports = Imports(ctx, errorStringContext, Nil)
 
 
   private def createNameAnalyzer(clazz: ClassDeclTree): NameAnalyser = {

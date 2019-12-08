@@ -6,7 +6,6 @@ import org.scalatest._
 import tlang.compiler.output.ExecutionTimeOutput
 import tlang.testutils.TestConstants
 
-
 import scala.collection.mutable
 import scala.util.matching.Regex
 

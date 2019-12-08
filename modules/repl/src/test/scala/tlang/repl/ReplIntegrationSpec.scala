@@ -4,7 +4,7 @@ package repl
 import akka.actor.ActorRef
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
-import tlang.formatting.{Formatter}
+import tlang.formatting.Formatter
 import tlang.options.Options
 import tlang.repl.actors.ReplActor.{Start, Stop}
 import tlang.testutils.AnsiMatchers
@@ -16,7 +16,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
   def Height = 300
 
   val testTerminal: TestTerminal = new TestTerminal(Width, Height)
-  var repl        : ActorRef     = _
+  var repl: ActorRef = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()

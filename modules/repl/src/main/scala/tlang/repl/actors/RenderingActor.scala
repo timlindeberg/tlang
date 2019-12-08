@@ -5,7 +5,6 @@ package actors
 import akka.actor.{Actor, Props}
 import tlang.compiler.messages.CompilerMessage
 import tlang.formatting.Formatter
-import tlang.repl.OutputBox
 import tlang.repl.input.InputBuffer
 import tlang.repl.terminal.ReplTerminal
 import tlang.utils.Logging

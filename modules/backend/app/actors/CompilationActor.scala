@@ -14,13 +14,13 @@ object CompilationActor {
 
 
 object CompilationMessageType {
-  val EVALUATE                = "EVALUATE"
-  val CANCEL                  = "CANCEL"
-  val TIMEOUT                 = "TIMEOUT"
-  val SUCCESS                 = "SUCCESS"
-  val NO_OUTPUT               = "NO_OUTPUT"
-  val COMPILATION_ERROR       = "COMPILATION_ERROR"
-  val EXECUTION_ERROR         = "EXECUTION_ERROR"
+  val EVALUATE = "EVALUATE"
+  val CANCEL = "CANCEL"
+  val TIMEOUT = "TIMEOUT"
+  val SUCCESS = "SUCCESS"
+  val NO_OUTPUT = "NO_OUTPUT"
+  val COMPILATION_ERROR = "COMPILATION_ERROR"
+  val EXECUTION_ERROR = "EXECUTION_ERROR"
   val INTERNAL_COMPILER_ERROR = "INTERNAL_COMPILER_ERROR"
 }
 

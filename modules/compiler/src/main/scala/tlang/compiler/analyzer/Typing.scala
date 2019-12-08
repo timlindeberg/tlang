@@ -18,11 +18,11 @@ import scala.collection.mutable.ArrayBuffer
 
 object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
-  val hasBeenTypeChecked: mutable.Set[MethodSymbol]  = mutable.Set()
-  var methodUsage       : Map[MethodSymbol, Boolean] = Map()
+  val hasBeenTypeChecked: mutable.Set[MethodSymbol] = mutable.Set()
+  var methodUsage: Map[MethodSymbol, Boolean] = Map()
 
   val emptyClassSym = new ClassSymbol("")
-  val emptyMethSym  = new MethodSymbol("", emptyClassSym, None, Set())
+  val emptyMethSym = new MethodSymbol("", emptyClassSym, None, Set())
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
     ctx.executor.foreach(cus) { typeCheckFields(ctx, _) }
@@ -635,15 +635,15 @@ case class TypeChecker(
 
 
   /**
-    * This is hardcoded and does not depend on the trait Iterable.
-    * This allows for classes which do not implement the Iterable trait
-    * but which does provide an Iterator method which returns an Iterator
-    * with the methods HasNext and Next of correct types to still be
-    * applicable for ForEach loops.
-    *
-    * This is useful since it allows for iterable behaviour to be added
-    * through extension methods.
-    */
+   * This is hardcoded and does not depend on the trait Iterable.
+   * This allows for classes which do not implement the Iterable trait
+   * but which does provide an Iterator method which returns an Iterator
+   * with the methods HasNext and Next of correct types to still be
+   * applicable for ForEach loops.
+   *
+   * This is useful since it allows for iterable behaviour to be added
+   * through extension methods.
+   */
   private def getIteratorType(classSymbol: ClassSymbol): Option[Type] =
     classSymbol.lookupMethod("Iterator", Nil, imports).flatMap { methSymbol =>
       inferTypeOfMethod(methSymbol) match {

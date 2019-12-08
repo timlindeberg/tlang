@@ -3,30 +3,29 @@ package options
 package argument
 
 import tlang.formatting.Formatter
-import tlang.options.{FlagArgument, OptionalArgumentFlag}
 
 
 object HelpFlag {
-  val Name           = "help"
-  val ShortFlag      = Some("h")
+  val Name = "help"
+  val ShortFlag = Some("h")
   val ArgDescription = "about"
-  val DefaultArg     = "all"
+  val DefaultArg = "all"
 }
 
 // All flags is a function so we can pass the list of compiler flags to the help flag.
 // Otherwise we get a null pointer exception since the Help Flag is part of the compiler flags
 // list and gets initialized before the list exists.
 class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[Set[String]] {
-  override val name          : String       = HelpFlag.Name
-  override val shortFlag     : Some[String] = HelpFlag.ShortFlag
-  override val argDescription: String       = HelpFlag.ArgDescription
-  override val defaultArg    : String       = HelpFlag.DefaultArg
+  override val name: String = HelpFlag.Name
+  override val shortFlag: Some[String] = HelpFlag.ShortFlag
+  override val argDescription: String = HelpFlag.ArgDescription
+  override val defaultArg: String = HelpFlag.DefaultArg
 
   val Phases: String = "phases"
 
-  private lazy val FlagNames : Set[String] = allFlags.map(_.name)
+  private lazy val FlagNames: Set[String] = allFlags.map(_.name)
   private lazy val OtherNames: Set[String] = Set(Phases)
-  private lazy val ValidArguments          = FlagNames ++ OtherNames
+  private lazy val ValidArguments = FlagNames ++ OtherNames
 
   override def isValidArg(arg: String): Boolean = arg in ValidArguments
 

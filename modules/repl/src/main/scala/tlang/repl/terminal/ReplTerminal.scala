@@ -12,14 +12,13 @@ import com.googlecode.lanterna.{SGR, TerminalPosition}
 import tlang.formatting.Colors.{Color, NoColor, extractColorFrom}
 import tlang.formatting.{Colors, Formatter}
 import tlang.repl.OutputBox.{XIndent, YIndent}
-import tlang.repl._
 import tlang.repl.input.{Cursor, InputBuffer}
 
 
 object ReplTerminal {
 
   val MouseReportingDragClick = "\u001b[?1002"
-  val MouseReportingDecimals  = "\u001b[?1005"
+  val MouseReportingDecimals = "\u001b[?1005"
 
 }
 
@@ -27,14 +26,14 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
 
   import ReplTerminal._
 
-  private var _isCursorVisible      = true
+  private var _isCursorVisible = true
   private var _enableMouseReporting = false
-  private var _width: Int           = formatter.lineWidth
+  private var _width: Int = formatter.lineWidth
 
-  private var boxStartPosition : TerminalPosition = cursorPosition
-  private var boxHeight        : Int              = 0
-  private var previousBoxHeight: Int              = 0
-  private var cursor           : Cursor           = Cursor()
+  private var boxStartPosition: TerminalPosition = cursorPosition
+  private var boxHeight: Int = 0
+  private var previousBoxHeight: Int = 0
+  private var cursor: Cursor = Cursor()
 
 
   def close(): Unit = {

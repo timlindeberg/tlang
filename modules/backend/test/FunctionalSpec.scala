@@ -5,9 +5,9 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
 /**
-  * Functional tests start a Play application internally, available
-  * as `app`.
-  */
+ * Functional tests start a Play application internally, available
+ * as `app`.
+ */
 class FunctionalSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   "Routes" should {

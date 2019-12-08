@@ -18,29 +18,29 @@ import scala.collection.mutable
 
 object CodeGenerator {
 
-  val TraitFlags     : U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
+  val TraitFlags: U2 = CLASS_ACC_ABSTRACT | CLASS_ACC_PUBLIC | CLASS_ACC_INTERFACE
   val AnnotationFlags: U2 = TraitFlags | CLASS_ACC_ANNOTATION
-  val ClassFlags     : U2 = CLASS_ACC_PUBLIC
+  val ClassFlags: U2 = CLASS_ACC_PUBLIC
 
   val ConstructorName = "<init>"
 
   val JavaLang = "java/lang/"
   val JavaUtil = "java/util/"
-  val JavaIO   = "java/io/"
+  val JavaIO = "java/io/"
 
   /* Java classes used by T compiler */
-  val JavaStringBuilder   : String = JavaLang + "StringBuilder"
-  val JavaString          : String = JavaLang + "String"
-  val JavaSystem          : String = JavaLang + "System"
-  val JavaPrintStream     : String = JavaIO + "PrintStream"
-  val JavaObject          : String = JavaLang + "Object"
-  val JavaInt             : String = JavaLang + "Integer"
-  val JavaChar            : String = JavaLang + "Character"
-  val JavaFloat           : String = JavaLang + "Float"
-  val JavaDouble          : String = JavaLang + "Double"
-  val JavaLong            : String = JavaLang + "Long"
-  val JavaBool            : String = JavaLang + "Boolean"
-  val JavaArrays          : String = JavaUtil + "Arrays"
+  val JavaStringBuilder: String = JavaLang + "StringBuilder"
+  val JavaString: String = JavaLang + "String"
+  val JavaSystem: String = JavaLang + "System"
+  val JavaPrintStream: String = JavaIO + "PrintStream"
+  val JavaObject: String = JavaLang + "Object"
+  val JavaInt: String = JavaLang + "Integer"
+  val JavaChar: String = JavaLang + "Character"
+  val JavaFloat: String = JavaLang + "Float"
+  val JavaDouble: String = JavaLang + "Double"
+  val JavaLong: String = JavaLang + "Long"
+  val JavaBool: String = JavaLang + "Boolean"
+  val JavaArrays: String = JavaUtil + "Arrays"
   val JavaRuntimeException: String = JavaLang + "RuntimeException"
 
   object Primitive {

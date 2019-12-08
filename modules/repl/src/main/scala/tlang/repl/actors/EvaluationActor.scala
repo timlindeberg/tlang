@@ -10,7 +10,6 @@ import tlang.formatting.Formatter
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.repl.actors.ReplActor.SetState
 import tlang.repl.evaluation.{Evaluator, ReplState}
-
 import tlang.utils.{CancellableFuture, Logging}
 
 import scala.concurrent.{CancellationException, TimeoutException}
@@ -37,7 +36,6 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
   import EvaluationActor._
   import Evaluator.ClassName
   import context.dispatcher
-
   import formatter._
 
   private val WarmupProgram = "val theAnswerToLifeInTheUniverseAndEverything: Int = 21 * 2"

@@ -1,6 +1,8 @@
 package tlang
 package compiler
 
+import java.nio.file.Files
+
 import better.files.{File, FileMonitor}
 import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.Trees.CompilationUnit
@@ -9,7 +11,6 @@ import tlang.compiler.output.MessageOutput
 import tlang.formatting.Formatter
 import tlang.options.Options
 import tlang.utils.{FileSource, Logging, Source}
-import java.nio.file.Files
 
 import scala.collection.mutable
 
@@ -66,7 +67,7 @@ case class CompilationWatcher(
   case class CompilerFileMonitor(fileToWatch: File, fileToCompile: File) extends FileMonitor(fileToWatch, fileToWatch.isDirectory) {
 
     private val filesToCompile = List(FileSource(fileToCompile))
-    private val modifiedTimes  = mutable.Map[String, Long]()
+    private val modifiedTimes = mutable.Map[String, Long]()
 
     override def onModify(file: File, count: Int): Unit = {
       import ctx.formatter._

@@ -4,14 +4,13 @@ package argument
 
 import tlang.formatting.Colors.{ColorNameMap, ColorScheme}
 import tlang.formatting.{Colors, ErrorStringContext, Formatter}
-import tlang.options.DictionaryFlag
 
 
 case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
   import tlang.formatting.Colors.ColorScheme._
 
-  override val name          : String = "colorscheme"
+  override val name: String = "colorscheme"
   override val argDescription: String = "colormap"
 
   override def description(implicit formatter: Formatter): String =
@@ -58,14 +57,14 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
     val colors = getColorValues(args)
 
     new ColorScheme {
-      override val Keyword : Int = colors(KeywordName)
+      override val Keyword: Int = colors(KeywordName)
       override val Variable: Int = colors(VariableName)
-      override val Class   : Int = colors(ClassName)
-      override val Method  : Int = colors(MethodName)
-      override val String  : Int = colors(StringName)
-      override val Number  : Int = colors(NumberName)
-      override val Comment : Int = colors(CommentName)
-      override val Symbol  : Int = colors(SymbolName)
+      override val Class: Int = colors(ClassName)
+      override val Method: Int = colors(MethodName)
+      override val String: Int = colors(StringName)
+      override val Number: Int = colors(NumberName)
+      override val Comment: Int = colors(CommentName)
+      override val Symbol: Int = colors(SymbolName)
     }
   }
 

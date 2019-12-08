@@ -3,12 +3,11 @@ package options
 package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.options.ArgumentFlag
 
 
 case object ClassPathFlag extends ArgumentFlag[Set[String]] {
-  override val name           = "classpath"
-  override val shortFlag      = Some("cp")
+  override val name = "classpath"
+  override val shortFlag = Some("cp")
   override val argDescription = "path"
 
   override def description(implicit formatter: Formatter): String =

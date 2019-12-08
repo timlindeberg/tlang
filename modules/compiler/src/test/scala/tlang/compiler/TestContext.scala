@@ -2,13 +2,12 @@ package tlang
 package compiler
 
 import better.files.File
-import tlang.Constants
-import tlang.testutils.TestConstants
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.DefaultReporter
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.textformatters.SyntaxHighlighter
+import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants.{PrintCodePhases, PrintJSON, Resources, TestOutputDirectory}
 
 trait TestContext {

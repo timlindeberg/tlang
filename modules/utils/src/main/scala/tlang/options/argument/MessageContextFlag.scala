@@ -3,12 +3,11 @@ package options
 package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.options.NumberFlag
 
 case object MessageContextFlag extends NumberFlag {
   override val defaultValue = 2
 
-  override val name      = "messagecontext"
+  override val name = "messagecontext"
   override val shortFlag = Some("c")
 
   override def description(implicit formatter: Formatter): String =

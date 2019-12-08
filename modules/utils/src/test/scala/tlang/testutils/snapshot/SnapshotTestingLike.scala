@@ -7,27 +7,25 @@ import org.scalatest._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import tlang.formatting.Colors
 import tlang.formatting.Colors.Color
-import tlang.testutils.{StringDifference, TestConstants}
-
 
 import scala.collection.mutable
 import scala.util.matching.Regex
 
 object SnapshotTestingLike {
 
-  val UpdateSnapshotsKey   : String                   = "updateSnapshots"
-  val RemoveSnapshotsKey   : String                   = "removeUnusedSnapshots"
-  val UpdateSnapshots      : String                   = sys.env.getOrElse(UpdateSnapshotsKey, "")
-  val RemoveUnusedSnapshots: Boolean                  = sys.env.get(RemoveSnapshotsKey).contains("true")
-  val UpdateRegex          : Regex                    = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
-  val SnapshotIndex        : mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
-  val Directory            : String                   = TestConstants.Resources + "/snapshots"
-  val Extension            : String                   = ".snap"
-  val LocalNameSeparator   : String                   = " "
-  val Separator            : String                   = "---------------------------------------------------------------------------------------------------------"
+  val UpdateSnapshotsKey: String = "updateSnapshots"
+  val RemoveSnapshotsKey: String = "removeUnusedSnapshots"
+  val UpdateSnapshots: String = sys.env.getOrElse(UpdateSnapshotsKey, "")
+  val RemoveUnusedSnapshots: Boolean = sys.env.get(RemoveSnapshotsKey).contains("true")
+  val UpdateRegex: Regex = if (UpdateSnapshots.isEmpty) new Regex("\\b\\B") else UpdateSnapshots.r
+  val SnapshotIndex: mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
+  val Directory: String = TestConstants.Resources + "/snapshots"
+  val Extension: String = ".snap"
+  val LocalNameSeparator: String = " "
+  val Separator: String = "---------------------------------------------------------------------------------------------------------"
 
   private val HighlightColor: Color = Colors.Magenta
-  private val FailColor     : Color = Colors.Red + Colors.Bold
+  private val FailColor: Color = Colors.Red + Colors.Bold
 
 }
 
@@ -46,8 +44,8 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
     Snapshots(file)
   }
 
-  private val _currentTestName: ThreadLocal[String]       = new ThreadLocal[String]()
-  private val _localTestNames : ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
+  private val _currentTestName: ThreadLocal[String] = new ThreadLocal[String]()
+  private val _localTestNames: ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
 
   def matchSnapshot: SnapshotMatcher = {
     SnapshotIndex(fullTestName) += 1

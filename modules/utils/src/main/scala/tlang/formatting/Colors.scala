@@ -7,56 +7,56 @@ import scala.language.implicitConversions
 
 object Colors {
 
-  val NO_COLOR  : Int = -1
-  val RESET     : Int = 0
-  val BOLD      : Int = 1
+  val NO_COLOR: Int = -1
+  val RESET: Int = 0
+  val BOLD: Int = 1
   val UNDERLINED: Int = 4
-  val BLINK     : Int = 5
-  val INVERSE   : Int = 7
-  val CONCEALED : Int = 8
+  val BLINK: Int = 5
+  val INVERSE: Int = 7
+  val CONCEALED: Int = 8
 
-  val BLACK     : Int = 30
-  val RED       : Int = 31
-  val GREEN     : Int = 32
-  val YELLOW    : Int = 33
-  val BLUE      : Int = 34
-  val MAGENTA   : Int = 35
-  val CYAN      : Int = 36
-  val WHITE     : Int = 37
+  val BLACK: Int = 30
+  val RED: Int = 31
+  val GREEN: Int = 32
+  val YELLOW: Int = 33
+  val BLUE: Int = 34
+  val MAGENTA: Int = 35
+  val CYAN: Int = 36
+  val WHITE: Int = 37
   val DEFAULT_FG: Int = 39
 
-  val BLACK_BG  : Int = 40
-  val RED_BG    : Int = 41
-  val GREEN_BG  : Int = 42
-  val YELLOW_BG : Int = 43
-  val BLUE_BG   : Int = 44
+  val BLACK_BG: Int = 40
+  val RED_BG: Int = 41
+  val GREEN_BG: Int = 42
+  val YELLOW_BG: Int = 43
+  val BLUE_BG: Int = 44
   val MAGENTA_BG: Int = 45
-  val CYAN_BG   : Int = 46
-  val WHITE_BG  : Int = 47
+  val CYAN_BG: Int = 46
+  val WHITE_BG: Int = 47
   val DEFAULT_BG: Int = 49
 
-  val Bold     : Color = RegularColor(modifiers = Set(BOLD))
+  val Bold: Color = RegularColor(modifiers = Set(BOLD))
   val Underline: Color = RegularColor(modifiers = Set(UNDERLINED))
-  val Inverse  : Color = RegularColor(modifiers = Set(INVERSE))
+  val Inverse: Color = RegularColor(modifiers = Set(INVERSE))
 
-  val Black    : Color = RegularColor(foreground = BLACK)
-  val Red      : Color = RegularColor(foreground = RED)
-  val Green    : Color = RegularColor(foreground = GREEN)
-  val Yellow   : Color = RegularColor(foreground = YELLOW)
-  val Blue     : Color = RegularColor(foreground = BLUE)
-  val Magenta  : Color = RegularColor(foreground = MAGENTA)
-  val Cyan     : Color = RegularColor(foreground = CYAN)
-  val White    : Color = RegularColor(foreground = WHITE)
+  val Black: Color = RegularColor(foreground = BLACK)
+  val Red: Color = RegularColor(foreground = RED)
+  val Green: Color = RegularColor(foreground = GREEN)
+  val Yellow: Color = RegularColor(foreground = YELLOW)
+  val Blue: Color = RegularColor(foreground = BLUE)
+  val Magenta: Color = RegularColor(foreground = MAGENTA)
+  val Cyan: Color = RegularColor(foreground = CYAN)
+  val White: Color = RegularColor(foreground = WHITE)
   val DefaultFG: Color = RegularColor(foreground = DEFAULT_FG)
 
-  val BlackBG  : Color = RegularColor(background = BLACK_BG)
-  val RedBG    : Color = RegularColor(background = RED_BG)
-  val GreenBG  : Color = RegularColor(background = GREEN_BG)
-  val YellowBG : Color = RegularColor(background = YELLOW_BG)
-  val BlueBG   : Color = RegularColor(background = BLUE_BG)
+  val BlackBG: Color = RegularColor(background = BLACK_BG)
+  val RedBG: Color = RegularColor(background = RED_BG)
+  val GreenBG: Color = RegularColor(background = GREEN_BG)
+  val YellowBG: Color = RegularColor(background = YELLOW_BG)
+  val BlueBG: Color = RegularColor(background = BLUE_BG)
   val MagentaBG: Color = RegularColor(background = MAGENTA_BG)
-  val CyanBG   : Color = RegularColor(background = CYAN_BG)
-  val WhiteBG  : Color = RegularColor(background = WHITE_BG)
+  val CyanBG: Color = RegularColor(background = CYAN_BG)
+  val WhiteBG: Color = RegularColor(background = WHITE_BG)
   val DefaultBG: Color = RegularColor(foreground = DEFAULT_BG)
 
 
@@ -142,8 +142,8 @@ object Colors {
   }
 
   case object NoColor extends Color {
-    override val ansi     : String    = ""
-    override val repr     : String    = "-"
+    override val ansi: String = ""
+    override val repr: String = "-"
     override val colorType: ColorType = ColorType.NoColor
     override def +(c: Color): Color = if (c == Reset) NoColor else c
     override def +(any: Any): String = any.toString
@@ -151,14 +151,14 @@ object Colors {
     override def apply(any: Any): String = any.toString
     override def needsResetBefore(nextColor: Color) = false
 
-    override val foreground: Int      = -1
-    override val background: Int      = -1
-    override val modifiers : Set[Int] = Set()
+    override val foreground: Int = -1
+    override val background: Int = -1
+    override val modifiers: Set[Int] = Set()
   }
 
   case object Reset extends Color {
-    override val ansi     : String    = "\u001b[0m"
-    override val repr     : String    = "\\u001b[0m"
+    override val ansi: String = "\u001b[0m"
+    override val repr: String = "\\u001b[0m"
     override val colorType: ColorType = ColorType.Reset
     override def +(c: Color): Color = NoColor
     override def +(any: Any): String = ansi + any.toString
@@ -166,9 +166,9 @@ object Colors {
     override def apply(any: Any): String = any.toString + ansi
     override def needsResetBefore(nextColor: Color) = false
 
-    override val foreground: Int      = -1
-    override val background: Int      = -1
-    override val modifiers : Set[Int] = Set()
+    override val foreground: Int = -1
+    override val background: Int = -1
+    override val modifiers: Set[Int] = Set()
 
   }
 
@@ -215,8 +215,8 @@ object Colors {
       case NoColor                                         => NoColor
       case Reset                                           => NoColor
       case RegularColor(foreground, background, modifiers) =>
-        val fg   = if (foreground != -1) foreground else this.foreground
-        val bg   = if (background != -1) background else this.background
+        val fg = if (foreground != -1) foreground else this.foreground
+        val bg = if (background != -1) background else this.background
         val mods = modifiers ++ this.modifiers
         RegularColor(fg, bg, mods)
     }
@@ -227,8 +227,8 @@ object Colors {
       case NoColor                                         => this
       case Reset                                           => this
       case RegularColor(foreground, background, modifiers) =>
-        val fg   = if (foreground == this.foreground) -1 else this.foreground
-        val bg   = if (background == this.background) -1 else this.background
+        val fg = if (foreground == this.foreground) -1 else this.foreground
+        val bg = if (background == this.background) -1 else this.background
         val mods = this.modifiers -- modifiers
         if (fg == -1 && bg == -1 && mods.isEmpty) NoColor else RegularColor(fg, bg, mods)
     }
@@ -294,14 +294,14 @@ object Colors {
 
   object ColorScheme {
 
-    val KeywordName  = "keyword"
+    val KeywordName = "keyword"
     val VariableName = "variable"
-    val ClassName    = "class"
-    val MethodName   = "method"
-    val StringName   = "string"
-    val NumberName   = "number"
-    val CommentName  = "comment"
-    val SymbolName   = "symbol"
+    val ClassName = "class"
+    val MethodName = "method"
+    val StringName = "string"
+    val NumberName = "number"
+    val CommentName = "comment"
+    val SymbolName = "symbol"
 
     val Keys: List[String] = List(
       KeywordName,
@@ -315,25 +315,25 @@ object Colors {
     )
 
     case object NoColors extends ColorScheme {
-      val Keyword : Int = NO_COLOR
+      val Keyword: Int = NO_COLOR
       val Variable: Int = NO_COLOR
-      val Class   : Int = NO_COLOR
-      val Method  : Int = NO_COLOR
-      val String  : Int = NO_COLOR
-      val Number  : Int = NO_COLOR
-      val Comment : Int = NO_COLOR
-      val Symbol  : Int = NO_COLOR
+      val Class: Int = NO_COLOR
+      val Method: Int = NO_COLOR
+      val String: Int = NO_COLOR
+      val Number: Int = NO_COLOR
+      val Comment: Int = NO_COLOR
+      val Symbol: Int = NO_COLOR
     }
 
     case object DefaultColorScheme extends ColorScheme {
-      val Keyword : Int = BLUE
+      val Keyword: Int = BLUE
       val Variable: Int = CYAN
-      val Class   : Int = GREEN
-      val Method  : Int = YELLOW
-      val String  : Int = YELLOW
-      val Number  : Int = MAGENTA
-      val Comment : Int = BLACK
-      val Symbol  : Int = WHITE
+      val Class: Int = GREEN
+      val Method: Int = YELLOW
+      val String: Int = YELLOW
+      val Number: Int = MAGENTA
+      val Comment: Int = BLACK
+      val Symbol: Int = WHITE
     }
   }
 
@@ -342,7 +342,7 @@ object Colors {
   // an array of the color each character.
   def splitStringAndColors(str: String): (String, Array[Color]) = {
     val colors = new ArrayBuffer[Color] {override val initialSize: Int = str.length }
-    val sb     = new StringBuilder(str.length)
+    val sb = new StringBuilder(str.length)
 
     foreachWithColor(str) { (c, color) => sb += c; colors += color }
     (sb.toString, colors.toArray)
@@ -352,9 +352,9 @@ object Colors {
   // and the index where the ansi sequence ended
   def extractColorFrom(str: String, startIndex: Int, initialColor: Color = NoColor, extractMultiple: Boolean = true): (Color, Int) = {
     var color: Color = initialColor
-    var i            = startIndex
+    var i = startIndex
     while (i < str.length && str(i) == '\u001b' && str(i + 1) == '[') {
-      val endOfAnsi          = str.indexOf('m', i + 1)
+      val endOfAnsi = str.indexOf('m', i + 1)
       val ansiEscapeSequence = str.substring(i + 2, endOfAnsi)
       color += Color(ansiEscapeSequence)
       i = endOfAnsi + 1

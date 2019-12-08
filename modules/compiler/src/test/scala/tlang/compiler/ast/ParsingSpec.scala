@@ -1369,8 +1369,8 @@ class ParsingSpec extends UnitSpec with TreeTesting {
   }
 
   private implicit val formatter: Formatter = testFormatter(useColor = false)
-  private          val errorStringContext   = ErrorStringContext()
-  private          val ctx                  = Context(mock[Reporter], PrettyOutputHandler())
+  private val errorStringContext = ErrorStringContext()
+  private val ctx = Context(mock[Reporter], PrettyOutputHandler())
 
   private def parser(tokens: Any*) = Parser(ctx, errorStringContext, createTokenStream(tokens))
 

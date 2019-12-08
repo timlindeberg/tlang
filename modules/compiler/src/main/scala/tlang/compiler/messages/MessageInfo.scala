@@ -6,7 +6,6 @@ import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
-
 import tlang.utils.{Position, Positioned}
 
 case class MessageInfo(

@@ -10,12 +10,12 @@ import tlang.compiler.analyzer.Types._
 object CodeMap {
 
   /* Types */
-  val T_BOOL   = 4
-  val T_CHAR   = 5
-  val T_FLOAT  = 6
+  val T_BOOL = 4
+  val T_CHAR = 5
+  val T_FLOAT = 6
   val T_DOUBLE = 7
-  val T_INT    = 10
-  val T_LONG   = 11
+  val T_INT = 10
+  val T_LONG = 11
 
 }
 

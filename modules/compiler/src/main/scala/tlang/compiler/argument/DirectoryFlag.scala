@@ -8,8 +8,8 @@ import tlang.options.ArgumentFlag
 
 
 case object DirectoryFlag extends ArgumentFlag[Set[File]] {
-  override val name           = "directory"
-  override val shortFlag      = Some("d")
+  override val name = "directory"
+  override val shortFlag = Some("d")
   override val argDescription = "dir"
 
   override def description(implicit formatter: Formatter): String =

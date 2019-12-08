@@ -1,6 +1,6 @@
 package cafebabe
 
-import ClassFileTypes._
+import cafebabe.ClassFileTypes._
 
 object AttributeInfo {
   def apply(attributeNameIndex: U2, info: Seq[U1]): AttributeInfo =

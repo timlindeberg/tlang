@@ -6,9 +6,9 @@ package grid
 import scala.collection.mutable.ListBuffer
 
 object ColumnDefaults {
-  val Width           : tlang.formatting.grid.Width            = tlang.formatting.grid.Width.Auto
+  val Width: tlang.formatting.grid.Width = tlang.formatting.grid.Width.Auto
   val OverflowHandling: tlang.formatting.grid.OverflowHandling = tlang.formatting.grid.OverflowHandling.Wrap
-  val Alignment       : tlang.formatting.grid.Alignment        = tlang.formatting.grid.Alignment.Left
+  val Alignment: tlang.formatting.grid.Alignment = tlang.formatting.grid.Alignment.Left
 }
 
 object Column extends Column(ColumnDefaults.Width, ColumnDefaults.Alignment, ColumnDefaults.OverflowHandling)
@@ -22,7 +22,7 @@ case class Column(
 ) {
 
   private[grid] val lines: ListBuffer[GridContent] = ListBuffer()
-  private       var _maxWidth                      = 0
+  private var _maxWidth = 0
 
   def maxWidth: Int = _maxWidth
 

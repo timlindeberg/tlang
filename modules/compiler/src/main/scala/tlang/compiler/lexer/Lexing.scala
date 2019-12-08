@@ -5,7 +5,6 @@ package lexer
 import java.math.BigInteger
 
 import sourcecode.{Enclosing, Line}
-import tlang.compiler.CompilerPhase
 import tlang.compiler.lexer.Tokens._
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
@@ -40,8 +39,8 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
 
 case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexingErrors with Logging {
 
-  protected override var line           = 1
-  protected override var column         = 1
+  protected override var line = 1
+  protected override var column = 1
   protected override var source: Source = _
 
   protected var indent = 0

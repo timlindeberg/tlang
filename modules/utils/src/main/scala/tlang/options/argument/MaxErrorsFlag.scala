@@ -3,7 +3,6 @@ package options
 package argument
 
 import tlang.formatting.Formatter
-import tlang.options.NumberFlag
 
 case object MaxErrorsFlag extends NumberFlag {
   override val defaultValue = 100

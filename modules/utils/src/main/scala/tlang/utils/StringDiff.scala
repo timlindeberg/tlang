@@ -38,13 +38,13 @@ object StringDiff {
     import OperationType._
 
     /**
-      * The unaltered diff result
-      */
+     * The unaltered diff result
+     */
     override def toString: String = diffs.mkString
 
     /**
-      * Create a nice HTML report of the diff
-      */
+     * Create a nice HTML report of the diff
+     */
     def html: String = {
       Diff.clean(diffs).foldLeft("") { (html, diff) =>
         val text = diff.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
@@ -58,8 +58,8 @@ object StringDiff {
     }
 
     /**
-      * Convert the diff into a more human-readable format
-      */
+     * Convert the diff into a more human-readable format
+     */
     def humanized: String = {
       Diff.clean(diffs).foldLeft("") { (res, diff) =>
         val text = diff.op match {
@@ -92,12 +92,12 @@ object StringDiff {
     private val MAX_EDIT_COST = 4
 
     /**
-      * Creates a new Diff
-      *
-      * @param a First string
-      * @param b Second string
-      * @return Diff
-      */
+     * Creates a new Diff
+     *
+     * @param a First string
+     * @param b Second string
+     * @return Diff
+     */
     def create(a: String, b: String): Diff = {
       import scala.util.control.Breaks._
 
@@ -143,10 +143,10 @@ object StringDiff {
     }
 
     /**
-      * Eliminate operationally trivial equalities, then reorder and merge both edits and equalities.
-      *
-      * @param diffs List[Operation]
-      */
+     * Eliminate operationally trivial equalities, then reorder and merge both edits and equalities.
+     *
+     * @param diffs List[Operation]
+     */
     def clean(diffs: List[Operation]): List[Operation] = {
       var buffer = diffs
       var changes = false
@@ -180,13 +180,13 @@ object StringDiff {
           }
 
           /**
-            * Five types to be split:
-            * +A-BXY+C-D
-            * +AX+C-D
-            * +A-BX+C
-            * +AX+C-D
-            * +A-BX-C
-            */
+           * Five types to be split:
+           * +A-BXY+C-D
+           * +AX+C-D
+           * +A-BX+C
+           * +AX+C-D
+           * +A-BX-C
+           */
           val bools = Seq(preInsert, preDelete, postInsert, postDelete)
           if (!lastEquality.isEmpty && (bools.forall(b => b) || ((lastEquality.length < MAX_EDIT_COST / 2) && bools.count(b => b) == 3))) {
             // Duplicate record
@@ -217,10 +217,10 @@ object StringDiff {
     }
 
     /**
-      * Reorder and merge edits, equalities. Any edit section can move as long as it doesn't cross an equality.
-      *
-      * @param diffs List of Operations
-      */
+     * Reorder and merge edits, equalities. Any edit section can move as long as it doesn't cross an equality.
+     *
+     * @param diffs List of Operations
+     */
     private def cleanMerge(diffs: List[Operation]): List[Operation] = {
       var buffer = diffs :+ Operation(Equals, "")
       var deletes = 0
@@ -338,13 +338,13 @@ object StringDiff {
     }
 
     /**
-      * Generate the longest common subsequence between two strings
-      * using the traceback approach to solving this problem
-      *
-      * @param a First string
-      * @param b Second string
-      * @return Longest common subsequence
-      */
+     * Generate the longest common subsequence between two strings
+     * using the traceback approach to solving this problem
+     *
+     * @param a First string
+     * @param b Second string
+     * @return Longest common subsequence
+     */
     private def lcs(a: String, b: String): String = {
       // Empty pair of strings? No LCS...
       if (a.isEmpty || b.isEmpty) {
@@ -388,12 +388,12 @@ object StringDiff {
     }
 
     /**
-      * Determine the common prefix of two strings
-      *
-      * @param text1 First string.
-      * @param text2 Second string.
-      * @return The number of characters common to the start of each string.
-      */
+     * Determine the common prefix of two strings
+     *
+     * @param text1 First string.
+     * @param text2 Second string.
+     * @return The number of characters common to the start of each string.
+     */
     private def commonPrefix(text1: String, text2: String): Int = {
       // Performance analysis: http://neil.fraser.name/news/2007/10/09/
       val n = Math.min(text1.length, text2.length) - 1
@@ -406,12 +406,12 @@ object StringDiff {
     }
 
     /**
-      * Determine the common suffix of two strings
-      *
-      * @param text1 First string.
-      * @param text2 Second string.
-      * @return The number of characters common to the end of each string.
-      */
+     * Determine the common suffix of two strings
+     *
+     * @param text1 First string.
+     * @param text2 Second string.
+     * @return The number of characters common to the end of each string.
+     */
     private def commonSuffix(text1: String, text2: String): Int = {
       // Performance analysis: http://neil.fraser.name/news/2007/10/09/
       val (text1length, text2length) = (text1.length, text2.length)
@@ -428,41 +428,41 @@ object StringDiff {
     }
 
     /**
-      * Insert one or more elements within a list
-      *
-      * @param xs       The target list
-      * @param index    The index at which to insert the new element
-      * @param elements The list of elements to insert
-      * @tparam T The type of the list
-      * @return List[T]
-      */
+     * Insert one or more elements within a list
+     *
+     * @param xs       The target list
+     * @param index    The index at which to insert the new element
+     * @param elements The list of elements to insert
+     * @tparam T The type of the list
+     * @return List[T]
+     */
     def insert[T](xs: List[T], index: Int)(elements: T*): List[T] = {
       xs.take(index) ++ elements ++ xs.drop(index)
     }
 
     /**
-      * Replace one or more elements within a list with another set of elements
-      *
-      * @param xs       The target list
-      * @param start    The index to begin replacement
-      * @param num      The number of elements to replace
-      * @param elements The elements to swap in
-      * @tparam T The type of the list
-      * @return List[T]
-      */
+     * Replace one or more elements within a list with another set of elements
+     *
+     * @param xs       The target list
+     * @param start    The index to begin replacement
+     * @param num      The number of elements to replace
+     * @param elements The elements to swap in
+     * @tparam T The type of the list
+     * @return List[T]
+     */
     def replace[T](xs: List[T], start: Int, num: Int)(elements: T*): List[T] = {
       xs.take(start) ++ elements ++ xs.drop(start + num)
     }
 
     /**
-      * A safe substring operation that starts at the provided index and ends either at the end of the string
-      * or after `length` characters have been sliced
-      *
-      * @param s      The source string
-      * @param start  The index to start slicing at
-      * @param length The number of characters to slice
-      * @return String
-      */
+     * A safe substring operation that starts at the provided index and ends either at the end of the string
+     * or after `length` characters have been sliced
+     *
+     * @param s      The source string
+     * @param start  The index to start slicing at
+     * @param length The number of characters to slice
+     * @return String
+     */
     def slice(s: String, start: Int, length: Int = Int.MinValue): String = {
       val len = if (length == Int.MinValue) s.length - start else length
       if (s == null) ""
@@ -473,12 +473,12 @@ object StringDiff {
     }
 
     /**
-      * A safe substring operation that starts at the beginning of the string and selects towards the end
-      *
-      * @param s The source string
-      * @param x The number of characters to select
-      * @return String
-      */
+     * A safe substring operation that starts at the beginning of the string and selects towards the end
+     *
+     * @param s The source string
+     * @param x The number of characters to select
+     * @return String
+     */
     def sliceLeft(s: String, x: Int): String = {
       if (s == null) ""
       else if (x <= 0) ""
@@ -487,12 +487,12 @@ object StringDiff {
     }
 
     /**
-      * A safe substring operation that starts at the end of the string and selects towards the beginning
-      *
-      * @param s The source string
-      * @param x The number of characters to select
-      * @return String
-      */
+     * A safe substring operation that starts at the end of the string and selects towards the beginning
+     *
+     * @param s The source string
+     * @param x The number of characters to select
+     * @return String
+     */
     def sliceRight(s: String, x: Int): String = {
       if (s == null) ""
       else if (x <= 0) ""

@@ -3,7 +3,6 @@ package formatting
 package textformatters
 
 import tlang.formatting.Colors._
-import tlang.formatting.Formatter
 import tlang.utils.{Position, Positioned}
 
 

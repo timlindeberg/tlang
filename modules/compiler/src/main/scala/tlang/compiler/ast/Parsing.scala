@@ -14,7 +14,6 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.{Logging, NoPosition, Positioned}
 
-import scala.collection.immutable.Stream.cons
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 

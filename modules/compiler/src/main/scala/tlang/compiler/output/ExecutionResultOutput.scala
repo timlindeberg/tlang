@@ -5,9 +5,8 @@ package output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
-import tlang.utils.{ExecutionResult, Source}
-
 import tlang.utils.JSON.Json
+import tlang.utils.{ExecutionResult, Source}
 
 case class ExecutionResultOutput(
   results: Seq[(Source, ExecutionResult)]

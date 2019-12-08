@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
 
   val BreakCharacters = "-/.,_\\;:()[]{}"
-  val WhiteSpaces     = " \t"
+  val WhiteSpaces = " \t"
 
   def apply(text: String, maxWidth: Int): List[String] = {
     val lineBuffer: ListBuffer[String] = ListBuffer()

@@ -7,7 +7,6 @@ import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -16,7 +15,7 @@ case class ReplState(prettyPrinter: PrettyPrinter, private val _imports: Imports
   import Evaluator._
 
   private var _newStatements = List[StatTree]()
-  private val _history       = ListBuffer[StatTree]()
+  private val _history = ListBuffer[StatTree]()
 
   private val _classes = mutable.Map[String, ClassDeclTree]()
   private val _methods = mutable.Map[String, MethodDeclTree]()

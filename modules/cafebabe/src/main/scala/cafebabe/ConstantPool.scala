@@ -10,29 +10,29 @@ class ConstantPool extends Streamable {
   import scala.collection.mutable.HashMap
 
   /** The following maps keep track of the constants already added to the pool to avoid duplicates. */
-  private val intMap         = new HashMap[Int, U2]
-  private val floatMap       = new HashMap[Float, U2]
-  private val longMap        = new HashMap[Long, U2]
-  private val doubleMap      = new HashMap[Double, U2]
-  private val stringMap      = new HashMap[String, U2]
+  private val intMap = new HashMap[Int, U2]
+  private val floatMap = new HashMap[Float, U2]
+  private val longMap = new HashMap[Long, U2]
+  private val doubleMap = new HashMap[Double, U2]
+  private val stringMap = new HashMap[String, U2]
   // all internal strings
   private val stringConstMap = new HashMap[U2, U2]
   // string constants
-  private val classMap       = new HashMap[U2, U2]
-  private val fieldRefMap    = new HashMap[(U2, U2), U2]
-  private val methodRefMap   = new HashMap[(U2, U2), U2]
+  private val classMap = new HashMap[U2, U2]
+  private val fieldRefMap = new HashMap[(U2, U2), U2]
+  private val methodRefMap = new HashMap[(U2, U2), U2]
   private val nameAndTypeMap = new HashMap[(U2, U2), U2]
 
   /** Inverse maps to retrieve strings for debugging purposes */
-  private val inverseIntMap         = new HashMap[U2, Int]
-  private val inverseFloatMap       = new HashMap[U2, Float]
-  private val inverseLongMap        = new HashMap[U2, Long]
-  private val inverseDoubleMap      = new HashMap[U2, Double]
-  private val inverseStringMap      = new HashMap[U2, String]
+  private val inverseIntMap = new HashMap[U2, Int]
+  private val inverseFloatMap = new HashMap[U2, Float]
+  private val inverseLongMap = new HashMap[U2, Long]
+  private val inverseDoubleMap = new HashMap[U2, Double]
+  private val inverseStringMap = new HashMap[U2, String]
   private val inverseStringConstMap = new HashMap[U2, U2]
-  private val inverseClassMap       = new HashMap[U2, U2]
-  private val inverseFieldRefMap    = new HashMap[U2, (U2, U2)]
-  private val inverseMethodRefMap   = new HashMap[U2, (U2, U2)]
+  private val inverseClassMap = new HashMap[U2, U2]
+  private val inverseFieldRefMap = new HashMap[U2, (U2, U2)]
+  private val inverseMethodRefMap = new HashMap[U2, (U2, U2)]
   private val inverseNameAndTypeMap = new HashMap[U2, (U2, U2)]
 
   /** The list of all entries in that constant pool. */

@@ -6,9 +6,9 @@ object ByteCodes {
   import ClassFileTypes._
 
   sealed abstract class ByteCode(val code: U1, se: Option[Int], l: Option[Int]) extends AbstractByteCode {
-    val size       : Int         = 1
+    val size: Int = 1
     val stackEffect: Option[Int] = se
-    val length     : Option[Int] = l
+    val length: Option[Int] = l
     override def toStream(bs: ByteStream): ByteStream = bs << code
   }
 

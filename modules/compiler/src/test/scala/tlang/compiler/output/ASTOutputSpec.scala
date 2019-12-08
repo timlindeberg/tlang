@@ -2,7 +2,6 @@ package tlang
 package compiler
 package output
 
-import tlang.compiler.TestContext
 import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.imports.Imports
@@ -65,7 +64,7 @@ class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
   }
 
   private val prettyPrinter = mock[PrettyPrinter] use { _.apply(*[Tree]) returns "Tree but pretty printed!" }
-  private val treePrinter   = mock[TreePrinter] use { _.apply(*[Tree]) returns List(("A", "B", "C", "D", "E")) }
+  private val treePrinter = mock[TreePrinter] use { _.apply(*[Tree]) returns List(("A", "B", "C", "D", "E")) }
 
 
   private def makeASTOutput(formatter: Formatter) =

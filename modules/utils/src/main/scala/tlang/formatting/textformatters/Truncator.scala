@@ -5,9 +5,9 @@ package textformatters
 
 case class Truncator() {
 
-  private val TruncationChar : Char   = '.'
-  private val TruncationWidth: Int    = 3
-  private val Truncation     : String = s"$TruncationChar" * TruncationWidth
+  private val TruncationChar: Char = '.'
+  private val TruncationWidth: Int = 3
+  private val Truncation: String = s"$TruncationChar" * TruncationWidth
 
   def apply(line: String, width: Int): String = {
     if (width < 0)

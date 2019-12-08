@@ -6,7 +6,7 @@ class StackMapTableAttribute(val nameIndex: U2, stackMapFrames: List[StackMapFra
 
   override def toStream(stream: ByteStream): ByteStream = {
     val stackMapSize: U4 = 2 + stackMapFrames.foldLeft(0)((sum, stackMap) => sum + stackMap.size)
-    val ne          : U2 = stackMapFrames.size
+    val ne: U2 = stackMapFrames.size
 
     stream << nameIndex << stackMapSize << ne
     stackMapFrames.foreach(stream << _)
@@ -15,27 +15,27 @@ class StackMapTableAttribute(val nameIndex: U2, stackMapFrames: List[StackMapFra
 }
 
 object VerificationTypeInfoTags {
-  val Top               = 0
-  val Integer           = 1
-  val Float             = 2
-  val Double            = 3
-  val Long              = 4
-  val Null              = 5
+  val Top = 0
+  val Integer = 1
+  val Float = 2
+  val Double = 3
+  val Long = 4
+  val Null = 5
   val UninitializedThis = 6
-  val Object            = 7
-  val Uninitialized     = 8
+  val Object = 7
+  val Uninitialized = 8
 
   def size(a: Array[VerificationTypeInfo]): U4 = a.foldLeft(0)((sum, typeInfo) => sum + typeInfo.size)
 }
 
 object StackMapFrameTypes {
-  val SameFrame                        : Range.Inclusive = 0 to 63
-  val SameLocals1StackItemFrame        : Range.Inclusive = 64 to 127
+  val SameFrame: Range.Inclusive = 0 to 63
+  val SameLocals1StackItemFrame: Range.Inclusive = 64 to 127
   val SameLocals1StackItemFrameExtended: Range.Inclusive = 247 to 247
-  val ChopFrame                        : Range.Inclusive = 248 to 250
-  val SameFrameExtended                : Range.Inclusive = 251 to 251
-  val AppendFrame                      : Range.Inclusive = 252 to 254
-  val FullFrame                        : Range.Inclusive = 255 to 255
+  val ChopFrame: Range.Inclusive = 248 to 250
+  val SameFrameExtended: Range.Inclusive = 251 to 251
+  val AppendFrame: Range.Inclusive = 252 to 254
+  val FullFrame: Range.Inclusive = 255 to 255
 }
 
 import cafebabe.VerificationTypeInfoTags._

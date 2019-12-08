@@ -3,7 +3,6 @@ package repl
 package input
 
 import tlang.testutils.UnitSpec
-
 import tlang.utils.Position
 
 class InputBufferSpec extends UnitSpec {

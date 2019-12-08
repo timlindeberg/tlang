@@ -6,7 +6,6 @@ import akka.actor.{Actor, Props}
 import com.googlecode.lanterna.input.KeyType
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.StackTraceHighlighter
-import tlang.repl.OutputBox
 import tlang.repl.actors.EvaluationActor._
 import tlang.repl.actors.RenderingActor.{DrawFailure, DrawLoading, DrawSuccess, RenderingMessage}
 import tlang.repl.evaluation.{Evaluator, ReplState}

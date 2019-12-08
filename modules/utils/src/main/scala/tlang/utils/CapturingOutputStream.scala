@@ -4,7 +4,7 @@ package utils
 import java.io.{ByteArrayOutputStream, OutputStream, PrintStream}
 
 object CapturingOutputStream {
-  var OriginalOut      : Option[PrintStream]               = None
+  var OriginalOut: Option[PrintStream] = None
   val ThreadLocalStream: ThreadLocal[Option[OutputStream]] = ThreadLocal.withInitial(() => None)
 
   def byteStream: ByteArrayOutputStream = {

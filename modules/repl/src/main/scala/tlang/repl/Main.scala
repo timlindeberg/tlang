@@ -24,15 +24,15 @@ import tlang.repl.argument.ReplHelpFlag
 import tlang.repl.evaluation.{Evaluator, Extractor, ReplState, SaveAndPrintTransformer}
 import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
-import tlang.utils.{DefaultProgramExecutor, Logging, ProgramExecutor}
+import tlang.utils.{DefaultProgramExecutor, Logging}
 
 
 object Main extends Logging {
 
   import tlang.Constants._
 
-  val VersionNumber   = "0.0.1"
-  val MaxRedoSize     = 500
+  val VersionNumber = "0.0.1"
+  val MaxRedoSize = 500
   val DoubleClickTime = 500L
 
   val HistoryFileName: String = "repl_history"

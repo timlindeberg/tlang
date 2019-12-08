@@ -2,9 +2,6 @@ package tlang
 package formatting
 package textformatters
 
-import tlang.formatting.Formatter
-
-
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
 
@@ -23,12 +20,12 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
 
     import formatter._
 
-    private val TextColor   = Bold
-    private val FileColor   = Cyan + Bold + Underline
-    private val IdColor     = Red + Bold
+    private val TextColor = Bold
+    private val FileColor = Cyan + Bold + Underline
+    private val IdColor = Red + Bold
     private val MethodColor = Blue + Bold
-    private val MsgColor    = Yellow
-    private val Indent      = "   "
+    private val MsgColor = Yellow
+    private val Indent = "   "
 
     // Override whitespaces so that spaces and tabs are skipped but not new lines.
     override val whiteSpace: Regex = "".r
@@ -159,8 +156,8 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
     }
 
 
-    private val num     = """\d+""".r
-    private val id      = """[0-9A-Za-z$_\-/<> ]+""".r
+    private val num = """\d+""".r
+    private val id = """[0-9A-Za-z$_\-/<> ]+""".r
     private val newLine = "\r?\n".r
 
 

@@ -4,7 +4,6 @@ package output
 package debug
 
 import tlang.compiler.lexer.Token
-import tlang.compiler.output.Output
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.grid.{Column, TruncatedColumn}

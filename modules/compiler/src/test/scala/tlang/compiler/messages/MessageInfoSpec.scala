@@ -2,15 +2,15 @@ package tlang
 package compiler
 package messages
 
-import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.formatting.Colors
+import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
 import tlang.testutils.UnitSpec
 import tlang.utils._
 
 class MessageInfoSpec extends UnitSpec with MessageTesting {
 
   val DefaultContextSize = 2
-  val DefaultTabWidth    = 2
+  val DefaultTabWidth = 2
 
   var messageInfo: MessageInfo = _
 

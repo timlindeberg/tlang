@@ -12,17 +12,16 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-
 import tlang.utils.{Logging, ProgramExecutor, StringSource}
 
 
 object Evaluator {
 
 
-  val ClassName        = "ReplExecution"
+  val ClassName = "ReplExecution"
   val ReplOutputMarker = "__ReplRes__"
-  val PrintMarker      = Print(StringLit(ReplOutputMarker))
-  val ReplClassID      = ClassID(ClassName)
+  val PrintMarker = Print(StringLit(ReplOutputMarker))
+  val ReplClassID = ClassID(ClassName)
 
 
   def apply(ctx: Context,

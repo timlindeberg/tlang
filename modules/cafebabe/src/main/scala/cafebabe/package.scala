@@ -1,6 +1,6 @@
 package object cafebabe {
   /** Converts a string representing multiple JVM types into a sequence of
-    * integers representing their respective sizes in bytes. */
+   * integers representing their respective sizes in bytes. */
   def typesToByteCounts(types: String): Seq[Int] = {
     var s: String = types
     var lst: List[Int] = Nil
@@ -13,8 +13,8 @@ package object cafebabe {
   }
 
   /** Used to compute for instance the stack effect of method invocations or
-    * the number of slots required by for method arguments. In reality, a hackish
-    * parser. */
+   * the number of slots required by for method arguments. In reality, a hackish
+   * parser. */
   def typesToByteCount(types: String): Int = {
     var s: String = types
     var c: Int = 0
@@ -27,7 +27,7 @@ package object cafebabe {
   }
 
   /** Returns the number of required to store a value of a given type, in JVM
-    * notation. */
+   * notation. */
   def typeToByteCount(tpe: String): Int = {
     val (c, _, r) = parseRec(tpe)
     if (!r.isEmpty) {

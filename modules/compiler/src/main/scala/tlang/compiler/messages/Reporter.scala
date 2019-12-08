@@ -52,7 +52,7 @@ case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) exte
 
 case class VoidReporter() extends Reporter {
 
-  private var _hasErrors   = false
+  private var _hasErrors = false
   private var _hasWarnings = false
 
   override def report(message: CompilerMessage): Unit = message match {

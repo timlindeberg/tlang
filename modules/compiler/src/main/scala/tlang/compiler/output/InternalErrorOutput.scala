@@ -6,7 +6,6 @@ import cafebabe.CodeFreezingException
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Alignment.Center
 import tlang.formatting.textformatters.StackTraceHighlighter
-
 import tlang.utils.JSON.Json
 
 case class InternalErrorOutput(error: Throwable)(implicit formatter: Formatter, stackTraceHighlighter: StackTraceHighlighter) extends Output {

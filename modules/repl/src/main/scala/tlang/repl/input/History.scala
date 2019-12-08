@@ -18,8 +18,8 @@ case class History[T](maxSize: Int) extends Seq[T] {
   private case class Node(var elem: T, var prev: Option[Node], var next: Option[Node])
 
   private var _first: Option[Node] = None
-  private var _last : Option[Node] = None
-  private var _size : Int          = 0
+  private var _last: Option[Node] = None
+  private var _size: Int = 0
 
   def apply(idx: Int): T = iterator.drop(idx).next()
 

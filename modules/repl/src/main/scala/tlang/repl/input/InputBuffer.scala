@@ -2,13 +2,12 @@ package tlang
 package repl
 package input
 
+import scalaz.Cord
 import tlang.formatting.Colors
 import tlang.repl.input.CordExtensions._
-
 import tlang.utils.Position
 
 import scala.collection.mutable.ListBuffer
-import scalaz.Cord
 
 object InputBuffer {
 

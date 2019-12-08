@@ -87,7 +87,7 @@ class LoggerSpec extends UnitSpec {
 
   it should "minimize the location of the log call" in {
     val (sb, memFile) = memoryFile()
-    val logSettings   = LoggingSettings(
+    val logSettings = LoggingSettings(
       printToStdout = false,
       formatter = Formatter.SimpleFormatter,
       logLevel = LogLevel.Info,
@@ -95,14 +95,14 @@ class LoggerSpec extends UnitSpec {
     )
     logSettings.printToFile = List(memFile)
 
-    var testEnclosing : String = ""
-    var testFile      : String = ""
-    var testLineNumber: Int    = 0
+    var testEnclosing: String = ""
+    var testFile: String = ""
+    var testLineNumber: Int = 0
 
     val logger: Logger = new Logger()(logSettings) {
-      override val now       : Date   = new Date(0)
+      override val now: Date = new Date(0)
       override val threadName: String = "TestThread"
-      override val threadId  : Int    = 0
+      override val threadId: Int = 0
       override def location(enclosing: String, file: String, lineNumber: Int): String =
         super.location(testEnclosing, testFile, testLineNumber)
       override def fileName(file: String): String = file
@@ -225,7 +225,7 @@ class LoggerSpec extends UnitSpec {
     )
     logSettings.printToFile = List(memFile)
 
-    var _threadId      = 0
+    var _threadId = 0
     val logger: Logger = new Logger()(logSettings) {
       override val now: Date = new Date(0)
       override def threadName: String = "TestThread" + _threadId

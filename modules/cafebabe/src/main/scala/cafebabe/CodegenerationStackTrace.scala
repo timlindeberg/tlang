@@ -18,13 +18,13 @@ case class CodegenerationStackTrace(
   implicit formatter: Formatter
 ) {
 
-  val heights: Array[Int]                   = heightArray.clone()
-  val abcs   : IndexedSeq[AbstractByteCode] = abcBuffer.toIndexedSeq
+  val heights: Array[Int] = heightArray.clone()
+  val abcs: IndexedSeq[AbstractByteCode] = abcBuffer.toIndexedSeq
 
   import formatter._
 
   private val UninitializedHeight: Int = Int.MinValue
-  private val types                    = Map(
+  private val types = Map(
     4 -> "T_BOOLEAN",
     5 -> "T_CHAR",
     6 -> "T_FLOAT",
@@ -36,7 +36,7 @@ case class CodegenerationStackTrace(
   )
 
   private var colorIndex = -1
-  private val colorMap   = mutable.HashMap[String, Color]()
+  private val colorMap = mutable.HashMap[String, Color]()
 
   private def getLabelColor(label: String) = {
     colorMap.getOrElseUpdate(label, {

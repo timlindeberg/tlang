@@ -2,7 +2,6 @@ package tlang
 package utils
 
 import better.files.File
-import tlang.Constants
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
 

@@ -2,7 +2,6 @@ package tlang
 package compiler
 package ast
 
-import tlang.compiler.ast.Trees.ExprTree
 import tlang.compiler.lexer.Tokens.{DEDENT, INDENT}
 import tlang.compiler.lexer.{Token, TokenKind}
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, FatalMessage}

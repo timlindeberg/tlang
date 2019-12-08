@@ -20,9 +20,9 @@ case class TokenStream(tokenList: Traversable[Token]) {
     .map(_._1)
 
   var nextIncludingNewlines: Token = tokens(currentIndex)
-  var next                 : Token = calculateNext()
+  var next: Token = calculateNext()
 
-  val last       : Token = tokens.last
+  val last: Token = tokens.last
   var lastVisible: Token = nextIncludingNewlines
 
 

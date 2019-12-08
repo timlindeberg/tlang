@@ -22,11 +22,11 @@ case class ErrorStringContext(
 
     private val ValueColor: Color = NumColor
 
-    private var currentColor: Color            = NoColor
-    private val sb          : StringBuilder    = new StringBuilder
-    private val strings     : Iterator[String] = sc.parts.iterator
-    private var nextString  : String           = strings.next
-    private var expressions : Iterator[Any]    = _
+    private var currentColor: Color = NoColor
+    private val sb: StringBuilder = new StringBuilder
+    private val strings: Iterator[String] = sc.parts.iterator
+    private var nextString: String = strings.next
+    private var expressions: Iterator[Any] = _
 
     def err(args: Any*): String = {
 
@@ -82,7 +82,7 @@ case class ErrorStringContext(
       suggestions.distinct match {
         case suggestion :: Nil =>
           val transformed = transform(suggestion)
-          val v           = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"
+          val v = if (formatter.useColor) ValueColor(transformed) else s"'$transformed'"
           sb ++= " Did you mean " + v + Bold + "?"
           currentColor = Bold
           if (hasMore)

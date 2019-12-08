@@ -15,7 +15,7 @@ import scala.collection.mutable
 
 object Templating extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
-  val StartEnd  = "-"
+  val StartEnd = "-"
   val Seperator = "$"
 
   def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
@@ -34,7 +34,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
   import ctx.formatter
 
-  private val templateCus         = mutable.Map[String, CompilationUnit]()
+  private val templateCus = mutable.Map[String, CompilationUnit]()
   private var generatedClassNames = mutable.Set[String]()
 
   def generateTemplates(cus: List[CompilationUnit]): List[CompilationUnit] = {
@@ -103,9 +103,9 @@ case class TemplateModifier(ctx: Context) extends Logging {
     classSymbolLocator: ClassSymbolLocator) extends TemplatingErrors with Logging {
 
     /**
-      * Has the side effect of filling the programs in the template program map with
-      * generated template classes.
-      */
+     * Has the side effect of filling the programs in the template program map with
+     * generated template classes.
+     */
     def apply(): Unit = {
       cu.classes.filter(_.id.isTemplated) foreach checkDuplicateTemplateNames
 

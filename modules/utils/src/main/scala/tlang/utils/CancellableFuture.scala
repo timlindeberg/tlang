@@ -3,14 +3,13 @@ package utils
 
 import java.util.concurrent.atomic.AtomicReference
 
-
 import scala.concurrent.{CancellationException, ExecutionContext, Future, Promise}
 
 
 object CancellableFuture {
 
   type CancelFunction = () => Boolean
-  
+
   def apply[T](fun: => T)(implicit ex: ExecutionContext): CancellableFuture[T] = {
     val promise = Promise[T]()
     val future = promise.future

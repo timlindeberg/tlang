@@ -7,12 +7,11 @@ import better.files.File
 import tlang.repl.input.CordExtensions._
 import tlang.utils.CircularBuffer
 
-
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Input {
 
-  val HistorySeperator  = "<--COMMAND-->"
+  val HistorySeperator = "<--COMMAND-->"
   val Seperator: String = NL + HistorySeperator + NL
 
 }
@@ -25,7 +24,7 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
   private val commands = CircularBuffer(newHistory())
 
   private val unmodifiedCommands = ArrayBuffer[String]()
-  private var dirty              = false
+  private var dirty = false
 
   loadFromFile()
 

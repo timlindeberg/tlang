@@ -13,7 +13,6 @@ case object ExecTimeoutFlag extends ArgumentFlag[Duration] {
 
   override def argDescription: String = "timeout"
   override def description(implicit formatter: Formatter): String = {
-    import formatter._
     s"""
        |The timeout duration in seconds to be used when executing a program.
        |The execution will cancel once the timout is reached. If ${ highlight(-1) } is passed

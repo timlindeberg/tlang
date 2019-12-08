@@ -6,7 +6,6 @@ package help
 import tlang.formatting.Formatter
 import tlang.formatting.grid.{Column, Width}
 import tlang.options.FlagArgument
-
 import tlang.utils.JSON.Json
 
 case class HelpOutput(flagArguments: Set[FlagArgument[_]])(implicit formatter: Formatter) extends Output {

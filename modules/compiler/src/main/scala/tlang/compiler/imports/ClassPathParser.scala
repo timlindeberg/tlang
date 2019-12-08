@@ -15,7 +15,7 @@ class ClassPathParser(paths: Set[String]) {
 
   private val estimatedNumClasses = jars.map(_.length).sum + dirs.size * 50
 
-  private val classes   : ArrayBuffer[String]                  = new ArrayBuffer(estimatedNumClasses)
+  private val classes: ArrayBuffer[String] = new ArrayBuffer(estimatedNumClasses)
   private val pathToFile: java.util.HashMap[String, ClassFile] = new java.util.HashMap(estimatedNumClasses)
 
   def parse(): (Map[String, ClassFile], Array[String]) = {

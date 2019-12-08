@@ -3,7 +3,6 @@ package compiler
 package ast
 
 import better.files.File
-import tlang.compiler.CompilerIntegrationTestSpec
 import tlang.compiler.ast.Trees._
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages.CompilationException

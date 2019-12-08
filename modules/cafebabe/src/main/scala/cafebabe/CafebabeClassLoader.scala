@@ -3,7 +3,7 @@ package cafebabe
 import scala.collection.mutable.{Map => MutableMap}
 
 /** A `ClassLoader` with the capability for loading cafebabe
-  *  `ClassFile`s directly from memory. */
+ * `ClassFile`s directly from memory. */
 class CafebabeClassLoader(parent: ClassLoader) extends ClassLoader(parent) {
   def this() {
     this(ClassLoader.getSystemClassLoader())
