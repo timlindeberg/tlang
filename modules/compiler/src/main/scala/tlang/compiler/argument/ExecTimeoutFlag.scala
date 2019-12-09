@@ -34,7 +34,7 @@ case object ExecTimeoutFlag extends ArgumentFlag[Duration] {
   }
 
   override def parseValue(args: Set[String]): Duration = {
-    if (args.isEmpty) Duration.Inf else Duration(args.map { _.toDouble }.max, TimeUnit.SECONDS)
+    val n = if (args.isEmpty) -1 else args.map { _.toDouble }.max
+    if (n == -1) Duration.Inf else Duration(n, TimeUnit.SECONDS)
   }
-
 }

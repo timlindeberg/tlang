@@ -129,7 +129,6 @@ object Main extends Logging {
   }
 }
 
-
 case class Main(ctx: Context) extends Logging {
 
   import Main._
@@ -168,7 +167,6 @@ case class Main(ctx: Context) extends Logging {
       CompilationWatcher(ctx, CUs, options, sources, compileAndExecute).watch()
     exit(0)
   }
-
 
   private def getSources: List[Source] = options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin
 
@@ -284,8 +282,8 @@ case class Main(ctx: Context) extends Logging {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    val execution = programExecutor.executeAsync(sour
-      awaitExecution(execution, source, boxLines.last)
+    val execution = programExecutor.executeAsync(source)
+    awaitExecution(execution, source, boxLines.last)
   }
 
   private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
