@@ -14,15 +14,12 @@ class Vector<T>: List<T>, Stack<T> =
 
 	Def new() = Clear()
 
-
 	Def new(elements: Collection<T>) =
 		Clear()
 		AddAll(elements)
 
-	Def implicit new(array: T[]) =
-		Clear()
-		for(val e in array)
-			Add(e)
+	Def implicit new(array: T[]) = init(array, array.Size())
+	Def new(array: T[], size: Int) =  init(array, size)
 
 	Def new(capacity: Int) = data = new T[capacity]
 
@@ -33,7 +30,6 @@ class Vector<T>: List<T>, Stack<T> =
 			data[i] = value
 
 	/* ------------------------------ List ------------------------------  */
-
 
 	Def Get(index: Int) = data[index]
 	Def Set(index: Int, value: T) = (data[index] = value)
@@ -98,13 +94,16 @@ class Vector<T>: List<T>, Stack<T> =
 
 	/* ------------------------------ Misc ------------------------------  */
 
-	Def Copy(): Vector<T> = new Vector<T>(data)
+	Def Copy(): Vector<T> = new Vector<T>(data, size)
 
 	Def toString() = IsEmpty() ? "[]" : "[ " + MakeString(", ") + " ]"
 
-	/**
-	* Increases the size of the underlying storage.
-	*/
+	def init(array: T[], size: Int) =
+		this.size = size
+		data = new T[size]
+		for(var i = 0 ; i < size; i++)
+			data[i] = array[i]
+
 	def increaseStorage() =
 		val newData = new T[(data.Size() * 3) / 2 + 1]
 
