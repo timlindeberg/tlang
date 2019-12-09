@@ -287,11 +287,10 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
-
     cancelExecution = Some(execution.cancel)
     val timeout = options(ExecTimeoutFlag)
     val result = Try(Await.result(execution.future, timeout))
-    cancelExecution = None
+    cancelExecution ifDefined { cancel => cancel() }
     println(endOfBox)
     result match {
       case Success(ExecutionResult(_, _, Some(exception))) => printStackTrace(source, exception)
@@ -299,6 +298,7 @@ case class Main(ctx: Context) extends Logging {
       case Failure(_: CancellationException)               => printCancelation()
       case _                                               =>
     }
+    cancelExecution = None
   }
 
   private def printExecLine(line: String, lineNumber: Int): Unit = {
