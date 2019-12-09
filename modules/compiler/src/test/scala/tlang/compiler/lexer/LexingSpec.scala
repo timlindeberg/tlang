@@ -12,7 +12,6 @@ class LexingSpec extends UnitSpec {
 
   behavior of "A lexer"
 
-
   it should "should parse key words" in {
     lex("val Var def protected static this implicit null") should contain inOrder(
       new Token(PRIVVAL),
@@ -25,7 +24,6 @@ class LexingSpec extends UnitSpec {
       new Token(NULL)
     )
   }
-
 
   it should "should parse symbols" in {
     lex("+ += -- ++ <<= ^= . ; !! ?: ? ?.") should contain inOrder(
@@ -44,7 +42,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse identifiers" in {
     lex("abc _ABC ___ a123 _123 statica _return") should contain inOrder(
       ID("abc"),
@@ -56,7 +53,6 @@ class LexingSpec extends UnitSpec {
       ID("_return")
     )
   }
-
 
   it should "should parse whitespace tokens" in {
     lex(s"$NL$NL\t$NL\t\t$NL") should contain theSameElementsInOrderAs Seq(
@@ -73,7 +69,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse char literals" in {
     lex("""'a' '\n' '\t' '\u001b' '\''""") should contain inOrder(
       CHARLIT('a'),
@@ -84,7 +79,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse string literals" in {
     lex(""" "abc" "a \t" "\n" "\u001b 55 \u001b[31m" """) should contain inOrder(
       STRLIT("abc"),
@@ -93,7 +87,6 @@ class LexingSpec extends UnitSpec {
       STRLIT("\u001b 55 \u001b[31m")
     )
   }
-
 
   it should "should parse multi line string literals" in {
     lex(
@@ -106,7 +99,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse hexadecimal number literals" in {
     lex("0x0 0x1 0x1A 0x123456789AL 0xabCdeF 0x7FFFFFFFFFFFFFFFl") should contain inOrder(
       INTLIT(0),
@@ -118,7 +110,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse binary number literals" in {
     lex("0b0 0b1 0b01010101 0b1111111111111111111111111111111111l") should contain inOrder(
       INTLIT(0),
@@ -127,7 +118,6 @@ class LexingSpec extends UnitSpec {
       LONGLIT(17179869183L)
     )
   }
-
 
   it should "should parse number literals" in {
     lex("123 12f 1.0 1e4 5E-1F 123_456_789_0123L") should contain inOrder(
@@ -140,7 +130,6 @@ class LexingSpec extends UnitSpec {
     )
   }
 
-
   it should "should parse line comments" in {
     lex(
       """|123 //  123 abc ef gh
@@ -150,7 +139,6 @@ class LexingSpec extends UnitSpec {
       COMMENTLIT("// abc 123")
     )
   }
-
 
   it should "should parse block comments" in {
     lex(
@@ -164,5 +152,4 @@ class LexingSpec extends UnitSpec {
 
   private def lex(s: String) = newLexer(StringSource(s, ""))
   private def newLexer = Lexer(mock[Reporter], mock[ErrorStringContext])
-
 }

@@ -77,5 +77,4 @@ case class ReplState(prettyPrinter: PrettyPrinter, private val _imports: Imports
     val newStats = Block(PrintMarker :: (_newStatements :+ PrintMarker))
     Block(history :+ newStats)
   }
-
 }

@@ -15,11 +15,9 @@ import tlang.utils.{Enumerable, Enumeration, Logging}
 
 import scala.concurrent._
 
-
 trait ExecutionState
 case object AwaitingExecution extends ExecutionState
 case object Normal extends ExecutionState
-
 
 object ReplActor {
   case object Start
@@ -207,7 +205,6 @@ class ReplActor(
           input.moveCursorTo(x, y, moveSecondary = false)
           true
       }
-
     }
 
     case object MoveToStartOrEndOfLine extends Command(Normal, 1) {
@@ -220,7 +217,6 @@ class ReplActor(
           input.moveCursorToEndOfLine(isShiftDown)
           true
       }
-
     }
 
     case object RemoveToStartOfLine extends Command(Normal, 1) {
@@ -230,7 +226,6 @@ class ReplActor(
           input.removeToStartOfLine()
           true
       }
-
     }
 
     case object CopyPasteCut extends Command(Normal, 1) {
@@ -246,7 +241,6 @@ class ReplActor(
           input.cutSelected()
           true
       }
-
     }
 
     case object ExitProgram extends Command(Normal, 2) {
@@ -256,9 +250,7 @@ class ReplActor(
           self ! Stop
           false
       }
-
     }
-
 
     case object CancelExecution extends Command(AwaitingExecution, 2) {
 
@@ -268,7 +260,6 @@ class ReplActor(
           state = Normal
           false
       }
-
     }
 
     case object NewCharacter extends Command(Normal, 3) {
@@ -278,7 +269,6 @@ class ReplActor(
           input += char
           true
       }
-
     }
 
     override protected lazy val Values: List[Command] = Enumeration.instancesOf[Command].sortBy(_.priority)

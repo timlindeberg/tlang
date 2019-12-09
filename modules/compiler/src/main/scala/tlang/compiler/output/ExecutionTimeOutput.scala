@@ -29,7 +29,6 @@ case class ExecutionTimeOutput(
     if (executionTimes.isEmpty)
       return ""
 
-
     val totalTime = executionTimes.values.sum
     val executedPhases = Main.CompilerPhases
       .map(_.phaseName)
@@ -55,7 +54,6 @@ case class ExecutionTimeOutput(
       .contents(columns)
       .render()
   }
-
 
   override def json: Json = Json("executionTimes" -> executionTimes)
 }

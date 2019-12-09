@@ -37,5 +37,4 @@ class MethodHandler private[cafebabe](m: MethodInfo, c: Option[CodeAttributeInfo
     }
     m.accessFlags = flags
   }
-
 }

@@ -2,7 +2,6 @@ package tlang
 package formatting
 package grid
 
-
 trait Width
 trait FixedWidth extends Width {
   def apply(maxWidth: Int): Int

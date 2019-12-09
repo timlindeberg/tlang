@@ -115,5 +115,4 @@ class CompilerMessageSpec extends UnitSpec with MessageTesting {
   ): CompilerMessages = {
     CompilerMessages(maxErrors, warningIsError, suppressWarnings)
   }
-
 }

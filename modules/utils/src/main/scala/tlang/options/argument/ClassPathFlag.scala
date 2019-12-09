@@ -4,7 +4,6 @@ package argument
 
 import tlang.formatting.{ErrorStringContext, Formatter}
 
-
 case object ClassPathFlag extends ArgumentFlag[Set[String]] {
   override val name = "classpath"
   override val shortFlag = Some("cp")

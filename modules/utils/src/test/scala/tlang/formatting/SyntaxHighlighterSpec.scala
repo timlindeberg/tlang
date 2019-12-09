@@ -8,9 +8,7 @@ import tlang.utils.Position
 
 class SyntaxHighlighterSpec extends UnitSpec {
 
-
   behavior of "A syntax highlighter"
-
 
   it should "highlight valid code" in {
     val code =
@@ -23,7 +21,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
          |comment */
          |val d = 1.0
          |""".stripMargin
-
 
     def colors(formatter: Formatter) = {
       import formatter._
@@ -55,7 +52,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
         (NoColor, 9, 1, 9, 1)
       )
     }
-
 
     test("With default color scheme") {
       val syntaxHighlighter = makeSyntaxHighlighter(colors(Formatter.PrettyFormatter), Formatter.PrettyFormatter)
@@ -101,9 +97,7 @@ class SyntaxHighlighterSpec extends UnitSpec {
             |\u001b[0m""".stripMargin
       )
     }
-
   }
-
 
   it should "not highlight code when colors are disabled" in {
     val formatter = Formatter(useColor = false)
@@ -114,7 +108,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
 
     syntaxHighlighter("ABC DEF") shouldBe theSameInstanceAs("ABC DEF")
   }
-
 
   it should "not highlight NoColor tokens" in {
     val code =
@@ -147,7 +140,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
     )
   }
 
-
   it should "keep colors that are already in the given string" in {
     val code =
       s"""|val \u001b[31ma = 5
@@ -158,7 +150,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |line
           |commen\u001b[1;4;42mt */
           |""".stripMargin
-
 
     val formatter = Formatter.PrettyFormatter
     import formatter._
@@ -199,7 +190,6 @@ class SyntaxHighlighterSpec extends UnitSpec {
           |\u001b[0m""".stripMargin
     )
   }
-
 
   it should "highlight markings" in {
     val code =
@@ -267,5 +257,4 @@ class SyntaxHighlighterSpec extends UnitSpec {
     }
       .toList
   }
-
 }

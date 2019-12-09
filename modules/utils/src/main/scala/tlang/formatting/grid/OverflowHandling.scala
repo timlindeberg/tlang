@@ -2,7 +2,6 @@ package tlang
 package formatting
 package grid
 
-
 trait OverflowHandling {
   def apply(line: String, width: Int)(implicit formatter: Formatter): List[String] = {
     if (line.isEmpty)

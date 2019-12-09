@@ -12,29 +12,30 @@ case class AST(name: Term.Name, params: Seq[Term.Param]) {
   val args: Seq[Term.Name] = params.map(p => Term.Name(p.name.value))
   val patTerms: Seq[Pat.Var.Term] = args.map(a => Pat.Var.Term(a))
   val commonness: Int = -FillTreeHelpers.TreeStatistics.getOrElse(name.syntax, 0)
-
 }
-
 
 class FillTreeHelpers extends StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
     import FillTreeHelpers._
 
+    // Intellij formatter cant handle q string interpolators. It inserts a space
+    // every time the file is formatted
+    // @formatter:off
     defn match {
-      case q"object Trees { ..$stats } " =>
+      case q"object Trees { ..$stats }" =>
         val asts = getASTs(stats)
 
         val filledTrees = stats.map {
-          case q"class Copier "                              =>
+          case q"class Copier"                              =>
             q"class Copier { ..${ fillCopier(asts) } }"
-          case q"class LazyCopier extends $_ "               =>
+          case q"class LazyCopier extends $_"               =>
             q"class LazyCopier extends Copier { ..${ fillLazyCopier(asts) } }"
-          case q"trait Transformer { ..$transformerStats } " =>
+          case q"trait Transformer { ..$transformerStats }" =>
             q"trait Transformer { ..${ fillTransformer(transformerStats, asts) } }"
-          case q"trait Traverser { ..$traverserStats } "     =>
+          case q"trait Traverser { ..$traverserStats }"     =>
             q"trait Traverser { ..${ fillTraverser(traverserStats, asts) } }"
-          case s                                             => s
+          case s                                            => s
         }
 
         //val file = Paths.get("C:\\Users\\Tim Lindeberg\\IdeaProjects\\T-Compiler\\tree.txt")
@@ -44,6 +45,7 @@ class FillTreeHelpers extends StaticAnnotation {
       case _                             =>
         abort("@GenerateTreeHelpers must annotate Trees object.")
     }
+    // @formatter:on
   }
 }
 
@@ -182,7 +184,7 @@ object FillTreeHelpers {
     }
 
   def fillTransformer(transformerStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = transformerStats map {
-    case q"final def transformChildren(t: Tree): Tree = ??? " =>
+    case q"final def transformChildren(t: Tree): Tree = ???    " =>
       val cases = asts
         .sortBy(_.commonness)
         .map { case ast@AST(name, params) =>
@@ -199,11 +201,11 @@ object FillTreeHelpers {
             ..case $cases
          }
        """
-    case s                                                    => s
+    case s                                                       => s
   }
 
   def fillTraverser(traverserStats: Seq[Stat], asts: Seq[AST]): Seq[Stat] = traverserStats map {
-    case q"final def traverseChildren(t: Tree): Unit = ??? " =>
+    case q"final def traverseChildren(t: Tree): Unit = ???    " =>
       val cases = asts
         .sortBy(_.commonness)
         .map { case ast@AST(_, params) =>
@@ -221,7 +223,7 @@ object FillTreeHelpers {
            ..case $cases
           }
        """
-    case s                                                   => s
+    case s                                                      => s
   }
 
   // Used to log trees to file during compilation

@@ -21,7 +21,6 @@ trait TypingErrors extends ErrorHandling {
 
   import errorStringContext._
 
-
   private def containsErrorType(product: Product): Boolean =
     product.productIterator.exists {
       case s: String                                                             => s == CompilerMessage.ErrorName
@@ -50,7 +49,6 @@ trait TypingErrors extends ErrorHandling {
       case 1 => err"${ expected.head }"
       case n => expected.take(n - 1).map(t => err"$t").mkString(", ") + " or " + expected.last + ""
     }
-
   }
   case class WrongType(expected: String, found: String, override val pos: Positioned)
     extends TypeCheckingError(0, pos) {
@@ -100,7 +98,6 @@ trait TypingErrors extends ErrorHandling {
   case class InvalidPrivacyAccess(sym: Symbol with Modifiable, clazz: ClassSymbol, callingClass: ClassSymbol, override val pos: Positioned)
     extends TypeCheckingError(9, pos) {
     lazy val message: String = {
-
       val accessibility = sym.accessibility match {
         case Protected() => "protected"
         case Private()   => "private"
@@ -115,13 +112,11 @@ trait TypingErrors extends ErrorHandling {
       val callingClassName = callingClass.name
       err"Cannot use $accessibility " + tpe + err" in class $className from class $callingClassName."
     }
-
   }
 
   case class AssignUnit(override val pos: Positioned) extends TypeCheckingError(10, pos) {
     lazy val message: String = err"Cannot assign variable to an expression of type $TUnit."
   }
-
 
   case class MissingAnnotationValues(name: String, missing: List[(String, Type)], override val pos: Positioned)
     extends TypeCheckingError(11, pos) {
@@ -156,7 +151,6 @@ trait TypingErrors extends ErrorHandling {
         err"The class ${ args(0) } does not"
       else
         err"None of the classes " + args.map { arg => err"$arg" }.mkString(err" or ")
-
   }
 
   case class OperatorWrongReturnType(operatorSignature: String, expected: Type, found: Type, override val pos: Positioned)
@@ -186,7 +180,6 @@ trait TypingErrors extends ErrorHandling {
   case class ValueMustBeInitialized(variableName: String, override val pos: Positioned)
     extends TypeCheckingError(19, pos) {
     lazy val message = err"Value $variableName is not initialized."
-
   }
 
   case class NotOnNonNullable(override val pos: Positioned)
@@ -291,7 +284,6 @@ trait TypingErrors extends ErrorHandling {
     lazy val message = err"Cannot check if non nullable type $tpe is null."
   }
 
-
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------
@@ -304,6 +296,5 @@ trait TypingErrors extends ErrorHandling {
   //---------------------------------------------------------------------------------------
   //  Private methods
   //---------------------------------------------------------------------------------------
-
 
 }

@@ -6,7 +6,6 @@ import better.files.File
 import tlang.formatting.Formatter
 import tlang.options.ArgumentFlag
 
-
 case object DirectoryFlag extends ArgumentFlag[Set[File]] {
   override val name = "directory"
   override val shortFlag = Some("d")
@@ -21,6 +20,4 @@ case object DirectoryFlag extends ArgumentFlag[Set[File]] {
   override def parseValue(args: Set[String]): Set[File] = {
     if (args.isEmpty) Set(File(".")) else args.map(File(_))
   }
-
-
 }

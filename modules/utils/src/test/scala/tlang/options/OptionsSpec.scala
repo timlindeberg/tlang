@@ -8,9 +8,7 @@ class OptionsSpec extends UnitSpec {
 
   implicit val errorContext: ErrorStringContext = ErrorStringContext()(Formatter.SimpleFormatter)
 
-
   behavior of "An option parser"
-
 
   it should "parse positional arguments" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
@@ -21,7 +19,6 @@ class OptionsSpec extends UnitSpec {
     val options = Options(Set(), Some(positionalArgument), args)
     options(positionalArgument) shouldBe Set("ABC", "DEF", "GHI")
   }
-
 
   it should "parse boolean flags" in {
     val a: BooleanFlag = new BooleanFlag {
@@ -44,7 +41,6 @@ class OptionsSpec extends UnitSpec {
     options(b) shouldBe true
     options(c) shouldBe false
   }
-
 
   it should "parse argument flags" in {
     val a: ArgumentFlag[Set[String]] = new ArgumentFlag[Set[String]] {
@@ -73,7 +69,6 @@ class OptionsSpec extends UnitSpec {
     options(b) shouldBe Set("abc")
     options(c) shouldBe Set()
   }
-
 
   it should "parse optional argument flags" in {
     val a: OptionalArgumentFlag[Set[String]] = new OptionalArgumentFlag[Set[String]] {
@@ -109,9 +104,7 @@ class OptionsSpec extends UnitSpec {
     options(a) shouldBe Set("abc", "abcdef")
     options(b) shouldBe Set("DEF")
     options(c) shouldBe Set()
-
   }
-
 
   it should "parse number flags" in {
     val a: NumberFlag = new NumberFlag {
@@ -137,7 +130,6 @@ class OptionsSpec extends UnitSpec {
     options(b) shouldBe 1
     options(c) shouldBe 789
   }
-
 
   it should "parse dictionary flags" in {
     val a: DictionaryFlag[Map[String, String]] = new DictionaryFlag[Map[String, String]] {
@@ -171,7 +163,6 @@ class OptionsSpec extends UnitSpec {
     )
     options(c) shouldBe Map()
   }
-
 
   it should "parse flags in any order" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
@@ -261,7 +252,6 @@ class OptionsSpec extends UnitSpec {
     )
   }
 
-
   it should "use short flag" in {
     val argFlag: ArgumentFlag[Set[String]] = new ArgumentFlag[Set[String]] {
       override def name = "arg"
@@ -276,7 +266,6 @@ class OptionsSpec extends UnitSpec {
 
     options(argFlag) shouldBe Set("ABC", "DEF")
   }
-
 
   it should "remove duplicates" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
@@ -297,7 +286,6 @@ class OptionsSpec extends UnitSpec {
     options(positionalArgument) shouldBe Set("ABC")
   }
 
-
   it should "throw when given an invalid flag" in {
     val a: BooleanFlag = new BooleanFlag {
       override def name = "a"
@@ -314,9 +302,7 @@ class OptionsSpec extends UnitSpec {
     val args = "--a --b --d".split(" ")
     intercept[IllegalArgumentException] { Options(Set(a, b, c), None, args) }
       .getMessage should include("--d")
-
   }
-
 
   it should "throw when given an invalid argument to a dictionary flag" in {
     val flags: Set[FlagArgument[_]] = Set(
@@ -353,5 +339,4 @@ class OptionsSpec extends UnitSpec {
     intercept[IllegalArgumentException] { Options(flags, None, "--a 1234567891011121314151617181920".split(" ")) }
       .getMessage should include("1234567891011121314151617181920")
   }
-
 }

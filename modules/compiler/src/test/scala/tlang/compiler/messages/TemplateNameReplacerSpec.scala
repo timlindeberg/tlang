@@ -14,5 +14,4 @@ class TemplateNameReplacerSpec extends UnitSpec {
     TemplateNameReplacer("-A$-B$T1$T2--") shouldBe "A<B<T1, T2>>"
     TemplateNameReplacer("-A$-B$T1$-C$T2$T3--$T4$-D$T5$T6-$T7-") shouldBe "A<B<T1, C<T2, T3>>, T4, D<T5, T6>, T7>"
   }
-
 }

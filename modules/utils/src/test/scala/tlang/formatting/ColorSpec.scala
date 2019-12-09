@@ -6,7 +6,6 @@ import tlang.testutils.UnitSpec
 
 class ColorSpec extends UnitSpec {
 
-
   it should "produce standard colors" in {
     NoColor.toString should matchWithAnsi("")
     Reset.toString should matchWithAnsi("\u001b[0m")
@@ -33,13 +32,11 @@ class ColorSpec extends UnitSpec {
     WhiteBG.toString should matchWithAnsi("\u001b[47m")
   }
 
-
   it should "color strings" in {
     Black("ABC") should matchWithAnsi("\u001b[30mABC\u001b[0m")
     Red("ABC") should matchWithAnsi("\u001b[31mABC\u001b[0m")
     Red("") should matchWithAnsi("")
   }
-
 
   it should "color any value" in {
     test("With normal toString") {
@@ -56,7 +53,6 @@ class ColorSpec extends UnitSpec {
     }
   }
 
-
   it should "be implicitly convertible to string" in {
     val sb = new StringBuilder
     sb ++= "ABC"
@@ -70,13 +66,11 @@ class ColorSpec extends UnitSpec {
     assertColor(Red)
   }
 
-
   it should "be added to strings" in {
     Red + "ABC" + Green + "DEF" + Yellow + "GHI" + Reset should matchWithAnsi(
       "\u001b[31mABC\u001b[32mDEF\u001b[33mGHI\u001b[0m"
     )
   }
-
 
   it should "be combined with each other" in {
     val color = Red + Underline + Bold + GreenBG
@@ -99,19 +93,16 @@ class ColorSpec extends UnitSpec {
     Red - NoColor shouldBe Red
   }
 
-
   it should "use the last foreground or background color added" in {
     val color = Red + RedBG + Underline + Bold + Green + GreenBG + Yellow + YellowBG
     color.toString should matchWithAnsi("\u001b[1;4;33;43m")
   }
-
 
   it should "adding reset should result in no color" in {
     val color = Red + RedBG + Underline + Bold + Green + GreenBG + Yellow + YellowBG + Reset
     color.toString should matchWithAnsi("")
     color shouldBe NoColor
   }
-
 
   it should "be created from an ansi escape sequence" in {
     Color("\u001b[31m").toString shouldBe "\u001b[31m"
@@ -128,7 +119,6 @@ class ColorSpec extends UnitSpec {
     intercept[IllegalArgumentException] { Color("abc\u001b[31mdef") }
       .getMessage should include("abc\u001b[31mdef")
   }
-
 
   it should "have correct color type" in {
     Color(RED).colorType shouldBe ColorType.Foreground
@@ -155,7 +145,6 @@ class ColorSpec extends UnitSpec {
 
     (Green + Reset).colorType shouldBe ColorType.NoColor
   }
-
 
   it should "produce correct string with colors" in {
     val BoldGreen = Bold + Green
@@ -223,9 +212,7 @@ class ColorSpec extends UnitSpec {
         BoldGreen //  'f'
       )
     }
-
   }
-
 
   it should "determine whether a reset is needed between two colors" in {
     Red needsResetBefore NoColor shouldBe true
@@ -250,7 +237,6 @@ class ColorSpec extends UnitSpec {
     (GreenBG + Red) needsResetBefore Bold shouldBe true
   }
 
-
   it should "throw when using unsupported color values" in {
     intercept[IllegalArgumentException] { Color(-5) }
       .getMessage should include("-5")
@@ -261,5 +247,4 @@ class ColorSpec extends UnitSpec {
     intercept[IllegalArgumentException] { Color(1337) }
       .getMessage should include("1337")
   }
-
 }

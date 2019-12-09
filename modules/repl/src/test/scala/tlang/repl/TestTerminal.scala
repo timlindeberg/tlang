@@ -17,7 +17,6 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-
 /**
  * Class used for doing integration tests on the REPL.
  * The Terminal is both the starting point and the end point of the REPL.
@@ -135,7 +134,6 @@ class TestTerminal(width: Int, height: Int) extends Terminal {
   override def clearScreen(): Unit = {}
   override def addResizeListener(listener: TerminalResizeListener): Unit = {}
 
-
   private def convert(sGR: SGR): Color = sGR match {
     case SGR.BOLD      => Colors.Bold
     case SGR.REVERSE   => Colors.Inverse
@@ -166,7 +164,6 @@ class TestTerminal(width: Int, height: Int) extends Terminal {
     case ANSI.WHITE   => Colors.WhiteBG
   }
 }
-
 
 class TestTerminalExecution() extends Matchers with AnsiMatchers {
 
@@ -203,5 +200,4 @@ class TestTerminalExecution() extends Matchers with AnsiMatchers {
         promise.success(box)
     }
   }
-
 }

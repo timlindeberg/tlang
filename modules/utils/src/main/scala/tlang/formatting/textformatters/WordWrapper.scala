@@ -229,5 +229,4 @@ case class WordWrapper(tabSize: Int = 2, wrapAnsiColors: Boolean = true) {
     }
     (breakPoint, 0)
   }
-
 }

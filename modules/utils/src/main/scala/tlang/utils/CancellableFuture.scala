@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.{CancellationException, ExecutionContext, Future, Promise}
 
-
 object CancellableFuture {
 
   type CancelFunction = () => Boolean
@@ -31,7 +30,6 @@ object CancellableFuture {
       promise.tryFailure(new CancellationException)
     })
   }
-
 }
 
 case class CancellableFuture[T](future: Future[T], cancel: CancellableFuture.CancelFunction)

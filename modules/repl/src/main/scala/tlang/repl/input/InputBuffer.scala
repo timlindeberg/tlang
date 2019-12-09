@@ -22,7 +22,6 @@ object InputBuffer {
     lines.toList
   }
 
-
   def apply(tabWidth: Int): InputBuffer = {
     InputBuffer(tabWidth, Cord.empty :+ "", Cursor(), Cursor(), 0 :: Nil)
   }
@@ -33,7 +32,6 @@ object InputBuffer {
     InputBuffer(tabWidth, Cord.empty :+ s, Cursor(), Cursor(), linePositions)
   }
 }
-
 
 case class InputBuffer(
   tabWidth: Int,
@@ -48,7 +46,6 @@ case class InputBuffer(
   def height: Int = linePositions.length
 
   def isEmpty: Boolean = cord.isEmpty
-
 
   def +(char: Char): InputBuffer = add(char)
   def add(char: Char): InputBuffer = addString(s"$char")
@@ -168,7 +165,6 @@ case class InputBuffer(
      """.stripMargin.trim
   }
 
-
   private def selection: (Int, Int) = orderedCursors.map(_.position)
 
   private def orderedCursors: (Cursor, Cursor) =
@@ -176,7 +172,6 @@ case class InputBuffer(
       (secondaryCursor, mainCursor)
     else
       (mainCursor, secondaryCursor)
-
 
   private def addString(str: String): InputBuffer = {
     val buffer = if (mainCursor != secondaryCursor) removeSelected() else this
@@ -303,7 +298,6 @@ case class InputBuffer(
     Cursor(pos, x, y)
   }
 
-
   private def linePosition(line: Int): (Int, Int) = {
     val start = linePositions(line)
     val end = if (line == 0) cord.length else linePositions(line - 1) - 1
@@ -313,5 +307,4 @@ case class InputBuffer(
   private def currentLineIndex = lineIndex(mainCursor.position, linePositions)
   private def lineIndex(position: Int, linePositions: List[Int]) =
     linePositions.indices.find(i => linePositions(i) <= position).getOrElse(0)
-
 }

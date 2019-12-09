@@ -7,14 +7,12 @@ import tlang.testutils.UnitSpec
 
 class ErrorStringContextSpec extends UnitSpec {
 
-
   it should "make text bold" in {
     val errorStringContext = makeErrorStringContext(useColor = true)
     import errorStringContext.ErrorStringContext
 
     err"ABC DEF" should matchWithAnsi("\u001b[1mABC DEF\u001b[0m")
   }
-
 
   it should "should mark interpolated values with color" in {
     val errorStringContext = makeErrorStringContext(useColor = true)
@@ -32,7 +30,6 @@ class ErrorStringContextSpec extends UnitSpec {
     err"$x ABC $y DEF $z" should matchWithAnsi("\u001b[1;35mx\u001b[0m\u001b[1m ABC \u001b[35my\u001b[0m\u001b[1m DEF \u001b[35mz\u001b[0m")
   }
 
-
   it should "should mark interpolated values without color" in {
     val errorStringContext = makeErrorStringContext(useColor = false)
     import errorStringContext.ErrorStringContext
@@ -48,7 +45,6 @@ class ErrorStringContextSpec extends UnitSpec {
 
     err"$x ABC $y DEF $z" should matchWithAnsi("'x' ABC 'y' DEF 'z'")
   }
-
 
   it should "transform interpolated values" in {
     test("One transform") {
@@ -79,9 +75,7 @@ class ErrorStringContextSpec extends UnitSpec {
       err"ABC DEF" should matchWithAnsi("ABC DEF")
       err"$abc DEF" should matchWithAnsi("'---def------def------def---' DEF")
     }
-
   }
-
 
   it should "suggest corrections" in {
     val alternatives = List("ABC", "DEF", "GHI")
@@ -206,7 +200,6 @@ class ErrorStringContextSpec extends UnitSpec {
       import errorStringContext.{ErrorStringContext, suggestion}
       err"Some text.${ suggestion("ABCD", alternatives) }More text." shouldBe "Some text. Did you mean 'DEF'? More text."
     }
-
   }
 
   private def makeErrorStringContext(
@@ -217,6 +210,4 @@ class ErrorStringContextSpec extends UnitSpec {
     val formatter = testFormatter(useColor = useColor)
     ErrorStringContext(alternativeSuggestor = alternativeSuggestor, transforms = transforms)(formatter)
   }
-
-
 }

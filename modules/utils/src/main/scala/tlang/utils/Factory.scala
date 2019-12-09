@@ -1,7 +1,6 @@
 package tlang
 package utils
 
-
 abstract class Factory[Type](dependencies: Any*) {
   //
   //  private val cache: mutable.Map[Class[_], ConstructorWithArguments[_]] = mutable.Map()
@@ -46,6 +45,5 @@ abstract class Factory[Type](dependencies: Any*) {
   //      dependencies.find(v => tpe.isAssignableFrom(v.getClass))
   //
   //  }
-
 
 }

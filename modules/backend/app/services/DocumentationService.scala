@@ -60,6 +60,4 @@ class DocumentationService @Inject()(config: Configuration) {
     val fileName = path.getFileName.toString
     fileName.replaceAll("""^(\d+)_""", "").replaceAll("""\.md$""", "")
   }
-
-
 }

@@ -5,7 +5,6 @@ package argument
 import tlang.formatting.Colors.{ColorNameMap, ColorScheme}
 import tlang.formatting.{Colors, ErrorStringContext, Formatter}
 
-
 case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
 
   import tlang.formatting.Colors.ColorScheme._
@@ -18,7 +17,6 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
        |Define the color scheme to use when printing error messages and code output.
        |Argument is a list comma separated key-values, type ${ flag(HelpFlag.Name) } ${ highlight(name) } for more details.
       """
-
 
   override def extendedDescription(implicit formatter: Formatter): String =
     s"""
@@ -93,5 +91,4 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
     import formatter._
     formatter.list(Colors.ColorNames.map(Magenta))
   }
-
 }

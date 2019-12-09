@@ -12,7 +12,6 @@ trait OutputHandler {
   def +=(output: Output): Unit = add(output)
 
   def flush(): Unit
-
 }
 
 case class PrettyOutputHandler() extends OutputHandler {
@@ -30,5 +29,4 @@ case class JSONOutputHandler() extends OutputHandler {
 
   override def add(output: Output): Unit = content ++= output.json
   override def flush(): Unit = println(JSON(content))
-
 }

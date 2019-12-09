@@ -5,7 +5,6 @@ import tlang.testutils.UnitSpec
 
 import scala.collection.mutable
 
-
 class JSONSpec extends UnitSpec {
 
   case class TestClass() {
@@ -68,5 +67,4 @@ class JSONSpec extends UnitSpec {
     )) shouldBe
       """{"A":[1,"2",false,true,null],"B":{"C":null,"D":"a","E":["\"ABC\"","abc"]},"\"ABC\"":"ABC"}"""
   }
-
 }

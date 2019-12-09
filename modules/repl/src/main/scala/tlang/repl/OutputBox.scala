@@ -11,7 +11,6 @@ import tlang.repl.input.InputBuffer
 
 import scala.concurrent.duration.FiniteDuration
 
-
 case class RenderState(
   input: String = "",
   highlightedInput: String = "",
@@ -42,7 +41,6 @@ object OutputBox {
       formatter.spinner
     )
   }
-
 }
 
 case class OutputBox private(
@@ -87,7 +85,6 @@ case class OutputBox private(
     ))
   }
 
-
   def exit(): OutputBox = {
     val content = Bold("Thanks for using ") + SuccessColor(Constants.ReplCommandName) + Bold("!")
     copy(renderState = renderState.copy(content = List(List(content))))
@@ -113,7 +110,6 @@ case class OutputBox private(
       renderState = renderState.copy(input = input, highlightedInput = highlightedInput)
     )
   }
-
 
   def success(output: String, truncate: Boolean): OutputBox = setResult(output, truncate, SuccessColor, "Result")
   def failure(output: String, truncate: Boolean): OutputBox = setResult(output, truncate, ErrorColor, "Error")
@@ -170,5 +166,4 @@ case class OutputBox private(
     val truncated = if (diff <= 0) lines else lines :+ color(s"... $diff more")
     truncated.mkString(NL)
   }
-
 }

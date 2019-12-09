@@ -133,5 +133,4 @@ case class SafeEvaluator(ctx: Context, dockerScript: String, timeout: Duration) 
       case e: RuntimeException => // do nothing
     }
   }
-
 }

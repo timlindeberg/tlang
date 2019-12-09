@@ -52,5 +52,4 @@ case class TabReplacer(tabWidth: Int) {
 
     (adjustedLines, positions)
   }
-
 }

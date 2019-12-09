@@ -9,7 +9,6 @@ import tlang.testutils.TestConstants
 import scala.collection.mutable
 import scala.util.matching.Regex
 
-
 trait TestPath
 case class TestDirectory(name: String, children: Array[TestPath]) extends TestPath
 case class TestFile(file: File) extends TestPath
@@ -25,7 +24,6 @@ object CompilerIntegrationTestSpec {
     sys.env.get("pattern")
       .filter { _.nonEmpty }
       .map { _.replaceAll(" +", "").toLowerCase.r }
-
 }
 
 trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContext {
@@ -116,5 +114,4 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
       // Ignore empty files
       firstLine.isEmpty || IgnoreRegex.findFirstIn(firstLine.get).isDefined
     })
-
 }

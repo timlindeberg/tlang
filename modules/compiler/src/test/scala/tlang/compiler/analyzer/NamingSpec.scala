@@ -22,7 +22,6 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
       ClassDecl("C")
     )
 
-
     val globalScope = new GlobalScope(mock[ClassSymbolLocator])
     val nameAnalyser = createNameAnalyzer(classes, globalScope)
     nameAnalyser.addSymbols()
@@ -173,9 +172,7 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
   it should "add parent symbols in binding stage" ignore {}
   it should "add methods to class symbol in binding stage" ignore {}
 
-
   /* -------------------- Helpers ---------------------*/
-
 
   private implicit val formatter: Formatter = testFormatter(useColor = false)
 
@@ -183,7 +180,6 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
   private val reporter = mock[Reporter]
   private val ctx = Context(reporter, PrettyOutputHandler())
   private val imports = Imports(ctx, errorStringContext, Nil)
-
 
   private def createNameAnalyzer(clazz: ClassDeclTree): NameAnalyser = {
     createNameAnalyzer(List(clazz))
@@ -199,6 +195,4 @@ class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
     val cu = CompilationUnit(Package(), classes, imports)
     NameAnalyser(reporter, errorStringContext, cu, globalScope)
   }
-
-
 }

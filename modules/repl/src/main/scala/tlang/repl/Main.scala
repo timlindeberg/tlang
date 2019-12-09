@@ -26,7 +26,6 @@ import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
 import tlang.utils.{DefaultProgramExecutor, Logging}
 
-
 object Main extends Logging {
 
   import tlang.Constants._
@@ -72,7 +71,6 @@ object Main extends Logging {
       sys.exit()
     }
 
-
     val terminal = TerminalFactory.createTerminal()
     val repl = createRepl(terminal, options)
     repl ! Start
@@ -85,7 +83,6 @@ object Main extends Logging {
     val tempDir = File.newTemporaryDirectory("repl")
 
     val ctx = createContext(options, tempDir)
-
 
     val prettyPrinter = PrettyPrinter()
     val errorStringContext = ErrorStringContext()
@@ -130,7 +127,6 @@ object Main extends Logging {
     repl
   }
 
-
   private def parseOptions(args: Array[String]): Options = {
     val formatter = Formatter.SimpleFormatter
 
@@ -152,10 +148,8 @@ object Main extends Logging {
     )
   }
 
-
   private def printHelp(args: Set[String] = Set("")) = {
     println("TODO")
     sys.exit(0)
   }
-
 }

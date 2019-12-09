@@ -4,7 +4,6 @@ package argument
 
 import tlang.formatting.Formatter
 
-
 object HelpFlag {
   val Name = "help"
   val ShortFlag = Some("h")
@@ -36,5 +35,4 @@ class HelpFlag(allFlags: => Set[FlagArgument[_]]) extends OptionalArgumentFlag[S
       """
 
   override def parseValue(args: Set[String]): Set[String] = args
-
 }

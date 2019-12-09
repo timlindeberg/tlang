@@ -127,5 +127,4 @@ case class CodegenerationStackTrace(
       case _                                                      => signature
     }
   }
-
 }

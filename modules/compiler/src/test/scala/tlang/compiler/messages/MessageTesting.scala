@@ -23,5 +23,4 @@ trait MessageTesting {
       override def notes: List[CompilerMessage] = ex
     }
   }
-
 }

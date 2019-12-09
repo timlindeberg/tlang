@@ -12,7 +12,6 @@ object CompilationActor {
   def props(out: ActorRef, evaluator: SafeEvaluator) = Props(new CompilationActor(out, evaluator))
 }
 
-
 object CompilationMessageType {
   val EVALUATE = "EVALUATE"
   val CANCEL = "CANCEL"
@@ -23,7 +22,6 @@ object CompilationMessageType {
   val EXECUTION_ERROR = "EXECUTION_ERROR"
   val INTERNAL_COMPILER_ERROR = "INTERNAL_COMPILER_ERROR"
 }
-
 
 class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
 
@@ -86,5 +84,4 @@ class CompilationActor(out: ActorRef, evaluator: SafeEvaluator) extends Actor {
   private def hasType(json: JsValue, messageType: String) = {
     (json \ "messageType").validate[String].asOpt.contains(messageType)
   }
-
 }

@@ -2,7 +2,6 @@ package tlang
 package formatting
 package grid
 
-
 trait Alignment {
   def apply(text: String, width: Int, fill: String = " "): String = {
     if (width < 1)

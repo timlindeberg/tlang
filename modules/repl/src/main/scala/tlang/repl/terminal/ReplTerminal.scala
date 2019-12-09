@@ -14,12 +14,10 @@ import tlang.formatting.{Colors, Formatter}
 import tlang.repl.OutputBox.{XIndent, YIndent}
 import tlang.repl.input.{Cursor, InputBuffer}
 
-
 object ReplTerminal {
 
   val MouseReportingDragClick = "\u001b[?1002"
   val MouseReportingDecimals = "\u001b[?1005"
-
 }
 
 case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: Int)(implicit formatter: Formatter) {
@@ -35,7 +33,6 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
   private var previousBoxHeight: Int = 0
   private var cursor: Cursor = Cursor()
 
-
   def close(): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] { frame =>
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
@@ -44,7 +41,6 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
     enableMouseReporting = false
     term.close()
   }
-
 
   def onClose(f: => Unit): Unit = {
     term.ifInstanceOf[SwingTerminalFrame] {
@@ -118,7 +114,6 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
     term.setCursorVisible(visible)
   }
 
-
   def enableMouseReporting: Boolean = _enableMouseReporting
   def enableMouseReporting_=(enable: Boolean): Unit = {
     if (_enableMouseReporting == enable)
@@ -173,7 +168,6 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
       .withRelativeRow(YIndent + y)
   }
 
-
   private def applyColor(color: Color): Unit = {
     if (color == NoColor) {
       term.resetColorAndSGR()
@@ -186,7 +180,6 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
     if (color.background != -1)
       term.setBackgroundColor(toLanternaColor(color.background))
   }
-
 
   private def toSGR(color: Int): SGR = color match {
     case Colors.BOLD       => SGR.BOLD
@@ -210,6 +203,4 @@ case class ReplTerminal(term: Terminal, keyConverter: KeyConverter, tabWidth: In
       case DEFAULT_FG | DEFAULT_BG => ANSI.DEFAULT
     }
   }
-
-
 }

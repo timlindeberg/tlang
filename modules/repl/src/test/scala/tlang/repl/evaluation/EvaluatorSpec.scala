@@ -18,7 +18,6 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
   // between dependencies.
   // It also serves as an example of how the evaluation works.
   it should "evaluate commands" in {
-
     val command =
       """
         |class A =
@@ -52,7 +51,6 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
       ),
       imports
     )
-
 
     val parse = mock[(List[StringSource]) => List[CompilationUnit]]
     parse(List(StringSource(command, Evaluator.ClassName))) returns List(parsedCommand)
@@ -93,7 +91,6 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     )
 
     replState.compilationUnit returns adjustedCompilationUnit
-
 
     val analyze = mock[(List[CompilationUnit]) => List[CompilationUnit]]
 
@@ -175,6 +172,4 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     there was one(saveAndPrintTransformer).apply(adjustedCompilationUnit)
     there was one(programExecutor).apply(classFile)
   }
-
-
 }

@@ -39,7 +39,6 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
         throw e
     }
 
-
     ctx.reporter.hasErrors shouldBe false
     cus foreach verifyTypesAndSymbols
 
@@ -106,5 +105,4 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
       fail(s"Expected ${ solutions.length } lines but ${ results.length } were output ${ extraInfo(-1) }")
     }
   }
-
 }

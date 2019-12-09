@@ -13,7 +13,6 @@ class KeyConverterSpec extends UnitSpec {
   behavior of "A key converter"
 
   it should "create correct mouse click events" in {
-
     test("size 20x8") {
       val keyConverter = KeyConverter(doubleClickTime = 0)
       val start = new TerminalPosition(0, 0)
@@ -57,7 +56,6 @@ class KeyConverterSpec extends UnitSpec {
       converter.convertMouseAction(mouseClick(18, 7), start, w, h) should contain(MouseClick(16, 4, 1))
       converter.convertMouseAction(mouseClick(23, 8), start, w, h) should contain(MouseClick(21, 5, 1))
       converter.convertMouseAction(mouseClick(7, 9), start, w, h) shouldBe empty
-
     }
 
     test("with other start position") {
@@ -89,9 +87,7 @@ class KeyConverterSpec extends UnitSpec {
       keyConverter.convertMouseAction(mouseClick(8, 10), start, w, h) should contain(MouseClick(6, 1, 1))
       keyConverter.convertMouseAction(mouseClick(9, 12), start, w, h) should contain(MouseClick(7, 3, 1))
     }
-
   }
-
 
   it should "create correct mouse double and triple click events" in {
     val doubleClickTime = 50
@@ -127,7 +123,6 @@ class KeyConverterSpec extends UnitSpec {
     keyConverter.convertMouseAction(mouseClick(2, 4), start, w, h) should contain(MouseClick(0, 1, 1))
     keyConverter.convertMouseAction(click, start, w, h) should contain(MouseClick(0, 0, 1))
   }
-
 
   it should "create correct drag events" in {
     val keyConverter = KeyConverter(doubleClickTime = 0)
@@ -188,6 +183,4 @@ class KeyConverterSpec extends UnitSpec {
 
   private def mouseClick(x: Int, y: Int) = new MouseAction(MouseActionType.CLICK_DOWN, 1, new TerminalPosition(x, y))
   private def mouseDrag(x: Int, y: Int) = new MouseAction(MouseActionType.DRAG, 1, new TerminalPosition(x, y))
-
-
 }

@@ -3,7 +3,6 @@ package utils
 
 import tlang.formatting.Formatter
 
-
 trait Positioned {
   var source: Option[Source] = None
   var line: Int = 0
@@ -72,7 +71,6 @@ trait Positioned {
     import formatter._
     source.map(_.description).getOrElse(Red("Missing Source"))
   }
-
 }
 
 object NoPosition extends Position {

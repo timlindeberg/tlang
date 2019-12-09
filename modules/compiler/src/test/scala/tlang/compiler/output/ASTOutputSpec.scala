@@ -10,9 +10,7 @@ import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec
 
-
 class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
-
 
   private val tree = CompilationUnit(
     pack = Package(List("A", "B", "C")),
@@ -66,9 +64,6 @@ class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
   private val prettyPrinter = mock[PrettyPrinter] use { _.apply(*[Tree]) returns "Tree but pretty printed!" }
   private val treePrinter = mock[TreePrinter] use { _.apply(*[Tree]) returns List(("A", "B", "C", "D", "E")) }
 
-
   private def makeASTOutput(formatter: Formatter) =
     ASTOutput(prettyPrinter, treePrinter, "TestPhase", List(tree))(formatter)
-
-
 }

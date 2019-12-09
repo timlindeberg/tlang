@@ -51,7 +51,6 @@ case class ExecutionResultOutput(
         .content(stackTrace)
     }
 
-
     if (numPrograms == 0)
       return grid.header(s"Execution ${ Red("failed") }, none of the given files contains a main method.").render()
 

@@ -2,7 +2,6 @@ package tlang
 package formatting
 package textformatters
 
-
 case class Truncator() {
 
   private val TruncationChar: Char = '.'

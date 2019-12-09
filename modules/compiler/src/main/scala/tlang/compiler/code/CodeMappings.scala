@@ -16,7 +16,6 @@ object CodeMap {
   val T_DOUBLE = 7
   val T_INT = 10
   val T_LONG = 11
-
 }
 
 import tlang.compiler.code.CodeGenerator.JVMType
@@ -102,7 +101,6 @@ trait CodeMap {
     val typeName = tpe.byteCodeName
     ch << InvokeStatic(className, "ValueOf", s"($typeName)L$className;")
   }
-
 }
 
 object EmptyCodeMap extends CodeMap
@@ -147,7 +145,6 @@ object IntCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
   override def box(ch: CodeHandler): CodeHandler = _box(ch, Int)
-
 }
 
 object LongCodeMap extends CodeMap {
@@ -189,7 +186,6 @@ object LongCodeMap extends CodeMap {
   override def toInt(ch: CodeHandler): CodeHandler = ch << L2I
 
   override def box(ch: CodeHandler): CodeHandler = _box(ch, Long)
-
 }
 
 object FloatCodeMap extends CodeMap {
@@ -304,7 +300,6 @@ object CharCodeMap extends CodeMap {
   override def toLong(ch: CodeHandler): CodeHandler = ch << I2L
 
   override def box(ch: CodeHandler): CodeHandler = _box(ch, Char)
-
 }
 
 object BoolCodeMap extends CodeMap {
@@ -329,7 +324,6 @@ object BoolCodeMap extends CodeMap {
   override def pop(ch: CodeHandler): CodeHandler = ch << POP
 
   override def box(ch: CodeHandler): CodeHandler = _box(ch, Bool)
-
 }
 
 class ArrayCodeMap(typeName: String) extends CodeMap {
@@ -348,7 +342,6 @@ class ArrayCodeMap(typeName: String) extends CodeMap {
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
   override def pop(ch: CodeHandler): CodeHandler = ch << POP
-
 }
 
 class ObjectCodeMap(name: String) extends CodeMap {
@@ -367,5 +360,4 @@ class ObjectCodeMap(name: String) extends CodeMap {
   override def dup_x1(ch: CodeHandler): CodeHandler = ch << DUP_X1
   override def dup_x2(ch: CodeHandler): CodeHandler = ch << DUP_X2
   override def pop(ch: CodeHandler): CodeHandler = ch << POP
-
 }

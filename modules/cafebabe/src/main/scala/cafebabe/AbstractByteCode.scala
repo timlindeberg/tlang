@@ -236,7 +236,6 @@ object AbstractByteCodes {
     }
   }
 
-
   // Field access
   object GetField {
     def apply(className: String, fieldName: String, fieldType: String): AbstractByteCodeGenerator = accessField(GETFIELD, className, fieldName, fieldType)
@@ -328,7 +327,6 @@ object AbstractByteCodes {
     }
   }
 
-
   object NewMultidimensionalArray {
     def apply(arrayType: String, dimension: Int): AbstractByteCodeGenerator = {
       (ch: CodeHandler) => {
@@ -336,7 +334,6 @@ object AbstractByteCodes {
       }
     }
   }
-
 
   object NewArray {
     def apply(arrayType: String): AbstractByteCodeGenerator = {

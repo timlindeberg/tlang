@@ -29,10 +29,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def description(implicit formatter: Formatter): String =
     "Performs data flow analysis and catches errors such as accessing objects that could potentially be null or using uninitialized variables."
 
-
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
-
 }
 
 case class FlowAnalyser(
@@ -377,5 +374,4 @@ case class FlowAnalyser(
         }
     }
   }
-
 }

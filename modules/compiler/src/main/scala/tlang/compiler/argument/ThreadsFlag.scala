@@ -13,7 +13,6 @@ case object ThreadsFlag extends ArgumentFlag[Executor] {
   override def description(implicit formatter: Formatter): String =
     "Specifies how many threads should be used. By default compilation is single threaded."
 
-
   override def extendedDescription(implicit formatter: Formatter): String =
     s"""
        |Specifies how many threads should be used. By default compilation is single threaded.
@@ -44,5 +43,4 @@ case object ThreadsFlag extends ArgumentFlag[Executor] {
     if (num < 0)
       error(err"Invalid number of threads: $num. Number has to be 0 or larger.")
   }
-
 }

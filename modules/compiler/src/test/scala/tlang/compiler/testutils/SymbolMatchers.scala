@@ -14,5 +14,4 @@ trait SymbolMatchers {
     s"$symbolic does not have a symbol",
     s"$symbolic has a symbol"
   )
-
 }

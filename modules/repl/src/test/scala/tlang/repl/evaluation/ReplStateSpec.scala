@@ -12,7 +12,6 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
 
   behavior of "ReplState"
 
-
   it should "be modified" in {
     val replState = ReplState(mock[PrettyPrinter], mock[Imports])
     val methodA = createMethod(
@@ -120,7 +119,6 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
     m.get should be theSameInstanceAs methodB
 
     mainClass.methods should contain(methodC)
-
   }
 
   it should "not add print statements to history" in {
@@ -131,10 +129,7 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
       Println(StringLit("ABC"))
     ))
 
-
     replState.addStatementsToHistory()
     replState.history shouldBe empty
   }
-
-
 }

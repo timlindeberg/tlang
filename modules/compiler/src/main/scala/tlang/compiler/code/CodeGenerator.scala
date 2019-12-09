@@ -64,7 +64,6 @@ object CodeGenerator {
       val types = s.argTypes.map(_.byteCodeName).mkString
       s"($types)${ s.getType.byteCodeName }"
     }
-
   }
 
   implicit class JVMType(val t: Type) extends AnyVal {

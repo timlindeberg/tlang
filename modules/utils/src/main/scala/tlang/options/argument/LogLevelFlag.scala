@@ -39,5 +39,4 @@ case object LogLevelFlag extends ArgumentFlag[LogLevel] {
     }
     formatter.list(logLevels)
   }
-
 }

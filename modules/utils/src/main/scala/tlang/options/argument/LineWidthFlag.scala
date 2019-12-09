@@ -37,5 +37,4 @@ case object LineWidthFlag extends NumberFlag {
     else
       TerminalFactory.create().getWidth
   }
-
 }

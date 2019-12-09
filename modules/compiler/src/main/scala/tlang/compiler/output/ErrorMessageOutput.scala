@@ -84,7 +84,6 @@ case class ErrorMessageOutput(
     messageTypes.map(format).filter(_.nonEmpty).mkString(NL)
   }
 
-
   override def json: Json = {
 
     def format(messageType: MessageType): Json = {

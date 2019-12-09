@@ -25,7 +25,6 @@ case class TokenStream(tokenList: Traversable[Token]) {
   val last: Token = tokens.last
   var lastVisible: Token = nextIncludingNewlines
 
-
   def source: Option[Source] = last.source
   def apply(i: Int): Token = tokens(i)
   def offset(i: Int): Token = tokens(currentIndex + i)
@@ -68,5 +67,4 @@ case class TokenStream(tokenList: Traversable[Token]) {
   }
 
   private def calculateNext(): Token = if (nextIncludingNewlines.kind == NEWLINE) tokens(currentIndex + 1) else nextIncludingNewlines
-
 }

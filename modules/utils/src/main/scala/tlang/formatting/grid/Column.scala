@@ -2,7 +2,6 @@ package tlang
 package formatting
 package grid
 
-
 import scala.collection.mutable.ListBuffer
 
 object ColumnDefaults {

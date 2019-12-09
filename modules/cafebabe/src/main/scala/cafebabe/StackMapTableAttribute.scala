@@ -63,7 +63,6 @@ case class UninitializedVariableInfo() extends VerificationTypeInfo(Uninitialize
   }
 }
 
-
 abstract class StackMapFrame(frameType: U1) extends Streamable {
   override def toStream(stream: ByteStream): ByteStream = stream << frameType
   val size: U4
@@ -83,7 +82,6 @@ case class SameLocals1StackItemFrame(frameType: U1, stack: Array[VerificationTyp
     stream
   }
   val size: U4 = 1 + VerificationTypeInfoTags.size(stack)
-
 }
 
 case class SameLocals1StackItemFrameExtended(frameType: U1, offsetDelta: U2, stack: Array[VerificationTypeInfo]) extends StackMapFrame(frameType) {
@@ -107,7 +105,6 @@ case class SameFrameExtended(frameType: U1, offsetDelta: U2) extends StackMapFra
   assert(StackMapFrameTypes.SameFrameExtended.contains(frameType))
   override def toStream(stream: ByteStream): ByteStream = super.toStream(stream) << offsetDelta
   val size = 3
-
 }
 
 case class AppendFrame(frameType: U1, offsetDelta: U2, locals: Array[VerificationTypeInfo]) extends StackMapFrame(frameType) {
@@ -138,5 +135,4 @@ case class FullFrame(offsetDelta: U2,
     stream
   }
   val size: U4 = 7 + VerificationTypeInfoTags.size(locals) + VerificationTypeInfoTags.size(stack)
-
 }

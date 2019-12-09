@@ -14,5 +14,4 @@ case object MaxErrorsFlag extends NumberFlag {
        |Specify the maximum number of errors to report. The default is ${ highlight(defaultValue) }.
        |Enter a negative number to show all errors.
       """
-
 }

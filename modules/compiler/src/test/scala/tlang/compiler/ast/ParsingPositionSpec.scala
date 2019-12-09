@@ -17,7 +17,6 @@ class ParsingPositionSpec extends CompilerIntegrationTestSpec {
 
   private val TestFile: File = File(s"$Resources/positions/ParserPositions.t")
 
-
   // We make Tree lazy so the parsing time counts towards the test execution time
   private lazy val Tree: Tree = {
     val file = FileSource(TestFile) :: Nil

@@ -21,5 +21,4 @@ class Module extends AbstractModule {
     // application starts.
 
   }
-
 }

@@ -12,13 +12,11 @@ import tlang.formatting.textformatters.StackTraceHighlighter
 
 import scala.language.implicitConversions
 
-
 sealed abstract class LogLevel(val priority: Int, private val _color: Color) extends Ordered[LogLevel] {
 
   override def compare(that: LogLevel): Int = priority - that.priority
   def name: String = getClass.simpleObjectName.toLowerCase
   def color(implicit formatter: Formatter): Color = formatter.translate(_color)
-
 }
 
 object LogLevel extends Enumerable[LogLevel] {
@@ -31,7 +29,6 @@ object LogLevel extends Enumerable[LogLevel] {
 
   override lazy val Values: List[LogLevel] = Enumeration.instancesOf[LogLevel].sortBy(_.priority)
 }
-
 
 case class LoggingSettings(
   var timeFormat: Date => String = (date) => new SimpleDateFormat("HH:mm:ss:SSS").format(date), // (date) => "",
@@ -62,7 +59,6 @@ object Logging {
     .flatMap(level => LogLevel.find(_.name == level.toLowerCase))
     .getOrElse(LogLevel.Off)
   )
-
 }
 
 class LazyVal(lazyValue: => Any) {
@@ -226,7 +222,6 @@ class Logger(implicit protected val loggingSettings: LoggingSettings = Logging.D
 
     name + " " * (width - name.length)
   }
-
 
   private def shortenLocation(enclosing: String, file: String, lineNumber: Int): String = {
     val filePos = s"(${ fileName(file) }:$lineNumber)"

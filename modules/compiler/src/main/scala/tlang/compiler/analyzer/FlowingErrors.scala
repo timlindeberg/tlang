@@ -5,9 +5,7 @@ package analyzer
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
 import tlang.utils.Positioned
 
-
 trait FlowingErrors extends ErrorHandling {
-
 
   def report(error: ErrorMessage): Unit = reporter.report(error)
 
@@ -61,7 +59,6 @@ trait FlowingErrors extends ErrorHandling {
       val line = if (startLine == endLine) err"line $startLine" else err"lines $startLine - $endLine"
       err"Code on " + line + err" is unreachable."
     }
-
   }
 
   case class UnnecessaryCheck(value: String, knownNull: Boolean, override val pos: Positioned) extends FlowAnalysisWarning(1, pos) {

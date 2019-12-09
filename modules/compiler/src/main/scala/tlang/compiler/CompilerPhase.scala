@@ -34,7 +34,6 @@ abstract class CompilerPhase[F, T] extends Logging {
 
     override def description(implicit formatter: Formatter): String = ""
     override def debugOutput(output: List[G])(implicit formatter: Formatter): Output = null
-
   }
 
   def execute(ctx: Context)(v: List[F]): List[T] = {
@@ -58,6 +57,4 @@ abstract class CompilerPhase[F, T] extends Logging {
     "name" -> phaseName,
     "description" -> description(Formatter.SimpleFormatter)
   )
-
-
 }

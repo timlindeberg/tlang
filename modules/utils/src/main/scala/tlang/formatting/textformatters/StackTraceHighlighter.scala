@@ -15,7 +15,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
     if (stackTrace.trim.isEmpty) "" else StackTraceParser.parse(stackTrace)
   }
 
-
   object StackTraceParser extends RegexParsers {
 
     import formatter._
@@ -38,7 +37,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     def parser(): Parser[String] =
       exception ~ ("Caused by:" ~> exception).* ^^ { case exc ~ more =>
         if (more.isEmpty)
@@ -55,7 +53,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // A description starts the stack trace eg.
     // "javax.servlet.ServletException: Something bad happened"
     private def description = {
@@ -63,7 +60,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
         exception.getOrElse("") + clazz + msg
       }
     }
-
 
     // The description of the message. Multiple lines of any character not starting with at
     private def descriptionMessage = {
@@ -73,7 +69,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // Specifies which thread the exception occurred in eg.
     // 'Exception in thread "main"'
     private def exceptionInThread = {
@@ -82,7 +77,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // A line in the stacktrace eg.
     // "at org.mortbay.jetty.Server.handle(Server.java:326)"
     private def stackTraceLine = {
@@ -90,7 +84,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
         Indent + TextColor("at") + clazz + source
       }
     }
-
 
     // Suppressed lines eg.
     // "... 27 more"
@@ -101,7 +94,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // A clazz eg.
     // "org.mortbay.jetty.Server"
     private def clazz = {
@@ -109,7 +101,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
         IdColor(id) + rest.map { id => SymbolColor(".") + IdColor(id) }.mkString
       }
     }
-
 
     // A method call eg.
     // "org.mortbay.jetty.Server.handle"
@@ -125,7 +116,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // A source eg.
     // "(Unknown Source)"
     // "(MyServlet.java:169)" or
@@ -134,7 +124,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       ("(" ~> ("Unknown Source" | "Native Method" | file) <~ ")") ~ jar.? ^^ { case file ~ jar =>
         SymbolColor("(") + FileColor(file) + SymbolColor(")") + (if (jar.isDefined) " " + jar.get else "")
       }
-
 
     // A file name eg.
     // "MyServlet.java:169"
@@ -145,7 +134,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     // A jar file eg.
     // "[struts-1.2.9.jar:1.2.9]"
     // These don't actually occur in stack traces but are produced by Logback.
@@ -155,11 +143,9 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
       }
     }
 
-
     private val num = """\d+""".r
     private val id = """[0-9A-Za-z$_\-/<> ]+""".r
     private val newLine = "\r?\n".r
-
 
     private def parseError(msg: String, nxt: Input): String = {
       val s = nxt.source
@@ -176,7 +162,6 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
           |--------------------------------------------------------------------------------
           |""".stripMargin.trim
     }
-
   }
 
 }

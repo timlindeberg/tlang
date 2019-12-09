@@ -84,7 +84,6 @@ trait NamingErrors extends ErrorHandling {
   case class MethodAlreadyDefined(methodSignature: String, line: Int, override val pos: Positioned)
     extends NameAnalysisError(7, pos) {
     lazy val message = err"Method $methodSignature is already defined at line $line."
-
   }
 
   // Missing 8

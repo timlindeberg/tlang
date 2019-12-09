@@ -9,7 +9,6 @@ import tlang.formatting._
 import tlang.formatting.textformatters._
 import tlang.testutils.snapshot.SnapshotTesting
 
-
 trait UnitSpec extends FlatSpec
   with Matchers
   with Inspectors
@@ -34,7 +33,6 @@ trait UnitSpec extends FlatSpec
   def mockedSyntaxHighlighter: SyntaxHighlighter =
     mock[SyntaxHighlighter] use { _.apply(*).forwardsArg(0) }
 
-
   def memoryFile(content: String = ""): (StringBuilder, File) = {
     val buffer = new StringBuilder
     val file = mock[File]
@@ -57,7 +55,6 @@ trait UnitSpec extends FlatSpec
     (buffer, file)
   }
 
-
   def testFormatter(
     width: Int = 80,
     useColor: Boolean = true,
@@ -79,5 +76,4 @@ trait UnitSpec extends FlatSpec
       asciiOnly
     )
   }
-
 }

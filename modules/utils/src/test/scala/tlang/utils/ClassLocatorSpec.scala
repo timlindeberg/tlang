@@ -15,5 +15,4 @@ class ClassLocatorSpec extends UnitSpec {
     classesInFormattingPackage should contain(classOf[SyntaxHighlighter])
     classesInFormattingPackage should contain(classOf[Formatter])
   }
-
 }

@@ -57,7 +57,6 @@ class ClassPath private(val pathToFile: Map[String, ClassFile], val classes: Arr
 
   def apply(className: String): Option[ClassFile] = pathToFile.get(ImportUtils.toPath(className))
 
-
   def getClassesInPackage(packageName: String): List[String] = {
     val name = ImportUtils.toPath(packageName)
     var index = getStartPosition(name)
@@ -122,5 +121,4 @@ class ClassPath private(val pathToFile: Map[String, ClassFile], val classes: Arr
       i += 1
     }
   }
-
 }

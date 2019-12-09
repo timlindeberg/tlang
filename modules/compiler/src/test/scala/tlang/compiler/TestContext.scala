@@ -35,5 +35,4 @@ trait TestContext {
       printCodePhase = PrintCodePhases
     )
   }
-
 }

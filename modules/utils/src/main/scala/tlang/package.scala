@@ -87,7 +87,6 @@ package object tlang {
     }
   }
 
-
   implicit class StringExtensions(val str: String) extends AnyVal {
     def isNumber: Boolean = Try(str.toInt).isSuccess
 
@@ -178,7 +177,6 @@ package object tlang {
       // TODO: This should trim at the end even if the string ends with ANSI-colors
       str.replaceAll("\\s+$", "")
     }
-
   }
 
   implicit class Tuple2Extensions[T](val t: (T, T)) extends AnyVal {
@@ -217,7 +215,6 @@ package object tlang {
   implicit class EnclosingExtensions(val enclosing: sourcecode.Enclosing) extends AnyVal {
 
     def method: String = enclosing.value.split("#")(1)
-
   }
 
   implicit class GenericExtensions[T](val t: T) extends AnyVal {
@@ -243,7 +240,6 @@ package object tlang {
     }
 
     def matches(p: PartialFunction[T, Boolean]): Boolean = p.isDefinedAt(t)
-
   }
 
   implicit class TraversableExtensions[Collection[T] <: Traversable[T], T](val collection: Collection[T]) extends AnyVal {
@@ -272,7 +268,6 @@ package object tlang {
     }
 
     def remove(t: T): Collection[T] = collection.filter(_ != t).asInstanceOf[Collection[T]]
-
   }
 
   implicit class SeqExtensions[T](val seq: Seq[T]) extends AnyVal {
@@ -291,7 +286,6 @@ package object tlang {
 
       snip(seq, targets, Vector.empty)
     }
-
   }
 
   implicit class MutableMapExtensions[K, V](val m: mutable.Map[K, V]) extends AnyVal {

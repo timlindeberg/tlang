@@ -10,6 +10,5 @@ case object ReadStdinFlag extends BooleanFlag {
 
   override def description(implicit formatter: Formatter): String =
     "Reads the content to compile from stdin."
-
 }
 

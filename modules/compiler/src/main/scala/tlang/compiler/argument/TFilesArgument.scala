@@ -2,7 +2,6 @@ package tlang
 package compiler
 package argument
 
-
 import better.files.File
 import tlang.formatting.ErrorStringContext
 import tlang.options.PositionalArgument
@@ -20,7 +19,6 @@ case object TFilesArgument extends PositionalArgument[Set[File]] {
       val tFiles = file.glob("*" + Constants.FileEnding)
       if (tFiles.isEmpty)
         error(err"The given directory $path does not contain any T-files.")
-
     } else if (!file.extension.contains(Constants.FileEnding)) {
       error(err"The given file $path is not a T-file.")
     }
@@ -33,5 +31,4 @@ case object TFilesArgument extends PositionalArgument[Set[File]] {
       if (file.isDirectory) file.glob("*" + Constants.FileEnding) else List(file)
     }
   }
-
 }

@@ -7,13 +7,11 @@ import tlang.utils.Positioned
 
 trait ImportErrors extends ErrorHandling {
 
-
   def report(error: ErrorMessage): Unit = reporter.report(error)
 
   val ErrorLetters = "I"
 
   import errorStringContext._
-
 
   abstract class ImportError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
 

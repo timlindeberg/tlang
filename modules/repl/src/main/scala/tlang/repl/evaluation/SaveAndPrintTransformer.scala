@@ -54,7 +54,6 @@ case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) {
     }
   }
 
-
   private def addSaveAndPrint(statTree: StatTree): List[StatTree] = statTree match {
     case Block(stats)                 => Block(stats flatMap addSaveAndPrint) :: Nil
     case acc@Access(_, _: MethodCall) => if (acc.getType == TUnit) acc :: Nil else saveAndPrint(acc)
@@ -72,5 +71,4 @@ case class SaveAndPrintTransformer(treeBuilder: TreeBuilder, state: ReplState) {
     val varDeclMessage = treeBuilder.stringConcat(StringLit(s"val $varName: $tpe = "), valDecl.id)
     valDecl :: Println(varDeclMessage) :: Nil
   }
-
 }

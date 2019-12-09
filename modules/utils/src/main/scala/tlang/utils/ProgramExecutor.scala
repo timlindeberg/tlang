@@ -78,7 +78,6 @@ case class DefaultProgramExecutor(classPaths: Set[String]) extends ProgramExecut
   }
 }
 
-
 case class StreamingProgramExecutor(classPaths: Set[String], lineHandler: (String, Int) => Unit) extends ProgramExecutor {
 
   protected def execute(method: Method, className: String): ExecutionResult = {

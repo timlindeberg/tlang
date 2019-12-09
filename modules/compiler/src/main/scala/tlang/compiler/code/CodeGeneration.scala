@@ -34,7 +34,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     val extraClassPaths = ctx.allClassPaths.map(File(_).url).toArray
     val classLoader = URLClassLoader.newInstance(extraClassPaths)
 
-
     ctx.executor.flatMap(results) { case Result(files, stackTraces) =>
       files.foreach(generateStackMapFrames(_, classLoader))
       stackTraces
@@ -46,7 +45,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
 
   override def debugOutput(output: List[CodegenerationStackTrace])(implicit formatter: Formatter): Output =
     CodeGenerationOutput(phaseName, output)
-
 
   case class Result(files: Set[String], stackTraces: List[CodegenerationStackTrace])
   /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
@@ -216,7 +214,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     else
       (Some(parents.head.JVMName), parents.drop(1))
 
-
     val classFile = new ClassFile(className, parent)
     traits.foreach { t => classFile.addInterface(t.JVMName) }
 
@@ -232,7 +229,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
       TraitFlags
     else
       ClassFlags
-
 
     classFile.setFlags(flags)
     // Default is public
@@ -378,7 +374,6 @@ object CodeGeneration extends CompilerPhase[CompilationUnit, CodegenerationStack
     mh.codeHandler << ALOAD_0
     mh.codeHandler << InvokeSpecial(superClassName, CodeGenerator.ConstructorName, "()V")
   }
-
 }
 
 

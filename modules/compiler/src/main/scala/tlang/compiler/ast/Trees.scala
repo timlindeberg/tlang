@@ -228,7 +228,6 @@ object Trees {
 
   /*----------------------- Function Declaration Trees ----------------------*/
 
-
   object MethodDeclTree {
     def unapply(f: MethodDeclTree) = Some(f.id, f.modifiers, f.args, f.retType, f.stat)
 
@@ -352,7 +351,6 @@ object Trees {
 
   /*------------------------- Binary Operator Trees -------------------------*/
 
-
   trait OperatorTree extends ExprTree {
     def opSign: String
     def operatorName: String
@@ -377,7 +375,6 @@ object Trees {
         case _                    => None
       }
     }
-
   }
 
   trait BinaryOperatorTree extends OperatorTree {
@@ -385,7 +382,6 @@ object Trees {
     def rhs: ExprTree
 
     def signature(args: List[Any]): String = s"${ orEmpty(args, 0) } $opSign ${ orEmpty(args, 1) }"
-
   }
 
   object BinaryOperatorTree {
@@ -591,7 +587,6 @@ object Trees {
 
   /*---------------------- Literal and Identifier Trees ---------------------*/
 
-
   trait Literal[T] extends ExprTree with Leaf {
     def value: T
   }
@@ -600,7 +595,6 @@ object Trees {
   object Literal {
     def unapply(e: Literal[_]): Option[Any] = Some(e.value)
   }
-
 
   case class IntLit(value: Int) extends NumberLiteral[Int] {override def getType: TObject = Types.Int }
   case class LongLit(value: Long) extends NumberLiteral[Long] {override def getType: TObject = Types.Long }
@@ -653,7 +647,6 @@ object Trees {
     override def getType: Type = if (hasSymbol) getSymbol.getType else TUntyped
 
     override def setType(tpe: Type): ClassID.this.type = this
-
 
     def isTemplated: Boolean = templateTypes.nonEmpty
 
@@ -757,10 +750,8 @@ object Trees {
     }
   }
 
-
   type TreeTransformation = PartialFunction[Tree, Tree]
   type TreeTraversal = PartialFunction[Tree, Unit]
-
 
   trait Transformer {
 
@@ -796,7 +787,6 @@ object Trees {
       case None    => None
     }
   }
-
 
   class Copier // Filled by FillTreeHelpers macro
   class LazyCopier extends Copier // Filled by FillTreeHelpers macro

@@ -59,7 +59,6 @@ object Colors {
   val WhiteBG: Color = RegularColor(background = WHITE_BG)
   val DefaultBG: Color = RegularColor(foreground = DEFAULT_BG)
 
-
   val ColorMap: Map[Int, Color] = Map(
     NO_COLOR -> NoColor,
     RESET -> Reset,
@@ -101,18 +100,15 @@ object Colors {
     "underlined" -> UNDERLINED
   )
 
-
   val ColorNames: List[String] = ColorNameMap.keys.toList
 
   implicit class ColorableAny(val s: Any) extends AnyVal {
     def +(c: Color): String = s.toString + c.ansi
   }
 
-
   implicit def ColorToString(color: Color): String = color.ansi
 
   implicit def ColorToFunction(color: Color): String => String = color(_)
-
 
   trait ColorType
   object ColorType {
@@ -169,7 +165,6 @@ object Colors {
     override val foreground: Int = -1
     override val background: Int = -1
     override val modifiers: Set[Int] = Set()
-
   }
 
   case object Color {
@@ -257,9 +252,7 @@ object Colors {
           case _                        => true
         }
     }
-
   }
-
 
   trait ColorScheme {
 
@@ -289,7 +282,6 @@ object Colors {
       val values = colorMap.map { case (key, value) => s"""""$key": "$value"""" }.mkString(",")
       s"{ $values }"
     }
-
   }
 
   object ColorScheme {
@@ -382,6 +374,5 @@ object Colors {
       i += 1
     }
   }
-
 }
 

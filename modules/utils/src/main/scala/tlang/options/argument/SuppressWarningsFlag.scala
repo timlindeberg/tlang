@@ -9,5 +9,4 @@ case object SuppressWarningsFlag extends BooleanFlag {
 
   override def description(implicit formatter: Formatter): String =
     "Suppresses warning messages."
-
 }

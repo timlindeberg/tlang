@@ -14,15 +14,12 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
 import tlang.utils.{Logging, ProgramExecutor, StringSource}
 
-
 object Evaluator {
-
 
   val ClassName = "ReplExecution"
   val ReplOutputMarker = "__ReplRes__"
   val PrintMarker = Print(StringLit(ReplOutputMarker))
   val ReplClassID = ClassID(ClassName)
-
 
   def apply(ctx: Context,
     extractor: Extractor,
@@ -59,7 +56,6 @@ case class Evaluator(
 ) extends Logging {
 
   import Evaluator._
-
 
   def apply(command: String): String = {
     debug"Clearing statements $command: $state"
@@ -112,12 +108,9 @@ case class Evaluator(
     sb.toString.trimWhiteSpaces
   }
 
-
   private def getOutput(s: String): String = {
     val start = s.indexOf(ReplOutputMarker)
     val end = s.lastIndexOf(ReplOutputMarker)
     if (start != -1 && end != -1) s.slice(start + ReplOutputMarker.length, end) else ""
   }
-
-
 }

@@ -1,7 +1,6 @@
 package tlang
 package utils
 
-
 import scala.collection.{Map, mutable}
 
 object JSON {
@@ -67,6 +66,4 @@ object JSON {
     json(any)
     sb.toString
   }
-
-
 }

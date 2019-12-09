@@ -6,7 +6,6 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.testutils.MockitoSugar
 
-
 trait TreeTesting extends MockitoSugar {
 
   val IntType = ClassID("Int")
@@ -33,5 +32,4 @@ trait TreeTesting extends MockitoSugar {
       imports.imports returns Nil
     }
   }
-
 }

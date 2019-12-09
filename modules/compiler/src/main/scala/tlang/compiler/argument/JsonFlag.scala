@@ -5,7 +5,6 @@ package argument
 import tlang.formatting.Formatter
 import tlang.options.BooleanFlag
 
-
 case object JSONFlag extends BooleanFlag {
   override val name = "json"
 
@@ -24,5 +23,4 @@ case object JSONFlag extends BooleanFlag {
        |
        |Running the compiler with the ${ flag(ExecFlag) } will output execution information under the key ${ highlight("execution") }.
       """
-
 }

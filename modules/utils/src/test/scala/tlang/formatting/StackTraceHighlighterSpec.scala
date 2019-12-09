@@ -6,9 +6,7 @@ import tlang.testutils.UnitSpec
 
 class StackTraceHighlighterSpec extends UnitSpec {
 
-
   behavior of "A stack trace highlighter"
-
 
   it should "highlight stacktraces" in {
     val stackTraceHighlighter = StackTraceHighlighter(failOnError = true)(Formatter.PrettyFormatter)
@@ -26,7 +24,6 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |	at tlang.compiler.Main.main(Main.scala)
          |""".stripMargin
     ) should matchSnapshot
-
 
     stackTraceHighlighter(
       """|javax.servlet.ServletException: Something bad happened
@@ -284,5 +281,4 @@ class StackTraceHighlighterSpec extends UnitSpec {
          |""".stripMargin
     ) should matchSnapshot
   }
-
 }

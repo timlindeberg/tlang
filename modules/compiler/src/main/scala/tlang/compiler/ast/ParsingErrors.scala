@@ -11,18 +11,15 @@ trait ParsingErrors extends ErrorHandling {
 
   protected def report(error: ErrorMessage): Unit = reporter.report(error)
 
-
   import errorStringContext._
 
   val ErrorLetters = "P"
   abstract class ParserFatal(code: Int, pos: Positioned) extends FatalMessage(ErrorLetters, code, pos)
   abstract class ParserError(code: Int, pos: Positioned) extends ErrorMessage(ErrorLetters, code, pos)
 
-
   //---------------------------------------------------------------------------------------
   //  Error messages
   //---------------------------------------------------------------------------------------
-
 
   case class ImplicitMethodOrOperator(override val pos: Positioned) extends ParserError(0, pos) {
     lazy val message = err"Only constructors can be declared implicit."
@@ -51,11 +48,9 @@ trait ParsingErrors extends ErrorHandling {
     }
   }
 
-
   //---------------------------------------------------------------------------------------
   //  Fatal messages
   //---------------------------------------------------------------------------------------
-
 
   case class ExpectedIdAssignment(override val pos: Positioned) extends ParserFatal(1, pos) {
     lazy val message = err"Expected identifier or array access on left side of assignment."
@@ -81,9 +76,7 @@ trait ParsingErrors extends ErrorHandling {
         " Make sure you're using tabs and not spaces for indentation."
       else
         ""
-
   }
-
 
   case class UnexpectedToken(currentToken: Token, lastToken: Token)
     extends ParserFatal(3, restOf(currentToken, lastToken)) {
@@ -91,6 +84,4 @@ trait ParsingErrors extends ErrorHandling {
   }
 
   private def restOf(currentToken: Token, lastToken: Token) = new Positioned {setPos(currentToken, lastToken) }
-
-
 }

@@ -5,7 +5,7 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils.JSON.Json
 
 import scala.collection.mutable
-
+import scala.annotation.tailrec
 
 object Options {
   def Empty: Options = Options(Set(), None, Array())(ErrorStringContext()(Formatter.SimpleFormatter))
@@ -19,7 +19,6 @@ case class Options(
 
   private val argumentValues: mutable.HashMap[Argument[_], Set[String]] = mutable.HashMap()
 
-
   def apply[F](argument: Argument[F]): F = {
     val valuesForArgument = argumentValues.getOrElse(argument, Set())
     argument.parseValue(valuesForArgument)
@@ -27,6 +26,7 @@ case class Options(
 
   def isEmpty: Boolean = arguments.isEmpty
 
+  @tailrec
   private def processOptions(args: List[String]): Unit = {
     if (args == Nil)
       return
@@ -65,7 +65,6 @@ case class Options(
     argumentValues += argument -> (existing ++ args)
   }
 
-
   private def ErrorUnrecognizedArgument(arg: String) = {
     import errorContext.ErrorStringContext
     throw new IllegalArgumentException(err"$arg is not a valid argument.")
@@ -94,28 +93,20 @@ case class Options(
       .sortBy(_._1)
       .aligned
   }
-
 }
 
-
 trait Argument[T] {
-
   def parseValue(args: Set[String]): T
   def error(message: String): Nothing = throw new IllegalArgumentException(message)
-
 }
 
 trait PositionalArgument[T] extends Argument[T] {
-
   def verifyArgument(arg: String)(implicit errorContext: ErrorStringContext): Unit = {}
-
 }
 
 trait FlagArgument[T] extends Argument[T] {
-
   def name: String
   def shortFlag: Option[String] = None
-
 
   def getDescription(implicit formatter: Formatter): String = cleanDescription(description)
   def getExtendedDescription(implicit formatter: Formatter): String = cleanDescription(extendedDescription)
@@ -158,11 +149,9 @@ trait FlagArgument[T] extends Argument[T] {
   protected def extendedDescription(implicit formatter: Formatter): String = description
 
   private def cleanDescription(description: String): String = description.stripMargin.trim
-
 }
 
 trait BooleanFlag extends FlagArgument[Boolean] {
-
   private val Active = "Active"
 
   override def parseValue(args: Set[String]): Boolean = args.contains(Active)
@@ -173,7 +162,6 @@ trait BooleanFlag extends FlagArgument[Boolean] {
 }
 
 trait ArgumentFlag[T] extends FlagArgument[T] {
-
   def argDescription: String
 
   override def flagName(implicit formatter: Formatter): String = {
@@ -181,7 +169,6 @@ trait ArgumentFlag[T] extends FlagArgument[T] {
     // Dropping space
     super.flagName + s" <${ Blue(argDescription) }> "
   }
-
 
   override def matches(args: List[String])(implicit errorContext: ErrorStringContext): Option[(Set[String], List[String])] = args match {
     case flag :: arg :: rest if matchesString(flag) => Some(getArgs(arg), rest)
@@ -196,9 +183,7 @@ trait ArgumentFlag[T] extends FlagArgument[T] {
       .use { args => args foreach verify }
       .toSet
 
-
   protected def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {}
-
 }
 
 trait OptionalArgumentFlag[T] extends ArgumentFlag[T] {
@@ -218,11 +203,9 @@ trait OptionalArgumentFlag[T] extends ArgumentFlag[T] {
       }
     case _                                   => None
   }
-
 }
 
 trait DictionaryFlag[T] extends ArgumentFlag[T] {
-
   def parseValue(args: Map[String, String]): T
 
   override def parseValue(args: Set[String]): T = {
@@ -250,7 +233,6 @@ trait DictionaryFlag[T] extends ArgumentFlag[T] {
 }
 
 trait NumberFlag extends ArgumentFlag[Int] {
-
   def defaultValue: Int
 
   override val argDescription: String = "num"
@@ -270,5 +252,4 @@ trait NumberFlag extends ArgumentFlag[Int] {
     if (!arg.isNumber)
       error(err"The argument $arg is not a valid number.")
   }
-
 }

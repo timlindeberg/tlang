@@ -1,7 +1,6 @@
 package tlang
 package formatting
 
-
 import java.nio.file.Path
 
 import better.files.File
@@ -10,7 +9,6 @@ import tlang.formatting.Colors.{Color, ColorScheme}
 import tlang.formatting.grid.Grid
 import tlang.formatting.textformatters._
 import tlang.options.argument.{LineWidthFlag, TabWidthFlag}
-
 
 object Formatter {
 
@@ -140,7 +138,6 @@ case class Formatter(
   val CommentColor: Color = color(Color(colorScheme.Comment))
   val SymbolColor: Color = color(Color(colorScheme.Symbol))
 
-
   /*----------------------------- ASCII Variants ----------------------------*/
 
   def spinner: Spinner = ascii(ASCIISpinner(), BrailSpinner())
@@ -173,7 +170,6 @@ case class Formatter(
   val LeftArrow: String = ascii("<-", "←")
   val UnderlineCharacter: String = ascii("~", "‾")
 
-
   private def ascii[T](ascii: => T, nonAscii: => T): T = if (asciiOnly) ascii else nonAscii
   private def color(color: Color): Color = if (useColor) color else Colors.NoColor
 
@@ -181,5 +177,4 @@ case class Formatter(
     val absolute = path.toAbsolutePath
     if (absolute.startsWith(Constants.Pwd)) Constants.Pwd.relativize(absolute) else absolute
   }
-
 }

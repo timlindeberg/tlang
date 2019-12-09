@@ -5,19 +5,15 @@ package input
 import better.files.File
 import tlang.testutils.UnitSpec
 
-
 // When testing the InputHistory class we should maybe mock more of it's dependencies
 // such as CircularBuffer and InputBuffer but it makes writing meaningful tests really difficult
 class InputSpec extends UnitSpec {
 
   import Input._
 
-
   val DefaultMaxHistory = 25
 
-
   behavior of "Input"
-
 
   it should "create a new history file if it does not exist" in {
     val historyFile = mock[File]
@@ -31,18 +27,15 @@ class InputSpec extends UnitSpec {
   it should "save input history to an empty file" in {
     val (fileContents, file) = memoryFile()
 
-
     val input = createInput(file)
 
     input.saveToFile()
     fileContents.toString shouldBe ""
 
-
     input ++= "ABC"
     input.saveCurrentCommand()
     input.saveToFile()
     fileContents.toString shouldBe s"ABC${ Seperator }"
-
 
     input ++= "DEF"
     input.saveCurrentCommand()
@@ -58,11 +51,9 @@ class InputSpec extends UnitSpec {
   it should "not write the same content to file twice" in {
     val (fileContents, file) = memoryFile()
 
-
     val input = createInput(file)
 
     fileContents.toString shouldBe ""
-
 
     input ++= "ABC"
     input.saveCurrentCommand()
@@ -73,10 +64,8 @@ class InputSpec extends UnitSpec {
     there was one(file).write(*)(*, *)
   }
 
-
   it should "not write to file unless changes have been saved" in {
     val (_, file) = memoryFile()
-
 
     val input = createInput(file)
 
@@ -85,7 +74,6 @@ class InputSpec extends UnitSpec {
 
     there was no(file).write(*)(*, *)
   }
-
 
   it should "change input buffer when going up/down when at the end of a command" in {
     val (_, file) = memoryFile(
@@ -116,7 +104,6 @@ class InputSpec extends UnitSpec {
     input.down()
     input.toString shouldBe "ABCD"
   }
-
 
   it should "load input history from file" in {
     val (_, file) = memoryFile(
@@ -154,11 +141,9 @@ class InputSpec extends UnitSpec {
       """|ABCDEF
          |GHIJKL""".stripMargin
 
-
     input.down().down()
     input.toString shouldBe ""
   }
-
 
   it should "not write changed inputs to file which were not saved" in {
     val (contents, file) = memoryFile(
@@ -191,7 +176,6 @@ class InputSpec extends UnitSpec {
           |$HistorySeperator
           |""".stripMargin
   }
-
 
   it should "keep the old command in history when a command has been modified and saved" in {
     val (contents, file) = memoryFile(
@@ -342,7 +326,6 @@ class InputSpec extends UnitSpec {
     input.undo() shouldBe false
   }
 
-
   it should "add indentation when adding a newline character if the current line is indented" in {
     val input = createInput()
     input
@@ -415,7 +398,6 @@ class InputSpec extends UnitSpec {
       }
   }
 
-
   it should "handle pasting at the cursor position" in {
     val clipboard = mock[Clipboard]
     clipboard.content returns s"Pasted${ NL }lines"
@@ -439,7 +421,6 @@ class InputSpec extends UnitSpec {
          |LMN""".stripMargin
   }
 
-
   it should "remove the selected text when pasting" in {
     val clipboard = mock[Clipboard]
     clipboard.content returns s"Pasted line"
@@ -458,7 +439,6 @@ class InputSpec extends UnitSpec {
       """|ABC
          |DPasted line""".stripMargin
   }
-
 
   it should "copy selected characters" in {
     val clipboard = mock[Clipboard]
@@ -480,7 +460,6 @@ class InputSpec extends UnitSpec {
     there was one(clipboard).setContent(s"HIJK${ NL }LMN")
     there was one(clipboard).setContent(s"FGHI")
   }
-
 
   it should "copy the current line when nothing is selected" in {
     val clipboard = mock[Clipboard]
@@ -562,5 +541,4 @@ class InputSpec extends UnitSpec {
   private def createInput(file: File = memoryFile()._2, clipboard: Clipboard = mock[Clipboard], maxHistorySize: Int = DefaultMaxHistory) = {
     Input(file, clipboard, maxHistorySize, 4)
   }
-
 }

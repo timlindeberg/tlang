@@ -24,5 +24,4 @@ case object MessageContextFlag extends NumberFlag {
       error(err"$num is not a number of message context lines.")
     }
   }
-
 }

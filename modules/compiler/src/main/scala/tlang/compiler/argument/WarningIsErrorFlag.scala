@@ -10,5 +10,4 @@ case object WarningIsErrorFlag extends BooleanFlag {
 
   override def description(implicit formatter: Formatter): String =
     "Treats warnings as errors."
-
 }

@@ -26,7 +26,6 @@ object SnapshotTestingLike {
 
   private val HighlightColor: Color = Colors.Magenta
   private val FailColor: Color = Colors.Red + Colors.Bold
-
 }
 
 class UnusedSnapshotsException(msg: String) extends Throwable(msg)
@@ -69,7 +68,6 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
     testName + postfix
   }
-
 
   override def afterAll(): Unit = {
     super.afterAll()
@@ -199,8 +197,6 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
           |${ StringDifference(newSnapshot, oldSnapshot) }
        """.stripMargin
     }
-
   }
-
 
 }

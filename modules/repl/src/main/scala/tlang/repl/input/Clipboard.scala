@@ -15,5 +15,4 @@ case class Clipboard() {
     val selection = new StringSelection(value)
     systemClipboard.setContents(selection, selection)
   }
-
 }

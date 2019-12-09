@@ -52,7 +52,6 @@ object Types {
   val ExtensionClassAnnotation = TObject(ExtensionClassAnnotationSymbol)
   val ImplicitConstructorAnnotation = TObject(ImplicitConstructorAnnotationSymbol)
 
-
   val Primitives: List[TObject] = List(Int, Long, Float, Double, Char, Bool)
   val DefaultTypes: List[TObject] = Primitives ++ List(String, Object)
 

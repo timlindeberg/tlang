@@ -3,7 +3,6 @@ package formatting
 
 import tlang.formatting.Colors.Color
 
-
 case class ErrorStringContext(
   private val alternativeSuggestor: AlternativeSuggestor = AlternativeSuggestor(),
   private val transforms: List[String => String] = Nil
@@ -11,14 +10,11 @@ case class ErrorStringContext(
   implicit val formatter: Formatter
 ) {
 
-
   def suggestion(name: String, alternatives: List[String]): Suggestion = alternativeSuggestor(name, alternatives)
-
 
   implicit class ErrorStringContext(val sc: StringContext) {
 
     import formatter._
-
 
     private val ValueColor: Color = NumColor
 
@@ -46,7 +42,6 @@ case class ErrorStringContext(
         expressions.next match {
           case Suggestion(suggestions) => evaluateSuggestion(suggestions)
           case any                     => evaluateAny(any)
-
         }
         if (nextString.nonEmpty) {
           if (currentColor != Bold) {

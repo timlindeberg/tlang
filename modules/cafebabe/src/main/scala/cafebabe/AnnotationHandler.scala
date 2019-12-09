@@ -2,7 +2,6 @@ package cafebabe
 
 import cafebabe.ClassFileTypes.{U1, U2}
 
-
 /** A method handler is used to attach attributes to a method. In particular,
  * it can return an associated <code>CodeHandler</code> which can be used to
  * specify a method's body. <code>MethodHandler</code>s should not be created
@@ -19,5 +18,4 @@ class AnnotationHandler private[cafebabe](annotationInfo: AnnotationInfo, cp: Co
   private def addValue(tag: Char, nameIndex: U2, valueIndex: U2): Unit = {
     annotationInfo.elementValuePairs ::= new AnnotationElementValue(tag.toInt.asInstanceOf[U1], nameIndex, valueIndex)
   }
-
 }

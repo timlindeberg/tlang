@@ -4,13 +4,11 @@ package input
 
 import tlang.formatting.Colors
 
-
 object History {
 
   def apply[T](): History[T] = History[T](Int.MaxValue)
   def apply[T](maxSize: Int, initial: T): History[T] = History[T](maxSize) use { _ += initial }
   def apply[T](maxSize: Int, initial: Traversable[T]): History[T] = History[T](maxSize) use { _ ++= initial }
-
 }
 
 case class History[T](maxSize: Int) extends Seq[T] {
@@ -119,6 +117,5 @@ case class History[T](maxSize: Int) extends Seq[T] {
       }
       .mkString(" -> ")
   }
-
 }
 

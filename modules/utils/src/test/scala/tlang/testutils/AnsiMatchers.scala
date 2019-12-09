@@ -3,7 +3,6 @@ package testutils
 
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-
 // When comparing Strings with ansi colors the parser for IntelliJ:s test runner
 // breaks. Comparing lists of characters works a lot better and has the added benefit
 // of letting us see exact differences in ansi formatting.
@@ -19,7 +18,6 @@ trait AnsiMatchers {
         s"The strings matched."
       )
     }
-
   }
 
   class MultipleAnsiStringMatcher(expectedStrings: Iterable[String]) extends Matcher[Iterable[String]] {
@@ -60,7 +58,6 @@ trait AnsiMatchers {
         .getOrElse((true, s""))
       MatchResult(matches, failMessage, Matched)
     }
-
   }
 
   def matchWithAnsi(expectedString: String) = new AnsiStringMatcher(expectedString)
@@ -70,6 +67,4 @@ trait AnsiMatchers {
     val l = if (line.isEmpty) "<empty>" else line.ansiDebugString
     s"$name$seperator$l"
   }
-
-
 }

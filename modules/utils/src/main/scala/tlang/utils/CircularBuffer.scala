@@ -1,7 +1,6 @@
 package tlang
 package utils
 
-
 import scala.collection.mutable.ArrayBuffer
 
 object CircularBuffer {
@@ -24,5 +23,4 @@ case class CircularBuffer[T]() extends ArrayBuffer[T] {
     val x = i % m
     if (x < 0) x + m else x
   }
-
 }

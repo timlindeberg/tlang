@@ -33,7 +33,6 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
   private val dPlusPos = Position(10, 2, 10, 5, source = Some(source))
   private val multipleLinesPos = Position(4, 1, 6, 8, source = Some(source))
 
-
   it should "output an error message" in {
     val messages = List(
       createMessage(
@@ -60,7 +59,6 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     )
     testMessages(messages)
   }
-
 
   it should "output multiple error messages" in {
     val messages = List(
@@ -167,7 +165,6 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     testMessages(messages)
   }
 
-
   it should "output only maximum errors" in {
     val messages = List(
       createMessage(
@@ -245,5 +242,4 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
     val syntaxHighlighter = TLangSyntaxHighlighter()(formatter)
     ErrorMessageOutput(cm, messageContextSize)(formatter, syntaxHighlighter)
   }
-
 }

@@ -41,7 +41,6 @@ object Naming extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
     "Resolves names and attaches symbols to trees."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
 }
 
 case class NameAnalyser(
@@ -109,7 +108,6 @@ case class NameAnalyser(
       if (nonTraitsAfterFirst.nonEmpty)
         report(NonFirstArgumentIsClass(nonTraits.head))
     }
-
 
   /*-------------------------------- Adding symbols --------------------------------*/
 
@@ -295,7 +293,6 @@ case class NameAnalyser(
 
   /*-------------------------------- Binding symbols --------------------------------*/
 
-
   private def bind(tree: Tree): Unit = tree match {
     case annotation@Annotation(id, values)                                            =>
       setType(id)
@@ -367,7 +364,6 @@ case class NameAnalyser(
       stat ifDefined { new StatementBinder(opSym, isStaticOperator).bindStatement(_) }
   }
 
-
   private def bindArguments(args: List[Formal]): Unit =
     for (Formal(typeTree, id) <- args) {
       val tpe = setType(typeTree)
@@ -389,7 +385,6 @@ case class NameAnalyser(
     val methSym = new MethodSymbol("new", classDecl.getSymbol, Some(Block(Nil)), Set(Public())).setType(TUnit)
     classDecl.getSymbol.addMethod(methSym)
   }
-
 
   private class StatementBinder(scope: Symbol, isStaticContext: Boolean) {
 

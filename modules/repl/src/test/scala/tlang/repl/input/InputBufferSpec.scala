@@ -7,7 +7,6 @@ import tlang.utils.Position
 
 class InputBufferSpec extends UnitSpec {
 
-
   val TabWidth = 4
 
   behavior of "An inputbuffer"
@@ -24,7 +23,6 @@ class InputBufferSpec extends UnitSpec {
       .toString shouldBe s"ABCD${ NL }\t "
   }
 
-
   it should "add multiple characters" in {
     InputBuffer(TabWidth)
       .add("ABCD")
@@ -32,7 +30,6 @@ class InputBufferSpec extends UnitSpec {
       .add("EFGH")
       .toString shouldBe s"ABCD${ NL }EFGH"
   }
-
 
   it should "be constructed from a string" in {
     InputBuffer(
@@ -79,7 +76,6 @@ class InputBufferSpec extends UnitSpec {
       .add('9')
       .toString shouldBe "9823A4BCD51E67"
   }
-
 
   it should "handle moving the cursor up and down" in {
     InputBuffer(TabWidth)
@@ -129,7 +125,6 @@ class InputBufferSpec extends UnitSpec {
          |TUV""".stripMargin
   }
 
-
   it should "handle cursor navigation with large movements" in {
     InputBuffer(TabWidth)
       .add("abc \tdefgh    ijk lmn")
@@ -169,7 +164,6 @@ class InputBufferSpec extends UnitSpec {
       .moveCursorToRightWord() // Shouldn't move the cursor
       .toString shouldBe "7abc68 \t95defgh4A    B3ijk2C D1lmnE"
   }
-
 
   it should "handle secondary cursor navigation" in {
     InputBuffer(TabWidth)
@@ -220,7 +214,6 @@ class InputBufferSpec extends UnitSpec {
       }
   }
 
-
   it should "remove the selected text when adding a character" in {
     InputBuffer(TabWidth)
       .add(
@@ -236,7 +229,6 @@ class InputBufferSpec extends UnitSpec {
          |D
          |EFG1""".stripMargin
   }
-
 
   it should "handle adding a character to the end, start and middle of a buffer" in {
     InputBuffer(TabWidth)
@@ -258,7 +250,6 @@ class InputBufferSpec extends UnitSpec {
          |EFGHIJK
          |LMN1""".stripMargin
   }
-
 
   it should "handle removing a character at the cursor position" in {
     InputBuffer(TabWidth)
@@ -285,7 +276,6 @@ class InputBufferSpec extends UnitSpec {
          |DFIJK
          |L""".stripMargin
   }
-
 
   it should "handle removing multiple characters between the cursor positions" in {
     InputBuffer(
@@ -423,7 +413,6 @@ class InputBufferSpec extends UnitSpec {
         buffer.secondaryCursor.xy shouldBe(4, 2)
         buffer.mainCursor.xy shouldBe(7, 2)
       }
-
   }
 
   it should "compensate for tab characters" in {
@@ -605,5 +594,4 @@ class InputBufferSpec extends UnitSpec {
         .use { _.mainCursor.xy shouldBe(13, 0) }
     }
   }
-
 }

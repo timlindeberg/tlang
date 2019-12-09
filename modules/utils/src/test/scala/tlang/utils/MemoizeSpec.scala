@@ -35,5 +35,4 @@ class MemoizeSpec extends UnitSpec {
     res shouldBe 25
     elapsedTime should be >= sleepTime
   }
-
 }

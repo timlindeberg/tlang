@@ -28,7 +28,6 @@ class SaveAndPrintTransformerSpec extends UnitSpec with TreeTesting {
       )
     ))
 
-
     val treeBuilder = mock[TreeBuilder]
     treeBuilder.createValDecl("res0", newStatement1, "") returns
       VarDecl("res0", Some(IntType), initiation = newStatement1, modifiers = Set(Private(), Final()))
@@ -42,12 +41,10 @@ class SaveAndPrintTransformerSpec extends UnitSpec with TreeTesting {
     treeBuilder.stringConcat(StringLit("val res1: Int = "), VariableID("res1")) returns
       Plus(StringLit("val res1: Int = "), VariableID("res1"))
 
-
     val replState = mock[ReplState]
     val imports = mock[Imports]
     imports.replaceNames("T::lang::Int") returns "Int"
     replState.imports returns imports
-
 
     val saveAndPrintTransformer = SaveAndPrintTransformer(treeBuilder, replState)
     val transformed = saveAndPrintTransformer(statements)
@@ -72,5 +69,4 @@ class SaveAndPrintTransformerSpec extends UnitSpec with TreeTesting {
       Evaluator.PrintMarker
     ))
   }
-
 }

@@ -17,7 +17,6 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
   private var currentIndent: Int = 0
   private val seperator = NL * 2 + "/* ----------------------------------------------------------------- */" + NL * 2
 
-
   def apply(ts: Traversable[Tree]): String = ts.map(apply).mkString(seperator)
   def apply(t: Tree): String = {
     currentIndent = 0
@@ -236,7 +235,6 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     " " + mods.mkString(" ")
   }
 
-
   private def optional[T](t: Option[T])(f: (T => String)): String = if (t.isDefined) f(t.get) else ""
   private def optional[T](list: List[T])(f: (List[T] => String)): String = if (list.nonEmpty) f(list) else ""
 
@@ -342,6 +340,5 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
       })
     }
   }
-
 
 }

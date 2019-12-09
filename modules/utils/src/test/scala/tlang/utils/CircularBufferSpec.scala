@@ -5,20 +5,17 @@ import tlang.testutils.UnitSpec
 
 class CircularBufferSpec extends UnitSpec {
 
-
   it should "insert elements" in {
     val circularBuffer = CircularBuffer[Int](1, 2, 3, 4)
     circularBuffer += 5
     circularBuffer should contain theSameElementsInOrderAs Seq(1, 2, 3, 4, 5)
   }
 
-
   it should "delete elements" in {
     val circularBuffer = CircularBuffer[Int](1, 2, 3, 4, 5)
     circularBuffer -= 5
     circularBuffer should contain theSameElementsInOrderAs Seq(1, 2, 3, 4)
   }
-
 
   it should "use a circular index" in {
     val circularBuffer = CircularBuffer[Int](1, 2, 3, 4)
@@ -39,5 +36,4 @@ class CircularBufferSpec extends UnitSpec {
     circularBuffer.index shouldBe 0
     circularBuffer.current shouldBe 1
   }
-
 }

@@ -10,7 +10,6 @@ import tlang.formatting.textformatters.{Coloring, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.utils._
 
-
 object TLangSyntaxHighlighter {
 
   def apply()(implicit formatter: Formatter): TLangSyntaxHighlighter = {
@@ -39,7 +38,6 @@ object TLangSyntaxHighlighter {
         .apply(StringSource(s, ""))
         .map { token => Coloring(getColor(token), token) }
   }
-
 }
 
 class TLangSyntaxHighlighter(lexer: Lexer)(implicit formatter: Formatter) extends

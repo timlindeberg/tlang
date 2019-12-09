@@ -11,7 +11,6 @@ trait JavaClassFile extends ClassFile {
 
   def parse: JavaClass = parser.parse()
   protected def parser: ClassParser
-
 }
 
 case class JarClassFile(path: String, className: String) extends JavaClassFile {

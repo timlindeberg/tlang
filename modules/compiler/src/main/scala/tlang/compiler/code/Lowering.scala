@@ -25,7 +25,6 @@ object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Log
     "Lowers the tree to simpler components. Performs desugaring."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
 }
 
 class Lowerer(imports: Imports) extends Logging {
@@ -47,7 +46,6 @@ class Lowerer(imports: Imports) extends Logging {
         case extensionDecl: ExtensionDecl => desugarExtensionDecl(transformChildren(extensionDecl))
         case methodDecl: MethodDeclTree   => methodDecl // stop here for now, no need to recurse in to stats etc.
       }
-
     }
     transformer(cu)
   }
@@ -186,7 +184,6 @@ class Lowerer(imports: Imports) extends Logging {
     ClassDecl(classId, Nil, Nil, newMethods).setSymbol(classSymbol).setPos(extensionDecl)
   }
 
-
   //@formatter:off
   /**
     * Replaces a call to an extension method with a static call.
@@ -226,7 +223,6 @@ class Lowerer(imports: Imports) extends Logging {
     case _                                          => t
   }
 
-
   //@formatter:off
   /**
     * Replaces overloaded operator calls with calls to static methods
@@ -252,7 +248,6 @@ class Lowerer(imports: Imports) extends Logging {
       case _: And | _: Or | _: Not | _: ExtractNullable => return op
       case _                                            =>
     }
-
 
     val treeBuilder = new TreeBuilder
     import treeBuilder._
@@ -459,7 +454,6 @@ class Lowerer(imports: Imports) extends Logging {
     }
   }
 
-
   /**
    * Desugars for each loops, either array based or an iterator based.
    */
@@ -477,7 +471,6 @@ class Lowerer(imports: Imports) extends Logging {
       case _                    => ???
     }
   }
-
 
   //@formatter:off
   /**
@@ -606,7 +599,6 @@ class Lowerer(imports: Imports) extends Logging {
     val sliceType = arraySlice.arr.getType
     if (sliceType.isInstanceOf[TObject])
       return arraySlice
-
 
     val arr = arraySlice.arr
     val arrayType = arr.getType
@@ -767,7 +759,6 @@ class Lowerer(imports: Imports) extends Logging {
   }
 
   private def isObject(expr: ExprTree) = expr.getType.isInstanceOf[TObject]
-
 
   private def getClassID(operatorSymbol: OperatorSymbol) = {
     val classSymbol = operatorSymbol.classSymbol

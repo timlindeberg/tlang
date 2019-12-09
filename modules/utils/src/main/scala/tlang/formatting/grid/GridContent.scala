@@ -4,7 +4,6 @@ package grid
 
 import tlang.formatting.Colors.Color
 
-
 trait GridContent {
   def render(width: Int): String
   def width: Option[Int] = None

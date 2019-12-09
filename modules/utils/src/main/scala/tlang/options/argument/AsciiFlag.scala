@@ -4,7 +4,6 @@ package argument
 
 import tlang.formatting.Formatter
 
-
 case object AsciiFlag extends BooleanFlag {
   override val name = "ascii"
 
@@ -54,6 +53,4 @@ case object AsciiFlag extends BooleanFlag {
       }
       .mkString(NL * 2)
   }
-
-
 }

@@ -15,7 +15,6 @@ import tlang.utils.{CancellableFuture, Logging}
 import scala.concurrent.{CancellationException, TimeoutException}
 import scala.util.{Failure, Success}
 
-
 object EvaluationActor {
 
   trait EvaluationMessage
@@ -43,9 +42,7 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
   private val NoCancel = () => false
   private var cancelExecution = NoCancel
 
-
   private def parent = context.parent
-
 
   override def receive: Receive = {
     case msg: EvaluationMessage => evaluate(msg)
@@ -87,9 +84,7 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
     }
   }
 
-
   private def prettyPrint(): Unit = parent ! RenderingActor.DrawSuccess(state.prettyPrinted, truncate = false)
-
 
   private def formatStackTrace(e: Throwable): String = {
     val stackTrace = e.getCause.stackTrace
@@ -97,6 +92,4 @@ class EvaluationActor(state: ReplState, stackTraceHighlighter: StackTraceHighlig
     val trimmed = stackTrace.split("at " + ClassName).head + s"at $ClassName.main(Unknown Source)$NL"
     stackTraceHighlighter(trimmed).rightTrimWhiteSpaces
   }
-
-
 }

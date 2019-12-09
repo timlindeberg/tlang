@@ -5,7 +5,6 @@ package input
 object Cursor {
   def apply(x: Int, y: Int): Cursor = Cursor(0, x, y)
   def apply(): Cursor = Cursor(0, 0, 0)
-
 }
 
 case class Selection(main: Cursor, mark: Cursor)

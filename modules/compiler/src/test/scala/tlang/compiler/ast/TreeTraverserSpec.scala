@@ -11,7 +11,6 @@ class TreeTraverserSpec extends UnitSpec with TreeTesting {
   behavior of "A Tree Traverser"
 
   it should "visit each node once" in {
-
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
@@ -41,7 +40,6 @@ class TreeTraverserSpec extends UnitSpec with TreeTesting {
   }
 
   it should "not recurse to children unless specified" in {
-
     val clazz = ClassDecl(
       ClassID("Clazzy"),
       fields = List(
@@ -69,7 +67,5 @@ class TreeTraverserSpec extends UnitSpec with TreeTesting {
     traverser(clazz)
 
     count shouldBe 11
-
   }
-
 }

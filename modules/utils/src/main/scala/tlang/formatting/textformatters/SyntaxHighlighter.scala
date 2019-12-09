@@ -5,7 +5,6 @@ package textformatters
 import tlang.formatting.Colors._
 import tlang.utils.{Position, Positioned}
 
-
 case class Coloring(color: Color, position: Positioned)
 case class Marking(pos: Positioned, style: Color, isAdditive: Boolean = false, lineOffset: Int = 1)
 
@@ -24,7 +23,6 @@ case class SyntaxHighlighter(coloring: String => Seq[Coloring])(implicit formatt
     val colorings = coloring(codeWithoutColors)
     if (colorings.isEmpty)
       return code
-
 
     calculateColors(colors, codeWithoutColors, colorings.iterator, markings)
     constructColoredString(codeWithoutColors, colors)
@@ -54,7 +52,6 @@ case class SyntaxHighlighter(coloring: String => Seq[Coloring])(implicit formatt
           col = 1
         case _    => col += 1
       }
-
 
       colors(i) = getColor(colors(i), color, pos, markings)
     }

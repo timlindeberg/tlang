@@ -16,7 +16,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   private val syntaxHighlighter = mockedSyntaxHighlighter
 
   it should "extract classes" in {
-
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
     val replClass = ClassDecl(Evaluator.ReplClassID)
@@ -25,7 +24,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val classC = ClassDecl("C")
 
     val cu = createCU(replClass, classA, classB, classC)()
-
 
     val messages = extractor(cu)
     messages should contain theSameElementsInOrderAs Seq(
@@ -37,9 +35,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     there was one(replState).addClasses(List(classA, classB, classC))
   }
 
-
   it should "extract methods" in {
-
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
 
@@ -58,7 +54,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(methodA, methodB, methodC))
 
     val cu = createCU(replClass)()
-
 
     val messages = extractor(cu)
 
@@ -84,7 +79,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
 
     val cu = createCU()(imports)
 
-
     val messages = extractor(cu)
 
     messages should contain theSameElementsInOrderAs Seq(
@@ -97,7 +91,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   }
 
   it should "extract statements" in {
-
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
 
@@ -113,7 +106,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(mainMethod))
 
     val cu = createCU(replClass)()
-
 
     val messages = extractor(cu)
 
@@ -157,7 +149,6 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     there was one(replState).setNewStatements(List(statement))
   }
 
-
   private def formatter: Formatter = {
     val syntaxHighlighter = mock[SyntaxHighlighter]
     syntaxHighlighter.apply(*).forwardsArg(0)
@@ -167,5 +158,4 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
   private def makeExtractor(replState: ReplState): Extractor = {
     Extractor(syntaxHighlighter, replState)(formatter)
   }
-
 }

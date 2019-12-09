@@ -101,6 +101,4 @@ case class Snapshots(file: File) {
     addSnapshot()
     snapshots
   }
-
-
 }

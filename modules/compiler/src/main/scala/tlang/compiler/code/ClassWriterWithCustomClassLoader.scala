@@ -28,5 +28,4 @@ class ClassWriterWithCustomClassLoader(classLoader: ClassLoader, flags: Int) ext
     do c = c.getSuperclass while ( { !c.isAssignableFrom(d) })
     c.getName.replace('.', '/')
   }
-
 }

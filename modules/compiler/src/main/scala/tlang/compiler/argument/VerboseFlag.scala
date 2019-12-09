@@ -11,5 +11,4 @@ case object VerboseFlag extends BooleanFlag {
 
   override def description(implicit formatter: Formatter): String =
     "Prints additional information during compilation."
-
 }

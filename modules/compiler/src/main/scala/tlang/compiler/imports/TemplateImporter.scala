@@ -55,5 +55,4 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
         None
     }
   }
-
 }

@@ -63,7 +63,6 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
     verifyResults(foundCodes, expectedCodes)
   }
 
-
   private def getErrorCodes(errors: List[CompilerMessage]) = errors.map { error => (error.pos.line, error.code) }
 
   private def parseSolutions(file: File): List[(Int, String)] =
@@ -71,7 +70,6 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
       case (SolutionRegex(line), lineNumber) => line.split(",").map(res => (lineNumber + 1, res.trim))
       case _                                 => Nil
     }.toList
-
 
   private def verifyResults(results: List[(Int, String)], solutions: List[(Int, String)]): Unit = {
     def asString(l: List[(Int, String)]) = l map { case (lineNumber, msg) =>
@@ -107,12 +105,10 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
       if (res.nonEmpty)
         failTest(s"Unexpected '${ res.mkString(", ") }' was found on line $line", extraInfo(-1))
     }
-
   }
 
   private def failTest(msg: String, extraInfo: String): Nothing = {
     System.err.println(s"$msg\n$extraInfo")
     fail(msg)
   }
-
 }

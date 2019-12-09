@@ -7,7 +7,6 @@ import tlang.compiler.imports.Imports
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
 
-
 case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(implicit formatter: Formatter) {
 
   import Evaluator._
@@ -68,5 +67,4 @@ case class Extractor(syntaxHighlighter: SyntaxHighlighter, state: ReplState)(imp
       case s            => s :: Nil
     }
   }
-
 }

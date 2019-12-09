@@ -6,13 +6,11 @@ import java.util.Date
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
 
-
 class LoggerSpec extends UnitSpec {
 
   behavior of "A logger"
 
   it should "only output at the correct log levels" in {
-
     def doLog(logLevel: LogLevel): String = {
       val (logger, fileBuffer) = getLogger(logLevel)
 
@@ -84,7 +82,6 @@ class LoggerSpec extends UnitSpec {
     }
   }
 
-
   it should "minimize the location of the log call" in {
     val (sb, memFile) = memoryFile()
     val logSettings = LoggingSettings(
@@ -138,7 +135,6 @@ class LoggerSpec extends UnitSpec {
       sb.clear()
     }
 
-
     test("name that fits when removing prefixes") {
       testEnclosing = "a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.x.y.z.Abc"
       testFile = "Abcdefghijklmno.scala"
@@ -160,7 +156,6 @@ class LoggerSpec extends UnitSpec {
     }
   }
 
-
   it should "apply colors and correct formatting" in {
     val (logger, fileBuffer) = getLogger(useColor = true)
     logger.trace("ABC")
@@ -172,7 +167,6 @@ class LoggerSpec extends UnitSpec {
     fileBuffer.toString should matchSnapshot
   }
 
-
   it should "output extra info" in {
     val (logger, fileBuffer) = getLogger(useColor = true)
     logger.info("ABC", s"ABC${ NL }DEF${ NL }GHI")
@@ -181,7 +175,6 @@ class LoggerSpec extends UnitSpec {
 
     fileBuffer.toString should matchSnapshot
   }
-
 
   it should "log with string context" in {
     test("with colors") {
@@ -211,7 +204,6 @@ class LoggerSpec extends UnitSpec {
     }
   }
 
-
   private def getLogger(logLevel: LogLevel = LogLevel.Trace, useColor: Boolean = false): (Logger, StringBuilder) = {
     val (sb, memFile) = memoryFile()
 
@@ -235,5 +227,4 @@ class LoggerSpec extends UnitSpec {
 
     (logger, sb)
   }
-
 }

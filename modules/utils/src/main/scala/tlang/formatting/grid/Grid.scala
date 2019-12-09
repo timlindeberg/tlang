@@ -104,7 +104,6 @@ case class Grid()(implicit var formatter: Formatter) {
   def emptyLine(): Grid = content()
   def content(): Grid = allContent(List.fill(currentRow.size)(List("")))
 
-
   def content(content: Any, moreContent: Any*): Grid = {
     val allContent = content :: moreContent.toList
     verifyNumValues(allContent.length)
@@ -284,7 +283,6 @@ case class Grid()(implicit var formatter: Formatter) {
 
       widths.toList
     }
-
   }
 
   private case class GridRenderer() {
@@ -384,10 +382,8 @@ case class Grid()(implicit var formatter: Formatter) {
         else
           (HorizontalVertical, HorizontalUp, HorizontalDown, Horizontal, VerticalRight, VerticalLeft)
 
-
       val sb = new StringBuilder
       val maxWidth = formatter.lineWidth
-
 
       sb ++= verticalRight
 

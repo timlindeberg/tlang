@@ -29,12 +29,10 @@ object Parsing extends CompilerPhase[List[Token], CompilationUnit] with Logging 
     }
   }
 
-
   override def description(implicit formatter: Formatter): String =
     "Parses the tokens produced by the lexing phase and generates an AST."
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
-
 }
 
 object Parser {
@@ -61,7 +59,6 @@ object Parser {
     LOGICOR -> LogicOr,
     LOGICXOR -> LogicXor
   )
-
 }
 
 case class Parser(ctx: Context, override val errorStringContext: ErrorStringContext, tokens: TokenStream) extends ParsingErrors with Logging {
@@ -71,11 +68,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   import Parser._
 
-
   //----------------------------------------------------------------------------------------------
   //--- Declarations
   //----------------------------------------------------------------------------------------------
-
 
   /** <compilationUnit> ::=
    * [ <packageDeclaration> <statementEnd>  ]
@@ -284,7 +279,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
   /** <parentsDeclaration> ::= <classType> { "," <classType> } */
   def parentsDeclaration: List[ClassID] = nonEmptyList(COMMA)(classType)
 
-
   /** <fieldDeclaration> ::= <fieldModifiers> <varDeclEnd> */
   def fieldDeclaration(annotations: List[Annotation]): VarDecl = positioned {
     varDeclEnd(fieldModifiers, annotations)
@@ -402,7 +396,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <operator> ::= ( + | - | * | / | % | / | "|" | ^ | << | >> | < | <= | > | >= | ! | ~ | ++ | -- )
    * "(" <formal> [ , <formal> ] ")": <returnType> <methodBody>
-   **/
+   * */
   def operator(modifiers: Set[Modifier], annotations: List[Annotation]): OperatorDecl = {
     modifiers.findInstance[Implicit] ifDefined { impl =>
       report(ImplicitMethodOrOperator(impl))
@@ -474,7 +468,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
           (3, ArraySlice(Empty(), None, None, None))
         case _        => report(wrongToken(RBRACKET, COLON))
       }
-
 
       modifiers.findInstance[Static].ifDefined { static =>
         report(StaticIndexingOperator(static))
@@ -555,11 +548,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-
   //----------------------------------------------------------------------------------------------
   //--- Statements
   //----------------------------------------------------------------------------------------------
-
 
   /** <statement> ::=
    * | <varDeclaration>
@@ -741,11 +732,9 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-
   //----------------------------------------------------------------------------------------------
   //--- Expressions
   //----------------------------------------------------------------------------------------------
-
 
   /** <expression> ::= <assignment> */
   def expression: ExprTree = assignment()
@@ -1130,7 +1119,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     // @formatter:on
   }
 
-
   //----------------------------------------------------------------------------------------------
   //--- Misc trees, literals, identifiers, types
   //----------------------------------------------------------------------------------------------
@@ -1257,7 +1245,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-
   //----------------------------------------------------------------------------------------------
   //--- Help functions
   //----------------------------------------------------------------------------------------------
@@ -1352,7 +1339,6 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     items
   }
 
-
   /** <optional> ::= [ <parse> ] */
   private def optional[T](kinds: TokenKind*)(parse: => T): Option[T] = {
     if (tokens.next.kind notIn kinds)
@@ -1390,5 +1376,4 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     import ctx.formatter._
     VerticalRight + Horizontal * indent + " "
   }
-
 }

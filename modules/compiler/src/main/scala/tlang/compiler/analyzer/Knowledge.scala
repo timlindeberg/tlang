@@ -60,7 +60,6 @@ object Knowledge {
     override def toString = s"$id[$index]"
   }
 
-
   trait VarKnowledge {
     def invert: VarKnowledge = this
   }
@@ -158,7 +157,6 @@ object Knowledge {
       copy(varKnowledge = varKnowledge + (varId -> knowledge))
     }
 
-
     def get[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] = {
       val v = varKnowledge.getOrElse(varId, Set())
       v.findInstance[T] match {
@@ -205,7 +203,6 @@ object Knowledge {
       copy(varKnowledge = varKnowledge + (varId -> newKnowledge))
     }
 
-
     def endFlow(at: StatTree): Knowledge = copy(flowEnded = Some(at))
 
     def addOrKnowledge(from: Knowledge): Knowledge = _addWrapped(from, OrKnowledge)
@@ -241,7 +238,6 @@ object Knowledge {
         case _                  => None
       }
 
-
     def getNumericValue(expr: ExprTree): Option[Long] = {
       expr match {
         case IntLit(value)                   => Some(value)
@@ -264,7 +260,6 @@ object Knowledge {
           }
         case _                               => None
       }
-
     }
 
     private def _addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {

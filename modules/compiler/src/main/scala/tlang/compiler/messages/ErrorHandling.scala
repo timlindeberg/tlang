@@ -20,5 +20,4 @@ trait ErrorHandling {
     // and also if reporter is mocked
     throw new CompilationException(fatal)
   }
-
 }

@@ -82,6 +82,4 @@ class AlternativeSuggestorSpec extends UnitSpec {
     suggestor("ABCDEF", List("BCDEF", "ACDEF", "ABDEF", "ABCEF", "ABCDF", "ABCDE")) shouldBe
       Suggestion(List("BCDEF", "ACDEF", "ABDEF", "ABCEF", "ABCDF"))
   }
-
-
 }

@@ -28,7 +28,6 @@ case class AlternativeSuggestor() {
     val distance: Int = Distance(source, target)
     val similarity: Double = 1.0 - (distance.toDouble / math.max(source.length, target.length))
     val isAcceptable: Boolean = similarity > AcceptableSimilarity
-
   }
 }
 
@@ -74,7 +73,6 @@ object Distance {
   }
 
   private def min(values: Int*) = values.min
-
 }
 
 // This wrapper is used so we can pick it up in the Error String Context and format it properly

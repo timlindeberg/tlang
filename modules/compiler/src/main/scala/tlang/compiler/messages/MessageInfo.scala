@@ -20,7 +20,6 @@ case class MessageInfo(
 
   import formatter._
 
-
   def color: Color = message.messageType.color + Bold
   def position: Positioned = message.pos
 

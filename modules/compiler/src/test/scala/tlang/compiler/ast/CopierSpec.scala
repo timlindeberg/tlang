@@ -13,14 +13,11 @@ class CopierSpec extends UnitSpec with TreeTesting {
 
   behavior of "A tree copier"
 
-
   it should "clone trees" in {
-
     val classId = ClassID("Clazzy")
     val varX = VariableID("X")
     val varXInitiation = IntLit(0)
     val varXDecl = VarDecl(varX, initiation = varXInitiation)
-
 
     val varYInitiation = IntLit(10)
     val varY = VariableID("y")
@@ -44,7 +41,6 @@ class CopierSpec extends UnitSpec with TreeTesting {
   }
 
   it should "transfer attributes" in {
-
     val source = StringSource("ABC", "")
     val symbol = new VariableSymbol("y")
     val varY = VariableID("y")
@@ -65,7 +61,6 @@ class CopierSpec extends UnitSpec with TreeTesting {
     copy.colEnd shouldBe 4
   }
 
-
   behavior of "A lazy tree copier"
 
   it should "not copy a tree if all children are the same" in {
@@ -79,7 +74,6 @@ class CopierSpec extends UnitSpec with TreeTesting {
     val varX = VariableID("X")
     val varXInitiation = IntLit(0)
     val varXDecl = VarDecl(varX, initiation = varXInitiation)
-
 
     val varYInitiation = IntLit(10)
     val varY = VariableID("y")
@@ -100,7 +94,5 @@ class CopierSpec extends UnitSpec with TreeTesting {
     classDecl should not be lazyCopier.ClassDecl(classDecl, classId, parents, Nil, methods)
     classDecl should not be lazyCopier.ClassDecl(classDecl, classId, parents, fields, Nil)
     classDecl should not be lazyCopier.ClassDecl(classDecl, classId, List(ClassID("A")), fields, methods)
-
   }
-
 }

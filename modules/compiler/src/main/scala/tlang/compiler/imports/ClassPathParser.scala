@@ -72,5 +72,4 @@ class ClassPathParser(paths: Set[String]) {
     map forEach { (k, v) => builder += k -> v }
     builder.result()
   }
-
 }

@@ -15,9 +15,7 @@ import tlang.utils.StringSource
 
 class ParsingSpec extends UnitSpec with TreeTesting {
 
-
   behavior of "A parser"
-
 
   //------------------------------------------------------------------------------------
   //--- Declarations
@@ -557,7 +555,6 @@ class ParsingSpec extends UnitSpec with TreeTesting {
       retType = Some("A"),
       stat = Return(IntLit(1))
     )
-
   }
 
   it should "create a class from free statements and methods" in {
@@ -745,11 +742,9 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     parser(BREAK).statement shouldBe Break()
   }
 
-
   //------------------------------------------------------------------------------------
   //--- Expressions
   //------------------------------------------------------------------------------------
-
 
   it should "parse assignments" in {
     test("Normal assignment") {
@@ -1189,7 +1184,6 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     parser(ID("A"), DOT, ID("b"), LPAREN, RPAREN).expression shouldBe
       NormalAccess(VariableID("A"), MethodCall("b", Nil))
 
-
     parser(ID("A"), SAFEACCESS, ID("b")).expression shouldBe SafeAccess(VariableID("A"), VariableID("b"))
     parser(ID("A"), SAFEACCESS, ID("b"), LPAREN, RPAREN).expression shouldBe
       SafeAccess(VariableID("A"), MethodCall("b", Nil))
@@ -1384,5 +1378,4 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     tokens.foreach { _.setPos(StringSource("", "ParsingSpec"), 0, 0, 0, 0) }
     TokenStream(tokens)
   }
-
 }

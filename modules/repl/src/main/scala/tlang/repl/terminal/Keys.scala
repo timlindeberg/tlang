@@ -7,7 +7,6 @@ import java.util
 import com.googlecode.lanterna.input.CharacterPattern.Matching
 import com.googlecode.lanterna.input.{CharacterPattern, KeyDecodingProfile, KeyStroke, KeyType}
 
-
 object CustomCharacterPatterns extends KeyDecodingProfile {
 
   override val getPatterns: util.List[CharacterPattern] = util.Arrays.asList(BackwardsForwardsByWord, Redo)
@@ -53,11 +52,9 @@ object CustomCharacterPatterns extends KeyDecodingProfile {
   }
 }
 
-
 case class Ctrl(isDown: Boolean)
 case class Alt(isDown: Boolean)
 case class Shift(isDown: Boolean)
-
 
 trait Key {
 
@@ -69,7 +66,6 @@ trait Key {
   def isAltDown: Boolean = alt.isDown
   def isShiftDown: Boolean = shift.isDown
 }
-
 
 case class CharacterKey(
   char: Char,

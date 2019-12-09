@@ -9,9 +9,7 @@ class TabReplacerSpec extends UnitSpec {
 
   behavior of "A Tab replacer"
 
-
   it should "replace tabs and adjust given positions accordingly" in {
-
     test("Tab width 2") {
       val tabReplacer = TabReplacer(2)
 
@@ -35,12 +33,9 @@ class TabReplacerSpec extends UnitSpec {
       tabReplacer.apply("\t\tABC\t\tDEF", Position(1, 1, 1, 11)) shouldBe("        ABC        DEF", Position(1, 1, 1, 23))
       tabReplacer.apply("\t\tABC\t\tDEF", Position(1, 8, 1, 9)) shouldBe("        ABC        DEF", Position(1, 20, 1, 21))
     }
-
   }
 
-
   it should "replace tabs and adjust multiple positions" in {
-
     val tabReplacer = TabReplacer(2)
 
     val positions = List(
@@ -74,6 +69,4 @@ class TabReplacerSpec extends UnitSpec {
       Position(2, 9, 2, 15)
     )
   }
-
-
 }

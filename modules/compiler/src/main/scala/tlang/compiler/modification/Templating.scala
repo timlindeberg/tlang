@@ -88,7 +88,6 @@ case class TemplateModifier(ctx: Context) extends Logging {
     replace(cu)
   }
 
-
   private def getImportEntry(imports: Imports, classId: ClassID) = {
     val templateName = classId.templatedClassName
     val fullName = imports.getFullName(classId.name)
@@ -181,7 +180,6 @@ case class TemplateModifier(ctx: Context) extends Logging {
       }
     }
 
-
     private def findTemplateCU(typeId: ClassID): Option[CompilationUnit] = {
       val className = typeId.name.split("::").last
       if (templateCus.contains(className))
@@ -196,7 +194,6 @@ case class TemplateModifier(ctx: Context) extends Logging {
           .filter { clazz => !templateCus.contains(clazz.id.name) }
           .foreach { clazz => templateCus(clazz.id.name) = cu }
       }
-
 
       templateCus.get(className)
     }
@@ -242,7 +239,6 @@ case class TemplateModifier(ctx: Context) extends Logging {
       }
       transformTemplate(template)
     }
-
 
     private def constructTemplateMapping(typedId: ClassID, templateList: List[TypeTree], templateTypes: List[TypeTree]): Map[TypeTree, TypeTree] = {
       if (templateTypes.lengthCompare(templateList.size) != 0) {

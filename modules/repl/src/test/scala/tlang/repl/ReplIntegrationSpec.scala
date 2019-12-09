@@ -43,7 +43,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .map { _ should matchSnapshot }
   }
 
-
   it should "use existing variables" in {
     testTerminal
       .executeCommand("5 * res0")
@@ -51,7 +50,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .display
       .map { _ should matchSnapshot }
   }
-
 
   it should "define and use classes" in {
     testTerminal
@@ -71,7 +69,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .map { _ should matchSnapshot }
   }
 
-
   it should "define and use functions" in {
     testTerminal
       .executeCommand(
@@ -84,7 +81,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .display
       .map { _ should matchSnapshot }
   }
-
 
   it should "handle imports" in {
     testTerminal
@@ -99,7 +95,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .map { _ should matchSnapshot }
   }
 
-
   it should "show compilation errors" in {
     testTerminal
       .executeCommand(""""ABC" + a + res0 + b + "ABC"""")
@@ -107,7 +102,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .display
       .map { _ should matchSnapshot }
   }
-
 
   it should "show stack traces on errors" in {
     testTerminal
@@ -117,7 +111,6 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .map { _ should matchSnapshot }
   }
 
-
   it should "exit when pressing CTRL+C" in {
     testTerminal
       .executeCommand(new KeyStroke('c', true, false))
@@ -125,5 +118,4 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
       .display
       .map { _ should matchSnapshot }
   }
-
 }

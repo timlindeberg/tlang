@@ -50,5 +50,4 @@ class PrettyPrinterSpec extends CompilerIntegrationTestSpec {
       printedCU shouldBe prettyPrinter(reparsedCU)
     }
   }
-
 }

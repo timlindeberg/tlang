@@ -5,7 +5,6 @@ package terminal
 import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.{KeyStroke, KeyType, MouseAction, MouseActionType}
 
-
 case class KeyConverter(doubleClickTime: Long) {
 
   private var lastMouseClick: (Int, Int, Long) = (0, 0, 0L)
@@ -47,7 +46,6 @@ case class KeyConverter(doubleClickTime: Long) {
     if ((actionType in Seq(MouseActionType.CLICK_DOWN, MouseActionType.DRAG)) && button != 1)
       return None
 
-
     val startOfBuffer = boxStartPosition
       .withRelativeRow(OutputBox.YIndent)
       .withRelativeColumn(OutputBox.XIndent)
@@ -78,5 +76,4 @@ case class KeyConverter(doubleClickTime: Long) {
       case _                          => ???
     }
   }
-
 }

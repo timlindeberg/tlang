@@ -6,7 +6,6 @@ import tlang.compiler.imports.Imports
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
 
-
 case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
   override val name = "ignoreimport"
   override val argDescription = "import"

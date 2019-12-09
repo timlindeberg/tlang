@@ -71,13 +71,10 @@ class RenderingActor(
         }
         terminal.endBox(outputBox)
         outputBox = outputBox.clear()
-
     }
     if (previousBox != outputBox) {
       terminal.updateBox(outputBox)
       previousBox = outputBox
     }
   }
-
-
 }

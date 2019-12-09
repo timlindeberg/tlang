@@ -25,5 +25,4 @@ case class SourcesOutput(sources: List[Source])(implicit formatter: Formatter) e
   }
 
   override def json: Json = Json("sources" -> sources.map(_.description))
-
 }

@@ -2,7 +2,6 @@ package tlang
 package repl
 package input
 
-
 import better.files.File
 import tlang.repl.input.CordExtensions._
 import tlang.utils.CircularBuffer
@@ -13,9 +12,7 @@ object Input {
 
   val HistorySeperator = "<--COMMAND-->"
   val Seperator: String = NL + HistorySeperator + NL
-
 }
-
 
 case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, tabWidth: Int) {
 
@@ -200,5 +197,4 @@ case class Input(historyFile: File, clipboard: Clipboard, maxHistorySize: Int, t
   }
 
   private def newHistory(buffer: InputBuffer = InputBuffer(tabWidth)) = History(maxHistorySize, buffer)
-
 }

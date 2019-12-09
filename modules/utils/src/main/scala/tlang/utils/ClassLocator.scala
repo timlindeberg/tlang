@@ -34,5 +34,4 @@ object ClassLocator {
       case _: NoClassDefFoundError => None
     }
   }
-
 }

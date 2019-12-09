@@ -1,11 +1,9 @@
 package tlang
 package utils
 
-
 object Memoize {
 
   def apply[R](f: => R): Memoized[R] = new Memoized(f)
-
 }
 
 class Memoized[R](f: => R) {
@@ -20,5 +18,4 @@ class Memoized[R](f: => R) {
   }
 
   def reset(): Unit = value = None
-
 }

@@ -1,7 +1,6 @@
 package tlang
 package testutils
 
-
 object StringDifference {
 
   def apply(f: String, e: String): String = {
@@ -40,5 +39,4 @@ object StringDifference {
     case '\t'     => "\\t"
     case c        => s"$c"
   }
-
 }

@@ -2,7 +2,6 @@ package cafebabe
 
 import tlang.formatting.Formatter
 
-
 class ConstantPool extends Streamable {
 
   import ClassFileTypes._
@@ -65,7 +64,6 @@ class ConstantPool extends Streamable {
 
     if (inverseStringConstMap.contains(idx))
       return StringColor('"' + inverseStringMap(inverseStringConstMap(idx)) + '"')
-
 
     inverseFieldRefMap.get(idx).orElse(inverseMethodRefMap.get(idx)) match {
       case Some(ref) =>

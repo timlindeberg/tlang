@@ -39,7 +39,6 @@ object TerminalFactory {
       .createTerminal()
   }
 
-
   private lazy val emulatorFont =
     new SwingTerminalFontConfiguration(
       true,
@@ -71,6 +70,4 @@ object TerminalFactory {
     new java.awt.Color(247, 247, 247), // normalWhite
     new java.awt.Color(255, 255, 255) //  brightWhite
   ))
-
-
 }

@@ -11,7 +11,6 @@ class TreeTransformerSpec extends UnitSpec with TreeTesting {
   behavior of "A tree transformer"
 
   it should "transform a tree" in {
-
     val transform = new Trees.Transformer {
       def transformation: TreeTransformation = {
         case IntLit(value)    => IntLit(value + 1)
@@ -49,7 +48,6 @@ class TreeTransformerSpec extends UnitSpec with TreeTesting {
   }
 
   it should "return the same tree if the tree has not been modified" in {
-
     val addOneToLongLiterals = new Trees.Transformer {
       def transformation: TreeTransformation = {
         case LongLit(value) => LongLit(value + 1)
@@ -72,5 +70,4 @@ class TreeTransformerSpec extends UnitSpec with TreeTesting {
     val modified = addOneToLongLiterals(clazz)
     modified should be theSameInstanceAs clazz
   }
-
 }

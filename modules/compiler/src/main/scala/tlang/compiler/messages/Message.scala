@@ -6,7 +6,6 @@ import tlang.formatting.Colors.Color
 import tlang.formatting.{Colors, Formatter}
 import tlang.utils.Positioned
 
-
 object CompilerMessage {
   val ErrorName = "$ERROR"
 }
@@ -72,7 +71,6 @@ abstract class FatalMessage(override val errorLetters: String, override val code
 
 abstract class ExtraMessage(override val pos: Positioned)
   extends CompilerMessage(MessageType.Note, "", MessageType.Note.typeCode, -1, pos) with Product
-
 
 sealed abstract class MessageType(val typeCode: String, private val _color: Color) {
   def color(implicit formatter: Formatter): Color = formatter.translate(_color)

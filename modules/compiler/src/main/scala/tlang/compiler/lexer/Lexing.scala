@@ -14,7 +14,6 @@ import tlang.utils.{Logging, Source}
 
 import scala.annotation.tailrec
 
-
 object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
 
   val MaximumStringSize = 65535
@@ -34,7 +33,6 @@ object Lexing extends CompilerPhase[Source, List[Token]] with Logging {
 
   override def debugOutput(output: List[List[Token]])(implicit formatter: Formatter): Output =
     TokenOutput(phaseName, output)
-
 }
 
 case class Lexer(override val reporter: Reporter, override val errorStringContext: ErrorStringContext) extends LexingErrors with Logging {
@@ -44,7 +42,6 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   protected override var source: Source = _
 
   protected var indent = 0
-
 
   def apply(source: Source): List[Token] = {
 
@@ -189,7 +186,6 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
       if (mixedTabsAndSpaces)
         report(IndentationMixesTabsAndSpaces(parsedChars))
     }
-
   }
 
   private def tokenExists(str: String): Boolean = NonKeywords.contains(str)
@@ -215,7 +211,6 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
     getIdentifierOrKeyword(chars, new StringBuilder, 1)
   }
-
 
   private def getCharLiteral(chars: List[Char]): (Token, List[Char]) = {
 
@@ -460,7 +455,6 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     }
 
     lineComment(chars, new StringBuilder("//"))
-
   }
 
   private def blockComment(chars: List[Char]): (Token, List[Char]) = {
@@ -545,7 +539,6 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   }
 
   private def getStartPos = createToken(BAD, 0)
-
 
   private def parseLongToken(numStr: String, len: Int): Token = {
     def invalid(len: Int) = {

@@ -23,12 +23,10 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
 
   override val suiteName: String = "Message Snapshots"
 
-
   private val CompilerMessageType = typeOf[CompilerMessage].typeSymbol
 
   private val _errorStringContext = ErrorStringContext()(Formatter.PrettyFormatter)
   private val _reporter = VoidReporter()
-
 
   testMessages(
     new LexingErrors {
@@ -82,12 +80,10 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
     }
   )
 
-
   def testMessages[T <: ErrorHandling : ClassTag : TypeTag](enclosingClass: T): Unit = {
     val errorMessageClass = messageClass(enclosingClass)
     val typeMirror = runtimeMirror(enclosingClass.getClass.getClassLoader)
     val instanceMirror = typeMirror.reflect(enclosingClass)
-
 
     val testName = errorMessageClass.name.toString
     (testName taggedAs CompilerIntegrationTestTag) in {
@@ -149,7 +145,6 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
               |${ e.stackTrace }
             """.stripMargin)
     }
-
   }
 
   private def getConstructor(clazz: ClassSymbol): universe.MethodSymbol = {
@@ -181,5 +176,4 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
       case a if a <:< typeOf[Positioned]                     => tlang.utils.NoPosition
     }
   }
-
 }

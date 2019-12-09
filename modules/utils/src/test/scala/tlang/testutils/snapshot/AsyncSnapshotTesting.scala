@@ -15,5 +15,4 @@ trait AsyncSnapshotTesting extends AsyncTestSuite with SnapshotTestingLike {
         realOutcome
       }
   }
-
 }

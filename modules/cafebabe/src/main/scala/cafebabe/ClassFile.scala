@@ -69,7 +69,6 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     new FieldHandler(inf, constantPool)
   }
 
-
   def addMethod(retTpe: String, name: String, args: String, isAbstract: Boolean, signature: String): MethodHandler = {
     val accessFlags: U2 = defaultMethodAccessFlags
     val nameIndex: U2 = constantPool.addString(name)
@@ -77,7 +76,6 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
     val code = if (isAbstract) None else Some(CodeAttributeInfo(codeNameIndex))
     val inf = MethodInfo(accessFlags, nameIndex, descriptorIndex, code.toList)
     methods = methods ::: (inf :: Nil)
-
 
     new MethodHandler(inf, code, constantPool, args, signature)
   }
@@ -154,7 +152,6 @@ class ClassFile(val className: String, parentName: Option[String] = None) extend
       fields.size.asInstanceOf[U2] << fields <<
       methods.size.asInstanceOf[U2] << methods <<
       attributes.size.asInstanceOf[U2] << attributes
-
   }
 
   def stringToDescriptor(s: String): String = s

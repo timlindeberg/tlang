@@ -14,9 +14,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
 
   var messageInfo: MessageInfo = _
 
-
   behavior of "A message formatter"
-
 
   it should "use correct color depending on the messagetype" in {
     import Colors._
@@ -34,7 +32,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     messageInfo.color shouldBe NoColor
   }
 
-
   it should "use the correct prefix" in {
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Warning, errorLetters = "ABC", codeNum = 123), useColor = true)
 
@@ -46,11 +43,9 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Fatal, errorLetters = "GHI", codeNum = 23), useColor = true)
     messageInfo.prefix should matchWithAnsi("\u001b[1;31mFatal GHI3023\u001b[0m")
 
-
     messageInfo = getMessageInfo(createMessage(messageType = MessageType.Warning, errorLetters = "A", codeNum = 5), useColor = false)
     messageInfo.prefix should matchWithAnsi("Warning A1005")
   }
-
 
   it should "show position correctly" in {
     val message = createMessage(pos = Position(1, 10, 100, 1000))
@@ -61,11 +56,9 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     messageInfo.positionDescription should matchWithAnsi("1:10")
   }
 
-
   it should "show source description correctly" in {
     val source = mock[Source]
     source.lines returns IndexedSeq()
-
 
     val posWithFile = Position(1, 10, 100, 1000, source = Some(source))
     val message = createMessage(pos = posWithFile)
@@ -82,7 +75,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
 
     messageInfo.sourceDescription should matchWithAnsi(s"core/src/test/resources/positions/ParserPositions.t:1:10")
   }
-
 
   it should "show the location with color" in {
     val source = mock[Source]
@@ -101,7 +93,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     num should matchWithAnsi("\u001b[35m1\u001b[0m")
     line should matchWithAnsi("for(var i = x; \u001b[1;4;31mi < 5\u001b[0m; i++)")
   }
-
 
   it should "show the location in the file without colors" in {
     val source = mock[Source]
@@ -124,7 +115,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     line2 should matchWithAnsi("               ~~~~~")
   }
 
-
   it should "handle different context sizes" in {
     val source = mock[Source]
     source.lines returns IndexedSeq(
@@ -144,7 +134,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     val message = createMessage(pos = Position(6, 16, 6, 21, source = Some(source)))
 
     test("No context lines") {
-
       test("Without color") {
         messageInfo = getMessageInfo(message, contextSize = 0, useColor = false)
         val lines = messageInfo.locationInSource
@@ -167,7 +156,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     }
 
     test("Context size 1") {
-
       test("Without color") {
         val messageInfo = getMessageInfo(message, contextSize = 1, useColor = false)
         val lines = messageInfo.locationInSource
@@ -229,7 +217,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
       }
     }
 
-
     test("Context size 5") {
       test("Without color") {
         val messageInfo = getMessageInfo(message, contextSize = 5, useColor = false)
@@ -283,7 +270,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     }
 
     test("Context larger than number of lines") {
-
       test("Without color") {
         val messageInfo = getMessageInfo(message, contextSize = 5, useColor = false)
         val lines = messageInfo.locationInSource
@@ -435,9 +421,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         )
       }
     }
-
   }
-
 
   it should "trim indentation of location" in {
     val source = mock[Source]
@@ -479,7 +463,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     }
   }
 
-
   it should "replace tabs in location" in {
     val source = mock[Source]
     source.lines returns IndexedSeq(
@@ -492,7 +475,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     val message = createMessage(messageType = MessageType.Warning, pos = Position(2, 16, 2, 21, source = Some(source)))
 
     test("Normal tab width") {
-
       test("Without color") {
         val messageInfo = getMessageInfo(message, useColor = false, tabWidth = 2)
         val lines = messageInfo.locationInSource
@@ -581,10 +563,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         )
       }
     }
-
-
   }
-
 
   it should "mark errors over multiple lines" in {
     var source = mock[Source]
@@ -646,7 +625,6 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     )
   }
 
-
   private def getMessageInfo(
     message: CompilerMessage,
     useColor: Boolean = true,
@@ -661,6 +639,4 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     )
     MessageInfo(message, syntaxHighlighter, contextSize)(formatter)
   }
-
-
 }

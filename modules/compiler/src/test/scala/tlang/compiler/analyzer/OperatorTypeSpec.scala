@@ -39,7 +39,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
     def ==(rhs: TypeConstructor): Boolean = tpe.toString == rhs.tpe.toString
   }
 
-
   "Plus" in { arithmeticOperator(Plus) }
   "Minus" in { arithmeticOperator(Minus) }
   "Times" in { arithmeticOperator(Times) }
@@ -60,7 +59,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
   "LessThanEquals" in { comparisonOperator(LessThanEquals) }
   "GreaterThan" in { comparisonOperator(GreaterThan) }
   "GreaterThanEquals" in { comparisonOperator(GreaterThanEquals) }
-
 
   "Equals" in { equalsOperator(Equals) }
   "NotEquals" in { equalsOperator(NotEquals) }
@@ -162,7 +160,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (array, array, array().getType)
     )
 
-
   private def arrayAssignOperator(): Unit =
     new ArrayAssignmentAsserter().valid(
       (char, char, Char),
@@ -198,7 +195,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (obj, array, Object),
 
       (array, array, array().getType)
-
 
     )
 
@@ -296,7 +292,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (double, Double)
     )
 
-
   object UnaryExpressionAsserter {
 
     def getInvalidCombinations(validTpes: List[(TypeConstructor, Type)]): List[TypeConstructor] =
@@ -361,7 +356,6 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
           combination == tuple1 || combination == tuple2
         })
       })
-
   }
 
   class AssignmentAsserter(expressionType: (VariableID, VariableID) => ExprTree) {

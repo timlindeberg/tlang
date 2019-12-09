@@ -92,7 +92,6 @@ case class TreeBuilder() {
     case _                => ???
   }
 
-
   def getTypeTree(tpe: Type): TypeTree = (tpe match {
     case TUnit                => UnitType()
     case TArray(t)            => ArrayType(getTypeTree(t))
@@ -109,7 +108,6 @@ case class TreeBuilder() {
   }
 
   def setPos(pos: Positioned): Unit = code.foreach(_.setPos(pos))
-
 }
 
 

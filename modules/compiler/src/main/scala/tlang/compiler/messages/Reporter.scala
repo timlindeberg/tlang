@@ -38,7 +38,6 @@ case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) exte
     }
   }
 
-
   def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
   def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
 
@@ -47,7 +46,6 @@ case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) exte
     clear()
     throw e
   }
-
 }
 
 case class VoidReporter() extends Reporter {
@@ -71,5 +69,4 @@ case class VoidReporter() extends Reporter {
   override def hasWarnings: Boolean = _hasWarnings
 
   override def messages: CompilerMessages = null
-
 }

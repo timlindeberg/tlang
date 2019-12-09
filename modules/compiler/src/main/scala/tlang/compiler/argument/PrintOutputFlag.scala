@@ -6,13 +6,11 @@ import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
 import tlang.options.argument.HelpFlag
 
-
 case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
   override val name = "printoutput"
   override val argDescription = "phase"
 
   private lazy val compilerPhases = Main.CompilerPhases.map(_.phaseName)
-
 
   override def description(implicit formatter: Formatter): String =
     s"""
@@ -20,7 +18,6 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
        |If no argument is given the code is printed as it looks before the final code is generated (after the lowering phase).
        |Type ${ flag(CompilerHelpFlag) } ${ highlight(name) } for more information.
       """
-
 
   override def extendedDescription(implicit formatter: Formatter): String =
     s"""

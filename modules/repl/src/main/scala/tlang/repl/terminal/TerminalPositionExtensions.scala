@@ -13,7 +13,6 @@ object TerminalPositionExtensions {
 
     def +(other: TerminalPosition) = new TerminalPosition(x + pos.x, y + pos.y)
     def -(other: TerminalPosition) = new TerminalPosition(x - pos.x, y - pos.y)
-
   }
 
 }

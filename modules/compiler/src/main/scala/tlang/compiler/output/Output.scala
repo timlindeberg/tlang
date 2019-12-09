@@ -8,5 +8,4 @@ trait Output {
 
   def pretty: String
   def json: Json
-
 }

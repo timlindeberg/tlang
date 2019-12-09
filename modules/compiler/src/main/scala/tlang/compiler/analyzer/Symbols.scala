@@ -36,7 +36,6 @@ object Symbols {
     def addAnnotation(annotation: AnnotationSymbol): Unit = _annotations ::= annotation
 
     protected var _annotations: List[AnnotationSymbol] = Nil
-
   }
 
   class GlobalScope(classSymbolLocator: ClassSymbolLocator) {

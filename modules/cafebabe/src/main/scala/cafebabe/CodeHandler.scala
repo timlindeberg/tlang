@@ -246,7 +246,6 @@ class CodeHandler private[cafebabe](
                 case _          => error(s"Expected RawByte(0) as the last param for INVOKEINTERFACE at pc=$from.")
               }
             case b          => error(s"Expected RawByte after the RawBytes in INVOKEINTERFACE at pc=$from.")
-
           }
           case _             => error(s"Expected RawBytes after INVOKEINTERFACE at pc=$from.")
         }
@@ -262,7 +261,6 @@ class CodeHandler private[cafebabe](
             case _                  => error(s"Expected RawByte after the RawBytes in MULTINEWARRAY at pc=$from.")
           }
           case _           => error(s"Expected RawBytes after MULTINEWARRAY at pc=$from.")
-
         }
         case g@Goto(_)                                       => setHeight(from + g.offset, there)
         case co: ControlOperator                             =>

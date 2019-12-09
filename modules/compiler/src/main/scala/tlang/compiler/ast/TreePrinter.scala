@@ -112,7 +112,6 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     case _                                         => ""
   }
 
-
   private def symbolContent(tree: Tree): String = tree match {
     case symbolic: Symbolic[_] if symbolic.hasSymbol =>
       val symbol = symbolic.getSymbol
@@ -126,7 +125,6 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     case _: Symbolic[_]                              => Red(Bold(Cross))
     case _                                           => ""
   }
-
 
   private def typeColor(tpe: Type): Color = tpe match {
     case TUnit                       => NoColor
@@ -156,6 +154,4 @@ case class TreePrinter(idFunction: Any => Int = TreePrinter.idFunction, spacing:
     symbolId += 1
     (id, FGColors(colorIndex))
   }
-
-
 }

@@ -16,9 +16,7 @@ import scala.concurrent.duration.Duration
 
 class CompilerArgumentsSpec extends UnitSpec {
 
-
   behavior of "Compiler arguments"
-
 
   it should "use class path flag" in {
     test("No arguments") {
@@ -39,7 +37,6 @@ class CompilerArgumentsSpec extends UnitSpec {
         .getMessage should include("12345")
     }
   }
-
 
   it should "use color scheme flag" in {
     import tlang.formatting.Colors._
@@ -90,7 +87,6 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
-
   it should "use directory flag" in {
     test("No arguments should return PWD") {
       val options = createOptions("")
@@ -102,7 +98,6 @@ class CompilerArgumentsSpec extends UnitSpec {
       options(DirectoryFlag) shouldBe Set(File("src"), File("modules"), File("stdlib"))
     }
   }
-
 
   it should "use help flag" in {
     test("No arguments should be empty") {
@@ -127,7 +122,6 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
-
   it should "use ignore default imports flag" in {
     test("No arguments should be empty") {
       val options = createOptions("")
@@ -148,7 +142,6 @@ class CompilerArgumentsSpec extends UnitSpec {
       error.getMessage should include("Did you mean 'java::lang::Object'?")
     }
   }
-
 
   it should "use line width flag" in {
     test("No arguments should give default width if not connected to a terminal") {
@@ -172,7 +165,6 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
-
   it should "use max errors flag" in {
     test("No arguments should give -1") {
       val options = createOptions("")
@@ -189,7 +181,6 @@ class CompilerArgumentsSpec extends UnitSpec {
         .getMessage should include("abc")
     }
   }
-
 
   it should "use message context flag" in {
     test("No arguments should give default number of context lines") {
@@ -211,7 +202,6 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
-
   it should "use print output flag" in {
     test("No arguments should be empty") {
       val options = createOptions("")
@@ -222,7 +212,6 @@ class CompilerArgumentsSpec extends UnitSpec {
       val options = createOptions("--printoutput lowering,codegeneration --printoutput typing")
       options(PrintOutputFlag) shouldBe Set("lowering", "codegeneration", "typing")
     }
-
 
     test("No arguments is invalid") {
       intercept[IllegalArgumentException] { createOptions("--printoutput") }
@@ -240,7 +229,6 @@ class CompilerArgumentsSpec extends UnitSpec {
         .getMessage should include("ABC")
     }
   }
-
 
   it should "use tfiles argument" in {
     test("No arguments should result in no files") {
@@ -277,18 +265,15 @@ class CompilerArgumentsSpec extends UnitSpec {
         .getMessage should include("Constants.scala")
     }
 
-
     test("Directory without T-Files") {
       intercept[IllegalArgumentException] { createOptions("core") }
         .getMessage should include("core")
     }
 
-
     test("Non existant file") {
       intercept[IllegalArgumentException] { createOptions("dasdasd") }
         .getMessage should include("dasdasd")
     }
-
   }
 
   it should "use loglevel argument" in {
@@ -379,5 +364,4 @@ class CompilerArgumentsSpec extends UnitSpec {
     val flags = tlang.compiler.Main.CompilerFlags
     Options(flags, Some(TFilesArgument), args.split(" "))(errorContext)
   }
-
 }

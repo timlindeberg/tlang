@@ -187,7 +187,6 @@ case class ClassSymbolLocator(classPath: ClassPath) {
     symbol
   }
 
-
   private def convertArgument(tpe: Type, newName: String) = {
     val modifiers: Set[Modifier] = Set(Private(), Final())
     new VariableSymbol(newName, modifiers).setType(convertType(tpe))
@@ -288,6 +287,5 @@ case class ClassSymbolLocator(classPath: ClassPath) {
         loaded = true
       }
   }
-
 
 }

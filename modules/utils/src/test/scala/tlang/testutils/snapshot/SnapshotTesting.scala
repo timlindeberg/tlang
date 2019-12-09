@@ -19,5 +19,4 @@ trait SnapshotTesting extends TestSuite with SnapshotTestingLike {
       currentTestName = None
     }
   }
-
 }

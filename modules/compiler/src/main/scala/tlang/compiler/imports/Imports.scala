@@ -69,7 +69,6 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   private val classSymbolLocator = ClassSymbolLocator(classPath)
   private val templateImporter = new TemplateImporter(ctx)
 
-
   // Initialize
   {
     val defaultImports = DefaultImports.filter { imp => imp.writtenName notIn ctx.ignoredImports }
@@ -145,6 +144,4 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   override def toString: String = {
     shortToFull.map { case (short, full) => s"$short -> $full" }.mkString(NL)
   }
-
-
 }

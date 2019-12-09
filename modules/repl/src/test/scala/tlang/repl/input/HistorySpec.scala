@@ -153,7 +153,5 @@ class HistorySpec extends UnitSpec {
 
     history.size shouldBe 2
     history.toList shouldBe List(7, 10)
-
   }
-
 }

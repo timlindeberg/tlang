@@ -37,7 +37,6 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
 
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 
-
   private def typeCheckFields(ctx: Context, cu: CompilationUnit): Unit = {
     info"Type checking fields of ${ cu.simpleSourceDescription }"
 
@@ -74,9 +73,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
     typeChecker.checkCorrectOverrideReturnTypes(cu)
     typeChecker.checkTraitsAreImplemented(cu)
   }
-
 }
-
 
 object TypeChecker {
   def apply(ctx: Context, cu: CompilationUnit, methodSymbol: MethodSymbol): TypeChecker = TypeChecker(
@@ -435,7 +432,6 @@ case class TypeChecker(
         }
     }
 
-
     acc match {
       case _: SafeAccess   =>
         if (!objType.isNullable)
@@ -608,7 +604,6 @@ case class TypeChecker(
       }
     }
 
-
   def checkTraitsAreImplemented(cu: CompilationUnit): Unit =
     cu.classes.filterInstance[ClassDecl] foreach { classDecl =>
       classDecl.traits foreach { t => checkTraitIsImplemented(classDecl, t.getSymbol) }
@@ -632,7 +627,6 @@ case class TypeChecker(
     if (unimplementedMethods.nonEmpty)
       report(UnimplementedMethodFromTrait(classDecl.id.name, unimplementedMethods, classDecl))
   }
-
 
   /**
    * This is hardcoded and does not depend on the trait Iterable.
