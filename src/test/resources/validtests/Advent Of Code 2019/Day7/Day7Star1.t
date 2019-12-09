@@ -122,4 +122,4 @@ class Day7 =
 
 		return params
 
-new Day7().Run(input) // res: 70597
+new Day7().Run(input)
