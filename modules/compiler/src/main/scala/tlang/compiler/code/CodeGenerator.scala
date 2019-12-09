@@ -54,15 +54,15 @@ object CodeGenerator {
     }
   }
 
-  implicit class JVMClassSymbol(val s: ClassSymbol) extends AnyVal {
-    def JVMName: String = s.name.replaceAll("::", "/")
+  implicit class JVMClassSymbol(val classSymbol: ClassSymbol) extends AnyVal {
+    def JVMName: String = classSymbol.name.replaceAll("::", "/")
   }
 
-  implicit class JVMMethodSymbol(val s: MethodSymbol) extends AnyVal {
+  implicit class JVMMethodSymbol(val methSym: MethodSymbol) extends AnyVal {
 
     def byteCodeSignature: String = {
-      val types = s.argTypes.map(_.byteCodeName).mkString
-      s"($types)${ s.getType.byteCodeName }"
+      val types = methSym.argTypes.map(_.byteCodeName).mkString
+      s"($types)${ methSym.getType.byteCodeName }"
     }
   }
 
@@ -345,7 +345,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
               compilePrimitiveOperatorCall(acc)
             } else {
               val methName = meth.name
-              val signature = meth.getSymbol.byteCodeSignature
+              val signature = methSymbol.byteCodeSignature
 
               // Static calls are executed with InvokeStatic.
               // Super calls and private calls are executed with invokespecial.

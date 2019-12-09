@@ -289,9 +289,7 @@ class Lowerer(imports: Imports) extends Logging {
             (obj, List(s, e, st))
           case _                                   => ???
         }
-        val opSymbol = arrClassSymbol.lookupOperator(op, args.map(_.getType), imports).get
-        if (op.isInstanceOf[Assign])
-          opSymbol.setType(args(1))
+        val opSymbol = arrClassSymbol.lookupOperator(op, args.map { _.getType }, imports).get
         createMethodCall(obj, opSymbol, args)
       case _                            => op
     }
@@ -316,15 +314,16 @@ class Lowerer(imports: Imports) extends Logging {
           val retType = TreeBuilder().getTypeTree(valueId.getType)
           val ret = Return(Some(valueId)).setType(valueId.getType)
           val stats: List[StatTree] = op.stat.get match {
-            case Block(stats)    =>
+            case Block(stats) if stats.isEmpty => List(ret)
+            case Block(stats)                  =>
               val last = stats.last match {
                 case Return(Some(s)) => s
                 case s: StatTree     => s
               }
 
               stats.drop(1) :+ last :+ ret
-            case Return(Some(s)) => List(s, ret)
-            case stat: StatTree  => List(stat, ret)
+            case Return(Some(s))               => List(s, ret)
+            case stat: StatTree                => List(stat, ret)
           }
           opSymbol.setType(valueId.getType)
           MethodDecl(methodID, op.modifiers, op.annotations, op.args, Some(retType), Some(Block(stats)))
