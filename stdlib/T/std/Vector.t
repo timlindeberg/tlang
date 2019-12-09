@@ -78,7 +78,7 @@ class Vector<T>: List<T>, Stack<T> =
 
 	Def RemoveIndex(index: Int) =
 		val value = data[index]
-		for(var i = index; i < size; i++)
+		for(var i = index; i < size - 1; i++)
 			data[i] = data[i + 1]
 
 		size--
@@ -101,7 +101,7 @@ class Vector<T>: List<T>, Stack<T> =
 	def init(array: T[], size: Int) =
 		this.size = size
 		data = new T[size]
-		for(var i = 0 ; i < size; i++)
+		for(var i = 0; i < size; i++)
 			data[i] = array[i]
 
 	def increaseStorage() =
