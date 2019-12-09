@@ -703,7 +703,7 @@ object Trees {
   case class Assign(to: Assignable, from: ExprTree) extends ArrayOperatorTree {
     override val arr: ExprTree = to
     override val opSign: String = "[]="
-    override val operatorName: String = "Assign"
+    override val operatorName: String = "$Assign"
     override def signature(args: List[Any]): String = s"[${ orEmpty(args, 0) }] = ${ orEmpty(args, 1) }"
   }
   case class MethodCall(meth: MethodID, args: List[ExprTree]) extends ExprTree
