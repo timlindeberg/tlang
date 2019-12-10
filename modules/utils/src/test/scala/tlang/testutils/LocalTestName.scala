@@ -1,12 +1,12 @@
 package tlang.testutils
 
-object NamedTest {
+object LocalTestName {
   val LocalNameSeparator: String = " "
 }
 
-trait NamedTest {
+trait LocalTestName {
 
-  import NamedTest._
+  import LocalTestName._
 
   private val _localTestNames: ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
 

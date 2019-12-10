@@ -4,23 +4,32 @@ package ast
 
 import tlang.compiler.lexer.Token
 import tlang.compiler.lexer.Tokens._
-import tlang.utils.Source
+import tlang.utils.{Position, Source}
 
-case class TokenStream(tokenList: Traversable[Token]) {
+import scala.collection.mutable.ListBuffer
+
+case class TokenStream(tokenList: Seq[Token]) {
 
   private var currentIndex: Int = 0
+  private var leftOverGreaterThanFromRShift: Option[Token] = None
 
   private val InvisibleTokens = List(NEWLINE, INDENT, DEDENT)
 
   // Remove comments and adjacent new line tokens
-  private var tokens: Array[Token] = tokenList.filter(!_.isInstanceOf[COMMENTLIT]).toArray
-  tokens = tokens
-    .zipWithIndex
-    .filter { case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE) }
-    .map(_._1)
+  private val tokens: ListBuffer[Token] = filterTokenList(tokenList)
 
-  var nextIncludingNewlines: Token = tokens(currentIndex)
-  var next: Token = calculateNext()
+  private var _nextIncludingNewlines: Token = tokens(0)
+  private var _nextToken: Token = calculateNext()
+
+  def nextIncludingNewlines: Token = leftOverGreaterThanFromRShift match {
+    case Some(token) => token
+    case None        => _nextIncludingNewlines
+  }
+
+  def next: Token = leftOverGreaterThanFromRShift match {
+    case Some(token) => token
+    case None        => _nextToken
+  }
 
   val last: Token = tokens.last
   var lastVisible: Token = nextIncludingNewlines
@@ -30,12 +39,17 @@ case class TokenStream(tokenList: Traversable[Token]) {
   def offset(i: Int): Token = tokens(currentIndex + i)
 
   def readNext(): Unit = {
+    if (leftOverGreaterThanFromRShift.isDefined) {
+      leftOverGreaterThanFromRShift = None
+      return
+    }
+
     currentIndex += 1
     if (currentIndex < tokens.length)
-      nextIncludingNewlines = tokens(currentIndex)
+      _nextIncludingNewlines = tokens(currentIndex)
 
     lastVisible = calculateLastVisible()
-    next = calculateNext()
+    _nextToken = calculateNext()
   }
 
   def readNewLines(): Int = {
@@ -45,6 +59,17 @@ case class TokenStream(tokenList: Traversable[Token]) {
       num += 1
     }
     num
+  }
+
+  /**
+   * Handles generics having multiple ">" signs by
+   * treating RSHIFT (>>) as two ">". Real hack.
+   */
+  def useRShiftAsGreaterThan(): Unit = {
+    val pos = Position(lastVisible)
+    pos.col += 1
+    val token = new Token(GREATERTHAN).setPos(pos)
+    leftOverGreaterThanFromRShift = Some(token)
   }
 
   override def toString: String = {
@@ -67,4 +92,14 @@ case class TokenStream(tokenList: Traversable[Token]) {
   }
 
   private def calculateNext(): Token = if (nextIncludingNewlines.kind == NEWLINE) tokens(currentIndex + 1) else nextIncludingNewlines
+
+  private def filterTokenList(tokenList: Seq[Token]): ListBuffer[Token] = {
+    val buff = ListBuffer[Token]()
+    tokenList
+      .filter { !_.isInstanceOf[COMMENTLIT] }
+      .zipWithIndex
+      .filter { case (token, i) => !(token.kind == NEWLINE && i < tokenList.size - 1 && tokenList(i + 1).kind == NEWLINE) }
+      .foreach { elem => buff += elem._1 }
+    buff
+  }
 }

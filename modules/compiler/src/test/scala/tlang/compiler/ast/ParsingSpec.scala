@@ -5,7 +5,7 @@ package ast
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.lexer.Tokens._
-import tlang.compiler.lexer.{Token, TokenKind}
+import tlang.compiler.lexer.{Token, TokenKind, Tokens}
 import tlang.compiler.messages.{CompilationException, Reporter}
 import tlang.compiler.output.PrettyOutputHandler
 import tlang.compiler.testutils.TreeTesting
@@ -14,8 +14,6 @@ import tlang.testutils.UnitSpec
 import tlang.utils.StringSource
 
 class ParsingSpec extends UnitSpec with TreeTesting {
-
-  behavior of "A parser"
 
   //------------------------------------------------------------------------------------
   //--- Declarations
@@ -1360,6 +1358,76 @@ class ParsingSpec extends UnitSpec with TreeTesting {
     parser(
       ID("A"), LESSTHAN, NEWLINE, ID("B"), COMMA, NEWLINE, ID("C"), COMMA, NEWLINE, ID("D"), COMMA, NEWLINE, GREATERTHAN
     ).classTypeIdentifier shouldBe ClassID("A", List(ClassID("B"), ClassID("C"), ClassID("D")))
+  }
+
+  it should "parse nested template parameters" in {
+    // A<B<T, Int>>
+    parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("T"), COMMA, ID("Int"), RSHIFT)
+      .tpe shouldBe ClassID("A", ClassID("B", ClassID("T") :: ClassID("Int") :: Nil) :: Nil)
+
+    // A<B<C<D>>>
+    parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("C"), LESSTHAN, ID("D"), RSHIFT, GREATERTHAN)
+      .tpe shouldBe ClassID("A", ClassID("B", ClassID("C", ClassID("D") :: Nil) :: Nil) :: Nil)
+
+    // A<B<C<D<E>>>>
+    parser(ID("A"), LESSTHAN, ID("B"), LESSTHAN, ID("C"), LESSTHAN, ID("D"), LESSTHAN, ID("E"), RSHIFT, RSHIFT)
+      .tpe shouldBe ClassID("A", ClassID("B", ClassID("C", ClassID("D", ClassID("E") :: Nil) :: Nil) :: Nil) :: Nil)
+
+    // A<B<C<D>>, B<C<D>>>
+    parser(ID("A"), LESSTHAN,
+      ID("B"), LESSTHAN, ID("C"), LESSTHAN, ID("D"), RSHIFT, COMMA,
+      ID("B"), LESSTHAN, ID("C"), LESSTHAN, ID("D"), RSHIFT, GREATERTHAN)
+      .tpe shouldBe ClassID("A",
+      ClassID("B", ClassID("C", ClassID("D") :: Nil) :: Nil) ::
+        ClassID("B", ClassID("C", ClassID("D") :: Nil) :: Nil) :: Nil)
+
+    // A<
+    //    B<T, C<Int>>,
+    //    B<T, C<Int>>,
+    // >
+    parser(ID("A"), LESSTHAN, NEWLINE,
+      ID("B"), LESSTHAN, ID("T"), COMMA, ID("C"), LESSTHAN, ID("Int"), RSHIFT, COMMA, NEWLINE,
+      ID("B"), LESSTHAN, ID("T"), COMMA, ID("C"), LESSTHAN, ID("Int"), RSHIFT, COMMA, NEWLINE,
+      GREATERTHAN)
+      .tpe shouldBe ClassID("A",
+      ClassID("B", ClassID("T") :: ClassID("C", ClassID("Int") :: Nil) :: Nil) ::
+        ClassID("B", ClassID("T") :: ClassID("C", ClassID("Int") :: Nil) :: Nil) :: Nil)
+
+    // Def MyMethod(a: Map<String, Vector<Int>>, b: Map<String, Vector<Int>>, c: Map<String, Vector<Int>>)
+    parser(PUBDEF, ID("MyMethod"), LPAREN,
+      ID("a"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT, COMMA,
+      ID("b"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT, COMMA,
+      ID("c"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT,
+      RPAREN)
+      .methodDeclaration(Nil) shouldBe MethodDecl("MyMethod",
+      modifiers = Set(Public()),
+      retType = None,
+      args = List(
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "a"),
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "b"),
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "c")),
+      stat = None
+    )
+
+    // Def MyMethod(
+    //     a: Map<String, Vector<Int>>,
+    //     b: Map<String, Vector<Int>>,
+    //     c: Map<String, Vector<Int>>,
+    // )
+    parser(PUBDEF, ID("MyMethod"), LPAREN, NEWLINE,
+      ID("a"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT, COMMA, NEWLINE,
+      ID("b"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT, COMMA, NEWLINE,
+      ID("c"), COLON, ID("Map"), LESSTHAN, ID("String"), COMMA, ID("Vector"), LESSTHAN, ID("Int"), RSHIFT, COMMA, NEWLINE,
+      RPAREN)
+      .methodDeclaration(Nil) shouldBe MethodDecl("MyMethod",
+      modifiers = Set(Public()),
+      retType = None,
+      args = List(
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "a"),
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "b"),
+        Formal(ClassID("Map", ClassID("String") :: ClassID("Vector", ClassID("Int") :: Nil) :: Nil), "c")),
+      stat = None
+    )
   }
 
   private implicit val formatter: Formatter = testFormatter(useColor = false)

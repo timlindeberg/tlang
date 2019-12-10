@@ -29,7 +29,7 @@ object SnapshotTestingLike {
 
 class UnusedSnapshotsException(msg: String) extends Throwable(msg)
 
-trait SnapshotTestingLike extends Suite with BeforeAndAfterAll with NamedTest {
+trait SnapshotTestingLike extends Suite with BeforeAndAfterAll with LocalTestName {
 
   import SnapshotTestingLike._
 

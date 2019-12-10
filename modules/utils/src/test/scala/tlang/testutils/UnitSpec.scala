@@ -15,7 +15,7 @@ trait UnitSpec extends FlatSpec
   with OptionValues
   with AnsiMatchers
   with MockitoSugar
-  with NamedTest {
+  with LocalTestName {
 
   def mockedWordWrapperReturningSplitLines: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>

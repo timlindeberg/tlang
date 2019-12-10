@@ -1205,22 +1205,14 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-  /**
-   * Handles the conflict of generics having multiple ">" signs by
-   * treating RSHIFT (>>) as two ">".
-   */
-  private var toSpare = 0
   private def endTemplateList(): Unit = {
     tokens.next.kind match {
       case GREATERTHAN =>
         eat(GREATERTHAN)
       case RSHIFT      =>
         eat(RSHIFT)
-        toSpare += 1
-      case _           =>
-        toSpare -= 1
-        if (toSpare < 0)
-          report(wrongToken(GREATERTHAN))
+        tokens.useRShiftAsGreaterThan()
+      case _           => report(wrongToken(GREATERTHAN))
     }
   }
 
@@ -1265,7 +1257,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
    * */
   private def eat(kinds: TokenKind*)(implicit enclosing: Enclosing, line: Line): Unit = {
     kinds foreach { kind => eat(kind, kinds)(enclosing, line) }
-    traceTokensLeft()
+    traceTokensLeft()(enclosing, line)
   }
 
   /** Eats the expected tokens, or terminates with an error.
@@ -1274,7 +1266,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
    * */
   private def eatToken(tokensToEat: Token*)(implicit enclosing: Enclosing, line: Line): Unit = {
     tokensToEat foreach { token => eat(token.kind, tokensToEat)(enclosing, line) }
-    traceTokensLeft()
+    traceTokensLeft()(enclosing, line)
   }
 
   private def eat[T](kind: TokenKind, elements: Seq[T])(implicit enclosing: Enclosing, line: Line): Unit = {
@@ -1286,7 +1278,7 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
     }
   }
 
-  private def traceTokensLeft(): Unit = {
+  private def traceTokensLeft()(implicit enclosing: Enclosing, line: Line): Unit = {
     trace"${ indentation }Tokens left: ${ NL + tokens.toString }"
   }
 
