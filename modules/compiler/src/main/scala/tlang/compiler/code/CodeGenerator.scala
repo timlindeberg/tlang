@@ -140,6 +140,10 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case UselessStatement(expr)                    =>
         if (compileUseless)
           compileExpr(expr)
+        expr.getType match {
+          case Types.TUnit =>
+          case tpe         => tpe.codes.pop(ch)
+        }
       case Block(stats)                              =>
         stats.foreach(compileStat(_, continue, break, compileUseless))
       case v@VarDecl(_, _, init, _, _)               =>
