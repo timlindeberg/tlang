@@ -140,7 +140,7 @@ N2022: [1mFields in traits need to be val static.[0m
 N2009: [1mOperator [35mABC[0m[1m is already defined.[0m
 
 ========================================= NamingErrors OperatorWrongTypes
-N2014: [1mOperator [35mABC[0m[1m defined in [0m[1mclass [35mABC[0m[1m needs to have [35mABC[0m[1m as an argument.[0m
+N2014: [1mOperator [35mABC[0m[1m defined in class [35mABC[0m[1m needs to have [35mABC[0m[1m as an argument.[0m
 
 ========================================= NamingErrors ParentNotDeclared
 N2012: [1mCould not resolve parent symbol [35mABC[0m[1m.[0m
