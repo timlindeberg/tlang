@@ -12,13 +12,12 @@ object CancellableFuture {
   def apply[T](fun: => T)(implicit ex: ExecutionContext): CancellableFuture[T] = {
     val promise = Promise[T]()
     val future = promise.future
-    val aref = new AtomicReference[Thread](null)
+    val threadRef = new AtomicReference[Thread](null)
     promise tryCompleteWith Future {
       val thread = Thread.currentThread
-      aref.synchronized { aref.set(thread) }
+      threadRef.synchronized { threadRef.set(thread) }
       try fun finally {
-        aref.synchronized { aref getAndSet null } ne thread
-        //Deal with interrupted flag of this thread in desired
+        threadRef.synchronized { threadRef getAndSet null } ne thread
       }
     }
 
@@ -29,7 +28,7 @@ object CancellableFuture {
         // We have to use stop() to kill the thread since we have no control
         // over execution so this warning is disabled.
         //noinspection ScalaDeprecation
-        aref.synchronized { Option(aref getAndSet null) foreach { _.stop() } }
+        threadRef.synchronized { Option(threadRef getAndSet null) foreach { _.stop() } }
         promise.tryFailure(new CancellationException)
       }
     })
