@@ -3,8 +3,9 @@ package formatting
 
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.testutils.UnitSpec
+import tlang.testutils.snapshot.SnapshotTesting
 
-class StackTraceHighlighterSpec extends UnitSpec {
+class StackTraceHighlighterSpec extends UnitSpec with SnapshotTesting {
 
   behavior of "A stack trace highlighter"
 

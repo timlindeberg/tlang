@@ -21,7 +21,6 @@ object SnapshotTestingLike {
   val SnapshotIndex: mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
   val Directory: String = TestConstants.Resources + "/snapshots"
   val Extension: String = ".snap"
-  val LocalNameSeparator: String = " "
   val Separator: String = "---------------------------------------------------------------------------------------------------------"
 
   private val HighlightColor: Color = Colors.Magenta
@@ -30,7 +29,7 @@ object SnapshotTestingLike {
 
 class UnusedSnapshotsException(msg: String) extends Throwable(msg)
 
-trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
+trait SnapshotTestingLike extends Suite with BeforeAndAfterAll with NamedTest {
 
   import SnapshotTestingLike._
 
@@ -44,20 +43,10 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
   }
 
   private val _currentTestName: ThreadLocal[String] = new ThreadLocal[String]()
-  private val _localTestNames: ThreadLocal[List[String]] = new ThreadLocal[List[String]]()
 
   def matchSnapshot: SnapshotMatcher = {
     SnapshotIndex(fullTestName) += 1
     new SnapshotMatcher(snapshotName)
-  }
-
-  // For readability mostly. Appends the description to the snapshot name if
-  // a snapshot test is executed within the block
-  def test[U](description: String, ignore: Boolean = false)(testFun: => U): Unit = {
-    if (ignore)
-      return
-
-    withLocalName(description) { testFun }
   }
 
   def snapshotName: String = {
@@ -80,9 +69,6 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
 
   protected def currentTestName: String = _currentTestName.get()
   protected def currentTestName_=(name: Option[String]): Unit = _currentTestName.set(name.orNull)
-
-  protected def localTestNames: List[String] = Option(_localTestNames.get()).getOrElse(Nil)
-  protected def localTestNames_=(names: List[String]): Unit = _localTestNames.set(names)
 
   // Will return a failure outcome instead of the given outcome if the test
   // contained unused snapshots
@@ -119,17 +105,7 @@ trait SnapshotTestingLike extends Suite with BeforeAndAfterAll {
     Failed(msg.stripAnsi)
   }
 
-  private def withLocalName[U](name: String)(testFun: => U): Unit = {
-    val testNames = name :: localTestNames
-    localTestNames = testNames
-    try { testFun } finally { localTestNames = testNames.tail }
-  }
-
-  private def fullTestName: String = {
-    val local = localTestNames
-    val localName = if (local.isEmpty) "" else local.reverse.mkString(LocalNameSeparator, LocalNameSeparator, "")
-    currentTestName + localName
-  }
+  private def fullTestName: String = currentTestName + localTestName
 
   class SnapshotMatcher(snapshotName: String) extends Matcher[String] {
 

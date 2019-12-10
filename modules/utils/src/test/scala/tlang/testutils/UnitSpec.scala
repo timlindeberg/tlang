@@ -15,7 +15,7 @@ trait UnitSpec extends FlatSpec
   with OptionValues
   with AnsiMatchers
   with MockitoSugar
-  with SnapshotTesting {
+  with NamedTest {
 
   def mockedWordWrapperReturningSplitLines: WordWrapper = {
     mock[WordWrapper] use { wordWrapper =>
@@ -66,14 +66,7 @@ trait UnitSpec extends FlatSpec
     syntaxHighlighter: SyntaxHighlighter = mock[SyntaxHighlighter],
     stackTraceHighlighter: StackTraceHighlighter = mock[StackTraceHighlighter]
   ): Formatter = {
-    Formatter(
-      wordWrapper,
-      truncator,
-      tabReplacer,
-      width,
-      colorScheme,
-      useColor,
-      asciiOnly
+    Formatter(wordWrapper, truncator, tabReplacer, width, colorScheme, useColor, asciiOnly
     )
   }
 }

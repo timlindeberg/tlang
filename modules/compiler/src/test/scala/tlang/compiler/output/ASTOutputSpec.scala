@@ -9,8 +9,9 @@ import tlang.compiler.output.debug.ASTOutput
 import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.testutils.UnitSpec
+import tlang.testutils.snapshot.SnapshotTesting
 
-class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting {
+class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting with SnapshotTesting {
 
   private val tree = CompilationUnit(
     pack = Package(List("A", "B", "C")),

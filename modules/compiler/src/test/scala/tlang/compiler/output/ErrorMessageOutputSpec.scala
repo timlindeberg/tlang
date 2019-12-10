@@ -6,9 +6,10 @@ import tlang.compiler.messages.{CompilerMessage, CompilerMessages, MessageTestin
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
+import tlang.testutils.snapshot.SnapshotTesting
 import tlang.utils._
 
-class ErrorMessageOutputSpec extends UnitSpec with MessageTesting {
+class ErrorMessageOutputSpec extends UnitSpec with MessageTesting with SnapshotTesting {
 
   private val path = "src/a/path/to/the/File.t"
   private val source = mock[Source]

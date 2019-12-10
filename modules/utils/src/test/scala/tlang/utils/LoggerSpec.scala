@@ -5,8 +5,9 @@ import java.util.Date
 
 import tlang.formatting.Formatter
 import tlang.testutils.UnitSpec
+import tlang.testutils.snapshot.SnapshotTesting
 
-class LoggerSpec extends UnitSpec {
+class LoggerSpec extends UnitSpec with SnapshotTesting {
 
   behavior of "A logger"
 
