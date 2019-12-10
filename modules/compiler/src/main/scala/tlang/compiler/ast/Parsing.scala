@@ -180,18 +180,24 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
   /** <importDeclaration> ::= import <identifierName> { :: ( <identifierName> | * | extension  ) } */
   def importDeclaration: Import = positioned {
-    eat(IMPORT)
-    val address = ListBuffer[String](identifierName)
-    while (tokens.next.kind == COLON) {
-      eat(COLON, COLON)
-      tokens.next.kind match {
-        case TIMES =>
-          eat(TIMES)
-          return WildCardImport(address.toList)
-        case _     => address += identifierName
+    // We use an inner function to be able to return early but still
+    // keep the position
+    def getImport: Import = {
+      val address = ListBuffer[String](identifierName)
+      while (tokens.next.kind == COLON) {
+        eat(COLON, COLON)
+        tokens.next.kind match {
+          case TIMES =>
+            eat(TIMES)
+            return WildCardImport(address.toList)
+          case _     => address += identifierName
+        }
       }
+      RegularImport(address.toList)
     }
-    RegularImport(address.toList)
+
+    eat(IMPORT)
+    getImport
   }
 
   /** <annotation> ::= @<classType> [ "(" [ <keyValuePair> { , <keyValuePair> } ] ")" ] */
