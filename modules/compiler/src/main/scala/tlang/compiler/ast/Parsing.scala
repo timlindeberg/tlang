@@ -1210,8 +1210,8 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
       case GREATERTHAN =>
         eat(GREATERTHAN)
       case RSHIFT      =>
-        eat(RSHIFT)
-        tokens.useRShiftAsGreaterThan()
+        tokens.useRShiftAsTwoGreaterThan()
+        eat(GREATERTHAN)
       case _           => report(wrongToken(GREATERTHAN))
     }
   }

@@ -11,25 +11,12 @@ import scala.collection.mutable.ListBuffer
 case class TokenStream(tokenList: Seq[Token]) {
 
   private var currentIndex: Int = 0
-  private var leftOverGreaterThanFromRShift: Option[Token] = None
-
   private val InvisibleTokens = List(NEWLINE, INDENT, DEDENT)
 
-  // Remove comments and adjacent new line tokens
   private val tokens: ListBuffer[Token] = filterTokenList(tokenList)
 
-  private var _nextIncludingNewlines: Token = tokens(0)
-  private var _nextToken: Token = calculateNext()
-
-  def nextIncludingNewlines: Token = leftOverGreaterThanFromRShift match {
-    case Some(token) => token
-    case None        => _nextIncludingNewlines
-  }
-
-  def next: Token = leftOverGreaterThanFromRShift match {
-    case Some(token) => token
-    case None        => _nextToken
-  }
+  var nextIncludingNewlines: Token = tokens.head
+  var next: Token = calculateNext()
 
   val last: Token = tokens.last
   var lastVisible: Token = nextIncludingNewlines
@@ -39,17 +26,12 @@ case class TokenStream(tokenList: Seq[Token]) {
   def offset(i: Int): Token = tokens(currentIndex + i)
 
   def readNext(): Unit = {
-    if (leftOverGreaterThanFromRShift.isDefined) {
-      leftOverGreaterThanFromRShift = None
-      return
-    }
-
     currentIndex += 1
     if (currentIndex < tokens.length)
-      _nextIncludingNewlines = tokens(currentIndex)
+      nextIncludingNewlines = tokens(currentIndex)
 
     lastVisible = calculateLastVisible()
-    _nextToken = calculateNext()
+    next = calculateNext()
   }
 
   def readNewLines(): Int = {
@@ -63,13 +45,23 @@ case class TokenStream(tokenList: Seq[Token]) {
 
   /**
    * Handles generics having multiple ">" signs by
-   * treating RSHIFT (>>) as two ">". Real hack.
+   * replacing an RSHIFT (>>) with two ">".
    */
-  def useRShiftAsGreaterThan(): Unit = {
-    val pos = Position(lastVisible)
-    pos.col += 1
-    val token = new Token(GREATERTHAN).setPos(pos)
-    leftOverGreaterThanFromRShift = Some(token)
+  def useRShiftAsTwoGreaterThan(): Unit = {
+    assert(next.kind == RSHIFT)
+
+    val firstPos = Position(next)
+    firstPos.colEnd -= 1
+    val firstToken = new Token(GREATERTHAN).setPos(firstPos)
+
+    val secondPos = Position(next)
+    secondPos.col += 1
+    val secondToken = new Token(GREATERTHAN).setPos(secondPos)
+
+    tokens.remove(currentIndex)
+    tokens.insert(currentIndex, firstToken, secondToken)
+    nextIncludingNewlines = firstToken
+    next = firstToken
   }
 
   override def toString: String = {
@@ -95,11 +87,11 @@ case class TokenStream(tokenList: Seq[Token]) {
 
   private def filterTokenList(tokenList: Seq[Token]): ListBuffer[Token] = {
     val buff = ListBuffer[Token]()
-    tokenList
-      .filter { !_.isInstanceOf[COMMENTLIT] }
+    val tokens: Seq[Token] = tokenList.filter(!_.isInstanceOf[COMMENTLIT])
+    buff ++= tokens
       .zipWithIndex
-      .filter { case (token, i) => !(token.kind == NEWLINE && i < tokenList.size - 1 && tokenList(i + 1).kind == NEWLINE) }
-      .foreach { elem => buff += elem._1 }
+      .filter { case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE) }
+      .map(_._1)
     buff
   }
 }
