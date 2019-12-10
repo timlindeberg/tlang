@@ -117,7 +117,9 @@ case class TemplateModifier(ctx: Context) extends Logging {
             traverse(fields)
             traverse(methods)
             traverse(annotations)
-          case c: ClassID if c.isTemplated                             => generateClass(c)
+          case c@ClassID(_, templateTypes :: Nil)                      =>
+            traverse(templateTypes)
+            generateClass(c)
         }
       }
       traverser.traverse(cu)
