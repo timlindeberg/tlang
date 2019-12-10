@@ -1,6 +1,6 @@
 import java::util::regex::Pattern
 import java::lang::Math
-import T::std::Vector3
+import T::std::Vec3
 import T::std::Vector
 
 val input = `p=<-317,1413,1507>, v=<19,-102,-108>, a=<1,-3,-3>
@@ -1007,11 +1007,11 @@ p=<-2781,1254,-451>, v=<-399,186,-64>, a=<26,-13,0>`
 
 class Particle =
 
-	Var pos: Vector3<Long>
-	Var vel: Vector3<Long>
-	Var acc: Vector3<Long>
+	Var pos: Vec3<Long>
+	Var vel: Vec3<Long>
+	Var acc: Vec3<Long>
 
-	Def new(pos: Vector3<Long>, vel: Vector3<Long>, acc: Vector3<Long>) =
+	Def new(pos: Vec3<Long>, vel: Vec3<Long>, acc: Vec3<Long>) =
 		this.pos = pos
 		this.vel = vel
 		this.acc = acc
@@ -1052,9 +1052,9 @@ Def ParseParticles(input: String) =
 		val m = regex.matcher(line);
 		m.find()
 
-		val pos = new Vector3<Long>(m.group(1).ToInt(), m.group(2).ToInt(), m.group(3).ToInt())
-		val vel = new Vector3<Long>(m.group(4).ToInt(), m.group(5).ToInt(), m.group(6).ToInt())
-		val acc = new Vector3<Long>(m.group(7).ToInt(), m.group(8).ToInt(), m.group(9).ToInt())
+		val pos = new Vec3<Long>(m.group(1).ToInt(), m.group(2).ToInt(), m.group(3).ToInt())
+		val vel = new Vec3<Long>(m.group(4).ToInt(), m.group(5).ToInt(), m.group(6).ToInt())
+		val acc = new Vec3<Long>(m.group(7).ToInt(), m.group(8).ToInt(), m.group(9).ToInt())
 
 		particles.Add(new Particle(pos, vel, acc))
 	particles

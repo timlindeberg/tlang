@@ -1,6 +1,6 @@
 import java::util::regex::Pattern
 import java::lang::Math
-import T::std::Vector3
+import T::std::Vec3
 
 val input = `p=<-317,1413,1507>, v=<19,-102,-108>, a=<1,-3,-3>
 p=<1639,477,-2519>, v=<-79,-102,130>, a=<-9,9,12>
