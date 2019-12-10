@@ -14,28 +14,28 @@ import scala.collection.mutable
 
 object Imports {
 
-  private val javaLang = List("java", "lang")
-  private val tLang = List("T", "lang")
+  val javaLang = List("java", "lang")
+  val tLang = List("T", "lang")
 
-  private val javaObject = javaLang :+ "Object"
-  private val javaString = javaLang :+ "String"
-  private val TInt = tLang :+ "Int"
-  private val TLong = tLang :+ "Long"
-  private val TFloat = tLang :+ "Float"
-  private val TDouble = tLang :+ "Double"
-  private val TChar = tLang :+ "Char"
-  private val TBool = tLang :+ "Bool"
-  private val TObjectExtension = tLang :+ "ObjectExtension"
-  private val TStringExtension = tLang :+ "StringExtension"
-  private val TIntExtension = tLang :+ "IntExtension"
-  private val TLongExtension = tLang :+ "LongExtension"
-  private val TFloatExtension = tLang :+ "FloatExtension"
-  private val TDoubleExtension = tLang :+ "DoubleExtension"
-  private val TCharExtension = tLang :+ "CharExtension"
+  val JavaObject: List[String] = javaLang :+ "Object"
+  val JavaString: List[String] = javaLang :+ "String"
+  val TInt: List[String] = tLang :+ "Int"
+  val TLong: List[String] = tLang :+ "Long"
+  val TFloat: List[String] = tLang :+ "Float"
+  val TDouble: List[String] = tLang :+ "Double"
+  val TChar: List[String] = tLang :+ "Char"
+  val TBool: List[String] = tLang :+ "Bool"
+  val TObjectExtension: List[String] = tLang :+ "ObjectExtension"
+  val TStringExtension: List[String] = tLang :+ "StringExtension"
+  val TIntExtension: List[String] = tLang :+ "IntExtension"
+  val TLongExtension: List[String] = tLang :+ "LongExtension"
+  val TFloatExtension: List[String] = tLang :+ "FloatExtension"
+  val TDoubleExtension: List[String] = tLang :+ "DoubleExtension"
+  val TCharExtension: List[String] = tLang :+ "CharExtension"
 
   val DefaultImports: List[Import] = List(
-    RegularImport(javaObject),
-    RegularImport(javaString),
+    RegularImport(JavaObject),
+    RegularImport(JavaString),
     RegularImport(TInt),
     RegularImport(TLong),
     RegularImport(TFloat),
@@ -65,14 +65,16 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
 
   private val shortToFull = mutable.Map[String, String]()
   private val fullToShort = mutable.Map[String, String]()
+  private val addedImports = mutable.ListBuffer[Import]()
   private val classPath = ctx.classPath
   private val classSymbolLocator = ClassSymbolLocator(classPath)
   private val templateImporter = new TemplateImporter(ctx)
+  private val defaultImports = DefaultImports.filter { imp => imp.writtenName notIn ctx.ignoredImports }
 
   // Initialize
   {
-    val defaultImports = DefaultImports.filter { imp => imp.writtenName notIn ctx.ignoredImports }
-    (defaultImports ++ imports) foreach { this += _ }
+    defaultImports foreach add
+    imports foreach { this += _ }
   }
 
   def getExtensionClasses(className: String): List[ExtensionClassSymbol] =
@@ -88,16 +90,31 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
   }
 
   def +=(imp: Import): this.type = {
+    defaultImports.find { _ == imp } ifDefined { _ =>
+      report(AlreadyImportedByDefault(imp))
+      return this
+    }
+    addedImports.find { _ == imp } ifDefined { existing =>
+      report(AlreadyImported(imp, existing, imp))
+      return this
+    }
+    add(imp)
+    addedImports += imp
+    this
+  }
+
+  private def add(imp: Import): Unit = {
     debug"Adding import ${ imp.writtenName }"
+
     imp match {
       case imp: RegularImport  => addImport(imp)
       case imp: WildCardImport => addWildCardImport(imp)
     }
-    this
   }
 
   private def addImport(imp: RegularImport): Unit = {
     val shortName = imp.shortName
+
     if (contains(shortName)) {
       report(ConflictingImport(imp.writtenName, getFullName(shortName), imp))
       return
@@ -123,8 +140,18 @@ case class Imports(ctx: Context, override val errorStringContext: ErrorStringCon
     report(CantResolveImport(imp.writtenName, imp))
   }
 
-  private def addWildCardImport(imp: WildCardImport): Unit = {
-    classPath.getClassesInPackage(imp.name) foreach { name => this += RegularImport(name) }
+  private def addWildCardImport(wildCardImport: WildCardImport): Unit = {
+    val classes = classPath.getClassesInPackage(wildCardImport.name)
+    if (classes.isEmpty)
+      report(CantResolveImport(wildCardImport.writtenName, wildCardImport))
+
+    classes foreach { name =>
+      val imp = RegularImport(name).setPos(wildCardImport)
+      addedImports.find { _ == imp } match {
+        case Some(existing) => report(AlreadyImported(imp, existing, wildCardImport))
+        case None           => addImport(imp)
+      }
+    }
   }
 
   def ++=(imps: Imports): this.type = { imps.imports foreach { this += _ }; this }

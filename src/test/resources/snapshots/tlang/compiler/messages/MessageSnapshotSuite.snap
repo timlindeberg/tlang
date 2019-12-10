@@ -29,10 +29,10 @@ F1002: [1mElse is unnecessary since code flow ends in then branch.[0m
 F2006: [1mCannot use variable [35mABC[0m[1m since it may not have been initialized.[0m
 
 ========================================= ImportErrors CantResolveImport
-I2000: [1mCannot resolve import [35mABC[0m[1m.[0m
+I2000: [1mCould not resolve import [35mABC[0m[1m.[0m
 
 ========================================= ImportErrors ConflictingImport
-I2001: [1mImports [35mABC[0m[1m and [35mABC[0m[1m are conflicting.[0m
+I2003: [1mImports [35mABC[0m[1m and [35mABC[0m[1m are conflicting.[0m
 
 ========================================= ImportErrors NoGenerics
 I1000: [1mGeneric import [35mABC[0m[1m did not contain any generic classes.[0m
@@ -336,3 +336,9 @@ N2029: [1mMethods inside annotations need to return one of following types:[0m
 
 ========================================= NamingErrors PrivateMethodInAnnotation
 N2030: [1mMethods inside annotations need to be public.[0m
+
+========================================= ImportErrors AlreadyImported
+I2001: [1;35mT::lang::Int[0m[1m is already imported[0m
+
+========================================= ImportErrors AlreadyImportedByDefault
+I2002: [1;35mT::lang::Int[0m[1m is already imported by default.[0m

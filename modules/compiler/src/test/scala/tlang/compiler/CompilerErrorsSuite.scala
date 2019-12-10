@@ -24,6 +24,7 @@ class CompilerErrorsSuite extends CompilerIntegrationTestSpec with ParallelTestE
 
   testFileForErrors(s"$ErrorResources/Lexing", Lexing)
   testFileForErrors(s"$ErrorResources/Parsing", Lexing andThen Parsing)
+  testFileForErrors(s"$ErrorResources/Imports", Lexing andThen Parsing)
   testFileForErrors(s"$ErrorResources/Templating", Lexing andThen Parsing andThen Templating)
   testFileForErrors(s"$ErrorResources/Naming", Lexing andThen Parsing andThen Templating andThen Naming)
   testFileForErrors(s"$ErrorResources/Typing", Lexing andThen Parsing andThen Templating andThen Naming andThen Typing)

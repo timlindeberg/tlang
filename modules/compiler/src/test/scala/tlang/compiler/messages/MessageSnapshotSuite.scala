@@ -5,8 +5,8 @@ package messages
 import org.scalatest.{FreeSpec, Matchers}
 import tlang.compiler.analyzer._
 import tlang.compiler.ast.ParsingErrors
-import tlang.compiler.ast.Trees.{Modifiable, Private}
-import tlang.compiler.imports.ImportErrors
+import tlang.compiler.ast.Trees.{Modifiable, Private, Import, RegularImport}
+import tlang.compiler.imports.{ImportErrors, Imports}
 import tlang.compiler.lexer.Tokens.{INTLIT, INTLITKIND}
 import tlang.compiler.lexer.{LexingErrors, Token, TokenKind}
 import tlang.compiler.modification.TemplatingErrors
@@ -164,8 +164,9 @@ class MessageSnapshotSuite extends FreeSpec with Matchers with SnapshotTesting {
       case a if a <:< typeOf[String]                         => "ABC"
       case a if a <:< typeOf[Char]                           => 'A'
       case a if a <:< typeOf[Boolean]                        => true
-      case a if a <:< typeOf[Token]                          => new INTLIT(0)
+      case a if a <:< typeOf[Token]                          => INTLIT(0)
       case a if a <:< typeOf[TokenKind]                      => INTLITKIND
+      case a if a <:< typeOf[Import]                         => RegularImport(Imports.TInt)
       case a if a <:< typeOf[Seq[_]]                         => Nil
       case a if a <:< typeOf[Set[_]]                         => Set()
       case a if a <:< typeOf[Symbols.ClassSymbol]            => classSymbol

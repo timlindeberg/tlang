@@ -13,7 +13,7 @@ object TestConstants {
   val TestOutputDirectory: String = "integrationTestFiles"
 
   val AsciiOnly: Boolean = sys.env.get("ascii").contains("true")
-  val UseColors: Boolean = sys.env.get("useColors").contains("true")
+  val UseColors: Boolean = sys.env.get("useColor").contains("true")
   val PrintErrors: Boolean = sys.env.get("printErrors").contains("true")
   val KeepFilesOnExit: Boolean = sys.env.get("keepFilesOnExit").contains("true")
   val Verbose: Boolean = sys.env.get("verbose").contains("true")
