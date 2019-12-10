@@ -1006,11 +1006,11 @@ p=<-2781,1254,-451>, v=<-399,186,-64>, a=<26,-13,0>`
 
 class Particle =
 
-	var pos: Vector3<Double>
-	var vel: Vector3<Double>
-	var acc: Vector3<Double>
+	var pos: Vec3<Double>
+	var vel: Vec3<Double>
+	var acc: Vec3<Double>
 
-	Def new(pos: Vector3<Double>, vel: Vector3<Double>, acc: Vector3<Double>) =
+	Def new(pos: Vec3<Double>, vel: Vec3<Double>, acc: Vec3<Double>) =
 		this.pos = pos
 		this.vel = vel
 		this.acc = acc
@@ -1051,9 +1051,9 @@ Def ParseParticles(input: String) =
 		val m = regex.matcher(line);
 		m.find()
 
-		val pos = new Vector3<Double>(m.group(1).ToInt(), m.group(2).ToInt(), m.group(3).ToInt())
-		val vel = new Vector3<Double>(m.group(4).ToInt(), m.group(5).ToInt(), m.group(6).ToInt())
-		val acc = new Vector3<Double>(m.group(7).ToInt(), m.group(8).ToInt(), m.group(9).ToInt())
+		val pos = new Vec3<Double>(m.group(1).ToInt(), m.group(2).ToInt(), m.group(3).ToInt())
+		val vel = new Vec3<Double>(m.group(4).ToInt(), m.group(5).ToInt(), m.group(6).ToInt())
+		val acc = new Vec3<Double>(m.group(7).ToInt(), m.group(8).ToInt(), m.group(9).ToInt())
 
 		particles[i] = new Particle(pos, vel, acc)
 	particles
