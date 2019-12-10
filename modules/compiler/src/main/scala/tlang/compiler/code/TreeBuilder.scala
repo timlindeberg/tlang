@@ -100,11 +100,12 @@ case class TreeBuilder() {
   }).setType(tpe)
 
   def getCode: GeneratedExpr = {
-    val g = GeneratedExpr(code.toList).setPos(code.head).setType(TUnit)
-    code.last match {
-      case t: Typed => g.setType(t)
-      case _        => g
+    val generatedExpr = GeneratedExpr(code.toList).setPos(code.head)
+    val tpe = code.last match {
+      case typed: Typed => typed.getType
+      case _            => TUnit
     }
+    generatedExpr.setType(tpe)
   }
 
   def setPos(pos: Positioned): Unit = code.foreach(_.setPos(pos))

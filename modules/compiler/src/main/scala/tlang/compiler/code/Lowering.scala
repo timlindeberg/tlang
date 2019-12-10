@@ -401,7 +401,7 @@ class Lowerer(imports: Imports) extends Logging {
 
     def putResult(to: Assignable, from: ExprTree, value: ExprTree) = {
       put(Assign(to, from).setType(to))
-      put(PutValue(value))
+      put(PutOnStack(value))
       setPos(incDec)
       getCode
     }
@@ -637,7 +637,7 @@ class Lowerer(imports: Imports) extends Logging {
     val copyValue = Assign(toSlice, fromArr).setType(arrType)
 
     put(For(List(indexDecl), comparison, List(post), copyValue))
-    put(slice)
+    put(PutOnStack(slice))
 
     setPos(arraySlice)
 
@@ -708,9 +708,9 @@ class Lowerer(imports: Imports) extends Logging {
 
       if (apps.lengthCompare(1) == 0) {
         val ternary = Ternary(condition, access, NullLit()).setType(app.getType.getNullable)
-        return PutValue(ternary)
+        return PutOnStack(ternary)
       }
-      val ifNull = PutValue(NullLit())
+      val ifNull = PutOnStack(NullLit())
       val varDecl = createVarDecl(s"tmp$i", access)
       val thn = List(varDecl, _desugar(i + 1, varDecl.id, apps.tail))
       If(condition, Block(thn), Some(Block(List(ifNull))))
@@ -752,7 +752,7 @@ class Lowerer(imports: Imports) extends Logging {
     val nullableID = putVarDecl("tmp", nullableValue)
 
     val condition = Equals(nullableID, NullLit()).setType(Bool)
-    put(Ternary(condition, ifNull, nullableID).setType(elvis))
+    put(PutOnStack(Ternary(condition, ifNull, nullableID).setType(elvis)))
     setPos(elvis)
     getCode
   }

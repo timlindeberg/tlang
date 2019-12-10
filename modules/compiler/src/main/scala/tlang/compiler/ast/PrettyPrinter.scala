@@ -125,7 +125,7 @@ case class PrettyPrinter()(implicit formatter: Formatter) {
     case Continue()                        => pp"continue"
     case Empty()                           => pp"<EMPTY>"
     case GeneratedExpr(stats)              => pp"${ genExpr(stats) }"
-    case PutValue(expr)                    => s"<PutValue(${ pp"$expr" })>"
+    case PutOnStack(expr)                  => s"<PutOnStack(${ pp"$expr" })>"
   }
 
   private val charEscapeChars = Map('\t' -> "t", '\b' -> "b", '\n' -> "n", '\r' -> "r", '\f' -> "f", '\\' -> "\\")

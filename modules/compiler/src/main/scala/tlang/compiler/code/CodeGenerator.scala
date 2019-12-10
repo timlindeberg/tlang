@@ -133,19 +133,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
   def compileStat(statement: StatTree,
     continue: Option[String] = None,
-    break: Option[String] = None,
-    compileUseless: Boolean = false): Unit = {
+    break: Option[String] = None): Unit = {
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                    =>
-        if (compileUseless)
-          compileExpr(expr)
+        compileExpr(expr)
         expr.getType match {
           case Types.TUnit =>
           case tpe         => tpe.codes.pop(ch)
         }
       case Block(stats)                              =>
-        stats.foreach(compileStat(_, continue, break, compileUseless))
+        stats.foreach(compileStat(_, continue, break))
       case v@VarDecl(_, _, init, _, _)               =>
         val sym = v.getSymbol
         val tpe = sym.getType
@@ -163,12 +161,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
         compileBranch(conditionExpr, Label(thn), Label(els))
         ch << Label(thn)
-        compileStat(thnStat, continue, break, compileUseless)
+        compileStat(thnStat, continue, break)
         if (elsStat.isDefined)
           ch << Goto(after)
         ch << Label(els)
         if (elsStat.isDefined)
-          compileStat(elsStat.get, continue, break, compileUseless)
+          compileStat(elsStat.get, continue, break)
         ch << Label(after)
       case While(conditionExpr, stat)                =>
         val body = ch.getFreshLabel("body")
@@ -177,7 +175,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
 
         ch << Goto(condition)
         ch << Label(body)
-        compileStat(stat, Some(condition), Some(after), compileUseless)
+        compileStat(stat, Some(condition), Some(after))
         ch << Label(condition)
         compileBranch(conditionExpr, Label(body), Label(after))
         ch << Label(after)
@@ -187,12 +185,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         val after = ch.getFreshLabel("after")
         val post = ch.getFreshLabel("post")
 
-        init.foreach(stat => compileStat(stat, compileUseless = compileUseless))
+        init.foreach(stat => compileStat(stat))
         ch << Goto(condition)
         ch << Label(body)
-        compileStat(stat, Some(post), Some(after), compileUseless)
+        compileStat(stat, Some(post), Some(after))
         ch << Label(post)
-        postExprs.foreach(expr => compileStat(expr, compileUseless = compileUseless))
+        postExprs.foreach(expr => compileStat(expr))
         ch << Label(condition)
         compileBranch(conditionExpr, Label(body), Label(after))
         ch << Label(after)
@@ -403,14 +401,14 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << Label(elsLabel)
         compileAndConvert(els, ternaryType)
         ch << Label(afterLabel)
-      case PutValue(expr)                               =>
+      case PutOnStack(expr)                             =>
         compileExpr(expr)
       case GeneratedExpr(stats)                         =>
-        // Generated expressions are always compiled, they cannot have useless expressions
         stats.foreach {
-          case PutValue(expr) => if (duplicate)
-            compileExpr(expr)
-          case stat           => compileStat(stat, compileUseless = true)
+          case PutOnStack(expr) =>
+            if (duplicate)
+              compileExpr(expr)
+          case stat             => compileStat(stat)
         }
     }
   }

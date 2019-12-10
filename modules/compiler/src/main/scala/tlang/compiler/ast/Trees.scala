@@ -727,7 +727,7 @@ object Trees {
 
   // Expression that will be compiled if a value is to be left
   // on the stack.
-  case class PutValue(exprTree: ExprTree) extends ExprTree {
+  case class PutOnStack(exprTree: ExprTree) extends ExprTree {
     override def getType: Type = exprTree.getType
   }
 
@@ -744,7 +744,7 @@ object Trees {
       case IncrementDecrementTree(_)   => None
       case _: Assign                   => None
       case _: GeneratedExpr            => None
-      case _: PutValue                 => None
+      case _: PutOnStack               => None
       case expr: ExprTree              => Some(expr)
       case _                           => None
     }
