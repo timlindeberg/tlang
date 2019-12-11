@@ -102,7 +102,7 @@ class Matrix<T> =
 			data[i] = new MatrixRow<T>(columns)
 
 	def static errorInvalidDimensions(m1: Matrix<T>, m2: Matrix<T>) =
-		error("Invalid dimensions for matrix operaton: (" + m1.rows + ", " + m1.columns + ") and (" + m2.rows + ", " + m2.columns + ").")
+		error("Invalid dimensions for matrix operation: (" + m1.rows + ", " + m1.columns + ") and (" + m2.rows + ", " + m2.columns + ").")
 
 class MatrixRow<T> =
 
