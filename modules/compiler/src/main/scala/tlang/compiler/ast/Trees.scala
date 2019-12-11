@@ -722,7 +722,7 @@ object Trees {
   // Used to generate code which doesn't fit the tree structure but
   // which fits when generating bytecode. Can be used to transform an expression
   // in to multiple statements etc.
-  // Generated when desugaring.
+  // Generated when lowering.
   case class GeneratedExpr(stats: List[StatTree]) extends ExprTree
 
   // Expression that will be compiled if a value is to be left

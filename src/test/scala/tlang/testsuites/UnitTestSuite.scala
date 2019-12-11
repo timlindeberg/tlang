@@ -1,4 +1,5 @@
-package tlang.testsuites
+package tlang
+package testsuites
 
 import org.scalatest.Suites
 import tlang.compiler.CompilerSuite

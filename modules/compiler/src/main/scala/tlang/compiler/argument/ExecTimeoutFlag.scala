@@ -1,4 +1,6 @@
-package tlang.compiler.argument
+package tlang
+package compiler
+package argument
 
 import java.util.concurrent.TimeUnit
 

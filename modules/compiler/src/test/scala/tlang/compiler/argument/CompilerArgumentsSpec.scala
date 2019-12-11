@@ -339,22 +339,22 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
   }
 
-  it should "use exec-timeout argument" in {
+  it should "use exectimeout argument" in {
     test("No arguments should give default width") {
       val options = createOptions("")
       options(ExecTimeoutFlag) shouldBe Duration.Inf
     }
 
     test("With arguments should pick largest value") {
-      val options = createOptions("--exec-timeout 5.0,10.1 --exec-timeout 25.25")
+      val options = createOptions("--exectimeout 5.0,10.1 --exectimeout 25.25")
       options(ExecTimeoutFlag) shouldBe Duration(25.25, TimeUnit.SECONDS)
     }
 
     test("Invalid argument") {
-      intercept[IllegalArgumentException] { createOptions("--exec-timeout abc") }
+      intercept[IllegalArgumentException] { createOptions("--exectimeout abc") }
         .getMessage should include("abc")
 
-      intercept[IllegalArgumentException] { createOptions("--exec-timeout -5") }
+      intercept[IllegalArgumentException] { createOptions("--exectimeout -5") }
         .getMessage should include("-5")
     }
   }

@@ -1,6 +1,6 @@
 package tlang
 package compiler
-package code
+package lowering
 
 import tlang.compiler.analyzer.Symbols.{ClassSymbol, MethodSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types._
@@ -9,6 +9,10 @@ import tlang.compiler.imports.Imports
 import tlang.utils.Positioned
 
 import scala.collection.mutable.ListBuffer
+
+object TreeBuilder {
+  val ThisName = "$this"
+}
 
 case class TreeBuilder() {
   val code: ListBuffer[StatTree] = ListBuffer()
@@ -105,6 +109,7 @@ case class TreeBuilder() {
       case typed: Typed => typed.getType
       case _            => TUnit
     }
+    code.clear()
     generatedExpr.setType(tpe)
   }
 

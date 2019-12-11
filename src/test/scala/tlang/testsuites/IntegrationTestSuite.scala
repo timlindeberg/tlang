@@ -1,4 +1,5 @@
-package tlang.testsuites
+package tlang
+package testsuites
 
 import better.files._
 import org.scalatest.{BeforeAndAfterAll, Suites}
@@ -7,7 +8,6 @@ import tlang.compiler.ast.PrettyPrinterSpec
 import tlang.compiler.messages.MessageSnapshotSuite
 import tlang.compiler.{CompilerErrorsSuite, PositionSuite, ValidProgramsSuite}
 import tlang.repl.ReplIntegrationSpec
-
 
 class IntegrationTestSuite extends Suites(
   new CompilerErrorsSuite,

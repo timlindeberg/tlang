@@ -6,8 +6,9 @@ import cafebabe.CodegenerationStackTrace
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees.CompilationUnit
-import tlang.compiler.code.{CodeGeneration, Lowering}
+import tlang.compiler.code.CodeGeneration
 import tlang.compiler.lexer.Lexing
+import tlang.compiler.lowering.Lowering
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.compiler.modification.Templating
 import tlang.compiler.output.ErrorMessageOutput

@@ -32,7 +32,7 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
        |All these phase can be used as arguments.
        |If no argument is given the code is printed as it looks before the final code is generated (after the Lowering phase).
        |
-       |Example: $formattedName ${ highlight("lexer") },${ highlight("desugaring") },${ highlight("codegeneration") }
+       |Example: $formattedName ${ highlight("lexer") },${ highlight("lowering") },${ highlight("codegeneration") }
       """
 
   override protected def verify(arg: String)(implicit errorContext: ErrorStringContext): Unit = {

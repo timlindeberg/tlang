@@ -1,4 +1,5 @@
-package tlang.testutils
+package tlang
+package testutils
 
 object LocalTestName {
   val LocalNameSeparator: String = " "

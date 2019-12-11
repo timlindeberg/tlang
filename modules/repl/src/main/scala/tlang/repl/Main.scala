@@ -8,8 +8,8 @@ import com.typesafe.config.ConfigFactory
 import tlang.compiler.Context
 import tlang.compiler.argument.TFilesArgument
 import tlang.compiler.ast.PrettyPrinter
-import tlang.compiler.code.TreeBuilder
 import tlang.compiler.imports.{ClassPath, Imports}
+import tlang.compiler.lowering.TreeBuilder
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.PrettyOutputHandler
 import tlang.compiler.utils.TLangSyntaxHighlighter

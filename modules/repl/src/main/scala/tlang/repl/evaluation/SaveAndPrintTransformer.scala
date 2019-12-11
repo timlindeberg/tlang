@@ -5,7 +5,7 @@ package evaluation
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
-import tlang.compiler.code.TreeBuilder
+import tlang.compiler.lowering.TreeBuilder
 
 /**
  * Adds a variable declaration and print statement for each of the entered
