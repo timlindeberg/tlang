@@ -2,6 +2,7 @@ package tlang
 package options
 
 import tlang.formatting.{ErrorStringContext, Formatter}
+import tlang.options.argument.HelpFlag
 import tlang.utils.JSON.Json
 
 import scala.collection.mutable
@@ -41,7 +42,7 @@ case class Options(
       .getOrElse {
         val arg :: rest = args
         if (arg.startsWith("-"))
-          ErrorInvalidFlag(arg)
+          errorInvalidFlag(arg)
 
         positionalArgument match {
           case Some(positional) =>
@@ -49,7 +50,7 @@ case class Options(
               positional.verifyArgument(arg)
               addArg(positional, arg)
             }
-          case None             => ErrorUnrecognizedArgument(arg)
+          case None             => errorUnrecognizedArgument(arg)
         }
         rest
       }
@@ -58,6 +59,7 @@ case class Options(
   }
 
   processOptions(arguments.toList)
+  verifyCompatibility()
 
   private def addArg(argument: Argument[_], args: String): Unit = addArgs(argument, Set(args))
   private def addArgs(argument: Argument[_], args: Set[String]): Unit = {
@@ -65,16 +67,35 @@ case class Options(
     argumentValues += argument -> (existing ++ args)
   }
 
-  private def ErrorUnrecognizedArgument(arg: String) = {
+  private def verifyCompatibility(): Unit = {
+    argumentValues.foreach { case (arg, _) =>
+      arg.incompatibleWith.find { incompatible => argumentValues.contains(incompatible) } ifDefined { incompatible =>
+        errorIncompatibleFlags(arg, incompatible)
+      }
+    }
+  }
+
+  private def errorUnrecognizedArgument(arg: String) = {
     import errorContext.ErrorStringContext
     throw new IllegalArgumentException(err"$arg is not a valid argument.")
   }
 
-  private def ErrorInvalidFlag(arg: String) = {
+  private def errorInvalidFlag(arg: String) = {
     import errorContext.ErrorStringContext
+    import errorContext.formatter
+
     val suggestion = errorContext.suggestion(arg, flags.flatMap(_.names).toList)
     throw new IllegalArgumentException(
-      err"$arg is not a valid flag.$suggestion Type '--help' to see a list of valid commands."
+      err"$arg is not a valid flag.$suggestion$NL Type ${ HelpFlag.formattedName } to see a list of valid commands."
+    )
+  }
+
+  private def errorIncompatibleFlags(flag1: Argument[_], flag2: Argument[_]) = {
+    import errorContext.ErrorStringContext
+    import errorContext.formatter
+
+    throw new IllegalArgumentException(
+      err"The flag ${ flag1.formattedName } is incompatible with the flag ${ flag2.formattedName }."
     )
   }
 
@@ -98,6 +119,9 @@ case class Options(
 trait Argument[T] {
   def parseValue(args: Set[String]): T
   def error(message: String): Nothing = throw new IllegalArgumentException(message)
+  def incompatibleWith: Set[Argument[_]] = Set()
+  def name: String
+  def formattedName(implicit formatter: Formatter): String = formatter.Magenta(name)
 }
 
 trait PositionalArgument[T] extends Argument[T] {
@@ -105,7 +129,6 @@ trait PositionalArgument[T] extends Argument[T] {
 }
 
 trait FlagArgument[T] extends Argument[T] {
-  def name: String
   def shortFlag: Option[String] = None
 
   def getDescription(implicit formatter: Formatter): String = cleanDescription(description)
@@ -118,8 +141,10 @@ trait FlagArgument[T] extends Argument[T] {
   def flagName(implicit formatter: Formatter): String = {
     import formatter._
     val shortFlagDescription = shortFlag.map { f => s" (-${ Magenta(f) })" }.getOrElse("")
-    flag(name) + shortFlagDescription
+    formattedName + shortFlagDescription
   }
+
+  override def formattedName(implicit formatter: Formatter): String = s"--${ formatter.Magenta(name) }"
 
   def names: List[String] = s"--$name" :: shortFlag.map(short => List(s"-$short")).getOrElse(Nil)
 
@@ -133,12 +158,6 @@ trait FlagArgument[T] extends Argument[T] {
       "extendedDescription" -> extendedDescription,
       "shortName" -> shortFlag.map(flag => s"-$flag")
     )
-  }
-
-  def flag(flag: FlagArgument[_])(implicit formatter: Formatter): String = this.flag(flag.name)
-  def flag(flagName: String)(implicit formatter: Formatter): String = {
-    import formatter._
-    s"--${ Magenta(flagName) }"
   }
 
   def highlight(value: Any)(implicit formatter: Formatter): String = {

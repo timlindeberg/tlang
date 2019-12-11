@@ -13,6 +13,7 @@ class OptionsSpec extends UnitSpec {
   it should "parse positional arguments" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
       override def parseValue(args: Set[String]): Set[String] = args
+      override def name = "positionalArg"
     }
 
     val args = "ABC DEF GHI".split(" ")
@@ -167,6 +168,7 @@ class OptionsSpec extends UnitSpec {
   it should "parse flags in any order" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
       override def parseValue(args: Set[String]): Set[String] = args
+      override def name = "positionalArg"
     }
 
     val argFlag: ArgumentFlag[Set[String]] = new ArgumentFlag[Set[String]] {
@@ -270,6 +272,7 @@ class OptionsSpec extends UnitSpec {
   it should "remove duplicates" in {
     val positionalArgument = new PositionalArgument[Set[String]]() {
       override def parseValue(args: Set[String]): Set[String] = args
+      override def name = "positionalArg"
     }
 
     val argFlag: ArgumentFlag[Set[String]] = new ArgumentFlag[Set[String]] {
@@ -338,5 +341,23 @@ class OptionsSpec extends UnitSpec {
 
     intercept[IllegalArgumentException] { Options(flags, None, "--a 1234567891011121314151617181920".split(" ")) }
       .getMessage should include("1234567891011121314151617181920")
+  }
+
+  it should "throw when given incompatible flags" in {
+    val a: BooleanFlag = new BooleanFlag {
+      override def name = "a"
+      override def description(implicit formatter: Formatter): Nothing = ???
+    }
+    val b: BooleanFlag = new BooleanFlag {
+      override def name = "b"
+      override def description(implicit formatter: Formatter): Nothing = ???
+      override def incompatibleWith: Set[Argument[_]] = Set(a)
+    }
+    val flags: Set[FlagArgument[_]] = Set(a, b)
+    val message = intercept[IllegalArgumentException] { Options(flags, None, "--a --b".split(" ")) }
+      .getMessage
+    message should include("--b")
+    message should include("--a")
+    message should include("incompatible")
   }
 }

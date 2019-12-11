@@ -10,7 +10,7 @@ case object AsciiFlag extends BooleanFlag {
   override def description(implicit formatter: Formatter): String =
     s"""
        |Prints all output from the compiler using only ASCII characters. No Unicode characters will be printed.
-       |Type ${ flag(HelpFlag.Name) } ${ highlight(name) } for more information.
+       |Type ${ HelpFlag.formattedName } ${ highlight(name) } for more information.
       """
 
   override def extendedDescription(implicit formatter: Formatter): String =

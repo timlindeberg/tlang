@@ -18,7 +18,7 @@ case object ExecTimeoutFlag extends ArgumentFlag[Duration] {
        |The execution will cancel once the timout is reached. If ${ highlight(-1) } is passed
        |the program will never timeout.
        |
-       |Example: ${ flag(name) } ${ highlight(2.5) } will timeout after ${ highlight(2.5) } seconds
+       |Example: $formattedName ${ highlight(2.5) } will timeout after ${ highlight(2.5) } seconds
       """
   }
 

@@ -15,12 +15,12 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
   override def description(implicit formatter: Formatter): String =
     s"""
        |Define the color scheme to use when printing error messages and code output.
-       |Argument is a list comma separated key-values, type ${ flag(HelpFlag.Name) } ${ highlight(name) } for more details.
+       |Argument is a list comma separated key-values, type ${ HelpFlag.formattedName } ${ highlight(name) } for more details.
       """
 
   override def extendedDescription(implicit formatter: Formatter): String =
     s"""
-       |The ${ flag(this) } flag accepts key-value-pairs as it's argument. The following types can be set:
+       |The $formattedName flag accepts key-value-pairs as it's argument. The following types can be set:
        |
        |$validKeys
        |
@@ -30,7 +30,7 @@ case object ColorSchemeFlag extends DictionaryFlag[ColorScheme] {
        |
        |Example:
        |
-       |${ flag(this) } $KeywordName=red,$VariableName=1,$ClassName=4,$MethodName=magenta,$StringName=green,$NumberName=bold,$CommentName=underlined,$SymbolName=black
+       |$formattedName $KeywordName=red,$VariableName=1,$ClassName=4,$MethodName=magenta,$StringName=green,$NumberName=bold,$CommentName=underlined,$SymbolName=black
        |"""
 
   override def verifyArg(colorKey: String, color: String)(implicit errorContext: ErrorStringContext): Unit = {

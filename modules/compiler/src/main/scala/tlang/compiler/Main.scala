@@ -101,9 +101,9 @@ object Main extends Logging {
   }
 
   private def parseOptions(args: Array[String]): Options = {
-    val errorContext = ErrorStringContext()(Formatter.SimpleFormatter)
+    implicit val errorContext: ErrorStringContext = ErrorStringContext()(Formatter.SimpleFormatter)
     try {
-      Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
+      Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)
     } catch {
       case e: IllegalArgumentException =>
         println(e.getMessage)
@@ -229,7 +229,7 @@ case class Main(ctx: Context) extends Logging {
     }
     val args = options(CompilerHelpFlag)
 
-    if (HelpFlag.DefaultArg in args) {
+    if (HelpFlag.defaultArg in args) {
       ctx.output += HelpOutput(CompilerFlags)
       exit(0)
     }
@@ -252,7 +252,6 @@ case class Main(ctx: Context) extends Logging {
   }
 
   private def executePrograms(cus: Seq[CompilationUnit]): Unit = {
-
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     val sources = cusWithMainMethods map { _.source.get }
     if (options(JSONFlag)) {
@@ -322,7 +321,7 @@ case class Main(ctx: Context) extends Logging {
       stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
-  private def printStackTrace(source: Source, exception: Throwable) = {
+  private def printStackTrace(source: Source, exception: Throwable): Unit = {
     import formatter._
 
     val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(exception))
@@ -333,7 +332,7 @@ case class Main(ctx: Context) extends Logging {
       .print()
   }
 
-  private def printCancelation() = {
+  private def printCancelation(): Unit = {
     import formatter._
     grid
       .row()
@@ -341,7 +340,7 @@ case class Main(ctx: Context) extends Logging {
       .print()
   }
 
-  private def printTimeout(timeout: Duration) = {
+  private def printTimeout(timeout: Duration): Unit = {
     import formatter._
     grid
       .row()

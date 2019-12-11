@@ -8,6 +8,8 @@ import tlang.options.PositionalArgument
 
 case object TFilesArgument extends PositionalArgument[Set[File]] {
 
+  override def name: String = "tfiles"
+
   override def verifyArgument(path: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 

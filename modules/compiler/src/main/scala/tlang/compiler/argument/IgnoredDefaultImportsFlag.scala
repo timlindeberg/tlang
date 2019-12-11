@@ -23,7 +23,7 @@ case object IgnoredDefaultImportsFlag extends ArgumentFlag[Set[String]] {
     s"""
        |Specify a default import to ignore.
        |
-       |Example: ${ flag(this) } ${ highlight("java::lang::Object") }
+       |Example: $formattedName ${ highlight("java::lang::Object") }
       """
 
   override def parseValue(ignoredImports: Set[String]): Set[String] = {
