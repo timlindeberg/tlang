@@ -7,7 +7,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.testutils.TreeTesting
 import tlang.testutils.UnitSpec
-import tlang.utils.{ExecutionResult, ProgramExecutor, StringSource}
+import tlang.utils.{ExecutionResult, MainMethodExecutor, StringSource}
 
 class EvaluatorSpec extends UnitSpec with TreeTesting {
 
@@ -139,9 +139,9 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     val compile = mock[List[CompilationUnit] => Unit]
 
     val classFile = mock[File]
-    val programExecutor = mock[ProgramExecutor]
+    val mainMethodExecutor = mock[MainMethodExecutor]
 
-    programExecutor(classFile) returns ExecutionResult(
+    mainMethodExecutor(classFile) returns ExecutionResult(
       output =
         s"""
            |${ Evaluator.ReplOutputMarker }val res1: Int = 6
@@ -153,7 +153,7 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     val evaluator = Evaluator(
       classFile,
       extractor,
-      programExecutor,
+      mainMethodExecutor,
       saveAndPrintTransformer,
       replState,
       parse,
@@ -170,6 +170,6 @@ class EvaluatorSpec extends UnitSpec with TreeTesting {
     there was one(analyze).apply(List(adjustedCompilationUnit))
     there was one(compile).apply(List(saveAndPrintTransformed))
     there was one(saveAndPrintTransformer).apply(adjustedCompilationUnit)
-    there was one(programExecutor).apply(classFile)
+    there was one(mainMethodExecutor).apply(classFile)
   }
 }

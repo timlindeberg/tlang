@@ -15,6 +15,17 @@ case class StackTraceHighlighter(failOnError: Boolean = false)(implicit formatte
     if (stackTrace.trim.isEmpty) "" else StackTraceParser.parse(stackTrace)
   }
 
+  def stackTraceFromFile(fileName: String, throwable: Throwable): String = {
+    val stackTrace = apply(throwable)
+    val stackTraceLines = stackTrace.lines.toList
+    val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
+
+    if (lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
+      stackTrace
+    else
+      stackTraceLines.take(lastRow + 1).mkString(NL)
+  }
+
   object StackTraceParser extends RegexParsers {
 
     import formatter._

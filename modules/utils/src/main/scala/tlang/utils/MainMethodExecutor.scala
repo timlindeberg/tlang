@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext
 
 case class ExecutionResult(output: String, time: Double, exception: Option[Throwable] = None)
 
-trait ProgramExecutor {
+trait MainMethodExecutor {
   def classPaths: Set[String]
   def apply(classFile: File): ExecutionResult = apply(classFile.name.replaceAll("\\..*", ""))
   def apply(className: String): ExecutionResult = executeClass(className)
@@ -51,7 +51,7 @@ trait ProgramExecutor {
   }
 }
 
-case class DefaultProgramExecutor(classPaths: Set[String]) extends ProgramExecutor {
+case class DefaultMainMethodExecutor(classPaths: Set[String]) extends MainMethodExecutor {
 
   protected def execute(method: Method, className: String): ExecutionResult = {
     // In order to run tests in parallel we use a custom PrintStream to redirect threads started
@@ -78,7 +78,7 @@ case class DefaultProgramExecutor(classPaths: Set[String]) extends ProgramExecut
   }
 }
 
-case class StreamingProgramExecutor(classPaths: Set[String], lineHandler: (String, Int) => Unit) extends ProgramExecutor {
+case class StreamingMainMethodExecutor(classPaths: Set[String], lineHandler: (String, Int) => Unit) extends MainMethodExecutor {
 
   protected def execute(method: Method, className: String): ExecutionResult = {
     var exception: Option[Throwable] = None

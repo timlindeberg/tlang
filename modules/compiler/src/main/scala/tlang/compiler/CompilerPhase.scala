@@ -2,6 +2,7 @@ package tlang
 package compiler
 
 import tlang.compiler.ast.Trees.CompilationUnit
+import tlang.compiler.execution.Compiler
 import tlang.compiler.messages.TemplateNameReplacer
 import tlang.compiler.output.Output
 import tlang.formatting._
@@ -39,11 +40,11 @@ abstract class CompilerPhase[F, T] extends Logging {
   def execute(ctx: Context)(v: List[F]): List[T] = {
     import ctx.formatter
 
-    if (Main.CompilerPhases.contains(this))
+    if (Compiler.Phases.contains(this))
       info"Executing compiler stage $phaseName"
 
     val (output, time) = measureTime { run(ctx)(v) }
-    if (Main.CompilerPhases.contains(this)) {
+    if (Compiler.Phases.contains(this)) {
       ctx.executionTimes += phaseName -> time
 
       if (phaseName in ctx.printCodePhase)

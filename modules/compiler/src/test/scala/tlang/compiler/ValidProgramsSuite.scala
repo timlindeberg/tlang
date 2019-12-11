@@ -7,12 +7,13 @@ import tlang.compiler.analyzer.Symbols.Symbolic
 import tlang.compiler.analyzer.Types.Typed
 import tlang.compiler.ast.TreePrinter
 import tlang.compiler.ast.Trees.{CompilationUnit, Tree}
+import tlang.compiler.execution.Compiler
 import tlang.compiler.messages.CompilationException
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants._
-import tlang.utils.{DefaultProgramExecutor, FileSource, Logging}
+import tlang.utils.{DefaultMainMethodExecutor, FileSource, Logging}
 
 import scala.runtime.ScalaRunTime
 
@@ -25,11 +26,11 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
   def testValidProgram(file: File): Unit = {
     val ctx = testContext(Some(file))
 
-    val programExecutor = DefaultProgramExecutor(ctx.allClassPaths)
+    val mainMethodExecutor = DefaultMainMethodExecutor(ctx.allClassPaths)
 
     val sources = FileSource(file) :: Nil
     val cus = try {
-      Main.FrontEnd.execute(ctx)(sources)
+      Compiler.FrontEnd.execute(ctx)(sources)
     } catch {
       case e: CompilationException =>
         ctx.output += ErrorMessageOutput(e.messages)
@@ -42,12 +43,12 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
     ctx.reporter.hasErrors shouldBe false
     cus foreach verifyTypesAndSymbols
 
-    Main.GenerateCode.execute(ctx)(cus)
+    Compiler.GenerateCode.execute(ctx)(cus)
 
     if (Verbose)
       printExecutionTimes(file, ctx)
 
-    val res = programExecutor(file)
+    val res = mainMethodExecutor(file)
     res.exception.ifDefined { e => fail(s"Program execution failed with exception: ${ e.stackTrace }") }
     val resLines = lines(res.output)
     val sol = parseSolutions(file)

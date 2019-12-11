@@ -4,9 +4,10 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 import better.files.File
+import tlang.compiler.Context
 import tlang.compiler.ast.Trees.CompilationUnit
+import tlang.compiler.execution.Compiler
 import tlang.compiler.messages.{CompilationException, CompilerMessage, MessageType}
-import tlang.compiler.{Context, Main}
 import tlang.utils.StringSource
 
 import scala.concurrent.duration.Duration
@@ -43,10 +44,10 @@ case class SafeEvaluator(ctx: Context, dockerScript: String, timeout: Duration) 
     val evaluationCtx = ctx.copy(outDirs = Set(outDir))(ctx.formatter)
 
     try {
-      val cus = Main.FrontEnd.execute(evaluationCtx)(source)
+      val cus = Compiler.FrontEnd.execute(evaluationCtx)(source)
       if (!hasMainMethod(cus))
         return Evaluation(Future(NoOutput), identity)
-      Main.GenerateCode.execute(evaluationCtx)(cus)
+      Compiler.GenerateCode.execute(evaluationCtx)(cus)
     } catch {
       case e: CompilationException =>
         val executionResult = CompilationError(e.messages(MessageType.Error))

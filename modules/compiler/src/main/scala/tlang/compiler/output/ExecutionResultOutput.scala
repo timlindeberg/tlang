@@ -43,7 +43,7 @@ case class ExecutionResultOutput(
     }
 
     def addException(source: Source, exception: Throwable) = {
-      val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(exception))
+      val stackTrace = stackTraceHighlighter.stackTraceFromFile(source.mainName, exception)
       grid
         .row(alignment = Center)
         .content(source.errorDescription)
@@ -62,15 +62,6 @@ case class ExecutionResultOutput(
     }
 
     grid.render()
-  }
-
-  private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
-    val stackTraceLines = stackTrace.lines.toList
-    val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
-    if (lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
-      stackTrace
-    else
-      stackTraceLines.take(lastRow + 1).mkString(NL)
   }
 
   override def json: Json = Json(

@@ -12,7 +12,7 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.code.{CodeGeneration, Lowering}
 import tlang.compiler.lexer.Lexing
 import tlang.compiler.modification.Templating
-import tlang.utils.{Logging, ProgramExecutor, StringSource}
+import tlang.utils.{Logging, MainMethodExecutor, StringSource}
 
 object Evaluator {
 
@@ -23,7 +23,7 @@ object Evaluator {
 
   def apply(ctx: Context,
     extractor: Extractor,
-    programExecutor: ProgramExecutor,
+    mainMethodExecutor: MainMethodExecutor,
     saveAndPrintTransformer: SaveAndPrintTransformer,
     state: ReplState): Evaluator = {
     val parser = Lexing andThen Parsing
@@ -34,7 +34,7 @@ object Evaluator {
     Evaluator(
       classFile,
       extractor,
-      programExecutor,
+      mainMethodExecutor,
       saveAndPrintTransformer,
       state,
       parse = input => parser.execute(ctx)(input),
@@ -47,7 +47,7 @@ object Evaluator {
 case class Evaluator(
   classFile: File,
   extractor: Extractor,
-  programExecutor: ProgramExecutor,
+  mainMethodExecutor: MainMethodExecutor,
   saveAndPrintTransformer: SaveAndPrintTransformer,
   state: ReplState,
   parse: List[StringSource] => List[CompilationUnit],
@@ -94,7 +94,7 @@ case class Evaluator(
     compile(cus)
 
     debug"Executing program $classFile"
-    val res = programExecutor(classFile)
+    val res = mainMethodExecutor(classFile)
     res.exception.ifDefined { e => throw new InvocationTargetException(e) }
     state.addStatementsToHistory()
 

@@ -2,6 +2,7 @@ package tlang
 package compiler
 package output
 
+import tlang.compiler.execution.Compiler
 import tlang.formatting.Colors.Color
 import tlang.formatting.Formatter
 import tlang.utils.JSON.Json
@@ -30,7 +31,7 @@ case class ExecutionTimeOutput(
       return ""
 
     val totalTime = executionTimes.values.sum
-    val executedPhases = Main.CompilerPhases
+    val executedPhases = Compiler.Phases
       .map(_.phaseName)
       .filter(executionTimes.contains)
 

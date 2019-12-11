@@ -2,6 +2,7 @@ package tlang
 package compiler
 package argument
 
+import tlang.compiler.execution.Compiler
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.ArgumentFlag
 import tlang.options.argument.HelpFlag
@@ -10,7 +11,7 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
   override val name = "printoutput"
   override val argDescription = "phase"
 
-  private lazy val compilerPhases = Main.CompilerPhases.map(_.phaseName)
+  private lazy val compilerPhases = Compiler.Phases.map(_.phaseName)
 
   override def description(implicit formatter: Formatter): String =
     s"""
@@ -49,6 +50,6 @@ case object PrintOutputFlag extends ArgumentFlag[Set[String]] {
 
   private def phases(implicit formatter: Formatter): String = {
     import formatter._
-    formatter.list(Main.CompilerPhases.map(phase => Blue(phase.phaseName.capitalize)))
+    formatter.list(Compiler.Phases.map(phase => Blue(phase.phaseName.capitalize)))
   }
 }

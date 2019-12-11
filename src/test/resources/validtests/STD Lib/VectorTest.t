@@ -27,6 +27,7 @@ Def Construction() =
 	t.AssertEquals(v1.Get(2), 3)
 	t.AssertEquals(v1.Size(), 3)
 
+
 	val v2: Vector<Int> = new Vector<Int>()
 	t.AssertEquals(v2.Size(), 0)
 	t.AssertTrue(v2.IsEmpty())
@@ -273,7 +274,7 @@ Def Foreach() =
 	val v: Vector<Int> = [ 1, 2, 3, 4, 5, 6 ]
 
 	var i = 1
-	for(var value in v)
+	for(val value in v)
 		t.AssertEquals(i++, value)
 
 Def Splice() =

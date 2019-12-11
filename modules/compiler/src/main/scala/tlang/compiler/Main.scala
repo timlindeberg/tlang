@@ -1,61 +1,22 @@
 package tlang
 package compiler
 
-import cafebabe.CodegenerationStackTrace
-import sun.misc.Signal
 import tlang.Constants._
-import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.argument._
-import tlang.compiler.ast.Parsing
 import tlang.compiler.ast.Trees._
-import tlang.compiler.code.{CodeGeneration, Lowering}
+import tlang.compiler.execution.{CompilationWatcher, Compiler, ExitException, ProgramExecutor}
 import tlang.compiler.imports.ClassPath
-import tlang.compiler.lexer.Lexing
 import tlang.compiler.messages._
-import tlang.compiler.modification.Templating
 import tlang.compiler.output._
 import tlang.compiler.output.help.{FlagInfoOutput, HelpOutput, PhaseInfoOutput, VersionOutput}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.formatting.grid.Width.Fixed
-import tlang.formatting.grid.{CenteredContent, Column, OverflowHandling}
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, CancellationException, TimeoutException}
-import scala.util.{Failure, Success, Try}
-
-case class ExitException(code: Int) extends Throwable
-
 object Main extends Logging {
-
-  val FrontEnd: CompilerPhase[Source, CompilationUnit] =
-    Lexing andThen
-      Parsing andThen
-      Templating andThen
-      Naming andThen
-      Typing andThen
-      Flowing
-
-  val GenerateCode: CompilerPhase[CompilationUnit, CodegenerationStackTrace] =
-    Lowering andThen CodeGeneration
-
-  val Compiler: CompilerPhase[Source, CodegenerationStackTrace] = FrontEnd andThen GenerateCode
-
-  val CompilerPhases: Seq[CompilerPhase[_, _]] = List(
-    Lexing,
-    Parsing,
-    Templating,
-    Naming,
-    Typing,
-    Flowing,
-    Lowering,
-    CodeGeneration
-  )
-
   val CompilerFlags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
@@ -132,15 +93,17 @@ object Main extends Logging {
 case class Main(ctx: Context) extends Logging {
 
   import Main._
-  import ctx._
+  import ctx.{formatter, options}
 
   private implicit val syntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
-  private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter(failOnError = false)
+  private implicit val stackTraceHighlighter: StackTraceHighlighter = StackTraceHighlighter()
 
-  private var cancelExecution: Option[CancellableFuture.CancelFunction] = None
+  private val interruptionHandler = InterruptionHandler()
+  private val programExecutor = ProgramExecutor(ctx, interruptionHandler)
+  private val compiler = Compiler(ctx)
 
   def run(): Unit = {
-    Signal.handle(new Signal("INT"), (_: Signal) => onInterrupt())
+    interruptionHandler.setHandler(onInterrupt _)
 
     if (options.isEmpty) {
       ctx.output += HelpOutput(CompilerFlags)
@@ -168,7 +131,9 @@ case class Main(ctx: Context) extends Logging {
     exit(0)
   }
 
-  private def getSources: List[Source] = options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin
+  private def getSources: List[Source] = {
+    options(TFilesArgument).map(FileSource(_)).toList ++ sourceFromStdin
+  }
 
   private def sourceFromStdin(): List[Source] = {
     if (options(ReadStdinFlag)) List(StdinSource()) else List()
@@ -176,50 +141,32 @@ case class Main(ctx: Context) extends Logging {
 
   private def compileAndExecute(sources: List[Source]): Seq[CompilationUnit] = {
     try {
-      val CUs = runCompiler(sources)
-      printExecutionTimes(success = true)
-      if (options(ExecFlag))
-        executePrograms(CUs)
-      CUs
+      handleInternalErrors {
+        val CUs = compiler(sources)
+        printExecutionTimes(success = true)
+        if (options(ExecFlag))
+          programExecutor(CUs)
+        CUs
+      }
     } catch {
       case ExitException(code) =>
+        printExecutionTimes(success = false)
         if (!options(WatchFlag))
           exit(code)
         Nil
     }
   }
 
-  private def runCompiler(sources: List[Source]): Seq[CompilationUnit] = {
+  private def handleInternalErrors[T](execute: => T): T = {
     try {
-      val CUs = runFrontend(sources)
-      GenerateCode.execute(ctx)(CUs)
-      val messages = ctx.reporter.messages
-      ctx.output += ErrorMessageOutput(messages, options(MessageContextFlag), List(MessageType.Warning))
-      CUs
+      execute
     } catch {
       case e: ExitException => throw e
-      case e: Throwable     => internalError(e)
+      case error: Throwable =>
+        error"Execution error occurred: ${ error.stackTrace }"
+        ctx.output += InternalErrorOutput(error)
+        throw ExitException(1)
     }
-  }
-
-  private def runFrontend(sources: List[Source]): List[CompilationUnit] = {
-    try {
-      FrontEnd.execute(ctx)(sources)
-    } catch {
-      case e: CompilationException =>
-        ctx.output += ErrorMessageOutput(e.messages, options(MessageContextFlag))
-        printExecutionTimes(success = false)
-        tryExit(1)
-    }
-  }
-
-  // Top level error handling for any unknown exception
-  private def internalError(error: Throwable): Nothing = {
-    error"Execution error occurred: ${ error.stackTrace }"
-
-    ctx.output += InternalErrorOutput(error)
-    printExecutionTimes(success = false)
-    tryExit(1)
   }
 
   private def printHelp(): Unit = {
@@ -235,7 +182,7 @@ case class Main(ctx: Context) extends Logging {
     }
 
     if (CompilerHelpFlag.Phases in args) {
-      ctx.output += PhaseInfoOutput(CompilerPhases)
+      ctx.output += PhaseInfoOutput(Compiler.Phases)
     }
 
     args foreach { arg =>
@@ -251,125 +198,23 @@ case class Main(ctx: Context) extends Logging {
     true
   }
 
-  private def executePrograms(cus: Seq[CompilationUnit]): Unit = {
-    val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
-    val sources = cusWithMainMethods map { _.source.get }
-    if (options(JSONFlag)) {
-      val programExecutor = DefaultProgramExecutor(ctx.allClassPaths)
-      val results = sources map { programExecutor(_) }
-
-      ctx.output += ExecutionResultOutput(sources zip results)
-    } else {
-      sources foreach executeStreamingProgram
-    }
-  }
-
-  private def executeStreamingProgram(source: Source): Unit = {
-    import formatter._
-
-    val boxLines = grid
-      .header(Bold("Executing program"))
-      .content(source.description)
-      .row(Column(width = Fixed(6)), Column)
-      .contents("", "")
-      .render()
-      .lines
-      .toList
-
-    val programExecutor = StreamingProgramExecutor(ctx.allClassPaths, printExecLine)
-    boxLines.take(4).foreach(println)
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    val execution = programExecutor.executeAsync(source)
-    awaitExecution(execution, source, boxLines.last)
-  }
-
-  private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
-    cancelExecution = Some(execution.cancel)
-    val timeout = options(ExecTimeoutFlag)
-    val result = Try(Await.result(execution.future, timeout))
-    cancelExecution ifDefined { cancel => cancel() }
-    println(endOfBox)
-    result match {
-      case Success(ExecutionResult(_, _, Some(exception))) => printStackTrace(source, exception)
-      case Failure(_: TimeoutException)                    => printTimeout(timeout)
-      case Failure(_: CancellationException)               => printCancelation()
-      case _                                               =>
-    }
-    cancelExecution = None
-  }
-
-  private def printExecLine(line: String, lineNumber: Int): Unit = {
-    import formatter._
-
-    val s = grid
-      .row(Column(width = Fixed(6), overflowHandling = OverflowHandling.Truncate), Column)
-      .content(Magenta(lineNumber), syntaxHighlighter(line))
-      .removeTop()
-      .removeBottom()
-      .render()
-    print(s)
-  }
-
-  private def removeCompilerPartOfStacktrace(fileName: String, stackTrace: String) = {
-    val stackTraceLines = stackTrace.lines.toList
-    val lastRow = stackTraceLines.lastIndexWhere(_.contains(fileName))
-    if (lastRow == -1 || lastRow + 1 >= stackTraceLines.length)
-      stackTrace
-    else
-      stackTraceLines.take(lastRow + 1).mkString(NL)
-  }
-
-  private def printStackTrace(source: Source, exception: Throwable): Unit = {
-    import formatter._
-
-    val stackTrace = removeCompilerPartOfStacktrace(source.mainName, stackTraceHighlighter(exception))
-    grid
-      .header((Red + Bold) ("There was an exception"))
-      .row()
-      .content(stackTrace)
-      .print()
-  }
-
-  private def printCancelation(): Unit = {
-    import formatter._
-    grid
-      .row()
-      .content(CenteredContent(Red("Canceled execution")))
-      .print()
-  }
-
-  private def printTimeout(timeout: Duration): Unit = {
-    import formatter._
-    grid
-      .row()
-      .content(CenteredContent(Red("Execution timed out after ") + (Bold + Red) (timeout.toMillis) + Red(" ms.")))
-      .print()
-  }
-
-  private def printExecutionTimes(success: Boolean): Unit = {
-    if (options(VerboseFlag))
-      ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
-  }
-
   private def onInterrupt(): Unit = {
-    cancelExecution match {
-      case Some(cancel) =>
-        cancel()
-      case None         =>
-        ctx.output += InterruptedOutput()
-        exit(0)
-    }
+    ctx.output += InterruptedOutput()
+    exit(0)
   }
-
-  private def tryExit(code: Int) = throw ExitException(code)
 
   private def exit(code: Int): Nothing = {
     ctx.output += SuccessOutput(code == 0)
     ctx.output.flush()
     sys.runtime.halt(code)
+
+    // So that exit can have Nothing as return type
     throw new RuntimeException("")
+  }
+
+  private def printExecutionTimes(success: Boolean): Unit = {
+    if (options(VerboseFlag))
+      ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
   }
 
   private def error(message: String): Nothing = {
