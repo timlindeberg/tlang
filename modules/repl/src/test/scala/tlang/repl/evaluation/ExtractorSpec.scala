@@ -2,6 +2,7 @@ package tlang
 package repl
 package evaluation
 
+import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
 import tlang.compiler.testutils.TreeTesting
@@ -39,16 +40,16 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val replState = mock[ReplState]
     val extractor = makeExtractor(replState)
 
-    val methodA = createMethod(name = "A", retType = IntType)
+    val methodA = createMethod(name = "A", retType = Types.Int)
     val methodB = createMethod(
       name = "B",
-      args = List(StringType),
-      retType = UnitType()
+      args = List(Types.String),
+      retType = Types.TUnit
     )
     val methodC = createMethod(
       name = "C",
-      args = List(IntType, StringType),
-      retType = StringType
+      args = List(Types.Int, Types.String),
+      retType = Types.String
     )
 
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(methodA, methodB, methodC))
@@ -58,9 +59,9 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val messages = extractor(cu)
 
     messages should contain theSameElementsInOrderAs Seq(
-      "Defined method A(): Int",
-      "Defined method B(String): Unit",
-      "Defined method C(Int, String): String"
+      "Defined method A(): T::lang::Int",
+      "Defined method B(java::lang::String): Unit",
+      "Defined method C(T::lang::Int, java::lang::String): java::lang::String"
     )
 
     there was one(replState).addMethods(List(methodA, methodB, methodC))
@@ -110,8 +111,8 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val messages = extractor(cu)
 
     messages should contain theSameElementsInOrderAs Seq(
-      "Defined variable A: Int",
-      "Defined variable B: String",
+      "Defined variable A: T::lang::Int",
+      "Defined variable B: java::lang::String",
       "Defined variable C"
     )
 
@@ -128,7 +129,7 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     val imports = mock[Imports]
     imports.imports returns List(RegularImport("ABC" :: "DEF" :: "GHI" :: Nil))
 
-    val statement = VarDecl("A", tpe = Some(IntType))
+    val statement = VarDecl("A", tpe = Some(StringType))
     val mainMethod = MethodDeclTree.mainMethod(List(statement))
 
     val replClass = ClassDecl(Evaluator.ReplClassID, methods = List(mainMethod, methodA))
@@ -139,8 +140,8 @@ class ExtractorSpec extends UnitSpec with TreeTesting {
     messages should contain theSameElementsInOrderAs Seq(
       "Imported ABC::DEF::GHI",
       "Defined class A",
-      "Defined method A(): Int",
-      "Defined variable A: Int"
+      "Defined method A(): T::lang::Int",
+      "Defined variable A: java::lang::String"
     )
 
     there was one(replState).addImports(imports)

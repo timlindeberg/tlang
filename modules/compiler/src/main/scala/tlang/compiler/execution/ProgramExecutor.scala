@@ -22,7 +22,6 @@ case class ProgramExecutor(ctx: Context, interruptionHandler: InterruptionHandle
   private var cancelExecution: Option[CancellableFuture.CancelFunction] = None
 
   def apply(cus: Seq[CompilationUnit]): Unit = {
-
     val cusWithMainMethods = cus.filter(_.classes.exists(_.methods.exists(_.isMain)))
     val sources = cusWithMainMethods map { _.source.get }
     if (options(JSONFlag)) {

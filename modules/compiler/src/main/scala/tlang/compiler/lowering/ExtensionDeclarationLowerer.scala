@@ -13,26 +13,21 @@ import tlang.compiler.ast.Trees._
  * Example:
  *
  * --------------------------------------------------------------------------------
- * extension Extension : A {
+ * extension Extension : A =
  *
- *   Def Method(arg1: A, arg2: Int) = {
+ *   Def Method(arg1: A, arg2: Int) =
  *     OtherMethod() + arg1.i + i + arg2.M()
- *   }
  *
  *   Def static StaticMethod(arg: Int) = arg + 1
- *
- * }
  *
  * becomes:
  *
- * class ext$Extension {
+ * class ext$Extension =
  *
- *   Def static Method($this: A, arg1: A, arg2: Int) = {
+ *   Def static Method($this: A, arg1: A, arg2: Int) =
  *     $this.OtherMethod() + arg1.i + $this.i + arg2.M()
- *   }
  *
  *   Def static StaticMethod(arg: Int) = arg + 1
- * }
  * --------------------------------------------------------------------------------
  */
 case class ExtensionDeclarationLowerer() extends TreeLowerer {
@@ -89,7 +84,8 @@ case class ExtensionDeclarationLowerer() extends TreeLowerer {
         case This()                                                      =>
           thisId
         case acc@Access(obj, app)                                        =>
-          // Don't replace VariableIDs in app since that would replace e.g A.i with A.$this.i
+          // Don't replace VariableIDs in applications since that
+          // would replace e.g A.i with A.$this.i
           val a = app match {
             case _: VariableID => app
             case _             => apply(app)

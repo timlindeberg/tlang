@@ -10,6 +10,8 @@ trait Positioned {
   var lineEnd: Int = 0
   var colEnd: Int = 0
 
+  def getPos: Position = Position(line, col, lineEnd, colEnd, source)
+
   def setPos(source: Source, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     this.line = lineStart
     this.col = colStart

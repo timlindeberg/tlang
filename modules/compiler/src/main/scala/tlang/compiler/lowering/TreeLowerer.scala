@@ -4,7 +4,7 @@ package lowering
 
 import tlang.compiler.ast.Trees.Tree
 
-abstract class TreeLowerer {
+trait TreeLowerer {
   def apply(tree: Tree): Tree = {
     val f = lower
     if (f.isDefinedAt(tree)) f(tree) else tree

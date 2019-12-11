@@ -2,6 +2,7 @@ package tlang
 package repl
 package evaluation
 
+import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
@@ -16,13 +17,13 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
     val replState = ReplState(mock[PrettyPrinter], mock[Imports])
     val methodA = createMethod(
       name = "A",
-      args = List(StringType),
-      retType = UnitType()
+      args = List(Types.String),
+      retType = Types.Int
     )
     val methodB = createMethod(
       name = "B",
-      args = List(IntType, StringType),
-      retType = StringType
+      args = List(Types.Int, Types.String),
+      retType = Types.String
     )
     replState.addMethods(List(methodA, methodB))
 
@@ -91,18 +92,18 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
 
     val methodA = createMethod(
       name = "A",
-      args = List(StringType, IntType),
-      retType = UnitType()
+      args = List(Types.String, Types.Int),
+      retType = Types.Int
     )
     val methodB = createMethod(
       name = "A",
-      args = List(StringType, IntType),
-      retType = StringType
+      args = List(Types.String, Types.Int),
+      retType = Types.String
     )
     val methodC = createMethod(
       name = "A",
-      args = List(IntType, StringType),
-      retType = StringType
+      args = List(Types.Int, Types.String),
+      retType = Types.String
     )
     replState.addMethods(List(methodA, methodB, methodC))
 
@@ -114,7 +115,7 @@ class ReplStateSpec extends UnitSpec with TreeTesting {
 
     // Including the main method
     mainClass.methods should have size 3
-    val m = mainClass.methods.find { _.signature == "A(String, Int)" }
+    val m = mainClass.methods.find { _.signature == "A(java::lang::String, T::lang::Int)" }
     m should not be empty
     m.get should be theSameInstanceAs methodB
 

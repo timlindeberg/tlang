@@ -14,7 +14,8 @@ import tlang.compiler.ast.Trees._
  *
  * becomes:
  *
- * val a = b == null ? -1 : b
+ * val $tmp = b
+ * val a = $tmp == null ? -1 : $tmp
  * --------------------------------------------------------------------------------
  */
 case class ElvisOperatorLowerer() extends TreeLowerer {
