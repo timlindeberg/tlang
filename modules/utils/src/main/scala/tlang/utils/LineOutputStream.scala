@@ -1,7 +1,7 @@
 package tlang
 package utils
 
-import java.io.{OutputStream, PrintStream}
+import java.io.{ByteArrayOutputStream, OutputStream, PrintStream}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
@@ -26,7 +26,7 @@ object LineOutputStream {
 class LineOutputStream(originalOut: OutputStream, printLine: (String, Int) => Unit) extends PrintStream(originalOut) {
 
   private var lineNumber = 1
-  private val bytes: ByteBuffer = ByteBuffer.allocate(16384)
+  private val bytes: ByteArrayOutputStream = new ByteArrayOutputStream(16384)
 
   override def write(b: Array[Byte]): Unit = write(b, 0, b.length)
   override def write(buf: Array[Byte], off: Int, len: Int): Unit = {
@@ -39,7 +39,7 @@ class LineOutputStream(originalOut: OutputStream, printLine: (String, Int) => Un
         writeLine()
         index += 1
       } else {
-        bytes.put(buf(i))
+        bytes.write(buf(i))
       }
       index += 1
     }
@@ -49,16 +49,16 @@ class LineOutputStream(originalOut: OutputStream, printLine: (String, Int) => Un
     if (b == '\n') {
       writeLine()
     } else {
-      bytes.put(b.asInstanceOf[Byte])
+      bytes.write(b.asInstanceOf[Byte])
     }
   }
 
   override def flush(): Unit = {}
 
   private def writeLine(): Unit = {
-    val s = new String(bytes.array(), 0, bytes.position(), StandardCharsets.UTF_8)
+    val s = new String(bytes.toByteArray(), 0, bytes.size(), StandardCharsets.UTF_8)
     printLine(s, lineNumber)
-    bytes.clear()
+    bytes.reset()
     lineNumber += 1
   }
 }
