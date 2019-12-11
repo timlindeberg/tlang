@@ -56,7 +56,7 @@ class LineOutputStream(originalOut: OutputStream, printLine: (String, Int) => Un
   override def flush(): Unit = {}
 
   private def writeLine(): Unit = {
-    val s = new String(bytes.toByteArray(), 0, bytes.size(), StandardCharsets.UTF_8)
+    val s = new String(bytes.toByteArray, 0, bytes.size(), StandardCharsets.UTF_8)
     printLine(s, lineNumber)
     bytes.reset()
     lineNumber += 1

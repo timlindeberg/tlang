@@ -8,6 +8,7 @@ import tlang.utils.{Executor, ParallellExecutor, SingleThreadExecutor}
 
 case object ThreadsFlag extends ArgumentFlag[Executor] {
   override val name = "threads"
+  override val shortFlag = Some("j")
   override val argDescription = "num"
 
   override def description(implicit formatter: Formatter): String =

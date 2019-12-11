@@ -9,7 +9,7 @@ import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
 
 case object ExecTimeoutFlag extends ArgumentFlag[Duration] {
-  override val name = "exec-timeout"
+  override val name = "exectimeout"
 
   override def argDescription: String = "timeout"
   override def description(implicit formatter: Formatter): String = {

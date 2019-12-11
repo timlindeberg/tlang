@@ -19,10 +19,10 @@ case object AsciiFlag extends BooleanFlag {
        |
        |This is what the output look like:
        |
-       |$formatBoxes
+       |$exampleBoxes
        |"""
 
-  private def formatBoxes(implicit formatter: Formatter): String = {
+  private def exampleBoxes(implicit formatter: Formatter): String = {
     import formatter._
     val exampleFormatter = formatter.copy(lineWidth = formatter.lineWidth - 4)
 
