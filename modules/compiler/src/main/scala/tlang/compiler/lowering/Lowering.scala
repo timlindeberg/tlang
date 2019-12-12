@@ -15,7 +15,11 @@ import tlang.utils.Logging
 object Lowering extends CompilerPhase[CompilationUnit, CompilationUnit] with Logging {
 
   override def run(ctx: Context)(cus: List[CompilationUnit]): List[CompilationUnit] = {
-    ctx.executor.map(cus) { cu => new Lowerer(cu.imports)(cu) }
+    val lowerers = cus.map { cu => new Lowerer(cu.imports) }
+    val loweredDecls = ctx.executor.map(lowerers.zip(cus)) { case (lowerer, cu) =>
+      lowerer.lowerDeclarations(cu)
+    }
+    ctx.executor.map(lowerers.zip(loweredDecls)) { case (lowerer, cu) => lowerer.lowerCode(cu) }
   }
 
   override def description(implicit formatter: Formatter): String =
@@ -36,14 +40,8 @@ class Lowerer(imports: Imports) extends Logging {
   private val safeAccessLowerer = SafeAccessLowerer()
   private val elvisLowerer = ElvisOperatorLowerer()
 
-  def apply(cu: CompilationUnit): CompilationUnit = {
-    val first = firstPass(cu)
-    val second = secondPass(first)
-    second
-  }
-
-  private def firstPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing first pass of lowering phase for ${ cu.simpleSourceDescription }"
+  def lowerDeclarations(cu: CompilationUnit): CompilationUnit = {
+    debug"Lowering declarations in ${ cu.simpleSourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
@@ -55,8 +53,8 @@ class Lowerer(imports: Imports) extends Logging {
     transformer(cu)
   }
 
-  private def secondPass(cu: CompilationUnit): CompilationUnit = {
-    debug"Executing second pass of lowering phase for ${ cu.simpleSourceDescription }"
+  def lowerCode(cu: CompilationUnit): CompilationUnit = {
+    debug"Lowering code in ${ cu.simpleSourceDescription }"
     val transformer = new Trees.Transformer {
 
       def transformation: TreeTransformation = {
