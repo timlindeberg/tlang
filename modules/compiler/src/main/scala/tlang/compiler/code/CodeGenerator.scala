@@ -43,6 +43,14 @@ object CodeGenerator {
   val JavaArrays: String = JavaUtil + "Arrays"
   val JavaRuntimeException: String = JavaLang + "RuntimeException"
 
+  object Nullable {
+    def unapply(tpe: Type): Option[Type] = if (tpe.isNullable) Some(tpe) else None
+  }
+
+  object NonNullable {
+    def unapply(tpe: Type): Option[Type] = if (!tpe.isNullable) Some(tpe) else None
+  }
+
   object Primitive {
     def unapply(tpe: Type): Option[TObject] = if (tpe in Primitives) Some(tpe.asInstanceOf[TObject]) else None
   }
@@ -106,21 +114,22 @@ object CodeGenerator {
     }
 
     def codes: CodeMap = t match {
-      case TUnit                        => EmptyCodeMap
-      case TNull                        => new ObjectCodeMap(JavaObject)
-      case Primitive(p) if p.isNullable => new ObjectCodeMap(TRef)
-      case Int                          => IntCodeMap
-      case Long                         => LongCodeMap
-      case Float                        => FloatCodeMap
-      case Double                       => DoubleCodeMap
-      case Char                         => CharCodeMap
-      case Bool                         => BoolCodeMap
-      case objTpe: TObject              => new ObjectCodeMap(objTpe.classSymbol.JVMName)
-      case TArray(arrTpe)               => new ArrayCodeMap(arrTpe.byteCodeName)
+      case TUnit                  => EmptyCodeMap
+      case TNull                  => new ObjectCodeMap(JavaObject)
+      case Primitive(Nullable(p)) => new ObjectCodeMap(TRef)
+      case Int                    => IntCodeMap
+      case Long                   => LongCodeMap
+      case Float                  => FloatCodeMap
+      case Double                 => DoubleCodeMap
+      case Char                   => CharCodeMap
+      case Bool                   => BoolCodeMap
+      case objTpe: TObject        => new ObjectCodeMap(objTpe.classSymbol.JVMName)
+      case TArray(arrTpe)         => new ArrayCodeMap(arrTpe.byteCodeName)
     }
 
     def size: Int = t match {
       case TUnit         => 0
+      case Nullable(_)   => 1
       case Long | Double => 2
       case _             => 1
     }
@@ -134,6 +143,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
   def compileStat(statement: StatTree,
     continue: Option[String] = None,
     break: Option[String] = None): Unit = {
+
     ch << LineNumber(statement.line)
     statement match {
       case UselessStatement(expr)                    =>
@@ -274,20 +284,25 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         to match {
           case id: VariableID           =>
             val sym = id.getSymbol
-            store(sym, () => compileAndConvert(expr, sym.getType), duplicate, () => ch << ArgLoad(0))
+            store(expr, sym, duplicate, () => ch << ArgLoad(0))
           case Access(obj, application) =>
             // This is a field variable symbol
             val sym = application.asInstanceOf[VariableID].getSymbol
-            store(sym, () => compileAndConvert(expr, sym.getType), duplicate, () => compileExpr(obj))
+            store(expr, sym, duplicate, () => compileExpr(obj))
           case ArrayRead(arr, index)    =>
             compileExpr(arr)
             compileExpr(index)
             val arrayTpe = arr.getType.asInstanceOf[TArray].tpe
-            compileAndConvert(expr, arrayTpe)
-            val codes = arrayTpe.codes
+            expr match {
+              case arrLit: ArrayLit =>
+                val expectedInnerType = to.getType.asInstanceOf[TArray].tpe
+                compileArrayLiteral(arrLit, Some(expectedInnerType))
+              case _                => compileExpr(expr)
+            }
             if (duplicate)
-              codes.dup_x2(ch) // arrayref index value -> value arrayref index value
-            codes.arrayStore(ch)
+              expr.getType.codes.dup_x2(ch)
+            convertValueOnStack(expr.getType, arrayTpe)
+            arrayTpe.codes.arrayStore(ch)
         }
       case Is(expr, tpe)                                =>
         compileExpr(expr)
@@ -550,56 +565,65 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     }
 
   private def compileAndConvert(expr: ExprTree, desired: Type): Unit = {
-    val found = expr.getType
+    (expr, desired) match {
+      case (arrLit: ArrayLit, desired: TArray) => compileArrayLiteral(arrLit, Some(desired.tpe))
+      case _                                   => compileExpr(expr)
+    }
+    convertValueOnStack(expr.getType, desired)
+  }
+
+  private def convertValueOnStack(found: Type, desired: Type): Unit = {
     val codes = found.codes
     (found, desired) match {
       case (NonPrimitive(found), NonPrimitive(desired)) if found.isSubTypeOf(desired) =>
-        compileExpr(expr)
       case (_, NonPrimitive(desired)) if desired.implicitTypes.contains(found)        =>
+
+        // A hack: We already have a value on the stack that we want to convert
+        // but to do an implicit construction we need to put the newly constructed
+        // object before the value on the stack. We store it in memory temporarily
+        // so we can put two new objects on the stack before, one to be used
+        // by the constructor and one to replace the value that was on the stack.
+        // This should probably be fixed at some point
+        val id = ch.getFreshVar(found.size)
+        codes.store(ch, id)
+
         val name = desired.classSymbol.JVMName
         ch << cafebabe.AbstractByteCodes.New(name)
         desired.codes.dup(ch)
-        compileExpr(expr)
+        codes.load(ch, id)
         val signature = s"(${ found.byteCodeName })V"
         ch << InvokeSpecial(name, ConstructorName, signature)
-      case (_: TArray, desired: TArray)                                               =>
-        expr match {
-          case arrLit: ArrayLit => compileArrayLiteral(arrLit, Some(desired.tpe))
-          case _                => compileExpr(expr)
-        }
+      case (_: TArray, _: TArray)                                                     =>
+      case (NonPrimitive(_), Primitive(NonNullable(desired)))                         =>
+        // Found an object, wanted a non nullable primitive type, unbox the object
+        unbox(desired)
+      case (Primitive(_), NonPrimitive(_))                                            =>
+        // found a primitive type, needed an object, box the primitive
+        codes.box(ch)
+      case (Primitive(Nullable(found)), Primitive(NonNullable(desired)))              =>
+        // found nullable primitive, need non nullable primitive, unbox
+        unbox(found)
+        // The unboxed type might still be different from the desired type
+        // for instance if twe have Found: Float? and desired Double
+        castPrimitive(found, desired)
+      case (Primitive(NonNullable(found)), Primitive(Nullable(desired)))              =>
+        // found non nullable primitive, need nullable primitive, cast if necessary
+        // and then box the value
+        castPrimitive(found, desired)
+        desired.getNonNullable.codes.box(ch)
       case _                                                                          =>
-        compileExpr(expr)
-        (found, desired) match {
-          case (NonPrimitive(_), Primitive(desired)) if !desired.isNullable                      =>
-            // Found an object, wanted a non nullable primitive type, unbox the object
-            unbox(desired)
-          case (Primitive(_), NonPrimitive(_))                                                   =>
-            // found a primitive type, needed an object, box the primitive
-            codes.box(ch)
-          case (Primitive(found), Primitive(desired)) if found.isNullable && !desired.isNullable =>
-            // found nullable primitive, need non nullable primitive, unbox
-            unbox(found)
-            // The unboxed type might still be different from the desired type
-            // for instance if twe have Found: Float? and desired Double
-            val codes = found.getNonNullable.codes
-            desired match {
-              case Double => codes.toDouble(ch)
-              case Float  => codes.toFloat(ch)
-              case Long   => codes.toLong(ch)
-              case _      => codes.toInt(ch)
-            }
-          case (Primitive(found), Primitive(desired)) if !found.isNullable && desired.isNullable =>
-            // found non nullable primitive, need nullable primitive, box
-            codes.box(ch)
-          case (_, Double)                                                                       =>
-            codes.toDouble(ch)
-          case (_, Float)                                                                        =>
-            codes.toFloat(ch)
-          case (_, Long)                                                                         =>
-            codes.toLong(ch)
-          case _                                                                                 =>
-            codes.toInt(ch)
-        }
+        // Otherwise we have to non nullable primitives. Cast if necessary
+        castPrimitive(found, desired)
+    }
+  }
+
+  private def castPrimitive(found: Type, desired: Type): Unit = {
+    val codes = found.getNonNullable.codes
+    desired match {
+      case Double => codes.toDouble(ch)
+      case Float  => codes.toFloat(ch)
+      case Long   => codes.toLong(ch)
+      case _      => codes.toInt(ch)
     }
   }
 
@@ -677,20 +701,16 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
     case _                                                                     => ???
   }
 
-  private def store(variable: VariableSymbol,
-    putValue: () => Unit,
-    duplicate: Boolean,
-    putObject: () => Unit = () => ch << ArgLoad(0)
-  ): CodeHandler = {
+  private def store(expr: ExprTree, variable: VariableSymbol, duplicate: Boolean, putObject: () => Unit): CodeHandler = {
     val name = variable.name
     val tpe = variable.getType
-    val codes = tpe.codes
 
     localVariableMap.get(variable) match {
       case Some(id) =>
-        putValue()
+        compileExpr(expr)
         if (duplicate)
-          codes.dup(ch)
+          expr.getType.codes.dup(ch)
+        convertValueOnStack(expr.getType, variable.getType)
         tpe.codes.store(ch, id)
       case None     =>
         // variable is a field
@@ -700,14 +720,13 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         // Must be a field since it's not a local variable
         val className = variable.asInstanceOf[FieldSymbol].classSymbol.JVMName
 
-        putValue()
-
+        compileExpr(expr)
         if (duplicate)
           if (variable.isStatic)
-            codes.dup(ch)
+            expr.getType.codes.dup(ch)
           else
-            codes.dup_x1(ch) // this value -> value this value
-
+            expr.getType.codes.dup_x1(ch) // this value -> value this value
+        convertValueOnStack(expr.getType, variable.getType)
         if (variable.isStatic)
           ch << PutStatic(className, name, tpe.byteCodeName)
         else

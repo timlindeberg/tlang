@@ -16,6 +16,7 @@ Equals()
 MakeString()
 Foreach()
 Splice()
+Assignment()
 
 println("All tests succeeded.") // res: All tests succeeded.
 
@@ -288,3 +289,17 @@ Def Splice() =
 	t.AssertEquals(v[1:3].toString(), "[ 2, 3 ]")
 	t.AssertEquals(v[::2].toString(), "[ 1, 3, 5 ]")
 	t.AssertEquals(v[1::2].toString(), "[ 2, 4, 6 ]")
+
+Def Assignment() =
+	val t = new Tester<Long>()
+	val v: Vector<Long> = [ 0L, 0L, 0L ]
+
+	v[0] = v[1] = v[2] = 5
+	t.AssertEquals(v[0], 5)
+	t.AssertEquals(v[1], 5)
+	t.AssertEquals(v[2], 5)
+
+	v[0] *= 2
+	v[0] -= 5
+	v[0] += 2
+	t.AssertEquals(v[0], 7)

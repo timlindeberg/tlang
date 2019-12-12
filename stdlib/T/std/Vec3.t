@@ -82,7 +82,12 @@ class Vec3<T> =
 
 	Def -(vec: Vec3<T>) = new Vec3<T>(-vec.X, -vec.Y, -vec.Z)
 
-	Def #(vec: Vec3<T>) = 31 * #vec.X ^ 31 * #vec.Y ^ 31 * #vec.Z
+	Def #(vec: Vec3<T>) =
+		var hashCode = 1
+		hashCode = 31 * hashCode + #vec.X
+		hashCode = 31 * hashCode + #vec.Y
+		hashCode = 31 * hashCode + #vec.Z
+		hashCode
 
 	//------------------------------------------------------
 	// Public static methods

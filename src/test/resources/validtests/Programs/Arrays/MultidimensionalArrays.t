@@ -1,28 +1,41 @@
 var intArray: Int[][][][] = new Int[1][2][3][4]
-var i: Int
-var j: Int
-var k: Int
-var l: Int
-var h: H = new H()
+val h: H = new H()
 
 println(intArray.Size()) // res: 1
 println(intArray[0].Size()) // res: 2
 println(intArray[0][0].Size()) // res: 3
 println(intArray[0][0][0].Size()) // res: 4
 
-for(i = 0; i < intArray.Size(); i++ )
-	for(j = 0; j < intArray[0].Size(); j++ )
-		for(k = 0; k < intArray[0][0].Size(); k++ )
-			for(l = 0; l < intArray[0][0][0].Size(); l++ )
+for(var i = 0; i < intArray.Size(); i++)
+	for(var j = 0; j < intArray[0].Size(); j++)
+		for(var k = 0; k < intArray[0][0].Size(); k++)
+			for(var l = 0; l < intArray[0][0][0].Size(); l++)
 				intArray[i][j][k][l] = i + j + k + l
 
-for(i = 0; i < intArray.Size(); i++ )
-	for(j = 0; j < intArray[0].Size(); j++ )
-		for(k = 0; k < intArray[0][0].Size(); k++ )
-			for(l = 0; l < intArray[0][0][0].Size(); l++ )
+for(var i = 0; i < intArray.Size(); i++)
+	for(var j = 0; j < intArray[0].Size(); j++)
+		for(var k = 0; k < intArray[0][0].Size(); k++)
+			for(var l = 0; l < intArray[0][0][0].Size(); l++)
 				print(intArray[i][j][k][l] + " ") // res: 0 1 2 3 1 2 3 4 2 3 4 5 1 2 3 4 2 3 4 5 3 4 5 6
+println()
 
-println("")
+intArray[0][0][0] = [ 1, 2, 3 ]
+for(var i = 0; i < intArray[0][0][0].Size(); i++)
+	print(intArray[0][0][0][i] + " ") // res: 1 2 3
+println()
+
+intArray[0][0] = [ [1, 2], [3, 4] ]
+for(var i = 0; i < intArray[0][0].Size(); i++)
+	for(var j = 0; j < intArray[0][0][0].Size(); j++)
+		print(intArray[0][0][i][j] + " ") // res: 1 2 3 4
+println()
+
+val longArray: Long[][] = [[1, 2], [3, 4]]
+longArray[1] = [1, 2]
+for(var i = 0; i < longArray.Size(); i++)
+	for(var j = 0; j < longArray[0].Size(); j++)
+		print(longArray[i][j] + " ") // res: 1 2 1 2
+println()
 
 intArray = new Int[2][3][4][5]
 println(intArray.Size()) // res: 2
@@ -61,12 +74,13 @@ println(H.GetArray()[0][0] = 1) // res: 1
 println(h.GetFieldArray()[0][0] = 5) // res: 5
 println(h.ArrField[0][0]) // res: 5
 
+
 class H =
 
 	Var ArrField: Int[][] = new Int[2][2]
 
 	Def static GetArray(): Int[][] =
-		var i: Int[][] = new Int[2][2]
+		val i: Int[][] = new Int[2][2]
 		i[0][0] = 0 ; i[0][1] = 1
 		i[1][0] = 2 ; i[1][1] = 3
 		return i

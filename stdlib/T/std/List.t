@@ -146,14 +146,14 @@ trait List<T>: Collection<T> =
 	* @param index the index of the element to return
 	* @return      the element specified by the given index
 	*/
-	Def [](index: Int) = Get(index)
+	Def [](index: Int): T = Get(index)
 
 	/**
 	* Sets the element specified by the given index.
 	* @param index the position to set the value of
 	* @param value the value to set
 	*/
-	Def []=(index: Int, value: T) = Set(index, value)
+	Def []=(index: Int, value: T): Unit = Set(index, value)
 
 	/**
 	* Creates a new list from this list containing every 'step':th
@@ -161,8 +161,8 @@ trait List<T>: Collection<T> =
 	* Example:
 	* {1, 2, 3, 4, 5, 6}[1:4:2] == {2, 4}
 	* @param start the starting position of the slice or null. Will be 0 if null.
-	* @param end the end position of the slice or null. Will be 'Size()' if null.
-	* @param step the step size of the slice or null. Will be 1 if null.
+	* @param end   the end position of the slice or null. Will be 'Size()' if null.
+	* @param step  the step size of the slice or null. Will be 1 if null.
 	*/
 	Def [:](start: Int?, end: Int?, step: Int?): List<T> =
 		val s  = start ?: 0

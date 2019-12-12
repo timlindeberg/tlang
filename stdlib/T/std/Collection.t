@@ -157,8 +157,8 @@ trait Collection<T>: Iterable<T> =
 	* @return		 a hashcode for the given collection
 	*/
 	Def #(elements: Collection<T>): Int =
-		var res = 0
-		for(val e in elements)
-			res = 31 * res ^ #e
+		var hashCode = 1
+		for (val e in elements)
+			hashCode = 31 * hashCode + #e
 
-		res
+		hashCode

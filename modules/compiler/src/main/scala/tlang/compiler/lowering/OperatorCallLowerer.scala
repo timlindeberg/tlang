@@ -57,11 +57,6 @@ case class OperatorCallLowerer(imports: Imports) extends TreeLowerer {
   }
 
   private def lowerArrayOperatorCall(op: OperatorTree, arr: ExprTree): Tree = {
-    if (!isObject(arr))
-      return op
-
-    val arrClassSymbol = arr.getType.asInstanceOf[TObject].classSymbol
-
     val (obj, args) = op match {
       case ArrayRead(obj, index)               =>
         (obj, List(index))
@@ -74,7 +69,12 @@ case class OperatorCallLowerer(imports: Imports) extends TreeLowerer {
         (obj, List(s, e, st))
       case _                                   => ???
     }
-    val opSymbol = arrClassSymbol.lookupOperator(op, args.map { _.getType }, imports).get
+    if (!isObject(obj)) {
+      return op
+    }
+
+    val objectClassSymbol = obj.getType.asInstanceOf[TObject].classSymbol
+    val opSymbol = objectClassSymbol.lookupOperator(op, args.map { _.getType }, imports).get
     treeBuilder.createMethodCall(obj, opSymbol, args)
   }
 

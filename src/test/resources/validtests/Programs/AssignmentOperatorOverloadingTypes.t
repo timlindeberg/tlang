@@ -1,5 +1,6 @@
 class A =
 	Def []=(a: Int, b: Long): Unit = ;
+	Def [](a: Int): Int = 5
 
 val a = new A()
 

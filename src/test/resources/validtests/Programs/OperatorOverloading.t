@@ -36,8 +36,10 @@ println(~a) // res: -2
 println(-a) // res: -1
 println(#a) // res: 1
 
-println(a[1]) // res: 2
+println(a[1]) // res: 1
 println(a[1] = 2) // res: 2
+println(a[1] += 2) // res: 4
+println(a[1]) // res: 4
 println(a[::]) // res: 0
 println(a[1::]) // res: 1
 println(a[:2:]) // res: 2
@@ -51,8 +53,8 @@ class A =
 
 	Def new(i: Int) = I = i
 
-	Def [](index: Int): Int = return I + index
-	Def []=(index: Int, value: Int): Unit = I = index + value
+	Def [](index: Int): Int = I
+	Def []=(index: Int, value: Int): Unit = I = value
 	Def [:](start: Int?, end: Int?, step: Int?): Int = (start ?: 0) + (end ?: 0) + (step ?: 0)
 
 

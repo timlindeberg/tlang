@@ -27,6 +27,7 @@ object CancellableFuture {
       } else {
         // We have to use stop() to kill the thread since we have no control
         // over execution so this warning is disabled.
+
         //noinspection ScalaDeprecation
         threadRef.synchronized { Option(threadRef getAndSet null) foreach { _.stop() } }
         promise.tryFailure(new CancellationException)

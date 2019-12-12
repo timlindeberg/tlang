@@ -499,44 +499,36 @@ case class TypeChecker(
 
   def typeCheckAssignment(assignment: Assign): Type = {
     val to = assignment.to
-    val expr = assignment.from
+    val from = assignment.from
 
-    val tpe = to match {
-      case _: VariableID          =>
-        val toTpe = typeCheckExpr(to)
-
-        typeCheckExpr(expr, toTpe)
-        toTpe
+    val toTpe = typeCheckExpr(to)
+    val fromTpe = to match {
+      case _: VariableID          => typeCheckExpr(from, toTpe)
       case Access(_, application) =>
         application match {
           case _: MethodCall => report(AssignValueToMethodCall(assignment))
-          case _: VariableID =>
-            val toTpe = typeCheckExpr(to)
-            typeCheckExpr(expr, toTpe)
-            toTpe
+          case _: VariableID => typeCheckExpr(from, toTpe)
           case _             => ???
         }
       case ArrayRead(arr, index)  =>
         val arrTpe = typeCheckExpr(arr)
-        to.setType(arr)
         arrTpe match {
           case _: TObject       =>
             val indexType = typeCheckExpr(index)
-            val exprType = typeCheckExpr(expr)
+            val fromType = typeCheckExpr(from)
 
-            val argList = List(indexType, exprType)
+            val argList = List(indexType, fromType)
             typeCheckArrayOperator(arrTpe, assignment, argList, arrTpe, assignment)
-            exprType
+            fromType
           case TArray(arrayTpe) =>
             typeCheckExpr(index, Int)
-            typeCheckExpr(expr, arrayTpe)
-            arrTpe.asInstanceOf[TArray].tpe
+            typeCheckExpr(from, arrayTpe)
           case _                => ???
         }
     }
-    if (expr.getType == TUnit)
-      report(AssignUnit(expr))
-    tpe
+    if (fromTpe == TUnit)
+      report(AssignUnit(from))
+    fromTpe
   }
 
   def typeCheckBinaryOperator(operator: OperatorTree, arg1: Type, arg2: Type): Type = {

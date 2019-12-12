@@ -19,7 +19,7 @@ print(a1 - a2) // res: T2009
 print(a1 * a2)
 
 print(a[1]) // res: T2009
-a[1] = 1 // res: T2009
+a[1] = 1 // res: T2009, T2009
 
 class A =
 
@@ -43,8 +43,8 @@ class A =
 	def protected -(lhs: A, rhs: A) = return 1
 	Def *(lhs: A, rhs: A) = return 1
 
-	def [](index: Int) = return 1
-	def protected []=(index: Int, value: Int) = ;
+	def protected [](index: Int) = return 1
+	def []=(index: Int, value: Int) = ;
 
 class B : A =
 
@@ -52,4 +52,5 @@ class B : A =
 		var a: A = new A(1)
 		print(a.B())
 		print(A.E())
-		a[1] = 1
+		print(a[1])
+		a[1] = 5 // res: T2009

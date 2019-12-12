@@ -128,34 +128,34 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
       (bool, bool, Bool),
 
       (char, char, Char),
-      (char, int, Char),
+      (char, int, Int),
 
       (int, int, Int),
-      (int, char, Int),
+      (int, char, Char),
 
       (long, long, Long),
-      (long, int, Long),
-      (long, char, Long),
+      (long, int, Int),
+      (long, char, Char),
 
       (float, float, Float),
-      (float, int, Float),
-      (float, char, Float),
-      (float, long, Float),
+      (float, int, Int),
+      (float, char, Char),
+      (float, long, Long),
 
       (double, double, Double),
-      (double, float, Double),
-      (double, int, Double),
-      (double, long, Double),
-      (double, char, Double),
+      (double, float, Float),
+      (double, int, Int),
+      (double, long, Long),
+      (double, char, Char),
 
       (obj, obj, Object),
-      (obj, double, Object),
-      (obj, float, Object),
-      (obj, int, Object),
-      (obj, long, Object),
-      (obj, char, Object),
-      (obj, bool, Object),
-      (obj, array, Object),
+      (obj, double, Double),
+      (obj, float, Float),
+      (obj, int, Int),
+      (obj, long, Long),
+      (obj, char, Char),
+      (obj, bool, Bool),
+      (obj, array, array().getType),
 
       (array, array, array().getType)
     )
@@ -163,36 +163,36 @@ class OperatorTypeSpec extends CompilerIntegrationTestSpec {
   private def arrayAssignOperator(): Unit =
     new ArrayAssignmentAsserter().valid(
       (char, char, Char),
-      (char, int, Char),
+      (char, int, Int),
 
       (int, int, Int),
-      (int, char, Int),
+      (int, char, Char),
 
       (long, long, Long),
-      (long, int, Long),
-      (long, char, Long),
+      (long, int, Int),
+      (long, char, Char),
 
       (bool, bool, Bool),
 
       (float, float, Float),
-      (float, int, Float),
-      (float, char, Float),
-      (float, long, Float),
+      (float, int, Int),
+      (float, char, Char),
+      (float, long, Long),
 
       (double, double, Double),
-      (double, float, Double),
-      (double, int, Double),
-      (double, long, Double),
-      (double, char, Double),
+      (double, float, Float),
+      (double, int, Int),
+      (double, long, Long),
+      (double, char, Char),
 
       (obj, obj, Object),
-      (obj, double, Object),
-      (obj, float, Object),
-      (obj, int, Object),
-      (obj, long, Object),
-      (obj, char, Object),
-      (obj, bool, Object),
-      (obj, array, Object),
+      (obj, double, Double),
+      (obj, float, Float),
+      (obj, int, Int),
+      (obj, long, Long),
+      (obj, char, Char),
+      (obj, bool, Bool),
+      (obj, array, array().getType),
 
       (array, array, array().getType)
 
