@@ -32,7 +32,7 @@ Def MissingReturnInElseBranch(): Int = // res: F2007
 	else
 		println("ABC")
 
-Def NestedMissingReturnInElseBranch(): Int = // res: F2007
+Def NestedMissingReturn1(): Int = // res: F2007
 	if(true)
 		if(true)
 			if(true)
@@ -40,9 +40,45 @@ Def NestedMissingReturnInElseBranch(): Int = // res: F2007
 			else
 				println("ABC")
 		else
-			return 25
+			if(true)
+				return 25
+			else
+				return 25
 	else
-		return 25
+		if(true)
+			if(true)
+				return 25
+			else
+				return 25
+		else
+			if(true)
+				return 25
+			else
+				return 25
+
+Def NestedMissingReturn2(): Int = // res: F2007
+	if(true)
+		if(true)
+			if(true)
+				return 25
+			else
+				return 25
+		else
+			if(true)
+				return 25
+			else
+				return 25
+	else
+		if(true)
+			if(true)
+				return 25
+			else
+				return 25
+		else
+			if(true)
+				println("ABC")
+			else
+				return 25
 
 Def NestedMissingReturnInThenBranch(): Int = // res: F2007
 	if(true)
@@ -55,6 +91,30 @@ Def NestedMissingReturnInThenBranch(): Int = // res: F2007
 			return 25
 	else
 		return 25
+
+Def MultipleMissingReturns(): Int = // res: F2007
+	if(true)
+		if(true)
+			if(true)
+				return 25
+			else
+				println("ABC")
+		else
+			if(true)
+				println("ABC")
+			else
+				return 25
+	else
+		if(true)
+			if(true)
+				println("ABC")
+			else
+				return 25
+		else
+			if(true)
+				println("ABC")
+			else
+				return 25
 
 Def WithWhileLoop(): Int =   // res: F2007
 	while(true)
