@@ -50,6 +50,10 @@ trait FlowingErrors extends ErrorHandling {
     lazy val message = err"Cannot use variable $v since it may not have been initialized."
   }
 
+  case class NotAllPathsReturnAValue(override val pos: Positioned) extends FlowAnalysisError(7, pos) {
+    lazy val message = err"Not all code paths return a value."
+  }
+
   //---------------------------------------------------------------------------------------
   //  Warnings
   //---------------------------------------------------------------------------------------

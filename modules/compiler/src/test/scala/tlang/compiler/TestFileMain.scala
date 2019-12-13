@@ -1,7 +1,7 @@
 package tlang
 package compiler
 
-import tlang.compiler.Main.CompilerFlags
+import tlang.compiler.CompilerMain.Flags
 import tlang.compiler.argument._
 import tlang.compiler.execution.Compiler
 import tlang.compiler.imports.ClassPath
@@ -14,9 +14,9 @@ import tlang.options.{FlagArgument, Options}
 import tlang.utils.{FileSource, Logging}
 
 object TestFileMain extends Logging {
-  case object TestHelpFlag extends HelpFlag(TestFlags)
+  case object TestHelpFlag extends HelpFlag(Flags)
 
-  val TestFlags: Set[FlagArgument[_]] = Set(
+  val Flags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
     ColorSchemeFlag,
@@ -49,7 +49,7 @@ object TestFileMain extends Logging {
     val helpArgs = options(CompilerHelpFlag)
 
     if (options.isEmpty || (HelpFlag.defaultArg in helpArgs)) {
-      ctx.output += HelpOutput(Constants.TesterCommandName, TestFlags)
+      ctx.output += HelpOutput(Constants.TesterCommandName, Flags)
       sys.exit(1)
     }
 
@@ -74,7 +74,7 @@ object TestFileMain extends Logging {
   private def parseOptions(args: Array[String]): Options = {
     implicit val errorContext: ErrorStringContext = ErrorStringContext()(Formatter.SimpleFormatter)
     try {
-      Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)
+      Options(flags = Flags, positionalArgument = Some(TFilesArgument), arguments = args)
     } catch {
       case e: IllegalArgumentException =>
         println(e.getMessage)

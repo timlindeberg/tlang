@@ -361,7 +361,7 @@ class CompilerArgumentsSpec extends UnitSpec {
 
   private def createOptions(args: String, suggestor: AlternativeSuggestor = mock[AlternativeSuggestor]) = {
     val errorContext = ErrorStringContext(suggestor)(Formatter.SimpleFormatter)
-    val flags = tlang.compiler.Main.CompilerFlags
+    val flags = tlang.compiler.CompilerMain.Flags
     Options(flags, Some(TFilesArgument), args.split(" "))(errorContext)
   }
 }

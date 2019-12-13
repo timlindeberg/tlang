@@ -17,8 +17,8 @@ class DocumentationService @Inject()(config: Configuration) {
 
   private implicit val formatter: Formatter = Formatter.SimpleFormatter
 
-  private lazy val compilerFlagDocs = flagDocumentation("Compiler flags", tlang.compiler.Main.CompilerFlags)
-  private lazy val replFlagDocs = flagDocumentation("trepl flags", tlang.repl.Main.ReplFlags)
+  private lazy val compilerFlagDocs = flagDocumentation("Compiler flags", tlang.compiler.CompilerMain.Flags)
+  private lazy val replFlagDocs = flagDocumentation("trepl flags", tlang.repl.ReplMain.Flags)
 
   def documentation: List[Documentation] = {
     staticDocumentation

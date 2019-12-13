@@ -16,8 +16,8 @@ import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
 import tlang.utils._
 
-object Main extends Logging {
-  val CompilerFlags: Set[FlagArgument[_]] = Set(
+object CompilerMain extends Logging {
+  val Flags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
     ColorSchemeFlag,
@@ -58,13 +58,13 @@ object Main extends Logging {
     Logging.DefaultLogSettings.logThreads = options(ThreadsFlag).isInstanceOf[ParallellExecutor]
 
     val ctx = createContext(options)
-    Main(ctx).run()
+    CompilerMain(ctx).run()
   }
 
   private def parseOptions(args: Array[String]): Options = {
     implicit val errorContext: ErrorStringContext = ErrorStringContext()(Formatter.SimpleFormatter)
     try {
-      Options(flags = CompilerFlags, positionalArgument = Some(TFilesArgument), arguments = args)
+      Options(flags = Flags, positionalArgument = Some(TFilesArgument), arguments = args)
     } catch {
       case e: IllegalArgumentException =>
         println(e.getMessage)
@@ -90,9 +90,9 @@ object Main extends Logging {
   }
 }
 
-case class Main(ctx: Context) extends Logging {
+case class CompilerMain(ctx: Context) extends Logging {
 
-  import Main._
+  import CompilerMain._
   import ctx.{formatter, options}
 
   private implicit val syntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
@@ -106,7 +106,7 @@ case class Main(ctx: Context) extends Logging {
     interruptionHandler.setHandler(onInterrupt _)
 
     if (options.isEmpty) {
-      ctx.output += HelpOutput(Constants.CompilerCommandName, CompilerFlags)
+      ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
       exit(1)
     }
 
@@ -177,7 +177,7 @@ case class Main(ctx: Context) extends Logging {
     val args = options(CompilerHelpFlag)
 
     if (HelpFlag.defaultArg in args) {
-      ctx.output += HelpOutput(Constants.CompilerCommandName, CompilerFlags)
+      ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
       exit(0)
     }
 
@@ -186,7 +186,7 @@ case class Main(ctx: Context) extends Logging {
     }
 
     args foreach { arg =>
-      CompilerFlags.find(_.name == arg) ifDefined { ctx.output += FlagInfoOutput(_) }
+      Flags.find(_.name == arg) ifDefined { ctx.output += FlagInfoOutput(_) }
     }
 
     if (args.nonEmpty)

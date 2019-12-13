@@ -7,7 +7,7 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
 import tlang.compiler.TestContext
 import tlang.formatting.Formatter
 import tlang.options.Options
-import tlang.repl.Main.createContext
+import tlang.repl.ReplMain.createContext
 import tlang.repl.actors.ReplActor.{Start, Stop}
 import tlang.testutils.AnsiMatchers
 import tlang.testutils.snapshot.AsyncSnapshotTesting
@@ -24,7 +24,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec with AsyncSnapshotTesting with M
     super.beforeAll()
     val ctx = testContext(None)
 
-    repl = Main.createRepl(ctx, testTerminal, Options.Empty, killProcessOnTerminate = false)(Formatter.PrettyFormatter)
+    repl = ReplMain.createRepl(ctx, testTerminal, Options.Empty, killProcessOnTerminate = false)(Formatter.PrettyFormatter)
     repl ! Start
   }
 

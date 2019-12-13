@@ -4,4 +4,4 @@ package argument
 
 import tlang.options.argument.HelpFlag
 
-case object CompilerHelpFlag extends HelpFlag(tlang.compiler.Main.CompilerFlags)
+case object CompilerHelpFlag extends HelpFlag(tlang.compiler.CompilerMain.Flags)

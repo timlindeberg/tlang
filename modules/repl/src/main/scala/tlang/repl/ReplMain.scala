@@ -27,7 +27,7 @@ import tlang.repl.input.{Clipboard, Input}
 import tlang.repl.terminal.{KeyConverter, ReplTerminal, TerminalFactory}
 import tlang.utils.{DefaultMainMethodExecutor, Logging}
 
-object Main extends Logging {
+object ReplMain extends Logging {
 
   import tlang.Constants._
 
@@ -37,7 +37,7 @@ object Main extends Logging {
 
   val HistoryFileName: String = "repl_history"
 
-  val ReplFlags: Set[FlagArgument[_]] = Set(
+  val Flags: Set[FlagArgument[_]] = Set(
     AsciiFlag,
     ClassPathFlag,
     LineWidthFlag,
@@ -71,7 +71,7 @@ object Main extends Logging {
     val ctx = createContext(options, tempDir)
 
     if (options(ReplHelpFlag).nonEmpty) {
-      ctx.output += HelpOutput(Constants.ReplCommandName, ReplFlags)
+      ctx.output += HelpOutput(Constants.ReplCommandName, Flags)
       sys.exit()
     }
 
@@ -130,7 +130,7 @@ object Main extends Logging {
     val formatter = Formatter.SimpleFormatter
 
     val errorContext = ErrorStringContext()(formatter)
-    Options(flags = ReplFlags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
+    Options(flags = Flags, positionalArgument = Some(TFilesArgument), arguments = args)(errorContext)
   }
 
   private def printVersion(): Unit = println(s"T-Repl $VersionNumber")

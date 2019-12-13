@@ -104,7 +104,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   }
 
   private def verifyErrorCodes(messages: CompilerMessages, messageType: MessageType, solutions: List[ErrorMessageSolution]): Unit = {
-    val foundCodes = getErrorCodes(messages(messageType))
+    val foundCodes = messages(messageType).map { msg => (msg.pos.line, msg.code) }
       .map { case (line, code) => ErrorMessageSolution(line, code) }
     verifyErrorCodes(foundCodes, solutions)
   }
@@ -190,7 +190,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   private def formatTestFailedMessage(failedTest: Int, result: List[Solution], solution: List[Solution]): String = {
     val smallerFormatter = formatter.copy(lineWidth = formatter.lineWidth - 4)
-    import smallerFormatter._
+    import formatter._
 
     def format(solution: Option[Solution]): String = solution match {
       case Some(Solution(lineNumber, output)) =>
@@ -223,8 +223,6 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
       .map { line => OutputSolution(-1, line.trim) }
       .toList
   }
-
-  private def getErrorCodes(errors: List[CompilerMessage]) = errors.map { error => (error.pos.line, error.code) }
 
   private def parseSolutions(file: File): List[Solution] =
     FileSource
