@@ -3,24 +3,23 @@ package compiler
 
 import better.files.File
 import org.scalatest._
-import tlang.compiler.output.ExecutionTimeOutput
 import tlang.testutils.TestConstants
 
 import scala.collection.mutable
 import scala.util.matching.Regex
 
-trait TestPath
-case class TestDirectory(name: String, children: Array[TestPath]) extends TestPath
-case class TestFile(file: File) extends TestPath
-case object Empty extends TestPath
-
 object CompilerIntegrationTestSpec {
 
-  val IgnoredFiles: mutable.Map[File, Boolean] = mutable.Map[File, Boolean]()
-  val TestPaths: mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
-  val RootDirectory: String = File(".").pathAsString
+  private trait TestPath
+  private case object Empty extends TestPath
+  private case class TestDirectory(name: String, children: Array[TestPath]) extends TestPath
+  private case class TestFile(file: File) extends TestPath
 
-  val TestPattern: Option[Regex] =
+  private val IgnoredFiles: mutable.Map[File, Boolean] = mutable.Map[File, Boolean]()
+  private val TestPaths: mutable.Map[String, TestPath] = mutable.Map[String, TestPath]()
+  private val RootDirectory: String = File(".").pathAsString
+
+  private val TestPattern: Option[Regex] =
     sys.env.get("pattern")
       .filter { _.nonEmpty }
       .map { _.replaceAll(" +", "").toLowerCase.r }
@@ -30,6 +29,8 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
 
   import CompilerIntegrationTestSpec._
   import TestConstants._
+
+  private val IgnoreRegex: Regex = """// *[I|i]gnore""".r
 
   def testFiles(path: String, executeTest: File => Unit): Unit = {
     def testPath(path: TestPath): Unit = {
@@ -51,25 +52,6 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
   }
 
   private def shouldBeIncludedInTestName(directoryName: String): Boolean = directoryName(0).isLower
-
-  def formatTestFailedMessage(failedTest: Int, result: List[String], solution: List[String]): String = {
-    val numbers = (1 to Math.max(result.length, solution.length)).map { i =>
-      if (i == failedTest) s"$i" + " " + TestFormatter.LeftArrow else s"$i"
-    }
-    TestFormatter
-      .grid
-      .row(3)
-      .content("", "Result", "Solution")
-      .mapContent(result.zipAll(solution, "", "").zip(numbers)) { case ((res, sol), num) => (num, res, sol) }
-      .render()
-  }
-
-  def printExecutionTimes(file: File, ctx: Context): Unit = {
-    import TestFormatter._
-
-    TestFormatter.grid.header(s"Testing file ${ Magenta(file.nameWithoutExtension) }").print()
-    ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success = true)
-  }
 
   // Since ParallellTestExecution instantiates the Spec for EACH test we try to cache as
   // much of the calculation as possible.

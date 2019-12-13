@@ -23,9 +23,6 @@ object TestConstants {
 
   implicit val TestFormatter: Formatter = Formatter(LineWidth, useColor = UseColors, asciiOnly = AsciiOnly)
 
-  val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
-  val IgnoreRegex: Regex = """// *[I|i]gnore""".r
-
   object CompilerIntegrationTestTag extends Tag("compilerIntegrationTest")
 
 }

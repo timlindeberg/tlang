@@ -12,6 +12,7 @@ import tlang.compiler.imports.{ClassPath, Imports}
 import tlang.compiler.lowering.TreeBuilder
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.PrettyOutputHandler
+import tlang.compiler.output.help.HelpOutput
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting._
 import tlang.formatting.textformatters.StackTraceHighlighter
@@ -66,23 +67,21 @@ object Main extends Logging {
       sys.exit()
     }
 
+    val tempDir = File.newTemporaryDirectory("repl")
+    val ctx = createContext(options, tempDir)
+
     if (options(ReplHelpFlag).nonEmpty) {
-      printHelp(options(ReplHelpFlag))
+      ctx.output += HelpOutput(Constants.ReplCommandName, ReplFlags)
       sys.exit()
     }
 
     val terminal = TerminalFactory.createTerminal()
-    val repl = createRepl(terminal, options)
+    val repl = createRepl(ctx, terminal, options)
     repl ! Start
   }
 
-  def createRepl(terminal: Terminal, options: Options, killProcessOnTerminate: Boolean = true)(implicit formatter: Formatter): ActorRef = {
+  def createRepl(ctx: Context, terminal: Terminal, options: Options, killProcessOnTerminate: Boolean = true)(implicit formatter: Formatter): ActorRef = {
     info"Creating Repl with options: $options"
-
-    // Inject dependencies
-    val tempDir = File.newTemporaryDirectory("repl")
-
-    val ctx = createContext(options, tempDir)
 
     val prettyPrinter = PrettyPrinter()
     val errorStringContext = ErrorStringContext()
@@ -146,10 +145,5 @@ object Main extends Logging {
       classPath = classPath,
       outDirs = Set(tempDir)
     )
-  }
-
-  private def printHelp(args: Set[String] = Set("")) = {
-    println("TODO")
-    sys.exit(0)
   }
 }

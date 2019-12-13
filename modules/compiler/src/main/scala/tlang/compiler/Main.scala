@@ -106,7 +106,7 @@ case class Main(ctx: Context) extends Logging {
     interruptionHandler.setHandler(onInterrupt _)
 
     if (options.isEmpty) {
-      ctx.output += HelpOutput(CompilerFlags)
+      ctx.output += HelpOutput(Constants.CompilerCommandName, CompilerFlags)
       exit(1)
     }
 
@@ -177,7 +177,7 @@ case class Main(ctx: Context) extends Logging {
     val args = options(CompilerHelpFlag)
 
     if (HelpFlag.defaultArg in args) {
-      ctx.output += HelpOutput(CompilerFlags)
+      ctx.output += HelpOutput(Constants.CompilerCommandName, CompilerFlags)
       exit(0)
     }
 

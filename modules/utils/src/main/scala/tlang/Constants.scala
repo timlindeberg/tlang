@@ -13,6 +13,7 @@ object Constants {
   val FileEnding = ".t"
   val THome = "T_HOME"
   val CompilerCommandName = "tcompile"
+  val TesterCommandName = "ttest"
   val ReplCommandName = "trepl"
   val MainMethod = "main"
   val JavaLangPackage = "java::lang"
