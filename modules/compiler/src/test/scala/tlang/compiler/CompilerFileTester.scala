@@ -19,12 +19,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.runtime.ScalaRunTime
 import scala.util.matching.Regex
 
-case class CompilerFileTester(
-  file: File,
-  ctx: Context,
-  pipeline: CompilerPhase[Source, _]
-)(
-  implicit val syntaxHighlighter: SyntaxHighlighter) {
+case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[Source, _])
+  (implicit val syntaxHighlighter: SyntaxHighlighter) {
 
   case class TestResult(success: Boolean, message: String)
 

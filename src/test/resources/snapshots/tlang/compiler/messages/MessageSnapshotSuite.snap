@@ -342,3 +342,6 @@ I2001: [1;35mT::lang::Int[0m[1m is already imported[0m
 
 ========================================= ImportErrors AlreadyImportedByDefault
 I2002: [1;35mT::lang::Int[0m[1m is already imported by default.[0m
+
+========================================= FlowingErrors NotAllPathsReturnAValue
+F2007: [1mNot all code paths return a value.[0m

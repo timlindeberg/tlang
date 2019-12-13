@@ -81,6 +81,8 @@ Def GetOperation(s: String): Operation =
 	if(c == 'p')
 		val s = rest.Split("/")
 		return new Partner(s[0][0], s[1][0])
+	// Should not happen
+	return new Spin(0)
 
 Def CreateVector(chars: String) =
 	val numPrograms = 'q' - 'a'

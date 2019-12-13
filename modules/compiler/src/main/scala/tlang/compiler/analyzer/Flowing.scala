@@ -4,6 +4,7 @@ package analyzer
 
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
 import tlang.compiler.analyzer.Symbols.FieldSymbol
+import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
@@ -41,22 +42,31 @@ case class FlowAnalyser(
 
   def apply(clazz: ClassDeclTree): Unit = {
     info"Performing flow analysis on ${ clazz.name }"
-    val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { (knowledge, field) =>
-      val sym = field.getSymbol
-      val varId = VarIdentifier(sym)
-      if (sym.modifiers.contains(Final()))
-        knowledge.assignment(varId, field.initiation, Initialized)
-      else
-        knowledge.add(varId, Initialized)
-    }
+    val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { analyzeField }
+    clazz.methods.filter(_.stat.isDefined) foreach { analyzeMethod(_, fieldKnowledge) }
+  }
 
-    clazz.methods.filter(_.stat.isDefined) foreach { meth =>
-      val args = meth.getSymbol.argList
-      val argMap: Map[Identifier, Set[VarKnowledge]] = args.map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
-      val argKnowledge = new Knowledge(argMap)
-      val knowledge: Knowledge = fieldKnowledge + argKnowledge
-      analyze(meth.stat.get, knowledge)
+  def analyzeField(knowledge: Knowledge, field: VarDecl): Knowledge = {
+    val sym = field.getSymbol
+    val varId = VarIdentifier(sym)
+    if (sym.modifiers.contains(Final()))
+      knowledge.assignment(varId, field.initiation, Initialized)
+    else
+      knowledge.add(varId, Initialized)
+  }
+
+  def analyzeMethod(meth: MethodDeclTree, fieldKnowledge: Knowledge): Knowledge = {
+    val args = meth.getSymbol.argList
+    val argMap: Map[Identifier, Set[VarKnowledge]] = args.map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
+    val argKnowledge = new Knowledge(argMap)
+    val knowledge: Knowledge = fieldKnowledge + argKnowledge
+
+    val methodKnowledge = analyze(meth.stat.get, knowledge)
+    val returnType = meth.getSymbol.getType
+    if (returnType != TUnit && methodKnowledge.flowEnded.isEmpty) {
+      report(NotAllPathsReturnAValue(meth.id))
     }
+    methodKnowledge
   }
 
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
