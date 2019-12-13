@@ -4,7 +4,7 @@ package compiler
 import tlang.Constants._
 import tlang.compiler.argument._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.execution.{CompilationWatcher, Compiler, ExitException, ProgramExecutor}
+import tlang.compiler.execution.{Compiler, CompilerFileWatcher, Executor, ExitException, ProgramExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages._
 import tlang.compiler.output._
@@ -101,13 +101,12 @@ case class CompilerMain(ctx: Context) extends Logging {
   private val interruptionHandler = InterruptionHandler()
   private val programExecutor = ProgramExecutor(ctx, interruptionHandler)
   private val compiler = Compiler(ctx)
+  private val executor = Executor(ctx, interruptionHandler)
 
   def run(): Unit = {
-    interruptionHandler.setHandler(onInterrupt _)
-
     if (options.isEmpty) {
       ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
-      exit(1)
+      executor.exit(1)
     }
 
     printHelp()
@@ -126,9 +125,10 @@ case class CompilerMain(ctx: Context) extends Logging {
 
     val CUs = compileAndExecute(sources)
 
-    if (options(WatchFlag))
-      CompilationWatcher(ctx, CUs, options, sources, compileAndExecute).watch()
-    exit(0)
+    if (!options(WatchFlag))
+      executor.exit(0)
+
+    CompilerFileWatcher(ctx, options, sources, compileAndExecute, CUs).watch()
   }
 
   private def getSources: List[Source] = {
@@ -140,45 +140,25 @@ case class CompilerMain(ctx: Context) extends Logging {
   }
 
   private def compileAndExecute(sources: List[Source]): Seq[CompilationUnit] = {
-    try {
-      handleInternalErrors {
-        val CUs = compiler(sources)
-        printExecutionTimes(success = true)
-        if (options(ExecFlag))
-          programExecutor(CUs)
-        CUs
-      }
-    } catch {
-      case ExitException(code) =>
-        printExecutionTimes(success = false)
-        if (!options(WatchFlag))
-          exit(code)
-        Nil
-    }
-  }
-
-  private def handleInternalErrors[T](execute: => T): T = {
-    try {
-      execute
-    } catch {
-      case e: ExitException => throw e
-      case error: Throwable =>
-        error"Execution error occurred: ${ error.stackTrace }"
-        ctx.output += InternalErrorOutput(error)
-        throw ExitException(1)
-    }
+    executor.execute {
+      val CUs = compiler(sources)
+      printExecutionTimes(success = true)
+      if (options(ExecFlag))
+        programExecutor(CUs)
+      CUs
+    }.getOrElse(Nil)
   }
 
   private def printHelp(): Unit = {
     if (options(VersionFlag)) {
       ctx.output += VersionOutput()
-      exit(0)
+      executor.exit(0)
     }
     val args = options(CompilerHelpFlag)
 
     if (HelpFlag.defaultArg in args) {
       ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
-      exit(0)
+      executor.exit(0)
     }
 
     if (CompilerHelpFlag.Phases in args) {
@@ -190,26 +170,12 @@ case class CompilerMain(ctx: Context) extends Logging {
     }
 
     if (args.nonEmpty)
-      exit(0)
+      executor.exit(0)
   }
 
   private def isValidTHomeDirectory(path: String): Boolean = {
     // TODO: Make this properly check that the directory is valid
     true
-  }
-
-  private def onInterrupt(): Unit = {
-    ctx.output += InterruptedOutput()
-    exit(0)
-  }
-
-  private def exit(code: Int): Nothing = {
-    ctx.output += SuccessOutput(code == 0)
-    ctx.output.flush()
-    sys.runtime.halt(code)
-
-    // So that exit can have Nothing as return type
-    throw new RuntimeException("")
   }
 
   private def printExecutionTimes(success: Boolean): Unit = {
@@ -219,7 +185,7 @@ case class CompilerMain(ctx: Context) extends Logging {
 
   private def error(message: String): Nothing = {
     ctx.output += ErrorOutput(message)
-    exit(1)
+    executor.exit(1)
   }
 
   private def ErrorNoSourcesGiven(): Nothing =

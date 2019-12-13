@@ -15,7 +15,7 @@ case class InternalErrorOutput(error: Throwable)(implicit formatter: Formatter, 
 
     val grid = formatter
       .grid
-      .header(s"${ Bold }Compilation ${ Red("failed") }${ Bold(" with an unexpected error") }")
+      .header(s"${ Bold }Execution ${ Red("failed") }${ Bold(" with an unexpected error") }")
       .row()
       .content(stackTrace)
 

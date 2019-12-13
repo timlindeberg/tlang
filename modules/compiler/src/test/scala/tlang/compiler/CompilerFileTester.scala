@@ -8,22 +8,27 @@ import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.TreePrinter
 import tlang.compiler.ast.Trees.{CompilationUnit, Tree}
 import tlang.compiler.execution.Compiler
-import tlang.compiler.messages.{CompilationException, CompilerMessage, CompilerMessages, MessageType}
-import tlang.compiler.output.{ErrorMessageOutput, ExecutionTimeOutput}
+import tlang.compiler.messages.{CompilationException, CompilerMessages, MessageType}
+import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.grid.{Column, TruncatedColumn}
-import tlang.utils.{DefaultMainMethodExecutor, ExecutionResult, FileSource, Logging, Source}
+import tlang.formatting.textformatters.SyntaxHighlighter
+import tlang.utils._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.runtime.ScalaRunTime
 import scala.util.matching.Regex
 
-case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[Source, _]) extends TestContext with Logging {
+case class CompilerFileTester(
+  file: File,
+  ctx: Context,
+  pipeline: CompilerPhase[Source, _]
+)(
+  implicit val syntaxHighlighter: SyntaxHighlighter) {
 
   case class TestResult(success: Boolean, message: String)
 
-  import ctx.options
-  import ctx.formatter
+  import ctx.{formatter, options}
 
   private val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
   private val ErrorCodeRegex: Regex = """[A-Z]\d{4}.*""".r
@@ -190,7 +195,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   private def formatTestFailedMessage(failedTest: Int, result: List[Solution], solution: List[Solution]): String = {
     val smallerFormatter = formatter.copy(lineWidth = formatter.lineWidth - 4)
-    import formatter._
+    import smallerFormatter._
 
     def format(solution: Option[Solution]): String = solution match {
       case Some(Solution(lineNumber, output)) =>

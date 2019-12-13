@@ -16,12 +16,13 @@ import tlang.utils.{FileSource, Logging, Source}
 
 import scala.collection.mutable
 
-case class CompilationWatcher(
+case class CompilerFileWatcher(
   ctx: Context,
-  CUs: Seq[CompilationUnit],
   options: Options,
   sources: List[Source],
-  compile: List[Source] => Seq[CompilationUnit])(implicit formatter: Formatter) extends Logging {
+  onFilesChanged: List[Source] => Unit,
+  CUs: Seq[CompilationUnit] = Nil)
+  (implicit formatter: Formatter) extends Logging {
 
   def watch(): Unit = {
     import ctx.formatter._
@@ -76,14 +77,14 @@ case class CompilationWatcher(
       if (hasAlreadyHandled(file))
         return
 
-      info"$file changed, recompiling"
+      info"$file changed"
       if (options(VerboseFlag))
-        ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }, recompiling...")
+        ctx.output += MessageOutput(s"Found changes to file ${ Magenta(file.path.relativePWD) }.")
 
       FileSource.clearCache()
       ctx.reporter.clear()
 
-      compile(filesToCompile)
+      onFilesChanged(filesToCompile)
     }
 
     // On Windows the modified event is sometimes triggered twice
