@@ -46,7 +46,8 @@ abstract class CompilerMessage(
         err.codeNum == codeNum &&
         err.typeCode == typeCode &&
         err.pos.encodedStartPos == pos.encodedStartPos &&
-        err.pos.encodedEndPos == pos.encodedEndPos
+        err.pos.encodedEndPos == pos.encodedEndPos &&
+        err.notes == notes
     case _                    => false
   }
 

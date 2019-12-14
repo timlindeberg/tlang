@@ -69,8 +69,14 @@ object Knowledge {
   }
 
   // Used to wrap knowledge to show it came from an and or an or expression
-  case class OrKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = AndKnowledge(inner.invert) }
-  case class AndKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {override def invert = OrKnowledge(inner.invert) }
+  case class OrKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {
+    override def invert = AndKnowledge(inner.invert)
+  }
+  case class AndKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper {
+    override def invert = OrKnowledge(inner.invert)
+  }
+
+  case class MaybeKnowledge(inner: VarKnowledge) extends VarKnowledgeWrapper
 
   // These should be objects but then it doesnt work as type parameters
   class Initialized extends VarKnowledge {override def toString = "Initialized" }
@@ -132,24 +138,31 @@ object Knowledge {
     }
 
     def intersection(other: Knowledge, newFlowEnded: Option[StatTree]): Knowledge = {
-      val knowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
-      varKnowledge.foreach { case (id, knowledge1) =>
-        other.varKnowledge.get(id) ifDefined { knowledge2 =>
-          knowledge += id -> knowledge1.intersect(knowledge2)
+      val ids = varKnowledge.keys ++ other.varKnowledge.keys
+      val knowledge = ids
+        .map { id =>
+          val k1 = varKnowledge.getOrElse(id, Set())
+          val k2 = other.varKnowledge.getOrElse(id, Set())
+          val idKnowledge =
+            k1.intersect(k2) ++
+              k1.diff(k2).map { toMaybeKnowledge } ++
+              k2.diff(k1).map { toMaybeKnowledge }
+          id -> idKnowledge
         }
-      }
+        .toMap
 
       val flow = newFlowEnded match {
         case Some(f) => if (flowEnded.isDefined && other.flowEnded.isDefined) Some(f) else None
         case None    => None
       }
-      Knowledge(knowledge.toMap, flow)
+      Knowledge(knowledge, flow)
     }
 
     def add[T <: VarKnowledge : ClassTag](varId: Identifier, newKnowledge: T): Knowledge = {
       varId.symbol ifDefined { sym =>
         if (sym.isInstanceOf[FieldSymbol] && !sym.isFinal) {
-          // cannot gain knowledge about var fields since they can change at any time
+          // Cannot gain knowledge about var fields since they can change at any time.
+          // For example, they could be changed in a different thread between two instructions
           return this
         }
       }
@@ -157,11 +170,23 @@ object Knowledge {
       copy(varKnowledge = varKnowledge + (varId -> knowledge))
     }
 
+    def getMaybe[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] = {
+      val knowledge = varKnowledge.getOrElse(varId, Set())
+        .filterInstance[MaybeKnowledge]
+        .map { _.inner }
+      get[T](knowledge)
+        .orElse(get[T](varId))
+    }
+
     def get[T <: VarKnowledge : ClassTag](varId: Identifier): Option[T] = {
-      val v = varKnowledge.getOrElse(varId, Set())
-      v.findInstance[T] match {
+      val knowledge = varKnowledge.getOrElse(varId, Set())
+      get[T](knowledge)
+    }
+
+    def get[T <: VarKnowledge : ClassTag](knowledge: Set[VarKnowledge]): Option[T] = {
+      knowledge.findInstance[T] match {
         case Some(x) => Some(x)
-        case None    => v.findInstance[AndKnowledge] flatMap {
+        case None    => knowledge.findInstance[AndKnowledge] flatMap {
           case AndKnowledge(x) =>
             if (classTag[T].runtimeClass.isInstance(x))
               Some(x.asInstanceOf[T])
@@ -171,6 +196,9 @@ object Knowledge {
         }
       }
     }
+
+    def is[T <: VarKnowledge : ClassTag](varId: Identifier): Boolean = get[T](varId).nonEmpty
+    def isMaybe[T <: VarKnowledge : ClassTag](varId: Identifier): Boolean = getMaybe[T](varId).nonEmpty
 
     def invert: Knowledge = copy(varKnowledge = {
       val knowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
@@ -205,24 +233,22 @@ object Knowledge {
 
     def endFlow(at: StatTree): Knowledge = copy(flowEnded = Some(at))
 
-    def addOrKnowledge(from: Knowledge): Knowledge = _addWrapped(from, OrKnowledge)
-    def addAndKnowledge(from: Knowledge): Knowledge = _addWrapped(from, AndKnowledge)
+    def addOrKnowledge(from: Knowledge): Knowledge = addWrapped(from, OrKnowledge)
+    def addAndKnowledge(from: Knowledge): Knowledge = addWrapped(from, AndKnowledge)
 
     def filterReassignedVariables(branch: StatTree, afterBranch: Knowledge): Knowledge = {
       val gainedKnowledge = afterBranch - this
       val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]() ++ varKnowledge
       gainedKnowledge.varKnowledge foreach { case (varId, knowledge) =>
-        knowledge.findInstance[Reassigned] match {
-          case Some(Reassigned(_)) =>
-            // Variable could have gotten reassigned in the branch so we have to
-            // remove previous knowledge
-            // The knowledge that can be saved from the branch is the intersection
-            // of the knowledge after the branch and the original knowledge
-            val inter = intersection(afterBranch, None)
-            val varIdKnowledge = inter.varKnowledge.getOrElse(varId, Set())
-            inter.varKnowledge foreach { case (vId, k) => newKnowledge += vId -> k }
-            newKnowledge += varId -> (varIdKnowledge + Reassigned(branch))
-          case None                =>
+        knowledge.findInstance[Reassigned] ifDefined { _ =>
+          // Variable could have gotten reassigned in the branch so we have to
+          // remove previous knowledge
+          // The knowledge that can be saved from the branch is the intersection
+          // of the knowledge after the branch and the original knowledge
+          val inter = intersection(afterBranch, newFlowEnded = None)
+          val varIdKnowledge = inter.varKnowledge.getOrElse(varId, Set())
+          inter.varKnowledge foreach { case (vId, k) => newKnowledge += vId -> k }
+          newKnowledge += varId -> (varIdKnowledge + Reassigned(branch))
         }
       }
       copy(varKnowledge = newKnowledge.toMap)
@@ -262,7 +288,12 @@ object Knowledge {
       }
     }
 
-    private def _addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {
+    private def toMaybeKnowledge(knowledge: VarKnowledge): MaybeKnowledge = knowledge match {
+      case knowledge: MaybeKnowledge => knowledge
+      case _                         => MaybeKnowledge(knowledge)
+    }
+
+    private def addWrapped[T <: VarKnowledgeWrapper : ClassTag](from: Knowledge, cons: VarKnowledge => T) = {
       val newKnowledge = mutable.Map[Identifier, Set[VarKnowledge]]()
       from.varKnowledge.foreach { case (varId, vKnowledge) =>
         val v = varKnowledge.getOrElse(varId, Set())
@@ -302,7 +333,9 @@ object Knowledge {
 
     private def getInitialKnowledge(varId: Identifier, varTpe: Type, maybeInit: Option[ExprTree]): List[(Identifier, Set[VarKnowledge])] = {
       if (maybeInit.isEmpty) {
-        val s: Set[VarKnowledge] = if (varTpe in Primitives) Set(Initialized) else Set()
+        // vars should be default initialized but not vals
+        val isFinal = varId.symbol exists { _.isFinal }
+        val s: Set[VarKnowledge] = if ((varTpe in Primitives) && !isFinal) Set(Initialized) else Set()
         return List(varId -> s)
       }
       val init = maybeInit.get

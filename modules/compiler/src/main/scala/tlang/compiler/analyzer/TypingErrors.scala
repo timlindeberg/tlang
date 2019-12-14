@@ -177,9 +177,9 @@ trait TypingErrors extends ErrorHandling {
     lazy val message = err"Variable $variableName declared with no type or initialization."
   }
 
-  case class ValueMustBeInitialized(variableName: String, override val pos: Positioned)
+  case class LocalValueMustBeInitialized(variableName: String, override val pos: Positioned)
     extends TypeCheckingError(19, pos) {
-    lazy val message = err"Value $variableName is not initialized."
+    lazy val message = err"Local value $variableName is not initialized."
   }
 
   case class NotOnNonNullable(override val pos: Positioned)

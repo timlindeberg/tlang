@@ -3,7 +3,7 @@ package compiler
 package analyzer
 
 import tlang.compiler.analyzer.Knowledge.{Identifier, _}
-import tlang.compiler.analyzer.Symbols.FieldSymbol
+import tlang.compiler.analyzer.Symbols.{ClassSymbol, FieldSymbol}
 import tlang.compiler.analyzer.Types.TUnit
 import tlang.compiler.ast.Trees
 import tlang.compiler.ast.Trees._
@@ -12,7 +12,7 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.{Logging, Positioned}
+import tlang.utils.{Logging, NoPosition, Positioned}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
@@ -20,7 +20,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
     ctx.executor.foreach(cus) { cu =>
       cu.classes foreach { clazz =>
         val errorStringContext = createErrorStringContext(ctx, cu)
-        val flowAnalyser = FlowAnalyser(ctx.reporter, errorStringContext, cu.imports)
+        val flowAnalyser = ClassFlowAnalyser(ctx.reporter, errorStringContext, cu.imports)
         flowAnalyser(clazz)
       }
     }
@@ -33,7 +33,7 @@ object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
   override def debugOutput(output: List[CompilationUnit])(implicit formatter: Formatter): Output = ASTOutput(phaseName, output)
 }
 
-case class FlowAnalyser(
+case class ClassFlowAnalyser(
   override val reporter: Reporter,
   override val errorStringContext: ErrorStringContext,
   imports: Imports) extends FlowingErrors with Logging {
@@ -43,34 +43,71 @@ case class FlowAnalyser(
   def apply(clazz: ClassDeclTree): Unit = {
     info"Performing flow analysis on ${ clazz.name }"
     val fieldKnowledge = clazz.fields.foldLeft(new Knowledge()) { analyzeField }
-    clazz.methods.filter(_.stat.isDefined) foreach { analyzeMethod(_, fieldKnowledge) }
+    clazz
+      .methods
+      .filter { _.stat.isDefined }
+      .foreach { analyzeMethod(_, fieldKnowledge) }
+
+    val hasDefaultConstructor = !clazz.methods.existsInstance[ConstructorDecl]
+    if (hasDefaultConstructor) {
+      verifyValuesInitialized(clazz.getSymbol, fieldKnowledge, "new()", clazz.id)
+    }
   }
 
   def analyzeField(knowledge: Knowledge, field: VarDecl): Knowledge = {
     val sym = field.getSymbol
     val varId = VarIdentifier(sym)
-    if (sym.modifiers.contains(Final()))
-      knowledge.assignment(varId, field.initiation, Initialized)
-    else
-      knowledge.add(varId, Initialized)
+    knowledge.assignment(varId, field.initiation)
   }
 
   def analyzeMethod(meth: MethodDeclTree, fieldKnowledge: Knowledge): Knowledge = {
-    val args = meth.getSymbol.argList
-    val argMap: Map[Identifier, Set[VarKnowledge]] = args.map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }.toMap
+    val methSymbol = meth.getSymbol
+    val args = methSymbol.argList
+    val argMap: Map[Identifier, Set[VarKnowledge]] = args
+      .map { v => VarIdentifier(v) -> Set[VarKnowledge](Initialized) }
+      .toMap
     val argKnowledge = new Knowledge(argMap)
     val knowledge: Knowledge = fieldKnowledge + argKnowledge
 
-    val methodKnowledge = analyze(meth.stat.get, knowledge)
-    val returnType = meth.getSymbol.getType
+    val methodAnalyzer = MethodFlowAnalyzer(reporter, errorStringContext, meth, imports)
+
+    val methodKnowledge = methodAnalyzer.analyze(meth.stat.get, knowledge)
+    val returnType = methSymbol.getType
     if (returnType != TUnit && methodKnowledge.flowEnded.isEmpty) {
       report(NotAllPathsReturnAValue(meth.id))
+    }
+
+    meth match {
+      case cons: ConstructorDecl =>
+        verifyValuesInitialized(cons.getSymbol.classSymbol, methodKnowledge, cons.signature, cons.id)
+      case _                     =>
     }
     methodKnowledge
   }
 
+  def verifyValuesInitialized(classSymbol: ClassSymbol, knowledge: Knowledge, constructor: String, errorPos: Positioned): Unit = {
+    classSymbol.fields foreach { case (name, fieldSymbol) =>
+      val id = VarIdentifier(fieldSymbol)
+      if (!knowledge.is[Initialized](id)) {
+        report(FieldMayNotHaveBeenInitialized(
+          name,
+          fieldSymbol.getPos,
+          classSymbol.name,
+          constructor,
+          errorPos))
+      }
+    }
+  }
+}
+
+case class MethodFlowAnalyzer(
+  override val reporter: Reporter,
+  override val errorStringContext: ErrorStringContext,
+  methodDeclTree: MethodDeclTree,
+  imports: Imports) extends FlowingErrors with Logging {
+
   def analyze(tree: StatTree, knowledge: Knowledge): Knowledge = {
-    trace"Analyzing ${ tree.toString.stripNewlines.trim } at line ${ tree.line } with knowledge: ${ NL + knowledge.toString }"
+    trace"Analyzing ${ tree.toString.stripNewlines.trim } at line ${ tree.line } with knowledge: $knowledge"
     tree match {
       case Block(stats)                      =>
         val endKnowledge = stats.foldLeft(knowledge) { (currentKnowledge, next) => analyze(next, currentKnowledge) }
@@ -129,7 +166,9 @@ case class FlowAnalyser(
               knowledge.endFlow(tree) // execution is dead after if branch
             else {
               val intersect = thnKnowledge.intersection(elsKnowledge, Some(tree))
-              intersect.filterReassignedVariables(thn, thnKnowledge).filterReassignedVariables(els.get, elsKnowledge)
+              intersect
+                .filterReassignedVariables(thn, thnKnowledge)
+                .filterReassignedVariables(els.get, elsKnowledge)
             }
           case None               =>
             if (thnEnded)
@@ -245,7 +284,7 @@ case class FlowAnalyser(
 
           knowledge.getIdentifier(obj) ifDefined { varId =>
             // Reset knowledge
-            checkReassignment(varId, assign)
+            checkReassignment(varId, knowledge, assign)
             knowledge = knowledge.assignment(varId, Some(from), Reassigned(assign))
           }
         case binOp@BinaryOperatorTree(lhs, rhs) =>
@@ -279,7 +318,7 @@ case class FlowAnalyser(
 
               op.ifInstanceOf[IncrementDecrementTree] { incDec =>
                 knowledge.getIdentifier(expr) ifDefined { varId =>
-                  checkReassignment(varId, op)
+                  checkReassignment(varId, knowledge, op)
                   val v = if (incDec.isIncrement) 1 else -1
                   knowledge = knowledge.addToNumericValue(varId, v)
                 }
@@ -305,10 +344,7 @@ case class FlowAnalyser(
           checkValidUse(arr, knowledge)
         case v: VariableID                      =>
           knowledge.getIdentifier(v) ifDefined { varId =>
-            varId.symbol ifDefined { varSym =>
-              if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-                report(VariableNotInitialized(v.toString, v))
-            }
+            verifyVariableInitialized(varId, v, knowledge)
           }
       }
     }
@@ -335,10 +371,23 @@ case class FlowAnalyser(
     knowledge
   }
 
-  private def checkReassignment(varId: Identifier, pos: Positioned): Unit =
+  private def checkReassignment(varId: Identifier, knowledge: Knowledge, pos: Positioned): Unit =
     varId.symbol ifDefined { sym =>
-      if (sym.modifiers.contains(Final()))
-        report(ReassignmentToVal(sym.name, pos))
+      if (!sym.isFinal) {
+        return
+      }
+
+      // We can only assign vals inside constructors
+      val isConstructor = methodDeclTree.isInstanceOf[ConstructorDecl]
+      if (!isConstructor) {
+        report(ReassignmentToValOutsideConstructor(sym.name, pos))
+        return
+      }
+
+      knowledge.getMaybe[Reassigned](varId) match {
+        case Some(Reassigned(at)) => report(ReassignmentToVal(sym.name, at, pos))
+        case None                 =>
+      }
     }
 
   private def getBoolVarCondition(obj: ExprTree, knowledge: Knowledge) =
@@ -377,11 +426,16 @@ case class FlowAnalyser(
               case _                              =>
             }
 
-          varId.symbol ifDefined { varSym =>
-            if (!varSym.isInstanceOf[FieldSymbol] && knowledge.get[Initialized](varId).isEmpty)
-              report(VariableNotInitialized(obj.toString, obj))
-          }
+          verifyVariableInitialized(varId, obj, knowledge)
         }
     }
   }
+
+  private def verifyVariableInitialized(varId: Identifier, obj: ExprTree, knowledge: Knowledge): Unit = {
+    varId.symbol ifDefined { varSym =>
+      if (!varSym.isInstanceOf[FieldSymbol] && !knowledge.is[Initialized](varId))
+        report(VariableNotInitialized(obj.toString, obj))
+    }
+  }
 }
+

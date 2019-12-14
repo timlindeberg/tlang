@@ -2,7 +2,7 @@ package tlang
 package compiler
 package analyzer
 
-import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
+import tlang.compiler.messages.{ErrorHandling, ErrorMessage, ExtraMessage, WarningMessage}
 import tlang.utils.Positioned
 
 trait FlowingErrors extends ErrorHandling {
@@ -42,8 +42,18 @@ trait FlowingErrors extends ErrorHandling {
     }
   }
 
-  case class ReassignmentToVal(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
+  case class ReassignmentToValOutsideConstructor(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
     lazy val message = err"Cannot reassign value $value."
+  }
+
+  case class ReassignmentToVal(value: String, assignedPos: Positioned, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
+    lazy val message = err"Cannot reassign value $value."
+
+    case class VarAssignmentExtraMessage() extends ExtraMessage(assignedPos) {
+      lazy val message: String = err"It might have been assigned to here:"
+    }
+
+    override lazy val notes = List(VarAssignmentExtraMessage())
   }
 
   case class VariableNotInitialized(v: String, override val pos: Positioned) extends FlowAnalysisError(6, pos) {
@@ -52,6 +62,16 @@ trait FlowingErrors extends ErrorHandling {
 
   case class NotAllPathsReturnAValue(override val pos: Positioned) extends FlowAnalysisError(7, pos) {
     lazy val message = err"Not all code paths return a value."
+  }
+
+  case class FieldMayNotHaveBeenInitialized(field: String, fieldPos: Positioned, clazz: String, constructor: String, override val pos: Positioned) extends FlowAnalysisError(8, pos) {
+    lazy val message = err"Field $field may not have been initialized in constructor $clazz::$constructor."
+
+    case class VarDeclExtraMessage() extends ExtraMessage(fieldPos) {
+      lazy val message: String = err"$field is declared here:"
+    }
+
+    override lazy val notes = List(VarDeclExtraMessage())
   }
 
   //---------------------------------------------------------------------------------------

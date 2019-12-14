@@ -1,10 +1,9 @@
 package tlang
 package compiler
 
-import tlang.Constants._
 import tlang.compiler.argument._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.execution.{Compiler, CompilerFileWatcher, Executor, ExitException, ProgramExecutor}
+import tlang.compiler.execution.{Compiler, CompilerFileWatcher, Executor, ProgramExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages._
 import tlang.compiler.output._
@@ -111,12 +110,9 @@ case class CompilerMain(ctx: Context) extends Logging {
 
     printHelp()
 
-    if (!isValidTHomeDirectory(THomeDirectory))
-      ErrorInvalidTHomeDirectory(THomeDirectory)
-
     val sources = getSources
     if (sources.isEmpty)
-      ErrorNoSourcesGiven()
+      executor.error(s"No compilation sources given.")
 
     info"Compiling ${ sources.size } sources: ${ sources.map { _.description }.mkString(NL) }"
 
@@ -173,24 +169,8 @@ case class CompilerMain(ctx: Context) extends Logging {
       executor.exit(0)
   }
 
-  private def isValidTHomeDirectory(path: String): Boolean = {
-    // TODO: Make this properly check that the directory is valid
-    true
-  }
-
   private def printExecutionTimes(success: Boolean): Unit = {
     if (options(VerboseFlag))
       ctx.output += ExecutionTimeOutput(ctx.executionTimes.toMap, success)
   }
-
-  private def error(message: String): Nothing = {
-    ctx.output += ErrorOutput(message)
-    executor.exit(1)
-  }
-
-  private def ErrorNoSourcesGiven(): Nothing =
-    error(s"No compilation sources given.")
-
-  private def ErrorInvalidTHomeDirectory(path: String): Nothing =
-    error(s"'$path' is not a valid $THome directory.")
 }

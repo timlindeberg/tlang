@@ -95,6 +95,9 @@ case class TestFileMain(ctx: Context) {
     }
 
     val sources = options(TFilesArgument).map(FileSource(_)).toList
+    if (sources.isEmpty)
+      executor.error(s"No compilation sources given.")
+
     val success = testFiles(sources)
 
     if (!options(WatchFlag))
@@ -104,9 +107,10 @@ case class TestFileMain(ctx: Context) {
   }
 
   private def testFiles(sources: List[Source]): Boolean = {
-    executor.execute {
-      sources.asInstanceOf[List[FileSource]] forall { testFile }
-    }.getOrElse(false)
+    val fileSources = sources.asInstanceOf[List[FileSource]]
+    executor
+      .execute { fileSources forall { testFile } }
+      .getOrElse(false)
   }
 
   private def testFile(source: FileSource): Boolean = {

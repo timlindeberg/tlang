@@ -5,7 +5,7 @@ package analyzer
 import tlang.compiler.analyzer.Naming.createErrorStringContext
 import tlang.compiler.analyzer.Symbols._
 import tlang.compiler.analyzer.Types._
-import tlang.compiler.ast.Trees._
+import tlang.compiler.ast.Trees.{VarDecl, _}
 import tlang.compiler.imports.Imports
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
@@ -44,7 +44,7 @@ object Typing extends CompilerPhase[CompilationUnit, CompilationUnit] with Loggi
       val fakeMethodSymbol = new MethodSymbol("", classDecl.getSymbol, None, Set())
       val typeChecker = TypeChecker(ctx, cu, fakeMethodSymbol)
       classDecl.fields foreach { field =>
-        typeChecker.typeCheckStatement(field)
+        typeChecker.typeCheckVarDecl(field, isField = true)
         field.annotations foreach { typeChecker.typeCheckAnnotation }
       }
       classDecl.annotations foreach { typeChecker.typeCheckAnnotation }
@@ -150,21 +150,8 @@ case class TypeChecker(
   def typeCheckStatement(statement: StatTree): Unit = statement match {
     case Block(stats)                      =>
       stats foreach typeCheckStatement
-    case VarDecl(id, tpe, init, _, _)      =>
-      val varSym = id.getSymbol
-      if (varSym.isFinal && init.isEmpty)
-        report(ValueMustBeInitialized(varSym.name, varSym))
-
-      (tpe, init) match {
-        case (Some(tpe), Some(expr)) => typeCheckExpr(expr, tpe.getType)
-        case (None, Some(expr))      => id.setType(typeCheckExpr(expr))
-        case (Some(_), None)         => // Abstract
-        case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
-      }
-      init ifDefined { expr =>
-        if (expr.getType == TUnit)
-          report(AssignUnit(expr))
-      }
+    case varDecl: VarDecl                  =>
+      typeCheckVarDecl(varDecl, isField = false)
     case If(condition, thn, els)           =>
       typeCheckExpr(condition, Bool)
       typeCheckStatement(thn)
@@ -347,7 +334,7 @@ case class TypeChecker(
   def typeCheckNewExpr(newExpr: New): Type = {
     val tpe = newExpr.tpe
     val exprs = newExpr.args
-    val argTypes = exprs.map(typeCheckExpr(_))
+    val argTypes = exprs.map { typeCheckExpr(_) }
     tpe.getType match {
       case TObject(classSymbol) if classSymbol.isAbstract =>
         report(InstantiateTrait(classSymbol.name, newExpr))
@@ -438,6 +425,25 @@ case class TypeChecker(
           report(SafeAccessOnNonNullable(objType, acc))
         tpe.getNullable
       case _: NormalAccess => tpe
+    }
+  }
+
+  def typeCheckVarDecl(varDecl: VarDecl, isField: Boolean): Unit = {
+    val VarDecl(id, tpe, init, _, _) = varDecl
+    val varSym = id.getSymbol
+    if (!isField && varSym.isFinal && init.isEmpty) {
+      report(LocalValueMustBeInitialized(varSym.name, varSym))
+    }
+
+    (tpe, init) match {
+      case (Some(tpe), Some(expr)) => typeCheckExpr(expr, tpe.getType)
+      case (None, Some(expr))      => id.setType(typeCheckExpr(expr))
+      case (Some(_), None)         => // Abstract
+      case (None, None)            => report(NoTypeNoInitializer(varSym.name, varSym))
+    }
+    init ifDefined { expr =>
+      if (expr.getType == TUnit)
+        report(AssignUnit(expr))
     }
   }
 

@@ -3,7 +3,7 @@ package compiler
 package execution
 
 import tlang.compiler.argument.{VerboseFlag, WatchFlag}
-import tlang.compiler.output.{ExecutionTimeOutput, InternalErrorOutput, InterruptedOutput, SuccessOutput}
+import tlang.compiler.output.{ErrorOutput, ExecutionTimeOutput, InternalErrorOutput, InterruptedOutput, SuccessOutput}
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.utils.{InterruptionHandler, Logging}
 
@@ -33,6 +33,11 @@ case class Executor(ctx: Context, interruptionHandler: InterruptionHandler)
 
     // So that exit can have Nothing as return type
     throw new RuntimeException("")
+  }
+
+  def error(message: String): Nothing = {
+    ctx.output += ErrorOutput(message)
+    exit(1)
   }
 
   private def onInterrupt(): Unit = {
