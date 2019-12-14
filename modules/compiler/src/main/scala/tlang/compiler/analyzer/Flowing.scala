@@ -50,7 +50,7 @@ case class ClassFlowAnalyser(
 
     val hasDefaultConstructor = !clazz.methods.existsInstance[ConstructorDecl]
     if (hasDefaultConstructor) {
-      verifyValuesInitialized(clazz.getSymbol, fieldKnowledge, "new()", clazz.id)
+      verifyFinalFieldsInitialized(clazz.getSymbol, fieldKnowledge, "new()", clazz.id)
     }
   }
 
@@ -79,13 +79,13 @@ case class ClassFlowAnalyser(
 
     meth match {
       case cons: ConstructorDecl =>
-        verifyValuesInitialized(cons.getSymbol.classSymbol, methodKnowledge, cons.signature, cons.id)
+        verifyFinalFieldsInitialized(cons.getSymbol.classSymbol, methodKnowledge, cons.signature, cons.id)
       case _                     =>
     }
     methodKnowledge
   }
 
-  def verifyValuesInitialized(classSymbol: ClassSymbol, knowledge: Knowledge, constructor: String, errorPos: Positioned): Unit = {
+  def verifyFinalFieldsInitialized(classSymbol: ClassSymbol, knowledge: Knowledge, constructor: String, errorPos: Positioned): Unit = {
     classSymbol.fields foreach { case (name, fieldSymbol) =>
       val id = VarIdentifier(fieldSymbol)
       if (!knowledge.is[Initialized](id)) {
@@ -383,10 +383,8 @@ case class MethodFlowAnalyzer(
         report(ReassignmentToValOutsideConstructor(sym.name, pos))
         return
       }
-
-      knowledge.getMaybe[Reassigned](varId) match {
-        case Some(Reassigned(at)) => report(ReassignmentToVal(sym.name, at, pos))
-        case None                 =>
+      if (knowledge.isMaybe[Initialized](varId)) {
+        report(ReassignmentToVal(sym.name, pos))
       }
     }
 

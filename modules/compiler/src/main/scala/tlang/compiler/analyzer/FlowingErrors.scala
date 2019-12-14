@@ -46,14 +46,8 @@ trait FlowingErrors extends ErrorHandling {
     lazy val message = err"Cannot reassign value $value."
   }
 
-  case class ReassignmentToVal(value: String, assignedPos: Positioned, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
+  case class ReassignmentToVal(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
     lazy val message = err"Cannot reassign value $value."
-
-    case class VarAssignmentExtraMessage() extends ExtraMessage(assignedPos) {
-      lazy val message: String = err"It might have been assigned to here:"
-    }
-
-    override lazy val notes = List(VarAssignmentExtraMessage())
   }
 
   case class VariableNotInitialized(v: String, override val pos: Positioned) extends FlowAnalysisError(6, pos) {
