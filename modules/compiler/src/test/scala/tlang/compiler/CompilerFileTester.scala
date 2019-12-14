@@ -8,6 +8,8 @@ import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.TreePrinter
 import tlang.compiler.ast.Trees.{CompilationUnit, Tree}
 import tlang.compiler.execution.Compiler
+import tlang.compiler.lexer.Tokens.COMMENTLIT
+import tlang.compiler.lexer.{Lexer, Lexing}
 import tlang.compiler.messages.{CompilationException, CompilerMessages, MessageType}
 import tlang.compiler.output.ErrorMessageOutput
 import tlang.formatting.grid.{Column, TruncatedColumn}
@@ -17,6 +19,7 @@ import tlang.utils._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.runtime.ScalaRunTime
+import scala.util.Try
 import scala.util.matching.Regex
 
 case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[Source, _])
@@ -26,7 +29,8 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
 
   import ctx.{formatter, options}
 
-  private val SolutionRegex: Regex = """.*// *[R|r]es:(.*)""".r
+  private val SolutionRegex: Regex = """// *[R|r]es:(.*)""".r
+  private val LineSolutionRegex: Regex = (""".*""" + SolutionRegex).r
   private val ErrorCodeRegex: Regex = """[A-Z]\d{4}.*""".r
 
   def execute(): TestResult = {
@@ -225,16 +229,35 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
       .toList
   }
 
-  private def parseSolutions(file: File): List[Solution] =
+  private def parseSolutions(file: File): List[Solution] = {
+    // We try read the solution using the Lexer first since this
+    // works better (doesn't pickup comments within other comments etc.)
+    // If that fails (for instance when testing lexing errors) we
+    // fall back to parsing each line using a regex
+    Try(parseSolutionsWithLexer(file))
+      .getOrElse(parseSolutionsWithRegex(file))
+  }
+
+  private def parseSolutionsWithLexer(file: File): List[Solution] = {
+    Lexing.execute(ctx)(FileSource(file) :: Nil)
+      .flatten
+      .flatMap {
+        case comment@COMMENTLIT(SolutionRegex(value)) => parseLine(comment.line, value.trim)
+        case _                                        => Nil
+      }
+  }
+
+  private def parseSolutionsWithRegex(file: File): List[Solution] = {
     FileSource
       .getText(file)
       .lines
       .zipWithIndex
       .flatMap {
-        case (SolutionRegex(line), lineNumber) => parseLine(lineNumber + 1, line.trim)
-        case _                                 => Nil
+        case (LineSolutionRegex(line), lineNumber) => parseLine(lineNumber + 1, line.trim)
+        case _                                     => Nil
       }
       .toList
+  }
 
   private def parseLine(lineNumber: Int, line: String): List[Solution] = {
     if (ErrorCodeRegex.matches(line))
