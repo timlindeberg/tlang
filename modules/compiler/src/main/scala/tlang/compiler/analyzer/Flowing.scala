@@ -86,17 +86,20 @@ case class ClassFlowAnalyser(
   }
 
   def verifyFinalFieldsInitialized(classSymbol: ClassSymbol, knowledge: Knowledge, constructor: String, errorPos: Positioned): Unit = {
-    classSymbol.fields foreach { case (name, fieldSymbol) =>
-      val id = VarIdentifier(fieldSymbol)
-      if (!knowledge.is[Initialized](id)) {
-        report(FieldMayNotHaveBeenInitialized(
-          name,
-          fieldSymbol.getPos,
-          classSymbol.name,
-          constructor,
-          errorPos))
+    classSymbol.fields
+      .values
+      .filter { _.isFinal }
+      .foreach { fieldSymbol =>
+        val id = VarIdentifier(fieldSymbol)
+        if (!knowledge.is[Initialized](id)) {
+          report(FieldMayNotHaveBeenInitialized(
+            fieldSymbol.name,
+            fieldSymbol.getPos,
+            classSymbol.name,
+            constructor,
+            errorPos))
+        }
       }
-    }
   }
 }
 
@@ -379,11 +382,7 @@ case class MethodFlowAnalyzer(
 
       // We can only assign vals inside constructors
       val isConstructor = methodDeclTree.isInstanceOf[ConstructorDecl]
-      if (!isConstructor) {
-        report(ReassignmentToValOutsideConstructor(sym.name, pos))
-        return
-      }
-      if (knowledge.isMaybe[Initialized](varId)) {
+      if (!isConstructor || knowledge.isMaybe[Initialized](varId)) {
         report(ReassignmentToVal(sym.name, pos))
       }
     }

@@ -250,9 +250,6 @@ G2002: [1mGeneric parameter [35mABC[0m[1m appears multiple times.[0m
 ========================================= TypingErrors NoTypeNoInitializer
 T2018: [1mVariable [35mABC[0m[1m declared with no type or initialization.[0m
 
-========================================= TypingErrors ValueMustBeInitialized
-T2019: [1mValue [35mABC[0m[1m is not initialized.[0m
-
 ========================================= TypingErrors NotOnNonNullable
 T2020: [1;35m![0m[1m operator can only be applied to [35mBool[0m[1m and nullable types.[0m
 
@@ -345,3 +342,9 @@ I2002: [1;35mT::lang::Int[0m[1m is already imported by default.[0m
 
 ========================================= FlowingErrors NotAllPathsReturnAValue
 F2007: [1mNot all code paths return a value.[0m
+
+========================================= TypingErrors LocalValueMustBeInitialized
+T2019: [1mLocal value [35mABC[0m[1m is not initialized.[0m
+
+========================================= FlowingErrors FieldMayNotHaveBeenInitialized
+F2008: [1mField [35mABC[0m[1m may not have been initialized in constructor [35mABC[0m[1m::[35mABC[0m[1m.[0m

@@ -133,3 +133,17 @@ class M =
 		X = 10 // res: F2005
 		Y = 11 // res: F2005
 		Z = 12 // res: F2005
+
+
+class N = // res: F2008
+
+	Var X: Int
+	Val Y: Int
+
+class O =
+
+	Var X: Int
+	Val Y: Int
+
+	def new() =
+		Y = 5

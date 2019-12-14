@@ -42,10 +42,6 @@ trait FlowingErrors extends ErrorHandling {
     }
   }
 
-  case class ReassignmentToValOutsideConstructor(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
-    lazy val message = err"Cannot reassign value $value."
-  }
-
   case class ReassignmentToVal(value: String, override val pos: Positioned) extends FlowAnalysisError(5, pos) {
     lazy val message = err"Cannot reassign value $value."
   }

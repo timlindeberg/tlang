@@ -6,18 +6,17 @@ import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.DefaultReporter
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants.{PrintCodePhases, PrintJSON, Resources, TestOutputDirectory}
 
 trait TestContext {
 
-  import TestConstants.TestFormatter
+  val TestContext: Context = testContext(None)(TestConstants.TestFormatter)
+  implicit val SyntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()(TestConstants.TestFormatter)
 
-  val TestContext: Context = testContext(None)
-  implicit val SyntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
-
-  def testContext(file: Option[File]): Context = {
+  def testContext(file: Option[File])(implicit formatter: Formatter): Context = {
     val outDir = file match {
       case Some(f) =>
         val resourceDir = File(Resources)

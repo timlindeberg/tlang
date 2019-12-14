@@ -73,8 +73,7 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   private def handleCompilationException(messages: CompilerMessages): Unit = {
     val expectedCodes = parseSolutions(file).filterInstance[ErrorMessageSolution]
     if (expectedCodes.isEmpty) {
-      ctx.output += ErrorMessageOutput(messages)
-      fail("Compilation failed")
+      fail("Compilation failed" + ErrorMessageOutput(messages).pretty)
     }
 
     if (options(VerboseFlag)) {

@@ -80,7 +80,8 @@ object ReplMain extends Logging {
     repl ! Start
   }
 
-  def createRepl(ctx: Context, terminal: Terminal, options: Options, killProcessOnTerminate: Boolean = true)(implicit formatter: Formatter): ActorRef = {
+  def createRepl(ctx: Context, terminal: Terminal, options: Options, killProcessOnTerminate: Boolean = true)
+    (implicit formatter: Formatter): ActorRef = {
     info"Creating Repl with options: $options"
 
     val prettyPrinter = PrettyPrinter()
