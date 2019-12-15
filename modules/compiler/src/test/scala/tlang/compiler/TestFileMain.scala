@@ -75,6 +75,7 @@ object TestFileMain extends Logging {
       output = if (options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler(),
       outDirs = Set(File(TestConstants.TestOutputDirectory)),
       classPath = ClassPath.Default ++ options(ClassPathFlag),
+      printCodePhase = options(PrintOutputFlag),
       options = options
     )
   }
@@ -123,6 +124,7 @@ case class TestFileMain(ctx: Context) extends Logging {
   private def testFile(source: FileSource): Boolean = {
     import formatter._
 
+    info"Executing test on file ${ source.file }"
     val fileTester = CompilerFileTester(source.file, ctx, Compiler.FrontEnd)
     val res = fileTester.execute()
     if (res.success) {
@@ -137,7 +139,7 @@ case class TestFileMain(ctx: Context) extends Logging {
   }
 
   private def deleteOutputDirectory(): Unit = {
-    debug"Deleting output directory"
+    info"Deleting output directory"
     File(TestOutputDirectory).delete(swallowIOExceptions = true)
   }
 }
