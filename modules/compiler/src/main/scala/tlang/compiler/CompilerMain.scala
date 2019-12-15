@@ -3,7 +3,7 @@ package compiler
 
 import tlang.compiler.argument._
 import tlang.compiler.ast.Trees._
-import tlang.compiler.execution.{Compiler, CompilerFileWatcher, Executor, ProgramExecutor}
+import tlang.compiler.execution.{Compiler, CompilerFileWatcher, TopLevelExecutor, ProgramExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages._
 import tlang.compiler.output._
@@ -82,7 +82,7 @@ object CompilerMain extends Logging {
     val outputHandler = if (options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler()
     Context(
       reporter = DefaultReporter(messages = messages),
-      outputHandler = outputHandler,
+      output = outputHandler,
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       options = options
     )
@@ -100,19 +100,19 @@ case class CompilerMain(ctx: Context) extends Logging {
   private val interruptionHandler = InterruptionHandler()
   private val programExecutor = ProgramExecutor(ctx, interruptionHandler)
   private val compiler = Compiler(ctx)
-  private val executor = Executor(ctx, interruptionHandler)
+  private val topLevel = TopLevelExecutor(ctx, interruptionHandler)
 
   def run(): Unit = {
     if (options.isEmpty) {
       ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
-      executor.exit(1)
+      topLevel.exit(1)
     }
 
     printHelp()
 
     val sources = getSources
     if (sources.isEmpty)
-      executor.error(s"No compilation sources given.")
+      topLevel.error(s"No compilation sources given.")
 
     info"Compiling ${ sources.size } sources: ${ sources.map { _.description }.mkString(NL) }"
 
@@ -122,7 +122,7 @@ case class CompilerMain(ctx: Context) extends Logging {
     val CUs = compileAndExecute(sources)
 
     if (!options(WatchFlag))
-      executor.exit(0)
+      topLevel.exit(0)
 
     CompilerFileWatcher(ctx, options, sources, compileAndExecute, CUs).watch()
   }
@@ -136,7 +136,7 @@ case class CompilerMain(ctx: Context) extends Logging {
   }
 
   private def compileAndExecute(sources: List[Source]): Seq[CompilationUnit] = {
-    executor.execute {
+    topLevel.execute {
       val CUs = compiler(sources)
       printExecutionTimes(success = true)
       if (options(ExecFlag))
@@ -148,13 +148,13 @@ case class CompilerMain(ctx: Context) extends Logging {
   private def printHelp(): Unit = {
     if (options(VersionFlag)) {
       ctx.output += VersionOutput()
-      executor.exit(0)
+      topLevel.exit(0)
     }
     val args = options(CompilerHelpFlag)
 
     if (HelpFlag.defaultArg in args) {
       ctx.output += HelpOutput(Constants.CompilerCommandName, Flags)
-      executor.exit(0)
+      topLevel.exit(0)
     }
 
     if (CompilerHelpFlag.Phases in args) {
@@ -166,7 +166,7 @@ case class CompilerMain(ctx: Context) extends Logging {
     }
 
     if (args.nonEmpty)
-      executor.exit(0)
+      topLevel.exit(0)
   }
 
   private def printExecutionTimes(success: Boolean): Unit = {

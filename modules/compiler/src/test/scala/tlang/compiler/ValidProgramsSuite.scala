@@ -13,7 +13,7 @@ class ValidProgramsSuite extends CompilerIntegrationTestSpec with ParallelTestEx
 
   testFiles(s"$Resources/validtests", testValidProgram)
 
-  def testValidProgram(file: File): Unit = {
+  private def testValidProgram(file: File): Unit = {
     val ctx = testContext(Some(file))
     val fileTester = CompilerFileTester(file, ctx, Compiler.FrontEnd)
     val result = fileTester.execute()

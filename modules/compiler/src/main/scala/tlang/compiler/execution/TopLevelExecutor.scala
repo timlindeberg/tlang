@@ -7,12 +7,12 @@ import tlang.compiler.output.{ErrorOutput, ExecutionTimeOutput, InternalErrorOut
 import tlang.formatting.textformatters.StackTraceHighlighter
 import tlang.utils.{InterruptionHandler, Logging}
 
-case class Executor(ctx: Context, interruptionHandler: InterruptionHandler)
+case class TopLevelExecutor(ctx: Context, interruptionHandler: InterruptionHandler)
   (implicit stackTraceHighlighter: StackTraceHighlighter) extends Logging {
 
   import ctx.{formatter, options}
 
-  interruptionHandler.setHandler(onInterrupt _)
+  interruptionHandler.setHandler(InterruptionHandler.ExitCategory, onInterrupt _)
 
   def execute[T](execute: => T): Option[T] = {
     try {

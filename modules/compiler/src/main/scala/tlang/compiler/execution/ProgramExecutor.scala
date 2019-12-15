@@ -56,7 +56,7 @@ case class ProgramExecutor(ctx: Context, interruptionHandler: InterruptionHandle
   }
 
   private def awaitExecution(execution: CancellableFuture[ExecutionResult], source: Source, endOfBox: String): Unit = {
-    val interruptHandlerId = interruptionHandler.setHandler(onInterrupt _)
+    val interruptHandlerId = interruptionHandler.setHandler(InterruptionHandler.ExitCategory, onInterrupt _)
 
     cancelExecution = Some(execution.cancel)
     val timeout = options(ExecTimeoutFlag)
@@ -71,7 +71,7 @@ case class ProgramExecutor(ctx: Context, interruptionHandler: InterruptionHandle
     }
     cancelExecution = None
 
-    interruptionHandler.removeHandler(interruptHandlerId)
+    interruptionHandler.removeHandler(InterruptionHandler.ExitCategory, interruptHandlerId)
   }
 
   private def onInterrupt(): Unit = cancelExecution ifDefined { cancel => cancel() }
