@@ -30,6 +30,9 @@ trait UnitSpec extends FlatSpec
     }
   }
 
+  def mockedTabReplacerReturningSameString: TabReplacer =
+    mock[TabReplacer] use { _.apply(*).forwardsArg(0) }
+
   def mockedSyntaxHighlighter: SyntaxHighlighter =
     mock[SyntaxHighlighter] use { _.apply(*).forwardsArg(0) }
 

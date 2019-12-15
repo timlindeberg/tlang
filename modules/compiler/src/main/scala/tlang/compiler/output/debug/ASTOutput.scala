@@ -31,13 +31,12 @@ case class ASTOutput(
     import formatter._
 
     val grid = formatter.grid.header(Bold("Output after ") + Blue(phaseName.capitalize) + Bold(" phase"))
-    val tabReplacement = " " * formatter.replaceTabs.tabWidth
     trees foreach { tree =>
       grid
         .row(alignment = Center)
         .content(tree.sourceDescription)
         .row()
-        .content(prettyPrinter(tree).replaceAll("\t", tabReplacement).trimWhiteSpaces)
+        .content(replaceTabs(prettyPrinter(tree)).trimWhiteSpaces)
         .row(Column, TruncatedColumn, Column, Column, TruncatedColumn)
         .columnHeaders("Line", "Tree", "Reference", "Symbol", "Type")
         .contents(treePrinter(tree))

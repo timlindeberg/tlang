@@ -10,8 +10,8 @@ trait GridContent {
   def size: Option[Int] = None
 }
 
-case class StringContent(any: Any) extends GridContent {
-  val string: String = any.toString
+case class StringContent(any: Any)(implicit val formatter: Formatter) extends GridContent {
+  val string: String = formatter.replaceTabs(any.toString)
   def render(width: Int): String = string
   override def width: Option[Int] = {
     val width = if (string.isEmpty) 0 else string.lines.map(_.visibleCharacters).max
@@ -19,8 +19,12 @@ case class StringContent(any: Any) extends GridContent {
   }
 }
 
-case class CenteredContent(content: Any, color: Color = Colors.NoColor, fill: String = " ") extends GridContent {
-  def render(width: Int): String = color(Alignment.Center(content.toString, width, fill))
+case class CenteredContent(content: Any, color: Color = Colors.NoColor, fill: String = " ")
+  (implicit val formatter: Formatter) extends GridContent {
+  def render(width: Int): String = {
+    val s = formatter.replaceTabs(content.toString)
+    color(Alignment.Center(s, width, fill))
+  }
 }
 
 case class Divider(fill: String, color: Color = Colors.NoColor) extends GridContent {
@@ -31,18 +35,20 @@ case class Divider(fill: String, color: Color = Colors.NoColor) extends GridCont
   }
 }
 
-case class EvenlySpaced(items: Iterable[String], spacing: Int = 1) extends GridContent {
+case class EvenlySpaced(items: Iterable[String], spacing: Int = 1)
+  (implicit val formatter: Formatter) extends GridContent {
 
   def render(width: Int): String = {
-    val columnWidth = items.map(_.visibleCharacters).max + spacing
+    val strings = items.map { formatter.replaceTabs(_) }
+    val columnWidth = strings.map(_.visibleCharacters).max + spacing
     val numColumns = (width + spacing) / columnWidth
 
     if (numColumns == 0)
-      return items.map(pad(_, width)).mkString(NL)
+      return strings.map(pad(_, width)).mkString(NL)
 
     val totalWidth = numColumns * columnWidth - spacing
 
-    items
+    strings
       .grouped(numColumns)
       .map { columns =>
         val x = columns

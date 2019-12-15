@@ -8,6 +8,8 @@ case class TabReplacer(tabWidth: Int) {
 
   private val TabReplacement = " " * tabWidth
 
+  def apply(text: String): String = text.replaceAll("\t", " " * tabWidth)
+
   def apply(text: String, pos: Positioned): (String, Positioned) = {
     val (t, p) = apply(text, Seq(pos))
     (t, p.head)

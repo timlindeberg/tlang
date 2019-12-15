@@ -102,7 +102,7 @@ case class OutputBox private(
 
     val text = if (input.trim.startsWith(":")) InputColor(input) else input
     // Selected position is already adjusted for tabs so we can just replace it like normal.
-    val replacedTabs = text.replaceAll("\t", " " * formatter.replaceTabs.tabWidth)
+    val replacedTabs = formatter.replaceTabs(text)
 
     val selectionMarking = Marking(inputBuffer.selectedPosition, MarkColor, isAdditive = true)
     val highlightedInput = syntaxHighlighter(replacedTabs, selectionMarking)

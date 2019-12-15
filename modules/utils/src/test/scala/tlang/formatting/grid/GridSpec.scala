@@ -5,7 +5,7 @@ package grid
 import tlang.formatting.grid.Alignment.{Center, Left, Right}
 import tlang.formatting.grid.OverflowHandling.{Except, Truncate, Wrap}
 import tlang.formatting.grid.Width.{Auto, Fixed, Percentage}
-import tlang.formatting.textformatters.{Truncator, WordWrapper}
+import tlang.formatting.textformatters.{TabReplacer, Truncator, WordWrapper}
 import tlang.testutils.UnitSpec
 
 class GridSpec extends UnitSpec {
@@ -1148,8 +1148,15 @@ class GridSpec extends UnitSpec {
     width: Int = DefaultMaxWidth,
     asciiOnly: Boolean = false,
     wordWrapper: WordWrapper = mockedWordWrapperReturningSplitLines,
-    truncator: Truncator = mock[Truncator]
+    truncator: Truncator = mock[Truncator],
+    tabReplacer: TabReplacer = mockedTabReplacerReturningSameString
   ): Formatter = {
-    testFormatter(width = width, asciiOnly = asciiOnly, wordWrapper = wordWrapper, truncator = truncator)
+    testFormatter(
+      width = width,
+      asciiOnly = asciiOnly,
+      wordWrapper = wordWrapper,
+      truncator = truncator,
+      tabReplacer = tabReplacer
+    )
   }
 }
