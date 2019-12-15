@@ -15,7 +15,7 @@ import scala.collection.mutable
 object Context {
   def apply(
     reporter: Reporter,
-    outputHandler: OutputHandler,
+    output: OutputHandler,
     classPath: ClassPath,
     options: Options
   )(
@@ -23,7 +23,7 @@ object Context {
   ): Context = {
     Context(
       reporter,
-      outputHandler,
+      output,
       classPath,
       options,
       executor = options(ThreadsFlag),

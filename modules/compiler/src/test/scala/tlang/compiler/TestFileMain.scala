@@ -1,9 +1,10 @@
 package tlang
 package compiler
 
+import better.files.File
 import tlang.compiler.TestFileMain.Flags
 import tlang.compiler.argument._
-import tlang.compiler.execution.{Compiler, CompilerFileWatcher, Executor}
+import tlang.compiler.execution.{Compiler, CompilerFileWatcher, TopLevelExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.help.HelpOutput
@@ -13,6 +14,9 @@ import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
+import tlang.testutils.TestConstants
+import tlang.testutils.TestConstants.TestOutputDirectory
+import tlang.utils.InterruptionHandler.Category
 import tlang.utils.{FileSource, InterruptionHandler, Logging, Source}
 
 object TestFileMain extends Logging {
@@ -66,17 +70,17 @@ object TestFileMain extends Logging {
     info"Creating context with options $options"
 
     val messages = CompilerMessages(maxErrors = -1)
-    val outputHandler = if (options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler()
     Context(
       reporter = DefaultReporter(messages = messages),
-      outputHandler = outputHandler,
+      output = if (options(JSONFlag)) JSONOutputHandler() else PrettyOutputHandler(),
+      outDirs = Set(File(TestConstants.TestOutputDirectory)),
       classPath = ClassPath.Default ++ options(ClassPathFlag),
       options = options
     )
   }
 }
 
-case class TestFileMain(ctx: Context) {
+case class TestFileMain(ctx: Context) extends Logging {
 
   import ctx.{formatter, options}
 
@@ -84,31 +88,34 @@ case class TestFileMain(ctx: Context) {
   private implicit val syntaxHighlighter: SyntaxHighlighter = TLangSyntaxHighlighter()
 
   private val interruptionHandler = InterruptionHandler()
-  private val executor = Executor(ctx, interruptionHandler)
+  private val topLevel = TopLevelExecutor(ctx, interruptionHandler)
 
   def run(): Unit = {
+    interruptionHandler.setHandler(Category("TestFile"), deleteOutputDirectory _)
     val helpArgs = options(CompilerHelpFlag)
 
     if (options.isEmpty || (HelpFlag.defaultArg in helpArgs)) {
       ctx.output += HelpOutput(Constants.TesterCommandName, Flags)
-      executor.exit(1)
+      topLevel.exit(1)
     }
 
     val sources = options(TFilesArgument).map(FileSource(_)).toList
     if (sources.isEmpty)
-      executor.error(s"No compilation sources given.")
+      topLevel.error(s"No compilation sources given.")
+
+    deleteOutputDirectory()
 
     val success = testFiles(sources)
 
     if (!options(WatchFlag))
-      executor.exit(if (success) 0 else 1)
+      topLevel.exit(if (success) 0 else 1)
 
     CompilerFileWatcher(ctx, options, sources, testFiles).watch()
   }
 
   private def testFiles(sources: List[Source]): Boolean = {
     val fileSources = sources.asInstanceOf[List[FileSource]]
-    executor
+    topLevel
       .execute { fileSources forall { testFile } }
       .getOrElse(false)
   }
@@ -124,6 +131,13 @@ case class TestFileMain(ctx: Context) {
       ctx.output += MessageOutput(s"${ Red("Test of file") } ${ source.getDescription(Red + Bold) } ${ Red("failed.") }")
       ctx.output += MessageOutput(res.message.trim)
     }
+    deleteOutputDirectory()
+
     res.success
+  }
+
+  private def deleteOutputDirectory(): Unit = {
+    debug"Deleting output directory"
+    File(TestOutputDirectory).delete(swallowIOExceptions = true)
   }
 }
