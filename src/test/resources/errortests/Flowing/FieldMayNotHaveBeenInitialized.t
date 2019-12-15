@@ -1,4 +1,3 @@
-
 class A =
 
 	Val X: Int = 5
@@ -147,3 +146,13 @@ class O =
 
 	def new() =
 		Y = 5
+
+
+class P =
+
+	Val X: Int
+	Val Y: Int
+
+	def new() =
+		this.X = 5
+		this.Y = 5

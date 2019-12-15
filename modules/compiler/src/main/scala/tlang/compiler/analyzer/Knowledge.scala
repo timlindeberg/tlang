@@ -309,12 +309,13 @@ object Knowledge {
 
     private def getAccessIdentifier(access: Access): Option[Identifier] = {
       access match {
-        case Access(_, _: MethodCall)    => None
-        case Access(obj, id: VariableID) => getIdentifier(obj) match {
+        case Access(_, _: MethodCall)       => None
+        case Access(This(), id: VariableID) => Some(VarIdentifier(id.getSymbol))
+        case Access(obj, id: VariableID)    => getIdentifier(obj) match {
           case Some(objId) => Some(AccessIdentifier(objId, id.getSymbol))
           case None        => None
         }
-        case _                           => None
+        case _                              => None
       }
     }
 
