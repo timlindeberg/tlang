@@ -114,9 +114,17 @@ case class MessageInfo(
   }
 
   private def startAndEnd(line: String, lineNum: Int, pos: Positioned): (Int, Int) = {
-    val startOfText = line.indexWhere(!_.isWhitespace)
-    val start = if (lineNum == pos.line) pos.col - 1 else 0
-    val end = if (lineNum == pos.lineEnd) pos.colEnd - 1 else line.length
-    (Math.max(startOfText, start), Math.min(end, line.length))
+    var end = if (lineNum == pos.lineEnd) pos.colEnd - 1 else line.length
+    end = Math.min(end, line.length)
+
+    var start = if (lineNum == pos.line) pos.col - 1 else 0
+    val allWhitespace = line.substring(start, end).forall(_.isWhitespace)
+    if (!allWhitespace) {
+      // If content contains non whitespace, trim the part lead
+      val startOfText = line.indexWhere(!_.isWhitespace)
+      start = Math.max(startOfText, start)
+    }
+
+    (start, end)
   }
 }

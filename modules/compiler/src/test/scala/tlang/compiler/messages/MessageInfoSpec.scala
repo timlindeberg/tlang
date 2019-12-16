@@ -138,8 +138,8 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         messageInfo = getMessageInfo(message, contextSize = 0, useColor = false)
         val lines = messageInfo.locationInSource
         lines shouldBe List(
-          ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~")
+          ("6", /**/ "for(var i = x; i < 5; i++)"),
+          ("", /* */ "               ~~~~~")
         )
       }
 
@@ -160,10 +160,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val messageInfo = getMessageInfo(message, contextSize = 1, useColor = false)
         val lines = messageInfo.locationInSource
         lines shouldBe List(
-          ("5", "var e = 0"),
-          ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("7", "    a++")
+          ("5", /**/ "var e = 0"),
+          ("6", /**/ "for(var i = x; i < 5; i++)"),
+          ("", /* */ "               ~~~~~"),
+          ("7", /**/ "    a++")
         )
       }
 
@@ -188,12 +188,12 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val messageInfo = getMessageInfo(message, contextSize = 2, useColor = false)
         val lines = messageInfo.locationInSource
         lines shouldBe List(
-          ("4", "var d = 0"),
-          ("5", "var e = 0"),
-          ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("7", "    a++"),
-          ("8", "    b++")
+          ("4", /**/ "var d = 0"),
+          ("5", /**/ "var e = 0"),
+          ("6", /**/ "for(var i = x; i < 5; i++)"),
+          ("", /* */ "               ~~~~~"),
+          ("7", /**/ "    a++"),
+          ("8", /**/ "    b++")
         )
       }
 
@@ -222,18 +222,18 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val messageInfo = getMessageInfo(message, contextSize = 5, useColor = false)
         val lines = messageInfo.locationInSource
         lines shouldBe List(
-          ("1", "var a = 0"),
-          ("2", "var b = 0"),
-          ("3", "var c = 0"),
-          ("4", "var d = 0"),
-          ("5", "var e = 0"),
-          ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("7", "    a++"),
-          ("8", "    b++"),
-          ("9", "    c++"),
-          ("10", "    d++"),
-          ("11", "    e++")
+          ("1", /* */ "var a = 0"),
+          ("2", /* */ "var b = 0"),
+          ("3", /* */ "var c = 0"),
+          ("4", /* */ "var d = 0"),
+          ("5", /* */ "var e = 0"),
+          ("6", /* */ "for(var i = x; i < 5; i++)"),
+          ("", /*  */ "               ~~~~~"),
+          ("7", /* */ "    a++"),
+          ("8", /* */ "    b++"),
+          ("9", /* */ "    c++"),
+          ("10", /**/ "    d++"),
+          ("11", /**/ "    e++")
         )
       }
 
@@ -274,18 +274,18 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val messageInfo = getMessageInfo(message, contextSize = 5, useColor = false)
         val lines = messageInfo.locationInSource
         lines shouldBe List(
-          ("1", "var a = 0"),
-          ("2", "var b = 0"),
-          ("3", "var c = 0"),
-          ("4", "var d = 0"),
-          ("5", "var e = 0"),
-          ("6", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("7", "    a++"),
-          ("8", "    b++"),
-          ("9", "    c++"),
-          ("10", "    d++"),
-          ("11", "    e++")
+          ("1", /* */ "var a = 0"),
+          ("2", /* */ "var b = 0"),
+          ("3", /* */ "var c = 0"),
+          ("4", /* */ "var d = 0"),
+          ("5", /* */ "var e = 0"),
+          ("6", /* */ "for(var i = x; i < 5; i++)"),
+          ("", /*  */ "               ~~~~~"),
+          ("7", /* */ "    a++"),
+          ("8", /* */ "    b++"),
+          ("9", /* */ "    c++"),
+          ("10", /**/ "    d++"),
+          ("11", /**/ "    e++")
         )
       }
 
@@ -329,10 +329,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val lines = messageInfo.locationInSource
         lines should have size 4
         lines shouldBe List(
-          ("1", "var a = 0"),
-          ("", "    ~"),
-          ("2", "var b = 0"),
-          ("3", "var c = 0")
+          ("1", /**/ "var a = 0"),
+          ("", /* */ "    ~"),
+          ("2", /**/ "var b = 0"),
+          ("3", /**/ "var c = 0")
         )
       }
 
@@ -361,11 +361,11 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val lines = messageInfo.locationInSource
         lines should have size 5
         lines shouldBe List(
-          ("1", "var a = 0"),
-          ("2", "var b = 0"),
-          ("", "    ~"),
-          ("3", "var c = 0"),
-          ("4", "var d = 0")
+          ("1", /**/ "var a = 0"),
+          ("2", /**/ "var b = 0"),
+          ("", /* */ "    ~"),
+          ("3", /**/ "var c = 0"),
+          ("4", /**/ "var d = 0")
         )
       }
 
@@ -440,10 +440,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
       val lines = messageInfo.locationInSource
       lines should have size 4
       lines shouldBe List(
-        ("1", "var a = 0"),
-        ("2", "for(var i = x; i < 5; i++)"),
-        ("", "               ~~~~~"),
-        ("3", "  a++")
+        ("1", /**/ "var a = 0"),
+        ("2", /**/ "for(var i = x; i < 5; i++)"),
+        ("", /* */ "               ~~~~~"),
+        ("3", /**/ "  a++")
       )
     }
 
@@ -480,10 +480,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val lines = messageInfo.locationInSource
         lines should have size 4
         lines shouldBe List(
-          ("1", "    var a = 0"),
-          ("2", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("3", "    a++")
+          ("1", /**/ "    var a = 0"),
+          ("2", /**/ "for(var i = x; i < 5; i++)"),
+          ("", /* */ "               ~~~~~"),
+          ("3", /**/ "    a++")
         )
       }
 
@@ -509,10 +509,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val lines = messageInfo.locationInSource
         lines should have size 4
         lines shouldBe List(
-          ("1", "            var a = 0"),
-          ("2", "for(var i = x; i < 5; i++)"),
-          ("", "               ~~~~~"),
-          ("3", "            a++")
+          ("1", /**/ "            var a = 0"),
+          ("2", /**/ "for(var i = x; i < 5; i++)"),
+          ("", /* */ "               ~~~~~"),
+          ("3", /**/ "            a++")
         )
       }
 
@@ -541,10 +541,10 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
         val lines = messageInfo.locationInSource
         lines should have size 4
         lines shouldBe List(
-          ("1", "            var a = 0"),
-          ("2", "for(var i = x; i < 5; i++)"),
-          ("3", "            a++"),
-          ("", "            ~~~")
+          ("1", /**/ "            var a = 0"),
+          ("2", /**/ "for(var i = x; i < 5; i++)"),
+          ("3", /**/ "            a++"),
+          ("", /* */ "            ~~~")
         )
       }
 
@@ -581,11 +581,11 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     var lines = messageInfo.locationInSource
     lines should have size 5
     lines shouldBe List(
-      ("1", "for(var i = x; i < 5; i++)"),
-      ("2", "    a++ // abcdef"), // error indicator should continue over the whole line
-      ("", "    ~~~~~~~~~~~~~"),
-      ("3", "    b++"),
-      ("", "    ~~~")
+      ("1", /**/ "for(var i = x; i < 5; i++)"),
+      ("2", /**/ "    a++ // abcdef"), // error indicator should continue over the whole line
+      ("", /* */ "    ~~~~~~~~~~~~~"),
+      ("3", /**/ "    b++"),
+      ("", /* */ "    ~~~")
     )
 
     source = mock[Source]
@@ -601,11 +601,11 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     lines = messageInfo.locationInSource
     lines should have size 5
     lines shouldBe List(
-      ("1", "else"),
-      ("2", "  return // res: F1002"), // error indicator should continue over the whole line
-      ("", "  ~~~~~~~~~~~~~~~~~~~~"),
-      ("3", "  println(a) // res: F1000"),
-      ("", "  ~~~~~~~~~~~~~~~~~~~~~~~~")
+      ("1", /**/ "else"),
+      ("2", /**/ "  return // res: F1002"), // error indicator should continue over the whole line
+      ("", /* */ "  ~~~~~~~~~~~~~~~~~~~~"),
+      ("3", /**/ "  println(a) // res: F1000"),
+      ("", /* */ "  ~~~~~~~~~~~~~~~~~~~~~~~~")
     )
 
     // try last case with colors as well
