@@ -6,6 +6,10 @@ import tlang.utils.{Enumerable, Enumeration, Positioned}
 
 import scala.util.matching.Regex
 
+object Token {
+  def unapply(arg: Token): Option[TokenKind] = Some(arg.kind)
+}
+
 sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString: String = kind.toString
   override def equals(o: Any): Boolean = o matches {
@@ -125,6 +129,7 @@ object Tokens extends Enumerable[TokenKind] {
   case object IN              extends TokenKind("in")
   case object NULL            extends TokenKind("null")
   case object NEWLINE         extends TokenKind("\\n")
+  case object TAB             extends TokenKind("\\t")
   case object INDENT          extends TokenKind("<indentation>")
   case object DEDENT          extends TokenKind("<dedentation>")
   // @formatter:on
