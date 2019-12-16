@@ -43,9 +43,6 @@ L2003: [1mEmpty character literal.[0m
 ========================================= LexingErrors IndentationMixesTabsAndSpaces
 L2015: [1mCannot mix tabs and spaces. Use tabs for indentation and spaces for alignment.[0m
 
-========================================= LexingErrors IndentationTooLong
-L2016: [1mIndentation is too large. Indentation level went from [35m0[0m[1m to [35m0[0m[1m. Indentation should only increase one level at a time.[0m
-
 ========================================= LexingErrors InvalidBinaryLiteral
 L2013: [1mInvalid binary literal.[0m
 
@@ -348,3 +345,6 @@ T2019: [1mLocal value [35mABC[0m[1m is not initialized.[0m
 
 ========================================= FlowingErrors FieldMayNotHaveBeenInitialized
 F2008: [1mField [35mABC[0m[1m may not have been initialized in constructor [35mABC[0m[1m::[35mABC[0m[1m.[0m
+
+========================================= LexingErrors IndentationTooLarge
+L2016: [1mIndentation is too large. Indentation level went from [35m0[0m[1m to [35m0[0m[1m. Indentation should only increase one level at a time.[0m

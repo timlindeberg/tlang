@@ -10,8 +10,6 @@ import tlang.utils.StringSource
 
 class LexingSpec extends UnitSpec {
 
-  behavior of "A lexer"
-
   it should "should parse key words" in {
     lex("val Var def protected static this implicit null") should contain inOrder(
       new Token(PRIVVAL),
@@ -55,11 +53,13 @@ class LexingSpec extends UnitSpec {
   }
 
   it should "should parse whitespace tokens" in {
-    lex(s"$NL$NL\t$NL\t\t$NL") should contain theSameElementsInOrderAs Seq(
+    lex(s"$NL$NL\ta$NL\t\tb$NL") should contain theSameElementsInOrderAs Seq(
       new Token(NEWLINE),
       new Token(INDENT),
+      ID("a"),
       new Token(NEWLINE),
       new Token(INDENT),
+      ID("b"),
       new Token(NEWLINE),
       new Token(DEDENT),
       new Token(NEWLINE), // Newline tokens should be added between the indentation tokens

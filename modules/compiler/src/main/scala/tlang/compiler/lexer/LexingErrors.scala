@@ -4,7 +4,7 @@ package lexer
 
 import tlang.compiler.lexer.Tokens.BAD
 import tlang.compiler.messages.{ErrorHandling, ErrorMessage, WarningMessage}
-import tlang.utils.{Positioned, Source}
+import tlang.utils.{Position, Positioned, Source}
 
 trait LexingErrors extends ErrorHandling {
 
@@ -92,16 +92,16 @@ trait LexingErrors extends ErrorHandling {
     lazy val message = err"Invalid hexadecimal literal."
   }
 
-  case class IndentationMixesTabsAndSpaces(length: Int) extends LexerError(15, pos(length)) {
+  case class IndentationMixesTabsAndSpaces(start: Positioned, end: Positioned) extends LexerError(15, Position(start, end)) {
     lazy val message = err"Cannot mix tabs and spaces. Use tabs for indentation and spaces for alignment."
   }
 
-  case class IndentationTooLong(originalIndent: Int, newIndent: Int, length: Int) extends LexerError(16, pos(length)) {
+  case class IndentationTooLarge(originalIndent: Int, newIndent: Int, override val pos: Positioned) extends LexerError(16, pos) {
     lazy val message =
       err"Indentation is too large. Indentation level went from $originalIndent to $newIndent. Indentation should only increase one level at a time."
   }
 
-  case class TabsNonIndentation(length: Int) extends LexerError(17, pos(length)) {
+  case class TabsNonIndentation(override val pos: Positioned) extends LexerError(17, pos) {
     lazy val message = err"Tabs should only be used for indentation. Use spaces for alignment."
   }
 

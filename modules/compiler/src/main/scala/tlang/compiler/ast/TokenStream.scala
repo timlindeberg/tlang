@@ -87,7 +87,7 @@ case class TokenStream(tokenList: Seq[Token]) {
 
   private def filterTokenList(tokenList: Seq[Token]): ListBuffer[Token] = {
     val buff = ListBuffer[Token]()
-    val tokens: Seq[Token] = tokenList.filter(!_.isInstanceOf[COMMENTLIT])
+    val tokens: Seq[Token] = tokenList.filter { !_.isInstanceOf[COMMENTLIT] }
     buff ++= tokens
       .zipWithIndex
       .filter { case (token, i) => !(token.kind == NEWLINE && tokens(i + 1).kind == NEWLINE) }

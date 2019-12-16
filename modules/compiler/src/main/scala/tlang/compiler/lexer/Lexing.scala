@@ -10,7 +10,7 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.TokenOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.{Logging, Source}
+import tlang.utils.{Logging, Position, Source}
 
 import scala.annotation.tailrec
 
@@ -41,22 +41,15 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
   protected override var column = 1
   protected override var source: Source = _
 
-  protected var indent = 0
-
   def apply(source: Source): List[Token] = {
 
     @tailrec def readTokens(chars: List[Char], tokens: List[Token]): List[Token] = chars match {
       case ('\r' :: '\n' :: _) | ('\n' :: _) =>
-        val (newTokens, rest) = parseNewline(chars)
-        readTokens(rest, newTokens ::: tokens)
-      case '\t' :: _                         =>
-        val (tabsParsed, r) = parseCharacters(chars, '\t')
-        report(TabsNonIndentation(tabsParsed))
-        column += tabsParsed
-        readTokens(r, tokens)
-      case (c :: r) if c.isWhitespace        =>
-        column += 1
-        readTokens(r, tokens)
+        val (newToken, r) = parseNewline(chars)
+        readTokens(r, newToken :: tokens)
+      case (c :: _) if c.isWhitespace        =>
+        val (tabs, rest) = parseTabs(chars)
+        readTokens(rest, tabs ::: tokens)
       case '/' :: '/' :: r                   =>
         val (token, tail) = lineComment(r)
         readTokens(tail, token :: tokens)
@@ -92,13 +85,10 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         val (token, tail) = getNumberLiteral(chars)
         readTokens(tail, token :: tokens)
       case Nil                                              =>
-        val dedents = List(createToken(NEWLINE, 0), createToken(DEDENT, 0))
-
-        val dedent = List.fill(indent)(dedents).flatten
         val eof = if (tokens.nonEmpty && tokens.head.kind != DEDENT && tokens.head.kind != NEWLINE)
-          createToken(EOF, 0) :: dedent ::: (createToken(NEWLINE, 0) :: Nil)
+          createToken(EOF, 0) :: createToken(NEWLINE, 0) :: Nil
         else
-          createToken(EOF, 0) :: dedent
+          createToken(EOF, 0) :: Nil
 
         eof ::: tokens
       case c :: _                                           =>
@@ -112,16 +102,16 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
 
     line = 1
     column = 1
-    res
+    calculateIndentationTokens(res).reverse
   }
 
-  private def parseNewline(chars: List[Char]) = {
-    val (newlinesParsed, r) = parseNewlines(chars)
+  private def parseNewline(chars: List[Char]): (Token, List[Char]) = {
+    val (newlinesParsed, rest) = parseNewlines(chars)
     val newlineToken = new Token(NEWLINE).setPos(source, line, column, line + newlinesParsed, 1)
     column = 1
     line += newlinesParsed
-    val (indentToken, rest) = getIndentToken(newlineToken, r)
-    (indentToken :+ newlineToken, rest)
+
+    (newlineToken, rest)
   }
 
   private def parseNewlines(chars: List[Char]): (Int, List[Char]) = {
@@ -134,58 +124,93 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
     numNewlines(chars, 0)
   }
 
-  private def parseCharacters(chars: List[Char], char: Char): (Int, List[Char]) = {
-    @tailrec def numCharacters(chars: List[Char], numChars: Int): (Int, List[Char]) = chars match {
-      case `char` :: rest => numCharacters(rest, numChars + 1)
-      case _              => (numChars, chars)
-    }
-
-    numCharacters(chars, 0)
-  }
-
-  private def getIndentToken(newlineToken: Token, chars: List[Char]): (List[Token], List[Char]) = {
-    val (newIndent, parsedChars, rest) = indent(chars)
-
-    val difference = newIndent - indent
-    if (difference > 1)
-      report(IndentationTooLong(indent, newIndent, parsedChars))
-
-    val tokens = if (difference == 1) {
-      createToken(INDENT, newIndent) :: Nil
-    } else if (difference < 0) {
-      val dedents = List(newlineToken, createToken(DEDENT, newIndent))
-      List.fill(-difference)(dedents).flatten
-    } else {
-      Nil
-    }
-
-    column = 1 + parsedChars
-    indent = newIndent
-    (tokens, rest)
-  }
-
-  private def indent(chars: List[Char]): (Int, Int, List[Char]) = {
+  private def parseTabs(chars: List[Char]): (List[Token], List[Char]) = {
     var foundSpace = false
     var mixedTabsAndSpaces = false
 
-    @tailrec def indent(chars: List[Char], currentIndent: Int, parsedChars: Int): (Int, Int, List[Char]) = chars match {
-      case '\t' :: rest                      =>
+    @tailrec def parseTabs(chars: List[Char], tokens: List[Token]): (List[Token], List[Char]) = chars match {
+      case '\t' :: rest =>
         if (foundSpace)
           mixedTabsAndSpaces = true
-        indent(rest, currentIndent + 1, parsedChars + 1)
-      case ' ' :: rest                       =>
+        parseTabs(rest, createToken(TAB, 1) :: tokens)
+      case ' ' :: rest  =>
         foundSpace = true
-        indent(rest, currentIndent, parsedChars + 1)
-      case ('\r' :: '\n' :: _) | ('\n' :: _) =>
-        report(UnnecessaryWhitespaceOnBlankLine(parsedChars))
-        (currentIndent, parsedChars, chars)
-      case _                                 => (currentIndent, parsedChars, chars)
+        column += 1
+        parseTabs(rest, tokens)
+      case _            => (tokens, chars)
     }
 
-    indent(chars, 0, 0) use { case (_, parsedChars, _) =>
+    parseTabs(chars, Nil) use { case (tokens, _) =>
       if (mixedTabsAndSpaces)
-        report(IndentationMixesTabsAndSpaces(parsedChars))
+        report(IndentationMixesTabsAndSpaces(tokens.last, tokens.head))
     }
+  }
+
+  private def calculateIndentationTokens(tokens: List[Token]): List[Token] = {
+
+    def createDedentTokens(tabs: List[Token], rest: List[Token]): List[Token] = {
+      val dedentToken = new Token(DEDENT)
+      if (tabs.nonEmpty) {
+        dedentToken.setPos(tabs.last, tabs.head)
+      } else {
+        val nextPos = rest.head
+        dedentToken.setPos(nextPos.source, nextPos.line, nextPos.col, nextPos.line, nextPos.col)
+      }
+      val newlineToken = new Token(NEWLINE)
+      List(newlineToken, dedentToken)
+    }
+
+    @tailrec def untilNewLine(rest: List[Token], tokens: List[Token], tabs: List[Token]): (List[Token], List[Token]) = {
+      def checkTabs(): Unit = {
+        if (tabs.nonEmpty) {
+          report(TabsNonIndentation(Position(tabs.last, tabs.head)))
+        }
+      }
+
+      rest match {
+        case (tab@Token(TAB)) :: r       => untilNewLine(r, tokens, tab :: tabs)
+        case (token@Token(NEWLINE)) :: r =>
+          checkTabs()
+          (token :: tokens, r)
+        case token :: r                  =>
+          checkTabs()
+          untilNewLine(r, token :: tokens, Nil)
+        case Nil                         =>
+          checkTabs()
+          (tokens, Nil)
+      }
+    }
+
+    @tailrec def addIndentTokens(rest: List[Token], tokens: List[Token], indent: Int, tabs: List[Token]): List[Token] = rest match {
+      case Nil                            => tokens
+      case (t@Token(TAB)) :: r            => addIndentTokens(r, tokens, indent, t :: tabs)
+      case (t@Token(NEWLINE)) :: r        => addIndentTokens(r, t :: tokens, indent, Nil)
+      case (t@Token(COMMENTLITKIND)) :: r => addIndentTokens(r, t :: tokens, indent, tabs)
+      case list                           =>
+        val tabSize = tabs.size
+        val newIndent = tabSize
+        val difference = newIndent - indent
+        if (difference > 1) {
+          val pos = Position(tabs.last, tabs.head)
+          report(IndentationTooLarge(indent, newIndent, pos))
+        }
+
+        val indentTokens = if (difference == 1) {
+          val indentToken = new Token(INDENT).setPos(tabs.last, tabs.head)
+          indentToken :: Nil
+        } else if (difference < 0) {
+          val dedentTokens = createDedentTokens(tabs, list)
+          List.fill(-difference)(dedentTokens).flatten
+        } else {
+          Nil
+        }
+
+        val (lineTokens, rest) = untilNewLine(list, indentTokens ::: tokens, Nil)
+
+        addIndentTokens(rest, lineTokens, newIndent, Nil)
+    }
+
+    addIndentTokens(tokens, Nil, 0, Nil)
   }
 
   private def tokenExists(str: String): Boolean = NonKeywords.contains(str)
@@ -270,7 +295,7 @@ case class Lexer(override val reporter: Reporter, override val errorStringContex
         case 'n'  => (createToken('\n', 4), r)
         case 'r'  => (createToken('\r', 4), r)
         case 'f'  => (createToken('\f', 4), r)
-        case '0'  => (createToken('\0', 4), r)
+        case '0'  => (createToken('\u0000', 4), r)
         case '\'' => (createToken('\'', 4), r)
         case '\\' => (createToken('\\', 4), r)
         case _    =>

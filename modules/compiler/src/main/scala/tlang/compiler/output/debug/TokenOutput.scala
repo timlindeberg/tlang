@@ -25,7 +25,7 @@ case class TokenOutput(phaseName: String, allTokens: List[List[Token]])(implicit
           val tokenName = name(token)
           val start = NumColor(token.line) + ":" + NumColor(token.col)
           val end = NumColor(token.lineEnd) + ":" + NumColor(token.colEnd)
-          (token.toString.replaceAll(NL, ""), Bold(tokenName), start, end)
+          (token.toString.replaceAll(NL, "\\n"), Bold(tokenName), start, end)
         }
     }
     grid.render()

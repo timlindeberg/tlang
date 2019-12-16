@@ -13,13 +13,17 @@ trait Positioned {
   def getPos: Position = Position(line, col, lineEnd, colEnd, source)
 
   def setPos(source: Source, lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
+    setPos(Some(source), lineStart, colStart, lineEnd, colEnd)
+  }
+
+  def setPos(source: Option[Source], lineStart: Int, colStart: Int, lineEnd: Int, colEnd: Int): this.type = {
     this.line = lineStart
     this.col = colStart
 
     this.lineEnd = lineEnd
     this.colEnd = colEnd
 
-    this.source = Some(source)
+    this.source = source
 
     this
   }
