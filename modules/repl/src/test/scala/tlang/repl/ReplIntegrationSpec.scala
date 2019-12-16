@@ -47,7 +47,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
 
   behavior of "A repl"
 
-  it should "execute simple commands" in {
+  ignore should "execute simple commands" in {
     testTerminal
       .executeCommand("4 + 4")
       .stopWhen { display => display.contains("Result") }
@@ -55,7 +55,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "use existing variables" in {
+  ignore should "use existing variables" in {
     testTerminal
       .executeCommand("5 * res0")
       .stopWhen { display => display.contains("Result") }
@@ -63,7 +63,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "define and use classes" in {
+  ignore should "define and use classes" in {
     testTerminal
       .executeCommand(
         s"""|class A =
@@ -81,7 +81,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "define and use functions" in {
+  ignore should "define and use functions" in {
     testTerminal
       .executeCommand(
         s"""|def Fun(a: Int, b: String) = b * a
@@ -94,7 +94,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "handle imports" in {
+  ignore should "handle imports" in {
     testTerminal
       .executeCommand(
         s"""|import java::util::Date
@@ -107,7 +107,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "show compilation errors" in {
+  ignore should "show compilation errors" in {
     testTerminal
       .executeCommand(""""ABC" + a + res0 + b + "ABC"""")
       .stopWhen { display => display.contains("Error") }
@@ -115,7 +115,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "show stack traces on errors" in {
+  ignore should "show stack traces on errors" in {
     testTerminal
       .executeCommand("""error("ABC")""")
       .stopWhen { display => display.contains("Error") }
@@ -123,7 +123,7 @@ class ReplIntegrationSpec extends AsyncFlatSpec
       .map { _ should matchSnapshot }
   }
 
-  it should "exit when pressing CTRL+C" in {
+  ignore should "exit when pressing CTRL+C" in {
     testTerminal
       .executeCommand(new KeyStroke('c', true, false))
       .stopWhen { display => display.contains("Thanks") }
