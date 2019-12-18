@@ -26,6 +26,10 @@ extension LongExtension : Long =
 	Def ToHexString(): String            = java::lang::Long.toHexString(this)
 	Def ToOctalString(): String          = java::lang::Long.toOctalString(this)
 
+	Def Set(index: Int): Long    = this | (1L << index)
+	Def Clear(index: Int): Long  = this & ~(1L << index)
+	Def Toggle(index: Int): Long = this ^ (1L << index)
+
 	Def toString(): String = java::lang::Long.toString(this)
 
 	Def [](index: Int): Int =

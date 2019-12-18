@@ -40,3 +40,13 @@ println(0xFFFFFFFF[0:31]) // res: -1
 println(0xFFFFFFFF[16:]) // res: 65535
 println(0xFFFFFFFF[31:]) // res: 1
 println(0xFFFFFFFF[1:5]) // res: 2080374784
+
+println(0.Set(0)) // res: 1
+println(0.Set(1)) // res: 2
+println(0.Set(2)) // res: 4
+println(1.Clear(0)) // res: 0
+println(2.Clear(1)) // res: 0
+println(3.Clear(1)) // res: 1
+println(3.Toggle(1)) // res: 1
+println(0.Toggle(1)) // res: 2
+println(0.Toggle(0).Toggle(0)) // res: 0
