@@ -479,6 +479,7 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       case "LogicNot" =>
         compileExpr(expr)
         ch << Ldc(-1)
+        castPrimitive(Types.Int, expr.getType)
         codes.xor(ch)
     }
   }
