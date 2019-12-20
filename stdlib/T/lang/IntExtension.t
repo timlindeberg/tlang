@@ -25,9 +25,9 @@ extension IntExtension: Int =
 	Def ToHexString(): String           = java::lang::Integer.toHexString(this)
 	Def ToOctalString(): String         = java::lang::Integer.toOctalString(this)
 
-	Def Set(index: Int): Int    = this | (1 << index)
-	Def Clear(index: Int): Int  = this & ~(1 << index)
-	Def Toggle(index: Int): Int = this ^ (1 << index)
+	Def SetBit(bit: Int): Int    = this | (1 << bit)
+	Def ClearBit(bit: Int): Int  = this & ~(1 << bit)
+	Def ToggleBit(bit: Int): Int = this ^ (1 << bit)
 
 	Def toString(): String = java::lang::Integer.toString(this)
 

@@ -41,12 +41,12 @@ println(0xFFFFFFFF[16:]) // res: 65535
 println(0xFFFFFFFF[31:]) // res: 1
 println(0xFFFFFFFF[1:5]) // res: 2080374784
 
-println(0.Set(0)) // res: 1
-println(0.Set(1)) // res: 2
-println(0.Set(2)) // res: 4
-println(1.Clear(0)) // res: 0
-println(2.Clear(1)) // res: 0
-println(3.Clear(1)) // res: 1
-println(3.Toggle(1)) // res: 1
-println(0.Toggle(1)) // res: 2
-println(0.Toggle(0).Toggle(0)) // res: 0
+println(0.SetBit(0)) // res: 1
+println(0.SetBit(1)) // res: 2
+println(0.SetBit(2)) // res: 4
+println(1.ClearBit(0)) // res: 0
+println(2.ClearBit(1)) // res: 0
+println(3.ClearBit(1)) // res: 1
+println(3.ToggleBit(1)) // res: 1
+println(0.ToggleBit(1)) // res: 2
+println(0.ToggleBit(0).ToggleBit(0)) // res: 0

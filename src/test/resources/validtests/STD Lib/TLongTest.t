@@ -44,12 +44,12 @@ println(0xFFFFFFFFFFFFFFFFL[63:]) // res: 1
 println(0xFFFFFFFFFFFFFFFFL[1:5]) // res: 8935141660703064064
 
 
-println(0L.Set(0)) // res: 1
-println(0L.Set(1)) // res: 2
-println(0L.Set(2)) // res: 4
-println(1L.Clear(0)) // res: 0
-println(2L.Clear(1)) // res: 0
-println(3L.Clear(1)) // res: 1
-println(3L.Toggle(1)) // res: 1
-println(0L.Toggle(1)) // res: 2
-println(0L.Toggle(0).Toggle(0)) // res: 0
+println(0L.SetBit(0)) // res: 1
+println(0L.SetBit(1)) // res: 2
+println(0L.SetBit(2)) // res: 4
+println(1L.ClearBit(0)) // res: 0
+println(2L.ClearBit(1)) // res: 0
+println(3L.ClearBit(1)) // res: 1
+println(3L.ToggleBit(1)) // res: 1
+println(0L.ToggleBit(1)) // res: 2
+println(0L.ToggleBit(0).ToggleBit(0)) // res: 0
