@@ -47,7 +47,7 @@ case class TemplateModifier(ctx: Context) extends Logging {
 
     val classSymbolLocator = ClassSymbolLocator(ctx.classPath)
     // Generate all needed classes
-    // This can't be ran in parallell since there are dependencies between CUs
+    // This can't be ran in parallel since there are dependencies between CUs
     cus foreach { cu =>
       val transforms = List[String => String](cu.imports.replaceNames)
       val errorStringContext = ErrorStringContext(transforms = transforms)
@@ -122,7 +122,9 @@ case class TemplateModifier(ctx: Context) extends Logging {
             generateClass(c)
         }
       }
-      traverser.traverse(cu)
+      cu.classes
+        .filter { !_.id.isTemplated }
+        .foreach { traverser.traverse }
     }
 
     private def generateClass(typeId: ClassID): Unit = {
