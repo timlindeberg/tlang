@@ -6,6 +6,8 @@ import better.files.File
 import tlang.formatting.ErrorStringContext
 import tlang.options.PositionalArgument
 
+import scala.util.Try
+
 case object TFilesArgument extends PositionalArgument[Set[File]] {
 
   override def name: String = "tfiles"
@@ -13,7 +15,9 @@ case object TFilesArgument extends PositionalArgument[Set[File]] {
   override def verifyArgument(path: String)(implicit errorContext: ErrorStringContext): Unit = {
     import errorContext.ErrorStringContext
 
-    val file = File(path)
+    val file = Try(File(path)).getOrElse {
+      error(err"No such file: $path.")
+    }
     if (!file.exists())
       error(err"No such file: ${ file.path }.")
 
