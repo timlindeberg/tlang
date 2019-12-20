@@ -32,7 +32,6 @@ case object TFilesArgument extends PositionalArgument[Set[File]] {
 
   override def parseValue(args: Set[String]): Set[File] = {
     args.flatMap { path =>
-
       val file = File(path)
       if (file.isDirectory) file.glob("*" + Constants.FileEnding) else List(file)
     }

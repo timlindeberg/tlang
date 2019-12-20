@@ -8,7 +8,7 @@ import tlang.formatting.Formatter
 import scala.collection.mutable
 import scala.io.StdIn
 
-trait Source {
+trait Source extends Ordered[Source] {
   def mainName: String
   def text: String
   def lines: IndexedSeq[String] = text.lines.toIndexedSeq
@@ -16,6 +16,9 @@ trait Source {
   def errorDescription(implicit formatter: Formatter): String = getDescription(formatter.Red)
 
   def getDescription(color: Color)(implicit formatter: Formatter): String
+
+  override def compare(that: Source): Int = compareBy compare that.compareBy
+  protected def compareBy: String
 }
 
 object FileSource {
@@ -39,6 +42,8 @@ case class FileSource(file: File) extends Source {
     val fileName = style(file.name)
     file.parent.path.relativePWD + file.fileSystem.getSeparator + fileName
   }
+
+  override protected def compareBy: String = file.pathAsString
 }
 
 case class StdinSource() extends Source {
@@ -60,6 +65,8 @@ case class StdinSource() extends Source {
     }
     sb.toString()
   }
+
+  override protected def compareBy: String = mainName
 }
 
 case class StringSource(str: String, override val mainName: String) extends Source {
@@ -70,4 +77,6 @@ case class StringSource(str: String, override val mainName: String) extends Sour
     val style = Bold + color
     style(mainName)
   }
+
+  override protected def compareBy: String = str
 }

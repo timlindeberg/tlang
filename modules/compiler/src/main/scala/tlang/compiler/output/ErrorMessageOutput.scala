@@ -31,7 +31,9 @@ case class ErrorMessageOutput(
         return ""
 
       val grid = formatter.grid.header(header(messageType))
-      messages.foreach { addToGrid(grid, _) }
+      messages
+        .sortBy(_.pos)
+        .foreach { addToGrid(grid, _) }
       grid.render()
     }
 

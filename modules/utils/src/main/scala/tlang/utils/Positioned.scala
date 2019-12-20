@@ -3,7 +3,7 @@ package utils
 
 import tlang.formatting.Formatter
 
-trait Positioned {
+trait Positioned extends Ordered[Positioned] {
   var source: Option[Source] = None
   var line: Int = 0
   var col: Int = 0
@@ -26,6 +26,14 @@ trait Positioned {
     this.source = source
 
     this
+  }
+
+  override def compare(other: Positioned): Int = {
+    import scala.math.Ordered.orderingToOrdered
+
+    (source, line, col, lineEnd, colEnd).compare(
+      (other.source, other.line, other.col, other.lineEnd, other.colEnd)
+    )
   }
 
   def setPos(other: Positioned): this.type = {
@@ -60,11 +68,6 @@ trait Positioned {
 
     this
   }
-
-  //  def line: Int = _lineStart
-  //  def col: Int = _colStart
-  //  def endLine: Int = _lineEnd
-  //  def endCol: Int = _colEnd
 
   def encodedStartPos: Int = (line << 16) + col
   def encodedEndPos: Int = (lineEnd << 16) + colEnd
