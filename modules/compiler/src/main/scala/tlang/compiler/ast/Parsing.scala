@@ -136,10 +136,13 @@ case class Parser(ctx: Context, override val errorStringContext: ErrorStringCont
 
     val mainName = tokens.source.map(_.mainName).getOrElse("MissingSource")
 
-    classes.filterInstance[ClassDecl].find { _.id.name == mainName } ifDefined { mainClass =>
-      val pos = if (stats.nonEmpty) stats.head else methods.head
-      report(FileClassAlreadyDefined(mainName, mainClass, pos))
-    }
+    classes
+      .filterInstance[ClassDecl]
+      .find { _.id.name == mainName }
+      .ifDefined { mainClass =>
+        val pos = if (stats.nonEmpty) stats.head else methods.head
+        report(FileClassAlreadyDefined(mainName, mainClass, pos))
+      }
 
     if (stats.isEmpty)
       return createMainClass(mainName, methods) :: classes

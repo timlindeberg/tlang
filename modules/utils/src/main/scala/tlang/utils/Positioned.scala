@@ -31,9 +31,10 @@ trait Positioned extends Ordered[Positioned] {
   override def compare(other: Positioned): Int = {
     import scala.math.Ordered.orderingToOrdered
 
-    (source, line, col, lineEnd, colEnd).compare(
-      (other.source, other.line, other.col, other.lineEnd, other.colEnd)
-    )
+    def toTuple(p: Positioned) =
+      (p.source, p.line, p.col, p.lineEnd, p.colEnd)
+
+    toTuple(this) compare toTuple(other)
   }
 
   def setPos(other: Positioned): this.type = {

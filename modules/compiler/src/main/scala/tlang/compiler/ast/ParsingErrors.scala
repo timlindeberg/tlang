@@ -44,7 +44,7 @@ trait ParsingErrors extends ErrorHandling {
 
   case class FileClassAlreadyDefined(name: String, fileClass: Positioned, override val pos: Positioned) extends ParserError(4, pos) {
     lazy val message: String = {
-      err"Cannot have free statements or methods since a class with name $name is already defined at line ${ fileClass.line }. Consider moving the free statements in to $name."
+      err"Cannot have free statements or methods in file $name.t since a class with the name the $name is already defined at line ${ fileClass.line }. Consider creating a main method inside $name instead."
     }
   }
 

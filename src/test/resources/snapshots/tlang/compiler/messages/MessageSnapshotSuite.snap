@@ -166,11 +166,8 @@ N1003: [1mStatement has no effect.[0m
 ========================================= NamingErrors VariableAlreadyDefined
 N2004: [1mVariable named [35mABC[0m[1m is already defined at line [35m0[0m[1m.[0m
 
-========================================= ParsingErrors ExpectedIdAssignment
-P3001: [1mExpected identifier or array access on left side of assignment.[0m
-
 ========================================= ParsingErrors FileClassAlreadyDefined
-P2004: [1mCannot have free statements or methods since a class with name [35mABC[0m[1m is already defined at line [35m-1[0m[1m. Consider moving the free statements in to [35mABC[0m[1m.[0m
+P2004: [1mCannot have free statements or methods in file [35mABC[0m[1m.t since a class with the name the [35mABC[0m[1m is already defined at line [35m-1[0m[1m. Consider creating a main method inside [35mABC[0m[1m instead.[0m
 
 ========================================= ParsingErrors ImplicitMethodOrOperator
 P2000: [1mOnly constructors can be declared implicit.[0m
@@ -183,12 +180,6 @@ P2003: [1mCannot have free statements since a main method is already defined at
 
 ========================================= ParsingErrors StaticIndexingOperator
 P2001: [1mIndexing operators cannot be declared static.[0m
-
-========================================= ParsingErrors UnexpectedToken
-P3003: [1mUnexpected token: [35mInt(0)[0m
-
-========================================= ParsingErrors WrongToken
-P3002: [1mExpected [0m[1;35mInt[0m[1m, found: [35mInt(0)[0m[1m.[0m
 
 ========================================= TemplatingErrors ClassDoesNotExist
 G2001: [1mCould not find template class named [35mABC[0m[1m.[0m
@@ -348,3 +339,12 @@ F2008: [1mField [35mABC[0m[1m may not have been initialized in constructor 
 
 ========================================= LexingErrors IndentationTooLarge
 L2016: [1mIndentation is too large. Indentation level went from [35m0[0m[1m to [35m0[0m[1m. Indentation should only increase one level at a time.[0m
+
+========================================= ParsingErrors ExpectedIdAssignment
+P3001: [1mExpected identifier or array access on left side of assignment.[0m
+
+========================================= ParsingErrors WrongToken
+P3002: [1mExpected [0m[1;35mInt[0m[1m, found: [35mInt(0)[0m[1m.[0m
+
+========================================= ParsingErrors UnexpectedToken
+P3003: [1mUnexpected token: [35mInt(0)[0m
