@@ -46,7 +46,7 @@ class TemplateImporter(ctx: Context, imported: mutable.Set[String] = mutable.Set
     val sources = FileSource(path) :: Nil
     try {
       // Copy context so we don't reset execution times of the old context
-      val newContext = ctx.copy()
+      val newContext = ctx.copy(reporter = ctx.reporter.cleared())
       val parsedProgram = (Lexing andThen Parsing).execute(newContext)(sources).head
       Some(parsedProgram)
     } catch {

@@ -1,12 +1,10 @@
-1. Failure to find one template import can result in no template import being found
+- Can't have a super templated type without specifying full name of template argument
 
-2. Can't have a super templated type without specifying full name of template argument
-
-3. Even though i is updated in the loop:
+- Even though i is updated in the loop:
  1210:3 src\test\resources\validtests\Advent Of Code 2018\Day4\Day4Star1.t    │
 │ Indexing expression id is out of bounds: -1 < 0.     
 
-4. Logs error with [untyped]:
+- Logs error with [untyped]:
 Def Value() =
 	var v = 0
 	if(Children.Size() == 0)
@@ -16,15 +14,14 @@ Def Value() =
 	v
 The class Int does not define an operator Int + [untyped].
 
-5. Ternary doesn't prove non nullableness:
+- Ternary doesn't prove non nullableness:
 Def toString() = Task ? "(" + Task + ": " + FinishedAt + ")" : "Free"
 Errors on Task
 
-6. Cannot add Nullable types to Strings. 
+- Cannot add Nullable types to Strings.
 
-7. Array comparison should use Arrays.equals
+- Array comparison should use Arrays.equals
 
-8. Trailing commas and template parameters doesn't mix well. This fails to parse:
-	`Def DSF(graph: HashMap<String, Vector<String>>, node: String, distance: Int): Int =`
+- Unreachable code warning is weird for larger code blocks
 
-9. Unreachable code warning is weird for larger code blocks
+- Cast to nullable fails with CodeFreezingException

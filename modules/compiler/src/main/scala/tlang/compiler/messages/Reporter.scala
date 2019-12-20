@@ -8,6 +8,7 @@ trait Reporter {
 
   def report(error: CompilerMessage): Unit
   def clear(): Unit
+  def cleared(): Reporter
   def terminateIfErrors(): Unit
 
   def isEmpty: Boolean = !hasErrors && !hasWarnings
@@ -18,9 +19,9 @@ trait Reporter {
   def messages: CompilerMessages
 }
 
-case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) extends Reporter with Logging {
+case class DefaultReporter(override val messages: CompilerMessages = CompilerMessages()) extends Reporter with Logging {
 
-  def report(message: CompilerMessage): Unit = {
+  override def report(message: CompilerMessage): Unit = {
     info"Reporting compiler message: $message"
 
     messages += message
@@ -29,17 +30,18 @@ case class DefaultReporter(messages: CompilerMessages = CompilerMessages()) exte
       throwException()
   }
 
-  def clear(): Unit = messages.clear()
+  override def clear(): Unit = messages.clear()
+  override def cleared(): Reporter = copy(messages = CompilerMessages())
 
-  def terminateIfErrors(): Unit = {
+  override def terminateIfErrors(): Unit = {
     if (hasErrors) {
       info"Terminating compilation since there were ${ messages(MessageType.Error).length } errors"
       throwException()
     }
   }
 
-  def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
-  def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
+  override def hasErrors: Boolean = messages(MessageType.Error).nonEmpty
+  override def hasWarnings: Boolean = messages(MessageType.Warning).nonEmpty
 
   private def throwException(): Nothing = {
     val e = new CompilationException(messages.clone())
@@ -63,6 +65,8 @@ case class VoidReporter() extends Reporter {
     _hasErrors = false
     _hasWarnings = false
   }
+  override def cleared(): Reporter = VoidReporter()
+
   override def terminateIfErrors(): Unit = {}
 
   override def hasErrors: Boolean = _hasErrors
