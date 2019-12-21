@@ -10,6 +10,7 @@ case object LineWidthFlag extends NumberFlag {
   override val defaultValue: Int = -1
 
   val DefaultWidth = 80
+  val MinimumWidth = 20
 
   override val name = "linewidth"
 
@@ -23,8 +24,8 @@ case object LineWidthFlag extends NumberFlag {
     super.verify(arg)
     import errorContext.ErrorStringContext
     val num = arg.toInt
-    if (num < -1) {
-      error(err"$num is not a valid line length.")
+    if (num < MinimumWidth) {
+      error(err"A line length of $num is too small, needs to be at least $MinimumWidth.")
     }
   }
 
