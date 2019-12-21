@@ -34,10 +34,18 @@ case class MessageInfo(
 
   def sourceDescription: String = {
     val sourceDescription = position.source match {
-      case Some(source) => source.description
+      case Some(source) => source.getDescription(color)
       case _            => ""
     }
     s"$sourceDescription:$positionDescription"
+  }
+
+  def lineNumberWidth: Int = {
+    if (!hasValidPosition)
+      return 1
+      
+    val maxLine = math.min(message.pos.line + messageContextSize, lines.size)
+    maxLine.digits
   }
 
   def locationInSource: Seq[(String, String)] = {

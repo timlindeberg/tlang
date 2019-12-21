@@ -4,6 +4,7 @@ package output
 
 import tlang.compiler.messages._
 import tlang.formatting.Formatter
+import tlang.formatting.grid.Width.Fixed
 import tlang.formatting.grid.{CenteredContent, Column, Grid, TruncatedColumn}
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
@@ -56,20 +57,19 @@ case class ErrorMessageOutput(
     }
 
     def addToGrid(grid: Grid, message: CompilerMessage): Unit = {
-      addMessage(message, grid, showTitle = true)
-      message.notes foreach { addMessage(_, grid, showTitle = false) }
+      val messageInfo = MessageInfo(message, syntaxHighlighter, messageContextSize)
+      addMessage(message, messageInfo, grid)
+
+      val lineNumberWidth = messageInfo.lineNumberWidth
+      message.notes foreach { addNote(_, lineNumberWidth, grid) }
     }
 
-    def addMessage(message: CompilerMessage, grid: Grid, showTitle: Boolean): Unit = {
-      val messageInfo = MessageInfo(message, syntaxHighlighter, messageContextSize)
-
+    def addMessage(message: CompilerMessage, messageInfo: MessageInfo, grid: Grid): Unit = {
       grid.row()
 
-      if (showTitle) {
-        val color = message.messageType.color
-        val title = s" ${ messageInfo.prefix.stripAnsi } "
-        grid.content(CenteredContent(title, color, HorizontalThick))
-      }
+      val titleColor = message.messageType.color
+      val title = s" ${ messageInfo.prefix.stripAnsi } "
+      grid.content(CenteredContent(title, titleColor, HorizontalThick))
 
       val validPos = messageInfo.hasValidPosition
       if (validPos)
@@ -80,6 +80,27 @@ case class ErrorMessageOutput(
       if (validPos) {
         grid.row(Column, TruncatedColumn)
         grid.contents(messageInfo.locationInSource)
+      }
+    }
+
+    def addNote(message: CompilerMessage, lineNumberWidth: Int, grid: Grid): Unit = {
+      val contextSize = math.max(messageContextSize - 1, 0)
+      val messageInfo = MessageInfo(message, syntaxHighlighter, contextSize)
+      val hasValidPos = messageInfo.hasValidPosition
+
+      val color = message.messageType.color
+      val emptyContent = color(LightShade * lineNumberWidth)
+      val indentColumn = Column(width = Fixed(lineNumberWidth))
+
+      grid.row(indentColumn, Column)
+      if (hasValidPos)
+        grid.content(emptyContent, messageInfo.sourceDescription)
+
+      grid.content(emptyContent, message.message)
+
+      if (hasValidPos) {
+        grid.row(indentColumn, Column, TruncatedColumn)
+        grid.contents(messageInfo.locationInSource.map { x => (emptyContent, x._1, x._2) })
       }
     }
 

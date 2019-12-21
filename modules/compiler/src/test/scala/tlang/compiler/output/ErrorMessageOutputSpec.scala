@@ -28,6 +28,7 @@ class ErrorMessageOutputSpec extends UnitSpec with MessageTesting with SnapshotT
   )
   source.errorDescription(*) returns path
   source.description(*) returns path
+  source.getDescription(*)(*) returns path
 
   private val aPos = Position(1, 5, 1, 6, source = Some(source))
   private val iLessThanPos = Position(6, 16, 6, 21, source = Some(source))

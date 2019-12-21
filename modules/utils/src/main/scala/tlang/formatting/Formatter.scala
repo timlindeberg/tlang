@@ -169,6 +169,7 @@ case class Formatter(
   val RightArrow: String = ascii("->", "→")
   val LeftArrow: String = ascii("<-", "←")
   val UnderlineCharacter: String = ascii("~", "‾")
+  val LightShade: String = ascii(" ", "░")
 
   private def ascii[T](ascii: => T, nonAscii: => T): T = if (asciiOnly) ascii else nonAscii
   private def color(color: Color): Color = if (useColor) color else Colors.NoColor

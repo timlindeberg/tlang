@@ -1,6 +1,7 @@
 import java.io.{File, PrintWriter, StringWriter}
 import java.nio.file.{Path, Paths}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
@@ -58,6 +59,13 @@ package object tlang {
   implicit class IntExtensions(val i: Int) extends AnyVal {
     def times[U](f: => U): Unit = (1 to i) foreach { _ => f }
     def clamp(min: Int, max: Int): Int = Math.min(Math.max(i, min), max)
+    def digits: Int = {
+      @tailrec def countDigits(num: Int, digits: Int): Int =
+        if (num > 0) countDigits(num / 10, digits + 1)
+        else digits
+
+      countDigits(math.abs(i), 0)
+    }
   }
 
   implicit class LongExtensions(val i: Long) extends AnyVal {
