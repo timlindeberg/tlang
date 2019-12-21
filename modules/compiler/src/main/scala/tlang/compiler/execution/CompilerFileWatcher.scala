@@ -5,7 +5,6 @@ package execution
 import java.nio.file.Files
 
 import better.files.{File, FileMonitor}
-import tlang.compiler.Context
 import tlang.compiler.argument.VerboseFlag
 import tlang.compiler.ast.Trees.CompilationUnit
 import tlang.compiler.imports.TemplateFile
@@ -69,11 +68,12 @@ case class CompilerFileWatcher(
 
   case class CompilerFileMonitor(fileToWatch: File, fileToCompile: File) extends FileMonitor(fileToWatch, fileToWatch.isDirectory) {
 
-    private val filesToCompile = List(FileSource(fileToCompile))
+    private val filesSource = FileSource(fileToCompile)
     private val modifiedTimes = mutable.Map[String, Long]()
 
     override def onModify(file: File, count: Int): Unit = {
       import ctx.formatter._
+
       if (hasAlreadyHandled(file))
         return
 
@@ -84,7 +84,7 @@ case class CompilerFileWatcher(
       FileSource.clearCache()
       ctx.reporter.clear()
 
-      onFilesChanged(filesToCompile)
+      onFilesChanged(filesSource :: Nil)
     }
 
     // On Windows the modified event is sometimes triggered twice

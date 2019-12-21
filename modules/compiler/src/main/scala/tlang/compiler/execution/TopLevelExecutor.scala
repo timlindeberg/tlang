@@ -18,9 +18,9 @@ case class TopLevelExecutor(ctx: Context, interruptionHandler: InterruptionHandl
     try {
       Some(handleInternalErrors(execute))
     } catch {
-      case ExitException(code) =>
+      case ExitException(code, force) =>
         printExecutionTimes(success = false)
-        if (!options(WatchFlag))
+        if (force || !options(WatchFlag))
           exit(code)
         None
     }

@@ -2,6 +2,8 @@ package tlang
 package compiler
 package execution
 
+import java.nio.file.NoSuchFileException
+
 import cafebabe.CodegenerationStackTrace
 import tlang.compiler.analyzer.{Flowing, Naming, Typing}
 import tlang.compiler.ast.Parsing
@@ -11,7 +13,7 @@ import tlang.compiler.lexer.Lexing
 import tlang.compiler.lowering.Lowering
 import tlang.compiler.messages.{CompilationException, MessageType}
 import tlang.compiler.modification.Templating
-import tlang.compiler.output.ErrorMessageOutput
+import tlang.compiler.output.{ErrorMessageOutput, ErrorOutput}
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.Source
@@ -61,6 +63,9 @@ case class Compiler(ctx: Context)(implicit syntaxHighlighter: SyntaxHighlighter)
       case e: CompilationException =>
         ctx.output += ErrorMessageOutput(e.messages, options(MessageContextFlag))
         throw ExitException(1)
+      case e: NoSuchFileException  =>
+        ctx.output += ErrorOutput(s"File ${ ctx.formatter.Red(e.getMessage) } does not exist.")
+        throw ExitException(1, forceExit = true)
     }
   }
 }
