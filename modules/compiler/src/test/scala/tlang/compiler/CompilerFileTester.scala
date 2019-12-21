@@ -13,6 +13,7 @@ import tlang.compiler.output.ErrorMessageOutput
 import tlang.compiler.testutils.{ErrorMessageSolution, OutputSolution, Solution, SolutionParser}
 import tlang.formatting.grid.{Column, TruncatedColumn}
 import tlang.formatting.textformatters.SyntaxHighlighter
+import tlang.options.argument.MessageContextFlag
 import tlang.utils._
 
 import scala.collection.mutable
@@ -79,14 +80,15 @@ case class CompilerFileTester(file: File, ctx: Context, pipeline: CompilerPhase[
   }
 
   private def handleCompilationException(messages: CompilerMessages): Unit = {
+    val messageContext = ctx.options(MessageContextFlag)
     val expectedCodes = solutionParser.parse(file).filterInstance[ErrorMessageSolution]
     if (expectedCodes.isEmpty) {
-      val errors = ErrorMessageOutput(messages)(smallerFormatter, syntaxHighlighter).pretty
+      val errors = ErrorMessageOutput(messages, messageContext)(smallerFormatter, syntaxHighlighter).pretty
       fail("Compilation failed:", errors)
     }
 
     if (options(VerboseFlag)) {
-      ctx.output += ErrorMessageOutput(messages, messageTypes = List(MessageType.Error))
+      ctx.output += ErrorMessageOutput(messages, messageContext, List(MessageType.Error))
     }
 
     verifyErrorCodes(messages, MessageType.Error, expectedCodes)
