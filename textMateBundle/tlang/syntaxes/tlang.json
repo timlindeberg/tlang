@@ -6,9 +6,11 @@
     {"include": "#import"},
     {"include": "#typeList"},
     {"include": "#new"},
-    {"include": "#class"},
-    {"include": "#typed"},
+    {"include": "#classDeclaration"},
     {"include": "#funcDeclaration"},
+    {"include": "#annotation"},
+    {"include": "#typed"},
+    {"include": "#typeQualified"},
     {"include": "#core"},
     {"include": "#indentBlock"}
   ],
@@ -132,34 +134,54 @@
         "2": {"name": "entity.name.class.tlang"}
       }
     },
+    "typeQualified": {
+      "match": "(::)([a-zA-Z_][0-9a-zA-Z_]*)",
+      "captures": {
+        "1": {"name": "keyword.operator.tlang"},
+        "2": {"name": "entity.name.class.tlang"}
+      }
+    },
     "func": {
-      "match": "[a-zA-Z_][0-9a-zA-Z_]*\\(",
-      "name": "entity.name.function.tlang"
+      "match": "([a-zA-Z_][0-9a-zA-Z_]*)(\\()",
+      "captures": {
+        "1": {"name": "entity.name.function.tlang"},
+        "2": {"name": "keyword.operator.tlang"}
+      }
     },
     "languageLiteral": {
       "match": "\\b(false|true|null)\\b",
       "name": "constant.language.tlang"
     },
     "symbols": {
-      "match": "[\\-+;.:,=*!#()\\[\\]{}?~&|%<>/^]",
+      "match": "[\\-+;.:,=*!#@()\\[\\]{}?~&|%<>/^]",
       "name": "keyword.operator.tlang"
     },
     "funcDeclaration": {
       "patterns": [
         {
-          "match": "([Dd]ef) *(.+?)(\\()",
+          "match": "([Dd]ef)( implicit| static| protected)?( implicit| static| protected)?( implicit| static| protected)? *(.+?)(\\()",
           "captures": {
             "1": {"name": "keyword.tlang"},
-            "2": {"name": "entity.name.function.declaration.tlang"},
-            "3": {"name": "keyword.operator.tlang"}
+            "2": {"name": "keyword.tlang"},
+            "3": {"name": "keyword.tlang"},
+            "4": {"name": "keyword.tlang"},
+            "5": {"name": "entity.name.function.declaration.tlang"},
+            "6": {"name": "keyword.operator.tlang"}
           }
         }
       ]
     },
-    "class": {
-      "match": "(class) ([a-zA-Z_][0-9a-zA-Z_]*)",
+    "classDeclaration": {
+      "match": "(class|trait|extension|annotation) ([a-zA-Z_][0-9a-zA-Z_]*)",
       "captures": {
         "1": {"name": "keyword.tlang"},
+        "2": {"name": "entity.name.class.tlang"}
+      }
+    },
+    "annotation": {
+      "match": "(@)([a-zA-Z_][0-9a-zA-Z_]*)",
+      "captures": {
+        "1": {"name": "keyword.operator.tlang"},
         "2": {"name": "entity.name.class.tlang"}
       }
     },
