@@ -1,0 +1,23 @@
+{
+	"name": "tlang",
+	"version": "1.0.0",
+	"publisher": "Tim Lindeberg",
+	"engines": {
+		"vscode": "^0.10.5"
+	},
+	"contributes": {
+		"languages": [
+			{
+				"id": "tlang",
+				"extensions": [".t"]
+			}
+		],
+		"grammars": [
+			{
+		        "language": "tlang",
+		        "scopeName": "source.t",
+		        "path": "./syntaxes/tlang.json"
+			}
+		]
+	}
+}
