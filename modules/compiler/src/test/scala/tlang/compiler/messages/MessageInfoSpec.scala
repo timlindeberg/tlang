@@ -63,7 +63,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
     val posWithFile = Position(1, 10, 100, 1000, source = Some(source))
     val message = createMessage(pos = posWithFile)
     messageInfo = getMessageInfo(message, useColor = true)
-    source.description(*) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
+    source.getDescription(*)(*) returns s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m"
 
     messageInfo.sourceDescription should matchWithAnsi(
       s"core/src/test/resources/positions/\u001b[1;35mParserPositions.t\u001b[0m:\u001b[1;35m1\u001b[0m:\u001b[1;35m10\u001b[0m"
@@ -71,7 +71,7 @@ class MessageInfoSpec extends UnitSpec with MessageTesting {
 
     // Without color
     messageInfo = getMessageInfo(message, useColor = false)
-    source.description(*) returns s"core/src/test/resources/positions/ParserPositions.t"
+    source.getDescription(*)(*) returns s"core/src/test/resources/positions/ParserPositions.t"
 
     messageInfo.sourceDescription should matchWithAnsi(s"core/src/test/resources/positions/ParserPositions.t:1:10")
   }

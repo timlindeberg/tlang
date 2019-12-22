@@ -104,7 +104,10 @@ case class ErrorMessageOutput(
       }
     }
 
-    messageTypes.map(format).filter(_.nonEmpty).mkString(NL)
+    messageTypes
+      .map(format)
+      .filter { _.nonEmpty }
+      .mkString(NL)
   }
 
   override def json: Json = {

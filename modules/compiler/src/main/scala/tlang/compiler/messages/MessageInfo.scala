@@ -43,7 +43,7 @@ case class MessageInfo(
   def lineNumberWidth: Int = {
     if (!hasValidPosition)
       return 1
-      
+
     val maxLine = math.min(message.pos.line + messageContextSize, lines.size)
     maxLine.digits
   }

@@ -152,8 +152,8 @@ class CompilerArgumentsSpec extends UnitSpec {
     }
 
     test("With arguments should pick largest value") {
-      val options = createOptions("--linewidth 5,10 --linewidth 25")
-      options(LineWidthFlag) shouldBe 25
+      val options = createOptions("--linewidth 20,25 --linewidth 50")
+      options(LineWidthFlag) shouldBe 50
     }
 
     test("Invalid argument") {
@@ -162,6 +162,10 @@ class CompilerArgumentsSpec extends UnitSpec {
 
       intercept[IllegalArgumentException] { createOptions("--linewidth -5") }
         .getMessage should include("-5")
+
+      val tooSmallWidth = LineWidthFlag.MinimumWidth - 1
+      intercept[IllegalArgumentException] { createOptions("--linewidth " + tooSmallWidth) }
+        .getMessage should include(tooSmallWidth.toString)
     }
   }
 
