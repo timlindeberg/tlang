@@ -14,8 +14,6 @@ class GridSpec extends UnitSpec {
 
   private implicit val defaultFormatter: Formatter = mockedFormatter()
 
-  behavior of "A Grid"
-
   it should "have correct grid size and attributes" in {
     val threeColumns = List(Column(width = Fixed(5)), Column, Column(overflowHandling = Except))
     val grid = Grid()
@@ -999,6 +997,55 @@ class GridSpec extends UnitSpec {
           |└─────┴────────────────────────────────┘""".stripMargin
   }
 
+  it should "render filled columns" in {
+    val wordWrapper = mock[WordWrapper]
+    wordWrapper.wrapAnsiFormatting(*) forwardsArg 0
+
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
+    wordWrapper.apply("ABCDEFGHIJKLMN", 3) returns List("ABC", "DEF", "GHI", "JKL", "MN")
+    wordWrapper.apply("===", 3) returns List("===")
+
+    wordWrapper.apply("___", 3) returns List("___")
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRS", 3) returns List("ABC", "DEF", "GHI", "JKL", "MNO", "PQR", "S")
+    wordWrapper.apply("ABCD", 4) returns List("ABCD")
+
+    wordWrapper.apply("ABCDEFGHIJKLMNOP", 3) returns List("ABC", "DEF", "GHI", "JKL", "MNO", "P")
+    wordWrapper.apply("~~~", 3) returns List("~~~")
+    wordWrapper.apply("ABCDEFGHIJKLMNOPQRSTUVXYZ", 4) returns List("ABCD", "EFGH", "IJKL", "MNOP", "QRST", "UVXY", "Z")
+
+    Grid()(mockedFormatter(wordWrapper = wordWrapper))
+      .row(Column, Column, Column(width = Fixed(3)))
+      .content("ABCDEFGHIJKLMNOPQRSTUVXYZ", "ABCDEFGHIJKLMN", FilledColumnContent("="))
+      .row(Column, Column, Column)
+      .content(FilledColumnContent("_"), "ABCDEFGHIJKLMNOPQRS", "ABCD")
+      .content("ABCDEFGHIJKLMNOP", FilledColumnContent("~"), "ABCDEFGHIJKLMNOPQRSTUVXYZ")
+      .render() shouldBe
+      """|┌──────┬─────┬─────┐
+         |│ ABCD │ ABC │ === │
+         |│ EFGH │ DEF │ === │
+         |│ IJKL │ GHI │ === │
+         |│ MNOP │ JKL │ === │
+         |│ QRST │ MN  │ === │
+         |│ UVXY │     │ === │
+         |│ Z    │     │ === │
+         |├─────┬┴────┬┴─────┤
+         |│ ___ │ ABC │ ABCD │
+         |│ ___ │ DEF │      │
+         |│ ___ │ GHI │      │
+         |│ ___ │ JKL │      │
+         |│ ___ │ MNO │      │
+         |│ ___ │ PQR │      │
+         |│ ___ │ S   │      │
+         |│ ABC │ ~~~ │ ABCD │
+         |│ DEF │ ~~~ │ EFGH │
+         |│ GHI │ ~~~ │ IJKL │
+         |│ JKL │ ~~~ │ MNOP │
+         |│ MNO │ ~~~ │ QRST │
+         |│ P   │ ~~~ │ UVXY │
+         |│     │ ~~~ │ Z    │
+         |└─────┴─────┴──────┘""".stripMargin
+  }
+
   it should "throw when given content with improper dimension" in {
     intercept[IllegalArgumentException] {
       Grid()
@@ -1087,6 +1134,11 @@ class GridSpec extends UnitSpec {
         .row(3)
         .contents(List(("1", "2", "3"), ("4", "5", "6"), Column))
     }.getMessage should include("Column")
+  }
+
+  it should "throw when given an invalid column fill" in {
+    intercept[IllegalArgumentException] { FilledColumnContent("ABC") }
+    intercept[IllegalArgumentException] { FilledColumnContent("") }
   }
 
   behavior of "Alignment"

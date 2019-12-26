@@ -8,6 +8,7 @@ trait GridContent {
   def render(width: Int): String
   def width: Option[Int] = None
   def size: Option[Int] = None
+  def overflowedLineContent(width: Int): String = ""
 }
 
 case class StringContent(any: Any)(implicit val formatter: Formatter) extends GridContent {
@@ -17,6 +18,16 @@ case class StringContent(any: Any)(implicit val formatter: Formatter) extends Gr
     val width = if (string.isEmpty) 0 else string.lines.map(_.visibleCharacters).max
     Some(width)
   }
+}
+
+case class FilledColumnContent(character: String)(implicit val formatter: Formatter) extends GridContent {
+  if (character.visibleCharacters != 1) {
+    throw new IllegalArgumentException("Fill should be one visible character")
+  }
+  
+  override def width: Option[Int] = Some(1)
+  def render(width: Int): String = character * width
+  override def overflowedLineContent(width: Int): String = render(width)
 }
 
 case class CenteredContent(content: Any, color: Color = Colors.NoColor, fill: String = " ")

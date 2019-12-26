@@ -422,17 +422,29 @@ case class Grid()(implicit var formatter: Formatter) {
         .transpose
         .map { lines =>
           // Handle overflow in each line
-          val overFlowedLines = lines.zipWithIndex.map { case (line, columnIndex) =>
+          val linesWithIndex = lines.zipWithIndex
+
+          val overflowedLines = linesWithIndex.map { case (line, columnIndex) =>
             val width = columnWidths(columnIndex)
             val handleOverflow = columns(columnIndex).overflowHandling
             handleOverflow(line.render(width), width)
           }
-          val maxNumLines = overFlowedLines.map(_.length).max
-
-
-          // Fill out the columns with empty lines so that each column has the same
-          // number of lines after word wrapping
-          overFlowedLines map { lines => lines ::: List.fill(maxNumLines - lines.size)("") }
+          val maxNumLines = overflowedLines.map { _.length }.max
+          if (maxNumLines > 1) {
+            // Fill out the columns that didn't word wrap
+            // so that each column has the same number of lines after word wrapping
+            val overflowedContent = linesWithIndex.map { case (content, columnIndex) =>
+              val width = columnWidths(columnIndex)
+              content.overflowedLineContent(width)
+            }
+            overflowedLines
+              .zip(overflowedContent)
+              .map { case (lines, overflowContent) =>
+                lines ::: List.fill(maxNumLines - lines.size)(overflowContent)
+              }
+          } else {
+            overflowedLines
+          }
         }
         .transpose // Transpose back so that we have a list of list of lines for each column
         .map(_.flatten) // Flatten the list so we just have one list of lines for each column

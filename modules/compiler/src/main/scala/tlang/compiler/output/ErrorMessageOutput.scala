@@ -5,7 +5,7 @@ package output
 import tlang.compiler.messages._
 import tlang.formatting.Formatter
 import tlang.formatting.grid.Width.Fixed
-import tlang.formatting.grid.{CenteredContent, Column, Grid, TruncatedColumn}
+import tlang.formatting.grid._
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.argument.MessageContextFlag
 import tlang.utils.JSON.Json
@@ -89,7 +89,7 @@ case class ErrorMessageOutput(
       val hasValidPos = messageInfo.hasValidPosition
 
       val color = message.messageType.color
-      val emptyContent = color(LightShade * lineNumberWidth)
+      val emptyContent = FilledColumnContent(color(LightShade))
       val indentColumn = Column(width = Fixed(lineNumberWidth))
 
       grid.row(indentColumn, Column)
