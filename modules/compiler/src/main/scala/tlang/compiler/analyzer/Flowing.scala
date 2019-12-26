@@ -12,7 +12,7 @@ import tlang.compiler.messages.Reporter
 import tlang.compiler.output.Output
 import tlang.compiler.output.debug.ASTOutput
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.utils.{Logging, NoPosition, Positioned}
+import tlang.utils.{Logging, Positioned}
 
 object Flowing extends CompilerPhase[CompilationUnit, CompilationUnit] {
 
@@ -278,6 +278,7 @@ case class MethodFlowAnalyzer(
           traverseChildren(acc)
           checkValidUse(obj, knowledge)
         case assign@Assign(obj, from)           =>
+          traverse(from)
           obj match {
             case _: VariableID =>
             // Don't analyze identifiers in assignments since we don't want to produce errors for variables being

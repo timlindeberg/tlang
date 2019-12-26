@@ -61,4 +61,12 @@ class B =
 
 class C =
 
+	var X: Int?
+	var Y: Int?
+	var Z: Int?
+
 	Def Test() = println("Test")
+
+	Def Test2() =
+		X = Y = Z = 1
+		println(X + Y + Z)

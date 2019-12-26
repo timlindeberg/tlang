@@ -6,7 +6,6 @@ class A =
 	Def new() =
 		Y = 6
 
-
 class B =
 
 	Val X: Int = 5
@@ -156,3 +155,11 @@ class P =
 	def new() =
 		this.X = 5
 		this.Y = 5
+
+class Q =
+
+	Val X: Int
+	Val Y: Int
+	Val Z: Int
+
+	def new() = (X = Y = Z = 5)
