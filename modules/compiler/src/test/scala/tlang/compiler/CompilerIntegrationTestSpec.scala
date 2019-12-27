@@ -3,7 +3,9 @@ package compiler
 
 import better.files.File
 import org.scalatest._
-import tlang.testutils.TestConstants
+import tlang.filetester.CompilerFileTester
+import tlang.testutils.{TestConstants, TestContext}
+import tlang.utils.Source
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -49,6 +51,15 @@ trait CompilerIntegrationTestSpec extends FreeSpec with Matchers with TestContex
     }
 
     testPath(getTestPath(path))
+  }
+
+  def testFile(pipeline: CompilerPhase[Source, _], file: File): Unit = {
+    val ctx = testContext(Some(file))
+    val fileTester = CompilerFileTester(file, ctx, pipeline)
+    val result = fileTester.execute()
+    if (!result.success) {
+      fail(result.description)
+    }
   }
 
   private def shouldBeIncludedInTestName(directoryName: String): Boolean = directoryName(0).isLower
