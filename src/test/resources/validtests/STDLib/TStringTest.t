@@ -17,8 +17,7 @@ println(s.NonEmpty()) // res: true
 
 // Iterator
 for(val c in s)
-	print(c + " ") // res: S t r i n g
-println()
+	println(c) // res: S, t, r, i, n, g
 
 // To Numbers
 val sixtyFour = "64"
@@ -62,10 +61,19 @@ println(s + 1.0f) // res: String1.0
 println(1.0f + s) // res: 1.0String
 println(s + 1.0) // res: String1.0
 println(1.0 + s) // res: 1.0String
+println([1, 2, 3] + s) // res: "[1, 2, 3]String"
+println(s + [1, 2, 3]) // res: "String[1, 2, 3]"
+
+
+// TODO: Fix importing nullable arguments
+// val nullable: Int? = null
+//
+// println(s + nullable) // res: Stringnull
+// println(nullable + s) // res: nullString
 
 // Multiplication
-println(empty * 25) // res:
-println(25 * empty) // res:
+println(empty * 25) // res: ""
+println(25 * empty) // res: ""
 println(s * 3) // res: StringStringString
 println(3 * s) // res: StringStringString
 println(3L * s) // res: StringStringString
@@ -99,8 +107,8 @@ println("test"[::2]) // res: ts
 println("test"[:-1]) // res: tes
 println("test"[:-2]) // res: te
 println("test"[:-3]) // res: t
-println("test"[:-4]) // res:
-println("test"[:-100]) // res:
+println("test"[:-4]) // res: ""
+println("test"[:-100]) // res: ""
 println("test"[-1:]) // res: t
 println("test"[-2:]) // res: st
 println("test"[-3:]) // res: est
@@ -155,8 +163,7 @@ println(s.Contains("lol")) // res: false
 var chars = [ 'a', 'b', 'c' ]
 s.GetChars(1, 3, chars, 1)
 for(val c in chars)
-	print(c)
-println() // res: atr
+	println(c) // res: a, t, r
 
 // IndexOf
 val ss = s + s
@@ -212,8 +219,7 @@ println(s.StartsWith("St", 2)) // res: false
 // ToArray
 chars = s.ToArray()
 for(val c in chars)
-	print(c + " ")
-println() // res: S t r i n g
+	println(c) // res: S, t, r, i, n, g
 
 // ToLower/UpperCase
 println(s.ToLowerCase()) // res: string
@@ -226,7 +232,7 @@ val trim = "  \t   " + s + "      \t  "
 println(trim.Trim()) //  res: String
 
 // ValueOf
-println(String.ValueOf(chars)) // res: String
+println(String.ValueOf(chars)) // res: "[S, t, r, i, n, g]"
 println(String.ValueOf(chars, 1, 2)) // res: tr
 println(String.ValueOf('c')) // res: c
 println(String.ValueOf(true)) // res: true
@@ -237,6 +243,15 @@ println(String.ValueOf(5)) // res: 5
 println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(5l)) // res: 5
 println(String.ValueOf(new A())) // res: ObjectA
+
+// ValueOf for arrays
+println(String.ValueOf([1, 2, 3])) // res: "[1, 2, 3]"
+println(String.ValueOf([true, false, true])) // res: "[true, false, true]"
+println(String.ValueOf([1L, 2L, 3L])) // res: "[1, 2, 3]"
+println(String.ValueOf([1.0, 2.0, 3.0])) // res: "[1.0, 2.0, 3.0]"
+println(String.ValueOf(["a", "b", "c"])) // res: "[a, b, c]"
+println(String.ValueOf(['a', 'b', 'c'])) // res: "[a, b, c]"
+println(String.ValueOf([new A(), new A(), new A()])) // res: "[ObjectA, ObjectA, ObjectA]"
 
 class A =
 	Def toString() = "ObjectA"

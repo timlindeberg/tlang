@@ -2,11 +2,12 @@ package T::lang
 
 import java::lang::StringBuilder
 import java::util::Locale
+import java::util::Arrays
 
 import T::std::Iterable
 import T::std::Iterator
 
-extension StringExtension: String =
+extension StringExtension : String =
 
 	Def Iterator(): Iterator<Char> = new StringIterator(this)
 
@@ -31,18 +32,13 @@ extension StringExtension: String =
 	// Operators
 	//----------------------------------------------------
 
-	Def <(lhs: String, rhs: String)  = lhs.compareTo(rhs) < 0
+	Def  <(lhs: String, rhs: String) = lhs.compareTo(rhs)  < 0
 	Def <=(lhs: String, rhs: String) = lhs.compareTo(rhs) <= 0
-	Def >(lhs: String, rhs: String)  = lhs.compareTo(rhs) > 0
+	Def  >(lhs: String, rhs: String) = lhs.compareTo(rhs)  > 0
 	Def >=(lhs: String, rhs: String) = lhs.compareTo(rhs) >= 0
 
-	Def +(lhs: String, rhs: Object?): String =
-		val b = String.valueOf(rhs ?: "null")
-		lhs.concat(b)
-
-	Def +(lhs: Object?, rhs: String): String =
-		val a = String.valueOf(lhs ?: "null")
-		a.concat(rhs)
+	Def +(lhs: String, rhs: Object?): String = lhs.concat(ValueOf(rhs))
+	Def +(lhs: Object?, rhs: String): String = ValueOf(lhs).concat(rhs)
 
 	Def *(times: Long, str: String) = str * times
 	Def *(str: String, times: Long) =
@@ -144,22 +140,39 @@ extension StringExtension: String =
 
 	Def Trim() = trim()
 
-	Def static ValueOf(data: Char[], offset: Int, count: Int) = String.valueOf(data, offset, count)
-	Def static ValueOf(data: Char[]) = String.valueOf(data)
-	Def static ValueOf(c: Char)      = String.valueOf(c)
-	Def static ValueOf(b: Bool)      = String.valueOf(b)
-	Def static ValueOf(d: Double)    = String.valueOf(d)
-	Def static ValueOf(f: Float)     = String.valueOf(f)
-	Def static ValueOf(i: Int)       = String.valueOf(i)
-	Def static ValueOf(l: Long)      = String.valueOf(l)
-	Def static ValueOf(o: Object)    = String.valueOf(o)
+	Def static ValueOf(data: Char[], offset: Int, count: Int): String = String.valueOf(data, offset, count)
+	Def static ValueOf(c: Char): String      = String.valueOf(c)
+	Def static ValueOf(b: Bool): String      = String.valueOf(b)
+	Def static ValueOf(i: Int): String       = String.valueOf(i)
+	Def static ValueOf(l: Long): String      = String.valueOf(l)
+	Def static ValueOf(f: Float): String     = String.valueOf(f)
+	Def static ValueOf(d: Double): String    = String.valueOf(d)
+
+	Def static ValueOf(a: Char[]): String   = Arrays.toString(a)
+	Def static ValueOf(a: Bool[]): String   = Arrays.toString(a)
+	Def static ValueOf(a: Int[]): String    = Arrays.toString(a)
+	Def static ValueOf(a: Long[]): String   = Arrays.toString(a)
+	Def static ValueOf(a: Float[]): String  = Arrays.toString(a)
+	Def static ValueOf(a: Double[]): String = Arrays.toString(a)
+	Def static ValueOf(a: Object[]): String = Arrays.deepToString(a)
+
+	Def static ValueOf(o: Object?): String   =
+		if (!o)            return "null"
+		if (o is Char[])   return ValueOf(o as Char[])
+		if (o is Bool[])   return ValueOf(o as Bool[])
+		if (o is Int[])    return ValueOf(o as Int[])
+		if (o is Long[])   return ValueOf(o as Long[])
+		if (o is Float[])  return ValueOf(o as Float[])
+		if (o is Double[]) return ValueOf(o as Double[])
+		if (o is Object[]) return ValueOf(o as Object[])
+		String.valueOf(o)
 
 class StringIterator: Iterator<Char> =
 
-	var s: String
+	val s: String
 	var index = 0
 
-	Def new(str: String) = (this.s = str)
+	Def new(str: String) = (s = str)
 
 	Def HasNext() = index < s.length()
 	Def Next() = s.charAt(index++)
