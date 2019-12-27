@@ -1,20 +1,19 @@
-package tlang
-package compiler
+package tlang.testutils
 
 import better.files.File
-import tlang.compiler.TestFileMain.Flags
+import tlang.Constants
 import tlang.compiler.argument._
 import tlang.compiler.execution.{Compiler, CompilerFileWatcher, TopLevelExecutor}
 import tlang.compiler.imports.ClassPath
 import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.help.HelpOutput
-import tlang.compiler.output.{JSONOutputHandler, MessageOutput, PrettyOutputHandler}
+import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
+import tlang.compiler.Context
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
-import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants.TestOutputDirectory
 import tlang.utils.InterruptionHandler.Category
 import tlang.utils.{FileSource, InterruptionHandler, Logging, Source}
@@ -122,17 +121,10 @@ case class TestFileMain(ctx: Context) extends Logging {
   }
 
   private def testFile(source: FileSource): Boolean = {
-    import formatter._
-
     info"Executing test on file ${ source.file }"
     val fileTester = CompilerFileTester(source.file, ctx, Compiler.FrontEnd)
     val res = fileTester.execute()
-    if (res.success) {
-      ctx.output += MessageOutput(s"${ Green("Test of file") } ${ source.getDescription(Green + Bold) } ${ Green("was successful.") }")
-    } else {
-      ctx.output += MessageOutput(s"${ Red("Test of file") } ${ source.getDescription(Red + Bold) } ${ Red("failed.") }")
-      ctx.output += MessageOutput(res.message.trim)
-    }
+    ctx.output += TestFileOutput(source, res)
     deleteOutputDirectory()
 
     res.success

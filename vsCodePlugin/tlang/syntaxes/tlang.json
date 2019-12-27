@@ -1,19 +1,10 @@
 {
   "scopeName": "source.t",
   "fileTypes": [".t"],
-  "patterns": [
-    {"include": "#comment"},
-    {"include": "#import"},
-    {"include": "#typeList"},
-    {"include": "#new"},
-    {"include": "#classDeclaration"},
-    {"include": "#funcDeclaration"},
-    {"include": "#annotation"},
-    {"include": "#typed"},
-    {"include": "#typeQualified"},
-    {"include": "#core"},
-    {"include": "#indentBlock"}
-  ],
+  "patterns": [{"include": "#code"}],
+  "uuid": "732f9d75-f120-4c9a-905f-8d18b722faf3",
+  "foldingStartMarker": "^(\\s+)(?=\\S)",
+  "foldingStopMarker": "^(?!\\1\\s+)(?!\\s*$)",
   "repository": {
     "comment": {
       "patterns": [
@@ -28,8 +19,18 @@
         }
       ]
     },
-    "core": {
+    "code": {
       "patterns": [
+        {"include": "#comment"},
+        {"include": "#import"},
+        {"include": "#package"},
+        {"include": "#typeList"},
+        {"include": "#new"},
+        {"include": "#classDeclaration"},
+        {"include": "#funcDeclaration"},
+        {"include": "#annotation"},
+        {"include": "#typed"},
+        {"include": "#typeQualified"},
         {"include": "#keyword"},
         {"include": "#symbols"},
         {"include": "#string"},
@@ -44,6 +45,16 @@
     "keyword": {
       "match": "\\b(extension|protected|implicit|continue|package|import|object|static|return|class|trait|while|super|error|break|else|this|Def|def|Var|Val|var|val|for|new|is|as|if|in)\\b",
       "name": "keyword.tlang"
+    },
+    "indentBlock": {
+      "name": "indentBlock",
+      "begin": "^(\\s+)(?=\\S)",
+      "end": "^(?!\\1\\s+)(?!\\s*$)",
+      "patterns": [
+        {
+          "include": "$self"
+        }
+      ]
     },
     "string": {
       "patterns": [
@@ -187,6 +198,20 @@
     },
     "import": {
       "begin": "import",
+      "end": "\n",
+      "beginCaptures": {
+        "0": {"name": "keyword.tlang"}
+      },
+      "patterns": [
+        {
+          "match": "::",
+          "name": "keyword.operator.tlang"
+        },
+        {"include": "#variable"}
+      ]
+    },
+    "package": {
+      "begin": "package",
       "end": "\n",
       "beginCaptures": {
         "0": {"name": "keyword.tlang"}
