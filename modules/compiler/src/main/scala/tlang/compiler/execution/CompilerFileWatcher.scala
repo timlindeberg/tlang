@@ -14,6 +14,7 @@ import tlang.options.Options
 import tlang.utils.{FileSource, Logging, Source}
 
 import scala.collection.mutable
+import scala.util.{Success, Try}
 
 case class CompilerFileWatcher(
   ctx: Context,
@@ -23,8 +24,11 @@ case class CompilerFileWatcher(
   CUs: Seq[CompilationUnit] = Nil)
   (implicit formatter: Formatter) extends Logging {
 
+  private val watchedFiles = mutable.Set[File]()
+
+  import formatter._
+
   def watch(): Unit = {
-    import ctx.formatter._
 
     val fileSources = sources.filterInstance[FileSource]
     if (fileSources.isEmpty) {
@@ -35,21 +39,25 @@ case class CompilerFileWatcher(
     info"Starting file watchers"
     if (options(VerboseFlag))
       ctx.output += MessageOutput(s"Watching for ${ Green("changes") }...")
-    startFileWatchers(fileSources)
-    Thread.currentThread.join()
+    fileSources foreach startFileWatcher
+
+    while (true) {
+      readNewFileToWatch()
+    }
   }
 
-  private def startFileWatchers(fileSources: List[FileSource]): Unit = {
+  private def startFileWatcher(fileSource: FileSource): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    fileSources
-      .flatMap { fileSource =>
-        val file = fileSource.file
-        file :: getDependencies(fileSource) map { CompilerFileMonitor(_, file) }
-      }
-      .foreach { monitor =>
+    val rootFile = fileSource.file
+
+    (rootFile :: getDependencies(fileSource)) foreach { file =>
+      if (!watchedFiles.contains(file)) {
+        watchedFiles += file
+        val monitor = CompilerFileMonitor(file, rootFile)
         info"Watching file ${ monitor.fileToWatch } for changes to ${ monitor.fileToCompile }"
         monitor.start()
       }
+    }
   }
 
   private def getDependencies(fileSource: FileSource): List[File] = {
@@ -64,6 +72,30 @@ case class CompilerFileWatcher(
           .map { f => File(f.path) }
       }
       .toList
+  }
+
+  private def readNewFileToWatch(): Unit = {
+    val fileName = scala.io.StdIn.readLine()
+
+    info"Got new file to watch: $fileName"
+
+    val file = Try(File(fileName)) match {
+      case Success(file) if file.exists => file
+      case _                            =>
+        ctx.output += MessageOutput(s"No such file: ${ Red(fileName) }")
+        return
+    }
+    if (watchedFiles.contains(file)) {
+      ctx.output += MessageOutput(s"File ${ Red(fileName) } is already being watched.")
+      return
+    }
+
+    ctx.output += MessageOutput(s"Watching new file: ${ Green(fileName) }")
+
+    val fileSource = FileSource(file)
+
+    onFilesChanged(fileSource :: Nil)
+    startFileWatcher(fileSource)
   }
 
   case class CompilerFileMonitor(fileToWatch: File, fileToCompile: File) extends FileMonitor(fileToWatch, fileToWatch.isDirectory) {
