@@ -3,6 +3,7 @@
 !stdlib/**/*.class
 tlang-*.tar.gz
 .DS_Store
+.vs
 
 # sbt specific
 .cache
