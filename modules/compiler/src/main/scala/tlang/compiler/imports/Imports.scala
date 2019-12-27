@@ -27,6 +27,7 @@ object Imports {
   val TBool: List[String] = tLang :+ "Bool"
   val TObjectExtension: List[String] = tLang :+ "ObjectExtension"
   val TStringExtension: List[String] = tLang :+ "StringExtension"
+  val TBoolExtension: List[String] = tLang :+ "BoolExtension"
   val TIntExtension: List[String] = tLang :+ "IntExtension"
   val TLongExtension: List[String] = tLang :+ "LongExtension"
   val TFloatExtension: List[String] = tLang :+ "FloatExtension"
@@ -44,6 +45,7 @@ object Imports {
     RegularImport(TBool),
     RegularImport(TObjectExtension),
     RegularImport(TStringExtension),
+    RegularImport(TBoolExtension),
     RegularImport(TIntExtension),
     RegularImport(TLongExtension),
     RegularImport(TFloatExtension),
