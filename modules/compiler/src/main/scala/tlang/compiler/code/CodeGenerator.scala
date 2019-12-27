@@ -211,15 +211,8 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         val arg = expr.getType match {
           case NonPrimitive(_) => s"L$JavaObject;"
           case Primitive(p)    => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
-          case arr@TArray(t)   =>
-            // Use deepToString to render multidimensional arrays
-            val method = if (arr.dimension > 1) "deepToString" else "toString"
-            val arrTpe = t match {
-              case NonPrimitive(_) | TArray(_) => s"L$JavaObject;"
-              case Primitive(p)                => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
-            }
-
-            ch << InvokeStatic(JavaArrays, method, s"([$arrTpe)L$JavaString;")
+          case arr: TArray     =>
+            arrayToString(arr)
             s"L$JavaObject;"
         }
 
@@ -318,10 +311,12 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
         ch << InstanceOf(jvmTypeName)
       case As(expr, tpe)                                =>
         (expr.getType, tpe.getType) match {
+          case (NonPrimitive(_), tpe: TArray)       =>
+            compileExpr(expr)
+            ch << CheckCast(tpe.byteCodeName)
           case (NonPrimitive(_), NonPrimitive(tpe)) =>
             compileExpr(expr)
-            val name = tpe.classSymbol.JVMName
-            ch << CheckCast(name)
+            ch << CheckCast(tpe.classSymbol.JVMName)
           case _                                    =>
             compileAndConvert(expr, tpe.getType)
         }
@@ -335,14 +330,20 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
           compileExpr(obj)
 
         obj.getType match {
-          case _: TArray =>
-            // If the object is an array this is the method call Size()
+          case arr: TArray =>
+            // If the object is an array this is the method call Size() or toString()
             // TODO: Find of way of not hardcoding this
             val mc = application.asInstanceOf[MethodCall]
-            assert(mc.meth.name == "Size" && mc.args.isEmpty)
-            ch << ARRAYLENGTH
+            val methodName = mc.meth.name
+            if (methodName == "Size") {
+              ch << ARRAYLENGTH
+            } else if (methodName == "toString") {
+              arrayToString(arr)
+            } else {
+              ???
+            }
             return
-          case _         =>
+          case _           =>
         }
 
         val classSymbol = obj.getType.asInstanceOf[TObject].classSymbol
@@ -651,6 +652,17 @@ class CodeGenerator(ch: CodeHandler, localVariableMap: mutable.Map[VariableSymbo
       compileAndConvert(expr, newType)
       newType.codes.arrayStore(ch)
     }
+  }
+
+  private def arrayToString(arr: TArray) = {
+    // Use deepToString to render multidimensional arrays
+    val method = if (arr.dimension > 1) "deepToString" else "toString"
+    val arrTpe = arr.tpe match {
+      case NonPrimitive(_) | TArray(_) => s"L$JavaObject;"
+      case Primitive(p)                => if (p.isNullable) s"L$JavaObject;" else p.byteCodeName
+    }
+
+    ch << InvokeStatic(JavaArrays, method, s"([$arrTpe)L$JavaString;")
   }
 
   private def compileBranch(expression: ExprTree, thn: Label, els: Label): Unit = expression match {
