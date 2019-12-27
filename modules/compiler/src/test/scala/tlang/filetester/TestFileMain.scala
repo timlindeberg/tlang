@@ -1,7 +1,8 @@
-package tlang.testutils
+package tlang
+package filetester
 
 import better.files.File
-import tlang.Constants
+import tlang.compiler.Context
 import tlang.compiler.argument._
 import tlang.compiler.execution.{Compiler, CompilerFileWatcher, TopLevelExecutor}
 import tlang.compiler.imports.ClassPath
@@ -9,11 +10,11 @@ import tlang.compiler.messages.{CompilerMessages, DefaultReporter}
 import tlang.compiler.output.help.HelpOutput
 import tlang.compiler.output.{JSONOutputHandler, PrettyOutputHandler}
 import tlang.compiler.utils.TLangSyntaxHighlighter
-import tlang.compiler.Context
 import tlang.formatting.textformatters.{StackTraceHighlighter, SyntaxHighlighter}
 import tlang.formatting.{ErrorStringContext, Formatter}
 import tlang.options.argument._
 import tlang.options.{FlagArgument, Options}
+import tlang.testutils.TestConstants
 import tlang.testutils.TestConstants.TestOutputDirectory
 import tlang.utils.InterruptionHandler.Category
 import tlang.utils.{FileSource, InterruptionHandler, Logging, Source}
@@ -95,7 +96,7 @@ case class TestFileMain(ctx: Context) extends Logging {
     val helpArgs = options(CompilerHelpFlag)
 
     if (options.isEmpty || (HelpFlag.defaultArg in helpArgs)) {
-      ctx.output += HelpOutput(Constants.TesterCommandName, Flags)
+      ctx.output += HelpOutput(Constants.TesterCommandName, TestFileMain.Flags)
       topLevel.exit(1)
     }
 
@@ -116,7 +117,13 @@ case class TestFileMain(ctx: Context) extends Logging {
   private def testFiles(sources: List[Source]): Boolean = {
     val fileSources = sources.asInstanceOf[List[FileSource]]
     topLevel
-      .execute { fileSources forall { testFile } }
+      .execute {
+        // We want to execute all test so we map first since
+        // forall will exit early
+        fileSources
+          .map { testFile }
+          .forall(res => res)
+      }
       .getOrElse(false)
   }
 
