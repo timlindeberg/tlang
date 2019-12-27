@@ -7,9 +7,9 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.{ClassSymbolLocator, Imports}
 import tlang.compiler.messages.Reporter
 import tlang.compiler.output.PrettyOutputHandler
-import tlang.compiler.testutils.{SymbolMatchers, TreeTesting}
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
+import tlang.testutils.matcher.SymbolMatchers
 
 class NamingSpec extends UnitSpec with SymbolMatchers with TreeTesting {
 

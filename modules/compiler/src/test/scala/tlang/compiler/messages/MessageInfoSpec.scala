@@ -4,7 +4,7 @@ package messages
 
 import tlang.formatting.Colors
 import tlang.formatting.textformatters.{SyntaxHighlighter, TabReplacer}
-import tlang.testutils.UnitSpec
+import tlang.testutils.{MessageTesting, UnitSpec}
 import tlang.utils._
 
 class MessageInfoSpec extends UnitSpec with MessageTesting {

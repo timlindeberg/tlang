@@ -8,9 +8,8 @@ import tlang.compiler.lexer.Tokens._
 import tlang.compiler.lexer.{Token, TokenKind, Tokens}
 import tlang.compiler.messages.{CompilationException, Reporter}
 import tlang.compiler.output.PrettyOutputHandler
-import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 import tlang.utils.StringSource
 
 class ParsingSpec extends UnitSpec with TreeTesting {

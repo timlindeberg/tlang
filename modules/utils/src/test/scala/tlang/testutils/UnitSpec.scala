@@ -7,6 +7,7 @@ import tlang.formatting.Colors.ColorScheme
 import tlang.formatting.Colors.ColorScheme.DefaultColorScheme
 import tlang.formatting._
 import tlang.formatting.textformatters._
+import tlang.testutils.matcher.AnsiMatchers
 import tlang.testutils.snapshot.SnapshotTesting
 
 trait UnitSpec extends FlatSpec

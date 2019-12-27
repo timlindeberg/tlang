@@ -3,8 +3,7 @@ package compiler
 package ast
 
 import tlang.compiler.ast.Trees._
-import tlang.compiler.testutils.TreeTesting
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 
 class TreeTransformerSpec extends UnitSpec with TreeTesting {
 

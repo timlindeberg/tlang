@@ -3,7 +3,7 @@ package compiler
 package messages
 
 import tlang.compiler.ast.Trees.{ClassID, IntLit, Plus, VariableID}
-import tlang.testutils.UnitSpec
+import tlang.testutils.{MessageTesting, UnitSpec}
 import tlang.utils.{NoPosition, Position}
 
 class CompilerMessageSpec extends UnitSpec with MessageTesting {

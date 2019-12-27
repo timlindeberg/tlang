@@ -5,8 +5,7 @@ package lowering
 import tlang.compiler.analyzer.Symbols.{FieldSymbol, VariableSymbol}
 import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
-import tlang.compiler.testutils.TreeTesting
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 
 class LoweringSpec extends UnitSpec with TreeTesting {
 

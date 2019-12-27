@@ -1,5 +1,6 @@
 package tlang
 package testutils
+package matcher
 
 import org.scalatest.matchers.{MatchResult, Matcher}
 

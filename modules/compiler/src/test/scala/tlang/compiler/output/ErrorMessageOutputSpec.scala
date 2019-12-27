@@ -2,10 +2,10 @@ package tlang
 package compiler
 package output
 
-import tlang.compiler.messages.{CompilerMessage, CompilerMessages, MessageTesting, MessageType}
+import tlang.compiler.messages.{CompilerMessage, CompilerMessages, MessageType}
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Formatter
-import tlang.testutils.UnitSpec
+import tlang.testutils.{MessageTesting, UnitSpec}
 import tlang.testutils.snapshot.SnapshotTesting
 import tlang.utils._
 

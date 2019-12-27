@@ -4,13 +4,13 @@ package repl
 import akka.actor.ActorRef
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
-import tlang.compiler.TestContext
 import tlang.compiler.utils.TLangSyntaxHighlighter
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
 import tlang.options.Options
 import tlang.repl.actors.ReplActor.{Start, Stop}
-import tlang.testutils.AnsiMatchers
+import tlang.testutils.TestContext
+import tlang.testutils.matcher.AnsiMatchers
 import tlang.testutils.snapshot.AsyncSnapshotTesting
 
 class ReplIntegrationSpec extends AsyncFlatSpec

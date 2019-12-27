@@ -5,10 +5,9 @@ package evaluation
 import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.Formatter
 import tlang.formatting.textformatters.SyntaxHighlighter
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 
 class ExtractorSpec extends UnitSpec with TreeTesting {
 

@@ -5,8 +5,7 @@ package evaluation
 import better.files.File
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.compiler.testutils.TreeTesting
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 import tlang.utils.{ExecutionResult, MainMethodExecutor, StringSource}
 
 class EvaluatorSpec extends UnitSpec with TreeTesting {

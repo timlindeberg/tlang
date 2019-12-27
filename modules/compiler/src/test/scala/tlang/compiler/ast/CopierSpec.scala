@@ -5,8 +5,7 @@ package ast
 import tlang.compiler.analyzer.Symbols.VariableSymbol
 import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.Trees._
-import tlang.compiler.testutils.TreeTesting
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 import tlang.utils.StringSource
 
 class CopierSpec extends UnitSpec with TreeTesting {

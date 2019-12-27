@@ -1,4 +1,5 @@
-package tlang.testutils.misc
+package tlang
+package testutils
 
 import org.scalactic.source
 import org.scalatest.{AppendedClues, Assertion, Matchers}

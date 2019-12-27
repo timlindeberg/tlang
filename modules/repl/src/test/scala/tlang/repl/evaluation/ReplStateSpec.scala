@@ -6,8 +6,7 @@ import tlang.compiler.analyzer.Types
 import tlang.compiler.ast.PrettyPrinter
 import tlang.compiler.ast.Trees._
 import tlang.compiler.imports.Imports
-import tlang.compiler.testutils.TreeTesting
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TreeTesting, UnitSpec}
 
 class ReplStateSpec extends UnitSpec with TreeTesting {
 

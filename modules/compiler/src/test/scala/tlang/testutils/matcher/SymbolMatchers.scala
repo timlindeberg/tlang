@@ -1,6 +1,9 @@
-package tlang.testutils.matcher
+package tlang
+package testutils
+package matcher
 
 import org.scalatest.matchers.{MatchResult, Matcher}
+import tlang.compiler.analyzer.Symbols.Symbolic
 
 object SymbolMatchers extends SymbolMatchers
 

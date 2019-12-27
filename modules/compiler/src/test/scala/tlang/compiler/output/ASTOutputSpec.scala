@@ -6,9 +6,8 @@ import tlang.compiler.ast.Trees._
 import tlang.compiler.ast.{PrettyPrinter, TreePrinter}
 import tlang.compiler.imports.Imports
 import tlang.compiler.output.debug.ASTOutput
-import tlang.compiler.testutils.TreeTesting
 import tlang.formatting.{ErrorStringContext, Formatter}
-import tlang.testutils.UnitSpec
+import tlang.testutils.{TestContext, TreeTesting, UnitSpec}
 import tlang.testutils.snapshot.SnapshotTesting
 
 class ASTOutputSpec extends UnitSpec with TestContext with TreeTesting with SnapshotTesting {

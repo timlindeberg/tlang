@@ -11,7 +11,7 @@ import com.googlecode.lanterna.{SGR, TerminalPosition, TerminalSize, TextColor}
 import org.scalatest.Matchers
 import tlang.formatting.Colors.Color
 import tlang.formatting.{Colors, Formatter}
-import tlang.testutils.AnsiMatchers
+import tlang.testutils.matcher.AnsiMatchers
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
